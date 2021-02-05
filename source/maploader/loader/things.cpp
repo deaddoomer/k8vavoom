@@ -65,8 +65,8 @@ void VLevel::LoadThings1 (int Lump) {
 //==========================================================================
 void VLevel::LoadThings2 (int Lump) {
   NumThings = W_LumpLength(Lump)/20;
-  Things = new mthing_t[NumThings];
   if (NumThings < 0) Host_Error("Map '%s' has invalid THINGS lump!", *MapName);
+  Things = new mthing_t[NumThings+1];
   memset((void *)Things, 0, sizeof(mthing_t)*(NumThings+1));
 
   VStream *lumpstream = W_CreateLumpReaderNum(Lump);
