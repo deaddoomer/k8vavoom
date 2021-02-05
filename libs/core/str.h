@@ -686,7 +686,7 @@ public:
     if ((vuint8)ch < 128) {
       if (ch >= 'A' && ch <= 'Z') ch += 32;
     } else {
-      if ((vuint8)ch >= 224 && (vuint8)ch <= 255) ch -= 32;
+      if ((vuint8)ch >= 224 /*&& (vuint8)ch <= 255*/) ch -= 32;
       else {
         switch ((vuint8)ch) {
           case 179: case 180: case 182: case 183: case 189: ch -= 16; break;

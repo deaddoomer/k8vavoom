@@ -190,10 +190,10 @@ void vaShutdown () {
 char *vavarg (const char *text, va_list ap) {
   va_list apcopy;
   va_copy(apcopy, ap);
-  int size = vsnprintf(va_intr_bufset[va_intr_bufidx], va_intr_bufsizes[va_intr_bufidx], text, apcopy);
+  int size = (int)vsnprintf(va_intr_bufset[va_intr_bufidx], va_intr_bufsizes[va_intr_bufidx], text, apcopy);
   va_end(apcopy);
   if (size < 0) { fprintf(stderr, "FUCK YOU SHITDOWS!\n"); /*abort();*/ size = 1024*1024; }
-  if (size >= va_intr_bufsizes[va_intr_bufidx]) {
+  if ((size_t)size >= va_intr_bufsizes[va_intr_bufidx]) {
     va_intr_bufsizes[va_intr_bufidx] = size+16;
     va_intr_bufset[va_intr_bufidx] = realloc(va_intr_bufset[va_intr_bufidx], va_intr_bufsizes[va_intr_bufidx]);
     va_copy(apcopy, ap);

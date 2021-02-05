@@ -762,8 +762,8 @@ public:
   // this is used to move chase camera
   TVec SlideMoveCamera (TVec org, TVec end, float radius);
 
-  const int GetEffectiveSpriteIndex () const { return DispSpriteFrame&0x00ffffff; }
-  const int GetEffectiveSpriteFrame () const { return ((DispSpriteFrame>>24)&VState::FF_FRAMEMASK); }
+  inline int GetEffectiveSpriteIndex () const noexcept { return DispSpriteFrame&0x00ffffff; }
+  inline int GetEffectiveSpriteFrame () const noexcept { return ((DispSpriteFrame>>24)&VState::FF_FRAMEMASK); }
 
   inline VAliasModelFrameInfo getMFI () const {
     VAliasModelFrameInfo res;
