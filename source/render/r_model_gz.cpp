@@ -338,6 +338,7 @@ void GZModelDef::parse (VScriptParser *sc) {
       sc->ExpectString();
       while (models.length() <= skidx) models.alloc();
       VStr xpath = (!sc->String.isEmpty() ? path+sc->String.toLowerCase() : VStr::EmptyString);
+      if (!models[skidx].skinFile.isEmpty()) sc->Message(va("model #%d for class '%s' redefined skin", skidx, *className));
       models[skidx].skinFile = xpath;
       continue;
     }
@@ -385,6 +386,7 @@ void GZModelDef::parse (VScriptParser *sc) {
         mname = path+mname;
       }
       while (models.length() <= mdidx) models.alloc();
+      if (!models[mdidx].modelFile.isEmpty()) sc->Message(va("redefined model #%d for class '%s'", mdidx, *className));
       models[mdidx].modelFile = mname.fixSlashes();
       continue;
     }
