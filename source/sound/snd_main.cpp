@@ -264,6 +264,7 @@ VAudioPublic *VAudioPublic::Create () {
 VAudio::VAudio ()
   : MaxSoundDist(4096)
   , MapSong(NAME_None)
+  , MusicVolumeFactor(1.0f)
   , MusicEnabled(true)
   , StreamMusicPlayer(nullptr)
   , NumChannels(0)
