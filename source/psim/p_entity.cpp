@@ -491,7 +491,7 @@ void VEntity::Tick (float deltaTime) {
 //==========================================================================
 void VEntity::SetTID (int tid) {
   RemoveFromTIDList();
-  if (tid && Role == ROLE_Authority) InsertIntoTIDList(tid);
+  if (tid && Role == ROLE_Authority && !IsGoingToDie()) InsertIntoTIDList(tid);
 }
 
 
