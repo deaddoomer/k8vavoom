@@ -1337,6 +1337,6 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
       if (slopedFloorsBad || slopedCeilingsBad) GCon->Logf("UDMF: rejected %d height-based bad floor slopes, and %d bad ceiling slopes", slopedFloorsBad, slopedCeilingsBad);
     }
 
-    delete seclines;
+    delete[] seclines;
   }
 }
