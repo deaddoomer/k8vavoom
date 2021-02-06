@@ -2198,11 +2198,12 @@ VAcs *VAcsLevel::SpawnScript (VAcsInfo *Info, VAcsObject *Object,
   */
   //script->LocalVars = new vint32[Info->VarCount];
   //script->Font = VName("smallfont");
+  if (Info->VarCount > Info->ArgCount) memset((void *)(script->LocalVars+Info->ArgCount), 0, (Info->VarCount-Info->ArgCount)*sizeof(script->LocalVars[0]));
   if (Info->VarCount > 0) script->LocalVars[0] = Arg1;
   if (Info->VarCount > 1) script->LocalVars[1] = Arg2;
   if (Info->VarCount > 2) script->LocalVars[2] = Arg3;
   if (Info->VarCount > 3) script->LocalVars[3] = Arg4;
-  if (Info->VarCount > Info->ArgCount) memset((void *)(script->LocalVars+Info->ArgCount), 0, (Info->VarCount-Info->ArgCount)*4);
+  //if (Info->VarCount > Info->ArgCount) memset((void *)(script->LocalVars+Info->ArgCount), 0, (Info->VarCount-Info->ArgCount)*sizeof(script->LocalVars[0]));
   script->DelayTime = 0;
   script->DelayActivationTick = 0;
   if (Delayed) {
@@ -2525,6 +2526,14 @@ static int doGetUserVarOrArray (VEntity *ent, VName fldname, bool isArray, int i
 //
 //==========================================================================
 
+#define ACSVM_CHECK_STACK_UNDER(n_)  do { \
+  if ((uintptr_t)sp < (uintptr_t)mystack || (ptrdiff_t)(sp-mystack) < (ptrdiff_t)(n_)) Host_Error("ACS: stack underflow in script %d(%s) at ip 0x%08x", info->Number, *info->Name, (unsigned int)(ptrdiff_t)(ip-info->Address)); \
+} while (0)
+
+#define ACSVM_CHECK_STACK_OVER(n_)  do { \
+  if ((ptrdiff_t)(sp-mystack)+(n_) >= ACS_STACK_DEPTH) Host_Error("ACS: stack overflow in script %d(%s) at ip 0x%08x", info->Number, *info->Name, (unsigned int)(ptrdiff_t)(ip-info->Address)); \
+} while (0)
+
 #define STUB(cmd) GCon->Log(NAME_Dev, "Executing unimplemented ACS PCODE " #cmd);
 
 #ifdef ACS_DUMP_EXECUTION
@@ -2547,9 +2556,9 @@ static int doGetUserVarOrArray (VEntity *ent, VName fldname, bool isArray, int i
     } \
     scountLeft = ACS_GUARD_INSTRUCTION_COUNT; \
   } \
-  /* check stack */ \
-  if ((uintptr_t)sp < (uintptr_t)mystack) Host_Error("ACS: stack underflow"); \
-  if ((ptrdiff_t)(sp-mystack) >= ACS_STACK_DEPTH) Host_Error("ACS: stack overflow"); \
+  /* check stack -- no need to; it is done by opcodes now */ \
+  /*if ((uintptr_t)sp < (uintptr_t)mystack) Host_Error("ACS: stack underflow in script %d(%s) at ip 0x%08x", info->Number, *info->Name, (unsigned int)(ptrdiff_t)(ip-info->Address));*/ \
+  /*if ((ptrdiff_t)(sp-mystack) >= ACS_STACK_DEPTH) Host_Error("ACS: stack overflow in script %d(%s) at ip 0x%08x", info->Number, *info->Name, (unsigned int)(ptrdiff_t)(ip-info->Address));*/ \
   if (fmt == ACS_LittleEnhanced) { \
     cmd = *ip; \
     if (cmd >= 240) { \
@@ -4190,9 +4199,11 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     0 };
 #endif
 
-    // check stack
-    if ((uintptr_t)sp < (uintptr_t)mystack) Host_Error("ACS: stack underflow");
-    if ((ptrdiff_t)(sp-mystack) >= ACS_STACK_DEPTH) Host_Error("ACS: stack overflow");
+    // check stack (no need to; each opcode does it now)
+    /*
+    if ((uintptr_t)sp < (uintptr_t)mystack) Host_Error("ACS: stack underflow in script %d(%s)", info->Number, *info->Name);
+    if ((ptrdiff_t)(sp-mystack) >= ACS_STACK_DEPTH) Host_Error("ACS: stack overflow in script %d(%s)", info->Number, *info->Name);
+    */
 
     if (fmt == ACS_LittleEnhanced) {
       cmd = *ip;
@@ -4241,6 +4252,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_PushNumber)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = READ_INT32(ip);
 #ifdef ACS_DUMP_EXECUTION
       //GCon->Logf("ACS:    push %d (%u %u %u %u)", *sp, ip[0], ip[1], ip[2], ip[3]);
@@ -4250,6 +4262,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec1)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int special = READ_BYTE_OR_INT32;
         INC_BYTE_OR_INT32;
@@ -4260,6 +4273,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec2)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int special = READ_BYTE_OR_INT32;
         INC_BYTE_OR_INT32;
@@ -4270,6 +4284,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec3)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         int special = READ_BYTE_OR_INT32;
         INC_BYTE_OR_INT32;
@@ -4280,6 +4295,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec4)
+      ACSVM_CHECK_STACK_UNDER(4);
       {
         int special = READ_BYTE_OR_INT32;
         INC_BYTE_OR_INT32;
@@ -4290,6 +4306,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec5)
+      ACSVM_CHECK_STACK_UNDER(5);
       {
         int special = READ_BYTE_OR_INT32;
         INC_BYTE_OR_INT32;
@@ -4345,21 +4362,25 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Add)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] += sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Subtract)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] -= sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Multiply)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] *= sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Divide)
+      ACSVM_CHECK_STACK_UNDER(2);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `Divide`");
       sp[-2] /= sp[-1];
@@ -4367,6 +4388,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Modulus)
+      ACSVM_CHECK_STACK_UNDER(2);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `Modulus`");
       sp[-2] %= sp[-1];
@@ -4374,37 +4396,44 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EQ)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] == sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_NE)
+      ACSVM_CHECK_STACK_UNDER(2);
       //if (info->Number == 31234) GCon->Logf("ACS: %d: NE(%d, %d)", info->Number, sp[-2], sp[-1]);
       sp[-2] = sp[-2] != sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LT)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] < sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GT)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] > sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LE)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] <= sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GE)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] >= sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GCon->Logf("ACS:%d: PCD_AssignScriptVar(%p:%d): %d (old is %d)", info->Number, locals, READ_BYTE_OR_INT32, sp[-1], locals[READ_BYTE_OR_INT32]);
       locals[READ_BYTE_OR_INT32] = sp[-1];
       INC_BYTE_OR_INT32;
@@ -4412,12 +4441,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] = sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] = sp[-1];
       globals->SetWorldVarInt(READ_BYTE_OR_INT32, sp[-1]);
       INC_BYTE_OR_INT32;
@@ -4425,6 +4456,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushScriptVar)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = locals[READ_BYTE_OR_INT32];
       //GCon->Logf("ACS:%d: PCD_PushScriptVar(%p:%d): %d", info->Number, locals, READ_BYTE_OR_INT32, *sp);
       INC_BYTE_OR_INT32;
@@ -4432,12 +4464,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushMapVar)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
       INC_BYTE_OR_INT32;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushWorldVar)
+      ACSVM_CHECK_STACK_OVER(1);
       //*sp = WorldVars[READ_BYTE_OR_INT32];
       *sp = globals->GetWorldVarInt(READ_BYTE_OR_INT32);
       INC_BYTE_OR_INT32;
@@ -4445,18 +4479,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] += sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] += sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] += sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -4467,18 +4504,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] -= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] -= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] -= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -4489,18 +4529,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] *= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] *= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] *= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -4511,6 +4554,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `DivScriptVar`");
       locals[READ_BYTE_OR_INT32] /= sp[-1];
@@ -4519,6 +4563,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `DivMapVar`");
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] /= sp[-1];
@@ -4527,6 +4572,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `DivWorldVar`");
       //WorldVars[READ_BYTE_OR_INT32] /= sp[-1];
@@ -4539,6 +4585,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `ModScriptVar`");
       locals[READ_BYTE_OR_INT32] %= sp[-1];
@@ -4547,6 +4594,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `ModMapVar`");
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] %= sp[-1];
@@ -4555,6 +4603,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in `ModWorldVar`");
       //WorldVars[READ_BYTE_OR_INT32] %= sp[-1];
@@ -4609,6 +4658,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IfGoto)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1]) {
         ip = ActiveObject->OffsetToPtr(READ_INT32(ip));
       } else {
@@ -4618,6 +4668,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Drop)
+      ACSVM_CHECK_STACK_UNDER(1);
       --sp;
       ACSVM_BREAK;
 
@@ -4634,6 +4685,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       }
 
     ACSVM_CASE(PCD_Delay)
+      ACSVM_CHECK_STACK_UNDER(1);
       PERFORM_DELAY(sp[-1])
       --sp;
       ACSVM_BREAK_STOP;
@@ -4644,28 +4696,33 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_Random)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]+(vint32)(Random()*(sp[-1]-sp[-2]+1));
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RandomDirect)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = READ_INT32(ip)+(vint32)(Random()*(READ_INT32(ip+4)-READ_INT32(ip)+1));
       ip += 8;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingCount)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = Level->eventThingCount(sp[-2], NAME_None, sp[-1], -1);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingCountDirect)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Level->eventThingCount(READ_INT32(ip), NAME_None, READ_INT32(ip+4), -1);
       ip += 8;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TagWait)
+      ACSVM_CHECK_STACK_UNDER(1);
       WaitValue = sp[-1];
       State = ASTE_WaitingForTag;
       --sp;
@@ -4688,6 +4745,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_PolyWait)
+      ACSVM_CHECK_STACK_UNDER(1);
       WaitValue = sp[-1];
       State = ASTE_WaitingForPoly;
       --sp;
@@ -4710,6 +4768,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_ChangeFloor)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         //int Flat = GTextureManager.NumForName(GetName8(sp[-1]), TEXTYPE_Flat, true);
         int Flat = GTextureManager.FindOrLoadFullyNamedTextureAsMapTexture(GetStr(sp[-1]), nullptr, TEXTYPE_Flat, /*overload*/true);
@@ -4739,6 +4798,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ChangeCeiling)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         //int Flat = GTextureManager.NumForName(GetName8(sp[-1]), TEXTYPE_Flat, true);
         int Flat = GTextureManager.FindOrLoadFullyNamedTextureAsMapTexture(GetStr(sp[-1]), nullptr, TEXTYPE_Flat, /*overload*/true);
@@ -4773,49 +4833,59 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndLogical)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] && sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrLogical)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2] || sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndBitwise)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]&sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrBitwise)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]|sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EorBitwise)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]^sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_NegateLogical)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = !sp[-1];
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LShift)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]<<sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RShift)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = sp[-2]>>sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_UnaryMinus)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = -sp[-1];
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IfNotGoto)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (!sp[-1]) {
         ip = ActiveObject->OffsetToPtr(READ_INT32(ip));
       } else {
@@ -4825,11 +4895,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LineSide)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = side;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ScriptWait)
+      ACSVM_CHECK_STACK_UNDER(1);
       WaitValue = sp[-1];
       {
         VAcsInfo *scpt = XLevel->Acs->FindScript(WaitValue, WaitObject);
@@ -4870,6 +4942,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_ScriptWaitNamed)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VName name = GetNameLowerCase(sp[-1]);
         --sp;
@@ -4900,6 +4973,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CaseGoto)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1] == READ_INT32(ip)) {
         ip = ActiveObject->OffsetToPtr(READ_INT32(ip+4));
         --sp;
@@ -4924,24 +4998,28 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintString)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GCon->Logf("ACS: PrintString: <%s> <%s>", *PrintStr.quote(), *GetStr(sp[-1]).quote());
       PrintStr += GetStr(sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintNumber)
+      ACSVM_CHECK_STACK_UNDER(1);
       PrintStr += VStr(sp[-1]);
       //GCon->Logf("ACS: PrintNumber: res=<%s> <%d>", *PrintStr.quote(), sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintCharacter)
+      ACSVM_CHECK_STACK_UNDER(1);
       PrintStr += (char)sp[-1];
       //GCon->Logf("ACS: PrintCharacter: res=<%s> <%d>", *PrintStr.quote(), sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerCount)
+      ACSVM_CHECK_STACK_OVER(1);
       sp[0] = 0;
       for (int i = 0; i < MAXPLAYERS; ++i) {
         if (Level->Game->Players[i]) ++sp[0];
@@ -4950,6 +5028,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GameType)
+      ACSVM_CHECK_STACK_OVER(1);
            if (GGameInfo->NetMode == NM_TitleMap) *sp = GAME_TITLE_MAP;
       else if (GGameInfo->NetMode == NM_Standalone) *sp = GAME_SINGLE_PLAYER;
       else if (svs.deathmatch) *sp = GAME_NET_DEATHMATCH;
@@ -4958,31 +5037,37 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GameSkill)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Level->World->SkillAcsReturn;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Timer)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = XLevel->TicTime;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SectorSound)
+      ACSVM_CHECK_STACK_UNDER(2);
       Level->SectorStartSound((line ? line->frontsector : nullptr), GSoundManager->GetSoundID(GetName(sp[-2])), 0, sp[-1]/127.0f, 1.0f);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AmbientSound)
+      ACSVM_CHECK_STACK_UNDER(2);
       StartSound(TVec(0, 0, 0), 0, GSoundManager->GetSoundID(GetName(sp[-2])), 0, sp[-1]/127.0f, 0.0f, false);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SoundSequence)
+      ACSVM_CHECK_STACK_UNDER(1);
       Level->SectorStartSequence((line ? line->frontsector : nullptr), GetName(sp[-1]), 0);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetLineTexture)
+      ACSVM_CHECK_STACK_UNDER(4);
       {
         //int Tex = GTextureManager.NumForName(GetName8(sp[-1]), TEXTYPE_Wall, true);
         int Tex = GTextureManager.FindOrLoadFullyNamedTextureAsMapTexture(GetStr(sp[-1]), nullptr, TEXTYPE_Wall, /*overload*/true);
@@ -5004,6 +5089,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetLineBlocking)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int searcher = -1;
         for (line_t *line = XLevel->FindLine(sp[-2], &searcher); line != nullptr; line = XLevel->FindLine(sp[-2], &searcher)) {
@@ -5035,6 +5121,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetLineSpecial)
+      ACSVM_CHECK_STACK_UNDER(7);
       {
         TranslateSpecial(sp[-6], sp[-5]);
         int searcher = -1;
@@ -5052,6 +5139,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingSound)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         VName sound = GetName(sp[-2]);
         for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
@@ -5067,8 +5155,9 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       SB_POP;
       ACSVM_BREAK;
 
-    //  Extended P-Code commands.
+    // extended P-Code commands
     ACSVM_CASE(PCD_ActivatorSound)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (Activator) {
         Activator->StartSound(GetName(sp[-2]), 0, sp[-1]/127.0f, 1.0f, false);
       } else {
@@ -5078,11 +5167,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LocalAmbientSound)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (Activator) Activator->StartLocalSound(GetName(sp[-2]), 0, sp[-1]/127.0f, 1.0f);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetLineMonsterBlocking)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int searcher = -1;
         for (line_t *line = XLevel->FindLine(sp[-2], &searcher); line != nullptr; line = XLevel->FindLine(sp[-2], &searcher)) {
@@ -5097,21 +5188,25 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerHealth)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = (Activator ? Activator->Health : 0);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerArmorPoints)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = (Activator ? Activator->eventGetArmorPoints() : 0);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerFrags)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = (Activator && Activator->Player ? Activator->Player->Frags : 0);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintName)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VBasePlayer *Plr;
         switch (sp[-1]) {
@@ -5141,26 +5236,31 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MusicChange)
+      ACSVM_CHECK_STACK_UNDER(2);
       Level->ChangeMusic(GetName8(sp[-2]));
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SinglePlayer)
-      sp[-1] = GGameInfo->NetMode < NM_DedicatedServer;
+      ACSVM_CHECK_STACK_OVER(1);
+      *sp = (int)(GGameInfo->NetMode < NM_DedicatedServer);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_FixedMul)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = vint32((double)sp[-2]/(double)0x10000*(double)sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_FixedDiv)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = vint32((double)sp[-2]/(double)sp[-1]*(double)0x10000);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetGravity)
+      ACSVM_CHECK_STACK_UNDER(1);
       Level->Gravity = ((float)sp[-1]/(float)0x10000)*DEFAULT_GRAVITY/800.0f;
       --sp;
       ACSVM_BREAK;
@@ -5171,6 +5271,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetAirControl)
+      ACSVM_CHECK_STACK_UNDER(1);
       Level->AirControl = float(sp[-1])/65536.0f;
       --sp;
       ACSVM_BREAK;
@@ -5193,6 +5294,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GiveInventory)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (Activator) {
         //GCon->Logf(NAME_Debug, "PCD_GiveInventory: activator=<%s>; class=<%s>; count=%d", Activator->GetClass()->GetName(), *GetNameLowerCase(sp[-2]), sp[-1]);
         Activator->eventGiveInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
@@ -5219,6 +5321,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TakeInventory)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (Activator) {
         Activator->eventTakeInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
       } else {
@@ -5241,6 +5344,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckInventory)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (!Activator) {
         sp[-1] = 0;
       } else {
@@ -5251,6 +5355,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckInventoryDirect)
+      ACSVM_CHECK_STACK_OVER(1);
       if (!Activator) {
         *sp = 0;
       } else {
@@ -5263,6 +5368,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Spawn)
+      ACSVM_CHECK_STACK_UNDER(6);
       //GCon->Logf("!!!!!!!! '%s'", *GetNameLowerCase(sp[-6]));
       sp[-6] = Level->eventAcsSpawnThing(GetNameLowerCase(sp[-6]),
         TVec(float(sp[-5])/float(0x10000),
@@ -5273,6 +5379,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SpawnDirect)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Level->eventAcsSpawnThing(GetNameLowerCase(READ_INT32(ip)|ActiveObject->GetLibraryID()),
         TVec(float(READ_INT32(ip+4))/float(0x10000),
         float(READ_INT32(ip+8))/float(0x10000),
@@ -5282,18 +5389,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SpawnSpot)
+      ACSVM_CHECK_STACK_UNDER(4);
       sp[-4] = Level->eventAcsSpawnSpot(GetNameLowerCase(sp[-4]), sp[-3], sp[-2], float(sp[-1])*45.0f/32.0f);
       sp -= 3;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SpawnSpotDirect)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Level->eventAcsSpawnSpot(GetNameLowerCase(READ_INT32(ip)|ActiveObject->GetLibraryID()),
-        READ_INT32(ip+4), READ_INT32(ip+8),
-        float(READ_INT32(ip+12))*45.0f/32.0f);
+                                     READ_INT32(ip+4), READ_INT32(ip+8),
+                                     float(READ_INT32(ip+12))*45.0f/32.0f);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetMusic)
+      ACSVM_CHECK_STACK_UNDER(3);
       Level->ChangeMusic(GetName8(sp[-3]));
       sp -= 3;
       ACSVM_BREAK;
@@ -5304,6 +5414,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LocalSetMusic)
+      ACSVM_CHECK_STACK_UNDER(3);
       if (Activator && Activator->IsPlayer() && Activator->Player) {
         Activator->Player->eventClientChangeMusic(GetNameLowerCase(sp[-3]));
       }
@@ -5318,11 +5429,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintFixed)
+      ACSVM_CHECK_STACK_UNDER(1);
       PrintStr += VStr(float(sp[-1])/float(0x10000));
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintLocalised)
+      ACSVM_CHECK_STACK_UNDER(1);
       PrintStr += GLanguage[GetName(sp[-1])];
       --sp;
       ACSVM_BREAK;
@@ -5396,6 +5509,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetFont)
+      ACSVM_CHECK_STACK_UNDER(1);
       Font = GetNameLowerCase(sp[-1]);
       //GCon->Logf(NAME_Debug, "SETFONTI: '%s'", *Font);
       --sp;
@@ -5408,6 +5522,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushByte)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = *ip;
       ++sp;
       ++ip;
@@ -5444,18 +5559,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK_STOP;
 
     ACSVM_CASE(PCD_RandomDirectB)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = ip[0]+(vint32)(Random()*(ip[1]-ip[0]+1));
       ip += 2;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushBytes)
+      ACSVM_CHECK_STACK_OVER(ip[0]);
       for (int i = 0; i < ip[0]; ++i) sp[i] = ip[i+1];
       sp += ip[0];
       ip += ip[0]+1;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Push2Bytes)
+      ACSVM_CHECK_STACK_OVER(2);
       sp[0] = ip[0];
       sp[1] = ip[1];
       ip += 2;
@@ -5463,6 +5581,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Push3Bytes)
+      ACSVM_CHECK_STACK_OVER(3);
       sp[0] = ip[0];
       sp[1] = ip[1];
       sp[2] = ip[2];
@@ -5471,6 +5590,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Push4Bytes)
+      ACSVM_CHECK_STACK_OVER(4);
       sp[0] = ip[0];
       sp[1] = ip[1];
       sp[2] = ip[2];
@@ -5480,6 +5600,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Push5Bytes)
+      ACSVM_CHECK_STACK_OVER(5);
       sp[0] = ip[0];
       sp[1] = ip[1];
       sp[2] = ip[2];
@@ -5490,6 +5611,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetThingSpecial)
+      ACSVM_CHECK_STACK_UNDER(7);
       {
         TranslateSpecial(sp[-6], sp[-5]);
         if (sp[-7] != 0) {
@@ -5514,6 +5636,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] = sp[-1];
       globals->SetGlobalVarInt(READ_BYTE_OR_INT32, sp[-1]);
       INC_BYTE_OR_INT32;
@@ -5521,6 +5644,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushGlobalVar)
+      ACSVM_CHECK_STACK_OVER(1);
       //*sp = GlobalVars[READ_BYTE_OR_INT32];
       *sp = globals->GetGlobalVarInt(READ_BYTE_OR_INT32);
       INC_BYTE_OR_INT32;
@@ -5528,6 +5652,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] += sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -5538,6 +5663,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] -= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -5548,6 +5674,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] *= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -5558,6 +5685,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in 'DivGlobalVar'");
       //GlobalVars[READ_BYTE_OR_INT32] /= sp[-1];
@@ -5570,6 +5698,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       ACS_ZDIV_FIX
       if (sp[-1] == 0) Host_Error("ACS: division by zero in 'ModGlobalVar'");
       //GlobalVars[READ_BYTE_OR_INT32] %= sp[-1];
@@ -5600,6 +5729,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_FadeTo)
+      ACSVM_CHECK_STACK_UNDER(5);
       Level->eventAcsFadeRange(0, 0, 0, -1, (float)sp[-5]/255.0f,
         (float)sp[-4]/255.0f, (float)sp[-3]/255.0f,
         (float)sp[-2]/65536.0f, (float)sp[-1]/65536.0f, Activator);
@@ -5607,6 +5737,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_FadeRange)
+      ACSVM_CHECK_STACK_UNDER(9);
       Level->eventAcsFadeRange((float)sp[-9]/255.0f,
         (float)sp[-8]/255.0f, (float)sp[-7]/255.0f,
         (float)sp[-6]/65536.0f, (float)sp[-5]/255.0f,
@@ -5620,6 +5751,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayMovie)
+      ACSVM_CHECK_STACK_UNDER(1);
       STUB(PCD_PlayMovie)
       //FIXME implement this
       //sp[-1] - movie name, string
@@ -5628,6 +5760,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetFloorTrigger)
+      ACSVM_CHECK_STACK_UNDER(8);
       Level->eventStartPlaneWatcher(Activator, line, side, false,
         sp[-8], sp[-7], sp[-6], sp[-5], sp[-4], sp[-3], sp[-2],
         sp[-1]);
@@ -5635,6 +5768,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetCeilingTrigger)
+      ACSVM_CHECK_STACK_UNDER(8);
       Level->eventStartPlaneWatcher(Activator, line, side, true,
         sp[-8], sp[-7], sp[-6], sp[-5], sp[-4], sp[-3], sp[-2],
         sp[-1]);
@@ -5642,6 +5776,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorX)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? vint32(Ent->Origin.x*0x10000) : 0);
@@ -5649,6 +5784,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorY)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? vint32(Ent->Origin.y*0x10000) : 0);
@@ -5656,6 +5792,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorZ)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? vint32(Ent->Origin.z*0x10000) : 0);
@@ -5663,6 +5800,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_StartTranslation)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1] >= 1 && sp[-1] <= MAX_LEVEL_TRANSLATIONS) {
         while (XLevel->Translations.Num() < sp[-1]) {
           XLevel->Translations.Append(nullptr);
@@ -5679,11 +5817,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TranslationRange1)
+      ACSVM_CHECK_STACK_UNDER(4);
       if (Translation) Translation->MapToRange(sp[-4], sp[-3], sp[-2], sp[-1]);
       sp -= 4;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TranslationRange2)
+      ACSVM_CHECK_STACK_UNDER(8);
       if (Translation) Translation->MapToColors(sp[-8], sp[-7], sp[-6], sp[-5], sp[-4], sp[-3], sp[-2], sp[-1]);
       sp -= 8;
       ACSVM_BREAK;
@@ -5806,17 +5946,20 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushMapArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = ActiveObject->GetArrayVal(*ActiveObject->MapVars[READ_BYTE_OR_INT32], sp[-1]);
       INC_BYTE_OR_INT32;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       ActiveObject->SetArrayVal(*ActiveObject->MapVars[READ_BYTE_OR_INT32], sp[-2], sp[-1]);
       INC_BYTE_OR_INT32;
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])+sp[-1]);
@@ -5826,6 +5969,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])-sp[-1]);
@@ -5835,6 +5979,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])*sp[-1]);
@@ -5844,6 +5989,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in `DivMapArray`");
@@ -5855,6 +6001,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in `ModMapArray`");
@@ -5866,6 +6013,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IncMapArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-1], ActiveObject->GetArrayVal(ANum, sp[-1])+1);
@@ -5875,6 +6023,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DecMapArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-1], ActiveObject->GetArrayVal(ANum, sp[-1])-1);
@@ -5884,11 +6033,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Dup)
+      ACSVM_CHECK_STACK_UNDER(1);
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = sp[-1];
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Swap)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int tmp = sp[-2];
         sp[-2] = sp[-1];
@@ -5897,41 +6049,49 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Sin)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = vint32(msin(float(sp[-1])*360.0f/0x10000)*0x10000);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_Cos)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = vint32(mcos(float(sp[-1])*360.0f/0x10000)*0x10000);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_VectorAngle)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = vint32(matan(float(sp[-1])/float(0x10000),
         float(sp[-2])/float(0x10000))/360.0f*0x10000);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckWeapon)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = (Activator ? Activator->eventCheckNamedWeapon(GetNameLowerCase(sp[-1])) : 0);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetWeapon)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GCon->Logf("SETWEAPON: '%s'", *GetNameLowerCase(sp[-1]));
       sp[-1] = (Activator ? Activator->eventSetNamedWeapon(GetNameLowerCase(sp[-1])) : 0);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TagString)
+      ACSVM_CHECK_STACK_UNDER(1);
       //sp[-1] |= ActiveObject->GetLibraryID();
       //GCon->Logf("PCD_TagString: <%s> (0x%08x)", *ActiveObject->GetString(sp[-1]).quote(), (unsigned)sp[-1]);
       sp[-1] = ActiveObject->Level->PutNewString(ActiveObject->GetString(sp[-1]));
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushWorldArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       //sp[-1] = WorldArrays[READ_BYTE_OR_INT32].GetElemVal(sp[-1]);
       sp[-1] = globals->GetWorldArrayInt(READ_BYTE_OR_INT32, sp[-1]);
       INC_BYTE_OR_INT32;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       //WorldArrays[READ_BYTE_OR_INT32].SetElemVal(sp[-2], sp[-1]);
       globals->SetWorldArrayInt(READ_BYTE_OR_INT32, sp[-2], sp[-1]);
       INC_BYTE_OR_INT32;
@@ -5939,6 +6099,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) + sp[-1]);
@@ -5949,6 +6110,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) - sp[-1]);
@@ -5959,6 +6121,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) * sp[-1]);
@@ -5969,6 +6132,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in 'DivWorldArray'");
@@ -5981,6 +6145,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in 'ModWorldArray'");
@@ -5993,6 +6158,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IncWorldArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-1], WorldArrays[ANum].GetElemVal(sp[-1]) + 1);
@@ -6003,6 +6169,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DecWorldArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-1], WorldArrays[ANum].GetElemVal(sp[-1]) - 1);
@@ -6013,6 +6180,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       //sp[-1] = GlobalArrays[READ_BYTE_OR_INT32].GetElemVal(sp[-1]);
       sp[-1] = globals->GetGlobalArrayInt(READ_BYTE_OR_INT32, sp[-1]);
       INC_BYTE_OR_INT32;
@@ -6022,6 +6190,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 #ifdef ACS_DUMP_EXECUTION
       //GCon->Logf("ACS:  AssignGlobalArray[%d] (%d, %d)", READ_BYTE_OR_INT32, sp[-2], sp[-1]);
 #endif
+      ACSVM_CHECK_STACK_UNDER(2);
       //GlobalArrays[READ_BYTE_OR_INT32].SetElemVal(sp[-2], sp[-1]);
       globals->SetGlobalArrayInt(READ_BYTE_OR_INT32, sp[-2], sp[-1]);
       INC_BYTE_OR_INT32;
@@ -6029,6 +6198,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2])+sp[-1]);
@@ -6039,6 +6209,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2])-sp[-1]);
@@ -6049,6 +6220,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2])*sp[-1]);
@@ -6059,6 +6231,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         int ANum = READ_BYTE_OR_INT32;
@@ -6071,6 +6244,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         int ANum = READ_BYTE_OR_INT32;
@@ -6083,6 +6257,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IncGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-1], GlobalArrays[ANum].GetElemVal(sp[-1])+1);
@@ -6093,6 +6268,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DecGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-1], GlobalArrays[ANum].GetElemVal(sp[-1])-1);
@@ -6103,11 +6279,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetMarineWeapon)
+      ACSVM_CHECK_STACK_UNDER(2);
       Level->eventSetMarineWeapon(sp[-2], sp[-1], Activator);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetActorProperty)
+      ACSVM_CHECK_STACK_UNDER(3);
       if (!sp[-3]) {
         if (Activator) {
           Activator->eventSetActorProperty(sp[-2], sp[-1], GetStr(sp[-1]));
@@ -6123,6 +6301,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorProperty)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         VEntity *Ent = EntityFromTID(sp[-2], Activator);
         if (!Ent) {
@@ -6150,22 +6329,26 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerNumber)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = (Activator && Activator->IsPlayer() ? SV_GetPlayerNum(Activator->Player) : -1);
       //GCon->Logf("PCD_PlayerNumber: %d", *sp);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ActivatorTID)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Activator ? Activator->TID : 0;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetMarineSprite)
+      ACSVM_CHECK_STACK_UNDER(2);
       Level->eventSetMarineSprite(sp[-2], GetName(sp[-1]), Activator);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetScreenWidth)
+      ACSVM_CHECK_STACK_OVER(1);
 #ifdef CLIENT
       *sp++ = VirtualWidth;
 #else
@@ -6174,6 +6357,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetScreenHeight)
+      ACSVM_CHECK_STACK_OVER(1);
 #ifdef CLIENT
       *sp++ = VirtualHeight;
 #else
@@ -6183,17 +6367,20 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     // Thing_Projectile2 (tid, type, angle, speed, vspeed, gravity, newtid);
     ACSVM_CASE(PCD_ThingProjectile2)
+      ACSVM_CHECK_STACK_UNDER(7);
       Level->eventEV_ThingProjectile(sp[-7], sp[-6], sp[-5], sp[-4],
         sp[-3], sp[-2], sp[-1], NAME_None, Activator);
       sp -= 7;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_StrLen)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = GetStr(sp[-1]).Utf8Length();
       ACSVM_BREAK;
 
     // void SetHudSize (int width, int height, bool statusbar);
     ACSVM_CASE(PCD_SetHudSize)
+      ACSVM_CHECK_STACK_UNDER(3);
       HudWidth = (sp[-3] > 0 ? sp[-3] : 0);
       HudHeight = (sp[-2] > 0 ? sp[-2] : 0);
       //GCon->Logf("ACS: SetHudSize: (%d,%d)", HudWidth, HudHeight);
@@ -6202,6 +6389,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetCvar)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VStr cvname = GetStr(sp[-1]);
         int val;
@@ -6228,52 +6416,46 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CaseGotoSorted)
-      //  The count and jump table are 4-byte aligned.
-      if (ActiveObject->PtrToOffset(ip)&3)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
-        ip += 4-(ActiveObject->PtrToOffset(ip)&3);
-      }
-      {
+        // the count and jump table are 4-byte aligned
+        if (ActiveObject->PtrToOffset(ip)&3) ip += 4-(ActiveObject->PtrToOffset(ip)&3);
         int numcases = READ_INT32(ip);
         int min = 0, max = numcases-1;
-        while (min <= max)
-        {
-          int mid = (min+max)/2;
-          int caseval = READ_INT32(ip+4+mid*8);
-          if (caseval == sp[-1])
-          {
+        while (min <= max) {
+          const int mid = (min+max)/2;
+          const int caseval = READ_INT32(ip+4+mid*8);
+          if (caseval == sp[-1]) {
             ip = ActiveObject->OffsetToPtr(READ_INT32(ip+8+mid*8));
             --sp;
             ACSVM_BREAK;
-          }
-          else if (caseval < sp[-1])
-          {
+          } else if (caseval < sp[-1]) {
             min = mid+1;
-          }
-          else
-          {
+          } else {
             max = mid-1;
           }
         }
-        if (min > max)
-        {
-          // The case was not found, so go to the next instruction.
+        if (min > max) {
+          // the case was not found, so go to the next instruction
           ip += 4+numcases*8;
         }
       }
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetResultValue)
+      ACSVM_CHECK_STACK_UNDER(1);
       resultValue = sp[-1];
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetLineRowOffset)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = (line && line->sidenum[0] >= 0 ? (vint32)XLevel->Sides[line->sidenum[0]].Mid.RowOffset : 0);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorFloorZ)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = Ent ? vint32(Ent->FloorZ*0x10000) : 0;
@@ -6283,12 +6465,12 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     ACSVM_CASE(PCD_GetActorAngle)
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
-        sp[-1] = Ent ? vint32(Ent->Angles.yaw*0x10000/360) &
-          0xffff : 0;
+        sp[-1] = Ent ? (vint32(Ent->Angles.yaw*0x10000/360)&0xffff) : 0;
       }
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetSectorFloorZ)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         sector_t *sector;
         int SNum = FindSectorFromTag(sector, sp[-3]);
@@ -6299,6 +6481,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetSectorCeilingZ)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         sector_t *sector;
         int SNum = FindSectorFromTag(sector, sp[-3]);
@@ -6309,6 +6492,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec5Result)
+      ACSVM_CHECK_STACK_UNDER(5);
       sp[-5] = Level->eventExecuteActionSpecial(READ_BYTE_OR_INT32,
         sp[-5], sp[-4], sp[-3], sp[-2], sp[-1], line, side,
         Activator);
@@ -6317,11 +6501,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetSigilPieces)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = Activator ? Activator->eventGetSigilPieces() : 0;
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetLevelInfo)
+      ACSVM_CHECK_STACK_UNDER(1);
       switch (sp[-1]) {
         case LEVELINFO_PAR_TIME: sp[-1] = Level->ParTime; break;
         case LEVELINFO_SUCK_TIME: sp[-1] = Level->SuckTime; break;
@@ -6338,25 +6524,24 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ChangeSky)
+      ACSVM_CHECK_STACK_UNDER(2);
       Level->ChangeSky(GetStr(sp[-2]), GetStr(sp[-1]));
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerInGame)
-      sp[-1] = (sp[-1] < 0 || sp[-1] >= MAXPLAYERS) ? false :
-        (Level->Game->Players[sp[-1]] && (Level->Game->Players[
-        sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned));
+      ACSVM_CHECK_STACK_UNDER(1);
+      sp[-1] = (sp[-1] < 0 || sp[-1] >= MAXPLAYERS ? 0 : (int)(Level->Game->Players[sp[-1]] && (Level->Game->Players[sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned)));
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerIsBot)
-      sp[-1] = (sp[-1] < 0 || sp[-1] >= MAXPLAYERS) ? false :
-        Level->Game->Players[sp[-1]] && Level->Game->Players[
-        sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned &&
-        Level->Game->Players[sp[-1]]->PlayerFlags &
-        VBasePlayer::PF_IsBot;
+      ACSVM_CHECK_STACK_UNDER(1);
+      sp[-1] = (sp[-1] < 0 || sp[-1] >= MAXPLAYERS ? 0 :
+        (int)(Level->Game->Players[sp[-1]] && Level->Game->Players[sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned && (Level->Game->Players[sp[-1]]->PlayerFlags&VBasePlayer::PF_IsBot)));
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetCameraToTexture)
+      ACSVM_CHECK_STACK_UNDER(3);
       //FIXME: camera texture names are still limited to 8 chars
       XLevel->SetCameraToTexture(EntityFromTID(sp[-3], Activator), GetName8(sp[-2]), sp[-1]);
       sp -= 3;
@@ -6369,15 +6554,18 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetAmmoCapacity)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = (Activator ? Activator->eventGetAmmoCapacity(GetNameLowerCase(sp[-1])) : 0);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetAmmoCapacity)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (Activator) Activator->eventSetAmmoCapacity(GetNameLowerCase(sp[-2]), sp[-1]);
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintMapCharArray)
     ACSVM_CASE(PCD_PrintMapChRange)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int Idx = 0, count = 0x7fffffff;
         if (cmd == PCD_PrintMapChRange) {
@@ -6401,6 +6589,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_PrintWorldCharArray)
     ACSVM_CASE(PCD_PrintWorldChRange)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int Idx = 0, count = 0x7fffffff;
         if (cmd == PCD_PrintWorldChRange) {
@@ -6424,6 +6613,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_PrintGlobalCharArray)
     ACSVM_CASE(PCD_PrintGlobalChRange)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int Idx = 0, count = 0x7fffffff;
         if (cmd == PCD_PrintGlobalChRange) {
@@ -6446,6 +6636,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetActorAngle)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (!sp[-2]) {
         if (Activator) Activator->Angles.yaw = (float)(sp[-1]&0xffff)*360.0f/(float)0x10000;
       } else {
@@ -6457,11 +6648,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SpawnProjectile)
+      ACSVM_CHECK_STACK_UNDER(7);
       Level->eventEV_ThingProjectile(sp[-7], 0, sp[-5], sp[-4], sp[-3], sp[-2], sp[-1], GetNameLowerCase(sp[-6]), Activator);
       sp -= 7;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetSectorLightLevel)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         sector_t *sector;
         int SNum = FindSectorFromTag(sector, sp[-1]);
@@ -6470,6 +6663,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorCeilingZ)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = Ent ? vint32(Ent->CeilingZ*0x10000) : 0;
@@ -6477,6 +6671,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetActorPosition)
+      ACSVM_CHECK_STACK_UNDER(5);
       {
         VEntity *Ent = EntityFromTID(sp[-5], Activator);
         sp[-5] = Ent ? Ent->eventMoveThing(TVec(
@@ -6488,6 +6683,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ClearActorInventory)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         for (VEntity *mobj = Level->FindMobjFromTID(sp[-1], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-1], mobj)) {
           mobj->eventClearInventory();
@@ -6497,6 +6693,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GiveActorInventory)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
           mobj->eventGiveInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
@@ -6506,6 +6703,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TakeActorInventory)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         //int searcher = -1;
         for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
@@ -6516,6 +6714,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckActorInventory)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         VEntity *Ent = EntityFromTID(sp[-2], Activator);
         sp[-2] = (!Ent ? 0 : Ent->eventCheckInventory(GetNameLowerCase(sp[-1]), false, true)); // disable replacement, from ACS
@@ -6524,40 +6723,44 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingCountName)
+      ACSVM_CHECK_STACK_UNDER(2);
       sp[-2] = Level->eventThingCount(0, GetNameLowerCase(sp[-2]), sp[-1], -1);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SpawnSpotFacing)
+      ACSVM_CHECK_STACK_UNDER(3);
       sp[-3] = Level->eventAcsSpawnSpotFacing(GetNameLowerCase(sp[-3]), sp[-2], sp[-1]);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PlayerClass)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1] < 0 || sp[-1] >= MAXPLAYERS || !Level->Game->Players[sp[-1]] ||
           !(Level->Game->Players[sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned))
       {
         sp[-1] = -1;
-      }
-      else
-      {
+      } else {
         sp[-1] = Level->Game->Players[sp[-1]]->PClass;
       }
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] &= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] &= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] &= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6568,6 +6771,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] &= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6578,6 +6782,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])&sp[-1]);
@@ -6587,6 +6792,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) & sp[-1]);
@@ -6597,6 +6803,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2]) & sp[-1]);
@@ -6607,18 +6814,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] ^= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] ^= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] ^= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6629,6 +6839,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] ^= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6639,6 +6850,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])^sp[-1]);
@@ -6648,6 +6860,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) ^ sp[-1]);
@@ -6658,6 +6871,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2]) ^ sp[-1]);
@@ -6668,18 +6882,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] |= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] |= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] |= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6690,6 +6907,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] |= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6700,6 +6918,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])|sp[-1]);
@@ -6709,6 +6928,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) | sp[-1]);
@@ -6719,6 +6939,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2]) | sp[-1]);
@@ -6729,18 +6950,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] <<= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] <<= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] <<= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6751,6 +6975,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] <<= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6761,6 +6986,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])<<sp[-1]);
@@ -6770,6 +6996,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) << sp[-1]);
@@ -6780,6 +7007,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2]) << sp[-1]);
@@ -6790,18 +7018,21 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSScriptVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       locals[READ_BYTE_OR_INT32] >>= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSMapVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       *ActiveObject->MapVars[READ_BYTE_OR_INT32] >>= sp[-1];
       INC_BYTE_OR_INT32;
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSWorldVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //WorldVars[READ_BYTE_OR_INT32] >>= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6812,6 +7043,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSGlobalVar)
+      ACSVM_CHECK_STACK_UNDER(1);
       //GlobalVars[READ_BYTE_OR_INT32] >>= sp[-1];
       {
         int vidx = READ_BYTE_OR_INT32;
@@ -6822,6 +7054,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSMapArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = *ActiveObject->MapVars[READ_BYTE_OR_INT32];
         ActiveObject->SetArrayVal(ANum, sp[-2], ActiveObject->GetArrayVal(ANum, sp[-2])>>sp[-1]);
@@ -6831,6 +7064,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSWorldArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //WorldArrays[ANum].SetElemVal(sp[-2], WorldArrays[ANum].GetElemVal(sp[-2]) >> sp[-1]);
@@ -6841,6 +7075,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSGlobalArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         //GlobalArrays[ANum].SetElemVal(sp[-2], GlobalArrays[ANum].GetElemVal(sp[-2]) >> sp[-1]);
@@ -6851,6 +7086,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetPlayerInfo)
+      ACSVM_CHECK_STACK_UNDER(2);
       STUB(PCD_GetPlayerInfo)
       //sp[-2] - Player num
       //sp[-1] - Info type
@@ -6860,6 +7096,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ChangeLevel)
+      ACSVM_CHECK_STACK_UNDER(4);
       //STUB(PCD_ChangeLevel)
       //sp[-4] - Level name
       //sp[-3] - Position
@@ -6870,11 +7107,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SectorDamage)
+      ACSVM_CHECK_STACK_UNDER(5);
       Level->eventSectorDamage(sp[-5], sp[-4], GetName(sp[-3]), GetNameLowerCase(sp[-2]), sp[-1]);
       sp -= 5;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ReplaceTextures)
+      ACSVM_CHECK_STACK_UNDER(3);
       // walls
       if ((sp[-1]&(NOT_TOP|NOT_MIDDLE|NOT_BOTTOM)) != (NOT_TOP|NOT_MIDDLE|NOT_BOTTOM)) {
         //int FromTex = GTextureManager.NumForName(GetName8(sp[-3]), TEXTYPE_Wall, true);
@@ -6906,10 +7145,12 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_NegateBinary)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = ~sp[-1];
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorPitch)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? vint32(Ent->Angles.pitch*0x10000/360)&0xffff : 0);
@@ -6917,6 +7158,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetActorPitch)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (!sp[-2]) {
         if (Activator) Activator->Angles.pitch = AngleMod180((float)(sp[-1]&0xffff)*360.0f/(float)0x10000);
       } else {
@@ -6928,12 +7170,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintBind)
+      ACSVM_CHECK_STACK_UNDER(1);
       STUB(PCD_PrintBind)
       //sp[-1] - command (string)
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetActorState)
+      ACSVM_CHECK_STACK_UNDER(3);
       {
         TArray<VName> Names;
         VMemberBase::StaticSplitStateLabel(GetStr(sp[-2]), Names);
@@ -6962,11 +7206,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingDamage2)
+      ACSVM_CHECK_STACK_UNDER(3);
       sp[-3] = Level->eventDoThingDamage(sp[-3], sp[-2], GetName(sp[-1]), Activator);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_UseInventory)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (Activator) {
         sp[-1] = Activator->eventUseInventoryName(GetNameLowerCase(sp[-1]), false); // disable replacement
       } else {
@@ -6978,6 +7224,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_UseActorInventory)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (sp[-2]) {
         int Ret = 0;
         for (VEntity *Ent = Level->FindMobjFromTID(sp[-2], nullptr); Ent; Ent = Level->FindMobjFromTID(sp[-2], Ent)) {
@@ -6994,6 +7241,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckActorCeilingTexture)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         VEntity *Ent = EntityFromTID(sp[-2], Activator);
         if (Ent) {
@@ -7013,6 +7261,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckActorFloorTexture)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         VEntity *Ent = EntityFromTID(sp[-2], Activator);
         if (Ent) {
@@ -7032,6 +7281,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetActorLightLevel)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? Ent->Sector->params.lightlevel : 0);
@@ -7039,23 +7289,26 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetMugShotState)
+      ACSVM_CHECK_STACK_UNDER(1);
       STUB(PCD_SetMugShotState)
       //sp[-1] - state (string)
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingCountSector)
+      ACSVM_CHECK_STACK_UNDER(3);
       sp[-3] = Level->eventThingCount(sp[-3], NAME_None, sp[-2], sp[-1]);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ThingCountNameSector)
-      sp[-3] = Level->eventThingCount(0, GetNameLowerCase(sp[-3]),
-        sp[-2], sp[-1]);
+      ACSVM_CHECK_STACK_UNDER(3);
+      sp[-3] = Level->eventThingCount(0, GetNameLowerCase(sp[-3]), sp[-2], sp[-1]);
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_CheckPlayerCamera)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1] < 0 || sp[-1] >= MAXPLAYERS ||
           !Level->Game->Players[sp[-1]] ||
           !(Level->Game->Players[sp[-1]]->PlayerFlags&VBasePlayer::PF_Spawned) ||
@@ -7068,6 +7321,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MorphActor)
+      ACSVM_CHECK_STACK_UNDER(7);
       if (sp[-7]) {
         //int searcher = -1;
         int Res = 0;
@@ -7088,6 +7342,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_UnmorphActor)
+      ACSVM_CHECK_STACK_UNDER(2);
       if (sp[-2]) {
         //int searcher = -1;
         int Res = 0;
@@ -7104,6 +7359,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GetPlayerInput)
+      ACSVM_CHECK_STACK_UNDER(2);
       //GCon->Logf(NAME_Debug, "PIP (0x%04x): 0x%08x", (unsigned)sp[-1], (unsigned)sp[-2]);
       if (sp[-2] < 0) {
         if (Activator && Activator->IsPlayer()) {
@@ -7123,6 +7379,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ClassifyActor)
+      ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1]) {
         VEntity *Ent = EntityFromTID(sp[-1], Activator);
         sp[-1] = (Ent ? Ent->eventClassifyActor() : 0);
@@ -7135,6 +7392,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintBinary)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         vuint32 Val = sp[-1];
         do {
@@ -7146,11 +7404,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PrintHex)
+      ACSVM_CHECK_STACK_UNDER(1);
       PrintStr += va("%X", sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ConsoleCommand)
+      ACSVM_CHECK_STACK_UNDER(3);
       if (acs_warning_console_commands) GCon->Logf(NAME_Warning, "no console commands from ACS (%s)!", *GetStr(sp[-3]).quote());
       sp -= 3;
       ACSVM_BREAK;
@@ -7162,6 +7422,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SaveString)
+      ACSVM_CHECK_STACK_OVER(1);
       //GCon->Logf("PCD_SaveString: <%s>", *PrintStr.quote());
       *sp = ActiveObject->Level->PutNewString(*PrintStr);
       ++sp;
@@ -7169,6 +7430,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushFunction)
+      ACSVM_CHECK_STACK_OVER(1);
       {
         int funcnum = READ_BYTE_OR_INT32;
         if (funcnum < 0 || funcnum > 0xffff) Host_Error("invalid indirect function push in ACS code (%d)", funcnum);
@@ -7182,16 +7444,19 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     // various gzdoom translations
     ACSVM_CASE(PCD_TranslationRange3)
+      ACSVM_CHECK_STACK_UNDER(8);
       GCon->Logf(NAME_Dev, "ACS: unimplemented gzdoom opcode 362 (TranslationRange3)");
       sp -= 8;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TranslationRange4)
+      ACSVM_CHECK_STACK_UNDER(5);
       GCon->Logf(NAME_Dev, "ACS: unimplemented gzdoom opcode 383 (TranslationRange4)");
       sp -= 5;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_TranslationRange5)
+      ACSVM_CHECK_STACK_UNDER(6);
       GCon->Logf(NAME_Dev, "ACS: unimplemented gzdoom opcode 384 (TranslationRange5)");
       sp -= 6;
       ACSVM_BREAK;
@@ -7203,17 +7468,20 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AssignScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       localarrays->Set(locals, READ_BYTE_OR_INT32, sp[-2], sp[-1]);
       INC_BYTE_OR_INT32;
       sp -= 2;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_PushScriptArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       sp[-1] = localarrays->Get(locals, READ_BYTE_OR_INT32, sp[-1]);
       INC_BYTE_OR_INT32;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AddScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])+sp[-1]);
@@ -7223,6 +7491,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SubScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])-sp[-1]);
@@ -7232,6 +7501,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_MulScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])*sp[-1]);
@@ -7241,6 +7511,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DivScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in `DivScriptArray`");
@@ -7252,6 +7523,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_ModScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         ACS_ZDIV_FIX
         if (sp[-1] == 0) Host_Error("ACS: division by zero in `ModScriptArray`");
@@ -7263,6 +7535,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IncScriptArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-1], localarrays->Get(locals, ANum, sp[-1])+1);
@@ -7272,6 +7545,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_DecScriptArray)
+      ACSVM_CHECK_STACK_UNDER(1);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-1], localarrays->Get(locals, ANum, sp[-1])-1);
@@ -7281,6 +7555,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_AndScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])&sp[-1]);
@@ -7290,6 +7565,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EOrScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])^sp[-1]);
@@ -7299,6 +7575,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_OrScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])|sp[-1]);
@@ -7308,6 +7585,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])<<sp[-1]);
@@ -7317,6 +7595,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RSScriptArray)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int ANum = READ_BYTE_OR_INT32;
         localarrays->Set(locals, ANum, sp[-2], localarrays->Get(locals, ANum, sp[-2])>>sp[-1]);
@@ -7327,6 +7606,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_PrintScriptChArray)
     ACSVM_CASE(PCD_PrintScriptChRange)
+      ACSVM_CHECK_STACK_UNDER(2);
       {
         int Idx = 0, count = 0x7fffffff;
         if (cmd == PCD_PrintScriptChRange) {
@@ -7349,6 +7629,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec5Ex)
+      ACSVM_CHECK_STACK_UNDER(5);
       {
         int special = READ_INT32(ip);
         ip += 4;
@@ -7358,6 +7639,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_LSpec5ExResult)
+      ACSVM_CHECK_STACK_UNDER(5);
       {
         int special = READ_INT32(ip);
         ip += 4;
@@ -7367,11 +7649,12 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_IsOneFlagCTF)
+      ACSVM_CHECK_STACK_OVER(1);
       *sp = 0;
       ++sp;
       ACSVM_BREAK;
 
-    // these p-codes are not supported; they will terminate script
+    // these p-codes are not supported; they will terminate the script
     ACSVM_CASE(PCD_PlayerBlueSkull)
     ACSVM_CASE(PCD_PlayerRedSkull)
     ACSVM_CASE(PCD_PlayerYellowSkull)
