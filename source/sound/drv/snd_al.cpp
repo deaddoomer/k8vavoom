@@ -306,7 +306,10 @@ bool VOpenALDevice::AllocSource (ALuint *src) {
   if (!src) return false;
   ClearError();
   alGenSources(1, src);
-  if (IsError("cannot generate source")) return false;
+  if (IsError("cannot generate source")) {
+    if (src) *src = (ALuint)-1;
+    return false;
+  }
   activeSourceSet.put(*src, true);
   return true;
 }
@@ -321,7 +324,10 @@ bool VOpenALDevice::AllocSource (ALuint *src) {
 //
 //==========================================================================
 int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
-  if (sound_id < 0 || sound_id >= GSoundManager->S_sfx.length()) return VSoundManager::LS_Error;
+  if (sound_id < 0 || sound_id >= GSoundManager->S_sfx.length()) {
+    if (src) *src = (ALuint)-1;
+    return VSoundManager::LS_Error;
+  }
 
   if (BufferCount < GSoundManager->S_sfx.length()) {
     int newsz = ((GSoundManager->S_sfx.length()+1)|0xff)+1;
@@ -348,6 +354,7 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
   if (Buffers[sound_id]) {
     if (AllocSource(src)) return VSoundManager::LS_Ready;
+    if (src) *src = (ALuint)-1;
     return VSoundManager::LS_Error;
   }
 
@@ -355,7 +362,10 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
   auto pss = sourcesPending.find(sound_id);
   if (pss) {
     // pending sound, generate new source, and add it to pending list
-    if (!AllocSource(src)) return VSoundManager::LS_Error;
+    if (!AllocSource(src)) {
+      if (src) *src = (ALuint)-1;
+      return VSoundManager::LS_Error;
+    }
     PendingSrc *psrc = new PendingSrc;
     psrc->src = *src;
     psrc->sound_id = sound_id;
@@ -367,7 +377,10 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
   // check that sound lump is loaded
   int res = GSoundManager->LoadSound(sound_id);
-  if (res == VSoundManager::LS_Error) return false; // missing sound
+  if (res == VSoundManager::LS_Error) {
+    if (src) *src = (ALuint)-1;
+    return VSoundManager::LS_Error; // missing sound
+  }
 
   // generate new source
   if (!AllocSource(src)) {
