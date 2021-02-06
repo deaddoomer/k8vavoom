@@ -7433,7 +7433,8 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_CHECK_STACK_OVER(1);
       {
         int funcnum = READ_BYTE_OR_INT32;
-        if (funcnum < 0 || funcnum > 0xffff) Host_Error("invalid indirect function push in ACS code (%d)", funcnum);
+        if (/*funcnum < 0 || funcnum > 0xffff*/ (((vuint32)funcnum)>>16)+1u > 1u) Host_Error("invalid indirect function push in ACS code (%d)", funcnum);
+        funcnum &= 0xffff;
         // tag it (library id already shifted)
         funcnum |= ActiveObject->GetLibraryID();
         *sp = funcnum;
