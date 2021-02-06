@@ -138,7 +138,7 @@ static void InsertOpening (TArray<opening_t> &dest, const opening_t &op) {
   while (cpos > 0 && opfz <= ops[cpos-1].bottom) --cpos;
   // now, we can safely insert it into cpos
   // if op floor is the same as cpos ceiling, join
-  if (opfz == ops[cpos].bottom) {
+  if (cpos < dlen && opfz == ops[cpos].bottom) {
     // join (but check if new region is bigger first)
     if (op.top <= ops[cpos].top) return; // completely inside
     ops[cpos].eceiling = op.eceiling;
