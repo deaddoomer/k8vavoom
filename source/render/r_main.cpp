@@ -699,6 +699,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   HasLightIntersection = false;
   LitSurfaceHit = false;
   LitCalcBBox = true;
+  CurrLightCalcUnstuck = false;
   //HasBackLit = false;
   doShadows = false;
   MirrorClipSegs = false;

@@ -352,6 +352,10 @@ void VRenderLevelShared::PushDlights () {
 
   if (!r_dynamic_lights) return;
 
+  // lightvis params
+  LitCalcBBox = false;
+  CurrLightCalcUnstuck = (r_shadowmaps.asBool() && Drawer->CanRenderShadowMaps() && r_shadowmap_fix_light_dist);
+
   dlight_t *l = DLights;
   for (unsigned i = 0; i < MAX_DLIGHTS; ++i, ++l) {
     if (l->radius < 1.0f || l->die < Level->Time) {
