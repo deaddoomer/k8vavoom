@@ -79,6 +79,18 @@ struct SightTraceInfo {
   TVec LineStart;
   TVec LineEnd;
 
+  inline SightTraceInfo () noexcept
+    : LineBlockMask(0)
+    , PlaneNoBlockFlags(0)
+    , Delta(0.0f, 0.0f, 0.0f)
+    , Hit1S(false)
+    , LineStart(0.0f, 0.0f, 0.0f)
+    , LineEnd(0.0f, 0.0f, 0.0f)
+  {
+    Plane.normal = TVec(0.0f, 0.0f, 1.0f);
+    Plane.dist = 0.0f;
+  }
+
   inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, sector_t *sstart, sector_t *send) {
     Level = alevel;
     Start = org;
