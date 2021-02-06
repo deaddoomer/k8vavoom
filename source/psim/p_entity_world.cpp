@@ -829,6 +829,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
 //==========================================================================
 bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bool ignoreMonsters, bool ignorePlayers) {
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "*** CheckRelPosition: pos=(%g,%g,%g)", Pos.x, Pos.y, Pos.z);
+  memset((void *)&tmtrace, 0, sizeof(tmtrace));
 
   tmtrace.End = Pos;
 
@@ -1340,7 +1341,10 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
   line_t *ld;
   sector_t *OldSec = Sector;
 
-  if (IsGoingToDie() || !Sector) return false; // just in case, dead object is immovable
+  if (IsGoingToDie() || !Sector) {
+    memset((void *)&tmtrace, 0, sizeof(tmtrace));
+    return false; // just in case, dead object is immovable
+  }
 
   const bool isClient = (GGameInfo->NetMode == NM_Client);
 
