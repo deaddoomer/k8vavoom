@@ -1914,6 +1914,25 @@ override void SimplifiedTick (float deltaTime) {
 
   // state will be advanced by the normal ticker
   if (StateTime < 0.0) EntityTickCheckRespawn(deltaTime);
+  /* this is done in C++ code
+  else if (State) {
+    if (StateTime-deltaTime <= 0) {
+      TAVec lastAngles = Angles;
+      TVec lastOrg = Origin;
+      bIntrJustMoved = true; // teleports and force origin changes will reset it
+      if (AdvanceState(deltaTime)) {
+        // possibly moved, set new interpolation state
+        // if mobj is not moved, the engine will take care of it
+        LastMoveOrigin = lastOrg;
+        LastMoveAngles = lastAngles;
+        LastMoveTime = XLevel.Time;
+        LastMoveDuration = StateTime;
+      }
+    } else {
+      StateTime -= deltaTime;
+    }
+  }
+  */
 }
 
 
@@ -1980,7 +1999,6 @@ override void Tick (float deltaTime) {
     TAVec lastAngles = Angles;
     lastOrg = Origin;
     bIntrJustMoved = true; // teleports and force origin changes will reset it
-    //if (stateChange && (self isa 'RLFormerAssaultTrooper')) printdebug("%C: old state: %s; time=%s", self, State, StateTime);
     if (!AdvanceState(deltaTime)) {
       // freed itself
       return;

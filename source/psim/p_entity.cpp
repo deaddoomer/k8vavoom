@@ -437,9 +437,9 @@ void VEntity::Tick (float deltaTime) {
   // allow optimiser in netplay servers too, because why not?
   if (GGameInfo->NetMode != NM_Client && !(FlagsEx&EFEX_AlwaysTick) &&
       vm_optimise_statics.asBool() &&
-      (StateTime < 0.0f || StateTime-deltaTime > 0.0f) && !NeedPhysics())
+      /*(StateTime < 0.0f || StateTime-deltaTime > 0.0f) &&*/ !NeedPhysics())
   {
-    if (StateTime > 0.0f) StateTime -= deltaTime;
+    //if (StateTime > 0.0f) StateTime -= deltaTime;
     doSimplifiedTick = true;
   }
 
@@ -459,7 +459,26 @@ void VEntity::Tick (float deltaTime) {
     VThinker::Tick(deltaTime);
   } else {
     ++dbgEntityTickSimple;
+    const bool needAdvance = (StateTime >= 0.0f); // ticker may respawn the entity, so store it here
     eventSimplifiedTick(deltaTime);
+    // advance state, if necessary
+    if (needAdvance) {
+      if (StateTime-deltaTime > 0.0f) {
+        StateTime -= deltaTime;
+      } else {
+        TAVec lastAngles = Angles;
+        TVec lastOrg = Origin;
+        MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
+        if (AdvanceState(deltaTime)) {
+          // possibly moved, set new interpolation state
+          // if mobj is not moved, the engine will take care of it
+          LastMoveOrigin = lastOrg;
+          LastMoveAngles = lastAngles;
+          LastMoveTime = XLevel->Time;
+          LastMoveDuration = StateTime;
+        }
+      }
+    }
   }
 }
 
@@ -663,6 +682,8 @@ void VEntity::PerformOnIdle () {
 //==========================================================================
 //
 //  VEntity::AdvanceState
+//
+//  returns `false` if entity fried itself
 //
 //==========================================================================
 bool VEntity::AdvanceState (float deltaTime) {
