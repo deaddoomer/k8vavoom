@@ -1348,6 +1348,7 @@ void VRenderLevelShared::RenderPortals () {
 
   ++PortalLevel;
 
+  // do not use foreach iterator over portals here ('cause number of portals may change)
   const int maxpdepth = GetMaxPortalDepth();
   if (maxpdepth < 0 || PortalLevel <= maxpdepth) {
     //FIXME: disable decals for portals
@@ -1358,7 +1359,8 @@ void VRenderLevelShared::RenderPortals () {
     //bool oldShadows = r_shadows;
     //if (/*Portal->stackedSector &&*/ IsShadowVolumeRenderer()) r_shadows = false;
     //bool firstPortal = true;
-    for (auto &&pp : Portals) {
+    for (int pnum = 0; pnum < Portals.length(); ++pnum) {
+      VPortal *pp = Portals[pnum];
       if (pp && pp->Level == PortalLevel) {
         if (pp->IsMirror()) {
           if (r_allow_mirrors) pp->Draw(true);
@@ -1376,7 +1378,8 @@ void VRenderLevelShared::RenderPortals () {
     // if we are in sky portal, render nested sky portals
     // actually, always render sky portals
     if (true /*CurrPortal && CurrPortal->IsSkyBox()*/) {
-      for (auto &&pp : Portals) {
+      for (int pnum = 0; pnum < Portals.length(); ++pnum) {
+        VPortal *pp = Portals[pnum];
         if (pp && pp->Level == PortalLevel && pp->IsSky() && !pp->IsSkyBox()) {
           pp->Draw(true);
         }
