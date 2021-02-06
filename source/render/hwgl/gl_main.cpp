@@ -482,6 +482,8 @@ VOpenGLDrawer::VOpenGLDrawer ()
   //cameraFBO[1].mOwner = nullptr;
 
   scissorEnabled = false;
+  scissorX = scissorY = 0;
+  scissorW = scissorH = 0;
 
   depthMaskSP = 0;
   currDepthMaskState = 0;
