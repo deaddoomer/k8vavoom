@@ -185,6 +185,7 @@ void VEntity::Destroy () {
   UnlinkFromWorld();
   if (XLevel) XLevel->DelSectorList();
   if (TID && Level) RemoveFromTIDList(); // remove from TID list
+  TID = 0; // just in case
   Super::Destroy();
 }
 

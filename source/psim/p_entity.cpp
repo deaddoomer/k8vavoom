@@ -217,10 +217,9 @@ void VEntity::SerialiseOther (VStream &Strm) {
 void VEntity::DestroyThinker () {
   if (!IsGoingToDie()) {
     if (Role == ROLE_Authority) {
-      eventDestroyed();
-      if (TID) RemoveFromTIDList(); // remove from TID list
       // stop any playing sound
       StopSound(0);
+      eventDestroyed();
     }
 
     // unlink from sector and block lists
@@ -229,6 +228,8 @@ void VEntity::DestroyThinker () {
     sector_t *oldSector = Sector;
     UnlinkFromWorld();
     if (XLevel) XLevel->DelSectorList();
+    if (TID && Level) RemoveFromTIDList();
+    TID = 0; // just in case
     // those could be still used, restore
     // note that it is still safe to call `UnlinkFromWorld()` on such "half-linked" object
     // but to play safe, set some guard flags
@@ -490,7 +491,7 @@ void VEntity::Tick (float deltaTime) {
 //==========================================================================
 void VEntity::SetTID (int tid) {
   RemoveFromTIDList();
-  if (tid) InsertIntoTIDList(tid);
+  if (tid && Role == ROLE_Authority) InsertIntoTIDList(tid);
 }
 
 
@@ -500,9 +501,12 @@ void VEntity::SetTID (int tid) {
 //
 //==========================================================================
 void VEntity::InsertIntoTIDList (int tid) {
+  vassert(tid != 0);
   vassert(TID == 0);
+  vassert(TIDHashNext == nullptr);
+  vassert(TIDHashPrev == nullptr);
   TID = tid;
-  int HashIndex = tid&(VLevelInfo::TID_HASH_SIZE-1);
+  const int HashIndex = tid&(VLevelInfo::TID_HASH_SIZE-1);
   TIDHashPrev = nullptr;
   TIDHashNext = Level->TIDHash[HashIndex];
   if (TIDHashNext) TIDHashNext->TIDHashPrev = this;
@@ -521,10 +525,11 @@ void VEntity::RemoveFromTIDList () {
   if (TIDHashPrev) {
     TIDHashPrev->TIDHashNext = TIDHashNext;
   } else {
-    int HashIndex = TID&(VLevelInfo::TID_HASH_SIZE-1);
+    const int HashIndex = TID&(VLevelInfo::TID_HASH_SIZE-1);
     vassert(Level->TIDHash[HashIndex] == this);
     Level->TIDHash[HashIndex] = TIDHashNext;
   }
+  TIDHashNext = TIDHashPrev = nullptr;
   TID = 0;
 }
 

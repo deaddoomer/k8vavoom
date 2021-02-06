@@ -420,6 +420,9 @@ void VLevel::ClearAllMapData () {
 void VLevel::Destroy () {
   decanimlist = nullptr; // why not?
 
+  // destroy all thinkers (including scripts)
+  DestroyAllThinkers();
+
   // free fake floor data
   for (auto &&sector : allSectors()) {
     if (sector.fakefloors) {
@@ -434,9 +437,6 @@ void VLevel::Destroy () {
   if (csTouched) Z_Free(csTouched);
   csTouchCount = 0;
   csTouched = nullptr;
-
-  // destroy all thinkers (including scripts)
-  DestroyAllThinkers();
 
   while (HeadSecNode) {
     msecnode_t *Node = HeadSecNode;

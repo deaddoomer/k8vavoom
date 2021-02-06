@@ -46,7 +46,10 @@ IMPLEMENT_CLASS(V, Thinker)
 //==========================================================================
 void VThinker::Destroy () {
   // close any thinker channels
-  if (XLevel && XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
+  if (XLevel) {
+    if (XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
+    if (XLevel->Renderer) XLevel->Renderer->ThinkerDestroyed(this);
+  }
   Super::Destroy();
 }
 
@@ -81,6 +84,11 @@ void VThinker::Tick (float DeltaTime) {
 //
 //==========================================================================
 void VThinker::DestroyThinker () {
+  // remove from network layer here, because GC is not called on each frame
+  if (!IsGoingToDie() && XLevel) {
+    if (XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
+    if (XLevel->Renderer) XLevel->Renderer->ThinkerDestroyed(this);
+  }
   SetDelayedDestroy();
 }
 
