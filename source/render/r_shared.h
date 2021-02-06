@@ -215,7 +215,7 @@ struct surface_t {
   SurfVertex verts[1]; // dynamic array of vertices
 
 
-  inline bool isWorldAllocated () const noexcept { return (allocflags&ALLOC_WORLD); }
+  inline bool isWorldAllocated () const noexcept { return !!(allocflags&ALLOC_WORLD); }
 
   // used to fill subdivided surfaces
   inline void copyRequiredFrom (const surface_t &other) noexcept {

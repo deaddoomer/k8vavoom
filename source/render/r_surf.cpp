@@ -495,7 +495,9 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) {
     if (surf->next) { FreeWSurfs(surf->next); surf->next = nullptr; }
     if (surf->CacheSurf) FreeSurfCache(surf->CacheSurf);
     surf->FreeLightmaps();
+    const unsigned oldaf = (surf->allocflags&surface_t::ALLOC_WORLD);
     memset((void *)surf, 0, sizeof(surface_t)+(vcount-1)*sizeof(SurfVertex));
+    surf->allocflags = oldaf;
     surf->count = vcount;
     return surf;
   } else {
