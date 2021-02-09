@@ -230,7 +230,7 @@ VLevel *VServerNetContext::GetLevel () {
 //  load user-specified Vavoom C script files
 //
 //==========================================================================
-void G_LoadVCMods (VName modlistfile, const char *modtypestr) {
+void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions) {
   if (modlistfile == NAME_None) return;
   if (!modtypestr && !modtypestr[0]) modtypestr = "common";
   VCVFSSaver saver;
@@ -244,9 +244,20 @@ void G_LoadVCMods (VName modlistfile, const char *modtypestr) {
     while (!sc->AtEnd()) {
       sc->ExpectString();
       //fprintf(stderr, "  <%s>\n", *sc->String.quote());
-      while (sc->String.length() && (vuint8)sc->String[0] <= ' ') sc->String.chopLeft(1);
-      while (sc->String.length() && (vuint8)sc->String[sc->String.length()-1] <= ' ') sc->String.chopRight(1);
+      sc->String = sc->String.xstrip();
       if (sc->String.length() == 0 || sc->String[0] == '#' || sc->String[0] == ';') continue;
+      if (serveroptions) {
+        if (sc->String.strEquCI("option")) {
+          sc->ExpectString();
+          sc->String = sc->String.xstrip();
+          if (sc->String.strEquCI("skipbdw")) {
+            decorateSkipBDWClasses = true;
+            GCon->Logf(NAME_Init, "server option: skip BDW");
+            continue;
+          }
+          sc->Error(va("unknown server mod option '%s'", *sc->String));
+        }
+      }
       GCon->Logf(NAME_Init, "loading %s Vavoom C mod '%s'", modtypestr, *sc->String);
       VMemberBase::StaticLoadPackage(VName(*sc->String), TLocation());
     }
@@ -316,7 +327,7 @@ void SV_Init () {
 
   VMemberBase::StaticLoadPackage(NAME_game, TLocation());
   // load user-specified Vavoom C script files
-  G_LoadVCMods("loadvcs", "server");
+  G_LoadVCMods("loadvcs", "server", true); // allow server options
   // this emits code for all `PackagesToEmit()`
   VPackage::StaticEmitPackages();
 

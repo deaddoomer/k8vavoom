@@ -76,7 +76,7 @@ void CL_Init () {
   if (developer) GCon->Logf(NAME_Dev, "Default user name is '%s'", *cl_name.asStr());
   VMemberBase::StaticLoadPackage(NAME_cgame, TLocation());
   // load user-specified Vavoom C script files
-  G_LoadVCMods("loadvcc", "client");
+  G_LoadVCMods("loadvcc", "client", false); // client options
   // this emits code for all `PackagesToEmit()`
   VPackage::StaticEmitPackages();
   //!TLocation::ClearSourceFiles();

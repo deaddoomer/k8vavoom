@@ -38,6 +38,7 @@ VCvarB decorate_fail_on_unknown("decorate_fail_on_unknown", false, "Fail on unkn
 static int disableBloodReplaces = 0;
 static int bloodOverrideAllowed = 0;
 static int enableKnownBlood = 0;
+bool decorateSkipBDWClasses = false;
 
 // globals
 bool decoIgnorePlayerSpeed = false;
@@ -2066,6 +2067,18 @@ static void ScanActorDefForUserVars (VScriptParser *sc, TArray<VDecorateUserVarD
 
 //==========================================================================
 //
+//  isBDWActorClassName
+//
+//==========================================================================
+static bool isBDWActorClassName (VStr cname) {
+  return
+    cname.startsWithCI("BDW_") ||
+    cname.startsWithCI("K8BDW_");
+}
+
+
+//==========================================================================
+//
 //  ParseActor
 //
 //==========================================================================
@@ -2080,10 +2093,13 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   // parse actor name
   // in order to allow dots in actor names, this is done in non-C mode,
   // so we have to do a little bit more complex parsing
-  sc->ExpectString();
-  if (sc->String.ICmp("(optional)") == 0) {
-    optionalActor = true;
+  for (;;) {
     sc->ExpectString();
+    if (sc->String.strEquCI("(optional)")) {
+      optionalActor = true;
+      continue;
+    }
+    break;
   }
 
   VStr NameStr;
@@ -2119,6 +2135,12 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   if (ColonPos >= 0 && ParentStr.IsEmpty()) {
     sc->ExpectString();
     ParentStr = sc->String;
+  }
+
+  if (decorateSkipBDWClasses && isBDWActorClassName(NameStr)) {
+    sc->Message(va("skipping BDW class `%s`...", *NameStr));
+    sc->SkipBracketed(false); // bracket is not eaten
+    return;
   }
 
   VClass *ParentClass = ActorClass;
@@ -2187,6 +2209,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
       }
     }
   }
+
 
   VClass *ReplaceeClass = nullptr;
   if (sc->Check("replaces")) {

@@ -66,7 +66,7 @@ void NET_SendNetworkHeartbeat (bool forced=false);
 
 // loading mods, take list from modlistfile
 // `modtypestr` is used to show loading messages
-void G_LoadVCMods (VName modlistfile, const char *modtypestr); // in "sv_main.cpp"
+void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions); // in "sv_main.cpp"
 
 vuint32 SV_GetModListHash ();
 
