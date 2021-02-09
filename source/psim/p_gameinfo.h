@@ -139,6 +139,7 @@ public:
 
   void eventInit () { static VMethodProxy method("Init"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventPostDecorateInit () { static VMethodProxy method("PostDecorateInit"); vobjPutParamSelf(); VMT_RET_VOID(method); }
+  void eventPostPlayerClassInit () { static VMethodProxy method("PostPlayerClassInit"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventInitNewGame (int skill) { static VMethodProxy method("InitNewGame"); vobjPutParamSelf(skill); VMT_RET_VOID(method); }
   VWorldInfo *eventCreateWorldInfo () { static VMethodProxy method("CreateWorldInfo"); vobjPutParamSelf(); VMT_RET_REF(VWorldInfo, method); }
   void eventTranslateLevel (VLevel *InLevel) { static VMethodProxy method("TranslateLevel"); vobjPutParamSelf(InLevel); VMT_RET_VOID(method); }

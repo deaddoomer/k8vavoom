@@ -360,6 +360,7 @@ void Host_Init () {
 
   InitMapInfo();
   P_SetupMapinfoPlayerClasses();
+  GGameInfo->eventPostPlayerClassInit();
 
   //GCon->Logf("WARP: n0=%d; n1=%d; cmd=<%s>", fsys_warp_n0, fsys_warp_n1, *fsys_warp_cmd);
 
