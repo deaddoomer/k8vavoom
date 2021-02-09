@@ -371,14 +371,15 @@ struct CustomModeInfo {
   bool disableBloodReplacement;
   bool disableGoreMod;
   bool disableBDW;
+  VStr ForcePlayerClass;
   VStr basedir;
   // has any sense only for modes loaded from "~/.k8vavoom/modes.rc"
   TArray<VStr> basedirglob;
   bool reported;
 
-  CustomModeInfo () : name(), aliases(), pwads(), postpwads(), autoskips(), disableBloodReplacement(false), disableGoreMod(false), disableBDW(false), basedir(), basedirglob(), reported(false) {}
+  CustomModeInfo () : name(), aliases(), pwads(), postpwads(), autoskips(), disableBloodReplacement(false), disableGoreMod(false), disableBDW(false), ForcePlayerClass(), basedir(), basedirglob(), reported(false) {}
 
-  CustomModeInfo (const CustomModeInfo &src) : name(), aliases(), pwads(), postpwads(), autoskips(), disableBloodReplacement(false), disableGoreMod(false), disableBDW(false), basedir(), basedirglob(), reported(false) { copyFrom(src); }
+  CustomModeInfo (const CustomModeInfo &src) : name(), aliases(), pwads(), postpwads(), autoskips(), disableBloodReplacement(false), disableGoreMod(false), disableBDW(false), ForcePlayerClass(), basedir(), basedirglob(), reported(false) { copyFrom(src); }
 
   CustomModeInfo &operator = (const CustomModeInfo &src) { copyFrom(src); return *this; }
 
@@ -391,6 +392,7 @@ struct CustomModeInfo {
     disableBloodReplacement = false;
     disableGoreMod = false;
     disableBDW = false;
+    ForcePlayerClass.clear();
     basedirglob.clear();
     reported = false;
   }
@@ -432,6 +434,7 @@ struct CustomModeInfo {
     disableGoreMod = src.disableGoreMod;
     disableBDW = src.disableBDW;
     // copy other things
+    ForcePlayerClass = src.ForcePlayerClass;
     basedir = src.basedir;
     basedirglob.setLength(src.basedirglob.length());
     for (auto &&it : src.basedirglob.itemsIdx()) basedirglob[it.index()] = it.value();
@@ -447,6 +450,7 @@ struct CustomModeInfo {
     if (src.disableBloodReplacement) disableBloodReplacement = true;
     if (src.disableGoreMod) disableGoreMod = true;
     if (src.disableBDW) disableBDW = true;
+    if (!src.ForcePlayerClass.isEmpty()) ForcePlayerClass = src.ForcePlayerClass;
   }
 
   void dump () const {
@@ -556,7 +560,7 @@ struct CustomModeInfo {
         disableBDW = true;
       } else if (sc->Check("ForcePlayerClass")) {
         sc->ExpectString();
-        flForcePlayerClass = sc->String.xstrip();
+        ForcePlayerClass = sc->String.xstrip();
       } else if (sc->Check("alias")) {
         sc->ExpectString();
         VStr k = sc->String.xstrip();
@@ -2781,6 +2785,7 @@ void FL_Init () {
   // load custom mode pwads
   if (customMode.disableBloodReplacement) fsys_DisableBloodReplacement = true;
   if (customMode.disableBDW) fsys_DisableBDW = true;
+  if (!customMode.ForcePlayerClass.isEmpty()) { GCon->Logf(NAME_Init, "user mode forces player class '%s'.", *customMode.ForcePlayerClass); flForcePlayerClass = customMode.ForcePlayerClass; }
 
   fsys_report_added_paks = !!reportWads;
   //GCon->Logf(NAME_Debug, "!!!: %d", (fsys_report_added_paks ? 1 : 0));
