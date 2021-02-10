@@ -3753,7 +3753,7 @@ void SpawnPlayer (mthing_t *mthing, bool Voodoo) {
 
   PP = Level.SpawnEntityChecked(class!PlayerPawn, class!PlayerPawn(Level.Game.PlayerClasses[PClass]), vector(x, y, z), default, default, AllowReplace:false);
   if (!PP) Error("Player::SpawnPlayer: cannot spawn `%C` (it is prolly not a player pawn)", Level.Game.PlayerClasses[PClass]);
-  printdebug("spawned player with class <%C>", PP);
+  printdebug("spawned player with class <%C> (Health)", PP);
   PP.InitializeWeaponSlots();
   //print("falling damage: normal=%B; old=%B; strife=%B", Level.bFallingDamage, Level.bOldFallingDamage, Level.bStrifeFallingDamage);
   if (GetCvarS('player_default_gender')) PP.SoundGender = name(GetCvarS('player_default_gender'));
@@ -4730,21 +4730,13 @@ override void PlayerTick (float deltaTime) {
     if (!Level.bFrozen && !(Cheats&CF_TIMEFREEZE)) BotTick(deltaTime);
   }
 
-  /*
-  if (!MO) {
-    print("playertick(%C): %f", self, deltaTime);
-    print("  playertick(%C): MO=%C", self, MO);
-    print("  playertick(%C): MO.XLevel=%C", self, MO.XLevel);
-  }
-  */
-
-  //print("***000: BUTTONS: 0x%08x; old=0x%08x", Buttons, OldButtons);
+  //printdebug("PlayerTick(%C): Health=%s; MO.Health=%s", self, Health, MO.Health);
 
   if (!isBot && Level.Game.netgame && !Level.Game.deathmatch) {
     if (lastSubSector != MO.SubSector) AddSeenSubsector();
   }
 
-
+  // health regeneration powerup
   if (MO.XLevel.TicTime%(3*35) == 0 && Health > 0 && LastRegenTicTime != MO.XLevel.TicTime) {
     LastRegenTicTime = MO.XLevel.TicTime;
     PowerRegeneration rgp = EntityEx(MO).FindRegenerationPowerup();
