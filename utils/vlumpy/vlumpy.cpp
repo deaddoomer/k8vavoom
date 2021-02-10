@@ -95,6 +95,7 @@ struct fon2_char_t {
 };
 
 
+static bool verbose = false;
 static bool showPackedSize = false;
 static TOWadFile outwad;
 static zipFile Zip;
@@ -289,6 +290,7 @@ static void AddWadFile (const char *name) {
 //==========================================================================
 static void AddWad (const char *name) {
   if (Zip) Error("$wad cannot be used for ZIP file");
+  if (verbose) fprintf(stderr, "adding wad file '%s'...\n", name);
   char *filename = fn(name);
   DefaultExtension(filename, 256, ".wad"); // arbitrary limit
   AddWadFile(filename);
@@ -305,6 +307,7 @@ static void AddWad (const char *name) {
 static void AddMap (const char *name) {
   if (Zip) Error("$map cannot be used for ZIP file");
 
+  if (verbose) fprintf(stderr, "adding map wad '%s'...\n", name);
   char *filename = fn(name);
   DefaultExtension(filename, 256, ".wad"); // arbitrary limit
   AddWadFile(filename);
@@ -329,6 +332,7 @@ static void AddMap (const char *name) {
 static void LoadImage () {
   SC_MustGetString();
   DestroyImage();
+  if (verbose) fprintf(stderr, "adding image file '%s'...\n", sc_String);
   LoadImage(fn(sc_String));
   rgb_table_created = false;
 }
@@ -342,6 +346,7 @@ static void LoadImage () {
 static void GrabRGBTable () {
   vuint8 tmp[32*32*32+4];
 
+  if (verbose) fprintf(stderr, "adding rgb table '%s'...\n", sc_String);
   SetupRGBTable();
   memcpy(tmp, &rgb_table, 32*32*32);
   tmp[32*32*32] = 0;
@@ -364,6 +369,7 @@ static void GrabTranslucencyTable () {
   vuint8 table[256*256];
   vuint8 temp[768];
 
+  if (verbose) fprintf(stderr, "adding translucency table '%s'...\n", sc_String);
   SC_MustGetNumber();
   int transluc = sc_Number;
 
@@ -404,6 +410,7 @@ static void GrabTranslucencyTable () {
 static void GrabScaleMap () {
   vuint8 map[256];
 
+  if (verbose) fprintf(stderr, "adding scale map '%s'...\n", sc_String);
   SC_MustGetFloat();
   double r = sc_Float;
   SC_MustGetFloat();
@@ -433,6 +440,8 @@ static void GrabScaleMap () {
 //
 //==========================================================================
 static void GrabRaw () {
+  if (verbose) fprintf(stderr, "adding raw image '%s'...\n", sc_String);
+
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -470,6 +479,8 @@ static void GrabRaw () {
 //
 //==========================================================================
 static void GrabPatch () {
+  if (verbose) fprintf(stderr, "adding patch '%s'...\n", sc_String);
+
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -551,6 +562,8 @@ static void GrabPatch () {
 //
 //==========================================================================
 static void GrabPic () {
+  if (verbose) fprintf(stderr, "adding pic '%s'...\n", sc_String);
+
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -592,6 +605,8 @@ static void GrabPic () {
 //
 //==========================================================================
 static void GrabPic15 () {
+  if (verbose) fprintf(stderr, "adding pic15 '%s'...\n", sc_String);
+
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -674,6 +689,8 @@ static vint8 *CompressChar (vuint8 *Src, vint8 *Dst, int Size) {
 //
 //==========================================================================
 static void GrabFon1 () {
+  if (verbose) fprintf(stderr, "adding fon1 font '%s'...\n", sc_String);
+
   // dimensions of a character
   int CharW = ImgWidth/16;
   int CharH = ImgHeight/16;
@@ -742,6 +759,8 @@ static int Fon2PalCmp (const void *v1, const void *v2) {
 //
 //==========================================================================
 static void GrabFon2 () {
+  if (verbose) fprintf(stderr, "adding fon2 font '%s'...\n", sc_String);
+
   // process characters
   fon2_char_t *Chars[256];
   memset(Chars, 0, sizeof(Chars));
@@ -1106,6 +1125,7 @@ static void ParseScript (const char *name) {
       SortFileList(flist);
       for (int f = 0; f < flist.length(); ++f) {
         //fprintf(stderr, "  <%s> -> <%s>\n", *flist[f].diskName, *flist[f].zipName);
+        if (verbose) fprintf(stderr, "adding file '%s'...\n", *flist[f].diskName);
         void *data;
         int size = LoadFile(*flist[f].diskName, &data);
         AddToZip(*flist[f].zipName, data, size);
@@ -1131,6 +1151,7 @@ static void ParseScript (const char *name) {
       else if (SC_Compare("fon2")) GrabFon2();
       else SC_ScriptError(va("Unknown command: \"%s\"", sc_String));
     } else if (Zip) {
+      if (verbose) fprintf(stderr, "adding file '%s'...\n", sc_String);
       strcpy(lumpname, sc_String);
       SC_MustGetString();
       void *data;
@@ -1138,6 +1159,7 @@ static void ParseScript (const char *name) {
       AddToZip(lumpname, data, size);
       Z_Free(data);
     } else {
+      if (verbose) fprintf(stderr, "adding lump '%s'...\n", sc_String);
       ExtractFileBase(sc_String, lumpname, sizeof(lumpname));
       if (strlen(lumpname) > 8) SC_ScriptError("Lump name too long");
       void *data;
@@ -1196,6 +1218,8 @@ int main (int argc, char *argv[]) {
         if (strcmp(argv[i], "--no-zopfli") == 0) { useZopfli = false; continue; }
         if (strcmp(argv[i], "--zopfli=yes") == 0) { useZopfli = true; continue; }
         if (strcmp(argv[i], "--zopfli=no") == 0) { useZopfli = false; continue; }
+        if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
+        if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
       }
       if (argv[i][0] == '-' && argv[i][1] == 'D') {
         strcpy(destfile, argv[i]+2);
