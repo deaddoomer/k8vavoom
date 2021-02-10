@@ -389,8 +389,8 @@ public:
   void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, float alpha);
   void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha);
 
-  void DrawShadowedPic (int, int, int);
-  void DrawShadowedPic (int, int, VTexture *);
+  void DrawShadowedPic (int X, int Y, int Handle, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
+  void DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
 
   void FillRectWithFlat (int, int, int, int, VName);
   void FillRectWithFlatHandle (int, int, int, int, int);

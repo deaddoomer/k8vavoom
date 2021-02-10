@@ -1082,8 +1082,8 @@ void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, float Alpha, bool shadow
 //  VWidget::DrawShadowedPic
 //
 //==========================================================================
-void VWidget::DrawShadowedPic (int X, int Y, int Handle) {
-  DrawShadowedPic(X, Y, GTextureManager(Handle));
+void VWidget::DrawShadowedPic (int X, int Y, int Handle, float scaleX, float scaleY, bool ignoreOffset) {
+  DrawShadowedPic(X, Y, GTextureManager(Handle), scaleX, scaleY, ignoreOffset);
 }
 
 
@@ -1092,22 +1092,35 @@ void VWidget::DrawShadowedPic (int X, int Y, int Handle) {
 //  VWidget::DrawShadowedPic
 //
 //==========================================================================
-void VWidget::DrawShadowedPic (int X, int Y, VTexture *Tex) {
-  if (!Tex || Tex->Type == TEXTYPE_Null) return;
+void VWidget::DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX, float scaleY, bool ignoreOffset) {
+  if (!Tex || Tex->Type == TEXTYPE_Null || scaleX <= 0.0f || scaleY <= 0.0f || !isFiniteF(scaleX) || !isFiniteF(scaleY)) return;
 
-  float X1 = X-Tex->GetScaledSOffset()+2;
-  float Y1 = Y-Tex->GetScaledTOffset()+2;
-  float X2 = X-Tex->GetScaledSOffset()+2+Tex->GetScaledWidth();
-  float Y2 = Y-Tex->GetScaledTOffset()+2+Tex->GetScaledHeight();
+  float X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffset()*scaleX)+2;
+  float Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffset()*scaleY)+2;
+  float X2 = X1+Tex->GetScaledWidth()*scaleX;
+  float Y2 = Y1+Tex->GetScaledHeight()*scaleY;
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
   float T2 = Tex->GetHeight();
+
   if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
     Drawer->DrawPicShadow(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, 0.625f);
   }
 
-  DrawPic(X, Y, Tex);
+  //DrawPic(X, Y, Tex);
+  X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffset()*scaleX);
+  Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffset()*scaleY);
+  X2 = X1+Tex->GetScaledWidth()*scaleX;
+  Y2 = Y1+Tex->GetScaledHeight()*scaleY;
+  S1 = 0;
+  T1 = 0;
+  S2 = Tex->GetWidth();
+  T2 = Tex->GetHeight();
+
+  if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
+    Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, R_GetCachedTranslation(0, nullptr), 1.0f);
+  }
 }
 
 
@@ -2278,8 +2291,11 @@ IMPLEMENT_FUNCTION(VWidget, DrawPicScaled) {
 
 IMPLEMENT_FUNCTION(VWidget, DrawShadowedPic) {
   int X, Y, Handle;
-  vobjGetParamSelf(X, Y, Handle);
-  if (Self) Self->DrawShadowedPic(X, Y, Handle);
+  VOptParamFloat scaleX(1.0f);
+  VOptParamFloat scaleY(1.0f);
+  VOptParamBool ignoreOffset(false);
+  vobjGetParamSelf(X, Y, Handle, scaleX, scaleY, ignoreOffset);
+  if (Self) Self->DrawShadowedPic(X, Y, Handle, scaleX, scaleY, ignoreOffset);
 }
 
 IMPLEMENT_FUNCTION(VWidget, FillRectWithFlat) {

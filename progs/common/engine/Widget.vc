@@ -276,7 +276,7 @@ native final void DrawPicPartEx (float x, float y, float tx0, float ty0, float t
 
 native final void DrawPic (int X, int Y, int Handle, optional float Alpha, optional int Translation);
 native final void DrawPicScaled (int X, int Y, int Handle, float scaleX, float scaleY, optional float Alpha, optional int Translation);
-native final void DrawShadowedPic (int X, int Y, int Handle);
+native final void DrawShadowedPic (int X, int Y, int Handle, optional float scaleX, optional float scaleY, optional bool ignoreOffset);
 
 native final void FillRectWithFlat (int x, int y, int width, int height, name Name);
 native final void FillRectWithFlatHandle (int x, int y, int width, int height, int handle);

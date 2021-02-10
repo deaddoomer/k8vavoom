@@ -500,7 +500,7 @@ bool IsStandardAmmoClass (class a) {
 //  DrawPicFit
 //
 //==========================================================================
-final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional float alpha) {
+final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional float alpha, optional bool useOffset) {
   // scale it to the appropriate size
   if (handle <= 0 || alpha <= 0) return;
   picinfo_t pinf;
@@ -509,13 +509,21 @@ final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional fl
     alpha = fmin(alpha, 1.0);
     // standard doom image is 31x17
     if (pinf.width <= maxw && pinf.height <= maxh) {
-      DrawPic(x, y, handle, alpha);
+      if (useOffset) {
+        DrawPic(x, y, handle, alpha!optional);
+      } else {
+        DrawPicScaledIgnoreOffset(x, y, handle, Alpha:alpha!optional);
+      }
     } else {
       // calculate scaling
       float scaleX = (pinf.width > maxw ? float(maxw)/pinf.width : 1.0);
       float scaleY = (pinf.height > maxh ? float(maxh)/pinf.height : 1.0);
       float scaleN = fmin(scaleX, scaleY);
-      DrawPicScaled(x, y, handle, scaleN, scaleN, alpha);
+      if (useOffset) {
+        DrawPicScaled(x, y, handle, scaleN, scaleN, alpha!optional);
+      } else {
+        DrawPicScaledIgnoreOffset(x, y, handle, scaleN, scaleN, alpha!optional);
+      }
     }
   }
 }
@@ -528,51 +536,40 @@ final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional fl
 //  center at (x+maxw/2)
 //
 //==========================================================================
-final void DrawPicFitCenter (int maxw, int maxh, int x, int y, int handle, optional float alpha) {
+final void DrawPicFitCenter (int maxw, int maxh, int x, int ybot, int handle, optional float alpha, optional bool shadowed) {
   // scale it to the appropriate size
+  if (!specified_alpha || shadowed) alpha = 1.0;
   if (handle <= 0 || alpha <= 0) return;
+  if (maxh < 0) { ybot -= maxh; maxh = -maxh; }
   picinfo_t pinf;
   R_GetPicInfo(handle, &pinf);
   if (pinf.width > 0 && pinf.height > 0) {
-    #ifdef NONONONONONO
-    //x += pinf.xoffset;
-    //y += pinf.yoffset;
-    //if (pinf.xoffset == 0) x -= pinf.width/2;
-    if (pinf.yoffset == 0) y -= pinf.height;
-    alpha = fmin(alpha, 1.0);
-    // standard doom image is 31x17
-    if (pinf.width <= maxw && pinf.height <= maxh) {
-      DrawPic(x+(maxw-pinf.width)/2, y, handle, alpha);
-    } else {
-      // calculate scaling
-      float scaleX = (pinf.width > maxw ? float(maxw)/pinf.width : 1.0);
-      float scaleY = (pinf.height > maxh ? float(maxh)/pinf.height : 1.0);
-      float scaleN = fmin(scaleX, scaleY);
-      DrawPicScaled(x+int((float(maxw)-pinf.width*scaleN)*0.5), y, handle, scaleN, scaleN, alpha);
-    }
-    #else
     int x0, y0, width, height;
     R_GetPicRealDimensions(handle, out x0, out y0, out width, out height);
-    //printdebug("x0=%s; y0=%s; x1=%s; y1=%s; width=%s; height=%s; ofsx=%d; ofsy=%d", x0, y0, width, height, pinf.width, pinf.height, pinf.xoffset, pinf.yoffset);
+    //printdebug("x0=%s; y0=%s; x1=%s; y1=%s; width=%s; height=%s; ofsx=%d; ofsy=%d; maxw=%s; maxh=%s", x0, y0, width, height, pinf.width, pinf.height, pinf.xoffset, pinf.yoffset, maxw, maxh);
     width -= x0;
     height -= y0;
     if (width > 0 && height > 0) {
       alpha = fmin(alpha, 1.0);
       // standard doom image is 31x17
       if (width <= maxw && height <= maxh) {
-        DrawPicScaledIgnoreOffset(x+(maxw-width)/2-x0, y-height-y0, handle, 1.0, 1.0, alpha);
-        //DrawRect(x, y-height-y0, maxw, height, 0xff_00_00);
+        if (shadowed) {
+          DrawShadowedPic(x+(maxw-width)/2-x0-2, ybot-height-y0-2, handle, ignoreOffset:true);
+        } else {
+          DrawPicScaledIgnoreOffset(x+(maxw-width)/2-x0, ybot-height-y0, handle, 1.0, 1.0, alpha!optional);
+        }
       } else {
         // calculate scaling
         float scaleX = (width > maxw ? float(maxw)/width : 1.0);
         float scaleY = (height > maxh ? float(maxh)/height : 1.0);
         float scaleN = fmin(scaleX, scaleY);
-        DrawPicScaledIgnoreOffset(x+int((float(maxw)-width*scaleN)*0.5)-int(x0*scaleN), y-int(height*scaleN)-int(y0*scaleN), handle, scaleN, scaleN, alpha);
-        //DrawRect(x, y-int(height*scaleN)-int(y0*scaleN), maxw, int(height*scaleN), 0xff_7f_00);
-        //DrawRect(x, y-maxh, maxw, maxh, 0xff_7f_00);
+        if (shadowed) {
+          DrawShadowedPic(x+int((float(maxw)-width*scaleN)*0.5)-int(x0*scaleN)-2, ybot-int(height*scaleN)-int(y0*scaleN)-2, handle, scaleN, scaleN, ignoreOffset:true);
+        } else {
+          DrawPicScaledIgnoreOffset(x+int((float(maxw)-width*scaleN)*0.5)-int(x0*scaleN), ybot-int(height*scaleN)-int(y0*scaleN), handle, scaleN, scaleN, alpha!optional);
+        }
       }
     }
-    #endif
   }
 }
 
@@ -693,7 +690,7 @@ override void SB_DrawFullscreenStats () {
       int xpos = (Width-pi.width+pi.xoffset)/2;
       DrawPicScaled(xpos, Height-rhgt-2-42, pic_faces[sb_faceindex], 1, R_GetAspectRatio(), fsalpha);
     } else {
-      DrawPicFit(32, 32, 12, Height-32-2, pic_faces[sb_faceindex], fsalpha);
+      DrawPicFit(32, 32, 12, Height-32-2, pic_faces[sb_faceindex], fsalpha, useOffset:true);
     }
     #endif
   }
@@ -941,24 +938,24 @@ override void SB_DrawFullscreenStats () {
     // inventory
     Inventory Item = cl.InvFirst;
     foreach (auto i; 0..7) {
-      DrawPic(210+i*31, /*448*/ovh-32, pic_artibox, fsalpha);
+      DrawPicFit(30, 30, 210+i*31, /*448*/ovh-32, pic_artibox, fsalpha);
       if (Item) {
-        DrawShadowedPic(207+i*31, /*446*/ovh-34, R_RegisterPic(Item.IconName));
+        DrawPicFitCenter(28, -28, 211+i*31, /*446*/ovh-31, R_RegisterPic(Item.IconName), shadowed:true);
         SB_DrawSmallNum(238+i*31, /*470*/ovh-10, Item.Amount);
-        if (Item == cl.InvPtr) DrawPic(210+i*31, /*448*/ovh-32, pic_selectbox, fsalpha);
+        if (Item == cl.InvPtr) DrawPicFit(30, 30, 210+i*31, /*448*/ovh-32, pic_selectbox, fsalpha);
         Item = Item.NextInv();
       }
     }
-    if (cl.InvFirst && cl.InvFirst.PrevInv()) DrawPic(198, /*447*/ovh-33, pic_invgeml[!(ClGame.GLevel.TicTime&4) ? 0 : 1], fsalpha);
-    if (Item) DrawPic(429, /*447*/ovh-33, pic_invgemr[!(ClGame.GLevel.TicTime&4) ? 0 : 1], fsalpha);
+    if (cl.InvFirst && cl.InvFirst.PrevInv()) DrawPicFit(30, 30, 198, /*447*/ovh-33, pic_invgeml[!(ClGame.GLevel.TicTime&4) ? 0 : 1], fsalpha);
+    if (Item) DrawPicFit(30, 30, 429, /*447*/ovh-33, pic_invgemr[!(ClGame.GLevel.TicTime&4) ? 0 : 1], fsalpha);
   } else if (cl.InvPtr) {
     // ready artifact
     Inventory Item = cl.InvPtr;
     if (Item.State && /*GetStateSpriteName(Item.State) != 'tnt1'*/Item.IconName) {
       int icon = R_RegisterPic(Item.IconName);
       if (icon > 0) {
-        DrawPic(486, /*448*/ovh-32, pic_artibox, fsalpha);
-        DrawShadowedPic(483, /*446*/ovh-34, icon);
+        DrawPicFit(30, 30, 486, /*448*/ovh-32, pic_artibox, fsalpha);
+        DrawPicFitCenter(28, -28, 487, /*446*/ovh-31, icon, shadowed:true);
         SB_DrawSmallNum(514, /*470*/ovh-10, Item.Amount);
       }
     }
