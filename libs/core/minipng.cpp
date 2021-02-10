@@ -127,15 +127,17 @@ PalEntry PNGHandle::getPixel (int x, int y, bool keepTransparent) const {
   vuint8 alpha;
   switch (colortype) {
     case ColorGrayscale:
+      //FIXME: this is wrong, we should compare transparency BEFORE converting bpp to 8 bit!
       alpha = (hasTrans && trans[a[0]] == 0 ? 0 : 255);
       if (!keepTransparent && alpha == 0) return PalEntry::Transparent();
       return PalEntry::RGBA(a[0], a[0], a[0], alpha);
     case ColorRGB:
+      //FIXME: this is wrong, we should compare transparency BEFORE converting bpp to 8 bit!
       alpha = (hasTrans && a[0] == tR && a[1] == tG && a[2] == tB ? 0 : 255);
       if (!keepTransparent && alpha == 0) return PalEntry::Transparent();
       return PalEntry::RGBA(a[0], a[1], a[2], alpha);
     case ColorPaletted:
-      alpha = (hasTrans && trans[a[0]] == 0 ? 0 : 255);
+      alpha = (hasTrans ? trans[a[0]] : 255);
       if (!keepTransparent && alpha == 0) return PalEntry::Transparent();
       return PalEntry::RGBA(pal[a[0]*3+0], pal[a[0]*3+1], pal[a[0]*3+2], alpha);
     case ColorGrayscaleAlpha:
@@ -598,12 +600,13 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
           if (!readU16BE(png->File, &v)) { error = true; break; }
           png->hasTrans = true;
           memset(png->trans, 255, sizeof(png->trans));
+           //FIXME: this is wrong, we should compare transparency BEFORE converting bpp to 8 bit!
           png->trans[convertBPP(v, png->bitdepth)] = 0;
           chunk.Size = 0; // don't try to seek past its contents again
           break;
         case PNGHandle::ColorPaletted:
-          png->hasTrans = true;
           if (chunk.Size > 256) { error = true; break; } // invalid chunk
+          png->hasTrans = true;
           memset(png->trans, 255, sizeof(png->trans));
           if (chunk.Size) {
             png->File->Serialise(png->trans, (int)chunk.Size);
@@ -614,6 +617,7 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
         case PNGHandle::ColorRGB:
           if (chunk.Size != 3*2) { error = true; break; } // invalid chunk
           png->hasTrans = true;
+          //FIXME: this is wrong, we should compare transparency BEFORE converting bpp to 8 bit!
           if (!readU16BE(png->File, &v)) { error = true; break; }
           png->tR = convertBPP(v, png->bitdepth);
           if (!readU16BE(png->File, &v)) { error = true; break; }
