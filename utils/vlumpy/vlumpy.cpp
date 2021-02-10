@@ -1033,6 +1033,7 @@ static void ParseScript (const char *name) {
       if (OutputOpened) SC_ScriptError("Output already opened");
       SC_MustGetString();
       strcpy(destfile, fn(sc_String));
+      fprintf(stderr, "creating '%s' from script '%s'...\n", sc_String, name);
       continue;
     }
 
