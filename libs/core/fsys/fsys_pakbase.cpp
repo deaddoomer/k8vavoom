@@ -438,8 +438,8 @@ void VFileDirectory::buildLumpNames () {
       if (fi.fileName.length() == 0) continue;
 
       //!!!HACK!!!
-      if (fi.fileName.Cmp("default.cfg") == 0) continue;
-      if (fi.fileName.Cmp("startup.vs") == 0) continue;
+      //if (fi.fileName.Cmp("default.cfg") == 0) continue;
+      //if (fi.fileName.Cmp("startup.vs") == 0) continue;
 
       VStr origName = fi.fileName;
       int fidx = -1;
