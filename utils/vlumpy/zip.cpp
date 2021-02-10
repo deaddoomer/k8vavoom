@@ -678,7 +678,7 @@ extern int ZEXPORT zipOpenNewFileInZip3 (zipFile file,
 
   if (zi->in_opened_file_inzip == 1)
   {
-    err = zipCloseFileInZip (file);
+    err = zipCloseFileInZip (file, NULL);
     if (err != ZIP_OK)
       return err;
   }
@@ -914,7 +914,8 @@ static int needPackFile (const unsigned char *buf, unsigned bufsize) {
 }
 
 
-int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, const char *filename, const void *buf, unsigned bufsize) {
+int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, const char *filename, const void *buf, unsigned bufsize, unsigned *outpksize) {
+  if (outpksize) *outpksize = bufsize;
   if (file == NULL) return ZIP_PARAMERROR;
 
   if (!needPackFile((const unsigned char *)buf, bufsize)) {
@@ -926,7 +927,7 @@ int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, con
     res = zipWriteInFileInZip(file, buf, bufsize);
     if (res != ZIP_OK) return res;
     // close it
-    return zipCloseFileInZip(file);
+    return zipCloseFileInZip(file, outpksize);
   }
 
   //fprintf(stderr, "ZIP-COMPRESS: %s\n", filename);
@@ -939,7 +940,7 @@ int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, con
     res = zipWriteInFileInZip(file, buf, bufsize);
     if (res != ZIP_OK) return res;
     // close it
-    return zipCloseFileInZip(file);
+    return zipCloseFileInZip(file, outpksize);
   }
 
   // zopfli
@@ -957,6 +958,7 @@ int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, con
     ZopfliCompress(&zofopt, ZOPFLI_FORMAT_DEFLATE, (const unsigned char *)buf, bufsize, &out, &outsize);
     if (ZWRITE(zi->z_filefunc, zi->filestream, out, outsize) != outsize) err = ZIP_ERRNO;
     free(out);
+    if (outpksize) *outpksize = (unsigned)outsize;
   }
 
   if (zi->in_opened_file_inzip == 1) {
@@ -1081,7 +1083,7 @@ extern int ZEXPORT zipWriteInFileInZip (zipFile file,
 
 extern int ZEXPORT zipCloseFileInZipRaw (zipFile file,
   uLong uncompressed_size,
-  uLong crc32)
+  uLong crc32, unsigned *outpksize)
 {
   zip_internal* zi;
   uLong compressed_size;
@@ -1133,6 +1135,7 @@ extern int ZEXPORT zipCloseFileInZipRaw (zipFile file,
 #    ifndef NOCRYPT
   compressed_size += zi->ci.crypt_header_size;
 #    endif
+  if (outpksize) *outpksize = (unsigned)compressed_size;
 
   ziplocal_putValue_inmemory(zi->ci.central_header+16,crc32,4); /*crc*/
   ziplocal_putValue_inmemory(zi->ci.central_header+20,
@@ -1175,9 +1178,9 @@ extern int ZEXPORT zipCloseFileInZipRaw (zipFile file,
   return err;
 }
 
-extern int ZEXPORT zipCloseFileInZip (zipFile file)
+extern int ZEXPORT zipCloseFileInZip (zipFile file, unsigned *outpksize)
 {
-  return zipCloseFileInZipRaw (file,0,0);
+  return zipCloseFileInZipRaw (file, 0, 0, outpksize);
 }
 
 extern int ZEXPORT zipClose (zipFile file,
@@ -1194,7 +1197,7 @@ extern int ZEXPORT zipClose (zipFile file,
 
   if (zi->in_opened_file_inzip == 1)
   {
-    err = zipCloseFileInZip (file);
+    err = zipCloseFileInZip (file, NULL);
   }
 
   if (global_comment==NULL)

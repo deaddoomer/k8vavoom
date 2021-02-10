@@ -205,14 +205,14 @@ extern int ZEXPORT zipWriteInFileInZip OF((zipFile file,
   Write data in the zipfile
 */
 
-extern int ZEXPORT zipCloseFileInZip OF((zipFile file));
+extern int ZEXPORT zipCloseFileInZip OF((zipFile file, unsigned *outpksize));
 /*
   Close the current file in the zipfile
 */
 
 extern int ZEXPORT zipCloseFileInZipRaw OF((zipFile file,
                                             uLong uncompressed_size,
-                                            uLong crc32));
+                                            uLong crc32, unsigned *outpksize));
 /*
   Close the current file in the zipfile, for fiel opened with
     parameter raw=1 in zipOpenNewFileInZip2
@@ -222,7 +222,7 @@ extern int ZEXPORT zipCloseFileInZipRaw OF((zipFile file,
 
 extern int ZEXPORT zipWriteWholeFileToZip OF((zipFile file, const zip_fileinfo* zipfi,
                                               const char *filename,
-                                              const void *buf, unsigned bufsize));
+                                              const void *buf, unsigned bufsize, unsigned *outpksize));
 
 
 extern int ZEXPORT zipClose OF((zipFile file,

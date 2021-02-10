@@ -99,6 +99,8 @@ static bool verbose = false;
 static bool showPackedSize = false;
 static TOWadFile outwad;
 static zipFile Zip;
+static unsigned zipTotalUnpacked = 0;
+static unsigned zipTotalPacked = 0;
 
 static char basepath[256];
 static char srcpath[256];
@@ -111,6 +113,28 @@ static char lumpname[256];
 static char destfile[1024];
 
 static bool Fon2ColorsUsed[256] = {0};
+
+
+//==========================================================================
+//
+//  comatoze
+//
+//==========================================================================
+static __attribute__((unused)) const char *comatoze (unsigned n) {
+  static char buffers[128][128];
+  static unsigned bufidx = 0;
+  char *buf = buffers[bufidx];
+  bufidx = (bufidx+1)&0x7f;
+  int bpos = (int)sizeof(buf);
+  buf[--bpos] = 0;
+  int xcount = 0;
+  do {
+    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
+    buf[--bpos] = '0'+n%10;
+    ++xcount;
+  } while ((n /= 10) != 0);
+  return &buf[bpos];
+}
 
 
 //==========================================================================
@@ -204,7 +228,7 @@ static char *fn (const char *name) {
 //  AddToZip
 //
 //==========================================================================
-static void AddToZip (const char *Name, void *Data, size_t Size) {
+static void AddToZip (const char *Name, const void *Data, size_t Size) {
   zip_fileinfo zi;
   memset(&zi, 0, sizeof(zi));
 
@@ -238,9 +262,15 @@ static void AddToZip (const char *Name, void *Data, size_t Size) {
   }
   */
 
-  if (zipWriteWholeFileToZip(Zip, &zi, Name, Data, (unsigned)Size) != ZIP_OK) {
+  if (verbose) fflush(stderr);
+  unsigned pksize = (unsigned)Size;
+  if (zipWriteWholeFileToZip(Zip, &zi, Name, Data, (unsigned)Size, &pksize) != ZIP_OK) {
     Error(va("Failed to write file '%s' to ZIP", Name));
   }
+
+  if (verbose) fprintf(stderr, " %s -> %s\n", comatoze((unsigned)Size), comatoze(pksize));
+  zipTotalUnpacked += (unsigned)Size;
+  zipTotalPacked += pksize;
 }
 
 
@@ -346,11 +376,11 @@ static void LoadImage () {
 static void GrabRGBTable () {
   vuint8 tmp[32*32*32+4];
 
-  if (verbose) fprintf(stderr, "adding rgb table '%s'...\n", sc_String);
   SetupRGBTable();
   memcpy(tmp, &rgb_table, 32*32*32);
   tmp[32*32*32] = 0;
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding rgb table '%s'...", sc_String);
     AddToZip(lumpname, tmp, 32*32*32+1);
   } else {
     outwad.AddLump(lumpname, tmp, 32*32*32+1);
@@ -369,7 +399,6 @@ static void GrabTranslucencyTable () {
   vuint8 table[256*256];
   vuint8 temp[768];
 
-  if (verbose) fprintf(stderr, "adding translucency table '%s'...\n", sc_String);
   SC_MustGetNumber();
   int transluc = sc_Number;
 
@@ -393,6 +422,7 @@ static void GrabTranslucencyTable () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding translucency table '%s'...", sc_String);
     AddToZip(lumpname, table, 256*256);
   } else {
     outwad.AddLump(lumpname, table, 256*256);
@@ -410,7 +440,6 @@ static void GrabTranslucencyTable () {
 static void GrabScaleMap () {
   vuint8 map[256];
 
-  if (verbose) fprintf(stderr, "adding scale map '%s'...\n", sc_String);
   SC_MustGetFloat();
   double r = sc_Float;
   SC_MustGetFloat();
@@ -425,6 +454,7 @@ static void GrabScaleMap () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding scale map '%s'...", sc_String);
     AddToZip(lumpname, map, 256);
   } else {
     outwad.AddLump(lumpname, map, 256);
@@ -440,7 +470,6 @@ static void GrabScaleMap () {
 //
 //==========================================================================
 static void GrabRaw () {
-  if (verbose) fprintf(stderr, "adding raw image '%s'...\n", sc_String);
 
   SC_MustGetNumber();
   int x1 = sc_Number;
@@ -462,6 +491,7 @@ static void GrabRaw () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding raw image '%s'...", sc_String);
     AddToZip(lumpname, data, w*h);
   } else {
     outwad.AddLump(lumpname, data, w*h);
@@ -479,8 +509,6 @@ static void GrabRaw () {
 //
 //==========================================================================
 static void GrabPatch () {
-  if (verbose) fprintf(stderr, "adding patch '%s'...\n", sc_String);
-
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -545,6 +573,7 @@ static void GrabPatch () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding patch '%s'...", sc_String);
     AddToZip(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch);
   } else {
     outwad.AddLump(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch);
@@ -562,8 +591,6 @@ static void GrabPatch () {
 //
 //==========================================================================
 static void GrabPic () {
-  if (verbose) fprintf(stderr, "adding pic '%s'...\n", sc_String);
-
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -588,6 +615,7 @@ static void GrabPic () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding pic '%s'...", sc_String);
     AddToZip(lumpname, pic, sizeof(vpic_t)+w*h);
   } else {
     outwad.AddLump(lumpname, pic, sizeof(vpic_t)+w*h);
@@ -605,8 +633,6 @@ static void GrabPic () {
 //
 //==========================================================================
 static void GrabPic15 () {
-  if (verbose) fprintf(stderr, "adding pic15 '%s'...\n", sc_String);
-
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -641,6 +667,7 @@ static void GrabPic15 () {
   }
 
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding pic15 '%s'...", sc_String);
     AddToZip(lumpname, pic, sizeof(vpic_t)+w*h*2);
   } else {
     outwad.AddLump(lumpname, pic, sizeof(vpic_t)+w*h*2);
@@ -689,8 +716,6 @@ static vint8 *CompressChar (vuint8 *Src, vint8 *Dst, int Size) {
 //
 //==========================================================================
 static void GrabFon1 () {
-  if (verbose) fprintf(stderr, "adding fon1 font '%s'...\n", sc_String);
-
   // dimensions of a character
   int CharW = ImgWidth/16;
   int CharH = ImgHeight/16;
@@ -722,6 +747,7 @@ static void GrabFon1 () {
 
   // write lump and free memory
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding fon1 font '%s'...", sc_String);
     AddToZip(lumpname, Font, pDst-(vint8*)Font);
   } else {
     outwad.AddLump(lumpname, Font, pDst-(vint8*)Font);
@@ -759,8 +785,6 @@ static int Fon2PalCmp (const void *v1, const void *v2) {
 //
 //==========================================================================
 static void GrabFon2 () {
-  if (verbose) fprintf(stderr, "adding fon2 font '%s'...\n", sc_String);
-
   // process characters
   fon2_char_t *Chars[256];
   memset(Chars, 0, sizeof(Chars));
@@ -894,6 +918,7 @@ static void GrabFon2 () {
 
   // write lump and free memory
   if (Zip) {
+    if (verbose) fprintf(stderr, "adding fon2 font '%s'...", sc_String);
     AddToZip(lumpname, Font, pDst-(vint8*)Font);
   } else {
     outwad.AddLump(lumpname, Font, pDst-(vint8*)Font);
@@ -977,25 +1002,6 @@ extern "C" {
 static void SortFileList (TArray<DiskFile> &flist) {
   if (flist.length() < 2) return;
   timsort_r(flist.ptr(), (size_t)flist.length(), (size_t)sizeof(DiskFile), &DFICompare, nullptr);
-}
-
-
-//==========================================================================
-//
-//  comatoze
-//
-//==========================================================================
-static __attribute__((unused)) const char *comatoze (unsigned n) {
-  static char buf[128];
-  int bpos = (int)sizeof(buf);
-  buf[--bpos] = 0;
-  int xcount = 0;
-  do {
-    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
-    buf[--bpos] = '0'+n%10;
-    ++xcount;
-  } while ((n /= 10) != 0);
-  return &buf[bpos];
 }
 
 
@@ -1125,9 +1131,9 @@ static void ParseScript (const char *name) {
       SortFileList(flist);
       for (int f = 0; f < flist.length(); ++f) {
         //fprintf(stderr, "  <%s> -> <%s>\n", *flist[f].diskName, *flist[f].zipName);
-        if (verbose) fprintf(stderr, "adding file '%s'...\n", *flist[f].diskName);
         void *data;
         int size = LoadFile(*flist[f].diskName, &data);
+        if (verbose) fprintf(stderr, "adding file '%s'...", *flist[f].diskName);
         AddToZip(*flist[f].zipName, data, size);
         Z_Free(data);
       }
@@ -1151,7 +1157,7 @@ static void ParseScript (const char *name) {
       else if (SC_Compare("fon2")) GrabFon2();
       else SC_ScriptError(va("Unknown command: \"%s\"", sc_String));
     } else if (Zip) {
-      if (verbose) fprintf(stderr, "adding file '%s'...\n", sc_String);
+      if (verbose) fprintf(stderr, "adding file '%s'...", sc_String);
       strcpy(lumpname, sc_String);
       SC_MustGetString();
       void *data;
@@ -1159,7 +1165,7 @@ static void ParseScript (const char *name) {
       AddToZip(lumpname, data, size);
       Z_Free(data);
     } else {
-      if (verbose) fprintf(stderr, "adding lump '%s'...\n", sc_String);
+      //if (verbose) fprintf(stderr, "adding lump '%s'...\n", sc_String);
       ExtractFileBase(sc_String, lumpname, sizeof(lumpname));
       if (strlen(lumpname) > 8) SC_ScriptError("Lump name too long");
       void *data;
@@ -1182,7 +1188,7 @@ static void ParseScript (const char *name) {
       fseek(ff, 0, SEEK_END);
       int size = (int)ftell(ff);
       fclose(ff);
-      fprintf(stderr, "%s: %s bytes\n", destfile, comatoze((unsigned)size));
+      fprintf(stderr, "%s: %s bytes (%s -> %s)\n", destfile, comatoze((unsigned)size), comatoze(zipTotalUnpacked), comatoze(zipTotalPacked));
     }
   }
 
