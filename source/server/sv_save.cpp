@@ -1664,8 +1664,12 @@ static void SV_SaveMap (bool savePlayers) {
     ArrStrm->BeginWrite();
     VZLibStreamWriter *ZipStrm = new VZLibStreamWriter(ArrStrm, (int)save_compression_level);
     ZipStrm->Serialise(Buf.Ptr(), Buf.Num());
+    const bool wasErr = ZipStrm->IsError();
+    ZipStrm->Close();
+    ArrStrm->Close();
     delete ZipStrm;
     delete ArrStrm;
+    if (wasErr) Host_Error("error compressing savegame data");
   }
 
   delete Saver;
@@ -1886,8 +1890,12 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
     VZLibStreamReader *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
     DecompressedData.SetNum(Map->DecompressedSize);
     ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.Num());
+    const bool wasErr = ZipStrm->IsError();
+    ZipStrm->Close();
+    ArrStrm->Close();
     delete ZipStrm;
     delete ArrStrm;
+    if (wasErr) Host_Error("error decompressing savegame data");
   }
 
   VSaveLoaderStream *Loader = new VSaveLoaderStream(new VArrayStream("<savemap:mapdata>", DecompressedData));
@@ -1934,7 +1942,7 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
   if (checkpoint) {
     // if we have no maps in our base slot, checkpoints are enabled
     if (BaseSlot.Maps.length() != 0) {
-      GCon->Logf("AUTOSAVE: cannot create checkpoint, perform a full save sequence");
+      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is normal)");
       checkpoint = false;
     } else {
       GCon->Logf("AUTOSAVE: checkpoints allowed");
@@ -1951,7 +1959,7 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
   if (checkpoint) {
     // player state save
     if (!SV_SaveCheckpoint()) {
-      GCon->Logf("AUTOSAVE: checkpoint creation failed, perform a full save sequence");
+      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is normal)");
       checkpoint = false;
       SV_SaveMap(true); // true = save player info
     }
