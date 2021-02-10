@@ -1,8 +1,8 @@
 $dest basepak.pk3
 
 // default config files
-default.cfg  @CMAKE_CURRENT_SOURCE_DIR@/default.cfg
-startup.vs   @CMAKE_CURRENT_SOURCE_DIR@/startup.vs
+k8vavoom_default.cfg  @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom_default.cfg
+k8vavoom_startup.vs   @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom_startup.vs
 
 // native engine classes, common engine classes, UI
 $recursedirext| .vc| progs/  @CMAKE_SOURCE_DIR@/progs/common/

@@ -176,7 +176,7 @@ void VCommand::Init () {
   for (VCommand *cmd = Cmds; cmd; cmd = cmd->Next) AddToAutoComplete(cmd->Name);
 
   // add configuration file execution
-  GCmdBuf.Insert("exec startup.vs\n__run_cli_commands__\n");
+  GCmdBuf.Insert("exec k8vavoom_startup.vs\n__run_cli_commands__\n");
 
   Initialised = true;
 }

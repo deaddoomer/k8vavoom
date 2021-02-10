@@ -7,12 +7,13 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/confont.pcx
     ${CMAKE_CURRENT_SOURCE_DIR}/dbigfont.pcx
-    ${CMAKE_CURRENT_SOURCE_DIR}/default.cfg
+    ${CMAKE_CURRENT_SOURCE_DIR}/k8vavoom_default.cfg
     ${CMAKE_CURRENT_SOURCE_DIR}/language.en
-    ${CMAKE_CURRENT_SOURCE_DIR}/startup.vs
+    ${CMAKE_CURRENT_SOURCE_DIR}/k8vavoom_startup.vs
     ${CMAKE_CURRENT_SOURCE_DIR}/vavoom_decorate_defs.xml
     ${CMAKE_CURRENT_SOURCE_DIR}/vavoom_known_blood.rc
     ${CMAKE_CURRENT_SOURCE_DIR}/vavoom_class_ignores.rc
+    ${CMAKE_CURRENT_SOURCE_DIR}/gamecontrollerdb.txt
 
     ${CMAKE_CURRENT_SOURCE_DIR}/credits/*.txt
 
