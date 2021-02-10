@@ -651,7 +651,7 @@ override void SB_DrawFullscreenStats () {
   int ST_TDHEALTHX = 120;
   int ST_TDHEALTHY = ovh-20; //460;
 
-  int ST_TDARMORX = 280;
+  int ST_TDARMORX = 280-30;
   int ST_TDARMORY = ovh-20; //460;
 
   int ST_TDAMMOX = ovw-20; //620;
@@ -670,7 +670,6 @@ override void SB_DrawFullscreenStats () {
     // faces
     //if (ClGame.maxclients > 1) DrawPic(12, ovh-32, pic_faceback, fsalpha, cl.MO.Translation);
     //DrawPic(12, ovh-32, pic_faces[sb_faceindex], fsalpha);
-    #if 1
     picinfo_t pi;
     R_GetPicInfo(pic_faces[sb_faceindex], &pi);
     int rhgt = int((pi.height-pi.yoffset)*R_GetAspectRatio());
@@ -683,19 +682,8 @@ override void SB_DrawFullscreenStats () {
     } else {
       //printdebug("***: hgt=%s; ofs=%s", pi.height, pi.yoffset);
       //printdebug("wdt=%s; hgt=%s; ofs=%s:%s", pi.width, pi.height, pi.xoffset, pi.yoffset);
-      DrawPicScaled(12, Height-rhgt-2, pic_faces[sb_faceindex], scaleN, R_GetAspectRatio()*scaleN, fsalpha);
+      DrawPicScaled(12-8, Height-rhgt-2, pic_faces[sb_faceindex], scaleN, R_GetAspectRatio()*scaleN, fsalpha);
     }
-    #else
-    if (GetCvarB('r_hud_fs_face_centered')) {
-      picinfo_t pi;
-      R_GetPicInfo(pic_faces[sb_faceindex], &pi);
-      int rhgt = int((pi.height-pi.yoffset)*R_GetAspectRatio());
-      int xpos = (Width-pi.width+pi.xoffset)/2;
-      DrawPicScaled(xpos, Height-rhgt-2-42, pic_faces[sb_faceindex], 1, R_GetAspectRatio(), fsalpha);
-    } else {
-      DrawPicFit(32, 32, 12, Height-32-2, pic_faces[sb_faceindex], fsalpha, useOffset:true);
-    }
-    #endif
   }
 
   // health
@@ -703,7 +691,7 @@ override void SB_DrawFullscreenStats () {
   // draw berserk pack if player has berserk powerup
   int healthicon = pic_health;
   if (pic_berserk > 0 && EntityEx(cl.MO).FindInventory(PowerStrength)) healthicon = pic_berserk;
-  DrawPicFit(28, 20, ST_TDHEALTHX-60, ST_TDHEALTHY+15, healthicon, fsalpha);
+  DrawPicFit(28, 20, ST_TDHEALTHX-60-12, ST_TDHEALTHY/*+15*/-4, healthicon, fsalpha);
   //DbgPrintPicSize(healthicon, "health");
 
   // Health Accumulation Device
@@ -717,7 +705,8 @@ override void SB_DrawFullscreenStats () {
     int i = Armor.SavePercent > 0.335 ? 1 : 0;
     SB_DrawTallNum(ST_TDARMORX, ST_TDARMORY, Armor.Amount, fsalpha, false);
     // standard doom image is 31x17
-    DrawPicFit(32, 18, ST_TDARMORX-60, ST_TDARMORY+15, pic_armor[i], fsalpha);
+    //DrawPic(ST_TDARMORX-60, ST_TDARMORY+15, pic_armor[i], fsalpha);
+    DrawPicFit(32, 18, ST_TDARMORX-82, ST_TDARMORY-2, pic_armor[i], fsalpha);
   }
 
   // ready weapon ammo with icon
