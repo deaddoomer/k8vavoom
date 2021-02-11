@@ -457,8 +457,23 @@ void LoadGZMenuDef (ScriptsParser par) {
 //==========================================================================
 void LoadGZMenuDefs () {
   if (GetCvarB('_gz_skip_menudef')) return;
+
+  // scan
+  array!int mdlumps; // 0: none; -1: has modmenu; positive: menudef lump; index is pakfile index
   foreach (int lump; WadIterateNS(EWadNamespace.Global)) {
     if (W_LumpName(lump) == 'menudef') {
+      int fidx = W_LumpFile(lump);
+      while (mdlumps.length <= fidx) mdlumps[$] = 0;
+      if (mdlumps[fidx] >= 0) mdlumps[fidx] = lump;
+    } else if (W_LumpName(lump) == 'modmenu') {
+      int fidx = W_LumpFile(lump);
+      while (mdlumps.length <= fidx) mdlumps[$] = 0;
+      mdlumps[fidx] = -1;
+    }
+  }
+
+  foreach (int lump; mdlumps) {
+    if (lump > 0) {
       auto par = SpawnObject(ScriptsParser);
       scope(exit) delete par;
       par.OpenLumpIndex(lump);
@@ -467,6 +482,7 @@ void LoadGZMenuDefs () {
       LoadGZMenuDef(par);
     }
   }
+
   // fix optionvalue forwards
   foreach (MenuDefinition mdef; menudefs) {
     mdef.fixGZOptionValues(optvals, delegate bool (string subname) {
