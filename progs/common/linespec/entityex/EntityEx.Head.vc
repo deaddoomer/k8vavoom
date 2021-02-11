@@ -52,9 +52,10 @@ const float FRICTION_WATER  = 3.0;
 //WARNING: sync this with C++ code!
 const float MAXMOVE     = 1050.0*30; // this is rougly equal to 900 in Vanilla speed
 const float MAXMOVESTEP = /*MAXMOVE*/1050.0/(35.0*2.0);
+// minimum speed for the player
 const float STOPSPEED   = 2.1875; // 0x1000/65536.0*35.0
 
-const float BOUNCE_VAL  = 1.5;
+const float BOUNCE_VAL = 1.5;
 
 // follow a player exlusively for 3 seconds
 const int BASETHRESHOLD = 100;

@@ -44,6 +44,10 @@
 # define TMDbgF(...)  (void)0
 #endif
 
+//WARNING! keep this in sync with VC code! (not anymore)
+// roughly smaller than lowest fixed point 16.16 (it is more like 0.0000152587890625)
+#define SMALLEST_NONZERO_VEL  (0.000016f*35.0f)
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit);
@@ -2573,7 +2577,11 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
 //
 //=============================================================================
 void VEntity::UpdateVelocity (float DeltaTime, bool allowSlopeFriction) {
-  if (!Sector) return; // just in case
+  // clamp minimum velocity (because why not?)
+  if (fabsf(Velocity.x) < SMALLEST_NONZERO_VEL) Velocity.x = 0.0f;
+  if (fabsf(Velocity.y) < SMALLEST_NONZERO_VEL) Velocity.y = 0.0f;
+
+  if (!Sector || (EntityFlags&EF_NoSector)) return; // it is still called for each entity
 
   /*
   if (Origin.z <= FloorZ && !Velocity && !bCountKill && !bIsPlayer) {
@@ -2624,7 +2632,7 @@ void VEntity::UpdateVelocity (float DeltaTime, bool allowSlopeFriction) {
 
   const float dz = Origin.z-FloorZ;
 
-  // don't add gravity if standing on slope with normal.z > 0.7 (aprox 45 degrees)
+  // don't add gravity if standing on a slope with normal.z > 0.7 (aprox 45 degrees)
   if (dz > 0.6f || fnormz <= 0.7f) {
     //if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: *** dfz=%g; normz=%g", GetClass()->GetName(), dz, EFloor.GetNormalZ());
     if (WaterLevel < 2) {
@@ -2646,6 +2654,7 @@ void VEntity::UpdateVelocity (float DeltaTime, bool allowSlopeFriction) {
     }
   }
 }
+
 
 
 //==========================================================================

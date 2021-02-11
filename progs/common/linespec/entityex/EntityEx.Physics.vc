@@ -168,53 +168,25 @@ bool Physics (float DeltaTime) {
 
   //if (bOnScroll) printdebug("%C: ON SCROLLER!", self);
 
-  //k8: do we even need to process entity without sector set here?
-  if (Sector) {
-    #if 0
-    // old code
-    if (Sector->AffectorData && bColideWithWorld && !bNoSector) {
-      // killough 3/7/98: Carry things on floor
-      // killough 3/20/98: use new sector list which reflects true members
-      // killough 3/27/98: fix carrier bug
-      // killough 4/4/98: Underwater, carry things even w/o gravity
-
-      // move objects only if on floor or underwater, non-floating, and clipped
-      // k8: this should work with 3d floors, but now it doesn't
-      int CountX = 0;
-      int CountY = 0;
-      SectorThinker SecThink;
-      for (SecThink = SectorThinker(Sector->AffectorData); SecThink; SecThink = SecThink.NextAffector) {
-        auto sth = Scroller(SecThink);
-        if (!sth) continue;
-        float scrollx = sth.CarryScrollX;
-        float scrolly = sth.CarryScrollY;
-        if (!scrollx && !scrolly) continue;
-        if (bNoGravity && (!Sector->heightsec || Sector->heightsec->bIgnoreHeightSec)) continue;
-        float height = GetPointZClamped(ref Sector->floor, Origin);
-        if (Origin.z > height) {
-          if (!Sector->heightsec || Sector->heightsec->bIgnoreHeightSec) continue;
-          float waterheight = GetPointZClamped(ref Sector->heightsec->floor, Origin);
-          if (waterheight > height && Origin.z >= waterheight) continue;
-        }
-
-        CummX += scrollx;
-        CummY += scrolly;
-        if (scrollx) ++CountX;
-        if (scrolly) ++CountY;
-      }
-
-      // Some levels designed with Boom in mind actually want things to accelerate
-      // at neighboring scrolling sector boundaries. But it is only important for
-      // non-player objects.
-      if (bIsPlayer || !Level.CompatBoomScroll) {
-        if (CountX > 1) CummX /= float(CountX);
-        if (CountY > 1) CummY /= float(CountY);
-      }
-      //if (CummX || CummY) print("%C: CALCULATED SCROLL=(%s,%s); vel=%s", self, CummX, CummY, Velocity);
+  if (Sector && !bNoSector) {
+    // update velocity and apply friction first, so scrollers could do their work unhindered
+    // `UpdateVelocity()` does nothing if "no gravity" set
+    //FIXME: make a separate flag for this?
+    //if (!bNoGravity && (!bFloatBob || !bSpecial)) UpdateVelocity(DeltaTime);
+    //k8: why? floatbob should be affected by gravity, and dropped pickups too
+    /*if (!bFloatBob || !bSpecial)*/ UpdateVelocity(DeltaTime, !bSkullFly);
+    // apply friction here
+    //TODO: should we apply the friction for "no world collision" things here?
+    // (don't forget about "collide with things" flag too -- we may stand on a bridge or something)
+    // still call it for the player, to take care of state changes and such
+    // missile and skullfly check moved here from `ApplyFriction()` for speed reasons
+    // no friction for missiles ever
+    if (!bMissile && !bSkullFly) {
+      if (Velocity.xy || bIsPlayer) ApplyFriction(DeltaTime);
     }
-    #else
-    // new code
-    if (GetClassInstanceCountWithSub(Scroller) && bColideWithWorld && !bNoSector && Origin != lastScrollCheckOrigin) {
+
+    // new code for scroller checks
+    if (GetClassInstanceCountWithSub(Scroller) && bColideWithWorld && Origin != lastScrollCheckOrigin) {
       //if (self isa 'ExplosiveBarrel') printdebug("%C(%s): SCROLLER CHECK!", self, UniqueId);
       lastScrollCheckOrigin = Origin;
       // killough 3/7/98: Carry things on floor
@@ -279,12 +251,6 @@ bool Physics (float DeltaTime) {
       }
       //if (CummX || CummY) print("%C: CALCULATED SCROLL=(%s,%s); vel=%s", self, CummX, CummY, Velocity);
     }
-    /*
-    else {
-      printdebug("%C(%s): SCROLLER CHECK SKIP! Origin=%s; last=%s", self, UniqueId, Origin, lastScrollCheckOrigin);
-    }
-    */
-    #endif
 
     //k8: re-check it only when z position or sector was changed
     if (tmp_phys_last_water_sector != Sector || Origin.z != tmp_phys_last_water_z) {
@@ -293,13 +259,9 @@ bool Physics (float DeltaTime) {
       tmp_phys_last_water_z = Origin.z;
       tmp_phys_last_floor_pic = EFloor.splane->pic;
     }
-    // `UpdateVelocity()` does nothing if "no gravity" set
-    //FIXME: make a separate flag for this?
-    //if (!bNoGravity && (!bFloatBob || !bSpecial)) UpdateVelocity(DeltaTime);
-    //k8: why? floatbob should be affected by gravity, and dropped pickups too
-    /*if (!bFloatBob || !bSpecial)*/ UpdateVelocity(DeltaTime, !bSkullFly);
-    // apply friction here
-    if (Velocity.xy) ApplyFriction(DeltaTime);
+  } else {
+    // still call it, because of minimum velocity clamping
+    UpdateVelocity(DeltaTime, false);
   }
 
   //if ((self isa 'DoomImpBall') && !Level.Game.IsAuthority) printdebug("%C:000: org=%s; vel=%s", self, Origin, Velocity);
@@ -312,10 +274,6 @@ bool Physics (float DeltaTime) {
   sector_t *oldSector = Sector;
   XYMovement(DeltaTime, CummX, CummY, oldSector);
   if (IsDestroyed) return false; // mobj was removed
-  // apply friction here
-  //if (Velocity.x || Velocity.y) ApplyFriction(DeltaTime);
-
-  //if ((self isa 'DoomImpBall') && !Level.Game.IsAuthority) printdebug("%C:001: org=%s; vel=%s", self, Origin, Velocity);
 
   #ifdef FLOAT_BOB_IN_PHYSICS
   // moved to client ticker
@@ -440,8 +398,6 @@ bool Physics (float DeltaTime) {
     Level.MoveStaticLightByOwner(self, Origin+LightOffset);
   }
 
-  // apply friction here
-  //if (Velocity.x || Velocity.y) ApplyFriction(DeltaTime);
   return true;
 }
 
@@ -1641,40 +1597,15 @@ override void HandleFloorclip () {
 //
 //==========================================================================
 override void ApplyFriction (float DeltaTime) {
-  if (bMissile || bSkullFly) return; // no friction for missiles ever
+  // velocity clamping is done in `UpdateVelocity()`
+  // this check is done by the caller (for speed)
+  //if (bMissile || bSkullFly) return; // no friction for missiles ever
 
   //k8: no, really? no friction while knee-dip in the water? i don't think so
   //    was: `WaterLevel < 2`
   if (Origin.z > FloorZ && !bOnMobj && WaterLevel == 0 && !bFly && !bFallingFriction) {
     // no friction when airborne
-    // but do friction on slopes
-    /*
-    float fzdist = fabs(Sector.floor.maxz-Sector.floor.minz);
-    if (fzdist && fzdist <= MaxStepHeight && Origin.z-FloorZ <= MaxStepHeight/3) {
-      //TVec Vel = EFloor.spGetNormal();
-      //if (!Vel.xy) return; // not a slope
-      //float dot = DotProduct(Velocity, Vel);
-      //if (dot >= 0.0) return; // bad floor (it seems)
-      if (bIsPlayer) {
-        tmtrace_t tmtrace;
-        GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
-        TVec Vel = EFloor.spGetNormal();
-        printdebug("*** SKIP SLOPING! height=%s; vel=%s; dot=%s; vdot=%s; z=%s; cz=%s tz=%s; tfz=%s (%s)", fabs(Sector.floor.maxz-Sector.floor.minz), Vel, DotProduct(Velocity, Vel), Vel*DotProduct(Velocity, Vel),
-          Origin.z, EFloor.spGetPointZ(Origin), tmtrace.FloorZ, tmtrace.EFloor.spGetPointZ(Origin), (Origin.z-tmtrace.EFloor.spGetPointZ(Origin)));
-        if (tmtrace.FloorLine) printdebug("  HAS FLOOR LINE!");
-        float dot = DotProduct(Velocity, Vel);
-        if (dot < 0.0) {
-          Vel *= dot*0.5;
-          Velocity -= Vel.xy;
-        }
-      }
-      return;
-    } else
-    */
-    {
-      //print("AIRBORNE!");
-      return;
-    }
+    return;
   }
 
   #ifdef ENABLE_LINGUORTALS
@@ -1693,44 +1624,7 @@ override void ApplyFriction (float DeltaTime) {
   }
   #endif
 
-  // clip velocity on sloped floors
-  // TODO: don't clip on small slopes
-  // implementation: don't clip if slope is less or equal to maximum allowed step height
-  // this will allow to easily climb onto small steep slopes (see "ma_put", for example)
-#ifdef FRICTION_SLOPES
-  moved to "UpdateVelocity()"
-  if (Origin.z <= FloorZ && fabs(Sector.floor.maxz-Sector.floor.minz) > MaxStepHeight) {
-    TVec Vel = EFloor.spGetNormal();
-    if (bIsPlayer && Player && (PlayerEx(Player).Cheats&PlayerEx::CF_NOCLIP)) {
-      //print("noclip cheat!");
-      Vel = vector(0, 0, 1.0);
-    }
-    if (Vel.z != 1.0 /*Vel.z <= 0.7*/) {
-      float dot = DotProduct(Velocity, Vel);
-      if (dot < 0.0) {
-        //TVec Vel = dot*EFloor.spGetNormal();
-        //if (bIsPlayer) printdebug("%C: Velocity=%s; Vel=%s; dot=%s; Vel*dot=%s (%s); dt=%s", self, Velocity.xy, Vel, dot, Vel.xy*dot, Vel.xy*(dot*DeltaTime), DeltaTime);
-        Vel *= dot*DeltaTime;
-        //print("mht=%s; hgt=%s", MaxStepHeight, Sector.floor.maxz-Sector.floor.minz);
-        /*
-        print("vv: Vel=%s; dot=%s; norm=%s", Vel, dot, EFloor.spGetNormal());
-        print("  : z=%s; fminz=%s; fmaxz=%s", Origin.z, Sector.floor.minz, Sector.floor.maxz);
-        print("  : velocity: %s -- %s", Velocity, Velocity-Vel.xy);
-        */
-        Velocity -= Vel.xy;
-      }
-    }
-  } else {
-    /*
-    if (bIsPlayer && Origin.z <= FloorZ && fabs(Sector.floor.maxz-Sector.floor.minz) && fabs(Sector.floor.maxz-Sector.floor.minz) <= MaxStepHeight) {
-      TVec Vel = EFloor.spGetNormal();
-      printdebug("SKIP SLOPING! height=%s; vel=%s; dot=%s; vdot=%s; z=%s : %s", fabs(Sector.floor.maxz-Sector.floor.minz), Vel, DotProduct(Velocity, Vel), Vel*DotProduct(Velocity, Vel),
-        Origin.z, EFloor.spGetPointZ(Origin));
-    }
-    */
-  }
-#endif
-
+  // clip velocity on sloped floors (moved to `UpdateVelocity()`)
   float vx = Velocity.x;
   float vy = Velocity.y;
 
@@ -1739,14 +1633,15 @@ override void ApplyFriction (float DeltaTime) {
     if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
         vy > 0.25*35.0 || vy < -0.25*35.0)
     {
-      if ((/*Sector &&*/ FloorZ > GetPointZClamped(ref Sector->floor, Origin)) || DropOffZ != FloorZ) {
+      if (DropOffZ != FloorZ || FloorZ > GetPointZClamped(ref Sector->floor, Origin)) {
         return;
       }
     }
   }
 
+  // clamp Voodoo Dolls too
   if (fabs(vx) < STOPSPEED && fabs(vy) < STOPSPEED &&
-      (!bIsPlayer || !Player || (Player.MO == self && !Player.ForwardMove && !Player.SideMove)))
+      (!bIsPlayer || Player.MO != self || (Player.MO == self && !Player.ForwardMove && !Player.SideMove)))
   {
     Velocity.x = 0.0;
     Velocity.y = 0.0;
@@ -1756,11 +1651,6 @@ override void ApplyFriction (float DeltaTime) {
         //printdebug("%C: going to idle state %s from %s (0)", self, IdleState, State);
         SetState(IdleState);
       }
-      /*
-      else {
-        printdebug("%C: CANNOT go to idle state (0) from %s", self, State);
-      }
-      */
     }
   } else {
     // slow down
@@ -1777,24 +1667,6 @@ override void ApplyFriction (float DeltaTime) {
     TVec vdiff = Velocity.xy*(fric*DeltaTime);
     if (Friction <= 0.0) vdiff = Velocity.xy; // stop right there, you criminal scum!
     Velocity -= vdiff;
-    //Velocity.x -= Velocity.x*(GetFriction()*DeltaTime);
-    //Velocity.y -= Velocity.y*(GetFriction()*DeltaTime);
-    // roughly smaller than lowest fixed point 16.16 (it is more like 0.0000152587890625)
-    if (fabs(Velocity.x) < 0.000016) Velocity.x = 0;
-    if (fabs(Velocity.y) < 0.000016) Velocity.y = 0;
-    //k8: do we need this for Voodoo Dolls?
-    if (bIsPlayer && !Velocity.xy) {
-      // if in a walking frame, stop moving
-      if (IdleState && /*StateIsInRange(State, SeeState, none, 4)*/StateIsInSequence(State, SeeState)) {
-        //printdebug("%C: going to idle state %s from %s (1)", self, IdleState, State);
-        SetState(IdleState);
-      }
-      /*
-      else {
-        printdebug("%C: CANNOT go to idle state from %s (1)", self, State);
-      }
-      */
-    }
   }
 }
 
