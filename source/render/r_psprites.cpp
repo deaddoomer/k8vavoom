@@ -47,10 +47,17 @@ extern VCvarB gl_crop_psprites;
 
 static VCvarI crosshair("crosshair", "2", "Crosshair type (0-2).", CVAR_Archive);
 static VCvarF crosshair_alpha("crosshair_alpha", "0.6", "Crosshair opacity.", CVAR_Archive);
-static VCvarI r_crosshair_yofs("r_crosshair_yofs", "0", "Crosshair y offset (>0: down).", CVAR_Archive);
 static VCvarF crosshair_scale("crosshair_scale", "1", "Crosshair scale.", CVAR_Archive);
 
+static VCvarB crosshair_force("crosshair_force", false, "Force menu selected crosshair (i.e. don't allow mods to set their own)?", CVAR_Archive);
+static VCvarF crosshair_big_scale("crosshair_big_scale", "0.5", "Scale for 'big' mod crosshairs.", CVAR_Archive);
+static VCvarB crosshair_big_prefer("crosshair_big_prefer", true, "Prefer 'big' mod crosshairs over small ones?", CVAR_Archive);
+
+static VCvarI r_crosshair_yofs("r_crosshair_yofs", "0", "Crosshair y offset (>0: down).", CVAR_Archive);
+
 int VRenderLevelShared::prevCrosshairPic = -666;
+static int currCrosshairPicHandle = 0;
+static TMapNC<int, int> customXHairHandles; // key: id; value: handle (0: invalid; negative: scale by 0.5)
 
 
 static int cli_WarnSprites = 0;
@@ -423,26 +430,89 @@ void VRenderLevelShared::DrawPlayerSprites () {
 //
 //==========================================================================
 void VRenderLevelShared::RenderCrosshair () {
-  int ch = (int)crosshair;
-  const float scale = crosshair_scale.asFloat();
-  float alpha = crosshair_alpha.asFloat();
-  if (!isFiniteF(alpha)) alpha = 0;
-  if (ch > 0 && ch < 16 && alpha > 0.0f && isFiniteF(scale) && scale > 0.0f) {
-    static int handle = 0;
-    if (!handle || prevCrosshairPic != ch) {
-      prevCrosshairPic = ch;
-      handle = GTextureManager.AddPatch(VName(va("croshai%x", ch), VName::AddLower8), TEXTYPE_Pic, true); //silent
-      if (handle < 0) handle = 0;
-    }
-    if (handle > 0) {
-      //if (crosshair_alpha < 0.0f) crosshair_alpha = 0.0f;
-      if (alpha > 1.0f) alpha = 1.0f;
-      int cy = (screenblocks < 11 ? (VirtualHeight-sb_height)/2 : VirtualHeight/2);
-      cy += r_crosshair_yofs;
-      bool oldflt = gl_pic_filtering;
-      gl_pic_filtering = false;
-      R_DrawPicScaled(VirtualWidth/2, cy, handle, scale, alpha);
-      gl_pic_filtering = oldflt;
+  // do not show crosshair if player is dead
+  if (!cl || !cl->MO || cl->MO->Health <= 0) return;
+  int ch = crosshair.asInt();
+
+  //GCon->Logf(NAME_Debug, "***xhair*** prevCrosshairPic=%d; currCrosshairPicHandle=%d; pch=%d", prevCrosshairPic, currCrosshairPicHandle, (cl->Crosshair > 0 ? cl->Crosshair+1024 : 0));
+
+  // crosshair override
+  if (!crosshair_force.asBool() && cl->Crosshair > 0) {
+    if (prevCrosshairPic != cl->Crosshair+1024) {
+      int xpich = 0; // handle
+      // try to load a custom crosshair
+      auto xhp = customXHairHandles.find(cl->Crosshair);
+      if (xhp) {
+        xpich = *xhp;
+      } else {
+        if (crosshair_big_prefer.asBool()) {
+          xpich = GTextureManager.AddPatch(VName(va("xhairb%d", cl->Crosshair), VName::AddLower8), TEXTYPE_Pic, true, true); //silent, as crosshair
+          if (xpich < 0) xpich = 0; else xpich = -xpich;
+        }
+        if (!xpich) {
+          xpich = GTextureManager.AddPatch(VName(va("xhairs%d", cl->Crosshair), VName::AddLower8), TEXTYPE_Pic, true, true); //silent, as crosshair
+          if (xpich < 0) xpich = 0;
+        }
+        if (!xpich && !crosshair_big_prefer.asBool()) {
+          xpich = GTextureManager.AddPatch(VName(va("xhairb%d", cl->Crosshair), VName::AddLower8), TEXTYPE_Pic, true, true); //silent, as crosshair
+          if (xpich < 0) xpich = 0; else xpich = -xpich;
+        }
+        customXHairHandles.put(cl->Crosshair, xpich);
+        //GCon->Logf(NAME_Debug, "custom xhair %d (handle=%d)", cl->Crosshair, xpich);
+      }
+      // have pic?
+      if (xpich) {
+        ch = cl->Crosshair+1024;
+        prevCrosshairPic = ch;
+        currCrosshairPicHandle = xpich;
+        //GCon->Logf(NAME_Debug, "custom xhair %d (handle=%d)", ch, xpich);
+      }
+    } else {
+      ch = cl->Crosshair+1024;
     }
   }
+
+  if (ch <= 0) return;
+
+  float scale = crosshair_scale.asFloat();
+  if (!isFiniteF(scale)) scale = 0.0f;
+  if (scale <= 0.0f) return;
+
+  float alpha;
+  if (ch > 1024) {
+    alpha = 1.0f;
+  } else {
+    alpha = crosshair_alpha.asFloat();
+    if (!isFiniteF(alpha)) alpha = 0.0f;
+    if (alpha <= 0.0f) return;
+  }
+
+  if (!currCrosshairPicHandle || prevCrosshairPic != ch) {
+    prevCrosshairPic = ch;
+    if (ch < 1024) {
+      currCrosshairPicHandle = GTextureManager.AddPatch(VName(va("croshai%x", ch), VName::AddLower8), TEXTYPE_Pic, true); //silent
+      if (currCrosshairPicHandle < 0) currCrosshairPicHandle = 0;
+    } else {
+      currCrosshairPicHandle = 0;
+    }
+    //GCon->Logf(NAME_Debug, "standard xhair %d (handle=%d)", ch, currCrosshairPicHandle);
+  }
+
+  if (currCrosshairPicHandle) {
+    int hh = currCrosshairPicHandle;
+    if (hh < 0) {
+      hh = -hh;
+      const float bss = crosshair_big_scale.asFloat();
+      if (isFiniteF(bss) && bss > 0.0f) scale *= bss;
+    }
+    if (alpha > 1.0f) alpha = 1.0f;
+    int cy = (screenblocks < 11 ? (VirtualHeight-sb_height)/2 : VirtualHeight/2);
+    cy += r_crosshair_yofs;
+    bool oldflt = gl_pic_filtering;
+    gl_pic_filtering = false;
+    R_DrawPicScaled(VirtualWidth/2, cy, hh, scale, alpha);
+    gl_pic_filtering = oldflt;
+  }
+
+  //GCon->Logf(NAME_Debug, "***DONE xhair*** prevCrosshairPic=%d; currCrosshairPicHandle=%d; pch=%d", prevCrosshairPic, currCrosshairPicHandle, (cl->Crosshair > 0 ? cl->Crosshair+1024 : 0));
 }

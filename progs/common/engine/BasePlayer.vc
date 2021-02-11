@@ -162,6 +162,7 @@ int CShift;
 
 // overlay view sprites (gun, etc)
 VViewState[NUMPSPRITES] ViewStates;
+int Crosshair; // 0: default; >0: custom from decorate
 float ViewStateSX, ViewStateSY;
 float ViewStateOfsX, ViewStateOfsY;
 float ViewStateBobOfsX, ViewStateBobOfsY;

@@ -65,8 +65,14 @@ menudef HUDOptions {
   }
 
   option bool {
+    title = "Force Crosshair";
+    cvar = crosshair_force;
+    help = "Tuning this 'ON' disables mod crosshairs.";
+  }
+
+  option bool {
     title = "Topmost Crosshair";
-    cvar = crosshair_topmpost;
+    cvar = crosshair_topmost;
     help = "Draw crosshair on top of everything (including UI)?";
   }
 

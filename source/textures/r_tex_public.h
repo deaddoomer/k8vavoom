@@ -394,6 +394,8 @@ public:
 
   void CropTexture ();
 
+  void ConvertXHairPixels ();
+
 public:
   //k8: please note that due to my sloppy coding, real format checking should be preceded by `GetPixels()`
   inline int GetFormat () const noexcept { return (shadeColor == -1 ? mFormat : TEXFMT_RGBA); }
@@ -644,7 +646,7 @@ public:
   float TextureHeight (int TexNum);
   void SetFrontSkyLayer (int tex);
   void GetTextureInfo (int TexNum, picinfo_t *info);
-  int AddPatch (VName Name, int Type, bool Silent=false);
+  int AddPatch (VName Name, int Type, bool Silent=false, bool asXHair=false);
   int AddPatchShaded (VName Name, int Type, int shade, bool Silent=false); // shade==-1: don't shade
   int AddPatchLump (int LumpNum, VName Name, int Type, bool Silent=false);
   int AddRawWithPal (VName Name, VName PalName);

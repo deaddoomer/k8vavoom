@@ -1392,6 +1392,26 @@ void VTexture::CropTexture () {
 
 //==========================================================================
 //
+//  VTexture::ConvertXHairPixels
+//
+//==========================================================================
+void VTexture::ConvertXHairPixels () {
+  if (Width < 1 || Height < 1) return;
+  if (isTranslucent()) return;
+
+  (void)GetPixels();
+  ConvertPixelsToRGBA();
+
+  // it should be grayscale; use red channel as alpha
+  rgba_t *pic = (rgba_t *)Pixels;
+  for (int f = Width*Height; f--; ++pic) {
+    pic->a = pic->r;
+  }
+}
+
+
+//==========================================================================
+//
 //  VDummyTexture::VDummyTexture
 //
 //==========================================================================

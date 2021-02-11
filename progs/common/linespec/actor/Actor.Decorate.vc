@@ -1890,6 +1890,18 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 
 //==========================================================================
 //
+//  A_SetCrosshair
+//
+//==========================================================================
+[decorate] final void A_SetCrosshair (int num) {
+  if (bIsPlayer && Player && Player.MO == self) {
+    Player.Crosshair = num;
+  }
+}
+
+
+//==========================================================================
+//
 //  A_k8MoveBy
 //
 //==========================================================================

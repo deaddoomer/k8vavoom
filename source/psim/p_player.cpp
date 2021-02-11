@@ -305,6 +305,7 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
         ViewStates[position].OvlOfsX = ViewStates[position].OvlOfsY = 0.0f;
         // set overlay states for weapon
         if (position == PS_WEAPON) {
+          Crosshair = 0;
           for (int f = 0; f < NUMPSPRITES; ++f) {
             if (f != PS_WEAPON) {
               //ViewStates[f].SX = ViewStates[PS_WEAPON].SX;

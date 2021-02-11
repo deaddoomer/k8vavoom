@@ -155,6 +155,8 @@ static VCvarF menu_darkening("menu_darkening", "0.7", "Screen darkening for acti
 static VCvarB draw_pause("draw_pause", true, "Draw \"paused\" text?", CVAR_Archive);
 static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
 
+static VCvarB crosshair_topmost("crosshair_topmost", false, "Render crosshair on the top of everything?", CVAR_Archive);
+
 VCvarB r_wipe_enabled("r_wipe_enabled", true, "Is screen wipe effect enabled?", CVAR_Archive);
 VCvarI r_wipe_type("r_wipe_type", "0", "Wipe type?", CVAR_Archive);
 
@@ -653,7 +655,7 @@ void SCR_Update (bool fullUpdate) {
     wipeStartedTime = Sys_Time();
   }
 
-  Drawer->ResetCrosshair(); // just in case
+  Drawer->ResetCrosshair();
 
   bool updateStarted = false;
   bool allowClear = true;
@@ -687,6 +689,11 @@ void SCR_Update (bool fullUpdate) {
         } else {
           //if (clWipeTimer >= 0.0f) GCon->Logf(NAME_Debug, "R_RenderPlayerView(): clWipeTimer=%g; wipeStartedTime=%g; wipeStarted=%d; Time=%g; TicTime=%d", clWipeTimer, wipeStartedTime, (int)wipeStarted, GLevel->Time, GLevel->TicTime);
           R_RenderPlayerView();
+          // draw crosshair
+          if (cl && cl->MO && cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) {
+            Drawer->WantCrosshair();
+            if (!crosshair_topmost) Drawer->DrawCrosshair();
+          }
         }
       } else {
         Drawer->ClearScreen(VDrawer::CLEAR_ALL);

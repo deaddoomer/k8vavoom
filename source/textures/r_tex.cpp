@@ -1056,7 +1056,7 @@ static void FixTextureNSList (EWadNamespace nslist[], int Type) {
 //  VTextureManager::AddPatch
 //
 //==========================================================================
-int VTextureManager::AddPatch (VName Name, int Type, bool Silent) {
+int VTextureManager::AddPatch (VName Name, int Type, bool Silent, bool asXHair) {
   if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
 
@@ -1073,6 +1073,10 @@ int VTextureManager::AddPatch (VName Name, int Type, bool Silent) {
     int tidx = findAndLoadTexture(*this, Name, Type, nslist[nsidx]);
     if (tidx >= 0) {
       //GCon->Logf(NAME_Debug, "AddPatch: '%s' of '%s' found! (%d) (%s)", *Name, VTexture::TexTypeToStr(Type), tidx, *W_FullLumpName(getIgnoreAnim(tidx)->SourceLump));
+      if (asXHair) {
+        VTexture *tex = getIgnoreAnim(tidx);
+        if (tex) tex->ConvertXHairPixels();
+      }
       return tidx;
     }
   }

@@ -223,11 +223,10 @@ class VBasePlayer : public VGameObject {
 
   // overlay view sprites (gun, etc)
   VViewState ViewStates[NUMPSPRITES];
+  vint32 Crosshair; // 0: default; >0: custom from decorate
   float ViewStateSX, ViewStateSY;
   float ViewStateOfsX, ViewStateOfsY;
   float ViewStateBobOfsX, ViewStateBobOfsY;
-  //vint32 DispSpriteFrame[NUMPSPRITES]; // see entity code for explanation
-  //VName DispSpriteName[NUMPSPRITES]; // see entity code for explanation
   float PSpriteSY;
   float PSpriteWeaponLowerPrev;
   float PSpriteWeaponLoweringStartTime;
