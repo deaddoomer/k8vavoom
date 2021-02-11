@@ -63,6 +63,28 @@ menudef GameplayOptions {
   }
 
 
+  header "Player Movement";
+
+  option bool {
+    title = "Extra Player Friction";
+    cvar = player_extra_friction_enabled;
+    help =
+      "Apply extra friction to non-moving player, to make",
+      "player movement feel less 'icy'?";
+  }
+
+  option slider {
+    title = "Extra Player Friction Mult";
+    cvar = player_extra_friction;
+    min = 1.0;
+    max = 3.0;
+    step = 0.1;
+    help =
+      "Multiply non-moving player friction by this",
+      "(if extra player friction is enabled above).";
+  }
+
+
   header "Other Options";
 
   option bool {
