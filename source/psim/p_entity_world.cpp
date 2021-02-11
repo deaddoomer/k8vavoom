@@ -1330,6 +1330,22 @@ TAVec VEntity::GetInterpolatedDrawAngles () {
 
 //==========================================================================
 //
+//  VEntity::CheckBlockingMobj
+//
+//  returns `false` if blocked
+//
+//==========================================================================
+bool VEntity::CheckBlockingMobj (VEntity *blockmobj) {
+  VEntity *bmee = (blockmobj ? blockmobj->CheckOnmobj() : nullptr);
+  VEntity *myee = CheckOnmobj();
+  return
+    (!blockmobj || !bmee || (bmee && bmee != this)) &&
+    (!myee || (myee && myee != blockmobj));
+}
+
+
+//==========================================================================
+//
 //  VEntity::TryMove
 //
 //  attempt to move to a new position, crossing special lines.
@@ -1407,11 +1423,10 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       // when flying, slide up or down blocking lines until the actor is not blocked
       if (Origin.z+Height > tmtrace.CeilingZ) {
         // if sliding down, make sure we don't have another object below
-        if ((!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
-            (tmtrace.BlockingMobj->CheckOnmobj() &&
-             tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
-            (!CheckOnmobj() || (CheckOnmobj() &&
-             CheckOnmobj() != tmtrace.BlockingMobj)))
+        if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
+             (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
+            (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
+            CheckBlockingMobj(tmtrace.BlockingMobj))
         {
           if (!checkOnly && !isClient) Velocity.z = -8.0f*35.0f;
         }
@@ -1419,11 +1434,10 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
         return false;
       } else if (Origin.z < tmtrace.FloorZ && tmtrace.FloorZ-tmtrace.DropOffZ > MaxStepHeight) {
         // check to make sure there's nothing in the way for the step up
-        if ((!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
-            (tmtrace.BlockingMobj->CheckOnmobj() &&
-             tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
-            (!CheckOnmobj() || (CheckOnmobj() &&
-             CheckOnmobj() != tmtrace.BlockingMobj)))
+        if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
+             (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
+            (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
+            CheckBlockingMobj(tmtrace.BlockingMobj))
         {
           if (!checkOnly && !isClient) Velocity.z = 8.0f*35.0f;
         }
@@ -1492,8 +1506,13 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       } else {
         // special logic to move a monster off a dropoff
         // this intentionally does not check for standing on things
+        // k8: ...and due to this, the monster can stuck into another monster. what a great idea!
         if (FloorZ-tmtrace.FloorZ > MaxDropoffHeight || DropOffZ-tmtrace.DropOffZ > MaxDropoffHeight) {
           TMDbgF("%s:   DROPOFF(1)!", GetClass()->GetName());
+          return false;
+        }
+        // check to make sure there's nothing in the way
+        if (!CheckBlockingMobj(tmtrace.BlockingMobj)) {
           return false;
         }
       }

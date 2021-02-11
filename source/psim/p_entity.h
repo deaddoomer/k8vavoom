@@ -439,6 +439,9 @@ protected:
   void CopyRegFloor (sec_region_t *reg, bool setz=true);
   void CopyRegCeiling (sec_region_t *reg, bool setz=true);
 
+  // used in `TryMove()`
+  bool CheckBlockingMobj (VEntity *blockmobj);
+
 public:
   VVA_CHECKRESULT inline float GetFloorNormalZ () const noexcept { return EFloor.GetNormalZ(); }
   VVA_CHECKRESULT inline float GetCeilingNormalZ () const noexcept { return ECeiling.GetNormalZ(); }
