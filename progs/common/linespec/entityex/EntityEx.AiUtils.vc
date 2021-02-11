@@ -595,22 +595,14 @@ final bool StepMove () {
   float maxmvdist = Radius;
   int steps = 1;
 
-  float xspeed;
-  float yspeed;
   if (maxmvdist > 0.0) {
-    xspeed = fabs(deltax);
-    yspeed = fabs(deltay);
-    if (xspeed > yspeed) {
-      if (xspeed > maxmvdist) steps = 1+int(xspeed/maxmvdist);
-    } else {
-      if (yspeed > maxmvdist) steps = 1+int(yspeed/maxmvdist);
-    }
+    float maxspeed = fmax(fabs(deltax), fabs(deltay));
+    if (maxspeed > maxmvdist) steps = 1+int(maxspeed/maxmvdist);
   }
 
   bool try_ok = true;
   bool dropoff = false;
   tmtrace_t tmtrace;
-  //auto oldRadius = Radius;
   foreach (int i; 1..steps) {
     // killough 10/98: allow actors to drop off of taller ledges sometimes
     // dropoff==1 means only up to 128 high, and only if the target is
@@ -625,7 +617,6 @@ final bool StepMove () {
     try_ok = TryMoveEx(out tmtrace, vector(origx+(deltax/float(steps*i)), origy+(deltay/float(steps*i)), Origin.z), AllowDropOff:dropoff);
     if (!try_ok) break;
   }
-  //Radius = oldRadius;
 
   // killough 3/15/98: don't jump over dropoffs
   if (try_ok) {
@@ -764,13 +755,24 @@ final void DO_NewChaseDir (float deltax, float deltay) {
   int olddir = MoveDir;
   int turnaround = LineSpecialGameInfo(Level.Game).opposite[olddir];
 
-       if (deltax > 10.0) d[1] = DI_EAST;
-  else if (deltax < -10.0) d[1] = DI_WEST;
-  else d[1] = DI_NODIR;
+  if (bAvoidingDropoff) {
+    turnaround = DI_NODIR;
+         if (deltax > 0.0) d[1] = DI_EAST;
+    else if (deltax < 0.0) d[1] = DI_WEST;
+    else d[1] = DI_NODIR;
 
-       if (deltay < -10.0) d[2] = DI_SOUTH;
-  else if (deltay > 10.0) d[2] = DI_NORTH;
-  else d[2] = DI_NODIR;
+         if (deltay < 0.0) d[2] = DI_SOUTH;
+    else if (deltay > 0.0) d[2] = DI_NORTH;
+    else d[2] = DI_NODIR;
+  } else {
+         if (deltax > 10.0) d[1] = DI_EAST;
+    else if (deltax < -10.0) d[1] = DI_WEST;
+    else d[1] = DI_NODIR;
+
+         if (deltay < -10.0) d[2] = DI_SOUTH;
+    else if (deltay > 10.0) d[2] = DI_NORTH;
+    else d[2] = DI_NODIR;
+  }
 
   // try direct route
   if (d[1] != DI_NODIR && d[2] != DI_NODIR) {
