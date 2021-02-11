@@ -222,7 +222,6 @@ override bool OnEvent (ref event_t evt) {
         return true;
 
       case K_ENTER:
-      case K_PADENTER:
         if (lastCurrAddr && slist.Cache.length && Cursor >= 0 && Cursor < slist.Cache.length) {
           LocalSound('menu/choose');
           if (slist.Cache[Cursor].bGoodProtocol && slist.Cache[Cursor].bGoodWadList) {

@@ -1150,7 +1150,6 @@ override bool OnEvent (ref event_t evt) {
     int key = ConvertBoundKey(evt.keycode);
     switch (key) {
       case K_UPARROW:
-      case K_PAD8:
       case K_MWHEELUP:
         if (Items.length > 1) {
           CyclePrevChoice();
@@ -1158,7 +1157,6 @@ override bool OnEvent (ref event_t evt) {
         }
         return true;
       case K_DOWNARROW:
-      case K_PAD2:
       case K_MWHEELDOWN:
         if (Items.length > 1) {
           CycleNextChoice();
@@ -1166,14 +1164,12 @@ override bool OnEvent (ref event_t evt) {
         }
         return true;
       case K_HOME:
-      case K_PAD7:
         if (Items.length > 1) {
           DoHome();
           LocalSound('menu/cursor');
         }
         return true;
       case K_END:
-      case K_PAD1:
         if (Items.length > 1) {
           DoEnd();
           LocalSound('menu/cursor');

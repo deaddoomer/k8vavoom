@@ -862,6 +862,24 @@ static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
   if (key <= 0) return key;
   if (key >= K_MOUSE1 && key <= K_MWHEELDOWN) return key;
 
+  // convert numpad arrows and controller dpad
+  switch (key) {
+    case K_PAD1: case K_END: return K_END;
+    case K_PAD2: case K_BUTTON_DPAD_DOWN: return K_DOWNARROW;
+    case K_PAD3: case K_PAGEDOWN: return K_PAGEDOWN;
+    case K_PAD4: case K_BUTTON_DPAD_LEFT: case K_LEFTARROW: return K_LEFTARROW;
+    case K_PAD6: case K_BUTTON_DPAD_RIGHT: case K_RIGHTARROW: return K_RIGHTARROW;
+    case K_PAD7: case K_HOME: return K_HOME;
+    case K_PAD8: case K_BUTTON_DPAD_UP: case K_UPARROW: return K_UPARROW;
+    case K_PAD9: case K_PAGEUP: return K_PAGEUP;
+    case K_PADENTER: case K_SPACE: case K_BUTTON_START: case K_ENTER: return K_ENTER;
+    case K_BUTTON_BACK: case K_ESCAPE: return K_ESCAPE;
+    case K_BUTTON_A: K_BUTTON_X: return K_ENTER;
+    case K_BUTTON_B: K_BUTTON_Y: return K_ESCAPE;
+    case K_PAD0: case K_INSERT: return K_INSERT;
+    case K_PADDOT: case K_DELETE: return K_DELETE;
+  }
+
   int key1, key2;
 
   if (!specified_useBindings || useBindings) {
@@ -892,19 +910,6 @@ static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
     //wgGetBindingKeys("+Strafe", &key1, &key2);
     wgGetBindingKeys("+AltAttack", &key1, &key2);
     if (key == key1 || key == key2) return K_ESCAPE;
-  }
-
-  // convert numpad arrows
-  switch (key) {
-    case K_PAD1: return K_END;
-    case K_PAD2: return K_DOWNARROW;
-    case K_PAD3: return K_PAGEDOWN;
-    case K_PAD4: return K_LEFTARROW;
-    case K_PAD6: return K_RIGHTARROW;
-    case K_PAD7: return K_HOME;
-    case K_PAD8: return K_UPARROW;
-    case K_PAD9: return K_PAGEUP;
-    case K_PADENTER: return K_ENTER;
   }
 
   return key;

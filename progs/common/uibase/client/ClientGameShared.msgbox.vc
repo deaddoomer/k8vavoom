@@ -480,7 +480,6 @@ override bool MessageBoxResponder (event_t *event) {
             MessageBoxSetYesNoPos(false);
             return true;
           case K_ENTER:
-          case K_SPACE:
           case K_MOUSE1:
             // menu selection
             event.keycode = (msgboxState.currYes || IsMessageBoxSingleButton() ? K_y : K_n);

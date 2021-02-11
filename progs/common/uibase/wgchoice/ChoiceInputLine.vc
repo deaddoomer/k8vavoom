@@ -283,7 +283,7 @@ override bool OnEvent (ref event_t evt) {
       // not entering text
       if (IsFocused) {
         int key = ConvertBoundKey(evt.keycode);
-        if (key == K_ENTER || key == K_PADENTER || key == K_JOY1) {
+        if (key == K_ENTER || key == K_JOY1) {
           StartEnteringText(sound:true);
           return true;
         }

@@ -138,7 +138,6 @@ override bool OnEvent (ref event_t evt) {
         }
         return true;
       case K_ENTER:
-      case K_PADENTER:
       //case K_MOUSE1:
       case K_JOY1:
         if (!Disabled) GetClGame().MessageBoxStartBindQuery(self, strifeMode);

@@ -149,8 +149,6 @@ override bool OnEvent (ref event_t evt) {
     if (evt.keycode >= K_MOUSE1 && evt.keycode <= K_MOUSE9) return ::OnEvent(evt);
     switch (ConvertBoundKey(evt.keycode)) {
       case K_ENTER:
-      case K_PADENTER:
-      case K_SPACE:
         OpenColorPopup();
         return true;
     }
@@ -521,7 +519,7 @@ override bool OnEvent (ref event_t evt) {
       case K_ESCAPE:
         Destroy();
         return true;
-      case K_ENTER: case K_PADENTER:
+      case K_ENTER:
         if (SetNewColorCB) SetNewColorCB(currColor, h, s, v);
         Destroy();
         return true;

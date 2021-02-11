@@ -207,8 +207,7 @@ override bool OnEvent (ref event_t evt) {
         if (nextPage()) LocalSound('menu/clear');
         return true;
 
-      case K_ENTER: case K_PADENTER:
-      case K_SPACE:
+      case K_ENTER:
         LocalSound('menu/clear');
         if (!nextPage()) ClGame.ForceMenuOff();
         return true;

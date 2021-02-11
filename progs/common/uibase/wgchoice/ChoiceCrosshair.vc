@@ -166,7 +166,6 @@ override bool OnEvent (ref event_t evt) {
         break;
       case K_RIGHTARROW:
       case K_ENTER:
-      case K_PADENTER:
       case K_MWHEELDOWN:
         if (evt.keycode != K_MWHEELDOWN || (IsFocused() && evt.y >= 0 && evt.y < Height && evt.x > CursorXOffs)) {
           if (idx < 9) {

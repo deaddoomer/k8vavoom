@@ -159,7 +159,6 @@ override bool OnEvent (ref event_t evt) {
 
     switch (ConvertBoundKey(evt.keycode)) {
       case K_DELETE:
-      case K_PADDOT:
         if (Status) {
           if (!waitingDeletion) {
             waitingDeletion = true;
@@ -175,11 +174,9 @@ override bool OnEvent (ref event_t evt) {
         }
         return true;
       case K_INSERT:
-      case K_PAD0:
         waitingDeletion = false;
         return true;
       case K_ENTER:
-      case K_PADENTER:
       //case K_MOUSE1:
       case K_JOY1:
         waitingDeletion = false;

@@ -198,8 +198,6 @@ override bool OnEvent (ref event_t evt) {
         if (SetNewValue(ref newValue)) LocalSound('menu/change');
         return true;
       case K_ENTER:
-      case K_PADENTER:
-      case K_SPACE:
         OpenComboPopup();
         return true;
       case K_RIGHTARROW:
@@ -398,7 +396,7 @@ override bool OnEvent (ref event_t evt) {
       case K_ESCAPE:
         Destroy();
         return true;
-      case K_ENTER: case K_PADENTER:
+      case K_ENTER:
         if (choice) choice.SetComboChoice(currItem);
         Destroy();
         return true;
