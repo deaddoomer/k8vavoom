@@ -1769,6 +1769,11 @@ override void ApplyFriction (float DeltaTime) {
     //    as we're doing it the opposite way, we should divide subtracted velocity by entity friction factor
     //    zero factor means "infinite friction" (i.e. the entity cannot move at all)
     if (Friction > 0.0) fric /= Friction;
+    // apply extra friction for player, so it won't slide
+    if (bIsPlayer && Player && Player.MO == self && !Player.ForwardMove && !Player.SideMove && GetCvarB('player_extra_friction_enabled')) {
+      float efric = GetCvarF('player_extra_friction');
+      if (efric > 0.0) fric *= efric;
+    }
     TVec vdiff = Velocity.xy*(fric*DeltaTime);
     if (Friction <= 0.0) vdiff = Velocity.xy; // stop right there, you criminal scum!
     Velocity -= vdiff;
