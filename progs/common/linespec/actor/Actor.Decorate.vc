@@ -210,9 +210,6 @@ protected final void do_A_ReFire (optional state refirestate) self(Actor) {
 
   if (!Wpn) {
     pex.ResetWeaponReloadRefire();
-    if (!pex.PendingWeapon && Player.MO.Health > 0) {
-      Wpn.CheckAmmo(Wpn.FireMode, AutoSwitch:true); // k8: should we switch weapon here?
-    }
     return;
   }
 
