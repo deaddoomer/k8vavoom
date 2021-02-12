@@ -7183,8 +7183,9 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_PrintBind)
       ACSVM_CHECK_STACK_UNDER(1);
-      STUB(PCD_PrintBind)
+      //STUB(PCD_PrintBind)
       //sp[-1] - command (string)
+      PrintStr += "SOMESHIT";
       --sp;
       ACSVM_BREAK;
 
