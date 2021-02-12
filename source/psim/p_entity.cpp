@@ -66,6 +66,8 @@ static VField *fldLastScrollOrig = nullptr;
 
 static VClass *classActor = nullptr;
 
+static VField *fldbInChase = nullptr;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct SavedVObjectPtr {
@@ -148,6 +150,10 @@ void VEntity::EntityStaticInit () {
   classEntityEx = VClass::FindClassNoCase("EntityEx");
   if (classEntityEx) {
     GCon->Log(NAME_Init, "`EntityEx` class found");
+
+    fldbInChase = classEntityEx->FindField("bInChase");
+    if (fldbInChase && fldbInChase->Type.Type != TYPE_Bool) fldbInChase = nullptr; // bad type
+    if (fldbInChase) GCon->Logf(NAME_Init, "`EntityEx.bInChase` field found (%s)", *fldbInChase->Type.GetName());
 
     fldbWindThrust = classEntityEx->FindField("bWindThrust");
     if (fldbWindThrust && fldbWindThrust->Type.Type != TYPE_Bool) fldbWindThrust = nullptr; // bad type
@@ -443,6 +449,9 @@ void VEntity::Tick (float deltaTime) {
     //if (StateTime > 0.0f) StateTime -= deltaTime;
     doSimplifiedTick = true;
   }
+
+  // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
+  if ((FlagsEx&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
 
   // `Mass` is clamped in `OnMapSpawn()`, and we should take care of it in VC code
   // clamp velocity (just in case)
