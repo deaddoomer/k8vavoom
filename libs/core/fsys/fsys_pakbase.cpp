@@ -558,6 +558,44 @@ void VFileDirectory::buildLumpNames () {
 
 //==========================================================================
 //
+//  IsDupLumpAllowed
+//
+//==========================================================================
+static bool IsDupLumpAllowed (VName name) {
+  return
+    name == NAME_things ||
+    name == NAME_linedefs ||
+    name == NAME_sidedefs ||
+    name == NAME_vertexes ||
+    name == NAME_segs ||
+    name == NAME_ssectors ||
+    name == NAME_nodes ||
+    name == NAME_sectors ||
+    name == NAME_reject ||
+    name == NAME_blockmap ||
+    name == NAME_textmap ||
+    name == NAME_endmap ||
+    name == NAME_behavior ||
+    name == NAME_dialogue ||
+    name == NAME_znodes ||
+    name == NAME_gl_level ||
+    name == "gl_vert" ||
+    name == "gl_segs" ||
+    name == "gl_ssect" ||
+    name == "gl_nodes" ||
+    name == "gl_pvs" ||
+    name == "script" ||
+    name == "scripts" ||
+    name == "decorate" ||
+    name == "sndinfo" ||
+    name == "gldefs" ||
+    name == "dehacked" ||
+    false;
+}
+
+
+//==========================================================================
+//
 //  VFileDirectory::buildNameMaps
 //
 //  call this when all lump names are built
@@ -616,14 +654,12 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
       } else {
         // we'we seen it before
         vassert(files[*lsidp].nextLump == -1);
-        files[*lsidp].nextLump = f; // link to previous one
+        files[*lsidp].nextLump = f; // link to the next one
         *lsidp = f; // update index
-        if (doReports) {
-          if (lmp == "decorate" || lmp == "sndinfo" || lmp == "dehacked") {
-            if (!dupsReported.put(fi.fileName, true)) {
-              GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
-              GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
-            }
+        if (doReports && !aszip && !IsDupLumpAllowed(lmp)) {
+          if (!dupsReported.put(fi.fileName, true)) {
+            GLog.Logf(NAME_Warning, "duplicate lump \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
+            GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
           }
         }
       }
@@ -631,27 +667,13 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
 
     // register file
     if (fi.fileName.length()) {
-      if (doReports) {
-        if ((aszip || lmp == "decorate") && filemap.has(fi.fileName)) {
-          if (!dupsReported.put(fi.fileName, true)) {
-            GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
-            GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
-          }
-        } else if (f > 0) {
-          for (int pidx = f-1; pidx >= 0; --pidx) {
-            if (files[pidx].fileName.length()) {
-              if (files[pidx].fileName == fi.fileName) {
-                if (!dupsReported.put(fi.fileName, true)) {
-                  //GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\" (%d:%d).", *fi.fileName, *getArchiveName(), pidx, f);
-                  GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
-                  GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
-                }
-              }
-              break;
-            }
-          }
+      if (doReports && aszip && filemap.has(fi.fileName)) {
+        if (!dupsReported.put(fi.fileName, true)) {
+          GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
+          GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
         }
       }
+
       // put files into hashmap
       auto pfp = filemap.find(fi.fileName);
       if (pfp) fi.prevFile = *pfp;
