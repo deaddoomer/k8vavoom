@@ -173,6 +173,55 @@ static VCvarI cl_framerate_net_timeout("cl_framerate_net_timeout", "28", "If we 
 #include "dedlog.cpp"
 
 
+struct ECounterInfo {
+  VClass *cc;
+  int count;
+};
+
+
+//==========================================================================
+//
+//  CountAllEntities
+//
+//==========================================================================
+static VVA_OKUNUSED int cmpCounterInfo (const void *aa, const void *bb, void *) {
+  const ECounterInfo *a = (const ECounterInfo *)aa;
+  const ECounterInfo *b = (const ECounterInfo *)bb;
+  return b->count-a->count;
+}
+
+
+//==========================================================================
+//
+//  CountAllEntities
+//
+//==========================================================================
+static VVA_OKUNUSED void CountAllEntities () {
+  TMapNC<VClass *, int> cmap;
+  const int ocount = VObject::GetObjectsCount();
+  for (int f = 0; f < ocount; ++f) {
+    VObject *o = VObject::GetIndexObject(f);
+    if (!o) continue;
+    VClass *cc = o->GetClass();
+    auto xp = cmap.find(cc);
+    if (xp) {
+      ++(*xp);
+    } else {
+      cmap.put(cc, 1);
+    }
+  }
+  TArray<ECounterInfo> olist;
+  for (auto &&it : cmap.first()) {
+    ECounterInfo &nfo = olist.alloc();
+    nfo.cc = it.getKey();
+    nfo.count = it.getValue();
+  }
+  timsort_r(olist.ptr(), olist.length(), sizeof(ECounterInfo), &cmpCounterInfo, nullptr);
+  GCon->Logf(NAME_Debug, "=== %c object types ===", olist.length());
+  for (auto &&it : olist) GCon->Logf("  %5d: %s", it.count, it.cc->GetName());
+}
+
+
 //==========================================================================
 //
 //  Host_CollectGarbage
@@ -192,6 +241,7 @@ void Host_CollectGarbage (bool forced) {
   //GCon->Logf(NAME_Debug, "*** GC! ***");
   hostLastGCTime = ctt;
   VObject::CollectGarbage();
+  //CountAllEntities();
 }
 
 
