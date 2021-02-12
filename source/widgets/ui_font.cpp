@@ -674,7 +674,7 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
       }
     }
 
-    //GCon->Logf(NAME_Debug, "  char %d: lump=%d (%s)", Char, Lump, (Lump >= 0 ? *W_FullLumpName(Lump) : "<oops>"));
+    //GCon->Logf(NAME_Debug, "  char %d (%c): lump=%d (%s)", Char, (Char >= 32 && Char < 127 ? Char : '?'), Lump, (Lump >= 0 ? *W_FullLumpName(Lump) : "<oops>"));
 
     // in Doom, stcfn121 is actually a '|' and not 'y' and many wad
     // authors provide it as such, so put it in correct location
