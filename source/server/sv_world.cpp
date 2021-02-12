@@ -755,19 +755,39 @@ opening_t *SV_FindRelOpening (opening_t *InGaps, float z1, float z2) {
   if (!InGaps) return nullptr;
   if (!InGaps->next) return InGaps;
 
+  // there are 2 or more gaps; now it gets interesting :-)
   if (z2 < z1) z2 = z1;
 
+  // as we cannot be lower or higher than the base sector, clamp values
+  float gapminz = FLT_MAX;
+  float gapmaxz = -FLT_MAX;
+  for (opening_t *gap = InGaps; gap; gap = gap->next) {
+    if (gapminz > gap->bottom) gapminz = gap->bottom;
+    if (gapmaxz < gap->top) gapmaxz = gap->top;
+  }
+
+  if (z1 > gapmaxz) {
+    const float hgt = z2-z1;
+    z2 = gapmaxz;
+    z1 = z2-hgt;
+  }
+
+  if (z1 < gapminz) {
+    const float hgt = z2-z1;
+    z1 = gapminz;
+    z2 = z1+hgt;
+  }
+
   opening_t *fit_closest = nullptr;
-  float fit_mindist = 99999.0f;
+  float fit_mindist = FLT_MAX; //99999.0f;
 
   opening_t *nofit_closest = nullptr;
-  float nofit_mindist = 99999.0f;
+  float nofit_mindist = FLT_MAX; //99999.0f;
 
   const float zmid = z1+(z2-z1)*0.5f;
 
   opening_t *zerogap = nullptr;
 
-  // there are 2 or more gaps; now it gets interesting :-)
   for (opening_t *gap = InGaps; gap; gap = gap->next) {
     if (gap->range <= 0.0f) {
       if (!zerogap) zerogap = gap;
