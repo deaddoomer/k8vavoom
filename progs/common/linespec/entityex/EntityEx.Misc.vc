@@ -1485,6 +1485,7 @@ override void OnMapSpawn (mthing_t *mthing) {
     else z = ONFLOORZ;
 
     SetOrigin2(vector(x, y, z), moreHeight:mthing.height);
+    //if (mthing.type == 9001 && mthing.tid == 1800) printwarn("*** MapSpot sector: %s; org=%s (%s:%s:%s) mh=%s", Sector-&XLevel.Sectors[0], Origin, x, y, z, mthing.height);
     //if (mthing.type == 9001 && mthing.tid == 55) printwarn("*** MapSpot sector: %s", Sector-&XLevel.Sectors[0]);
     //if (mthing-&XLevel.Things[0] == 114) printwarn("***id=%s: Sector=%s; height=%s; floorz=%s; radius=%s", UniqueId, Sector-&XLevel.Sectors[0], mthing->height, FloorZ, Radius);
 

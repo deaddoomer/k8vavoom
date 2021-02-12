@@ -240,7 +240,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
     Org += Origin;
   }
 
-  //printdebug("A_SpawnItemEx: type=%C; org=%s; Origin=%s; yaw=%s", ItemType, Org, Origin, Angles.yaw);
+  //printdebug("%C: A_SpawnItemEx: type=%C; org=%s; Origin=%s; yaw=%s", self, ItemType, Org, Origin, Angles.yaw);
   EntityEx A = Spawn(ItemType, Org);
   //printdebug("A_SpawnItemEx(%C):xxx: angles=%s (%s); AA=%s", A, A.Angles, Angle, Angles);
   InitSpawnedItem(A,
