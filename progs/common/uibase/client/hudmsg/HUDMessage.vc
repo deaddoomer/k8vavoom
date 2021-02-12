@@ -48,6 +48,7 @@ int HudHeight;
 //bool isTextFont;
 
 bool bCenterX; // true if text lines should be centered
+bool bNoWrap;
 int DrawMsgX, DrawMsgY;
 
 bool isHealthBar;
@@ -146,7 +147,13 @@ void CalcMsgCoords () {
   // split message, and calculate message size
   MsgLines.length = 0;
   SetFont(MsgFont);
-  MsgHeight = SplitText(MsgText, MsgLines, Width);
+  if (bNoWrap) {
+    MsgLines.length = 1;
+    MsgLines[0].Text = MsgText;
+    MsgLines[0].Width = TextWidth(MsgLines[0].Text);
+  } else {
+    /*MsgHeight =*/ SplitText(MsgText, MsgLines, Width);
+  }
   MsgWidth = 0;
   MsgHeight = 0;
   foreach (auto ref line; MsgLines) {
@@ -307,7 +314,7 @@ final bool IsActive () {
 //==========================================================================
 void Init (string Message, name AFont, int Type, int AId, int Color,
   float AMsgX, float AMsgY, int AHudWidth, int AHudHeight, float AHoldTime,
-  float Time1, float Time2)
+  float Time1, float Time2, float Alpha, bool NoWrap)
 {
   Time = 0;
 
@@ -337,8 +344,12 @@ void Init (string Message, name AFont, int Type, int AId, int Color,
     bCenterX = true;
     MsgAlpha = fclamp(GetCvarF('k8HealthBarAlpha'), 0, 1);
     HoldTime = 0.25;
+    bNoWrap = true;
   } else {
     isHealthBar = false;
+    // negative alpha means "additive"; not implemented yet
+    MsgAlpha = fclamp(fabs(Alpha), 0.0, 1.0);
+    bNoWrap = NoWrap;
   }
 
   /*

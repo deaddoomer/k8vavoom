@@ -808,11 +808,11 @@ override void AddCenterMessage (string Msg) {
 //==========================================================================
 override void AddHudMessage (string Message, name Font, int Type, int Id, int Color,
   string ColorName, float x, float y, int HudWidth, int HudHeight,
-  float HoldTime, float Time1, float Time2)
+  float HoldTime, float Time1, float Time2, float Alpha)
 {
   //print("AddHudMessage: id=%s; msg=<%q>", Id, Message);
   GSBar.AddHudMessage(Message, Font, Type, Id, Color, ColorName, x, y,
-    HudWidth, HudHeight, HoldTime, Time1, Time2);
+    HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
 }
 
 

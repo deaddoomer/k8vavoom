@@ -111,7 +111,7 @@ void ClearHudMessages () {
 //==========================================================================
 void AddHudMessage (string Message, name aFont, int Type, int Id, int Color,
   string ColorName, float x, float y, int HudWidth, int HudHeight,
-  float HoldTime, float Time1, float Time2)
+  float HoldTime, float Time1, float Time2, float Alpha)
 {
   Widget Probe;
   HUDMessage Msg;
@@ -188,7 +188,7 @@ void AddHudMessage (string Message, name aFont, int Type, int Id, int Color,
 
   Msg.ClGame = ClGame;
 
-  Msg.Init(Message, aFont, Type, Id, Color, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
+  Msg.Init(Message, aFont, Type, Id, Color, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha, !!(Type&HUDMSG_NOWRAP));
 
   // insert in the list in the proper location
   #ifdef HUD_ALLOW_REUSE

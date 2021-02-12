@@ -621,6 +621,10 @@ private:
 
     HUDMSG_LOG         = 0x80000000,
     HUDMSG_COLORSTRING = 0x40000000,
+    // more gozzo flags
+    HUDMSG_ADDBLEND    = 0x20000000,
+    HUDMSG_ALPHA       = 0x10000000,
+    HUDMSG_NOWRAP      = 0x08000000,
   };
 
   inline VStr GetStr (int Index) { return ActiveObject->Level->GetString(Index); }
@@ -5447,11 +5451,13 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_OptHudMessage)
       optstart = sp;
+      //GCon->Logf(NAME_Debug, "PCD_OptHudMessage");
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_EndHudMessage)
     ACSVM_CASE(PCD_EndHudMessageBold)
       if (!optstart) optstart = sp;
+      //else GCon->Logf(NAME_Debug, "PCD_EndHudMessage: %d (sp=%p) (%g)", (int)(ptrdiff_t)(sp-optstart), sp, optstart[0]/65536.0);
       {
         int Type = optstart[-6];
         int Id = optstart[-5];
@@ -5466,9 +5472,15 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
         float HoldTime = (float)optstart[-1]/float(0x10000);
         float Time1 = 0;
         float Time2 = 0;
+        float Alpha = 1.0f; // negative alpha means "additive"
         switch (Type&0xff) {
           case HUDMSG_PLAIN:
             if (HoldTime < 1.0f/35.0f) HoldTime = 0; // gozzo does this
+            if ((Type&HUDMSG_ALPHA) && (int)(ptrdiff_t)(sp-optstart) > 0) {
+              Alpha = clampval(optstart[0]/65536.0f, 0.0f, 1.0f);
+              if (Type&HUDMSG_ADDBLEND) Alpha = -Alpha;
+              //GCon->Logf(NAME_Debug, "ALPHA=%g", Alpha);
+            }
             break;
           case HUDMSG_FADEOUT:
             Time1 = (optstart < sp ? (float)optstart[0]/float(0x10000) : 0.5f);
@@ -5495,12 +5507,12 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
           if (Activator->Player) {
             Activator->Player->eventClientHudMessage(PrintStr, Font,
               Type, Id, Color, ColorName, x, y, HudWidth,
-              HudHeight, HoldTime, Time1, Time2);
+              HudHeight, HoldTime, Time1, Time2, Alpha);
           }
         } else {
           for (auto &&it : Level->Game->playersSpawned()) {
             it.player()->eventClientHudMessage(PrintStr, Font, Type, Id, Color, ColorName,
-                                               x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
+                                               x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
           }
         }
         sp = optstart-6;

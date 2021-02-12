@@ -116,5 +116,5 @@ void HealthBarProcessor () {
   ClientHudMessage(msg, 'HEALTHBAR', Type:-1, Id:0xfffffffe, Color:clr, ColorName:"", x:/*320.0*/0, y:/*32.0*/0,
     HudWidth:/*640*/0, HudHeight:/*512*/0,
     HoldTime:7.0/35.0,
-    Time1:hlt, Time2:hltmax);
+    Time1:hlt, Time2:hltmax, Alpha:1.0);
 }

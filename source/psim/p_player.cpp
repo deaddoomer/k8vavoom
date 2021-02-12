@@ -812,10 +812,10 @@ void VBasePlayer::DoClientSetServerInfo (VStr Key, VStr Value) {
 //==========================================================================
 void VBasePlayer::DoClientHudMessage (VStr Message, VName Font, int Type,
   int Id, int Color, VStr ColorName, float x, float y,
-  int HudWidth, int HudHeight, float HoldTime, float Time1, float Time2)
+  int HudWidth, int HudHeight, float HoldTime, float Time1, float Time2, float Alpha)
 {
   ClGame->eventAddHudMessage(Message, Font, Type, Id, Color, ColorName,
-    x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
+    x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
 }
 
 
@@ -1214,9 +1214,9 @@ IMPLEMENT_FUNCTION(VBasePlayer, ClientHudMessage) {
   VStr ColorName;
   float x, y;
   int HudWidth, HudHeight;
-  float HoldTime, Time1, Time2;
-  vobjGetParamSelf(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
-  Self->DoClientHudMessage(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
+  float HoldTime, Time1, Time2, Alpha;
+  vobjGetParamSelf(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
+  Self->DoClientHudMessage(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
 }
 
 IMPLEMENT_FUNCTION(VBasePlayer, ClientFOV) {

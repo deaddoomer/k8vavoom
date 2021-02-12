@@ -489,7 +489,7 @@ int K8onBeforeDamage (EntityEx inflictor, TVec hitpos, int damage, name adamageT
             messageText, 'smallfont', Type:0, Id:123666,
             /*Color:*/messageColor, /*ColorName:*/"",
             x:0.5, y:0.45, HudWidth:0, HudHeight:0,
-            HoldTime:1.5, Time1:0.0, Time2:0.0);
+            HoldTime:1.5, Time1:0.0, Time2:0.0, Alpha:1.0);
         }
       }
 

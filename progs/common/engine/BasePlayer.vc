@@ -280,7 +280,7 @@ native void ClientSetServerInfo (string Key, string Value);
 native void ClientHudMessage (string Message, name Font, int Type, int Id,
                               int Color, string ColorName, float x, float y,
                               int HudWidth, int HudHeight, float HoldTime,
-                              float Time1, float Time2);
+                              float Time1, float Time2, float Alpha);
 
 native void ClientFOV (float fov);
 

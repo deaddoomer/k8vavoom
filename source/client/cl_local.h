@@ -176,10 +176,10 @@ public:
   void eventAddHudMessage (VStr Message, VName Font, int Type, int Id,
                            int Color, VStr ColorName, float x, float y,
                            int HudWidth, int HudHeight, float HoldTime,
-                           float Time1, float Time2)
+                           float Time1, float Time2, float Alpha)
   {
     static VMethodProxy method("AddHudMessage");
-    vobjPutParamSelf(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2);
+    vobjPutParamSelf(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
     VMT_RET_VOID(method);
   }
 };
