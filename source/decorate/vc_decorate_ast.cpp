@@ -1487,7 +1487,7 @@ void VDecorateAJump::Emit (VEmitContext &ec) {
 
   bool doDrop; // do we need to drop `prob` at the end?
 
-  if (prob->IsIntConst() && prob->GetIntConst() < 0) {
+  if (prob->IsIntConst() && prob->GetIntConst() <= 0) {
     // jump is never taken
     doDrop = false;
     ec.AddStatement(OPC_Goto, endTarget, Loc);
