@@ -142,9 +142,11 @@ VTexture::VTexture ()
   , HiResTexture(nullptr)
   , Pixels8BitValid(false)
   , Pixels8BitAValid(false)
-  , alreadyCropped(false)
   , shadeColor(-1)
   , shadeColorSaved(-1)
+  , alreadyCropped(false)
+  , croppedOfsX(0)
+  , croppedOfsY(0)
 {
 }
 
@@ -239,6 +241,7 @@ void VTexture::ReleasePixels () {
   mFormat = mOrigFormat; // undo `ConvertPixelsToRGBA()`
   if (Brightmap) Brightmap->ReleasePixels();
   alreadyCropped = false;
+  croppedOfsX = croppedOfsY = 0;
 }
 
 
@@ -1354,7 +1357,7 @@ void VTexture::CropTexture () {
 
   if (neww < 1 || newh < 1) return; // just in case
 
-  GCon->Logf(NAME_Debug, "%s: crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
+  GCon->Logf(NAME_Debug, "%s (%s): crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, *W_FullLumpName(SourceLump), Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
 
   if (Format == TEXFMT_RGBA) {
     const rgba_t *pic = (const rgba_t *)Pixels;
@@ -1381,6 +1384,8 @@ void VTexture::CropTexture () {
   }
 
   alreadyCropped = true;
+  croppedOfsX = x0;
+  croppedOfsY = y0;
   SOffset -= x0;
   TOffset -= y0;
   Width = neww;

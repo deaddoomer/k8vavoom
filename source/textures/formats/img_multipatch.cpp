@@ -607,22 +607,24 @@ vuint8 *VMultiPatchTexture::GetPixels () {
       //abort();
       continue;
     }
-    vuint8 *PatchPixels = (patch->Trans ? PatchTex->GetPixels8() : PatchTex->GetPixels());
+
+    const vuint8 *PatchPixels = (patch->Trans ? PatchTex->GetPixels8() : PatchTex->GetPixels());
     int PWidth = PatchTex->GetWidth();
     int PHeight = PatchTex->GetHeight();
     if (PWidth < 1 || PHeight < 1) continue;
 
     //int x1 = (patch->XOrigin < 0 ? 0 : patch->XOrigin);
-    int x1 = patch->XOrigin;
+    int x1 = patch->XOrigin+PatchTex->CropOffsetX();
     int x2 = x1+(patch->Rot&1 ? PHeight : PWidth);
     if (x2 > Width) x2 = Width;
 
     //int y1 = (patch->YOrigin < 0 ? 0 : patch->YOrigin);
-    int y1 = patch->YOrigin;
+    int y1 = patch->YOrigin+PatchTex->CropOffsetY();
     int y2 = y1+(patch->Rot&1 ? PWidth : PHeight);
     if (y2 > Height) y2 = Height;
 
     const float IAlpha = clampval(1.0f-patch->Alpha, 0.0f, 1.0f);
+    //const bool patchAlphaZero = (patch->Alpha == 0.0f);
 
     /*
     if (patch->Alpha <= 0.0f) {
@@ -675,6 +677,7 @@ vuint8 *VMultiPatchTexture::GetPixels () {
               case TEXFMT_RGBA: col = ((rgba_t *)PatchPixels)[PIdx]; break;
             }
           }
+
           if (patch->Blend.a == 255) {
             col.r = col.r*patch->Blend.r/255;
             col.g = col.g*patch->Blend.g/255;

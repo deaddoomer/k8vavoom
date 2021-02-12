@@ -337,9 +337,16 @@ protected:
   VTexture *HiResTexture;
   bool Pixels8BitValid;
   bool Pixels8BitAValid;
-  bool alreadyCropped;
   int shadeColor;
   int shadeColorSaved; // `ConvertPixelsToShaded()` saves `shadeColor` here, so we can restore it after `ReleasePixels()`
+  // we need those offsets to correctly apply patches in multipatch texture builder
+  bool alreadyCropped;
+  int croppedOfsX, croppedOfsY;
+
+public:
+  inline bool isCropped () const noexcept { return alreadyCropped; }
+  inline int CropOffsetX () const noexcept { return croppedOfsX; }
+  inline int CropOffsetY () const noexcept { return croppedOfsY; }
 
 public:
   static void checkerFill8 (vuint8 *dest, int width, int height);
