@@ -66,19 +66,38 @@ static const ISzAlloc fsysLzmaAlloc = {
 # define VV_IS_LZMA  false
 #endif
 
+//#define VV_DEBUG_BUFFERS
+//#define VV_DEBUG_BUFFERS_MORE
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 class VZipFileReader : public VStream {
 private:
-  //enum { UNZ_BUFSIZE = 16384 };
-  enum { UNZ_BUFSIZE = 65536 };
+  enum { MIN_PAGE_SIZE = 4096 };
 
+  struct DataPage {
+    int size; // data size
+    int fpos; // position in file
+    DataPage *next; // next page
+    vuint8 data[0]; // unpacked data
+  };
+
+private:
+  enum { UNZ_BUFSIZE = 4096 };
+  vuint8 ReadBuffer[UNZ_BUFSIZE];
+
+private:
   mythread_mutex *rdlock;
   VStream *FileStream; // source stream of the zipfile
   VStr fname;
   const VPakFileInfo &Info; // info about the file we are reading
 
-  vuint8 ReadBuffer[UNZ_BUFSIZE]; // internal buffer for compressed data
+  // file data will be unpacked and cached here
+  DataPage *unpackHead;
+  DataPage *unpackTail;
+  int total_unpacked_size;
+  int currpos; // we can do several seeks in a row; perform real seek in `Serialise()`
+
   mz_stream stream; // zlib stream structure for inflate
   #ifdef VAVOOM_USE_LIBLZMA
   lzma_stream lzmastream;
@@ -94,24 +113,32 @@ private:
   bool usezlib;
 
   vuint32 pos_in_zipfile; // position in byte on the zipfile
-  vuint32 start_pos; // initial position, for restart
   bool stream_initialised; // flag set if stream structure is initialised
 
   vuint32 Crc32; // crc32 of all data uncompressed
   vuint32 rest_read_compressed; // number of byte to be decompressed
   vuint32 rest_read_uncompressed; // number of byte to be obtained after decomp
 
-  // on second back-seek, read the whole data into this buffer, and use it
-  vuint8 *wholeBuf;
-  vint32 wholeSize; // this is abused as back-seek counter: -2 means none, -1 means "one issued"
-  int currpos; // we can do several seeks in a row; perform real seek in `Serialise()`; unused if `wholeSize >= 0`
-
 private:
-  bool CheckCurrentFileCoherencyHeader (vuint32 *, vuint32); // does locking
-  bool LzmaRestart (); // `pos_in_zipfile` must be valid; does locking
-  bool rewind ();
+  bool CheckCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint32 byte_before_the_zipfile); // does locking
+
+  void FreeDataBuffers ();
+
   void readBytes (void *buf, int length); // does locking, if necessary
-  void cacheAllData ();
+
+  // unpack file in data buffers, up to (but not including) `newpos`
+  // `newpos` must be valid (i.e. not negative, and not beyond EOF)
+  // returns `false` on error
+  // does locking, if necessary
+  // ill call `SetError()` if necessary
+  bool BufferToPosition (int newpos);
+
+  // calls `BufferToPosition`, return data buffer or `nullptr` on error
+  // does locking, if necessary
+  // ill call `SetError()` if necessary
+  DataPage *RealSeekToPosition (int newpos, int readamount);
+
+  bool LzmaStart (); // `pos_in_zipfile` must be valid; does locking
 
   #ifdef VAVOOM_USE_LIBLZMA
   inline int lzmaGetTotalOut () const { return (int)lzmastream.total_out; }
@@ -151,6 +178,10 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
   , FileStream(InStream)
   , fname(afname)
   , Info(aInfo)
+  , unpackHead(nullptr)
+  , unpackTail(nullptr)
+  , total_unpacked_size(0)
+  , currpos(0)
   #ifdef VAVOOM_USE_LIBLZMA
   , lzmaopts(nullptr)
   #else
@@ -159,15 +190,14 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
   , lzmainbufpos(nullptr)
   , lzmainbufleft(0)
   #endif
+  , usezlib(true)
   , stream_initialised(false)
-  , wholeBuf(nullptr)
-  , wholeSize(-2)
-  , currpos(0)
+  , Crc32(0)
+  , rest_read_compressed(0)
+  , rest_read_uncompressed(0)
 {
   // open the file in the zip
   // `rdlock` is not locked here
-  usezlib = true;
-  //stream_initialised = false;
 
   if (!rdlock) Sys_Error("VZipFileReader::VZipFileReader: empty lock!");
 
@@ -187,16 +217,20 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
     return;
   }
 
-  Crc32 = 0;
-
   stream.total_out = 0;
   #ifdef VAVOOM_USE_LIBLZMA
   lzmastream.total_out = 0;
   #endif
   pos_in_zipfile = Info.pakdataofs+SIZEZIPLOCALHEADER+iSizeVar+BytesBeforeZipFile;
-  start_pos = pos_in_zipfile;
   rest_read_compressed = Info.packedsize;
   rest_read_uncompressed = Info.filesize;
+
+  total_unpacked_size = (int)Info.filesize;
+  if (total_unpacked_size < 0) {
+    SetError();
+    GLog.Logf(NAME_Error, "Invalid size (%d) for packed file '%s'", total_unpacked_size, *afname);
+    return;
+  }
 
   if (Info.compression == MZ_DEFLATED) {
     stream.zalloc = (mz_alloc_func)0;
@@ -222,7 +256,7 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
   } else if (Info.compression == Z_LZMA) {
     // LZMA
     usezlib = false;
-    if (!LzmaRestart()) return; // error already set
+    if (!LzmaStart()) return; // error already set
   }
 
   stream.avail_in = 0;
@@ -241,6 +275,7 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
 //
 //==========================================================================
 VZipFileReader::~VZipFileReader() {
+  FreeDataBuffers();
   Close();
 }
 
@@ -261,8 +296,6 @@ VStr VZipFileReader::GetName () const {
 //
 //==========================================================================
 void VZipFileReader::SetError () {
-  if (wholeBuf) { Z_Free(wholeBuf); wholeBuf = nullptr; }
-  wholeSize = -2;
   if (stream_initialised) {
     if (usezlib) {
       mz_inflateEnd(&stream);
@@ -286,8 +319,7 @@ void VZipFileReader::SetError () {
 //==========================================================================
 bool VZipFileReader::Close () {
   //!GLog.Logf(NAME_Debug, "******** CLOSING '%s' ********", *fname);
-  if (wholeBuf) { Z_Free(wholeBuf); wholeBuf = nullptr; }
-  wholeSize = -2;
+  FreeDataBuffers();
 
   if (stream_initialised) {
     //GLog.Logf("***CLOSING '%s'", *fname);
@@ -399,18 +431,18 @@ bool VZipFileReader::CheckCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint3
 
 //==========================================================================
 //
-//  VZipFileReader::LzmaRestart
+//  VZipFileReader::LzmaStart
 //
 //  `pos_in_zipfile` must be valid
 //
 //==========================================================================
-bool VZipFileReader::LzmaRestart () {
+bool VZipFileReader::LzmaStart () {
   vuint8 ziplzmahdr[4];
   vuint8 lzmaprhdr[5];
 
   if (usezlib) {
     SetError();
-    GLog.Logf(NAME_Error, "Cannot lzma-restart non-lzma stream for file '%s'", *fname);
+    GLog.Logf(NAME_Error, "Cannot start lzma at non-lzma stream for file '%s'", *fname);
     return false;
   }
 
@@ -545,41 +577,11 @@ bool VZipFileReader::LzmaRestart () {
 
 //==========================================================================
 //
-//  VZipFileReader::rewind
-//
-//==========================================================================
-bool VZipFileReader::rewind () {
-  if (bError) return false;
-  //!GLog.Logf(NAME_Debug, "*** REWIND '%s'", *fname);
-  Crc32 = 0;
-  rest_read_compressed = Info.packedsize;
-  rest_read_uncompressed = Info.filesize;
-  pos_in_zipfile = start_pos;
-  if (Info.compression == MZ_DEFLATED) {
-    vassert(stream_initialised);
-    vassert(usezlib);
-    if (stream_initialised) mz_inflateEnd(&stream);
-    memset(&stream, 0, sizeof(stream));
-    vensure(mz_inflateInit2(&stream, -MAX_WBITS) == MZ_OK);
-  } else if (Info.compression == Z_LZMA) {
-    #ifdef K8_UNLZMA_DEBUG
-    GLog.Log(NAME_Debug, "LZMA: rewind");
-    #endif
-    vassert(stream_initialised);
-    vassert(!usezlib);
-    if (!LzmaRestart()) return false; // error already set
-  } else {
-    memset(&stream, 0, sizeof(stream));
-  }
-  return !bError;
-}
-
-
-//==========================================================================
-//
 //  VZipFileReader::readBytes
 //
 //  prerequisites: stream must be valid, initialized, and not cached
+//
+//  does locking, if necessary
 //
 //==========================================================================
 void VZipFileReader::readBytes (void *buf, int length) {
@@ -754,25 +756,132 @@ void VZipFileReader::readBytes (void *buf, int length) {
 
 //==========================================================================
 //
-//  VZipFileReader::cacheAllData
-//
-//  must NOT modify `currpos`
+//  VZipFileReader::FreeDataBuffers
 //
 //==========================================================================
-void VZipFileReader::cacheAllData () {
-  //GLog.Logf(NAME_Debug, "Back-seek in '%s' (curr=%d; new=%d)", *fname, Tell(), InPos);
-  //if (!skipRewind && !rewind()) return; // error already set
-  if (totalOut() != 0) {
-    if (!rewind()) return; // error already set
+void VZipFileReader::FreeDataBuffers () {
+  #ifdef VV_DEBUG_BUFFERS
+  if (unpackHead) fprintf(stderr, "UNZIP(%s): freeing data buffers\n", *fname);
+  #endif
+  DataPage *buf = unpackHead;
+  while (buf) {
+    DataPage *c = buf;
+    buf = buf->next;
+    Z_Free(c);
   }
-  vassert(totalOut() == 0);
-  // cache data
-  wholeSize = (vint32)Info.filesize;
-  //GLog.Logf(NAME_Debug, "*** CACHING '%s' (size=%d)", *fname, wholeSize);
-  if (wholeSize < 0) { SetError(); return; }
-  wholeBuf = (vuint8 *)Z_Realloc(wholeBuf, (wholeSize ? wholeSize : 1));
-  readBytes(wholeBuf, wholeSize);
-  //GLog.Logf(NAME_Debug, "*** CACHED: %s", (bError ? "error" : "ok"));
+  unpackHead = unpackTail = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VZipFileReader::BufferToPosition
+//
+//  unpack file in data buffers, up to (but not including) `newpos`
+//  `newpos` must be valid (i.e. not negative, and not beyond EOF)
+//  returns `false` on error
+//  does locking, if necessary
+//  won't call `SetError()`
+//
+//==========================================================================
+bool VZipFileReader::BufferToPosition (int newpos) {
+  if (newpos < 0 || newpos > total_unpacked_size) {
+    SetError();
+    return false;
+  }
+
+  if (!unpackHead) {
+    // no cached data yet
+    #ifdef VV_DEBUG_BUFFERS
+    fprintf(stderr, "UNZIP(%s): first data page, newpos=%d; totalsize=%d\n", *fname, newpos, total_unpacked_size);
+    #endif
+    if (newpos < MIN_PAGE_SIZE) newpos = min2((int)MIN_PAGE_SIZE, total_unpacked_size);
+    #ifdef VV_DEBUG_BUFFERS
+    fprintf(stderr, "UNZIP(%s): first data page, new newpos=%d; totalsize=%d\n", *fname, newpos, total_unpacked_size);
+    #endif
+    DataPage *buf = (DataPage *)Z_Malloc(sizeof(DataPage)+newpos+8);
+    buf->size = newpos;
+    buf->fpos = 0;
+    buf->next = nullptr;
+    unpackHead = unpackTail = buf;
+    readBytes(buf->data, buf->size);
+    return !bError;
+  } else {
+    // has some cached data, check if we need to unpack anything
+    const int unpendpos = unpackTail->fpos+unpackTail->size;
+    int unpackLeft = newpos-unpendpos;
+    if (unpackLeft <= 0) return true; // nothing to do here
+
+    #ifdef VV_DEBUG_BUFFERS_MORE
+    fprintf(stderr, "UNZIP(%s): new data page, newpos=%d (to unpack: %d); totalsize=%d (left=%d); unend=%d\n", *fname, newpos, unpackLeft, total_unpacked_size, total_unpacked_size-newpos, unpendpos);
+    #endif
+    // unpack at least `MIN_PAGE_SIZE` (if possible)
+    if (total_unpacked_size-newpos <= MIN_PAGE_SIZE) {
+      const int xleft = total_unpacked_size-newpos;
+      const int newnewpos = (xleft <= MIN_PAGE_SIZE ? total_unpacked_size : newpos+MIN_PAGE_SIZE);
+      unpackLeft = newnewpos-unpendpos;
+      #ifdef VV_DEBUG_BUFFERS_MORE
+      fprintf(stderr, "UNZIP(%s): new data page, new-to-end newpos=%d (new-to-end to unpack: %d); totalsize=%d (left=%d); unend=%d\n", *fname, newnewpos, unpackLeft, total_unpacked_size, total_unpacked_size-newnewpos, unpendpos);
+      #endif
+    } else if (unpackLeft < MIN_PAGE_SIZE) {
+      const int xleft = total_unpacked_size-newpos;
+      const int newnewpos = (xleft <= MIN_PAGE_SIZE ? total_unpacked_size : newpos+MIN_PAGE_SIZE);
+      unpackLeft = newnewpos-unpendpos;
+      #ifdef VV_DEBUG_BUFFERS_MORE
+      fprintf(stderr, "UNZIP(%s): new data page, new newpos=%d (new to unpack: %d); totalsize=%d (left=%d); unend=%d\n", *fname, newnewpos, unpackLeft, total_unpacked_size, total_unpacked_size-newnewpos, unpendpos);
+      #endif
+    }
+
+    #ifdef VV_DEBUG_BUFFERS_MORE
+    fprintf(stderr, "===BEFORE===\n"); for (const DataPage *p = unpackHead; p; p = p->next) fprintf(stderr, "  fpos=%d; size=%d; end=%d; total=%d (left=%d)\n", p->fpos, p->size, p->fpos+p->size, total_unpacked_size, total_unpacked_size-(p->fpos+p->size));
+    #endif
+    // allocate new data page, and unpack into it
+    DataPage *buf = (DataPage *)Z_Malloc(sizeof(DataPage)+unpackLeft+8);
+    buf->size = unpackLeft;
+    buf->fpos = unpackTail->fpos+unpackTail->size;
+    buf->next = nullptr;
+    unpackTail->next = buf;
+    unpackTail = buf;
+    #ifdef VV_DEBUG_BUFFERS_MORE
+    fprintf(stderr, "===AFTER===\n"); for (const DataPage *p = unpackHead; p; p = p->next) fprintf(stderr, "  fpos=%d; size=%d; end=%d; total=%d (left=%d)\n", p->fpos, p->size, p->fpos+p->size, total_unpacked_size, total_unpacked_size-(p->fpos+p->size));
+    #endif
+    readBytes(buf->data, buf->size);
+    return !bError;
+  }
+}
+
+
+//==========================================================================
+//
+//  VZipFileReader::RealSeekToPosition
+//
+//  calls `BufferToPosition`, return data buffer or `nullptr` on error
+//  does locking, if necessary
+//  won't call `SetError()`
+//
+//==========================================================================
+VZipFileReader::DataPage *VZipFileReader::RealSeekToPosition (int newpos, int readamount) {
+  if (bError) return nullptr;
+  if (newpos < 0 || newpos > total_unpacked_size || readamount < 1 || total_unpacked_size-newpos < readamount) {
+    SetError();
+    return nullptr;
+  }
+  if (!BufferToPosition(newpos+readamount)) return nullptr; // `SetError()` already called
+  // set `currBuffer`
+  DataPage *currBuffer = unpackHead;
+  while (currBuffer && newpos >= currBuffer->fpos+currBuffer->size) currBuffer = currBuffer->next;
+  if (!currBuffer) {
+    SetError();
+    return nullptr;
+  }
+  /*
+  #ifdef VV_DEBUG_BUFFERS
+  fprintf(stderr, "RealSeekToPosition(%s): newpos=%d; fpos=%d; size=%d; end=%d; ofs=%d\n", *fname, newpos, currBuffer->fpos, currBuffer->size, currBuffer->fpos+currBuffer->size, newpos-currBuffer->fpos);
+  #endif
+  */
+  vassert(newpos >= currBuffer->fpos);
+  vassert(newpos < currBuffer->fpos+currBuffer->size);
+  return currBuffer;
 }
 
 
@@ -783,8 +892,8 @@ void VZipFileReader::cacheAllData () {
 //==========================================================================
 void VZipFileReader::Serialise (void *V, int length) {
   if (bError) return;
-  if (length < 0) { SetError(); return; }
   if (length == 0) return;
+  if (length < 0 || currpos < 0 || currpos > total_unpacked_size || total_unpacked_size-currpos < length) { SetError(); return; }
 
   if (!V) {
     SetError();
@@ -792,78 +901,25 @@ void VZipFileReader::Serialise (void *V, int length) {
     return;
   }
 
-  // use data cache?
-  if (wholeSize >= 0) {
-    //!GLog.Logf(NAME_Debug, "  ***READING (CACHE) '%s' (currpos=%d; size=%d; left=%d; len=%d)", *fname, currpos, wholeSize, wholeSize-currpos, length);
-    if (length < 0 || currpos < 0 || currpos >= wholeSize || wholeSize-currpos < length) SetError();
-    if (bError) return;
-    memcpy(V, wholeBuf+currpos, length);
-    currpos += length;
-  } else {
-    // uncached
-    if (!FileStream) { SetError(); return; }
-    //!GLog.Logf(NAME_Debug, "  ***READING (DIRECT) '%s' (currpos=%d; length=%u; realpos=%d; size=%u; rru=%u)", *fname, currpos, length, totalOut(), Info.filesize, rest_read_uncompressed);
-    if (length > (int)Info.filesize || (int)Info.filesize-currpos < length) { SetError(); return; }
-    // cache file if we're seeking near the end
-    if (totalOut() < 32768 && currpos >= (vint32)(Info.filesize-Info.filesize/3)) {
-      ++wholeSize;
-      // cache file if it is LZMA (LZMA is quite slow, and texture detection seeks alot)
-      if (wholeSize >= 0 || VV_IS_LZMA) {
-        //!GLog.Logf(NAME_Debug, "*** (0)CACHING '%s' (cpos=%d; newpos=%d; size=%u)", *fname, totalOut(), currpos, Info.filesize);
-        cacheAllData();
-        if (bError) return;
-        Serialise(V, length);
-        return;
-      }
-    }
-    // rewind if necessary
-    if (currpos < totalOut()) {
-      // check if we have to cache data
-      // cache file if it is LZMA (LZMA is quite slow, and texture detection seeks alot)
-      if (totalOut() > 8192 || VV_IS_LZMA) {
-        ++wholeSize;
-        if (wholeSize >= 0 || VV_IS_LZMA) {
-          //!GLog.Logf(NAME_Debug, "*** (1)CACHING '%s' (cpos=%d; newpos=%d; size=%u)", *fname, totalOut(), currpos, Info.filesize);
-          cacheAllData();
-          if (bError) return;
-          Serialise(V, length);
-          return;
-        }
-      }
-      //!GLog.Logf(NAME_Debug, "Back-seek in '%s' (curr=%d; new=%d)", *fname, totalOut(), currpos);
-      if (!rewind()) return; // error already set
-      vassert(totalOut() == 0);
-    }
-    // skip bytes if necessary
-    if (currpos > totalOut()) {
-      // read data into a temporary buffer until we reach the required position
-      int toSkip = currpos-totalOut();
-      vassert(toSkip > 0);
-      vuint8 tmpbuf[512];
-      vuint8 *tmpbufptr;
-      int bsz;
-      if (!wholeBuf && toSkip <= (int)sizeof(tmpbuf)) {
-        bsz = (int)sizeof(tmpbuf);
-        tmpbufptr = tmpbuf;
-      } else {
-        bsz = 65536;
-        if (!wholeBuf) wholeBuf = (vuint8 *)Z_Malloc(bsz);
-        tmpbufptr = wholeBuf;
-      }
-      //!GLog.Logf(NAME_Debug, "*** SKIPPING '%s' (cpos=%d; newpos=%d; size=%u; skip=%d)", *fname, totalOut(), currpos, Info.filesize, toSkip);
-      while (toSkip > 0) {
-        int count = min2(toSkip, bsz);
-        toSkip -= count;
-        readBytes(tmpbufptr, count);
-        if (bError) return;
-      }
-      vassert(toSkip == 0);
-    }
-    vassert(currpos == totalOut());
-    readBytes(V, length);
-    currpos = totalOut();
-    //!GLog.Logf(NAME_Debug, "*** READ '%s' (cpos=%d; newpos=%d; size=%u; len=%d; err=%d)", *fname, totalOut(), currpos, Info.filesize, length, (int)bError);
+  DataPage *buf = RealSeekToPosition(currpos, length);
+  if (!buf) return;
+
+  vuint8 *dest = (vuint8 *)V;
+  while (length > 0) {
+    if (!buf) { SetError(); return; }
+    int bofs = currpos-buf->fpos;
+    vassert(bofs >= 0);
+    int bleft = buf->size-bofs;
+    vassert(bleft >= 0);
+    if (bleft == 0) { buf = buf->next; continue; }
+    if (bleft > length) bleft = length;
+    memcpy(dest, buf->data+bofs, bleft);
+    dest += bleft;
+    currpos += bleft;
+    length -= bleft;
   }
+
+  //!GLog.Logf(NAME_Debug, "*** READ '%s' (cpos=%d; newpos=%d; size=%u; len=%d; err=%d)", *fname, totalOut(), currpos, Info.filesize, length, (int)bError);
 }
 
 
@@ -874,7 +930,7 @@ void VZipFileReader::Serialise (void *V, int length) {
 //==========================================================================
 void VZipFileReader::Seek (int InPos) {
   if (bError) return;
-  if (InPos < 0 || InPos > (int)Info.filesize) { SetError(); return; }
+  //if (InPos < 0 || InPos > total_unpacked_size) { SetError(); return; }
   //!GLog.Logf(NAME_Debug, "*** SEEK '%s' (currpos=%d; newpos=%d; realpos=%d; size=%u)", *fname, currpos, InPos, totalOut(), Info.filesize);
   currpos = InPos;
 }
@@ -896,7 +952,7 @@ int VZipFileReader::Tell () {
 //
 //==========================================================================
 int VZipFileReader::TotalSize () {
-  return Info.filesize;
+  return total_unpacked_size;
 }
 
 
@@ -906,5 +962,5 @@ int VZipFileReader::TotalSize () {
 //
 //==========================================================================
 bool VZipFileReader::AtEnd () {
-  return (currpos >= (int)Info.filesize);
+  return (currpos >= total_unpacked_size);
 }
