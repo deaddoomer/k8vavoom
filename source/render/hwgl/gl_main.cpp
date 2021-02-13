@@ -467,7 +467,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   decalUsedStencil = false;
   decalStcVal = 255; // next value for stencil buffer (clear on the first use, and clear on each wrap)
   stencilBufferDirty = true; // just in case
-  isShittyGPU = true; // let's play safe
+  isShittyGPU = false; // not yet
   shittyGPUCheckDone = false; // just in case
   atlasesGenerated = false;
   currentActiveFBO = nullptr;
@@ -836,12 +836,12 @@ void VOpenGLDrawer::InitResolution () {
     major = minor = 0;
     if (!isShittyGPU) {
       isShittyGPU = true;
-      shittyGPUCheckDone = true;
       if (gl_dbg_ignore_gpu_blacklist) {
         GCon->Log(NAME_Init, "User command is to ignore blacklist; I shall obey!");
         isShittyGPU = false;
       }
     }
+    shittyGPUCheckDone = true;
   } else {
     GCon->Logf(NAME_Init, "OpenGL v%d.%d found", major, minor);
   }

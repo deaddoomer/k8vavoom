@@ -145,7 +145,7 @@ static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Prec
 static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
 static VCvarB r_precache_all_sprite_textures("r_precache_all_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
 static VCvarI r_precache_max_sprites("r_precache_max_sprites", "3072", "Maxumum number of sprite textures to precache?", CVAR_Archive);
-static VCvarI r_level_renderer("r_level_renderer", "1", "Level renderer type (0:auto; 1:lightmap; 2:stenciled).", CVAR_Archive);
+static VCvarI r_level_renderer("r_level_renderer", "0", "Level renderer type (0:auto; 1:lightmap; 2:stenciled).", CVAR_Archive);
 
 int r_precache_textures_override = -1;
 
@@ -555,25 +555,25 @@ void R_Init () {
 void R_Start (VLevel *ALevel) {
   SCR_Update(false); // partial update
   if (r_level_renderer > 1 && !Drawer->SupportsShadowVolumeRendering() && !Drawer->SupportsShadowMapRendering()) {
-    GCon->Logf(NAME_Warning, "Your GPU doesn't support Shadow Volume Renderer, so I will switch to the lightmapped one.");
+    GCon->Logf(NAME_Warning, "Your GPU doesn't support neither Shadow Volume Renderer, nor Shadow Maps, so I will switch to the lightmapped one.");
     r_level_renderer = 1;
   } else if (r_level_renderer <= 0) {
-    if (Drawer->SupportsShadowVolumeRendering() || Drawer->SupportsShadowMapRendering()) {
+    // prefer shadowmaps
+    if (Drawer->SupportsShadowMapRendering()) {
+      GCon->Logf("Your GPU supports ShadowMap Renderer, so i will use it.");
+      r_level_renderer = 2;
+      r_shadowmaps = true;
+    } else if (Drawer->SupportsShadowVolumeRendering()) {
+      r_shadowmaps = false;
       if (Drawer->IsShittyGPU()) {
         GCon->Logf("Your GPU is... not quite good, so I will use the lightmapped renderer.");
         r_level_renderer = 1;
-      } else if (Drawer->SupportsShadowMapRendering()) {
-        GCon->Logf("Your GPU supports ShadowMap Renderer, so i will use it.");
-        r_level_renderer = 2;
-      } else if (Drawer->SupportsShadowVolumeRendering()) {
+      } else {
         GCon->Logf("Your GPU supports Shadow Volume Renderer, so i will use it.");
         r_level_renderer = 2;
-      } else {
-        GCon->Logf("Your GPU is... not quite good, so I will use the lightmapped renderer.");
-        r_level_renderer = 1;
       }
     } else {
-      GCon->Logf("Your GPU doesn't support Shadow Volume Renderer, so I will use the lightmapped one.");
+      GCon->Logf(NAME_Warning, "Your GPU doesn't support neither Shadow Volume Renderer, nor Shadow Maps, so I will switch to the lightmapped one.");
       r_level_renderer = 1;
     }
   }
