@@ -141,7 +141,7 @@ override void Init () {
 
   CreateCvarBool('player_force_autocrouch', false, "Force autocrouching for all player pawns?", CVAR_ARCHIVE);
 
-  CreateCvarBool('player_extra_friction_enabled', false, "Multiply non-moving player friction?", CVAR_ARCHIVE);
+  CreateCvarBool('player_extra_friction_enabled', true, "Multiply non-moving player friction?", CVAR_ARCHIVE);
   CreateCvarFloat('player_extra_friction', 1.8, "Multiply non-moving player friction by this.", CVAR_ARCHIVE);
 
   CreateCvarBool('gm_death_infighting', true, "Should monsters start infighting when player dies?", CVAR_ARCHIVE);
