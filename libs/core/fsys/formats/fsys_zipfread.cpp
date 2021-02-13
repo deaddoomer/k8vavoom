@@ -83,7 +83,7 @@ private:
   };
 
 private:
-  enum { UNZ_BUFSIZE = 4096 };
+  enum { UNZ_BUFSIZE = 65536 };
   vuint8 ReadBuffer[UNZ_BUFSIZE];
 
 private:
@@ -594,6 +594,8 @@ void VZipFileReader::readBytes (void *buf, int length) {
     return;
   }
 
+  vassert(Info.compression != Z_STORE);
+
   stream.next_out = (vuint8 *)buf;
   stream.avail_out = length;
   #ifdef VAVOOM_USE_LIBLZMA
@@ -901,25 +903,41 @@ void VZipFileReader::Serialise (void *V, int length) {
     return;
   }
 
-  DataPage *buf = RealSeekToPosition(currpos, length);
-  if (!buf) return;
+  if (Info.compression == Z_STORE) {
+    // perform direct read (TODO: check CRC here)
+    MyThreadLocker locker(rdlock);
+    //fprintf(stderr, "ZIP DIRECT READ (%s): currpos=%d; length=%d\n", *fname, currpos, length);
+    bool err = FileStream->IsError();
+    if (!err) {
+      FileStream->Seek(pos_in_zipfile+currpos);
+      FileStream->Serialise(V, length);
+      err = FileStream->IsError();
+    }
+    if (err) {
+      SetError();
+      GLog.Logf(NAME_Error, "Failed to read from zip for file '%s'", *fname);
+      return;
+    }
+    currpos += length;
+  } else {
+    DataPage *buf = RealSeekToPosition(currpos, length);
+    if (!buf) return;
 
-  vuint8 *dest = (vuint8 *)V;
-  while (length > 0) {
-    if (!buf) { SetError(); return; }
-    int bofs = currpos-buf->fpos;
-    vassert(bofs >= 0);
-    int bleft = buf->size-bofs;
-    vassert(bleft >= 0);
-    if (bleft == 0) { buf = buf->next; continue; }
-    if (bleft > length) bleft = length;
-    memcpy(dest, buf->data+bofs, bleft);
-    dest += bleft;
-    currpos += bleft;
-    length -= bleft;
+    vuint8 *dest = (vuint8 *)V;
+    while (length > 0) {
+      if (!buf) { SetError(); return; }
+      int bofs = currpos-buf->fpos;
+      vassert(bofs >= 0);
+      int bleft = buf->size-bofs;
+      vassert(bleft >= 0);
+      if (bleft == 0) { buf = buf->next; continue; }
+      if (bleft > length) bleft = length;
+      memcpy(dest, buf->data+bofs, bleft);
+      dest += bleft;
+      currpos += bleft;
+      length -= bleft;
+    }
   }
-
-  //!GLog.Logf(NAME_Debug, "*** READ '%s' (cpos=%d; newpos=%d; size=%u; len=%d; err=%d)", *fname, totalOut(), currpos, Info.filesize, length, (int)bError);
 }
 
 
