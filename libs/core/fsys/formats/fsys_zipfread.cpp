@@ -905,13 +905,16 @@ void VZipFileReader::Serialise (void *V, int length) {
 
   if (Info.compression == Z_STORE) {
     // perform direct read (TODO: check CRC here)
-    MyThreadLocker locker(rdlock);
-    //fprintf(stderr, "ZIP DIRECT READ (%s): currpos=%d; length=%d\n", *fname, currpos, length);
-    bool err = FileStream->IsError();
-    if (!err) {
-      FileStream->Seek(pos_in_zipfile+currpos);
-      FileStream->Serialise(V, length);
+    bool err = false;
+    {
+      MyThreadLocker locker(rdlock);
+      //fprintf(stderr, "ZIP DIRECT READ (%s): currpos=%d; length=%d\n", *fname, currpos, length);
       err = FileStream->IsError();
+      if (!err) {
+        FileStream->Seek(pos_in_zipfile+currpos);
+        FileStream->Serialise(V, length);
+        err = FileStream->IsError();
+      }
     }
     if (err) {
       SetError();
