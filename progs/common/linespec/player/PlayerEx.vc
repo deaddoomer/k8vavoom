@@ -3878,6 +3878,7 @@ void PerformBossDetection () {
   Actor act;
   int cybbieCount = 0, mindCount = 0;
   foreach MO.AllThinkers(Actor, out act) {
+    if (!act.bMonster || act.bCorpse || act.Health <= 0) continue;
     class!Actor ec = class!Actor(act.Class);
     while (ec) {
       switch (GetClassName(ec)) {
