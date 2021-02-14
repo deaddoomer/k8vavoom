@@ -199,7 +199,7 @@ bool bStaticLightSpawned; // set by `OnMapSpawn()`
 bool bDynamicLight; // dynamic light source
 bool bLeaveTrail; // leave particles trail type 1 (Rocket)
 bool bLeaveTrail2; // leave particles trail type 2 (Grenade)
-bool bTriggerHappy;
+bool bTriggerHappy; // "+MissileMore" decorate flag
 //bool bFloatBob; // use float bobbing z movement (moved to `Entity`)
 bool bOnmobjCopyVel;
 bool bNoBounceSound; // don't make sound when bouncing
@@ -284,7 +284,7 @@ bool bGhost; // actor is a ghost
 bool bBossDeath; // A_FreezeDeathChunks calls A_BossDeath
 bool bNoIceDeath; // don't use generic ice death
 bool bDontTranslate; // don't use translation.
-bool bMissileEvenMore;
+bool bMissileEvenMore; // "+MissileEvenMore" decorate flag
 bool bNoLiftDrop; // don't fall down with the lift
 bool bStayMorphed; // don't unmorph
 bool bCanBlast; // special cases that can be blasted
