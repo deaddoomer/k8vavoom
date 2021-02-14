@@ -172,9 +172,11 @@ override void CreateChoices () {
   VSyncAdaptive = GetItemContainer().NewChild(MenuChoice_OnOff);
   SetChoiceInitialSizePos(VSyncAdaptive);
   //VSyncAdaptive.SetOrigin(ChoicesStartX, GetCurrentY());
-  VSyncAdaptive.SetText("VSync Adaptive");
+  VSyncAdaptive.SetText("Use Adaptive VSync");
   VSyncAdaptive.SetInitialValue(GetCvar('r_vsync_adaptive'));
     SetLastHelp(
+      "This modifies VSync mode, switching between normal/adaptive vsyncs.\n"~
+      "\n"~
       "If your GPU supports it, the engine can stop doing vsync when\n"~
       "the framerate is lower than physical frame refresh time.\n"~
       "This will allow you to get a smooth rendering if your GPU is\n"~
@@ -182,7 +184,7 @@ override void CreateChoices () {
       "if framerate is slightly below it.\n"~
       "It is recommented to turn this 'ON'.\n"~
       "\n"~
-      "\c[white]WARNING: this feature has no effect if 'VSYNC' above is turned off!"~
+      "\c[white]WARNING: this feature has no effect if 'VSYNC' above is turned off!\n"~
       "\n"~
       "You have to use \"Set Resolution\" to activate new setting.\n");
 
