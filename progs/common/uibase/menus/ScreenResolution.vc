@@ -180,7 +180,9 @@ override void CreateChoices () {
       "This will allow you to get a smooth rendering if your GPU is\n"~
       "fast enough, but will not cap FPS to half of the refresh rate\n"~
       "if framerate is slightly below it.\n"~
-      "It is recommented to turn this `ON`.\n"~
+      "It is recommented to turn this 'ON'.\n"~
+      "\n"~
+      "\c[white]WARNING: this feature has no effect if 'VSYNC' above is turned off!"~
       "\n"~
       "You have to use \"Set Resolution\" to activate new setting.\n");
 
