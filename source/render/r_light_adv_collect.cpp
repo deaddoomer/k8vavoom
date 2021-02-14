@@ -183,10 +183,11 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
     // check transdoor hacks
     //if (surf->drawflags&surface_t::TF_TOPHACK) continue;
 
+    texinfo_t *ti = texinfo; //(surf->texinfo ? surf->texinfo : texinfo);
     // ignore translucent
-    VTexture *tex = surf->texinfo->Tex;
+    VTexture *tex = ti->Tex;
     if (!tex || tex->Type == TEXTYPE_Null) continue;
-    if (surf->texinfo->Alpha < 1.0f || surf->texinfo->Additive) continue;
+    if (ti->Alpha < 1.0f || ti->Additive) continue;
     if (tex->isTranslucent()) continue; // this is translucent texture
 
     const float dist = surf->PointDistance(CurrLightPos);

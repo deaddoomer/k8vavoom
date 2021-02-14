@@ -255,6 +255,16 @@ void VRenderLevelShared::GetFlatSetToRender (subsector_t *sub, subregion_t *regi
 bool VRenderLevelShared::SurfPrepareForRender (surface_t *surf) {
   if (!surf || !surf->subsector || surf->count < 3) return false;
 
+  if (!surf->texinfo) {
+    GCon->Logf(NAME_Error, "surface for seg #%d, line #%d (side %d), subsector #%d, sector #%d has no texinfo!",
+      (surf->seg ? (int)(ptrdiff_t)(surf->seg-&Level->Segs[0]) : -1),
+      (surf->seg && surf->seg->linedef ? (int)(ptrdiff_t)(surf->seg->linedef-&Level->Lines[0]) : -1),
+      (surf->seg ? surf->seg->side : -1),
+      (surf->subsector ? (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]) : -1),
+      (surf->subsector ? (int)(ptrdiff_t)(surf->subsector->sector-&Level->Sectors[0]) : -1));
+    return false;
+  }
+
   VTexture *tex = surf->texinfo->Tex;
   /*k8: usually there is no need to do this
   if (tex && !tex->bIsCameraTexture) {
@@ -563,6 +573,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       //GCon->Logf(NAME_Debug, "PORTAL(%d): IsStack=%d; doRenderSurf=%d", Portals.length(), (int)IsStack, (int)doRenderSurf);
       for (; surf; surf = surf->next) {
         //k8: do we need to set this here? or portal will do this for us?
+        surf->texinfo = texinfo; //k8:should we force texinfo here?
         surf->Light = (lLev<<24)|lightColor;
         surf->Fade = Fade;
         surf->dlightframe = sub->dlightframe;
@@ -598,6 +609,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   const bool isCommon = (texinfo->Alpha >= 1.0f && !texinfo->Additive && !texinfo->Tex->isTranslucent());
 
   for (; surf; surf = surf->next) {
+    surf->texinfo = texinfo; //k8:should we force texinfo here?
     surf->Light = sflight;
     surf->Fade = Fade;
     surf->dlightframe = sub->dlightframe;
