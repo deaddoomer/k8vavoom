@@ -157,8 +157,8 @@ static VCvarB cfg_saving_allowed("cfg_saving_allowed", true, "Is config saving a
 static char CurrentLanguage[4];
 static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom);
 
-static VCvarB cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive);
-static VCvarI cl_framerate("cl_framerate", "0", "Framerate cap for client rendering.", CVAR_Archive);
+static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive);
+static VCvarI cl_framerate("cl_framerate", "140", "Framerate cap for client rendering.", CVAR_Archive);
 static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive);
 
 VCvarI sv_use_timefrac("sv_use_timefrac", "0", "Accumulate unused frame times? This *may* give slightly stable capped framerates, but it usually don't. (0:none;1:full;2:oneframe)", CVAR_Archive);
@@ -561,20 +561,24 @@ static bool FilterTime () {
           if (timeDelta < 1.0/(double)capfr) return false; // framerate is too high
         }
       } else {
-        int cfr = cl_framerate.asInt();
-        if (cfr < 1 || cfr > 200) cfr = 0;
-        if (cfr && (GGameInfo->NetMode == NM_None || GGameInfo->NetMode == NM_Standalone)) {
-          // capped fps
-          //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; cfr=%d; dt=%g", last_time, curr_time, time, cfr, 1.0/(double)cfr);
-          if (timeDelta < 1.0/(double)cfr) return false; // framerate is too high
-          //GCon->Logf("   OK! td=%g : %g (cfr=%g; over=%g)", timeDelta, time, 1.0/(double)cfr, timeDelta-(1.0/(double)cfr));
-        } else if (!cap_framerate && (GGameInfo->NetMode == NM_None || GGameInfo->NetMode == NM_Standalone)) {
-          // uncapped fps
-          if (timeDelta < max_fps_cap_double) return false;
+        // cap client fps
+        double ftime;
+        if (GGameInfo->NetMode <= NM_Standalone) {
+          // local game
+          if (cl_cap_framerate.asBool()) {
+            int cfr = cl_framerate.asInt();
+            if (cfr < 1 || cfr > 200) cfr = 140;
+            ftime = 1.0/(double)cfr;
+          } else {
+            ftime = max_fps_cap_double;
+          }
         } else {
-          // capped fps
-          if (timeDelta < 1.0/70.0) return false; // framerate is too high
+          // network game
+          const int sfr = clampval(sv_framerate.asInt(), 5, 70);
+          ftime = 1.0/(double)sfr;
         }
+        //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
+        if (timeDelta < ftime) return false; // framerate is too high
       }
       #else
       // dedicated server

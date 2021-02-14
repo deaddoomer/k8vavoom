@@ -53,8 +53,8 @@ extern bool host_gdb_mode;
 
 
 // no more than 250 FPS
-#define max_fps_cap_double  (0.004)
-#define max_fps_cap_float   (0.004f)
+#define max_fps_cap_double  (1.0/250.0)
+#define max_fps_cap_float   ((float)(1.0f/250.0f))
 
 extern int host_frametics;
 extern double host_frametime;
