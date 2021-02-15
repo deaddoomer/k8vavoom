@@ -38,6 +38,9 @@ VCvarB r_models("r_models", true, "Allow 3d models?", 0/*CVAR_Archive*/);
 
 extern VCvarI sv_use_timefrac;
 
+#ifdef CLIENT
+extern VCvarB r_wipe_enabled;
+#endif
 
 // arbitrary number
 #define INITIAL_TICK_DELAY  (2)
@@ -826,6 +829,22 @@ static void SV_UpdateMaster () {
 //  SV_Ticker
 //
 //==========================================================================
+static inline bool svIsInWipe () noexcept {
+#ifdef CLIENT_NOPE_NOPE
+  if (GGameInfo->NetMode <= NM_Standalone || GLevel->TicTime >= serverStartRenderFramesTic) return false;
+  //if (!r_wipe_enabled.asBool()) return false;
+  return true;
+#else
+  return false;
+#endif
+}
+
+
+//==========================================================================
+//
+//  SV_Ticker
+//
+//==========================================================================
 static void SV_Ticker () {
   //double saved_frametime;
 
@@ -899,7 +918,8 @@ static void SV_Ticker () {
       // do it this way, because of rounding
       GGameInfo->frametime = currframetime;
       host_frametime = GGameInfo->frametime;
-      if (GGameInfo->IsPaused()) {
+      // do not allow pause if we're doing initial ticking with wiping
+      if (GGameInfo->IsPaused() && !svIsInWipe()) {
         // no need to do anything more if the game is paused
         if (!frameSkipped) { runClientsCalled = true; SV_RunClients(); }
         wasPaused = true;
@@ -1684,7 +1704,7 @@ void SV_SpawnServer (const char *mapname, bool spawn_thinkers, bool titlemap) {
 
     // delay rendering if we have ACS scripts
     if (GLevel->scriptThinkers.length() || AcsHasScripts(GLevel->Acs)) {
-      serverStartRenderFramesTic = GLevel->TicTime+INITIAL_TICK_DELAY;
+      if (GGameInfo->NetMode <= NM_Standalone) serverStartRenderFramesTic = GLevel->TicTime+INITIAL_TICK_DELAY;
       GCon->Log("---");
       if (AcsHasScripts(GLevel->Acs)) GCon->Log("Found some ACS scripts");
       if (GLevel->scriptThinkers.length()) GCon->Logf("ACS thinkers: %d", GLevel->scriptThinkers.length());

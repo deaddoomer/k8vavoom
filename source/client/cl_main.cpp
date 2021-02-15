@@ -391,8 +391,13 @@ void CL_SetupStandaloneClient () {
 
   // if wipe is enabled, tick the world once, so spawned things will fix themselves
   if (r_wipe_enabled) {
-    if (developer) GCon->Log(NAME_Dev, "****** WIPE TICK ******");
+    if (developer) GCon->Log(NAME_Debug, "****** WIPE TICK ******");
     GLevel->TickWorld(SV_GetFrameTimeConstant());
+    if (CL_IntermissionPhase()) serverStartRenderFramesTic = -1;
+    while (GLevel->TicTime < serverStartRenderFramesTic) {
+      if (developer) GCon->Logf(NAME_Debug, "****** WIPE EXTRA TICK (%d : %d) ******", GLevel->TicTime, serverStartRenderFramesTic);
+      GLevel->TickWorld(SV_GetFrameTimeConstant());
+    }
   }
 
   GCon->Log(NAME_Dev, "Client level loaded");
