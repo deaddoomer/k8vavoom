@@ -275,7 +275,6 @@ void DrawNotify () {
 
   // notify lines
   int y = 0;
-  int i = 0;
   if (GetCvar('dbg_world_think_vm_time') || GetCvar('dbg_world_think_decal_time') || GetCvar('draw_gc_stats')) y += FontHeight();
 
   foreach (ref NotifyMessage msg; notifyMessages) {
