@@ -104,6 +104,11 @@ defaultproperties {
   Attenuated = true;
 }
 
+class SectorPointLightAdditive : DynamicLight __mobjinfo__(9813);
+defaultproperties {
+  LightType = DLTYPE_Sector|DLTYPE_Additive;
+}
+
 class SectorPointLightSubtractive : DynamicLight __mobjinfo__(9823);
 defaultproperties {
   LightType = DLTYPE_Sector|DLTYPE_Subtractive;
