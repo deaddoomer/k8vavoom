@@ -77,7 +77,7 @@ VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leva no more than
 //
 //==========================================================================
 float VEntity::GetMoveRadius () const noexcept {
-  if ((EntityFlags&(EF_Corpse|EF_Missile)) == EF_Corpse && (FlagsEx&EFEX_Monster)) {
+  if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Fly|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse && (FlagsEx&EFEX_Monster)) {
     // monster corpse
     if (gm_smaller_corpses.asBool()) {
       const float rmult = gm_corpse_radius_mult.asFloat();
@@ -1343,8 +1343,8 @@ bool VEntity::CheckBlockingMobj (VEntity *blockmobj) {
   VEntity *bmee = (blockmobj ? blockmobj->CheckOnmobj() : nullptr);
   VEntity *myee = CheckOnmobj();
   return
-    (!blockmobj || !bmee || (bmee && bmee != this)) &&
-    (!myee || (myee && myee != blockmobj));
+    (!blockmobj || !bmee || bmee != this) &&
+    (!myee || myee != blockmobj);
 }
 
 
@@ -1427,23 +1427,27 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       // when flying, slide up or down blocking lines until the actor is not blocked
       if (Origin.z+Height > tmtrace.CeilingZ) {
         // if sliding down, make sure we don't have another object below
-        if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
-             (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
-            (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
-            CheckBlockingMobj(tmtrace.BlockingMobj))
-        {
-          if (!checkOnly && !isClient) Velocity.z = -8.0f*35.0f;
+        if (!checkOnly && !isClient) {
+          if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
+               (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
+              (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
+              CheckBlockingMobj(tmtrace.BlockingMobj))
+          {
+            Velocity.z = -8.0f*35.0f;
+          }
         }
         PushLine(tmtrace, skipEffects);
         return false;
       } else if (Origin.z < tmtrace.FloorZ && tmtrace.FloorZ-tmtrace.DropOffZ > MaxStepHeight) {
         // check to make sure there's nothing in the way for the step up
-        if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
-             (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
-            (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
-            CheckBlockingMobj(tmtrace.BlockingMobj))
-        {
-          if (!checkOnly && !isClient) Velocity.z = 8.0f*35.0f;
+        if (!checkOnly && !isClient) {
+          if (/*(!tmtrace.BlockingMobj || !tmtrace.BlockingMobj->CheckOnmobj() ||
+               (tmtrace.BlockingMobj->CheckOnmobj() && tmtrace.BlockingMobj->CheckOnmobj() != this)) &&
+              (!CheckOnmobj() || (CheckOnmobj() && CheckOnmobj() != tmtrace.BlockingMobj))*/
+              CheckBlockingMobj(tmtrace.BlockingMobj))
+          {
+            Velocity.z = 8.0f*35.0f;
+          }
         }
         PushLine(tmtrace, skipEffects);
         return false;
