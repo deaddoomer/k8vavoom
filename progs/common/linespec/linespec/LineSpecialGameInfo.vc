@@ -1515,7 +1515,7 @@ override void CmdSetSlot (ref array!string Args, bool asKeyconf) {
   kkWeaponSlotCopy[Slot-1] = false;
 
   if (Args.length == 2) {
-    print("Slot %s cleared", Slot);
+    printmsg(PMSG.Init, "Weapon slot %s cleared", Slot);
   } else {
     foreach (auto i; 2..Args.length) {
       // standardize class name here, since I've found people writing in all types of mixed cases...
@@ -1525,6 +1525,8 @@ override void CmdSetSlot (ref array!string Args, bool asKeyconf) {
       } else {
         if (!AddKeyconfWeaponToSlot(Slot, Cls, (asKeyconf ? WSlotSrc.KEYCONF : WSlotSrc.GAMEINFO))) {
           printwarn("Couldn't add `%s` to slot `%s`", Args[i], Slot);
+        } else {
+          //printmsg(PMSG.Init, "Added weapon `%C` to slot %s (keyconf)", Cls, Slot);
         }
       }
     }

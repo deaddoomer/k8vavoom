@@ -537,10 +537,15 @@ void InitializeWeaponSlots () {
       }
       // try to find a slot number
       int snum = wcls.default.SlotNumber-1;
+      if (debugDump) printdebug("*** Weapon `%C`, bad slot %d", wcls, snum+1);
       if (snum < 0 || snum >= actualWeaponSlots.length) {
+        if (debugDump) printdebug("*** Weapon `%C` -- trying to find a suitable slot", wcls);
         // if this is replacement weapon, get slot number from replacee
         class!Weapon rpx = class!Weapon(GetClassReplacee(wcls));
-        if (rpx) snum = rpx.default.SlotNumber-1;
+        if (rpx && rpx.default.SlotNumber > 0) {
+          snum = rpx.default.SlotNumber-1;
+          if (debugDump) printdebug("*** Weapon `%C` -- got slot %d from replacee `%C`", wcls, snum+1, rpx);
+        }
         // if direct replacee don't have slot number, try to find one in inheritance chain
         if (snum < 0 || snum >= actualWeaponSlots.length) {
           rpx = wcls;
