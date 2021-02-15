@@ -598,6 +598,8 @@ void InitMapInfo () {
   VName nameZMI = VName("zmapinfo", VName::Add);
   VName nameUMI = VName("umapinfo", VName::Add);
 
+  TArray<int> fileKeyconfLump;
+
   for (int Lump = W_IterateNS(-1, WADNS_Global); Lump >= 0; Lump = W_IterateNS(Lump, WADNS_Global)) {
     int currFile = W_LumpFile(Lump);
     if (doSkipFile) {
@@ -606,6 +608,7 @@ void InitMapInfo () {
     }
     // if we hit another file, load last seen [z]mapinfo lump
     if (currFile != lastMapinfoFile) {
+      //GCon->Logf(NAME_Debug, "*** new archive at '%s' ***", *W_FullLumpName(Lump));
       LoadAllMapInfoLumpsInFile(lastMapinfoLump, lastZMapinfoLump, lastVMapinfoLump);
       if (lastMapinfoLump < 0 && lastZMapinfoLump < 0 && lastVMapinfoLump < 0 && lastUmapinfoLump >= 0) {
         LoadUmapinfoLump(lastUmapinfoLump);
@@ -613,10 +616,15 @@ void InitMapInfo () {
       // reset/update remembered lump indicies
       lastMapinfoFile = currFile;
       lastMapinfoLump = lastVMapinfoLump = lastZMapinfoLump = lastUmapinfoLump = -1; // haven't seen yet
+      // load keyconfs from previous files
+      for (auto &&klmp : fileKeyconfLump) VCommand::LoadKeyconfLump(klmp);
+      fileKeyconfLump.resetNoDtor();
       // skip zip files
       doSkipFile = !W_IsWadPK3File(currFile);
       if (doSkipFile) continue;
     }
+    // remember keyconf
+    if (W_LumpName(Lump) == NAME_keyconf) fileKeyconfLump.append(Lump);
     // remember last seen [z]mapinfo lump
     if (lastMapinfoLump < 0 && W_LumpName(Lump) == NAME_mapinfo) lastMapinfoLump = Lump;
     if (zmapinfoAllowed && lastZMapinfoLump < 0 && W_LumpName(Lump) == nameZMI) lastZMapinfoLump = Lump;
@@ -631,6 +639,10 @@ void InitMapInfo () {
   }
 
   mapinfoParsed = true;
+
+  // load latest keyconfs
+  for (auto &&klmp : fileKeyconfLump) VCommand::LoadKeyconfLump(klmp);
+  fileKeyconfLump.resetNoDtor();
 
   for (int i = 0; i < MapInfo.Num(); ++i) {
     if (VStr(MapInfo[i].NextMap).StartsWith("&wt@")) {

@@ -103,7 +103,8 @@ public:
   static void InsertCLICommands (); // should be called after loading startup scripts
   static void WriteAlias (VStream *st);
   static void Shutdown ();
-  static void ProcessKeyConf ();
+  //static void ProcessKeyConf ();
+  static void LoadKeyconfLump (int lump);
 
   static void AddToAutoComplete (const char *string);
   static void RemoveFromAutoComplete (const char *string);

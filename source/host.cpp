@@ -404,11 +404,11 @@ void Host_Init () {
   R_InitSkyBoxes();
 #endif
 
-  VCommand::ProcessKeyConf();
+  //VCommand::ProcessKeyConf();
 
   R_ParseEffectDefs();
 
-  InitMapInfo();
+  InitMapInfo(); // this also loads keyconf files
   P_SetupMapinfoPlayerClasses();
   GGameInfo->eventPostPlayerClassInit();
 

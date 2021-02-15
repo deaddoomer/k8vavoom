@@ -294,49 +294,66 @@ void VCommand::Shutdown () {
 
 //==========================================================================
 //
-//  VCommand::ProcessKeyConf
+//  VCommand::LoadKeyconfLump
 //
 //==========================================================================
-void VCommand::ProcessKeyConf () {
-  // enable special mode for console commands
-  ParsingKeyConf = true;
+void VCommand::LoadKeyconfLump (int Lump) {
+  if (Lump < 0) return;
+  // read it
+  VStream *Strm = W_CreateLumpReaderNum(Lump);
+  if (!Strm) return;
 
-  for (auto &&it : WadNSNameIterator(NAME_keyconf, WADNS_Global)) {
-    const int Lump = it.lump;
-    // read it
-    VStream *Strm = W_CreateLumpReaderNum(Lump);
-    VStr buf;
-    buf.setLength(Strm->TotalSize(), 0);
-    Strm->Serialize(buf.getMutableCStr(), buf.length());
-    if (Strm->IsError()) buf.clear();
-    delete Strm;
+  VStr buf;
+  buf.setLength(Strm->TotalSize(), 0);
+  Strm->Serialize(buf.getMutableCStr(), buf.length());
+  if (Strm->IsError()) buf.clear();
+  Strm->Close();
+  delete Strm;
 
-    // parse it
-    VCmdBuf CmdBuf;
-    TArray<VStr> lines;
-    TArray<VStr> args;
-    buf.split('\n', lines);
-    for (auto &&s : lines) {
-      s = s.xstrip();
-      if (s.length() == 0 || s[0] == '#' || s[0] == '/') continue;
-      args.reset();
-      s.tokenise(args);
-      if (args.length() == 0) continue;
-      /*
-      if (args[0].strEquCI("defaultbind")) {
-        GCon->Logf(NAME_Warning, "ignored keyconf command: %s", *s);
-      } else
-      */
-      {
-        CmdBuf << s << "\n";
-      }
+  GCon->Logf(NAME_Init, "loading keyconf from '%s'...", *W_FullLumpName(Lump));
+
+  // parse it
+  VCmdBuf CmdBuf;
+  TArray<VStr> lines;
+  TArray<VStr> args;
+  buf.split('\n', lines);
+  for (auto &&s : lines) {
+    s = s.xstrip();
+    if (s.length() == 0 || s[0] == '#' || s[0] == '/') continue;
+    args.reset();
+    s.tokenise(args);
+    if (args.length() == 0) continue;
+    /*
+    if (args[0].strEquCI("defaultbind")) {
+      GCon->Logf(NAME_Warning, "ignored keyconf command: %s", *s);
+    } else
+    */
+    {
+      CmdBuf << s << "\n";
     }
-    CmdBuf.Exec();
   }
 
+  // enable special mode for console commands
+  ParsingKeyConf = true;
+  CmdBuf.Exec();
   // back to normal console command execution
   ParsingKeyConf = false;
 }
+
+
+//==========================================================================
+//
+//  VCommand::ProcessKeyConf
+//
+//==========================================================================
+/*
+void VCommand::ProcessKeyConf () {
+  for (auto &&it : WadNSNameIterator(NAME_keyconf, WADNS_Global)) {
+    const int Lump = it.lump;
+    LoadKeyconfLump(Lump);
+  }
+}
+*/
 
 
 //==========================================================================
