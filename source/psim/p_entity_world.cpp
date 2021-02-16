@@ -77,7 +77,7 @@ VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leva no more than
 //
 //==========================================================================
 float VEntity::GetMoveRadius () const noexcept {
-  if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Fly|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse && (FlagsEx&EFEX_Monster)) {
+  if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse && (FlagsEx&EFEX_Monster)) {
     // monster corpse
     if (gm_smaller_corpses.asBool()) {
       const float rmult = gm_corpse_radius_mult.asFloat();

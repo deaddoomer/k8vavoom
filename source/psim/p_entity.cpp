@@ -269,11 +269,16 @@ void VEntity::AddedToLevel () {
 bool VEntity::NeedPhysics () {
   if (IsPlayer()) return true;
   if (Owner) return true; // inventory
+
+  //if (EntityFlags&EF_Float) GCon->Logf(NAME_Debug, "%s:%u: vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x, Velocity.y, Velocity.z);
+
   //if (IsPlayerOrMissileOrMonster()) return true;
   //if (WaterLevel != 0) return true; // i don't think that we need to check this
   //if (!Velocity.isZero2D()) return true;
   // roughly smaller than lowest fixed point 16.16 (it is more like 0.0000152587890625)
   if (fabsf(Velocity.x) > 0.000016f*4.0f || fabsf(Velocity.y) > 0.000016f*4.0f) return true;
+
+  //if ((EntityFlags&EF_Fly) && fabsf(Velocity.z) > 0.000016f*4.0f) return true;
 
   // check sticks
   if (FlagsEx&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
@@ -284,7 +289,7 @@ bool VEntity::NeedPhysics () {
     }
   }
 
-  if (!(EntityFlags&EF_NoGravity)) {
+  if (!(EntityFlags&(EF_NoGravity|EF_Fly|EF_Float))) {
     // going up, or not stanting on a floor?
     if (Velocity.z > 0.0f || Origin.z != FloorZ) return true;
   } else {
@@ -478,6 +483,8 @@ void VEntity::Tick (float deltaTime) {
       if (StateTime-deltaTime > 0.0f) {
         StateTime -= deltaTime;
       } else {
+        #if 0
+        // for some reason this doesn't work right for floating mobjs (like caco), and maybe for some others
         TAVec lastAngles = Angles;
         TVec lastOrg = Origin;
         MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
@@ -489,6 +496,12 @@ void VEntity::Tick (float deltaTime) {
           LastMoveTime = XLevel->Time;
           LastMoveDuration = StateTime;
         }
+        #else
+        --dbgEntityTickSimple;
+        Velocity.clampScaleInPlace(PHYS_MAXMOVE);
+        // call normal ticker
+        VThinker::Tick(deltaTime);
+        #endif
       }
     }
   }
