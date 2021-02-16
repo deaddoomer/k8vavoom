@@ -380,6 +380,7 @@ void VEntity::Tick (float deltaTime) {
   // skip ticker?
   const unsigned eflags = FlagsEx;
   if (eflags&EFEX_NoTickGrav) {
+    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     ++dbgEntityTickNoTick;
     #ifdef CLIENT
     //GCon->Logf(NAME_Debug, "*** %s ***", GetClass()->GetName());
@@ -469,6 +470,7 @@ void VEntity::Tick (float deltaTime) {
     VThinker::Tick(deltaTime);
   } else {
     ++dbgEntityTickSimple;
+    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     const bool needAdvance = (StateTime >= 0.0f); // ticker may respawn the entity, so store it here
     eventSimplifiedTick(deltaTime);
     // advance state, if necessary
