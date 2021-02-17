@@ -72,21 +72,9 @@ static VField *fldbInChase = nullptr;
 static VField *fldbInFloat = nullptr;
 static VField *fldbSkullFly = nullptr;
 static VField *fldbTouchy = nullptr;
+static VField *fldbDormant = nullptr;
 
 static VClass *classActor = nullptr;
-
-
-//==========================================================================
-//
-//  IsInFloatSkullTouchy
-//
-//==========================================================================
-static inline bool IsInFloatSkullTouchy (VEntity *e) {
-  return
-    (fldbInFloat && fldbInFloat->GetBool(e)) ||
-    (fldbSkullFly && fldbSkullFly->GetBool(e)) ||
-    (fldbTouchy && fldbTouchy->GetBool(e));
-}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -128,96 +116,65 @@ public:
 
 //==========================================================================
 //
+//  FindTypedField
+//
+//==========================================================================
+static VField *FindTypedField (VClass *klass, const char *fldname, EType type, VClass *refclass=nullptr) {
+  vassert(klass);
+  VField *fld = klass->FindField(fldname);
+  if (!fld) Sys_Error("field `%s` not found in class `%s`", fldname, klass->GetName());
+  if (fld->Type.Type != type || (type == TYPE_Reference && fld->Type.Class != refclass)) Sys_Error("field `%s` in class `%s` is of invalid type `%s`", fldname, klass->GetName(), *fld->Type.GetName());
+  return fld;
+}
+
+
+//==========================================================================
+//
 //  VEntity::EntityStaticInit
 //
 //==========================================================================
 void VEntity::EntityStaticInit () {
-  classSectorThinker = VClass::FindClassNoCase("SectorThinker");
-  if (classSectorThinker) {
-    GCon->Log(NAME_Init, "`SectorThinker` class found");
-    //SectorThinker NextAffector;
-    fldNextAffector = classSectorThinker->FindField("NextAffector");
-    if (fldNextAffector && (fldNextAffector->Type.Type != TYPE_Reference || fldNextAffector->Type.Class != classSectorThinker)) fldNextAffector = nullptr;
-    if (fldNextAffector) GCon->Logf(NAME_Init, "`SectorThinker.NextAffector` field found (%s)", *fldNextAffector->Type.GetName());
-  }
+  // ah, 'cmon, we are Doom engine, stop dreaming about being something else
+  // any missing field/class is a fatality
+  // this also allows to skip checks for "do we have this field"?
 
-  classScroller = (fldNextAffector ? VClass::FindClassNoCase("Scroller") : nullptr);
-  if (classScroller) {
-    GCon->Log(NAME_Init, "`Scroller` class found");
-
-    fldCarryScrollX = classScroller->FindField("CarryScrollX");
-    if (fldCarryScrollX->Type.Type != TYPE_Float) fldCarryScrollX = nullptr;
-    if (fldCarryScrollX) GCon->Logf(NAME_Init, "`Scroller.CarryScrollX` field found (%s)", *fldCarryScrollX->Type.GetName());
-
-    fldCarryScrollY = classScroller->FindField("CarryScrollY");
-    if (fldCarryScrollY->Type.Type != TYPE_Float) fldCarryScrollY = nullptr;
-    if (fldCarryScrollY) GCon->Logf(NAME_Init, "`Scroller.CarryScrollY` field found (%s)", *fldCarryScrollY->Type.GetName());
-
-    fldVDX = classScroller->FindField("VDX");
-    if (fldVDX->Type.Type != TYPE_Float) fldVDX = nullptr;
-    if (fldVDX) GCon->Logf(NAME_Init, "`Scroller.VDX` field found (%s)", *fldVDX->Type.GetName());
-
-    fldVDY = classScroller->FindField("VDY");
-    if (fldVDY->Type.Type != TYPE_Float) fldVDY = nullptr;
-    if (fldVDY) GCon->Logf(NAME_Init, "`Scroller.VDY` field found (%s)", *fldVDY->Type.GetName());
-
-    fldbAccel = classScroller->FindField("bAccel");
-    if (fldbAccel->Type.Type != TYPE_Bool) fldbAccel = nullptr;
-    if (fldbAccel) GCon->Logf(NAME_Init, "`Scroller.bAccel` field found (%s)", *fldbAccel->Type.GetName());
-
-  }
+  // prepare classes
 
   classEntityEx = VClass::FindClassNoCase("EntityEx");
-  if (classEntityEx) {
-    GCon->Log(NAME_Init, "`EntityEx` class found");
-
-    fldbInChase = classEntityEx->FindField("bInChase");
-    if (fldbInChase && fldbInChase->Type.Type != TYPE_Bool) fldbInChase = nullptr; // bad type
-    if (fldbInChase) GCon->Logf(NAME_Init, "`EntityEx.bInChase` field found (%s)", *fldbInChase->Type.GetName());
-
-    fldbNoTimeFreeze = classEntityEx->FindField("bNoTimeFreeze");
-    if (fldbNoTimeFreeze && fldbNoTimeFreeze->Type.Type != TYPE_Bool) fldbNoTimeFreeze = nullptr; // bad type
-    if (fldbNoTimeFreeze) GCon->Logf(NAME_Init, "`EntityEx.bNoTimeFreeze` field found (%s)", *fldbNoTimeFreeze->Type.GetName());
-
-    fldbWindThrust = classEntityEx->FindField("bWindThrust");
-    if (fldbWindThrust && fldbWindThrust->Type.Type != TYPE_Bool) fldbWindThrust = nullptr; // bad type
-    if (fldbWindThrust) GCon->Logf(NAME_Init, "`EntityEx.bWindThrust` field found (%s)", *fldbWindThrust->Type.GetName());
-
-    fldLastScrollOrig = classEntityEx->FindField("lastScrollCheckOrigin");
-    if (fldLastScrollOrig && fldLastScrollOrig->Type.Type != TYPE_Vector) fldLastScrollOrig = nullptr; // bad type
-    if (fldLastScrollOrig) GCon->Logf(NAME_Init, "`EntityEx.lastScrollCheckOrigin` field found (%s)", *fldLastScrollOrig->Type.GetName());
-
-    if (!fldLastScrollOrig && classScroller) {
-      GCon->Log(NAME_Init, "`Scroller` class discarded due to missing EntityEx fields");
-      classScroller = nullptr;
-    }
-
-    fldbInFloat = classEntityEx->FindField("bInFloat");
-    if (fldbInFloat && fldbInFloat->Type.Type != TYPE_Bool) fldbInFloat = nullptr; // bad type
-    if (fldbInFloat) GCon->Logf(NAME_Init, "`EntityEx.bInFloat` field found (%s)", *fldbInFloat->Type.GetName());
-
-    fldbSkullFly = classEntityEx->FindField("bSkullFly");
-    if (fldbSkullFly && fldbSkullFly->Type.Type != TYPE_Bool) fldbSkullFly = nullptr; // bad type
-    if (fldbSkullFly) GCon->Logf(NAME_Init, "`EntityEx.bSkullFly` field found (%s)", *fldbSkullFly->Type.GetName());
-
-    fldbTouchy = classEntityEx->FindField("bTouchy");
-    if (fldbTouchy && fldbTouchy->Type.Type != TYPE_Bool) fldbTouchy = nullptr; // bad type
-    if (fldbTouchy) GCon->Logf(NAME_Init, "`EntityEx.bTouchy` field found (%s)", *fldbTouchy->Type.GetName());
-  }
+  if (!classEntityEx) Sys_Error("no `EntityEx` actor found");
 
   classActor = VClass::FindClassNoCase("Actor");
-  if (classActor) GCon->Log(NAME_Init, "`Actor` class found");
+  if (!classActor) Sys_Error("no `Actor` actor found");
 
-  // discard the things we cannot check, to do less work in ticker
-  if (fldLastScrollOrig && classScroller) fldCarryScrollX = nullptr;
-  if (classScroller && (!fldCarryScrollX || !fldCarryScrollY || !fldVDX || !fldVDY || !fldbAccel)) {
-    GCon->Log(NAME_Init, "`Scroller` class discarded due to missing fields");
-    GCon->Log(NAME_Init, "`SectorThinker` class discarded due to missing fields");
-    classSectorThinker = nullptr;
-    fldNextAffector = nullptr;
-    classScroller = nullptr;
-    fldCarryScrollX = fldCarryScrollY = fldVDX = fldVDY = fldbAccel = nullptr;
-  }
+  classSectorThinker = VClass::FindClassNoCase("SectorThinker");
+  if (!classSectorThinker) Sys_Error("no `SectorThinker` actor found");
+
+  classScroller = VClass::FindClassNoCase("Scroller");
+  if (!classScroller) Sys_Error("`Scroller` class not found");
+
+  // prepare fields
+
+  // `SectorThinker`
+  fldNextAffector = FindTypedField(classSectorThinker, "NextAffector", TYPE_Reference, classSectorThinker);
+
+  // `Scroller`
+  fldCarryScrollX = FindTypedField(classScroller, "CarryScrollX", TYPE_Float);
+  fldCarryScrollY = FindTypedField(classScroller, "CarryScrollY", TYPE_Float);
+  fldVDX = FindTypedField(classScroller, "VDX", TYPE_Float);
+  fldVDY = FindTypedField(classScroller, "VDY", TYPE_Float);
+  fldbAccel = FindTypedField(classScroller, "bAccel", TYPE_Bool);
+
+  // `EntityEx`
+  fldbInChase = FindTypedField(classEntityEx, "bInChase", TYPE_Bool);
+  fldbNoTimeFreeze = FindTypedField(classEntityEx, "bNoTimeFreeze", TYPE_Bool);
+  fldbWindThrust = FindTypedField(classEntityEx, "bWindThrust", TYPE_Bool);
+  fldLastScrollOrig = FindTypedField(classEntityEx, "lastScrollCheckOrigin", TYPE_Vector);
+  fldbInFloat = FindTypedField(classEntityEx, "bInFloat", TYPE_Bool);
+  fldbSkullFly = FindTypedField(classEntityEx, "bSkullFly", TYPE_Bool);
+  fldbTouchy = FindTypedField(classEntityEx, "bTouchy", TYPE_Bool);
+  fldbDormant = FindTypedField(classEntityEx, "bDormant", TYPE_Bool);
+
+  // `Actor` -- no fields yet
 }
 
 
@@ -306,22 +263,35 @@ bool VEntity::NeedPhysics (const float deltaTime) {
   if (IsPlayer()) return true;
   if (Owner) return true; // inventory
 
-  //if (eflags&EF_Float) GCon->Logf(NAME_Debug, "%s:%u: vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x, Velocity.y, Velocity.z);
-
-  //if (WaterLevel != 0) return true; // i don't think that we need to check this
-  // 2d velocity needs always physics
-  if (fabsf(Velocity.x) /*> PHYS_MIN_SPEED*/ || fabsf(Velocity.y) /*> PHYS_MIN_SPEED*/) return true;
-
   const unsigned eflags = EntityFlags;
   const unsigned eflagsex = FlagsEx;
 
+  // if this is not `EntityEx`, then something is wrong! do not try to optimise it
+  if (!(eflagsex&EFEX_IsEntityEx)) return true;
+
+  // from now on this is `EntityEx`, for sure
+
+  //if (WaterLevel != 0) return true; // i don't think that we need to check this
+  // 2d velocity always needs physics
+  if (fabsf(Velocity.x) || fabsf(Velocity.y)) return true;
+
+  // blasted has special logic when 2d velocity is zero
+  if (eflags&(EF_Fly|EF_Blasted)) return true;
+
   // flying/blasted/touchy objects will do full physics, due to special behaviour
   // (for some reason flying objects tend to behave strangely without full physics; this needs further investigation)
-  if (!(eflags&EF_Corpse)) {
-    if ((eflags&(EF_Fly|EF_Blasted)) || ((eflagsex&EFEX_IsEntityEx) && IsInFloatSkullTouchy(this))) {
-      return true;
-    }
-  }
+  // oh... *ALL* objects could glitch when
+
+  // `bSkullFly` and `bTouchy` has special logic when 2d velocity is zero
+  if (fldbSkullFly->GetBool(this)) return true; // "slammed skull" logic in physics changes skull state
+  if (fldbTouchy->GetBool(this)) return true; // "touchy" arms a mine
+  // `bInFloat` has some more special logic i am too lazy to untangle
+  if (fldbInFloat->GetBool(this)) return true;
+  // activation condition for special code for floaters
+  if ((eflags&(EF_Corpse|EF_Float)) == EF_Float && Target && !Target->IsGoingToDie() && !fldbDormant->GetBool(this)) return true;
+
+  // check for windthrust
+  if (fldbWindThrust->GetBool(this)) return true;
 
   const float hgt = max2(0.0f, Height);
   const float oz = Origin.z;
@@ -335,76 +305,61 @@ bool VEntity::NeedPhysics (const float deltaTime) {
     }
   }
 
+  // if entity is inside a floor or a ceiling, it needs physics step
+  // this is because `StepMove()` or such may move entity over the stairs, for example, but the real thing is done in `ZMovement()`
   if (!(eflags&EF_NoGravity)) {
     // going up, or not standing on a floor?
     if (Velocity.z > 0.0f || oz != FloorZ || oz+hgt > CeilingZ) return true;
   } else {
     // no gravity, check for any vertical velocity
-    if (fabsf(Velocity.z) /*> PHYS_MIN_SPEED*/ || oz < FloorZ || oz+hgt > CeilingZ) return true;
+    if (fabsf(Velocity.z) || oz < FloorZ || oz+hgt > CeilingZ) return true;
   }
 
-  // check for some `EntityEx` things
-  if (eflagsex&EFEX_IsEntityEx) {
-    // check for scrollers
-    if (classScroller) {
-      if (classScroller->InstanceCountWithSub && (eflags&(EF_NoSector|EF_ColideWithWorld)) == EF_ColideWithWorld &&
-          Sector && fldLastScrollOrig->GetVec(this) != Origin)
-      {
-        // do as much as we can here (it is *MUCH* faster than VM code)
-        // fallback to VM checks only if they have a chance to succeed
-        for (msecnode_t *mnode = TouchingSectorList; mnode; mnode = mnode->TNext) {
-          sector_t *sec = mnode->Sector;
-          VThinker *th = sec->AffectorData;
-          if (!th) continue;
-          if (th->GetClass()->IsChildOf(classSectorThinker)) {
-            // check if we have any transporters
-            //TODO: add another velocity-affecting classes here if they will ever emerge
-            bool needCheck = false;
-            while (th) {
-              if (th->GetClass()->IsChildOf(classScroller)) {
-                if (fldCarryScrollX->GetFloat(th) != 0.0f || fldCarryScrollY->GetFloat(th) != 0.0f ||
-                    (fldbAccel->GetBool(th) && (fldVDX->GetFloat(th) != 0.0f || fldVDX->GetFloat(th) != 0.0f)))
-                {
-                  needCheck = true;
-                  break;
-                }
-              }
-              th = (VThinker *)fldNextAffector->GetObjectValue(th);
-            }
-            if (needCheck) {
-              if (eventPhysicsCheckScroller()) return true;
+  // check for scrollers
+  if (classScroller->InstanceCountWithSub && (eflags&(EF_NoSector|EF_ColideWithWorld)) == EF_ColideWithWorld &&
+      Sector && fldLastScrollOrig->GetVec(this) != Origin)
+  {
+    // do as much as we can here (it is *MUCH* faster than VM code)
+    // fallback to VM checks only if they have a chance to succeed
+    for (msecnode_t *mnode = TouchingSectorList; mnode; mnode = mnode->TNext) {
+      sector_t *sec = mnode->Sector;
+      VThinker *th = sec->AffectorData;
+      if (!th) continue;
+      if (th->GetClass()->IsChildOf(classSectorThinker)) {
+        // check if we have any transporters
+        //TODO: add another velocity-affecting classes here if they will ever emerge
+        bool needCheck = false;
+        while (th) {
+          if (th->GetClass()->IsChildOf(classScroller)) {
+            if (fldCarryScrollX->GetFloat(th) != 0.0f || fldCarryScrollY->GetFloat(th) != 0.0f ||
+                (fldbAccel->GetBool(th) && (fldVDX->GetFloat(th) != 0.0f || fldVDX->GetFloat(th) != 0.0f)))
+            {
+              needCheck = true;
               break;
             }
-          } else {
-            // affector is not a sector thinker: this should not happen, but let's play safe
-            if (eventPhysicsCheckScroller()) return true;
-            break;
           }
+          th = (VThinker *)fldNextAffector->GetObjectValue(th);
         }
+        if (needCheck) {
+          if (eventPhysicsCheckScroller()) return true;
+          break;
+        }
+      } else {
+        // affector is not a sector thinker: this should not happen, but let's play safe
+        if (eventPhysicsCheckScroller()) return true;
+        break;
       }
-    } else {
-      // no scroller class, something wicked that way comes...
-      if (eventPhysicsCheckScroller()) return true;
     }
-
-    // check for windthrust
-    if (fldbWindThrust && fldbWindThrust->GetBool(this)) return true;
-  } else {
-    // just in case (everything should be EntityEx here, but let's play safe)
-    if (eventPhysicsCheckScroller()) return true;
   }
 
   // check for state change
   if (!(eflagsex&EFEX_AllowSimpleTick) && StateTime >= 0.0f && StateTime-deltaTime <= 0.0f) {
     if (HasStateMethodIfAdvanced(deltaTime)) {
-      // has state method call, need physics
+      // has state method call, need physics (due to possible movement)
       //if (VStr::strEqu(GetClass()->GetName(), "LostSoul")) GCon->Logf(NAME_Debug, "%s:%u: fallback to full physics -- %s", GetClass()->GetName(), GetUniqueId(), (State ? *State->Loc.toStringNoCol() : "<none>"));
       return true;
     }
   }
-
-  // reset horizontal velocity (just in case, it is either already zero, or very close to zero, but...)
-  //Velocity.x = Velocity.y = 0.0f;
 
   return false;
 }
@@ -492,7 +447,7 @@ void VEntity::Tick (float deltaTime) {
     !NeedPhysics(deltaTime);
 
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
-  if ((eflagsex&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
+  if (eflagsex&EFEX_IsEntityEx) fldbInChase->SetBool(this, false);
 
   // `Mass` is clamped in `OnMapSpawn()`, and we should take care of it in VC code
   // clamp velocity (just in case)
@@ -511,7 +466,7 @@ void VEntity::Tick (float deltaTime) {
   } else {
     ++dbgEntityTickSimple;
     if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
-      const bool noFreeze = ((eflagsex&EFEX_IsEntityEx) && fldbNoTimeFreeze && fldbNoTimeFreeze->GetBool(this));
+      const bool noFreeze = ((eflagsex&EFEX_IsEntityEx) && fldbNoTimeFreeze->GetBool(this));
       if (!noFreeze) return;
     }
     const VState *oldState = State;
