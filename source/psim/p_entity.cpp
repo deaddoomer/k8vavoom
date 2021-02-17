@@ -141,13 +141,13 @@ void VEntity::EntityStaticInit () {
   // prepare classes
 
   classEntityEx = VClass::FindClassNoCase("EntityEx");
-  if (!classEntityEx) Sys_Error("no `EntityEx` actor found");
+  if (!classEntityEx) Sys_Error("`EntityEx` class not found");
 
   classActor = VClass::FindClassNoCase("Actor");
-  if (!classActor) Sys_Error("no `Actor` actor found");
+  if (!classActor) Sys_Error("`Actor` class not found");
 
   classSectorThinker = VClass::FindClassNoCase("SectorThinker");
-  if (!classSectorThinker) Sys_Error("no `SectorThinker` actor found");
+  if (!classSectorThinker) Sys_Error("`SectorThinker` class not found");
 
   classScroller = VClass::FindClassNoCase("Scroller");
   if (!classScroller) Sys_Error("`Scroller` class not found");
