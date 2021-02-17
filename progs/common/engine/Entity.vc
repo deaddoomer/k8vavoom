@@ -239,11 +239,10 @@ float FloorClip; // value to use for floor clipping
 float ScaleX;
 float ScaleY;
 
-// mostly reliable, but you'd better don't use this
-// k8: why i wrote that?
 native readonly transient subsector_t *SubSector;
 native readonly transient sector_t *Sector;
-native readonly transient sector_t *LastSector;
+native readonly transient sector_t *LastSector; // set by `UnlinkFromWorld()`, used to remove excessive gore actors
+native readonly transient TVec PrevTickOrigin; // set in `VEntity::Tick()`
 
 // interaction info, by BLOCKMAP
 // links in blocks (if needed)

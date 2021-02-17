@@ -80,7 +80,7 @@ final void GetFloorAndCeilingEx (out tmtrace_t tmtrace, TVec org, optional bool 
 //
 //==========================================================================
 override bool PhysicsCheckScroller () {
-  // all prerequisites are checked by the C++ code
+  // all prerequisites were checked by the C++ code
   // check conveyors
   TVec eorg;
   float hgt;

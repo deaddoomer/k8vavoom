@@ -228,7 +228,8 @@ class VEntity : public VThinker {
 
   subsector_t *SubSector;
   sector_t *Sector;
-  sector_t *LastSector; // transient
+  sector_t *LastSector; // transient; set by `UnlinkFromWorld()`, used to remove excessive gore actors
+  TVec PrevTickOrigin; // transient; set in `VEntity::Tick()`
 
   // interaction info, by BLOCKMAP
   // links in blocks (if needed)

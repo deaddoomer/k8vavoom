@@ -263,6 +263,12 @@ bool VEntity::NeedPhysics (const float deltaTime) {
   if (IsPlayer()) return true;
   if (Owner) return true; // inventory
 
+  // if it moved, play safe and perform physics code
+  // this may still miss sector enter/exit effects (fuck!)
+  // changed 2d position may mean that something tried to move this thing without using velocities
+  // it is better to play safe here
+  if (PrevTickOrigin.x != Origin.x || PrevTickOrigin.y != Origin.y) return true;
+
   const unsigned eflags = EntityFlags;
   const unsigned eflagsex = FlagsEx;
 
@@ -378,6 +384,7 @@ void VEntity::Tick (float deltaTime) {
   const unsigned eflagsex = FlagsEx;
   if (eflagsex&EFEX_NoTickGrav) {
     ++dbgEntityTickNoTick;
+    PrevTickOrigin = Origin; // it is not used in notick code
     #ifdef CLIENT
     //GCon->Logf(NAME_Debug, "*** %s ***", GetClass()->GetName());
     #endif
@@ -444,6 +451,8 @@ void VEntity::Tick (float deltaTime) {
     !(eflagsex&EFEX_AlwaysTick) &&
     vm_optimise_statics.asBool() &&
     !NeedPhysics(deltaTime);
+
+  PrevTickOrigin = Origin;
 
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
   if (eflagsex&EFEX_IsEntityEx) fldbInChase->SetBool(this, false);
