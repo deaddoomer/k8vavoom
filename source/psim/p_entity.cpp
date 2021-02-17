@@ -323,21 +323,24 @@ bool VEntity::NeedPhysics (const float deltaTime) {
     }
   }
 
+  const float hgt = max2(0.0f, Height);
+  const float oz = Origin.z;
+
   // check sticks (just in case)
   if (eflagsex&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
     if (eflagsex&EFEX_StickToFloor) {
-      return (Origin.z != CeilingZ);
+      return (oz != FloorZ);
     } else {
-      return (Origin.z != FloorZ);
+      return (oz+hgt != CeilingZ);
     }
   }
 
   if (!(eflags&EF_NoGravity)) {
     // going up, or not standing on a floor?
-    if (Velocity.z > 0.0f || Origin.z != FloorZ) return true;
+    if (Velocity.z > 0.0f || oz != FloorZ || oz+hgt > CeilingZ) return true;
   } else {
     // no gravity, check for any vertical velocity
-    if (fabsf(Velocity.z) /*> PHYS_MIN_SPEED*/) return true;
+    if (fabsf(Velocity.z) /*> PHYS_MIN_SPEED*/ || oz < FloorZ || oz+hgt > CeilingZ) return true;
   }
 
   // check for some `EntityEx` things
