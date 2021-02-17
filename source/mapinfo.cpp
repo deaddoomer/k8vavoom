@@ -2570,7 +2570,9 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
       } else if (sc->Check("episode")) {
         ParseEpisodeDef(sc, milumpnum);
       } else if (sc->Check("clearepisodes")) {
+        // clear episodes and clusterdefs
         EpisodeDefs.Clear();
+        ClusterDefs.Clear();
       } else if (sc->Check("skill")) {
         ParseSkillDef(sc);
       } else if (sc->Check("clearskills")) {
@@ -2593,9 +2595,7 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
           error = true;
           break;
         }
-      }
-      // hack for "complete"
-      else if (sc->Check("gameinfo")) {
+      } else if (sc->Check("gameinfo")) {
         ParseGameInfo(sc);
       } else if (sc->Check("damagetype")) {
         ParseDamageType(sc);
