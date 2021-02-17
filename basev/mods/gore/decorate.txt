@@ -1,5 +1,5 @@
-Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" }
-Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" }
+Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" +NoTeleport }
+Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" +NoTeleport }
 k8VaVoom { AllowBloodReplacement = true }
 ////////////////////////////////////////////////////////////////////////////////
 // RED BLOOD
@@ -17,6 +17,7 @@ Actor K8Gore_Blood : Blood /*: K8Gore_BloodBase*/ Replaces Blood {
   +NOGRAVITY
   +THRUACTORS
   +CLIENTSIDEONLY
+  +NoTeleport
   -ALLOWPARTICLES
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -104,6 +105,7 @@ Actor K8Gore_BloodHit : K8Gore_BloodBase {
   +CLIENTSIDEONLY
   +NoInteraction
   +CopyBloodTranslation
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -146,9 +148,9 @@ Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
   +CORPSE
   -DONTSPLASH
   -NOGRAVITY
+  +NoTeleport
   +CopyBloodTranslation
   //+KillOnUnarchive
-  +NoTeleport
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
@@ -229,6 +231,7 @@ Actor K8Gore_FlyingBloodLevel3 : K8Gore_FlyingBlood {
   Speed 5 //7
   Mass 1
   //+KillOnUnarchive
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -331,6 +334,7 @@ Actor K8Gore_FlyingBloodFakeNoDecal : K8Gore_FlyingBloodFake {
   
   Decal None
   -Decals2SPass
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -614,6 +618,7 @@ Actor K8Gore_CeilBloodTinyBloodSpawner : K8Gore_TinyBlood {
   +NOCLIP
   +NOBLOCKMAP
   +NoInteraction
+  +NoTeleport
   +SpawnCeiling
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -645,6 +650,7 @@ Actor K8Gore_BloodDripingFromCeiling : K8Gore_TinyBlood {
   +SpawnCeiling
   -DOOMBOUNCE
   +NOBLOCKMAP
+  +NoTeleport
   //+KillOnUnarchive
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -670,6 +676,7 @@ Actor K8Gore_DripingBloodLeavesSmallPool : K8Gore_TinyBlood {
   -DONTSPLASH
   -DOOMBOUNCE
   +NOBLOCKMAP
+  +NoTeleport
   +CopyBloodTranslation
   //+KillOnUnarchive
   +k8DetachFromServer
@@ -883,6 +890,7 @@ Actor K8Gore_GrowingBloodPool : K8Gore_BloodSpot {
 // ////////////////////////////////////////////////////////////////////////// //
 Actor K8Gore_Blood_SplatterReplacer : K8Gore_Blood Replaces BloodSplatter {
   
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -906,6 +914,7 @@ Actor K8Gore_BloodTransient /*: K8Gore_BloodBaseTransient*/ {
   +NOGRAVITY
   +THRUACTORS
   +CLIENTSIDEONLY
+  +NoTeleport
   -ALLOWPARTICLES
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -988,6 +997,7 @@ Actor K8Gore_BloodHitTransient : K8Gore_BloodBaseTransient {
   +CLIENTSIDEONLY
   +NoInteraction
   +CopyBloodTranslation
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -1030,9 +1040,9 @@ Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
   +CORPSE
   -DONTSPLASH
   -NOGRAVITY
+  +NoTeleport
   +CopyBloodTranslation
   //+KillOnUnarchive
-  +NoTeleport
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
@@ -1113,6 +1123,7 @@ Actor K8Gore_FlyingBloodLevel3Transient : K8Gore_FlyingBloodTransient {
   Speed 5 //7
   Mass 1
   //+KillOnUnarchive
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -1215,6 +1226,7 @@ Actor K8Gore_FlyingBloodFakeNoDecalTransient : K8Gore_FlyingBloodFakeTransient {
   
   Decal None
   -Decals2SPass
+  +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
@@ -1493,6 +1505,7 @@ Actor K8Gore_CeilBloodTinyBloodSpawnerTransient : K8Gore_TinyBloodTransient {
   +NOCLIP
   +NOBLOCKMAP
   +NoInteraction
+  +NoTeleport
   +SpawnCeiling
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -1524,6 +1537,7 @@ Actor K8Gore_BloodDripingFromCeilingTransient : K8Gore_TinyBloodTransient {
   +SpawnCeiling
   -DOOMBOUNCE
   +NOBLOCKMAP
+  +NoTeleport
   //+KillOnUnarchive
   +CopyBloodTranslation
   +k8DetachFromServer
@@ -1549,6 +1563,7 @@ Actor K8Gore_DripingBloodLeavesSmallPoolTransient : K8Gore_TinyBloodTransient {
   -DONTSPLASH
   -DOOMBOUNCE
   +NOBLOCKMAP
+  +NoTeleport
   +CopyBloodTranslation
   //+KillOnUnarchive
   +k8DetachFromServer
