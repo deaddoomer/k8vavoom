@@ -11,6 +11,7 @@ ACTOR BDW_PlayerMuzzle {
   +ThruActors
   +ThruGhost
   -MoveWithSector
+  +k8AllowSimpleTick
   //+Ghost
   States {
     Spawn:

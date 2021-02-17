@@ -55,6 +55,7 @@ Actor BDW_Bubbles {
   +NoTrigger
   +ThruActors
   +ThruGhost
+  +k8AllowSimpleTick
   States {
     Spawn:
       TNT1 A 0
@@ -93,6 +94,7 @@ Actor BDW_EmptyClipSpawn /*: BDW_CasingSpawnerBase*/ {
   +ThruActors
   +ThruGhost
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   States {
     Spawn:
       TNT1 A 0
@@ -168,6 +170,7 @@ Actor BDW_RifleCaseSpawn /*: BDW_CasingSpawnerBase*/ {
   +ThruActors
   +ThruGhost
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   States {
   Spawn:
     TNT1 A 0
@@ -262,6 +265,7 @@ Actor BDW_EmptyBrass : BDW_CasingBase {
 
 
 Actor BDW_UnderwaterEmptyBrass : BDW_EmptyBrass {
+  +k8AllowSimpleTick
   Speed 0
   Mass 1
   -DoomBounce
@@ -286,6 +290,7 @@ Actor BDW_UnderwaterEmptyBrass : BDW_EmptyBrass {
 ////////////////////////////////////////////////////////////////////////////////
 Actor BDW_ShotCaseSpawn : BDW_RifleCaseSpawn {
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   States {
     Spawn:
       TNT1 A 0

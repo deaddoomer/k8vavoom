@@ -21,6 +21,7 @@ Actor BDW_Tracer : FastProjectile {
   -DropOff
   -MoveWithSector
   +k8DetachFromServer
+  +k8AllowSimpleTick
   //+Randomize //k8:???
   //+ThruActors
   //+ThruGhost

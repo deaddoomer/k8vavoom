@@ -14,6 +14,7 @@ Actor BDW_HitPuff Replaces BulletPuff {
   +NoGravity
   -ExplodeOnWater
   -Randomize
+  +k8AllowSimpleTick
   DamageType Bullet
   Decal "BDW_BulletDecal"
   states {
