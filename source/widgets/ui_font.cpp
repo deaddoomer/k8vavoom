@@ -197,7 +197,7 @@ void VFont::StaticInit () {
     }
   }
   if (!haveBigFont && W_CheckNumForName("dbigfont") >= 0) {
-    GCon->Log(NAME_Init, "  BigFont: from default FON lump");
+    GCon->Log(NAME_Init, "  BigFont: from FON lump");
     if (!GetFont(VStr(VName(NAME_bigfont)), VStr("dbigfont"))) {
       GCon->Log(NAME_Init, "  BigFont: cannot create");
     } else {
@@ -1383,6 +1383,7 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
       FChar.Char = Chr;
       FChar.TexNum = -1;
       if (Chr < 128) AsciiChars[Chr] = Chars.Num()-1;
+      //GCon->Logf(NAME_Debug, "FON2 '%s': chr=%d (%c); size=(%dx%d)", *AName, Chr, (Chr >= 32 && Chr != 127 ? (char)Chr : '?'), Widths[i], FontHeight);
 
       // create texture objects for all different colors
       FChar.Textures = new VTexture*[TextColors.Num()];
