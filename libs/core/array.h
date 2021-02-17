@@ -29,12 +29,6 @@
 //**************************************************************************
 //#define VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
 
-// "placement new"
-enum EArrayNew { E_ArrayNew };
-
-inline void *operator new (size_t, void *ptr, EArrayNew, EArrayNew) { return ptr; }
-
-
 template<class T> class TArray {
 private:
   // 2d info is from `VScriptArray`

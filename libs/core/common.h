@@ -106,6 +106,10 @@ static_assert(sizeof(vdouble) == 8, "invalid vdouble");
 // ctor argument to avoid initialisation
 enum ENoInit { E_NoInit };
 
+// "placement new"
+enum EArrayNew { E_ArrayNew };
+
+inline VVA_OKUNUSED void *operator new (size_t, void *ptr, EArrayNew, EArrayNew) { return ptr; }
 
 static inline VVA_CHECKRESULT uint16_t foldHash32to16 (uint32_t h) noexcept { return (uint16_t)(h+(h>>16)); }
 static inline VVA_CHECKRESULT uint8_t foldHash32to8 (uint32_t h) noexcept { h = foldHash32to16(h); return (uint8_t)(h+(h>>8)); }

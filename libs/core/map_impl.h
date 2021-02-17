@@ -35,10 +35,12 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+static_assert(sizeof(unsigned) >= 4, "`unsigned` should be at least 4 bytes");
+
 template<class TK, class TV> class TMap_Class_Name {
 public:
-  static inline vuint32 nextPOTU32 (vuint32 x) noexcept {
-    vuint32 res = x;
+  static inline unsigned nextPOTU32 (unsigned x) noexcept {
+    unsigned res = x;
     res |= (res>>1);
     res |= (res>>2);
     res |= (res>>4);
@@ -49,8 +51,8 @@ public:
     return res;
   }
 
-  inline static vuint32 hashU32 (vuint32 a) noexcept {
-    vuint32 res = (vuint32)a;
+  inline static unsigned hashU32 (unsigned a) noexcept {
+    unsigned res = (unsigned)a;
     res -= (res<<6);
     res = res^(res>>17);
     res -= (res<<9);
@@ -68,30 +70,49 @@ private:
   };
 
   struct TEntry {
-    vuint32 hash; // 0 means "empty"
+    unsigned hash; // 0 means "empty"
     TEntry *nextFree; // next free entry
     TK key;
     TV value;
 
     inline bool isEmpty () const noexcept { return (hash == 0); }
     inline void setEmpty () noexcept { hash = 0; }
+
+    inline void zeroEntry () noexcept {
+      memset((void *)this, 0, sizeof(*this));
+      new(&key, E_ArrayNew, E_ArrayNew)TK;
+      new(&value, E_ArrayNew, E_ArrayNew)TV;
+    }
   };
 
 private:
-  vuint32 mEBSize;
+  unsigned mEBSize;
   TEntry *mEntries;
   TEntry **mBuckets;
   int mBucketsUsed;
   TEntry *mFreeEntryHead;
   int mFirstEntry, mLastEntry;
-  vuint32 mSeed;
-  vuint32 mSeedCount;
+  unsigned mSeed;
+  unsigned mSeedCount;
+
+private:
+  // up to, but not including last
+  void initEntries (unsigned first, unsigned last) {
+    if (first < last) {
+      TEntry *ee = &mEntries[first];
+      memset((void *)ee, 0, (last-first)*sizeof(TEntry));
+      for (unsigned f = first; f < last; ++f, ++ee) {
+        new(&ee->key, E_ArrayNew, E_ArrayNew)TK;
+        new(&ee->value, E_ArrayNew, E_ArrayNew)TV;
+      }
+    }
+  }
 
 public:
   class TIterator {
   private:
     TMap_Class_Name *map;
-    vuint32 index;
+    unsigned index;
 
   public:
     // ctor
@@ -100,7 +121,7 @@ public:
       if (amap->mFirstEntry < 0) {
         index = amap->mEBSize;
       } else {
-        index = (vuint32)amap->mFirstEntry;
+        index = (unsigned)amap->mFirstEntry;
         while ((int)index <= amap->mLastEntry && index < amap->mEBSize && amap->mEntries[index].isEmpty()) ++index;
         if ((int)index > amap->mLastEntry) index = amap->mEBSize;
       }
@@ -150,7 +171,7 @@ public:
       if (map->mFirstEntry < 0) {
         index = map->mEBSize;
       } else {
-        index = (vuint32)map->mFirstEntry;
+        index = (unsigned)map->mFirstEntry;
         while ((int)index <= map->mLastEntry && index < map->mEBSize && map->mEntries[index].isEmpty()) ++index;
         if ((int)index > map->mLastEntry) index = map->mEBSize;
       }
@@ -161,20 +182,20 @@ public:
 
 public:
   // this is for VavoomC VM
-  inline bool isValidIIdx (vint32 index) const noexcept {
+  inline bool isValidIIdx (int index) const noexcept {
     return (index >= 0 && index <= mLastEntry);
   }
 
   // this is for VavoomC VM
-  inline vint32 getFirstIIdx () const noexcept {
+  inline int getFirstIIdx () const noexcept {
     if (mFirstEntry < 0) return -1;
     int index = mFirstEntry;
     while (index <= mLastEntry && index < (int)mEBSize && mEntries[index].isEmpty()) ++index;
-    return (vint32)(index <= mLastEntry ? index : -1);
+    return (int)(index <= mLastEntry ? index : -1);
   }
 
   // <0: done
-  inline vint32 getNextIIdx (vint32 index) const noexcept {
+  inline int getNextIIdx (int index) const noexcept {
     if (index >= 0 && index <= mLastEntry) {
       ++index;
       while (index <= mLastEntry && mEntries[index].isEmpty()) ++index;
@@ -183,7 +204,7 @@ public:
     return -1;
   }
 
-  inline vint32 removeCurrAndGetNextIIdx (vint32 index) noexcept {
+  inline int removeCurrAndGetNextIIdx (int index) noexcept {
     if (index >= 0 && index <= mLastEntry) {
       if (!mEntries[index].isEmpty()) del(mEntries[index].key);
       return getNextIIdx(index);
@@ -191,11 +212,11 @@ public:
     return -1;
   }
 
-  inline const TK *getKeyIIdx (vint32 index) const noexcept {
+  inline const TK *getKeyIIdx (int index) const noexcept {
     return (isValidIIdx(index) && !mEntries[index].isEmpty() ? &mEntries[index].key : nullptr);
   }
 
-  inline TV *getValueIIdx (vint32 index) const noexcept {
+  inline TV *getValueIIdx (int index) const noexcept {
     return (isValidIIdx(index) && !mEntries[index].isEmpty() ? &mEntries[index].value : nullptr);
   }
 
@@ -213,10 +234,7 @@ private:
       }
     }
     #endif
-    if (doZero && mEBSize > 0) {
-      memset((void *)(&mEntries[0]), 0, mEBSize*sizeof(TEntry));
-      //for (vuint32 f = 0; f < mEBSize; ++f) mEntries[f].setEmpty(); //k8: no need to
-    }
+    if (doZero && mEBSize > 0) initEntries(0, mEBSize);
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
   }
@@ -230,8 +248,7 @@ private:
         mBuckets = (TEntry **)Z_Malloc(mEBSize*sizeof(TEntry *));
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
-        memset((void *)(&mEntries[0]), 0, mEBSize*sizeof(TEntry));
-        //for (vuint32 f = 0; f < mEBSize; ++f) mEntries[f].setEmpty(); //k8: no need to
+        initEntries(0, mEBSize);
       }
       ++mLastEntry;
       if (mFirstEntry == -1) {
@@ -258,8 +275,7 @@ private:
     e->key.~TK();
     e->value.~TV();
     #endif
-    memset((void *)e, 0, sizeof(*e));
-    //e->setEmpty(); //k8: no need to
+    e->zeroEntry();
     e->nextFree = mFreeEntryHead;
     mFreeEntryHead = e;
     // fix mFirstEntry and mLastEntry
@@ -282,32 +298,32 @@ private:
     }
   }
 
-  inline vuint32 distToStIdx (vuint32 idx) const noexcept {
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 res = (mBuckets[idx]->hash^mSeed)&(vuint32)(mEBSize-1);
-#else
-    vuint32 res = (vuint32)(((vuint64)(mBuckets[idx]->hash^mSeed)*(vuint64)(mEBSize-1))>>32);
-#endif
+  inline unsigned distToStIdx (unsigned idx) const noexcept {
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
+    #else
+    unsigned res = (unsigned)(((uint64_t)(mBuckets[idx]->hash^mSeed)*(uint64_t)(mEBSize-1))>>32);
+    #endif
     res = (res <= idx ? idx-res : idx+(mEBSize-res));
     return res;
   }
 
   void putEntryInternal (TEntry *swpe) noexcept {
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (swpe->hash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(swpe->hash^mSeed)*(vuint64)bhigh)>>32);
-#endif
-    vuint32 pcur = 0;
-    for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (swpe->hash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(swpe->hash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
+    unsigned pcur = 0;
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) {
         // put entry
         mBuckets[idx] = swpe;
         ++mBucketsUsed;
         return;
       }
-      vuint32 pdist = distToStIdx(idx);
+      unsigned pdist = distToStIdx(idx);
       if (pcur > pdist) {
         // swapping the current bucket with the one to insert
         TEntry *tmpe = mBuckets[idx];
@@ -336,18 +352,17 @@ public:
       // copy entries
       if (other.mBucketsUsed > 0) {
         // has some entries
-        mEBSize = nextPOTU32(vuint32(mBucketsUsed));
+        mEBSize = nextPOTU32(unsigned(mBucketsUsed));
         mBuckets = (TEntry **)Z_Malloc(mEBSize*sizeof(TEntry *));
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
-        memset((void *)(&mEntries[0]), 0, mEBSize*sizeof(TEntry));
-        //for (vuint32 f = 0; f < mEBSize; ++f) mEntries[f].setEmpty(); //k8: don't need this
+        initEntries(0, mEBSize);
         mSeedCount = other.mSeedCount;
         mFirstEntry = mLastEntry = -1;
         if (other.mLastEntry >= 0) {
-          const vuint32 end = (vuint32)other.mLastEntry;
-          vuint32 didx = 0;
-          for (vuint32 f = (vuint32)other.mFirstEntry; f <= end; ++f) {
+          const unsigned end = (unsigned)other.mLastEntry;
+          unsigned didx = 0;
+          for (unsigned f = (unsigned)other.mFirstEntry; f <= end; ++f) {
             if (!other.mEntries[f].isEmpty()) {
               mEntries[didx++] = other.mEntries[f];
             }
@@ -401,21 +416,21 @@ public:
       if (++mSeedCount == 0) mSeedCount = 1;
       mSeed = hashU32(mSeedCount);
       // small optimisation for empty head case
-      const vuint32 stx = (vuint32)mFirstEntry;
+      const unsigned stx = (unsigned)mFirstEntry;
       TEntry *e;
       if (stx > 0) {
         e = &mEntries[0];
         lastfree = mFreeEntryHead = e++;
-        for (vuint32 idx = 1; idx < stx; ++idx, ++e) {
+        for (unsigned idx = 1; idx < stx; ++idx, ++e) {
           lastfree->nextFree = e;
           lastfree = e;
         }
         lastfree->nextFree = nullptr;
       }
       // reinsert all alive entries
-      const vuint32 end = (vuint32)mLastEntry;
+      const unsigned end = (unsigned)mLastEntry;
       e = &mEntries[stx];
-      for (vuint32 idx = stx; idx <= /*mEBSize*/end; ++idx, ++e) {
+      for (unsigned idx = stx; idx <= /*mEBSize*/end; ++idx, ++e) {
         if (!e->isEmpty()) {
           // no need to recalculate hash
           putEntryInternal(e);
@@ -431,7 +446,7 @@ public:
   // call this instead of `rehash()` after alot of deletions
   // if `doRealloc` is `false`, force moving all entries to top
   void compact (bool doRealloc=true) noexcept {
-    vuint32 newsz = nextPOTU32((vuint32)mBucketsUsed);
+    unsigned newsz = nextPOTU32((unsigned)mBucketsUsed);
     if (doRealloc) {
       if (newsz >= 1024*1024*1024) return;
       if (newsz*2 >= mEBSize) return;
@@ -445,48 +460,37 @@ public:
     bool didAnyCopy = false;
     // move all entries to top
     if (mFirstEntry >= 0) {
-      vuint32 didx = 0;
-      while (didx < mEBSize) if (!mEntries[didx].isEmpty()) ++didx; else break;
-      vuint32 f = didx+1;
-      const vuint32 end = mLastEntry;
-      if (f <= end) {
-        // copy entries
-        for (;;) {
-          if (!mEntries[f].isEmpty()) {
-            didAnyCopy = true;
-            mEntries[didx] = mEntries[f];
-            #if !defined(TMAP_NO_CLEAR)
-            mEntries[f].key.~TK();
-            mEntries[f].value.~TV();
-            #endif
-            mEntries[f].setEmpty();
-            ++didx;
-            if (f == end) break;
-            while (didx < mEBSize) if (!mEntries[didx].isEmpty()) ++didx; else break;
-          }
-          if (++f > end) break;
+      unsigned didx = 0;
+      while (didx < mEBSize && !mEntries[didx].isEmpty()) ++didx;
+      const unsigned end = mLastEntry;
+      // copy entries
+      for (unsigned f = didx+1; f <= end; ++f) {
+        if (!mEntries[f].isEmpty()) {
+          vassert(didx < f);
+          didAnyCopy = true;
+          mEntries[didx].zeroEntry(); // just in case
+          mEntries[didx] = mEntries[f];
+          #if !defined(TMAP_NO_CLEAR)
+          mEntries[f].key.~TK();
+          mEntries[f].value.~TV();
+          #endif
+          mEntries[f].zeroEntry();
+          ++didx;
+          while (didx < mEBSize && !mEntries[didx].isEmpty()) ++didx;
         }
       }
-      mFirstEntry = 0;
-      mLastEntry = mBucketsUsed-1;
+      if (didAnyCopy) {
+        mFirstEntry = mLastEntry = 0;
+        while ((unsigned)mLastEntry+1 < mEBSize && !mEntries[mLastEntry].isEmpty()) ++mLastEntry;
+        mLastEntry = mBucketsUsed-1;
+      }
     }
     if (doRealloc) {
       // shrink
-      TEntry **obptr = mBuckets;
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
       mEntries = (TEntry *)Z_Realloc((void *)mEntries, newsz*sizeof(TEntry));
       mEBSize = newsz;
-      if (obptr != mBuckets) {
-        didAnyCopy = true; // reinsert
-#ifdef CORE_MAP_TEST
-        printf("; (AC)");
-#endif
-      }
-#ifdef CORE_MAP_TEST
-      else if (didAnyCopy) {
-        printf("; (XC)");
-      }
-#endif
+      didAnyCopy = true; // just in case, reinsert everything
     }
     // mFreeEntryHead will be fixed in `rehash()`
     // reinsert entries
@@ -498,20 +502,20 @@ public:
 
   bool has (const TK &akey) const noexcept {
     if (mBucketsUsed == 0) return false;
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-    vuint32 khash = GetTypeHash(akey);
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
     //if (!khash) khash = 1; // avoid zero hash value
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (khash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(khash^mSeed)*(vuint64)bhigh)>>32);
-#endif
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
     if (!mBuckets[idx]) return false;
     bool res = false;
-    for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      vuint32 pdist = distToStIdx(idx);
+      unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -522,19 +526,19 @@ public:
 
   const TV *get (const TK &akey) const noexcept {
     if (mBucketsUsed == 0) return nullptr;
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-    vuint32 khash = GetTypeHash(akey);
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
     //if (!khash) khash = 1; // avoid zero hash value
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (khash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(khash^mSeed)*(vuint64)bhigh)>>32);
-#endif
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
     if (!mBuckets[idx]) return nullptr;
-    for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      vuint32 pdist = distToStIdx(idx);
+      unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -544,19 +548,19 @@ public:
 
   TV *get (const TK &akey) noexcept {
     if (mBucketsUsed == 0) return nullptr;
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-    vuint32 khash = GetTypeHash(akey);
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
     //if (!khash) khash = 1; // avoid zero hash value
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (khash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(khash^mSeed)*(vuint64)bhigh)>>32);
-#endif
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
     if (!mBuckets[idx]) return nullptr;
-    for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      vuint32 pdist = distToStIdx(idx);
+      unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -581,22 +585,22 @@ public:
   bool del (const TK &akey) noexcept {
     if (mBucketsUsed == 0) return false;
 
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-    vuint32 khash = GetTypeHash(akey);
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
     //if (!khash) khash = 1; // avoid zero hash value
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (khash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(khash^mSeed)*(vuint64)bhigh)>>32);
-#endif
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
 
     // find key
     if (!mBuckets[idx]) return false; // no key
     bool res = false;
-    for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      vuint32 pdist = distToStIdx(idx);
+      unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -608,10 +612,10 @@ public:
     releaseEntry(mBuckets[idx]);
 
     if (mBucketsUsed > 1) {
-      vuint32 idxnext = (idx+1)&bhigh;
-      for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+      unsigned idxnext = (idx+1)&bhigh;
+      for (unsigned dist = 0; dist <= bhigh; ++dist) {
         if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
-        vuint32 pdist = distToStIdx(idxnext);
+        unsigned pdist = distToStIdx(idxnext);
         if (pdist == 0) { mBuckets[idx] = nullptr; break; }
         mBuckets[idx] = mBuckets[idxnext];
         idx = (idx+1)&bhigh;
@@ -631,22 +635,22 @@ public:
 
   // returns `true` if old value was replaced
   bool put (const TK &akey, const TV &aval) noexcept {
-    const vuint32 bhigh = (vuint32)(mEBSize-1);
-    vuint32 khash = GetTypeHash(akey);
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
     //if (!khash) khash = 1; // avoid zero hash value
-#ifndef TMAP_USE_MULTIPLY
-    vuint32 idx = (khash^mSeed)&bhigh;
-#else
-    vuint32 idx = (vuint32)(((vuint64)(khash^mSeed)*(vuint64)bhigh)>>32);
-#endif
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
 
     // check if we already have this key
     if (mBucketsUsed != 0 && mBuckets[idx]) {
-      for (vuint32 dist = 0; dist <= bhigh; ++dist) {
+      for (unsigned dist = 0; dist <= bhigh; ++dist) {
         TEntry *e = mBuckets[idx];
         if (!e) break;
-        vuint32 pdist = distToStIdx(idx);
+        unsigned pdist = distToStIdx(idx);
         if (dist > pdist) break;
         if (e->hash == khash && e->key == akey) {
           // replace element
@@ -659,18 +663,19 @@ public:
 
     // need to resize elements table?
     // if elements table is empty, `allocEntry()` will take care of it
-    if (mEBSize && (vuint32)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100) {
-      vuint32 newsz = (vuint32)mEBSize;
+    if (mEBSize && (unsigned)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100) {
+      unsigned newsz = (unsigned)mEBSize;
       //if (Length(mEntries) <> newsz) then raise Exception.Create('internal error in hash table (resize)');
       //if (newsz <= 1024*1024*1024) then newsz *= 2 else raise Exception.Create('hash table too big');
-      newsz *= 2;
+      newsz <<= 1;
       // resize buckets array
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
       memset(mBuckets+mEBSize, 0, (newsz-mEBSize)*sizeof(TEntry *));
       // resize entries array
       mEntries = (TEntry *)Z_Realloc((void *)mEntries, newsz*sizeof(TEntry));
-      memset((void *)(mEntries+mEBSize), 0, (newsz-mEBSize)*sizeof(TEntry));
-      //for (vuint32 f = mEBSize; f < newsz; ++f) mEntries[f].setEmpty(); //k8: no need to
+      //memset((void *)(mEntries+mEBSize), 0, (newsz-mEBSize)*sizeof(TEntry));
+      //for (unsigned f = mEBSize; f < newsz; ++f) mEntries[f].setEmpty(); //k8: no need to
+      initEntries(mEBSize, newsz);
       mEBSize = newsz;
       // mFreeEntryHead will be fixed in `rehash()`
       // reinsert entries
@@ -697,7 +702,7 @@ public:
 #ifdef CORE_MAP_TEST
   int countItems () const noexcept {
     int res = 0;
-    for (vuint32 f = 0; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
+    for (unsigned f = 0; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
     return res;
   }
 #endif
