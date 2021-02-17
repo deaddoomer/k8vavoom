@@ -63,6 +63,7 @@ static VField *fldbAccel = nullptr;
 static VClass *classEntityEx = nullptr;
 static VField *fldbWindThrust = nullptr;
 static VField *fldLastScrollOrig = nullptr;
+static VField *fldbNoTimeFreeze = nullptr;
 
 static VClass *classActor = nullptr;
 
@@ -154,6 +155,10 @@ void VEntity::EntityStaticInit () {
     fldbInChase = classEntityEx->FindField("bInChase");
     if (fldbInChase && fldbInChase->Type.Type != TYPE_Bool) fldbInChase = nullptr; // bad type
     if (fldbInChase) GCon->Logf(NAME_Init, "`EntityEx.bInChase` field found (%s)", *fldbInChase->Type.GetName());
+
+    fldbNoTimeFreeze = classEntityEx->FindField("bNoTimeFreeze");
+    if (fldbNoTimeFreeze && fldbNoTimeFreeze->Type.Type != TYPE_Bool) fldbNoTimeFreeze = nullptr; // bad type
+    if (fldbNoTimeFreeze) GCon->Logf(NAME_Init, "`EntityEx.bNoTimeFreeze` field found (%s)", *fldbNoTimeFreeze->Type.GetName());
 
     fldbWindThrust = classEntityEx->FindField("bWindThrust");
     if (fldbWindThrust && fldbWindThrust->Type.Type != TYPE_Bool) fldbWindThrust = nullptr; // bad type
@@ -475,7 +480,10 @@ void VEntity::Tick (float deltaTime) {
     VThinker::Tick(deltaTime);
   } else {
     ++dbgEntityTickSimple;
-    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
+    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
+      const bool noFreeze = ((eflags&EFEX_IsEntityEx) && fldbNoTimeFreeze && fldbNoTimeFreeze->GetBool(this));
+      if (!noFreeze) return;
+    }
     const bool needAdvance = (StateTime >= 0.0f); // ticker may respawn the entity, so store it here
     eventSimplifiedTick(deltaTime);
     // advance state, if necessary
