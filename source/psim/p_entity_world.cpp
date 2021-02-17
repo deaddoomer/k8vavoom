@@ -778,12 +778,40 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
 
   if (open) {
     // adjust floor / ceiling heights
+    /*
     if (!(open->eceiling.splane->flags&SPF_NOBLOCKING) && open->top < cptrace.CeilingZ) {
       cptrace.CopyOpenCeiling(open);
     }
+    */
+    if (!(open->eceiling.splane->flags&SPF_NOBLOCKING)) {
+      bool replaceIt;
+      if (open->eceiling.GetNormalZ() != -1.0f) {
+        // slope
+        replaceIt = (cptrace.CeilingZ-open->top > 0.1f);
+      } else {
+        replaceIt = (cptrace.CeilingZ > open->top || (open->top == cptrace.CeilingZ && cptrace.ECeiling.isSlope()));
+      }
+      if (replaceIt) {
+        cptrace.CopyOpenCeiling(open);
+      }
+    }
 
+    /*
     if (!(open->efloor.splane->flags&SPF_NOBLOCKING) && open->bottom > cptrace.FloorZ) {
       cptrace.CopyOpenFloor(open);
+    }
+    */
+    if (!(open->efloor.splane->flags&SPF_NOBLOCKING)) {
+      bool replaceIt;
+      if (open->efloor.GetNormalZ() != 1.0f) {
+        // slope
+        replaceIt = (open->bottom-cptrace.FloorZ > 0.1f);
+      } else {
+        replaceIt = (open->bottom > cptrace.FloorZ || (open->bottom == cptrace.FloorZ && cptrace.EFloor.isSlope()));
+      }
+      if (replaceIt) {
+        cptrace.CopyOpenFloor(open);
+      }
     }
 
     if (open->lowfloor < cptrace.DropOffZ) cptrace.DropOffZ = open->lowfloor;
@@ -1140,7 +1168,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   }
 
   // set openrange, opentop, openbottom
-  const float hgt = (Height > 0 ? Height : 0.0f);
+  const float hgt = max2(0.0f, Height);
   //TVec hit_point = tmtrace.End-(DotProduct(tmtrace.End, ld->normal)-ld->dist)*ld->normal;
   TVec hit_point = tmtrace.End-(ld->PointDistance(tmtrace.End)*ld->normal);
   opening_t *open = SV_LineOpenings(ld, hit_point, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
@@ -1149,7 +1177,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   if (IsPlayer()) {
     GCon->Logf(NAME_Debug, "  checking line: %d; sz=%g; ez=%g; hgt=%g; traceFZ=%g; traceCZ=%g", (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.End.z, tmtrace.End.z+hgt, hgt, tmtrace.FloorZ, tmtrace.CeilingZ);
     for (opening_t *op = open; op; op = op->next) {
-      GCon->Logf(NAME_Debug, "   %p: bot=%g; top=%g; range=%g; lowfloor=%g; highceil=%g", op, op->bottom, op->top, op->range, op->lowfloor, op->highceiling);
+      GCon->Logf(NAME_Debug, "   %p: bot=%g; top=%g; range=%g; lowfloor=%g; highceil=%g; fnormz=%g", op, op->bottom, op->top, op->range, op->lowfloor, op->highceiling, op->efloor.GetNormalZSafe());
     }
   }
   #endif
@@ -1168,7 +1196,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         // slope
         replaceIt = (tmtrace.CeilingZ-open->top > 0.1f);
       } else {
-        replaceIt = (tmtrace.CeilingZ > open->top);
+        replaceIt = (tmtrace.CeilingZ > open->top || (open->top == tmtrace.CeilingZ && tmtrace.ECeiling.isSlope()));
       }
       if (/*open->top < tmtrace.CeilingZ*/replaceIt) {
         if (!skipSpecials || open->top /*+hgt*/ >= Origin.z+hgt) {
@@ -1187,7 +1215,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         // slope
         replaceIt = (open->bottom-tmtrace.FloorZ > 0.1f);
       } else {
-        replaceIt = (open->bottom > tmtrace.FloorZ);
+        replaceIt = (open->bottom > tmtrace.FloorZ || (open->bottom == tmtrace.FloorZ && tmtrace.EFloor.isSlope()));
       }
       //const bool slope = (open->efloor.GetNormalZ() != 1.0f);
       //const float diffz = open->bottom-tmtrace.FloorZ;

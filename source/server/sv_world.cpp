@@ -507,7 +507,20 @@ opening_t *SV_LineOpenings (const line_t *linedef, const TVec point, unsigned No
     // create opening
     opening_t *dop = &openings[0];
     // setup floor
-    if (fop.bottom >= bop.bottom) {
+    if (fop.bottom == bop.bottom) {
+      // prefer non-sloped sector
+      if (fop.efloor.isSlope() && !bop.efloor.isSlope()) {
+        dop->efloor = bop.efloor;
+        dop->bottom = bop.bottom;
+        dop->lowfloor = fop.bottom;
+        dop->elowfloor = fop.efloor;
+      } else {
+        dop->efloor = fop.efloor;
+        dop->bottom = fop.bottom;
+        dop->lowfloor = bop.bottom;
+        dop->elowfloor = bop.efloor;
+      }
+    } else if (fop.bottom > bop.bottom) {
       dop->efloor = fop.efloor;
       dop->bottom = fop.bottom;
       dop->lowfloor = bop.bottom;
@@ -519,7 +532,20 @@ opening_t *SV_LineOpenings (const line_t *linedef, const TVec point, unsigned No
       dop->elowfloor = fop.efloor;
     }
     // setup ceiling
-    if (fop.top <= bop.top) {
+    if (fop.top == bop.top) {
+      // prefer non-sloped sector
+      if (fop.eceiling.isSlope() && !bop.eceiling.isSlope()) {
+        dop->eceiling = bop.eceiling;
+        dop->top = bop.top;
+        dop->highceiling = fop.top;
+        dop->ehighceiling = fop.eceiling;
+      } else {
+        dop->eceiling = fop.eceiling;
+        dop->top = fop.top;
+        dop->highceiling = bop.top;
+        dop->ehighceiling = bop.eceiling;
+      }
+    } else if (fop.top <= bop.top) {
       dop->eceiling = fop.eceiling;
       dop->top = fop.top;
       dop->highceiling = bop.top;
