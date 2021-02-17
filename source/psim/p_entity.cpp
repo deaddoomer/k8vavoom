@@ -483,25 +483,27 @@ void VEntity::Tick (float deltaTime) {
       if (StateTime-deltaTime > 0.0f) {
         StateTime -= deltaTime;
       } else {
-        #if 0
-        // for some reason this doesn't work right for floating mobjs (like caco), and maybe for some others
-        TAVec lastAngles = Angles;
-        TVec lastOrg = Origin;
-        MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
-        if (AdvanceState(deltaTime)) {
-          // possibly moved, set new interpolation state
-          // if mobj is not moved, the engine will take care of it
-          LastMoveOrigin = lastOrg;
-          LastMoveAngles = lastAngles;
-          LastMoveTime = XLevel->Time;
-          LastMoveDuration = StateTime;
+        if (HasStateMethodIfAdvanced(deltaTime)) {
+          //GCon->Logf(NAME_Debug, "%s:%u: fallback to normal tick", GetClass()->GetName(), GetUniqueId());
+          --dbgEntityTickSimple;
+          Velocity.clampScaleInPlace(PHYS_MAXMOVE);
+          // call normal ticker
+          VThinker::Tick(deltaTime);
+        } else {
+          // for some reason this doesn't work right for floating mobjs (like caco), and maybe for some others
+          // i really hope that this is safe to call for states without method calls
+          TAVec lastAngles = Angles;
+          TVec lastOrg = Origin;
+          MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
+          if (AdvanceState(deltaTime)) {
+            // possibly moved, set new interpolation state
+            // if mobj is not moved, the engine will take care of it
+            LastMoveOrigin = lastOrg;
+            LastMoveAngles = lastAngles;
+            LastMoveTime = XLevel->Time;
+            LastMoveDuration = StateTime;
+          }
         }
-        #else
-        --dbgEntityTickSimple;
-        Velocity.clampScaleInPlace(PHYS_MAXMOVE);
-        // call normal ticker
-        VThinker::Tick(deltaTime);
-        #endif
       }
     }
   }
@@ -705,6 +707,43 @@ void VEntity::PerformOnIdle () {
       //default: NoTickGravOnIdleType = 0; break; // just in case
     }
   }
+}
+
+
+//==========================================================================
+//
+//  VEntity::HasStateMethodIfAdvanced
+//
+//==========================================================================
+bool VEntity::HasStateMethodIfAdvanced (float deltaTime) const noexcept {
+  const VState *state = State;
+  if (!state || deltaTime <= 0.0f) return false;
+  float stime = StateTime;
+  if (stime < 0.0f) return false;
+  stime -= deltaTime;
+  if (stime > 0.0f) return false;
+  const VState *prevstate = state; // to detect loops
+  bool doSecondMove = false;
+  for (;;) {
+    state = state->NextState;
+    if (!state) return false;
+    if (state->Function) return true;
+    float stdur;
+    if (state->TicType == VState::TicKind::TCK_Random) {
+      stdur = max2(0, min2(state->Arg1, state->Arg2))/35.0f;
+    } else {
+      stdur = state->Time;
+      if (stdur < 0.0f) return false;
+    }
+    if (prevstate) {
+      if (doSecondMove) prevstate = prevstate->NextState;
+      if (prevstate == state) return true; // endless loop detected, play safe
+      doSecondMove = !doSecondMove;
+    }
+    stime += state->Time;
+    if (stime > 0.0f) return false;
+  }
+  return false;
 }
 
 

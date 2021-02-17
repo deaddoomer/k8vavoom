@@ -735,6 +735,7 @@ public:
   bool SetState (VState *);
   void SetInitialState (VState *);
   void PerformOnIdle (); // call when state duration becomes negative
+  bool HasStateMethodIfAdvanced (float deltaTime) const noexcept;
   bool AdvanceState (float);
   VState *FindState (VName StateName, VName SubLabel=NAME_None, bool Exact=false);
   VState *FindStateEx (VStr StateName, bool Exact);
