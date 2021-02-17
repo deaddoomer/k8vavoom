@@ -636,6 +636,7 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
 //
 //==========================================================================
 final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector_t *OldSector) {
+  tmtrace_t tmtrace;
   float oldz = Origin.z;
   bool wasonground = (oldz == OldFloorZ);
 
@@ -658,6 +659,13 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
         //!if (bIsPlayer) printdebug("%C: GRAVITY! vz=%s : %s  dfz=%s; wasonground=%s; sequ=%s; normz=%s", self, Velocity.z, (grav/xmass)*DeltaTime, oldz-FloorZ, wasonground, (OldSector == Sector), EFloor.spGetNormalZ);
         Velocity.z -= (grav/xmass)*DeltaTime;
         // check if we're on the same slope
+        /*
+        if (bIsPlayer) {
+          printdebug("%C: DOWN0 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s", self, FloorZ-oldz, FloorZ, Velocity.z, EFloor.spGetNormalZ, OldFloorNZ);
+          GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
+          printdebug("%C: DOWN1 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s; doffz=%s", self, tmtrace.FloorZ-oldz, tmtrace.FloorZ, Velocity.z, tmtrace.EFloor.spGetNormalZ, OldFloorNZ, tmtrace.DropOffZ);
+        }
+        */
         if (wasonground && prevVelZ <= 0 && OldFloorNZ != 1.0 && EFloor.spGetNormalZ == OldFloorNZ) {
           //if (bIsPlayer) printdebug("%C: same slope (down)!", self);
           oldz = FloorZ;
@@ -665,13 +673,28 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
         }
       }
     } else if (wasonground && oldz < FloorZ) {
-      //!if (bIsPlayer) printdebug("%C: UP delta=%s; vz=%s; normz=%s", self, FloorZ-oldz, Velocity.z, EFloor.spGetNormalZ);
+      /*
+      if (bIsPlayer) {
+        printdebug("%C: UP0 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s", self, FloorZ-oldz, FloorZ, Velocity.z, EFloor.spGetNormalZ, OldFloorNZ);
+        GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
+        printdebug("%C: UP1 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s; doffz=%s", self, tmtrace.FloorZ-oldz, tmtrace.FloorZ, Velocity.z, tmtrace.EFloor.spGetNormalZ, OldFloorNZ, tmtrace.DropOffZ);
+      }
+      */
       if (!bBounceFloors) Velocity.z = fmax(0.0, Velocity.z);
       // check if we're on the same slope
       if (!Velocity.z && OldFloorNZ != 1.0 && EFloor.spGetNormalZ == OldFloorNZ) {
         //if (bIsPlayer) printdebug("%C: same slope (up)!", self);
-        oldz = FloorZ;
-        Origin.z = oldz;
+        if (bIsPlayer) {
+          GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
+          // same `FloorZ` means "walking on the slope", otherwise "walked out of the slope"
+          if (FloorZ == tmtrace.FloorZ) {
+            oldz = FloorZ;
+            Origin.z = oldz;
+          }
+        } else {
+          oldz = FloorZ;
+          Origin.z = oldz;
+        }
       }
     }
   }
@@ -736,7 +759,7 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
     //if (bMissile) printdebug("%C: HitFloor: z=%s; floorz=%s; hit=%B", self, Origin.z, FloorZ, (Origin.z <= FloorZ+0.1));
     if (origz < FloorZ+0.1) {
       // hit the floor
-      //!if (bIsPlayer) printdebug("%C: HitFloor: z=%s; floorz=%s; vz=%s; sector=%d", self, Origin.z, FloorZ, Velocity.z, (Sector ? Sector-&XLevel.Sectors[0] : -1));
+      //if (bIsPlayer && oldz < FloorZ) printdebug("%C: HitFloor: oldz=%s; z=%s; floorz=%s; vz=%s; sector=%d", self, oldz, Origin.z, FloorZ, Velocity.z, (Sector ? Sector-&XLevel.Sectors[0] : -1));
       if (!HitFloor(oldz, OldSector)) return;
       origz = Origin.z;
     }
