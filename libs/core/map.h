@@ -37,10 +37,3 @@
 #include "map_impl.h"
 #undef TMAP_NO_CLEAR
 #undef TMap_Class_Name
-
-
-#define TMap_Class_Name  TMapDtor
-#define TMAP_DO_DTOR
-#include "map_impl.h"
-#undef TMAP_DO_DTOR
-#undef TMap_Class_Name

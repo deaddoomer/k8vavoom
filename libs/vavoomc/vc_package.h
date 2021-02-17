@@ -64,7 +64,7 @@ public:
   TArray<VClass *> ParsedClasses;
   TArray<VClass *> ParsedDecorateImportClasses;
 
-  TMap<VName, bool> KnownEnums;
+  TMapNC<VName, bool> KnownEnums;
 
   int NumBuiltins;
 

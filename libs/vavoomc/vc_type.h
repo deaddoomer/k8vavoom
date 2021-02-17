@@ -272,7 +272,7 @@ vuint32 GetTypeHash (const VScriptDictElem &e);
 
 class VScriptDict {
 public:
-  TMapDtor<VScriptDictElem, VScriptDictElem> *map;
+  TMap<VScriptDictElem, VScriptDictElem> *map;
 
 public:
   VScriptDict () : map(nullptr) {}

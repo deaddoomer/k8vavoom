@@ -26,9 +26,8 @@
 //**  Template for mapping kays to values.
 //**
 //**************************************************************************
-// define this to call destructors on both keys and values
-//#define TMAP_DO_DTOR
-// define this to skip clearing keys and values (can be useful for PODs)
+// define this to skip calling dtors on keys and values (can be useful for PODs)
+// note that both keys and values will be zeroed before using anyway
 //#define TMAP_NO_CLEAR
 
 // see https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
@@ -201,26 +200,20 @@ public:
   }
 
 private:
-  void freeEntries () noexcept {
-#if defined(TMAP_DO_DTOR) || !defined(TMAP_NO_CLEAR)
+  void freeEntries (const bool doZero=true) noexcept {
+    #if !defined(TMAP_NO_CLEAR)
     if (mFirstEntry >= 0) {
       const int end = mLastEntry;
       TEntry *e = &mEntries[mFirstEntry];
       for (int f = mFirstEntry; f <= end; ++f, ++e) {
         if (!e->isEmpty()) {
-          // free key
-#if defined(TMAP_DO_DTOR)
           e->key.~TK();
           e->value.~TV();
-#elif !defined(TMAP_NO_CLEAR)
-          e->key = TK();
-          e->value = TV();
-#endif
         }
       }
     }
-#endif
-    if (mEBSize > 0) {
+    #endif
+    if (doZero && mEBSize > 0) {
       memset((void *)(&mEntries[0]), 0, mEBSize*sizeof(TEntry));
       //for (vuint32 f = 0; f < mEBSize; ++f) mEntries[f].setEmpty(); //k8: no need to
     }
@@ -260,14 +253,11 @@ private:
   }
 
   void releaseEntry (TEntry *e) noexcept {
-    int idx = (int)(e-&mEntries[0]);
-#if defined(TMAP_DO_DTOR)
+    const int idx = (int)(e-&mEntries[0]);
+    #if !defined(TMAP_NO_CLEAR)
     e->key.~TK();
     e->value.~TV();
-#elif !defined(TMAP_NO_CLEAR)
-    e->key = TK();
-    e->value = TV();
-#endif
+    #endif
     memset((void *)e, 0, sizeof(*e));
     //e->setEmpty(); //k8: no need to
     e->nextFree = mFreeEntryHead;
@@ -328,7 +318,7 @@ private:
       idx = (idx+1)&bhigh;
       ++pcur;
     }
-    abort();
+    abort(); // we should not come here, ever
   }
 
 public:
@@ -374,9 +364,10 @@ public:
   }
 
   void clear () noexcept {
-#if defined(TMAP_DO_DTOR) || !defined(TMAP_NO_CLEAR)
-    freeEntries();
-#endif
+    // no need to call this to zero memory that will be freed anyway
+    #if !defined(TMAP_NO_CLEAR)
+    freeEntries(false);
+    #endif
     mFreeEntryHead = nullptr;
     Z_Free(mBuckets);
     mBucketsUsed = 0;
@@ -464,13 +455,10 @@ public:
           if (!mEntries[f].isEmpty()) {
             didAnyCopy = true;
             mEntries[didx] = mEntries[f];
-#if defined(TMAP_DO_DTOR)
+            #if !defined(TMAP_NO_CLEAR)
             mEntries[f].key.~TK();
             mEntries[f].value.~TV();
-#elif !defined(TMAP_NO_CLEAR)
-            mEntries[f].key = TK();
-            mEntries[f].value = TV();
-#endif
+            #endif
             mEntries[f].setEmpty();
             ++didx;
             if (f == end) break;
@@ -638,8 +626,8 @@ public:
     return true;
   }
 
-  bool Remove (const TK &Key) noexcept { return del(Key); }
-  bool remove (const TK &Key) noexcept { return del(Key); }
+  inline bool Remove (const TK &Key) noexcept { return del(Key); }
+  inline bool remove (const TK &Key) noexcept { return del(Key); }
 
   // returns `true` if old value was replaced
   bool put (const TK &akey, const TV &aval) noexcept {
@@ -714,5 +702,5 @@ public:
   }
 #endif
 
-  TIterator first () noexcept { return TIterator(this); }
+  inline TIterator first () noexcept { return TIterator(this); }
 };

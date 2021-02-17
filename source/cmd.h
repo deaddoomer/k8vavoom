@@ -76,7 +76,7 @@ protected:
   static VBasePlayer *Player; // for SRC_Client
 
   static bool rebuildCache;
-  static TMapDtor<VStr, VCommand *> locaseCache;
+  static TMap<VStr, VCommand *> locaseCache;
 
 public:
   static bool ParsingKeyConf;

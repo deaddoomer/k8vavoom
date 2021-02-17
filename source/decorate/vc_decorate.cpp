@@ -514,10 +514,10 @@ struct VFlagList {
   VClass *Class;
 
   TArray<VPropDef> Props;
-  TMapNC<VStrCI, int> PropsHash;
+  TMap<VStrCI, int> PropsHash;
 
   TArray<VFlagDef> Flags;
-  TMapNC<VStrCI, int> FlagsHash;
+  TMap<VStrCI, int> FlagsHash;
 
   VPropDef *FindProp (VStr name) {
     auto pi = PropsHash.find(name);

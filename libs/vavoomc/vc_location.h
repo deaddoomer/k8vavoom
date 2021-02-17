@@ -31,7 +31,7 @@ private:
   vuint32 Loc;
   vuint32 Col;
   static TArray<VStr> SourceFiles;
-  static TMapDtor<VStr, vint32> SourceFilesMap; // to avoid Schlemiel's curse
+  static TMap<VStr, vint32> SourceFilesMap; // to avoid Schlemiel's curse
 
 public:
   TLocation () : Loc(0), Col(0) {}

@@ -339,7 +339,7 @@ public:
   TMap<VStr, VMethod *> ConCmdListMts; // names are lowercased
 
   // new-style state options and textures
-  TMapDtor<VStr, TextureInfo> dfStateTexList;
+  TMap<VStr, TextureInfo> dfStateTexList;
   VStr dfStateTexDir;
   vint32 dfStateTexDirSet;
 
@@ -386,7 +386,7 @@ public:
 
   VName ResolveAlias (VName aname, bool nocase=false); // returns `aname` for unknown alias, or `NAME_None` for alias loop
 
-  TMap<VName, bool> KnownEnums;
+  TMapNC<VName, bool> KnownEnums;
 
   // increments in `VObject::StaticSpawn()`
   // decrements in `VObject::Destroy()`

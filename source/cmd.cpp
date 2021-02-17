@@ -38,14 +38,14 @@ bool VCommand::Initialised = false;
 VStr VCommand::Original;
 
 bool VCommand::rebuildCache = true;
-TMapDtor<VStr, VCommand *> VCommand::locaseCache;
+TMap<VStr, VCommand *> VCommand::locaseCache;
 
 TArray<VStr> VCommand::Args;
 VCommand::ECmdSource VCommand::Source;
 VBasePlayer *VCommand::Player;
 
 TArray<VStr> VCommand::AutoCompleteTable;
-static TMapNC<VStr, bool> AutoCompleteTableBSet; // quicksearch
+static TMap<VStr, bool> AutoCompleteTableBSet; // quicksearch
 
 VCommand *VCommand::Cmds = nullptr;
 //VCommand::VAlias *VCommand::Alias = nullptr;

@@ -103,6 +103,7 @@ static_assert(sizeof(vfloat) == 4, "invalid vfloat");
 static_assert(sizeof(vdouble) == 8, "invalid vdouble");
 
 
+// ctor argument to avoid initialisation
 enum ENoInit { E_NoInit };
 
 

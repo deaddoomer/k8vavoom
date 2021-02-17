@@ -406,8 +406,8 @@ struct FilterItem {
   int fileno; // file index
   int filter; // filter number
 
-  FilterItem () {}
-  FilterItem (int afno, int afidx) : fileno(afno), filter(afidx) {}
+  inline FilterItem () noexcept {}
+  inline FilterItem (int afno, int afidx) noexcept : fileno(afno), filter(afidx) {}
 };
 
 

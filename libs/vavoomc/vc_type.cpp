@@ -1656,7 +1656,7 @@ void VScriptDict::copyTo (VScriptDict *dest) const {
   vassert(dest->map == nullptr);
   if (map) {
     // copy hashtable
-    dest->map = new TMapDtor<VScriptDictElem, VScriptDictElem>;
+    dest->map = new TMap<VScriptDictElem, VScriptDictElem>;
     for (auto it = map->first(); it; ++it) {
       dest->map->put(it.getKey(), it.getValue());
     }
@@ -1709,7 +1709,7 @@ VScriptDictElem *VScriptDict::find (const VScriptDictElem &key) {
 //
 //==========================================================================
 bool VScriptDict::put (const VScriptDictElem &key, const VScriptDictElem &value) {
-  if (!map) map = new TMapDtor<VScriptDictElem, VScriptDictElem>;
+  if (!map) map = new TMap<VScriptDictElem, VScriptDictElem>;
   return map->put(key, value);
 }
 

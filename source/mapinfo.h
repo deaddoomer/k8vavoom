@@ -91,6 +91,24 @@ struct VClusterDef {
   VStr ExitText;
   VName Flat;
   VName Music;
+
+  inline VClusterDef () noexcept
+    : Cluster(0)
+    , Flags(0)
+    , EnterText()
+    , ExitText()
+    , Flat(NAME_None)
+    , Music(NAME_None)
+  {}
+
+  inline void reset () noexcept {
+    Cluster = 0;
+    Flags = 0;
+    EnterText.clear();
+    ExitText.clear();
+    Flat = NAME_None;
+    Music = NAME_None;
+  }
 };
 
 enum {

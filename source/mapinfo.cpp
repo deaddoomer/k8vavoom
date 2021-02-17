@@ -200,8 +200,8 @@ static TArray<ParTimeInfo> partimes; // not a hashmap, so i can use `ICmp`
 
 static TArray<VName> MapInfoPlayerClasses;
 
-static TMapDtor<int, SpawnEdFixup> SpawnNumFixups; // keyed by num
-static TMapDtor<int, SpawnEdFixup> DoomEdNumFixups; // keyed by num
+static TMap<int, SpawnEdFixup> SpawnNumFixups; // keyed by num
+static TMap<int, SpawnEdFixup> DoomEdNumFixups; // keyed by num
 
 
 //==========================================================================
@@ -313,7 +313,7 @@ void P_SetupMapinfoPlayerClasses () {
 //  appendNumFixup
 //
 //==========================================================================
-static void appendNumFixup (TMapDtor<int, SpawnEdFixup> &arr, VStr className, int num, int flags=0, int special=0, int arg1=0, int arg2=0, int arg3=0, int arg4=0, int arg5=0) {
+static void appendNumFixup (TMap<int, SpawnEdFixup> &arr, VStr className, int num, int flags=0, int special=0, int arg1=0, int arg2=0, int arg3=0, int arg4=0, int arg5=0) {
   SpawnEdFixup *fxp = arr.find(num);
   if (fxp) {
     fxp->ClassName = className;
@@ -345,7 +345,7 @@ static void appendNumFixup (TMapDtor<int, SpawnEdFixup> &arr, VStr className, in
 //  processNumFixups
 //
 //==========================================================================
-static void processNumFixups (const char *errname, bool ismobj, TMapDtor<int, SpawnEdFixup> &fixups) {
+static void processNumFixups (const char *errname, bool ismobj, TMap<int, SpawnEdFixup> &fixups) {
   //GCon->Logf(NAME_Debug, "fixing '%s' (%d)", errname, fixups.count());
 #if 0
   int f = 0;

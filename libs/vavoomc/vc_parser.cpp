@@ -2832,7 +2832,7 @@ void VParser::ParseStatesNewStyleUnused (VClass *inClass) {
     int frameOfsX;
     int frameOfsY;
   };
-  TMapDtor<VStr, TextureInfo> texlist;
+  TMap<VStr, TextureInfo> texlist;
 
   VStr texDir;
   float tickTime = 28.0f*2/1000.0f; //DF does it once per two frames

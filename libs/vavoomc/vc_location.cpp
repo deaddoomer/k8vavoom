@@ -28,7 +28,7 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 TArray<VStr> TLocation::SourceFiles;
-TMapDtor<VStr, vint32> TLocation::SourceFilesMap;
+TMap<VStr, vint32> TLocation::SourceFilesMap;
 
 
 //==========================================================================
