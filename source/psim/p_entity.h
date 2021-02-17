@@ -688,7 +688,7 @@ public:
     VMT_RET_BOOL(method);
   }
 
-  bool NeedPhysics ();
+  bool NeedPhysics (const float deltaTime);
 
   //bool IsMonster () { static VMethodProxy method("IsMonster"); vobjPutParamSelf(); VMT_RET_BOOL(method); }
   inline bool IsPlayer () const noexcept { return !!(EntityFlags&EF_IsPlayer); }

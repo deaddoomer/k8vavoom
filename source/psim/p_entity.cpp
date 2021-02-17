@@ -35,6 +35,10 @@
 #endif
 
 
+// roughly smaller than lowest fixed point 16.16 (it is more like 0.0000152587890625)
+#define PHYS_MIN_SPEED  (0.000016f*2.0f)
+
+
 IMPLEMENT_CLASS(V, Entity);
 
 
@@ -64,10 +68,25 @@ static VClass *classEntityEx = nullptr;
 static VField *fldbWindThrust = nullptr;
 static VField *fldLastScrollOrig = nullptr;
 static VField *fldbNoTimeFreeze = nullptr;
+static VField *fldbInChase = nullptr;
+static VField *fldbInFloat = nullptr;
+static VField *fldbSkullFly = nullptr;
+static VField *fldbTouchy = nullptr;
 
 static VClass *classActor = nullptr;
 
-static VField *fldbInChase = nullptr;
+
+//==========================================================================
+//
+//  IsInFloatSkullTouchy
+//
+//==========================================================================
+static inline bool IsInFloatSkullTouchy (VEntity *e) {
+  return
+    (fldbInFloat && fldbInFloat->GetBool(e)) ||
+    (fldbSkullFly && fldbSkullFly->GetBool(e)) ||
+    (fldbTouchy && fldbTouchy->GetBool(e));
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -172,6 +191,18 @@ void VEntity::EntityStaticInit () {
       GCon->Log(NAME_Init, "`Scroller` class discarded due to missing EntityEx fields");
       classScroller = nullptr;
     }
+
+    fldbInFloat = classEntityEx->FindField("bInFloat");
+    if (fldbInFloat && fldbInFloat->Type.Type != TYPE_Bool) fldbInFloat = nullptr; // bad type
+    if (fldbInFloat) GCon->Logf(NAME_Init, "`EntityEx.bInFloat` field found (%s)", *fldbInFloat->Type.GetName());
+
+    fldbSkullFly = classEntityEx->FindField("bSkullFly");
+    if (fldbSkullFly && fldbSkullFly->Type.Type != TYPE_Bool) fldbSkullFly = nullptr; // bad type
+    if (fldbSkullFly) GCon->Logf(NAME_Init, "`EntityEx.bSkullFly` field found (%s)", *fldbSkullFly->Type.GetName());
+
+    fldbTouchy = classEntityEx->FindField("bTouchy");
+    if (fldbTouchy && fldbTouchy->Type.Type != TYPE_Bool) fldbTouchy = nullptr; // bad type
+    if (fldbTouchy) GCon->Logf(NAME_Init, "`EntityEx.bTouchy` field found (%s)", *fldbTouchy->Type.GetName());
   }
 
   classActor = VClass::FindClassNoCase("Actor");
@@ -271,52 +302,49 @@ void VEntity::AddedToLevel () {
 //  VEntity::NeedPhysics
 //
 //==========================================================================
-bool VEntity::NeedPhysics () {
+bool VEntity::NeedPhysics (const float deltaTime) {
   if (IsPlayer()) return true;
   if (Owner) return true; // inventory
 
-  //if (EntityFlags&EF_Float) GCon->Logf(NAME_Debug, "%s:%u: vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x, Velocity.y, Velocity.z);
+  //if (eflags&EF_Float) GCon->Logf(NAME_Debug, "%s:%u: vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x, Velocity.y, Velocity.z);
 
-  //if (IsPlayerOrMissileOrMonster()) return true;
   //if (WaterLevel != 0) return true; // i don't think that we need to check this
-  //if (!Velocity.isZero2D()) return true;
-  // roughly smaller than lowest fixed point 16.16 (it is more like 0.0000152587890625)
-  if (fabsf(Velocity.x) > 0.000016f*4.0f || fabsf(Velocity.y) > 0.000016f*4.0f) return true;
+  // 2d velocity needs always physics
+  if (fabsf(Velocity.x) /*> PHYS_MIN_SPEED*/ || fabsf(Velocity.y) /*> PHYS_MIN_SPEED*/) return true;
 
-  //if ((EntityFlags&EF_Fly) && fabsf(Velocity.z) > 0.000016f*4.0f) return true;
+  const unsigned eflags = EntityFlags;
+  const unsigned eflagsex = FlagsEx;
 
-  // check sticks
-  if (FlagsEx&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
-    if (FlagsEx&EFEX_StickToFloor) {
+  // flying/blasted/touchy objects will do full physics, due to special behaviour
+  // (for some reason flying objects tend to behave strangely without full physics; this needs further investigation)
+  if (!(eflags&EF_Corpse)) {
+    if ((eflags&(EF_Fly|EF_Blasted)) || ((eflagsex&EFEX_IsEntityEx) && IsInFloatSkullTouchy(this))) {
+      return true;
+    }
+  }
+
+  // check sticks (just in case)
+  if (eflagsex&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
+    if (eflagsex&EFEX_StickToFloor) {
       return (Origin.z != CeilingZ);
     } else {
       return (Origin.z != FloorZ);
     }
   }
 
-  if (!(EntityFlags&(EF_NoGravity|EF_Fly|EF_Float))) {
-    // going up, or not stanting on a floor?
+  if (!(eflags&EF_NoGravity)) {
+    // going up, or not standing on a floor?
     if (Velocity.z > 0.0f || Origin.z != FloorZ) return true;
   } else {
-    // no gravity, check for vertical velocity
-    if (fabsf(Velocity.z) > 0.000016f*4.0f) return true;
+    // no gravity, check for any vertical velocity
+    if (fabsf(Velocity.z) /*> PHYS_MIN_SPEED*/) return true;
   }
 
-  // interpolation
-  // actually, interpolation is done by the renderer, so why bother?
-  /*
-  bool removeJustMoved = false;
-  if (MoveFlags&MVF_JustMoved) {
-    TVec odiff = LastMoveOrigin-Origin;
-    if (fabsf(odiff.x) > 0.2f || fabsf(odiff.y) > 0.2f || fabsf(odiff.z) > 0.2f) return true;
-    removeJustMoved = true;
-  }
-  */
-
-  if (FlagsEx&EFEX_IsEntityEx) {
+  // check for some `EntityEx` things
+  if (eflagsex&EFEX_IsEntityEx) {
     // check for scrollers
     if (classScroller) {
-      if (classScroller->InstanceCountWithSub && (EntityFlags&(EF_NoSector|EF_ColideWithWorld)) == EF_ColideWithWorld &&
+      if (classScroller->InstanceCountWithSub && (eflags&(EF_NoSector|EF_ColideWithWorld)) == EF_ColideWithWorld &&
           Sector && fldLastScrollOrig->GetVec(this) != Origin)
       {
         // do as much as we can here (it is *MUCH* faster than VM code)
@@ -363,15 +391,17 @@ bool VEntity::NeedPhysics () {
     if (eventPhysicsCheckScroller()) return true;
   }
 
-  /*
-  if (removeJustMoved) {
-    MoveFlags &= ~MVF_JustMoved;
-    LastMoveOrigin = Origin;
+  // check for state change
+  if (!(eflagsex&EFEX_AllowSimpleTick) && StateTime >= 0.0f && StateTime-deltaTime <= 0.0f) {
+    if (HasStateMethodIfAdvanced(deltaTime)) {
+      // has state method call, need physics
+      //if (VStr::strEqu(GetClass()->GetName(), "LostSoul")) GCon->Logf(NAME_Debug, "%s:%u: fallback to full physics -- %s", GetClass()->GetName(), GetUniqueId(), (State ? *State->Loc.toStringNoCol() : "<none>"));
+      return true;
+    }
   }
-  */
 
   // reset horizontal velocity (just in case, it is either already zero, or very close to zero, but...)
-  Velocity.x = Velocity.y = 0.0f;
+  //Velocity.x = Velocity.y = 0.0f;
 
   return false;
 }
@@ -388,16 +418,16 @@ void VEntity::Tick (float deltaTime) {
   // may be moved down later if some VC code will start using it
   DataGameTime = XLevel->Time+deltaTime;
   // skip ticker?
-  const unsigned eflags = FlagsEx;
-  if (eflags&EFEX_NoTickGrav) {
+  const unsigned eflagsex = FlagsEx;
+  if (eflagsex&EFEX_NoTickGrav) {
     ++dbgEntityTickNoTick;
     #ifdef CLIENT
     //GCon->Logf(NAME_Debug, "*** %s ***", GetClass()->GetName());
     #endif
     // stick to floor or ceiling?
     if (SubSector) {
-      if (eflags&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
-        if (eflags&EFEX_StickToFloor) {
+      if (eflagsex&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
+        if (eflagsex&EFEX_StickToFloor) {
           Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
         } else {
           #ifdef CLIENT
@@ -417,7 +447,7 @@ void VEntity::Tick (float deltaTime) {
       }
     }
     if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
-    if (eflags&EFEX_NoTickGravLT) {
+    if (eflagsex&EFEX_NoTickGravLT) {
       #ifdef CLIENT
       //GCon->Logf(NAME_Debug, "  : %s lifetime (lmt=%g)", GetClass()->GetName(), LastMoveTime-deltaTime);
       #endif
@@ -451,18 +481,15 @@ void VEntity::Tick (float deltaTime) {
     return;
   }
 
-  bool doSimplifiedTick = false;
   // allow optimiser in netplay servers too, because why not?
-  if (GGameInfo->NetMode != NM_Client && !(eflags&EFEX_AlwaysTick) &&
-      vm_optimise_statics.asBool() &&
-      /*(StateTime < 0.0f || StateTime-deltaTime > 0.0f) &&*/ !NeedPhysics())
-  {
-    //if (StateTime > 0.0f) StateTime -= deltaTime;
-    doSimplifiedTick = true;
-  }
+  const bool doSimplifiedTick =
+    GGameInfo->NetMode != NM_Client &&
+    !(eflagsex&EFEX_AlwaysTick) &&
+    vm_optimise_statics.asBool() &&
+    !NeedPhysics(deltaTime);
 
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
-  if ((eflags&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
+  if ((eflagsex&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
 
   // `Mass` is clamped in `OnMapSpawn()`, and we should take care of it in VC code
   // clamp velocity (just in case)
@@ -481,37 +508,30 @@ void VEntity::Tick (float deltaTime) {
   } else {
     ++dbgEntityTickSimple;
     if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
-      const bool noFreeze = ((eflags&EFEX_IsEntityEx) && fldbNoTimeFreeze && fldbNoTimeFreeze->GetBool(this));
+      const bool noFreeze = ((eflagsex&EFEX_IsEntityEx) && fldbNoTimeFreeze && fldbNoTimeFreeze->GetBool(this));
       if (!noFreeze) return;
     }
-    const bool needAdvance = (StateTime >= 0.0f); // ticker may respawn the entity, so store it here
+    const VState *oldState = State;
     eventSimplifiedTick(deltaTime);
-    // advance state, if necessary
-    if (needAdvance) {
+    // advance state, if necessary (but don't do it if the state was changed)
+    if (oldState == State && StateTime >= 0.0) {
       if (StateTime-deltaTime > 0.0f) {
         StateTime -= deltaTime;
       } else {
-        if (!(eflags&EFEX_AllowSimpleTick) && HasStateMethodIfAdvanced(deltaTime)) {
-          //GCon->Logf(NAME_Debug, "%s:%u: fallback to normal tick", GetClass()->GetName(), GetUniqueId());
-          --dbgEntityTickSimple;
-          Velocity.clampScaleInPlace(PHYS_MAXMOVE);
-          // call normal ticker
-          VThinker::Tick(deltaTime);
-        } else {
-          // for some reason this doesn't work right for floating mobjs (like caco), and maybe for some others
-          // i really hope that this is safe to call for states without method calls
-          TAVec lastAngles = Angles;
-          TVec lastOrg = Origin;
-          MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
-          if (AdvanceState(deltaTime)) {
-            // possibly moved, set new interpolation state
-            // if mobj is not moved, the engine will take care of it
-            LastMoveOrigin = lastOrg;
-            LastMoveAngles = lastAngles;
-            LastMoveTime = XLevel->Time;
-            LastMoveDuration = StateTime;
-          }
+        // for some reason this doesn't work right for floating mobjs (like caco), and maybe for some others
+        // i really hope that this is safe to call for states without method calls
+        TAVec lastAngles = Angles;
+        TVec lastOrg = Origin;
+        MoveFlags |= MVF_JustMoved; // teleports and force origin changes will reset it
+        if (AdvanceState(deltaTime)) {
+          // possibly moved, set new interpolation state
+          // if mobj is not moved, the engine will take care of it
+          LastMoveOrigin = lastOrg;
+          LastMoveAngles = lastAngles;
+          LastMoveTime = XLevel->Time;
+          LastMoveDuration = StateTime;
         }
+        //if (VStr::strEqu(GetClass()->GetName(), "LostSoul")) GCon->Logf(NAME_Debug, "%s:%u:   new simplified state -- %s", GetClass()->GetName(), GetUniqueId(), (State ? *State->Loc.toStringNoCol() : "<none>"));
       }
     }
   }
