@@ -300,7 +300,10 @@ bool VEntity::NeedPhysics (const float deltaTime) {
 
   // if entity is inside a floor or a ceiling, it needs full physics
   // this is because `StepMove()` or such may move entity over the stairs, for example, but the real thing is done in `ZMovement()`
-  if (oz < FloorZ || oz+hgt > CeilingZ) return true;
+  // do this only for monsters and missiles -- assume that pickups, barrels, decorations, etc. won't walk by themselves ;-)
+  if ((eflags&EF_Missile)|(eflagsex&EFEX_Monster)) {
+    if (oz < FloorZ || oz+hgt > CeilingZ) return true;
+  }
 
   // check vertical velocity
   if (!(eflags&EF_NoGravity)) {
