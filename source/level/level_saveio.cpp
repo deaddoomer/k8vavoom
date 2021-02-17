@@ -628,7 +628,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     Strm << STRM_INDEX(slcount);
     if (Strm.IsLoading()) {
       StaticLights.setLength(slcount);
-      StaticLightsMap.clear();
+      if (StaticLightsMap) StaticLightsMap->clear();
     } else {
       // build uid map
       for (TThinkerIterator<VEntity> ent(this); ent; ++ent) {
@@ -652,9 +652,10 @@ void VLevel::SerialiseOther (VStream &Strm) {
         vio.io(VName("Owner"), owner);
         sl.OwnerUId = (owner ? owner->ServerUId : 0);
         if (sl.OwnerUId) {
-          auto oidp = StaticLightsMap.find(sl.OwnerUId);
+          if (!StaticLightsMap) StaticLightsMap = new TMapNC<vuint32, int>();
+          auto oidp = StaticLightsMap->find(sl.OwnerUId);
           if (oidp) StaticLights[*oidp].OwnerUId = 0; //FIXME
-          StaticLightsMap.put(sl.OwnerUId, lidx);
+          StaticLightsMap->put(sl.OwnerUId, lidx);
         }
       } else {
         auto opp = suidmap.find(sl.OwnerUId);

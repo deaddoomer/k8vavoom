@@ -362,7 +362,7 @@ class VLevel : public VGameObject {
   rep_polyobj_t *BasePolyObjs;
 
   TArray<rep_light_t> StaticLights;
-  TMapNC<vuint32, int> StaticLightsMap; // key: owner; value: index in `StaticLights`
+  TMapNC<vuint32, int> *StaticLightsMap; // key: owner; value: index in `StaticLights`
 
   TArray<VSndSeqInfo> ActiveSequences;
   TArray<VCameraTextureInfo> CameraTextures;

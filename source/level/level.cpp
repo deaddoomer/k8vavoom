@@ -513,7 +513,11 @@ void VLevel::Destroy () {
   }
 
   StaticLights.clear();
-  StaticLightsMap.clear();
+  if (StaticLightsMap) {
+    StaticLightsMap->clear();
+    delete StaticLightsMap;
+    StaticLightsMap = nullptr;
+  }
 
   ActiveSequences.Clear();
 
@@ -547,7 +551,7 @@ void VLevel::Destroy () {
 //==========================================================================
 void VLevel::ResetStaticLights () {
   StaticLights.clear();
-  StaticLightsMap.clear();
+  if (StaticLightsMap) StaticLightsMap->clear();
 }
 
 
@@ -557,6 +561,7 @@ void VLevel::ResetStaticLights () {
 //
 //==========================================================================
 void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
+  if (owneruid && !StaticLightsMap) StaticLightsMap = new TMapNC<vuint32, int>();
   const int idx = StaticLights.length();
   rep_light_t &L = StaticLights.alloc();
   L.OwnerUId = owneruid;
@@ -574,9 +579,10 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
   }
   L.Flags = rep_light_t::LightChanged|rep_light_t::LightActive;
   if (owneruid) {
-    auto oidxp = StaticLightsMap.find(owneruid);
+    vassert(StaticLightsMap);
+    auto oidxp = StaticLightsMap->find(owneruid);
     if (oidxp) StaticLights[*oidxp].OwnerUId = 0; //FIXME!
-    StaticLightsMap.put(owneruid, idx);
+    StaticLightsMap->put(owneruid, idx);
   }
   #ifdef CLIENT
   if (Renderer) Renderer->AddStaticLightRGB(owneruid, lpar);
@@ -591,7 +597,8 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
 //==========================================================================
 void VLevel::MoveStaticLightByOwner (vuint32 owneruid, const TVec &Origin) {
   if (!owneruid) return;
-  auto oidxp = StaticLightsMap.find(owneruid);
+  if (!StaticLightsMap) return; // no owned lights
+  auto oidxp = StaticLightsMap->find(owneruid);
   if (!oidxp) return; // no such owned light
   // check if it is moved far enough
   rep_light_t &sl = StaticLights[*oidxp];
@@ -615,13 +622,14 @@ void VLevel::MoveStaticLightByOwner (vuint32 owneruid, const TVec &Origin) {
 //==========================================================================
 void VLevel::RemoveStaticLightByOwner (vuint32 owneruid) {
   if (!owneruid) return;
-  auto oidxp = StaticLightsMap.find(owneruid);
+  if (!StaticLightsMap) return; // no owned lights
+  auto oidxp = StaticLightsMap->find(owneruid);
   if (!oidxp) return; // no such owned light
   rep_light_t &sl = StaticLights[*oidxp];
   sl.Flags = rep_light_t::LightChanged;
   sl.Flags &= ~rep_light_t::LightActive;
   sl.OwnerUId = 0;
-  StaticLightsMap.del(owneruid);
+  StaticLightsMap->del(owneruid);
   #ifdef CLIENT
   if (Renderer) Renderer->RemoveStaticLightByOwner(owneruid);
   #endif
