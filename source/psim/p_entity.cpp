@@ -273,15 +273,9 @@ bool VEntity::NeedPhysics (const float deltaTime) {
 
   //if (WaterLevel != 0) return true; // i don't think that we need to check this
   // 2d velocity always needs physics
-  if (fabsf(Velocity.x) || fabsf(Velocity.y)) return true;
+  if (Velocity.x != 0.0f || Velocity.y != 0.0f) return true;
 
-  // blasted has special logic when 2d velocity is zero
-  if (eflags&(EF_Fly|EF_Blasted)) return true;
-
-  // flying/blasted/touchy objects will do full physics, due to special behaviour
-  // (for some reason flying objects tend to behave strangely without full physics; this needs further investigation)
-  // oh... *ALL* objects could glitch when
-
+  if (eflags&(EF_Fly|EF_Blasted)) return true; // blasted has special logic even when 2d velocity is zero
   // `bSkullFly` and `bTouchy` has special logic when 2d velocity is zero
   if (fldbSkullFly->GetBool(this)) return true; // "slammed skull" logic in physics changes skull state
   if (fldbTouchy->GetBool(this)) return true; // "touchy" arms a mine
@@ -289,14 +283,13 @@ bool VEntity::NeedPhysics (const float deltaTime) {
   if (fldbInFloat->GetBool(this)) return true;
   // activation condition for special code for floaters
   if ((eflags&(EF_Corpse|EF_Float)) == EF_Float && Target && !Target->IsGoingToDie() && !fldbDormant->GetBool(this)) return true;
-
-  // check for windthrust
+  // windthrust should be done in physics code too
   if (fldbWindThrust->GetBool(this)) return true;
 
   const float hgt = max2(0.0f, Height);
   const float oz = Origin.z;
 
-  // check sticks (just in case)
+  // check floor/ceiling stickers
   if (eflagsex&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
     if (eflagsex&EFEX_StickToFloor) {
       return (oz != FloorZ);
@@ -305,14 +298,17 @@ bool VEntity::NeedPhysics (const float deltaTime) {
     }
   }
 
-  // if entity is inside a floor or a ceiling, it needs physics step
+  // if entity is inside a floor or a ceiling, it needs full physics
   // this is because `StepMove()` or such may move entity over the stairs, for example, but the real thing is done in `ZMovement()`
+  if (oz < FloorZ || oz+hgt > CeilingZ) return true;
+
+  // check vertical velocity
   if (!(eflags&EF_NoGravity)) {
     // going up, or not standing on a floor?
-    if (Velocity.z > 0.0f || oz != FloorZ || oz+hgt > CeilingZ) return true;
+    if (Velocity.z > 0.0f || oz != FloorZ) return true;
   } else {
     // no gravity, check for any vertical velocity
-    if (fabsf(Velocity.z) || oz < FloorZ || oz+hgt > CeilingZ) return true;
+    if (Velocity.z != 0.0f) return true;
   }
 
   // check for scrollers
