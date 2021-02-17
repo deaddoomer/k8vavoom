@@ -70,7 +70,7 @@ public:
 
 private:
   // mapping from sound name to sfx index
-  TMap<VName, vint32> name2idx;
+  TMapNC<VName, vint32> name2idx;
 
   bool LoadSound (int sound_id, const VStr &filename);
 };

@@ -1471,7 +1471,7 @@ void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static TMap<int, VGLTexture *> vcGLTexMap;
+static TMapNC<int, VGLTexture *> vcGLTexMap;
 //FIXME: rewrite id management
 static TArray<int> vcGLFreeIds;
 static int vcGLFreeIdsUsed = 0;
@@ -1726,7 +1726,7 @@ struct TimerInfo {
   bool oneShot;
 };
 
-static TMap<int, TimerInfo> timerMap; // key: timer id; value: timer info
+static TMapNC<int, TimerInfo> timerMap; // key: timer id; value: timer info
 static int timerLastUsedId = 0;
 
 

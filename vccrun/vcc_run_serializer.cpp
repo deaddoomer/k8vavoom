@@ -31,9 +31,9 @@ class ObjectSaver;
 // ////////////////////////////////////////////////////////////////////////// //
 class ObjectSaveChecker {
 public:
-  TMap<VClass *, bool> classmap;
-  TMap<VStruct *, bool> structmap;
-  TMap<VField *, bool> fieldmap;
+  TMapNC<VClass *, bool> classmap;
+  TMapNC<VStruct *, bool> structmap;
+  TMapNC<VField *, bool> fieldmap;
 
   // saveable class either has no fields, or all fields are saveable
   static bool isSkip (VClass *cls, bool checkName) {
@@ -132,11 +132,11 @@ static const char *BinStorageSignature = "VaVoom C Binary Data Storage v0"; // 3
 // build map of objects, strings and names
 class ObjectSaveMap {
 public:
-  TMap<VObject *, vuint32> objmap;
+  TMapNC<VObject *, vuint32> objmap;
   TArray<VObject *> objarr;
-  TMap<VName, vuint32> namemap;
+  TMapNC<VName, vuint32> namemap;
   TArray<VName> namearr;
-  TMapDtor<VStr, vuint32> strmap;
+  TMap<VStr, vuint32> strmap;
   TArray<VStr> strarr;
   vuint32 objCount;
   vuint32 nameCount;

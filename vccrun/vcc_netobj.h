@@ -36,7 +36,7 @@ private:
   TArray<int> NameMap;
 
   TArray<VClass *> ClassLookup;
-  TMap<VClass *, vuint32> ClassMap;
+  TMapNC<VClass *, vuint32> ClassMap;
 
 public:
   VNetConnection *Connection;
