@@ -385,7 +385,6 @@ void VEntity::Tick (float deltaTime) {
   // skip ticker?
   const unsigned eflags = FlagsEx;
   if (eflags&EFEX_NoTickGrav) {
-    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     ++dbgEntityTickNoTick;
     #ifdef CLIENT
     //GCon->Logf(NAME_Debug, "*** %s ***", GetClass()->GetName());
@@ -412,6 +411,7 @@ void VEntity::Tick (float deltaTime) {
         #endif
       }
     }
+    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     if (eflags&EFEX_NoTickGravLT) {
       #ifdef CLIENT
       //GCon->Logf(NAME_Debug, "  : %s lifetime (lmt=%g)", GetClass()->GetName(), LastMoveTime-deltaTime);
@@ -448,7 +448,7 @@ void VEntity::Tick (float deltaTime) {
 
   bool doSimplifiedTick = false;
   // allow optimiser in netplay servers too, because why not?
-  if (GGameInfo->NetMode != NM_Client && !(FlagsEx&EFEX_AlwaysTick) &&
+  if (GGameInfo->NetMode != NM_Client && !(eflags&EFEX_AlwaysTick) &&
       vm_optimise_statics.asBool() &&
       /*(StateTime < 0.0f || StateTime-deltaTime > 0.0f) &&*/ !NeedPhysics())
   {
@@ -457,7 +457,7 @@ void VEntity::Tick (float deltaTime) {
   }
 
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
-  if ((FlagsEx&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
+  if ((eflags&EFEX_IsEntityEx) && fldbInChase) fldbInChase->SetBool(this, false);
 
   // `Mass` is clamped in `OnMapSpawn()`, and we should take care of it in VC code
   // clamp velocity (just in case)
@@ -483,7 +483,7 @@ void VEntity::Tick (float deltaTime) {
       if (StateTime-deltaTime > 0.0f) {
         StateTime -= deltaTime;
       } else {
-        if (HasStateMethodIfAdvanced(deltaTime)) {
+        if (!(eflags&EFEX_AllowSimpleTick) && HasStateMethodIfAdvanced(deltaTime)) {
           //GCon->Logf(NAME_Debug, "%s:%u: fallback to normal tick", GetClass()->GetName(), GetUniqueId());
           --dbgEntityTickSimple;
           Velocity.clampScaleInPlace(PHYS_MAXMOVE);

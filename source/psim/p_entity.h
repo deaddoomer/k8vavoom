@@ -329,6 +329,7 @@ class VEntity : public VThinker {
     // set in postctor, refreshed in serializer (to avoid serializing them)
     EFEX_IsEntityEx       = 1u<<13u, // cannot optimise physics for this entity
     EFEX_IsActor          = 1u<<14u, // cannot optimise physics for this entity
+    EFEX_AllowSimpleTick  = 1u<<15u, // do not fallback to full physics code even for states with action method calls
   };
   vuint32 FlagsEx;
 
