@@ -636,7 +636,6 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
 //
 //==========================================================================
 final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector_t *OldSector) {
-  tmtrace_t tmtrace;
   float oldz = Origin.z;
   bool wasonground = (oldz == OldFloorZ);
 
@@ -662,6 +661,7 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
         /*
         if (bIsPlayer) {
           printdebug("%C: DOWN0 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s", self, FloorZ-oldz, FloorZ, Velocity.z, EFloor.spGetNormalZ, OldFloorNZ);
+          tmtrace_t tmtrace;
           GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
           printdebug("%C: DOWN1 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s; doffz=%s", self, tmtrace.FloorZ-oldz, tmtrace.FloorZ, Velocity.z, tmtrace.EFloor.spGetNormalZ, OldFloorNZ, tmtrace.DropOffZ);
         }
@@ -676,6 +676,7 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
       /*
       if (bIsPlayer) {
         printdebug("%C: UP0 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s", self, FloorZ-oldz, FloorZ, Velocity.z, EFloor.spGetNormalZ, OldFloorNZ);
+        tmtrace_t tmtrace;
         GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
         printdebug("%C: UP1 delta=%s; fz=%s; vz=%s; normz=%s; ofnz=%s; doffz=%s", self, tmtrace.FloorZ-oldz, tmtrace.FloorZ, Velocity.z, tmtrace.EFloor.spGetNormalZ, OldFloorNZ, tmtrace.DropOffZ);
       }
@@ -684,17 +685,8 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
       // check if we're on the same slope
       if (!Velocity.z && OldFloorNZ != 1.0 && EFloor.spGetNormalZ == OldFloorNZ) {
         //if (bIsPlayer) printdebug("%C: same slope (up)!", self);
-        if (bIsPlayer) {
-          GetFloorAndCeilingEx(out tmtrace, Origin, collideWorld:true);
-          // same `FloorZ` means "walking on the slope", otherwise "walked out of the slope"
-          if (FloorZ == tmtrace.FloorZ) {
-            oldz = FloorZ;
-            Origin.z = oldz;
-          }
-        } else {
-          oldz = FloorZ;
-          Origin.z = oldz;
-        }
+        oldz = FloorZ;
+        Origin.z = oldz;
       }
     }
   }
