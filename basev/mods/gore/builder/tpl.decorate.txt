@@ -22,6 +22,7 @@ Actor K8Gore_Blood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
   -ALLOWPARTICLES
   +CopyBloodTranslation
   +k8DetachFromServer
+  +k8AllowSimpleTick
   Scale 0.5
   Speed 0
 
@@ -114,6 +115,7 @@ Actor K8Gore_BloodHit$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +CopyBloodTranslation
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   Scale 0.7
   Renderstyle Translucent
   Alpha 0.7
@@ -159,6 +161,7 @@ Actor K8Gore_FlyingBlood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   Mass 1
 
   States {
@@ -241,6 +244,7 @@ Actor K8Gore_FlyingBloodLevel3$(Color) : K8Gore_FlyingBlood$(Color) {
   //+KillOnUnarchive
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 }
 
 
@@ -267,6 +271,7 @@ Actor K8Gore_FlyingBloodTrail$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   Speed 2
 
   States {
@@ -314,6 +319,7 @@ Actor K8Gore_FlyingBloodFake$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   Mass 1
 
   States {
@@ -340,6 +346,7 @@ Actor K8Gore_FlyingBloodFakeNoDecal$(Color) : K8Gore_FlyingBloodFake$(Color) {
   -Decals2SPass
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 }
 
 
@@ -369,6 +376,7 @@ Actor K8Gore_BloodSpot$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +CopyBloodTranslation
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   Renderstyle Dark
 #ifdef TRANSIENT
   Alpha 0.85
@@ -528,6 +536,7 @@ Actor K8Gore_CeilBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
 #endif
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 
   States {
     Spawn:
@@ -611,6 +620,7 @@ Actor K8Gore_TinyBlood$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +CopyBloodTranslation
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 
   States {
     Spawn:
@@ -661,6 +671,7 @@ Actor K8Gore_CeilBloodTinyBloodSpawner$(Color) : K8Gore_TinyBlood$(Color) {
   +CopyBloodTranslation
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 
   States {
     Spawn:
@@ -698,6 +709,7 @@ Actor K8Gore_BloodDripingFromCeiling$(Color) : K8Gore_TinyBlood$(Color) {
   +CopyBloodTranslation
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 
   States {
     Spawn:
@@ -726,6 +738,7 @@ Actor K8Gore_DripingBloodLeavesSmallPool$(Color) : K8Gore_TinyBlood$(Color) {
   //+KillOnUnarchive
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   scale 0.3
 
   States {
@@ -789,6 +802,7 @@ Actor K8Gore_MinuscleBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
   +NoTrigger
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
   //DamageFactor "TeleportRemover", 100.0
   Renderstyle Dark
   Alpha 0.9
@@ -873,6 +887,7 @@ Actor K8Gore_GrowingBloodPool$(Color) : K8Gore_BloodSpot$(Color) {
   Renderstyle Dark
   Alpha 0.99
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 
   States {
     Spawn:
@@ -939,5 +954,6 @@ Actor K8Gore_Blood_SplatterReplacer$(Color) : K8Gore_Blood Replaces BloodSplatte
   $(Translation)
   +k8DetachFromServer
   +k8ServerSideOnly
+  +k8AllowSimpleTick
 }
 #endif
