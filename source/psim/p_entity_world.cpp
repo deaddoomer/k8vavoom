@@ -30,8 +30,6 @@
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
 
-//#define VV_NEW_SLIDE_CHECK
-
 //#define VV_DBG_VERBOSE_TRYMOVE
 //#define VV_DBG_VERBOSE_REL_LINE_FC
 
@@ -1676,6 +1674,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
   TVec SlideDir = Velocity*StepVelScale;
   if (gm_use_new_slide_code.asBool()) {
     const float rad = GetMoveRadius();
+    const bool slideDiag = (SlideDir.x && SlideDir.y);
+    bool prevClipToZero = false;
     // new slide code
     DeclareMakeBlockMapCoords(Origin.x, Origin.y, rad, xl, yl, xh, yh);
     XLevel->IncrementValidCount();
@@ -1726,13 +1726,45 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
           if (fdist < BestSlideFrac) {
             #ifdef VV_DBG_VERBOSE_SLIDE
             if (IsPlayer()) {
-              TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
-              GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: NEW line #%d; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
+              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
+              GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: NEW line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
             }
             #endif
             BestSlideFrac = fdist;
             BestSlideLine = li;
+            if (slideDiag) {
+              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
+              prevClipToZero = !(cvel.x && cvel.y);
+            }
+          } else if (prevClipToZero && slideDiag && fdist == BestSlideFrac) {
+            // choose line that doesn't clip one of the sliding dirs to zero
+            const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
+            if (cvel.x && cvel.y) {
+              #ifdef VV_DBG_VERBOSE_SLIDE
+              if (IsPlayer()) {
+                GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: NEW NON-ZERO line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
+              }
+              #endif
+              BestSlideFrac = fdist;
+              BestSlideLine = li;
+              prevClipToZero = false;
+            }
+            #ifdef VV_DBG_VERBOSE_SLIDE
+            else {
+              if (IsPlayer()) {
+                GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: SKIP ZERO line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
+              }
+            }
+            #endif
           }
+          #ifdef VV_DBG_VERBOSE_SLIDE
+          else {
+            if (IsPlayer()) {
+              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
+              GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: SKIP line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
+            }
+          }
+          #endif
         }
       }
     }
@@ -1819,7 +1851,7 @@ void VEntity::SlideMove (float StepVelScale, bool noPickups) {
   if (XMove == 0.0f && YMove == 0.0f) return; // just in case
 
   #ifdef VV_DBG_VERBOSE_SLIDE
-  if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: === SlideMove; move=(%g,%g) ===", GetClass()->GetName(), XMove, YMove);
+  if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: === SlideMove; move=(%g,%g) pos=(%g,%g,%g) ===", GetClass()->GetName(), XMove, YMove, Origin.x, Origin.y, Origin.z);
   #endif
 
   const float rad = GetMoveRadius();
@@ -1919,7 +1951,7 @@ void VEntity::SlideMove (float StepVelScale, bool noPickups) {
     // first calculate remainder
     BestSlideFrac = 1.0f-origSlide;
     #ifdef VV_DBG_VERBOSE_SLIDE
-    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlideMove: hitcount=%d; fracleft=%g", GetClass()->GetName(), hitcount, BestSlideFrac);
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlideMove: hitcount=%d; fracleft=%g; vel=(%g,%g)", GetClass()->GetName(), hitcount, BestSlideFrac, Velocity.x, Velocity.y);
     #endif
 
     if (BestSlideFrac > 1.0f) BestSlideFrac = 1.0f;
@@ -1929,10 +1961,19 @@ void VEntity::SlideMove (float StepVelScale, bool noPickups) {
     // k8: don't multiply z, 'cause it makes jumping against a wall unpredictably hard
     Velocity.x *= BestSlideFrac;
     Velocity.y *= BestSlideFrac;
+    #ifdef VV_DBG_VERBOSE_SLIDE
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlideMove: hitcount=%d;   velclip0=(%g,%g)", GetClass()->GetName(), hitcount, Velocity.x, Velocity.y);
+    #endif
     Velocity = ClipVelocity(Velocity, BestSlideLine->normal, 1.0f);
+    #ifdef VV_DBG_VERBOSE_SLIDE
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlideMove: hitcount=%d;   velclip1=(%g,%g)", GetClass()->GetName(), hitcount, Velocity.x, Velocity.y);
+    #endif
     //Velocity = ClipVelocity(Velocity*BestSlideFrac, BestSlideLine->normal, 1.0f);
     XMove = Velocity.x*StepVelScale;
     YMove = Velocity.y*StepVelScale;
+    #ifdef VV_DBG_VERBOSE_SLIDE
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlideMove: hitcount=%d;   step=(%g,%g) : %g", GetClass()->GetName(), hitcount, XMove, YMove, StepVelScale);
+    #endif
   } while (!TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true));
 }
 
