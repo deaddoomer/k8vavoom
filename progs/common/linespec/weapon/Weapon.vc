@@ -236,6 +236,19 @@ override bool TryPickup (EntityEx Toucher) {
   // if sprites for ready state are missing, you can't pick up this weapon
   state ReadyState = FindState('Ready');
   if (ReadyState && AreStateSpritesPresent(ReadyState)) {
+    // ok to pickup a weapon
+    // call `TryPickupWeapon` state, with player pawn as toucher
+    // you can `Fail` it
+    // works for Voodoo Dolls too
+    if (Toucher.Player && PlayerPawn(Toucher)) {
+      state pst = FindState('TryPickupWeapon', Exact:true);
+      if (pst) {
+        if (!CallStateChain(Toucher, pst)) {
+          //printdebug("%C: weapon rejected picking up for `%C`", self, Toucher);
+          return false;
+        }
+      }
+    }
     return ::TryPickup(Toucher);
   }
   return false;
@@ -314,12 +327,21 @@ override void AttachToOwner (EntityEx NewOwner, optional Inventory oldInv) {
   Ammo2 = AddAmmo(NewOwner, AmmoType2, AmmoGive2);
   SisterWeapon = AddWeapon(SisterWeaponType);
 
-  if (Owner.Player && !bNoAutoSwitch && GetCvarB('wpn_autoswitch')) {
+  // call `PickupWeapon` state, with player pawn as toucher
+  // you cannot `Fail` it (it has no effect)
+  // works for Voodoo Dolls too
+  if (Owner.Player && PlayerPawn(Owner)) {
+    state pst = FindState('PickupWeapon', Exact:true);
+    if (pst) CallStateChain(Owner, pst);
+  }
+
+  // don't autoswitch when Voodoo Doll picked up a weapon
+  if (Owner.Player && PlayerPawn(Owner) && Owner.Player.MO == Owner && !bNoAutoSwitch && GetCvarB('wpn_autoswitch')) {
     // Doom and Strife always switch to a new weapon, Heretic and Hexen
     // only switch to more powerful weapons; always check for ammo
     auto pawn = PlayerPawn(Owner);
     if (!pawn) return;
-    auto plr = PlayerEx(Owner.Player);
+    auto plr = PlayerEx(pawn.Player);
     if (!plr) return;
 
     bool doSwitch = LineSpecialGameInfo(Level.Game).bAlwaysSwitchNewWeapon;
