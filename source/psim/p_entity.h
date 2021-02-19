@@ -87,6 +87,12 @@
   const int yl_ = MapBlock((ypos_)-(radius_)-XLevel->BlockMapOrgY); \
   const int yh_ = MapBlock((ypos_)+(radius_)-XLevel->BlockMapOrgY);
 
+#define DeclareMakeBlockMapCoordsMaxRadius(xpos_,ypos_,radius_,xl_,yl_,xh_,yh_)  \
+  const int xl_ = MapBlock((xpos_)-(radius_)-XLevel->BlockMapOrgX)-1; \
+  const int xh_ = MapBlock((xpos_)+(radius_)-XLevel->BlockMapOrgX)+1; \
+  const int yl_ = MapBlock((ypos_)-(radius_)-XLevel->BlockMapOrgY)-1; \
+  const int yh_ = MapBlock((ypos_)+(radius_)-XLevel->BlockMapOrgY)+1;
+
 #define DeclareMakeBlockMapCoordsBBox2D(bbox_,xl_,yl_,xh_,yh_)  \
   const int xl_ = MapBlock(bbox_[BOX2D_LEFT]-XLevel->BlockMapOrgX); \
   const int xh_ = MapBlock(bbox_[BOX2D_RIGHT]-XLevel->BlockMapOrgX); \
@@ -95,10 +101,10 @@
 
 
 #define DeclareMakeBlockMapCoordsBBox2DMaxRadius(bbox_,xl_,yl_,xh_,yh_)  \
-  const int xl_ = MapBlock(bbox_[BOX2D_LEFT]-MAXRADIUS-XLevel->BlockMapOrgX); \
-  const int xh_ = MapBlock(bbox_[BOX2D_RIGHT]+MAXRADIUS-XLevel->BlockMapOrgX); \
-  const int yl_ = MapBlock(bbox_[BOX2D_BOTTOM]-MAXRADIUS-XLevel->BlockMapOrgY); \
-  const int yh_ = MapBlock(bbox_[BOX2D_TOP]+MAXRADIUS-XLevel->BlockMapOrgY);
+  const int xl_ = MapBlock(bbox_[BOX2D_LEFT]/*-MAXRADIUS*/-XLevel->BlockMapOrgX)-1; \
+  const int xh_ = MapBlock(bbox_[BOX2D_RIGHT]/*+MAXRADIUS*/-XLevel->BlockMapOrgX)+1; \
+  const int yl_ = MapBlock(bbox_[BOX2D_BOTTOM]/*-MAXRADIUS*/-XLevel->BlockMapOrgY)-1; \
+  const int yh_ = MapBlock(bbox_[BOX2D_TOP]/*+MAXRADIUS*/-XLevel->BlockMapOrgY)+1;
 
 
 struct tmtrace_t;

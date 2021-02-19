@@ -169,10 +169,10 @@ VRadiusThingsIterator::VRadiusThingsIterator (VThinker *ASelf, VEntity **AEntPtr
   const int bmWidth = Self->XLevel->BlockMapWidth;
   const int bmHeight = Self->XLevel->BlockMapHeight;
   // calculate blockmap rectangle
-  xl = MapBlock(Org.x-Radius-bmOrgX-MAXRADIUS);
-  xh = MapBlock(Org.x+Radius-bmOrgX+MAXRADIUS);
-  yl = MapBlock(Org.y-Radius-bmOrgY-MAXRADIUS);
-  yh = MapBlock(Org.y+Radius-bmOrgY+MAXRADIUS);
+  xl = MapBlock(Org.x-Radius-bmOrgX/*-MAXRADIUS*/)-1;
+  xh = MapBlock(Org.x+Radius-bmOrgX/*+MAXRADIUS*/)+1;
+  yl = MapBlock(Org.y-Radius-bmOrgY/*-MAXRADIUS*/)-1;
+  yh = MapBlock(Org.y+Radius-bmOrgY/*+MAXRADIUS*/)+1;
   if (xh < 0 || yh < 0 || xl >= bmWidth || yl >= bmHeight) {
     // nothing to do
     // set the vars so `GetNext()` will return `false`
@@ -190,6 +190,7 @@ VRadiusThingsIterator::VRadiusThingsIterator (VThinker *ASelf, VEntity **AEntPtr
     x = xl;
     y = yl;
     Ent = Self->XLevel->BlockLinks[y*bmWidth+x];
+    while (Ent && Ent->IsGoingToDie()) Ent = Ent->BlockMapNext;
   }
 }
 

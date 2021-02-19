@@ -157,10 +157,10 @@ void VRenderLevelShadowVolume::BuildMobjsInCurrLight (bool doShadows, bool colle
       }
     } else {
       useInCurrLightAsLight = false;
-      const int xl = MapBlock(CurrLightPos.x-CurrLightRadius-Level->BlockMapOrgX-MAXRADIUS);
-      const int xh = MapBlock(CurrLightPos.x+CurrLightRadius-Level->BlockMapOrgX+MAXRADIUS);
-      const int yl = MapBlock(CurrLightPos.y-CurrLightRadius-Level->BlockMapOrgY-MAXRADIUS);
-      const int yh = MapBlock(CurrLightPos.y+CurrLightRadius-Level->BlockMapOrgY+MAXRADIUS);
+      const int xl = MapBlock(CurrLightPos.x-CurrLightRadius-Level->BlockMapOrgX/*-MAXRADIUS*/)-1;
+      const int xh = MapBlock(CurrLightPos.x+CurrLightRadius-Level->BlockMapOrgX/*+MAXRADIUS*/)+1;
+      const int yl = MapBlock(CurrLightPos.y-CurrLightRadius-Level->BlockMapOrgY/*-MAXRADIUS*/)-1;
+      const int yh = MapBlock(CurrLightPos.y+CurrLightRadius-Level->BlockMapOrgY/*+MAXRADIUS*/)+1;
       RenderStyleInfo ri;
       for (int bx = xl; bx <= xh; ++bx) {
         for (int by = yl; by <= yh; ++by) {

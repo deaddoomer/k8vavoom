@@ -436,12 +436,11 @@ void VEntity::LinkToWorld (int properFloorCheck) {
 
     //tmtrace.FloorZ = tmtrace.DropOffZ;
 
-    DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
-
     //float lastFZ, lastCZ;
     //sec_plane_t *lastFloor = nullptr;
     //sec_plane_t *lastCeiling = nullptr;
 
+    DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         line_t *ld;
@@ -2249,8 +2248,7 @@ VEntity *VEntity::TestMobjZ (const TVec &TryOrg) {
   // the bounding box is extended by MAXRADIUS because mobj_ts are grouped
   // into mapblocks based on their origin point, and can overlap into adjacent
   // blocks by up to MAXRADIUS units
-  //FIXME
-  DeclareMakeBlockMapCoords(TryOrg.x, TryOrg.y, (rad+MAXRADIUS), xl, yl, xh, yh);
+  DeclareMakeBlockMapCoordsMaxRadius(TryOrg.x, TryOrg.y, rad, xl, yl, xh, yh);
   // xl->xh, yl->yh determine the mapblock set to search
   for (int bx = xl; bx <= xh; ++bx) {
     for (int by = yl; by <= yh; ++by) {

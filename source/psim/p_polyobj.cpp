@@ -766,39 +766,31 @@ bool VLevel::RotatePolyobj (int num, float angle) {
 //
 //==========================================================================
 bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
-  VEntity *mobj;
-  int i, j;
-  int left, right, top, bottom;
-  float tmbbox[4];
-  line_t *ld;
-  bool blocked;
+  const line_t *ld = seg->linedef;
 
-  ld = seg->linedef;
+  int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY/*+MAXRADIUS*/)+1;
+  int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY/*-MAXRADIUS*/)-1;
+  int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX/*-MAXRADIUS*/)-1;
+  int right = MapBlock(ld->bbox2d[BOX2D_RIGHT]-BlockMapOrgX/*+MAXRADIUS*/)+1;
 
-  top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY+MAXRADIUS);
-  bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY-MAXRADIUS);
-  left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX-MAXRADIUS);
-  right = MapBlock(ld->bbox2d[BOX2D_RIGHT]-BlockMapOrgX+MAXRADIUS);
+  if (top < 0 || right < 0 || bottom >= BlockMapHeight || left >= BlockMapWidth) return false;
 
-  blocked = false;
+  if (bottom < 0) bottom = 0;
+  if (top >= BlockMapHeight) top = BlockMapHeight-1;
+  if (left < 0) left = 0;
+  if (right >= BlockMapWidth) right = BlockMapWidth-1;
 
-  bottom = (bottom < 0 ? 0 : bottom);
-  bottom = (bottom >= BlockMapHeight ? BlockMapHeight-1 : bottom);
-  top = (top < 0 ? 0 : top);
-  top = (top >= BlockMapHeight ? BlockMapHeight-1 : top);
-  left = (left < 0 ? 0 : left);
-  left = (left >= BlockMapWidth ? BlockMapWidth-1 : left);
-  right = (right < 0 ? 0 : right);
-  right = (right >= BlockMapWidth ? BlockMapWidth-1 : right);
+  bool blocked = false;
 
-  for (j = bottom*BlockMapWidth; j <= top*BlockMapWidth; j += BlockMapWidth) {
-    for (i = left; i <= right; ++i) {
-      for (mobj = BlockLinks[j+i]; mobj; mobj = mobj->BlockMapNext) {
+  for (int j = bottom*BlockMapWidth; j <= top*BlockMapWidth; j += BlockMapWidth) {
+    for (int i = left; i <= right; ++i) {
+      for (VEntity *mobj = BlockLinks[j+i]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
         if (mobj->EntityFlags&VEntity::EF_ColideWithWorld) {
           if (mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse)) {
             bool isSolid = !!(mobj->EntityFlags&VEntity::EF_Solid);
 
+            float tmbbox[4];
             tmbbox[BOX2D_TOP] = mobj->Origin.y+mobj->Radius;
             tmbbox[BOX2D_BOTTOM] = mobj->Origin.y-mobj->Radius;
             tmbbox[BOX2D_LEFT] = mobj->Origin.x-mobj->Radius;
@@ -824,6 +816,7 @@ bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
       }
     }
   }
+
   return blocked;
 }
 
