@@ -66,18 +66,19 @@ private:
   VEntity *Ent;
 
 public:
-  VBlockThingsIterator (VLevel *Level, int x, int y) {
+  inline VBlockThingsIterator (VLevel *Level, int x, int y) noexcept {
     if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) {
       Ent = nullptr;
     } else {
       Ent = Level->BlockLinks[y*Level->BlockMapWidth+x];
+      while (Ent && Ent->IsGoingToDie()) Ent = Ent->BlockMapNext;
     }
   }
 
-  inline operator bool () const { return !!Ent; }
-  inline void operator ++ () { Ent = Ent->BlockMapNext; }
-  inline VEntity *operator * () const { return Ent; }
-  inline VEntity *operator -> () const { return Ent; }
+  inline operator bool () const noexcept { return !!Ent; }
+  inline void operator ++ () noexcept { if (Ent) do { Ent = Ent->BlockMapNext; } while (Ent && Ent->IsGoingToDie()); }
+  inline VEntity *operator * () const noexcept { return Ent; }
+  inline VEntity *operator -> () const noexcept { return Ent; }
 };
 
 
