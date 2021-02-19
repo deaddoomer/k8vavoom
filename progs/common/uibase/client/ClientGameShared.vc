@@ -459,21 +459,30 @@ void LoadGZMenuDefs () {
   if (GetCvarB('_gz_skip_menudef')) return;
 
   // scan
-  array!int mdlumps; // 0: none; -1: has modmenu; positive: menudef lump; index is pakfile index
+  array!int mdlumps;
+  array!bool fignore;
   foreach (int lump; WadIterateNS(EWadNamespace.Global)) {
     if (W_LumpName(lump) == 'menudef') {
       int fidx = W_LumpFile(lump);
-      while (mdlumps.length <= fidx) mdlumps[$] = 0;
-      if (mdlumps[fidx] >= 0) mdlumps[fidx] = lump;
+      //printdebug("lump %s (file %s): menudef (%s)", lump, fidx, mdlumps.length);
+      while (fignore.length <= fidx) fignore[$] = false;
+      mdlumps[$] = lump;
     } else if (W_LumpName(lump) == 'modmenu') {
       int fidx = W_LumpFile(lump);
-      while (mdlumps.length <= fidx) mdlumps[$] = 0;
-      mdlumps[fidx] = -1;
+      //printdebug("lump %s (file %s): modmenu (%s)", lump, fidx, mdlumps.length);
+      while (fignore.length <= fidx) fignore[$] = false;
+      fignore[fidx] = true;
     }
   }
 
   foreach (int lump; mdlumps) {
     if (lump > 0) {
+      int fidx = W_LumpFile(lump);
+      if (fignore[fidx]) {
+        //printdebug("INGNORE menudef from lump %s (%s)", lump, W_FullLumpName(lump));
+        continue;
+      }
+      //printdebug("LOADING menudef from lump %s (%s)", lump, W_FullLumpName(lump));
       auto par = SpawnObject(ScriptsParser);
       scope(exit) delete par;
       par.OpenLumpIndex(lump);
