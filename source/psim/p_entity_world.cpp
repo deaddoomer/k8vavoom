@@ -2759,8 +2759,7 @@ VRoughBlockSearchIterator::VRoughBlockSearchIterator (VEntity *ASelf, int ADista
 //
 //==========================================================================
 bool VRoughBlockSearchIterator::GetNext () {
-  int BlockX;
-  int BlockY;
+  int BlockX, BlockY;
 
   for (;;) {
     while (Ent && Ent->IsGoingToDie()) Ent = Ent->BlockMapNext;
@@ -2772,8 +2771,7 @@ bool VRoughBlockSearchIterator::GetNext () {
     }
 
     switch (CurrentEdge) {
-      case 0:
-        // trace the first block section (along the top)
+      case 0: // trace the first block section (along the top)
         if (BlockIndex <= FirstStop) {
           Ent = Self->XLevel->BlockLinks[BlockIndex];
           ++BlockIndex;
@@ -2782,8 +2780,7 @@ bool VRoughBlockSearchIterator::GetNext () {
           --BlockIndex;
         }
         break;
-      case 1:
-        // trace the second block section (right edge)
+      case 1: // trace the second block section (right edge)
         if (BlockIndex <= SecondStop) {
           Ent = Self->XLevel->BlockLinks[BlockIndex];
           BlockIndex += Self->XLevel->BlockMapWidth;
@@ -2792,8 +2789,7 @@ bool VRoughBlockSearchIterator::GetNext () {
           BlockIndex -= Self->XLevel->BlockMapWidth;
         }
         break;
-      case 2:
-        // trace the third block section (bottom edge)
+      case 2: // trace the third block section (bottom edge)
         if (BlockIndex >= ThirdStop) {
           Ent = Self->XLevel->BlockLinks[BlockIndex];
           --BlockIndex;
@@ -2802,8 +2798,7 @@ bool VRoughBlockSearchIterator::GetNext () {
           ++BlockIndex;
         }
         break;
-      case 3:
-        // trace the final block section (left edge)
+      case 3: // trace the final block section (left edge)
         if (BlockIndex > FinalStop) {
           Ent = Self->XLevel->BlockLinks[BlockIndex];
           BlockIndex -= Self->XLevel->BlockMapWidth;
