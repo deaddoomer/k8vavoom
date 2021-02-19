@@ -80,8 +80,10 @@ private:
 
     inline void zeroEntry () noexcept {
       memset((void *)this, 0, sizeof(*this));
+      #if !defined(TMAP_NO_CLEAR)
       new(&key, E_ArrayNew, E_ArrayNew)TK;
       new(&value, E_ArrayNew, E_ArrayNew)TV;
+      #endif
     }
   };
 
@@ -101,10 +103,12 @@ private:
     if (first < last) {
       TEntry *ee = &mEntries[first];
       memset((void *)ee, 0, (last-first)*sizeof(TEntry));
+      #if !defined(TMAP_NO_CLEAR)
       for (unsigned f = first; f < last; ++f, ++ee) {
         new(&ee->key, E_ArrayNew, E_ArrayNew)TK;
         new(&ee->value, E_ArrayNew, E_ArrayNew)TV;
       }
+      #endif
     }
   }
 
@@ -158,6 +162,10 @@ public:
     inline const TK &getKey () const noexcept { return map->mEntries[index].key; }
     inline const TV &getValue () const noexcept { return map->mEntries[index].value; }
     inline TV &getValue () noexcept { return map->mEntries[index].value; }
+
+    inline const TK &key () const noexcept { return map->mEntries[index].key; }
+    inline const TV &value () const noexcept { return map->mEntries[index].value; }
+    inline TV &value () noexcept { return map->mEntries[index].value; }
 
     inline void removeCurrent () noexcept {
       if ((int)index <= map->mLastEntry && index < map->mEBSize) {
@@ -449,9 +457,8 @@ public:
     unsigned newsz = nextPOTU32((unsigned)mBucketsUsed);
     if (doRealloc) {
       if (newsz >= 1024*1024*1024) return;
-      if (newsz*2 >= mEBSize) return;
-      if (newsz*2 < /*128*/64) return;
-      newsz *= 2;
+      newsz <<= 1;
+      if (newsz <= /*128*/64 || newsz >= mEBSize) return;
     }
 #ifdef CORE_MAP_TEST
     printf("compacting; old size=%u; new size=%u; used=%d; fe=%d; le=%d; cseed=(%d:0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeedCount, mSeed);
@@ -665,8 +672,7 @@ public:
     // if elements table is empty, `allocEntry()` will take care of it
     if (mEBSize && (unsigned)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100) {
       unsigned newsz = (unsigned)mEBSize;
-      //if (Length(mEntries) <> newsz) then raise Exception.Create('internal error in hash table (resize)');
-      //if (newsz <= 1024*1024*1024) then newsz *= 2 else raise Exception.Create('hash table too big');
+      //FIXME: check for OOM
       newsz <<= 1;
       // resize buckets array
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
