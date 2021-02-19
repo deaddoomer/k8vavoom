@@ -100,7 +100,16 @@ enum gameArchiveSegment_t {
   ASEG_WORLD,
   ASEG_SCRIPTS,
   ASEG_SOUNDS,
-  ASEG_END
+  ASEG_END,
+};
+
+
+// extra gameslot data
+enum {
+  GSLOT_DATA_SKILL = 202,
+
+  GSLOT_DATA_START = 667,
+  GSLOT_DATA_END = 666,
 };
 
 
@@ -235,6 +244,7 @@ public:
   VName CurrentMap;
   TArray<VSavedMap *> Maps; // if there are no maps, it is a checkpoint
   VSavedCheckpoint CheckPoint;
+  vint32 SavedSkill; // -1: don't change/unknown
 
   ~VSaveSlot () { Clear(); }
 
@@ -789,6 +799,7 @@ static VStr TimeVal2Str (const TTimeVal *tvin, bool forAutosave=false) {
 void VSaveSlot::Clear () {
   Description.Clean();
   CurrentMap = NAME_None;
+  SavedSkill = -1;
   for (int i = 0; i < Maps.Num(); ++i) { delete Maps[i]; Maps[i] = nullptr; }
   Maps.Clear();
   CheckPoint.Clear();
@@ -904,7 +915,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
   VStream *Strm = SV_OpenSlotFileRead(Slot);
   if (!Strm) {
     saveFileBase.clear();
-    GCon->Log("Savegame file doesn't exist");
+    GCon->Logf(NAME_Error, "Savegame #%d file doesn't exist", Slot);
     return false;
   }
 
@@ -918,7 +929,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     Strm->Close();
     delete Strm;
     Strm = nullptr;
-    GCon->Log("Savegame is from incompatible version");
+    GCon->Logf(NAME_Error, "Savegame #%d is from incompatible version", Slot);
     return false;
   }
 
@@ -932,7 +943,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
       Strm->Close();
       delete Strm;
       Strm = nullptr;
-      GCon->Log("Savegame is corrupted");
+      GCon->Logf(NAME_Error, "Savegame #%d is corrupted", Slot);
       return false;
     }
   }
@@ -947,7 +958,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     Strm->Close();
     delete Strm;
     Strm = nullptr;
-    GCon->Log("Invalid savegame (bad number of mods)");
+    GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
     return false;
   }
 
@@ -957,7 +968,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
       Strm->Close();
       delete Strm;
       Strm = nullptr;
-      GCon->Log("Invalid savegame (bad number of mods)");
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
       return false;
     }
   }
@@ -971,7 +982,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
         Strm->Close();
         delete Strm;
         Strm = nullptr;
-        GCon->Log("Invalid savegame (bad mod)");
+        GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
         return false;
       }
     }
@@ -993,7 +1004,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     Strm->Serialise(Map->Data.Ptr(), Map->Data.Num());
   }
 
-  //HACK: if `NumMaps` is 0, we're loading checkpoint
+  //HACK: if `NumMaps` is 0, we're loading a checkpoint
   if (NumMaps == 0) {
     // load players inventory
     VSavedCheckpoint &cp = CheckPoint;
@@ -1001,6 +1012,33 @@ bool VSaveSlot::LoadSlot (int Slot) {
   } else {
     VSavedCheckpoint &cp = CheckPoint;
     cp.Clear();
+    if (!Strm->AtEnd()) {
+      vuint32 seg = 0xffffffff;
+      *Strm << STRM_INDEX_U(seg);
+      if (!Strm->IsError() && seg == GSLOT_DATA_START) {
+        for (;;) {
+          seg = 0xffffffff;
+          *Strm << STRM_INDEX_U(seg);
+          if (Strm->IsError()) break;
+          if (seg == GSLOT_DATA_END) break;
+          if (seg == GSLOT_DATA_SKILL) {
+            vint32 sk;
+            *Strm << STRM_INDEX(sk);
+            if (sk < 0 || sk > 32) {
+              GCon->Logf(NAME_Warning, "Invalid savegame #%d skill (%d)", Slot, sk);
+            } else {
+              SavedSkill = sk;
+            }
+            continue;
+          }
+          GCon->Logf(NAME_Warning, "Invalid savegame #%d extra segment (%u)", Slot, seg);
+          Strm->Close();
+          delete Strm;
+          saveFileBase.clear();
+          return false;
+        }
+      }
+    }
   }
 
   bool err = Strm->IsError();
@@ -1012,8 +1050,10 @@ bool VSaveSlot::LoadSlot (int Slot) {
 
   if (err) {
     saveFileBase.clear();
+    GCon->Logf(NAME_Error, "Error loading savegame #%d data", Slot);
     return false;
   }
+
   vassert(!saveFileBase.isEmpty());
   return true;
 }
@@ -1030,7 +1070,7 @@ bool VSaveSlot::SaveToSlot (int Slot) {
   VStream *Strm = SV_CreateSlotFileWrite(Slot, Description);
   if (!Strm) {
     saveFileBase.clear();
-    GCon->Logf("ERROR: cannot save to slot %d!", Slot);
+    GCon->Logf(NAME_Error, "cannot save to slot %d!", Slot);
     return false;
   }
 
@@ -1092,6 +1132,20 @@ bool VSaveSlot::SaveToSlot (int Slot) {
     // save players inventory
     VSavedCheckpoint &cp = CheckPoint;
     cp.Serialise(Strm);
+  } else {
+    if (SavedSkill > 0 && SavedSkill <= 32) {
+      // save extra data
+      vuint32 seg = GSLOT_DATA_START;
+      *Strm << STRM_INDEX_U(seg);
+      // skill
+      seg = GSLOT_DATA_SKILL;
+      *Strm << STRM_INDEX_U(seg);
+      vint32 sk = SavedSkill;
+      *Strm << STRM_INDEX(sk);
+      // done
+      seg = GSLOT_DATA_END;
+      *Strm << STRM_INDEX_U(seg);
+    }
   }
 
   bool err = Strm->IsError();
@@ -1103,7 +1157,7 @@ bool VSaveSlot::SaveToSlot (int Slot) {
 
   if (err) {
     saveFileBase.clear();
-    GCon->Logf("ERROR: error saving to slot %d, savegame is corrupted!", Slot);
+    GCon->Logf(NAME_Error, "error saving to slot %d, savegame is corrupted!", Slot);
     return false;
   }
 
@@ -1262,7 +1316,7 @@ static int SV_FindAutosaveSlot () {
 //
 //==========================================================================
 static void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
-  if (Streamer<int>(Strm) != (int)segType) Host_Error("Corrupt save game: Segment [%d] failed alignment check", segType);
+  if (Streamer<vint32>(Strm) != (int)segType) Host_Error("Corrupt save game: Segment [%d] failed alignment check", segType);
 }
 
 
@@ -1630,6 +1684,7 @@ static void SV_SaveMap (bool savePlayers) {
   // write the level timer
   *Saver << GLevel->Time << GLevel->TicTime;
 
+  // write main data
   ArchiveThinkers(Saver, savePlayers);
   ArchiveSounds(*Saver);
 
@@ -1937,6 +1992,7 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
 static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAutosave) {
   BaseSlot.Description = Description;
   BaseSlot.CurrentMap = GLevel->MapName;
+  BaseSlot.SavedSkill = GGameInfo->WorldInfo->GameSkill;
 
   // save out the current map
   if (checkpoint) {
@@ -2021,6 +2077,11 @@ static void SV_LoadGame (int slot) {
   SV_SetupSkipCallback();
 
   if (!BaseSlot.LoadSlot(slot)) return;
+
+  if (BaseSlot.SavedSkill >= 0) {
+    //GCon->Logf(NAME_Debug, "*** SAVED SKILL: %d", BaseSlot.SavedSkill);
+    Skill = BaseSlot.SavedSkill;
+  }
 
   sv_loading = true;
 

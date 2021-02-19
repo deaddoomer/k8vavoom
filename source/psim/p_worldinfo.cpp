@@ -27,6 +27,9 @@
 #include "../server/sv_local.h"
 
 
+extern VCvarI Skill;
+
+
 IMPLEMENT_CLASS(V, WorldInfo)
 
 
@@ -74,6 +77,7 @@ void VWorldInfo::Destroy () {
 //
 //==========================================================================
 void VWorldInfo::SetSkill (int ASkill) {
+  //GCon->Logf(NAME_Debug, "SetSkill: ASkill=%d; GameSkill=%d; cvar=%d", ASkill, GameSkill, Skill.asInt());
        if (ASkill < 0) GameSkill = 0;
   else if (ASkill >= P_GetNumSkills()) GameSkill = P_GetNumSkills()-1;
   else GameSkill = ASkill;
