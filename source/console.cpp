@@ -832,7 +832,6 @@ static void DoPrint (const char *buf) noexcept {
 //
 //==========================================================================
 static void ConSerialise (const char *str, EName Event, bool fromGLog) noexcept {
-  //devprintf("%s: %s\n", VName::SafeString(Event), *rc);
   if (Event == NAME_Dev && !developer) return;
   if (!fromGLog) { GLog.WriteLine(Event, "%s", str); return; }
   if (!str) str = "";

@@ -101,7 +101,6 @@ struct GameOptions {
 };
 
 
-//extern bool fl_devmode;
 extern VStr fl_basedir;
 extern VStr fl_savedir;
 extern VStr fl_gamedir;

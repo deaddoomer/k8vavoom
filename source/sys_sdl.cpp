@@ -157,111 +157,6 @@ void Sys_Quit (const char *EndText) {
 
 //==========================================================================
 //
-//  Sys_Error
-//
-//  Exits game and displays error message.
-//
-//==========================================================================
-
-#ifdef USE_SIGNAL_HANDLER
-
-#define MAX_STACK_ADDR  (40)
-
-// __builtin_return_address needs a constant, so this cannot be in a loop
-
-#define handle_stack_address(X) \
-  if (continue_stack_trace && ((unsigned long)__builtin_frame_address((X)) != 0L) && ((X) < MAX_STACK_ADDR)) \
-  { \
-    stack_addr[(X)]= __builtin_return_address((X)); \
-    devprintf("stack %d %8p frame %d %8p\n", \
-      (X), __builtin_return_address((X)), (X), __builtin_frame_address((X))); \
-  } \
-  else if (continue_stack_trace) \
-  { \
-    continue_stack_trace = false; \
-  }
-
-static void stack_trace () {
-  FILE *fff;
-  int i;
-  static void *stack_addr[MAX_STACK_ADDR];
-  // can we still print entries on the calling stack or have we finished?
-  static bool continue_stack_trace = true;
-
-  // get void*'s for all entries on the stack
-  void *array[10];
-  size_t size = backtrace(array, 10);
-
-  // print out all the frames to stderr
-  backtrace_symbols_fd(array, size, STDERR_FILENO);
-
-  // clean the stack addresses if necessary
-  for (i = 0; i < MAX_STACK_ADDR; ++i) stack_addr[i] = 0;
-
-  devprintf("STACK TRACE:\n\n");
-
-  handle_stack_address(0);
-  handle_stack_address(1);
-  handle_stack_address(2);
-  handle_stack_address(3);
-  handle_stack_address(4);
-  handle_stack_address(5);
-  handle_stack_address(6);
-  handle_stack_address(7);
-  handle_stack_address(8);
-  handle_stack_address(9);
-  handle_stack_address(10);
-  handle_stack_address(11);
-  handle_stack_address(12);
-  handle_stack_address(13);
-  handle_stack_address(14);
-  handle_stack_address(15);
-  handle_stack_address(16);
-  handle_stack_address(17);
-  handle_stack_address(18);
-  handle_stack_address(19);
-  handle_stack_address(20);
-  handle_stack_address(21);
-  handle_stack_address(22);
-  handle_stack_address(23);
-  handle_stack_address(24);
-  handle_stack_address(25);
-  handle_stack_address(26);
-  handle_stack_address(27);
-  handle_stack_address(28);
-  handle_stack_address(29);
-  handle_stack_address(30);
-  handle_stack_address(31);
-  handle_stack_address(32);
-  handle_stack_address(33);
-  handle_stack_address(34);
-  handle_stack_address(35);
-  handle_stack_address(36);
-  handle_stack_address(37);
-  handle_stack_address(38);
-  handle_stack_address(39);
-
-  // Give a warning
-  //fprintf(stderr, "You suddenly see a gruesome SOFTWARE BUG leap for your throat!\n");
-
-  // Open the non-existing file
-  fff = fopen("crash.txt", "w");
-
-  // Invalid file
-  if (fff) {
-    // dump stack frame
-    for (i = (MAX_STACK_ADDR - 1); i >= 0 ; --i) {
-      fprintf(fff,"%8p\n", stack_addr[i]);
-    }
-    fclose(fff);
-  }
-}
-
-#endif
-
-
-//==========================================================================
-//
 //  Sys_ConsoleInput
 //
 //==========================================================================
@@ -295,55 +190,12 @@ char *Sys_ConsoleInput () {
 //  Shuts down system, on error signal
 //
 //==========================================================================
-
-#ifdef USE_SIGNAL_HANDLER
-
-static void signal_handler (int s) {
-  VObject::vmAbortBySignal += 1;
-  // ignore future instances of this signal
-  signal(s, SIG_IGN);
-  stack_trace();
-
-  // exit with error message
-#ifdef USE_GUARD_SIGNAL_CONTEXT
-  switch (s) {
-    case SIGABRT: VSigContextHack::ErrToThrow = "Aborted"; break;
-    case SIGFPE: VSigContextHack::ErrToThrow = "Floating Point Exception"; break;
-    case SIGILL: VSigContextHack::ErrToThrow = "Illegal Instruction"; break;
-    case SIGSEGV: VSigContextHack::ErrToThrow = "Segmentation Violation"; break;
-    case SIGTERM: VSigContextHack::ErrToThrow = "Terminated"; break;
-    case SIGINT: VSigContextHack::ErrToThrow = "Interrupted by User"; break;
-    case SIGKILL: VSigContextHack::ErrToThrow = "Killed"; break;
-    case SIGQUIT: VSigContextHack::ErrToThrow = "Quited"; break;
-    default: VSigContextHack::ErrToThrow = "Terminated by signal";
-  }
-  devprintf("signal: %s\n", VSigContextHack::ErrToThrow);
-  longjmp(VSigContextHack::Env, 1);
-#else
-  switch (s) {
-    case SIGABRT: throw VavoomError("Abnormal termination triggered by abort call");
-    case SIGFPE: throw VavoomError("Floating Point Exception");
-    case SIGILL: throw VavoomError("Illegal Instruction");
-    case SIGINT: throw VavoomError("Interrupted by User");
-    case SIGSEGV: throw VavoomError("Segmentation Violation");
-    case SIGTERM: throw VavoomError("Software termination signal from kill");
-    case SIGKILL: throw VavoomError("Killed");
-    case SIGQUIT: throw VavoomError("Quited");
-    default: throw VavoomError("Terminated by signal");
-  }
-#endif
-}
-
-#else
-
 static volatile int sigReceived = 0;
 
 static void signal_handler (int s) {
   sigReceived = 1;
   VObject::vmAbortBySignal += 1;
 }
-
-#endif
 
 
 //==========================================================================
@@ -361,24 +213,12 @@ static void mainloop (int argc, char **argv) {
 
     if (SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(): %s\n", SDL_GetError());
 
-#ifdef USE_SIGNAL_HANDLER
-    // install signal handlers
-    signal(SIGABRT, signal_handler);
-    signal(SIGFPE,  signal_handler);
-    signal(SIGILL,  signal_handler);
-    signal(SIGSEGV, signal_handler);
-    signal(SIGTERM, signal_handler);
-    signal(SIGINT,  signal_handler);
-    signal(SIGKILL, signal_handler);
-    signal(SIGQUIT, signal_handler);
-#else
     // install signal handlers
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
-# ifndef _WIN32
+    #ifndef _WIN32
     signal(SIGQUIT, signal_handler);
-# endif
-#endif
+    #endif
 
 /*
 #if defined(USE_FPU_MATH)
@@ -427,16 +267,15 @@ static void mainloop (int argc, char **argv) {
     }
   } catch (VavoomError &e) {
     //printf("\n%s\n", e.message);
-    //devprintf("\n\nERROR: %s\n", e.message);
-    GCon->Logf("\n\nERROR: %s", e.message);
+    GCon->Logf(NAME_Error, "ERROR: %s", e.message);
     Host_Shutdown();
     if (developer) GLog.Log(NAME_Dev, "calling `SDL_Quit()`");
     SDL_Quit();
     if (developer) GLog.Log(NAME_Dev, "exiting");
-#ifdef _WIN32
+    #ifdef _WIN32
     //ExitProcess(1);
     //TerminateProcess(GetCurrentProcess(), 1);
-#endif
+    #endif
     exit(1);
   }
   if (developer) GLog.Log(NAME_Dev, "calling `SDL_Quit()`");
@@ -504,7 +343,6 @@ int main (int argc, char **argv) {
     try {
       mainloop(argc, argv);
     } catch (...) {
-      //devprintf("\n\nExiting due to external exception\n");
       //fprintf(stderr, "\nExiting due to external exception\n");
       GCon->Logf("\nExiting due to external exception");
       Host_Shutdown();

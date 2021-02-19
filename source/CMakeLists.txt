@@ -386,8 +386,6 @@ set(CS_SHARED_SOURCES
   cmd.cpp
   cvar.h
   cvar.cpp
-  debug.h
-  debug.cpp
 
   misc.h
   misc.cpp

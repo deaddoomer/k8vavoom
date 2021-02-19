@@ -269,60 +269,12 @@ char *Sys_ConsoleInput () {
 //  Shuts down system, on error signal
 //
 //==========================================================================
-
-#ifdef USE_SIGNAL_HANDLER
-
-static void signal_handler (int s) {
-  VObject::vmAbortBySignal += 1;
-  // Ignore future instances of this signal.
-  signal(s, SIG_IGN);
-
-  //  Exit with error message
-#ifdef __linux__
-  switch (s) {
-    case SIGABRT: VSigContextHack::ErrToThrow = "Aborted"; break;
-    case SIGFPE: VSigContextHack::ErrToThrow = "Floating Point Exception"; break;
-    case SIGILL: VSigContextHack::ErrToThrow = "Illegal Instruction"; break;
-    case SIGSEGV: VSigContextHack::ErrToThrow = "Segmentation Violation"; break;
-    case SIGTERM: VSigContextHack::ErrToThrow = "Terminated"; break;
-    case SIGINT: VSigContextHack::ErrToThrow = "Interrupted by User"; break;
-    case SIGKILL: VSigContextHack::ErrToThrow = "Killed"; break;
-    case SIGQUIT: VSigContextHack::ErrToThrow = "Quited"; break;
-    default: VSigContextHack::ErrToThrow = "Terminated by signal";
-  }
-  longjmp(VSigContextHack::Env, 1);
-#else
-  switch (s) {
-    case SIGABRT: throw VavoomError("Abnormal termination triggered by abort call");
-    case SIGFPE: throw VavoomError("Floating Point Exception");
-    case SIGILL: throw VavoomError("Illegal Instruction");
-    case SIGINT: throw VavoomError("Interrupted by User");
-    case SIGSEGV: throw VavoomError("Segmentation Violation");
-    case SIGTERM: throw VavoomError("Software termination signal from kill");
-#ifdef SIGKILL
-    case SIGKILL: throw VavoomError("Killed");
-#endif
-#ifdef SIGQUIT
-    case SIGQUIT: throw VavoomError("Quited");
-#endif
-#ifdef SIGNOFP
-    case SIGNOFP: throw VavoomError("k8vavoom requires a floating-point processor");
-#endif
-    default: throw VavoomError("Terminated by signal");
-  }
-#endif
-}
-
-#else
-
 static volatile int sigReceived = 0;
 
 static void signal_handler (int s) {
   sigReceived = 1;
   VObject::vmAbortBySignal += 1;
 }
-
-#endif
 
 
 #ifndef _WIN32
@@ -389,35 +341,16 @@ int main (int argc, char **argv) {
     }
     #endif
 
-    #ifdef USE_SIGNAL_HANDLER
-      // install signal handlers
-      signal(SIGABRT, signal_handler);
-      signal(SIGFPE,  signal_handler);
-      signal(SIGILL,  signal_handler);
-      signal(SIGSEGV, signal_handler);
-      signal(SIGTERM, signal_handler);
-      signal(SIGINT,  signal_handler);
-      #ifdef SIGKILL
-      signal(SIGKILL, signal_handler);
-      #endif
-      #ifdef SIGQUIT
-      signal(SIGQUIT, signal_handler);
-      #endif
-      #ifdef SIGNOFP
-      signal(SIGNOFP, signal_handler);
-      #endif
+    #ifndef _WIN32
+    // install basic signal handlers
+    signal(SIGTERM, signal_handler);
+    signal(SIGINT,  signal_handler);
+    signal(SIGQUIT, signal_handler);
     #else
-      #ifndef _WIN32
-      // install basic signal handlers
-      signal(SIGTERM, signal_handler);
-      signal(SIGINT,  signal_handler);
-      signal(SIGQUIT, signal_handler);
-      #else
-      signal(SIGINT,  signal_handler);
-      signal(SIGTERM, signal_handler);
-      signal(SIGBREAK,signal_handler);
-      signal(SIGABRT, signal_handler);
-      #endif
+    signal(SIGINT,  signal_handler);
+    signal(SIGTERM, signal_handler);
+    signal(SIGBREAK,signal_handler);
+    signal(SIGABRT, signal_handler);
     #endif
 
     #ifdef VAVOOM_ALLOW_FPU_DEBUG
@@ -453,15 +386,15 @@ int main (int argc, char **argv) {
     }
   } catch (VavoomError &e) {
     dedEnableTTYLog = true;
+    GCon->Logf(NAME_Error, "ERROR: %s", e.message);
     Host_Shutdown();
-    devprintf("\n\nERROR: %s\n", e.message);
-    fprintf(stderr, "\n%s\n", e.message);
+    //fprintf(stderr, "\nERROR: %s\n", e.message);
     Z_Exit(1);
   } catch (...) {
     dedEnableTTYLog = true;
+    GCon->Log(NAME_Error, "Exiting due to external exception");
     Host_Shutdown();
-    devprintf("\n\nExiting due to external exception\n");
-    fprintf(stderr, "\nExiting due to external exception\n");
+    //fprintf(stderr, "\nExiting due to external exception\n");
     throw;
   }
 

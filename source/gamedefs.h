@@ -47,7 +47,6 @@
 #include "language.h"
 #include "misc.h"
 #include "infostr.h"
-#include "debug.h"
 #include "system.h"
 #include "filesys/files.h"
 #include "../libs/vavoomc/vc_public.h"

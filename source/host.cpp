@@ -82,11 +82,7 @@ public:
 void Host_Quit ();
 
 
-#ifdef DEVELOPER
-VCvarB developer("developer", true, "Developer (debug) mode?", CVAR_PreInit/*|CVAR_Archive*/);
-#else
 VCvarB developer("developer", false, "Developer (debug) mode?", CVAR_PreInit/*|CVAR_Archive*/);
-#endif
 
 #ifdef VAVOOM_K8_DEVELOPER
 # define CVAR_K8_DEV_VALUE  true
@@ -279,10 +275,12 @@ void Host_Init () {
   #endif
   DD_SetupLog();
 
+  /*
   {
     VStr cfgdir = FL_GetConfigDir();
     OpenDebugFile(va("%s/debug.txt", *cfgdir));
   }
+  */
 
   // seed the random-number generator
   RandomInit();

@@ -2720,10 +2720,6 @@ void FL_Init () {
   ParseBaseGameDefsFile("basev/games.txt", mainIWad, false);
   ParseBaseGameDefsFile("games.rc", mainIWad, true); // load rc from user home directory too
   ProcessBaseGameDefs(mainIWad);
-#ifdef DEVELOPER
-  // i need progs to be loaded from files
-  //fl_devmode = true;
-#endif
 
   // process "warp", do it here, so "+var" will be processed after "map nnn"
   // postpone, and use `P_TranslateMapEx()` in host initialization

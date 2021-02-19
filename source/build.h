@@ -44,8 +44,5 @@
 # error "serverless client builds are not supported"
 #endif
 
-// if rangecheck is undefined, most parameter validation debugging code
-// will not be compiled
-//#define PARANOID    1
-
-//#define DEVELOPER   1
+// this does almost nothing, no need to turn it on *ever*
+//#define PARANOID
