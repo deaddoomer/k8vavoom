@@ -647,7 +647,7 @@ bool VEntity::CheckPosition (TVec Pos) {
     // because mobj_ts are grouped into mapblocks
     // based on their origin point, and can overlap
     // into adjacent blocks by up to MAXRADIUS units.
-    DeclareMakeBlockMapCoordsBBox2D(cptrace.BBox, xl, yl, xh, yh);
+    DeclareMakeBlockMapCoordsBBox2DMaxRadius(cptrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         for (VBlockThingsIterator It(XLevel, bx, by); It; ++It) {
@@ -884,12 +884,12 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
   VEntity *thingblocker = nullptr;
 
   // check things first, possibly picking things up.
-  // the bounding box is extended by MAXRADIUS
-  // because mobj_ts are grouped into mapblocks
-  // based on their origin point, and can overlap
-  // into adjacent blocks by up to MAXRADIUS units.
   if (EntityFlags&EF_ColideWithThings) {
-    DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
+    // the bounding box is extended by MAXRADIUS
+    // because mobj_ts are grouped into mapblocks
+    // based on their origin point, and can overlap
+    // into adjacent blocks by up to MAXRADIUS units.
+    DeclareMakeBlockMapCoordsBBox2DMaxRadius(tmtrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         for (VBlockThingsIterator It(XLevel, bx, by); It; ++It) {
