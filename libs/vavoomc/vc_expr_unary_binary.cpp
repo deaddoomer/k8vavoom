@@ -672,26 +672,22 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     // "a == b == c" and such should not compile
     // bitwise ops has lower precedence than comparisons (due to C roots), so warn about it too
     if (IsComparison() || IsBitLogic()) {
-      if (op1->IsBinaryMath() && ((VBinary *)op1)->IsComparison()) {
-        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VBinary *)op1)->getOpName(), getOpName());
-        delete this;
-        return nullptr;
-      }
-      if (op2->IsBinaryMath() && ((VBinary *)op2)->IsComparison()) {
-        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", getOpName(), ((VBinary *)op2)->getOpName());
+      VExpression *xo = nullptr;
+           if (op1->IsBinaryMath() && ((VBinary *)op1)->IsComparison()) xo = op1;
+      else if (op2->IsBinaryMath() && ((VBinary *)op2)->IsComparison()) xo = op2;
+      if (xo) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VBinary *)xo)->getOpName(), getOpName());
         delete this;
         return nullptr;
       }
     }
     // `!a & b` is not what you want
     if (IsBitLogic()) {
-      if (op1->IsUnaryMath() && ((VUnary *)op1)->Oper == VUnary::Not) {
-        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VUnary *)op1)->getOpName(), getOpName());
-        delete this;
-        return nullptr;
-      }
-      if (op2->IsUnaryMath() && ((VUnary *)op2)->Oper == VUnary::Not) {
-        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", getOpName(), ((VUnary *)op2)->getOpName());
+      VExpression *xo = nullptr;
+           if (op1->IsUnaryMath() && ((VUnary *)op1)->Oper == VUnary::Not) xo = op1;
+      else if (op2->IsUnaryMath() && ((VUnary *)op2)->Oper == VUnary::Not) xo = op2;
+      if (xo) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VUnary *)xo)->getOpName(), getOpName());
         delete this;
         return nullptr;
       }
@@ -711,10 +707,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       }
       // convert float to int
       op1 = (new VScalarToInt(op1, true/*resolved*/))->Resolve(ec);
-      if (!op1) {
-        delete this;
-        return nullptr;
-      }
+      if (!op1) { delete this; return nullptr; }
     }
     switch (Oper) {
       case LShiftFloat: Oper = LShift; break;
@@ -841,9 +834,8 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     case LessEquals:
     case Greater:
     case GreaterEquals:
-      if (!(op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) &&
-          !(op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) &&
-          !(op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String))
+      if (op1->Type.Type != op2->Type.Type ||
+          (op1->Type.Type != TYPE_Int && op1->Type.Type != TYPE_Float && op1->Type.Type != TYPE_String))
       {
         ParseError(Loc, "Expression type mismatch");
         delete this;
@@ -853,15 +845,16 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       break;
     case Equals:
     case NotEquals:
-      if (!(op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) &&
-          !(op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) &&
-          !(op1->Type.Type == TYPE_Name && op2->Type.Type == TYPE_Name) &&
-          !(op1->Type.Type == TYPE_Pointer && op2->Type.Type == TYPE_Pointer) &&
-          !(op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Vector) &&
-          !(op1->Type.Type == TYPE_Class && op2->Type.Type == TYPE_Class) &&
-          !(op1->Type.Type == TYPE_State && op2->Type.Type == TYPE_State) &&
-          !(op1->Type.Type == TYPE_Reference && op2->Type.Type == TYPE_Reference) &&
-          !(op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String))
+      if (op1->Type.Type != op2->Type.Type ||
+          (op1->Type.Type != TYPE_Int &&
+           op1->Type.Type != TYPE_Float &&
+           op1->Type.Type != TYPE_Name &&
+           op1->Type.Type != TYPE_Pointer &&
+           op1->Type.Type != TYPE_Vector &&
+           op1->Type.Type != TYPE_Class &&
+           op1->Type.Type != TYPE_State &&
+           op1->Type.Type != TYPE_Reference &&
+           op1->Type.Type != TYPE_String))
       {
         ParseError(Loc, "Expression type mismatch");
         delete this;
@@ -1139,60 +1132,73 @@ void VBinary::Emit (VEmitContext &ec) {
   op1->Emit(ec);
   op2->Emit(ec);
 
+  bool err = false;
   switch (Oper) {
     case Add:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Add, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FAdd, Loc);
       else if (op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Vector) ec.AddStatement(OPC_VAdd, Loc);
+      else err = true;
       break;
     case Subtract:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Subtract, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FSubtract, Loc);
       else if (op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Vector) ec.AddStatement(OPC_VSubtract, Loc);
       else if (op1->Type.IsPointer() && op2->Type.IsPointer()) ec.AddStatement(OPC_PtrSubtract, op1->Type.GetPointerInnerType(), Loc);
+      else err = true;
       break;
     case Multiply:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Multiply, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FMultiply, Loc);
       else if (op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_VPostScale, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Vector) ec.AddStatement(OPC_VPreScale, Loc);
+      else err = true;
       break;
     case Divide:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Divide, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FDivide, Loc);
       else if (op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_VIScale, Loc);
+      else err = true;
       break;
     case Modulus:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Modulus, Loc);
+      else err = true;
       break;
     case LShift:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_LShift, Loc);
+      else err = true;
       break;
     case RShift:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_RShift, Loc);
+      else err = true;
       break;
     case URShift:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_URShift, Loc);
+      else err = true;
       break;
     case Less:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Less, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FLess, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrLess, Loc);
+      else err = true;
       break;
     case LessEquals:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_LessEquals, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FLessEquals, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrLessEqu, Loc);
+      else err = true;
       break;
     case Greater:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Greater, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FGreater, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrGreat, Loc);
+      else err = true;
       break;
     case GreaterEquals:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_GreaterEquals, Loc);
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) ec.AddStatement(OPC_FGreaterEquals, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrGreatEqu, Loc);
+      else err = true;
       break;
     case Equals:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_Equals, Loc);
@@ -1204,6 +1210,7 @@ void VBinary::Emit (VEmitContext &ec) {
       else if (op1->Type.Type == TYPE_State && op2->Type.Type == TYPE_State) ec.AddStatement(OPC_PtrEquals, Loc);
       else if (op1->Type.Type == TYPE_Reference && op2->Type.Type == TYPE_Reference) ec.AddStatement(OPC_PtrEquals, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrEquals, Loc);
+      else err = true;
       break;
     case NotEquals:
            if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_NotEquals, Loc);
@@ -1215,22 +1222,28 @@ void VBinary::Emit (VEmitContext &ec) {
       else if (op1->Type.Type == TYPE_State && op2->Type.Type == TYPE_State) ec.AddStatement(OPC_PtrNotEquals, Loc);
       else if (op1->Type.Type == TYPE_Reference && op2->Type.Type == TYPE_Reference) ec.AddStatement(OPC_PtrNotEquals, Loc);
       else if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrNotEquals, Loc);
+      else err = true;
       break;
     case And:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_AndBitwise, Loc);
+      else err = true;
       break;
     case XOr:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_XOrBitwise, Loc);
+      else err = true;
       break;
     case Or:
       if (op1->Type.Type == TYPE_Int && op2->Type.Type == TYPE_Int) ec.AddStatement(OPC_OrBitwise, Loc);
+      else err = true;
       break;
     case StrCat:
       if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) ec.AddStatement(OPC_StrCat, Loc);
+      else err = true;
       break;
     case IsA: case NotIsA: VCFatalError("wtf?!");
     default: VCFatalError("VBinary::DoResolve: forgot to handle oper %d in code emiter", (int)Oper);
   }
+  if (err) VCFatalError("VBinary::Emit(%s): internal compiler error", getOpName());
 }
 
 
@@ -1307,6 +1320,7 @@ VStr VBinary::toString () const {
 }
 
 
+
 //==========================================================================
 //
 //  VBinaryLogical::VBinaryLogical
@@ -1376,27 +1390,27 @@ bool VBinaryLogical::IsBinaryLogical () const {
 //==========================================================================
 VExpression *VBinaryLogical::DoResolve (VEmitContext &ec) {
   if (op1 && op2) {
-    // "a & b && c" is not what you want
-    if (op1->IsBinaryMath() && ((VBinary *)op1)->IsBitLogic()) {
-      ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VBinary *)op1)->getOpName(), getOpName());
-      delete this;
-      return nullptr;
+    {
+      VExpression *xo = nullptr;
+      // "a & b && c" is not what you want
+           if (op1->IsBinaryMath() && ((VBinary *)op1)->IsBitLogic()) xo = op1;
+      else if (op2->IsBinaryMath() && ((VBinary *)op2)->IsBitLogic()) xo = op2;
+      if (xo) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VBinary *)xo)->getOpName(), getOpName());
+        delete this;
+        return nullptr;
+      }
     }
-    if (op2->IsBinaryMath() && ((VBinary *)op2)->IsBitLogic()) {
-      ParseError(Loc, "doing `%s` with `%s` is probably not what you want", getOpName(), ((VBinary *)op2)->getOpName());
-      delete this;
-      return nullptr;
-    }
-    // `a && b || c`, `a || b && c`
-    if (op1->IsBinaryLogical() && ((VBinaryLogical *)op1)->Oper != Oper) {
-      ParseError(Loc, "doing `%s` with `%s` is probably not what you want (precedence)", ((VBinaryLogical *)op1)->getOpName(), getOpName());
-      delete this;
-      return nullptr;
-    }
-    if (op2->IsBinaryLogical() && ((VBinaryLogical *)op2)->Oper != Oper) {
-      ParseError(Loc, "doing `%s` with `%s` is probably not what you want (precedence)", getOpName(), ((VBinaryLogical *)op2)->getOpName());
-      delete this;
-      return nullptr;
+    {
+      VExpression *xo = nullptr;
+      // `a && b || c`, `a || b && c`
+           if (op1->IsBinaryLogical() && ((VBinaryLogical *)op1)->Oper != Oper) xo = op1;
+      else if (op2->IsBinaryLogical() && ((VBinaryLogical *)op2)->Oper != Oper) xo = op2;
+      if (xo) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want (precedence)", ((VBinaryLogical *)xo)->getOpName(), getOpName());
+        delete this;
+        return nullptr;
+      }
     }
   }
 
@@ -1409,10 +1423,7 @@ VExpression *VBinaryLogical::DoResolve (VEmitContext &ec) {
   if (op1) op1 = op1->Resolve(ec);
   if (op2) op2 = op2->Resolve(ec);
 
-  if (!op1 || !op2) {
-    delete this;
-    return nullptr;
-  }
+  if (!op1 || !op2) { delete this; return nullptr; }
 
   // perform some more checks
   if (op1->IsIntConst() && (op1->GetIntConst() != 0 && op1->GetIntConst() != 1)) {
@@ -1429,10 +1440,7 @@ VExpression *VBinaryLogical::DoResolve (VEmitContext &ec) {
   // convert to booleans
   op1 = op1->CoerceToBool(ec);
   op2 = op2->CoerceToBool(ec);
-  if (!op1 || !op2) {
-    delete this;
-    return nullptr;
-  }
+  if (!op1 || !op2) { delete this; return nullptr; }
 
   Type = TYPE_Int;
 
