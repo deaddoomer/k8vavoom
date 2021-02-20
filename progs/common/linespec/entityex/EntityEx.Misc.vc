@@ -3356,7 +3356,8 @@ final state FindJumpState (name Label) {
     // `item` is the original caller, we should follow its states here
     state res = XLevel.StateCall->Item.FindState(Label);
     if (!res && !k8CheckIfSpecialStateLabel(Label)) {
-      printwarn("unknown item decorate label (statecall) '%s' (actor is `%C`) -- probably broken item `%C` code!", Label, self, XLevel.StateCall->Item);
+      printwarn("unknown item `%C` decorate label (statecall) '%s' (actor is `%C`) -- probably broken code!", XLevel.StateCall->Item, Label, self);
+      if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
       if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
     }
     return res;
@@ -3373,7 +3374,8 @@ final state FindJumpState (name Label) {
       if (!PlayerEx(Player).ReadyWeapon) return none;
       state res = PlayerEx(Player).ReadyWeapon.FindState(Label);
       if (!res && !k8CheckIfSpecialStateLabel(Label)) {
-        printwarn("unknown weapon decorate label '%s' -- probably broken actor `%C` code!", Label, PlayerEx(Player).ReadyWeapon);
+        printwarn("unknown weapon `%C` decorate label '%s' -- probably broken code!", PlayerEx(Player).ReadyWeapon, Label);
+        if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
         if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
       }
       return res;
@@ -3383,7 +3385,8 @@ final state FindJumpState (name Label) {
   // normal state jump
   state res = FindState(Label);
   if (!res && !k8CheckIfSpecialStateLabel(Label)) {
-    printwarn("unknown decorate label '%s' -- probably broken actor `%C` code!", Label, self);
+    printwarn("unknown actor `%C` decorate label '%s' -- probably broken code!", self, Label);
+    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
     if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
   }
 
