@@ -694,6 +694,17 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         delete this;
         return nullptr;
       }
+      // bitwise ops has lower precedence than comparisons (due to C roots), so warn about it
+      if (op1->IsBinaryMath() && ((VBinary *)op1)->IsComparison()) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", ((VBinary *)op1)->getOpName(), getOpName());
+        delete this;
+        return nullptr;
+      }
+      if (op2->IsBinaryMath() && ((VBinary *)op2)->IsComparison()) {
+        ParseError(Loc, "doing `%s` with `%s` is probably not what you want", getOpName(), ((VBinary *)op2)->getOpName());
+        delete this;
+        return nullptr;
+      }
     }
   }
 

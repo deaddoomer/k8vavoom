@@ -74,7 +74,7 @@ static OperInfo operList[] = {
   { .prio = 5, .tk = TK_RShift,  .oper = (int)VBinary::RShift,  .type = OperInfo::Binary },
   { .prio = 5, .tk = TK_URShift, .oper = (int)VBinary::URShift, .type = OperInfo::Binary },
 
-  // priority 6 (isa, !sia)
+  // priority 6 (isa, !isa)
   { .prio = 6, .tk = TK_IsA, .oper = (int)VBinary::IsA,    .type = OperInfo::Binary },
   { .prio = 6, .tk = TK_EOF, .oper = (int)VBinary::NotIsA, .type = OperInfo::NotIsA }, // special
 
