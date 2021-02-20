@@ -90,13 +90,13 @@
   }
 
   if (Level.bMap07Special) {
-    if ((rpc isa 'Fatso')) {
+    if (rpc isa 'Fatso') {
       //Level.bMap07Special = false;
       printdebug("%C: A_BossDeath: Fatsos dead", self);
       Level.ExecuteActionSpecial(LNSPEC_FloorLowerToLowest, 666, 8, 0, 0, 0, nullptr, 0, none);
       return;
     }
-    if ((rpc isa 'Arachnotron')) {
+    if (rpc isa 'Arachnotron') {
       //Level.bMap07Special = false;
       printdebug("%C: A_BossDeath: Babyspiders dead", self);
       Level.ExecuteActionSpecial(LNSPEC_FloorRaiseByTexture, 667, 8, 0, 0, 0, nullptr, 0, none);

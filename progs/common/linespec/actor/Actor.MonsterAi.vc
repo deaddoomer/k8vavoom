@@ -178,8 +178,6 @@ final void SetSeeOrWanderState () {
 {
   EntityEx targ = none;
 
-  //if (self isa 'PSXZombieMan') printdebug("%C:%s:A_LookEx:000: specified_flags=%B; flags=0x%04x; minseedist=%s; maxseedist=%s; maxheardist=%s; fov=%s; wakestate=%s (%B)", self, UniqueId, specified_flags, flags, minseedist, maxseedist, maxheardist, fov, wakestate, specified_wakestate);
-
   // fix optional args
   if (!fov && bLookAllAround) fov = 360; // use default value if zero
   if (!specified_wakestate) wakestate = SeeState;

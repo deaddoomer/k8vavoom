@@ -2004,7 +2004,6 @@ override void Tick (float deltaTime) {
       // freed itself
       return;
     }
-    //if (stateChange && (self isa 'RLFormerAssaultTrooper')) printdebug("%C: new state: %s; time=%s", self, State, StateTime);
     // interpolation check
     if (stateChange && bIntrJustMoved) {
       /*

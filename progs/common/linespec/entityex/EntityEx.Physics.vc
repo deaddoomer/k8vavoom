@@ -461,11 +461,6 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
     #endif
   }
 
-  //if (self isa 'DH_GaussBall') printdebug("%C: 000 (max=%s): %s  %s", self, MAXMOVE, Velocity, Normalise(Velocity));
-  //k8: no need to do this (i hope)
-  //Velocity = vclampscale(Velocity, MAXMOVE);
-  //if (self isa 'DH_GaussBall') printdebug("%C: 001 (max=%s): %s  %s", self, MAXMOVE, Velocity, Normalise(Velocity));
-
   float xmove = Velocity.x*DeltaTime;
   float ymove = Velocity.y*DeltaTime;
   bool forceSlide = false;

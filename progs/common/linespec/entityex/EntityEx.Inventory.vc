@@ -124,12 +124,7 @@ void DebugDumpInventory () {
 void AddInventory (Inventory Item) {
   if (!Item) return;
 
-  /*
-  if (Inventory(self)) {
-    bool doDebug = (Item !isa 'LDWeaponNameAlternation');
-    if (doDebug) printdebug("%C(%B): adding inventory item %C (owner=%C; bTransferInventory=%B)", self, Inventory(self).bTransferInventory, Item, Item.Owner, Item.bTransferInventory);
-  }
-  */
+  //bool doDebug = false;
 
   if (Item.Owner == Item) {
     printerror("%C: AddInventory: Item `%C` owns itself, wtf?!", self, Item);
