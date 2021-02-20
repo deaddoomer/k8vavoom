@@ -3727,7 +3727,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       useSide = 1;
     } else {
       // front side
-      if (line->SpacFlags&(SPAC_UseBack|SPAC_Use|SPAC_UseThrough) == SPAC_UseBack) continue; // can't be used from front, skip it
+      if ((line->SpacFlags&(SPAC_UseBack|SPAC_Use|SPAC_UseThrough)) == SPAC_UseBack) continue; // can't be used from front, skip it
       if (checkLineUseDg && !checkLineUseDg(line)) continue;
       useType = SPAC_Use;
       useSide = 0;
