@@ -920,7 +920,7 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
     if (++RunAway > 512) {
       GCon->Logf(NAME_Warning, "entity '%s' state chain interrupted by WatchCat!", *Actor->GetClass()->GetFullName());
       GCon->Logf(NAME_Warning, "... state: '%s'", *S->Loc.toStringNoCol());
-      res = false; // watchcat break, oops
+      res = 0; // watchcat break, oops
       break;
     }
 
