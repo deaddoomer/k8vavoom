@@ -898,13 +898,13 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         Type = TYPE_Int;
       } else if (op1->Type.Type == TYPE_Class || op1->Type.Type == TYPE_Reference) {
         if (op2->Type.Type != TYPE_Class && op2->Type.Type != TYPE_Reference && op2->Type.Type != TYPE_Name) {
-          ParseError(Loc, "`isa` expects class/object/name");
+          ParseError(Loc, "`isa` expects class/object/name as second operand");
           delete this;
           return nullptr;
         }
         Type = TYPE_Int;
       } else {
-        ParseError(Loc, "`isa` expects class or object");
+        ParseError(Loc, "`isa` expects class or object as first operand");
         delete this;
         return nullptr;
       }
@@ -1107,6 +1107,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
 void VBinary::Emit (VEmitContext &ec) {
   if (!op1 || !op2) return;
 
+  // `isa` and `!isa`
   if (Oper == IsA || Oper == NotIsA) {
     if (op1->Type.Type == TYPE_Class && op2->Type.Type == TYPE_Class) {
       //VCFatalError("VC: internal compiler error (VBinary::Emit:Class:Class)");
