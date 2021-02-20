@@ -178,8 +178,8 @@ public:
 
   const char *getOpName () const;
 
-  inline bool IsComparison () const { return (Oper >= Equals); }
-  inline bool IsBitLogic () const { return (Oper >= And && Oper <= Or); }
+  inline bool IsComparison () const noexcept { return (Oper >= Equals && Oper <= GreaterEquals); }
+  inline bool IsBitLogic () const noexcept { return (Oper >= And && Oper <= Or); }
 
 protected:
   VBinary () {}
