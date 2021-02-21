@@ -1233,10 +1233,52 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].x = wv[3].x = seg->v2->x;
     wv[2].y = wv[3].y = seg->v2->y;
 
+    /*
     const float topz1 = r_ceiling.GetPointZ(*seg->v1);
     const float topz2 = r_ceiling.GetPointZ(*seg->v2);
     const float botz1 = r_floor.GetPointZ(*seg->v1);
     const float botz2 = r_floor.GetPointZ(*seg->v2);
+    */
+
+    float topz1 = r_ceiling.GetPointZ(*seg->v1);
+    float topz2 = r_ceiling.GetPointZ(*seg->v2);
+    float botz1 = r_floor.GetPointZ(*seg->v1);
+    float botz2 = r_floor.GetPointZ(*seg->v2);
+
+    //FIXME: cache this info
+    if (sub->sector->SectorFlags&sector_t::SF_IsTransDoor) {
+      const sector_t *sec = sub->sector;
+      //GCon->Logf(NAME_Debug, "transdorrtrack; sector #%d; line #%d; fz=(%g : %g); cz=(%g : %g)", (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(linedef-&Level->Lines[0]), botz1, botz2, topz1, topz2);
+      for (int f = 0; f < sec->linecount; ++f) {
+        const line_t *ldef = sec->lines[f];
+        //GCon->Logf(NAME_Debug, "  ...trying line #%d...", (int)(ptrdiff_t)(ldef-&Level->Lines[0]));
+
+        if (ldef == linedef) continue;
+        if (ldef->sidenum[0] < 0) continue;
+        if ((ldef->flags&(ML_TWOSIDED|ML_3DMIDTEX)) != ML_TWOSIDED) continue;
+
+        const sector_t *fsec = ldef->frontsector;
+        const sector_t *bsec = ldef->backsector;
+        if (!fsec || !bsec) continue; // one-sided
+        if (fsec == bsec) continue; // self-referenced sector
+        if (/*fsec != sec &&*/ bsec != sec) continue;
+
+        const side_t *lsd = &Level->Sides[ldef->sidenum[0]];
+
+        if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) continue;
+
+        if ((ldef->flags&ML_ADDITIVE) == 0 && ldef->alpha >= 1.0f) {
+          VTexture *tex = GTextureManager[lsd->MidTexture];
+          if (!tex->isSeeThrough()) continue;
+        }
+
+        //GCon->Logf(NAME_Debug, "  ...fixing with line #%d", (int)(ptrdiff_t)(ldef-&Level->Lines[0]));
+        topz1 = max2(topz1, fsec->ceiling.GetPointZ(*linedef->v1));
+        topz2 = max2(topz2, fsec->ceiling.GetPointZ(*linedef->v2));
+        botz1 = min2(botz1, fsec->floor.GetPointZ(*linedef->v1));
+        botz2 = min2(botz2, fsec->floor.GetPointZ(*linedef->v2));
+      }
+    }
 
     wv[0].z = botz1;
     wv[1].z = topz1;
