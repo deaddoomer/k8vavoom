@@ -145,6 +145,18 @@ void VLevel::DetectHiddenSectors () {
 
 //==========================================================================
 //
+//  IsTransTexture
+//
+//==========================================================================
+static inline bool IsTransTexture (int tid) {
+  if (GTextureManager.IsEmptyTexture(tid)) return false;
+  VTexture *MTex = GTextureManager[tid];
+  return MTex->isSeeThrough();
+}
+
+
+//==========================================================================
+//
 //  VLevel::FixTransparentDoors
 //
 //  this tries to mark all sectors with "transparent door hack"
@@ -157,7 +169,7 @@ void VLevel::FixTransparentDoors () {
 
   // mark all sectors with transparent door hacks
   for (auto &&sec : allSectors()) {
-    sec.SectorFlags &= ~(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot);
+    sec.SectorFlags &= ~(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot|sector_t::SF_IsTransDoorTrack);
     if (sec.linecount < 3) {
       GCon->Logf(NAME_Debug, "skipped sector #%d with %d lines (transdoor check)", (int)(ptrdiff_t)(&sec-&Sectors[0]), sec.linecount);
       continue;
@@ -196,8 +208,21 @@ void VLevel::FixTransparentDoors () {
       const sector_t *fsec = ldef->frontsector;
       const sector_t *bsec = ldef->backsector;
 
-      if (fsec == bsec) continue; // self-referenced sector
       if (!fsec || !bsec) continue; // one-sided
+
+      const side_t *lsd = &Sides[ldef->sidenum[0]];
+
+      if (fsec == bsec && fsec->floor.minz == fsec->ceiling.maxz) {
+        // self-referenced sector
+        // Boom "doortrack" fix?
+        if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f || IsTransTexture(lsd->MidTexture)) {
+          if (!(sec.SectorFlags&sector_t::SF_IsTransDoorTrack)) {
+            GCon->Logf(NAME_Debug, "sector #%d is transdoor-track, with line #%d", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
+            sec.SectorFlags |= sector_t::SF_IsTransDoorTrack;
+          }
+        }
+        continue;
+      }
 
       // transparent door sector is "inside" one (i.e. linedef should point to the outside
       // if there are any linedef points outside, this is not a door sector, ignore it
@@ -206,8 +231,6 @@ void VLevel::FixTransparentDoors () {
         sec.SectorFlags &= ~(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot);
         break;
       }
-
-      const side_t *lsd = &Sides[ldef->sidenum[0]];
 
       if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) {
         //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip line with empty midtex", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));

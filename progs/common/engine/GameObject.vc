@@ -1034,6 +1034,7 @@ struct sector_t {
   bool bNoPlayerRespawn;  // ZDoom "player cannot respawn in this sector" flag (who may need it at all?)
   bool bIsTransDoorTop;   // `bIsTransDoor` is always set with this
   bool bIsTransDoorBot;   // `bIsTransDoor` is always set with this
+  bool bIsTransDoorTrack; // fix one-sided "door tracks" for this sector (Boom transparent walls hack)
 
   // 0 = untraversed, 1,2 = sndlines -1
   int soundtraversed;

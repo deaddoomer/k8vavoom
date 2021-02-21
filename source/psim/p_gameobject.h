@@ -780,6 +780,7 @@ struct sector_t {
     SF_NoPlayerRespawn  = 1u<<15, // ZDoom "player cannot respawn in this sector" flag (who may need it at all?)
     SF_IsTransDoorTop   = 1u<<16, // `SF_IsTransDoor` is always set with this
     SF_IsTransDoorBot   = 1u<<17, // `SF_IsTransDoor` is always set with this
+    SF_IsTransDoorTrack = 1u<<18, // fix one-sided "door tracks" for this sector (Boom transparent walls hack)
   };
   vuint32 SectorFlags;
 

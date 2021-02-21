@@ -1258,7 +1258,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     float botz2 = r_floor.GetPointZ(*seg->v2);
 
     //FIXME: cache this info
-    if (sub->sector->SectorFlags&sector_t::SF_IsTransDoor) {
+    if (sub->sector->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) {
       const sector_t *sec = sub->sector;
       //GCon->Logf(NAME_Debug, "transdorrtrack; sector #%d; line #%d; fz=(%g : %g); cz=(%g : %g)", (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(linedef-&Level->Lines[0]), botz1, botz2, topz1, topz2);
       for (int f = 0; f < sec->linecount; ++f) {
@@ -1277,11 +1277,15 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
         const side_t *lsd = &Level->Sides[ldef->sidenum[0]];
 
-        if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) continue;
+        if ((sub->sector->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack) {
+          // here, any door-like two-sided wall will do
+        } else {
+          if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) continue;
 
-        if ((ldef->flags&ML_ADDITIVE) == 0 && ldef->alpha >= 1.0f) {
-          VTexture *tex = GTextureManager[lsd->MidTexture];
-          if (!tex->isSeeThrough()) continue;
+          if ((ldef->flags&ML_ADDITIVE) == 0 && ldef->alpha >= 1.0f) {
+            VTexture *tex = GTextureManager[lsd->MidTexture];
+            if (!tex->isSeeThrough()) continue;
+          }
         }
 
         //GCon->Logf(NAME_Debug, "  ...fixing with line #%d", (int)(ptrdiff_t)(ldef-&Level->Lines[0]));
