@@ -199,6 +199,14 @@ void VLevel::FixTransparentDoors () {
       if (fsec == bsec) continue; // self-referenced sector
       if (!fsec || !bsec) continue; // one-sided
 
+      // transparent door sector is "inside" one (i.e. linedef should point to the outside
+      // if there are any linedef points outside, this is not a door sector, ignore it
+      // note that renderer will still fix textures, but won't set any flags
+      if (bsec != &sec) {
+        sec.SectorFlags &= ~(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot);
+        break;
+      }
+
       const side_t *lsd = &Sides[ldef->sidenum[0]];
 
       if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) {
@@ -246,11 +254,6 @@ void VLevel::FixTransparentDoors () {
         }
       }
       if (!topflag && !botflag) continue;
-
-      // transparent door sector is "inside" one (i.e. linedef should point to the outside
-      // if there are any linedef points outside, this is not a door sector, ignore it
-      // note that renderer will still fix textures, but won't set any flags
-      if (bsec != &sec) continue;
 
       sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : 0u)|(botflag ? sector_t::SF_IsTransDoorBot : 0u);
       GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d), with line #%d", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag, (int)(ptrdiff_t)(ldef-&Lines[0]));
