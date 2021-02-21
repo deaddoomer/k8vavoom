@@ -126,6 +126,7 @@ surface_t *VRenderLevelShadowVolume::FixFaceTJunctions (surface_t *surf) {
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *seg) {
+  //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   // wall segment should always be a quad
   if (!lastRenderQuality || surf->count != 4) return surf; // just in case
 
@@ -211,13 +212,57 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
         const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
         if (!sec || sec == mysec) continue;
         if (sn && ln->frontsector == ln->backsector) continue; // self-referenced line
-        const float fz = sec->floor.GetPointZClamped(lv);
-        const float cz = sec->ceiling.GetPointZClamped(lv);
-        //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
+        /*const*/ float fz = sec->floor.GetPointZClamped(lv);
+        /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
         if (fz > cz) continue; // just in case
         if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
+        //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
         if (fz > minz[vidx]) tjunkHList.push(fz);
         if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+
+        if (true /*(sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack*/) {
+          if (sec->heightsec) {
+            const sector_t *fsec = sec->heightsec;
+            cz = fsec->ceiling.GetPointZ(lv);
+            fz = fsec->floor.GetPointZ(lv);
+            TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
+            if (fz > minz[vidx]) tjunkHList.push(fz);
+            if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+          }
+        }
+
+        #if 0
+        //FIXME: cache this info
+        if ((sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack) {
+          for (int ff = 0; ff < sec->linecount; ++ff) {
+            const line_t *ldef = sec->lines[ff];
+            if (ldef == ln || ldef == line) continue;
+            if (ldef->sidenum[0] < 0) continue;
+            if ((ldef->flags&(ML_TWOSIDED|ML_3DMIDTEX)) != ML_TWOSIDED) continue;
+
+            const sector_t *fsec = ldef->frontsector;
+            const sector_t *bsec = ldef->backsector;
+            if (!fsec || !bsec) continue; // one-sided
+            if (fsec == bsec) continue; // self-referenced sector
+            if (/*fsec != sec &&*/ bsec != sec) continue;
+            TJLOG(NAME_Debug, "  other line #%d: fsec=%d; fz=%g; cz=%g; bsec=%d; fz=%g; cz=%g",
+              (int)(ptrdiff_t)(ldef-&Level->Lines[0]),
+                (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fsec->floor.GetPointZ(lv), fsec->ceiling.GetPointZ(lv),
+                (int)(ptrdiff_t)(bsec-&Level->Sectors[0]), bsec->floor.GetPointZ(lv), bsec->ceiling.GetPointZ(lv)
+            );
+
+            cz = fsec->ceiling.GetPointZ(lv);
+            fz = fsec->floor.GetPointZ(lv);
+            if (fz > minz[vidx]) tjunkHList.push(fz);
+            if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+
+            cz = bsec->ceiling.GetPointZ(lv);
+            fz = bsec->floor.GetPointZ(lv);
+            if (fz > minz[vidx]) tjunkHList.push(fz);
+            if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+          }
+        }
+        #endif
       }
     }
     if (!tjunkHList.length()) continue;
@@ -228,7 +273,7 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
       // invariant: first triangle edge is a vertical line
       vassert(surf->count == 4);
       #ifdef VV_TJUNCTION_VERBOSE
-        TJLOG(NAME_Debug, " minz=%g:%g; maxz=%g%g; (%g,%g,%g)-(%g,%g,%g)", minz[0], minz[1], maxz[0], maxz[1], seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
+        TJLOG(NAME_Debug, " minz=%g:%g; maxz=%g:%g; (%g,%g,%g)-(%g,%g,%g)", minz[0], minz[1], maxz[0], maxz[1], seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
         for (int f = 0; f < surf->count; ++f) TJLOG(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].vec().x, surf->verts[f].vec().y, surf->verts[f].vec().z);
       #endif
       // first triangle
@@ -279,6 +324,10 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
           continue;
         }
         tri.Insert(f, TVec(tri[0].x, tri[0].y, hz));
+        #ifdef VV_TJUNCTION_VERBOSE
+        TJLOG(NAME_Debug, "   INSERTED AT %d", f);
+        for (int ff = 0; ff < tri.length(); ++ff) TJLOG(NAME_Debug, "      %d: (%g,%g,%g)", ff, tri[ff].x, tri[ff].y, tri[ff].z);
+        #endif
       }
     }
   }
