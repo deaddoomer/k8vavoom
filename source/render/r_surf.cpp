@@ -770,18 +770,14 @@ static bool IsTransDoorHack (const seg_t *seg, bool fortop) {
   const side_t *sidedef = seg->sidedef;
   if (!GTextureManager.IsEmptyTexture(fortop ? sidedef->TopTexture : sidedef->BottomTexture)) return false;
   // if we have don't have a midtex, it is not a door hack
-  if (GTextureManager.IsEmptyTexture(sidedef->MidTexture)) return false;
+  //if (GTextureManager.IsEmptyTexture(sidedef->MidTexture)) return false;
+  VTexture *tex = GTextureManager[sidedef->MidTexture];
+  if (!tex || tex->Type == TEXTYPE_Null) return false;
+  // should be "see through", or line should have alpha
+  if (seg->linedef->alpha >= 1.0f && !tex->isSeeThrough()) return false;
   // check for slopes
   if (secs[0]->floor.normal.z != 1.0f || secs[0]->ceiling.normal.z != -1.0f) return false;
   if (secs[1]->floor.normal.z != 1.0f || secs[1]->ceiling.normal.z != -1.0f) return false;
-  // check for door
-  //!if (secs[0]->floor.minz >= secs[1]->ceiling.minz) return false;
-  // check for middle texture
-  // if we have midtex, it is door hack
-  //VTexture *tex = GTextureManager[sidedef->MidTexture];
-  //if (!tex || !tex->isTrasparent()) return false;
-  //!return !GTextureManager.IsEmptyTexture(sidedef->MidTexture);
-  //if (!mt || mt->Type == TEXTYPE_Null || !mt->isTransparent()) return false;
   // ok, looks like it
   return true;
 }
@@ -898,6 +894,7 @@ static inline bool CheckFakeDistances (const seg_t *seg, const segpart_t *sp) {
 //==========================================================================
 void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
   FreeWSurfs(sp->surfs);
+  vassert(sub->sector);
 
   const line_t *linedef = seg->linedef;
   const side_t *sidedef = seg->sidedef;
@@ -917,8 +914,23 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   //       also, invert "upper unpegged" flag for this case
   int peghack = 0;
   unsigned hackflag = 0;
-  //if (r_hack_transparent_doors && TTex->Type == TEXTYPE_Null) GCon->Logf(NAME_Debug, "line #%d, side #%d: transdoor check=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), IsTransDoorHackTop(seg));
-  if (r_hack_transparent_doors && TTex->Type == TEXTYPE_Null && IsTransDoorHackTop(seg)) {
+
+  const bool transDoorHack = (r_hack_transparent_doors && TTex->Type == TEXTYPE_Null && IsTransDoorHackTop(seg));
+
+  if (sub->sector->SectorFlags&sector_t::SF_IsTransDoor) {
+    // sector is marked as transdoor
+    if (!transDoorHack) {
+      // not a transdoor, reset mark
+      sub->sector->SectorFlags &= ~sector_t::SF_IsTransDoor;
+    }
+  } else {
+    // sector is not marked as transdoor
+    if (transDoorHack) {
+      sub->sector->SectorFlags |= sector_t::SF_IsTransDoor;
+    }
+  }
+
+  if (transDoorHack) {
     TTex = GTextureManager(sidedef->MidTexture);
     //peghack = ML_DONTPEGTOP;
     hackflag = surface_t::TF_TOPHACK;
@@ -962,6 +974,12 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     }
     sp->texinfo.toffs += sidedef->Top.RowOffset*TextureOffsetTScale(TTex);
 
+    // transparent/translucent door
+    if (hackflag == surface_t::TF_TOPHACK) {
+      sp->texinfo.Alpha = linedef->alpha;
+      sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
+    }
+
     wv[0].x = wv[1].x = seg->v1->x;
     wv[0].y = wv[1].y = seg->v1->y;
     wv[2].x = wv[3].x = seg->v2->x;
@@ -975,7 +993,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (seg->backsector->heightsec && r_hack_fake_floor_decorations) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && r_hack_fake_floor_decorations) {
       // do not create outer top texture surface if our fake ceiling is higher than the surrounding ceiling
       // otherwise, make sure that it is not lower than the fake ceiling (simc)
       const sector_t *bsec = seg->backsector;
@@ -1033,6 +1051,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     BTex = GTextureManager(sidedef->MidTexture);
     //peghack = ML_DONTPEGBOTTOM;
     hackflag = surface_t::TF_TOPHACK;
+    if (sub->sector) sub->sector->SectorFlags |= sector_t::SF_IsTransDoor;
   }
 
   SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot);
@@ -1043,7 +1062,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     float topz1 = r_ceiling.GetPointZ(*seg->v1);
     float topz2 = r_ceiling.GetPointZ(*seg->v2);
 
-    // some map authors are making floor decorations with height transer
+    // some map authors are making floor decorations with height transfer
     // (that is so player won't wobble walking on such floors)
     // so we should use minimum front height here (sigh)
     //FIXME: this is totally wrong, because we may have alot of different
@@ -1100,6 +1119,12 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     sp->texinfo.toffs *= TextureTScale(BTex)*sidedef->Bot.ScaleY;
     sp->texinfo.toffs += sidedef->Bot.RowOffset*TextureOffsetTScale(BTex);
 
+    // transparent/translucent door
+    if (hackflag == surface_t::TF_TOPHACK) {
+      sp->texinfo.Alpha = linedef->alpha;
+      sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
+    }
+
     wv[0].x = wv[1].x = seg->v1->x;
     wv[0].y = wv[1].y = seg->v1->y;
     wv[2].x = wv[3].x = seg->v2->x;
@@ -1134,7 +1159,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (seg->backsector->heightsec && r_hack_fake_floor_decorations) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && r_hack_fake_floor_decorations) {
       // do not create outer bottom texture surface if our fake floor is lower than the surrounding floor
       // otherwise, make sure that it is not higher than the fake floor (simc)
       const sector_t *bsec = seg->backsector;
@@ -1302,8 +1327,21 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   const sec_plane_t *back_floor = &seg->backsector->floor;
   const sec_plane_t *back_ceiling = &seg->backsector->ceiling;
 
+  if (sub->sector && (sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) MTex = nullptr;
+  /*
   if (MTex->Type != TEXTYPE_Null) {
+    // transdoors are using top/bottom surfaces instead
+    if (r_hack_transparent_doors && (IsTransDoorHackTop(seg) || IsTransDoorHackBot(seg))) {
+      if (sub->sector) sub->sector->SectorFlags |= sector_t::SF_IsTransDoor;
+      MTex = nullptr;
+    }
+  }
+  */
+
+  if (MTex && MTex->Type != TEXTYPE_Null) {
     TVec wv[4];
+
+    //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
 
     const sec_plane_t *bfloor = back_floor;
     const sec_plane_t *bceiling = back_ceiling;
@@ -1323,6 +1361,8 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
     const float exbotz = min2(back_botz1, back_botz2);
     const float extopz = max2(back_topz1, back_topz2);
+
+    //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); back_botz=(%g : %g); back_topz=(%g : %g), exbotz=%g; extopz=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, back_botz1, back_botz2, back_topz1, back_topz2, exbotz, extopz);
 
     const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
     float z_org; // texture top

@@ -1179,6 +1179,9 @@ bool VViewClipper::CheckSegFrustum (const subsector_t *sub, const seg_t *seg, co
   if (!seg || !sub || !Frustum.isValid() || !mask) return true;
   const sector_t *sector = sub->sector;
   if (!sector) return true; // just in case
+  //FIXME: ignore transparent doors (because their bounding box is wrong)
+  if (sub->sector && (sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) return true;
+  // check quad
   const TVec sv0(seg->v1->x, seg->v1->y, sector->floor.GetPointZ(*seg->v1));
   const TVec sv1(seg->v1->x, seg->v1->y, sector->ceiling.GetPointZ(*seg->v1));
   const TVec sv2(seg->v2->x, seg->v2->y, sector->ceiling.GetPointZ(*seg->v2));
