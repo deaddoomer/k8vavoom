@@ -196,3 +196,18 @@ detector "ZPack" {
     gamename = "doom2";
   }
 }
+
+
+detector "TNT: Revilution" {
+  info {
+    type = "pwad";
+  }
+
+  preconditions {
+    file { name = "mapinfo"; size = 4633; md5 = "6ef6f3bdc09a7dc7855e9a5502f0b784"; }
+  }
+
+  options {
+    gamename = "tnt";
+  }
+}
