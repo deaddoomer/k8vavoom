@@ -39,7 +39,7 @@ static VCvarB deepwater_hacks_ceiling("deepwater_hacks_ceiling", true, "Apply de
 static VCvarB deepwater_hacks_bridges("deepwater_hacks_bridges", true, "Apply hack for \"handing bridges\"?", CVAR_Archive);
 
 static VCvarB ldr_fix_slope_cracks("ldr_fix_slope_cracks", true, "Try to fix empty cracks near sloped floors?", /*CVAR_Archive|*/CVAR_PreInit);
-static VCvarB ldr_fix_transparent_doors("ldr_fix_transparent_doors", false, "Try to fix transparent doors?", CVAR_Archive);
+static VCvarB ldr_fix_transparent_doors("ldr_fix_transparent_doors", true, "Try to find and mark transparent doors?", CVAR_Archive);
 
 
 //==========================================================================
@@ -153,37 +153,71 @@ void VLevel::DetectHiddenSectors () {
 //==========================================================================
 void VLevel::FixTransparentDoors () {
   if (!ldr_fix_transparent_doors) return;
-  if (!NeedUDMFFix(this)) { GCon->Logf(NAME_Debug, "FixTransparentDoors: skipped due to UDMF map"); return; }
+  //if (!NeedUDMFFix(this)) { GCon->Logf(NAME_Debug, "FixTransparentDoors: skipped due to UDMF map"); return; }
 
   // mark all sectors with transparent door hacks
   for (auto &&sec : allSectors()) {
-    sec.SectorFlags &= ~sector_t::SF_IsTransDoor;
-    if (sec.linecount < 3) continue;
-
-    if ((sec.SectorFlags&(sector_t::SF_HasExtrafloors|sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource|sector_t::SF_UnderWater))) {
-      if (!(sec.SectorFlags&sector_t::SF_IgnoreHeightSec)) continue; // this is special sector, skip it
+    sec.SectorFlags &= ~(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot);
+    if (sec.linecount < 3) {
+      GCon->Logf(NAME_Debug, "skipped sector #%d with %d lines (transdoor check)", (int)(ptrdiff_t)(&sec-&Sectors[0]), sec.linecount);
+      continue;
     }
 
-    // never do this for slopes
-    if (sec.floor.isSlope() || sec.ceiling.isSlope()) continue;
+    if (sec.SectorFlags&(sector_t::SF_HasExtrafloors|sector_t::SF_UnderWater)) continue;
+    if ((sec.SectorFlags&(sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource)) == (sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource)) {
+      if (!(sec.SectorFlags&sector_t::SF_IgnoreHeightSec)) continue;
+    }
 
-    bool doorFlag = false;
+    /*
+    if ((sec.SectorFlags&(sector_t::SF_HasExtrafloors|sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource))) {
+      if (!(sec.SectorFlags&sector_t::SF_IgnoreHeightSec)) {
+        GCon->Logf(NAME_Debug, "skipped special sector #%d (transdoor check) 0x%08x", (int)(ptrdiff_t)(&sec-&Sectors[0]), sec.SectorFlags);
+        continue; // this is special sector, skip it
+      }
+    }
+    */
+
+    // never do this for slopes
+    if (sec.floor.isSlope() || sec.ceiling.isSlope()) {
+      //GCon->Logf(NAME_Debug, "skipped sloped sector #%d (transdoor check)", (int)(ptrdiff_t)(&sec-&Sectors[0]));
+      continue;
+    }
+
+    //bool doorFlag = false;
     for (int f = 0; f < sec.linecount; ++f) {
       const line_t *ldef = sec.lines[f];
 
-      // mark only back sectors (the usual door setup)
-      if (ldef->backsector != &sec) continue;
-      if (ldef->sidenum[0] < 0) continue; // sector-less control line (usually)
+      if (ldef->sidenum[0] < 0) {
+        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip sideless line", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
+        continue; // sector-less control line (usually)
+      }
 
-      if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) continue; // skip translucent walls
-      if (!(ldef->flags&ML_TWOSIDED)) continue; // one-sided wall always blocks everything
-      if (ldef->flags&ML_3DMIDTEX) continue; // 3dmidtex never blocks anything
+      if (!(ldef->flags&ML_TWOSIDED)) {
+        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip one-sided line", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
+        continue; // one-sided wall always blocks everything
+      }
+      if (ldef->flags&ML_3DMIDTEX) {
+        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip 3d midtex line", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
+        continue; // 3dmidtex never blocks anything
+      }
 
       const sector_t *fsec = ldef->frontsector;
       const sector_t *bsec = ldef->backsector;
 
       if (fsec == bsec) continue; // self-referenced sector
       if (!fsec || !bsec) continue; // one-sided
+
+      if (GTextureManager.IsEmptyTexture(Sides[ldef->sidenum[0]].MidTexture)) {
+        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip line with empty midtex", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
+        continue;
+      }
+
+      if ((ldef->flags&ML_ADDITIVE) == 0 && ldef->alpha >= 1.0f) {
+        VTexture *MTex = GTextureManager[Sides[ldef->sidenum[0]].MidTexture];
+        if (!MTex->isSeeThrough()) continue;
+      }
+
+      //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d)", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
 
       const TVec vv1 = *ldef->v1;
       const TVec vv2 = *ldef->v2;
@@ -198,7 +232,7 @@ void VLevel::FixTransparentDoors () {
       const float secbackfz1 = bsec->floor.GetPointZ(vv1);
       const float secbackfz2 = bsec->floor.GetPointZ(vv2);
 
-      bool flag = false;
+      bool topflag = false, botflag = false;
       // if front sector is not closed, check it
       if (secfrontfz1 < secfrontcz1 || secfrontfz2 < secfrontcz2) {
         // front sector is not closed, check if it can see top/bottom textures
@@ -206,25 +240,26 @@ void VLevel::FixTransparentDoors () {
         if (secfrontfz1 < secbackfz1 || secfrontfz2 < secbackfz2) {
           // it can see a bottom texture, check if it is solid
           if (GTextureManager.GetTextureType(Sides[ldef->sidenum[0]].BottomTexture) != VTextureManager::TCT_SOLID) {
-            flag = true;
+            botflag = true;
           }
         }
         // to see a top texture, front sector ceiling must be higher than back sector ceiling
         if (secfrontcz1 > secbackcz1 || secfrontcz2 > secbackcz2) {
           // it can see a top texture, check if it is solid
-          doorFlag = true;
           if (GTextureManager.GetTextureType(Sides[ldef->sidenum[0]].TopTexture) != VTextureManager::TCT_SOLID) {
-            flag = true;
+            //doorFlag = true;
+            topflag = true;
           }
         }
       }
-      if (!flag) continue;
+      if (!topflag && !botflag) continue;
 
-      sec.SectorFlags |= sector_t::SF_IsTransDoor;
-      GCon->Logf(NAME_Debug, "sector #%d is transdoor", (int)(ptrdiff_t)(&sec-&Sectors[0]));
+      sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : 0u)|(botflag ? sector_t::SF_IsTransDoorBot : 0u);
+      GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d)", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag);
       break;
     }
 
+    #if 0
     // create fake ceilings for transparent doors
     if (sec.fakefloors || (sec.SectorFlags&sector_t::SF_IsTransDoor) == 0) continue;
 
@@ -282,6 +317,7 @@ void VLevel::FixTransparentDoors () {
       ff->ceilplane = sec.ceiling;
       ff->params = highsec->params;
     }
+    #endif
   }
 }
 

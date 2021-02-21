@@ -136,10 +136,21 @@ struct segpart_t {
   float frontFakeCeilDist;
   float backFakeFloorDist;
   float backFakeCeilDist;
-  // t-junction flag
-  vuint32 fixTJunction;
+  // various flags
+  vuint32 flags;
+  enum {
+    FixTJunk  = 1u<<0, // fix t-junction flag
+    TransDoor = 1u<<1, // this is part of "transparent door" hack (used to check if we need to update surfaces)
+  };
   //vint32 regidx; // region index (negative means "backsector region")
   sec_region_t *basereg;
+
+  inline void SetFixTJunk () noexcept { flags |= FixTJunk; }
+  inline void ResetFixTJunk () noexcept { flags &= ~FixTJunk; }
+  inline bool NeedFixTJunk () const noexcept { return (flags&FixTJunk); }
+
+  inline void SetTransDoor (const bool flg) noexcept { if (flg) flags |= TransDoor; else flags &= ~TransDoor; }
+  inline bool IsTransDoor () const noexcept { return (flags&TransDoor); }
 };
 
 

@@ -778,6 +778,8 @@ struct sector_t {
     SF_IsTransDoor      = 1u<<13, // is this sector can be interpreted as "transparent door"?
     SF_Hidden           = 1u<<14, // this sector is not visible on the automap
     SF_NoPlayerRespawn  = 1u<<15, // ZDoom "player cannot respawn in this sector" flag (who may need it at all?)
+    SF_IsTransDoorTop   = 1u<<16, // `SF_IsTransDoor` is always set with this
+    SF_IsTransDoorBot   = 1u<<17, // `SF_IsTransDoor` is always set with this
   };
   vuint32 SectorFlags;
 

@@ -633,8 +633,9 @@ struct segpart_t {
   float frontFakeCeilDist;
   float backFakeFloorDist;
   float backFakeCeilDist;
-  // t-junction flag
-  int fixTJunction;
+  // flags
+  bool bFixTJunk; // fix t-junction flag
+  bool bTransDoor; // this is part of "transparent door" hack (used to check if we need to update surfaces)
   //int regidx; // region index (has no meaning for non-region parts)
   sec_region_t *basereg;
 };
@@ -1031,6 +1032,8 @@ struct sector_t {
   bool bIsTransDoor;      // is this sector can be interpreted as "transparent door"?
   bool bHidden;           // this sector is not visible on the automap
   bool bNoPlayerRespawn;  // ZDoom "player cannot respawn in this sector" flag (who may need it at all?)
+  bool bIsTransDoorTop;   // `bIsTransDoor` is always set with this
+  bool bIsTransDoorBot;   // `bIsTransDoor` is always set with this
 
   // 0 = untraversed, 1,2 = sndlines -1
   int soundtraversed;
