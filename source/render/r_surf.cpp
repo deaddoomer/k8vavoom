@@ -922,6 +922,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     if (!TTex) TTex = GTextureManager[GTextureManager.DefaultTexture];
     //peghack = ML_DONTPEGTOP;
     hackflag = surface_t::TF_TOPHACK;
+    // this doesn't check height, so we cannot set any flags here
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop);
     //GCon->Logf(NAME_Debug, "line #%d, side #%d (%d): tdtex='%s'", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), seg->side, *TTex->Name);
   }
@@ -1045,6 +1046,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     BTex = GTextureManager(sidedef->MidTexture);
     //peghack = ML_DONTPEGBOTTOM;
     hackflag = surface_t::TF_TOPHACK;
+    // this doesn't check height, so we cannot set any flags here
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorBot);
   }
 
