@@ -316,6 +316,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("special"), sec->special);
       vio.io(VName("tag"), sec->sectorTag);
       vio.io(VName("seqType"), sec->seqType);
+      const vuint32 origSectorFlags = sec->SectorFlags;
       vio.io(VName("SectorFlags"), sec->SectorFlags);
       vio.io(VName("SoundTarget"), sec->SoundTarget);
       vio.io(VName("FloorData"), sec->FloorData);
@@ -332,6 +333,9 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("Gravity"), sec->Gravity);
       vio.io(VName("Sky"), sec->Sky);
       if (Strm.IsLoading()) {
+        // fix flags
+        const vuint32 xmask = sector_t::SF_IsTransDoor|sector_t::SF_Hidden|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot|sector_t::SF_IsTransDoorTrack;
+        sec->SectorFlags = (sec->SectorFlags&~xmask)|(origSectorFlags&xmask);
         // load additional tags
         sec->moreTags.clear();
         int moreTagCount = 0;
