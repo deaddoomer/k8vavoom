@@ -183,7 +183,6 @@ void VLevel::FixTransparentDoors () {
       continue;
     }
 
-    //bool doorFlag = false;
     for (int f = 0; f < sec.linecount; ++f) {
       const line_t *ldef = sec.lines[f];
 
@@ -234,32 +233,33 @@ void VLevel::FixTransparentDoors () {
         // to see a bottom texture, front sector floor must be lower than back sector floor
         if (secfrontfz1 < secbackfz1 || secfrontfz2 < secbackfz2) {
           // it can see a bottom texture, check if it is solid
-          if (GTextureManager.GetTextureType(Sides[ldef->sidenum[0]].BottomTexture) != VTextureManager::TCT_SOLID) {
+          if (GTextureManager.GetTextureType(lsd->BottomTexture) != VTextureManager::TCT_SOLID) {
             botflag = true;
           }
         }
         // to see a top texture, front sector ceiling must be higher than back sector ceiling
         if (secfrontcz1 > secbackcz1 || secfrontcz2 > secbackcz2) {
           // it can see a top texture, check if it is solid
-          if (GTextureManager.GetTextureType(Sides[ldef->sidenum[0]].TopTexture) != VTextureManager::TCT_SOLID) {
-            //doorFlag = true;
+          if (GTextureManager.GetTextureType(lsd->TopTexture) != VTextureManager::TCT_SOLID) {
             topflag = true;
           }
         }
       }
       if (!topflag && !botflag) continue;
 
+      // transparent door sector is "inside" one (i.e. linedef should point to the outside
+      // if there are any linedef points outside, this is not a door sector, ignore it
+      // note that renderer will still fix textures, but won't set any flags
+      if (bsec != &sec) continue;
+
       sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : 0u)|(botflag ? sector_t::SF_IsTransDoorBot : 0u);
       GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d), with line #%d", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag, (int)(ptrdiff_t)(ldef-&Lines[0]));
       break;
     }
 
-    #if 0
+    #if 1
     // create fake ceilings for transparent doors
-    if (sec.fakefloors || (sec.SectorFlags&sector_t::SF_IsTransDoor) == 0) continue;
-
-    // check if this is a door
-    //if (!doorFlag) continue;
+    if (sec.fakefloors || (sec.SectorFlags&(sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorBot)) != (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop)) continue;
 
     // ignore sectors with skies (for now)
     if (sec.floor.pic == skyflatnum || sec.ceiling.pic == skyflatnum) continue;
@@ -269,7 +269,7 @@ void VLevel::FixTransparentDoors () {
 
     // find lowest surrounding sector
     const sector_t *lowsec = nullptr; // lowest ceiling
-    const sector_t *highsec = nullptr; // highest floor
+    //const sector_t *highsec = nullptr; // highest floor
     for (int f = 0; f < sec.linecount; ++f) {
       const line_t *ldef = sec.lines[f];
       if (!(ldef->flags&ML_TWOSIDED)) continue; // one-sided wall always blocks everything
@@ -277,22 +277,30 @@ void VLevel::FixTransparentDoors () {
       if (ss == &sec) continue;
       // ignore sloped sectors
       //if (ss->floor.isSlope() || ss->ceiling.isSlope()) continue;
-      if (doorFlag) {
+      //if (doorFlag) // always
+      {
         if (ss->ceiling.minz > sec.ceiling.minz && !ss->ceiling.isSlope()) {
           if (!lowsec || lowsec->ceiling.minz > ss->ceiling.minz) lowsec = ss;
         }
-      } else {
+      }
+      /*
+      else {
         if (ss->floor.minz < sec.floor.minz && !ss->floor.isSlope()) {
           if (!highsec || highsec->floor.minz < ss->floor.minz) highsec = ss;
         }
       }
+      */
     }
 
-    if (doorFlag) {
+    //if (doorFlag) // always
+    {
       if (!lowsec) continue;
-    } else {
+    }
+    /*
+    else {
       if (!highsec) continue;
     }
+    */
 
     // allocate fakefloor data (engine require it to complete setup)
     GCon->Logf(NAME_Debug, "sector #%d got transdoor flat fix", (int)(ptrdiff_t)(&sec-&Sectors[0]));
@@ -303,15 +311,19 @@ void VLevel::FixTransparentDoors () {
     ff->flags |= fakefloor_t::FLAG_CreatedByLoader;
     ff->floorplane = sec.floor;
     ff->ceilplane = sec.ceiling;
-    if (doorFlag) {
+    //if (doorFlag) // always
+    {
       ff->floorplane = sec.floor;
       ff->ceilplane = lowsec->ceiling;
       ff->params = lowsec->params;
-    } else {
+    }
+    /*
+    else {
       ff->floorplane = highsec->floor;
       ff->ceilplane = sec.ceiling;
       ff->params = highsec->params;
     }
+    */
     #endif
   }
 }
