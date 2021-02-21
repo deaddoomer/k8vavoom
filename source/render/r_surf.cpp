@@ -927,10 +927,10 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     //GCon->Logf(NAME_Debug, "line #%d, side #%d (%d): tdtex='%s'", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), seg->side, *TTex->Name);
   }
 
-  SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top);
-
   sp->texinfo.Tex = TTex;
   sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
+
+  SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top);
 
   if (TTex->Type != TEXTYPE_Null) {
     TVec wv[4];
@@ -1006,6 +1006,10 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 
     if (createSurf) {
       CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
+      if (sp->surfs) {
+        sp->texinfo.Tex = TTex;
+        sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
+      }
     }
   }
 
@@ -1037,6 +1041,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
   VTexture *BTex = GTextureManager(sidedef->BottomTexture);
   if (!BTex) BTex = GTextureManager[GTextureManager.DefaultTexture];
 
+
   // HACK: sector with height of 1, and only middle masked texture is "transparent door"
   //       also, invert "lower unpegged" flag for this case
   int peghack = 0;
@@ -1044,16 +1049,17 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
   //if (r_hack_transparent_doors && TTex->Type == TEXTYPE_Null) GCon->Logf(NAME_Debug, "line #%d, side #%d: transdoor check=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), IsTransDoorHackTop(seg));
   if ((sub->sector->SectorFlags&sector_t::SF_IsTransDoorBot) || (r_hack_transparent_doors && BTex->Type == TEXTYPE_Null && IsTransDoorHackBot(seg))) {
     BTex = GTextureManager(sidedef->MidTexture);
+    if (!BTex) BTex = GTextureManager[GTextureManager.DefaultTexture];
     //peghack = ML_DONTPEGBOTTOM;
     hackflag = surface_t::TF_TOPHACK;
     // this doesn't check height, so we cannot set any flags here
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorBot);
   }
 
-  SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot);
-
   sp->texinfo.Tex = BTex;
   sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
+
+  SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot);
 
   if (BTex->Type != TEXTYPE_Null) {
     TVec wv[4];
@@ -1177,6 +1183,10 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
 
     if (createSurf) {
       CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
+      if (sp->surfs) {
+        sp->texinfo.Tex = BTex;
+        sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
+      }
     }
   }
 
@@ -2112,7 +2122,13 @@ static inline bool CheckMidRecreate2S (const seg_t *seg, const segpart_t *sp, co
 //==========================================================================
 static inline bool CheckTopRecreate2S (const seg_t *seg, const segpart_t *sp, const sec_plane_t *floor, const sec_plane_t *ceiling) {
   const sec_plane_t *back_ceiling = &seg->backsector->ceiling;
-  VTexture *TTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorTop ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->TopTexture));
+  //VTexture *TTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorTop ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->TopTexture));
+
+  VTexture *TTex = GTextureManager(seg->sidedef->TopTexture);
+  if ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorTop) || (r_hack_transparent_doors && (!TTex || TTex->Type == TEXTYPE_Null) && IsTransDoorHackTop(seg))) {
+    TTex = GTextureManager(seg->sidedef->MidTexture);
+  }
+
   if (ceiling->SkyBox != back_ceiling->SkyBox && R_IsStrictlySkyFlatPlane(ceiling) && R_IsStrictlySkyFlatPlane(back_ceiling)) {
     TTex = GTextureManager[skyflatnum];
   }
@@ -2126,8 +2142,14 @@ static inline bool CheckTopRecreate2S (const seg_t *seg, const segpart_t *sp, co
 //
 //==========================================================================
 static inline bool CheckBotRecreate2S (seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
-  VTexture *TTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorBot ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->BottomTexture));
-  return CheckCommonRecreate(seg, sp, TTex, floor, ceiling);
+  //VTexture *BTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorBot ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->BottomTexture));
+
+  VTexture *BTex = GTextureManager(seg->sidedef->BottomTexture);
+  if ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorBot) || (r_hack_transparent_doors && (!BTex || BTex->Type == TEXTYPE_Null) && IsTransDoorHackBot(seg))) {
+    BTex = GTextureManager(seg->sidedef->MidTexture);
+  }
+
+  return CheckCommonRecreate(seg, sp, BTex, floor, ceiling);
 }
 
 
@@ -2251,7 +2273,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         if (CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedTopWSurf(sub, seg, sp, r_floor, r_ceiling);
-        if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) GCon->Logf(NAME_Debug, "FUCK!");
+        //if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) GCon->Logf(NAME_Debug, "FUCK! line #%d", (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]));
       } else {
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Top);
       }
