@@ -192,14 +192,7 @@ void VLevel::FixTransparentDoors () {
         continue; // sector-less control line (usually)
       }
 
-      if (!(ldef->flags&ML_TWOSIDED)) {
-        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip one-sided line", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
-        continue; // one-sided wall always blocks everything
-      }
-      if (ldef->flags&ML_3DMIDTEX) {
-        //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip 3d midtex line", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
-        continue; // 3dmidtex never blocks anything
-      }
+      if ((ldef->flags&(ML_TWOSIDED|ML_3DMIDTEX)) != ML_TWOSIDED) continue;
 
       const sector_t *fsec = ldef->frontsector;
       const sector_t *bsec = ldef->backsector;
@@ -207,13 +200,15 @@ void VLevel::FixTransparentDoors () {
       if (fsec == bsec) continue; // self-referenced sector
       if (!fsec || !bsec) continue; // one-sided
 
-      if (GTextureManager.IsEmptyTexture(Sides[ldef->sidenum[0]].MidTexture)) {
+      const side_t *lsd = &Sides[ldef->sidenum[0]];
+
+      if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) {
         //GCon->Logf(NAME_Debug, "checking sector #%d (line #%d): skip line with empty midtex", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)(ptrdiff_t)(ldef-&Lines[0]));
         continue;
       }
 
       if ((ldef->flags&ML_ADDITIVE) == 0 && ldef->alpha >= 1.0f) {
-        VTexture *MTex = GTextureManager[Sides[ldef->sidenum[0]].MidTexture];
+        VTexture *MTex = GTextureManager[lsd->MidTexture];
         if (!MTex->isSeeThrough()) continue;
       }
 
@@ -255,7 +250,7 @@ void VLevel::FixTransparentDoors () {
       if (!topflag && !botflag) continue;
 
       sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : 0u)|(botflag ? sector_t::SF_IsTransDoorBot : 0u);
-      GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d)", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag);
+      GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d), with line #%d", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag, (int)(ptrdiff_t)(ldef-&Lines[0]));
       break;
     }
 
