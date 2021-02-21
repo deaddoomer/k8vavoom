@@ -2063,7 +2063,7 @@ static inline bool CheckFlatsChanged (const seg_t *seg, const segpart_t *sp, con
 //  CheckCommonRecreateEx
 //
 //==========================================================================
-static inline bool CheckCommonRecreateEx (const segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling,
+static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling,
                                           const TPlane *backfloor, const TPlane *backceiling)
 {
   if (!NTex) NTex = GTextureManager[GTextureManager.DefaultTexture];
@@ -2075,9 +2075,10 @@ static inline bool CheckCommonRecreateEx (const segpart_t *sp, VTexture *NTex, c
     (sp->texinfo.Tex->Type == TEXTYPE_Null) != (NTex->Type == TEXTYPE_Null) ||
     sp->texinfo.Tex->GetHeight() != NTex->GetHeight() ||
     sp->texinfo.Tex->GetWidth() != NTex->GetWidth();
-  // update texture, why not (nope, it is done in surface creation code)
-  //sp->texinfo.Tex = NTex;
-  //sp->texinfo.noDecals = NTex->noDecals;
+  // update texture, why not
+  // without this, various animations (like switches) won't work
+  sp->texinfo.Tex = NTex;
+  sp->texinfo.noDecals = NTex->noDecals;
   return res;
 }
 
@@ -2087,7 +2088,7 @@ static inline bool CheckCommonRecreateEx (const segpart_t *sp, VTexture *NTex, c
 //  CheckCommonRecreate
 //
 //==========================================================================
-static inline bool CheckCommonRecreate (const seg_t *seg, const segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
   if (seg->backsector) {
     // check for fake floors
     return
@@ -2104,7 +2105,7 @@ static inline bool CheckCommonRecreate (const seg_t *seg, const segpart_t *sp, V
 //  CheckMidRecreate1S
 //
 //==========================================================================
-static inline bool CheckMidRecreate1S (const seg_t *seg, const segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckMidRecreate1S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
 }
 
@@ -2114,7 +2115,7 @@ static inline bool CheckMidRecreate1S (const seg_t *seg, const segpart_t *sp, co
 //  CheckMidRecreate2S
 //
 //==========================================================================
-static inline bool CheckMidRecreate2S (const seg_t *seg, const segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckMidRecreate2S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
 }
 
@@ -2124,7 +2125,7 @@ static inline bool CheckMidRecreate2S (const seg_t *seg, const segpart_t *sp, co
 //  CheckTopRecreate2S
 //
 //==========================================================================
-static inline bool CheckTopRecreate2S (const seg_t *seg, const segpart_t *sp, const sec_plane_t *floor, const sec_plane_t *ceiling) {
+static inline bool CheckTopRecreate2S (const seg_t *seg, segpart_t *sp, const sec_plane_t *floor, const sec_plane_t *ceiling) {
   const sec_plane_t *back_ceiling = &seg->backsector->ceiling;
   //VTexture *TTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorTop ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->TopTexture));
 
