@@ -1175,12 +1175,17 @@ int VViewClipper::CheckSubsectorFrustum (subsector_t *sub, const unsigned mask) 
 //
 //==========================================================================
 bool VViewClipper::CheckSegFrustum (const subsector_t *sub, const seg_t *seg, const unsigned mask) const noexcept {
+  if (!clip_frustum_bsp_segs.asBool()) return true;
   //const subsector_t *sub = seg->frontsub;
   if (!seg || !sub || !Frustum.isValid() || !mask) return true;
   const sector_t *sector = sub->sector;
   if (!sector) return true; // just in case
   //FIXME: ignore transparent doors (because their bounding box is wrong)
   if (sub->sector && (sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) return true;
+  const line_t *ldef = seg->linedef;
+  if (ldef) {
+    if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) return true; // skip translucent walls
+  }
   // check quad
   const TVec sv0(seg->v1->x, seg->v1->y, sector->floor.GetPointZ(*seg->v1));
   const TVec sv1(seg->v1->x, seg->v1->y, sector->ceiling.GetPointZ(*seg->v1));
@@ -1349,6 +1354,8 @@ static inline bool MirrorCheck (const TPlane *Mirror, const TVec &v1, const TVec
 //  VViewClipper::ClipCheckAddSubsector
 //
 //  this returns `true` if clip was modified
+//
+//  THIS DOESN'T WORK RIGHT, AND IS NOT USED!
 //
 //==========================================================================
 bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *Mirror) noexcept {
