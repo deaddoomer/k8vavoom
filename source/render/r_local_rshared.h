@@ -219,7 +219,7 @@ protected:
   int pspartsLeft;
   bool lastRenderQuality;
   // used in t-junction fixer, put there to avoid constant memory reallocating
-  TBinHeapNoDtor<float> tjunkHList;
+  TBinHeapNC<float> tjunkHList;
   TArray<TVec> tjunkTri0, tjunkTri1;
 
   vuint32 currVisFrame;

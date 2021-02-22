@@ -38,14 +38,14 @@ private:
   }
 
 public:
-  TBinHeap_Class_Name () : elem(nullptr), elemUsed(0), elemSize(0) {}
-  TBinHeap_Class_Name (const T *ainit, size_t acount) : elem(nullptr), elemUsed(0), elemSize(0) { build(ainit, acount); }
+  inline TBinHeap_Class_Name () noexcept : elem(nullptr), elemUsed(0), elemSize(0) {}
+  inline TBinHeap_Class_Name (const T *ainit, size_t acount) noexcept : elem(nullptr), elemUsed(0), elemSize(0) { build(ainit, acount); }
   TBinHeap_Class_Name (const TBinHeap_Class_Name &) = delete;
 
   TBinHeap_Class_Name &operator = (const TBinHeap_Class_Name &) = delete;
 
   void reset () noexcept {
-    #ifndef VV_HEAP_SKIP_DTOR
+    #ifndef VV_HEAP_NO_CLEAR
     T *el = elem;
     for (size_t idx = elemUsed; idx--; ++el) el->~T();
     #endif
@@ -58,12 +58,14 @@ public:
 
   inline void clear () noexcept {
     reset();
-    if (elem) { Z_Free(elem); elem = nullptr; }
+    Z_Free(elem);
+    elem = nullptr;
     elemUsed = elemSize = 0;
   }
 
   inline bool isEmpty () const noexcept { return (elemUsed == 0); }
-  size_t length () const noexcept { return elemUsed; }
+  inline size_t length () const noexcept { return elemUsed; }
+  inline size_t capacity () const noexcept { return elemSize; }
 
   void push (const T &val) noexcept {
     //if (elemUsed == size_t.max-2) assert(0, "too many elements in heap");
@@ -71,9 +73,12 @@ public:
     if (i == elemSize) {
       size_t newSize = elemSize+(elemSize/3+64);
       elem = (T *)Z_Realloc(elem, newSize*sizeof(T));
-      memset((void *)(elem+elemSize), 0, (newSize-elemSize)*sizeof(T));
       elemSize = newSize;
     }
+    #ifndef VV_HEAP_NO_CLEAR
+    memset((void *)&elem[elemUsed], 0, sizeof(T));
+    new(&elem[elemUsed], E_ArrayNew, E_ArrayNew)T;
+    #endif
     ++elemUsed;
     while (i != 0) {
       size_t par = (i-1)/2; // parent
@@ -89,13 +94,13 @@ public:
 
   void popFront () noexcept {
     if (elemUsed > 1) {
-      #ifndef VV_HEAP_SKIP_DTOR
+      #ifndef VV_HEAP_NO_CLEAR
       elem[0].~T();
       #endif
       elem[0] = elem[--elemUsed];
       heapify(0);
     } else if (elemUsed == 1) {
-      #ifndef VV_HEAP_SKIP_DTOR
+      #ifndef VV_HEAP_NO_CLEAR
       elem[0].~T();
       #endif
       elemUsed = 0;
@@ -114,10 +119,13 @@ public:
     reset();
     if (elemSize < acount || elemSize-acount >= acount) {
       elem = (T *)Z_Realloc(elem, acount*sizeof(T));
-      if (elemSize < acount) memset((void *)(elem+elemSize), 0, (acount-elemSize)*sizeof(T));
       elemSize = acount;
     }
     elemUsed = acount;
+    #ifndef VV_HEAP_NO_CLEAR
+    memset((void *)&elem[0], 0, elemUsed*sizeof(T));
+    for (size_t f = 0; f < elemUsed; ++f) new(&elem[f], E_ArrayNew, E_ArrayNew)T;
+    #endif
     for (size_t n = 0; n < acount; ++n) elem[n] = arr[n];
     // making sure that heap property satisfied; loop from last parent up to (and including) first item
     for (size_t par = (elemUsed-1)/2+1; par--; ) heapify(par);

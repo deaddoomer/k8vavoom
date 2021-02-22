@@ -32,16 +32,9 @@
 #include "binheap_impl.h"
 #undef TBinHeap_Class_Name
 
-/*
+// this won't even zero items
 #define TBinHeap_Class_Name  TBinHeapNC
-#define TMAP_NO_CLEAR
+#define VV_HEAP_NO_CLEAR
 #include "binheap_impl.h"
-#undef TMAP_NO_CLEAR
-#undef TBinHeap_Class_Name
-*/
-
-#define TBinHeap_Class_Name  TBinHeapNoDtor
-#define VV_HEAP_SKIP_DTOR
-#include "binheap_impl.h"
-#undef VV_HEAP_SKIP_DTOR
+#undef VV_HEAP_NO_CLEAR
 #undef TBinHeap_Class_Name
