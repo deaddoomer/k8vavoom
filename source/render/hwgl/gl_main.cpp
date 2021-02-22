@@ -806,10 +806,21 @@ void VOpenGLDrawer::InitResolution () {
 
   GCon->Logf(NAME_Init, "Setting up new resolution: %dx%d (%dx%d)", RealScreenWidth, RealScreenHeight, calcWidth, calcHeight);
 
+  bool isCrippledGPU = false;
+
   if (gl_dump_vendor) {
     GCon->Logf(NAME_Init, "GL_VENDOR: %s", glGetString(GL_VENDOR));
     GCon->Logf(NAME_Init, "GL_RENDERER: %s", glGetString(GL_RENDERER));
     GCon->Logf(NAME_Init, "GL_VERSION: %s", glGetString(GL_VERSION));
+  } else {
+    VStr ven((char *)glGetString(GL_VENDOR));
+    VStr ren((char *)glGetString(GL_RENDERER));
+    VStr ver((char *)glGetString(GL_VERSION));
+    GCon->Logf(NAME_Init, "OpenGL: %s / %s / %s", *ven, *ren, *ver);
+    if (ren.globMatchCI("*rtx*3060*")) {
+      isCrippledGPU = true;
+      GCon->Logf(NAME_Error, "OpenGL: this videocard is severely crippled. turning off advanced effects.");
+    }
   }
 
   if (gl_dump_extensions) {
@@ -833,7 +844,7 @@ void VOpenGLDrawer::InitResolution () {
     GCon->Log(NAME_Error, "OpenGL: your GPU drivers are absolutely broken.");
     GCon->Logf(NAME_Error, "OpenGL: reported OpenGL version is v%d.%d, which is nonsence.", major, minor);
     GCon->Log(NAME_Error, "OpenGL: expect crashes and visual glitches (if the engine will run at all).");
-    major = minor = 0;
+    major = minor = 2;
     if (!isShittyGPU) {
       isShittyGPU = true;
       if (gl_dbg_ignore_gpu_blacklist) {
@@ -846,6 +857,12 @@ void VOpenGLDrawer::InitResolution () {
     GCon->Logf(NAME_Init, "OpenGL v%d.%d found", major, minor);
   }
 #endif
+  if (isCrippledGPU) {
+    major = minor = 2;
+    shittyGPUCheckDone = true;
+    isShittyGPU = true;
+  }
+
   glVerMajor = major;
   glVerMinor = minor;
   shadowmapPOT = getShadowmapPOT();
@@ -886,15 +903,17 @@ void VOpenGLDrawer::InitResolution () {
   canRenderShadowmaps = false;
   p_glClipControl = nullptr;
 
-  if ((major > 4 || (major == 4 && minor >= 5)) || CheckExtension("GL_ARB_clip_control")) {
-    p_glClipControl = glClipControl_t(GetExtFuncPtr("glClipControl"));
-  }
-  if (p_glClipControl) {
-    if (gl_enable_clip_control) {
-      GCon->Log(NAME_Init, "OpenGL: `glClipControl()` found");
-    } else {
-      p_glClipControl = nullptr;
-      GCon->Log(NAME_Init, "OpenGL: `glClipControl()` found, but disabled by user; i shall obey");
+  if (!isCrippledGPU) {
+    if ((major > 4 || (major == 4 && minor >= 5)) || CheckExtension("GL_ARB_clip_control")) {
+      p_glClipControl = glClipControl_t(GetExtFuncPtr("glClipControl"));
+    }
+    if (p_glClipControl) {
+      if (gl_enable_clip_control) {
+        GCon->Log(NAME_Init, "OpenGL: `glClipControl()` found");
+      } else {
+        p_glClipControl = nullptr;
+        GCon->Log(NAME_Init, "OpenGL: `glClipControl()` found, but disabled by user; i shall obey");
+      }
     }
   }
 
@@ -946,7 +965,7 @@ void VOpenGLDrawer::InitResolution () {
 
   // anisotropy extension
   max_anisotropy = 1.0f;
-  if (ext_anisotropy && CheckExtension("GL_EXT_texture_filter_anisotropic")) {
+  if (!isCrippledGPU && ext_anisotropy && CheckExtension("GL_EXT_texture_filter_anisotropic")) {
     glGetFloatv(GLenum(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT), &max_anisotropy);
     if (max_anisotropy < 1) max_anisotropy = 1;
     GCon->Logf(NAME_Init, "Max anisotropy: %g", (double)max_anisotropy);
@@ -996,7 +1015,7 @@ void VOpenGLDrawer::InitResolution () {
 
   if (p_glBlitFramebuffer) GCon->Log(NAME_Init, "OpenGL: `glBlitFramebuffer()` found");
 
-  if (!isShittyGPU && p_glClipControl) {
+  if (!isShittyGPU && !isCrippledGPU && p_glClipControl) {
     // normal GPUs
     useReverseZ = true;
     if (!gl_enable_reverse_z) {
@@ -1008,11 +1027,14 @@ void VOpenGLDrawer::InitResolution () {
     useReverseZ = false;
   }
 
+  if (isCrippledGPU) { p_glDepthBounds = nullptr; hasBoundsTest = false; }
+
   if (hasBoundsTest && !p_glDepthBounds) {
     hasBoundsTest = false;
     GCon->Log(NAME_Init, "OpenGL: GL_EXT_depth_bounds_test found, but no `glDepthBounds()` exported");
   }
 
+  if (isCrippledGPU) p_glStencilOpSeparate = nullptr;
   if (/*p_glStencilFuncSeparate &&*/ p_glStencilOpSeparate) {
     GCon->Log(NAME_Init, "Found OpenGL 2.0 separate stencil methods");
   } else if (CheckExtension("GL_ATI_separate_stencil")) {
@@ -1031,10 +1053,10 @@ void VOpenGLDrawer::InitResolution () {
     p_glStencilOpSeparate = nullptr;
   }
 
-  if (!gl_dbg_disable_depth_clamp && CheckExtension("GL_ARB_depth_clamp")) {
+  if (!gl_dbg_disable_depth_clamp && !isCrippledGPU && CheckExtension("GL_ARB_depth_clamp")) {
     GCon->Log(NAME_Init, "Found GL_ARB_depth_clamp");
     HaveDepthClamp = true;
-  } else if (!gl_dbg_disable_depth_clamp && CheckExtension("GL_NV_depth_clamp")) {
+  } else if (!gl_dbg_disable_depth_clamp && !isCrippledGPU && CheckExtension("GL_NV_depth_clamp")) {
     GCon->Log(NAME_Init, "Found GL_NV_depth_clamp");
     HaveDepthClamp = true;
   } else {
@@ -1042,7 +1064,7 @@ void VOpenGLDrawer::InitResolution () {
     HaveDepthClamp = false;
   }
 
-  if (CheckExtension("GL_EXT_stencil_wrap")) {
+  if (!isCrippledGPU && CheckExtension("GL_EXT_stencil_wrap")) {
     GCon->Log(NAME_Init, "Found GL_EXT_stencil_wrap");
     HaveStencilWrap = true;
   } else {
@@ -1050,7 +1072,7 @@ void VOpenGLDrawer::InitResolution () {
     HaveStencilWrap = false;
   }
 
-  if (CheckExtension("GL_EXT_texture_compression_s3tc")) {
+  if (!isCrippledGPU && CheckExtension("GL_EXT_texture_compression_s3tc")) {
     GCon->Log(NAME_Init, "S3TC (texture compression) is supported");
     HaveS3TC = true;
   } else {
@@ -1124,7 +1146,7 @@ void VOpenGLDrawer::InitResolution () {
   p_glObjectLabelVA(GL_FRAMEBUFFER, wipeFBO.getFBOid(), "Wipe FBO");
 
   //if (major >= 3) canRenderShadowmaps = true;
-  canRenderShadowmaps = true;
+  canRenderShadowmaps = !isCrippledGPU; //true;
 
   // check extensions
   if (canRenderShadowmaps) {

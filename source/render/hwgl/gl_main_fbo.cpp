@@ -171,10 +171,7 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
     // there is (almost) no reason to use fp depth buffer without reverse z
     // also, reverse z is perfectly working with int24 depth buffer, see http://www.reedbeta.com/blog/depth-precision-visualized/
     if (gl_enable_fp_zbuffer) {
-      GLint major, minor;
-      glGetIntegerv(GL_MAJOR_VERSION, &major);
-      glGetIntegerv(GL_MINOR_VERSION, &minor);
-      if (major >= 3) {
+      if (aowner->glVerMajor >= 3) {
         depthStencilFormat = GL_DEPTH32F_STENCIL8;
         GCon->Log(NAME_Init, "OpenGL: using floating-point depth buffer");
       }
