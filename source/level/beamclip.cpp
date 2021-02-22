@@ -72,7 +72,7 @@ VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry 
 VCvarB clip_frustum_init_range("clip_frustum_init_range", true, "Init clipper range with frustum?", CVAR_PreInit);
 // set to false, because 1d clipper can clip bboxes too, and node bsp z is miscalculated for some map trickery
 VCvarB clip_frustum_bsp("clip_frustum_bsp", true, "Clip BSP geometry with frustum?", CVAR_PreInit);
-VCvarB clip_frustum_bsp_segs("clip_frustum_bsp_segs", false, "Clip segs in BSP rendering with frustum?", CVAR_PreInit);
+//VCvarB clip_frustum_bsp_segs("clip_frustum_bsp_segs", false, "Clip segs in BSP rendering with frustum?", CVAR_PreInit);
 //VCvarI clip_frustum_check_mask("clip_frustum_check_mask", TFrustum::LeftBit|TFrustum::RightBit|TFrustum::BackBit, "Which frustum planes we should check?", CVAR_PreInit);
 //VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "19", "Which frustum planes we should check?", CVAR_PreInit);
 VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "255", "Which frustum planes we should check?", CVAR_PreInit);
@@ -1151,6 +1151,7 @@ inline static bool CreateBBVerts (TVec &v1, TVec &v2, const float bbox[6], const
 //  VViewClipper::CheckSubsectorFrustum
 //
 //==========================================================================
+/*
 int VViewClipper::CheckSubsectorFrustum (subsector_t *sub, const unsigned mask) const noexcept {
   if (!sub || !Frustum.isValid() || !mask) return 1;
   float bbox[6];
@@ -1167,6 +1168,7 @@ int VViewClipper::CheckSubsectorFrustum (subsector_t *sub, const unsigned mask) 
   // check
   return Frustum.checkBoxEx(bbox, clip_frustum_check_mask&mask);
 }
+*/
 
 
 //==========================================================================
@@ -1174,6 +1176,7 @@ int VViewClipper::CheckSubsectorFrustum (subsector_t *sub, const unsigned mask) 
 //  VViewClipper::CheckSegFrustum
 //
 //==========================================================================
+/*
 bool VViewClipper::CheckSegFrustum (const subsector_t *sub, const seg_t *seg, const unsigned mask) const noexcept {
   if (!clip_frustum_bsp_segs.asBool()) return true;
   //const subsector_t *sub = seg->frontsub;
@@ -1193,6 +1196,7 @@ bool VViewClipper::CheckSegFrustum (const subsector_t *sub, const seg_t *seg, co
   const TVec sv3(seg->v2->x, seg->v2->y, sector->floor.GetPointZ(*seg->v2));
   return Frustum.checkQuad(sv0, sv1, sv2, sv3, mask);
 }
+*/
 
 
 //==========================================================================
@@ -1358,6 +1362,7 @@ static inline bool MirrorCheck (const TPlane *Mirror, const TVec &v1, const TVec
 //  THIS DOESN'T WORK RIGHT, AND IS NOT USED!
 //
 //==========================================================================
+#if 0
 bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *Mirror) noexcept {
   if (!clip_enabled) return true;
   if (ClipIsFull()) return false;
@@ -1390,7 +1395,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
           // viewer is in back side; we still need to check visibility to render floors
           if (!res) {
             res = IsRangeVisible(*seg->v1, *seg->v2);
-            if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
+            //if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
           }
           continue;
         }
@@ -1407,7 +1412,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
     if (!ldef) {
       if (!res) {
         res = IsRangeVisible(v2, v1);
-        if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
+        //if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
       }
       continue;
     }
@@ -1433,7 +1438,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
       if (!solid) {
         if (!res) {
           res = IsRangeVisible(v2, v1);
-          if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
+          //if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
         }
         continue;
       }
@@ -1442,7 +1447,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
     // add to range
     if (!res) {
       res = AddClipRange(v2, v1);
-      if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
+      //if (res && !CheckSegFrustum(sub, seg)) res = false; // out of frustum
     } else {
       AddClipRange(v2, v1);
     }
@@ -1450,6 +1455,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
 
   return res;
 }
+#endif
 
 
 //==========================================================================

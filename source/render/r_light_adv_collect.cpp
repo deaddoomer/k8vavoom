@@ -296,12 +296,13 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   }
   #endif
 
-#if 0
   // k8: this drops some segs that may leak without proper frustum culling
   // k8: this seems to be unnecessary now
   // k8: yet leave it there in the hope that it will reduce GPU overdrawing
+  // k8: no more
+  /*
   if (!LightClip.CheckSegFrustum(sub, seg)) return;
-#endif
+  */
 
   VEntity *skybox = secregion->eceiling.splane->SkyBox;
   if (dseg->mid) CollectAdvLightSurfaces(dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag);

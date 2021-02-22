@@ -36,11 +36,7 @@
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)
 
-// sadly, this doesn't work the way i want it to work... yet
-//#define VV_USE_CLIP_CHECK_AND_ADD
-
-static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? (Most of the time this is not needed; useful for comples stacked sectors.)", CVAR_Archive);
-
+static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? Most of the time this is not needed; might be useful for complex stacked sectors.", CVAR_Archive);
 
 VCvarB r_draw_pobj("r_draw_pobj", true, "Render polyobjects?", CVAR_PreInit);
 static VCvarI r_maxmiror_depth("r_maxmiror_depth", "1", "Maximum allowed mirrors.", CVAR_Archive);
@@ -69,9 +65,7 @@ static VCvarB r_dbg_always_draw_flats("r_dbg_always_draw_flats", true, "Draw fla
 extern VCvarB r_decals;
 extern VCvarB clip_frustum;
 extern VCvarB clip_frustum_bsp;
-#ifndef VV_USE_CLIP_CHECK_AND_ADD
-extern VCvarB clip_frustum_bsp_segs;
-#endif
+//extern VCvarB clip_frustum_bsp_segs;
 extern VCvarB clip_frustum_mirror;
 extern VCvarB clip_use_1d_clipper;
 // for portals
@@ -829,16 +823,15 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   }
   */
 
-  #ifndef VV_USE_CLIP_CHECK_AND_ADD
   if (!ViewClip.IsRangeVisible(*seg->v2, *seg->v1)) return;
-  #endif
 
   // k8: this drops some segs that may leak without proper frustum culling
   // k8: this seems to be unnecessary now
   // k8: reenabled, because why not?
-  #ifndef VV_USE_CLIP_CHECK_AND_ADD
+  // k8: no more
+  /*
   if (clip_frustum_bsp_segs && !ViewClip.CheckSegFrustum(sub, seg)) return;
-  #endif
+  */
 
   // automap
   // mark only autolines that allowed to be seen on the automap
@@ -1102,12 +1095,7 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
     if (sub->VisFrame == currVisFrame) return;
 
     // is this subsector potentially visible?
-    #ifndef VV_USE_CLIP_CHECK_AND_ADD
-    if (ViewClip.ClipCheckSubsector(sub))
-    #else
-    if (ViewClip.ClipCheckAddSubsector(sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr)))
-    #endif
-    {
+    if (ViewClip.ClipCheckSubsector(sub)) {
       if (sub->parent) sub->parent->visframe = currVisFrame; // check is here for one-sector degenerate maps
       sub->VisFrame = currVisFrame;
 
@@ -1148,11 +1136,9 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
 
   // add subsector's segs to the clipper
   // clipping against mirror is done only for vertical mirror planes
-  #ifndef VV_USE_CLIP_CHECK_AND_ADD
   if (clip_use_1d_clipper) {
     ViewClip.ClipAddSubsectorSegs(sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
   }
-  #endif
 }
 
 

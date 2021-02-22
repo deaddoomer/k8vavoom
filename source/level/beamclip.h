@@ -194,9 +194,9 @@ public:
   inline void SetFrustum (const TFrustum &newfrustum) noexcept { Frustum = newfrustum; }
 
   // 0: completely outside; >0: completely inside; <0: partially inside
-  int CheckSubsectorFrustum (subsector_t *sub, const unsigned mask=~0u) const noexcept;
+  //int CheckSubsectorFrustum (subsector_t *sub, const unsigned mask=~0u) const noexcept;
   // we have to pass subsector here, because of polyobjects
-  bool CheckSegFrustum (const subsector_t *sub, const seg_t *seg, const unsigned mask=~0u) const noexcept;
+  //bool CheckSegFrustum (const subsector_t *sub, const seg_t *seg, const unsigned mask=~0u) const noexcept;
 
   void ClearClipNodes (const TVec &AOrigin, VLevel *ALevel, float aradius=0.0f) noexcept;
 
@@ -246,7 +246,7 @@ public:
   bool ClipCheckSubsector (const subsector_t *sub) noexcept;
 
   // this returns `true` if clip was modified
-  bool ClipCheckAddSubsector (const subsector_t *sub, const TPlane *Mirror=nullptr) noexcept;
+  //bool ClipCheckAddSubsector (const subsector_t *sub, const TPlane *Mirror=nullptr) noexcept;
 
   // asShadow
   enum {
