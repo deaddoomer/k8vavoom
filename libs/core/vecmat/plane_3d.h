@@ -361,6 +361,18 @@ public:
     return (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist > 0.0f); // at least partially on a front side?
   }
 
+  // returns `false` if the box fully is on the back side of the plane
+  // returns `true` for non-vertical planes (because our box is 2d)
+  inline VVA_CHECKRESULT bool checkBox2D (const float bbox2d[4]) const noexcept {
+    if (normal.z == 0.0f) {
+      // vertical plane
+      // check reject point
+      return (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist > 0.0f); // at least partially on a front side?
+    } else {
+      return true;
+    }
+  }
+
   // WARNING! make sure that the following constants are in sync with `TFrustum` ones!
   enum { OUTSIDE = 0, INSIDE = 1, PARTIALLY = -1 };
 

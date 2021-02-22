@@ -543,22 +543,6 @@ VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noe
 
 //==========================================================================
 //
-//  FixBBoxZ
-//
-//==========================================================================
-void FixBBoxZ (float bbox[6]) noexcept {
-  vassert(isFiniteF(bbox[2]));
-  vassert(isFiniteF(bbox[3+2]));
-  if (bbox[2] > bbox[3+2]) {
-    const float tmp = bbox[2];
-    bbox[2] = bbox[3+2];
-    bbox[3+2] = tmp;
-  }
-}
-
-
-//==========================================================================
-//
 //  SanitizeBBox3D
 //
 //  make sure that bbox min is lesser than bbox max
@@ -629,30 +613,6 @@ VVA_CHECKRESULT bool CheckSphereVsAABB (const float bbox[6], const TVec &lorg, c
 //
 //  CheckSphereVsAABB
 //
-//  check to see if the sphere overlaps the AABB (ignore z coords)
-//
-//==========================================================================
-VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &lorg, const float radius) noexcept {
-  float d = 0.0f, s;
-  // find the square of the distance from the sphere to the box
-  // first check is min, second check is max
-  const float *li = &lorg[0];
-
-  s = (*li < bbox[0] ? (*li)-bbox[0] : *li > bbox[0+3] ? (*li)-bbox[0+3] : 0.0f);
-  d += s*s;
-  ++li;
-  ++bbox;
-  s = (*li < bbox[0] ? (*li)-bbox[0] : *li > bbox[0+3] ? (*li)-bbox[0+3] : 0.0f);
-  d += s*s;
-
-  return (d < radius*radius); // or <= if you want exact touching
-}
-
-
-//==========================================================================
-//
-//  CheckSphereVsAABB
-//
 //  check to see if the sphere overlaps the 2D AABB
 //
 //==========================================================================
@@ -669,32 +629,4 @@ VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg,
   d += s*s;
 
   return (d < radius*radius); // or <= if you want exact touching
-}
-
-
-//==========================================================================
-//
-//  IsCircleTouchBox2D
-//
-//==========================================================================
-VVA_CHECKRESULT bool IsCircleTouchBox2D (const float cx, const float cy, float radius, const float bbox2d[4]) noexcept {
-  if (radius < 1.0f) return false;
-
-  const float bbwHalf = (bbox2d[BOX2D_RIGHT]+bbox2d[BOX2D_LEFT])*0.5f;
-  const float bbhHalf = (bbox2d[BOX2D_TOP]+bbox2d[BOX2D_BOTTOM])*0.5f;
-
-  // the distance between the center of the circle and the center of the box
-  // not a const, because we'll modify the variables later
-  float cdistx = fabsf(cx-(bbox2d[BOX2D_LEFT]+bbwHalf));
-  float cdisty = fabsf(cy-(bbox2d[BOX2D_BOTTOM]+bbhHalf));
-
-  // easy cases: either completely outside, or completely inside
-  if (cdistx > bbwHalf+radius || cdisty > bbhHalf+radius) return false;
-  if (cdistx <= bbwHalf || cdisty <= bbhHalf) return true;
-
-  // hard case: touching a corner
-  cdistx -= bbwHalf;
-  cdisty -= bbhHalf;
-  const float cdistsq = cdistx*cdistx+cdisty*cdisty;
-  return (cdistsq <= radius*radius);
 }

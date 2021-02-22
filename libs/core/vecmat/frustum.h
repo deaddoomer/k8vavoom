@@ -270,7 +270,15 @@ public:
 
 // ////////////////////////////////////////////////////////////////////////// //
 // sometimes subsector bbox has invalid z; this fixes it
-void FixBBoxZ (float bbox[6]) noexcept;
+inline static VVA_OKUNUSED void FixBBoxZ (float bbox[6]) noexcept {
+  vassert(isFiniteF(bbox[2]));
+  vassert(isFiniteF(bbox[3+2]));
+  if (bbox[2] > bbox[3+2]) {
+    const float tmp = bbox[2];
+    bbox[2] = bbox[3+2];
+    bbox[3+2] = tmp;
+  }
+}
 
 // make sure that bbox min is lesser than bbox max
 // UB if bbox coords are not finite (no checks!)
@@ -278,9 +286,6 @@ void SanitizeBBox3D (float bbox[6]) noexcept;
 
 // check to see if the sphere overlaps the AABB
 VVA_CHECKRESULT bool CheckSphereVsAABB (const float bbox[6], const TVec &lorg, const float radius) noexcept;
-
-// check to see if the sphere overlaps the AABB (ignore z coords)
-VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &lorg, const float radius) noexcept;
 
 // check to see if the sphere overlaps the 2D AABB
 VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg, const float radius) noexcept;
@@ -291,11 +296,16 @@ VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg,
 // size, or 0 if the line intersects the box.
 VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noexcept;
 
-VVA_CHECKRESULT bool IsCircleTouchBox2D (const float cx, const float cy, float radius, const float bbox2d[4]) noexcept;
-
 static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DBBoxesOverlapIn2D (const float bbox0[6], const float bbox1[6]) noexcept {
   return !(
     bbox1[BOX3D_MAXX] < bbox0[BOX3D_MINX] || bbox1[BOX3D_MAXY] < bbox0[BOX3D_MINY] ||
     bbox1[BOX3D_MINX] > bbox0[BOX3D_MAXX] || bbox1[BOX3D_MINY] > bbox0[BOX3D_MAXY]
+  );
+}
+
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are2DBBoxesOverlap (const float bbox0[4], const float bbox1[4]) noexcept {
+  return !(
+    bbox1[BOX2D_MAXX] < bbox0[BOX2D_MINX] || bbox1[BOX2D_MAXY] < bbox0[BOX2D_MINY] ||
+    bbox1[BOX2D_MINX] > bbox0[BOX2D_MAXX] || bbox1[BOX2D_MINY] > bbox0[BOX2D_MAXY]
   );
 }

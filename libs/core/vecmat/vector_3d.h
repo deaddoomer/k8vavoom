@@ -37,6 +37,17 @@
     {3+0, 3+1, 3+2}, \
   }
 
+#define CONST_BBox2DVertexIndex  \
+  const unsigned BBox2DVertexIndex[4][2] = { \
+    {BOX2D_MINX, BOX2D_MINY}, \
+    {BOX2D_MAXX, BOX2D_MINY}, \
+    {BOX2D_MINX, BOX2D_MAXY}, \
+    {BOX2D_MAXX, BOX2D_MAXY}, \
+  }
+
+#define HUGE_BBOX2D(bbname_)  float bbname_[4] = { /*maxy*/+FLT_MAX, /*miny*/-FLT_MAX, -FLT_MAX/*minx*/, +FLT_MAX/*maxx*/ }
+
+
 // this is for 2d line/node bboxes
 // bounding box
 enum {
@@ -345,4 +356,11 @@ static inline VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, 
   box[BOX3D_MAXX] = origin.x+radius;
   box[BOX3D_MAXY] = origin.y+radius;
   box[BOX3D_MAXZ] = origin.z+height;
+}
+
+
+static inline VVA_OKUNUSED bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
+  return
+    x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
+    y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
 }
