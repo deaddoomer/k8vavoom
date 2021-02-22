@@ -37,11 +37,11 @@ private:
   T *ArrData;
 
 public:
-  TArray () noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) {}
-  TArray (ENoInit) noexcept {}
-  TArray (const TArray<T> &other) noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) { *this = other; }
+  inline TArray () noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) {}
+  inline TArray (ENoInit) noexcept {}
+  inline TArray (const TArray<T> &other) noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) { *this = other; }
 
-  ~TArray () noexcept { clear(); }
+  inline ~TArray () noexcept { clear(); }
 
   inline int length1D () const noexcept { return (ArrNum >= 0 ? ArrNum : (ArrNum&0x7fffffff)*(ArrSize&0x7fffffff)); }
 
@@ -154,13 +154,13 @@ public:
   inline void SetNumWithReserve (int NewNum) noexcept {
     vassert(NewNum >= 0);
     if (NewNum > ArrSize) {
-#ifdef VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
+      #ifdef VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
       Resize(NewNum+64);
-#else
-      Resize(NewNum+NewNum*3/8+32);
-#endif
+      #else
+      Resize(NewNum+NewNum*3/8+(NewNum < 64 ? 64 : 0));
+      #endif
     }
-    SetNum(NewNum, false); // don't resize
+    SetNum(NewNum, false); // don't resize, if it is not necessary
   }
   inline void setLengthReserve (int NewNum) noexcept { SetNumWithReserve(NewNum); }
 
