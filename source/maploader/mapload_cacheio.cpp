@@ -27,7 +27,7 @@
 
 
 static int constexpr cestlen (const char *s, int pos=0) noexcept { return (s && s[pos] ? 1+cestlen(s, pos+1) : 0); }
-static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 009.\n";
+static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 010.\n";
 enum { CDSLEN = cestlen(CACHE_DATA_SIGNATURE) };
 static_assert(CDSLEN == 32, "oops!");
 
@@ -131,8 +131,8 @@ void VLevel::SaveCachedData (VStream *strm) {
     node_t *n = Nodes+f;
     doPlaneIO(arrstrm, n);
     for (int bbi0 = 0; bbi0 < 2; ++bbi0) {
-      for (int bbi1 = 0; bbi1 < 6; ++bbi1) {
-        *arrstrm << n->bbox[bbi0][bbi1];
+      for (int bbi1 = 0; bbi1 < 4; ++bbi1) {
+        *arrstrm << n->bbox2d[bbi0][bbi1];
       }
     }
     for (int cci = 0; cci < 2; ++cci) *arrstrm << n->children[cci];
@@ -289,8 +289,8 @@ bool VLevel::LoadCachedData (VStream *strm) {
     node_t *n = &Nodes[f];
     doPlaneIO(arrstrm, n);
     for (int bbi0 = 0; bbi0 < 2; ++bbi0) {
-      for (int bbi1 = 0; bbi1 < 6; ++bbi1) {
-        *arrstrm << n->bbox[bbi0][bbi1];
+      for (int bbi1 = 0; bbi1 < 4; ++bbi1) {
+        *arrstrm << n->bbox2d[bbi0][bbi1];
       }
     }
     for (int cci = 0; cci < 2; ++cci) *arrstrm << n->children[cci];

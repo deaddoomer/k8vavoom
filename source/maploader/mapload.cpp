@@ -849,8 +849,6 @@ load_again:
 
   mapTextureWarns.clear();
 
-  RecalcWorldBBoxes();
-
   cacheFileBase = cacheFileName;
 
   eventAfterLevelLoaded();

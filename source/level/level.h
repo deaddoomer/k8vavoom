@@ -563,31 +563,12 @@ public:
   void ResetValidCount ();
   void IncrementValidCount ();
 
-  void ResetSZValidCount ();
-  void IncrementSZValidCount ();
-
   // this saves everything except thinkers, so i can load it for further experiments
   void DebugSaveLevel (VStream &strm);
 
   // this is slow!
   float CalcSkyHeight () const;
 
-  // some sectors (like doors) has floor and ceiling on the same level, so
-  // we have to look at neighbour sector to get height.
-  // note that if neighbour sector is closed door too, we can safely use
-  // our zero height, as camera cannot see through top/bottom textures.
-  //void CalcSectorBoundingHeight (sector_t *sector, float *minz, float *maxz);
-
-  void UpdateSubsectorBBox (int num, float bbox[6], const float skyheight);
-  void RecalcWorldNodeBBox (int bspnum, float bbox[6], const float skyheight);
-  // this also fixes 2d node bounding boxes (those can be wrong due to integers in ajbsp)
-  void RecalcWorldBBoxes ();
-
-  // recalcs world bboxes if some cvars changed
-  void CheckAndRecalcWorldBBoxes ();
-
-  void UpdateSectorHeightCache (sector_t *sector);
-  void GetSubsectorBBox (subsector_t *sub, float bbox[6]);
   void CalcSecMinMaxs (sector_t *sector); // also, update BSP bounding boxes
 
 public:

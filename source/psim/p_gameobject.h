@@ -812,9 +812,6 @@ struct sector_t {
 
   vint32 Zone; // reverb zone id
 
-  vint32 ZExtentsCacheId;
-  float LastMinZ, LastMaxZ;
-
   // this is used to check for "floor holes" that should be filled to emulate original flat floodfill bug
   // if sector has more than one neighbour, this is `nullptr`
   sector_t *othersecFloor;
@@ -1089,7 +1086,8 @@ enum {
 struct node_t : public TPlane {
   // bounding box for each child
   // (x,y,z) triples (min and max)
-  float bbox[2][6];
+  //float bbox[2][6];
+  float bbox2d[2][4];
 
   // if NF_SUBSECTOR its a subsector
   vuint32 children[2];

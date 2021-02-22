@@ -63,7 +63,7 @@ enum { r_draw_pobj = true };
 
 static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimizations?", CVAR_PreInit);
 static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
-static VCvarB clip_check_bbox_z("clip_check_bbox_z", false, "Consider bbox height when cliping BSP bboxes with 1D clipper?", CVAR_PreInit);
+//static VCvarB clip_check_bbox_z("clip_check_bbox_z", false, "Consider bbox height when cliping BSP bboxes with 1D clipper?", CVAR_PreInit);
 static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
 static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
@@ -1077,67 +1077,59 @@ bool VViewClipper::IsRangeVisibleAngle (const FromTo From, const FromTo To) cons
 
 //==========================================================================
 //
-//  CreateBBVerts
+//  CreateBBVerts2D
 //
 //  returns `true` if no check required (origin in is a box)
 //
 //==========================================================================
-inline static bool CreateBBVerts (TVec &v1, TVec &v2, const float bbox[6], const TVec &origin) noexcept {
-  enum { MIN_X, MIN_Y, MIN_Z, MAX_X, MAX_Y, MAX_Z };
+inline static bool CreateBBVerts2D (TVec &v1, TVec &v2, const float bbox2d[4], const TVec &origin) noexcept {
+  if (IsPointInsideBBox2D(origin.x, origin.y, bbox2d)) return true; // viewer is inside the box
 
-  if (bbox[0] <= origin.x && bbox[3] >= origin.x &&
-      bbox[1] <= origin.y && bbox[4] >= origin.y &&
-      (!clip_check_bbox_z || (bbox[2] <= origin.z && bbox[5] >= origin.z)))
-  {
-    // viewer is inside the box
-    return true;
-  }
-
-  if (bbox[MIN_X] > origin.x) {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MAX_Y];
-    } else if (bbox[MAX_Y] < origin.y) {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MAX_Y];
+  if (bbox2d[BOX2D_MINX] > origin.x) {
+    if (bbox2d[BOX2D_MINY] > origin.y) {
+      v1.x = bbox2d[BOX2D_MAXX];
+      v1.y = bbox2d[BOX2D_MINY];
+      v2.x = bbox2d[BOX2D_MINX];
+      v2.y = bbox2d[BOX2D_MAXY];
+    } else if (bbox2d[BOX2D_MAXY] < origin.y) {
+      v1.x = bbox2d[BOX2D_MINX];
+      v1.y = bbox2d[BOX2D_MINY];
+      v2.x = bbox2d[BOX2D_MAXX];
+      v2.y = bbox2d[BOX2D_MAXY];
     } else {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MAX_Y];
+      v1.x = bbox2d[BOX2D_MINX];
+      v1.y = bbox2d[BOX2D_MINY];
+      v2.x = bbox2d[BOX2D_MINX];
+      v2.y = bbox2d[BOX2D_MAXY];
     }
-  } else if (bbox[MAX_X] < origin.x) {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MIN_Y];
-    } else if (bbox[MAX_Y] < origin.y) {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MIN_Y];
+  } else if (bbox2d[BOX2D_MAXX] < origin.x) {
+    if (bbox2d[BOX2D_MINY] > origin.y) {
+      v1.x = bbox2d[BOX2D_MAXX];
+      v1.y = bbox2d[BOX2D_MAXY];
+      v2.x = bbox2d[BOX2D_MINX];
+      v2.y = bbox2d[BOX2D_MINY];
+    } else if (bbox2d[BOX2D_MAXY] < origin.y) {
+      v1.x = bbox2d[BOX2D_MINX];
+      v1.y = bbox2d[BOX2D_MAXY];
+      v2.x = bbox2d[BOX2D_MAXX];
+      v2.y = bbox2d[BOX2D_MINY];
     } else {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MIN_Y];
+      v1.x = bbox2d[BOX2D_MAXX];
+      v1.y = bbox2d[BOX2D_MAXY];
+      v2.x = bbox2d[BOX2D_MAXX];
+      v2.y = bbox2d[BOX2D_MINY];
     }
   } else {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MIN_Y];
+    if (bbox2d[BOX2D_MINY] > origin.y) {
+      v1.x = bbox2d[BOX2D_MAXX];
+      v1.y = bbox2d[BOX2D_MINY];
+      v2.x = bbox2d[BOX2D_MINX];
+      v2.y = bbox2d[BOX2D_MINY];
     } else {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MAX_Y];
+      v1.x = bbox2d[BOX2D_MINX];
+      v1.y = bbox2d[BOX2D_MAXY];
+      v2.x = bbox2d[BOX2D_MAXX];
+      v2.y = bbox2d[BOX2D_MAXY];
     }
   }
   v1.z = v2.z = 0.0f;
@@ -1201,24 +1193,16 @@ bool VViewClipper::CheckSegFrustum (const subsector_t *sub, const seg_t *seg, co
 
 //==========================================================================
 //
-//  VViewClipper::ClipIsBBoxVisible
+//  VViewClipper::ClipIsBBox2DVisible
 //
 //==========================================================================
-bool VViewClipper::ClipIsBBoxVisible (const float bbox[6]) const noexcept {
+bool VViewClipper::ClipIsBBox2DVisible (const float bbox2d[4]) const noexcept {
   if (!clip_enabled || !clip_bbox) return true;
   if (ClipIsEmpty()) return true; // no clip nodes yet
   if (ClipIsFull()) return false;
 
-  if (bbox[0] <= Origin.x && bbox[3] >= Origin.x &&
-      bbox[1] <= Origin.y && bbox[4] >= Origin.y &&
-      bbox[2] <= Origin.z && bbox[5] >= Origin.z)
-  {
-    // viewer is inside the box
-    return 1;
-  }
-
   TVec v1, v2;
-  if (CreateBBVerts(v1, v2, bbox, Origin)) return true;
+  if (CreateBBVerts2D(v1, v2, bbox2d, Origin)) return true;
   return IsRangeVisible(v1, v2);
 }
 
@@ -1298,9 +1282,7 @@ bool VViewClipper::ClipCheckSubsector (const subsector_t *sub) noexcept {
 
   /*
   if (checkBBox) {
-    float bbox[6];
-    Level->GetSubsectorBBox(sub, bbox);
-    if (!ClipIsBBoxVisible(bbox)) return false;
+    if (!ClipIsBBox2DVisible(sub->bbox2d)) return false;
   }
   */
 
@@ -1552,34 +1534,25 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
 //
 //  VViewClipper::CheckSubsectorLight
 //
+//   0: outside
+//   1: fully inside
+//  -1: partially inside
+//
 //==========================================================================
 int VViewClipper::CheckSubsectorLight (subsector_t *sub) const noexcept {
   if (!sub) return 0;
-  float bbox[6];
-  Level->GetSubsectorBBox(sub, bbox);
 
-  if (bbox[0] <= Origin.x && bbox[3] >= Origin.x &&
-      bbox[1] <= Origin.y && bbox[4] >= Origin.y &&
-      bbox[2] <= Origin.z && bbox[5] >= Origin.z)
-  {
-    // inside the box
-    return 1;
-  }
+  if (!CheckSphereVs2dAABB(sub->bbox2d, Origin, Radius)) return 0;
 
-  if (!CheckSphereVsAABB(bbox, Origin, Radius)) return 0;
-
-  // check if all box vertices are inside a sphere
-  // early exit if sphere is smaller than bbox
-  if (Radius < bbox[3+0]-bbox[0]) return -1;
-  if (Radius < bbox[3+1]-bbox[1]) return -1;
-  if (Radius < bbox[3+2]-bbox[2]) return -1;
-
-  const float xradSq = Radius*Radius;
-
-  CONST_BBoxVertexIndex;
-  for (unsigned bidx = 0; bidx < 8; ++bidx) {
-    TVec bv = TVec(bbox[BBoxVertexIndex[bidx][0]]-Origin.x, BBoxVertexIndex[bidx][1]-Origin.y, BBoxVertexIndex[bidx][2]-Origin.z);
-    if (bv.lengthSquared() > xradSq) return -1; // partially inside
+  // check if all points are inside a circle
+  CONST_BBox2DVertexIndex;
+  const float rsq = Radius*Radius;
+  const float cx = Origin.x;
+  const float cy = Origin.y;
+  for (unsigned f = 0; f < 4; ++f) {
+    const float bx = sub->bbox2d[BBox2DVertexIndex[f][0]]-cx;
+    const float by = sub->bbox2d[BBox2DVertexIndex[f][1]]-cy;
+    if (bx*bx+by*by > rsq) return -1; // paritally inside
   }
 
   // fully inside
@@ -1589,16 +1562,16 @@ int VViewClipper::CheckSubsectorLight (subsector_t *sub) const noexcept {
 
 //==========================================================================
 //
-//  VViewClipper::ClipLightIsBBoxVisible
+//  VViewClipper::ClipLightIsBBox2DVisible
 //
 //==========================================================================
-bool VViewClipper::ClipLightIsBBoxVisible (const float bbox[6]) const noexcept {
+bool VViewClipper::ClipLightIsBBox2DVisible (const float bbox2d[4]) const noexcept {
   if (ClipIsFull()) return false;
-  if (!CheckSphereVsAABBIgnoreZ(bbox, Origin, Radius)) return false;
+  if (!CheckSphereVs2dAABB(bbox2d, Origin, Radius)) return false;
   if (ClipIsEmpty()) return true; // no clip nodes yet
 
   TVec v1, v2;
-  if (CreateBBVerts(v1, v2, bbox, Origin)) return true;
+  if (CreateBBVerts2D(v1, v2, bbox2d, Origin)) return true;
   return IsRangeVisible(v1, v2);
 }
 

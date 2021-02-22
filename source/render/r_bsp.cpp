@@ -1076,62 +1076,55 @@ void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region)
 //  VRenderLevelShared::RenderSubsector
 //
 //==========================================================================
-void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
+void VRenderLevelShared::RenderSubsector (int num) {
   subsector_t *sub = &Level->Subsectors[num];
   if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
 
   // this should not be necessary, because BSP node rejection does it for us
-  /*
-  if (Drawer->MirrorClip) {
-    float sbb[6];
-    Level->GetSubsectorBBox(sub, sbb);
-    if (!Drawer->MirrorPlane.checkBox(sbb)) return;
-  }
-  */
+  //if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox2D(sub->bbox2d)) return;
 
   // render it if we're not in "only clip" mode
-  if (!onlyClip) {
-    // if we already hit this subsector somehow, do nothing
-    if (sub->VisFrame == currVisFrame) return;
 
-    // is this subsector potentially visible?
-    if (ViewClip.ClipCheckSubsector(sub)) {
-      if (sub->parent) sub->parent->visframe = currVisFrame; // check is here for one-sector degenerate maps
-      sub->VisFrame = currVisFrame;
+  // if we already hit this subsector somehow, do nothing
+  if (sub->VisFrame == currVisFrame) return;
 
-      // mark this subsector as rendered
-      BspVis[((unsigned)num)>>3] |= 1U<<(num&7);
+  // is this subsector potentially visible?
+  if (ViewClip.ClipCheckSubsector(sub)) {
+    if (sub->parent) sub->parent->visframe = currVisFrame; // check is here for one-sector degenerate maps
+    sub->VisFrame = currVisFrame;
 
-      // mark this sector as rendered (thing visibility check needs this info)
-      const unsigned secnum = (unsigned)(ptrdiff_t)(sub->sector-&Level->Sectors[0]);
-      BspVisSector[secnum>>3] |= 1U<<(secnum&7);
+    // mark this subsector as rendered
+    BspVis[((unsigned)num)>>3] |= 1U<<(num&7);
 
-      markSectorRendered(secnum);
+    // mark this sector as rendered (thing visibility check needs this info)
+    const unsigned secnum = (unsigned)(ptrdiff_t)(sub->sector-&Level->Sectors[0]);
+    BspVisSector[secnum>>3] |= 1U<<(secnum&7);
 
-      // update world
-      if (sub->updateWorldFrame != updateWorldFrame) {
-        sub->updateWorldFrame = updateWorldFrame;
-        if (!r_disable_world_update) UpdateSubRegion(sub, sub->regions);
-      }
+    markSectorRendered(secnum);
 
-      // update static light info
-      SubStaticLigtInfo *sli = &SubStaticLights.ptr()[num];
-      if (sli->touchedStatic.length()) {
-        for (auto it : sli->touchedStatic.first()) {
-          const int slidx = it.getKey();
-          if (slidx >= 0 && slidx < Lights.length()) {
-            Lights.ptr()[slidx].dlightframe = currDLightFrame;
-          }
+    // update world
+    if (sub->updateWorldFrame != updateWorldFrame) {
+      sub->updateWorldFrame = updateWorldFrame;
+      if (!r_disable_world_update) UpdateSubRegion(sub, sub->regions);
+    }
+
+    // update static light info
+    SubStaticLigtInfo *sli = &SubStaticLights.ptr()[num];
+    if (sli->touchedStatic.length()) {
+      for (auto it : sli->touchedStatic.first()) {
+        const int slidx = it.getKey();
+        if (slidx >= 0 && slidx < Lights.length()) {
+          Lights.ptr()[slidx].dlightframe = currDLightFrame;
         }
       }
-
-      // render the polyobj in the subsector first, and add it to clipper
-      // this blocks view with polydoors
-      //FIXME: (it is broken now, because we need to dynamically split pobj with BSP)
-      RenderPolyObj(sub);
-      AddPolyObjToClipper(ViewClip, sub);
-      RenderSubRegion(sub, sub->regions);
     }
+
+    // render the polyobj in the subsector first, and add it to clipper
+    // this blocks view with polydoors
+    //FIXME: (it is broken now, because we need to dynamically split pobj with BSP)
+    RenderPolyObj(sub);
+    AddPolyObjToClipper(ViewClip, sub);
+    RenderSubRegion(sub, sub->regions);
   }
 
   // add subsector's segs to the clipper
@@ -1150,48 +1143,19 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
 //  recursively. Just call with BSP root.
 //
 //==========================================================================
-void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigned clipflags, bool onlyClip) {
+void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox2d[4]) {
  tailcall:
   if (ViewClip.ClipIsFull()) return;
 
   if (bspnum == -1) {
-    RenderSubsector(0, onlyClip);
+    RenderSubsector(0);
     return;
   }
 
-  if (!ViewClip.ClipIsBBoxVisible(bbox)) return;
+  if (!ViewClip.ClipIsBBox2DVisible(bbox2d)) return;
 
   // mirror clip
-  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
-
-  if (!onlyClip) {
-    // cull the clipping planes if not trivial accept
-    if (clipflags && clip_frustum && clip_frustum_bsp) {
-      //static float newbbox[6];
-      //memcpy(newbbox, bbox, sizeof(float)*6);
-      //newbbox[2] = -32767.0f;
-      //newbbox[5] = +32767.0f;
-      const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
-      for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) {
-        if (!(clipflags&cp->clipflag)) continue; // don't need to clip against it
-        //k8: this check is always true, because view origin is outside of frustum (oops)
-        //if (cp->PointOnSide(Drawer->vieworg)) continue; // viewer is in back side or on plane (k8: why check this?)
-        auto crs = cp->checkBoxEx(bbox);
-        if (crs == 1) clipflags ^= cp->clipflag; // if it is on a front side of this plane, don't bother checking with it anymore
-        else if (crs == 0) {
-          // it is enough to hit at least one "outside" to be completely outside
-          // add this box to clipper, why not
-          // k8: nope; this glitches
-          //if (clip_use_1d_clipper) ViewClip.ClipAddBBox(bbox);
-          if (!clip_use_1d_clipper) return;
-          if (cp->clipflag&TFrustum::FarBit) return; // clipped with forward plane
-          onlyClip = true;
-          break;
-          //return;
-        }
-      }
-    }
-  }
+  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox2D(bbox2d)) return;
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
@@ -1201,12 +1165,12 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
     // decide which side the view point is on
     unsigned side = (unsigned)bsp->PointOnSide(Drawer->vieworg);
     // recursively divide front space (towards the viewer)
-    RenderBSPNode(bsp->children[side], bsp->bbox[side], clipflags, onlyClip);
+    RenderBSPNode(bsp->children[side], bsp->bbox2d[side]);
     // recursively divide back space (away from the viewer)
     side ^= 1;
-    //return RenderBSPNode(bsp->children[side], bsp->bbox[side], clipflags, onlyClip);
+    //return RenderBSPNode(bsp->children[side], bsp->bbox2d[side]);
     bspnum = bsp->children[side];
-    bbox = bsp->bbox[side];
+    bbox2d = bsp->bbox2d[side];
     goto tailcall;
   } else {
     // if we have a skybox there, turn off advanced clipping, or stacked sector may glitch
@@ -1222,13 +1186,13 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
       clip_midsolid = false;
       //clip_frustum_bsp = false;
       //clip_frustum_bsp_segs = false;
-      RenderSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum), onlyClip);
+      RenderSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum));
       clip_height = old_clip_height;
       clip_midsolid = old_clip_midsolid;
       //clip_frustum_bsp = old_clip_frustum_bsp;
       //clip_frustum_bsp_segs = old_clip_frustum_bsp_segs;
     } else {
-      return RenderSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum), onlyClip);
+      return RenderSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum));
     }
   }
 }
@@ -1240,7 +1204,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
 //
 //==========================================================================
 void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper *Range) {
-  /*static*/ const float dummy_bbox[6] = { -99999, -99999, -99999, 99999, 99999, 99999 };
+  const HUGE_BBOX2D(dummybbox2d);
 
   ViewClip.ClearClipNodes(Drawer->vieworg, Level);
   if (Range) {
@@ -1265,12 +1229,7 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
   if (r_viewleaf) r_viewleaf->miscFlags |= subsector_t::SSMF_Rendered;
 
   // head node is the last node output
-  {
-    unsigned clipflags = 0;
-    const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
-    for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) clipflags |= cp->clipflag;
-    RenderBSPNode(Level->NumNodes-1, dummy_bbox, clipflags /*(Drawer->MirrorClip ? 0x3f : 0x1f)*/);
-  }
+  RenderBSPNode(Level->NumNodes-1, dummybbox2d);
 
   // draw the most complex sky portal behind the scene first, without the need to use stencil buffer
   // most of the time this is the only sky portal, so we can get away without rendering portals at all

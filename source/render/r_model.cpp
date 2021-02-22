@@ -1248,7 +1248,7 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
   // i can preprocess this, but meh, i guess that hashtable+chain is fast enough
 
   int res = -1;
-  float bestInter = -9999.9f;
+  float bestInter = -FLT_MAX;
 
   //FIXME: reduce pasta!
   if (Frame.sprite != NAME_None && Frame.frame >= 0 && Frame.frame < 4096) {
@@ -1308,7 +1308,7 @@ static int FindNextFrame (VClassModelScript &Cls, int FIdx, const VAliasModelFra
   if (FDef.Inter < 1.0f) {
     // doesn't finish time slice
     int res = -1;
-    float bestInter = 9999.9f;
+    float bestInter = FLT_MAX;
 
     if (FDef.sprite != NAME_None) {
       // by sprite name

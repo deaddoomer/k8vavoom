@@ -785,7 +785,7 @@ static inline float getFPlaneDist (const sec_surface_t *floor, const TVec &p) {
 sec_surface_t *SV_DebugFindNearestFloor (subsector_t *sub, const TVec &p) {
   sec_surface_t *rfloor = nullptr;
   //reg = sub->regions;
-  float bestdist = 999999.0f;
+  float bestdist = FLT_MAX;
   for (subregion_t *r = sub->regions; r; r = r->next) {
     //const float d = DotProduct(p, reg->floor->secplane->normal)-reg->floor->secplane->dist;
     // floors
@@ -871,7 +871,7 @@ sec_surface_t *SV_DebugFindNearestFloor (subsector_t *sub, const TVec &p) {
 sec_surface_t *VRenderLevelShared::GetNearestFloor (const subsector_t *sub, const TVec &p) {
   if (!sub) return nullptr;
   sec_surface_t *rfloor = nullptr;
-  float bestdist = 999999.0f;
+  float bestdist = FLT_MAX;
   for (subregion_t *r = sub->regions; r; r = r->next) {
     sec_surface_t *floor;
     // floors
@@ -1325,10 +1325,8 @@ vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, fl
 //  VRenderLevelShared::CalcBSPNodeLMaps
 //
 //==========================================================================
-void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox) {
+void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float bbox2d[4]) {
   if (bspnum == -1) return; // one-sector map, ignore
-
-  //if (!CheckSphereVsAABBIgnoreZ(bbox, sl.origin, sl.radius)) return;
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
@@ -1337,18 +1335,18 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
     const float dist = bsp->PointDistance(sl.origin);
     if (dist > sl.radius) {
       // light is completely on the front side
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[0], bsp->bbox[0]);
+      return CalcBSPNodeLMaps(slindex, sl, bsp->children[0], bsp->bbox2d[0]);
     } else if (dist < -sl.radius) {
       // light is completely on the back side
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[1], bsp->bbox[1]);
+      return CalcBSPNodeLMaps(slindex, sl, bsp->children[1], bsp->bbox2d[1]);
     } else {
       //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
+      CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox2d[side]);
       // possibly divide back space
       side ^= 1;
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
+      return CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox2d[side]);
     }
   } else {
     //subsector_t *sub = &Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
@@ -1379,9 +1377,7 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
 //==========================================================================
 void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) {
   //FIXME: make this faster!
-  float bbox[6];
-  bbox[0] = bbox[1] = bbox[2] = -999999.0f;
-  bbox[3] = bbox[4] = bbox[5] = 999999.0f;
+  const HUGE_BBOX2D(bbox2d);
 
   // remove from all subsectors
   if (SubStaticLights.length() < Level->NumSubsectors) SubStaticLights.setLength(Level->NumSubsectors);
@@ -1394,7 +1390,7 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
   if (!sl.active || sl.radius < 2.0f) return;
 
   //sl.touchedPolys.reset();
-  CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1, bbox);
+  CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1, bbox2d);
 }
 
 

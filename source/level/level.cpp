@@ -105,27 +105,6 @@ void VLevel::IncrementValidCount () {
 }
 
 
-//==========================================================================
-//
-//  VLevel::ResetSZValidCount
-//
-//==========================================================================
-void VLevel::ResetSZValidCount () {
-  validcountSZCache = 1;
-  for (auto &&it : allSectors()) it.ZExtentsCacheId = 0;
-}
-
-
-//==========================================================================
-//
-//  VLevel::IncrementSZValidCount
-//
-//==========================================================================
-void VLevel::IncrementSZValidCount () {
-  if (++validcountSZCache == 0x7fffffff) ResetSZValidCount();
-}
-
-
 /* reference code from GZDoom
 static int R_PointOnSideSlow(double xx, double yy, node_t *node)
 {

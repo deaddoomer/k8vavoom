@@ -88,13 +88,14 @@ static void AppendSurfaces (segpart_t *sp, surface_t *newsurfs) {
 //
 //==========================================================================
 void VRenderLevelShared::SetupSky () {
-  skyheight = -99999.0f;
+  skyheight = -FLT_MAX;
   for (auto &&sec : Level->allSectors()) {
     if (sec.ceiling.pic == skyflatnum && sec.ceiling.maxz > skyheight) {
       skyheight = sec.ceiling.maxz;
     }
   }
   // make it a bit higher to avoid clipping of the sprites
+  if (skyheight < -32768.0f) skyheight = -32768.0f;
   skyheight += 8*1024;
   memset((void *)&sky_plane, 0, sizeof(sky_plane));
   sky_plane.Set(TVec(0, 0, -1), -skyheight);

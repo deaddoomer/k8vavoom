@@ -97,8 +97,8 @@ static inline void spvReserve (int size) {
 //
 //==========================================================================
 static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, const TVec axis/*, const float offs=0.0f*/) {
-  float mins = +99999.0f;
-  float maxs = -99999.0f;
+  float mins = +FLT_MAX;
+  float maxs = -FLT_MAX;
   const SurfVertex *vt = surf->verts;
   for (int i = surf->count; i--; ++vt) {
     if (!vt->vec().isValid()) {
