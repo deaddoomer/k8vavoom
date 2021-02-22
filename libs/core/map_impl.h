@@ -33,6 +33,10 @@
 // see https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
 //#define TMAP_USE_MULTIPLY
 
+// define this to clear items on entry pool allocation/release
+// if not defined, entry pool item will be cleared right before putting a new item
+//#define TMAP_CLEAR_INB4
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 static_assert(sizeof(unsigned) >= 4, "`unsigned` should be at least 4 bytes");
@@ -75,15 +79,21 @@ private:
     TK key;
     TV value;
 
-    inline bool isEmpty () const noexcept { return (hash == 0); }
-    inline void setEmpty () noexcept { hash = 0; }
+    inline bool isEmpty () const noexcept { return (hash == 0u); }
+    inline void setEmpty () noexcept { hash = 0u; }
+
+    inline void initEntry () noexcept {
+      new(&key, E_ArrayNew, E_ArrayNew)TK;
+      new(&value, E_ArrayNew, E_ArrayNew)TV;
+    }
 
     inline void zeroEntry () noexcept {
       memset((void *)this, 0, sizeof(*this));
-      #if !defined(TMAP_NO_CLEAR)
-      new(&key, E_ArrayNew, E_ArrayNew)TK;
-      new(&value, E_ArrayNew, E_ArrayNew)TV;
-      #endif
+    }
+
+    inline void destroyEntry () noexcept {
+      key.~TK();
+      value.~TV();
     }
   };
 
@@ -103,11 +113,8 @@ private:
     if (first < last) {
       TEntry *ee = &mEntries[first];
       memset((void *)ee, 0, (last-first)*sizeof(TEntry));
-      #if !defined(TMAP_NO_CLEAR)
-      for (unsigned f = first; f < last; ++f, ++ee) {
-        new(&ee->key, E_ArrayNew, E_ArrayNew)TK;
-        new(&ee->value, E_ArrayNew, E_ArrayNew)TV;
-      }
+      #if !defined(TMAP_NO_CLEAR) && defined(TMAP_CLEAR_INB4)
+      for (unsigned f = first; f < last; ++f, ++ee) ee->initEntry();
       #endif
     }
   }
@@ -234,12 +241,7 @@ private:
     if (mFirstEntry >= 0) {
       const int end = mLastEntry;
       TEntry *e = &mEntries[mFirstEntry];
-      for (int f = mFirstEntry; f <= end; ++f, ++e) {
-        if (!e->isEmpty()) {
-          e->key.~TK();
-          e->value.~TV();
-        }
-      }
+      for (int f = mFirstEntry; f <= end; ++f, ++e) if (!e->isEmpty()) e->destroyEntry();
     }
     #endif
     if (doZero && mEBSize > 0) initEntries(0, mEBSize);
@@ -257,12 +259,12 @@ private:
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
         initEntries(0, mEBSize);
+        mSeedCount = (unsigned)(uintptr_t)mEntries;
+        mSeed = hashU32(mSeedCount);
       }
+      // it is guaranteed to have a room for at least one entry here (see `put()`)
       ++mLastEntry;
-      if (mFirstEntry == -1) {
-        //if (mLastEntry != 0) then raise Exception.Create('internal error in hash entry allocator (0.1)');
-        mFirstEntry = 0;
-      }
+      if (mFirstEntry == -1) mFirstEntry = 0;
       res = &mEntries[mLastEntry];
     } else {
       res = mFreeEntryHead;
@@ -273,17 +275,22 @@ private:
       if (idx > mLastEntry) mLastEntry = idx;
     }
     res->nextFree = nullptr; // just in case
-    //res->setEmpty(false);
+    #if !defined(TMAP_NO_CLEAR) && !defined(TMAP_CLEAR_INB4)
+    // the entry is guaranteed to be zeroed
+    res->initEntry();
+    #endif
     return res;
   }
 
   void releaseEntry (TEntry *e) noexcept {
     const int idx = (int)(e-&mEntries[0]);
     #if !defined(TMAP_NO_CLEAR)
-    e->key.~TK();
-    e->value.~TV();
+    e->destroyEntry();
     #endif
     e->zeroEntry();
+    #if !defined(TMAP_NO_CLEAR) && defined(TMAP_CLEAR_INB4)
+    e->initEntry();
+    #endif
     e->nextFree = mFreeEntryHead;
     mFreeEntryHead = e;
     // fix mFirstEntry and mLastEntry
@@ -365,13 +372,17 @@ public:
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
         initEntries(0, mEBSize);
-        mSeedCount = other.mSeedCount;
+        if (!mSeedCount) mSeedCount = (unsigned)(uintptr_t)mEntries;
         mFirstEntry = mLastEntry = -1;
         if (other.mLastEntry >= 0) {
           const unsigned end = (unsigned)other.mLastEntry;
           unsigned didx = 0;
           for (unsigned f = (unsigned)other.mFirstEntry; f <= end; ++f) {
             if (!other.mEntries[f].isEmpty()) {
+              #if !defined(TMAP_NO_CLEAR) && !defined(TMAP_CLEAR_INB4)
+              // the entry is guaranteed to be zeroed
+              mEntries[didx].initEntry();
+              #endif
               mEntries[didx++] = other.mEntries[f];
             }
           }
@@ -452,18 +463,17 @@ public:
   }
 
   // call this instead of `rehash()` after alot of deletions
-  // if `doRealloc` is `false`, force moving all entries to top
+  // if `doRealloc` is `false`, force moving all entries to top if entry pool reallocated
   void compact (bool doRealloc=true) noexcept {
     unsigned newsz = nextPOTU32((unsigned)mBucketsUsed);
     if (doRealloc) {
-      if (newsz >= 1024*1024*1024) return;
+      if (newsz >= 0x40000000u) return;
       newsz <<= 1;
-      if (newsz <= /*128*/64 || newsz >= mEBSize) return;
+      if (newsz < 64 || newsz >= mEBSize) return;
     }
-#ifdef CORE_MAP_TEST
-    printf("compacting; old size=%u; new size=%u; used=%d; fe=%d; le=%d; cseed=(%d:0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeedCount, mSeed);
-#endif
-    //bool didAnyCopy = doRealloc; // realloc may change address, so reinsert entries
+    #ifdef CORE_MAP_TEST
+    printf("compacting; old size=%u; new size=%u; used=%d; fe=%d; le=%d; cseed=(%u:0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeedCount, mSeed);
+    #endif
     bool didAnyCopy = false;
     // move all entries to top
     if (mFirstEntry >= 0) {
@@ -476,12 +486,17 @@ public:
           vassert(didx < f);
           didAnyCopy = true;
           mEntries[didx].zeroEntry(); // just in case
+          #if !defined(TMAP_NO_CLEAR) && !defined(TMAP_CLEAR_INB4)
+          mEntries[didx].initEntry();
+          #endif
           mEntries[didx] = mEntries[f];
           #if !defined(TMAP_NO_CLEAR)
-          mEntries[f].key.~TK();
-          mEntries[f].value.~TV();
+          mEntries[f].destroyEntry();
           #endif
           mEntries[f].zeroEntry();
+          #if !defined(TMAP_NO_CLEAR) && defined(TMAP_CLEAR_INB4)
+          mEntries[f].initEntry();
+          #endif
           ++didx;
           while (didx < mEBSize && !mEntries[didx].isEmpty()) ++didx;
         }
@@ -502,9 +517,9 @@ public:
     // mFreeEntryHead will be fixed in `rehash()`
     // reinsert entries
     if (didAnyCopy) rehash();
-#ifdef CORE_MAP_TEST
-    printf("; newfe=%d; newle=%d; newcseed=(%d:0x%08x)\n", mFirstEntry, mLastEntry, mSeedCount, mSeed);
-#endif
+    #ifdef CORE_MAP_TEST
+    printf("; newfe=%d; newle=%d; newcseed=(%u:0x%08x)\n", mFirstEntry, mLastEntry, mSeedCount, mSeed);
+    #endif
   }
 
   bool has (const TK &akey) const noexcept {
@@ -670,9 +685,9 @@ public:
 
     // need to resize elements table?
     // if elements table is empty, `allocEntry()` will take care of it
-    if (mEBSize && (unsigned)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100) {
+    if (mEBSize && (unsigned)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100u) {
       unsigned newsz = (unsigned)mEBSize;
-      //FIXME: check for OOM
+      if (newsz >= 0x40000000u) Sys_Error("out of memory for TMap!");
       newsz <<= 1;
       // resize buckets array
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
@@ -705,13 +720,13 @@ public:
   inline int length () const noexcept { return (int)mBucketsUsed; }
   inline int capacity () const noexcept { return (int)mEBSize; }
 
-#ifdef CORE_MAP_TEST
+  #ifdef CORE_MAP_TEST
   int countItems () const noexcept {
     int res = 0;
     for (unsigned f = 0; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
     return res;
   }
-#endif
+  #endif
 
   inline TIterator first () noexcept { return TIterator(this); }
 };
