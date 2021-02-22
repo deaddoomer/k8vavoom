@@ -496,96 +496,82 @@ struct TSecPlaneRef {
   sec_plane_t *splane;
   /*bool*/vint32 flipped; // actually, bit flags
 
-  TSecPlaneRef () : splane(nullptr), flipped(false) {}
-  TSecPlaneRef (const TSecPlaneRef &sp) : splane(sp.splane), flipped(sp.flipped) {}
-  explicit TSecPlaneRef (sec_plane_t *aplane, bool arev) : splane(aplane), flipped(arev) {}
+  inline TSecPlaneRef () noexcept : splane(nullptr), flipped(false) {}
+  inline TSecPlaneRef (const TSecPlaneRef &sp) noexcept : splane(sp.splane), flipped(sp.flipped) {}
+  explicit TSecPlaneRef (sec_plane_t *aplane, bool arev) noexcept : splane(aplane), flipped(arev) {}
 
-  inline TSecPlaneRef &operator = (const TSecPlaneRef &sp) {
+  inline TSecPlaneRef &operator = (const TSecPlaneRef &sp) noexcept {
     if (this != &sp) { splane = sp.splane; flipped = sp.flipped; }
     return *this;
   }
 
-  inline bool isValid () const { return !!splane; }
+  inline bool isValid () const noexcept { return !!splane; }
 
-  inline bool isFloor () const { return (GetNormalZSafe() > 0.0f); }
-  inline bool isCeiling () const { return (GetNormalZSafe() < 0.0f); }
+  inline bool isFloor () const noexcept { return (GetNormalZSafe() > 0.0f); }
+  inline bool isCeiling () const noexcept { return (GetNormalZSafe() < 0.0f); }
 
-  inline bool isSlope () const { return (fabsf(GetNormalZSafe()) != 1.0f); }
+  inline bool isSlope () const noexcept { return (fabsf(GetNormalZSafe()) != 1.0f); }
 
   // see enum at the top
-  inline Type classify () const { const float z = GetNormalZSafe(); return (z < 0.0f ? Ceiling : z > 0.0f ? Floor : Unknown); }
+  inline Type classify () const noexcept { const float z = GetNormalZSafe(); return (z < 0.0f ? Ceiling : z > 0.0f ? Floor : Unknown); }
 
-  inline void set (sec_plane_t *aplane, bool arev) { splane = aplane; flipped = arev; }
+  inline void set (sec_plane_t *aplane, bool arev) noexcept { splane = aplane; flipped = arev; }
 
-  inline TVec GetNormal () const { return (!flipped ? splane->normal : -splane->normal); }
-  inline float GetNormalZ () const { return (!flipped ? splane->normal.z : -splane->normal.z); }
-  inline float GetNormalZSafe () const { return (splane ? (!flipped ? splane->normal.z : -splane->normal.z) : 0.0f); }
-  inline float GetDist () const { return (!flipped ? splane->dist : -splane->dist); }
-  inline TPlane GetPlane () const { TPlane res; res.normal = (!flipped ? splane->normal : -splane->normal); res.dist = (!flipped ? splane->dist : -splane->dist); return res; }
+  inline TVec GetNormal () const noexcept { return (!flipped ? splane->normal : -splane->normal); }
+  inline float GetNormalZ () const noexcept { return (!flipped ? splane->normal.z : -splane->normal.z); }
+  inline float GetNormalZSafe () const noexcept { return (splane ? (!flipped ? splane->normal.z : -splane->normal.z) : 0.0f); }
+  inline float GetDist () const noexcept { return (!flipped ? splane->dist : -splane->dist); }
+  inline TPlane GetPlane () const noexcept { TPlane res; res.normal = (!flipped ? splane->normal : -splane->normal); res.dist = (!flipped ? splane->dist : -splane->dist); return res; }
 
-  inline float PointDistance (const TVec &p) const { return (!flipped ? DotProduct(p, splane->normal)-splane->dist : DotProductV2Neg(p, splane->normal)+splane->dist); }
+  inline float PointDistance (const TVec &p) const noexcept { return (!flipped ? DotProduct(p, splane->normal)-splane->dist : DotProductV2Neg(p, splane->normal)+splane->dist); }
 
   // valid only for horizontal planes!
-  inline float GetRealDist () const { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
+  inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
 
-  inline void Flip () { flipped = !flipped; }
+  inline void Flip () noexcept { flipped = !flipped; }
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
-  inline VVA_CHECKRESULT float GetPointZ (float x, float y) const {
+  inline VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
     return (!flipped ? splane->GetPointZ(x, y) : splane->GetPointZRev(x, y));
   }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const {
+  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
     //return clampval((!flipped ? splane->GetPointZ(x, y) : splane->GetPointZRev(x, y)), splane->minz, splane->maxz);
     return (!flipped ? splane->GetPointZClamped(x, y) : splane->GetPointZRevClamped(x, y));
   }
 
-  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const { return (!flipped ? DotProduct(point, splane->normal) : DotProductV2Neg(point, splane->normal)); }
+  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept { return (!flipped ? DotProduct(point, splane->normal) : DotProductV2Neg(point, splane->normal)); }
 
-  inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const {
-    return GetPointZ(v.x, v.y);
-  }
+  inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept { return GetPointZ(v.x, v.y); }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const {
-    return GetPointZClamped(v.x, v.y);
-  }
+  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept { return GetPointZClamped(v.x, v.y); }
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSide (const TVec &point) const {
-    return (PointDistance(point) <= 0.0f);
-  }
+  inline VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept { return (PointDistance(point) <= 0.0f); }
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const {
-    return (PointDistance(point) < 0.1f);
-  }
+  inline VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept { return (PointDistance(point) < 0.1f); }
 
   // returns side 0 (front, or on plane) or 1 (back)
   // "fri" means "front inclusive"
-  inline VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const {
-    return (PointDistance(point) < 0.0f);
-  }
+  inline VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept { return (PointDistance(point) < 0.0f); }
 
   // returns side 0 (front), 1 (back), or 2 (on)
   // used in line tracing (only)
-  inline VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const {
+  inline VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
     const float dot = PointDistance(point);
     return (dot < -0.1f ? 1 : dot > 0.1f ? 0 : 2);
   }
 
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
-  inline VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const {
-    return (PointDistance(center) <= -radius);
-  }
+  inline VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept { return (PointDistance(center) <= -radius); }
 
-  inline VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const {
-    return (fabsf(PointDistance(center)) < radius);
-  }
+  inline VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept { return (fabsf(PointDistance(center)) < radius); }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
-  inline VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const {
+  inline VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
     const float d = PointDistance(center);
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
