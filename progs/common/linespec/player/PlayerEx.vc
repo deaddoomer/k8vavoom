@@ -984,30 +984,54 @@ void MovePlayer (float deltaTime) {
 //
 //==========================================================================
 void CheckWaterJump (optional bool asStep) {
-  TVec start;
-  TVec end;
-  TVec vforward, vright, vup;
-
   if (EntityEx(MO).bWaterJump && EntityEx(MO).ReactionTime > 0) return;
 
-  AngleVectors(MO.Angles, out vforward, out vright, out vup);
+  //TVec vforward, vright;
+  //AngleVectors(MO.Angles, out vforward, out vright, out vup);
   //TVec fwdvel = vforward.xy;
-  vforward = (vforward*ForwardMove+vright*SideMove).Normalise;
+  //vforward = (vforward*ForwardMove+vright*SideMove).Normalise;
+  //vforward.z = 0.0;
+  //vforward = Normalise(vforward);
 
-  start = MO.Origin;
+  TVec vforward = (AngleYawVector(MO.Angles.yaw)*ForwardMove+YawVectorRight(MO.Angles.yaw)*SideMove).Normalise;
+
+  TVec start = MO.Origin;
   start.z += (!asStep ? MO.Height*0.5+8.0 : MO.MaxStepHeight);
-  vforward.z = 0.0;
-  vforward = Normalise(vforward);
-  end = start+vforward*24.0;
-  if (!Level.XLevel.BSPTraceLine(start, end, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
+  TVec end = start+vforward*24.0;
+
+  Level::linetrace_t tm;
+  if (!Level.XLevel.BSPTraceLineEx(start, end, out trace:tm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
     // solid at waist
     start.z = MO.Origin.z+MO.Height;
     end = start+vforward*24.0;
     //MoveDir = HitNormal*(-50.0);
     if (Level.XLevel.BSPTraceLine(start, end, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
       // open at eye level
+      //printdebug("%C: vel=%s : %s -- %s", self, MO.Velocity, MO.Velocity.xy.length, vforward);
       EntityEx(MO).bWaterJump = true;
       MO.Velocity.z = 350.0;
+      // add some horizontal velocity
+      float hlen = MO.Velocity.xy.length;
+      if (hlen < 40) {
+        MO.Velocity += vforward*(60-hlen);
+        //printdebug("%C: vel=%s : %s", self, MO.Velocity, MO.Velocity.xy.length);
+      } else if (hlen > 70) {
+        MO.Velocity -= vforward*(hlen-60);
+        //printdebug("%C: vel=%s : %s", self, MO.Velocity, MO.Velocity.xy.length);
+      }
+      // try to move slightly away from hitline, to make a better jump
+      if (tm.HitLine) {
+        //printdebug("%C: water line=%s (%s); dist=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, PlanePointDistance(ref *tm.HitLine, MO.Origin));
+        float wdist = PlanePointDistance(ref *tm.HitLine, MO.Origin);
+        if (wdist > 0 && wdist < 24) {
+          float mdist = 24-wdist;
+          if (MO.Radius-4 >= mdist) {
+            //printdebug("%C:000: water line=%s (%s); wdist=%s; mdist=%s; org=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, wdist, mdist, MO.Origin);
+            MO.TryMove(MO.Origin+tm.HitLine.normal*mdist, AllowDropOff:false);
+            //printdebug("%C:001: water line=%s (%s); wdist=%s; mdist=%s; org=%s; newdist=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, wdist, mdist, MO.Origin, PlanePointDistance(ref *tm.HitLine, MO.Origin));
+          }
+        }
+      }
       //MoveDir = fwdvel*ForwardMove;
       EntityEx(MO).ReactionTime = 2.0; // safety net
       MO.PlaySound('*jump', CHAN_VOICE); //FIXME
