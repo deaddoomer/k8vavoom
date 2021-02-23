@@ -1636,6 +1636,7 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
       VStr ss = ParseUStringKey(sc);
       if (ss.strEquCI("clear")) {
         EpisodeDefs.Clear();
+        ClusterDefs.Clear(); // clear clusterdefs too
       } else {
         VStr pic = ss;
         VStr epname;
@@ -1678,7 +1679,7 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
       continue;
     }
 
-    // intertexts require creating new clusters; not now (and maybe never, because i don't really care)
+    // special hack for intertexts in `VBasePlayer::DoClientIntermission()` allows to use per-map texts
     if (sc->Check("intertext")) {
       VStr exitText = ParseUStringKey(sc);
       while (sc->Check(",")) {
