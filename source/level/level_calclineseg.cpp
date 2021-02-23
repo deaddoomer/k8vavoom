@@ -89,11 +89,11 @@ void VLevel::CalcSeg (seg_t *seg) {
       if (seg->v1->y == seg->v2->y) {
         valid = false;
       } else {
-        seg->dir = TVec(0, (seg->v1->y < seg->v2->y ? 1 : -1), 0);
+        seg->dir = TVec(0.0f, (seg->v1->y < seg->v2->y ? 1.0f : -1.0f), 0.0f);
       }
     } else if (seg->v1->y == seg->v2->y) {
       // horizontal
-      seg->dir = TVec((seg->v1->x < seg->v2->x ? 1 : -1), 0, 0);
+      seg->dir = TVec((seg->v1->x < seg->v2->x ? 1.0f : -1.0f), 0.0f, 0.0f);
     } else {
       seg->dir = ((*seg->v2)-(*seg->v1)).normalised2D();
     }
