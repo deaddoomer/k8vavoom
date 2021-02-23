@@ -2412,10 +2412,10 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 
   //k8: just in case
   if (seg->length <= 0.0f) {
-    seg->dir = TVec(1, 0, 0); // arbitrary
+    seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
   } else {
     seg->dir = ((*seg->v2)-(*seg->v1)).normalised2D();
-    if (!seg->dir.isValid() || seg->dir.isZero()) seg->dir = TVec(1, 0, 0); // arbitrary
+    if (!seg->dir.isValid() || seg->dir.isZero()) seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
   }
 
   const side_t *sidedef = seg->sidedef;
