@@ -236,7 +236,8 @@ override void Init () {
   CreateCvarBool('k8StealthFist', true, "Should fist attack alert monsters only when some monster was injured?.", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
   CreateCvarBool('k8StealthChainsaw', true, "Should chainsaw attack alert monsters only when some monster was hit?", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
 
-  CreateCvarFloat('k8BonusFlashMaxTime', 0.4, "Maximum bonus flash time, in sectonds (<=0 is unlimited; one bonus is 0.2).", CVAR_ARCHIVE);
+  CreateCvarFloat('k8BonusFlashMaxTime', 0.4, "Maximum bonus flash time, in seconds (<=0 is unlimited; one bonus is 0.2).", CVAR_ARCHIVE);
+  CreateCvarFloat('k8DamageFlashMaxIntensity', 0.89, "Maximum intensity of damage screen tint.", CVAR_ARCHIVE);
 
   CreateCvarBool('k8TraceDebug', false, "Line trace debug mode", 0);
 

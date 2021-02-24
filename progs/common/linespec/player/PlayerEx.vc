@@ -2724,9 +2724,12 @@ void PaletteFlash () {
       }
       */
 
-      int Amount = int(114.0*DamageFlash*dmgIntensity);
-      if (Amount >= 228) Amount = 228;
-      AddBlend(r, g, b, a, (Amount<<24)|(dmgColor&0x00ffffff));
+      float maxent = fmin(GetCvarF('k8DamageFlashMaxIntensity'), 1.0)*255.0;
+      if (maxent <= 0.0) maxent = 255.0; // cheaters must be punished! ;-)
+      int Amount = int(fclamp(114.0*DamageFlash*dmgIntensity, 0, maxent));
+      //printdebug("%C: maxent=%s; DamageFlash=%s; dmgIntensity=%s; amount=%s (%s)", self, maxent, DamageFlash, dmgIntensity, int(114.0*DamageFlash*dmgIntensity), Amount);
+      //if (Amount >= 228) Amount = 228;
+      if (Amount > 0) AddBlend(r, g, b, a, (Amount<<24)|(dmgColor&0x00ffffff));
     }
 
     if (BonusFlash) {
