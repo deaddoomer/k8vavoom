@@ -29,17 +29,21 @@
 
 //==========================================================================
 //
-//  isFuckedHereticLump
+//  isFuckedHereticFlat
 //
 //==========================================================================
-static bool isFuckedHereticLump (int LumpNum) {
+static bool isFuckedHereticFlat (int LumpNum) {
   if (LumpNum <= 0) return false;
   int lmpsize = W_LumpLength(LumpNum);
   if (lmpsize != 4160) return false;
-  static const char *fuckedHeretic[7] = {"fltflww1","fltflww2","fltflww3","fltlava1","fltlava2","fltlava3","fltlava4"};
   const char *lname = *W_LumpName(LumpNum);
-  for (unsigned f = 0; f < 7; ++f) {
-    if (VStr::strEquCI(lname, fuckedHeretic[f])) return true;
+  if (strlen(lname) != 8) return false;
+  if (lname[7] < '0' || lname[7] > '9') return false;
+  if (VStr::startsWith(lname, "fltflww") ||
+      VStr::startsWith(lname, "fltlava"))
+  {
+    //GCon->Logf(NAME_Debug, "<%s> <%s>", lname, *W_FullLumpName(LumpNum));
+    return true;
   }
   return false;
 }
@@ -51,7 +55,7 @@ static bool isFuckedHereticLump (int LumpNum) {
 //
 //==========================================================================
 VTexture *VFlatTexture::Create (VStream &, int LumpNum) {
-  if (isFuckedHereticLump(LumpNum)) return new VFlatTexture(LumpNum); // fucked Heretic flat
+  if (isFuckedHereticFlat(LumpNum)) return new VFlatTexture(LumpNum); // fucked Heretic flat
   const int lmpsize = W_LumpLength(LumpNum);
   if (lmpsize == 8192) return new VFlatTexture(LumpNum); // 64x128 (some idiots does this)
   for (int Width = 8; Width <= 256; Width <<= 1) {
@@ -76,7 +80,7 @@ VFlatTexture::VFlatTexture (int InLumpNum)
   Name = W_LumpName(SourceLump);
   Width = 64;
   // check for larger flats
-  if (isFuckedHereticLump(SourceLump)) {
+  if (isFuckedHereticFlat(SourceLump)) {
     Height = 64;
   } else {
     //while (W_LumpLength(SourceLump) >= Width*Width*4) Width *= 2;
