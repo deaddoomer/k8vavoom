@@ -1,0 +1,53 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#include "Powerup.vc"
+#include "PowerupGiver.vc"
+#include "PowerInvulnerable.vc"
+#include "PowerStrength.vc"
+#include "PowerInvisibility.vc"
+#include "PowerGhost.vc"
+#include "PowerInfiniteAmmo.vc"
+#include "PowerShadow.vc"
+#include "PowerIronFeet.vc"
+#include "PowerMask.vc"
+#include "PowerLightAmp.vc"
+#include "PowerTorch.vc"
+#include "PowerFlight.vc"
+#include "PowerFrightener.vc"
+#include "PowerWeaponLevel2.vc"
+#include "PowerSpeed.vc"
+#include "PowerHighJump.vc"
+#include "PowerMinotaur.vc"
+#include "PowerScanner.vc"
+#include "PowerTargeter.vc"
+#include "PowerMorph.vc"
+#include "PowerDamage.vc"
+#include "PowerDoubleFiringSpeed.vc"
+#include "PowerProtection.vc"
+#include "PowerRegeneration.vc"
+#include "PowerTimeFreeze.vc"
+#include "PowerUselessShit.vc"
+#include "PowerBuddha.vc"

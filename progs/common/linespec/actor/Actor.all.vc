@@ -1,0 +1,45 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#include "Actor.Head.vc"
+#include "Actor.Decorate.Const.vc"
+#include "Actor.Decorate.vc"
+#include "Actor.MonsterAi.vc"
+#include "Actor.GenericAttacks.vc"
+#include "Actor.FreezeDeath.vc"
+#include "Actor.Sound.vc"
+#include "Actor.Special.vc"
+#include "Actor.Spawn.vc"
+#include "Actor.StateJump.vc"
+#include "Actor.FlagsAndAppearance.vc"
+#include "Actor.MissileMovement.vc"
+#include "Actor.Inventory.vc"
+#include "Actor.DoomAttack.vc"
+#include "Actor.DoomSpecific.vc"
+#include "Actor.Heretic.vc"
+#include "Actor.Hexen.vc"
+#include "Actor.HexenWeapons.vc"
+#include "Actor.Strife.vc"
+#include "Actor.States.vc"

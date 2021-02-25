@@ -1,0 +1,38 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#include "SectorAction.vc"
+#include "SecActEnter.vc"
+#include "SecActExit.vc"
+#include "SecActHitFloor.vc"
+#include "SecActHitCeiling.vc"
+#include "SecActUse.vc"
+#include "SecActUseWall.vc"
+#include "SecActEyesDive.vc"
+#include "SecActEyesSurface.vc"
+#include "SecActEyesBelowC.vc"
+#include "SecActEyesAboveC.vc"
+#include "SecActHitFakeFloor.vc"
+#include "SecActMusChanger.vc"

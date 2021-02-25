@@ -1,0 +1,61 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#include "HexenWeapon.vc"
+#include "FighterWeapon.vc"
+#include "ClericWeapon.vc"
+#include "MageWeapon.vc"
+#include "FighterWeaponPiece.vc"
+#include "ClericWeaponPiece.vc"
+#include "MageWeaponPiece.vc"
+#include "FWeapAxe.vc"
+#include "FSwordMissile.vc"
+#include "CFlameMissile.vc"
+#include "HolySpirit.vc"
+#include "CWeapWraithverge.vc"
+#include "MageWandMissile.vc"
+#include "FrostMissile.vc"
+#include "Lightning.vc"
+#include "LightningZap.vc"
+#include "MageStaffFX2.vc"
+#include "MWeapBloodscourge.vc"
+#include "TelOtherFX1.vc"
+#include "ArtiTeleportOther.vc"
+#include "ArtiPoisonBag.vc"
+#include "PoisonCloud.vc"
+#include "ArtiBoostArmor.vc"
+#include "ArtiBlastRadius.vc"
+#include "ArtiHealingRadius.vc"
+#include "ZCorpseLynchedNoHeart.vc"
+#include "Pottery1.vc"
+#include "ZBell.vc"
+#include "Heresiarch.vc"
+#include "SorcBall.vc"
+#include "SorcBall1.vc"
+#include "SorcBall2.vc"
+#include "SorcBall3.vc"
+#include "PigPlayer.vc"
+#include "MinotaurFriend.vc"
+#include "ArtiDarkServant.vc"

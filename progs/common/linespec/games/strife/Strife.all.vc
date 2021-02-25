@@ -1,0 +1,52 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#include "Coin.vc"
+#include "Meat.vc"
+#include "LoreShot.vc"
+#include "SpectralMonster.vc"
+#include "DummyStrifeItem.vc"
+#include "UpgradeStamina.vc"
+#include "UpgradeAccuracy.vc"
+#include "AmmoFillup.vc"
+#include "RaiseAlarm.vc"
+#include "OpenDoor222.vc"
+#include "CloseDoor222.vc"
+#include "OpenDoor224.vc"
+#include "SlideshowStarter.vc"
+#include "Oracle.vc"
+#include "Macil1.vc"
+#include "PoisonBolt.vc"
+#include "PhosphorousFire.vc"
+#include "Sigil.vc"
+#include "DegninOre.vc"
+#include "Scanner.vc"
+#include "TeleporterBeacon.vc"
+#include "PrisonPass.vc"
+#include "ForceFieldGuard.vc"
+#include "PowerCoupling.vc"
+
+// it is based on `DummyStrifeItem`
+#include "health/HealthFillup.vc"

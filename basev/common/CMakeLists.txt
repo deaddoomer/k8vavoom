@@ -81,9 +81,13 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/camera/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/dynlight/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/entityex/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/heretic/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/hexen/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/raven/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/strife/*.vc
+    ${CMAKE_SOURCE_DIR}/progs/common/linespec/games/strife/health/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/health/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/common/linespec/heretic/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/common/linespec/hexen/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/incomplete/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/linespec/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/particle/*.vc
@@ -91,13 +95,11 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/polythink/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/portals/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/powerup/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/common/linespec/raven/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/secaction/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/secthink/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/secthink/lights/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/secthink/movers/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/sound/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/common/linespec/strife/*.vc
     ${CMAKE_SOURCE_DIR}/progs/common/linespec/weapon/*.vc
 
     ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/*.fs
