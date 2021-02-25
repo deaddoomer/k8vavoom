@@ -28,6 +28,7 @@
 #include "EntityEx.LineAttack.vc"
 #include "EntityEx.AiUtils.vc"
 #include "EntityEx.SpawnMissile.vc"
+#include "EntityEx.Damage.HS.vc"
 #include "EntityEx.Damage.vc"
 #include "EntityEx.Inventory.vc"
 #include "EntityEx.Morph.vc"
