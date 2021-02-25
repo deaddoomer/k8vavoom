@@ -135,7 +135,7 @@ int K8HS_HeadshotFastKillHook (int dodmg) {
   if (K8HS_IsIAmAKindOf('Archvile')) {
     int fastdamage = GetCvar('k8HSFastKillArchVileDamage');
     if (fastdamage > 0 && dodmg < fastdamage) {
-      //Log(s:"Archvile superdamage: old=", d:dodmg, s:"; new=", d:fastdamage, s:"; health=", d:vicHealth);
+      //printdebug("%C: Archvile superdamage: old=%s; new=%s; health=%s", self, dodmg, fastdamage, Health);
       return fastdamage;
     }
   }
@@ -338,7 +338,6 @@ int K8onBeforeDamage (EntityEx inflictor, TVec hitpos, int damage, name adamageT
   // head shot
   if (headshot) {
     if (showHeadshots) {
-      //Log(s:"K8HS: Headshot! ", s:vicName, s:"; Height=", d:Height, s:"; fromtop=", d:fromtop, s:"; mass=", d:vicMass, s:"; radius=", d:Radius, s:"; len=", d:len);
       float hithgt = hitpos.z; //-Pos.z;
       float fromtop = Height-hithgt;
       printdebug("K8HS: Headshot! %C; Height=%s; fromtop=%s; radius=%s; len=%s", Class, Height, fromtop, Radius, len);
