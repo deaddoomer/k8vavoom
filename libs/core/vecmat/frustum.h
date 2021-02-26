@@ -290,6 +290,9 @@ VVA_CHECKRESULT bool CheckSphereVsAABB (const float bbox[6], const TVec &lorg, c
 // check to see if the sphere overlaps the 2D AABB
 VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg, const float radius) noexcept;
 
+// check to see if the sphere overlaps the AABB (ignore z coords)
+VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &lorg, const float radius) noexcept;
+
 // considers the line to be infinite
 // check the relationship between the given box and the partition
 // line.  Returns -1 if box is on left side, +1 if box is on right

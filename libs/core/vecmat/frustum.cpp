@@ -611,6 +611,30 @@ VVA_CHECKRESULT bool CheckSphereVsAABB (const float bbox[6], const TVec &lorg, c
 
 //==========================================================================
 //
+//  CheckSphereVsAABBIgnoreZ
+//
+//  check to see if the sphere overlaps the AABB (ignore z coords)
+//
+//==========================================================================
+VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &lorg, const float radius) noexcept {
+  float d = 0.0f, s;
+  // find the square of the distance from the sphere to the box
+  // first check is min, second check is max
+  const float *li = &lorg[0];
+
+  s = (*li < bbox[0] ? (*li)-bbox[0] : *li > bbox[0+3] ? (*li)-bbox[0+3] : 0.0f);
+  d += s*s;
+  ++li;
+  ++bbox;
+  s = (*li < bbox[0] ? (*li)-bbox[0] : *li > bbox[0+3] ? (*li)-bbox[0+3] : 0.0f);
+  d += s*s;
+
+  return (d < radius*radius); // or <= if you want exact touching
+}
+
+
+//==========================================================================
+//
 //  CheckSphereVsAABB
 //
 //  check to see if the sphere overlaps the 2D AABB
