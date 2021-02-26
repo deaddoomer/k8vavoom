@@ -71,6 +71,12 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
   float maxz = sector->ceiling.maxz;
   if (minz > maxz) { const float tmp = minz; minz = maxz; maxz = tmp; }
 
+  const sector_t *hs = sector->heightsec;
+  if (hs && !(hs->SectorFlags&sector_t::SF_IgnoreHeightSec)) {
+    minz = min2(minz, min2(hs->floor.minz, hs->ceiling.maxz));
+    maxz = max2(maxz, max2(hs->floor.minz, hs->ceiling.maxz));
+  }
+
   if (!lastLooseBBoxHeight && sector->linecount) {
     sector_t *const *nbslist = sector->nbsecs;
     for (int nbc = sector->nbseccount; nbc--; ++nbslist) {
@@ -86,6 +92,11 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
       */
       float zmin = min2(bsec->floor.minz, bsec->ceiling.maxz);
       float zmax = max2(bsec->floor.minz, bsec->ceiling.maxz);
+      const sector_t *bhs = bsec->heightsec;
+      if (bhs && !(bhs->SectorFlags&sector_t::SF_IgnoreHeightSec)) {
+        zmin = min2(zmin, min2(bhs->floor.minz, bhs->ceiling.maxz));
+        zmax = max2(zmax, max2(bhs->floor.minz, bhs->ceiling.maxz));
+      }
       minz = min2(minz, zmin);
       maxz = max2(maxz, zmax);
     }
