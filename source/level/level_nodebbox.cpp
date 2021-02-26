@@ -26,8 +26,8 @@
 #include "../gamedefs.h"
 
 
-static VCvarB r_bsp_loose_bbox_height("r_bsp_loose_bbox_height", false, "If `true`, the engine will try to calculate proper bbox heights.", CVAR_Archive);
-static int lastLooseBBoxHeight = -1; // unknown yet
+static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", true, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive);
+static int lastSkyHeightFlag = -1; // unknown yet
 
 
 //==========================================================================
@@ -78,7 +78,7 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
     maxz = max2(maxz, max2(hs->floor.minz, hs->ceiling.maxz));
   }
 
-  if (!lastLooseBBoxHeight && sector->linecount) {
+  if (sector->linecount) {
     sector_t *const *nbslist = sector->nbsecs;
     for (int nbc = sector->nbseccount; nbc--; ++nbslist) {
       const sector_t *bsec = *nbslist;
@@ -244,23 +244,16 @@ void VLevel::UpdateSubsectorBBox (int num, float bbox[6], const float skyheight)
   float ssbbox[6];
   GetSubsectorBBox(sub, ssbbox);
   FixBBoxZ(ssbbox);
-  ssbbox[2] = min2(ssbbox[2], sub->sector->floor.minz);
-  ssbbox[5] = max2(ssbbox[5], (R_IsAnySkyFlatPlane(&sub->sector->ceiling) ? skyheight : sub->sector->ceiling.maxz));
+  ssbbox[BOX3D_MINZ] = min2(ssbbox[BOX3D_MINZ], sub->sector->floor.minz);
+  if (R_IsAnySkyFlatPlane(&sub->sector->ceiling)) {
+    ssbbox[BOX3D_MAXZ] = max2(ssbbox[BOX3D_MAXZ], (lastSkyHeightFlag ? skyheight : sub->sector->ceiling.maxz+128.0f));
+  } else {
+    ssbbox[BOX3D_MAXZ] = max2(ssbbox[BOX3D_MAXZ], sub->sector->ceiling.maxz);
+  }
   FixBBoxZ(ssbbox);
 
-  /*
-  FixBBoxZ(bbox);
-  for (unsigned f = 0; f < 3; ++f) {
-    bbox[0+f] = min2(bbox[0+f], ssbbox[0+f]);
-    bbox[3+f] = max2(bbox[3+f], ssbbox[3+f]);
-  }
-  */
   memcpy(bbox, ssbbox, sizeof(ssbbox));
   FixBBoxZ(bbox);
-
-  //bbox[2] = sub->sector->floor.minz;
-  //bbox[5] = (R_IsAnySkyFlatPlane(&sub->sector->ceiling) ? skyheight : sub->sector->ceiling.maxz);
-  //FixBBoxZ(bbox);
 }
 
 
@@ -329,7 +322,7 @@ void VLevel::RecalcWorldBBoxes () {
   ITER_CHECKER(Things, allThingsIdx, mthing_t)
   */
   ResetSZValidCount();
-  lastLooseBBoxHeight = (r_bsp_loose_bbox_height ? 1 : 0);
+  lastSkyHeightFlag = (r_bsp_bbox_sky_maxheight ? 1 : 0);
   if (NumSectors == 0 || NumSubsectors == 0) return; // just in case
   const float skyheight = CalcSkyHeight();
   for (auto &&node : allNodes()) {
@@ -353,8 +346,8 @@ void VLevel::RecalcWorldBBoxes () {
 //
 //==========================================================================
 void VLevel::CheckAndRecalcWorldBBoxes () {
-  int nbbh = (r_bsp_loose_bbox_height ? 1 : 0);
-  if (lastLooseBBoxHeight != nbbh) {
+  const int nbbh = (r_bsp_bbox_sky_maxheight ? 1 : 0);
+  if (lastSkyHeightFlag != nbbh) {
     double stime = -Sys_Time();
     RecalcWorldBBoxes();
     stime += Sys_Time();
