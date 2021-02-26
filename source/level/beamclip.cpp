@@ -63,7 +63,6 @@ enum { r_draw_pobj = true };
 
 static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimizations?", CVAR_PreInit);
 static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
-static VCvarB clip_check_bbox_z("clip_check_bbox_z", false, "Consider bbox height when cliping BSP bboxes with 1D clipper?", CVAR_PreInit);
 static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
 static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
@@ -1079,70 +1078,58 @@ bool VViewClipper::IsRangeVisibleAngle (const FromTo From, const FromTo To) cons
 //
 //  CreateBBVerts
 //
-//  returns `true` if no check required (origin in is a box)
+//  `origin` MUST NOT be inside the bbox
 //
 //==========================================================================
-inline static bool CreateBBVerts (TVec &v1, TVec &v2, const float bbox[6], const TVec &origin) noexcept {
-  enum { MIN_X, MIN_Y, MIN_Z, MAX_X, MAX_Y, MAX_Z };
-
-  if (bbox[0] <= origin.x && bbox[3] >= origin.x &&
-      bbox[1] <= origin.y && bbox[4] >= origin.y &&
-      (!clip_check_bbox_z || (bbox[2] <= origin.z && bbox[5] >= origin.z)))
-  {
-    // viewer is inside the box
-    return true;
-  }
-
-  if (bbox[MIN_X] > origin.x) {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MAX_Y];
-    } else if (bbox[MAX_Y] < origin.y) {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MAX_Y];
+inline static void CreateBBVerts (TVec &v1, TVec &v2, const float bbox[6], const TVec &origin) noexcept {
+  if (bbox[BOX3D_MINX] > origin.x) {
+    if (bbox[BOX3D_MINY] > origin.y) {
+      v1.x = bbox[BOX3D_MAXX];
+      v1.y = bbox[BOX3D_MINY];
+      v2.x = bbox[BOX3D_MINX];
+      v2.y = bbox[BOX3D_MAXY];
+    } else if (bbox[BOX3D_MAXY] < origin.y) {
+      v1.x = bbox[BOX3D_MINX];
+      v1.y = bbox[BOX3D_MINY];
+      v2.x = bbox[BOX3D_MAXX];
+      v2.y = bbox[BOX3D_MAXY];
     } else {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MAX_Y];
+      v1.x = bbox[BOX3D_MINX];
+      v1.y = bbox[BOX3D_MINY];
+      v2.x = bbox[BOX3D_MINX];
+      v2.y = bbox[BOX3D_MAXY];
     }
-  } else if (bbox[MAX_X] < origin.x) {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MIN_Y];
-    } else if (bbox[MAX_Y] < origin.y) {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MIN_Y];
+  } else if (bbox[BOX3D_MAXX] < origin.x) {
+    if (bbox[BOX3D_MINY] > origin.y) {
+      v1.x = bbox[BOX3D_MAXX];
+      v1.y = bbox[BOX3D_MAXY];
+      v2.x = bbox[BOX3D_MINX];
+      v2.y = bbox[BOX3D_MINY];
+    } else if (bbox[BOX3D_MAXY] < origin.y) {
+      v1.x = bbox[BOX3D_MINX];
+      v1.y = bbox[BOX3D_MAXY];
+      v2.x = bbox[BOX3D_MAXX];
+      v2.y = bbox[BOX3D_MINY];
     } else {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MIN_Y];
+      v1.x = bbox[BOX3D_MAXX];
+      v1.y = bbox[BOX3D_MAXY];
+      v2.x = bbox[BOX3D_MAXX];
+      v2.y = bbox[BOX3D_MINY];
     }
   } else {
-    if (bbox[MIN_Y] > origin.y) {
-      v1.x = bbox[MAX_X];
-      v1.y = bbox[MIN_Y];
-      v2.x = bbox[MIN_X];
-      v2.y = bbox[MIN_Y];
+    if (bbox[BOX3D_MINY] > origin.y) {
+      v1.x = bbox[BOX3D_MAXX];
+      v1.y = bbox[BOX3D_MINY];
+      v2.x = bbox[BOX3D_MINX];
+      v2.y = bbox[BOX3D_MINY];
     } else {
-      v1.x = bbox[MIN_X];
-      v1.y = bbox[MAX_Y];
-      v2.x = bbox[MAX_X];
-      v2.y = bbox[MAX_Y];
+      v1.x = bbox[BOX3D_MINX];
+      v1.y = bbox[BOX3D_MAXY];
+      v2.x = bbox[BOX3D_MAXX];
+      v2.y = bbox[BOX3D_MAXY];
     }
   }
   v1.z = v2.z = 0.0f;
-
-  return false;
 }
 
 
@@ -1209,16 +1196,16 @@ bool VViewClipper::ClipIsBBoxVisible (const float bbox[6]) const noexcept {
   if (ClipIsEmpty()) return true; // no clip nodes yet
   if (ClipIsFull()) return false;
 
-  if (bbox[0] <= Origin.x && bbox[3] >= Origin.x &&
-      bbox[1] <= Origin.y && bbox[4] >= Origin.y &&
-      bbox[2] <= Origin.z && bbox[5] >= Origin.z)
+  if (bbox[BOX3D_MINX] <= Origin.x && bbox[BOX3D_MAXX] >= Origin.x &&
+      bbox[BOX3D_MINY] <= Origin.y && bbox[BOX3D_MAXY] >= Origin.y &&
+      bbox[BOX3D_MINZ] <= Origin.z && bbox[BOX3D_MAXZ] >= Origin.z)
   {
     // viewer is inside the box
-    return 1;
+    return true;
   }
 
   TVec v1, v2;
-  if (CreateBBVerts(v1, v2, bbox, Origin)) return true;
+  CreateBBVerts(v1, v2, bbox, Origin);
   return IsRangeVisible(v1, v2);
 }
 
@@ -1594,11 +1581,20 @@ int VViewClipper::CheckSubsectorLight (subsector_t *sub) const noexcept {
 //==========================================================================
 bool VViewClipper::ClipLightIsBBoxVisible (const float bbox[6]) const noexcept {
   if (ClipIsFull()) return false;
-  if (!CheckSphereVsAABBIgnoreZ(bbox, Origin, Radius)) return false;
   if (ClipIsEmpty()) return true; // no clip nodes yet
 
+  if (bbox[BOX3D_MINX] <= Origin.x && bbox[BOX3D_MAXX] >= Origin.x &&
+      bbox[BOX3D_MINY] <= Origin.y && bbox[BOX3D_MAXY] >= Origin.y /*&&
+      bbox[BOX3D_MINZ] <= Origin.z && bbox[BOX3D_MAXZ] >= Origin.z*/)
+  {
+    // viewer is inside the box
+    return true;
+  }
+
+  if (!CheckSphereVsAABBIgnoreZ(bbox, Origin, Radius)) return false;
+
   TVec v1, v2;
-  if (CreateBBVerts(v1, v2, bbox, Origin)) return true;
+  CreateBBVerts(v1, v2, bbox, Origin);
   return IsRangeVisible(v1, v2);
 }
 
