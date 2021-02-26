@@ -36,6 +36,8 @@ static VCvarI r_color_distance_algo("r_color_distance_algo", "1", "What algorith
 // there is no sense to store this in config, because config is loaded after brightmaps
 static VCvarB x_brightmaps_ignore_iwad("x_brightmaps_ignore_iwad", false, "Ignore \"iwad\" option when *loading* brightmaps?", CVAR_PreInit);
 
+static VCvarB r_glow_ignore_iwad("r_glow_ignore_iwad", false, "Ignore 'iwad' option in glow definitions?", /*CVAR_Archive|*/CVAR_PreInit);
+
 
 static int cli_WarnBrightmaps = 0;
 static int cli_DumpBrightmaps = 0;
@@ -1576,13 +1578,13 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
 }
 
 
-//==========================================================================
-//
-//  ApplyGlowToTexture
-//
-//==========================================================================
-static void ApplyGlowToTexture (VName txname, bool isWall, bool allowOtherType, bool fullbright, bool iwad, vuint32 clr=0u) {
 #ifdef CLIENT
+//==========================================================================
+//
+//  ApplyGlowToExactTexture
+//
+//==========================================================================
+static void ApplyGlowToExactTexture (VName txname, bool isWall, bool allowOtherType, bool fullbright, bool iwad, vuint32 clr=0u) {
   if (txname != NAME_None && !VTextureManager::IsDummyTextureName(txname)) {
     VTexture *basetex = GTextureManager.GetExistingTextureByName(VStr(txname), (isWall ? TEXTYPE_Wall : TEXTYPE_Flat));
     if (!basetex && allowOtherType) basetex = GTextureManager.GetExistingTextureByName(VStr(txname), (!isWall ? TEXTYPE_Wall : TEXTYPE_Flat));
@@ -1592,7 +1594,6 @@ static void ApplyGlowToTexture (VName txname, bool isWall, bool allowOtherType, 
         GCon->Logf(NAME_Warning, "IWAD GLOW SKIP: %s[%d]; '%s'", *W_FullLumpName(basetex->SourceLump), basetex->SourceLump, *basetex->Name);
         return;
       }
-      //GCon->Logf("GLOW: <%s>", *txname);
       rgb_t gclr;
       if (clr) {
         gclr.r = (clr>>16)&0xffu;
@@ -1601,6 +1602,7 @@ static void ApplyGlowToTexture (VName txname, bool isWall, bool allowOtherType, 
       } else {
         gclr = basetex->GetAverageColor(153);
       }
+      //GCon->Logf(NAME_Debug, "GLOW: <%s> : <%s> (%d,%d,%d)", *txname, *basetex->Name, gclr.r, gclr.g, gclr.b);
       if (gclr.r || gclr.g || gclr.b) {
         basetex->glowing = (fullbright ? 0xff000000u : 0xfe000000u)|(gclr.r<<16)|(gclr.g<<8)|gclr.b;
       } else {
@@ -1608,6 +1610,53 @@ static void ApplyGlowToTexture (VName txname, bool isWall, bool allowOtherType, 
       }
       // we don't need its pixels anymore (also, undo any RGBA conversion)
       basetex->ReleasePixels();
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  GlowNameMaskCheck
+//
+//==========================================================================
+static bool GlowNameMaskCheck (const char *name, const char *mask) {
+  if (!mask || !mask[0]) return false;
+  if (!name || !name[0]) return false;
+  if (VStr::startsWithCI(name, mask)) return true;
+  return VStr::globMatchCI(name, mask);
+}
+#endif
+
+
+//==========================================================================
+//
+//  ApplyGlowToExactTexture
+//
+//==========================================================================
+static void ApplyGlowToTexture (VName txname, VStr txnamefull, bool isWall, bool allowOtherType, bool fullbright, bool iwad, bool basename, vuint32 clr=0u) {
+#ifdef CLIENT
+  if (txname == NAME_None || VTextureManager::IsDummyTextureName(txname)) return;
+  if (r_glow_ignore_iwad) iwad = false;
+  if (!basename) {
+    //GCon->Logf(NAME_Debug, "applying glow '%s'", *txname);
+    ApplyGlowToExactTexture(txname, isWall, allowOtherType, fullbright, iwad, clr);
+  } else {
+    const int count = GTextureManager.GetNumTextures();
+    for (int f = 0; f < count; ++f) {
+      VTexture *tex = GTextureManager.getIgnoreAnim(f);
+      if (!tex || tex->Name == NAME_None || tex->Type == TEXTYPE_Null || tex->Width < 1 || tex->Height < 1) continue;
+      if (iwad && !W_IsIWADLump(tex->SourceLump)) continue;
+      if (GlowNameMaskCheck(*tex->Name, *txnamefull)) {
+        //GCon->Logf(NAME_Debug, "applying glow mask '%s' to '%s'", *txnamefull, *tex->Name);
+        ApplyGlowToExactTexture(tex->Name, isWall, allowOtherType, fullbright, iwad, clr);
+        continue;
+      }
+      /*
+      else {
+        GCon->Logf(NAME_Debug, "skipping glow mask '%s' at '%s'", *txnamefull, *tex->Name);
+      }
+      */
     }
   }
 #endif
@@ -1622,11 +1671,13 @@ static void ApplyGlowToTexture (VName txname, bool isWall, bool allowOtherType, 
 static void ParseGlow (VScriptParser *sc) {
   bool allFullBright = true;
   bool allIWad = false;
+  bool allBaseName = false;
   // parse global options
   for (;;) {
     if (sc->Check("fullbright")) { allFullBright = true; continue; }
     if (sc->Check("nofullbright")) { allFullBright = false; continue; }
     if (sc->Check("iwad")) { allIWad = true; continue; }
+    if (sc->Check("basename")) { allBaseName = true; continue; }
     break;
   }
   sc->Expect("{");
@@ -1634,8 +1685,9 @@ static void ParseGlow (VScriptParser *sc) {
     // not implemented gozzo feature (in gozzo too)
     if (sc->Check("Texture")) {
       // Texture "flat name", color[, glow height] [, fullbright]
-      sc->ExpectName8Warn();
-      VName txname = sc->Name8;
+      VName txname;
+      if (allBaseName) { sc->ExpectName(); txname = sc->Name; } else { sc->ExpectName8(); txname = sc->Name8; }
+      VStr txnamefull = sc->String;
       if (sc->Check(",")) {
         // ignore, we cannot support parameters yet
         sc->ExpectString();
@@ -1645,13 +1697,15 @@ static void ParseGlow (VScriptParser *sc) {
         // no parameters, apply normal glow
         bool fullbright = allFullBright;
         bool iwad = allIWad;
+        bool basename = allBaseName;
         for (;;) {
           if (sc->Check("fullbright")) { fullbright = true; continue; }
           if (sc->Check("nofullbright")) { fullbright = false; continue; }
           if (sc->Check("iwad")) { iwad = true; continue; }
+          if (sc->Check("basename")) { basename = true; continue; }
           break;
         }
-        ApplyGlowToTexture(txname, true, true, fullbright, iwad);
+        ApplyGlowToTexture(txname, txnamefull, true, true, fullbright, iwad, basename);
       }
       continue;
     }
@@ -1662,28 +1716,31 @@ static void ParseGlow (VScriptParser *sc) {
     if (ttype > 0) {
       bool fullbright = allFullBright;
       bool iwad = allIWad;
+      bool basename = allBaseName;
       for (;;) {
         if (sc->Check("fullbright")) { fullbright = true; continue; }
         if (sc->Check("nofullbright")) { fullbright = false; continue; }
         if (sc->Check("iwad")) { iwad = true; continue; }
+        if (sc->Check("basename")) { basename = true; continue; }
         break;
       }
       sc->Expect("{");
       VName txname;
+      VStr txnamefull;
       while (!sc->Check("}")) {
         if (sc->Check(",")) continue;
         bool xfbr = fullbright;
         bool xiwad = iwad;
         vuint32 gclr = 0u;
         if (sc->Check("texture")) {
-          sc->ExpectName8Warn();
-          txname = sc->Name8;
+          if (basename) { sc->ExpectName(); txname = sc->Name; } else { sc->ExpectName8(); txname = sc->Name8; }
+          txnamefull = sc->String;
           while (sc->Check(",")) sc->ExpectString();
                if (sc->Check("fullbright")) xfbr = true;
           else if (sc->Check("nofullbright")) xfbr = false;
         } else {
-          sc->ExpectName8Warn();
-          txname = sc->Name8;
+          if (basename) { sc->ExpectName(); txname = sc->Name; } else { sc->ExpectName8(); txname = sc->Name8; }
+          txnamefull = sc->String;
           // check for glow color and fullbright flag
           while (sc->GetString()) {
             if (sc->Crossed) { sc->UnGet(); break; }
@@ -1697,7 +1754,7 @@ static void ParseGlow (VScriptParser *sc) {
           }
           //if (gclr || xfbr) GCon->Logf(NAME_Debug, "GLOW for '%s': gclr=0x%08x; fbr=%d", *txname, gclr, (int)xfbr);
         }
-        ApplyGlowToTexture(sc->Name8, (ttype == TEXTYPE_Wall), false, xfbr, xiwad, gclr);
+        ApplyGlowToTexture(txname, txnamefull, (ttype == TEXTYPE_Wall), false, xfbr, xiwad, basename, gclr);
       }
       continue;
     }
