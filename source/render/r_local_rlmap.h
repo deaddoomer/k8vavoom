@@ -143,7 +143,7 @@ protected:
   void InvalidateLineLMaps (const TVec &org, float radius, drawseg_t *dseg);
 
   void InvalidateSubsectorLMaps (const TVec &org, float radius, int num);
-  void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float bbox2d[4]);
+  void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox);
 
 protected:
   void initLightChain ();

@@ -76,15 +76,15 @@ extern VCvarB r_draw_pobj;
 //  VRenderLevelShared::CalcLightVisCheckNode
 //
 //==========================================================================
-void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float bbox2d[4], const float lightbbox2d[4]) {
+void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox) {
 #ifdef VV_CLIPPER_FULL_CHECK
   if (LightClip.ClipIsFull()) return;
 #endif
 
-  if (!LightClip.ClipLightIsBBox2DVisible(bbox2d)) return;
+  if (!LightClip.ClipLightIsBBoxVisible(bbox)) return;
 
   // mirror clip
-  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox2D(bbox2d)) return;
+  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
 
   if (bspnum == -1) {
     const unsigned subidx = 0;
@@ -114,23 +114,23 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float bbox2d[4
     const float dist = bsp->PointDistance(CurrLightPos);
     if (dist > CurrLightRadius) {
       // light is completely on front side
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[0], lightbbox2d)) return;
-      return CalcLightVisCheckNode(bsp->children[0], bsp->bbox2d[0], lightbbox2d);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], lightbbox)) return;
+      return CalcLightVisCheckNode(bsp->children[0], bsp->bbox[0], lightbbox);
     } else if (dist < -CurrLightRadius) {
       // light is completely on back side
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[1], lightbbox2d)) return;
-      return CalcLightVisCheckNode(bsp->children[1], bsp->bbox2d[1], lightbbox2d);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], lightbbox)) return;
+      return CalcLightVisCheckNode(bsp->children[1], bsp->bbox[1], lightbbox);
     } else {
       //unsigned side = (unsigned)bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f); //(unsigned)bsp->PointOnSide(CurrLightPos);
       // recursively divide front space
-      if (Are2DBBoxesOverlap(bsp->bbox2d[side], lightbbox2d)) {
-        CalcLightVisCheckNode(bsp->children[side], bsp->bbox2d[side], lightbbox2d);
+      if (Are3DBBoxesOverlapIn2D(bsp->bbox[side], lightbbox)) {
+        CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
       }
       // possibly divide back space
       side ^= 1;
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[side], lightbbox2d)) return;
-      return CalcLightVisCheckNode(bsp->children[side], bsp->bbox2d[side], lightbbox2d);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[side], lightbbox)) return;
+      return CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
     }
   } else {
     const unsigned subidx = (unsigned)(BSPIDX_LEAF_SUBSECTOR(bspnum));
@@ -306,21 +306,23 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
   LitBBox[0] = TVec(+FLT_MAX, +FLT_MAX, +FLT_MAX);
   LitBBox[1] = TVec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-  const HUGE_BBOX2D(dummybbox2d);
+  float dummybbox[6] = { -99999, -99999, -99999, 99999, 99999, 99999 };
 
   // create light bounding box
-  const float lightbbox2d[6] = {
-    org.y+radius, /*maxy*/
-    org.y-radius, /*miny*/
-    org.x-radius, /*minx*/
-    org.x+radius, /*maxx*/
+  float lightbbox[6] = {
+    org.x-radius,
+    org.y-radius,
+    0, // doesn't matter
+    org.x+radius,
+    org.y+radius,
+    0, // doesn't matter
   };
 
   // build vis data for light
   IncLightFrameNum();
   LightClip.ClearClipNodes(CurrLightPos, Level, CurrLightRadius);
   HasLightIntersection = false;
-  CalcLightVisCheckNode(Level->NumNodes-1, dummybbox2d, lightbbox2d);
+  CalcLightVisCheckNode(Level->NumNodes-1, dummybbox, lightbbox);
   if (!HasLightIntersection) return false;
 
   return true;

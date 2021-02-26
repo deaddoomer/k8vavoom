@@ -358,8 +358,8 @@ void compressBools (Type *tp) {
   }
   // fix some special VC cases
   if (!tp->shitpp && tp->name == "node_t") {
-    vassert(tp->fields->type->toString() == "float[4]");
-    vassert(tp->fields->next->type->toString() == "float[4]");
+    vassert(tp->fields->type->toString() == "float[6]");
+    vassert(tp->fields->next->type->toString() == "float[6]");
     tp->fields->type->dimension *= 2;
     tp->fields->next = tp->fields->next->next;
   }

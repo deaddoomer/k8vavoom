@@ -111,7 +111,7 @@ void VRenderLevelShared::amFlatsCheckNode (int bspnum) {
     node_t *bsp = &Level->Nodes[bspnum];
     // decide which side the view point is on
     for (unsigned side = 0; side < 2; ++side) {
-      if (AM_isBBox2DVisible(bsp->bbox2d[side])) {
+      if (AM_isBBox3DVisible(bsp->bbox[side])) {
         amFlatsCheckNode(bsp->children[side]);
         //++amFlatsAcc;
       }/* else {

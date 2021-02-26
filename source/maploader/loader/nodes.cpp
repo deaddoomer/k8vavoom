@@ -140,10 +140,12 @@ void VLevel::LoadNodes (int Lump) {
 
     for (int j = 0; j < 2; ++j) {
       no->children[j] = children[j];
-      no->bbox2d[j][BOX2D_LEFT] = bbox[j][BOX2D_LEFT];
-      no->bbox2d[j][BOX2D_BOTTOM] = bbox[j][BOX2D_BOTTOM];
-      no->bbox2d[j][BOX2D_RIGHT] = bbox[j][BOX2D_RIGHT];
-      no->bbox2d[j][BOX2D_TOP] = bbox[j][BOX2D_TOP];
+      no->bbox[j][0] = bbox[j][BOX2D_LEFT];
+      no->bbox[j][1] = bbox[j][BOX2D_BOTTOM];
+      no->bbox[j][2] = -32768.0f;
+      no->bbox[j][3] = bbox[j][BOX2D_RIGHT];
+      no->bbox[j][4] = bbox[j][BOX2D_TOP];
+      no->bbox[j][5] = 32768.0f;
     }
   }
 }
@@ -379,10 +381,12 @@ bool VLevel::LoadCompressedGLNodes (int Lump, char hdr[4]) {
 
       for (int j = 0; j < 2; ++j) {
         no->children[j] = children[j];
-        no->bbox2d[j][BOX2D_LEFT] = bbox[j][BOX2D_LEFT];
-        no->bbox2d[j][BOX2D_BOTTOM] = bbox[j][BOX2D_BOTTOM];
-        no->bbox2d[j][BOX2D_RIGHT] = bbox[j][BOX2D_RIGHT];
-        no->bbox2d[j][BOX2D_TOP] = bbox[j][BOX2D_TOP];
+        no->bbox[j][0] = bbox[j][BOX2D_LEFT];
+        no->bbox[j][1] = bbox[j][BOX2D_BOTTOM];
+        no->bbox[j][2] = -32768.0f;
+        no->bbox[j][3] = bbox[j][BOX2D_RIGHT];
+        no->bbox[j][4] = bbox[j][BOX2D_TOP];
+        no->bbox[j][5] = 32768.0f;
       }
     }
   }

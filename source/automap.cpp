@@ -1527,8 +1527,8 @@ static void AM_DrawRenderedNodes () {
   const node_t *node = &GClLevel->Nodes[0];
   for (unsigned i = GClLevel->NumNodes; i--; ++node) {
     if (!Drawer->RendLev->IsNodeRendered(node)) continue;
-    AM_DrawBox(node->bbox2d[0][BOX2D_MINX], node->bbox2d[0][BOX2D_MAXX], node->bbox2d[0][BOX2D_MINY], node->bbox2d[0][BOX2D_MAXY], 0xffff7f00);
-    AM_DrawBox(node->bbox2d[1][BOX2D_MINX], node->bbox2d[1][BOX2D_MAXX], node->bbox2d[1][BOX2D_MINY], node->bbox2d[1][BOX2D_MAXY], 0xffffffff);
+    AM_DrawBox(node->bbox[0][0], node->bbox[0][1], node->bbox[0][3], node->bbox[0][4], 0xffff7f00);
+    AM_DrawBox(node->bbox[1][0], node->bbox[1][1], node->bbox[1][3], node->bbox[1][4], 0xffffffff);
   }
 }
 

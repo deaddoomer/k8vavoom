@@ -516,7 +516,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
 //  recursively. Just call with BSP root.
 //
 //==========================================================================
-void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float bbox2d[4], unsigned int ssflag) {
+void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *bbox, unsigned int ssflag) {
 #ifdef VV_CLIPPER_FULL_CHECK
   if ((ssflag&FlagAsLight) && LightClip.ClipIsFull()) {
     if ((ssflag &= ~FlagAsLight) == 0) return;
@@ -527,18 +527,18 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float b
 #endif
 
 
-  if (bbox2d) {
+  if (bbox) {
     // mirror clip
-    if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox2D(bbox2d)) return;
+    if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
     // clipper clip
-    if ((ssflag&FlagAsLight) && !LightClip.ClipLightIsBBox2DVisible(bbox2d)) {
+    if ((ssflag&FlagAsLight) && !LightClip.ClipLightIsBBoxVisible(bbox)) {
       if ((ssflag &= ~FlagAsLight) == 0) return;
     }
-    if ((ssflag&FlagAsShadow) && !LightShadowClip.ClipLightIsBBox2DVisible(bbox2d)) {
+    if ((ssflag&FlagAsShadow) && !LightShadowClip.ClipLightIsBBoxVisible(bbox)) {
       if ((ssflag &= ~FlagAsShadow) == 0) return;
     }
   }
-  //if (bbox2d && !CheckSphereVs2dAABB(bbox2d, CurrLightPos, CurrLightRadius)) return;
+  //if (bbox && !CheckSphereVsAABBIgnoreZ(bbox, CurrLightPos, CurrLightRadius)) return;
 
   if (bspnum == -1) return CollectAdvLightSubsector(0, ssflag);
 
@@ -549,18 +549,18 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float b
     const float dist = bsp->PointDistance(CurrLightPos);
     if (dist >= CurrLightRadius) {
       // light is completely on front side
-      return CollectAdvLightBSPNode(bsp->children[0], bsp->bbox2d[0], ssflag);
+      return CollectAdvLightBSPNode(bsp->children[0], bsp->bbox[0], ssflag);
     } else if (dist <= -CurrLightRadius) {
       // light is completely on back side
-      return CollectAdvLightBSPNode(bsp->children[1], bsp->bbox2d[1], ssflag);
+      return CollectAdvLightBSPNode(bsp->children[1], bsp->bbox[1], ssflag);
     } else {
       //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      CollectAdvLightBSPNode(bsp->children[side], bsp->bbox2d[side], ssflag);
+      CollectAdvLightBSPNode(bsp->children[side], bsp->bbox[side], ssflag);
       // possibly divide back space
       side ^= 1;
-      return CollectAdvLightBSPNode(bsp->children[side], bsp->bbox2d[side], ssflag);
+      return CollectAdvLightBSPNode(bsp->children[side], bsp->bbox[side], ssflag);
     }
   } else {
     return CollectAdvLightSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum), ssflag);

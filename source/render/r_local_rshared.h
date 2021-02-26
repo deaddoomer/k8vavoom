@@ -236,10 +236,10 @@ protected:
   AMCheckSubsectorCB amCheckSubsector;
   float amX, amY, amX2, amY2;
 
-  inline bool AM_isBBox2DVisible (const float bbox2d[4]) const noexcept {
+  inline bool AM_isBBox3DVisible (const float bbox3d[6]) const noexcept {
     return
-      amX2 >= bbox2d[BOX2D_MINX] && amY2 >= bbox2d[BOX2D_MINY] &&
-      amX <= bbox2d[BOX2D_MAXX] && amY <= bbox2d[BOX2D_MAXY];
+      amX2 >= bbox3d[0+0] && amY2 >= bbox3d[0+1] &&
+      amX <= bbox3d[3+0] && amY <= bbox3d[3+1];
   }
 
   // also, resets list of rendered sectors
@@ -281,7 +281,7 @@ protected:
   bool CheckBSPFloodVisibility (const TVec &org, float radius, const subsector_t *sub=nullptr) noexcept;
 
   // this destroys `CurrListPos` and `CurrLightRadius`
-  bool CheckBSPVisibilityBoxSub (int bspnum, const float bbox2d[4]) noexcept;
+  bool CheckBSPVisibilityBoxSub (int bspnum, const float *bbox) noexcept;
   bool CheckBSPVisibilityBox (const TVec &org, float radius, const subsector_t *sub=nullptr) noexcept;
 
   void ResetVisFrameCount () noexcept;
@@ -481,7 +481,7 @@ protected:
   void UpdateBBoxWithLine (TVec bbox[2], VEntity *SkyBox, const drawseg_t *dseg);
 
   // the following should not be called directly
-  void CalcLightVisCheckNode (int bspnum, const float bbox2d[4], const float lightbbox2d[4]);
+  void CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox);
 
   // main entry point for lightvis calculation
   // note that this should be called with filled `BspVis`
@@ -591,8 +591,8 @@ protected:
   void AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub);
   void RenderPolyObj (subsector_t *sub);
   void RenderSubRegion (subsector_t *sub, subregion_t *region);
-  void RenderSubsector (int num);
-  void RenderBSPNode (int bspnum, const float bbox2d[4]);
+  void RenderSubsector (int num, bool onlyClip);
+  void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip=false);
   void RenderBspWorld (const refdef_t *, const VViewClipper *);
   void RenderPortals ();
 
@@ -718,7 +718,7 @@ protected:
   // calculate subsector's light from static light sources (light variables must be initialized)
   void CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height);
 
-  void CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float bbox2d[4]);
+  void CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox);
   void CalcStaticLightTouchingSubs (int slindex, light_t &sl);
 
   // called when some surface from the given subsector changed

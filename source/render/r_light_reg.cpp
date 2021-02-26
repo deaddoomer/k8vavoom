@@ -243,16 +243,16 @@ bool VRenderLevelLightmap::CastStaticRay (float *dist, sector_t *srcsector, cons
 //
 //==========================================================================
 void VRenderLevelLightmap::CalcMinMaxs (LMapTraceInfo &lmi, const surface_t *surf) {
-  TVec smins(+FLT_MAX, +FLT_MAX, +FLT_MAX);
-  TVec smaxs(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+  TVec smins(999999.0f, 999999.0f, 999999.0f);
+  TVec smaxs(-999999.0f, -999999.0f, -999999.0f);
   const SurfVertex *v = &surf->verts[0];
   for (int i = surf->count; i--; ++v) {
-    smins.x = min2(smins.x, v->x);
-    smins.y = min2(smins.y, v->y);
-    smins.z = min2(smins.z, v->z);
-    smaxs.x = max2(smaxs.x, v->x);
-    smaxs.y = max2(smaxs.y, v->y);
-    smaxs.z = max2(smaxs.z, v->z);
+    if (smins.x > v->x) smins.x = v->x;
+    if (smins.y > v->y) smins.y = v->y;
+    if (smins.z > v->z) smins.z = v->z;
+    if (smaxs.x < v->x) smaxs.x = v->x;
+    if (smaxs.y < v->y) smaxs.y = v->y;
+    if (smaxs.z < v->z) smaxs.z = v->z;
   }
   lmi.smins = smins;
   lmi.smaxs = smaxs;
@@ -416,7 +416,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           //const TVec fmss = facemid-(*spt);
           //if (length2DSquared(fmss) < 0.1f) break; // same point, got it
           //!if (Level->TraceLine(Trace, facemid, *spt, SPF_NOBLOCKSIGHT)) break; // got it
-          if (CastStaticRay(nullptr, facesec, facemid, *spt, FLT_MAX)) {
+          if (CastStaticRay(nullptr, facesec, facemid, *spt, 999999.0f)) {
             //found = true;
             break;
           }
@@ -1177,7 +1177,7 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
 //  VRenderLevelLightmap::InvalidateBSPNodeLMaps
 //
 //==========================================================================
-void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float bbox2d[4]) {
+void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox) {
   if (bspnum == -1) {
     return InvalidateSubsectorLMaps(org, radius, 0);
   }
@@ -1186,8 +1186,8 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
   if (LightClip.ClipIsFull()) return;
 #endif
 
-  if (!LightClip.ClipLightIsBBox2DVisible(bbox2d)) return;
-  if (!CheckSphereVs2dAABB(bbox2d, org, radius)) return;
+  if (!LightClip.ClipLightIsBBoxVisible(bbox)) return;
+  if (!CheckSphereVsAABBIgnoreZ(bbox, org, radius)) return;
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
@@ -1196,18 +1196,18 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
     const float dist = bsp->PointDistance(org);
     if (dist > radius) {
       // light is completely on the front side
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[0], bsp->bbox2d[0]);
+      return InvalidateBSPNodeLMaps(org, radius, bsp->children[0], bsp->bbox[0]);
     } else if (dist < -radius) {
       // light is completely on the back side
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[1], bsp->bbox2d[1]);
+      return InvalidateBSPNodeLMaps(org, radius, bsp->children[1], bsp->bbox[1]);
     } else {
       //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox2d[side]);
+      InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
       // possibly divide back space
       side ^= 1;
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox2d[side]);
+      return InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
     }
   } else {
     subsector_t *sub = &Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
@@ -1234,18 +1234,21 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
   //FIXME: make this faster!
   if (radius < 2.0f) return;
   invalidateRelight = relight;
+  float bbox[6];
 #if 0
   subsector_t *sub = Level->Subsectors;
   for (int count = Level->NumSubsectors; count--; ++sub) {
     if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
-    if (!CheckSphereVs2dAABB(sub->bbox2d, org, radius)) continue;
+    Level->GetSubsectorBBox(sub, bbox);
+    if (!CheckSphereVsAABBIgnoreZ(bbox, org, radius)) continue;
     //GCon->Logf("invalidating subsector %d", (int)(ptrdiff_t)(sub-Level->Subsectors));
     InvalidateSubsectorLMaps(org, radius, (int)(ptrdiff_t)(sub-Level->Subsectors));
   }
 #else
-  const HUGE_BBOX2D(bbox2d);
+  bbox[0] = bbox[1] = bbox[2] = -999999.0f;
+  bbox[3] = bbox[4] = bbox[5] = 999999.0f;
   LightClip.ClearClipNodes(org, Level, radius);
-  InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox2d);
+  InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
 #endif
 }
 

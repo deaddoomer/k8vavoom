@@ -240,7 +240,7 @@ public:
     return AddClipRangeAngle(PointToClipAngle(vfrom), PointToClipAngle(vto));
   }
 
-  bool ClipIsBBox2DVisible (const float bbox2d[4]) const noexcept;
+  bool ClipIsBBoxVisible (const float BBox[6]) const noexcept;
   bool ClipCheckRegion (const subregion_t *region, const subsector_t *sub) const noexcept;
 
   bool ClipCheckSubsector (const subsector_t *sub) noexcept;
@@ -256,7 +256,7 @@ public:
   };
 
 #ifdef CLIENT
-  bool ClipLightIsBBox2DVisible (const float bbox2d[6]) const noexcept;
+  bool ClipLightIsBBoxVisible (const float BBox[6]) const noexcept;
   bool ClipLightCheckRegion (const subregion_t *region, subsector_t *sub, int asShadow) const noexcept;
   bool ClipLightCheckSubsector (subsector_t *sub, int asShadow) const noexcept;
   // this doesn't do raduis and subsector checks: this is done in `CalcLightVisCheckNode()`

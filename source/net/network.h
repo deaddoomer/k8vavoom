@@ -900,7 +900,7 @@ public:
 
 protected:
   void SetupFatPVS ();
-  void SetupPvsNode (int BspNum, const float bbox2d[4]);
+  void SetupPvsNode (int, float *);
   void PvsMarkExtra (sector_t *sec);
   void PvsAddSector (sector_t *sec);
 

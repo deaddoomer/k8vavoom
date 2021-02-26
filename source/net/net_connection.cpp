@@ -1312,8 +1312,8 @@ void VNetConnection::SetupFatPVS () {
   //Clipper.check2STextures = false;
   Clipper.RepSectors = (GetLevelChannel() ? GetLevelChannel()->Sectors : nullptr);
 
-  const HUGE_BBOX2D(dummy_bbox2d);
-  SetupPvsNode(Level->NumNodes-1, dummy_bbox2d);
+  float dummy_bbox[6] = { -99999, -99999, -99999, 99999, 99999, 99999 };
+  SetupPvsNode(Level->NumNodes-1, dummy_bbox);
 }
 
 
@@ -1352,13 +1352,13 @@ void VNetConnection::PvsAddSector (sector_t *sec) {
 //  VNetConnection::SetupPvsNode
 //
 //==========================================================================
-void VNetConnection::SetupPvsNode (int BspNum, const float bbox2d[4]) {
+void VNetConnection::SetupPvsNode (int BspNum, float *BBox) {
   VLevel *Level = Context->GetLevel();
   vassert(Level);
 #ifdef VV_CLIPPER_FULL_CHECK
   if (Clipper.ClipIsFull()) return;
 #endif
-  if (!Clipper.ClipIsBBox2DVisible(bbox2d)) return;
+  if (!Clipper.ClipIsBBoxVisible(BBox)) return;
 
   if (BspNum == -1) {
     int SubNum = 0;
@@ -1376,14 +1376,14 @@ void VNetConnection::SetupPvsNode (int BspNum, const float bbox2d[4]) {
 
   // found a subsector?
   if (!(BspNum&NF_SUBSECTOR)) {
-    const node_t *Bsp = &Level->Nodes[BspNum];
+    node_t *Bsp = &Level->Nodes[BspNum];
     // decide which side the view point is on
-    const int Side = Bsp->PointOnSide(Owner->ViewOrg);
+    int Side = Bsp->PointOnSide(Owner->ViewOrg);
     // recursively divide front space
-    SetupPvsNode(Bsp->children[Side], Bsp->bbox2d[Side]);
+    SetupPvsNode(Bsp->children[Side], Bsp->bbox[Side]);
     // possibly divide back space
-    //if (!Clipper.ClipIsBBox2DVisible(Bsp->bbox[Side^1])) return;
-    return SetupPvsNode(Bsp->children[Side^1], Bsp->bbox2d[Side^1]);
+    //if (!Clipper.ClipIsBBoxVisible(Bsp->bbox[Side^1])) return;
+    return SetupPvsNode(Bsp->children[Side^1], Bsp->bbox[Side^1]);
   } else {
     int SubNum = BspNum&~NF_SUBSECTOR;
     subsector_t *Sub = &Level->Subsectors[SubNum];

@@ -36,10 +36,23 @@ extern VCvarB dbg_vischeck_time;
 
 //==========================================================================
 //
+//  Are3DAnd2DBBoxesOverlap
+//
+//==========================================================================
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const float bbox0[6], const float bbox1[4]) {
+  return !(
+    bbox1[2+0] < bbox0[0+0] || bbox1[2+1] < bbox0[0+1] ||
+    bbox1[0+0] > bbox0[3+0] || bbox1[0+1] > bbox0[3+1]
+  );
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::CheckBSPVisibilityBoxSub
 //
 //==========================================================================
-bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float bbox2d[4]) noexcept {
+bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float *bbox) noexcept {
   if (bspnum == -1) return true;
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
@@ -53,26 +66,26 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float bbox2
     const float dist = bsp->PointDistance(CurrLightPos);
     if (dist >= CurrLightRadius) {
       // light is completely on front side
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[0], bbox2d)) return false;
-      return CheckBSPVisibilityBoxSub(bsp->children[0], bbox2d);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], bbox)) return false;
+      return CheckBSPVisibilityBoxSub(bsp->children[0], bbox);
     } else if (dist <= -CurrLightRadius) {
       // light is completely on back side
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[1], bbox2d)) return false;
-      return CheckBSPVisibilityBoxSub(bsp->children[1], bbox2d);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], bbox)) return false;
+      return CheckBSPVisibilityBoxSub(bsp->children[1], bbox);
     } else {
       // it doesn't really matter which subspace we'll check first, but why not?
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox2d)) return true;
+      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox)) return true;
       // recursively divide back space
       side ^= 1;
-      return CheckBSPVisibilityBoxSub(bsp->children[side], bbox2d);
+      return CheckBSPVisibilityBoxSub(bsp->children[side], bbox);
     }
     #else
     // this is slower
     for (unsigned side = 0; side < 2; ++side) {
-      if (!Are2DBBoxesOverlap(bsp->bbox2d[side], bbox2d)) continue;
-      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox2d)) return true;
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[side], bbox)) continue;
+      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox)) return true;
     }
     #endif
   } else {
@@ -80,7 +93,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float bbox2
     const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
     if (BspVis[subidx>>3]&(1<<(subidx&7))) {
       // no, this check is wrong
-      /*if (Are2DBBoxesOverlap(bbox2d, Level->Subsectors[subidx].bbox2d))*/
+      /*if (Are3DAnd2DBBoxesOverlap(bbox, Level->Subsectors[subidx].bbox2d))*/
       {
         if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "***HIT VISIBLE SUBSECTOR #%u", subidx);
         return true;
@@ -107,11 +120,13 @@ bool VRenderLevelShared::CheckBSPVisibilityBox (const TVec &org, float radius, c
   }
 
   // create light bounding box
-  const float lbbox[4] = {
-    org.y+radius, /*maxy*/
-    org.y-radius, /*miny*/
-    org.x-radius, /*minx*/
-    org.x+radius, /*maxx*/
+  float lbbox[6] = {
+    org.x-radius,
+    org.y-radius,
+    0, // doesn't matter
+    org.x+radius,
+    org.y+radius,
+    0, // doesn't matter
   };
 
   #ifndef VAVOOM_USE_SIMPLE_BSP_BBOX_VIS_CHECK

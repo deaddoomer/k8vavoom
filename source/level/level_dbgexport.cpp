@@ -320,15 +320,19 @@ void VLevel::DebugSaveLevel (VStream &strm) {
     strm.writef("  plane_normal_z = %g;\n", node->normal.z);
     strm.writef("  plane_dist = %g;\n", node->dist);
     // child 0
-    strm.writef("  bbox_child0_min_x = %g;\n", node->bbox2d[0][BOX2D_MINX]);
-    strm.writef("  bbox_child0_min_y = %g;\n", node->bbox2d[0][BOX2D_MINY]);
-    strm.writef("  bbox_child0_max_x = %g;\n", node->bbox2d[0][BOX2D_MAXX]);
-    strm.writef("  bbox_child0_max_y = %g;\n", node->bbox2d[0][BOX2D_MAXY]);
+    strm.writef("  bbox_child0_min_x = %g;\n", node->bbox[0][0]);
+    strm.writef("  bbox_child0_min_y = %g;\n", node->bbox[0][1]);
+    strm.writef("  bbox_child0_min_z = %g;\n", node->bbox[0][2]);
+    strm.writef("  bbox_child0_max_x = %g;\n", node->bbox[0][3]);
+    strm.writef("  bbox_child0_max_y = %g;\n", node->bbox[0][4]);
+    strm.writef("  bbox_child0_max_z = %g;\n", node->bbox[0][5]);
     // child 1
-    strm.writef("  bbox_child1_min_x = %g;\n", node->bbox2d[1][BOX2D_MINX]);
-    strm.writef("  bbox_child1_min_y = %g;\n", node->bbox2d[1][BOX2D_MINY]);
-    strm.writef("  bbox_child1_max_x = %g;\n", node->bbox2d[1][BOX2D_MAXX]);
-    strm.writef("  bbox_child1_max_y = %g;\n", node->bbox2d[1][BOX2D_MAXY]);
+    strm.writef("  bbox_child1_min_x = %g;\n", node->bbox[1][0]);
+    strm.writef("  bbox_child1_min_y = %g;\n", node->bbox[1][1]);
+    strm.writef("  bbox_child1_min_z = %g;\n", node->bbox[1][2]);
+    strm.writef("  bbox_child1_max_x = %g;\n", node->bbox[1][3]);
+    strm.writef("  bbox_child1_max_y = %g;\n", node->bbox[1][4]);
+    strm.writef("  bbox_child1_max_z = %g;\n", node->bbox[1][5]);
     // children
     if (node->children[0]&NF_SUBSECTOR) {
       strm.writef("  subsector0 = %d;\n", node->children[0]&(~NF_SUBSECTOR));

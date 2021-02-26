@@ -148,7 +148,7 @@ protected:
   void CollectAdvLightPolyObj (subsector_t *sub, unsigned int ssflag);
   void CollectAdvLightSubRegion (subsector_t *sub, subregion_t *region, unsigned int ssflag);
   void CollectAdvLightSubsector (int num, unsigned int ssflag);
-  void CollectAdvLightBSPNode (int bspnum, const float bbox2d[4], unsigned int ssflag);
+  void CollectAdvLightBSPNode (int bspnum, const float *bbox, unsigned int ssflag);
 
   // collector entr point
   // `CurrLightPos` and `CurrLightRadius` should be set

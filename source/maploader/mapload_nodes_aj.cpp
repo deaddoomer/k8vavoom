@@ -524,15 +524,19 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
   }
 
   //TODO: check if i should convert AJBSP bounding boxes to floats
-  Node->bbox2d[0][BOX2D_MINX] = SrcNode->r.bounds.minx;
-  Node->bbox2d[0][BOX2D_MINY] = SrcNode->r.bounds.miny;
-  Node->bbox2d[0][BOX2D_MAXX] = SrcNode->r.bounds.maxx;
-  Node->bbox2d[0][BOX2D_MAXY] = SrcNode->r.bounds.maxy;
+  Node->bbox[0][0] = SrcNode->r.bounds.minx;
+  Node->bbox[0][1] = SrcNode->r.bounds.miny;
+  Node->bbox[0][2] = -32768.0f;
+  Node->bbox[0][3] = SrcNode->r.bounds.maxx;
+  Node->bbox[0][4] = SrcNode->r.bounds.maxy;
+  Node->bbox[0][5] = 32768.0f;
 
-  Node->bbox2d[1][BOX2D_MINX] = SrcNode->l.bounds.minx;
-  Node->bbox2d[1][BOX2D_MINY] = SrcNode->l.bounds.miny;
-  Node->bbox2d[1][BOX2D_MAXX] = SrcNode->l.bounds.maxx;
-  Node->bbox2d[1][BOX2D_MAXY] = SrcNode->l.bounds.maxy;
+  Node->bbox[1][0] = SrcNode->l.bounds.minx;
+  Node->bbox[1][1] = SrcNode->l.bounds.miny;
+  Node->bbox[1][2] = -32768.0f;
+  Node->bbox[1][3] = SrcNode->l.bounds.maxx;
+  Node->bbox[1][4] = SrcNode->l.bounds.maxy;
+  Node->bbox[1][5] = 32768.0f;
 
   if (SrcNode->ldefidx >= 0 && SrcNode->ldefidx < Level->NumLines) {
     Node->splitldef = &Level->Lines[SrcNode->ldefidx];

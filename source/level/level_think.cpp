@@ -344,6 +344,8 @@ void VLevel::TickDecals (float DeltaTime) {
 void VLevel::TickWorld (float DeltaTime) {
   if (DeltaTime <= 0.0f) return;
 
+  CheckAndRecalcWorldBBoxes();
+
   double stimet = 0;
 
   NextTime = Time+DeltaTime;
