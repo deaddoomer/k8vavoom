@@ -306,10 +306,10 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
   LitBBox[0] = TVec(+FLT_MAX, +FLT_MAX, +FLT_MAX);
   LitBBox[1] = TVec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-  float dummybbox[6] = { -99999, -99999, -99999, 99999, 99999, 99999 };
+  const float dummybbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
 
   // create light bounding box
-  float lightbbox[6] = {
+  const float lightbbox[6] = {
     org.x-radius,
     org.y-radius,
     0, // doesn't matter

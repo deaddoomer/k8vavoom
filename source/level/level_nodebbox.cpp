@@ -46,6 +46,7 @@ float VLevel::CalcSkyHeight () const {
       skyheight = Sectors[i].ceiling.maxz;
     }
   }
+  if (skyheight < -32768.0f) skyheight = -32768.0f;
   // make it a bit higher to avoid clipping of the sprites
   skyheight += 8*1024;
   return skyheight;
@@ -338,6 +339,7 @@ void VLevel::RecalcWorldBBoxes () {
     node.bbox[1][0+2] = -99999.0f;
     node.bbox[1][3+2] = +99999.0f;
   }
+  // special values
   float dummy_bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
   RecalcWorldNodeBBox(NumNodes-1, dummy_bbox, skyheight);
 }

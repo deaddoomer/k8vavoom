@@ -95,6 +95,7 @@ void VRenderLevelShared::SetupSky () {
     }
   }
   // make it a bit higher to avoid clipping of the sprites
+  if (skyheight < -32768.0f) skyheight = -32768.0f;
   skyheight += 8*1024;
   memset((void *)&sky_plane, 0, sizeof(sky_plane));
   sky_plane.Set(TVec(0, 0, -1), -skyheight);

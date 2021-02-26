@@ -124,8 +124,8 @@ struct texinfo_t {
   }
 
   inline void initLastUsed () noexcept {
-    saxis = taxis = saxisLM = taxisLM = TVec(-99999, -99999, -99999);
-    soffs = toffs = -99999;
+    saxis = taxis = saxisLM = taxisLM = TVec(-99999.0f, -99999.0f, -99999.0f);
+    soffs = toffs = -99999.0f;
     Tex = nullptr;
     noDecals = false;
     Alpha = -666;

@@ -243,8 +243,8 @@ bool VRenderLevelLightmap::CastStaticRay (float *dist, sector_t *srcsector, cons
 //
 //==========================================================================
 void VRenderLevelLightmap::CalcMinMaxs (LMapTraceInfo &lmi, const surface_t *surf) {
-  TVec smins(999999.0f, 999999.0f, 999999.0f);
-  TVec smaxs(-999999.0f, -999999.0f, -999999.0f);
+  TVec smins(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+  TVec smaxs(-FLT_MAX, -FLT_MAX, -FLT_MAX);
   const SurfVertex *v = &surf->verts[0];
   for (int i = surf->count; i--; ++v) {
     if (smins.x > v->x) smins.x = v->x;
@@ -254,6 +254,12 @@ void VRenderLevelLightmap::CalcMinMaxs (LMapTraceInfo &lmi, const surface_t *sur
     if (smaxs.y < v->y) smaxs.y = v->y;
     if (smaxs.z < v->z) smaxs.z = v->z;
   }
+  smins.x = clampval(smins.x, -32768.0f, 32768.0f);
+  smins.y = clampval(smins.y, -32768.0f, 32768.0f);
+  smins.z = clampval(smins.z, -32768.0f, 32768.0f);
+  smaxs.x = clampval(smaxs.x, -32768.0f, 32768.0f);
+  smaxs.y = clampval(smaxs.y, -32768.0f, 32768.0f);
+  smaxs.z = clampval(smaxs.z, -32768.0f, 32768.0f);
   lmi.smins = smins;
   lmi.smaxs = smaxs;
 }

@@ -116,8 +116,8 @@ static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, con
   // always zero-based (why?)
   //maxs -= mins;
   //mins = 0;
-  outmins = mins;
-  outmaxs = maxs;
+  outmins = clampval(mins, -32767.0f, 32767.0f);
+  outmaxs = clampval(maxs, -32767.0f, 32767.0f);
   return true;
 }
 
