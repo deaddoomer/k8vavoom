@@ -23,6 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// REMEMBER! 3d bounding boxes are used to perform frustum culling in renderer.
+// without this culling, looking almost vertically up or down will try to render
+// the whole 360 degrees (because beam clipper works this way).
+// DO NOT REMOVE THIS CODE!
+//**************************************************************************
 #include "../gamedefs.h"
 
 
