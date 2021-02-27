@@ -42,12 +42,19 @@
 
 
 static int cli_NoMouse = 0;
-static int cli_NoJoy = 0;
+static int cli_NoJoy = 1;
+static int cli_NoCotl = 1;
 
 /*static*/ bool cliRegister_input_args =
   VParsedArgs::RegisterFlagSet("-nomouse", "Disable mouse controls", &cli_NoMouse) &&
   VParsedArgs::RegisterFlagSet("-nojoystick", "Disable joysticks", &cli_NoJoy) &&
-  VParsedArgs::RegisterAlias("-nojoy", "-nojoystick");
+  VParsedArgs::RegisterFlagReset("-usejoystick", "Enable joysticks", &cli_NoJoy) &&
+  VParsedArgs::RegisterFlagSet("-nocontroller", "Disable controllers", &cli_NoCotl) &&
+  VParsedArgs::RegisterFlagReset("-usecontroller", "Enable controllers", &cli_NoCotl) &&
+  VParsedArgs::RegisterAlias("-nojoy", "-nojoystick") &&
+  VParsedArgs::RegisterAlias("-joy", "-usejoystick") &&
+  VParsedArgs::RegisterAlias("-noctrl", "-nocontroller") &&
+  VParsedArgs::RegisterAlias("-ctrl", "-usecontroller");
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -818,8 +825,8 @@ void VSdlInputDevice::LoadControllerMappings (VStream *st) {
 void VSdlInputDevice::StartupJoystick () {
   ShutdownJoystick();
 
-  if (cli_NoJoy) {
-    GCon->Log(NAME_Init, "SDL: skipping joystick initialisation due to user request");
+  if (cli_NoJoy && cli_NoCotl) {
+    //GCon->Log(NAME_Init, "SDL: skipping joystick/controller initialisation due to user request");
     return;
   }
 
@@ -850,14 +857,14 @@ void VSdlInputDevice::StartupJoystick () {
 
 
   if (SDL_InitSubSystem(VSDL_JINIT) < 0) {
-    GCon->Log(NAME_Init, "SDL: joystick initialisation failed");
+    GCon->Log(NAME_Init, "SDL: joystick/controller initialisation failed");
     return;
   }
   joystick_started = true;
 
   int joycount = SDL_NumJoysticks();
   if (joycount < 0) {
-    GCon->Log(NAME_Init, "SDL: joystick initialisation failed (cannot get number of joysticks)");
+    GCon->Log(NAME_Init, "SDL: joystick/controller initialisation failed (cannot get number of joysticks)");
   }
 
   if (joycount == 0) {
@@ -868,6 +875,11 @@ void VSdlInputDevice::StartupJoystick () {
   GCon->Logf(NAME_Init, "SDL: %d joystick%s found", joycount, (joycount == 1 ? "" : "s"));
 
   if (SDL_IsGameController(joynum)) {
+    if (cli_NoCotl) {
+      GCon->Log(NAME_Init, "SDL: skipping controller initialisation due to user request");
+      ShutdownJoystick();
+      return;
+    }
     joystick_controller = true;
     joy_num_buttons = 0;
     controller = SDL_GameControllerOpen(joynum);
@@ -879,6 +891,11 @@ void VSdlInputDevice::StartupJoystick () {
     SDL_JoystickEventState(SDL_IGNORE);
     SDL_GameControllerEventState(SDL_ENABLE);
   } else {
+    if (cli_NoJoy) {
+      GCon->Log(NAME_Init, "SDL: skipping joystick initialisation due to user request");
+      ShutdownJoystick();
+      return;
+    }
     joystick = SDL_JoystickOpen(joynum);
     if (!joystick) {
       GCon->Logf(NAME_Init, "SDL: cannot initialise joystick #%d", joynum);
