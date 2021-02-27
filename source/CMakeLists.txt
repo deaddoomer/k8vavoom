@@ -149,6 +149,7 @@ set(RENDERBASE_SOURCES
   render/r_surf_mgmt.cpp
   render/r_surf_common.cpp
   render/r_surf_update.cpp
+  render/r_surf_update_fake.cpp
   render/r_surf_flat.cpp
   render/r_surf_1sided.cpp
   render/r_surf_2sided.cpp
