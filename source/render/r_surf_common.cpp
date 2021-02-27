@@ -33,346 +33,13 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB r_hack_transparent_doors("r_hack_transparent_doors", true, "Transparent doors hack.", CVAR_Archive);
-static VCvarB r_hack_zero_sky("r_hack_zero_sky", true, "ZeroSky hack (Doom II MAP01 extra floor fix).", CVAR_Archive);
-
 static VCvarB r_3dfloor_clip_both_sides("r_3dfloor_clip_both_sides", false, "Clip 3d floors with both sectors?", CVAR_Archive);
-
 static VCvarB r_hack_fake_floor_decorations("r_hack_fake_floor_decorations", true, "Fake floor/ceiling decoration fix.", /*CVAR_Archive|*/CVAR_PreInit);
-
 
 VCvarB r_fix_tjunctions("r_fix_tjunctions", true, "Fix t-junctions to avoid occasional white dots?", CVAR_Archive);
 VCvarB dbg_fix_tjunctions("dbg_fix_tjunctions", false, "Show debug messages from t-junctions fixer?", CVAR_PreInit);
 VCvarB warn_fix_tjunctions("warn_fix_tjunctions", false, "Show t-junction fixer warnings?", CVAR_Archive);
 
-
-//**************************************************************************
-//
-//  Scaling
-//
-//**************************************************************************
-static inline __attribute__((const)) float TextureSScale (const VTexture *pic) noexcept { return pic->SScale; }
-static inline __attribute__((const)) float TextureTScale (const VTexture *pic) noexcept { return pic->TScale; }
-static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->SScale : 1.0f); }
-static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->TScale : 1.0f); }
-
-
-//**************************************************************************
-//**
-//**  Sector surfaces
-//**
-//**************************************************************************
-
-//==========================================================================
-//
-//  VRenderLevelShared::SetupSky
-//
-//==========================================================================
-void VRenderLevelShared::SetupSky () {
-  skyheight = -99999.0f;
-  for (auto &&sec : Level->allSectors()) {
-    if (sec.ceiling.pic == skyflatnum && sec.ceiling.maxz > skyheight) {
-      skyheight = sec.ceiling.maxz;
-    }
-  }
-  // make it a bit higher to avoid clipping of the sprites
-  if (skyheight < -32768.0f) skyheight = -32768.0f;
-  skyheight += 8*1024;
-  memset((void *)&sky_plane, 0, sizeof(sky_plane));
-  sky_plane.Set(TVec(0, 0, -1), -skyheight);
-  sky_plane.pic = skyflatnum;
-  sky_plane.Alpha = 1.1f;
-  sky_plane.LightSourceSector = -1;
-  sky_plane.MirrorAlpha = 1.0f;
-  sky_plane.XScale = 1.0f;
-  sky_plane.YScale = 1.0f;
-}
-
-
-//==========================================================================
-//
-//  IsZeroSkyFloorHack
-//
-//==========================================================================
-static inline bool IsZeroSkyFloorHack (const subsector_t *sub, const sec_region_t *reg) {
-  // if current sector has zero height, and its ceiling is sky, and its floor is not sky, skip floor creation
-  return
-    (reg->regflags&sec_region_t::RF_BaseRegion) &&
-    reg->eceiling.splane->pic == skyflatnum &&
-    reg->efloor.splane->pic != skyflatnum &&
-    sub->sector->floor.normal.z == 1.0f && sub->sector->ceiling.normal.z == -1.0f &&
-    sub->sector->floor.minz == sub->sector->ceiling.minz;
-}
-
-
-//==========================================================================
-//
-//  SurfRecalcFlatOffset
-//
-//  returns `true` if any offset was changed
-//
-//==========================================================================
-static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef &spl, VTexture *Tex) {
-  const float newsoffs = spl.splane->xoffs*(TextureSScale(Tex)*spl.splane->XScale);
-  const float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(TextureTScale(Tex)*spl.splane->YScale);
-  /*
-  const bool offsChanged = (FASI(surf->texinfo.soffs) != FASI(newsoffs) ||
-                           FASI(surf->texinfo.toffs) != FASI(newtoffs));
-  */
-  surf->texinfo.soffs = newsoffs;
-  surf->texinfo.toffs = newtoffs;
-  //return offsChanged;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::CreateSecSurface
-//
-//  this is used to create floor and ceiling surfaces
-//
-//  `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
-//
-//==========================================================================
-sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subsector_t *sub, TSecPlaneRef InSplane, subregion_t *sreg, bool fake) {
-  int vcount = sub->numlines;
-
-  if (vcount < 3) {
-    GCon->Logf(NAME_Warning, "CreateSecSurface: subsector #%d of sector #%d has only #%d vertices", (int)(ptrdiff_t)(sub-Level->Subsectors), (sub->sector ? (int)(ptrdiff_t)(sub->sector-Level->Sectors) : -1), vcount);
-    if (vcount < 1) Sys_Error("ONE VERTEX. WTF?!");
-    if (ssurf) return ssurf;
-  }
-  //vassert(vcount >= 3);
-
-  // if current sector has zero height, and its ceiling is sky, and its floor is not sky, skip floor creation
-  // this is what removes extra floors on Doom II MAP01, for example
-  if (!fake && r_hack_zero_sky && IsZeroSkyFloorHack(sub, sreg->secregion)) {
-    sreg->flags |= subregion_t::SRF_ZEROSKY_FLOOR_HACK;
-    // we still need to create this floor, because it may be reactivated later
-  } else {
-    sreg->flags &= ~subregion_t::SRF_ZEROSKY_FLOOR_HACK;
-  }
-
-  // if we're simply changing sky, and already have surface created, do not recreate it, it is pointless
-  bool isSkyFlat = (InSplane.splane->pic == skyflatnum);
-  bool recreateSurface = true;
-  bool updateZ = false;
-
-  //if (R_IsStackedSectorPlane(InSplane.splane)) isSkyFlat = true;
-
-  // fix plane
-  TSecPlaneRef spl(InSplane);
-  if (isSkyFlat && spl.GetNormalZ() < 0.0f) spl.set(&sky_plane, false);
-
-  surface_t *surf = nullptr;
-  if (!ssurf) {
-    // new sector surface
-    ssurf = new sec_surface_t;
-    memset((void *)ssurf, 0, sizeof(sec_surface_t));
-    surf = NewWSurf(vcount);
-  } else {
-    // change sector surface
-    // we still may have to recreate it if it was a "sky <-> non-sky" change, so check for it
-    recreateSurface = !isSkyFlat || ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat);
-    if (recreateSurface) {
-      //GCon->Logf("***  RECREATING!");
-      surf = ReallocSurface(ssurf->surfs, vcount);
-    } else {
-      updateZ = (FASI(ssurf->edist) != FASI(spl.splane->dist));
-      surf = ssurf->surfs;
-    }
-    ssurf->surfs = nullptr; // just in case
-  }
-
-  vuint32 typeFlags = (spl.GetNormalZ() > 0.0f ? surface_t::TF_FLOOR : surface_t::TF_CEILING);
-
-  // this is required to calculate static lightmaps, and for other business
-  for (surface_t *ss = surf; ss; ss = ss->next) {
-    ss->subsector = sub;
-    ss->typeFlags = typeFlags;
-  }
-
-  ssurf->esecplane = spl;
-  ssurf->edist = spl.splane->dist;
-
-  // setup texture
-  VTexture *Tex = GTextureManager(spl.splane->pic);
-  if (!Tex) Tex = GTextureManager[GTextureManager.DefaultTexture];
-  if (fabsf(spl.splane->normal.z) > 0.1f) {
-    float s, c;
-    msincos(spl.splane->BaseAngle-spl.splane->Angle, &s, &c);
-    ssurf->texinfo.saxisLM = TVec(c,  s, 0);
-    ssurf->texinfo.saxis = TVec(c,  s, 0)*(TextureSScale(Tex)*spl.splane->XScale);
-    ssurf->texinfo.taxisLM = TVec(s, -c, 0);
-    ssurf->texinfo.taxis = TVec(s, -c, 0)*(TextureTScale(Tex)*spl.splane->YScale);
-  } else {
-    ssurf->texinfo.taxisLM = TVec(0, 0, -1);
-    ssurf->texinfo.taxis = TVec(0, 0, -1)*(TextureTScale(Tex)*spl.splane->YScale);
-    ssurf->texinfo.saxisLM = Normalise(CrossProduct(spl.GetNormal(), ssurf->texinfo.taxisLM));
-    ssurf->texinfo.saxis = Normalise(CrossProduct(spl.GetNormal(), ssurf->texinfo.taxis))*(TextureSScale(Tex)*spl.splane->XScale);
-  }
-
-  /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, spl, Tex);
-
-  ssurf->texinfo.Tex = Tex;
-  ssurf->texinfo.noDecals = (Tex ? Tex->noDecals : true);
-  ssurf->texinfo.Alpha = (spl.splane->Alpha < 1.0f ? spl.splane->Alpha : 1.1f);
-  ssurf->texinfo.Additive = !!(spl.splane->flags&SPF_ADDITIVE);
-  ssurf->texinfo.ColorMap = 0;
-  ssurf->XScale = spl.splane->XScale;
-  ssurf->YScale = spl.splane->YScale;
-  ssurf->Angle = spl.splane->BaseAngle-spl.splane->Angle;
-
-  TPlane plane = *(TPlane *)spl.splane;
-  if (spl.flipped) plane.flipInPlace();
-
-  if (recreateSurface) {
-    surf->plane = plane;
-    surf->count = vcount;
-    const seg_t *seg = &Level->Segs[sub->firstline];
-    SurfVertex *dptr = surf->verts;
-    if (spl.GetNormalZ() < 0.0f) {
-      // backward
-      for (seg += (vcount-1); vcount--; ++dptr, --seg) {
-        const TVec &v = *seg->v1;
-        dptr->setVec(v.x, v.y, spl.GetPointZ(v.x, v.y));
-      }
-    } else {
-      // forward
-      for (; vcount--; ++dptr, ++seg) {
-        const TVec &v = *seg->v1;
-        dptr->setVec(v.x, v.y, spl.GetPointZ(v.x, v.y));
-      }
-    }
-
-    if (isSkyFlat) {
-      // don't subdivide sky, as it cannot have lightmap
-      ssurf->surfs = surf;
-      surf->texinfo = &ssurf->texinfo;
-    } else {
-      //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
-      ssurf->surfs = FixFaceTJunctions(SubdivideFace(surf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM));
-      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
-    }
-  } else if (updateZ) {
-    // update z coords
-    bool changed = false;
-    for (; surf; surf = surf->next) {
-      SurfVertex *svert = surf->verts;
-      for (int i = surf->count; i--; ++svert) {
-        const float oldZ = svert->z;
-        svert->z = spl.GetPointZ(svert->x, svert->y);
-        if (!changed && FASI(oldZ) != FASI(svert->z)) changed = true;
-      }
-      if (changed) InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
-    }
-  }
-  /*k8: no, lightmap doesn't depend of texture axes anymore
-  else if (offsChanged) {
-    // still have to force it, because texture is scrolled, and lightmap s/t are invalid
-    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub);
-  }
-  */
-
-  return ssurf;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::UpdateSecSurface
-//
-//  this is used to update floor and ceiling surfaces
-//
-//==========================================================================
-void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef RealPlane, subsector_t *sub, subregion_t *sreg, bool ignoreColorMap, bool fake) {
-  if (!ssurf->esecplane.splane->pic) return; // no texture? nothing to do
-
-  TSecPlaneRef splane(ssurf->esecplane);
-
-  if (splane.splane != RealPlane.splane) {
-    // check for sky changes
-    if ((splane.splane->pic == skyflatnum) != (RealPlane.splane->pic == skyflatnum)) {
-      // sky <-> non-sky, simply recreate it
-      sec_surface_t *newsurf = CreateSecSurface(ssurf, sub, RealPlane, sreg, fake);
-      vassert(newsurf == ssurf); // sanity check
-      ssurf->texinfo.ColorMap = ColorMap; // just in case
-      // nothing more to do
-      return;
-    }
-    // substitute real plane with sky plane if necessary
-    if (RealPlane.splane->pic == skyflatnum && RealPlane.GetNormalZ() < 0.0f) {
-      if (splane.splane != &sky_plane) {
-        // recreate it, just in case
-        sec_surface_t *newsurf = CreateSecSurface(ssurf, sub, RealPlane, sreg, fake);
-        vassert(newsurf == ssurf); // sanity check
-        ssurf->texinfo.ColorMap = ColorMap; // just in case
-        // nothing more to do
-        return;
-      }
-      splane.set(&sky_plane, false);
-    }
-  }
-
-  enum { USS_Normal, USS_Force, USS_IgnoreCMap, USS_ForceIgnoreCMap };
-
-  // if scale/angle was changed, we should update everything, and possibly rebuild the surface
-  // our general surface creation function will take care of everything
-  if (FASI(ssurf->XScale) != FASI(splane.splane->XScale) ||
-      FASI(ssurf->YScale) != FASI(splane.splane->YScale) ||
-      ssurf->Angle != splane.splane->BaseAngle-splane.splane->Angle)
-  {
-    // this will update texture, offsets, and everything
-    /*
-    GCon->Logf("*** SSF RECREATION! xscale=(%g:%g), yscale=(%g,%g); angle=(%g,%g)",
-      ssurf->XScale, splane.splane->XScale,
-      ssurf->YScale, splane.splane->YScale,
-      ssurf->Angle, splane.splane->BaseAngle-splane.splane->Angle);
-    */
-    sec_surface_t *newsurf = CreateSecSurface(ssurf, sub, RealPlane, sreg, fake);
-    vassert(newsurf == ssurf); // sanity check
-    ssurf->texinfo.ColorMap = (!ignoreColorMap ? ColorMap : 0); // just in case
-    // nothing more to do
-    return;
-  }
-
-  if (!ignoreColorMap) ssurf->texinfo.ColorMap = ColorMap; // just in case
-  // ok, we still may need to update texture or z coords
-  // update texture?
-  VTexture *Tex = GTextureManager(splane.splane->pic);
-  if (!Tex) Tex = GTextureManager[GTextureManager.DefaultTexture];
-  /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, splane, Tex);
-  ssurf->texinfo.Tex = Tex;
-  ssurf->texinfo.noDecals = Tex->noDecals;
-
-  // update z coords?
-  if (FASI(ssurf->edist) != FASI(splane.splane->dist)) {
-    TPlane plane = *(TPlane *)splane.splane;
-    if (splane.flipped) plane.flipInPlace();
-    bool changed = false;
-    ssurf->edist = splane.splane->dist;
-    for (surface_t *surf = ssurf->surfs; surf; surf = surf->next) {
-      surf->plane = plane;
-      SurfVertex *svert = surf->verts;
-      for (int i = surf->count; i--; ++svert) {
-        const float oldZ = svert->z;
-        svert->z = splane.GetPointZ(svert->x, svert->y);
-        if (!changed && FASI(oldZ) != FASI(svert->z)) changed = true;
-      }
-    }
-    // force lightmap recalculation
-    if (changed || splane.splane->pic != skyflatnum) {
-      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
-    }
-  }
-  /*k8: no, lightmap doesn't depend of texture axes anymore
-  else if (offsChanged && splane.splane->pic != skyflatnum) {
-    // still have to force it, because texture is scrolled, and lightmap s/t are invalid
-    TPlane plane = *(TPlane *)splane.splane;
-    if (splane.flipped) plane.flipInPlace();
-    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub);
-  }
-  */
-}
 
 
 //**************************************************************************
@@ -500,13 +167,13 @@ static inline void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VText
   texinfo->ColorMap = 0;
 
   texinfo->saxisLM = seg->dir;
-  texinfo->saxis = seg->dir*(TextureSScale(tex)*tparam->ScaleX);
+  texinfo->saxis = seg->dir*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX);
   texinfo->taxisLM = TVec(0, 0, -1);
-  texinfo->taxis = TVec(0, 0, -1)*(TextureTScale(tex)*tparam->ScaleY);
+  texinfo->taxis = TVec(0, 0, -1)*(VRenderLevelShared::TextureTScale(tex)*tparam->ScaleY);
 
   texinfo->soffs = -DotProduct(*seg->v1, texinfo->saxis)+
-                   seg->offset*(TextureSScale(tex)*tparam->ScaleX)+
-                   tparam->TextureOffset*TextureOffsetSScale(tex);
+                   seg->offset*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX)+
+                   tparam->TextureOffset*VRenderLevelShared::TextureOffsetSScale(tex);
   texinfo->toffs = 0.0f;
   // toffs is not calculated here, as its calculation depends of texture position and pegging
 }
@@ -537,13 +204,13 @@ static inline void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTe
   #endif
 
   texinfo->saxisLM = seg->dir;
-  texinfo->saxis = seg->dir*(TextureSScale(tex)*tparam->ScaleX*scale2X);
+  texinfo->saxis = seg->dir*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX*scale2X);
   texinfo->taxisLM = TVec(0, 0, -1);
-  texinfo->taxis = TVec(0, 0, -1)*(TextureTScale(tex)*tparam->ScaleY*scale2Y);
+  texinfo->taxis = TVec(0, 0, -1)*(VRenderLevelShared::TextureTScale(tex)*tparam->ScaleY*scale2Y);
 
   texinfo->soffs = -DotProduct(*seg->v1, texinfo->saxis)+
-                   seg->offset*(TextureSScale(tex)*tparam->ScaleX*scale2X)+
-                   (tparam->TextureOffset+tparam2->TextureOffset)*TextureOffsetSScale(tex);
+                   seg->offset*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX*scale2X)+
+                   (tparam->TextureOffset+tparam2->TextureOffset)*VRenderLevelShared::TextureOffsetSScale(tex);
 
   texinfo->toffs = 0.0f;
   // toffs is not calculated here, as its calculation depends of texture position and pegging
@@ -1185,14 +852,14 @@ static VVA_OKUNUSED void DumpOpening (const opening_t *op) {
 static inline void FixMidTextureOffsetAndOrigin (float &z_org, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam, bool forceWrapped=false) {
   if (forceWrapped || ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX))) {
     // it is wrapped, so just slide it
-    texinfo->toffs = tparam->RowOffset*TextureOffsetTScale(MTex);
+    texinfo->toffs = tparam->RowOffset*VRenderLevelShared::TextureOffsetTScale(MTex);
   } else {
     // move origin up/down, as this texture is not wrapped
-    z_org += tparam->RowOffset*DivByScale(TextureOffsetTScale(MTex), tparam->ScaleY);
+    z_org += tparam->RowOffset*DivByScale(VRenderLevelShared::TextureOffsetTScale(MTex), tparam->ScaleY);
     // offset is done by origin, so we don't need to offset texture
     texinfo->toffs = 0.0f;
   }
-  texinfo->toffs += z_org*(TextureTScale(MTex)*tparam->ScaleY);
+  texinfo->toffs += z_org*(VRenderLevelShared::TextureTScale(MTex)*tparam->ScaleY);
 }
 
 
@@ -1209,8 +876,8 @@ static inline void FixMidTextureOffsetAndOriginEx (float &z_org, const line_t *l
   const float scale2Y = 1.0f;
   #endif
   // it is always wrapped, so just slide it
-  texinfo->toffs = (tparam->RowOffset+tparam2->RowOffset)*TextureOffsetTScale(MTex);
-  texinfo->toffs += z_org*(TextureTScale(MTex)*tparam->ScaleY*scale2Y);
+  texinfo->toffs = (tparam->RowOffset+tparam2->RowOffset)*VRenderLevelShared::TextureOffsetTScale(MTex);
+  texinfo->toffs += z_org*(VRenderLevelShared::TextureTScale(MTex)*tparam->ScaleY*scale2Y);
 }
 
 

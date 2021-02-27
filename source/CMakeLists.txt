@@ -148,6 +148,7 @@ set(RENDERBASE_SOURCES
   render/r_sky.cpp
   render/r_surf_mgmt.cpp
   render/r_surf_common.cpp
+  render/r_surf_flat.cpp
   render/r_surf_adv.cpp
   render/r_surf_reg.cpp
   render/r_maskqueue.cpp
