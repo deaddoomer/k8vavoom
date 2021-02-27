@@ -146,7 +146,8 @@ set(RENDERBASE_SOURCES
   render/r_particle.cpp
   render/r_portal.cpp
   render/r_sky.cpp
-  render/r_surf.cpp
+  render/r_surf_mgmt.cpp
+  render/r_surf_common.cpp
   render/r_surf_adv.cpp
   render/r_surf_reg.cpp
   render/r_maskqueue.cpp

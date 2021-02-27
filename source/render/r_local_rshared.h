@@ -596,8 +596,6 @@ protected:
   void RenderBspWorld (const refdef_t *, const VViewClipper *);
   void RenderPortals ();
 
-  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec wv[4], vuint32 typeFlags, bool doOffset=false);
-
   void SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
   void SetupOneSidedSkyWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
   void SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
@@ -609,7 +607,9 @@ protected:
 
   // surf methods
   void SetupSky ();
-  void FlushSurfCaches (surface_t *InSurfs);
+
+  void FlushSurfCaches (surface_t *InSurfs) noexcept;
+
   // `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
   // this is used both to create initial surfaces, and to update changed surfaces
   sec_surface_t *CreateSecSurface (sec_surface_t *ssurf, subsector_t *sub, TSecPlaneRef InSplane, subregion_t *sreg, bool fake=false);
@@ -618,15 +618,23 @@ protected:
   void UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef RealPlane, subsector_t *sub, subregion_t *sreg, bool ignoreColorMap=false, bool fake=false);
 
   // call this ONLY when vcount is known and won't be increased later! use `FreeWSurfs()` to free this surface
-  surface_t *NewWSurf (int vcount);
+  surface_t *NewWSurf (int vcount) noexcept;
   // frees *the* *whole* *surface* *chain*!
-  void FreeWSurfs (surface_t *&);
+  void FreeWSurfs (surface_t *&InSurfs) noexcept;
+  surface_t *ReallocSurface (surface_t *surfs, int vcount) noexcept;
 
   // can be called to recreate all world surfaces
   // call only after world surfaces were created for the first time!
-  void InvaldateAllSegParts ();
+  void InvaldateAllSegParts () noexcept;
 
-  surface_t *CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags);
+  static void InvalidateSegPart (segpart_t *sp) noexcept;
+  static void InvalidateWholeSeg (seg_t *seg) noexcept;
+
+  void MarkTJunctions (seg_t *seg) noexcept;
+
+  surface_t *CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept;
+  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec wv[4], vuint32 typeFlags, bool doOffset=false) noexcept;
+
   int CountSegParts (const seg_t *);
   void CreateSegParts (subsector_t *r_surf_sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg, bool isMainRegion);
   void CreateWorldSurfaces ();
@@ -634,10 +642,10 @@ protected:
   void UpdateFakeFlats (sector_t *);
   void UpdateDeepWater (sector_t *);
   void UpdateFloodBug (sector_t *sec);
+
   // free all surfaces except the first one, clear first, set number of vertices to vcount
-  surface_t *ReallocSurface (surface_t *surfs, int vcount);
-  void FreeSurfaces (surface_t *);
-  void FreeSegParts (segpart_t *);
+  void FreeSurfaces (surface_t *) noexcept;
+  void FreeSegParts (segpart_t *) noexcept;
 
   // models
   bool DrawAliasModel (VEntity *mobj, const TVec &Org, const TAVec &Angles,
