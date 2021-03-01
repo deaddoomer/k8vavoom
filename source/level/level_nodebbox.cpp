@@ -88,19 +88,18 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
     sector_t *const *nbslist = sector->nbsecs;
     for (int nbc = sector->nbseccount; nbc--; ++nbslist) {
       const sector_t *bsec = *nbslist;
-      /*
-      // self-referencing deepwater is usually deeper than the surrounding sector
-      if (bsec == sector) {
-        //FIXME: this is deepwater, make in infinitely high
-        minz = -32767.0f;
-        maxz = 32767.0f;
-        break;
+      if (!bsec->linecount) continue; // pobj sectors should not come here, but just in case...
+      float zmin, zmax;
+      if (bsec->floor.minz < bsec->ceiling.maxz) {
+        zmin = bsec->floor.minz;
+        zmax = bsec->ceiling.maxz;
+      } else {
+        zmin = bsec->ceiling.maxz;
+        zmax = bsec->floor.minz;
       }
-      */
-      float zmin = min2(bsec->floor.minz, bsec->ceiling.maxz);
-      float zmax = max2(bsec->floor.minz, bsec->ceiling.maxz);
       const sector_t *bhs = bsec->heightsec;
       if (bhs && !(bhs->SectorFlags&sector_t::SF_IgnoreHeightSec)) {
+        // rare case, allow more comparisons
         zmin = min2(zmin, min2(bhs->floor.minz, bhs->ceiling.maxz));
         zmax = max2(zmax, max2(bhs->floor.minz, bhs->ceiling.maxz));
       }
@@ -108,10 +107,12 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
       maxz = max2(maxz, zmax);
     }
   } else {
+    // pobj sector; it won't be directly rendered anyway
     minz = -32768.0f;
     maxz = +32767.0f;
   }
 
+  vassert(minz <= maxz);
   sector->LastMinZ = minz;
   sector->LastMaxZ = maxz;
 
@@ -161,10 +162,10 @@ void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
   bbox[3+1] = sub->bbox2d[BOX2D_TOP];
 
   sector_t *sector = sub->sector;
-  UpdateSectorHeightCache(sector);
+  if (sector->ZExtentsCacheId != validcountSZCache) UpdateSectorHeightCache(sector);
   bbox[0+2] = sector->LastMinZ;
   bbox[3+2] = sector->LastMaxZ;
-  //FixBBoxZ(bbox);
+  //FixBBoxZ(bbox); // no need to do this, minz/maxz *MUST* be correct here
 }
 
 
@@ -176,24 +177,27 @@ void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
 void VLevel::CalcSecMinMaxs (sector_t *sector) {
   if (!sector) return; // k8: just in case
 
+  enum {
+    SlopedFloor   = 1u<<0,
+    SlopedCeiling = 1u<<1,
+  };
+
   unsigned slopedFC = 0;
 
   if (sector->floor.normal.z == 1.0f || sector->linecount == 0) {
     // horizontal floor
-    sector->floor.minz = sector->floor.dist;
-    sector->floor.maxz = sector->floor.dist;
+    sector->floor.minz = sector->floor.maxz = sector->floor.dist;
   } else {
     // sloped floor
-    slopedFC |= 1;
+    slopedFC |= SlopedFloor;
   }
 
   if (sector->ceiling.normal.z == -1.0f || sector->linecount == 0) {
     // horisontal ceiling
-    sector->ceiling.minz = -sector->ceiling.dist;
-    sector->ceiling.maxz = -sector->ceiling.dist;
+    sector->ceiling.minz = sector->ceiling.maxz = -sector->ceiling.dist;
   } else {
     // sloped ceiling
-    slopedFC |= 2;
+    slopedFC |= SlopedCeiling;
   }
 
   // calculate extents for sloped flats
@@ -205,7 +209,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
     line_t **llist = sector->lines;
     for (int cnt = sector->linecount; cnt--; ++llist) {
       line_t *ld = *llist;
-      if (slopedFC&1) {
+      if (slopedFC&SlopedFloor) {
         float z = sector->floor.GetPointZ(*ld->v1);
         minzf = min2(minzf, z);
         maxzf = max2(maxzf, z);
@@ -213,7 +217,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
         minzf = min2(minzf, z);
         maxzf = max2(maxzf, z);
       }
-      if (slopedFC&2) {
+      if (slopedFC&SlopedCeiling) {
         float z = sector->ceiling.GetPointZ(*ld->v1);
         minzc = min2(minzc, z);
         maxzc = max2(maxzc, z);
@@ -222,11 +226,13 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
         maxzc = max2(maxzc, z);
       }
     }
-    if (slopedFC&1) {
+    if (slopedFC&SlopedFloor) {
+      if (minzf > maxzf) { const float tmp = minzf; minzf = maxzf; maxzf = tmp; } // just in case
       sector->floor.minz = minzf;
       sector->floor.maxz = maxzf;
     }
-    if (slopedFC&2) {
+    if (slopedFC&SlopedCeiling) {
+      if (minzc > maxzc) { const float tmp = minzc; minzc = maxzc; maxzc = tmp; } // just in case
       sector->ceiling.minz = minzc;
       sector->ceiling.maxz = maxzc;
     }
