@@ -2202,16 +2202,19 @@ override void ClientTick (float DeltaTime) {
         r = Random()*8.0;
         alt = true;
       }
-      LineSpecialLevelInfo(Level).ParticleEffect(int(DeltaTime*256.0), alt ? LineSpecialLevelInfo::pt_explode : LineSpecialLevelInfo::pt_static, 0, Origin,
-          0.0, vector(16.0, 16.0, 64.0), 0.5, 2.5, 0.0, alt ? RGB(255, 140, 0) : RGB(c, c, c), 0.5, r);
+      LineSpecialLevelInfo(Level).ParticleEffect(int(DeltaTime*256.0),
+        (alt ? LineSpecialLevelInfo::pt_explode : LineSpecialLevelInfo::pt_static), 0,
+        Origin+vector(0.0, 0.0, fmax(0.0, Height)/2.0), 0.0, vector(16.0, 16.0, 64.0), 0.5, 2.5, 0.0,
+        (alt ? RGB(255, 140, 0) : RGB(c, c, c)), 0.5, r);
     }
 
     if (bLeaveTrail2) {
       int c = P_Random()>>1;
       LineSpecialLevelInfo(Level).ParticleEffect(6,
-          LineSpecialLevelInfo::pt_static, 0, vector(Origin.x-(cos(Angles.yaw)*Radius*2.0),
-          Origin.y-(sin(Angles.yaw)*Radius*2.0),
-          Origin.z-(float(int(Height)>>3*int(Velocity.z)>>16)+2.0*Height/3.0)),
+          LineSpecialLevelInfo::pt_static, 0,
+          vector(Origin.x-(cos(Angles.yaw)*Radius*2.0),
+                 Origin.y-(sin(Angles.yaw)*Radius*2.0),
+                 Origin.z-(float(int(Height)>>3*int(Velocity.z)>>16)+2.0*Height/3.0)),
           0.0, vector(32.0, 32.0, 32.0), 0.5, 10.0, 40.0, RGB(c, c, c), 0.6, 0.0);
     }
   }
