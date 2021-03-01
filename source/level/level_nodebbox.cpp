@@ -32,6 +32,7 @@
 
 
 static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", true, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive);
+static VCvarF r_bsp_bbox_sky_addheight("r_bsp_bbox_sky_addheight", "0.0", "Add this to sky sector height if 'sky maxheigh' is off (DEBUG).", CVAR_Archive);
 static int lastSkyHeightFlag = -1; // unknown yet
 
 
@@ -251,7 +252,7 @@ void VLevel::UpdateSubsectorBBox (int num, float bbox[6], const float skyheight)
   FixBBoxZ(ssbbox);
   ssbbox[BOX3D_MINZ] = min2(ssbbox[BOX3D_MINZ], sub->sector->floor.minz);
   if (R_IsAnySkyFlatPlane(&sub->sector->ceiling)) {
-    ssbbox[BOX3D_MAXZ] = max2(ssbbox[BOX3D_MAXZ], (lastSkyHeightFlag ? skyheight : sub->sector->ceiling.maxz+128.0f));
+    ssbbox[BOX3D_MAXZ] = max2(ssbbox[BOX3D_MAXZ], (lastSkyHeightFlag ? skyheight : sub->sector->ceiling.maxz+r_bsp_bbox_sky_addheight.asFloat()));
   } else {
     ssbbox[BOX3D_MAXZ] = max2(ssbbox[BOX3D_MAXZ], sub->sector->ceiling.maxz);
   }
