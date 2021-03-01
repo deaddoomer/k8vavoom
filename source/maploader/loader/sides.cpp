@@ -26,9 +26,6 @@
 #include "../../gamedefs.h"
 
 
-static VCvarB loader_force_fix_2s("loader_force_fix_2s", false, "Force-fix invalid two-sided flags? (non-persistent)", CVAR_PreInit/*|CVAR_Archive*/);
-
-
 //==========================================================================
 //
 //  VLevel::CreateSides
@@ -43,51 +40,57 @@ void VLevel::CreateSides () {
   for (int i = 0; i < NumLines; ++i, ++Line) {
     if (Line->sidenum[0] < 0) Line->sidenum[0] = -1; // just in case
     if (Line->sidenum[1] < 0) Line->sidenum[1] = -1; // just in case
+
     if (Line->sidenum[0] == -1) {
       if (Line->sidenum[1] == -1) {
         // UDMF control line
-        GCon->Logf(NAME_Debug, "Line %d is sideless control line", i);
+        GCon->Logf(NAME_Debug, "Line #%d is sideless control line", i);
         Line->flags &= ~ML_TWOSIDED; // just in case
         continue;
       }
-      GCon->Logf(NAME_Error, "Line %d has no front side", i);
-      //++dummySideCount;
-    } else {
-      if (Line->sidenum[0] < 0 || Line->sidenum[0] >= NumSides) {
-        //Host_Error("Bad sidedef index %d", Line->sidenum[0]);
-        GCon->Logf(NAME_Error, "Bad sidedef index %d for linedef #%d", Line->sidenum[0], i);
-        Line->sidenum[0] = -1;
-        ++dummySideCount;
+      //k8: dunno what to do here; use second side?
+      if ((Line->flags&ML_TWOSIDED) == 0) {
+        GCon->Logf(NAME_Error, "One-sided line #%d has no front side, using back side instead", i);
+        Line->sidenum[0] = Line->sidenum[1];
+        Line->sidenum[1] = -1;
+        ++NumNewSides;
       } else {
+        GCon->Logf(NAME_Error, "Two-sided line #%d has no front side, using back side for both", i);
+        //++dummySideCount;
+        Line->sidenum[0] = Line->sidenum[1];
         ++NumNewSides;
       }
+    } else if (Line->sidenum[0] < 0 || Line->sidenum[0] >= NumSides) {
+      //Host_Error("Bad sidedef index %d", Line->sidenum[0]);
+      GCon->Logf(NAME_Error, "Bad sidedef index %d for line #%d", Line->sidenum[0], i);
+      Line->sidenum[0] = -1;
+      ++dummySideCount;
+    } else {
+      ++NumNewSides;
     }
 
     if (Line->sidenum[1] != -1 && (Line->sidenum[1] < 0 || Line->sidenum[1] >= NumSides)) {
       //Host_Error("Bad sidedef index %d for linedef #%d", Line->sidenum[1], i);
-      GCon->Logf(NAME_Error, "Bad second sidedef index %d for linedef #%d", Line->sidenum[1], i);
+      GCon->Logf(NAME_Error, "Bad second sidedef index %d for line #%d", Line->sidenum[1], i);
       Line->sidenum[1] = -1;
     }
 
     if (Line->sidenum[1] != -1) {
       // has second side
-      // just a warning (and a fix)
       if ((Line->flags&ML_TWOSIDED) == 0) {
-        if (loader_force_fix_2s) {
-          GCon->Logf(NAME_Warning, "Linedef #%d marked as two-sided but has no TWO-SIDED flag set", i);
-          Line->flags |= ML_TWOSIDED; //k8: we need to set this, or clipper will glitch
-        }
+        // ignore extra side, we don't need it
+        vassert(Line->sidenum[0] >= 0);
+        Line->sidenum[1] = -1;
+      } else {
+        ++NumNewSides;
       }
-      ++NumNewSides;
     } else {
-      // no second side, but marked as two-sided
+      // no second side, but marked as two-sided?
       if (Line->flags&ML_TWOSIDED) {
-        //if (strict_level_errors) Host_Error("Bad WAD: Line %d is marked as TWO-SIDED but has only one side", i);
-        GCon->Logf(NAME_Warning, "Linedef #%d is marked as TWO-SIDED but has only one side", i);
+        GCon->Logf(NAME_Warning, "Line #%d is marked as TWOSIDED but has only one side; converted to one-sided line", i);
         Line->flags &= ~ML_TWOSIDED;
       }
     }
-    //fprintf(stderr, "linedef #%d: sides=(%d,%d); two-sided=%s\n", i, Line->sidenum[0], Line->sidenum[1], (Line->flags&ML_TWOSIDED ? "tan" : "ona"));
   }
 
 
