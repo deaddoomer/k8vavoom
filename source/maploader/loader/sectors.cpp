@@ -305,51 +305,50 @@ void VLevel::GroupLines () {
 
   // collect neighbouring sectors
   if (NumSectors < 1) return; // just in case
+
   TArray<vuint8> ssmark;
   ssmark.setLength(NumSectors);
-  int nbstotal = 0;
 
-  for (auto &&sector : allSectors()) {
-    if (!sector.linecount) continue;
-    memset(ssmark.ptr(), 0, sizeof(vuint8)*NumSectors);
-    for (int j = 0; j < sector.linecount; ++j) {
-      const line_t *line = sector.lines[j];
-      if (!(line->flags&ML_TWOSIDED)) continue;
-      // get neighbour sector
-      const sector_t *bsec = (&sector == line->frontsector ? line->backsector : line->frontsector);
-      if (!bsec) continue; // just in case
-      int snum = (int)(ptrdiff_t)(bsec-Sectors);
-      vassert(snum >= 0 && snum < NumSectors);
-      if (ssmark[snum]) continue;
-      ssmark[snum] = 1;
-      ++sector.nbseccount;
-      ++nbstotal;
-    }
-  }
+  sector_t **nbsbuffer = nullptr;
 
-  sector_t **nbsbuffer = new sector_t*[nbstotal+1]; // `+1` just in case
-  for (auto &&sector : allSectors()) {
-    sector.nbsecs = nbsbuffer;
-    //nbsbuffer += sector.nbseccount;
-    if (sector.nbseccount) {
+  // pass 0: only count
+  // pass 1: collect
+  for (unsigned pass = 0; pass < 2; ++pass) {
+    vassert((pass == 0 && !nbsbuffer) || (pass == 1 && nbsbuffer));
+    int nbstotal = 0;
+    for (auto &&sector : allSectors()) {
+      sector.nbsecs = nbsbuffer; // it doesn't hurt to assign it in pass 0
+      if (sector.linecount == 0) continue; // pobj source sector, ignore
       memset(ssmark.ptr(), 0, sizeof(vuint8)*NumSectors);
       for (int j = 0; j < sector.linecount; ++j) {
         const line_t *line = sector.lines[j];
         if (!(line->flags&ML_TWOSIDED)) continue;
         // get neighbour sector
         sector_t *bsec = (&sector == line->frontsector ? line->backsector : line->frontsector);
-        if (!bsec) continue; // just in case
-        int snum = (int)(ptrdiff_t)(bsec-Sectors);
+        if (!bsec || bsec == &sector) continue; // just in case
+        if (bsec->linecount == 0) continue; // pobj source sector, ignore
+        const int snum = (int)(ptrdiff_t)(bsec-Sectors);
         vassert(snum >= 0 && snum < NumSectors);
         if (ssmark[snum]) continue;
         ssmark[snum] = 1;
-        nbsbuffer[0] = bsec;
-        ++nbsbuffer;
+        if (!nbsbuffer) {
+          // pass 0
+          vassert(pass == 0);
+          ++sector.nbseccount;
+          ++nbstotal;
+        } else {
+          // pass 0
+          vassert(pass == 1);
+          nbsbuffer[0] = bsec;
+          ++nbsbuffer;
+        }
       }
     }
+    // allocate pool for the next pass
+    if (pass == 0) {
+      nbsbuffer = new sector_t*[nbstotal+1]; // `+1` just in case
+    }
   }
-  vassert(nbsbuffer == Sectors[0].nbsecs+nbstotal);
-  //GCon->Logf("nbs buffer size: %d", nbstotal);
 }
 
 

@@ -733,10 +733,16 @@ struct sector_t {
   VEntity *ThingList;
   msecnode_t *TouchingThingList;
 
+  // this is allocated as a big pool, and `nbsecs` points to various parts of that pool
+  // it is guaranteed that sector 0 has `nbsecs` pointing to the pool start
+  // `lines` is never `nullptr`, even if `linecount` is zero
   line_t **lines; // [linecount] size
   vint32 linecount;
 
   // neighbouring sectors
+  // this is allocated as a big pool, and `nbsecs` points to various parts of that pool
+  // it is guaranteed that sector 0 has `nbsecs` pointing to the pool start
+  // `nbsecs` is never `nullptr`, even if `nbseccount` is zero
   sector_t **nbsecs;
   vint32 nbseccount;
 
