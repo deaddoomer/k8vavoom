@@ -1010,7 +1010,7 @@ void SB_DrawDamageIndicator (int dir, int clr, float alpha) {
   float x1 = Width*(0.5+SB_DMG_YOFS);
   float y1 = Height*(0.5+SB_DMG_YOFS);
 
-  int wdt, hgt, w2, h2;
+  int wdt, hgt;
 
   switch (dir) {
     case SB_DMG_TOP:
