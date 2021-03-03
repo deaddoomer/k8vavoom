@@ -982,7 +982,9 @@ enum {
 };
 
 const float SB_DMG_Z_THRESHOLD = 256.0;
-const float SB_DBG_TIMEOUT = 1.5;
+
+const float SB_DMG_TIMEOUT = 0.6;
+const float SB_DMG_ALPHA = 0.8;
 
 // 640x512
 // ofs is from the center
@@ -1106,7 +1108,7 @@ void SB_DrawAdvancedDamage () {
   //printdebug("=== %d attackers ===", cl.Attackers.length);
   foreach (auto const ref atk; cl.Attackers) {
     float td = fmax(0.0, cl.GameTime-atk.GameTime);
-    if (td >= SB_DBG_TIMEOUT) continue;
+    if (td >= SB_DMG_TIMEOUT) continue;
 
     float badguyangle = atan2(atk.Origin.y-mo.Origin.y, atk.Origin.x-mo.Origin.x);
     float diffang;
@@ -1145,7 +1147,7 @@ void SB_DrawAdvancedDamage () {
     //printdebug("  `%C`(%s): DIR=%s; yaw=%s; ayaw=%s; (diffang=%s; toright=%s); zdiff=%s; damage=%s; type=%s; dtime=%s", atk.ent, atk.ent.UniqueId, dir, mo.Angles.yaw, badguyangle, diffang, toright, atk.Origin.z-mo.Origin.z, atk.Damage, atk.DamageType, cl.GameTime-atk.GameTime);
 
     int clr = RGB(255, 0, 0);
-    float alpha = (1.0-td/SB_DBG_TIMEOUT)*0.6;
+    float alpha = (1.0-td/SB_DMG_TIMEOUT)*SB_DMG_ALPHA;
 
     SB_DrawDamageIndicator(dir, clr, alpha);
   }
