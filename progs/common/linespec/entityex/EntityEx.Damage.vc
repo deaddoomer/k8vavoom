@@ -309,9 +309,7 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
       if (damage <= 0) return -1;
     }
 
-    if (damage >= Health && (Level.World.bSkillAutoUseHealth ||
-        Level.Game.deathmatch) && !PlayerEx(Player).MorphTime)
-    {
+    if (damage >= Health && (Level.World.bSkillAutoUseHealth || Level.Game.deathmatch) && !PlayerEx(Player).MorphTime) {
       // try to use some inventory health
       AutoUseHealth(damage-Health+1);
     }
@@ -320,7 +318,7 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
     assert(pex);
 
     // remember attacker for advanced damage indication
-    if (source) pex.RememberAttacker(source, source.Origin, damage, DmgType);
+    if (source && Player.MO == self) pex.RememberAttacker(source, source.Origin, damage, DmgType);
 
     if (Player.Health-damage < 50 && !Level.Game.deathmatch) {
       // try to use some inventory health
