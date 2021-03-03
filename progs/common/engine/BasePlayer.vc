@@ -772,7 +772,7 @@ void CleanupAttackers () {
 //
 //==========================================================================
 void RememberAttacker (Entity ent, TVec aOrigin, float aDamage, name aDamageType) {
-  printdebug("attack from `%C`(%s): org=%s; dmg=%s; type=%s", ent, ent.UniqueId, aOrigin, aDamage, aDamageType);
+  //printdebug("attack from `%C`(%s): org=%s; dmg=%s; type=%s", ent, ent.UniqueId, aOrigin, aDamage, aDamageType);
   // check for the same origin, if there is any
   foreach (auto ref atk; Attackers) {
     if (ent && atk.ent == ent) {
