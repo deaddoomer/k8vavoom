@@ -844,12 +844,13 @@ struct PWadScanInfo {
   bool processed;
   VStr iwad; // guessed from gameinfo; no path
   VStr mapname; // name of the arbitrary map from pwads
+  VStr maplump; // ...for the above
   int episode; // 0: doom2
   int mapnum;
   bool hasMapinfo;
 
-  PWadScanInfo () noexcept : processed(false), iwad(), mapname(), episode(-1), mapnum(-1), hasMapinfo(false) {}
-  inline void clear () noexcept { processed = false; iwad.clear(); mapname.clear(); episode = -1; mapnum = -1; hasMapinfo = false; }
+  PWadScanInfo () noexcept : processed(false), iwad(), mapname(), maplump(), episode(-1), mapnum(-1), hasMapinfo(false) {}
+  inline void clear () noexcept { processed = false; iwad.clear(); mapname.clear(); maplump.clear(); episode = -1; mapnum = -1; hasMapinfo = false; }
 
   inline bool isMapIndexValid () const noexcept { return (episode >= 0 && mapnum >= 0); }
 
@@ -965,6 +966,7 @@ static void processMapName (const char *name, int lump) {
           pwadScanInfo.episode = e;
           pwadScanInfo.mapnum = m;
           pwadScanInfo.mapname = VStr(name);
+          if (pwadScanInfo.maplump.isEmpty()) pwadScanInfo.maplump = W_FullLumpName(lump);
           //GCon->Logf(NAME_Debug, "*** D1 MAP; episode=%d; map=%d; index=%d", e, m, pwadScanInfo.getMapIndex());
         }
       }
@@ -997,6 +999,7 @@ static void processMapName (const char *name, int lump) {
     if (pwadScanInfo.mapnum < 0 || pwadScanInfo.mapnum > n) {
       pwadScanInfo.mapnum = n;
       pwadScanInfo.mapname = VStr(name);
+      if (pwadScanInfo.maplump.isEmpty()) pwadScanInfo.maplump = W_FullLumpName(lump);
       //GCon->Logf(NAME_Debug, "*** D2 MAP; index=%d", pwadScanInfo.getMapIndex());
     }
     return; // continue
@@ -1902,7 +1905,11 @@ static void ProcessBaseGameDefs (VStr mainiwad) {
               for (auto &&mwi : game.mainWads) {
                 mwp = FindMainWad(mwi.main);
                 if (!mwp.isEmpty()) {
-                  GCon->Logf(NAME_Init, "Detected game is '%s' (from map lump '%s')", *mwi.description, *pwadScanInfo.mapname);
+                  if (!pwadScanInfo.maplump.isEmpty()) {
+                    GCon->Logf(NAME_Init, "Detected game is '%s' (from map lump '%s' at '%s')", *mwi.description, *pwadScanInfo.mapname, *pwadScanInfo.maplump);
+                  } else {
+                    GCon->Logf(NAME_Init, "Detected game is '%s' (from map lump '%s')", *mwi.description, *pwadScanInfo.mapname);
+                  }
                   selectedGame = &game;
                   break;
                 }
