@@ -363,6 +363,7 @@ void VLevel::CheckAndRecalcWorldBBoxes () {
     double stime = -Sys_Time();
     RecalcWorldBBoxes();
     stime += Sys_Time();
-    GCon->Logf("Recalculated world BSP bounding boxes in %g seconds", stime);
+    const int msecs = (int)(stime*1000);
+    GCon->Logf("Recalculated world BSP bounding boxes in %d msecs", msecs);
   }
 }
