@@ -1084,7 +1084,8 @@ void SB_DrawDamageIndicator (int dir, int clr, float alpha) {
 //  advanced damage indicator code
 //
 //==========================================================================
-void SB_DrawAdvancedDamage () {
+override void SB_DrawAdvancedDamage () {
+  //if (!GetCvarB('r_statusbar_advdamage')) return;
   #if 0
   //printdebug("Width=%s; Height=%s", Width, Height);
   SB_DrawDamageIndicator(SB_DMG_TOP, RGB(255, 0, 0), 0.6);
@@ -1160,7 +1161,7 @@ void SB_DrawAdvancedDamage () {
 //
 //==========================================================================
 override void SB_Drawer (int sb_view) {
-  SB_Housekeeping(sb_view);
+  ::SB_Drawer(sb_view);
   if (!cl || !cl.MO) return;
   if (GetCvarB('r_statusbar_advdamage')) SB_DrawAdvancedDamage();
   if (!GetCvarB('r_statusbar_draw')) return;
