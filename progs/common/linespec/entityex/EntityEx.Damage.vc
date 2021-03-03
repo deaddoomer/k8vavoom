@@ -316,24 +316,42 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
       AutoUseHealth(damage-Health+1);
     }
 
+    PlayerEx pex = PlayerEx(Player);
+    assert(pex);
+
+    // remember attacker for advanced damage indication
+    if (source) pex.RememberAttacker(source, source.Origin, damage, DmgType);
+
     if (Player.Health-damage < 50 && !Level.Game.deathmatch) {
       // try to use some inventory health
       AutoUseStrifeHealth(damage-Health+1);
     }
-    Player.Health -= damage; // mirror mobj health here for Dave
-    if (Player.Health < 0) Player.Health = 0;
-    if (Player.Health < 1 && /*(PlayerEx(Player).Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Player.Health = 1;
-    PlayerEx(Player).Attacker = source;
-    PlayerEx(Player).DamageFlash += float(damage)/35.0; // add damage after armor / invuln
-    if (PlayerEx(Player).DamageFlash > 3.0) PlayerEx(Player).DamageFlash = 3.0; // teleport stomp does 10k points...
-    PlayerEx(Player).DamageFlashType = DmgType;
+
+    //Player.Health -= damage; // mirror mobj health here for Dave
+    //if (Player.Health < 0) Player.Health = 0;
+    //if (Player.Health < 1 && /*(pex.Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Player.Health = 1;
+
+    // remember last attacker for statusbar face, and add damage flash
+    pex.Attacker = source;
+    pex.DamageFlash += float(damage)/35.0; // add damage after armor / invuln
+    if (pex.DamageFlash > 3.0) pex.DamageFlash = 3.0; // teleport stomp does 10k points...
+    pex.DamageFlashType = DmgType;
+
     // for Korax Arena
-    PlayerEx(Player).Damaged(inflictor);
+    pex.Damaged(inflictor);
   }
 
   // do the damage
   Health -= damage;
-  if (bIsPlayer && Health < 1 && /*(PlayerEx(Player).Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Health = 1;
+
+  // fix internal player object damage, and apply "buddha"
+  if (bIsPlayer) {
+    if (Health < 1 && isBuddha) Health = 1; // "buddha" cheat
+    // update internal player object health
+    Player.Health = max(0, Health);
+  }
+  //if (bIsPlayer && Health < 1 && /*(PlayerEx(Player).Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Health = 1;
+
   if (Health <= 0) {
     // death
     Special1 = damage;

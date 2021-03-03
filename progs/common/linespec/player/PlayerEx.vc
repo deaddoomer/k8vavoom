@@ -5210,6 +5210,7 @@ override void ClientTick (float deltaTime) {
     DebugPutRotatingSpotlightHead(MO.Origin+vector(0, 0, MO.Height+32), 100, 512, 0xff_ff_00_00, 2);
   }
 #endif
+  ::ClientTick(deltaTime);
 }
 
 

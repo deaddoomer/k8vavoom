@@ -115,6 +115,15 @@ struct VPlrAngleInterp {
 };
 
 
+struct VAttackerInfo {
+  VEntity *ent; // to properly replace the attacker
+  TVec Origin; // attack origin
+  float Damage; // damage dealt
+  VName DamageType; // damage type
+  float GameTime; // attack time
+};
+
+
 // extended player object info: player_t
 class VBasePlayer : public VGameObject {
   DECLARE_CLASS(VBasePlayer, VGameObject, 0)
@@ -252,6 +261,12 @@ class VBasePlayer : public VGameObject {
   VPlayerReplicationInfo *PlayerReplicationInfo;
 
   VObject *LastViewObject;
+
+  // this can be used in HUD to draw attack directions
+  // it is updated in `EntityEx.Damage()`
+  // also, `ClientTick()` will remove items after 3 seconds of game time
+  // transient
+  TArray<VAttackerInfo> Attackers;
 
   static bool isCheckpointSpawn;
 

@@ -247,6 +247,7 @@ override void Init () {
   CreateCvarBool('r_particle_trails', true, "Enable particle trails?", CVAR_ARCHIVE);
 
   CreateCvarBool('r_statusbar_draw', true, "Draw statusbar?", CVAR_ARCHIVE);
+  CreateCvarBool('r_statusbar_advdamage', false, "Draw advanced damage indicators?", CVAR_ARCHIVE);
 
   CreateCvarBool('r_hud_draw_fs_ammo', true, "Draw ammo counts on fullscreen HUD?", CVAR_ARCHIVE);
   CreateCvarBool('r_hud_draw_fs_face', true, "Draw Doomguy face on fullscreen HUD?", CVAR_ARCHIVE);

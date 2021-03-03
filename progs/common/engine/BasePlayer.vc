@@ -69,6 +69,15 @@ struct VPlrAngleInterp {
   float Prev;
 };
 
+struct VAttackerInfo {
+  Entity ent; // to properly replace the attacker
+  TVec Origin; // attack origin
+  float Damage; // damage dealt
+  name DamageType; // damage type
+  float GameTime; // attack time
+};
+
+
 readonly LevelInfo Level;
 
 readonly bool bActive;
@@ -193,6 +202,11 @@ native readonly ClientGameBase ClGame; // valid only on client side
 PlayerReplicationInfo playerReplicationInfo;
 
 private native transient Object LastViewObject;
+
+// this can be used in HUD to draw attack directions
+// it is updated in `EntityEx.Damage()`
+// also, `ClientTick()` will remove items after 3 seconds of game time
+native transient array!VAttackerInfo Attackers;
 
 
 replication {
@@ -394,6 +408,7 @@ void PlayerTick (float deltaTime) {
 //
 //==========================================================================
 void ClientTick (float deltaTime) {
+  CleanupAttackers();
 }
 
 
@@ -732,6 +747,65 @@ int CheatHelperCheckOnOff () {
 //
 //==========================================================================
 bool GetIsNoclipActive () { return false; }
+
+
+//==========================================================================
+//
+//  CleanupAttackers
+//
+//==========================================================================
+void CleanupAttackers () {
+  int idx = 0;
+  while (idx < Attackers.length) {
+    if (Attackers[idx].GameTime+3 <= GameTime) {
+      Attackers.remove(idx);
+    } else {
+      ++idx;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  RememberAttacker
+//
+//==========================================================================
+void RememberAttacker (Entity ent, TVec aOrigin, float aDamage, name aDamageType) {
+  printdebug("attack from `%C`(%s): org=%s; dmg=%s; type=%s", ent, ent.UniqueId, aOrigin, aDamage, aDamageType);
+  // check for the same origin, if there is any
+  foreach (auto ref atk; Attackers) {
+    if (ent && atk.ent == ent) {
+      // replace it
+      atk.ent = ent;
+      atk.Origin = aOrigin; // just in case
+      atk.Damage = aDamage;
+      atk.DamageType = aDamageType;
+      atk.GameTime = GameTime;
+      return;
+    }
+    if (!ent && !atk.ent && (aOrigin-atk.Origin).lengthSquared <= 4*4) {
+      // yeah, close enough, check the damage
+      if (atk.Damage <= aDamage) {
+        // replace it
+        atk.ent = ent;
+        atk.Origin = aOrigin; // just in case
+        atk.Damage = aDamage;
+        atk.DamageType = aDamageType;
+        atk.GameTime = GameTime;
+      }
+      // do nothing
+      return;
+    }
+  }
+  // append new attacker
+  VAttackerInfo *natk = Attackers.alloc();
+  natk.ent = ent;
+  natk.Origin = aOrigin; // just in case
+  natk.Damage = aDamage;
+  natk.DamageType = aDamageType;
+  natk.GameTime = GameTime;
+}
 
 
 /*
