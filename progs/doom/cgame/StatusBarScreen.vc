@@ -1099,7 +1099,7 @@ void SB_DrawAdvancedDamage () {
   #endif
 
   if (!cl || !cl.MO || !cl.Attackers) return;
-  if (R_GetScreenBlocks() <= R_SCREEN_BLOCKS_FS_STATUSBAR) return; // for now
+  //if (R_GetScreenBlocks() <= R_SCREEN_BLOCKS_FS_STATUSBAR) return; // for now
 
   bool[SB_DMG_MAXDIR] wasRendered;
 
