@@ -408,7 +408,8 @@ void VUdmfParser::Parse (VLevel *Level, const VMapInfo &MInfo) {
   else if (Namespace.strEquCI("ZDoom")) { NS = NS_ZDoom; bExtended = true; bDoTranslation = false; }
   else if (Namespace.strEquCI("ZDoomTranslated")) { NS = NS_ZDoomTranslated; bExtended = true; } // we need to perform translation
   else {
-    sc.HostError(va("UDMF: unknown namespace '%s'", *Namespace));
+    //sc.HostError(va("UDMF: unknown namespace '%s'", *Namespace));
+    GCon->Logf(NAME_Warning, "UDMF: unknown namespace '%s'", *Namespace);
     NS = NS_ZDoom; // unknown namespace, assume ZDoom
     bExtended = true;
     bDoTranslation = false;
