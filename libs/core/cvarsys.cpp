@@ -213,6 +213,10 @@ void VCvar::EnsureShadow () {
   if (shadowVar) return;
   // create nonamed cvar, so it won't go into hashtable
   shadowVar = new VCvar(nullptr, *StringValue, nullptr/*HelpString*/, 0/*flags*/, Type);
+  shadowVar->StringValue = StringValue;
+  shadowVar->IntValue = IntValue;
+  shadowVar->FloatValue = FloatValue;
+  shadowVar->BoolValue = BoolValue;
 }
 
 
