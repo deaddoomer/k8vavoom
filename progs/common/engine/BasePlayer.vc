@@ -70,7 +70,8 @@ struct VPlrAngleInterp {
 };
 
 struct VAttackerInfo {
-  Entity ent; // to properly replace the attacker
+  //Entity ent; // to properly replace the attacker
+  int entUId; // to properly replace the attacker
   TVec Origin; // attack origin
   float Damage; // damage dealt
   name DamageType; // damage type
@@ -774,21 +775,22 @@ void CleanupAttackers () {
 void RememberAttacker (Entity ent, TVec aOrigin, float aDamage, name aDamageType) {
   //printdebug("attack from `%C`(%s): org=%s; dmg=%s; type=%s", ent, ent.UniqueId, aOrigin, aDamage, aDamageType);
   // check for the same origin, if there is any
+  int uid = (ent ? ent.ServerUId : 0);
   foreach (auto ref atk; Attackers) {
-    if (ent && atk.ent == ent) {
+    if (uid && atk.entUId == uid) {
       // replace it
-      atk.ent = ent;
+      atk.entUId = uid;
       atk.Origin = aOrigin; // just in case
       atk.Damage = aDamage;
       atk.DamageType = aDamageType;
       atk.GameTime = GameTime;
       return;
     }
-    if (!ent && !atk.ent && (aOrigin-atk.Origin).lengthSquared <= 4*4) {
+    if (!uid && !atk.entUId && (aOrigin-atk.Origin).lengthSquared <= 4*4) {
       // yeah, close enough, check the damage
       if (atk.Damage <= aDamage) {
         // replace it
-        atk.ent = ent;
+        atk.entUId = uid;
         atk.Origin = aOrigin; // just in case
         atk.Damage = aDamage;
         atk.DamageType = aDamageType;
@@ -800,7 +802,7 @@ void RememberAttacker (Entity ent, TVec aOrigin, float aDamage, name aDamageType
   }
   // append new attacker
   VAttackerInfo *natk = Attackers.alloc();
-  natk.ent = ent;
+  natk.entUId = uid;
   natk.Origin = aOrigin; // just in case
   natk.Damage = aDamage;
   natk.DamageType = aDamageType;

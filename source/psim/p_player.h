@@ -116,7 +116,8 @@ struct VPlrAngleInterp {
 
 
 struct VAttackerInfo {
-  VEntity *ent; // to properly replace the attacker
+  //VEntity *ent; // to properly replace the attacker
+  vuint32 entUId; // to properly replace the attacker
   TVec Origin; // attack origin
   float Damage; // damage dealt
   VName DamageType; // damage type
