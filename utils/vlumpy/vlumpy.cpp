@@ -1204,7 +1204,7 @@ static void ParseScript (const char *name) {
 //==========================================================================
 int main (int argc, char *argv[]) {
   if (argc < 2) {
-    fprintf(stderr, "Usage: vlumpy <script1> [<script2> ...]\n");
+    fprintf(stderr, "Usage: k8vlumpy <script1> [<script2> ...]\n");
     return 1;
   }
 
