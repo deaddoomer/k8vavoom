@@ -23,14 +23,14 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-  ACS_EXTFUNC_NUM(GetLineUDMFInt, 1)
-  ACS_EXTFUNC(GetLineUDMFFixed)
-  ACS_EXTFUNC(GetThingUDMFInt)
-  ACS_EXTFUNC(GetThingUDMFFixed)
-  ACS_EXTFUNC(GetSectorUDMFInt)
-  ACS_EXTFUNC(GetSectorUDMFFixed)
-  ACS_EXTFUNC(GetSideUDMFInt)
-  ACS_EXTFUNC(GetSideUDMFFixed)
+  ACS_EXTFUNC_NUM(GetLineUDMFInt, 1) // implemented
+  ACS_EXTFUNC(GetLineUDMFFixed) // implemented
+  ACS_EXTFUNC(GetThingUDMFInt) // implemented
+  ACS_EXTFUNC(GetThingUDMFFixed) // implemented
+  ACS_EXTFUNC(GetSectorUDMFInt) // implemented
+  ACS_EXTFUNC(GetSectorUDMFFixed) // implemented
+  ACS_EXTFUNC(GetSideUDMFInt) // implemented
+  ACS_EXTFUNC(GetSideUDMFFixed) // implemented
   ACS_EXTFUNC(GetActorVelX) // implemented
   ACS_EXTFUNC(GetActorVelY) // implemented
   ACS_EXTFUNC(GetActorVelZ) // implemented
@@ -167,7 +167,7 @@
 
 
   ACS_EXTFUNC_NUM(CheckClass, 200) // implemented
-  ACS_EXTFUNC(DamageActor) // [arookas]
+  ACS_EXTFUNC(DamageActor)
   ACS_EXTFUNC(SetActorFlag) // implemented
   ACS_EXTFUNC(SetTranslation) // implemented
   ACS_EXTFUNC(GetActorFloorTexture) // implemented
@@ -179,14 +179,14 @@
   ACS_EXTFUNC(ScriptCall) // ignored
   ACS_EXTFUNC(StartSlideshow)
 
-  // Eternity's
+  // Eternity's (i won't look into EE engine code, so nope)
   ACS_EXTFUNC_NUM(GetLineX, 300)
   ACS_EXTFUNC(GetLineY)
 
-  // OpenGL stuff
+  // OpenGL stuff (not now)
   ACS_EXTFUNC_NUM(SetSectorGlow, 400) // ignored
   ACS_EXTFUNC(SetFogDensity) // ignored
 
-  // ZDaemon
+  // ZDaemon (not implemented, and will never be)
   ACS_EXTFUNC_NUM(GetTeamScore, 19620) // (int team)
   ACS_EXTFUNC(SetTeamScore) // (int team, int value)
