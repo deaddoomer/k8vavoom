@@ -69,6 +69,9 @@ enum {
   SB_DMG_MAXDIR,
 };
 
+const int SB_DMG_UP_FLAG = 1;
+const int SB_DMG_DOWN_FLAG = 2;
+
 const float SB_DMG_TIMEOUT = 0.6;
 const float SB_DMG_ALPHA = 0.8;
 
@@ -78,6 +81,8 @@ const float SB_DMG_XOFS = 0.05;
 const float SB_DMG_YOFS = 0.05;
 // height/width fraction
 const float SB_DMG_SIZE = 0.1;
+const float SB_DMG_SMALL_SIZE_B = 0.7;
+const float SB_DMG_SMALL_SIZE_S = 0.3;
 // in pixels
 const int SB_DMG_THICKNESS = 8;
 
@@ -668,7 +673,7 @@ void SB_Drawer (int sb_view) {
 //  SB_DrawDamageIndicator
 //
 //==========================================================================
-void SB_DrawDamageIndicator (int dir, int clr, float alpha) {
+void SB_DrawDamageIndicator (int dir, int clr, float alpha, int udflag) {
   if (alpha <= 0.0) return;
   alpha = fmin(1.0, alpha);
 
@@ -693,66 +698,129 @@ void SB_DrawDamageIndicator (int dir, int clr, float alpha) {
 
   int wdt, hgt;
 
+  //udflag &= ~SB_DMG_DOWN_FLAG;
+  //udflag &= ~SB_DMG_UP_FLAG;
+
   switch (dir) {
     case SB_DMG_TOP:
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect((x0+x1-wdt)*0.5, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect((x0+x1-w2)*0.5, y0-h2*2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect((x0+x1-w2)*0.5, y0+hgt+h2, w2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_BOTTOM:
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect((x0+x1-wdt)*0.5, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect((x0+x1-w2)*0.5, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect((x0+x1-w2)*0.5, y1-hgt-h2*2, w2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_LEFT:
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x0, (y0+y1-hgt)*0.5, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_RIGHT:
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x1-wdt, (y0+y1-hgt)*0.5, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_LEFT_TOP:
       // left
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x0, y0+SB_DMG_THICKNESS, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, y0+SB_DMG_THICKNESS+2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, y0+SB_DMG_THICKNESS+2+w2, w2, h2-w2*2, clr, alpha);
+      }
       // top
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect(x0+SB_DMG_THICKNESS, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2, y0-h2*2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2+h2, y0+hgt+h2, w2-h2*2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_LEFT_BOTTOM:
       // left
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x0, y1-SB_DMG_THICKNESS-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, y1-SB_DMG_THICKNESS-2-h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, y1-SB_DMG_THICKNESS-2-h2+w2, w2, h2-w2*2, clr, alpha);
+      }
       // bottom
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect(x0+SB_DMG_THICKNESS, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2+h2, y1-hgt-h2*2, w2-h2*2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_RIGHT_TOP:
       // right
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x1-wdt, y0+SB_DMG_THICKNESS, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, y0+SB_DMG_THICKNESS+2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, y0+SB_DMG_THICKNESS+2+w2, w2, h2-w2*2, clr, alpha);
+      }
       // top
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect(x1-SB_DMG_THICKNESS-wdt, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2, y0-h2-2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2+h2, y0+hgt+h2, w2-h2*2, h2, clr, alpha);
+      }
       break;
     case SB_DMG_RIGHT_BOTTOM:
       // right
       wdt = int(SB_DMG_THICKNESS);
       hgt = sizev;
       R_FillRect(x1-wdt, y1-SB_DMG_THICKNESS-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, y1-h2-SB_DMG_THICKNESS-2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, y1-h2-SB_DMG_THICKNESS-2+w2, w2, h2-w2*2, clr, alpha);
+      }
       // bottom
       wdt = sizeh;
       hgt = int(SB_DMG_THICKNESS);
       R_FillRect(x1-SB_DMG_THICKNESS-wdt, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2+h2, y1-hgt-h2*2, w2-h2*2, h2, clr, alpha);
+      }
       break;
   }
 }
@@ -769,18 +837,19 @@ void SB_DrawAdvancedDamage (Player cl) {
   //if (!GetCvarB('r_statusbar_advdamage')) return;
   #if 0
   //printdebug("Width=%s; Height=%s", Width, Height);
-  SB_DrawDamageIndicator(SB_DMG_TOP, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_BOTTOM, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_LEFT, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_RIGHT, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_LEFT_TOP, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_LEFT_BOTTOM, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_RIGHT_TOP, RGB(255, 0, 0), 0.6);
-  SB_DrawDamageIndicator(SB_DMG_RIGHT_BOTTOM, RGB(255, 0, 0), 0.6);
+  SB_DrawDamageIndicator(SB_DMG_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
   return;
   #endif
 
   float[SB_DMG_MAXDIR] dmgAttackTimeout;
+  int[SB_DMG_MAXDIR] dmgUpDownFlag;
 
   if (cl && cl.MO && cl.Attackers) {
     Entity mo = cl.MO;
@@ -798,12 +867,6 @@ void SB_DrawAdvancedDamage (Player cl) {
       bool toright = (diffangyaw < 0.0);
       diffangyaw = fabs(diffangyaw);
 
-      /*
-      float diffangpitch = AngleDiff(mo.Angles.pitch, itang.pitch);
-      bool toup = (diffangpitch < 0.0);
-      diffangpitch = fabs(diffangpitch);
-      */
-
       int dir;
            if (diffangyaw < 22.5) dir = SB_DMG_TOP; // forward
       else if (diffangyaw < 67.5) dir = (toright ? SB_DMG_RIGHT_TOP : SB_DMG_LEFT_TOP); // forward, diagonal
@@ -813,6 +876,13 @@ void SB_DrawAdvancedDamage (Player cl) {
 
       //dmgAttackTimeout[dir] = SB_DMG_TIMEOUT;
       dmgAttackTimeout[dir] = td;
+
+      float diffangpitch = AngleDiff(mo.Angles.pitch, itang.pitch);
+      bool toup = (diffangpitch < 0.0);
+      diffangpitch = fabs(diffangpitch);
+
+      if (diffangpitch > 45.0) dmgUpDownFlag[dir] |= (toup ? SB_DMG_UP_FLAG : SB_DMG_DOWN_FLAG);
+
       //atk.GameTime = -1;
     }
   }
@@ -825,7 +895,7 @@ void SB_DrawAdvancedDamage (Player cl) {
     int clr = RGB(255, 0, 0);
     float alpha = (1.0-td/SB_DMG_TIMEOUT)*SB_DMG_ALPHA;
 
-    SB_DrawDamageIndicator(dir, clr, alpha);
+    SB_DrawDamageIndicator(dir, clr, alpha, dmgUpDownFlag[dir]);
   }
 }
 
