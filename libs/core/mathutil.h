@@ -52,6 +52,13 @@ inline bool isInfF (const float v) noexcept {
 }
 #endif
 
+// is float denormalised?
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+bool isDenormalF (const float v) noexcept {
+  const union { float f; uint32_t x; } u = {v};
+  return ((u.x&0x7f800000u) == 0u && (u.x&0x007fffffu) != 0u);
+}
+
 // this turns all nan/inf values into positive zero
 static VVA_OKUNUSED inline void killInfNaNF (float &f) noexcept {
   vint32 fi = *(vint32 *)&f;
