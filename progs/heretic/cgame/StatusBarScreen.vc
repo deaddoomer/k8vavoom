@@ -524,7 +524,7 @@ void SB_DrawPause () {
 override void SB_Drawer(int sb_view) {
   ::SB_Drawer(sb_view);
   if (!cl || !cl.MO) return;
-  if (GetCvarB('r_statusbar_advdamage')) SB_DrawAdvancedDamage();
+  if (GetCvarB('r_statusbar_advdamage')) SB_DrawAdvancedDamage(cl);
   if (!GetCvarB('r_statusbar_draw')) return;
   SB_DrawMainPart(sb_view);
   {
