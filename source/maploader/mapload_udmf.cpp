@@ -70,12 +70,19 @@ public:
     TK_Identifier,
   };
 
+  struct VValue {
+    VName name;
+    int i;
+    float f;
+  };
+
   struct VParsedLine {
     line_t L;
     int V1Index;
     int V2Index;
     int index;
     TLocation loc;
+    TArray<VValue> userFields;
   };
 
   struct VParsedSide {
@@ -86,6 +93,7 @@ public:
     int SectorIndex;
     int index;
     TLocation loc;
+    TArray<VValue> userFields;
   };
 
   struct VParsedVertex {
@@ -110,6 +118,18 @@ public:
     }
   };
 
+  struct VParsedThing {
+    mthing_t T;
+    TLocation loc;
+    TArray<VValue> userFields;
+  };
+
+  struct VParsedSector {
+    sector_t S;
+    TLocation loc;
+    TArray<VValue> userFields;
+  };
+
   VScriptParser sc;
   bool bExtended;
   bool bDoTranslation;
@@ -121,10 +141,10 @@ public:
   float ValFloat;
   VStr Val;
   TArray<VParsedVertex> ParsedVertexes;
-  TArray<sector_t> ParsedSectors;
+  TArray<VParsedSector> ParsedSectors;
   TArray<VParsedLine> ParsedLines;
   TArray<VParsedSide> ParsedSides;
-  TArray<mthing_t> ParsedThings;
+  TArray<VParsedThing> ParsedThings;
 
   bool warnUnknownKeys;
 
@@ -160,6 +180,8 @@ public:
   void Flag (vuint32 &Field, int Mask);
 
   void ParseMoreIds (TArray<vint32> &ids);
+
+  bool CheckUserKey (TArray<VValue> &userFields);
 
   vuint32 CheckColor (vuint32 defval, vuint32 mask=0u);
 };
@@ -380,6 +402,40 @@ void VUdmfParser::ParseMoreIds (TArray<vint32> &idlist) {
 
 //==========================================================================
 //
+//  VUdmfParser::CheckUserKey
+//
+//==========================================================================
+bool VUdmfParser::CheckUserKey (TArray<VValue> &userFields) {
+  if (!Key.startsWithCI("user_")) return false;
+
+  if (Key.length() <= 5) {
+    GCon->Logf(NAME_Warning, "%s: invalid UDMF user field '%s'", *W_FullLumpName(srcLump), *Key);
+    return false;
+  }
+
+  if (ValType != TK_Int && ValType != TK_Float) {
+    GCon->Logf(NAME_Warning, "%s: invalid UDMF user field '%s' (string value: %s)", *W_FullLumpName(srcLump), *Key, *Val);
+    return false;
+  }
+
+  VValue v;
+  v.name = VName(*Key, VName::AddLower);
+  if (ValType == TK_Int) {
+    v.i = ValInt;
+    v.f = ValInt;
+  } else {
+    if (!isFiniteF(ValFloat)) ValFloat = 0.0f;
+    v.i = (int)ValFloat;
+    v.f = ValFloat;
+  }
+
+  userFields.append(v);
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VUdmfParser::Parse
 //
 //==========================================================================
@@ -486,29 +542,30 @@ void VUdmfParser::ParseVertex () {
 //
 //==========================================================================
 void VUdmfParser::ParseSector (VLevel *Level) {
-  sector_t &S = ParsedSectors.Alloc();
-  memset((void *)&S, 0, sizeof(sector_t));
-  S.floor.Set(TVec(0, 0, 1), 0);
-  S.floor.XScale = 1.0f;
-  S.floor.YScale = 1.0f;
-  S.floor.Alpha = 1.0f;
-  S.floor.MirrorAlpha = 1.0f;
-  S.floor.LightSourceSector = -1;
-  S.ceiling.Set(TVec(0, 0, -1), 0);
-  S.ceiling.XScale = 1.0f;
-  S.ceiling.YScale = 1.0f;
-  S.ceiling.Alpha = 1.0f;
-  S.ceiling.MirrorAlpha = 1.0f;
-  S.ceiling.LightSourceSector = -1;
-  S.params.lightlevel = 160;
-  S.params.LightColor = 0x00ffffff;
-  S.seqType = -1; // default seqType
-  S.Gravity = 1.0f;  // default sector gravity of 1.0
-  S.Zone = -1;
-  S.Damage = 0;
-  S.DamageType = NAME_None; // default
-  S.DamageInterval = 0; // default interval
-  S.DamageLeaky = 0;
+  VParsedSector &S = ParsedSectors.Alloc();
+  memset((void *)&S, 0, sizeof(VParsedSector));
+
+  S.S.floor.Set(TVec(0, 0, 1), 0);
+  S.S.floor.XScale = 1.0f;
+  S.S.floor.YScale = 1.0f;
+  S.S.floor.Alpha = 1.0f;
+  S.S.floor.MirrorAlpha = 1.0f;
+  S.S.floor.LightSourceSector = -1;
+  S.S.ceiling.Set(TVec(0, 0, -1), 0);
+  S.S.ceiling.XScale = 1.0f;
+  S.S.ceiling.YScale = 1.0f;
+  S.S.ceiling.Alpha = 1.0f;
+  S.S.ceiling.MirrorAlpha = 1.0f;
+  S.S.ceiling.LightSourceSector = -1;
+  S.S.params.lightlevel = 160;
+  S.S.params.LightColor = 0x00ffffff;
+  S.S.seqType = -1; // default seqType
+  S.S.Gravity = 1.0f;  // default sector gravity of 1.0
+  S.S.Zone = -1;
+  S.S.Damage = 0;
+  S.S.DamageType = NAME_None; // default
+  S.S.DamageInterval = 0; // default interval
+  S.S.DamageLeaky = 0;
 
   bool fpvalid[4] = {false, false, false, false};
   float fval[4] = {0,0,0,0};
@@ -519,47 +576,49 @@ void VUdmfParser::ParseSector (VLevel *Level) {
   while (!sc.Check("}")) {
     ParseKey();
 
+    if (CheckUserKey(S.userFields)) continue;
+
     if (Key.strEquCI("heightfloor")) {
       float FVal = CheckFloat();
-      S.floor.dist = FVal;
-      S.floor.TexZ = FVal;
-      S.floor.minz = FVal;
-      S.floor.maxz = FVal;
+      S.S.floor.dist = FVal;
+      S.S.floor.TexZ = FVal;
+      S.S.floor.minz = FVal;
+      S.S.floor.maxz = FVal;
       continue;
     }
 
     if (Key.strEquCI("heightceiling")) {
       float FVal = CheckFloat();
-      S.ceiling.dist = -FVal;
-      S.ceiling.TexZ = FVal;
-      S.ceiling.minz = FVal;
-      S.ceiling.maxz = FVal;
+      S.S.ceiling.dist = -FVal;
+      S.S.ceiling.TexZ = FVal;
+      S.S.ceiling.minz = FVal;
+      S.S.ceiling.maxz = FVal;
       continue;
     }
 
-    if (Key.strEquCI("texturefloor")) { S.floor.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
-    if (Key.strEquCI("textureceiling")) { S.ceiling.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
-    if (Key.strEquCI("lightlevel")) { S.params.lightlevel = CheckInt(); continue; }
-    if (Key.strEquCI("special")) { S.special = CheckInt(); continue; }
-    if (Key.strEquCI("id")) { S.sectorTag = CheckInt(); continue; }
+    if (Key.strEquCI("texturefloor")) { S.S.floor.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
+    if (Key.strEquCI("textureceiling")) { S.S.ceiling.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
+    if (Key.strEquCI("lightlevel")) { S.S.params.lightlevel = CheckInt(); continue; }
+    if (Key.strEquCI("special")) { S.S.special = CheckInt(); continue; }
+    if (Key.strEquCI("id")) { S.S.sectorTag = CheckInt(); continue; }
 
     // extensions
     if (NS&(NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
-      if (Key.strEquCI("xpanningfloor")) { S.floor.xoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("ypanningfloor")) { S.floor.yoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("xpanningceiling")) { S.ceiling.xoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("ypanningceiling")) { S.ceiling.yoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("xscalefloor")) { S.floor.XScale = CheckFloat(); continue; }
-      if (Key.strEquCI("yscalefloor")) { S.floor.YScale = CheckFloat(); continue; }
-      if (Key.strEquCI("xscaleceiling")) { S.ceiling.XScale = CheckFloat(); continue; }
-      if (Key.strEquCI("yscaleceiling")) { S.ceiling.YScale = CheckFloat(); continue; }
-      if (Key.strEquCI("rotationfloor")) { S.floor.Angle = CheckFloat(); continue; }
-      if (Key.strEquCI("rotationceiling")) { S.ceiling.Angle = CheckFloat(); continue; }
-      if (Key.strEquCI("gravity")) { S.Gravity = CheckFloat(); continue; }
-      if (Key.strEquCI("lightcolor")) { S.params.LightColor = CheckColor(0x00ffffffu); continue; }
-      if (Key.strEquCI("fadecolor")) { S.params.Fade = CheckColor(0u); continue; }
-      if (Key.strEquCI("silent")) { Flag(S.SectorFlags, sector_t::SF_Silent); continue; }
-      if (Key.strEquCI("nofallingdamage")) { Flag(S.SectorFlags, sector_t::SF_NoFallingDamage); continue; }
+      if (Key.strEquCI("xpanningfloor")) { S.S.floor.xoffs = CheckFloat(); continue; }
+      if (Key.strEquCI("ypanningfloor")) { S.S.floor.yoffs = CheckFloat(); continue; }
+      if (Key.strEquCI("xpanningceiling")) { S.S.ceiling.xoffs = CheckFloat(); continue; }
+      if (Key.strEquCI("ypanningceiling")) { S.S.ceiling.yoffs = CheckFloat(); continue; }
+      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloat(); continue; }
+      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloat(); continue; }
+      if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloat(); continue; }
+      if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloat(); continue; }
+      if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = CheckFloat(); continue; }
+      if (Key.strEquCI("rotationceiling")) { S.S.ceiling.Angle = CheckFloat(); continue; }
+      if (Key.strEquCI("gravity")) { S.S.Gravity = CheckFloat(); continue; }
+      if (Key.strEquCI("lightcolor")) { S.S.params.LightColor = CheckColor(0x00ffffffu); continue; }
+      if (Key.strEquCI("fadecolor")) { S.S.params.Fade = CheckColor(0u); continue; }
+      if (Key.strEquCI("silent")) { Flag(S.S.SectorFlags, sector_t::SF_Silent); continue; }
+      if (Key.strEquCI("nofallingdamage")) { Flag(S.S.SectorFlags, sector_t::SF_NoFallingDamage); continue; }
 
       if (Key.strEquCI("floorplane_a")) { fval[0] = CheckFloat(); fpvalid[0] = true; continue; }
       if (Key.strEquCI("floorplane_b")) { fval[1] = CheckFloat(); fpvalid[1] = true; continue; }
@@ -571,47 +630,47 @@ void VUdmfParser::ParseSector (VLevel *Level) {
       if (Key.strEquCI("ceilingplane_c")) { cval[2] = CheckFloat(); cpvalid[2] = true; continue; }
       if (Key.strEquCI("ceilingplane_d")) { cval[3] = CheckFloat(); cpvalid[3] = true; continue; }
 
-      if (Key.strEquCI("moreids")) { ParseMoreIds(S.moreTags); continue; }
+      if (Key.strEquCI("moreids")) { ParseMoreIds(S.S.moreTags); continue; }
 
-      if (Key.strEquCI("lightfloor")) { S.params.lightFloor = CheckInt(); continue; }
-      if (Key.strEquCI("lightceiling")) { S.params.lightCeiling = CheckInt(); continue; }
+      if (Key.strEquCI("lightfloor")) { S.S.params.lightFloor = CheckInt(); continue; }
+      if (Key.strEquCI("lightceiling")) { S.S.params.lightCeiling = CheckInt(); continue; }
 
-      if (Key.strEquCI("lightfloorabsolute")) { Flag(S.params.lightFCFlags, sec_params_t::LFC_FloorLight_Abs); continue; }
-      if (Key.strEquCI("lightceilingabsolute")) { Flag(S.params.lightFCFlags, sec_params_t::LFC_CeilingLight_Abs); continue; }
+      if (Key.strEquCI("lightfloorabsolute")) { Flag(S.S.params.lightFCFlags, sec_params_t::LFC_FloorLight_Abs); continue; }
+      if (Key.strEquCI("lightceilingabsolute")) { Flag(S.S.params.lightFCFlags, sec_params_t::LFC_CeilingLight_Abs); continue; }
 
-      if (Key.strEquCI("floorglowcolor")) { S.params.glowFloor = CheckColor(0u, 0xff000000u); continue; }
-      if (Key.strEquCI("ceilingglowcolor")) { S.params.glowCeiling = CheckColor(0u, 0xff000000u); continue; }
+      if (Key.strEquCI("floorglowcolor")) { S.S.params.glowFloor = CheckColor(0u, 0xff000000u); continue; }
+      if (Key.strEquCI("ceilingglowcolor")) { S.S.params.glowCeiling = CheckColor(0u, 0xff000000u); continue; }
 
-      if (Key.strEquCI("floor_reflect")) { S.floor.MirrorAlpha = 1.0f-clampval(CheckFloat(), 0.0f, 1.0f); continue; }
-      if (Key.strEquCI("ceiling_reflect")) { S.ceiling.MirrorAlpha = 1.0f-clampval(CheckFloat(), 0.0f, 1.0f); continue; }
+      if (Key.strEquCI("floor_reflect")) { S.S.floor.MirrorAlpha = 1.0f-clampval(CheckFloat(), 0.0f, 1.0f); continue; }
+      if (Key.strEquCI("ceiling_reflect")) { S.S.ceiling.MirrorAlpha = 1.0f-clampval(CheckFloat(), 0.0f, 1.0f); continue; }
 
-      if (Key.strEquCI("floorglowheight")) { S.params.glowFloorHeight = CheckFloat(); continue; }
-      if (Key.strEquCI("ceilingglowheight")) { S.params.glowCeilingHeight = CheckFloat(); continue; }
+      if (Key.strEquCI("floorglowheight")) { S.S.params.glowFloorHeight = CheckFloat(); continue; }
+      if (Key.strEquCI("ceilingglowheight")) { S.S.params.glowCeilingHeight = CheckFloat(); continue; }
 
-      if (Key.strEquCI("waterzone")) { S.params.contents = (CheckBool() ? 1 : 0); continue; } // 1 is `CONTENTS_WATER`
+      if (Key.strEquCI("waterzone")) { S.S.params.contents = (CheckBool() ? 1 : 0); continue; } // 1 is `CONTENTS_WATER`
 
-      if (Key.strEquCI("hidden")) { if (CheckBool()) S.SectorFlags |= sector_t::SF_Hidden; continue; }
-      if (Key.strEquCI("norespawn")) { if (CheckBool()) S.SectorFlags |= sector_t::SF_NoPlayerRespawn; continue; }
+      if (Key.strEquCI("hidden")) { if (CheckBool()) S.S.SectorFlags |= sector_t::SF_Hidden; continue; }
+      if (Key.strEquCI("norespawn")) { if (CheckBool()) S.S.SectorFlags |= sector_t::SF_NoPlayerRespawn; continue; }
 
       // sector damage properties
-      if (Key.strEquCI("damageamount")) { S.Damage = CheckInt(); continue; }
+      if (Key.strEquCI("damageamount")) { S.S.Damage = CheckInt(); continue; }
       if (Key.strEquCI("damagetype")) {
         VStr dmg = CheckString();
         VStr dmgs = dmg.xstrip();
         if (dmgs.isEmpty() || dmgs.strEquCI("none") || dmgs.strEquCI("normal")) dmg.clear();
-        S.DamageType = VName(*dmg);
+        S.S.DamageType = VName(*dmg);
         continue;
       }
       if (Key.strEquCI("damageinterval")) {
-        S.DamageInterval = CheckInt();
+        S.S.DamageInterval = CheckInt();
         // "0" means "default" in the engine; fix it
-        if (S.DamageInterval == 0) S.DamageInterval = -1;
+        if (S.S.DamageInterval == 0) S.S.DamageInterval = -1;
         continue;
       }
       if (Key.strEquCI("leakiness")) {
-        S.DamageLeaky = CheckInt();
+        S.S.DamageLeaky = CheckInt();
         // "0" means "default" in the engine; fix it
-        if (S.DamageLeaky == 0) S.DamageLeaky = -1;
+        if (S.S.DamageLeaky == 0) S.S.DamageLeaky = -1;
         continue;
       }
     }
@@ -619,8 +678,8 @@ void VUdmfParser::ParseSector (VLevel *Level) {
     keyWarning(WT_SECTOR);
   }
 
-  if (S.params.glowFloorHeight >= 1) S.params.lightFCFlags |= sec_params_t::LFC_FloorLight_Glow; else S.params.glowFloorHeight = 0;
-  if (S.params.glowCeilingHeight >= 1) S.params.lightFCFlags |= sec_params_t::LFC_CeilingLight_Glow; else S.params.glowCeilingHeight = 0;
+  if (S.S.params.glowFloorHeight >= 1) S.S.params.lightFCFlags |= sec_params_t::LFC_FloorLight_Glow; else S.S.params.glowFloorHeight = 0;
+  if (S.S.params.glowCeilingHeight >= 1) S.S.params.lightFCFlags |= sec_params_t::LFC_CeilingLight_Glow; else S.S.params.glowCeilingHeight = 0;
 
   // setup slopes with floor/ceiling planes
 
@@ -631,7 +690,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -fval[3];
       if (pl.normal.z < 0) pl.flipInPlace();
-      *((TPlane *)&S.floor) = pl;
+      *((TPlane *)&S.S.floor) = pl;
     }
   }
 
@@ -642,7 +701,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -cval[3];
       if (pl.normal.z > 0) pl.flipInPlace();
-      *((TPlane *)&S.ceiling) = pl;
+      *((TPlane *)&S.S.ceiling) = pl;
     }
   }
 }
@@ -676,6 +735,8 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   sc.Expect("{");
   while (!sc.Check("}")) {
     ParseKey();
+
+    if (CheckUserKey(L.userFields)) continue;
 
     if (Key.strEquCI("id")) { L.L.lineTag = CheckInt(); continue; }
     if (Key.strEquCI("v1")) { L.V1Index = CheckInt(); continue; }
@@ -827,6 +888,8 @@ void VUdmfParser::ParseSideDef () {
   while (!sc.Check("}")) {
     ParseKey();
 
+    if (CheckUserKey(S.userFields)) continue;
+
     if (Key.strEquCI("offsetx")) { XOffs = CheckFloat(); continue; }
     if (Key.strEquCI("offsety")) { YOffs = CheckFloat(); continue; }
     if (Key.strEquCI("texturetop")) { S.TopTexture = CheckString(); continue; }
@@ -877,8 +940,8 @@ void VUdmfParser::ParseSideDef () {
 //
 //==========================================================================
 void VUdmfParser::ParseThing () {
-  mthing_t &T = ParsedThings.Alloc();
-  memset((void *)&T, 0, sizeof(mthing_t));
+  VParsedThing &T = ParsedThings.Alloc();
+  memset((void *)&T, 0, sizeof(VParsedThing));
 
   VStr arg0str;
   bool hasArg0Str = false;
@@ -889,29 +952,31 @@ void VUdmfParser::ParseThing () {
   while (!sc.Check("}")) {
     ParseKey();
 
-    if (Key.strEquCI("x")) { hasXY |= 1u; T.x = CheckFloat(); continue; }
-    if (Key.strEquCI("y")) { hasXY |= 2u; T.y = CheckFloat(); continue; }
-    if (Key.strEquCI("height")) { T.height = CheckFloat(); continue; }
-    if (Key.strEquCI("angle")) { T.angle = CheckFloat(); continue; }
-    if (Key.strEquCI("pitch")) { T.pitch = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UsePitch; continue; }
-    if (Key.strEquCI("roll")) { T.roll = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseRoll; continue; }
-    if (Key.strEquCI("yaw")) { T.angle = CheckFloat(); continue; }
-    if (Key.strEquCI("type")) { hasType = true; T.type = CheckInt(); continue; }
-    if (Key.strEquCI("ambush")) { Flag(T.options, MTF_AMBUSH); continue; }
-    if (Key.strEquCI("single")) { Flag(T.options, MTF_GSINGLE); continue; }
-    if (Key.strEquCI("dm")) { Flag(T.options, MTF_GDEATHMATCH); continue; }
-    if (Key.strEquCI("coop")) { Flag(T.options, MTF_GCOOP); continue; }
-    if (Key.strEquCI("scalex")) { T.scaleX = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseScaleX; continue; }
-    if (Key.strEquCI("scaley")) { T.scaleY = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseScaleY; continue; }
-    if (Key.strEquCI("scale")) { T.scaleX = T.scaleY = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseScaleX|mthing_t::MTHF_UseScaleY; continue; }
-    if (Key.strEquCI("gravity")) { T.gravity = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseGravity; continue; }
+    if (CheckUserKey(T.userFields)) continue;
+
+    if (Key.strEquCI("x")) { hasXY |= 1u; T.T.x = CheckFloat(); continue; }
+    if (Key.strEquCI("y")) { hasXY |= 2u; T.T.y = CheckFloat(); continue; }
+    if (Key.strEquCI("height")) { T.T.height = CheckFloat(); continue; }
+    if (Key.strEquCI("angle")) { T.T.angle = CheckFloat(); continue; }
+    if (Key.strEquCI("pitch")) { T.T.pitch = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UsePitch; continue; }
+    if (Key.strEquCI("roll")) { T.T.roll = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseRoll; continue; }
+    if (Key.strEquCI("yaw")) { T.T.angle = CheckFloat(); continue; }
+    if (Key.strEquCI("type")) { hasType = true; T.T.type = CheckInt(); continue; }
+    if (Key.strEquCI("ambush")) { Flag(T.T.options, MTF_AMBUSH); continue; }
+    if (Key.strEquCI("single")) { Flag(T.T.options, MTF_GSINGLE); continue; }
+    if (Key.strEquCI("dm")) { Flag(T.T.options, MTF_GDEATHMATCH); continue; }
+    if (Key.strEquCI("coop")) { Flag(T.T.options, MTF_GCOOP); continue; }
+    if (Key.strEquCI("scalex")) { T.T.scaleX = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseScaleX; continue; }
+    if (Key.strEquCI("scaley")) { T.T.scaleY = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseScaleY; continue; }
+    if (Key.strEquCI("scale")) { T.T.scaleX = T.T.scaleY = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseScaleX|mthing_t::MTHF_UseScaleY; continue; }
+    if (Key.strEquCI("gravity")) { T.T.gravity = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseGravity; continue; }
 
     // skills (up to, and including 16)
     if (Key.startsWithCI("skill")) {
       int skill = -1;
       if (VStr::convertInt((*Key)+5, &skill)) {
         if (skill >= 1 && skill <= 16) {
-          Flag(T.SkillClassFilter, 0x0001<<(skill-1));
+          Flag(T.T.SkillClassFilter, 0x0001<<(skill-1));
           continue;
         }
       }
@@ -919,12 +984,12 @@ void VUdmfParser::ParseThing () {
 
     if (NS&(NS_Hexen|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       // MBF friendly flag
-      if (Key.strEquCI("friend")) { Flag(T.options, MTF_FRIENDLY); continue; }
+      if (Key.strEquCI("friend")) { Flag(T.T.options, MTF_FRIENDLY); continue; }
       // strife specific flags
-      if (Key.strEquCI("standing")) { Flag(T.options, MTF_STANDSTILL); continue; }
-      if (Key.strEquCI("strifeally")) { Flag(T.options, MTF_FRIENDLY); continue; }
-      if (Key.strEquCI("translucent")) { Flag(T.options, MTF_SHADOW); continue; }
-      if (Key.strEquCI("invisible")) { Flag(T.options, MTF_ALTSHADOW); continue; }
+      if (Key.strEquCI("standing")) { Flag(T.T.options, MTF_STANDSTILL); continue; }
+      if (Key.strEquCI("strifeally")) { Flag(T.T.options, MTF_FRIENDLY); continue; }
+      if (Key.strEquCI("translucent")) { Flag(T.T.options, MTF_SHADOW); continue; }
+      if (Key.strEquCI("invisible")) { Flag(T.T.options, MTF_ALTSHADOW); continue; }
     }
 
     // hexen's extensions
@@ -932,60 +997,60 @@ void VUdmfParser::ParseThing () {
       if (Key.strEquCI("arg0str")) {
         //FIXME: actually, this is valid only for ACS specials
         //       this can be color name for dynamic lights too
-        //T.arg0 = M_ParseColor(*CheckString())&0xffffffu;
+        //T.T.arg0 = M_ParseColor(*CheckString())&0xffffffu;
         arg0str = CheckString();
         hasArg0Str = true;
-        T.arg0str = arg0str;
-        T.udmfExFlags |= mthing_t::MTHF_UseArg0Str;
+        T.T.arg0str = arg0str;
+        T.T.udmfExFlags |= mthing_t::MTHF_UseArg0Str;
         continue;
       }
 
-      if (Key.strEquCI("id")) { T.tid = CheckInt(); continue; }
-      if (Key.strEquCI("dormant")) { Flag(T.options, MTF_DORMANT); continue; }
-      if (Key.strEquCI("special")) { T.special = CheckInt(); continue; }
-      if (Key.strEquCI("arg0")) { T.args[0] = CheckInt(); continue; }
-      if (Key.strEquCI("arg1")) { T.args[1] = CheckInt(); continue; }
-      if (Key.strEquCI("arg2")) { T.args[2] = CheckInt(); continue; }
-      if (Key.strEquCI("arg3")) { T.args[3] = CheckInt(); continue; }
-      if (Key.strEquCI("arg4")) { T.args[4] = CheckInt(); continue; }
+      if (Key.strEquCI("id")) { T.T.tid = CheckInt(); continue; }
+      if (Key.strEquCI("dormant")) { Flag(T.T.options, MTF_DORMANT); continue; }
+      if (Key.strEquCI("special")) { T.T.special = CheckInt(); continue; }
+      if (Key.strEquCI("arg0")) { T.T.args[0] = CheckInt(); continue; }
+      if (Key.strEquCI("arg1")) { T.T.args[1] = CheckInt(); continue; }
+      if (Key.strEquCI("arg2")) { T.T.args[2] = CheckInt(); continue; }
+      if (Key.strEquCI("arg3")) { T.T.args[3] = CheckInt(); continue; }
+      if (Key.strEquCI("arg4")) { T.T.args[4] = CheckInt(); continue; }
 
-      if (Key.strEquCI("health")) { T.health = CheckFloat(); T.udmfExFlags |= mthing_t::MTHF_UseHealth; continue; }
+      if (Key.strEquCI("health")) { T.T.health = CheckFloat(); T.T.udmfExFlags |= mthing_t::MTHF_UseHealth; continue; }
 
       if (Key.strEquCI("renderstyle")) {
         VStr s = CheckString().xstrip();
         if (s.length() == 0) continue;
-        if (s.strEquCI("none")) { T.renderStyle = STYLE_None; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("normal")) { T.renderStyle = STYLE_Normal; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("add")) { T.renderStyle = STYLE_Add; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("additive")) { T.renderStyle = STYLE_Add; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("sub")) { T.renderStyle = STYLE_Subtract; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("subtract")) { T.renderStyle = STYLE_Subtract; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("subtractive")) { T.renderStyle = STYLE_Subtract; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("stencil")) { T.renderStyle = STYLE_Stencil; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("translucentstencil")) { T.renderStyle = STYLE_TranslucentStencil; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("addstencil")) { T.renderStyle = STYLE_AddStencil; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("shaded")) { T.renderStyle = STYLE_Shaded; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("addshaded")) { T.renderStyle = STYLE_AddShaded; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("translucent")) { T.renderStyle = STYLE_Translucent; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("fuzzy")) { T.renderStyle = STYLE_Fuzzy; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("optfuzzy")) { T.renderStyle = STYLE_OptFuzzy; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("soultrans")) { T.renderStyle = STYLE_SoulTrans; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("shadow")) { T.renderStyle = STYLE_Shadow; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
-        if (s.strEquCI("k8dark")) { T.renderStyle = STYLE_Dark; T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("none")) { T.T.renderStyle = STYLE_None; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("normal")) { T.T.renderStyle = STYLE_Normal; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("add")) { T.T.renderStyle = STYLE_Add; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("additive")) { T.T.renderStyle = STYLE_Add; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("sub")) { T.T.renderStyle = STYLE_Subtract; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("subtract")) { T.T.renderStyle = STYLE_Subtract; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("subtractive")) { T.T.renderStyle = STYLE_Subtract; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("stencil")) { T.T.renderStyle = STYLE_Stencil; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("translucentstencil")) { T.T.renderStyle = STYLE_TranslucentStencil; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("addstencil")) { T.T.renderStyle = STYLE_AddStencil; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("shaded")) { T.T.renderStyle = STYLE_Shaded; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("addshaded")) { T.T.renderStyle = STYLE_AddShaded; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("translucent")) { T.T.renderStyle = STYLE_Translucent; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("fuzzy")) { T.T.renderStyle = STYLE_Fuzzy; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("optfuzzy")) { T.T.renderStyle = STYLE_OptFuzzy; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("soultrans")) { T.T.renderStyle = STYLE_SoulTrans; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("shadow")) { T.T.renderStyle = STYLE_Shadow; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
+        if (s.strEquCI("k8dark")) { T.T.renderStyle = STYLE_Dark; T.T.udmfExFlags |= mthing_t::MTHF_UseRenderStyle; continue; }
         //sc.Message(va("UDMF: `renderstyle` property with value \"%s\" is not supported yet", *s));
         keyWarning(WT_THING);
         continue;
       }
 
       if (Key.strEquCI("fillcolor")) {
-        T.stencilColor = CheckColor(0);
-        T.udmfExFlags |= mthing_t::MTHF_UseStencilColor;
+        T.T.stencilColor = CheckColor(0);
+        T.T.udmfExFlags |= mthing_t::MTHF_UseStencilColor;
         continue;
       }
 
       if (Key.strEquCI("alpha")) {
-        T.renderAlpha = clampval(CheckFloat(), 0.0f, 1.0f);
-        T.udmfExFlags |= mthing_t::MTHF_UseRenderAlpha;
+        T.T.renderAlpha = clampval(CheckFloat(), 0.0f, 1.0f);
+        T.T.udmfExFlags |= mthing_t::MTHF_UseRenderAlpha;
         continue;
       }
 
@@ -994,18 +1059,18 @@ void VUdmfParser::ParseThing () {
         int cls = -1;
         if (VStr::convertInt((*Key)+5, &cls)) {
           if (cls >= 1 && cls <= 16) {
-            Flag(T.SkillClassFilter, 0x00010000<<(cls-1));
+            Flag(T.T.SkillClassFilter, 0x00010000<<(cls-1));
             continue;
           }
         }
       }
 
       if (Key.startsWithCI("countsecret")) {
-        if (CheckBool()) T.udmfExFlags |= mthing_t::MTHF_CountAsSecret; else T.udmfExFlags &= ~mthing_t::MTHF_CountAsSecret;
+        if (CheckBool()) T.T.udmfExFlags |= mthing_t::MTHF_CountAsSecret; else T.T.udmfExFlags &= ~mthing_t::MTHF_CountAsSecret;
         continue;
       }
 
-      if (Key.startsWithCI("conversation")) { T.conversationId = CheckInt(); T.udmfExFlags |= mthing_t::MTHF_UseConversationId; continue; }
+      if (Key.startsWithCI("conversation")) { T.T.conversationId = CheckInt(); T.T.udmfExFlags |= mthing_t::MTHF_UseConversationId; continue; }
 
       // ignored properties
       if (Key.startsWithCI("score")) { if (CheckInt() == 0) continue; }
@@ -1018,13 +1083,13 @@ void VUdmfParser::ParseThing () {
   if (!hasType) sc.HostError(va("UDMF: thing #%d has no type set", ParsedThings.length()-1));
 
   //FIXME: actually, this is valid only for special runacs range for now; write a proper thingy instead
-  if (hasArg0Str && ((T.special >= 80 && T.special <= 86) || T.special == 226)) {
+  if (hasArg0Str && ((T.T.special >= 80 && T.T.special <= 86) || T.T.special == 226)) {
     VName sn = VName(*arg0str, VName::AddLower); // 'cause script names are lowercased
     if (sn != NAME_None) {
-      T.args[0] = -(int)sn.GetIndex();
-      //GCon->Logf("*** ACS NAMED THING SPECIAL %d: name is (%d) '%s'", T.special, sn.GetIndex(), *sn);
+      T.T.args[0] = -(int)sn.GetIndex();
+      //GCon->Logf("*** ACS NAMED THING SPECIAL %d: name is (%d) '%s'", T.T.special, sn.GetIndex(), *sn);
     } else {
-      T.args[0] = 0;
+      T.T.args[0] = 0;
     }
   }
 }
@@ -1093,8 +1158,12 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   NumSectors = Parser.ParsedSectors.Num();
   Sectors = new sector_t[NumSectors];
   for (int i = 0; i < NumSectors; ++i) {
-    Sectors[i] = Parser.ParsedSectors[i];
+    Sectors[i] = Parser.ParsedSectors[i].S;
     Sectors[i].CreateBaseRegion();
+    for (auto &&vv : Parser.ParsedSectors[i].userFields) {
+      if (Sectors[i].sectorTag) putSectorKey(Sectors[i].sectorTag, *vv.name, vv.i, vv.f);
+      for (auto &&mt : Sectors[i].moreTags) if (mt) putSectorKey(mt, *vv.name, vv.i, vv.f);
+    }
   }
   HashSectors();
 
@@ -1117,6 +1186,12 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
     //Lines[i].v2 = &Vertexes[Parser.ParsedLines[i].V2Index];
 
     //if (i == 1018) GCon->Logf("LD1018: v0=%d; v1=%d; v0=(%f,%f); v1=(%f,%f)", *ip0, *ip1, Vertexes[*ip0].x, Vertexes[*ip0].y, Vertexes[*ip1].x, Vertexes[*ip1].y);
+
+    for (auto &&vv : Parser.ParsedLines[i].userFields) {
+      putLineIdxKey(i, *vv.name, vv.i, vv.f);
+      if (Lines[i].lineTag) putLineKey(Lines[i].lineTag, *vv.name, vv.i, vv.f);
+      for (auto &&mt : Lines[i].moreTags) if (mt) putLineKey(mt, *vv.name, vv.i, vv.f);
+    }
   }
 
   if (doTranslation) {
@@ -1148,6 +1223,24 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
       Host_Error("%s: UDFM: bad sector index %d in sidedef #%d", *Src.loc.toStringNoCol(), Src.SectorIndex, Src.index);
     }
     sd->Sector = &Sectors[Src.SectorIndex];
+
+    if (Src.userFields.length()) {
+      for (auto &&vv : Src.userFields) putSideIdxKey(i, *vv.name, vv.i, vv.f);
+
+      if (sd->LineNum >= 0 && sd->LineNum < NumLines) {
+        const line_t *l = &Lines[sd->LineNum];
+        if (l->lineTag || l->moreTags.length()) {
+          for (auto &&vv : Src.userFields) {
+            for (int sdx = 0; sdx < 2; ++sdx) {
+              if (l->sidenum[sdx] == i) {
+                if (l->lineTag) putSideKey(sdx, l->lineTag, *vv.name, vv.i, vv.f);
+                for (auto &&mt : l->moreTags) if (mt) putSideKey(sdx, mt, *vv.name, vv.i, vv.f);
+              }
+            }
+          }
+        }
+      }
+    }
 
     switch (Spec) {
       case LNSPEC_LineTranslucent:
@@ -1199,8 +1292,12 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   NumThings = Parser.ParsedThings.Num();
   Things = new mthing_t[NumThings+1];
   memset((void *)Things, 0, (NumThings+1)*sizeof(mthing_t));
-  for (int f = 0; f < Parser.ParsedThings.length(); ++f) Things[f] = Parser.ParsedThings[f];
-  //memcpy(Things, Parser.ParsedThings.Ptr(), sizeof(mthing_t)*NumThings);
+  for (int f = 0; f < Parser.ParsedThings.length(); ++f) {
+    Things[f] = Parser.ParsedThings[f].T;
+    if (Things[f].tid) {
+      for (auto &&vv : Parser.ParsedThings[f].userFields) putThingKey(Things[f].tid, *vv.name, vv.i, vv.f);
+    }
+  }
 
   // create slopes from vertex heights
   // this is allowed only for triangular sectors (otherwise the map will be distorted)

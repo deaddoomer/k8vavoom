@@ -248,6 +248,47 @@ struct VLightParams {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+struct VCustomKeyInfo {
+  struct Value {
+    int i;
+    float f;
+
+    inline Value () noexcept : i(0), f(0.0f) {}
+    inline Value (const int iv, const float fv) noexcept : i(iv), f(fv) {}
+  };
+
+  typedef TMapNC<vint32, Value> ValueMap; // key: line tag or thing id
+
+  TMap<VName, ValueMap> idMap;
+
+  inline VCustomKeyInfo () noexcept : idMap() {}
+  inline ~VCustomKeyInfo () noexcept { idMap.clear(); }
+
+  inline void putKey (int id, const char *name, int iv, float fv) noexcept {
+    if (!name || !name[0] || !id) return;
+    VName n = VName(name, VName::AddLower);
+    ValueMap *mp = idMap.find(n);
+    if (!mp) {
+      idMap.put(n, ValueMap());
+      mp = idMap.find(n);
+      vassert(mp);
+    }
+    mp->put(id, Value(iv, fv));
+  }
+
+  inline const Value *findKey (int id, const char *name) const noexcept {
+    if (!id || !name || !name[0]) return nullptr;
+    VName n = VName(name, VName::FindLower);
+    if (n == NAME_None) return nullptr;
+    const ValueMap *mp = idMap.find(n);
+    if (!mp) return nullptr;
+    return mp->find(id);
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 class VLevel : public VGameObject {
   DECLARE_CLASS(VLevel, VGameObject, 0)
   NO_DEFAULT_CONSTRUCTOR(VLevel)
@@ -428,6 +469,14 @@ class VLevel : public VGameObject {
   vuint32 cacheFlags;
 
   TArray<VMapMarkerInfo> MapMarkers;
+
+  VCustomKeyInfo *UserLineKeyInfo;
+  VCustomKeyInfo *UserThingKeyInfo;
+  VCustomKeyInfo *UserSectorKeyInfo;
+  VCustomKeyInfo *UserSideKeyInfo0;
+  VCustomKeyInfo *UserSideKeyInfo1;
+  VCustomKeyInfo *UserLineIdxKeyInfo; // key: line_index+1
+  VCustomKeyInfo *UserSideIdxKeyInfo; // key: side_index+1
 
 protected:
   // temporary working set for decal spreader
@@ -1002,6 +1051,145 @@ public:
     VMT_RET_VOID(method);
   }
 
+public:
+  inline void putLineKey (int id, const char *name, int iv, float fv) noexcept {
+    if (!id || !name || !name[0]) return;
+    if (!UserLineKeyInfo) UserLineKeyInfo = new VCustomKeyInfo();
+    UserLineKeyInfo->putKey(id, name, iv, fv);
+  }
+
+  inline void putThingKey (int id, const char *name, int iv, float fv) noexcept {
+    if (!id || !name || !name[0]) return;
+    if (!UserThingKeyInfo) UserThingKeyInfo = new VCustomKeyInfo();
+    UserThingKeyInfo->putKey(id, name, iv, fv);
+  }
+
+  inline void putSectorKey (int id, const char *name, int iv, float fv) noexcept {
+    if (!id || !name || !name[0]) return;
+    if (!UserSectorKeyInfo) UserSectorKeyInfo = new VCustomKeyInfo();
+    UserSectorKeyInfo->putKey(id, name, iv, fv);
+  }
+
+  inline void putSideKey (int sidenum, int id, const char *name, int iv, float fv) noexcept {
+    if (sidenum < 0 || sidenum > 1 || !id || !name || !name[0]) return;
+    if (sidenum == 0) {
+      if (!UserSideKeyInfo0) UserSideKeyInfo0 = new VCustomKeyInfo();
+      UserSideKeyInfo0->putKey(id, name, iv, fv);
+    } else {
+      if (!UserSideKeyInfo1) UserSideKeyInfo1 = new VCustomKeyInfo();
+      UserSideKeyInfo1->putKey(id, name, iv, fv);
+    }
+  }
+
+  inline void putLineIdxKey (int idx, const char *name, int iv, float fv) noexcept {
+    if (idx < 0 || idx >= NumLines || !name || !name[0]) return;
+    if (!UserLineIdxKeyInfo) UserLineIdxKeyInfo = new VCustomKeyInfo();
+    UserLineIdxKeyInfo->putKey(idx+1, name, iv, fv);
+  }
+
+  inline void putSideIdxKey (int idx, const char *name, int iv, float fv) noexcept {
+    if (idx < 0 || idx >= NumSides || !name || !name[0]) return;
+    if (!UserSideIdxKeyInfo) UserSideIdxKeyInfo = new VCustomKeyInfo();
+    UserSideIdxKeyInfo->putKey(idx+1, name, iv, fv);
+  }
+
+
+  inline const VCustomKeyInfo::Value *findLineKey (int id, const char *name) const noexcept {
+    return (UserLineKeyInfo ? UserLineKeyInfo->findKey(id, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findThingKey (int id, const char *name) const noexcept {
+    return (UserThingKeyInfo ? UserThingKeyInfo->findKey(id, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findSectorKey (int id, const char *name) const noexcept {
+    return (UserSectorKeyInfo ? UserSectorKeyInfo->findKey(id, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findSide0Key (int id, const char *name) const noexcept {
+    return (UserSideKeyInfo0 ? UserSideKeyInfo0->findKey(id, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findSide1Key (int id, const char *name) const noexcept {
+    return (UserSideKeyInfo1 ? UserSideKeyInfo1->findKey(id, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findSideKey (int sidenum, int id, const char *name) const noexcept {
+         if (sidenum == 0) return findSide0Key(id, name);
+    else if (sidenum == 1) return findSide1Key(id, name);
+    else return nullptr;
+  }
+
+  inline const VCustomKeyInfo::Value *findLineIdxKey (int idx, const char *name) const noexcept {
+    return (UserLineIdxKeyInfo && idx >= 0 && idx < NumLines ? UserLineIdxKeyInfo->findKey(idx+1, name) : nullptr);
+  }
+
+  inline const VCustomKeyInfo::Value *findSideIdxKey (int idx, const char *name) const noexcept {
+    return (UserSideIdxKeyInfo && idx >= 0 && idx < NumSides ? UserSideIdxKeyInfo->findKey(idx+1, name) : nullptr);
+  }
+
+
+  inline int getLineKeyInt (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findLineKey(id, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getLineKeyFloat (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findLineKey(id, name);
+    return (v ? v->f : 0);
+  }
+
+  inline int getThingKeyInt (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findThingKey(id, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getThingKeyFloat (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findThingKey(id, name);
+    return (v ? v->f : 0);
+  }
+
+  inline int getSectorKeyInt (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSectorKey(id, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getSectorKeyFloat (int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSectorKey(id, name);
+    return (v ? v->f : 0);
+  }
+
+  inline int getSideKeyInt (int sidenum, int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSideKey(sidenum, id, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getSideKeyFloat (int sidenum, int id, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSideKey(sidenum, id, name);
+    return (v ? v->f : 0);
+  }
+
+  inline int getLineIdxKeyInt (int idx, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findLineIdxKey(idx, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getLineIdxKeyFloat (int idx, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findLineIdxKey(idx, name);
+    return (v ? v->f : 0);
+  }
+
+  inline int getSideIdxKeyInt (int idx, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSideIdxKey(idx, name);
+    return (v ? v->i : 0);
+  }
+
+  inline float getSideIdxKeyFloat (int idx, const char *name) const noexcept {
+    const VCustomKeyInfo::Value *v = findSideIdxKey(idx, name);
+    return (v ? v->f : 0);
+  }
+
+
 private:
   DECLARE_FUNCTION(GetLineIndex)
 
@@ -1066,6 +1254,15 @@ private:
   DECLARE_FUNCTION(CD_SweepLinedefAABB)
 
   DECLARE_FUNCTION(GetNextVisitedCount)
+
+  DECLARE_FUNCTION(GetUDMFLineInt)
+  DECLARE_FUNCTION(GetUDMFLineFloat)
+  DECLARE_FUNCTION(GetUDMFThingInt)
+  DECLARE_FUNCTION(GetUDMFThingFloat)
+  DECLARE_FUNCTION(GetUDMFSectorInt)
+  DECLARE_FUNCTION(GetUDMFSectorFloat)
+  DECLARE_FUNCTION(GetUDMFSideInt)
+  DECLARE_FUNCTION(GetUDMFSideFloat)
 };
 
 

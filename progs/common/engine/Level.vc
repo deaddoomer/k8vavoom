@@ -214,10 +214,30 @@ native transient private bool cacheIgnore;
 
 protected array!MapMarkerInfo MapMarkers;
 
+// UDMF user keys
+private native transient /*VCustomKeyInfo*/void *UserLineKeyInfo;
+private native transient /*VCustomKeyInfo*/void *UserThingKeyInfo;
+private native transient /*VCustomKeyInfo*/void *UserSectorKeyInfo;
+private native transient /*VCustomKeyInfo*/void *UserSideKeyInfo0;
+private native transient /*VCustomKeyInfo*/void *UserSideKeyInfo1;
+private native transient /*VCustomKeyInfo*/void *UserLineIdxKeyInfo;
+private native transient /*VCustomKeyInfo*/void *UserSideIdxKeyInfo;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // natives
 native final int GetLineIndex (line_t *line);
+
+// "user_" must be included in key name!
+native final bool GetUDMFLineInt (int id, name keyname, out int res);
+native final bool GetUDMFLineFloat (int id, name keyname, out float res);
+native final bool GetUDMFThingInt (int id, name keyname, out int res);
+native final bool GetUDMFThingFloat (int id, name keyname, out float res);
+native final bool GetUDMFSectorInt (int id, name keyname, out int res);
+native final bool GetUDMFSectorFloat (int id, name keyname, out float res);
+native final bool GetUDMFSideInt (int sidenum, int id, name keyname, out int res);
+native final bool GetUDMFSideFloat (int sidenum, int id, name keyname, out float res);
+
 
 struct linetrace_t {
   TVec Start;

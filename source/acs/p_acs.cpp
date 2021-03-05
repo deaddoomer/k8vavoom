@@ -547,7 +547,9 @@ public:
   void TranslateSpecial (int &spec, int &arg1);
   int RunScript (float DeltaTime, bool immediate);
   virtual void Tick (float) override;
-  int CallFunction (int argCount, int funcIndex, vint32 *args);
+  int CallFunction (line_t *line, int argCount, int funcIndex, vint32 *args);
+
+  VStr GetUDMFKeyName (vint32 arg);
 
   virtual VStr DebugDumpToString () override {
     return VStr(va("number=%d; name=<%s>", number, *info->Name));
@@ -2661,10 +2663,22 @@ static inline float NormHudTime (float t, float DelayTime) {
 
 //==========================================================================
 //
+//  VAcs::GetUDMFKeyName
+//
+//==========================================================================
+VStr VAcs::GetUDMFKeyName (vint32 arg) {
+  VStr s = GetStr(arg);
+  if (!s.isEmpty() && !s.startsWithCI("user_")) s = VStr("user_")+s;
+  return s;
+}
+
+
+//==========================================================================
+//
 //  VAcs::CallFunction
 //
 //==========================================================================
-int VAcs::CallFunction (int argCount, int funcIndex, vint32 *args) {
+int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *args) {
 #if !USE_COMPUTED_GOTO
   {
     VStr dstr;
@@ -4003,6 +4017,87 @@ int VAcs::CallFunction (int argCount, int funcIndex, vint32 *args) {
 
     case ACSF_GetMaxInventory:
       GCon->Logf(NAME_Warning, "ACSF `GetMaxInventory` is not implemented");
+      return 0;
+
+    case ACSF_GetLineUDMFInt:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        int id = args[0];
+        if (id == 0) {
+          if (!actline) return 0;
+          return Level->XLevel->getLineIdxKeyInt((int)(ptrdiff_t)(actline-&Level->XLevel->Lines[0]), *key);
+        } else {
+          return Level->XLevel->getLineKeyInt(id, *key);
+        }
+      }
+      return 0;
+    case ACSF_GetLineUDMFFixed:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        int id = args[0];
+        if (id == 0) {
+          if (!actline) return 0;
+          return (int)(Level->XLevel->getLineIdxKeyFloat((int)(ptrdiff_t)(actline-&Level->XLevel->Lines[0]), *key)*65536.0f);
+        } else {
+          return (int)(Level->XLevel->getLineKeyFloat(id, *key)*65536.0f);
+        }
+      }
+      return 0;
+
+    case ACSF_GetThingUDMFInt:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        int id = args[0];
+        if (id == 0 && Activator) id = Activator->TID;
+        return Level->XLevel->getThingKeyInt(id, *key);
+      }
+      return 0;
+    case ACSF_GetThingUDMFFixed:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        int id = args[0];
+        if (id == 0 && Activator) id = Activator->TID;
+        return (int)(Level->XLevel->getThingKeyFloat(id, *key)*65536.0f);
+      }
+      return 0;
+
+    case ACSF_GetSectorUDMFInt:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        return Level->XLevel->getSectorKeyInt(args[0], *key);
+      }
+      return 0;
+    case ACSF_GetSectorUDMFFixed:
+      if (argCount >= 2) {
+        VStr key = GetUDMFKeyName(args[1]);
+        return (int)(Level->XLevel->getSectorKeyFloat(args[0], *key)*65536.0f);
+      }
+      return 0;
+
+    case ACSF_GetSideUDMFInt:
+      if (argCount >= 3 && args[1] >= 0 && args[1] <= 1) {
+        VStr key = GetUDMFKeyName(args[2]);
+        int id = args[0];
+        if (id == 0) {
+          if (!actline) return 0;
+          return Level->XLevel->getSideIdxKeyInt(actline->sidenum[args[1]], *key);
+        } else {
+          return Level->XLevel->getSideKeyInt(args[1], id, *key);
+        }
+      }
+      return 0;
+    case ACSF_GetSideUDMFFixed:
+      if (argCount >= 3 && args[1] >= 0 && args[1] <= 1) {
+        VStr key = GetUDMFKeyName(args[2]);
+        int id = args[0];
+        if (id == 0 && actline) id = actline->lineTag;
+        if (id == 0) {
+          if (!actline) return 0;
+          return (int)(Level->XLevel->getSideIdxKeyFloat(actline->sidenum[args[1]], *key)*65536.0f);
+        } else {
+          return (int)(Level->XLevel->getSideKeyFloat(args[1], id, *key)*65536.0f);
+        }
+      }
       return 0;
   }
 
@@ -5906,7 +6001,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       {
         int argCount = READ_BYTE_OR_INT32; INC_BYTE_OR_INT32;
         int funcIndex = READ_SHORT_OR_INT32; INC_SHORT_OR_INT32;
-        int retval = CallFunction(argCount, funcIndex, sp-argCount);
+        int retval = CallFunction(line, argCount, funcIndex, sp-argCount);
         sp -= argCount-1;
         sp[-1] = retval;
       }

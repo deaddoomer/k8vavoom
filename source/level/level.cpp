@@ -330,6 +330,27 @@ void VLevel::ClearReferences () {
 //
 //==========================================================================
 void VLevel::ClearAllMapData () {
+  delete UserLineKeyInfo;
+  UserLineKeyInfo = nullptr;
+
+  delete UserThingKeyInfo;
+  UserThingKeyInfo = nullptr;
+
+  delete UserSectorKeyInfo;
+  UserSectorKeyInfo = nullptr;
+
+  delete UserSideKeyInfo0;
+  UserSideKeyInfo0 = nullptr;
+
+  delete UserSideKeyInfo1;
+  UserSideKeyInfo1 = nullptr;
+
+  delete UserLineIdxKeyInfo;
+  UserLineIdxKeyInfo = nullptr;
+
+  delete UserSideIdxKeyInfo;
+  UserSideIdxKeyInfo = nullptr;
+
   if (Sectors) {
     for (auto &&sec : allSectors()) {
       sec.DeleteAllRegions();
@@ -1118,6 +1139,95 @@ IMPLEMENT_FUNCTION(VLevel, SetBodyQueueTrans) {
   P_GET_INT(Slot);
   P_GET_SELF;
   RET_INT(Self->SetBodyQueueTrans(Slot, Trans));
+}
+
+
+// native final bool GetUDMFLineInt (int id, name keyname, out int res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFLineInt) {
+  vint32 id;
+  VName name;
+  vint32 *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findLineKey(id, *name);
+  if (val && res) *res = val->i;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFLineFloat (int id, name keyname, out float res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFLineFloat) {
+  vint32 id;
+  VName name;
+  float *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findLineKey(id, *name);
+  if (val && res) *res = val->f;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFThingInt (int id, name keyname, out int res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFThingInt) {
+  vint32 id;
+  VName name;
+  vint32 *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findThingKey(id, *name);
+  if (val && res) *res = val->i;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFThingFloat (int id, name keyname, out float res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFThingFloat) {
+  vint32 id;
+  VName name;
+  float *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findThingKey(id, *name);
+  if (val && res) *res = val->f;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFSectorInt (int id, name keyname, out int res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFSectorInt) {
+  vint32 id;
+  VName name;
+  vint32 *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findSectorKey(id, *name);
+  if (val && res) *res = val->i;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFSectorFloat (int id, name keyname, out float res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFSectorFloat) {
+  vint32 id;
+  VName name;
+  float *res;
+  vobjGetParamSelf(id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findSectorKey(id, *name);
+  if (val && res) *res = val->f;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFSideInt (int sidenum, int id, name keyname, out int res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFSideInt) {
+  vint32 sidenum, id;
+  VName name;
+  vint32 *res;
+  vobjGetParamSelf(sidenum, id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findSideKey(sidenum, id, *name);
+  if (val && res) *res = val->i;
+  RET_BOOL(!!val);
+}
+
+// native final bool GetUDMFSideFloat (int sidenum, int id, name keyname, out float res);
+IMPLEMENT_FUNCTION(VLevel, GetUDMFSideFloat) {
+  vint32 sidenum, id;
+  VName name;
+  float *res;
+  vobjGetParamSelf(sidenum, id, name, res);
+  const VCustomKeyInfo::Value *val = Self->findSideKey(sidenum, id, *name);
+  if (val && res) *res = val->f;
+  RET_BOOL(!!val);
 }
 
 
