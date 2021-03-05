@@ -25,6 +25,7 @@
 //**************************************************************************
 #include <signal.h>
 #include <time.h>
+//#include <xmmintrin.h>
 
 #include "vcc_run.h"
 #include "../libs/vavoomc/vc_local.h"
@@ -569,6 +570,9 @@ int main (int argc, char **argv) {
 
   GLogErrorToStderr = true;
   GLogWarningToStderr = true;
+
+  //_mm_setcsr(_mm_getcsr()&~0x8040); // disable DAZ and FTZ
+  //_mm_setcsr(_mm_getcsr()|0x8040); // enable DAZ and FTZ
 
   RandomInit();
   VCvar::Init();
