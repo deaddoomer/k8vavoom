@@ -1716,6 +1716,9 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
     if (sc->Check("interbackdrop")) {
       VStr ss = ParseUStringKey(sc);
       info->InterBackdrop = VName(*ss, VName::AddLower);
+      // ignore possible patch name
+      //TODO: use it, if necessary
+      if (sc->Check(",")) sc->ExpectString();
       continue;
     }
     if (sc->Check("intermusic")) {
