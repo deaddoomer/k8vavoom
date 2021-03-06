@@ -54,6 +54,7 @@ const int MAXMORPHHEALTH = 30;
 float DamageFlash;
 float BonusFlash;
 name DamageFlashType;
+transient int DamageFlashBlend; // for advdamage indicator
 
 // base height above floor for viewz
 float ViewHeight;
@@ -2696,6 +2697,7 @@ void PaletteFlash () {
     }
   }
 
+  DamageFlashBlend = 0;
   if (nameicmp(EntityEx(MO).DamageType, 'Ice') == 0) {
     // Frozen player
     AddBlend(r, g, b, a, RGBA(2, 2, 255, 113));
@@ -2730,6 +2732,7 @@ void PaletteFlash () {
       //printdebug("%C: maxent=%s; DamageFlash=%s; dmgIntensity=%s; amount=%s (%s)", self, maxent, DamageFlash, dmgIntensity, int(114.0*DamageFlash*dmgIntensity), Amount);
       //if (Amount >= 228) Amount = 228;
       if (Amount > 0) AddBlend(r, g, b, a, (Amount<<24)|(dmgColor&0x00ffffff));
+      DamageFlashBlend = Amount;
     }
 
     if (BonusFlash) {

@@ -775,7 +775,7 @@ void CleanupAttackers () {
 void RememberAttacker (Entity ent, TVec aOrigin, float aDamage, name aDamageType) {
   //printdebug("attack from `%C`(%s): org=%s; dmg=%s; type=%s", ent, ent.UniqueId, aOrigin, aDamage, aDamageType);
   // check for the same origin, if there is any
-  int uid = (ent ? ent.ServerUId : 0);
+  int uid = (ent && !ent.isDestroyed ? ent.ServerUId : 0);
   foreach (auto ref atk; Attackers) {
     if (uid && atk.entUId == uid) {
       // replace it

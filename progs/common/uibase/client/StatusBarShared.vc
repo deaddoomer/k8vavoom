@@ -72,7 +72,7 @@ enum {
 const int SB_DMG_UP_FLAG = 1;
 const int SB_DMG_DOWN_FLAG = 2;
 
-const float SB_DMG_TIMEOUT = 0.6;
+const float SB_DMG_TIMEOUT = 0.8;
 const float SB_DMG_ALPHA = 0.8;
 
 // 640x512
@@ -851,15 +851,25 @@ void SB_DrawAdvancedDamage (Player cl) {
   float[SB_DMG_MAXDIR] dmgAttackTimeout;
   int[SB_DMG_MAXDIR] dmgUpDownFlag;
 
+  int dmgflash = 0;
+
+  if (cl && cl.MO && PlayerPawn(cl.MO) && cl.MO.Player) {
+    auto pex = PlayerEx(cl.MO.Player);
+    if (pex) dmgflash = int(clamp(pex.DamageFlashBlend, 0, 114)*(255.0/114.0));
+    //printdebug("=== %d attackers (flash:%s) ===", cl.Attackers.length, dmgflash);
+  }
+
   if (cl && cl.MO && cl.Attackers) {
     Entity mo = cl.MO;
     TAVec itang;
 
-    //printdebug("=== %d attackers ===", cl.Attackers.length);
+    //printdebug("=== %d attackers (flash:%s) ===", cl.Attackers.length, dmgflash);
     foreach (auto ref atk; cl.Attackers) {
       //if (atk.GameTime < 0) continue;
       float td = fmax(0.0, cl.GameTime-atk.GameTime);
       if (td >= SB_DMG_TIMEOUT) continue;
+
+      //if (dmgflash) { atk.GameTime = cl.GameTime; td = 0; }
 
       VectorAngles(atk.Origin-mo.Origin, out itang);
 
@@ -875,7 +885,7 @@ void SB_DrawAdvancedDamage (Player cl) {
       else dir = SB_DMG_BOTTOM; // backward
 
       //dmgAttackTimeout[dir] = SB_DMG_TIMEOUT;
-      dmgAttackTimeout[dir] = td;
+      dmgAttackTimeout[dir] = SB_DMG_TIMEOUT-td;
 
       float diffangpitch = AngleDiff(mo.Angles.pitch, itang.pitch);
       bool toup = (diffangpitch < 0.0);
@@ -887,13 +897,14 @@ void SB_DrawAdvancedDamage (Player cl) {
     }
   }
 
+  int clr = RGB(255, dmgflash, 0);
+
   // draw damage indicators
   foreach (int dir; 0..SB_DMG_MAXDIR) {
     float td = fmin(SB_DMG_TIMEOUT, dmgAttackTimeout[dir]);
     if (td <= 0.0) continue;
 
-    int clr = RGB(255, 0, 0);
-    float alpha = (1.0-td/SB_DMG_TIMEOUT)*SB_DMG_ALPHA;
+    float alpha = (td/SB_DMG_TIMEOUT)*SB_DMG_ALPHA;
 
     SB_DrawDamageIndicator(dir, clr, alpha, dmgUpDownFlag[dir]);
   }
