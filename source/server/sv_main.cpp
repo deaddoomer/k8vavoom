@@ -51,33 +51,34 @@ int serverStartRenderFramesTic = -1;
 static bool triedToSkipIntermission = false;
 
 /*
-static double FrameTime = 1.0f/35.0f;
+static double FrameTime = 1.0/35.0;
 // round a little bit up to prevent "slow motion"
-*(vuint64 *)&FrameTime += 1;
+*(vuint64 *)&FrameTime += 1; // this is 0x1.d41d41d41d41ep-6
+
+static float FrameTime = 1.0f/35.0f;
+// round a little bit up to prevent "slow motion"
+*(vuint32 *)&FrameTime += 1; // this is 0x1.d41d44p-6
 */
-static constexpr double FrameTime = 0x1.d41d41d41d41ep-6; // same as above
+static constexpr double FrameTime = 0x1.d41d41d41d41ep-6; // see above
 double SV_GetFrameTimeConstant () { return FrameTime; }
 
 /*
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-int main () {
-  double FrameTime = 1.0/35.0;
-  printf("%a %.21g 0x%08llx\n", FrameTime, FrameTime, *(const uint64_t *)&FrameTime);
-  // round a little bit up to prevent "slow motion"
-  *(uint64_t *)&FrameTime += 1;
-  printf("%a %.21g 0x%08llx\n", FrameTime, FrameTime, *(const uint64_t *)&FrameTime);
-  *(uint64_t *)&FrameTime += 1;
-  printf("%a %.21g 0x%08llx\n", FrameTime, FrameTime, *(const uint64_t *)&FrameTime);
-  printf("---\n");
-  FrameTime = 0x1.d41d41d41d41dp-6;
-  printf("%a %.21g 0x%08llx\n", FrameTime, FrameTime, *(const uint64_t *)&FrameTime);
-  FrameTime = 0x1.d41d41d41d41ep-6;
-  printf("%a %.21g 0x%08llx\n", FrameTime, FrameTime, *(const uint64_t *)&FrameTime);
-  return 0;
-}
+  float FrameTime = 1.0f/35.0f;
+  printf("%a  0x%08x\n", FrameTime, *(const vuint32 *)&FrameTime);  // 0x1.d41d42p-6  0x3cea0ea1
+  *(vuint32 *)&FrameTime += 1;
+  printf("%a  0x%08x\n", FrameTime, *(const vuint32 *)&FrameTime);  // 0x1.d41d44p-6  0x3cea0ea2
+
+  double FrameTimeD = 1.0f/35.0f;
+  printf("%a  0x%16llx\n", FrameTimeD, *(const vuint64 *)&FrameTimeD);  // 0x1.d41d42p-6  0x3f9d41d420000000
+  *(vuint64 *)&FrameTimeD += 1;
+  printf("%a  0x%16llx\n", FrameTimeD, *(const vuint64 *)&FrameTimeD);  // 0x1.d41d420000001p-6  0x3f9d41d420000001
+
+  FrameTimeD = 1.0/35.0;
+  printf("%a  0x%16llx\n", FrameTimeD, *(const vuint64 *)&FrameTimeD);  // 0x1.d41d41d41d41dp-6  0x3f9d41d41d41d41d
+  *(vuint64 *)&FrameTimeD += 1;
+  printf("%a  0x%16llx\n", FrameTimeD, *(const vuint64 *)&FrameTimeD);  // 0x1.d41d41d41d41ep-6  0x3f9d41d41d41d41e
 */
+
 
 static double ServerLastKeepAliveTime = 0.0;
 
