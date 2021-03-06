@@ -887,7 +887,7 @@ void SB_DrawAdvancedDamage (Player cl) {
       //dmgAttackTimeout[dir] = SB_DMG_TIMEOUT;
       dmgAttackTimeout[dir] = SB_DMG_TIMEOUT-td;
 
-      float diffangpitch = AngleDiff(mo.Angles.pitch, itang.pitch);
+      float diffangpitch = AngleDiff(/*mo.Angles.pitch*/0, itang.pitch);
       bool toup = (diffangpitch < 0.0);
       diffangpitch = fabs(diffangpitch);
 
