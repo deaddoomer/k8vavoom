@@ -4132,6 +4132,27 @@ override int AcsSpawnSpotFacing (name Name, int SpotTid, int Tid, bool forced) {
 
 //==========================================================================
 //
+//  AcsDamageActor
+//
+//==========================================================================
+override int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr, int damage, name damagetype, Entity Activator) {
+  // get target
+  EntityEx tgt = EntityEx(targettid ? FindMobjFromTID(targettid, none) : Activator);
+  if (!tgt) return -1;
+  tgt = EntityEx(tgt.DecorDoAAPtr('AcsDamageActor:tgt', targetptr));
+  if (!tgt) return -1;
+
+  // get inflictor
+  EntityEx ifc = EntityEx(inflictortid ? FindMobjFromTID(inflictortid, none) : Activator);
+  if (ifc) ifc = EntityEx(ifc.DecorDoAAPtr('AcsDamageActor:ifc', inflictorptr));
+
+  //k8: clamp damage, just because
+  return tgt.Damage(ifc, ifc, clamp(damage, 0, 100000), damagetype);
+}
+
+
+//==========================================================================
+//
 //  EV_ThingActivate
 //
 //==========================================================================

@@ -4099,6 +4099,13 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
         }
       }
       return 0;
+
+    // int DamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr, int damage, str damagetype);
+    case ACSF_DamageActor:
+      if (argCount >= 6) {
+        return Level->eventAcsDamageActor(args[0], args[1], args[2], args[3], args[4], GetName(args[5]), Activator);
+      }
+      return -1;
   }
 
   for (const ACSF_Info *nfo = ACSF_List; nfo->name; ++nfo) {

@@ -122,20 +122,12 @@
   ACS_EXTFUNC(SetMusicVolume) // ignored
   ACS_EXTFUNC(CheckProximity) // implemented
   ACS_EXTFUNC(CheckActorState) // implemented 99
-  /* Zandronum's - these must be skipped when we reach 99!
-  -100:ResetMap(0)
-  -101 : PlayerIsSpectator(1)
-  -102 : ConsolePlayerNumber(0)
-  -103 : GetTeamProperty(2)
-  -104 : GetPlayerLivesLeft(1)
-  -105 : SetPlayerLivesLeft(2)
-  -106 : KickFromGame(2)
-  */
 
+  // Zandronum (this is prolly as much as i want to implement)
   ACS_EXTFUNC_NUM(ResetMap_Zandro, 100)
   ACS_EXTFUNC(PlayerIsSpectator_Zandro) // ignored
   ACS_EXTFUNC(ConsolePlayerNumber_Zandro) // implemented
-  ACS_EXTFUNC(GetTeamProperty_Zandro) // [Dusk]
+  ACS_EXTFUNC(GetTeamProperty_Zandro)
   ACS_EXTFUNC(GetPlayerLivesLeft_Zandro) // ignored
   ACS_EXTFUNC(SetPlayerLivesLeft_Zandro) // ignored
   ACS_EXTFUNC(ForceToSpectate_Zandro)
@@ -167,7 +159,7 @@
 
 
   ACS_EXTFUNC_NUM(CheckClass, 200) // implemented
-  ACS_EXTFUNC(DamageActor)
+  ACS_EXTFUNC(DamageActor) // implemented
   ACS_EXTFUNC(SetActorFlag) // implemented
   ACS_EXTFUNC(SetTranslation) // implemented
   ACS_EXTFUNC(GetActorFloorTexture) // implemented

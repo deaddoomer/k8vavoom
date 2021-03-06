@@ -1297,6 +1297,16 @@ int AcsSpawnSpotFacing (name Name, int SpotTid, int Tid, bool forced) {
 
 //==========================================================================
 //
+//  AcsDamageActor
+//
+//==========================================================================
+int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr, int damage, name damagetype, Entity Activator) {
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  SectorDamage
 //
 //==========================================================================

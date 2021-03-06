@@ -277,6 +277,11 @@ public:
     vobjPutParamSelf(Name, SpotTid, Tid, forced);
     VMT_RET_INT(method);
   }
+  int eventAcsDamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr, int damage, VName damagetype, VEntity *Activator) {
+    static VMethodProxy method("AcsDamageActor");
+    vobjPutParamSelf(targettid, targetptr, inflictortid, inflictorptr, damage, damagetype, Activator);
+    VMT_RET_INT(method);
+  }
   void eventSectorDamage (int Tag, int Amount, VName DamageType, VName ProtectionType, int Flags) {
     static VMethodProxy method("SectorDamage");
     vobjPutParamSelf(Tag, Amount, DamageType, ProtectionType, Flags);
