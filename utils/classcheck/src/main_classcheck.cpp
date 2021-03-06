@@ -1467,7 +1467,7 @@ void checkVCType (Type *tp) {
         }
       }
       // internal hack
-      if (!ok && tp->name == "Level" && (vcf->name == "ActiveSequences" || vcf->name == "CameraTextures")) {
+      if (!ok && tp->name == "VLevel" && (vcf->name == "ActiveSequences" || vcf->name == "CameraTextures")) {
         ok = (vcType->toString() == "array!vint32");
       }
       if (!ok) {

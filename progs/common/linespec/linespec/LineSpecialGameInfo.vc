@@ -381,7 +381,7 @@ void SetSkill (int NewSkill) {
 //  MakeSlope
 //
 //==========================================================================
-final void MakeSlope (Level InLevel, mthing_t *mthing, bool IsCeiling) {
+final void MakeSlope (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
   TVec v1, v2;
   TVec p1, p2, p3;
   sec_plane_t *plane;
@@ -422,7 +422,7 @@ final void MakeSlope (Level InLevel, mthing_t *mthing, bool IsCeiling) {
 //  SlopeLineToPoint
 //
 //===========================================================================
-final void SlopeLineToPoint (Level InLevel, mthing_t *mthing, bool IsCeiling) {
+final void SlopeLineToPoint (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
   sec_plane_t *plane;
   TVec p1, p2;
   TVec v1, v2;
@@ -477,7 +477,7 @@ final void SlopeLineToPoint (Level InLevel, mthing_t *mthing, bool IsCeiling) {
 //  SetSlope
 //
 //===========================================================================
-final void SetSlope (Level InLevel, mthing_t *mthing, bool IsCeiling) {
+final void SetSlope (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
   TVec p1;
   sec_plane_t *plane;
   float xyang;
@@ -542,7 +542,7 @@ final void SetSlope (Level InLevel, mthing_t *mthing, bool IsCeiling) {
 //  SetVertexHeights
 //
 //==========================================================================
-final bool SetVertexHeights (Level InLevel, int ThingID) {
+final bool SetVertexHeights (VLevel InLevel, int ThingID) {
   bool ret = false;
 
   // clean all
@@ -572,7 +572,7 @@ final bool SetVertexHeights (Level InLevel, int ThingID) {
 //  CleanVertexHeights
 //
 //==========================================================================
-final void CleanVertexHeights (Level InLevel) {
+final void CleanVertexHeights (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Vertexes.length) InLevel.Vertexes[i].z = 0.0;
 }
 
@@ -582,7 +582,7 @@ final void CleanVertexHeights (Level InLevel) {
 //  MakeVertexFloorHeights
 //
 //==========================================================================
-final void MakeVertexFloorHeights (Level InLevel) {
+final void MakeVertexFloorHeights (VLevel InLevel) {
   TVec p1, p2, p3;
   TVec v1, v2;
 
@@ -623,7 +623,7 @@ final void MakeVertexFloorHeights (Level InLevel) {
 //  MakeVertexCeilingHeights
 //
 //==========================================================================
-final void MakeVertexCeilingHeights (Level InLevel) {
+final void MakeVertexCeilingHeights (VLevel InLevel) {
   TVec p1, p2, p3;
   TVec v1, v2;
 
@@ -673,7 +673,7 @@ final void MakeVertexCeilingHeights (Level InLevel) {
 //  If which == 1, sets ceiling.
 //
 //==========================================================================
-final void AlignPlane (Level InLevel, sector_t *sec, line_t *line, int which, int lineidx) {
+final void AlignPlane (VLevel InLevel, sector_t *sec, line_t *line, int which, int lineidx) {
   if (line->backsector == nullptr) return;
 
   // find furthest vertex from the reference line
@@ -743,7 +743,7 @@ final void AlignPlane (Level InLevel, sector_t *sec, line_t *line, int which, in
 //  SetSlopes
 //
 //==========================================================================
-final void SetSlopes (Level InLevel) {
+final void SetSlopes (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) {
     line_t *line = &InLevel.Lines[i];
     if (line.special == LNSPEC_PlaneAlign) {
@@ -779,7 +779,7 @@ final void SetSlopes (Level InLevel) {
 //  ProcessCopySlopes
 //
 //==========================================================================
-final void ProcessCopySlopes (Level InLevel) {
+final void ProcessCopySlopes (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) {
     line_t *line = &InLevel.Lines[i];
     if (line.special == LNSPEC_PlaneCopy) {
@@ -809,7 +809,7 @@ final void ProcessCopySlopes (Level InLevel) {
 //  CopyPlaneBetweenSectors
 //
 //===========================================================================
-final void CopyPlaneBetweenSectors (Level InLevel, sector_t *dst, sector_t *src, bool IsCeiling) {
+final void CopyPlaneBetweenSectors (VLevel InLevel, sector_t *dst, sector_t *src, bool IsCeiling) {
   if (!src || !dst || src == dst) return; // just in case
   if (!IsCeiling) {
     dst->floor.normal = src->floor.normal;
@@ -826,7 +826,7 @@ final void CopyPlaneBetweenSectors (Level InLevel, sector_t *dst, sector_t *src,
 //  CopyPlaneBetweenTaggedSectors
 //
 //===========================================================================
-final void CopyPlaneBetweenTaggedSectors (Level InLevel, sector_t *dst, int srctag, bool IsCeiling) {
+final void CopyPlaneBetweenTaggedSectors (VLevel InLevel, sector_t *dst, int srctag, bool IsCeiling) {
   if (srctag <= 0 || !dst) return; // just in case
   sector_t *sector;
   if (InLevel.FindSectorFromTag(out sector, srctag) < 0) return; // no source sector
@@ -839,7 +839,7 @@ final void CopyPlaneBetweenTaggedSectors (Level InLevel, sector_t *dst, int srct
 //  CopyPlaneWithThing
 //
 //===========================================================================
-final void CopyPlaneWithThing (Level InLevel, mthing_t *mthing, bool IsCeiling) {
+final void CopyPlaneWithThing (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
   sector_t *dst = InLevel.PointInSector(vector(mthing->x, mthing->y, 0.0));
   sector_t *src;
   if (InLevel.FindSectorFromTag(out src, mthing->args[1-1]) < 0) return; // no source sector
@@ -858,7 +858,7 @@ final void CopyPlaneWithThing (Level InLevel, mthing_t *mthing, bool IsCeiling) 
 //  SpawnExtraFloors
 //
 //==========================================================================
-final void SpawnExtraFloors (Level InLevel, line_t *line) {
+final void SpawnExtraFloors (VLevel InLevel, line_t *line) {
   int tag = line->arg1+(line->arg1&8 ? 0 : line->arg5);
   foreach (auto j; 0..InLevel.Sectors.length) {
     if (IsSectorTagEqual(&InLevel.Sectors[j], tag)) {
@@ -873,7 +873,7 @@ final void SpawnExtraFloors (Level InLevel, line_t *line) {
 //  MakeWaterContents
 //
 //==========================================================================
-final void MakeWaterContents (Level InLevel, line_t *line) {
+final void MakeWaterContents (VLevel InLevel, line_t *line) {
   int contents = CONTENTS_WATER;
   sector_t *sec = line->frontsector;
   sec.params.contents = contents;
@@ -889,7 +889,7 @@ final void MakeWaterContents (Level InLevel, line_t *line) {
 //  MakeSolidContents
 //
 //==========================================================================
-final void MakeSolidContents (Level InLevel, line_t *line) {
+final void MakeSolidContents (VLevel InLevel, line_t *line) {
   int contents = CONTENTS_EMPTY;
   sector_t *sec = line->frontsector;
   sec.params.contents = contents;
@@ -905,7 +905,7 @@ final void MakeSolidContents (Level InLevel, line_t *line) {
 //  MakeNonSolidContents
 //
 //==========================================================================
-final void MakeNonSolidContents (Level InLevel, line_t *line) {
+final void MakeNonSolidContents (VLevel InLevel, line_t *line) {
   int contents = CONTENTS_EMPTY;
   sector_t *sec = line->frontsector;
   sec.params.contents = contents;
@@ -954,7 +954,7 @@ final void MakeContents (line_t *line) {
 //  support for drawn heights coming from different sector
 //
 //==========================================================================
-void MakeHeightSec (Level InLevel, line_t *line) {
+void MakeHeightSec (VLevel InLevel, line_t *line) {
   sector_t *sec = line->frontsector;
   sec.bTransferSource = true;
   //if (line->arg2&1) sec.bAlwaysFakeHeights = true;//TODO
@@ -976,7 +976,7 @@ void MakeHeightSec (Level InLevel, line_t *line) {
 //  SetSectorFriction
 //
 //==========================================================================
-void SetSectorFriction (Level InLevel, int tag, int amount, bool alterFlag) {
+void SetSectorFriction (VLevel InLevel, int tag, int amount, bool alterFlag) {
   int OldMoveFactor;
 
   // an amount of 100 should result in a friction of ORIG_FRICTION (0xE800)
@@ -1037,7 +1037,7 @@ void SetSectorFriction (Level InLevel, int tag, int amount, bool alterFlag) {
 //  StaticInit
 //
 //==========================================================================
-void StaticInit (Level InLevel, line_t *line) {
+void StaticInit (VLevel InLevel, line_t *line) {
   float Grav;
   int Dmg;
   sector_t *sec;
@@ -1097,7 +1097,7 @@ void StaticInit (Level InLevel, line_t *line) {
 //  SpawnWorld
 //
 //==========================================================================
-override void SpawnWorld (Level InLevel) {
+override void SpawnWorld (VLevel InLevel) {
   int length;
   //int SecNum;
   float alpha;

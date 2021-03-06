@@ -254,7 +254,7 @@ WorldInfo CreateWorldInfo () {
 //  TranslateLevel
 //
 //==========================================================================
-void TranslateLevel (Level InLevel) {
+void TranslateLevel (VLevel InLevel) {
 }
 
 
@@ -272,7 +272,7 @@ void TranslateSpecialActions (LevelInfo Level) {
 //  SpawnWorld
 //
 //==========================================================================
-void SpawnWorld (Level InLevel) {
+void SpawnWorld (VLevel InLevel) {
 }
 
 

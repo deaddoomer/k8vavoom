@@ -50,7 +50,7 @@ struct Transition {
   float floorDist, ceilDist;
 }
 
-Level XLevel; // level object (i.e. actual map)
+VLevel XLevel; // level object (i.e. actual map)
 TVec Origin;
 int index; // subsector number; also, node index in pather `nodes`
 GameObject::subsector_t *sub;
@@ -69,7 +69,7 @@ array!Transition exits;
 float myFloorDist, myCeilDist;
 
 
-static final BotPathNode CreateNew (Level axlevel) {
+static final BotPathNode CreateNew (VLevel axlevel) {
   BotPathNode res = SpawnObject(BotPathNode);
   res.XLevel = axlevel;
   return res;
@@ -222,7 +222,7 @@ final void refreshNovePassability (BotPathNode node) {
   node.myCeilDist = sec.ceiling.dist;
 
   EntityEx::FakeDoorInfo savedPlane;
-  Level lev = bot.player.MO.XLevel;
+  VLevel lev = bot.player.MO.XLevel;
 
   if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "updating sub #%d (sector #%d) passability (old is %B)", node.index, node.sub.sector-&lev.Sectors[0], node.passable);
 
@@ -270,7 +270,7 @@ transient dictionary!(int, int) twoWayRefresh;
 // should be called when sector heights changed
 final void refreshNodeExit (BotPathNode node, int exitnum) {
   EntityEx botmo = EntityEx(bot.player.MO);
-  Level lev = botmo.XLevel;
+  VLevel lev = botmo.XLevel;
   auto tr = &node.exits[exitnum];
 
   auto sec = tr.sub.sector;
@@ -388,7 +388,7 @@ final void Setup (BotPlayerBase abot) {
   bot = abot;
   foreach (ref auto node; nodes) delete node;
   EntityEx botmo = EntityEx(bot.player.MO);
-  Level lev = botmo.XLevel;
+  VLevel lev = botmo.XLevel;
 
   Reset();
   queryCounter = 1;
@@ -493,7 +493,7 @@ final bool BuildPath (TVec from, GameObject::subsector_t *fromsub, TVec dest, Ga
   // we may need alive bot mobile to re-evaluate nodes
   Actor botmo = Actor(abot.player.MO);
   if (!botmo || botmo.Health <= 0) return false; // dead bot cannot go anywhere
-  Level lev = bot.player.MO.XLevel;
+  VLevel lev = bot.player.MO.XLevel;
 
   if (!fromsub) fromsub = lev.PointInSubsector(from);
   if (!destsub) destsub = lev.PointInSubsector(dest);

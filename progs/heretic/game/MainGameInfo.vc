@@ -502,7 +502,7 @@ void TranslateThing(mthing_t *mthing)
 //
 //==========================================================================
 
-override void TranslateLevel(Level InLevel)
+override void TranslateLevel(VLevel InLevel)
 {
   int i;
 

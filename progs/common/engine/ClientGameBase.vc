@@ -31,7 +31,7 @@ bool bSkipIntermission;
 
 readonly GameInfo Game;
 readonly BasePlayer cl;
-readonly Level GLevel;
+readonly VLevel GLevel;
 
 readonly IntermissionInfo im;
 

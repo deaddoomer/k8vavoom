@@ -23,7 +23,7 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Level : GameObject native;
+class VLevel : GameObject native;
 
 const int MAX_LEVEL_TRANSLATIONS = 0xffff;
 const int MAX_BODY_QUEUE_TRANSLATIONS = 0xff;

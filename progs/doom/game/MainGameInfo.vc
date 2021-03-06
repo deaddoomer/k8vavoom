@@ -705,7 +705,7 @@ void SetLineTrans (int i, int special, int arg1, int arg2, int arg3,
 //  front sector is not set yet
 //
 //==========================================================================
-void TranslateLine (Level InLevel, line_t *line) {
+void TranslateLine (VLevel InLevel, line_t *line) {
   int OldSpec = line->special;
   int OldTag = line->arg1;
   int OldFlags = line->flags;
@@ -1017,7 +1017,7 @@ void TranslateThing (mthing_t *mthing) {
 //  TranslateLevel
 //
 //==========================================================================
-override void TranslateLevel (Level InLevel) {
+override void TranslateLevel (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
   foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(&InLevel.Sectors[i]);
   foreach (auto i; 0..InLevel.Things.length) TranslateThing(&InLevel.Things[i]);

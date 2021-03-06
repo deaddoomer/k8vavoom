@@ -70,7 +70,7 @@ struct FAmbientSound {
 };
 
 
-readonly Level XLevel; // level object (i.e. actual map)
+readonly VLevel XLevel; // level object (i.e. actual map)
 readonly LevelInfo Level; // level info object
 
 native readonly private Thinker Prev;

@@ -56,7 +56,7 @@ public: \
   friend inline VStream &operator<<(VStream &Strm, TClass *&Obj) { return Strm << *(VObject **)&Obj; }
 
 // register a class at startup time
-#define IMPLEMENT_CLASS(Pre, TClass) \
+#define IMPLEMENT_CLASS(Pre,TClass) \
   VClass Pre##TClass::PrivateStaticClass \
   ( \
     EC_NativeConstructor, \
@@ -67,6 +67,19 @@ public: \
     Pre##TClass::InternalConstructor \
   ); \
   VClass *autoclass##Pre##TClass = Pre##TClass::StaticClass();
+
+// register a class at startup time
+#define IMPLEMENT_CLASS_NAMED(TClass,XName) \
+  VClass TClass::PrivateStaticClass \
+  ( \
+    EC_NativeConstructor, \
+    sizeof(TClass), \
+    TClass::StaticClassFlags, \
+    TClass::Super::StaticClass(), \
+    NAME_##XName, \
+    TClass::InternalConstructor \
+  ); \
+  VClass *autoclass##TClass = TClass::StaticClass();
 
 // use this to declare VavoomC native function in some object
 #define DECLARE_FUNCTION(func) \

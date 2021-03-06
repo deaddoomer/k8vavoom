@@ -462,7 +462,7 @@ void TranslateThing (mthing_t *mthing) {
 //  TranslateLevel
 //
 //==========================================================================
-override void TranslateLevel (Level InLevel) {
+override void TranslateLevel (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) TranslateLine(&InLevel.Lines[i]);
   foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(&InLevel.Sectors[i]);
   foreach (auto i; 0..InLevel.Things.length) TranslateThing(&InLevel.Things[i]);

@@ -30,7 +30,7 @@
 #endif
 
 
-IMPLEMENT_CLASS(V, Level);
+IMPLEMENT_CLASS_NAMED(VLevel, VLevel);
 
 VLevel *GLevel;
 VLevel *GClLevel;

@@ -313,8 +313,10 @@ public:
     } else if (TmpIdx > 0) {
       if (TmpIdx > Exports.Num()) Sys_Error("Bad index %d", TmpIdx);
       Ref = Exports[TmpIdx-1];
+      //vassert(Ref);
+      //GCon->Logf(NAME_Debug, "IO OBJECT: '%s'", Ref->GetClass()->GetName());
     } else {
-      GCon->Logf("LOAD: playerbase %d", -TmpIdx-1);
+      GCon->Logf(NAME_Warning, "LOAD: playerbase %d", -TmpIdx-1);
       Ref = GPlayersBase[-TmpIdx-1];
     }
   }
@@ -327,7 +329,7 @@ public:
     } else if (Struct->Name == "line_t") {
       Ptr = (TmpIdx >= 0 ? &GLevel->Lines[TmpIdx] : nullptr);
     } else {
-      if (developer) GCon->Logf(NAME_Dev, "Don't know how to handle pointer to %s", *Struct->Name);
+      if (developer) GCon->Logf(NAME_Warning, "Don't know how to handle pointer to %s", *Struct->Name);
       Ptr = nullptr;
     }
   }
@@ -468,7 +470,7 @@ static bool checkSkipClassCB (VObject *self, VName clsname) {
   if (clsname == "Level_K8BDW" || clsname == "Level_K8Gore") {
     // allow any level descendant
     for (VClass *cls = self->GetClass(); cls; cls = cls->GetSuperClass()) {
-      if (VStr::strEqu(cls->GetName(), "Level")) return true;
+      if (VStr::strEqu(cls->GetName(), "VLevel")) return true;
     }
   }
   return false;

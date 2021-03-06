@@ -36,7 +36,7 @@ struct Transition {
   bool needUse;
 }
 
-Level XLevel; // level object (i.e. actual map)
+VLevel XLevel; // level object (i.e. actual map)
 TVec Origin;
 int index;
 
@@ -49,7 +49,7 @@ array!Transition ssreachable;
 bool needRecalc;
 
 
-static final BotPathNode CreateNew (Level axlevel) {
+static final BotPathNode CreateNew (VLevel axlevel) {
   BotPathNode res = SpawnObject(BotPathNode);
   res.XLevel = axlevel;
   return res;

@@ -365,7 +365,7 @@ final bool eachTID_opIterNext (out MobjByTIDIteratorInfo it, out EntityEx ent) {
 //  AfterSetMapInfo
 //
 //==========================================================================
-void AfterSetMapInfo (Level lvl) {
+void AfterSetMapInfo (VLevel lvl) {
   if (!lvl) return;
   // shorttex (taken from GZDoom)
   if (lvl.MapHashMD5 == "0eecbf37b328c9caaf20ded4949a4157") {
@@ -1141,7 +1141,7 @@ final float FindLowestCeilingPoint (sector_t *sec, TVec *v) {
 
 
 struct AllTouchingThingsIter {
-  Level xlevel;
+  VLevel xlevel;
   sector_t *sec;
   msecnode_t *currnode;
 }

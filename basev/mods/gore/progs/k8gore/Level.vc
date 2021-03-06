@@ -23,7 +23,7 @@
 //**
 //**************************************************************************
 //#define K8GORE_DEBUG
-class Level_K8Gore : replaces(Level);
+class Level_K8Gore : replaces(VLevel);
 
 const int DefaultMaxAllowedBloodEntities = 1500;
 

@@ -626,7 +626,7 @@ void Died (EntityEx source, EntityEx inflictor) {
   //printdebug("DEAD: `%C`; bNoKillScripts=%B; bUseKillScripts=%B; bForceKillScripts=%B", self, bNoKillScripts, bUseKillScripts, Level.Game.bForceKillScripts);
   if (!bIsPlayer && !bNoKillScripts && (bUseKillScripts || Level.Game.bForceKillScripts)) {
     //printdebug("calling kill script for `%C`", self);
-    XLevel.StartTypedACScripts(Level::SCRIPT_Kill, 0, 0, 0, Activator:self, Always:true, RunNow:true);
+    XLevel.StartTypedACScripts(VLevel::SCRIPT_Kill, 0, 0, 0, Activator:self, Always:true, RunNow:true);
   }
 
   //FIXME: need compatibility flag
@@ -665,7 +665,7 @@ void Died (EntityEx source, EntityEx inflictor) {
     // display obituary
     PlayerEx(Player).DisplayObituary(inflictor, source, DamageType);
 
-    XLevel.StartTypedACScripts(Level::SCRIPT_Death, 0, 0, 0, self, true, false);
+    XLevel.StartTypedACScripts(VLevel::SCRIPT_Death, 0, 0, 0, self, true, false);
 
     ++PlayerEx(Player).Deaths;
 

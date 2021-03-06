@@ -1000,7 +1000,7 @@ void CheckWaterJump (optional bool asStep) {
   start.z += (!asStep ? MO.Height*0.5+8.0 : MO.MaxStepHeight);
   TVec end = start+vforward*24.0;
 
-  Level::linetrace_t tm;
+  VLevel::linetrace_t tm;
   if (!Level.XLevel.BSPTraceLineEx(start, end, out trace:tm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
     // solid at waist
     start.z = MO.Origin.z+MO.Height;
@@ -3875,7 +3875,7 @@ void SpawnPlayer (mthing_t *mthing, bool Voodoo) {
   UpdateRevealedMap();
 
   if (ResetInventory) {
-    if (reborned) Level.XLevel.StartTypedACScripts(Level::SCRIPT_Respawn, 0, 0, 0, MO, true, false);
+    if (reborned) Level.XLevel.StartTypedACScripts(VLevel::SCRIPT_Respawn, 0, 0, 0, MO, true, false);
     k8ElvenGifted = false;
   }
 

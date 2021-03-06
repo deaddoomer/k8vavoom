@@ -4370,7 +4370,7 @@ final bool EV_ThingSetTranslation (int Arg1, int Arg2, int Arg3, int Arg4, int A
   int Trans;
   if (Arg2 == -1 && A) {
     Trans = A.Translation;
-  } else if (Arg2 >= 1 && Arg2 < Level::MAX_LEVEL_TRANSLATIONS) {
+  } else if (Arg2 >= 1 && Arg2 < VLevel::MAX_LEVEL_TRANSLATIONS) {
     Trans = (Entity::TRANSL_Level<<Entity::TRANSL_TYPE_SHIFT)+Arg2-1;
   } else {
     Trans = 0;
