@@ -822,6 +822,14 @@ MAPINFOCMD(levelnum) {
   info->LevelNum = sc->Number;
 }
 
+
+// ////////////////////////////////////////////////////////////////////////// //
+MAPINFOCMD(author) {
+  if (newFormat) sc->Expect("=");
+  sc->ExpectString();
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(cluster) {
   if (newFormat) sc->Expect("=");
@@ -992,6 +1000,7 @@ MAPINFOCMD(specialaction_exitlevel) { info->Flags &= ~(VLevelInfo::LIF_SpecialAc
 MAPINFOCMD(specialaction_opendoor) { info->Flags &= ~VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags |= VLevelInfo::LIF_SpecialActionOpenDoor; }
 MAPINFOCMD(specialaction_lowerfloor) { info->Flags |= VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags &= ~VLevelInfo::LIF_SpecialActionOpenDoor; }
 MAPINFOCMD(specialaction_killmonsters) { info->Flags |= VLevelInfo::LIF_SpecialActionKillMonsters; }
+MAPINFOCMD(specialaction_blazedoor) {} //FIXME
 MAPINFOCMD(intermission) { info->Flags &= ~VLevelInfo::LIF_NoIntermission; }
 MAPINFOCMD(nointermission) { info->Flags |= VLevelInfo::LIF_NoIntermission; }
 MAPINFOCMD(nosoundclipping) { /* ignored */ }
