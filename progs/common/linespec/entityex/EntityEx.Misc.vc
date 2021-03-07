@@ -325,10 +325,80 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
 //==========================================================================
 //
-//  TeleportMove
+//  CheckTeleportMove
+//
+//  `IgnoreObstacles` will ignore things we cannot telestomp
 //
 //==========================================================================
-final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool ForceProperFloorCheck) {
+final bool CheckTeleportMove (TVec org, bool CheckOnly, optional bool ForceTelestomp, optional bool IgnoreObstacles) {
+  EntityEx Other;
+  float blockdist;
+
+  // kill anything occupying the position
+  // stomp on any things contacted
+  foreach RadiusThings(Other, org, Radius) {
+    if (!Other.bShootable) continue;
+
+    blockdist = Other.Radius+Radius;
+
+    if (fabs(Other.Origin.x-org.x) >= blockdist ||
+        fabs(Other.Origin.y-org.y) >= blockdist)
+    {
+      // didn't hit it
+      //print("TELEPORT CHECK: %C (%s) didin't touch %C (%s) (blockdist=%s; dist=%s)", self, self.Radius, Other, Other.Radius, blockdist, Other.Origin.xy-org.xy);
+      continue;
+    }
+
+    // don't clip against self
+    if (Other == self) continue;
+
+    //print("TELEPORT CHECK: %C (%s) possibly touch %C (%s) (blockdist=%s; dist=%s)", self, self.Radius, Other, Other.Radius, blockdist, Other.Origin.xy-org.xy);
+    // z-check
+    if ((bPassMobj || Other.bActLikeBridge) && !Level.CompatNoPassOver &&
+        (!bDontOverlap || !Other.bDontOverlap))
+    {
+      if (Other.Origin.z > org.z+Height) {
+        //print("  *: otherz=%s; z=%s; z+h=%s", Other.Origin.z, org.z, org.z+Height);
+        continue;
+      }
+      if (Other.Origin.z+Other.Height < org.z) {
+        //print("  *: otherz=%s; z=%s; o+h=%s", Other.Origin.z, org.z, Other.Origin.z+Height);
+        continue;
+      }
+    }
+
+    //print("TELEPORT CHECK: %C (%s) really touch %C (%s)", self, self.Radius, Other, Other.Radius);
+    // check if allowed to stomp things
+    //k8: should we reject forced telefragging if `Other` denied it?
+    if (!ForceTelestomp) {
+      if ((!bTelestomp && !Level.bAllowMonsterTelefrags) || Other.bNoTeleFrag) {
+        if (!IgnoreObstacles) return false;
+        continue;
+      }
+    }
+
+    if (!CheckOnly) {
+      Other.SpawnBloodAtHeadExplosion(max(Other.Health, 10000), self);
+      // telefrags kills even invincible things
+      Other.Damage(self, self, max(Other.Health, 10000), 'Telefrag', forced:true/*, spawnBlood:true*/);
+    }
+  }
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  TeleportMove
+//
+//  `IgnoreObstacles` will ignore things we cannot telestomp
+//
+//==========================================================================
+final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool ForceProperFloorCheck, optional bool IgnoreObstacles) {
+  if (!CheckTeleportMove(org, CheckOnly:false, ForceTelestomp:ForceTelestomp, IgnoreObstacles:IgnoreObstacles)) return false;
+
+  /+
   EntityEx Other;
   float blockdist;
 
@@ -370,7 +440,8 @@ final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool F
     //k8: should we reject forced telefragging if `Other` denied it?
     if (!ForceTelestomp) {
       if ((/*!ForceTelestomp &&*/ !bTelestomp && !Level.bAllowMonsterTelefrags) || Other.bNoTeleFrag) {
-        return false;
+        if (!IgnoreObstacles) return false;
+        continue;
       }
     }
 
@@ -378,12 +449,14 @@ final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool F
     // telefrags kills even invincible things
     Other.Damage(self, self, max(Other.Health, 10000), 'Telefrag', forced:true/*, spawnBlood:true*/);
   }
+  +/
 
   // the move is ok,
   // so link the thing into its new position
   SetOrigin(org, properFloorCheck:(ForceProperFloorCheck ? -666 : 1));
   if (org.z == ONFLOORZ) Origin.z = FloorZ;
 
+  bIntrJustMoved = false; // disable movement interpolation
   return true;
 }
 
