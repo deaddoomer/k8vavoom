@@ -1801,6 +1801,127 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 }
 
 
+//==========================================================================
+//
+//  A_Teleport
+//
+//==========================================================================
+[decorate] final bool A_Teleport (optional name teleportstate, optional name targettype, optional name fogtype,
+                                  optional int flags, optional float mindist, optional float maxdist, optional int aptr)
+{
+  KeepChainResult(); //FIXME: is it?
+
+  if (!targettype) targettype = 'BossSpot';
+
+  // find destination point type
+  auto spotClass = class!SpecialSpot(FindClassNoCase(targettype));
+  if (!spotClass) return false;
+
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_Teleport', aptr!optional));
+  if (!tgt) return false;
+
+  if (tgt.bNoTeleport && !(flags&TF_OVERRIDE)) return false;
+
+  // randomly choose not to teleport like `A_Srcr2Decide()`
+  if (flags&TF_RANDOMDECIDE) {
+    float chance;
+    switch (tgt.Health/max(1, tgt.InitialHealth/8)) {
+      case 0: chance = 0.75; break;
+      case 1: chance = 0.46875; break;
+      case 2: chance = 0.46875; break;
+      case 3: chance = 0.46875; break;
+      case 4: chance = 0.25; break;
+      case 5: chance = 0.25; break;
+      case 6: chance = 0.125; break;
+      case 7: chance = 0.0625; break;
+      //case 8: chance = 0.0; break;
+      default: return false;
+    }
+    if (!(Random() < chance)) return false;
+  }
+
+  // find state to jump
+  if (!teleportstate) teleportstate = 'Teleport';
+  state tstate = tgt.FindState(teleportstate, Exact:true);
+  if (!tstate) {
+    if (!nameEquCI(teleportstate, 'Teleport')) tstate = tgt.FindState('Teleport', Exact:true);
+  }
+  if (!tstate && !(flags&TF_NOJUMP)) return false;
+
+  // find destination point
+  bool needDist = (mindist > 0 || maxdist > 0);
+  Actor dest = none;
+  Actor spot;
+  foreach AllThinkers(spotClass, spot) {
+    if (spot.Class != spotClass) continue; // we need exact match here
+    if (needDist) {
+      // check distance (2d)
+      float dist = spot.DistTo2(tgt);
+      if (mindist > 0 && dist < mindist) continue;
+      if (maxdist > 0 && dist > maxdist) continue;
+    }
+    dest = spot;
+    break;
+  }
+  if (!dest) return false;
+
+  //printdebug("*** %C: trying to teleport to `%C`", tgt, spot);
+
+  // find destination floor and ceiling
+  TVec dpos = spot.Origin;
+  // ground it, if necessary
+  float fz, cz;
+  if (spot.bNoSector) {
+    tmtrace_t tmtrace;
+    tgt.GetFloorAndCeilingEx(out tmtrace, dpos, collideWorld:true, collideThings:false);
+    fz = tmtrace.FloorZ;
+    cz = tmtrace.CeilingZ;
+  } else {
+    fz = spot.FloorZ;
+    cz = spot.CeilingZ;
+  }
+  if (!(flags&TF_USESPOTZ)) dpos.z = fz;
+
+  // check if it isn't stuck in floor/ceiling
+  if (flags&TF_SENSITIVEZ) {
+    if (dpos.z < fz || dpos.z+fmax(0, tgt.Height) > cz) return false; // stuck
+  }
+
+  // check if we can teleport
+  if (!(flags&TF_FORCED)) {
+    if (!tgt.CheckTeleportMove(dpos, CheckOnly:true, ForceTelestomp:!!(flags&TF_TELEFRAG), IgnoreObstacles:false)) return false;
+  }
+
+  // perform teleporting
+  TVec oldOrg = tgt.Origin;
+  if (!tgt.TeleportMove(dpos, ForceTelestomp:!!(flags&TF_TELEFRAG), IgnoreObstacles:!!(flags&TF_FORCED))) return false;
+
+  // teleported, fix position
+  if (!(flags&TF_USESPOTZ)) tgt.Origin.z = tgt.FloorZ; // ground it
+  if (!(flags&TF_KEEPANGLE)) { tgt.Angles.yaw = spot.Angles.yaw; tgt.Angles.pitch = 0; tgt.Angles.roll = 0; }
+  if (!(flags&TF_KEEPVELOCITY)) tgt.Velocity = vector(0, 0, 0);
+
+  // teleport fog (source spot)
+  //TODO: TF_USEACTORFOG
+  if ((flags&TF_NOFOG) != TF_NOFOG) {
+    auto fogClass = class!Actor(FindClassNoCase(fogtype ? fogtype : 'TeleportFog'));
+    if (fogClass) {
+      float fogDelta = (tgt.bMissile ? 0.0 : LineSpecialGameInfo(tgt.Level.Game).TeleFogHeight);
+      if (!(flags&TF_NOSRCFOG)) Spawn(fogClass, oldOrg+vector(0.0, 0.0, fogDelta));
+      if (!(flags&TF_NODESTFOG)) Spawn(fogClass, tgt.Origin+vector(20.0*cos(tgt.Angles.yaw), 20.0*sin(tgt.Angles.yaw), fogDelta));
+    }
+  }
+
+  // change state
+  if (!(flags&TF_NOJUMP)) {
+    assert(tstate);
+    DoJump(tstate);
+  }
+
+  return true;
+}
+
+
 //===========================================================================
 //
 //  A_ResetHealth
