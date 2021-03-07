@@ -106,6 +106,8 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
     while (Instig && Instig.IsMissile(true)) Instig = Instig.Target;
   }
 
+  //printdebug("%C: InitSpawnedItem: %C; Telestomp=%B; SetMaster=%B; NoCheckPos=%B", self, A, Telestomp, SetMaster, NoCheckPos);
+
   if (Telestomp) {
     A.TeleportMove(A.Origin, true);
     // we need this, because otherwise nothing will be spawned if something was telestomped
@@ -240,7 +242,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
     Org += Origin;
   }
 
-  //printdebug("%C: A_SpawnItemEx: type=%C; org=%s; Origin=%s; yaw=%s", self, ItemType, Org, Origin, Angles.yaw);
+  //printdebug("%C: A_SpawnItemEx: type=%C; org=%s; Origin=%s; yaw=%s; flags=0x%08x", self, ItemType, Org, Origin, Angles.yaw, Flags);
   EntityEx A = Spawn(ItemType, Org);
   //printdebug("A_SpawnItemEx(%C):xxx: angles=%s (%s); AA=%s", A, A.Angles, Angle, Angles);
   InitSpawnedItem(A,
