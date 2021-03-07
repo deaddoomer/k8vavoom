@@ -64,6 +64,15 @@ static VCvarB r_dbg_advthing_draw_fog("r_dbg_advthing_draw_fog", true, "Draw fog
 
 VCvarB r_model_advshadow_all("r_model_advshadow_all", false, "Light all alias models, not only those that are in blockmap (slower)?", CVAR_Archive);
 
+//static VCvarB r_shadowmap_spr_alias_models("r_shadowmap_spr_alias_models", false, "Render shadows from alias models (based on sprite frame)?", CVAR_Archive);
+
+static VCvarB r_shadowmap_spr_monsters("r_shadowmap_spr_monsters", true, "Render fake sprite shadows for monsters?", CVAR_Archive);
+static VCvarB r_shadowmap_spr_corpses("r_shadowmap_spr_corpses", true, "Render fake sprite shadows for corpses?", CVAR_Archive);
+static VCvarB r_shadowmap_spr_missiles("r_shadowmap_spr_missiles", true, "Render fake sprite shadows for projectiles?", CVAR_Archive);
+static VCvarB r_shadowmap_spr_pickups("r_shadowmap_spr_pickups", true, "Render fake sprite shadows for pickups?", CVAR_Archive);
+static VCvarB r_shadowmap_spr_decorations("r_shadowmap_spr_decorations", true, "Render fake sprite shadows for decorations?", CVAR_Archive);
+static VCvarB r_shadowmap_spr_players("r_shadowmap_spr_players", true, "Render fake sprite shadows for players?", CVAR_Archive);
+
 
 //==========================================================================
 //
@@ -240,6 +249,19 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsig
     if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
       //GCon->Logf("THING SHADOW! (%s)", *ent->GetClass()->GetFullName());
       if (ri.isTranslucent()) continue;
+      bool renderShadow = true;
+      const VEntity::EType tclass = ent->Classify();
+      switch (tclass) {
+        case VEntity::EType::ET_Unknown: renderShadow = true; break;
+        case VEntity::EType::ET_Player: renderShadow = r_shadowmap_spr_players.asBool(); break;
+        case VEntity::EType::ET_Missile: renderShadow = r_shadowmap_spr_missiles.asBool(); break;
+        case VEntity::EType::ET_Corpse: renderShadow = r_shadowmap_spr_corpses.asBool(); break;
+        case VEntity::EType::ET_Monster: renderShadow = r_shadowmap_spr_monsters.asBool(); break;
+        case VEntity::EType::ET_Decoration: renderShadow = r_shadowmap_spr_decorations.asBool(); break;
+        case VEntity::EType::ET_Pickup: renderShadow = r_shadowmap_spr_pickups.asBool(); break;
+        default: abort();
+      }
+      if (!renderShadow) continue;
       ri.light = 0xffffffffu;
       ri.fade = 0;
       DrawEntityModel(ent, ri, TimeFrac, RPASS_ShadowMaps);
@@ -394,7 +416,8 @@ void VRenderLevelShadowVolume::RenderMobjsFog () {
 //==========================================================================
 void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner, const unsigned int facenum, int spShad, vuint32 dlflags) {
   if (spShad < 1) return;
-  const bool doPlayer = r_shadowmap_sprshadows_player.asBool();
+  //const bool doPlayer = r_shadowmap_spr_player.asBool();
+
   for (auto &&mo : mobjsInCurrLightSprites) {
     if (mo == owner /*&& (dlflags&dlight_t::NoSelfShadow)*/) continue;
     //GCon->Logf(NAME_Debug, "x00: thing:<%s>", mo->GetClass()->GetName());
@@ -402,7 +425,22 @@ void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner, const 
     //GCon->Logf(NAME_Debug, "x01: thing:<%s>", mo->GetClass()->GetName());
     //!if (!IsShadowAllowedFor(mo)) continue;
     //GCon->Logf(NAME_Debug, "x02: thing:<%s>", mo->GetClass()->GetName());
-    if (!doPlayer && mo->IsPlayer()) continue;
+    //if (!doPlayer && mo->IsPlayer()) continue;
+
+    bool renderShadow = true;
+    const VEntity::EType tclass = mo->Classify();
+    switch (tclass) {
+      case VEntity::EType::ET_Unknown: renderShadow = true; break;
+      case VEntity::EType::ET_Player: renderShadow = r_shadowmap_spr_players.asBool(); break;
+      case VEntity::EType::ET_Missile: renderShadow = r_shadowmap_spr_missiles.asBool(); break;
+      case VEntity::EType::ET_Corpse: renderShadow = r_shadowmap_spr_corpses.asBool(); break;
+      case VEntity::EType::ET_Monster: renderShadow = r_shadowmap_spr_monsters.asBool(); break;
+      case VEntity::EType::ET_Decoration: renderShadow = r_shadowmap_spr_decorations.asBool(); break;
+      case VEntity::EType::ET_Pickup: renderShadow = r_shadowmap_spr_pickups.asBool(); break;
+      default: abort();
+    }
+    if (!renderShadow) continue;
+
     RenderMobjShadowMapSprite(mo, facenum, (spShad > 1));
   }
 }

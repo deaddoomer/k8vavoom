@@ -41,7 +41,6 @@ static VCvarF r_shadowvol_pslope("r_shadowvol_pslope", "-0.2", "DEBUG");
 
 VCvarB r_shadowmap_fix_light_dist("r_shadowmap_fix_light_dist", false, "Move lights slightly away from surfaces?", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI r_shadowmap_sprshadows("r_shadowmap_sprshadows", "2", "Render shadows from sprites (0:none;1:non-rotational;2:all)?", /*CVAR_PreInit|*/CVAR_Archive);
-VCvarB r_shadowmap_sprshadows_player("r_shadowmap_sprshadows_player", true, "Render player sprite shadow?", /*CVAR_PreInit|*/CVAR_Archive);
 
 
 //==========================================================================
