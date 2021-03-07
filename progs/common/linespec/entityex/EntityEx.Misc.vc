@@ -203,7 +203,8 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
 final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
                          bool DamageSource, optional name BombDmgType, optional bool DoDamage,
                          optional int damagedistance, optional bool thrustZ,
-                         optional float fullthrustdistance, optional bool NoImpactDamage)
+                         optional float fullthrustdistance, optional bool NoImpactDamage,
+                         optional name onlyThisSpecie)
 {
   EntityEx Other;
 
@@ -211,6 +212,8 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
   if (!specified_thrustZ) thrustZ = DoDamage; //k8: see below
   if (!specified_DoDamage) DoDamage = true;
+
+  if (onlyThisSpecie && nameEquCI(onlyThisSpecie, 'None')) onlyThisSpecie = '';
 
   EntityEx SpecieSrc = (Source ? Source : self);
 
@@ -223,6 +226,8 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
     if (Other.bNoRadiusDamage && !bForceRadiusDmg) continue;
 
     if (!DamageSource && (Other == Source || Other == self)) continue; // don't damage the source of the explosion
+
+    if (specified_onlyThisSpecie && !nameEquCI(onlyThisSpecie, Other.GetSpecies())) continue;
 
     // option for monsters that fire explosive projectiles not to hurt
     // monsters of the same class with it's projectiles.

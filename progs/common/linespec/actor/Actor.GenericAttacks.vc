@@ -661,12 +661,12 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //
 //==========================================================================
 [decorate] final void A_RadiusThrust (optional int Force, optional int Distance, optional int flags,
-                           optional float fullthrustdistance, optional name species)
+                                      optional float fullthrustdistance, optional name species)
 {
   if (!Level.Game.IsAuthority) return;
 
   if (!Force) Force = 128;
-  //if (!Distance) Distance = Force;
+  if (!Distance) Distance = Force;
 
   if (!specified_flags) flags = RTF_AFFECTSOURCE; //???
   bool AffectSelf = !!(flags&RTF_AFFECTSOURCE);
@@ -687,7 +687,7 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 
   RadiusAttack(src, Force, float(Distance), AffectSelf, BombDmgType:'', DoDamage:false,
     damagedistance:Distance!optional, thrustZ:!!(flags&RTF_THRUSTZ), fullthrustdistance:fullthrustdistance!optional,
-    NoImpactDamage:!!(flags&RTF_NOIMPACTDAMAGE));
+    NoImpactDamage:!!(flags&RTF_NOIMPACTDAMAGE), onlyThisSpecie:species!optional);
 
   if (src) src.bNoDamageThrust = oldDmgThrust;
 
