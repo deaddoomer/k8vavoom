@@ -954,6 +954,18 @@ final void common_A_FaceSomething (EntityEx Tgt, optional float max_turn, option
 
 //==========================================================================
 //
+//  A_ClearLastHeard
+//
+//==========================================================================
+[decorate] final void A_ClearLastHeard () {
+  // this currently does nothing, because k8vavoom always preserve sound target in sector
+  // see "compat_soundtarget" option in ZDoom ( https://zdoom.org/wiki/Compatibility_options#compat_soundtarget )
+  LastHeard = none;
+}
+
+
+//==========================================================================
+//
 //  doKillXXX
 //
 //  worker for A_KillXXX
