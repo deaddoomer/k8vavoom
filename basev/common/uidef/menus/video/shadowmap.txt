@@ -52,12 +52,45 @@ menudef ShadowMapOptions {
       "really have proper sides), but it still may look fun.";
   }
 
+
+  header "Fine Control of Sprite Shadows";
+
   option bool {
-    title = "Player Shadow";
-    cvar = r_shadowmap_sprshadows_player;
+    title = "Monsters";
+    cvar = r_shadowmap_spr_monsters;
+    help = "Should monsters cast shadows?";
+  }
+
+  option bool {
+    title = "Corpses";
+    cvar = r_shadowmap_spr_corpses;
+    help = "Should corpses cast shadows?";
+  }
+
+  option bool {
+    title = "Missiles";
+    cvar = r_shadowmap_spr_missiles;
+    help = "Should missiles (projectiles) cast shadows?";
+  }
+
+  option bool {
+    title = "Pickups";
+    cvar = r_shadowmap_spr_pickups;
+    help = "Should pickups cast shadows?";
+  }
+
+  option bool {
+    title = "Decorations";
+    cvar = r_shadowmap_spr_decorations;
     help =
-      "If you turned on sprite shadows, you can enable/disable rendering",
-      "player shadow. Most of the time player shadow is only distracting.";
+      "Should decorations cast shadows?"
+      "'Decoration' is any solid thing.";
+  }
+
+  option bool {
+    title = "Players";
+    cvar = r_shadowmap_spr_players;
+    help = "Should players cast shadows?";
   }
 
 
