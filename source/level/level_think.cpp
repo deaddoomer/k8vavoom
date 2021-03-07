@@ -684,18 +684,13 @@ public:
   {}
 
   virtual bool GetNext () override {
-    if (!Current) {
-      Current = Self->ThinkerHead;
-    } else {
-      Current = Current->Next;
-    }
+    Current = (Current ? Current->Next : Self->ThinkerHead);
     *Out = nullptr;
-    while (Current) {
-      if (Current->IsA(Class) && !Current->IsGoingToDie()) {
+    for (; Current; Current = Current->Next) {
+      if (!Current->IsGoingToDie() && Current->IsA(Class)) {
         *Out = Current;
         break;
       }
-      Current = Current->Next;
     }
     return !!*Out;
   }
