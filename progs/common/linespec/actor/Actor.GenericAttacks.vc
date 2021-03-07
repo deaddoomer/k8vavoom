@@ -675,7 +675,7 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
   //printdebug("%C: A_RadiusThrust: Force=%s; Distance=%s; flags=0x%08x; fullthrustdistance=%s", self, Force, Distance, flags, fullthrustdistance);
 
   EntityEx src = (flags&RTF_NOTMISSILE ? self : Target);
-  if (!src && !(flags&RTF_NOTMISSILE)) src = self;
+  //if (!src && !(flags&RTF_NOTMISSILE)) src = self;
 
   // Temporarily negate `bNoDamageThrust` on the shooter, since it renders this function useless
   bool oldDmgThrust = (src ? src.bNoDamageThrust : false);
