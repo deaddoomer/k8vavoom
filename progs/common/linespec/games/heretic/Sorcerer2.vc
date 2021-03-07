@@ -141,56 +141,30 @@ final void DSparilTeleport()
   }
 }
 
+
 //==========================================================================
 //
 //  A_Srcr2Decide
 //
 //==========================================================================
-
-[decorate] final void A_Srcr2Decide()
-{
+[decorate] final void A_Srcr2Decide () {
+  if (!BossSpotCount) return; // no spots
   float chance;
-
-  if (!BossSpotCount)
-  {
-    // No spots
-    return;
+  switch (Health/max(1, InitialHealth/8)) {
+    case 0: chance = 0.75; break;
+    case 1: chance = 0.46875; break;
+    case 2: chance = 0.46875; break;
+    case 3: chance = 0.46875; break;
+    case 4: chance = 0.25; break;
+    case 5: chance = 0.25; break;
+    case 6: chance = 0.125; break;
+    case 7: chance = 0.0625; break;
+    //case 8: chance = 0.0; break;
+    default: return;
   }
-  switch (Health / (InitialHealth / 8))
-  {
-  case 0:
-    chance = 0.75;
-    break;
-  case 1:
-    chance = 0.46875;
-    break;
-  case 2:
-    chance = 0.46875;
-    break;
-  case 3:
-    chance = 0.46875;
-    break;
-  case 4:
-    chance = 0.25;
-    break;
-  case 5:
-    chance = 0.25;
-    break;
-  case 6:
-    chance = 0.125;
-    break;
-  case 7:
-    chance = 0.0625;
-    break;
-  case 8:
-    chance = 0.0;
-    break;
-  }
-  if (Random() < chance)
-  {
-    DSparilTeleport();
-  }
+  if (Random() < chance) DSparilTeleport();
 }
+
 
 //==========================================================================
 //
