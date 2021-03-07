@@ -222,7 +222,7 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
     // check for actors that take no damage from concussion
     if (Other.bNoRadiusDamage && !bForceRadiusDmg) continue;
 
-    if (!DamageSource && Other == Source) continue; // don't damage the source of the explosion
+    if (!DamageSource && (Other == Source || Other == self)) continue; // don't damage the source of the explosion
 
     // option for monsters that fire explosive projectiles not to hurt
     // monsters of the same class with it's projectiles.
