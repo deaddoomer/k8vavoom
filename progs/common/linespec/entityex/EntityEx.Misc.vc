@@ -203,7 +203,7 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
 final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
                          bool DamageSource, optional name BombDmgType, optional bool DoDamage,
                          optional int damagedistance, optional bool thrustZ,
-                         optional float fullthrustdistance)
+                         optional float fullthrustdistance, optional bool NoImpactDamage)
 {
   EntityEx Other;
 
@@ -282,14 +282,16 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
       if (damage < 0) damage = 0;
       //if (damage <= 0) continue;
 
-      if (damage > 0) {
-        if (DoDamage) {
+      if (DoDamage) {
+        if (damage) {
           int dmg = Other.Damage(self, Source, damage, BombDmgType); // !0: done or absorbed
           //print("%C: got RadiusAttack from `%C`, damage=%s; dmg=%s; type=%s", self, Source, damage, dmg, BombDmgType);
           if (damage > 1 && dmg) Other.SpawnBloodAtHeadExplosion(damage, Source);
-        } else {
-          if (!bDontThrust) Other.bBlasted = true;
         }
+      } else {
+        // dunno, GZDoom does it like this
+        if (!Other.bIsPlayer && !NoImpactDamage && !Other.bDontThrust) Other.bBlasted = true;
+        //if (!bDontThrust) Other.bBlasted = true; //k8: old code
       }
 
       if (!bDontThrust && !Other.bIceCorpse && (!DoDamage || !bNoDamageThrust)) {
