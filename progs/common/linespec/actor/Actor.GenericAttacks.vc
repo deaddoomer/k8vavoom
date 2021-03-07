@@ -661,17 +661,36 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //
 //==========================================================================
 [decorate] final void A_RadiusThrust (optional int Force, optional int Distance, optional int flags,
-                           optional float fullthrustdistance)
+                           optional float fullthrustdistance, optional name species)
 {
+  if (!Level.Game.IsAuthority) return;
+
   if (!Force) Force = 128;
-  if (!Distance) Distance = Force;
+  //if (!Distance) Distance = Force;
 
   if (!specified_flags) flags = RTF_AFFECTSOURCE; //???
   bool AffectSelf = !!(flags&RTF_AFFECTSOURCE);
   //???if (!specified_AffectSelf) AffectSelf = true;
 
-  RadiusAttack((flags&RTF_NOTMISSILE ? self : Target), Force, float(Distance), AffectSelf, DamageType,
-    /*false*/!(flags&RTF_NOIMPACTDAMAGE), thrustZ:!!(flags&RTF_THRUSTZ), fullthrustdistance:fullthrustdistance!optional);
+  //printdebug("%C: A_RadiusThrust: Force=%s; Distance=%s; flags=0x%08x; fullthrustdistance=%s", self, Force, Distance, flags, fullthrustdistance);
+
+  EntityEx src = (flags&RTF_NOTMISSILE ? self : Target);
+  if (!src && !(flags&RTF_NOTMISSILE)) src = self;
+
+  // Temporarily negate `bNoDamageThrust` on the shooter, since it renders this function useless
+  bool oldDmgThrust = (src ? src.bNoDamageThrust : false);
+  //if (!(flags&RTF_NOTMISSILE) && src.bNoDamageThrust) AffectSelf = false; //GZDoom
+  if (src) {
+    if (src.bNoDamageThrust) AffectSelf = false;
+    src.bNoDamageThrust = false;
+  }
+
+  RadiusAttack(src, Force, float(Distance), AffectSelf, BombDmgType:'', DoDamage:false,
+    damagedistance:Distance!optional, thrustZ:!!(flags&RTF_THRUSTZ), fullthrustdistance:fullthrustdistance!optional,
+    NoImpactDamage:!!(flags&RTF_NOIMPACTDAMAGE));
+
+  if (src) src.bNoDamageThrust = oldDmgThrust;
+
   if (Origin.z <= FloorZ+float(Distance)) HitFloorType();
 }
 
