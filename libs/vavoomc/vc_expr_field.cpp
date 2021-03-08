@@ -627,6 +627,97 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
     return e->Resolve(ec);
   }
 
+  // class properties
+  if (op->Type.Type == TYPE_Class) {
+    if (FieldName == "Replacement" || FieldName == "replacement") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `Replacement` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Replacement, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "Replacee" || FieldName == "replacee") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `Replacee` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Replacee, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "Name" || FieldName == "name") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `Name` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Name, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "Parent" || FieldName == "parent") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `Parent` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Parent, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "IsNative" || FieldName == "isNative") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `IsNative` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::IsNative, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "IsAbstract" || FieldName == "isAbstract") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `IsAbstract` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::IsAbstract, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "fullName" || FieldName == "FullName") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `FullName` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::FullName, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+
+    if (FieldName == "loc" || FieldName == "Loc" || FieldName == "location" || FieldName == "Location") {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot change `Location` property");
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Location, opcopy.extract(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
+  }
+
   // dynarray properties
   if (op->Type.Type == TYPE_DynamicArray &&
       (FieldName == NAME_Num || FieldName == NAME_Length || FieldName == NAME_length ||
