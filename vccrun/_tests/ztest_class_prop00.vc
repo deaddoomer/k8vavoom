@@ -1,0 +1,16 @@
+class Main : Object;
+
+
+void main () {
+  auto n = Class.Name;
+  writeln(n);
+  n = GetClassName(Class);
+  writeln(n);
+  writeln("Parent: ", Class.Parent);
+  writeln("Replacement: ", Class.Replacement);
+  writeln("Replacee: ", Class.Replacee);
+  writeln("FullName: ", Class.FullName);
+  writeln("Loc: ", Class.Loc);
+  writeln("IsNative: ", Class.IsNative);
+  writeln("IsAbstract: ", Class.IsAbstract);
+}

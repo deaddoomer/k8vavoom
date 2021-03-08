@@ -1,0 +1,9 @@
+Main
+Main
+Parent: (class!Object)
+Replacement: (class!Main)
+Replacee: (class!Main)
+FullName: vccrun.Main
+Loc: ztest_class_prop00.vc:1
+IsNative: 0
+IsAbstract: 0
