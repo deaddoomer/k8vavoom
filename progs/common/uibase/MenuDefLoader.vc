@@ -777,6 +777,7 @@ class MenuDefOptionEnum : MenuDefOptionBase;
 
 array!(ClientGameShared::OptionValueDef) list;
 string gzOptValName;
+bool isSF2Selector;
 
 
 //==========================================================================
@@ -785,7 +786,12 @@ string gzOptValName;
 //
 //==========================================================================
 override bool parseOne (ScriptsParser par) {
-  if (::parseOne(par)) return true;
+  if (::parseOne(par)) {
+    isSF2Selector = nameEquCI(cvar, 'snd_sf2_file_selector');
+    return true;
+  }
+
+  isSF2Selector = nameEquCI(cvar, 'snd_sf2_file_selector');
 
   if (par.Check("list")) {
     if (par.Check("=")) {
@@ -850,7 +856,102 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
   opt.SetText(title);
   if (textColor != CR_UNDEFINED) opt.TextColor = textColor;
   if (textColorFocus != CR_UNDEFINED) opt.TextColorFocus = textColorFocus;
-  foreach (ref auto s; list) opt.AddItem(s.caption, s.value);
+  if (isSF2Selector) {
+    int count = SF2_GetCount();
+    if (count < 1) {
+      opt.AddItem("<DEFAULT>", -1);
+    } else {
+      foreach (int idx; 0..count) opt.AddItem(SF2_GetShortName(idx), idx);
+    }
+    opt.ValueChanging = delegate bool (Object Sender, float NewValue) {
+      int val = cast(int)NewValue;
+      if (NewValue < 0) return false;
+      int count = SF2_GetCount();
+      if (NewValue >= count) return false;
+      int oldval = cast(int)(MenuChoiceEnum(Sender).Value);
+
+      //printdebug("oldval=%s; newval=%s", oldval, val);
+
+      // save current preset
+      string s;
+      if (val != oldval) {
+        s ~= va("// %s\n", SF2_GetShortName(oldval));
+        s ~= va("version = 1;\n"); // version
+        s ~= va("snd_fluid_interp = %s;\n", GetCvarI('snd_fluid_interp'));
+        s ~= va("snd_fluid_voices = %s;\n", GetCvarI('snd_fluid_voices'));
+        s ~= va("snd_fluid_gain = %s;\n", GetCvarF('snd_fluid_gain'));
+        s ~= va("snd_fluid_reverb = %s;\n", GetCvarI('snd_fluid_reverb'));
+        s ~= va("snd_fluid_reverb_roomsize = %s;\n", GetCvarF('snd_fluid_reverb_roomsize'));
+        s ~= va("snd_fluid_reverb_damping = %s;\n", GetCvarF('snd_fluid_reverb_damping'));
+        s ~= va("snd_fluid_reverb_width = %s;\n", GetCvarF('snd_fluid_reverb_width'));
+        s ~= va("snd_fluid_reverb_level = %s;\n", GetCvarF('snd_fluid_reverb_level'));
+        s ~= va("snd_fluid_chorus = %s;\n", GetCvarI('snd_fluid_chorus'));
+        s ~= va("snd_fluid_chorus_type = %s;\n", GetCvarI('snd_fluid_chorus_type'));
+        s ~= va("snd_fluid_chorus_voices = %s;\n", GetCvarI('snd_fluid_chorus_voices'));
+        s ~= va("snd_fluid_chorus_level = %s;\n", GetCvarF('snd_fluid_chorus_level'));
+        s ~= va("snd_fluid_chorus_speed = %s;\n", GetCvarF('snd_fluid_chorus_speed'));
+        s ~= va("snd_fluid_chorus_depth = %s;\n", GetCvarF('snd_fluid_chorus_depth'));
+        //printdebug("OLD HASH: <%s>", SF2_GetHash(oldval));
+        //printdebug("NEW HASH: <%s>", SF2_GetHash(val));
+        FS_WriteFileContents(va("sf2_preset_%s.rc", SF2_GetHash(oldval)), s);
+      }
+
+      // load new preset
+      s = FS_ReadFileContents(va("sf2_preset_%s.rc", SF2_GetHash(val)));
+      if (s) {
+        auto par = SpawnObject(ScriptsParser);
+        scope(exit) delete par;
+        par.OpenString('sf2preset', s);
+        par.SetCMode(true);
+        par.SetEscape(true);
+        if (par.Check("version") && par.Check("=") && par.Check("1") && par.Check(";")) {
+          while (par.GetString()) {
+            string vname = par.String;
+            if (!par.Check("=")) break;
+            if (!par.GetString()) break;
+            string vval = par.String;
+            if (!par.Check(";")) break;
+            //printdebug("PRESET: <%s>=<%s>", vname, vval);
+            if (vname.strEquCI("snd_fluid_interp") ||
+                vname.strEquCI("snd_fluid_voices") ||
+                vname.strEquCI("snd_fluid_reverb") ||
+                vname.strEquCI("snd_fluid_chorus") ||
+                vname.strEquCI("snd_fluid_chorus_type") ||
+                vname.strEquCI("snd_fluid_chorus_voices"))
+            {
+              int v = atoi(vval);
+              //printdebug("  INT VAR! v=%s", v);
+              SetCvarI(cast(name)vname, v);
+              continue;
+            }
+            if (vname.strEquCI("snd_fluid_gain") ||
+                vname.strEquCI("snd_fluid_reverb_roomsize") ||
+                vname.strEquCI("snd_fluid_reverb_damping") ||
+                vname.strEquCI("snd_fluid_reverb_width") ||
+                vname.strEquCI("snd_fluid_reverb_level") ||
+                vname.strEquCI("snd_fluid_chorus_level") ||
+                vname.strEquCI("snd_fluid_chorus_speed") ||
+                vname.strEquCI("snd_fluid_chorus_depth"))
+            {
+              float v = atof(vval);
+              if (v.isFinite) {
+                //printdebug("  FLOAT VAR! v=%s", v);
+                SetCvarF(cast(name)vname, v);
+              }
+              continue;
+            }
+          }
+        }
+      }
+
+      //printdebug("NEW SOUNDFONT: <%s>", SF2_GetName(val));
+      SetCvarS('snd_sf2_file', SF2_GetName(val));
+
+      return true;
+    };
+  } else {
+    foreach (ref auto s; list) opt.AddItem(s.caption, s.value);
+  }
   if (cvar) opt.SetSessionCvar(cvar);
   return opt;
 }

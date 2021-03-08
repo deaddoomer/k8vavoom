@@ -3,11 +3,13 @@ menudef SoundOptions {
   //selector = MenuSelector_SmallRight;
   Title = "SOUND SETTINGS";
 
+  /*k8: nobody knows how to use this anyway
   option bool {
     title = "External Music Remap";
     cvar = snd_external_music;
     help = "Allow music remapping with external xml file?";
   }
+  */
 
   option enum {
     title = "MIDI Decoder";
@@ -27,6 +29,17 @@ menudef SoundOptions {
       "None",
       "XMP Lite",
     }
+  }
+
+  option enum {
+    title = "SF2 Soundfont File";
+    cvar = snd_sf2_file_selector; // this is special cvar!
+    help =
+      "You can select SF2 soundfont from the list of soundfonts here.",
+      "Changing soundfont will also save current FluidSynth settings,",
+      "and load previous settings for the given soundfont.",
+      "",
+      "Your new sound will be used on the next music chane.";
   }
 
 
