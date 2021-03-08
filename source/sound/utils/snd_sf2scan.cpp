@@ -34,6 +34,10 @@ VCvarS snd_sf2_file("snd_sf2_file", "", "Use this soundfont file.", CVAR_Archive
 TArray<VStr> sf2FileList;
 static bool diskScanned = false;
 
+// for SF2 VC API
+static TArray<VStr> sf2KnownFiles;
+static bool sf2KnownScanned = false;
+
 
 static const char *SF2SearchPathes[] = {
   "!",
@@ -127,9 +131,15 @@ void SF2_ScanDiskBanks () {
   // try to find sf2 in binary dir
   diskScanned = true;
 
+  TMap<VStr, bool> knownMap;
+  VStr sf2x = snd_sf2_file.asStr();
+
   // collect banks
   sf2FileList.reset();
-  sf2FileList.append(snd_sf2_file.asStr());
+  if (!sf2x.isEmpty()) {
+    sf2FileList.append(sf2x);
+    knownMap.put(sf2x, true);
+  }
 
   if (snd_sf2_autoload) {
     for (const char **sfdir = SF2SearchPathes; *sfdir; ++sfdir) {
@@ -150,7 +160,10 @@ void SF2_ScanDiskBanks () {
         auto fname = Sys_ReadDir(dir);
         if (fname.isEmpty()) break;
         VStr ext = fname.extractFileExtension();
-        if (ext.strEquCI(".sf2") || ext.strEquCI(".dls")) sf2FileList.append(dirname+"/"+fname);
+        if (ext.strEquCI(".sf2") || ext.strEquCI(".dls")) {
+          VStr nn = dirname+"/"+fname;
+          if (!knownMap.put(nn, true)) sf2FileList.append(nn);
+        }
       }
       Sys_CloseDir(dir);
     }
@@ -166,7 +179,10 @@ void SF2_ScanDiskBanks () {
         break;
       }
     }
-    if (!found) sf2FileList.append("./gzdoom.sf2");
+    if (!found) {
+      VStr nn = "./gzdoom.sf2";
+      if (!knownMap.put(nn, true)) sf2FileList.append(nn);
+    }
   }
 #endif
 
@@ -194,7 +210,7 @@ void SF2_ScanDiskBanks () {
             break;
           }
         }
-        if (!found) {
+        if (!found && !knownMap.put(gmpath, true)) {
           if (!delimeterPut) sf2FileList.append(""); // delimiter
           delimeterPut = true;
           sf2FileList.append(gmpath);
@@ -203,4 +219,116 @@ void SF2_ScanDiskBanks () {
     }
   }
 #endif
+}
+
+
+
+//==========================================================================
+//
+//  SF2_KnownScan
+//
+//==========================================================================
+static void SF2_KnownScan () {
+  if (sf2KnownScanned) return;
+  sf2KnownScanned = true;
+
+  TMap<VStr, bool> knownMap;
+  VStr sf2x = snd_sf2_file.asStr();
+
+  // collect banks
+  sf2KnownFiles.reset();
+  if (!sf2x.isEmpty()) {
+    sf2KnownFiles.append(sf2x);
+    knownMap.put(sf2x, true);
+  }
+
+  for (const char **sfdir = SF2SearchPathes; *sfdir; ++sfdir) {
+    VStr dirname = VStr(*sfdir);
+    if (dirname.isEmpty()) continue;
+    if (dirname[0] == '!') { dirname.chopLeft(1); dirname = GParsedArgs.getBinDir()+dirname; }
+    #if !defined(_WIN32) && !defined(__SWITCH__)
+    else if (dirname[0] == '~') {
+      const char *home = getenv("HOME");
+      if (!home || !home[0]) continue;
+      dirname.chopLeft(1);
+      dirname = VStr(home)+dirname;
+    }
+    #endif
+    //GCon->Logf("Timidity: scanning '%s'", *dirname);
+    auto dir = Sys_OpenDir(dirname);
+    for (;;) {
+      auto fname = Sys_ReadDir(dir);
+      if (fname.isEmpty()) break;
+      VStr ext = fname.extractFileExtension();
+      if (ext.strEquCI(".sf2") /*|| ext.strEquCI(".dls")*/) {
+        VStr nn = dirname+"/"+fname;
+        if (!knownMap.put(nn, true)) sf2KnownFiles.append(nn);
+      }
+    }
+    Sys_CloseDir(dir);
+  }
+
+#if defined(__SWITCH__)
+  // try "./gzdoom.sf2"
+  if (Sys_FileExists("./gzdoom.sf2")) {
+    bool found = false;
+    for (auto &&fn : sf2KnownFiles) {
+      if (fn.strEquCI("./gzdoom.sf2")) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      VStr nn = "./gzdoom.sf2";
+      if (!knownMap.put(nn, true)) sf2KnownFiles.append(nn);
+    }
+  }
+#endif
+}
+
+
+//==========================================================================
+//
+//  SF2_GetCount
+//
+//==========================================================================
+int SF2_GetCount () {
+  SF2_KnownScan();
+  return sf2KnownFiles.length();
+}
+
+
+//==========================================================================
+//
+//  SF2_GetName
+//
+//  get full soundfont name (to use with "snd_sf2_file")
+//
+//==========================================================================
+VStr SF2_GetName (int idx) {
+  SF2_KnownScan();
+  return (idx >= 0 && idx < sf2KnownFiles.length() ? sf2KnownFiles[idx] : VStr::EmptyString);
+}
+
+
+//==========================================================================
+//
+//  SF2_GetHash
+//
+//  get soundfount hash to use with `FS_*()` API
+//
+//==========================================================================
+VStr SF2_GetHash (int idx) {
+  SF2_KnownScan();
+  if (idx < 0 || idx >= sf2KnownFiles.length()) return VStr::EmptyString;
+  VStr s = sf2KnownFiles[idx];
+  VStr bn = s.extractFileName();
+  if (bn.isEmpty()) bn = s;
+  s = bn.toLowerCase();
+  MD5Context md5ctx;
+  md5ctx.Init();
+  md5ctx.Update(*s, (unsigned)s.length());
+  vuint8 md5digest[MD5Context::DIGEST_SIZE];
+  md5ctx.Final(md5digest);
+  return VStr::buf2hex(md5digest, MD5Context::DIGEST_SIZE);
 }

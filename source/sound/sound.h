@@ -234,3 +234,10 @@ extern VCvarI snd_module_player;
 
 extern VSoundManager *GSoundManager;
 extern VAudioPublic *GAudio;
+
+// for VC API
+int SF2_GetCount ();
+// get full soundfont name (to use with "snd_sf2_file")
+VStr SF2_GetName (int idx);
+// get soundfount hash to use with `FS_*()` API
+VStr SF2_GetHash (int idx);

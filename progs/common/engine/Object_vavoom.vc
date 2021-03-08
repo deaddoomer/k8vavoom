@@ -591,6 +591,21 @@ native static final bool IsLocalSoundPlaying (name Name);
 native static final void StopLocalSounds ();
 
 // ////////////////////////////////////////////////////////////////////////// //
+// soundfont list
+
+// get number of known soundfonts
+native static final int SF2_GetCount ();
+
+// get full soundfont name (to use with "snd_sf2_file")
+native static final string SF2_GetName (int idx);
+// get short soundfont name (to use in menu)
+native static final string SF2_GetShortName (int idx);
+
+// get soundfount hash to use with `FS_*()` API
+native static final string SF2_GetHash (int idx);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // misc stuff
 
 // handle shift+key
@@ -682,6 +697,11 @@ native static final GameObject::VTerrainInfo *TerrainType (int pic); // never re
 native static final GameObject::VSplashInfo *GetSplashInfo (name Name); // can return `nullptr`
 native static final GameObject::VTerrainInfo *GetTerrainInfo (name Name); // can return `nullptr`
 
+
+// ////////////////////////////////////////////////////////////////////////// //
+
+// called in `SpawnPlayer()` and player class changes, to awake the statusbar
+// this, in turn, simply calls `StatusBarStartMap()`
 native static final void SB_Start ();
 
 native static final class FindClassFromEditorId (int Id, int GameFilter);
@@ -741,19 +761,46 @@ native static final bool FS_FileExists (string fname);
 native static final string FS_ReadFileContents (string fname); // returns empty string on error/no file
 native static final bool FS_WriteFileContents (string fname, string contents);
 
-#include "Object_vv_lumpiter.vc"
+
+//==========================================================================
+//
+//  `foreach` Lump iteration
+//
+//==========================================================================
+struct WadLumpIteratorInfoNS {
+  EWadNamespace ns;
+  int curr;
+}
+
+static final bool WadIterateNS_opIterInit (out WadLumpIteratorInfoNS it, EWadNamespace ns) {
+  it.ns = ns;
+  it.curr = W_IterateNS(-1, ns);
+  return (it.curr >= 0);
+}
+
+static final bool WadIterateNS_opIterNext (out WadLumpIteratorInfoNS it, out int lumpnum) {
+  if (it.curr < 0) return false; // done
+  lumpnum = it.curr;
+  it.curr = W_IterateNS(it.curr, it.ns);
+  return true;
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-/*
-struct refdef_t {
-  int x, y;
-  int width, height;
-  float fovx, fovy;
-  bool drawworld;
-  bool DrawCamera;
-};
+struct WadLumpIteratorInfoName {
+  string fname;
+  int curr;
+}
 
+static final bool WadIterateFile_opIterInit (out WadLumpIteratorInfoName it, string fname) {
+  it.fname = fname;
+  it.curr = W_IterateFile(-1, fname);
+  return (it.curr >= 0);
+}
 
-native static final void GetCurrRefDef (out refdef_t rd);
-*/
+static final bool WadIterateFile_opIterNext (out WadLumpIteratorInfoName it, out int lumpnum) {
+  if (it.curr < 0) return false; // done
+  lumpnum = it.curr;
+  it.curr = W_IterateFile(it.curr, it.fname);
+  return true;
+}

@@ -544,3 +544,54 @@ IMPLEMENT_FREE_FUNCTION(VObject, R_GetScreenBlocks) {
   RET_INT(13);
 #endif
 }
+
+
+// get number of known soundfonts
+//native static final int SF2_GetCount ();
+IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetCount) {
+#ifdef CLIENT
+  RET_INT(SF2_GetCount());
+#else
+  RET_INT(0);
+#endif
+}
+
+// get full soundfont name (to use with "snd_sf2_file")
+//native static final string SF2_GetName (int idx);
+IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetName) {
+  int idx;
+  vobjGetParam(idx);
+#ifdef CLIENT
+  RET_STR(SF2_GetName(idx));
+#else
+  RET_STR(VStr::EmptyString);
+#endif
+}
+
+// get short soundfont name (to use in menu)
+//native static final string SF2_GetShortName (int idx);
+IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetShortName) {
+  int idx;
+  vobjGetParam(idx);
+#ifdef CLIENT
+  VStr s = SF2_GetName(idx);
+  VStr bn = s.ExtractFileName();
+  if (bn.isEmpty()) bn = s;
+  if (bn.length() > 4 && bn.endsWithCI(".sf2")) bn.chopRight(4);
+  RET_STR(bn);
+#else
+  RET_STR(VStr::EmptyString);
+#endif
+}
+
+// get soundfount hash to use with `FS_*()` API
+//native static final string SF2_GetHash (int idx);
+IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetHash) {
+  int idx;
+  vobjGetParam(idx);
+#ifdef CLIENT
+  RET_STR(SF2_GetHash(idx));
+#else
+  RET_STR(VStr::EmptyString);
+#endif
+}
