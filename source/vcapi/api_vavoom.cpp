@@ -578,6 +578,18 @@ IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetShortName) {
   VStr bn = s.ExtractFileName();
   if (bn.isEmpty()) bn = s;
   if (bn.length() > 4 && bn.endsWithCI(".sf2")) bn.chopRight(4);
+  int f = 0;
+  while (f < bn.length()) {
+    if (bn[f] == '_' || (vuint8)bn[f] < 32) bn.getMutableCStr()[f] = ' ';
+    if ((vuint8)bn[f] >= 127) bn.getMutableCStr()[f] = '-';
+    if (f > 0 && bn[f] == ' ' && bn[f-1] == ' ') {
+      bn = bn.left(f)+bn.mid(f+1, bn.length());
+    } else {
+      ++f;
+    }
+  }
+  bn = bn.xstrip();
+  if (bn.isEmpty()) bn = "wtf?";
   RET_STR(bn);
 #else
   RET_STR(VStr::EmptyString);

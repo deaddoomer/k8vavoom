@@ -874,7 +874,7 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
 
       // save current preset
       string s;
-      if (val != oldval) {
+      /*if (val != oldval)*/ {
         s ~= va("// %s\n", SF2_GetShortName(oldval));
         s ~= va("version = 1;\n"); // version
         s ~= va("snd_fluid_interp = %s;\n", GetCvarI('snd_fluid_interp'));
