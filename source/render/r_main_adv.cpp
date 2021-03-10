@@ -194,7 +194,7 @@ void VRenderLevelShadowVolume::RenderSceneStaticLights (const refdef_t *RD, cons
     const sector_t *sec = Level->Subsectors[stlight->leafnum].sector;
     if (!CheckValidLightPosRough(lorg, sec)) continue;
     // 'cmon, `RenderLightShadows()` builds lightvis, and checks this
-    if (checkLightVis && !CheckBSPVisibilityBox(lorg, stlight->radius, &Level->Subsectors[stlight->leafnum])) continue;
+    if (checkLightVis && !(IsBspVisSector(stlight->leafnum) || CheckBSPVisibilityBox(lorg, stlight->radius, &Level->Subsectors[stlight->leafnum]))) continue;
 
     StLightInfo &sli = visstatlights[visstatlightCount++];
     sli.stlight = stlight;

@@ -281,6 +281,7 @@ protected:
   bool CheckBSPFloodVisibility (const TVec &org, float radius, const subsector_t *sub=nullptr) noexcept;
 
   // this destroys `CurrListPos` and `CurrLightRadius`
+  // mostly used to check for dynamic light visibility
   bool CheckBSPVisibilityBoxSub (int bspnum, const float *bbox) noexcept;
   bool CheckBSPVisibilityBox (const TVec &org, float radius, const subsector_t *sub=nullptr) noexcept;
 

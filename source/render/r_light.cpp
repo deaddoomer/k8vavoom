@@ -54,6 +54,10 @@ static VCvarB r_lmap_texture_check_dynamic("r_lmap_texture_check_dynamic", true,
 static VCvarI r_lmap_texture_check_radius_dynamic("r_lmap_texture_check_radius_dynamic", "300", "Disable texture check for dynamic lights with radius lower than this.", CVAR_Archive);
 
 
+static TFrustum frustumDLight;
+static TFrustumParam fpDLight;
+
+
 #define RL_CLEAR_DLIGHT(_dl)  do { \
   (_dl)->radius = 0; \
   (_dl)->flags = 0; \
@@ -396,20 +400,20 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
   dlight_t *dlreplace = nullptr;
   dlight_t *dlbestdist = nullptr;
 
-  if (radius <= 0) radius = 0; else if (radius < 2) return nullptr; // ignore too small lights
+  if (radius <= 0.0f) radius = 0.0f; else if (radius < 2.0f) return nullptr; // ignore too small lights
   if (lightid < 0) lightid = 0;
 
   float bestdist = lengthSquared(lorg-cl->ViewOrg);
 
-  float coeff = r_light_filter_dynamic_coeff;
-  if (coeff <= 0.1f) coeff = 0.1f; else if (coeff > 1) coeff = 1;
-  if (!r_allow_dynamic_light_filter) coeff = 0.02f; // filter them anyway
+  // even if filtering is disabled, filter them anyway
+  const float coeff = (r_allow_dynamic_light_filter.asBool() ? clampval(r_light_filter_dynamic_coeff.asFloat(), 0.1f, 1.0f) : 0.02f);
 
-  float radsq = (radius < 1 ? 64*64 : radius*radius*coeff);
-  if (radsq < 32*32) radsq = 32*32;
+  float radsq = (radius < 1.0f ? 64*64 : radius*radius*coeff);
+  if (radsq < 32.0f*32.0f) radsq = 32.0f*32.0f;
   const float radsqhalf = radsq*0.25f;
 
   // if this is player's dlight, never drop it
+  //TODO: check for Voodoo Dolls?
   bool isPlr = false;
   if (Owner && Owner->IsA(VEntity::StaticClass())) {
     isPlr = ((VEntity *)Owner)->IsPlayer();
@@ -419,46 +423,17 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
 
   if (!isPlr) {
     // if the light is behind a view, drop it if it is further than the light radius
-    if ((radius > 0 && bestdist >= radius*radius) || (!radius && bestdist >= 64*64)) {
-      static TFrustum frustum;
-      static TFrustumParam fp;
-      if (fp.needUpdate(cl->ViewOrg, cl->ViewAngles)) {
-        fp.setup(cl->ViewOrg, cl->ViewAngles);
-        frustum.setup(clip_base, fp, true, GetLightMaxDistDef());
+    if (bestdist >= (radius > 0.0f ? radius*radius : 64.0f*64.0f)) {
+      if (fpDLight.needUpdate(cl->ViewOrg, cl->ViewAngles)) {
+        fpDLight.setup(cl->ViewOrg, cl->ViewAngles);
+        // this also drops too far-away lights
+        frustumDLight.setup(clip_base, fpDLight, true, GetLightMaxDistDef());
       }
-      if (!frustum.checkSphere(lorg, (radius > 0 ? radius : 64))) {
+      if (!frustumDLight.checkSphere(lorg, (radius > 0.0f ? radius : 64.0f))) {
         //GCon->Logf("  DROPPED; radius=%f; dist=%f", radius, sqrtf(bestdist));
         return nullptr;
       }
-    } else {
-      // don't add too far-away lights
-      // this checked above
-      //!if (bestdist/*lengthSquared(cl->ViewOrg-lorg)*/ >= r_lights_radius*r_lights_radius) return nullptr;
-      //const float rsqx = r_lights_radius+radius;
-      //if (bestdist >= rsqx*rsqx) return nullptr;
     }
-
-    #if 0
-    //TODO: do this *after* trying to allocate a light slot!
-    // floodfill visibility check
-    if (/*!IsShadowVolumeRenderer() &&*/ r_dynamic_light_better_vis_check) {
-      if (leafnum < 0) leafnum = (int)(ptrdiff_t)(Level->PointInSubsector(lorg)-Level->Subsectors);
-      if (!CheckBSPVisibilityBox(lorg, (radius > 0 ? radius : 64), &Level->Subsectors[leafnum])) {
-        //GCon->Logf("DYNAMIC DROP: visibility check");
-        return nullptr;
-      }
-    }
-    #endif
-  } else {
-    // test
-    /*
-    static TFrustum frustum1;
-    frustum1.update(clip_base, cl->ViewOrg, cl->ViewAngles, true, 128);
-    if (!frustum1.checkSphere(lorg, 64)) {
-      //GCon->Logf("  DROPPED; radius=%f; dist=%f", radius, sqrtf(bestdist));
-      return nullptr;
-    }
-    */
   }
 
   // look for any free slot (or free one if necessary)
@@ -490,7 +465,7 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
     dl = DLights;
     for (int i = 0; i < MAX_DLIGHTS; ++i, ++dl) {
       // remove dead lights (why not?)
-      if (dl->die < Level->Time) dl->radius = 0;
+      if (dl->die < Level->Time) dl->radius = 0.0f;
       // unused light?
       if (dl->radius < 2.0f) {
         RL_CLEAR_DLIGHT(dl);
@@ -500,7 +475,7 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
       // don't replace player's lights
       if (dl->flags&dlight_t::PlayerLight) continue;
       // replace furthest light
-      float dist = lengthSquared(dl->origin-cl->ViewOrg);
+      const float dist = lengthSquared(dl->origin-cl->ViewOrg);
       if (dist > bestdist) {
         bestdist = dist;
         dlbestdist = dl;
@@ -508,19 +483,19 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
       // check if we already have dynamic light around new origin
       if (!isPlr) {
         const float dd = lengthSquared(dl->origin-lorg);
-        if (dd <= 6*6) {
+        if (dd <= 6.0f*6.0f) {
           if (radius > 0 && dl->radius >= radius) return nullptr;
           dlreplace = dl;
-          skipVisCheck = true; // it is so near, that we don't need to do id
-          break; // stop searching, we have a perfect candidate
+          skipVisCheck = true; // it is so near that we don't need to do any checks
+          break; // stop searching, we have the perfect candidate
         } else if (dd < radsqhalf) {
           // if existing light radius is greater than a new radius, drop new light, 'cause
           // we have too much lights around one point (prolly due to several things at one place)
-          if (radius > 0 && dl->radius >= radius) return nullptr;
+          if (radius > 0.0f && dl->radius >= radius) return nullptr;
           // otherwise, replace this light
           dlreplace = dl;
-          skipVisCheck = true; // it is so near, that we don't need to do id (i hope)
-          //break; // stop searching, we have a perfect candidate
+          skipVisCheck = true; // it is so near that we don't need to do any checks (i hope)
+          // keep checking, we may find a better candidate
         }
       }
     }
@@ -545,7 +520,7 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
   // floodfill visibility check
   if (!skipVisCheck && !isPlr && /*!IsShadowVolumeRenderer() &&*/ r_dynamic_light_better_vis_check) {
     if (leafnum < 0) leafnum = (int)(ptrdiff_t)(Level->PointInSubsector(lorg)-Level->Subsectors);
-    if (!CheckBSPVisibilityBox(lorg, (radius > 0 ? radius : 64), &Level->Subsectors[leafnum])) {
+    if (!IsBspVisSector(leafnum) && !CheckBSPVisibilityBox(lorg, (radius > 0.0f ? radius : 64.0f), &Level->Subsectors[leafnum])) {
       //GCon->Logf("DYNAMIC DROP: visibility check");
       return nullptr;
     }
