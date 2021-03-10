@@ -486,6 +486,8 @@ static void SV_SetupSkipCallback () {
   if (skipCallbackInited) return;
   skipCallbackInited = true;
   VObject::CanSkipReadingClassCBList.append(&checkSkipClassCB);
+  // translate old `Level` class to `VLevel`
+  VObject::IOClassNameTranslation.put(VName("Level"), VName("VLevel"));
 }
 #endif
 
