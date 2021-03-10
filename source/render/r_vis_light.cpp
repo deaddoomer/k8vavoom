@@ -34,41 +34,118 @@
 extern VCvarB r_draw_pobj;
 
 
-#define UPDATE_LIGHTVIS(ssindex)  do { \
-  /*if (LitCalcBBox) LightSubs.append((int)ssindex);*/ \
-  /*const vuint8 bvbit = (vuint8)(1u<<((unsigned)(ssindex)&7));*/ \
-  /*const unsigned sid8 = (unsigned)(ssindex)>>3;*/ \
-  /*LightVis[sid8] |= bvbit;*/ \
-  LightVis[(unsigned)(ssindex)] = LightFrameNum; \
-  LitVisSubHit = true; \
-  if (IsBspVis(ssindex)) { \
-    /*LightBspVis[sid8] |= bvbit;*/ \
-    LightBspVis[(unsigned)(ssindex)] = LightFrameNum; \
-    HasLightIntersection = true; \
-    /*if (LitCalcBBox) LightVisSubs.append((int)ssindex);*/ \
-    if (LitCalcBBox) { \
-      const subsector_t *vsub = &Level->Subsectors[ssindex]; \
-      for (const subregion_t *region = vsub->regions; region; region = region->next) { \
-        sec_region_t *curreg = region->secregion; \
-        if (vsub->HasPObjs() && r_draw_pobj) { \
-          for (auto &&it : vsub->PObjFirst()) { \
-            polyobj_t *pobj = it.value(); \
-            seg_t **polySeg = pobj->segs; \
-            for (int count = pobj->numsegs; count--; ++polySeg) { \
-              UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, (*polySeg)->drawsegs); \
-            } \
-          } \
-        } \
-        drawseg_t *ds = region->lines; \
-        for (int count = vsub->numlines; count--; ++ds) UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, ds); \
-        if (region->fakefloor) UpdateBBoxWithSurface(LitBBox, region->fakefloor->surfs, &region->fakefloor->texinfo, curreg->efloor.splane->SkyBox, true); \
-        if (region->realfloor) UpdateBBoxWithSurface(LitBBox, region->realfloor->surfs, &region->realfloor->texinfo, curreg->efloor.splane->SkyBox, true); \
-        if (region->fakeceil) UpdateBBoxWithSurface(LitBBox, region->fakeceil->surfs, &region->fakeceil->texinfo, curreg->eceiling.splane->SkyBox, true); \
-        if (region->realceil) UpdateBBoxWithSurface(LitBBox, region->realceil->surfs, &region->realceil->texinfo, curreg->eceiling.splane->SkyBox, true); \
-      } \
-    } \
-  } \
-} while (0)
+//==========================================================================
+//
+//  VRenderLevelShared::CalcLightVisCheckSubsector
+//
+//==========================================================================
+void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
+  //const unsigned subidx = (unsigned)(BSPIDX_LEAF_SUBSECTOR(bspnum));
+  subsector_t *sub = &Level->Subsectors[subidx];
+  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+
+  if (!LightClip.ClipLightCheckSubsector(sub, false)) {
+    LightClip.ClipLightAddSubsectorSegs(sub, false);
+    return;
+  }
+
+  // surface hits are checked in bbox updater
+  //if (LitCalcBBox) LightSubs.append((int)subidx);
+  //const vuint8 bvbit = (vuint8)(1u<<((unsigned)(subidx)&7));
+  //const unsigned sid8 = (unsigned)(subidx)>>3;
+  //LightVis[sid8] |= bvbit;
+  LightVis[subidx] = LightFrameNum;
+  LitVisSubHit = true;
+
+  if (IsBspVis((int)subidx)) {
+    //LightBspVis[sid8] |= bvbit;
+    LightBspVis[subidx] = LightFrameNum;
+    HasLightIntersection = true;
+    //if (LitCalcBBox) LightVisSubs.append((int)subidx);
+    if (LitCalcBBox) {
+      LitSurfaceHit = false;
+      const subsector_t *vsub = &Level->Subsectors[subidx];
+      for (const subregion_t *region = vsub->regions; region; region = region->next) {
+        sec_region_t *curreg = region->secregion;
+        if (vsub->HasPObjs() && r_draw_pobj.asBool()) {
+          for (auto &&it : vsub->PObjFirst()) {
+            polyobj_t *pobj = it.value();
+            seg_t **polySeg = pobj->segs;
+            for (int count = pobj->numsegs; count--; ++polySeg) {
+              UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, (*polySeg)->drawsegs);
+            }
+          }
+        }
+        drawseg_t *ds = region->lines;
+        for (int count = vsub->numlines; count--; ++ds) UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, ds);
+        if (region->fakefloor) UpdateBBoxWithSurface(LitBBox, region->fakefloor->surfs, &region->fakefloor->texinfo, curreg->efloor.splane->SkyBox, true);
+        if (region->realfloor) UpdateBBoxWithSurface(LitBBox, region->realfloor->surfs, &region->realfloor->texinfo, curreg->efloor.splane->SkyBox, true);
+        if (region->fakeceil) UpdateBBoxWithSurface(LitBBox, region->fakeceil->surfs, &region->fakeceil->texinfo, curreg->eceiling.splane->SkyBox, true);
+        if (region->realceil) UpdateBBoxWithSurface(LitBBox, region->realceil->surfs, &region->realceil->texinfo, curreg->eceiling.splane->SkyBox, true);
+      }
+    }
+  }
+
+  if (CurrLightBit) {
+    if (sub->dlightframe != currDLightFrame) {
+      sub->dlightbits = CurrLightBit;
+      sub->dlightframe = currDLightFrame;
+    } else {
+      sub->dlightbits |= CurrLightBit;
+    }
+  }
+
+  LightClip.ClipLightAddSubsectorSegs(sub, false);
+
+  // check if the light is too close to a wall/floor, and calculate "move out" vector
+  if (CurrLightCalcUnstuck) {
+    const float mindist = 2.5f;
+    //const sector_t *sec = sub->sector;
+
+    /*
+    const float fz = sec->floor.GetPointZClamped(CurrLightUnstuckPos);
+    const float cz = sec->ceiling.GetPointZClamped(CurrLightUnstuckPos);
+    */
+
+    // check walls
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int count = sub->numlines; count--; ++seg) {
+      const line_t *linedef = seg->linedef;
+      if (!linedef) continue; // miniseg
+      if (linedef->flags&ML_TWOSIDED) continue; // don't bother with two-sided lines for now
+      //const float dist = sef->PointDistance(CurrLightUnstuckPos);
+      /*
+      if (seg->partner) {
+        if (!seg->partner->frontsub) continue;
+        const sector_t *osec = seg->partner->frontsub->sector;
+        if (!osec) continue;
+        // if this sector height is lower than the other sector height, and the light is above other height, bottex skip
+        if ((sec->floor.maxz >= osec->floor.maxz || CurrLightUnstuckPos.z >= osec->floor.maxz) && // skip bottom?
+            (sec->ceiling.minz <= osec->ceiling.minz || CurrLightUnstuckPos.z <= osec->ceiling.minz)) // skip top?
+        {
+          // check midtex presence
+          const side_t *sidedef = seg->sidedef;
+          if (!sidedef) continue; // just in case
+          if (sidedef->MidTexture <= 0) continue;
+        }
+      }
+      */
+      const float dist = seg->PointDistance(CurrLightUnstuckPos);
+      if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += seg->normal*(mindist-dist); // move away
+    }
+    // now check floors
+    for (const subregion_t *region = sub->regions; region; region = region->next) {
+      if (region->floorplane.splane) {
+        const float dist = region->floorplane.PointDistance(CurrLightUnstuckPos);
+        if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += region->floorplane.GetNormal()*(mindist-dist); // move away
+      }
+      if (region->ceilplane.splane) {
+        const float dist = region->ceilplane.PointDistance(CurrLightUnstuckPos);
+        if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += region->floorplane.GetNormal()*(mindist-dist); // move away
+      }
+    }
+  }
+}
 
 
 //==========================================================================
@@ -77,6 +154,7 @@ extern VCvarB r_draw_pobj;
 //
 //==========================================================================
 void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox) {
+ tailcall:
 #ifdef VV_CLIPPER_FULL_CHECK
   if (LightClip.ClipIsFull()) return;
 #endif
@@ -86,27 +164,6 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
   // mirror clip
   if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
 
-  if (bspnum == -1) {
-    const unsigned subidx = 0;
-    subsector_t *sub = &Level->Subsectors[subidx];
-    if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
-    if (!LightClip.ClipLightCheckSubsector(sub, false)) {
-      LightClip.ClipLightAddSubsectorSegs(sub, false);
-      return;
-    }
-    UPDATE_LIGHTVIS(subidx);
-    if (CurrLightBit) {
-      if (sub->dlightframe != currDLightFrame) {
-        sub->dlightbits = CurrLightBit;
-        sub->dlightframe = currDLightFrame;
-      } else {
-        sub->dlightbits |= CurrLightBit;
-      }
-    }
-    LightClip.ClipLightAddSubsectorSegs(sub, false);
-    return;
-  }
-
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     const node_t *bsp = &Level->Nodes[bspnum];
@@ -115,125 +172,45 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
     if (dist > CurrLightRadius) {
       // light is completely on front side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], lightbbox)) return;
-      return CalcLightVisCheckNode(bsp->children[0], bsp->bbox[0], lightbbox);
+      //return CalcLightVisCheckNode(bsp->children[0], bsp->bbox[0], lightbbox);
+      bspnum = bsp->children[0];
+      bbox = bsp->bbox[0];
+      goto tailcall;
     } else if (dist < -CurrLightRadius) {
       // light is completely on back side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], lightbbox)) return;
-      return CalcLightVisCheckNode(bsp->children[1], bsp->bbox[1], lightbbox);
+      //return CalcLightVisCheckNode(bsp->children[1], bsp->bbox[1], lightbbox);
+      bspnum = bsp->children[1];
+      bbox = bsp->bbox[1];
+      goto tailcall;
     } else {
+      // it doesn't really matter which subspace we'll check first
       //unsigned side = (unsigned)bsp->PointOnSide(CurrLightPos);
-      unsigned side = (unsigned)(dist <= 0.0f); //(unsigned)bsp->PointOnSide(CurrLightPos);
+      //unsigned side = (unsigned)(dist <= 0.0f); //(unsigned)bsp->PointOnSide(CurrLightPos);
       // recursively divide front space
-      if (Are3DBBoxesOverlapIn2D(bsp->bbox[side], lightbbox)) {
-        CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
+      if (Are3DBBoxesOverlapIn2D(bsp->bbox[0/*side*/], lightbbox)) {
+        if (Are3DBBoxesOverlapIn2D(bsp->bbox[1/*1^side*/], lightbbox)) {
+          CalcLightVisCheckNode(bsp->children[0/*side*/], bsp->bbox[0/*side*/], lightbbox);
+          bspnum = bsp->children[1];
+          bbox = bsp->bbox[1];
+          goto tailcall;
+        } else {
+          bspnum = bsp->children[0];
+          bbox = bsp->bbox[0];
+          goto tailcall;
+        }
+      } else if (Are3DBBoxesOverlapIn2D(bsp->bbox[1/*1^side*/], lightbbox)) {
+        // only back space
+        //side ^= 1;
+        //if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1/*side*/], lightbbox)) return;
+        //return CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
+        bspnum = bsp->children[1];
+        bbox = bsp->bbox[1];
+        goto tailcall;
       }
-      // possibly divide back space
-      side ^= 1;
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[side], lightbbox)) return;
-      return CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
     }
   } else {
-    const unsigned subidx = (unsigned)(BSPIDX_LEAF_SUBSECTOR(bspnum));
-    subsector_t *sub = &Level->Subsectors[subidx];
-    if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
-    if (!LightClip.ClipLightCheckSubsector(sub, false)) {
-      LightClip.ClipLightAddSubsectorSegs(sub, false);
-      return;
-    }
-
-#if 0
-    bool hasGoodSurf = false;
-    if (!sub->HasPObjs()) {
-      const seg_t *seg = &Level->Segs[sub->firstline];
-      for (int count = sub->numlines; count--; ++seg) {
-        if (seg->SphereTouches(CurrLightPos, CurrLightRadius)) {
-          hasGoodSurf = true;
-          break;
-        }
-      }
-      if (!hasGoodSurf) {
-        for (const subregion_t *region = sub->regions; region; region = region->next) {
-          //const sec_region_t *curreg = region->secregion;
-          //const drawseg_t *ds = region->lines;
-          if (region->floorplane && region->floorplane->SphereTouches(CurrLightPos, CurrLightRadius)) {
-            hasGoodSurf = true;
-            break;
-          }
-          if (region->ceilplane && region->ceilplane->SphereTouches(CurrLightPos, CurrLightRadius)) {
-            hasGoodSurf = true;
-            break;
-          }
-        }
-      }
-      //if (!hasGoodSurf) GCon->Logf("skipped uninteresting subsector");
-    } else {
-      //FIXME!
-      hasGoodSurf = true;
-    }
-
-    if (hasGoodSurf)
-#endif
-    {
-      UPDATE_LIGHTVIS(subidx);
-      if (CurrLightBit) {
-        if (sub->dlightframe != currDLightFrame) {
-          sub->dlightbits = CurrLightBit;
-          sub->dlightframe = currDLightFrame;
-        } else {
-          sub->dlightbits |= CurrLightBit;
-        }
-      }
-    }
-    LightClip.ClipLightAddSubsectorSegs(sub, false);
-
-    // check if the light is too close to a wall/floor, and calculate "move out" vector
-    if (CurrLightCalcUnstuck) {
-      const float mindist = 2.5f;
-      //const sector_t *sec = sub->sector;
-
-      /*
-      const float fz = sec->floor.GetPointZClamped(CurrLightUnstuckPos);
-      const float cz = sec->ceiling.GetPointZClamped(CurrLightUnstuckPos);
-      */
-
-      // check walls
-      const seg_t *seg = &Level->Segs[sub->firstline];
-      for (int count = sub->numlines; count--; ++seg) {
-        const line_t *linedef = seg->linedef;
-        if (!linedef) continue; // miniseg
-        if (linedef->flags&ML_TWOSIDED) continue; // don't bother with two-sided lines for now
-        //const float dist = sef->PointDistance(CurrLightUnstuckPos);
-        /*
-        if (seg->partner) {
-          if (!seg->partner->frontsub) continue;
-          const sector_t *osec = seg->partner->frontsub->sector;
-          if (!osec) continue;
-          // if this sector height is lower than the other sector height, and the light is above other height, bottex skip
-          if ((sec->floor.maxz >= osec->floor.maxz || CurrLightUnstuckPos.z >= osec->floor.maxz) && // skip bottom?
-              (sec->ceiling.minz <= osec->ceiling.minz || CurrLightUnstuckPos.z <= osec->ceiling.minz)) // skip top?
-          {
-            // check midtex presence
-            const side_t *sidedef = seg->sidedef;
-            if (!sidedef) continue; // just in case
-            if (sidedef->MidTexture <= 0) continue;
-          }
-        }
-        */
-        const float dist = seg->PointDistance(CurrLightUnstuckPos);
-        if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += seg->normal*(mindist-dist); // move away
-      }
-      // now check floors
-      for (const subregion_t *region = sub->regions; region; region = region->next) {
-        if (region->floorplane.splane) {
-          const float dist = region->floorplane.PointDistance(CurrLightUnstuckPos);
-          if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += region->floorplane.GetNormal()*(mindist-dist); // move away
-        }
-        if (region->ceilplane.splane) {
-          const float dist = region->ceilplane.PointDistance(CurrLightUnstuckPos);
-          if (dist > 0.0f && dist < mindist) CurrLightUnstuckPos += region->floorplane.GetNormal()*(mindist-dist); // move away
-        }
-      }
-    }
+    return CalcLightVisCheckSubsector((unsigned)(BSPIDX_LEAF_SUBSECTOR(bspnum)));
   }
 }
 
@@ -322,10 +299,18 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
   IncLightFrameNum();
   LightClip.ClearClipNodes(CurrLightPos, Level, CurrLightRadius);
   HasLightIntersection = false;
-  CalcLightVisCheckNode(Level->NumNodes-1, dummybbox, lightbbox);
-  if (!HasLightIntersection) return false;
 
-  return true;
+  if (Level->NumSubsectors < 2) {
+    if (Level->NumSubsectors == 0) return false; // just in case
+    CalcLightVisCheckSubsector(0);
+    //return HasLightIntersection;
+  } else {
+    CalcLightVisCheckNode(Level->NumNodes-1, dummybbox, lightbbox);
+    //if (!HasLightIntersection) return false;
+    //return true;
+  }
+
+  return HasLightIntersection;
 }
 
 

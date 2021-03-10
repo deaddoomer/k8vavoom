@@ -1152,7 +1152,9 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
 //==========================================================================
 void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigned clipflags, bool onlyClip) {
  tailcall:
+#ifdef VV_CLIPPER_FULL_CHECK
   if (ViewClip.ClipIsFull()) return;
+#endif
 
   if (!ViewClip.ClipIsBBoxVisible(bbox)) return;
 

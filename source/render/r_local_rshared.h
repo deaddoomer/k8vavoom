@@ -202,7 +202,7 @@ protected:
   // set `LitCalcBBox` to true to calculate bbox of all hit surfaces, and all following flags
   bool LitCalcBBox; // set this to `false` disables `LitSurfaces`/`LitSurfaceHit` calculation, and all other arrays
   TVec LitBBox[2]; // bounding box for all hit surfaces
-  bool LitSurfaceHit; // hit any surface in visible subsector?
+  bool LitSurfaceHit; // hit any surface in visible subsector? (set only if `LitCalcBBox` is `true`)
   // nope, not used for now
   //bool HasBackLit; // if there's no backlit surfaces, use zpass
 
@@ -498,6 +498,8 @@ protected:
                               VEntity *SkyBox, bool CheckSkyBoxAlways);
   void UpdateBBoxWithLine (TVec bbox[2], VEntity *SkyBox, const drawseg_t *dseg);
 
+  // the following should not be called directly
+  void CalcLightVisCheckSubsector (const unsigned subidx);
   // the following should not be called directly
   void CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox);
 
