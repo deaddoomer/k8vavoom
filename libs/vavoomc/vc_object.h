@@ -551,7 +551,10 @@ protected:
   }
 
 public:
-  // temporary hack
+  // temporary hacks
+  // first, translate, then call "can skip"
+  static TMapNC<VName, VName> IOClassNameTranslation; // key: original name; value: new name
+
   typedef bool (*CanSkipReadingClassFn) (VObject *self, VName clsname);
   static TArray<CanSkipReadingClassFn> CanSkipReadingClassCBList;
 

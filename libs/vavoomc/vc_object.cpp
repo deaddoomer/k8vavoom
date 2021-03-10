@@ -48,6 +48,7 @@ int VObject::engineAllowNotImplementedBuiltins = 0;
 int VObject::standaloneExecutor = 0;
 TMap<VStrCI, bool> VObject::cliAsmDumpMethods;
 TArray<VObject::CanSkipReadingClassFn> VObject::CanSkipReadingClassCBList;
+TMapNC<VName, VName> VObject::IOClassNameTranslation;
 
 
 //==========================================================================
@@ -999,6 +1000,12 @@ void VObject::Serialise (VStream &strm) {
     strm << clsname;
     if (strm.IsError()) VPackage::IOError(va("error reading object of class `%s`", GetClass()->GetName()));
     if (clsname == NAME_None) VPackage::IOError(va("cannot load object of `none` class"));
+    // translate name
+    auto tnp = IOClassNameTranslation.find(clsname);
+    if (tnp) {
+      clsname = *tnp;
+      if (clsname == NAME_None) VPackage::IOError(va("cannot load translated object of `none` class"));
+    }
     VClass *cls = VClass::FindClass(*clsname);
     if (!cls) {
       // can we skip it?
