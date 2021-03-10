@@ -147,7 +147,7 @@ public:
     if (Index == NAME_None) return *this;
     vassert(Initialised);
     if (Names[Index]->IsLoCase()) return *this;
-    return VName(NAME_None);
+    return VName(Names[Index]->Name, VName::FindLower);
   }
 
   // returns lower-cased name, or NAME_None; cannot be called before `StaticInit()`
@@ -157,7 +157,8 @@ public:
     vassert(Initialised);
     if (Names[Index]->IsLoCase8()) return *this;
     // if the name is longer than 8 chars, try to find a shortened one
-    return (Names[Index]->IsName8() ? VName(NAME_None) : VName(Names[Index]->Name, VName::FindLower8));
+    //return (Names[Index]->IsName8() ? VName(NAME_None) : VName(Names[Index]->Name, VName::FindLower8));
+    return VName(Names[Index]->Name, VName::FindLower8);
   }
 
   VVA_CHECKRESULT inline bool IsLower () const noexcept {
