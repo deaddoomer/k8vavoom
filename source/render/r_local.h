@@ -240,7 +240,7 @@ extern VCvarB r_shadows_players;
 
 extern VCvarB dbg_show_lightmap_cache_messages;
 
-extern VCvarB dbg_dlight_vis_check_messages;
+//extern VCvarB dbg_dlight_vis_check_messages;
 extern VCvarF r_dynamic_light_vis_check_radius_tolerance;
 extern VCvarB r_vis_check_flood;
 extern VCvarF r_fade_mult_regular;

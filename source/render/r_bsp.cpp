@@ -139,7 +139,7 @@ void VRenderLevelShared::PrepareWorldRender (const refdef_t *rd, const VViewClip
   if (dbgCheckVisTime > 0) GCon->Logf(NAME_Debug, "dbgCheckVisTime: %g", dbgCheckVisTime);
   ClearQueues();
   MarkLeaves(); // this sets `r_viewleaf`
-  if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "*** PrepareWorldRender ***");
+  //if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "*** PrepareWorldRender ***");
   dbgCheckVisTime = 0;
   // this is done in `VRenderLevelShared::RenderPlayerView()`
   //FIXME: but should be done here if `r_viewleaf` was changed

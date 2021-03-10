@@ -30,7 +30,6 @@
 #include "r_local.h"
 
 //#define VAVOOM_DEBUG_PORTAL_POOL
-#define VAVOOM_USE_SIMPLE_BSP_BBOX_VIS_CHECK
 
 extern VCvarB r_advlight_opt_optimise_scissor;
 extern VCvarB dbg_clip_dump_added_ranges;
@@ -48,8 +47,8 @@ VCvarB dbg_show_lightmap_cache_messages("dbg_show_lightmap_cache_messages", fals
 
 VCvarB r_allow_cameras("r_allow_cameras", true, "Allow rendering live cameras?", CVAR_Archive);
 
-VCvarB dbg_dlight_vis_check_messages("dbg_dlight_vis_check_messages", false, "Show dynlight vischeck debug messages?", 0);
-VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks?", CVAR_Archive);
+//VCvarB dbg_dlight_vis_check_messages("dbg_dlight_vis_check_messages", false, "Show dynlight vischeck debug messages?", 0);
+VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks? (AT MAJORITY OF CASES THIS IS SLOWER THAN BSP!)", CVAR_Archive);
 
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);

@@ -34,6 +34,11 @@
 extern VCvarB dbg_vischeck_time;
 
 
+static TVec cboxPos;
+static float cboxRadius;
+static float cboxCheckBox[6];
+
+
 //==========================================================================
 //
 //  Are3DAnd2DBBoxesOverlap
@@ -52,42 +57,37 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const f
 //  VRenderLevelShared::CheckBSPVisibilityBoxSub
 //
 //==========================================================================
-bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float *bbox) noexcept {
-  if (bspnum == -1) return true;
+bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum) noexcept {
+  //if (bspnum == -1) return true;
+ tailcall:
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     // nope
     const node_t *bsp = &Level->Nodes[bspnum];
-    #ifndef VAVOOM_USE_SIMPLE_BSP_BBOX_VIS_CHECK
     // k8: this seems to be marginally slower than simple bbox check
     // k8: checking bbox before recurse into one node speeds it up
     // k8: checking bbox in two-node recursion doesn't do anything sensible (obviously)
     // decide which side the light is on
-    const float dist = bsp->PointDistance(CurrLightPos);
-    if (dist >= CurrLightRadius) {
+    const float dist = bsp->PointDistance(cboxPos);
+    if (dist >= cboxRadius) {
       // light is completely on front side
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], bbox)) return false;
-      return CheckBSPVisibilityBoxSub(bsp->children[0], bbox);
-    } else if (dist <= -CurrLightRadius) {
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], cboxCheckBox)) return false;
+      return CheckBSPVisibilityBoxSub(bsp->children[0]);
+    } else if (dist <= -cboxRadius) {
       // light is completely on back side
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], bbox)) return false;
-      return CheckBSPVisibilityBoxSub(bsp->children[1], bbox);
+      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], cboxCheckBox)) return false;
+      return CheckBSPVisibilityBoxSub(bsp->children[1]);
     } else {
-      // it doesn't really matter which subspace we'll check first, but why not?
-      unsigned side = (unsigned)(dist <= 0.0f);
+      // it doesn't really matter which subspace we'll check first
+      //const unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox)) return true;
+      if (CheckBSPVisibilityBoxSub(bsp->children[0/*side*/])) return true;
       // recursively divide back space
-      side ^= 1;
-      return CheckBSPVisibilityBoxSub(bsp->children[side], bbox);
+      //side ^= 1;
+      //return CheckBSPVisibilityBoxSub(bsp->children[side]);
+      bspnum = bsp->children[1/*side*/];
+      goto tailcall;
     }
-    #else
-    // this is slower
-    for (unsigned side = 0; side < 2; ++side) {
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[side], bbox)) continue;
-      if (CheckBSPVisibilityBoxSub(bsp->children[side], bbox)) return true;
-    }
-    #endif
   } else {
     // check subsector
     const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
@@ -95,7 +95,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float *bbox
       // no, this check is wrong
       /*if (Are3DAnd2DBBoxesOverlap(bbox, Level->Subsectors[subidx].bbox2d))*/
       {
-        if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "***HIT VISIBLE SUBSECTOR #%u", subidx);
+        //if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "***HIT VISIBLE SUBSECTOR #%u", subidx);
         return true;
       }
     }
@@ -119,26 +119,25 @@ bool VRenderLevelShared::CheckBSPVisibilityBox (const TVec &org, float radius, c
     if (IsBspVis((int)subidx)) return true;
   }
 
-  // create light bounding box
-  float lbbox[6] = {
-    org.x-radius,
-    org.y-radius,
-    0, // doesn't matter
-    org.x+radius,
-    org.y+radius,
-    0, // doesn't matter
-  };
+  if (Level->NumSubsectors < 2) return true; // anyway
+  vassert(Level->NumNodes > 1);
 
-  #ifndef VAVOOM_USE_SIMPLE_BSP_BBOX_VIS_CHECK
-  CurrLightPos = org;
-  CurrLightRadius = radius;
-  #endif
+  // create light bounding box
+  cboxCheckBox[0] = org.x-radius;
+  cboxCheckBox[1] = org.y-radius;
+  cboxCheckBox[2] = -99999.9f; // doesn't matter
+  cboxCheckBox[3] = org.x+radius;
+  cboxCheckBox[4] = org.y+radius;
+  cboxCheckBox[5] = +99999.9f; // doesn't matter
+
+  cboxPos = org;
+  cboxRadius = radius;
 
   if (!dbg_vischeck_time) {
-    return CheckBSPVisibilityBoxSub(Level->NumNodes-1, lbbox);
+    return CheckBSPVisibilityBoxSub(Level->NumNodes-1);
   } else {
     const double stt = -Sys_Time_CPU();
-    bool res = CheckBSPVisibilityBoxSub(Level->NumNodes-1, lbbox);
+    bool res = CheckBSPVisibilityBoxSub(Level->NumNodes-1);
     dbgCheckVisTime += stt+Sys_Time_CPU();
     return res;
   }
