@@ -1167,21 +1167,21 @@ native static final class FindClassNoCaseStr (string Name);
 native static final spawner class FindClassNoCaseEx (class BaseClass, name Name);
 native static final spawner class FindClassNoCaseExStr (class BaseClass, string Name);
 native static final bool ClassIsChildOf (class SomeClass, class BaseClass);
-native static final bool IsAbstractClass (class C);
-native static final bool IsNativeClass (class C);
-native static final name GetClassName (class C);
-native static final string GetFullClassName (class C);
-native static final string GetClassLocationStr (class C);
-native static final class GetClassParent (class C);
-native static final class GetClassReplacement (class C);
+native static final bool IsAbstractClass (class C) [property(class) IsAbstract];
+native static final bool IsNativeClass (class C) [property(class) IsNative];
+native static final name GetClassName (class C) [property(class) Name];
+native static final string GetFullClassName (class C) [property(class) FullName];
+native static final string GetClassLocationStr (class C) [property(class) Loc];
+native static final class GetClassParent (class C) [property(class) Parent];
+native static final class GetClassReplacement (class C) [property(class) Replacement];
 native static final spawner class GetCompatibleClassReplacement (class CType, class C); // returns `none` if replacement is not compatible with `CType`
-native static final class GetClassReplacee (class C);
+native static final class GetClassReplacee (class C) [property(class) Replacee];
 native static final state FindClassState (class C, name StateName, optional name SubLabel, optional bool exact);
-native static final int GetClassNumOwnedStates (class C);
-native static final state GetClassFirstState (class C);
-native static final name GetClassGameObjName (class C);
-native static final int GetClassInstanceCount (class C);
-native static final int GetClassInstanceCountWithSub (class C);
+native static final int GetClassNumOwnedStates (class C) [property(class) NumOwnedStates];
+native static final state GetClassFirstState (class C) [property(class) FirstState];
+native static final name GetClassGameObjName (class C) [property(class) GameObjectName];
+native static final int GetClassInstanceCount (class C) [property(class) InstanceCount];
+native static final int GetClassInstanceCountWithSub (class C) [property(class) InstanceCountWithSub];
 
 
 // ////////////////////////////////////////////////////////////////////////// //
