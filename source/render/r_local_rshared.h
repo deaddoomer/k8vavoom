@@ -610,8 +610,9 @@ protected:
   void RenderPolyObj (subsector_t *sub);
   void RenderSubRegion (subsector_t *sub, subregion_t *region);
   void RenderSubsector (int num, bool onlyClip);
-  void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip=false);
-  void RenderBspWorld (const refdef_t *, const VViewClipper *);
+  void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip);
+  void RenderBSPTree ();
+  void RenderBspWorld (const refdef_t *rd, const VViewClipper *Range);
 
   void RenderResetSavedBspVis () noexcept;
   void RenderSaveBspVis () noexcept;

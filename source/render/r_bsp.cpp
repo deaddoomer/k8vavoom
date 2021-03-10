@@ -1154,11 +1154,6 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
  tailcall:
   if (ViewClip.ClipIsFull()) return;
 
-  if (bspnum == -1) {
-    RenderSubsector(0, onlyClip);
-    return;
-  }
-
   if (!ViewClip.ClipIsBBoxVisible(bbox)) return;
 
   // mirror clip
@@ -1196,7 +1191,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     // nope
-    node_t *bsp = &Level->Nodes[bspnum];
+    const node_t *bsp = &Level->Nodes[bspnum];
     //if (bsp->visframe == currVisFrame) return; // if we're exactly on a splitting plane, this can happen
     // decide which side the view point is on
     unsigned side = (unsigned)bsp->PointOnSide(Drawer->vieworg);
@@ -1236,12 +1231,32 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
 
 //==========================================================================
 //
+//  VRenderLevelShared::RenderBSPTree
+//
+//  Renders all subsectors below a given node, traversing subtree
+//  recursively from BSP root.
+//
+//==========================================================================
+void VRenderLevelShared::RenderBSPTree () {
+  if (Level->NumSubsectors > 1) {
+    vassert(Level->NumNodes > 1);
+    /*static*/ const float bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
+    unsigned clipflags = 0;
+    const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
+    for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) clipflags |= cp->clipflag;
+    RenderBSPNode(Level->NumNodes-1, bbox, clipflags /*(Drawer->MirrorClip ? 0x3f : 0x1f)*/, false);
+  } else if (Level->NumSubsectors > 0) {
+    RenderSubsector(0, false);
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::RenderBspWorld
 //
 //==========================================================================
 void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper *Range) {
-  /*static*/ const float dummy_bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
-
   ViewClip.ClearClipNodes(Drawer->vieworg, Level);
   if (Range) {
     ViewClip.ClipResetFrustumPlanes();
@@ -1254,9 +1269,11 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
   IncrementBspVis();
 
   if (PortalLevel == 0) {
-    if (WorldSurfs.NumAllocated() < 4096) WorldSurfs.Resize(4096);
+    if (WorldSurfs.NumAllocated() < 32768) WorldSurfs.Resize(32768);
   }
+
   MirrorClipSegs = (Drawer->MirrorClip && !Drawer->viewfrustum.planes[TFrustum::Forward].normal.z);
+
   if (!clip_frustum_mirror) {
     MirrorClipSegs = false;
     Drawer->viewfrustum.planes[TFrustum::Forward].clipflag = 0;
@@ -1265,13 +1282,7 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
   // mark the leaf we're in as seen
   if (r_viewleaf) r_viewleaf->miscFlags |= subsector_t::SSMF_Rendered;
 
-  // head node is the last node output
-  {
-    unsigned clipflags = 0;
-    const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
-    for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) clipflags |= cp->clipflag;
-    RenderBSPNode(Level->NumNodes-1, dummy_bbox, clipflags /*(Drawer->MirrorClip ? 0x3f : 0x1f)*/);
-  }
+  RenderBSPTree();
 
   // draw the most complex sky portal behind the scene first, without the need to use stencil buffer
   // most of the time this is the only sky portal, so we can get away without rendering portals at all
