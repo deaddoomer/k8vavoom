@@ -199,12 +199,12 @@ bool VRenderLevelDrawer::CalculateRenderStyleInfo (RenderStyleInfo &ri, int Rend
 //
 //==========================================================================
 bool VRenderLevelShared::IsThingVisible (VEntity *ent) const noexcept {
-  const unsigned SubIdx = (unsigned)(ptrdiff_t)(ent->SubSector-Level->Subsectors);
-  if (BspVis[SubIdx>>3]&(1u<<(SubIdx&7))) return true;
+  const int SubIdx = (int)(ptrdiff_t)(ent->SubSector-Level->Subsectors);
+  if (IsBspVis(SubIdx)) return true;
   // check if the sector is visible
-  const unsigned SecIdx = (unsigned)(ptrdiff_t)(ent->Sector-Level->Sectors);
+  const int SecIdx = (int)(ptrdiff_t)(ent->Sector-Level->Sectors);
   // check if it is in visible sector
-  if (BspVisSector[SecIdx>>3]&(1u<<(SecIdx&7))) {
+  if (IsBspVisSector(SecIdx)) {
     // in visible sector; check frustum, because sector shapes can be quite bizarre
     return Drawer->viewfrustum.checkSphere(ent->Origin, ent->GetRenderRadius());
   } else if (r_draw_adjacent_sector_things) {
@@ -213,8 +213,8 @@ bool VRenderLevelShared::IsThingVisible (VEntity *ent) const noexcept {
     if (Drawer->viewfrustum.checkSphere(ent->Origin, ent->GetRenderRadius())) {
       // check if this thing is touching any visible sector
       for (msecnode_t *mnode = ent->TouchingSectorList; mnode; mnode = mnode->TNext) {
-        const unsigned snum = (unsigned)(ptrdiff_t)(mnode->Sector-Level->Sectors);
-        if (BspVisSector[snum>>3]&(1u<<(snum&7))) return true;
+        const int snum = (int)(ptrdiff_t)(mnode->Sector-Level->Sectors);
+        if (IsBspVisSector(snum)) return true;
       }
     }
   }
@@ -420,7 +420,7 @@ void VRenderLevelShared::BuildVisibleObjectsList (bool doShadows) {
         if (doDump) GCon->Logf("  <%s> (%f,%f,%f) 0x%08x", *ent->GetClass()->GetFullName(), ent->Origin.x, ent->Origin.y, ent->Origin.z, ent->EntityFlags);
         // mark as visible, why not?
         // use bsp visibility, to not mark "adjacent" things
-        //if (BspVis[SubIdx>>3]&(1<<(SubIdx&7))) ent->FlagsEx |= VEntity::EFEX_Rendered;
+        //if (IsBspVis(SubIdx)) ent->FlagsEx |= VEntity::EFEX_Rendered;
 
         visibleObjects.append(ent);
         if (hasAliasModel) {
@@ -474,7 +474,7 @@ void VRenderLevelShared::BuildVisibleObjectsList (bool doShadows) {
       if (doDump) GCon->Logf("  <%s> (%f,%f,%f) 0x%08x", *ent->GetClass()->GetFullName(), ent->Origin.x, ent->Origin.y, ent->Origin.z, ent->EntityFlags);
       // mark as visible, why not?
       // use bsp visibility, to not mark "adjacent" things
-      //if (BspVis[SubIdx>>3]&(1<<(SubIdx&7))) ent->FlagsEx |= VEntity::EFEX_Rendered;
+      //if (IsBspVis(SubIdx)) ent->FlagsEx |= VEntity::EFEX_Rendered;
 
       visibleObjects.append(ent);
       if (hasAliasModel) {

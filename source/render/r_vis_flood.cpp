@@ -91,7 +91,7 @@ void VRenderLevelShared::NewBSPFloodVisibilityFrame () noexcept {
 bool VRenderLevelShared::CheckBSPFloodVisibilitySub (const TVec &org, const float radius, const subsector_t *currsub, const seg_t *firsttravel) noexcept {
   const unsigned csubidx = (unsigned)(ptrdiff_t)(currsub-Level->Subsectors);
   // rendered means "visible"
-  if (BspVis[csubidx>>3]&(1<<(csubidx&7))) {
+  if (IsBspVis((int)csubidx)) {
     bspVisRadius[csubidx].framecount = bspVisRadiusFrame|0x80000000u; // just in case
     return true;
   }
@@ -170,14 +170,14 @@ bool VRenderLevelShared::CheckBSPFloodVisibility (const TVec &org, float radius,
   bspVisRadius[subidx].framecount = bspVisRadiusFrame;
   bspVisRadius[subidx].radius = radius;
   // rendered means "visible"
-  if (BspVis[subidx>>3]&(1<<(subidx&7))) {
+  if (IsBspVis((int)subidx)) {
     bspVisRadius[subidx].radius = 1e12; // big!
     bspVisRadius[subidx].vis = BSPVisInfo::VISIBLE;
     return true;
   }
 */
   // rendered means "visible"
-  if (BspVis[subidx>>3]&(1<<(subidx&7))) return true;
+  if (IsBspVis((int)subidx)) return true;
 
   // use floodfill to determine (rough) potential visibility
   // nope, don't do it here, do it in scene renderer

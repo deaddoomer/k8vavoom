@@ -41,7 +41,7 @@ extern VCvarB r_draw_pobj;
   /*LightVis[sid8] |= bvbit;*/ \
   LightVis[(unsigned)(ssindex)] = LightFrameNum; \
   LitVisSubHit = true; \
-  if (BspVis[(unsigned)(ssindex)>>3]&((vuint8)(1u<<((unsigned)(ssindex)&7)))) { \
+  if (IsBspVis(ssindex)) { \
     /*LightBspVis[sid8] |= bvbit;*/ \
     LightBspVis[(unsigned)(ssindex)] = LightFrameNum; \
     HasLightIntersection = true; \

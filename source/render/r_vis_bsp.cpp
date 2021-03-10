@@ -91,7 +91,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum, const float *bbox
   } else {
     // check subsector
     const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
-    if (BspVis[subidx>>3]&(1<<(subidx&7))) {
+    if (IsBspVis((int)subidx)) {
       // no, this check is wrong
       /*if (Are3DAnd2DBBoxesOverlap(bbox, Level->Subsectors[subidx].bbox2d))*/
       {
@@ -116,7 +116,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBox (const TVec &org, float radius, c
   if (sub) {
     const unsigned subidx = (unsigned)(ptrdiff_t)(sub-Level->Subsectors);
     // rendered means "visible"
-    if (BspVis[subidx>>3]&(1<<(subidx&7))) return true;
+    if (IsBspVis((int)subidx)) return true;
   }
 
   // create light bounding box

@@ -451,8 +451,8 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
 
   if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
 
-  // `LightBspVis` is already an intersection, no need to check `BspVis` here
-  //if (!IsSubsectorLitBspVis(num) || !(BspVis[num>>3]&(1<<(num&7)))) return;
+  // `LightBspVis` is already an intersection, no need to check `BspVisData` here
+  //if (!IsSubsectorLitBspVis(num) || !IsBspVis(num)) return;
 
   if ((ssflag&FlagAsLight) && !LightClip.ClipLightCheckSubsector(sub, VViewClipper::AsLight)) {
     if ((ssflag &= ~FlagAsLight) == 0) return;
@@ -474,7 +474,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
 
     // if our light is in frustum, out-of-frustum subsectors are not interesting
     //FIXME: pass "need frustum check" flag to other functions
-    if ((ssflag&FlagAsShadow) && CurrLightInFrustum && !(BspVis[num>>3]&(1u<<(num&7)))) {
+    if ((ssflag&FlagAsShadow) && CurrLightInFrustum && !IsBspVis(num)) {
       // this subsector is invisible, check if it is in frustum (this was originally done for shadow)
       float bbox[6];
       // min

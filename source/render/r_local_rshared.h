@@ -94,10 +94,10 @@ protected:
   //unsigned FrustumIndexes[5][6];
   int MirrorLevel;
   int PortalLevel;
-  int VisSize;
-  int SecVisSize;
-  vuint8 *BspVis;
-  vuint8 *BspVisSector; // for whole sectors
+
+  unsigned BspVisFrame;
+  unsigned *BspVisData;
+  unsigned *BspVisSectorData; // for whole sectors
 
   subsector_t *r_viewleaf;
   subsector_t *r_oldviewleaf;
@@ -196,8 +196,8 @@ protected:
   VViewClipper LightClip; // internal working clipper
   VViewClipper LightShadowClip; // internal working clipper
   unsigned *LightVis; // this will be allocated if necessary; set to `LightFrameNum` for subsectors touched in `CalcLightVis()`
-  unsigned *LightBspVis; // this will be allocated if necessary; set to `LightFrameNum` for subsectors touched, and marked in `BspVis`
-  bool HasLightIntersection; // set by `CalcLightVisCheckNode()`: is any touched subsector also marked in `BspVis`?
+  unsigned *LightBspVis; // this will be allocated if necessary; set to `LightFrameNum` for subsectors touched, and marked in `BspVisData`
+  bool HasLightIntersection; // set by `CalcLightVisCheckNode()`: is any touched subsector also marked in `BspVisData`?
   bool LitVisSubHit; // hit any subsector?
   // set `LitCalcBBox` to true to calculate bbox of all hit surfaces, and all following flags
   bool LitCalcBBox; // set this to `false` disables `LitSurfaces`/`LitSurfaceHit` calculation, and all other arrays
@@ -469,6 +469,19 @@ public:
   static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->SScale : 1.0f); }
   static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->TScale : 1.0f); }
 
+  inline void IncrementBspVis () {
+    if (++BspVisFrame == 0) {
+      memset(BspVisData, 0, Level->NumSubsectors*sizeof(BspVisData[0]));
+      memset(BspVisSectorData, 0, Level->NumSectors*sizeof(BspVisSectorData[0]));
+    }
+  }
+
+  inline bool IsBspVis (int idx) const noexcept { return (idx >= 0 && idx < Level->NumSubsectors ? (BspVisData[(unsigned)idx] == BspVisFrame) : false); }
+  inline bool IsBspVisSector (int idx) const noexcept { return (idx >= 0 && idx < Level->NumSectors ? (BspVisSectorData[(unsigned)idx] == BspVisFrame) : false); }
+
+  inline void MarkBspVis (int idx) noexcept { if (idx >= 0 && idx < Level->NumSubsectors) BspVisData[(unsigned)idx] = BspVisFrame; }
+  inline void MarkBspVisSector (int idx) noexcept { if (idx >= 0 && idx < Level->NumSectors) BspVisSectorData[(unsigned)idx] = BspVisFrame; }
+
 protected:
   VRenderLevelShared (VLevel *ALevel);
   ~VRenderLevelShared ();
@@ -489,7 +502,7 @@ protected:
   void CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox);
 
   // main entry point for lightvis calculation
-  // note that this should be called with filled `BspVis`
+  // note that this should be called with filled `BspVisData`
   // if we will use this for dynamic lights, they will have one-frame latency
   // sets `CurrLightPos` and `CurrLightRadius`, and other lvis fields
   // returns `false` if the light is invisible

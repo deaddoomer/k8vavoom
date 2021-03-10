@@ -1100,11 +1100,11 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
       sub->VisFrame = currVisFrame;
 
       // mark this subsector as rendered
-      BspVis[((unsigned)num)>>3] |= 1U<<(num&7);
+      MarkBspVis(num);
 
       // mark this sector as rendered (thing visibility check needs this info)
-      const unsigned secnum = (unsigned)(ptrdiff_t)(sub->sector-&Level->Sectors[0]);
-      BspVisSector[secnum>>3] |= 1U<<(secnum&7);
+      const int secnum = (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]);
+      MarkBspVisSector(secnum);
 
       markSectorRendered(secnum);
 
@@ -1250,8 +1250,9 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
   } else {
     ViewClip.ClipInitFrustumRange(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup, rd->fovx, rd->fovy);
   }
-  memset(BspVis, 0, VisSize);
-  memset(BspVisSector, 0, SecVisSize);
+
+  IncrementBspVis();
+
   if (PortalLevel == 0) {
     if (WorldSurfs.NumAllocated() < 4096) WorldSurfs.Resize(4096);
   }

@@ -58,8 +58,10 @@ struct AutoSavedView {
 
   bool shadowsDisabled;
 
-  vuint8 *SavedBspVis;
-  vuint8 *SavedBspVisSector;
+  //TODO: optimise vis saving
+  unsigned *SavedBspVis;
+  unsigned *SavedBspVisSector;
+  unsigned SavedBspVisFrame;
 
   VRenderLevelShared::PPMark pmark;
 
@@ -90,8 +92,9 @@ struct AutoSavedView {
 
     shadowsDisabled = RLev->forceDisableShadows;
 
-    SavedBspVis = RLev->BspVis;
-    SavedBspVisSector = RLev->BspVisSector;
+    SavedBspVis = RLev->BspVisData;
+    SavedBspVisSector = RLev->BspVisSectorData;
+    SavedBspVisFrame = RLev->BspVisFrame;
     VRenderLevelShared::MarkPortalPool(&pmark);
 
     if (aSaveBSP) {
@@ -101,21 +104,21 @@ struct AutoSavedView {
       // this has to be done only for portals that do rendering of view
 
       // notify allocator about minimal node size
-      VRenderLevelShared::SetMinPoolNodeSize(RLev->VisSize+RLev->SecVisSize+128);
+      VRenderLevelShared::SetMinPoolNodeSize((RLev->Level->NumSubsectors+RLev->Level->NumSectors+2)*sizeof(unsigned));
       // allocate new bsp vis
-      RLev->BspVis = VRenderLevelShared::AllocPortalPool(RLev->VisSize+RLev->SecVisSize+128);
-      RLev->BspVisSector = RLev->BspVis+RLev->VisSize;
-      if (RLev->VisSize) memset(RLev->BspVis, 0, RLev->VisSize);
-      if (RLev->SecVisSize) memset(RLev->BspVisSector, 0, RLev->SecVisSize);
-      //fprintf(stderr, "BSPVIS: size=%d\n", RLev->VisSize);
+      RLev->BspVisData = (unsigned *)VRenderLevelShared::AllocPortalPool((RLev->Level->NumSubsectors+RLev->Level->NumSectors+2)*sizeof(unsigned));
+      RLev->BspVisSectorData = RLev->BspVisData+RLev->Level->NumSubsectors+1;
+      memset(RLev->BspVisData, 0, (RLev->Level->NumSubsectors+1)*sizeof(RLev->BspVisData[0]));
+      memset(RLev->BspVisSectorData, 0, (RLev->Level->NumSectors+1)*sizeof(RLev->BspVisSectorData[0]));
     }
   }
 
   inline ~AutoSavedView () noexcept {
     if (saveBSP) {
-      RLev->BspVis = SavedBspVis;
-      RLev->BspVisSector = SavedBspVisSector;
+      RLev->BspVisData = SavedBspVis;
+      RLev->BspVisSectorData = SavedBspVisSector;
       RLev->PopDrawLists();
+      RLev->BspVisFrame = SavedBspVisFrame;
       // restore ppol
       VRenderLevelShared::RestorePortalPool(&pmark);
     }

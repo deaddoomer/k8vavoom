@@ -607,10 +607,8 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , CurrPortal(nullptr)
   , MirrorLevel(0)
   , PortalLevel(0)
-  , VisSize(0)
-  , SecVisSize(0)
-  , BspVis(nullptr)
-  , BspVisSector(nullptr)
+  , BspVisData(nullptr)
+  , BspVisSectorData(nullptr)
   , r_viewleaf(nullptr)
   , r_oldviewleaf(nullptr)
   , old_fov(90.0f)
@@ -647,19 +645,17 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   PortalUsingStencil = 0;
   //VPortal::ResetFrame();
 
-  VisSize = (Level->NumSubsectors+7)>>3;
-  SecVisSize = (Level->NumSectors+7)>>3;
-
-  BspVis = new vuint8[VisSize];
-  memset(BspVis, 0, VisSize);
-  BspVisSector = new vuint8[SecVisSize];
-  memset(BspVisSector, 0, SecVisSize);
+  BspVisFrame = 1;
+  BspVisData = new unsigned[Level->NumSubsectors+1];
+  memset(BspVisData, 0, (Level->NumSubsectors+1)*sizeof(BspVisData[0]));
+  BspVisSectorData = new unsigned[Level->NumSectors+1];
+  memset(BspVisSectorData, 0, (Level->NumSectors+1)*sizeof(BspVisSectorData[0]));
 
   LightFrameNum = 1; // just to play safe
-  LightVis = new unsigned[Level->NumSubsectors];
-  LightBspVis = new unsigned[Level->NumSubsectors];
-  memset(LightVis, 0, sizeof(LightVis[0])*Level->NumSubsectors);
-  memset(LightBspVis, 0, sizeof(LightBspVis[0])*Level->NumSubsectors);
+  LightVis = new unsigned[Level->NumSubsectors+1];
+  LightBspVis = new unsigned[Level->NumSubsectors+1];
+  memset(LightVis, 0, sizeof(LightVis[0])*(Level->NumSubsectors+1));
+  memset(LightBspVis, 0, sizeof(LightBspVis[0])*(Level->NumSubsectors+1));
   //GCon->Logf(NAME_Debug, "*** SUBSECTORS: %d", Level->NumSubsectors);
 
   SubStaticLights.setLength(Level->NumSubsectors);
@@ -824,10 +820,10 @@ VRenderLevelShared::~VRenderLevelShared () {
   delete[] Particles;
   Particles = nullptr;
 
-  delete[] BspVis;
-  BspVis = nullptr;
-  delete[] BspVisSector;
-  BspVisSector = nullptr;
+  delete[] BspVisData;
+  BspVisData = nullptr;
+  delete[] BspVisSectorData;
+  BspVisSectorData = nullptr;
 
   delete[] LightVis;
   LightVis = nullptr;
@@ -1461,7 +1457,7 @@ void VRenderLevelShared::RenderPlayerView () {
   AnimateSky(host_frametime);
   UpdateParticles(host_frametime);
 
-  //TODO: we can separate BspVis building (and batching surfaces for rendering), and
+  //TODO: we can separate `BspVisData` building (and batching surfaces for rendering), and
   //      the actual rendering. this way we'll be able to do better dynlight checks
 
   PushDlights();
