@@ -412,11 +412,14 @@ private:
 public:
   // property renames for various types
   // put here, because all methods belongs to classes
-  TMap<VStr, VStr> StringProps;
-  TMap<VStr, VStr> NameProps;
+  //   key: property name (lowercased)
+  // value: method name
+  TMapNC<VName, VName> StringProps;
+  TMapNC<VName, VName> NameProps;
+  TMapNC<VName, VName> ClassProps;
 
   // returns empty string if not found
-  VStr FindInPropMap (EType type, VStr prname) noexcept;
+  VName FindInPropMap (EType type, VName prname) noexcept;
 
 public:
   static void InitSpriteList ();

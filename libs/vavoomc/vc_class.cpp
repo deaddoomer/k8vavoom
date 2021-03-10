@@ -273,21 +273,22 @@ void VClass::CompilerShutdown () {
 //  returns empty string if not found
 //
 //==========================================================================
-VStr VClass::FindInPropMap (EType type, VStr prname) noexcept {
-  if (prname.isEmpty()) return VStr::EmptyString;
-  if (type == TYPE_String) {
-    for (VClass *cls = this; cls; cls = cls->ParentClass) {
-      auto np = cls->StringProps.find(prname);
-      //GLog.Logf(NAME_Debug, "::FIPM:STR:%s: prname=<%s>; found=<%s>", cls->GetName(), *prname, (np ? **np : ""));
-      if (np) return *np;
+VName VClass::FindInPropMap (EType type, VName prname) noexcept {
+  //prname = prname.GetLowerNoCreate();
+  if (prname == NAME_None) return NAME_None;
+  for (VClass *cls = this; cls; cls = cls->ParentClass) {
+    TMapNC<VName, VName> *pmap;
+    switch (type) {
+      case TYPE_String: pmap = &cls->StringProps; break;
+      case TYPE_Name: pmap = &cls->NameProps; break;
+      case TYPE_Class: pmap = &cls->ClassProps; break;
+      default: return NAME_None;
     }
-  } else if (type == TYPE_Name) {
-    for (VClass *cls = this; cls; cls = cls->ParentClass) {
-      auto np = cls->NameProps.find(prname);
-      if (np) return *np;
-    }
+    auto np = pmap->find(prname);
+    //GLog.Logf(NAME_Debug, "::FIPM:STR:%s: prname=<%s>; found=<%s>", cls->GetName(), *prname, (np ? **np : ""));
+    if (np) return *np;
   }
-  return VStr::EmptyString;
+  return NAME_None;
 }
 
 

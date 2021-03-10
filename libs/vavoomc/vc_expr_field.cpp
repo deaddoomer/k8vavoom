@@ -629,92 +629,40 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
 
   // class properties
   if (op->Type.Type == TYPE_Class) {
-    if (FieldName == "Replacement" || FieldName == "replacement") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `Replacement` property");
+    VClass *cls = (op->Type.Class ?: ec.OuterClass);
+    if (cls) {
+      VName newname = cls->FindInPropMap(TYPE_Class, FieldName);
+      if (newname != NAME_None) {
+        // i found her!
+        if (assType == AssType::AssTarget) {
+          ParseError(Loc, "Cannot assign to read-only property `%s`", *FieldName);
+          delete this;
+          return nullptr;
+        }
+        // method
+        VMethod *M = cls->FindAccessibleMethod(newname, ec.SelfClass, &Loc);
+        if (!M) {
+          ParseError(Loc, "Method `%s` not found in class `%s` (for property `%s`)", *newname, cls->GetName(), *FieldName);
+          delete this;
+          return nullptr;
+        }
+        if (M->IsIterator()) {
+          ParseError(Loc, "Iterator methods can only be used in foreach statements");
+          delete this;
+          return nullptr;
+        }
+        if (!M->IsStatic()) {
+          ParseError(Loc, "Only static methods can be called with this syntax");
+          delete this;
+          return nullptr;
+        }
+        // statics has no self
+        VExpression *ufcsArgs[1];
+        ufcsArgs[0] = opcopy.extract();
+        VExpression *e = new VInvocation(nullptr, M, nullptr, false, false, Loc, 1, ufcsArgs);
         delete this;
-        return nullptr;
+        return e->Resolve(ec);
       }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Replacement, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "Replacee" || FieldName == "replacee") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `Replacee` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Replacee, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "Name" || FieldName == "name") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `Name` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Name, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "Parent" || FieldName == "parent") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `Parent` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Parent, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "IsNative" || FieldName == "isNative") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `IsNative` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::IsNative, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "IsAbstract" || FieldName == "isAbstract") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `IsAbstract` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::IsAbstract, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "fullName" || FieldName == "FullName") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `FullName` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::FullName, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
-    }
-
-    if (FieldName == "loc" || FieldName == "Loc" || FieldName == "location" || FieldName == "Location") {
-      if (assType == AssType::AssTarget) {
-        ParseError(Loc, "Cannot change `Location` property");
-        delete this;
-        return nullptr;
-      }
-      VExpression *e = new VGetBuiltInClassProperty(VGetBuiltInClassProperty::Location, opcopy.extract(), Loc);
-      delete this;
-      return e->Resolve(ec);
     }
   }
 
@@ -784,8 +732,8 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       return e->Resolve(ec);
     }
     if (ec.OuterClass) {
-      VStr newname = ec.OuterClass->FindInPropMap(TYPE_String, VStr(FieldName));
-      if (!newname.isEmpty()) {
+      VName newname = ec.OuterClass->FindInPropMap(TYPE_String, FieldName);
+      if (newname != NAME_None) {
         // i found her!
         //GLog.Logf(NAME_Debug, "<%s> : <%s>", *FieldName, *newname);
         if (assType == AssType::AssTarget) {
@@ -794,7 +742,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
           return nullptr;
         }
         // let UFCS do the work
-        FieldName = VName(*newname);
+        FieldName = newname;
       }
     }
   }
@@ -802,8 +750,8 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
   // name properties
   if (op->Type.Type == TYPE_Name) {
     if (ec.OuterClass) {
-      VStr newname = ec.OuterClass->FindInPropMap(TYPE_Name, VStr(FieldName));
-      if (!newname.isEmpty()) {
+      VName newname = ec.OuterClass->FindInPropMap(TYPE_Name, FieldName);
+      if (newname != NAME_None) {
         // i found her!
         //GLog.Logf(NAME_Debug, "<%s> : <%s>", *FieldName, *newname);
         if (assType == AssType::AssTarget) {
@@ -812,7 +760,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
           return nullptr;
         }
         // let UFCS do the work
-        FieldName = VName(*newname);
+        FieldName = newname;
       }
     }
   }
@@ -913,7 +861,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
     // Class.Method -- for static methods
     if (op->Type.Type == TYPE_Class) {
       if (!op->Type.Class) {
-        ParseError(Loc, "Class name expected at the left side of `.`");
+        ParseError(Loc, "Class name expected at the left side of `.` for calling `%s`", *FieldName);
         delete this;
         return nullptr;
       }

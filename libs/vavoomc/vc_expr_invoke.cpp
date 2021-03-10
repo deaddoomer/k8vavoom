@@ -1174,19 +1174,19 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
     if (SelfExpr->Type.IsNormalOrPointerType(TYPE_String)) {
       // string
       if (ec.OuterClass) {
-        VStr newname = ec.OuterClass->FindInPropMap(TYPE_String, VStr(MethodName));
-        if (!newname.isEmpty()) {
+        VName newname = ec.OuterClass->FindInPropMap(TYPE_String, MethodName);
+        if (newname != NAME_None) {
           // i found her!
-          MethodName = VName(*newname);
+          MethodName = newname;
         }
       }
     } else if (SelfExpr->Type.IsNormalOrPointerType(TYPE_Name)) {
       // name
       if (ec.OuterClass) {
-        VStr newname = ec.OuterClass->FindInPropMap(TYPE_Name, VStr(MethodName));
-        if (!newname.isEmpty()) {
+        VName newname = ec.OuterClass->FindInPropMap(TYPE_Name, MethodName);
+        if (newname != NAME_None) {
           // i found her!
-          MethodName = VName(*newname);
+          MethodName = newname;
         }
       }
     } else if (SelfExpr->Type.IsNormalOrPointerType(TYPE_Float)) {
