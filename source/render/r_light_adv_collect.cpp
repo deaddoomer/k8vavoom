@@ -58,7 +58,13 @@ void VRenderLevelShadowVolume::CollectLightShadowSurfaces (bool doShadows) {
   lightSurfacesMasked.resetNoDtor();
   collectorForShadowMaps = (r_shadowmaps.asBool() && Drawer->CanRenderShadowMaps());
   collectorShadowType = (collectorForShadowMaps && r_shadowmap_flip_surfaces.asBool() ? VViewClipper::AsShadowMap : VViewClipper::AsShadow);
-  CollectAdvLightBSPNode(Level->NumNodes-1, nullptr, (doShadows ? FlagAsBoth : FlagAsLight));
+  if (Level->NumSubsectors < 2) {
+    if (Level->NumSubsectors != 0) {
+      return CollectAdvLightSubsector(0, (doShadows ? FlagAsBoth : FlagAsLight));
+    }
+  } else {
+    return CollectAdvLightBSPNode(Level->NumNodes-1, nullptr, (doShadows ? FlagAsBoth : FlagAsLight));
+  }
 }
 
 
