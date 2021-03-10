@@ -38,8 +38,6 @@ extern VCvarB gl_dbg_wireframe;
 
 // "autosave" struct to avoid some pasta
 struct AutoSavedView {
-  bool saveBSP;
-
   VRenderLevelShared *RLev;
   TVec SavedViewOrg;
   TAVec SavedViewAngles;
@@ -58,21 +56,13 @@ struct AutoSavedView {
 
   bool shadowsDisabled;
 
-  //TODO: optimise vis saving
-  unsigned *SavedBspVis;
-  unsigned *SavedBspVisSector;
-  unsigned SavedBspVisFrame;
-
-  VRenderLevelShared::PPMark pmark;
-
   AutoSavedView () = delete;
   AutoSavedView (const AutoSavedView &) = delete;
   AutoSavedView &operator = (const AutoSavedView &) = delete;
 
-  inline AutoSavedView (VRenderLevelShared *ARLev, bool aSaveBSP=false) noexcept {
+  inline AutoSavedView (VRenderLevelShared *ARLev) noexcept {
     vassert(ARLev);
     vassert(Drawer);
-    saveBSP = aSaveBSP;
     RLev = ARLev;
 
     SavedViewOrg = Drawer->vieworg;
@@ -91,38 +81,9 @@ struct AutoSavedView {
     planeCount = Drawer->viewfrustum.planeCount;
 
     shadowsDisabled = RLev->forceDisableShadows;
-
-    SavedBspVis = RLev->BspVisData;
-    SavedBspVisSector = RLev->BspVisSectorData;
-    SavedBspVisFrame = RLev->BspVisFrame;
-    VRenderLevelShared::MarkPortalPool(&pmark);
-
-    if (aSaveBSP) {
-      RLev->PushDrawLists();
-
-      // set up BSP visibility table and translated sprites
-      // this has to be done only for portals that do rendering of view
-
-      // notify allocator about minimal node size
-      VRenderLevelShared::SetMinPoolNodeSize((RLev->Level->NumSubsectors+RLev->Level->NumSectors+2)*sizeof(unsigned));
-      // allocate new bsp vis
-      RLev->BspVisData = (unsigned *)VRenderLevelShared::AllocPortalPool((RLev->Level->NumSubsectors+RLev->Level->NumSectors+2)*sizeof(unsigned));
-      RLev->BspVisSectorData = RLev->BspVisData+RLev->Level->NumSubsectors+1;
-      memset(RLev->BspVisData, 0, (RLev->Level->NumSubsectors+1)*sizeof(RLev->BspVisData[0]));
-      memset(RLev->BspVisSectorData, 0, (RLev->Level->NumSectors+1)*sizeof(RLev->BspVisSectorData[0]));
-    }
   }
 
   inline ~AutoSavedView () noexcept {
-    if (saveBSP) {
-      RLev->BspVisData = SavedBspVis;
-      RLev->BspVisSectorData = SavedBspVisSector;
-      RLev->PopDrawLists();
-      RLev->BspVisFrame = SavedBspVisFrame;
-      // restore ppol
-      VRenderLevelShared::RestorePortalPool(&pmark);
-    }
-
     // restore render settings
     Drawer->vieworg = SavedViewOrg;
     Drawer->viewangles = SavedViewAngles;
@@ -267,7 +228,7 @@ void VPortal::Draw (bool UseStencil) {
 
   {
     // save renderer settings
-    AutoSavedView guard(RLev, NeedsDepthBuffer());
+    AutoSavedView guard(RLev);
     RLev->CurrPortal = this;
     RLev->forceDisableShadows = true;
     DrawContents();

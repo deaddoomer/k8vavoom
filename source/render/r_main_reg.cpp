@@ -391,10 +391,6 @@ void VRenderLevelLightmap::RenderScene (const refdef_t *RD, const VViewClipper *
   DrawTranslucentPolys();
   profDrawTransSpr.stopAndReport();
 
-  /*
-  RenderPortals();
-  */
-
   profRenderScene.stopAndReport();
   if (profRenderScene.isEnabled()) GCon->Log(NAME_Debug, "===:::=== RenderScene ===:::===");
 }
