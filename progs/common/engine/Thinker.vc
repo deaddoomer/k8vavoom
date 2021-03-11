@@ -115,29 +115,29 @@ replication {
 // ////////////////////////////////////////////////////////////////////////// //
 // alas, RandomSpawner can return various shit here, so we need to double-check it
 // WARNING! this can return any object, so caller MUST check result type!
-native final spawner Thinker SpawnThinker (class!Thinker Type, optional TVec AOrigin,
+native /*final*/ spawner Thinker SpawnThinker (class!Thinker Type, optional TVec AOrigin,
                                                optional TAVec AAngles, optional mthing_t *mthing,
                                                optional bool AllowReplace/*=true*/);
 
 // alas, RandomSpawner can return various shit here, so we need to double-check it
 // WARNING! this can return any object, so caller MUST check result type!
-native final spawner EntityEx SpawnNoTypeCheck (class!EntityEx Type, optional TVec AOrigin,
-                                                optional TAVec AAngles, optional mthing_t *mthing,
-                                                optional bool AllowReplace/*=true*/);
+native /*final*/ spawner EntityEx SpawnNoTypeCheck (class!EntityEx Type, optional TVec AOrigin,
+                                                    optional TAVec AAngles, optional mthing_t *mthing,
+                                                    optional bool AllowReplace/*=true*/);
 
 // alas, RandomSpawner can return various shit here, so we need to double-check it
 // this has to be native, becase `EntityEx` is not yet defined here
 // if spawned object is not of `Type` type, it will be immediately destroyed, and `none` will be returned
-native final spawner EntityEx SpawnEntityChecked (class!EntityEx desiredClass, class!EntityEx Type, optional TVec AOrigin,
-                                                  optional TAVec AAngles, optional mthing_t *mthing,
-                                                  optional bool AllowReplace/*=true*/);
+native /*final*/ spawner EntityEx SpawnEntityChecked (class!EntityEx desiredClass, class!EntityEx Type, optional TVec AOrigin,
+                                                      optional TAVec AAngles, optional mthing_t *mthing,
+                                                      optional bool AllowReplace/*=true*/);
 
 // alas, RandomSpawner can return various shit here, so we need to double-check it
 // this can return *ONLY* `EntityEx` and descentdants
 // if spawned object is not of `EntityEx` type, it will be immediately destroyed, and `none` will be returned
-native final /*spawner*/ EntityEx Spawn (class!EntityEx Type, optional TVec AOrigin,
-                                         optional TAVec AAngles, optional mthing_t *mthing,
-                                         optional bool AllowReplace/*=true*/);
+native /*final*/ /*spawner*/ EntityEx Spawn (class!EntityEx Type, optional TVec AOrigin,
+                                             optional TAVec AAngles, optional mthing_t *mthing,
+                                             optional bool AllowReplace/*=true*/);
 
 override native void Destroy (); // this just marks thinker to be deleted on a next tick
 

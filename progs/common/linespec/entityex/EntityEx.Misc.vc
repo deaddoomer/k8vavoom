@@ -4569,21 +4569,26 @@ void DaggerAlert (EntityEx atarget, EntityEx emitter) {
 }
 
 
+//==========================================================================
+//
+//  DaggerAlert
+//
+//==========================================================================
+final void A_DormantWakeupInternal () {
+  bInvisible = false;
+  bSpecial = true;
+  SetState(IdleState);
+
+  // spawn a teleport fog at the new spot
+  EntityEx A = SpawnEntityChecked(class!EntityEx, ItemFog, Origin);
+  if (A && !A.IsDestroyed) A.PlaySound('misc/spawn', CHAN_ITEM);
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 states {
 DehackedDormantPickup:
   TNT1 A 1050
-  TNT1 A -1
-  {
-    EntityEx  A;
-
-    bInvisible = false;
-    bSpecial = true;
-    SetState(IdleState);
-
-    // spawn a teleport fog at the new spot
-    A = SpawnEntityChecked(class!EntityEx, ItemFog, Origin);
-    if (A) A.PlaySound('misc/spawn', CHAN_ITEM);
-  }
+  TNT1 A -1 A_DormantWakeupInternal
   Stop
 }

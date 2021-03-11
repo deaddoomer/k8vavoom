@@ -33,16 +33,7 @@ states {
   // hide pickup like in Doom and Strife
 DormantPickup:
   TNT1 A 1050
-  TNT1 A -1
-    {
-      bInvisible = false;
-      bSpecial = true;
-      SetState(IdleState);
-
-      // spawn a teleport fog at the new spot
-      EntityEx A = Spawn(ItemFog, Origin);
-      if (A) A.PlaySound('misc/spawn', CHAN_ITEM);
-    }
+  TNT1 A -1 A_DormantWakeupInternal
   Stop
 
   // hide for 40 secs
