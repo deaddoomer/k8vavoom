@@ -759,7 +759,7 @@ int VLevel::SetBodyQueueTrans (int Slot, int Trans) {
 //
 //==========================================================================
 int VLevel::FindSectorFromTag (sector_t *&sector, int tag, int start) {
-   //k8: just in case
+  //k8: just in case
   if (tag == -1 || NumSubsectors < 1) {
     sector = nullptr;
     return -1;
