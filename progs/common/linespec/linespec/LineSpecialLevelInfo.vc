@@ -1181,7 +1181,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int arg2, int arg3, int arg4)
 {
   PlaneWatcher PW = SpawnThinker(PlaneWatcher);
-  PW.Start(it, line, lineSide, ceiling, tag, height, special, arg0, arg1, arg2, arg3, arg4);
+  if (PW && !PW.IsDestroyed) PW.Start(it, line, lineSide, ceiling, tag, height, special, arg0, arg1, arg2, arg3, arg4);
 }
 
 
@@ -1222,15 +1222,19 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 
     // new door thinker
     Door = SpawnThinker(VerticalDoor);
-    Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
-    RetCode = true;
+    if (Door && !Door.IsDestroyed) {
+      Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
+      RetCode = true;
+    }
   } else {
     for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
       if (Sec->CeilingData || !Sec->lines.length) continue;
       // add new door thinker
-      RetCode = true;
       Door = SpawnThinker(VerticalDoor);
-      Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
+      if (Door && !Door.IsDestroyed) {
+        Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
+        RetCode = true;
+      }
     }
   }
 
@@ -1281,8 +1285,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //==========================================================================
 /*final*/ void SpawnDoorCloseIn30 (sector_t *sec) {
   VerticalDoor Door = SpawnThinker(VerticalDoor);
-  Door.InitCloseIn30(sec);
-  sec->special = 0;
+  if (Door && !Door.IsDestroyed) {
+    Door.InitCloseIn30(sec);
+    sec->special = 0;
+  }
 }
 
 
@@ -1294,9 +1300,11 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ void SpawnDoorRaiseIn5Mins (sector_t *sec) {
-  sec->special = 0;
   VerticalDoor Door = SpawnThinker(VerticalDoor);
-  Door.Init(sec, 0, 16, 150, 0, 0, VerticalDoor::DOOREV_RaiseIn5Mins);
+  if (Door && !Door.IsDestroyed) {
+    sec->special = 0;
+    Door.Init(sec, 0, 16, 150, 0, 0, VerticalDoor::DOOREV_RaiseIn5Mins);
+  }
 }
 
 
@@ -1901,7 +1909,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ bool EV_StopPoly (line_t *line, int Arg1, int Arg2, int Arg3,
-                        int Arg4, int Arg5, int direction, bool overRide)
+                            int Arg4, int Arg5, int direction, bool overRide)
 {
   int polyNum = Arg1;
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
@@ -1925,7 +1933,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ bool EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
-                          int Arg4, int Arg5, int direction, bool overRide)
+                              int Arg4, int Arg5, int direction, bool overRide)
 {
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
   if (!poly) { printerror("EV_RotatePoly: invalid polyobj num %d", polyNum); return false; }
@@ -1990,7 +1998,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ bool EV_MovePolyToSpot (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
-                              int Arg5, bool timesEight, bool overRide)
+                                  int Arg5, bool timesEight, bool overRide)
 {
   int pnum = Arg1;
   int speed = Arg2;
@@ -2027,9 +2035,9 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ bool EV_MovePoly (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
-                        int Arg5, bool timesEight, bool overRide,
-                        optional float floatAngle, optional float floatDist,
-                        optional bool carryThings)
+                            int Arg5, bool timesEight, bool overRide,
+                            optional float floatAngle, optional float floatDist,
+                            optional bool carryThings)
 {
   int mirror;
   int polyNum;
@@ -2095,15 +2103,13 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   return true;
 }
 
+
 //==========================================================================
 //
 // EV_OpenPolyDoor
 //
 //==========================================================================
-
-/*final*/ bool EV_OpenPolyDoor(line_t *line, int Arg1, int Arg2, int Arg3,
-  int Arg4, int Arg5, int type)
-{
+/*final*/ bool EV_OpenPolyDoor (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int type) {
   int mirror;
   int polyNum;
   PolyobjDoor pd;
@@ -2117,8 +2123,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   pd = SpawnThinker(PolyobjDoor);
   pd.type = type;
   pd.polyobj = polyNum;
-  if (type == PolyobjDoor::PODOOR_SLIDE)
-  {
+  if (type == PolyobjDoor::PODOOR_SLIDE) {
     pd.waitTime = float(Arg5)/35.0;
     pd.speed = float(Arg2)*4.0;
     pd.totalDist = float(Arg4);  // Distance
@@ -2127,13 +2132,11 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     pd.xSpeed = cos(an);
     pd.ySpeed = sin(an);
 
-    //THRUST
+    //thrust
     pd.thrust_force = pd.speed/8.0;
 
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
-  }
-  else if (type == PolyobjDoor::PODOOR_SWING)
-  {
+  } else if (type == PolyobjDoor::PODOOR_SWING) {
     pd.waitTime = float(Arg4)/35.0;
     pd.speed = /*AngleClamp360Signed*/(4.0*float(Arg2)*(90.0/64.0)); // was AngleMod180
     pd.totalDist = float(Arg3)*(90.0/64.0);
@@ -2149,16 +2152,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 
   for (mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(/*polyNum*/mirror)) {
     poly = XLevel.GetPolyobj(mirror);
-    if (poly && poly->SpecialData)
-    { // mirroring poly is already in motion
-      break;
-    }
+    if (poly && poly->SpecialData) break; // mirroring poly is already in motion
     pd = SpawnThinker(PolyobjDoor);
     pd.polyobj = mirror;
     pd.type = type;
     poly->SpecialData = pd;
-    if (type == PolyobjDoor::PODOOR_SLIDE)
-    {
+    if (type == PolyobjDoor::PODOOR_SLIDE) {
       pd.waitTime = float(Arg5)/35.0;
       pd.speed = float(Arg2)*4.0;
       pd.totalDist = float(Arg4);  // Distance
@@ -2167,13 +2166,11 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       pd.xSpeed = cos(an);
       pd.ySpeed = sin(an);
 
-      //THRUST
+      //thrust
       pd.thrust_force = pd.speed/8.0;
 
       PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
-    }
-    else if (type == PolyobjDoor::PODOOR_SWING)
-    {
+    } else if (type == PolyobjDoor::PODOOR_SWING) {
       pd.waitTime = float(Arg4)/35.0;
       pd.speed = /*AngleClamp360Signed*/(4.0*float(-Arg2)*(90.0/64.0)); // was AngleMod180
       pd.totalDist = float(Arg3)*(90.0/64.0);
@@ -2186,8 +2183,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     }
     //polyNum = mirror;
   }
+
   return true;
 }
+
 
 //**************************************************************************
 //
@@ -2200,14 +2199,11 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  SpawnFireFlicker
 //
 //==========================================================================
-
-/*final*/ void SpawnFireFlicker(sector_t *sector)
-{
-  FireFlicker Flick;
-
-  Flick = SpawnThinker(FireFlicker);
-  Flick.Init(sector);
+/*final*/ void SpawnFireFlicker (sector_t *sector) {
+  FireFlicker Flick = SpawnThinker(FireFlicker);
+  if (Flick && !Flick.IsDestroyed) Flick.Init(sector);
 }
+
 
 //==========================================================================
 //
@@ -2216,100 +2212,65 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  Spawn glowing light
 //
 //==========================================================================
-
-/*final*/ void SpawnGlowingLight(sector_t *sector)
-{
-  GlowingLight G;
-
-  G = SpawnThinker(GlowingLight);
-  G.Init(sector);
+/*final*/ void SpawnGlowingLight (sector_t *sector) {
+  GlowingLight G = SpawnThinker(GlowingLight);
+  if (G && !G.IsDestroyed) G.Init(sector);
 }
+
 
 //==========================================================================
 //
 //  SpawnLightFlash
 //
 //==========================================================================
-
-/*final*/ void SpawnLightFlash(sector_t *sector)
-{
-  LightFlash Flash;
-
-  Flash = SpawnThinker(LightFlash);
-  Flash.Init(sector);
+/*final*/ void SpawnLightFlash (sector_t *sector) {
+  LightFlash Flash = SpawnThinker(LightFlash);
+  if (Flash && !Flash.IsDestroyed) Flash.Init(sector);
 }
+
 
 //==========================================================================
 //
 //  SpawnStrobeFlash
 //
 //==========================================================================
-
-/*final*/ void SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int maxtime,
-  int inSync)
-{
-  Strobe Flash;
-
-  Flash = SpawnThinker(Strobe);
-  Flash.Init(sector, fastOrSlow, maxtime, inSync);
+/*final*/ void SpawnStrobeFlash (sector_t *sector, int fastOrSlow, int maxtime, int inSync) {
+  Strobe Flash = SpawnThinker(Strobe);
+  if (Flash && !Flash.IsDestroyed) Flash.Init(sector, fastOrSlow, maxtime, inSync);
 }
+
 
 //==========================================================================
 //
 //  SpawnPhasedLight
 //
 //==========================================================================
-
-/*final*/ void SpawnPhasedLight(sector_t *sector, int base, int index)
-{
-  PhasedLight Phase;
-
-  Phase = SpawnThinker(PhasedLight);
-  Phase.Init(sector, base, index);
+/*final*/ void SpawnPhasedLight (sector_t *sector, int base, int index) {
+  PhasedLight Phase = SpawnThinker(PhasedLight);
+  if (Phase && !Phase.IsDestroyed) Phase.Init(sector, base, index);
 }
+
 
 //==========================================================================
 //
 //  SpawnLightSequence
 //
 //==========================================================================
-
-/*final*/ void SpawnLightSequence(sector_t *sector, float indexStep)
-{
-  sector_t *sec;
-  sector_t *nextSec;
-  sector_t *tempSec;
-  int seqSpecial;
-  int i;
-  float count;
-  float index;
-  float indexDelta;
-  int base;
-
-  seqSpecial = SECSPEC_LightSequence; // look for Light_Sequence, first
-  sec = sector;
-  count = 1.0;
-  do
-  {
-    nextSec = nullptr;
+/*final*/ void SpawnLightSequence (sector_t *sector, float indexStep) {
+  int seqSpecial = SECSPEC_LightSequence; // look for Light_Sequence, first
+  sector_t *sec = sector;
+  float count = 1.0;
+  do {
+    sector_t *nextSec = nullptr;
     //  Make sure that the search doesn't back up.
-    sec->special = (sec->special&~SECSPEC_BASE_MASK) |
-      SECSPEC_LightSequenceStart;
-    for (i = 0; i < sec.lines.length; i++)
-    {
-      tempSec = getNextSector(sec->lines[i], sec);
-      if (!tempSec)
-      {
-        continue;
-      }
-      if ((tempSec->special&SECSPEC_BASE_MASK) == seqSpecial)
-      {
-        if (seqSpecial == SECSPEC_LightSequence)
-        {
+    sec->special = (sec->special&~SECSPEC_BASE_MASK)|SECSPEC_LightSequenceStart;
+    foreach (line_t *ln; sec.lines) {
+      sector_t *tempSec = getNextSector(ln, sec);
+      if (!tempSec) continue;
+      if ((tempSec->special&SECSPEC_BASE_MASK) == seqSpecial) {
+        if (seqSpecial == SECSPEC_LightSequence) {
           seqSpecial = SECSPEC_LightSequenceAlt;
-        }
-        else
-        {
+        } else {
           seqSpecial = SECSPEC_LightSequence;
         }
         nextSec = tempSec;
@@ -2317,42 +2278,29 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       }
     }
     sec = nextSec;
-  }
-  while (sec);
+  } while (sec);
 
   sec = sector;
   count *= indexStep;
-  index = 0.0;
-  indexDelta = 64.0/count;
-  base = sector->params.lightlevel;
-  do
-  {
-    nextSec = nullptr;
-    if (sec->params.lightlevel)
-    {
-      base = sec->params.lightlevel;
-    }
+  float index = 0.0;
+  float indexDelta = 64.0/count;
+  int base = sector->params.lightlevel;
+  do {
+    sector_t *nextSec = nullptr;
+    if (sec->params.lightlevel) base = sec->params.lightlevel;
     SpawnPhasedLight(sec, base, int(index));
-    //  Clear sector special.
+    // clear sector special
     sec->special &= ~SECSPEC_BASE_MASK;
     index += indexDelta;
-    for (i = 0; i < sec.lines.length; i++)
-    {
-      tempSec = getNextSector(sec->lines[i], sec);
-      if (!tempSec)
-      {
-        continue;
-      }
-      if ((tempSec->special&SECSPEC_BASE_MASK) ==
-        SECSPEC_LightSequenceStart)
-      {
-        nextSec = tempSec;
-      }
+    foreach (line_t *ln; sec.lines) {
+      sector_t *tempSec = getNextSector(ln, sec);
+      if (!tempSec) continue;
+      if ((tempSec->special&SECSPEC_BASE_MASK) == SECSPEC_LightSequenceStart) nextSec = tempSec;
     }
     sec = nextSec;
-  }
-  while (sec);
+  } while (sec);
 }
+
 
 //==========================================================================
 //
@@ -4631,16 +4579,11 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 /*final*/ bool EV_RemoveForceField(int Arg1, int Arg2, int Arg3, int Arg4,
   int Arg5)
 {
-  int     i;
   sector_t *sec;
-  line_t *secline;
-
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    for (i = 0; i < sec.lines.length; i++)
-    {
-      secline = sec->lines[i];
+    foreach (line_t *secline; sec.lines) {
       if (secline->special != LNSPEC_ForceField) continue;
       if (!(secline->flags&ML_TWOSIDED)) continue;
 
