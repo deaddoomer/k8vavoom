@@ -1199,7 +1199,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_DoDoor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type,
-                     line_t *Line, Entity Thing, optional bool delayOctics)
+                         line_t *Line, Entity Thing, optional bool delayOctics)
 {
   sector_t *Sec;
   VerticalDoor Door;
@@ -1233,6 +1233,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
     }
   }
+
   return RetCode;
 }
 
@@ -1344,6 +1345,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       }
     }
   }
+
   return Rtn;
 }
 
@@ -1501,22 +1503,15 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 // EV_FloorCrushStop
 //
 //==========================================================================
-
-/*final*/ int EV_FloorCrushStop(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
-  FloorMover  Floor;
-  bool    Rtn;
-
-  Rtn = false;
-  foreach AllThinkers(FloorMover, Floor)
-  {
-    if (Floor.CrushStop(Arg1))
-    {
-      Rtn = true;
-    }
+/*final*/ int EV_FloorCrushStop (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  FloorMover Floor;
+  int Rtn = 0;
+  foreach AllThinkers(FloorMover, Floor) {
+    if (Floor.CrushStop(Arg1)) Rtn = 1;
   }
   return Rtn;
 }
+
 
 //==========================================================================
 //
@@ -1528,43 +1523,34 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  Returns whether a thinker was created
 //
 //==========================================================================
-
-/*final*/ int EV_DoDonut(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
+/*final*/ int EV_DoDonut (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *s1;
-  sector_t *s2;
-  sector_t *s3;
-  int     rtn;
-  int     i;
-  FloorMover  Floor;
-
-  rtn = 0;
+  int rtn = 0;
   // do function on all sectors with same tag as linedef
   // s1 is pillar's sector
   for (int hidx = XLevel.FindSectorFromTag(out s1, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out s1, Arg1, hidx))
   {
-    if (!s1) { print("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
+    if (!s1) { printerror("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
 
     // ALREADY MOVING?  IF SO, KEEP GOING...
     if (s1->FloorData) continue;
 
-    s2 = getNextSector(s1->lines[0], s1); // s2 is pool's sector
-    if (!s2) { print("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
+    sector_t *s2 = getNextSector(s1->lines[0], s1); // s2 is pool's sector
+    if (!s2) { printerror("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
     rtn = 1;
 
     // find a two sided line around the pool whose other side isn't the pillar
-    for (i = 0; i < s2.lines.length; i++)
-    {
-      if (!(s2->lines[i]->flags&ML_TWOSIDED) || (s2->lines[i]->backsector == s1)) continue;
-      s3 = s2->lines[i]->backsector;
-      if (!s3) { print("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
+    foreach (line_t *ln; s2.lines) {
+      if (!(ln.flags&ML_TWOSIDED) || (ln.backsector == s1)) continue;
+      sector_t *s3 = ln.backsector;
+      if (!s3) { printerror("!!!EV_DoDonut: s3 is null"); continue; } //k8: just in case
 
-      //  Spawn rising slime
-      Floor = SpawnThinker(FloorMover);
+      // spawn rising slime
+      FloorMover Floor = SpawnThinker(FloorMover);
       Floor.InitDonut(s2, s3, Arg2);
 
-      //  Spawn lowering donut-hole
+      // spawn lowering donut-hole
       Floor = SpawnThinker(FloorMover);
       Floor.InitDonut2(s1, s3, Arg3);
       break;
