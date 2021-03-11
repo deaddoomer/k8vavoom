@@ -97,6 +97,15 @@ private:
   static VThinker *SpawnCommon (bool allowNoneClass, bool checkKillEntityEx, bool hasDesiredClass);
 
 public:
+  // utilities
+  static VClass *FindClassChecked (const char *classname);
+  static VField *FindTypedField (VClass *klass, const char *fldname, EType type, VClass *refclass=nullptr);
+
+public:
+  // call this *AFTER* all decorate code was compiled!
+  static void ThinkerStaticInit ();
+
+public:
   //VThinker ();
 
   // VObject interface

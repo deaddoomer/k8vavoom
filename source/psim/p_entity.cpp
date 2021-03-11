@@ -112,21 +112,6 @@ public:
 };
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-
-//==========================================================================
-//
-//  FindTypedField
-//
-//==========================================================================
-static VField *FindTypedField (VClass *klass, const char *fldname, EType type, VClass *refclass=nullptr) {
-  vassert(klass);
-  VField *fld = klass->FindField(fldname);
-  if (!fld) Sys_Error("field `%s` not found in class `%s`", fldname, klass->GetName());
-  if (fld->Type.Type != type || (type == TYPE_Reference && fld->Type.Class != refclass)) Sys_Error("field `%s` in class `%s` is of invalid type `%s`", fldname, klass->GetName(), *fld->Type.GetName());
-  return fld;
-}
-
 
 //==========================================================================
 //
@@ -139,18 +124,10 @@ void VEntity::EntityStaticInit () {
   // this also allows to skip checks for "do we have this field"?
 
   // prepare classes
-
-  classEntityEx = VClass::FindClassNoCase("EntityEx");
-  if (!classEntityEx) Sys_Error("`EntityEx` class not found");
-
-  classActor = VClass::FindClassNoCase("Actor");
-  if (!classActor) Sys_Error("`Actor` class not found");
-
-  classSectorThinker = VClass::FindClassNoCase("SectorThinker");
-  if (!classSectorThinker) Sys_Error("`SectorThinker` class not found");
-
-  classScroller = VClass::FindClassNoCase("Scroller");
-  if (!classScroller) Sys_Error("`Scroller` class not found");
+  classEntityEx = FindClassChecked("EntityEx");
+  classActor = FindClassChecked("Actor");
+  classSectorThinker = FindClassChecked("SectorThinker");
+  classScroller = FindClassChecked("Scroller");
 
   // prepare fields
 

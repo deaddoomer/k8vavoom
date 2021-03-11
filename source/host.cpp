@@ -375,6 +375,7 @@ void Host_Init () {
     Z_Exit(0);
   }
 
+  VThinker::ThinkerStaticInit();
   VEntity::EntityStaticInit();
 
 #ifdef CLIENT

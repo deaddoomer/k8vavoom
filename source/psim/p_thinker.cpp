@@ -36,7 +36,49 @@
 #include "../client/cl_local.h" // for dlight_t
 
 
+static VClass *eexCls = nullptr;
+
+
 IMPLEMENT_CLASS(V, Thinker)
+
+
+//==========================================================================
+//
+//  VThinker::FindClassChecked
+//
+//==========================================================================
+VClass *VThinker::FindClassChecked (const char *classname) {
+  if (!classname || !classname[0]) Sys_Error("cannot find nonamed class");
+  VClass *res = VClass::FindClass(classname);
+  if (!res) Sys_Error("cannot find required class `%s`", classname);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VThinker::FindTypedField
+//
+//==========================================================================
+VField *VThinker::FindTypedField (VClass *klass, const char *fldname, EType type, VClass *refclass) {
+  vassert(klass);
+  VField *fld = klass->FindField(fldname);
+  if (!fld) Sys_Error("required field `%s` not found in class `%s`", fldname, klass->GetName());
+  if (fld->Type.Type != type || (type == TYPE_Reference && fld->Type.Class != refclass)) {
+    Sys_Error("required field `%s` in class `%s` is of invalid type `%s`", fldname, klass->GetName(), *fld->Type.GetName());
+  }
+  return fld;
+}
+
+
+//==========================================================================
+//
+//  VThinker::ThinkerStaticInit
+//
+//==========================================================================
+void VThinker::ThinkerStaticInit () {
+  eexCls = FindClassChecked("EntityEx");
+}
 
 
 //==========================================================================
@@ -339,12 +381,6 @@ public:
 //
 //==========================================================================
 VThinker *VThinker::SpawnCommon (bool allowNoneClass, bool checkKillEntityEx, bool hasDesiredClass) {
-  static VClass *eexCls = nullptr;
-  if (checkKillEntityEx && !eexCls) {
-    eexCls = VClass::FindClass("EntityEx");
-    if (!eexCls) Sys_Error("cannot find class `EntityEx`");
-  }
-
   VClass *desiredClass = nullptr;
   VClass *Class;
   VOptParamVec AOrigin(TVec(0, 0, 0));
@@ -378,7 +414,6 @@ VThinker *VThinker::SpawnCommon (bool allowNoneClass, bool checkKillEntityEx, bo
 
   // check it
   if (th && checkKillEntityEx && !th->IsA(eexCls)) {
-    vassert(eexCls);
     GCon->Logf(NAME_Warning, "%s: tried to spawn class `%s`, got class `%s`, which is not `EntityEx` (this is mostly harmless)", Self->GetClass()->GetName(), Class->GetName(), th->GetClass()->GetName());
     th->DestroyThinker();
     th = nullptr;
