@@ -147,6 +147,32 @@ int corpseQueueSlot;
 
 //==========================================================================
 //
+//  ClampSideOffsets
+//
+//==========================================================================
+final void ClampSideOffsets (side_t *Side) {
+  if (Side->Top.TextureOffset > 32767.0 || Side->Top.TextureOffset < -32768.0) Side->Top.TextureOffset = 0.0;
+  if (Side->Bot.TextureOffset > 32767.0 || Side->Bot.TextureOffset < -32768.0) Side->Bot.TextureOffset = 0.0;
+  if (Side->Mid.TextureOffset > 32767.0 || Side->Mid.TextureOffset < -32768.0) Side->Mid.TextureOffset = 0.0;
+  if (Side->Top.RowOffset > 32767.0 || Side->Top.RowOffset < -32768.0) Side->Top.RowOffset = 0.0;
+  if (Side->Bot.RowOffset > 32767.0 || Side->Bot.RowOffset < -32768.0) Side->Bot.RowOffset = 0.0;
+  if (Side->Mid.RowOffset > 32767.0 || Side->Mid.RowOffset < -32768.0) Side->Mid.RowOffset = 0.0;
+}
+
+
+//==========================================================================
+//
+//  ClampSecPlaneOffsets
+//
+//==========================================================================
+final void ClampSecPlaneOffsets (sec_plane_t *Plane) {
+  if (Plane->xoffs > 32767.0 || Plane->xoffs < -32768.0) Plane->xoffs = 0.0;
+  if (Plane->yoffs > 32767.0 || Plane->yoffs < -32768.0) Plane->yoffs = 0.0;
+}
+
+
+//==========================================================================
+//
 //  SpawnSpecials
 //
 //==========================================================================
@@ -2758,44 +2784,36 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   }
 }
 
+
 //==========================================================================
 //
 //  EV_ScrollFloor
 //
 //==========================================================================
-
-/*final*/ bool EV_ScrollFloor(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
-  //  Set floor scrolling
-  if (Arg4 == 0 || Arg4 == 2)
-  {
+/*final*/ bool EV_ScrollFloor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  // set floor scrolling
+  if (Arg4 == 0 || Arg4 == 2) {
     SetScroller(Scroller::SCROLLEV_Floor, Arg1, Arg2, Arg3);
-  }
-  else
-  {
+  } else {
     SetScroller(Scroller::SCROLLEV_Floor, Arg1, 0, 0);
   }
 
-  //  Set carrying of items.
-  if (Arg4 > 0)
-  {
+  // set carrying of items
+  if (Arg4 > 0) {
     SetScroller(Scroller::SCROLLEV_Carry, Arg1, Arg2, Arg3);
-  }
-  else
-  {
+  } else {
     SetScroller(Scroller::SCROLLEV_Carry, Arg1, 0, 0);
   }
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_ScrollCeiling
 //
 //==========================================================================
-
-/*final*/ bool EV_ScrollCeiling(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
+/*final*/ bool EV_ScrollCeiling (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   SetScroller(Scroller::SCROLLEV_Ceiling, Arg1, Arg2, Arg3);
   return true;
 }
@@ -2829,7 +2847,9 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   {
     int secnum = sec-&XLevel.Sectors[0];
     Sc = SpawnThinker(Scroller);
-    Sc.InitScripted(Type, Arg2, Arg3, secnum);
+    if (Sc && !Sc.IsDestroyed) {
+      Sc.InitScripted(Type, Arg2, Arg3, secnum);
+    }
   }
 }
 
@@ -2845,60 +2865,42 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  EV_FloorTransferTrigger
 //
 //==========================================================================
-
-/*final*/ bool EV_FloorTransferTrigger(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5, line_t *Line)
-{
-  bool    Rtn;
+/*final*/ bool EV_FloorTransferTrigger (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, line_t *Line) {
+  bool Rtn = false;
   sector_t *sec;
-
-  if (!Line)
-  {
-    return false;
-  }
-
-  Rtn = false;
+  if (!Line) return false;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     Rtn = true;
-
     sec->floor.pic = Line->frontsector->floor.pic;
-    sec->special = (sec->special&SECSPEC_SECRET_MASK) |
-      (Line->frontsector->special&~SECSPEC_SECRET_MASK);
+    sec->special = (sec->special&SECSPEC_SECRET_MASK)|(Line->frontsector->special&~SECSPEC_SECRET_MASK);
   }
   return Rtn;
 }
+
 
 //==========================================================================
 //
 //  EV_FloorTransferNumeric
 //
 //==========================================================================
-
-/*final*/ bool EV_FloorTransferNumeric(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  bool    Rtn;
+/*final*/ bool EV_FloorTransferNumeric (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *sec;
-  sector_t *MdlSec;
-
-  Rtn = false;
+  bool Rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1, -1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     Rtn = true;
-
-    MdlSec = FindModelFloorSector(sec, GetPlanePointZ(ref sec->floor,
-      sec->soundorg));
-    if (MdlSec)
-    {
+    sector_t *MdlSec = FindModelFloorSector(sec, GetPlanePointZ(ref sec->floor, sec->soundorg));
+    if (MdlSec) {
       sec->floor.pic = MdlSec->floor.pic;
       sec->special = MdlSec->special;
     }
   }
   return Rtn;
 }
+
 
 //************************************************************************
 //
@@ -2911,18 +2913,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  EV_SectorSoundChange
 //
 //=========================================================================
-
-/*final*/ bool EV_SectorSoundChange(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSoundChange (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *sec;
-  bool rtn;
-
-  if (!Arg1)
-  {
-    return false;
-  }
-  rtn = false;
+  if (!Arg1) return false;
+  bool rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
@@ -2932,14 +2926,13 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   return rtn;
 }
 
+
 //=========================================================================
 //
 //  EV_SectorSetColor
 //
 //=========================================================================
-
-/*final*/ bool EV_SectorSetColor(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
+/*final*/ bool EV_SectorSetColor(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *sec;
   int Col = RGBA(Arg2, Arg3, Arg4, 0);
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
@@ -2950,14 +2943,13 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   return true;
 }
 
+
 //=========================================================================
 //
 //  EV_SectorSetFade
 //
 //=========================================================================
-
-/*final*/ bool EV_SectorSetFade(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
+/*final*/ bool EV_SectorSetFade (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *sec;
   int clrFade = RGBA(Arg2, Arg3, Arg4, 255);
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
@@ -3027,18 +3019,13 @@ name ConvertSpecialDamageType (int mod) {
 //  EV_SectorSetGravity
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetGravity(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  float SecGrav;
-  bool Ret;
+/*final*/ bool EV_SectorSetGravity (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  bool Ret = false;
   sector_t *sec;
 
   if (Arg3 > 99) Arg3 = 99;
+  float SecGrav = float(Arg2)+float(Arg3)*0.01;
 
-  SecGrav = float(Arg2)+float(Arg3)*0.01;
-  Ret = false;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
@@ -3048,28 +3035,20 @@ name ConvertSpecialDamageType (int mod) {
   return Ret;
 }
 
+
 //==========================================================================
 //
 //  SetSectorFriction
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetFriction(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
+/*final*/ bool EV_SectorSetFriction (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
 {
-  int     OldFriction;
-  int     OldMoveFactor;
-  float   Friction;
-  float   MoveFactor;
-  bool    Ret;
+  bool Ret = false;
 
   // An amount of 100 should result in a friction of
   // ORIG_FRICTION (0xE800)
-  OldFriction = (0x1EB8*Arg2)/0x80+0xD001;
-
-  // killough 8/28/98: prevent odd situations
-  if (OldFriction > 0x10000) OldFriction = 0x10000;
-  if (OldFriction < 0) OldFriction = 0;
+  // killough 8/28/98: prevent odd situations (clamping)
+  int OldFriction = clamp((0x1EB8*Arg2)/0x80+0xD001, 0, 0x10000);
 
   // The following check might seem odd. At the time of movement,
   // the move distance is multiplied by 'friction/0x10000', so a
@@ -3077,6 +3056,7 @@ name ConvertSpecialDamageType (int mod) {
 
   // [RH] Twiddled these values so that momentum on ice (with
   //    friction 0xf900) is the same as in Heretic/Hexen.
+  int OldMoveFactor;
   if (OldFriction >= 0xe800) { // ice
     //movefactor = ((0x10092 - friction)*(0x70))/0x158;
     OldMoveFactor = ((0x10092-OldFriction)*1024)/4352+568;
@@ -3087,8 +3067,8 @@ name ConvertSpecialDamageType (int mod) {
   // killough 8/28/98: prevent odd situations
   if (OldMoveFactor < 32) OldMoveFactor = 32;
 
-  Friction = (1.0-float(OldFriction)/float(0x10000))*35.0;
-  MoveFactor = float(OldMoveFactor)/float(0x10000);
+  float Friction = (1.0-float(OldFriction)/float(0x10000))*35.0;
+  float MoveFactor = float(OldMoveFactor)/float(0x10000);
 
   Ret = false;
   sector_t *sec;
@@ -3104,74 +3084,44 @@ name ConvertSpecialDamageType (int mod) {
     // on every tic, adjusting its friction, putting unnecessary
     // drag on CPU. New code adjusts friction of sector only once
     // at level startup, and then uses this friction value.
-
     sec.Friction = Friction;
     sec.MoveFactor = MoveFactor;
-    // When used inside a script, the sectors' friction flags
-    // can be enabled and disabled at will.
-    if (OldFriction == 0xe800)
-    {
-      sec.special &= ~SECSPEC_FRICTION_MASK;
-    }
-    else
-    {
-      sec.special |= SECSPEC_FRICTION_MASK;
-    }
+    // when used inside a script, the sectors' friction flags can be enabled and disabled at will
+    if (OldFriction == 0xe800) sec.special &= ~SECSPEC_FRICTION_MASK; else sec.special |= SECSPEC_FRICTION_MASK;
     Ret = true;
   }
   return Ret;
 }
+
 
 //=========================================================================
 //
 //  EV_SectorChangeFlags
 //
 //=========================================================================
-
-/*final*/ bool EV_SectorChangeFlags(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  bool  Rtn;
-
-  if (!Arg1)
-  {
-    return false;
-  }
-  Rtn = false;
+/*final*/ bool EV_SectorChangeFlags (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  bool Rtn = false;
+  if (!Arg1) return false;
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (Arg3&SECF_SILENT)
-    {
-      sec->bSilent = false;
-    }
-    else if (Arg2&SECF_SILENT)
-    {
-      sec->bSilent = true;
-    }
-    if (Arg3&SECF_NOFALLINGDAMAGE)
-    {
-      sec->bNoFallingDamage = false;
-    }
-    else if (Arg2&SECF_NOFALLINGDAMAGE)
-    {
-      sec->bNoFallingDamage = true;
-    }
+         if (Arg3&SECF_SILENT) sec->bSilent = false;
+    else if (Arg2&SECF_SILENT) sec->bSilent = true;
+         if (Arg3&SECF_NOFALLINGDAMAGE) sec->bNoFallingDamage = false;
+    else if (Arg2&SECF_NOFALLINGDAMAGE) sec->bNoFallingDamage = true;
     Rtn = true;
   }
   return Rtn;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetFloorPanning
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetFloorPanning(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetFloorPanning (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XOffs = float(Arg2)+float(Arg3)/100.0;
   float YOffs = float(Arg4)+float(Arg5)/100.0;
   sector_t *sec;
@@ -3185,15 +3135,13 @@ name ConvertSpecialDamageType (int mod) {
   return true;
 }
 
+
 //==========================================================================
 //
 //  EV_SectorSetCeilingPanning
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetCeilingPanning(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetCeilingPanning (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XOffs = float(Arg2)+float(Arg3)/100.0;
   float YOffs = float(Arg4)+float(Arg5)/100.0;
   sector_t *sec;
@@ -3207,432 +3155,246 @@ name ConvertSpecialDamageType (int mod) {
   return true;
 }
 
+
 //==========================================================================
 //
 //  EV_SectorSetRotation
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetRotation(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetRotation (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  float afloor = AngleMod360(Arg2);
+  float aceil = AngleMod360(Arg3);
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    sec.floor.Angle = float(Arg2);
-    sec.ceiling.Angle = float(Arg3);
+    sec.floor.Angle = afloor;
+    sec.ceiling.Angle = aceil;
   }
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetFloorScale
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetFloorScale(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetFloorScale (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XScale = float(Arg2)+float(Arg3)/100.0;
   float YScale = float(Arg4)+float(Arg5)/100.0;
-  if (XScale)
-  {
-    XScale = 1.0/XScale;
-  }
-  if (YScale)
-  {
-    YScale = 1.0/YScale;
-  }
+  if (XScale) XScale = 1.0/XScale;
+  if (YScale) YScale = 1.0/YScale;
+
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (XScale)
-    {
-      sec.floor.XScale = XScale;
-    }
-    if (YScale)
-    {
-      sec.floor.YScale = YScale;
-    }
+    if (XScale) sec.floor.XScale = XScale;
+    if (YScale) sec.floor.YScale = YScale;
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetCeilingScale
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetCeilingScale(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetCeilingScale (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XScale = float(Arg2)+float(Arg3)/100.0;
   float YScale = float(Arg4)+float(Arg5)/100.0;
-  if (XScale)
-  {
-    XScale = 1.0/XScale;
-  }
-  if (YScale)
-  {
-    YScale = 1.0/YScale;
-  }
+  if (XScale) XScale = 1.0/XScale;
+  if (YScale) YScale = 1.0/YScale;
+
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (XScale)
-    {
-      sec.ceiling.XScale = XScale;
-    }
-    if (YScale)
-    {
-      sec.ceiling.YScale = YScale;
-    }
+    if (XScale) sec.ceiling.XScale = XScale;
+    if (YScale) sec.ceiling.YScale = YScale;
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetFloorScale2
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetFloorScale2(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetFloorScale2 (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XScale = float(Arg2)/float(0x10000);
   float YScale = float(Arg3)/float(0x10000);
-  if (XScale)
-  {
-    XScale = 1.0/XScale;
-  }
-  if (YScale)
-  {
-    YScale = 1.0/YScale;
-  }
+  if (XScale) XScale = 1.0/XScale;
+  if (YScale) YScale = 1.0/YScale;
+
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (XScale)
-    {
-      sec.floor.XScale = XScale;
-    }
-    if (YScale)
-    {
-      sec.floor.YScale = YScale;
-    }
+    if (XScale) sec.floor.XScale = XScale;
+    if (YScale) sec.floor.YScale = YScale;
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetCeilingScale2
 //
 //==========================================================================
-
-/*final*/ bool EV_SectorSetCeilingScale2(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_SectorSetCeilingScale2 (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   float XScale = float(Arg2)/float(0x10000);
   float YScale = float(Arg3)/float(0x10000);
-  if (XScale)
-  {
-    XScale = 1.0/XScale;
-  }
-  if (YScale)
-  {
-    YScale = 1.0/YScale;
-  }
+  if (XScale) XScale = 1.0/XScale;
+  if (YScale) YScale = 1.0/YScale;
+
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (XScale)
-    {
-      sec.ceiling.XScale = XScale;
-    }
-    if (YScale)
-    {
-      sec.ceiling.YScale = YScale;
-    }
+    if (XScale) sec.ceiling.XScale = XScale;
+    if (YScale) sec.ceiling.YScale = YScale;
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_LineAlignFloor
 //
 //==========================================================================
-
-/*final*/ bool EV_LineAlignFloor(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  int     Searcher;
-  line_t *Line;
-  bool    Ret;
-  sector_t *sec;
-
-  Searcher = -1;
-  Ret = false;
-  for (Line = XLevel.FindLine(Arg1, &Searcher); Line;
-    Line = XLevel.FindLine(Arg1, &Searcher))
+/*final*/ bool EV_LineAlignFloor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  int Searcher = -1;
+  bool Ret = false;
+  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
+       Line = XLevel.FindLine(Arg1, &Searcher))
   {
-    sec = Arg2 ? Line->backsector : Line->frontsector;
-    if (!sec)
-    {
-      continue;
-    }
+    sector_t *sec = (Arg2 ? Line->backsector : Line->frontsector);
+    if (!sec) continue;
 
     TVec v1 = *Line->v1;
 
     float Angle = atan2(Line->v2->y-v1.y, Line->v2->x-v1.x);
     float Norm = Angle-90.0;
-
     float Dist = -(cos(Norm)*v1.x+sin(Norm)*v1.y);
 
-    if (Arg2)
-    {
+    if (Arg2) {
       Angle = AngleMod360(Angle+180.0);
       Dist = -Dist;
     }
 
     sec->floor.BaseAngle = Angle;
-    while (Dist < 0.0)
-    {
-      Dist += 256.0;
-    }
-    while (Dist >= 256.0)
-    {
-      Dist -= 256.0;
-    }
+    while (Dist < 0.0) Dist += 256.0;
+    while (Dist >= 256.0) Dist -= 256.0;
     sec->floor.BaseYOffs = Dist;
     Ret = true;
   }
+
   return Ret;
 }
+
 
 //==========================================================================
 //
 //  EV_LineAlignCeiling
 //
 //==========================================================================
-
-/*final*/ bool EV_LineAlignCeiling(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  int     Searcher;
-  line_t *Line;
-  bool    Ret;
-  sector_t *sec;
-
-  Searcher = -1;
-  Ret = false;
-  for (Line = XLevel.FindLine(Arg1, &Searcher); Line;
-    Line = XLevel.FindLine(Arg1, &Searcher))
+/*final*/ bool EV_LineAlignCeiling (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  int Searcher = -1;
+  bool Ret = false;
+  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
+       Line = XLevel.FindLine(Arg1, &Searcher))
   {
-    sec = Arg2 ? Line->backsector : Line->frontsector;
-    if (!sec)
-    {
-      continue;
-    }
+    sector_t *sec = (Arg2 ? Line->backsector : Line->frontsector);
+    if (!sec) continue;
 
     TVec v1 = *Line->v1;
 
     float Angle = atan2(Line->v2->y-v1.y, Line->v2->x-v1.x);
     float Norm = Angle-90.0;
-
     float Dist = -(cos(Norm)*v1.x+sin(Norm)*v1.y);
 
-    if (Arg2)
-    {
+    if (Arg2) {
       Angle = AngleMod360(Angle+180.0);
       Dist = -Dist;
     }
 
     sec->ceiling.BaseAngle = Angle;
-    while (Dist < 0.0)
-    {
-      Dist += 256.0;
-    }
-    while (Dist >= 256.0)
-    {
-      Dist -= 256.0;
-    }
+    while (Dist < 0.0) Dist += 256.0;
+    while (Dist >= 256.0) Dist -= 256.0;
     sec->ceiling.BaseYOffs = Dist;
     Ret = true;
   }
+
   return Ret;
 }
+
 
 //==========================================================================
 //
 //  EV_LineSetTextureOffset
 //
 //==========================================================================
-
-/*final*/ bool EV_LineSetTextureOffset(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  int     Searcher;
-  line_t *Line;
-
-  //  Check if side is valid.
-  if (Arg4 < 0 || Arg4 > 1)
-  {
-    return false;
-  }
+/*final*/ bool EV_LineSetTextureOffset (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  // check if the side is valid
+  if (Arg4 < 0 || Arg4 > 1) return false;
 
   int NoChange = 0x7fff0000;
 
-  Searcher = -1;
-  for (Line = XLevel.FindLine(Arg1, &Searcher); Line;
-    Line = XLevel.FindLine(Arg1, &Searcher))
+  int Searcher = -1;
+  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
+       Line = XLevel.FindLine(Arg1, &Searcher))
   {
-    if (Line->sidenum[Arg4] < 0)
-    {
-      continue;
-    }
+    if (Line->sidenum[Arg4] < 0) continue;
     side_t *Side = &XLevel.Sides[Line->sidenum[Arg4]];
 
-    //  X offset
-    if (Arg2 != NoChange)
-    {
+    // X offset
+    if (Arg2 != NoChange) {
       float Offs = float(Arg2)/float(0x10000);
-      if (!(Arg5&8))
-      {
-        //  Set
-        if (Arg5&1)
-        {
-          Side->Top.TextureOffset = Offs;
-        }
-        if (Arg5&2)
-        {
-          Side->Mid.TextureOffset = Offs;
-        }
-        if (Arg5&4)
-        {
-          Side->Bot.TextureOffset = Offs;
-        }
-      }
-      else
-      {
-        //  Add
-        if (Arg5&1)
-        {
-          Side->Top.TextureOffset += Offs;
-        }
-        if (Arg5&2)
-        {
-          Side->Mid.TextureOffset += Offs;
-        }
-        if (Arg5&4)
-        {
-          Side->Bot.TextureOffset += Offs;
-        }
+      if (!(Arg5&8)) {
+        // set
+        if (Arg5&1) Side->Top.TextureOffset = Offs;
+        if (Arg5&2) Side->Mid.TextureOffset = Offs;
+        if (Arg5&4) Side->Bot.TextureOffset = Offs;
+      } else {
+        // add
+        if (Arg5&1) Side->Top.TextureOffset += Offs;
+        if (Arg5&2) Side->Mid.TextureOffset += Offs;
+        if (Arg5&4) Side->Bot.TextureOffset += Offs;
       }
     }
 
-    //  Y offset
-    if (Arg3 != NoChange)
-    {
+    // Y offset
+    if (Arg3 != NoChange) {
       float Offs = float(Arg3)/float(0x10000);
-      if (!(Arg5&8))
-      {
-        //  Set
-        if (Arg5&1)
-        {
-          Side->Top.RowOffset = Offs;
-        }
-        if (Arg5&2)
-        {
-          Side->Mid.RowOffset = Offs;
-        }
-        if (Arg5&4)
-        {
-          Side->Bot.RowOffset = Offs;
-        }
+      if (!(Arg5&8)) {
+        // set
+        if (Arg5&1) Side->Top.RowOffset = Offs;
+        if (Arg5&2) Side->Mid.RowOffset = Offs;
+        if (Arg5&4) Side->Bot.RowOffset = Offs;
       }
-      else
-      {
-        //  Add
-        if (Arg5&1)
-        {
-          Side->Top.RowOffset += Offs;
-        }
-        if (Arg5&2)
-        {
-          Side->Mid.RowOffset += Offs;
-        }
-        if (Arg5&4)
-        {
-          Side->Bot.RowOffset += Offs;
-        }
+      else {
+        // add
+        if (Arg5&1) Side->Top.RowOffset += Offs;
+        if (Arg5&2) Side->Mid.RowOffset += Offs;
+        if (Arg5&4) Side->Bot.RowOffset += Offs;
       }
     }
     ClampSideOffsets(Side);
   }
+
   return true;
 }
 
-//==========================================================================
-//
-//  ClampSideOffsets
-//
-//==========================================================================
-
-final void ClampSideOffsets(side_t *Side)
-{
-  if (Side->Top.TextureOffset > 32767.0 || Side->Top.TextureOffset < -32768.0)
-  {
-    Side->Top.TextureOffset = 0.0;
-  }
-  if (Side->Bot.TextureOffset > 32767.0 || Side->Bot.TextureOffset < -32768.0)
-  {
-    Side->Bot.TextureOffset = 0.0;
-  }
-  if (Side->Mid.TextureOffset > 32767.0 || Side->Mid.TextureOffset < -32768.0)
-  {
-    Side->Mid.TextureOffset = 0.0;
-  }
-  if (Side->Top.RowOffset > 32767.0 || Side->Top.RowOffset < -32768.0)
-  {
-    Side->Top.RowOffset = 0.0;
-  }
-  if (Side->Bot.RowOffset > 32767.0 || Side->Bot.RowOffset < -32768.0)
-  {
-    Side->Bot.RowOffset = 0.0;
-  }
-  if (Side->Mid.RowOffset > 32767.0 || Side->Mid.RowOffset < -32768.0)
-  {
-    Side->Mid.RowOffset = 0.0;
-  }
-}
-
-//==========================================================================
-//
-//  ClampSecPlaneOffsets
-//
-//==========================================================================
-
-final void ClampSecPlaneOffsets(sec_plane_t *Plane)
-{
-  if (Plane->xoffs > 32767.0 || Plane->xoffs < -32768.0)
-  {
-    Plane->xoffs = 0.0;
-  }
-  if (Plane->yoffs > 32767.0 || Plane->yoffs < -32768.0)
-  {
-    Plane->yoffs = 0.0;
-  }
-}
 
 //**************************************************************************
 //
@@ -3645,8 +3407,7 @@ final void ClampSecPlaneOffsets(sec_plane_t *Plane)
 //  EV_ThingProjectile
 //
 //==========================================================================
-
-override bool EV_ThingProjectile(int Arg1, int Arg2, int Arg3, int Arg4,
+override bool EV_ThingProjectile (int Arg1, int Arg2, int Arg3, int Arg4,
   int Arg5, int agravity, int newtid, name TypeName, Entity Activator)
 {
   return DoThingProjectile(
@@ -3654,73 +3415,58 @@ override bool EV_ThingProjectile(int Arg1, int Arg2, int Arg3, int Arg4,
     agravity, newtid, TypeName, Activator, DestTID:0, ForceDest:none, Intercept:false);
 }
 
+
 //==========================================================================
 //
 //  EV_ThingProjectileAimed
 //
 //==========================================================================
-
-/*final*/ bool EV_ThingProjectileAimed(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5, Entity Activator)
-{
+/*final*/ bool EV_ThingProjectileAimed (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, Entity Activator) {
   return DoThingProjectile(tid:Arg1, TypeID:Arg2, AAngle:0, ASpeed:Arg3, AVSpeed:0,
     agravity:0, newtid:Arg5, TypeName:'', Activator, DestTID:Arg4,
     ForceDest:Activator, Intercept:false);
 }
+
 
 //==========================================================================
 //
 //  EV_ThingProjectileIntercept
 //
 //==========================================================================
-
-/*final*/ bool EV_ThingProjectileIntercept(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5, Entity Activator)
+/*final*/ bool EV_ThingProjectileIntercept (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, Entity Activator)
 {
   return DoThingProjectile(tid:Arg1, TypeID:Arg2, AAngle:0, ASpeed:Arg3, AVSpeed:0,
     agravity:0, newtid:Arg5, TypeName:'', Activator, DestTID:Arg4,
     ForceDest:Activator, Intercept:true);
 }
 
+
 //==========================================================================
 //
 //  DoThingProjectile
 //
 //==========================================================================
-
-/*final*/ bool DoThingProjectile(int tid, int TypeID, int AAngle, int ASpeed,
+/*final*/ bool DoThingProjectile (int tid, int TypeID, int AAngle, int ASpeed,
   int AVSpeed, int agravity, int newtid, name TypeName, Entity Activator,
   int DestTID, Entity ForceDest, bool Intercept)
 {
-  float   angle;
-  float   speed;
-  float   vspeed;
   class!EntityEx moType;
-  EntityEx  newA;
-  bool    success;
+  bool success = false;
 
-  success = false;
-  if (TypeName)
-  {
+  if (TypeName) {
     moType = class!EntityEx(FindClassNoCase(TypeName));
   }
-  else
-  {
-    moType = class!EntityEx(FindClassFromScriptId(TypeID,
-      LineSpecialGameInfo(Game).GameFilterFlag));
+  else {
+    moType = class!EntityEx(FindClassFromScriptId(TypeID, LineSpecialGameInfo(Game).GameFilterFlag));
   }
-  if (!moType)
-  {
-    return false;
-  }
-  moType = class!EntityEx(GetClassReplacement(moType));
-  if (Level.Game.nomonsters && moType.default.bMonster)
-  {
-    return false;
-  }
-  angle = float(AAngle)*(360.0/256.0);
-  speed = float(ASpeed)/8.0;
-  vspeed = float(AVSpeed)/8.0;
+  moType = class!EntityEx(moType.Replacement);
+  if (!moType) return false;
+
+  if (Level.Game.nomonsters && moType.default.bMonster) return false;
+
+  float angle = float(AAngle)*(360.0/256.0);
+  float speed = float(ASpeed)/8.0;
+  float vspeed = float(AVSpeed)/8.0;
 
   //print("projectile '%C', vspeed=%f (%f); intercept=%B", moType, AVSpeed, vspeed, Intercept);
   foreach (EntityEx A; eachTID(tid, Activator)) {
@@ -3731,13 +3477,17 @@ override bool EV_ThingProjectile(int Arg1, int Arg2, int Arg3, int Arg4,
       if (Targ == self) Targ = none; // just in case
     }
 
-    newA = Spawn(moType, A.Origin);
-    if (!newA) break;
+    EntityEx newA = Spawn(moType, A.Origin);
+    if (!newA || newA.IsDestroyed) {
+      if (!tid) break;
+      continue;
+    }
+
     //print("proj %C: org=%s; A=%C", newA, A.Origin, A);
     //print("%C: *** special:%B; agravity:%B, nogravity:%B; grav=%f", newA, newA.bSpecial, agravity, newA.bNoGravity, newA.Gravity);
     if (newA.SightSound) newA.PlaySound(newA.SightSound, CHAN_VOICE);
 
-    newA.Target = A;  // Originator
+    newA.Target = A; // originator
     if (Targ) {
       TVec TargOrg = Targ.Origin+vector(0.0, 0.0, Targ.Height/2.0);
       TVec Delta = TargOrg-newA.Origin;
@@ -3752,7 +3502,7 @@ override bool EV_ThingProjectile(int Arg1, int Arg2, int Arg3, int Arg4,
       }
 
       if (Intercept && speed > 0.0 && (TargVel.x || TargVel.y || TargVel.z)) {
-        // Aiming at the target's position some time in the future
+        // aiming at the target's position some time in the future
         // is basically just an application of the law of sines:
         //     a/sin(A) = b/sin(B)
 
@@ -3806,89 +3556,61 @@ override bool EV_ThingProjectile(int Arg1, int Arg2, int Arg3, int Arg4,
     } else {
       success = true;
     }
+
     if (!tid) break;
   }
+
   return success;
 }
+
 
 //==========================================================================
 //
 //  EV_ThingSpawn
 //
 //==========================================================================
-
-/*final*/ bool EV_ThingSpawn(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  bool fog, bool Facing, Entity Activator)
+/*final*/ bool EV_ThingSpawn (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
+                              bool fog, bool Facing, Entity Activator)
 {
-  int       tid;
-  float     angle;
-  EntityEx    newAct;
-  class!EntityEx moType;
-  bool      success;
+  bool success = false;
+  int tid = Arg1;
 
-  success = false;
-  tid = Arg1;
-  moType = class!EntityEx(FindClassFromScriptId(Arg2,
-    LineSpecialGameInfo(Game).GameFilterFlag));
-  if (!moType)
-  {
-    return false;
-  }
-  moType = class!EntityEx(GetClassReplacement(moType));
-  if (Level.Game.nomonsters && moType.default.bMonster)
-  {
-    return false;
-  }
-  auto moRepl = class!EntityEx(GetClassReplacement(moType));
-  if (moRepl) moType = moRepl;
-  angle = float(Arg3)*360.0/256.0;
+  class!EntityEx moType = class!EntityEx(FindClassFromScriptId(Arg2, LineSpecialGameInfo(Game).GameFilterFlag));
+  moType = class!EntityEx(moType.Replacement); //k8: dunno if we need this
+  if (!moType) return false;
+
+  if (Level.Game.nomonsters && moType.default.bMonster) return false;
+
+  float angle = float(Arg3)*360.0/256.0;
   foreach (EntityEx A; eachTID(tid, Activator)) {
-    newAct = Spawn(moType, A.Origin);
-    if (newAct.bFloatBob)
-    {
+    EntityEx newAct = Spawn(moType, A.Origin);
+    if (!newAct || newAct.IsDestroyed) {
+      if (!tid) break;
+      continue;
+    }
+    if (newAct.bFloatBob) {
       newAct.Origin.z = A.Origin.z-A.FloorZ;
       newAct.SetOrigin2(newAct.Origin, properFloorCheck:false);
     }
-    if (!newAct.TestLocation())
-    {
-      // Didn't fit
-      //  If it counts as kill, adjust total kills count
-      if (newAct.CountsAsKill())
-      {
-        TotalKills--;
-      }
-      //  Same for items.
-      if (newAct.bCountItem)
-      {
-        TotalItems--;
-      }
+    if (!newAct.TestLocation()) {
+      // didn't fit
+      // if it counts as kill, adjust total kills count
+      if (newAct.CountsAsKill()) --TotalKills;
+      // same for items
+      if (newAct.bCountItem) --TotalItems;
       newAct.Destroy();
-    }
-    else
-    {
+    } else {
       newAct.Angles.yaw = Facing ? A.Angles.yaw : angle;
       newAct.SetTID(Arg4);
-      if (fog == true)
-      {
-        Spawn(TeleportFog, A.Origin+vector(0.0, 0.0,
-          LineSpecialGameInfo(Game).TeleFogHeight));
-      }
-      if (newAct.bSpecial)
-      {
-        newAct.bDropped = true; // Don't respawn
-      }
+      if (fog) Spawn(TeleportFog, A.Origin+vector(0.0, 0.0, LineSpecialGameInfo(Game).TeleFogHeight));
+
+      if (newAct.bSpecial) newAct.bDropped = true; // don't respawn
       /* no need to do this, bobbing is done in renderer
-      if (newAct.bFloatBob)
-      {
-        newAct.Special1f = newAct.Origin.z-newAct.FloorZ;
-      }
+      if (newAct.bFloatBob) newAct.Special1f = newAct.Origin.z-newAct.FloorZ;
       */
       success = true;
     }
-    if (!tid)
-    {
-      break;
-    }
+    if (!tid) break;
   }
   return success;
 }
@@ -4145,57 +3867,37 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   return Ret;
 }
 
+
 //===========================================================================
 //
 //  EV_ChangeCamera
 //
 //===========================================================================
-
-/*final*/ bool EV_ChangeCamera(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  EntityEx A)
-{
+/*final*/ bool EV_ChangeCamera (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, EntityEx A) {
   Entity Camera = none;
-  if (Arg1)
-  {
-    Camera = FindMobjFromTID(Arg1, none);
-  }
+  if (Arg1) Camera = FindMobjFromTID(Arg1, none);
 
-  if (!A || !A.Player || Arg2)
-  {
+  if (!A || !A.Player || Arg2) {
     BasePlayer P;
-    foreach AllActivePlayers(P)
-    {
-      if (Camera)
-      {
+    foreach AllActivePlayers(P) {
+      if (Camera) {
         P.Camera = Camera;
-        if (Arg3)
-        {
-          PlayerEx(P).bRevertCamera = true;
-        }
-      }
-      else
-      {
+        if (Arg3) PlayerEx(P).bRevertCamera = true;
+      } else {
         P.Camera = P.MO;
         PlayerEx(P).bRevertCamera = false;
       }
     }
-  }
-  else
-  {
-    if (Camera)
-    {
+  } else {
+    if (Camera) {
       A.Player.Camera = Camera;
-      if (Arg3)
-      {
-        PlayerEx(A.Player).bRevertCamera = true;
-      }
-    }
-    else
-    {
+      if (Arg3) PlayerEx(A.Player).bRevertCamera = true;
+    } else {
       A.Player.Camera = A;
       PlayerEx(A.Player).bRevertCamera = false;
     }
   }
+
   return true;
 }
 
@@ -4321,8 +4023,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
                Hatee.bDormant);
     }
 
-    if (Hatee && Hatee != Hater && (Arg3 == 0 || (Hater.Goal && Hater.Target != Hater.Goal)))
-    {
+    if (Hatee && Hatee != Hater && (Arg3 == 0 || (Hater.Goal && Hater.Target != Hater.Goal))) {
       if (Hater.Target) Hater.LastEnemy = Hater.Target;
       Hater.Target = Hatee;
       if (!Hater.bDormant) {
@@ -4397,7 +4098,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   foreach (EntityEx Ent; eachTID(Arg1, A)) {
     //print("THRUSTZ for '%C', force=%s (%s), oldz=%f", Ent, Force, Arg4, Ent.Velocity.z);
     if (!Arg4) Ent.Velocity.z = 0;
-    Ent.Velocity.z = fclamp(Ent.Velocity.z+Force, -1024, 1024); // k8: why not?
+    Ent.Velocity.z = fclamp(Ent.Velocity.z+Force, -4096, 4096); // k8: why not?
     //if (!Arg4) Ent.Velocity.z = Force; else Ent.Velocity.z += Force;
     success = true;
   }
@@ -4455,28 +4156,14 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //
 //===========================================================================
 /*final*/ bool EV_SetPlayerProperty (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, EntityEx A) {
-  if (!Arg1)
-  {
-    if (!A || !A.bIsPlayer)
-    {
-      return false;
-    }
+  if (!Arg1) {
+    if (!A || !A.bIsPlayer) return false;
     return A.SetPlayerProperty(Arg3, Arg2);
-  }
-  else
-  {
+  } else {
     bool Ret = false;
-    int i;
-    for (i = 0; i < MAXPLAYERS; i++)
-    {
-      if (!Game.Players[i] || !Game.Players[i].bSpawned)
-      {
-        continue;
-      }
-      if (EntityEx(Game.Players[i].MO).SetPlayerProperty(Arg3, Arg2))
-      {
-        Ret = true;
-      }
+    foreach (int i; 0..MAXPLAYERS) {
+      if (!Game.Players[i] || !Game.Players[i].bSpawned || !Game.Players[i].MO) continue;
+      if (EntityEx(Game.Players[i].MO).SetPlayerProperty(Arg3, Arg2)) Ret = true;
     }
     return Ret;
   }
@@ -4508,25 +4195,22 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //  EV_ForceField
 //
 //==========================================================================
-
-/*final*/ bool EV_ForceField(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  EntityEx A)
-{
-  A.Damage(none, none, 16, '', spawnBlood:true);
-  A.Velocity.x += 7.8125*cos(A.Angles.yaw+180.0)*35.0;
-  A.Velocity.y += 7.8125*sin(A.Angles.yaw+180.0)*35.0;
+/*final*/ bool EV_ForceField (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, EntityEx A) {
+  if (A && !A.IsDestroyed) {
+    A.Damage(none, none, 16, '', spawnBlood:true);
+    A.Velocity.x += 7.8125*cos(A.Angles.yaw+180.0)*35.0;
+    A.Velocity.y += 7.8125*sin(A.Angles.yaw+180.0)*35.0;
+  }
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_RemoveForceField
 //
 //==========================================================================
-
-/*final*/ bool EV_RemoveForceField(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_RemoveForceField (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
@@ -4544,6 +4228,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   return true;
 }
 
+
 //**************************************************************************
 //
 //  Teleportation
@@ -4556,8 +4241,8 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //
 //==========================================================================
 /*final*/ bool EV_Teleport (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-                        EntityEx thing, line_t *Line, bool fog,
-                        optional bool keepMomentum, optional int Special)
+                            EntityEx thing, line_t *Line, bool fog,
+                            optional bool keepMomentum, optional int Special)
 {
   //int i;
   //int count;
@@ -4670,7 +4355,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //  Teleport anything matching other_tid to dest_tid
 //
 //==========================================================================
-/*final*/ bool EV_TeleportOther(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+/*final*/ bool EV_TeleportOther (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   bool Ret = false;
   if (Arg1 && Arg2) {
     foreach (EntityEx A; eachTID(Arg1, none)) {
@@ -4686,19 +4371,15 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //  DoGroupForOne
 //
 //==========================================================================
-
-/*final*/ bool DoGroupForOne(EntityEx victim, EntityEx source, EntityEx dest,
-  bool floorz, bool fog)
-{
+/*final*/ int DoGroupForOne(EntityEx victim, EntityEx source, EntityEx dest, bool floorz, bool fog) {
   float an = dest.Angles.yaw-source.Angles.yaw;
   float offX = victim.Origin.x-source.Origin.x;
   float offY = victim.Origin.y-source.Origin.y;
   float offAngle = victim.Angles.yaw-source.Angles.yaw;
   float newX = offX*cos(an)-offY*sin(an);
   float newY = offX*sin(an)+offY*cos(an);
-  bool res;
 
-  res = victim.Teleport(vector(dest.Origin.x+newX,
+  int res = victim.Teleport(vector(dest.Origin.x+newX,
     dest.Origin.y+newY, floorz ? EntityEx::ONFLOORZ : dest.Origin.z +
     victim.Origin.z-source.Origin.z), 0.0, fog, fog, !fog);
   // P_Teleport only changes angle if fog is true
@@ -4707,65 +4388,47 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   return res;
 }
 
+
 //==========================================================================
 //
 //  EV_TeleportGroup
 //
 //  [RH] Teleport a group of actors centered around source_tid so
-// that they become centered around dest_tid instead.
+//  that they become centered around dest_tid instead.
 //
 //==========================================================================
-
-/*final*/ bool EV_TeleportGroup(int group_tid, int source_tid, int dest_tid,
-  bool moveSource, bool fog, EntityEx victim)
-{
-  EntityEx  sourceOrigin;
-  EntityEx  destOrigin;
-  bool    didSomething;
-  bool    floorz;
-
-  sourceOrigin = EntityEx(FindMobjFromTID(source_tid, none));
-  if (!sourceOrigin)
-  {
-    //  If there is no source origin, behave like TeleportOther
+/*final*/ bool EV_TeleportGroup (int group_tid, int source_tid, int dest_tid, bool moveSource, bool fog, EntityEx victim) {
+  EntityEx sourceOrigin = EntityEx(FindMobjFromTID(source_tid, none));
+  if (!sourceOrigin) {
+    // if there is no source origin, behave like TeleportOther
     return EV_TeleportOther(group_tid, dest_tid, fog, 0, 0);
   }
 
-  destOrigin = none;
-  do
-  {
+  EntityEx destOrigin = none;
+  do {
     destOrigin = EntityEx(FindMobjFromTID(dest_tid, destOrigin));
-  }
-  while (destOrigin && !TeleportDest(destOrigin));
-  if (!destOrigin)
-  {
-    return false;
-  }
+  } while (destOrigin && !TeleportDest(destOrigin));
 
-  didSomething = false;
-  floorz = !TeleportDest2(destOrigin);
+  if (!destOrigin) return false;
+
+  int didSomething = 0;
+  bool floorz = !TeleportDest2(destOrigin);
 
   // Use the passed victim if group_tid is 0
-  if (group_tid == 0 && victim)
-  {
-    didSomething = DoGroupForOne(victim, sourceOrigin, destOrigin,
-      floorz, fog);
-  }
-  else
-  {
-    // For each actor with tid matching arg0, move it to the same
+  if (group_tid == 0 && victim) {
+    didSomething = DoGroupForOne(victim, sourceOrigin, destOrigin, floorz, fog);
+  } else {
+    // for each actor with tid matching arg0, move it to the same
     // position relative to destOrigin as it is relative to
-    // sourceOrigin before the teleport.
+    // sourceOrigin before the teleport
     for (victim = EntityEx(FindMobjFromTID(group_tid, none)); victim;
-      victim = EntityEx(FindMobjFromTID(group_tid, victim)))
+         victim = EntityEx(FindMobjFromTID(group_tid, victim)))
     {
-      didSomething |= DoGroupForOne(victim, sourceOrigin, destOrigin,
-        floorz, fog);
+      didSomething |= DoGroupForOne(victim, sourceOrigin, destOrigin, floorz, fog);
     }
   }
 
-  if (moveSource && didSomething)
-  {
+  if (moveSource && didSomething) {
     didSomething |= sourceOrigin.Teleport(vector(destOrigin.Origin.x,
       destOrigin.Origin.y, floorz ? EntityEx::ONFLOORZ : destOrigin.Origin.z),
       0.0, false, false, true);
@@ -4775,64 +4438,47 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   return didSomething;
 }
 
+
 //==========================================================================
 //
 //  EV_TeleportSector
 //
 //  [RH] Teleport a group of actors in a sector. Source_tid is used as a
-// reference point so that they end up in the same position relative to
-// dest_tid. Group_tid can be used to not teleport all actors in the sector.
+//  reference point so that they end up in the same position relative to
+//  dest_tid. Group_tid can be used to not teleport all actors in the sector.
 //
 //==========================================================================
+/*final*/ bool EV_TeleportSector (int tag, int source_tid, int dest_tid, bool fog, int group_tid) {
+  EntityEx sourceOrigin = EntityEx(FindMobjFromTID(source_tid, none));
+  if (!sourceOrigin) return false;
 
-/*final*/ bool EV_TeleportSector(int tag, int source_tid, int dest_tid, bool fog,
-  int group_tid)
-{
-  EntityEx  sourceOrigin;
-  EntityEx  destOrigin;
-  bool    didSomething;
-  bool    floorz;
-  sector_t *sec;
-  EntityEx  A;
-
-  sourceOrigin = EntityEx(FindMobjFromTID(source_tid, none));
-  if (!sourceOrigin)
-  {
-    return false;
-  }
-
-  destOrigin = none;
-  do
-  {
+  EntityEx destOrigin = none;
+  do {
     destOrigin = EntityEx(FindMobjFromTID(dest_tid, destOrigin));
-  }
-  while (destOrigin && !TeleportDest(destOrigin));
-  if (!destOrigin)
-  {
-    return false;
-  }
+  } while (destOrigin && !TeleportDest(destOrigin));
 
-  didSomething = false;
-  floorz = !TeleportDest2(destOrigin);
+  if (!destOrigin) return false;
 
+  int didSomething = 0;
+  bool floorz = !TeleportDest2(destOrigin);
+
+  sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, tag); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, tag, hidx))
   {
-    msecnode_t* Node = sec->TouchingThingList;
-    while (Node)
-    {
-      A = EntityEx(Node->Thing);
+    msecnode_t *Node = sec->TouchingThingList;
+    while (Node) {
+      EntityEx A = EntityEx(Node->Thing);
       msecnode_t *ndNext = Node->SNext;
       // possibly limit actors by group
-      if (A.Sector == sec && (group_tid == 0 || A.TID == group_tid))
-      {
-        didSomething |= DoGroupForOne(A, sourceOrigin, destOrigin,
-          floorz, fog);
+      if (A.Sector == sec && (group_tid == 0 || A.TID == group_tid)) {
+        didSomething |= DoGroupForOne(A, sourceOrigin, destOrigin, floorz, fog);
       }
       Node = ndNext;
     }
   }
-  return didSomething;
+
+  return !!didSomething;
 }
 
 
@@ -4840,16 +4486,16 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //
 //  EV_SilentLineTeleport
 //
-// Silent linedef-based TELEPORTATION, by Lee Killough
-// Primarily for rooms-over-rooms etc.
-// This is the complete player-preserving kind of teleporter.
-// It has advantages over the teleporter with thing exits.
+//  Silent linedef-based TELEPORTATION, by Lee Killough
+//  Primarily for rooms-over-rooms etc.
+//  This is the complete player-preserving kind of teleporter.
+//  It has advantages over the teleporter with thing exits.
 //
-// [RH] Modified to support different source and destination ids.
+//  [RH] Modified to support different source and destination ids.
 //
 //==========================================================================
 /*final*/ bool EV_SilentLineTeleport (line_t *line, int side, EntityEx thing,
-                                  int id, bool reverse)
+                                      int id, bool reverse)
 {
   int searcher;
   line_t *l;
@@ -4970,7 +4616,9 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
     }
   }
   */
-  //recSoundSectorEntities.reset();
+
+  // reset 'em, to help GC a little
+  recSoundSectorEntities.reset();
 }
 
 
@@ -4983,10 +4631,10 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 //
 //==========================================================================
 /*final*/ void NoiseAlert (Entity target, Entity emitter, optional bool Splash,
-                       optional float maxdist,
-                       optional bool targetEmitter,
-                       optional bool targetNonPlayer,
-                       optional bool emitFromTarget)
+                           optional float maxdist,
+                           optional bool targetEmitter,
+                           optional bool targetNonPlayer,
+                           optional bool emitFromTarget)
 {
   //if (!emitter) return;
 
@@ -5008,28 +4656,19 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 //  EV_NoiseAlert
 //
 //==========================================================================
+/*final*/ bool EV_NoiseAlert (EntityEx A, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  EntityEx ASource;
+  EntityEx ATarget;
 
-/*final*/ bool EV_NoiseAlert(EntityEx A, int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  EntityEx  ASource;
-  EntityEx  ATarget;
-
-  if (!Arg1)
-  {
+  if (!Arg1) {
     ASource = A;
-  }
-  else
-  {
+  } else {
     ASource = EntityEx(FindMobjFromTID(Arg1, none));
   }
 
-  if (!Arg2)
-  {
+  if (!Arg2) {
     ATarget = A;
-  }
-  else
-  {
+  } else {
     ATarget = EntityEx(FindMobjFromTID(Arg2, none));
   }
 
@@ -5037,35 +4676,31 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
   return true;
 }
 
+
 //==========================================================================
 //
 // EV_LineSearchForPuzzleItem
 //
 //==========================================================================
-
-/*final*/ bool EV_LineSearchForPuzzleItem(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5, EntityEx A)
-{
+/*final*/ bool EV_LineSearchForPuzzleItem (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, EntityEx A) {
   Inventory Item;
 
   if (!A) return false;
   if (!A.bIsPlayer) return false;
 
-  // Search player's inventory for puzzle items
-  for (Item = A.Inventory; Item; Item = Item.Inventory)
-  {
-    if (!PuzzleItem(Item)) continue;
-    if (PuzzleItem(Item).PuzzleItemNumber == Arg1)
-    {
-      // A puzzle item was found for the line
-      if (A.UseInventory(Item))
-      {
-        return true;
-      }
+  // search player's inventory for puzzle items
+  for (Item = A.Inventory; Item; Item = Item.Inventory) {
+    PuzzleItem pp = PuzzleItem(Item);
+    if (!pp) continue;
+    if (pp.PuzzleItemNumber == Arg1) {
+      // a puzzle item was found for the line
+      if (A.UseInventory(Item)) return true;
     }
   }
+
   return false;
 }
+
 
 //**************************************************************************
 //
@@ -5080,22 +4715,16 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 //  Returns a pointer to an MT_PUSH or MT_PULL thing, nullptr otherwise.
 //
 //==========================================================================
-
-final EntityEx GetPushThing(int s)
-{
-  Entity    thing;
-  sector_t *sec;
-
-  sec = &XLevel.Sectors[s];
-  for (thing = sec->ThingList; thing; thing = thing.SNext)
-  {
-    if (PointPusher(thing) || PointPuller(thing))
-    {
+/*final*/ EntityEx GetPushThing (int s) {
+  if (s < 0 || s >= XLevel.Sectors.length) return none;
+  for (Entity thing = XLevel.Sectors[s].ThingList; thing; thing = thing.SNext) {
+    if (PointPusher(thing) || PointPuller(thing)) {
       return EntityEx(thing);
     }
   }
   return none;
 }
+
 
 //==========================================================================
 //
@@ -5104,178 +4733,151 @@ final EntityEx GetPushThing(int s)
 //  Initialise the sectors where pushers are present
 //
 //==========================================================================
-
-/*final*/ void SpawnPushers()
-{
+/*final*/ void SpawnPushers () {
   sector_t *sec;
 
-  foreach (int i; 0..XLevel.Lines.length)
-  {
+  foreach (int i; 0..XLevel.Lines.length) {
     line_t *l = &XLevel.Lines[i];
-    switch (l->special)
-    {
-    case LNSPEC_SectorSetWind: // wind
-      for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
-           hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
-      {
-        Pusher P = SpawnThinker(Pusher);
-        P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
-      }
-      break;
-
-    case LNSPEC_SectorSetCurrent: // current
-      for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
-           hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
-      {
-        Pusher P = SpawnThinker(Pusher);
-        P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
-      }
-      break;
-
-    case LNSPEC_PointPushSetForce: // push/pull
-      if (l->arg1)
-      {
-        // [RH] Find thing by sector
+    switch (l->special) {
+      case LNSPEC_SectorSetWind: // wind
         for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
              hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
         {
-          int ssnum = sec-&XLevel.Sectors[0];
-          EntityEx thing = GetPushThing(ssnum);
-          if (thing)
+          Pusher P = SpawnThinker(Pusher);
+          if (P && !P.IsDestroyed) {
+            P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
+          }
+        }
+        break;
+
+      case LNSPEC_SectorSetCurrent: // current
+        for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
+             hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
+        {
+          Pusher P = SpawnThinker(Pusher);
+          if (P && !P.IsDestroyed) {
+            P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
+          }
+        }
+        break;
+
+      case LNSPEC_PointPushSetForce: // push/pull
+        if (l->arg1) {
+          // [RH] find thing by sector
+          for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
+               hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
           {
-            // No MT_P* means no effect
-            // [RH] Allow narrowing it down by tid
-            if (!l->arg2 || l->arg2 == thing.TID)
-            {
+            int ssnum = sec-&XLevel.Sectors[0];
+            EntityEx thing = GetPushThing(ssnum);
+            if (thing) {
+              // No MT_P* means no effect
+              // [RH] Allow narrowing it down by tid
+              if (!l->arg2 || l->arg2 == thing.TID) {
+                Pusher P = SpawnThinker(Pusher);
+                if (P && !P.IsDestroyed) {
+                  P.Init(Pusher::PUSHER_Push, l->arg4 ? l : nullptr, l->arg3, 0, thing, ssnum);
+                }
+              }
+            }
+          }
+        } else {
+          // [RH] Find thing by tid
+          foreach (EntityEx thing; eachTID(l->arg2)) {
+            if (PointPuller(thing) || PointPusher(thing)) {
+              /*
+              int s;
+              for (s = 0; s < XLevel.Sectors.length; ++s) if (&XLevel.Sectors[s] == thing.Sector) break;
+              */
+              if (!thing.Sector) continue;
+              int s = thing.Sector-&XLevel.Sectors[0];
               Pusher P = SpawnThinker(Pusher);
-              P.Init(Pusher::PUSHER_Push, l->arg4 ? l : nullptr, l->arg3, 0, thing, ssnum);
+              if (P && !P.IsDestroyed) {
+                P.Init(Pusher::PUSHER_Push, l->arg4 ? l : nullptr, l->arg3, 0, thing, s);
+              }
             }
           }
         }
-      }
-      else
-      {
-        // [RH] Find thing by tid
-        foreach (EntityEx thing; eachTID(l->arg2)) {
-          if (PointPuller(thing) || PointPusher(thing))
-          {
-            /*
-            int s;
-            for (s = 0; s < XLevel.Sectors.length; ++s) if (&XLevel.Sectors[s] == thing.Sector) break;
-            */
-            if (!thing.Sector) continue;
-            int s = thing.Sector-&XLevel.Sectors[0];
-            Pusher P = SpawnThinker(Pusher);
-            P.Init(Pusher::PUSHER_Push, l->arg4 ? l : nullptr, l->arg3, 0, thing, s);
-          }
-        }
-      }
-      break;
+        break;
     }
   }
 }
+
 
 //==========================================================================
 //
 //  AdjustPusher
 //
 //==========================================================================
+/*final*/ bool AdjustPusher (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, line_t *Line, int Type) {
+  if (Line || Arg4) return false;
 
-/*final*/ bool AdjustPusher(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  line_t *Line, int Type)
-{
-  int   tag;
-  int   magnitude;
-  int   angle;
-  Pusher  Collection;
-  Pusher  P;
+  int tag = Arg1;
+  int magnitude = Arg2;
+  int angle = Arg3;
+  Pusher Collection = none;
 
-  if (Line || Arg4)
-  {
-    return false;
-  }
-  tag = Arg1;
-  magnitude = Arg2;
-  angle = Arg3;
-  Collection = none;
-  // Find pushers already attached to the sector, and change their parameters.
-  foreach AllThinkers(Pusher, P)
-  {
-    if (P.CheckForSectorMatch(Type, tag) >= 0)
-    {
+  // find pushers already attached to the sector, and change their parameters
+  Pusher P;
+  foreach AllThinkers(Pusher, P) {
+    if (P.CheckForSectorMatch(Type, tag) >= 0) {
       P.ChangeValues(magnitude, angle);
       P.AdjustLink = Collection;
       Collection = P;
     }
   }
 
-  // Now create pushers for any sectors that don't already have them.
+  // now create pushers for any sectors that don't already have them
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, tag); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, tag, hidx))
   {
     int secnum = sec-&XLevel.Sectors[0];
-    for (P = Collection; P; P = P.AdjustLink)
-    {
+    for (P = Collection; P; P = P.AdjustLink) {
       if (P.Affectee == secnum) break;
     }
-    if (!P)
-    {
+    if (!P) {
       P = SpawnThinker(Pusher);
       P.Init(Type, nullptr, magnitude, angle, none, secnum);
     }
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_LineTranslucent
 //
 //==========================================================================
-
-/*final*/ bool EV_LineTranslucent(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  int     Searcher;
-  line_t *Other;
-
-  Searcher = -1;
-  for (Other = XLevel.FindLine(Arg1, &Searcher); Other;
-    Other = XLevel.FindLine(Arg1, &Searcher))
-  {
+/*final*/ bool EV_LineTranslucent (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  bool res = false;
+  int Searcher = -1;
+  for (line_t *Other = XLevel.FindLine(Arg1, &Searcher); Other; Other = XLevel.FindLine(Arg1, &Searcher)) {
     Other->alpha = float(Arg2)/255.0;
-    if (Arg3 == 0)
-    {
-      Other->flags &= ~ML_ADDITIVE;
-    }
-    else if (Arg3 == 1)
-    {
-      Other->flags |= ML_ADDITIVE;
-    }
-    else
-    {
-      print("Invalid line translucency type %d", Arg3);
-    }
+         if (Arg3 == 0) Other->flags &= ~ML_ADDITIVE;
+    else if (Arg3 == 1) Other->flags |= ML_ADDITIVE;
+    else printerror("Invalid line translucency type %d", Arg3);
+    res = true;
   }
-  return true;
+  return res;
 }
+
 
 //==========================================================================
 //
 //  EV_SectorSetPlaneReflection
 //
 //==========================================================================
-
-int EV_SectorSetPlaneReflection(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+int EV_SectorSetPlaneReflection (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  int res = 0;
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
     sec.floor.MirrorAlpha = float(255-Arg2)/255.0;
     sec.ceiling.MirrorAlpha = float(255-Arg3)/255.0;
+    res = 1;
   }
-  return 1;
+  return res;
 }
 
 
