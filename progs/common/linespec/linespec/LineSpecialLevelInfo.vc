@@ -1201,7 +1201,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 /*final*/ int EV_DoDoor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type,
                          line_t *Line, Entity Thing, optional bool delayOctics)
 {
-  sector_t *Sec;
+  sector_t *sec;
   VerticalDoor Door;
   int RetCode = false;
 
@@ -1212,10 +1212,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     if (Line->sidenum[1] < 0) return false;
 
     // if the sector has an active thinker, use it
-    Sec = XLevel.Sides[Line->sidenum[1]].Sector;
-    if (!Sec->lines.length) return false;
-    if (Sec->CeilingData) {
-      Door = VerticalDoor(Sec->CeilingData);
+    sec = XLevel.Sides[Line->sidenum[1]].Sector;
+    if (!sec->lines.length) return false;
+    if (sec->CeilingData) {
+      Door = VerticalDoor(sec->CeilingData);
       if (Door) return Door.ReUse(Type, Line, Thing);
       return false;
     }
@@ -1223,16 +1223,16 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     // new door thinker
     Door = SpawnThinker(VerticalDoor);
     if (Door && !Door.IsDestroyed) {
-      Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
+      Door.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
       RetCode = true;
     }
   } else {
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-      if (Sec->CeilingData || !Sec->lines.length) continue;
+    for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+      if (sec->CeilingData || !sec->lines.length) continue;
       // add new door thinker
       Door = SpawnThinker(VerticalDoor);
       if (Door && !Door.IsDestroyed) {
-        Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
+        Door.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, delayOctics!optional);
         RetCode = true;
       }
     }
@@ -1315,7 +1315,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //==========================================================================
 /*final*/ int EV_TextureChangeDoor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, line_t *Line, Entity E) {
   int Rtn;
-  sector_t *Sec;
+  sector_t *sec;
   TextureChangeDoor Door;
 
   Rtn = false;
@@ -1338,16 +1338,16 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       Rtn = true;
     }
   } else {
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-      if (Sec->CeilingData) continue;
-      foreach (auto i; 0..Sec.lines.length) {
-        Line = Sec->lines[i];
+    for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+      if (sec->CeilingData) continue;
+      foreach (auto i; 0..sec.lines.length) {
+        Line = sec->lines[i];
         if (!Line->backsector) continue;
         // new door thinker
         if (FindAnimDoor(XLevel.Sides[Line->sidenum[0]].TopTexture)) {
           Rtn = true;
           Door = SpawnThinker(TextureChangeDoor);
-          Door.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Line);
+          Door.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Line);
           break;
         }
       }
@@ -1372,7 +1372,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_DoCeiling (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type, line_t *Line) {
-  sector_t *Sec;
+  sector_t *sec;
   CeilingMover Ceiling;
   int Rtn = false;
 
@@ -1404,8 +1404,8 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       }
     }
 
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-      if (Sec->CeilingData || !Sec->lines.length) {
+    for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+      if (sec->CeilingData || !sec->lines.length) {
         //printdebug("sector #%s (tag %s) (ceiling): already moving or no lines (%s)", Sec-&XLevel.Sectors[0], Arg1, Sec->lines.length);
         continue;
       }
@@ -1414,7 +1414,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       // new ceiling thinker
       Rtn = true;
       Ceiling = SpawnThinker(CeilingMover);
-      Ceiling.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
+      Ceiling.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
     }
   }
 
@@ -1472,7 +1472,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_DoFloor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type, line_t *Line) {
-  sector_t *Sec;
+  sector_t *sec;
   FloorMover Floor;
   int Rtn = false;
 
@@ -1487,9 +1487,9 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       Floor.Init(Line->backsector, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
     }
   } else {
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
+    for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
       // ALREADY MOVING?  IF SO, KEEP GOING...
-      if (Sec->FloorData || !Sec->lines.length) {
+      if (sec->FloorData || !sec->lines.length) {
         //printdebug("sector #%s (tag %s) (floor): already moving or no lines (%s)", Sec-&XLevel.Sectors[0], Arg1, Sec->lines.length);
         continue;
       }
@@ -1498,7 +1498,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       // new floor thinker
       Rtn = true;
       Floor = SpawnThinker(FloorMover);
-      Floor.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
+      Floor.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
     }
   }
 
@@ -1610,7 +1610,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int Ok;
   int Texture;
   int Rtn;
-  sector_t *Sec;
+  sector_t *sec;
   sector_t *TSec;
   FloorMover Floor;
   line_t *SecLine;
@@ -1642,21 +1642,21 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   }
 
   while (SecNum >= 0 && SecNum < XLevel.Sectors.length) {
-    Sec = (Arg1 ? &XLevel.Sectors[SecNum] : Line->backsector);
+    sec = (Arg1 ? &XLevel.Sectors[SecNum] : Line->backsector);
 
     //OldSecNum = /*SecNum*/Sec-&XLevel.Sectors[0]; //jff 3/4/98 preserve loop index
     //int SecNum = OldSecNum;
     OldSecNum = SecNum;
 
     // ALREADY MOVING? IF SO, KEEP GOING...
-    if (!Sec->FloorData) {
+    if (!sec->FloorData) {
       // new floor thinker
       Rtn = 1;
-      Height = GetPlanePointZ(ref Sec->floor, vector(0.0, 0.0, 0.0))+StairSize;
+      Height = GetPlanePointZ(ref sec->floor, vector(0.0, 0.0, 0.0))+StairSize;
       Floor = SpawnThinker(FloorMover);
-      Floor.InitStair(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
+      Floor.InitStair(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
 
-      Texture = Sec->floor.pic;
+      Texture = sec->floor.pic;
 
       // Find next sector to raise
       // 1. Find 2-sided line with same sector side[0]
@@ -1664,11 +1664,11 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       // 3. Unless already moving, or different texture, then stop building
       do {
         Ok = false;
-        foreach (int i; 0..Sec.lines.length) {
-          SecLine = Sec->lines[i];
+        foreach (int i; 0..sec.lines.length) {
+          SecLine = sec->lines[i];
           if (!(SecLine->flags&ML_TWOSIDED)) continue;
           TSec = SecLine->frontsector;
-          if (Sec != TSec) continue;
+          if (sec != TSec) continue;
           TSec = SecLine->backsector;
           if (!TSec) continue; //jff 5/7/98 if no backside, continue
           if (!IgnTxt && TSec->floor.pic != Texture) continue;
@@ -1676,7 +1676,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
           Height += StairSize;
           if (TSec->FloorData) continue;
 
-          Sec = TSec;
+          sec = TSec;
           // SecNum = TSec-XLevel.Sectors;
           foreach (int j; 0..XLevel.Sectors.length) {
             if (TSec == &XLevel.Sectors[j]) {
@@ -1685,7 +1685,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
             }
           }
           Floor = SpawnThinker(FloorMover);
-          Floor.InitStair(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
+          Floor.InitStair(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
           Ok = true;
           break;
         }
@@ -1716,23 +1716,23 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_BuildStairs (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int StairsType) {
-  sector_t *Sec;
+  sector_t *sec;
   StairStepMover StairStep;
   StairStepMover StairQueueHead = none;
 
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (Sec->FloorData) continue; // already moving? if so, keep going...
+    if (sec->FloorData) continue; // already moving? if so, keep going...
 
     StairStep = SpawnThinker(StairStepMover);
-    StairStep.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, StairsType);
+    StairStep.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, StairsType);
     if (StairQueueHead) {
       StairQueueHead.AppendToQueue(StairStep);
     } else {
       StairQueueHead = StairStep;
     }
-    Sec->special &= ~SECSPEC_BASE_MASK;
+    sec->special &= ~SECSPEC_BASE_MASK;
   }
 
   for (StairStep = StairQueueHead; StairStep; StairStep = StairStep.QueueNext) {
@@ -1758,7 +1758,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //==========================================================================
 /*final*/ int EV_DoPlat (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type, line_t *Line) {
   Platform  Plat;
-  sector_t *Sec;
+  sector_t *sec;
 
   int Rtn = 0;
 
@@ -1794,14 +1794,14 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       if (Type == Platform::PLATEV_Toggle) Rtn = 1;
     }
 
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-         hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+    for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+         hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
     {
-      if (Sec->FloorData) continue;
+      if (sec->FloorData) continue;
       // find lowest & highest floors around sector
       Rtn = 1;
       Plat = SpawnThinker(Platform);
-      Plat.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
+      Plat.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
     }
   }
 
@@ -1835,14 +1835,14 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_BuildPillar (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, bool Crush) {
-  sector_t *Sec;
+  sector_t *sec;
   Pillar pillarObj;
   int Rtn = 0;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-    if (Sec->FloorData || Sec->CeilingData) continue; // already moving
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+    if (sec->FloorData || sec->CeilingData) continue; // already moving
     Rtn = 1;
     pillarObj = SpawnThinker(Pillar);
-    pillarObj.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Crush);
+    pillarObj.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Crush);
   }
   return Rtn;
 }
@@ -1854,14 +1854,14 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_OpenPillar (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
+  sector_t *sec;
   Pillar pillarObj;
   int Rtn = 0;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-    if (Sec->FloorData || Sec->CeilingData) continue; // already moving
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+    if (sec->FloorData || sec->CeilingData) continue; // already moving
     Rtn = 1;
     pillarObj = SpawnThinker(Pillar);
-    pillarObj.InitOpen(Sec, Arg1, Arg2, Arg3, Arg4, Arg5);
+    pillarObj.InitOpen(sec, Arg1, Arg2, Arg3, Arg4, Arg5);
   }
   return Rtn;
 }
@@ -1882,16 +1882,16 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   if (!Line && (Type == Elevator::ELEVEV_Current)) return false;
 
   int Rtn = 0;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     // skip if already busy
-    if (Sec->FloorData || Sec->CeilingData) continue;
+    if (sec->FloorData || sec->CeilingData) continue;
     // new elevator thinker
     Rtn = 1;
     Elevator Elev = SpawnThinker(Elevator);
-    Elev.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
+    Elev.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type, Line);
   }
   return Rtn;
 }
@@ -2311,15 +2311,15 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //==========================================================================
 /*final*/ int EV_StartLightStrobing (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   int Ret = 0;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    if (Sec->LightingData) continue;
+    if (sec->LightingData) continue;
     Strobe Flash = SpawnThinker(Strobe);
     if (Flash && !Flash.IsDestroyed) {
       Ret = 1;
-      Flash.Init(Sec, Arg3, Arg2, Arg4);
+      Flash.Init(sec, Arg3, Arg2, Arg4);
     }
   }
   return Ret;
@@ -2334,17 +2334,17 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_TagLightTurnOn (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     int Max = 0;
-    foreach (line_t *ln; Sec.lines) {
-      sector_t *TSec = getNextSector(ln, Sec);
+    foreach (line_t *ln; sec.lines) {
+      sector_t *TSec = getNextSector(ln, sec);
       if (!TSec) continue;
       Max = max(Max, TSec->params.lightlevel);
     }
-    Sec->params.lightlevel = Max;
+    sec->params.lightlevel = Max;
   }
   return 1;
 }
@@ -2358,17 +2358,17 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ int EV_TurnTagLightsOff (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    int Min = Sec->params.lightlevel;
-    foreach (line_t *ln; Sec.lines) {
-      sector_t *TSec = getNextSector(ln, Sec);
+    int Min = sec->params.lightlevel;
+    foreach (line_t *ln; sec.lines) {
+      sector_t *TSec = getNextSector(ln, sec);
       if (!TSec) continue;
       Min = min(Min, TSec->params.lightlevel);
     }
-    Sec->params.lightlevel = Min;
+    sec->params.lightlevel = Min;
   }
   return 1;
 }
@@ -2380,12 +2380,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //============================================================================
 /*final*/ bool EV_LightRaiseByValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
+  sector_t *sec;
   bool Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec->params.lightlevel = clamp(Sec->params.lightlevel+Arg2, 0, 255);
+    sec->params.lightlevel = clamp(sec->params.lightlevel+Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
@@ -2398,12 +2398,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //============================================================================
 /*final*/ bool EV_LightLowerByValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
+  sector_t *sec;
   bool Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec->params.lightlevel = clamp(Sec->params.lightlevel-Arg2, 0, 255);
+    sec->params.lightlevel = clamp(sec->params.lightlevel-Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
@@ -2416,12 +2416,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //============================================================================
 /*final*/ bool EV_LightChangeToValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
-  sector_t *Sec;
+  sector_t *sec;
   bool Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec->params.lightlevel = clamp(Arg2, 0, 255);
+    sec->params.lightlevel = clamp(Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
@@ -2434,14 +2434,14 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //============================================================================
 /*final*/ bool EV_SpawnLight (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type) {
-  sector_t *Sec;
+  sector_t *sec;
   bool Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     LightEffect Light = SpawnThinker(LightEffect);
     if (Light && !Light.IsDestroyed) {
-      Light.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
+      Light.Init(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
       Rtn = true;
     }
   }
@@ -2850,7 +2850,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int Arg5, line_t *Line)
 {
   bool    Rtn;
-  sector_t *Sec;
+  sector_t *sec;
 
   if (!Line)
   {
@@ -2858,13 +2858,13 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   }
 
   Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     Rtn = true;
 
-    Sec->floor.pic = Line->frontsector->floor.pic;
-    Sec->special = (Sec->special&SECSPEC_SECRET_MASK) |
+    sec->floor.pic = Line->frontsector->floor.pic;
+    sec->special = (sec->special&SECSPEC_SECRET_MASK) |
       (Line->frontsector->special&~SECSPEC_SECRET_MASK);
   }
   return Rtn;
@@ -2880,21 +2880,21 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int Arg5)
 {
   bool    Rtn;
-  sector_t *Sec;
+  sector_t *sec;
   sector_t *MdlSec;
 
   Rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1, -1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1, -1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     Rtn = true;
 
-    MdlSec = FindModelFloorSector(Sec, GetPlanePointZ(ref Sec->floor,
-      Sec->soundorg));
+    MdlSec = FindModelFloorSector(sec, GetPlanePointZ(ref sec->floor,
+      sec->soundorg));
     if (MdlSec)
     {
-      Sec->floor.pic = MdlSec->floor.pic;
-      Sec->special = MdlSec->special;
+      sec->floor.pic = MdlSec->floor.pic;
+      sec->special = MdlSec->special;
     }
   }
   return Rtn;
@@ -2915,7 +2915,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 /*final*/ bool EV_SectorSoundChange(int Arg1, int Arg2, int Arg3, int Arg4,
   int Arg5)
 {
-  sector_t *Sec;
+  sector_t *sec;
   bool rtn;
 
   if (!Arg1)
@@ -2923,10 +2923,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     return false;
   }
   rtn = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.seqType = Arg2;
+    sec.seqType = Arg2;
     rtn = true;
   }
   return rtn;
@@ -2940,12 +2940,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 
 /*final*/ bool EV_SectorSetColor(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
 {
-  sector_t *Sec;
+  sector_t *sec;
   int Col = RGBA(Arg2, Arg3, Arg4, 0);
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.params.LightColor = Col;
+    sec.params.LightColor = Col;
   }
   return true;
 }
@@ -2958,12 +2958,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 
 /*final*/ bool EV_SectorSetFade(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
 {
-  sector_t *Sec;
+  sector_t *sec;
   int clrFade = RGBA(Arg2, Arg3, Arg4, 255);
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.params.Fade = clrFade;
+    sec.params.Fade = clrFade;
   }
   return true;
 }
@@ -3006,16 +3006,16 @@ name ConvertSpecialDamageType (int mod) {
 //
 //=========================================================================
 /*final*/ bool EV_SectorSetDamage (int tag, int amount, int mod, int interval, int leaky) {
-  sector_t *Sec;
+  sector_t *sec;
   if (!tag) return false; //k8: is this right?
   bool res = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, tag); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, tag, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, tag); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, tag, hidx))
   {
-    Sec.Damage = amount;
-    Sec.DamageType = ConvertSpecialDamageType(mod);
-    Sec.DamageInterval = (interval ? interval : -1); // fix for "0 is default"
-    Sec.DamageLeaky = (leaky ? leaky : -1); // fix for "0 is default"
+    sec.Damage = amount;
+    sec.DamageType = ConvertSpecialDamageType(mod);
+    sec.DamageInterval = (interval ? interval : -1); // fix for "0 is default"
+    sec.DamageLeaky = (leaky ? leaky : -1); // fix for "0 is default"
     res = true;
   }
   return res;
@@ -3033,16 +3033,16 @@ name ConvertSpecialDamageType (int mod) {
 {
   float SecGrav;
   bool Ret;
-  sector_t *Sec;
+  sector_t *sec;
 
   if (Arg3 > 99) Arg3 = 99;
 
   SecGrav = float(Arg2)+float(Arg3)*0.01;
   Ret = false;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.Gravity = SecGrav;
+    sec.Gravity = SecGrav;
     Ret = true;
   }
   return Ret;
@@ -3091,9 +3091,9 @@ name ConvertSpecialDamageType (int mod) {
   MoveFactor = float(OldMoveFactor)/float(0x10000);
 
   Ret = false;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     // killough 8/28/98:
     //
@@ -3105,17 +3105,17 @@ name ConvertSpecialDamageType (int mod) {
     // drag on CPU. New code adjusts friction of sector only once
     // at level startup, and then uses this friction value.
 
-    Sec.Friction = Friction;
-    Sec.MoveFactor = MoveFactor;
+    sec.Friction = Friction;
+    sec.MoveFactor = MoveFactor;
     // When used inside a script, the sectors' friction flags
     // can be enabled and disabled at will.
     if (OldFriction == 0xe800)
     {
-      Sec.special &= ~SECSPEC_FRICTION_MASK;
+      sec.special &= ~SECSPEC_FRICTION_MASK;
     }
     else
     {
-      Sec.special |= SECSPEC_FRICTION_MASK;
+      sec.special |= SECSPEC_FRICTION_MASK;
     }
     Ret = true;
   }
@@ -3138,25 +3138,25 @@ name ConvertSpecialDamageType (int mod) {
     return false;
   }
   Rtn = false;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     if (Arg3&SECF_SILENT)
     {
-      Sec->bSilent = false;
+      sec->bSilent = false;
     }
     else if (Arg2&SECF_SILENT)
     {
-      Sec->bSilent = true;
+      sec->bSilent = true;
     }
     if (Arg3&SECF_NOFALLINGDAMAGE)
     {
-      Sec->bNoFallingDamage = false;
+      sec->bNoFallingDamage = false;
     }
     else if (Arg2&SECF_NOFALLINGDAMAGE)
     {
-      Sec->bNoFallingDamage = true;
+      sec->bNoFallingDamage = true;
     }
     Rtn = true;
   }
@@ -3174,13 +3174,13 @@ name ConvertSpecialDamageType (int mod) {
 {
   float XOffs = float(Arg2)+float(Arg3)/100.0;
   float YOffs = float(Arg4)+float(Arg5)/100.0;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.floor.xoffs = XOffs;
-    Sec.floor.yoffs = YOffs;
-    ClampSecPlaneOffsets(&Sec.floor);
+    sec.floor.xoffs = XOffs;
+    sec.floor.yoffs = YOffs;
+    ClampSecPlaneOffsets(&sec.floor);
   }
   return true;
 }
@@ -3196,13 +3196,13 @@ name ConvertSpecialDamageType (int mod) {
 {
   float XOffs = float(Arg2)+float(Arg3)/100.0;
   float YOffs = float(Arg4)+float(Arg5)/100.0;
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.ceiling.xoffs = XOffs;
-    Sec.ceiling.yoffs = YOffs;
-    ClampSecPlaneOffsets(&Sec.ceiling);
+    sec.ceiling.xoffs = XOffs;
+    sec.ceiling.yoffs = YOffs;
+    ClampSecPlaneOffsets(&sec.ceiling);
   }
   return true;
 }
@@ -3216,12 +3216,12 @@ name ConvertSpecialDamageType (int mod) {
 /*final*/ bool EV_SectorSetRotation(int Arg1, int Arg2, int Arg3, int Arg4,
   int Arg5)
 {
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    Sec.floor.Angle = float(Arg2);
-    Sec.ceiling.Angle = float(Arg3);
+    sec.floor.Angle = float(Arg2);
+    sec.ceiling.Angle = float(Arg3);
   }
   return true;
 }
@@ -3245,17 +3245,17 @@ name ConvertSpecialDamageType (int mod) {
   {
     YScale = 1.0/YScale;
   }
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     if (XScale)
     {
-      Sec.floor.XScale = XScale;
+      sec.floor.XScale = XScale;
     }
     if (YScale)
     {
-      Sec.floor.YScale = YScale;
+      sec.floor.YScale = YScale;
     }
   }
   return true;
@@ -3280,17 +3280,17 @@ name ConvertSpecialDamageType (int mod) {
   {
     YScale = 1.0/YScale;
   }
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     if (XScale)
     {
-      Sec.ceiling.XScale = XScale;
+      sec.ceiling.XScale = XScale;
     }
     if (YScale)
     {
-      Sec.ceiling.YScale = YScale;
+      sec.ceiling.YScale = YScale;
     }
   }
   return true;
@@ -3315,17 +3315,17 @@ name ConvertSpecialDamageType (int mod) {
   {
     YScale = 1.0/YScale;
   }
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     if (XScale)
     {
-      Sec.floor.XScale = XScale;
+      sec.floor.XScale = XScale;
     }
     if (YScale)
     {
-      Sec.floor.YScale = YScale;
+      sec.floor.YScale = YScale;
     }
   }
   return true;
@@ -3350,17 +3350,17 @@ name ConvertSpecialDamageType (int mod) {
   {
     YScale = 1.0/YScale;
   }
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
     if (XScale)
     {
-      Sec.ceiling.XScale = XScale;
+      sec.ceiling.XScale = XScale;
     }
     if (YScale)
     {
-      Sec.ceiling.YScale = YScale;
+      sec.ceiling.YScale = YScale;
     }
   }
   return true;
@@ -3378,15 +3378,15 @@ name ConvertSpecialDamageType (int mod) {
   int     Searcher;
   line_t *Line;
   bool    Ret;
-  sector_t *Sec;
+  sector_t *sec;
 
   Searcher = -1;
   Ret = false;
   for (Line = XLevel.FindLine(Arg1, &Searcher); Line;
     Line = XLevel.FindLine(Arg1, &Searcher))
   {
-    Sec = Arg2 ? Line->backsector : Line->frontsector;
-    if (!Sec)
+    sec = Arg2 ? Line->backsector : Line->frontsector;
+    if (!sec)
     {
       continue;
     }
@@ -3404,7 +3404,7 @@ name ConvertSpecialDamageType (int mod) {
       Dist = -Dist;
     }
 
-    Sec->floor.BaseAngle = Angle;
+    sec->floor.BaseAngle = Angle;
     while (Dist < 0.0)
     {
       Dist += 256.0;
@@ -3413,7 +3413,7 @@ name ConvertSpecialDamageType (int mod) {
     {
       Dist -= 256.0;
     }
-    Sec->floor.BaseYOffs = Dist;
+    sec->floor.BaseYOffs = Dist;
     Ret = true;
   }
   return Ret;
@@ -3431,15 +3431,15 @@ name ConvertSpecialDamageType (int mod) {
   int     Searcher;
   line_t *Line;
   bool    Ret;
-  sector_t *Sec;
+  sector_t *sec;
 
   Searcher = -1;
   Ret = false;
   for (Line = XLevel.FindLine(Arg1, &Searcher); Line;
     Line = XLevel.FindLine(Arg1, &Searcher))
   {
-    Sec = Arg2 ? Line->backsector : Line->frontsector;
-    if (!Sec)
+    sec = Arg2 ? Line->backsector : Line->frontsector;
+    if (!sec)
     {
       continue;
     }
@@ -3457,7 +3457,7 @@ name ConvertSpecialDamageType (int mod) {
       Dist = -Dist;
     }
 
-    Sec->ceiling.BaseAngle = Angle;
+    sec->ceiling.BaseAngle = Angle;
     while (Dist < 0.0)
     {
       Dist += 256.0;
@@ -3466,7 +3466,7 @@ name ConvertSpecialDamageType (int mod) {
     {
       Dist -= 256.0;
     }
-    Sec->ceiling.BaseYOffs = Dist;
+    sec->ceiling.BaseYOffs = Dist;
     Ret = true;
   }
   return Ret;
@@ -4563,7 +4563,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   //int count;
   EntityEx A;
   int SecTag;
-  sector_t *Sec;
+  sector_t *sec;
   bool SrcFog;
   bool KeepOrient;
   bool KeepVelocity;
@@ -4605,12 +4605,12 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
       do { A = EntityEx(FindMobjFromTID(Arg1, A)); } while (A && SecTag != 0 && !IsSectorTagEqual(A.Sector, SecTag));
     }
   } else if (SecTag) {
-    for (int hidx = XLevel.FindSectorFromTag(out Sec, SecTag); hidx >= 0;
-         hidx = XLevel.FindSectorFromTag(out Sec, SecTag, hidx))
+    for (int hidx = XLevel.FindSectorFromTag(out sec, SecTag); hidx >= 0;
+         hidx = XLevel.FindSectorFromTag(out sec, SecTag, hidx))
     {
       foreach AllThinkers(EntityEx, A) {
         if (!TeleportDest(A)) continue; // not a teleportman
-        if (A.Sector != Sec) continue; // wrong sector
+        if (A.Sector != sec) continue; // wrong sector
         break;
       }
       if (A) break;
@@ -5107,7 +5107,7 @@ final EntityEx GetPushThing(int s)
 
 /*final*/ void SpawnPushers()
 {
-  sector_t *Sec;
+  sector_t *sec;
 
   foreach (int i; 0..XLevel.Lines.length)
   {
@@ -5115,20 +5115,20 @@ final EntityEx GetPushThing(int s)
     switch (l->special)
     {
     case LNSPEC_SectorSetWind: // wind
-      for (int hidx = XLevel.FindSectorFromTag(out Sec, l->arg1); hidx >= 0;
-           hidx = XLevel.FindSectorFromTag(out Sec, l->arg1, hidx))
+      for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
+           hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
       {
         Pusher P = SpawnThinker(Pusher);
-        P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, Sec-&XLevel.Sectors[0]);
+        P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
       }
       break;
 
     case LNSPEC_SectorSetCurrent: // current
-      for (int hidx = XLevel.FindSectorFromTag(out Sec, l->arg1); hidx >= 0;
-           hidx = XLevel.FindSectorFromTag(out Sec, l->arg1, hidx))
+      for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
+           hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
       {
         Pusher P = SpawnThinker(Pusher);
-        P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, Sec-&XLevel.Sectors[0]);
+        P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
       }
       break;
 
@@ -5136,10 +5136,10 @@ final EntityEx GetPushThing(int s)
       if (l->arg1)
       {
         // [RH] Find thing by sector
-        for (int hidx = XLevel.FindSectorFromTag(out Sec, l->arg1); hidx >= 0;
-             hidx = XLevel.FindSectorFromTag(out Sec, l->arg1, hidx))
+        for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
+             hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
         {
-          int ssnum = Sec-&XLevel.Sectors[0];
+          int ssnum = sec-&XLevel.Sectors[0];
           EntityEx thing = GetPushThing(ssnum);
           if (thing)
           {
@@ -5210,11 +5210,11 @@ final EntityEx GetPushThing(int s)
   }
 
   // Now create pushers for any sectors that don't already have them.
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, tag); hidx >= 0;
-       hidx = XLevel.FindSectorFromTag(out Sec, tag, hidx))
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, tag); hidx >= 0;
+       hidx = XLevel.FindSectorFromTag(out sec, tag, hidx))
   {
-    int secnum = Sec-&XLevel.Sectors[0];
+    int secnum = sec-&XLevel.Sectors[0];
     for (P = Collection; P; P = P.AdjustLink)
     {
       if (P.Affectee == secnum) break;
@@ -5270,10 +5270,10 @@ final EntityEx GetPushThing(int s)
 int EV_SectorSetPlaneReflection(int Arg1, int Arg2, int Arg3, int Arg4,
   int Arg5)
 {
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx)) {
-    Sec.floor.MirrorAlpha = float(255-Arg2)/255.0;
-    Sec.ceiling.MirrorAlpha = float(255-Arg3)/255.0;
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx)) {
+    sec.floor.MirrorAlpha = float(255-Arg2)/255.0;
+    sec.ceiling.MirrorAlpha = float(255-Arg3)/255.0;
   }
   return 1;
 }
@@ -5325,126 +5325,87 @@ int EV_SectorSetPlaneReflection(int Arg1, int Arg2, int Arg3, int Arg4,
 //  EV_GlassBreak
 //
 //==========================================================================
+/*final*/ bool EV_GlassBreak (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, line_t *Line, EntityEx A) {
+  int Quest1, Quest2;
 
-/*final*/ bool EV_GlassBreak(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  line_t *Line, EntityEx A)
-{
-  bool    switched;
-  ubyte    Quest1;
-  ubyte    Quest2;
-  float   x;
-  float   y;
-  int     i;
-  EntityEx  glass;
-  float   an;
-  float   speed;
+  if (!Line) return false;
+  if (Line->flags&ML_TWOSIDED) Line->flags &= ~(ML_BLOCKING|ML_BLOCKEVERYTHING);
 
-  if (!Line)
-  {
-    return false;
-  }
-  if (Line->flags&ML_TWOSIDED)
-  {
-    Line->flags &= ~(ML_BLOCKING|ML_BLOCKEVERYTHING);
-  }
-  switched = ChangeSwitchTexture(Line->sidenum[0], false,
-    'switches/normbutn', Quest1);
+  bool switched = ChangeSwitchTexture(Line->sidenum[0], false, 'switches/normbutn', Quest1);
   Line->special = 0;
-  if (Line->sidenum[1] != -1)
-  {
-    if (ChangeSwitchTexture(Line->sidenum[1], false, 'switches/normbutn',
-      Quest2))
-    {
-      switched = true;
-    }
-  }
-  else
-  {
+
+  if (Line->sidenum[1] != -1) {
+    if (ChangeSwitchTexture(Line->sidenum[1], false, 'switches/normbutn', Quest2)) switched = true;
+  } else {
     Quest2 = Quest1;
   }
-  if (switched)
-  {
-    if (!Arg1)
-    {
-      // Break some glass
-      x = Line->v1->x+(Line->v2->x-Line->v1->x)/2.0;
-      y = Line->v1->y+(Line->v2->y-Line->v1->y)/2.0;
+
+  if (switched) {
+    if (!Arg1) {
+      // break some glass
+      float x = Line->v1->x+(Line->v2->x-Line->v1->x)/2.0;
+      float y = Line->v1->y+(Line->v2->y-Line->v1->y)/2.0;
       x += (Line->frontsector->soundorg.x-x)/5.0;
       y += (Line->frontsector->soundorg.y-y)/5.0;
 
-      for (i = 0; i < 7; i++)
-      {
-        glass = Spawn(GlassJunk, vector(x, y, EntityEx::ONFLOORZ));
+      foreach (; 0..7) {
+        EntityEx glass = Spawn(GlassJunk, vector(x, y, EntityEx::ONFLOORZ));
+        if (!glass || glass.IsDestroyed) continue;
         glass.Origin.z += 24.0;
         glass.SetState(GetStatePlus(glass.IdleState, P_Random()%glass.Health, IgnoreJump:true));
-        an = Random()*360.0;
+        if (glass.IsDestroyed) continue;
+        float an = Random()*360.0;
         glass.Angles.yaw = an;
-        speed = Random()*4.0*35.0;
+        float speed = Random()*4.0*35.0;
         glass.Velocity.x = cos(an)*speed;
         glass.Velocity.y = sin(an)*speed;
         glass.Velocity.z = Random()*8.0*35.0;
       }
     }
-    if (Quest1 || Quest2)
-    {
-      // Up stats and signal this mission is complete
-      if (!A)
-      {
-        for (i = 0; i < MAXPLAYERS; ++i)
-        {
-          if (Game.Players[i] && Game.Players[i].bSpawned)
-          {
+
+    if (Quest1 || Quest2) {
+      // up stats and signal this mission is complete
+      if (!A) {
+        foreach (int i; 0..MAXPLAYERS) {
+          if (Game.Players[i] && Game.Players[i].bSpawned) {
             A = EntityEx(Game.Players[i].MO);
             break;
           }
         }
       }
-      if (A && A.bIsPlayer)
-      {
+
+      if (A && A.bIsPlayer) {
         A.GiveInventoryType(QuestItem29);
         A.GiveInventoryType(class!Inventory(FindClass('UpgradeAccuracy')));
         A.GiveInventoryType(class!Inventory(FindClass('UpgradeStamina')));
       }
     }
   }
-  //  We already changed the switch texture, so don't make the main code
-  // switch it back.
+
+  // we already changed the switch texture, so don't make the main code switch it back
   return false;
 }
+
 
 //==========================================================================
 //
 //  EV_SendToCommunicator
 //
 //==========================================================================
+/*final*/ bool EV_SendToCommunicator (EntityEx A, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Side) {
+  if (Arg2 && Side) return false;
 
-/*final*/ bool EV_SendToCommunicator(EntityEx A, int Arg1, int Arg2, int Arg3,
-  int Arg4, int Arg5, int Side)
-{
-  if (Arg2 && Side)
-  {
-    return false;
-  }
-
-  if (A && A.bIsPlayer && A.FindInventory(Communicator))
-  {
-    if (!Arg4)
-    {
-      PlayerEx(A.Player).SetObjectives(Arg1);
-    }
+  if (A && A.bIsPlayer && A.FindInventory(Communicator)) {
+    if (!Arg4) PlayerEx(A.Player).SetObjectives(Arg1);
 
     PlayerEx(A.Player).ClientVoice(Arg1);
 
-    if (Arg3 == 0)
-    {
-      A.Player.cprint("Incoming Message");
-    }
-    else if (Arg3 == 1)
-    {
-      A.Player.cprint("Incoming Message from BlackBird");
-    }
+         if (Arg3 == 0) A.Player.cprint("Incoming Message");
+    else if (Arg3 == 1) A.Player.cprint("Incoming Message from BlackBird");
+
     return true;
   }
+
   return false;
 }
 
@@ -5575,164 +5536,107 @@ override void AcsWarp (Entity Activator, int tid, float xofs, float yofs, float 
 //  ForceLightning
 //
 //==========================================================================
-
-/*final*/ void ForceLightning(int Mode)
-{
+/*final*/ void ForceLightning (int Mode) {
   LightningThinker Lightning = none;
   Thinker Th;
-  foreach AllThinkers(LightningThinker, Th)
-  {
+  foreach AllThinkers(LightningThinker, Th) {
     Lightning = LightningThinker(Th);
     break;
   }
-  if (!Lightning)
-  {
+  if (!Lightning) {
     Lightning = SpawnThinker(LightningThinker);
+    if (!Lightning || Lightning.IsDestroyed) return;
     Lightning.Init();
   }
   Lightning.ForceLightning(Mode);
 }
+
 
 //==========================================================================
 //
 //  ModToDamageType
 //
 //==========================================================================
-
-final name ModToDamageType(int Mod)
-{
-  switch (Mod)
-  {
-  case 9:
-    return 'BFGSplash';
-  case 12:
-    return 'Drowning';
-  case 13:
-    return 'Slime';
-  case 14:
-    return 'Fire';
-  case 15:
-    return 'Crush';
-  case 16:
-    return 'Telefrag';
-  case 17:
-    return 'Falling';
-  case 18:
-    return 'Suicide';
-  case 20:
-    return 'Exit';
-  case 22:
-    return 'Melee';
-  case 23:
-    return 'Railgun';
-  case 24:
-    return 'Ice';
-  case 25:
-    return 'Disintegrate';
-  case 26:
-    return 'Poison';
-  case 27:
-    return 'Electric';
-  case 1000:
-    return 'Massacre';
-  default:
-    return '';
+/*final*/ name ModToDamageType (int Mod) {
+  switch (Mod) {
+    case 9: return 'BFGSplash';
+    case 12: return 'Drowning';
+    case 13: return 'Slime';
+    case 14: return 'Fire';
+    case 15: return 'Crush';
+    case 16: return 'Telefrag';
+    case 17: return 'Falling';
+    case 18: return 'Suicide';
+    case 20: return 'Exit';
+    case 22: return 'Melee';
+    case 23: return 'Railgun';
+    case 24: return 'Ice';
+    case 25: return 'Disintegrate';
+    case 26: return 'Poison';
+    case 27: return 'Electric';
+    case 1000: return 'Massacre';
+    default: return '';
   }
 }
+
 
 //==========================================================================
 //
 //  PolyThrustMobj
 //
 //==========================================================================
-
-override void PolyThrustMobj(Entity Other, TVec thrustDir, polyobj_t *po)
-{
+override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
   float force;
   PolyobjThinker pe;
 
-  if (!EntityEx(Other).bShootable && !Other.bIsPlayer)
-  {
-    return;
-  }
+  if (!EntityEx(Other).bShootable && !Other.bIsPlayer) return;
 
   pe = PolyobjThinker(po->SpecialData);
-  if (pe)
-  {
-    if (pe.IsA('PolyobjRotator'))
-    {
-      force = pe.thrust_force*8.0;
-    }
-    else
-    {
-      force = pe.thrust_force*3.0;
-    }
-
-    if (force < 1.0)
-    {
-      force = 1.0;
-    }
-    else if (force > 128.0)
-    {
-      force = 128.0;
-    }
-  }
-  else
-  {
+  if (pe) {
+    force = fclamp(pe.thrust_force*(pe isa 'PolyobjRotator' ? 8.0 : 3.0), 1.0, 128.0);
+  } else {
     force = 1.0;
   }
 
   Other.Velocity += (force*thrustDir)*2.0;
-  if (po->bCrush)
-  {
-    TVec testPos;
-
-    testPos = Other.Origin+force*thrustDir*Game.frametime;
-    if (po->bHurtOnTouch || !Other.CheckPosition(testPos))
-    {
-      // Damage other type of actors
+  if (po->bCrush) {
+    TVec testPos = Other.Origin+force*thrustDir*Game.frametime;
+    if (po->bHurtOnTouch || !Other.CheckPosition(testPos)) {
+      // damage other type of actors
       EntityEx(Other).Damage(none, none, 3, 'Crush', spawnBlood:true);
     }
   }
 }
+
 
 //==========================================================================
 //
 //  PolyCrushMobj
 //
 //==========================================================================
-
-override void PolyCrushMobj(Entity Other, polyobj_t *po)
-{
-  if (po->bCrush)
-  {
-    //  Crunch Ice Corpses
-    if (EntityEx(Other).bIceCorpse)
-    {
-      // Crush Ice corpses
+override void PolyCrushMobj (Entity Other, polyobj_t *po) {
+  if (po->bCrush) {
+    // crunch ice corpses
+    if (EntityEx(Other).bIceCorpse) {
+      // crush ice corpses
       Actor(Other).A_FreezeDeathChunks();
       return;
     }
 
-    //  Crunch bodies to giblets
-    if (EntityEx(Other).bCorpse && !EntityEx(Other).bDontGib && Other.Health <= 0)
-    {
+    // crunch bodies to giblets
+    if (EntityEx(Other).bCorpse && !EntityEx(Other).bDontGib && Other.Health <= 0) {
       bool CanDestroy = false;
-      if (!EntityEx(Other).bNoBlood)
-      {
-        class c = FindClass('RealGibs');
 
-        if (c)
-        {
-          if (!FindClassState(GetClassReplacement(c), 'Spawn') ||
-            !AreStateSpritesPresent(FindClassState(GetClassReplacement(c), 'Spawn')))
-          {
-            c = none;
-          }
+      if (!EntityEx(Other).bNoBlood) {
+        auto c = class!Actor(FindClass('RealGibs'));
+        c = class!Actor(c.Replacement);
+
+        if (c) {
+          state sst = FindClassState(c, 'Spawn');
+          if (!sst || !AreStateSpritesPresent(sst)) c = none;
         }
 
-        if (c)
-        {
+        if (c) {
           Actor Gib = SpawnEntityChecked(class!Actor, RealGibs);
           if (Gib) {
             Gib.RenderStyle = EntityEx(Other).RenderStyle;
@@ -5740,95 +5644,64 @@ override void PolyCrushMobj(Entity Other, polyobj_t *po)
             Gib.Height = 0.0;
             Gib.Radius = 0.0;
             Gib.CopyTranslations(Other);
-            /*k8: really?
-            if (EntityEx(Other).BloodTranslation && !Gib.bDontTranslate) {
-              Gib.Translation = EntityEx(Other).BloodTranslation;
-            }
-            */
+            //k8: really?
+            //if (EntityEx(Other).BloodTranslation && !Gib.bDontTranslate) Gib.Translation = EntityEx(Other).BloodTranslation;
             Gib.PlaySound('misc/fallingsplat', /*CHAN_BODY*/CHAN_AUTO);
           }
           CanDestroy = true;
-        }
-        else
-        {
+        } else {
           EntityEx(Other).bDontGib = true;
         }
       }
-      if (Other.bIsPlayer)
-      {
+
+      if (Other.bIsPlayer) {
         Other.bColideWithWorld = false;
         Other.bColideWithThings = false;
         EntityEx(Other).bDontGib = true;
         EntityEx(Other).bInvisible = true;
-      }
-      else
-      {
+      } else {
         if (CanDestroy) Other.Destroy();
       }
     }
   }
 }
 
+
 //==========================================================================
 //
 //  PolyBusy
 //
 //==========================================================================
-
-override bool PolyBusy(int polyobj)
-{
+override bool PolyBusy (int polyobj) {
   polyobj_t *poly = XLevel.GetPolyobj(polyobj);
-  if (!poly || !poly->SpecialData)
-  {
-    return false;
-  }
-  else
-  {
-    return true;
-  }
+  if (!poly || !poly->SpecialData) return false;
+  return true;
 }
+
 
 //==========================================================================
 //
 //  ThingCount
 //
 //==========================================================================
+override int ThingCount (int type, name TypeName, int tid, int SectorTag) {
+  class!EntityEx moType;
 
-override int ThingCount(int type, name TypeName, int tid, int SectorTag)
-{
-  class!EntityEx   moType;
+  if (!(type+tid) && !TypeName) return 0; // nothing to count
 
-  if (!(type+tid) && !TypeName)
-  {
-    // Nothing to count
-    return 0;
-  }
-  if (TypeName)
-  {
+  if (TypeName) {
     moType = class!EntityEx(FindClassNoCase(TypeName));
-    if (!moType)
-    {
-      return 0;
-    }
-  }
-  else
-  {
-    moType = class!EntityEx(FindClassFromScriptId(type,
-      LineSpecialGameInfo(Game).GameFilterFlag));
+    if (!moType) return 0;
+  } else {
+    moType = class!EntityEx(FindClassFromScriptId(type, LineSpecialGameInfo(Game).GameFilterFlag));
   }
 
-  //  Count things.
+  // count things
   int Count = DoThingCount(moType, tid, SectorTag);
-  if (moType)
-  {
-    //  If this class has a replacement, count number of instances of
-    // replacement class too.
-    class!EntityEx RepType = class!EntityEx(GetClassReplacement(
-      moType));
-    if (RepType != moType)
-    {
-      Count += DoThingCount(RepType, tid, SectorTag);
-    }
+  if (moType) {
+    // if this class has a replacement, count number of instances of replacement class too
+    class!EntityEx RepType = class!EntityEx(GetClassReplacement( moType));
+    if (RepType && RepType != moType) Count += DoThingCount(RepType, tid, SectorTag);
   }
 
   return Count;
@@ -5840,7 +5713,7 @@ override int ThingCount(int type, name TypeName, int tid, int SectorTag)
 //  DoThingCount
 //
 //==========================================================================
-final int DoThingCount (class!EntityEx moType, int tid, int SectorTag) {
+/*final*/ int DoThingCount (class!EntityEx moType, int tid, int SectorTag) {
   int count = 0;
   if (tid) {
     // count TID things
@@ -5870,69 +5743,36 @@ final int DoThingCount (class!EntityEx moType, int tid, int SectorTag) {
 //  SectorDamage
 //
 //==========================================================================
-
-override void SectorDamage(int Tag, int Amount, name DamageType,
-  name ProtectionType, int Flags)
-{
+override void SectorDamage (int Tag, int Amount, name DamageType, name ProtectionType, int Flags) {
   class!Inventory ProtectClass = class!Inventory(FindClassNoCase(ProtectionType));
 
-  sector_t *Sec;
-  for (int hidx = XLevel.FindSectorFromTag(out Sec, Tag); hidx >= 0; hidx = XLevel.FindSectorFromTag(out Sec, Tag, hidx)) {
-    //sector_t *Sec = &XLevel.Sectors[SecNum];
-    Entity Ent;
+  sector_t *sec;
+  for (int hidx = XLevel.FindSectorFromTag(out sec, Tag); hidx >= 0; hidx = XLevel.FindSectorFromTag(out sec, Tag, hidx)) {
     Entity entNext;
-
-    for (Ent = Sec->ThingList; Ent; Ent = entNext)
-    {
+    for (Entity Ent = sec->ThingList; Ent; Ent = entNext) {
       entNext = Ent.SNext;
+      EntityEx ee = EntityEx(Ent);
+      if (!ee) continue;
 
-      if (!EntityEx(Ent).bShootable)
-      {
-        continue;
-      }
-      if (!(Flags&DAMAGE_NONPLAYERS) && !Ent.bIsPlayer)
-      {
-        continue;
-      }
-      if (!(Flags&DAMAGE_PLAYERS) && Ent.bIsPlayer)
-      {
-        continue;
-      }
+      if (!ee.bShootable) continue;
+      if (!(Flags&DAMAGE_NONPLAYERS) && !Ent.bIsPlayer) continue;
+      if (!(Flags&DAMAGE_PLAYERS) && Ent.bIsPlayer) continue;
 
-      if (!(Flags&DAMAGE_IN_AIR) && Ent.Origin.z !=
-        GetPlanePointZ(ref Sec->floor, Ent.Origin) && !Ent.WaterLevel)
-      {
-        continue;
-      }
+      if (!(Flags&DAMAGE_IN_AIR) && !Ent.WaterLevel && Ent.Origin.z != GetPlanePointZ(ref sec->floor, Ent.Origin)) continue;
 
-      if (ProtectClass)
-      {
-        if (!(Flags&DAMAGE_SUBCLASSES_PROTECT))
-        {
-          if (EntityEx(Ent).FindInventory(ProtectClass))
-          {
-            continue;
-          }
-        }
-        else
-        {
+      if (ProtectClass) {
+        if (!(Flags&DAMAGE_SUBCLASSES_PROTECT)) {
+          if (ee.FindInventory(ProtectClass)) continue;
+        } else {
           Inventory Item;
-
-          for (Item = EntityEx(Ent).Inventory; Item; Item = Item.Inventory)
-          {
-            if (Item.IsA(ProtectionType))
-            {
-              break;
-            }
+          for (Item = ee.Inventory; Item; Item = Item.Inventory) {
+            if (Item.IsA(ProtectionType)) break;
           }
-          if (Item)
-          {
-            continue;
-          }
+          if (Item) continue;
         }
       }
 
-      EntityEx(Ent).Damage(none, none, Amount, DamageType/*, spawnBlood:true*/);
+      ee.Damage(none, none, Amount, DamageType/*, spawnBlood:true*/);
     }
   }
 }
@@ -5942,7 +5782,7 @@ override void SectorDamage(int Tag, int Amount, name DamageType,
 //
 //  SpawnMapThing
 //
-//  The fields of the mapthing should already be in host byte order.
+//  the fields in `mthing` should already be in host byte order
 //
 //==========================================================================
 override void SpawnMapThing (mthing_t *mthing) {
@@ -5970,7 +5810,7 @@ override void SpawnMapThing (mthing_t *mthing) {
   // check for player starts 1 to 4
   bool IsPlayerStart = false;
   if (mthing.type >= 1 && mthing.type <= 4) IsPlayerStart = true;
-  // Check for player starts 5 to 8
+  // check for player starts 5 to 8
   if (mthing.type >= ExtPlayersBase && mthing.type < ExtPlayersBase+4) {
     // change type to range 5-8
     mthing.type = 5+mthing.type-ExtPlayersBase;
@@ -5982,6 +5822,7 @@ override void SpawnMapThing (mthing_t *mthing) {
          if (!Game.netgame) spawnMask = MTF_GSINGLE;
     else if (Game.deathmatch) spawnMask = MTF_GDEATHMATCH;
     else spawnMask = MTF_GCOOP;
+
     if (!(mthing.options&spawnMask)) return;
 
     // check current skill with spawn flags
@@ -6032,6 +5873,7 @@ override void SpawnMapThing (mthing_t *mthing) {
   if (!moClass) {
     // can't find thing type
     if (mthing.type == 9200) {
+      // decal
       auto dcs = Spawn(Unknown, default, default, mthing, AllowReplace:false);
       dcs.bSolid = false;
       TAVec agl;
@@ -6088,7 +5930,7 @@ override void SpawnMapThing (mthing_t *mthing) {
 
   // spawn it
   EntityEx thg = EntityEx(SpawnThinker(moClass, default, default, mthing, AllowReplace:false));
-  if (thg && thg.bFixMapthingPos) thg.FixMapthingPos();
+  if (thg && !thg.IsDestroyed && thg.bFixMapthingPos) thg.FixMapthingPos();
   //print("SpawnMapThing: '%C' (%d) height=%f (defheight=%f); org=%s", thg, mthing.type, thg.Height, moClass.default.Height, thg.Origin);
   //if (moClass.default.bSolid && !thg.bSolid) print("  ****FUUUUUUU");
 
