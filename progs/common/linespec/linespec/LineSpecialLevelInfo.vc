@@ -2309,26 +2309,22 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  Start strobing lights (usually from a trigger)
 //
 //==========================================================================
-
-/*final*/ int EV_StartLightStrobing(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  int     Ret;
+/*final*/ int EV_StartLightStrobing (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  int Ret = 0;
   sector_t *Sec;
-  Strobe    Flash;
-
-  Ret = false;
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
     if (Sec->LightingData) continue;
-
-    Ret = true;
-    Flash = SpawnThinker(Strobe);
-    Flash.Init(Sec, Arg3, Arg2, Arg4);
+    Strobe Flash = SpawnThinker(Strobe);
+    if (Flash && !Flash.IsDestroyed) {
+      Ret = 1;
+      Flash.Init(Sec, Arg3, Arg2, Arg4);
+    }
   }
   return Ret;
 }
+
 
 //==========================================================================
 //
@@ -2337,28 +2333,22 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  Turn line's tag lights on
 //
 //==========================================================================
-
-/*final*/ int EV_TagLightTurnOn(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
-{
+/*final*/ int EV_TagLightTurnOn (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *Sec;
-  int     j;
-  sector_t *TSec;
-  int     Max;
-
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Max = 0;
-    for (j = 0; j < Sec.lines.length; j++)
-    {
-      TSec = getNextSector(Sec->lines[j], Sec);
+    int Max = 0;
+    foreach (line_t *ln; Sec.lines) {
+      sector_t *TSec = getNextSector(ln, Sec);
       if (!TSec) continue;
-      if (TSec->params.lightlevel > Max) Max = TSec->params.lightlevel;
+      Max = max(Max, TSec->params.lightlevel);
     }
     Sec->params.lightlevel = Max;
   }
   return 1;
 }
+
 
 //==========================================================================
 //
@@ -2367,150 +2357,107 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  Turn line's tag lights off
 //
 //==========================================================================
-
-/*final*/ int EV_TurnTagLightsOff(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ int EV_TurnTagLightsOff (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *Sec;
-  int     i;
-  int     Min;
-  sector_t *TSec;
-
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Min = Sec->params.lightlevel;
-    for (i = 0; i < Sec.lines.length; i++)
-    {
-      TSec = getNextSector(Sec->lines[i], Sec);
+    int Min = Sec->params.lightlevel;
+    foreach (line_t *ln; Sec.lines) {
+      sector_t *TSec = getNextSector(ln, Sec);
       if (!TSec) continue;
-      if (TSec->params.lightlevel < Min) Min = TSec->params.lightlevel;
+      Min = min(Min, TSec->params.lightlevel);
     }
     Sec->params.lightlevel = Min;
   }
   return 1;
 }
 
+
 //============================================================================
 //
 //  EV_LightRaiseByValue
 //
 //============================================================================
-
-/*final*/ bool EV_LightRaiseByValue(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_LightRaiseByValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *Sec;
-  bool    Rtn;
-
-  Rtn = false;
+  bool Rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Sec->params.lightlevel += Arg2;
-    if (Sec->params.lightlevel > 255)
-    {
-      Sec->params.lightlevel = 255;
-    }
+    Sec->params.lightlevel = clamp(Sec->params.lightlevel+Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
 }
+
 
 //============================================================================
 //
 //  EV_LightLowerByValue
 //
 //============================================================================
-
-/*final*/ bool EV_LightLowerByValue(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_LightLowerByValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *Sec;
-  bool    Rtn;
-
-  Rtn = false;
+  bool Rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Sec->params.lightlevel -= Arg2;
-    if (Sec->params.lightlevel < 0)
-    {
-      Sec->params.lightlevel = 0;
-    }
+    Sec->params.lightlevel = clamp(Sec->params.lightlevel-Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
 }
+
 
 //============================================================================
 //
 //  EV_LightChangeToValue
 //
 //============================================================================
-
-/*final*/ bool EV_LightChangeToValue(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
+/*final*/ bool EV_LightChangeToValue (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   sector_t *Sec;
-  bool    Rtn;
-
-  Rtn = false;
+  bool Rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Sec->params.lightlevel = Arg2;
-    if (Sec->params.lightlevel < 0)
-    {
-      Sec->params.lightlevel = 0;
-    }
-    else if (Sec->params.lightlevel > 255)
-    {
-      Sec->params.lightlevel = 255;
-    }
+    Sec->params.lightlevel = clamp(Arg2, 0, 255);
     Rtn = true;
   }
   return Rtn;
 }
+
 
 //============================================================================
 //
 //  EV_SpawnLight
 //
 //============================================================================
-
-/*final*/ bool EV_SpawnLight(int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-  int Type)
-{
-  LightEffect Light;
+/*final*/ bool EV_SpawnLight (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int Type) {
   sector_t *Sec;
-  bool    Rtn;
-
-  Rtn = false;
+  bool Rtn = false;
   for (int hidx = XLevel.FindSectorFromTag(out Sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out Sec, Arg1, hidx))
   {
-    Light = SpawnThinker(LightEffect);
-    Light.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
-    Rtn = true;
+    LightEffect Light = SpawnThinker(LightEffect);
+    if (Light && !Light.IsDestroyed) {
+      Light.Init(Sec, Arg1, Arg2, Arg3, Arg4, Arg5, Type);
+      Rtn = true;
+    }
   }
   return Rtn;
 }
+
 
 //==========================================================================
 //
 //  EV_LightStop
 //
 //==========================================================================
-
-/*final*/ bool EV_LightStop(int Tag)
-{
-  Lighting    L;
-
-  foreach AllThinkers(Lighting, L)
-  {
-    if (IsSectorTagEqual(L.Sector, Tag))
-    {
+/*final*/ bool EV_LightStop (int Tag) {
+  Lighting L;
+  foreach AllThinkers(Lighting, L) {
+    if (IsSectorTagEqual(L.Sector, Tag)) {
       if (L.Sector->LightingData == L) L.Sector->LightingData = none;
       L.Destroy();
     }
@@ -2518,20 +2465,21 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   return true;
 }
 
+
 //==========================================================================
 //
 //  SpawnTransferWallLight
 //
 //==========================================================================
-
-/*final*/ void SpawnTransferWallLight(line_t *Line)
-{
-  WallLightTransfer Tr;
-
-  Tr = SpawnThinker(WallLightTransfer);
-  Tr.Init(Line->frontsector, Line->arg1, Line->arg2, Line->arg3,
-    Line->arg4, Line->arg5);
+/*final*/ void SpawnTransferWallLight (line_t *Line) {
+  if (Line) {
+    WallLightTransfer Tr = SpawnThinker(WallLightTransfer);
+    if (Tr && !Tr.IsDestroyed) {
+      Tr.Init(Line->frontsector, Line->arg1, Line->arg2, Line->arg3, Line->arg4, Line->arg5);
+    }
+  }
 }
+
 
 //**************************************************************************
 //
