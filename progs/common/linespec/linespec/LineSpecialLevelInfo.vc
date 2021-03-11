@@ -6163,35 +6163,15 @@ override void SpawnMapThing (mthing_t *mthing) {
 //  StartConversation
 //
 //==========================================================================
+bool StartConversation (EntityEx User, EntityEx UseOn) {
+  if (Game.netgame) return false;
+  if (!User || !User.bIsPlayer || User.Health <= 0) return false;
+  if (!UseOn || UseOn.Health <= 0) return false;
+  if (UseOn.bInCombat) return false; // this dude is too busy to talk right now
+  if (!UseOn.ConversationID) return false;
 
-bool StartConversation(EntityEx User, EntityEx UseOn)
-{
-  int SpeechNum;
-
-  if (Game.netgame)
-  {
-    return false;
-  }
-  if (!User || !User.bIsPlayer || User.Health <= 0)
-  {
-    return false;
-  }
-  if (!UseOn || UseOn.Health <= 0)
-  {
-    return false;
-  }
-  if (UseOn.bInCombat)
-  {
-    //  This dude is too busy to talk right now.
-    return false;
-  }
-  if (!UseOn.ConversationID)
-  {
-    return false;
-  }
-  SpeechNum = UseOn.GetSpeech();
-  if (SpeechNum)
-  {
+  int SpeechNum = UseOn.GetSpeech();
+  if (SpeechNum) {
     CurrentSpeaker = UseOn;
     CurrentSpeakingTo = User;
     OldSpeakerAngle = UseOn.Angles.yaw;
@@ -6199,73 +6179,63 @@ bool StartConversation(EntityEx User, EntityEx UseOn)
     User.PlaySound('misc/chat', CHAN_VOICE);
     StartSpeech(SpeechNum);
   }
+
   return true;
 }
+
 
 //==========================================================================
 //
 //  StartSpeech
 //
 //==========================================================================
-
-/*final*/ void StartSpeech(int SpeechNum)
-{
+/*final*/ void StartSpeech (int SpeechNum) {
   FRogueConSpeech *Speech;
   bool conJumped;
 
-  do
-  {
+  do {
     conJumped = false;
-    if (!SpeechNum)
-    {
+
+    if (!SpeechNum) {
       StopSpeech();
       return;
     }
-    if (SpeechNum < 0)
-    {
+
+    if (SpeechNum < 0) {
       Speech = &XLevel.GenericSpeeches[-SpeechNum-1];
-    }
-    else
-    {
+    } else {
       Speech = &XLevel.LevelSpeeches[SpeechNum-1];
     }
+
     if (Speech->JumpToConv &&
-      CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem1, 1) != -2 &&
-      CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem2, 1) != -2 &&
-      CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem3, 1) != -2)
+        CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem1, 1) != -2 &&
+        CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem2, 1) != -2 &&
+        CheckForNeededItem(CurrentSpeakingTo, Speech->CheckItem3, 1) != -2)
     {
       CurrentSpeaker.CurrentSpeech = Speech->JumpToConv;
       SpeechNum = CurrentSpeaker.GetSpeech();
       conJumped = true;
     }
-  }
-  while (conJumped);
+  } while (conJumped);
   CurrentSpeechIndex = SpeechNum;
 
   PlayerEx(CurrentSpeakingTo.Player).ClientSpeech(CurrentSpeaker, SpeechNum);
 }
+
 
 //==========================================================================
 //
 //  GetClassFromID
 //
 //==========================================================================
-
-final class!EntityEx GetClassFromID(int ID)
-{
-  class Cls;
-  if (ID)
-  {
-    foreach AllClasses(EntityEx, Cls)
-    {
-      if (class!EntityEx(Cls).default.ConversationID == ID)
-      {
-        return class!EntityEx(Cls);
-      }
+final class!EntityEx GetClassFromID (int ID) {
+  if (ID) {
+    class Cls;
+    foreach AllClasses(EntityEx, Cls) {
+      if (class!EntityEx(Cls).default.ConversationID == ID) return class!EntityEx(Cls);
     }
-    print("Unknown item %d", ID);
+    printerror("Unknown item %d", ID);
   }
-
   return none;
 }
 
@@ -6300,28 +6270,26 @@ final class!EntityEx GetClassFromID(int ID)
   return -2;
 }
 
+
 //==========================================================================
 //
 //  StopSpeech
 //
 //==========================================================================
-
-/*final*/ void StopSpeech()
-{
+/*final*/ void StopSpeech () {
   CurrentSpeaker.Angles.yaw = OldSpeakerAngle;
   CurrentSpeaker = none;
   CurrentSpeakingTo = none;
   CurrentSpeechIndex = 0;
 }
 
+
 //==========================================================================
 //
 //  ConChoiceImpulse
 //
 //==========================================================================
-
-/*final*/ void ConChoiceImpulse(int ChoiceNum)
-{
+/*final*/ void ConChoiceImpulse (int ChoiceNum) {
   FRogueConSpeech *Speech;
   FRogueConChoice *Choice;
   //int SpeechNum;
@@ -6332,143 +6300,106 @@ final class!EntityEx GetClassFromID(int ID)
   Inventory Item;
   bool GaveItem;
 
-  if (ConversationSlideshow)
-  {
-    //  Resume conversation after slideshow.
+  if (ConversationSlideshow) {
+    // resume conversation after slideshow
     StartSpeech(CurrentSpeaker.GetSpeech());
     ConversationSlideshow = false;
     return;
   }
-  if (!CurrentSpeaker || !CurrentSpeechIndex)
-  {
-    return;
-  }
-  if (!ChoiceNum)
-  {
+
+  if (!CurrentSpeaker || !CurrentSpeechIndex) return;
+
+  if (!ChoiceNum) {
     StopSpeech();
     return;
   }
-  if (CurrentSpeechIndex < 0)
-  {
+
+  if (CurrentSpeechIndex < 0) {
     Speech = &XLevel.GenericSpeeches[-CurrentSpeechIndex-1];
-  }
-  else
-  {
+  } else {
     Speech = &XLevel.LevelSpeeches[CurrentSpeechIndex-1];
   }
+
   Choice = &Speech->Choices[ChoiceNum-1];
-  //  Check if player has needed items.
+  // check if player has needed items
   Item1 = CheckForNeededItem(CurrentSpeakingTo, Choice->NeedItem1, Choice->NeedAmount1);
   Item2 = CheckForNeededItem(CurrentSpeakingTo, Choice->NeedItem2, Choice->NeedAmount2);
   Item3 = CheckForNeededItem(CurrentSpeakingTo, Choice->NeedItem3, Choice->NeedAmount3);
-  if (Item1 == -2 || Item2 == -2 || Item3 == -2)
-  {
+  if (Item1 == -2 || Item2 == -2 || Item3 == -2) {
     CurrentSpeakingTo.Player.cprint("%s", Choice->TextNo);
     StopSpeech();
     return;
   }
+
   GaveItem = true;
-  if (Choice->GiveItem > 0)
-  {
+  if (Choice->GiveItem > 0) {
     ItemType = GetClassFromID(Choice->GiveItem);
-    if (ItemType)
-    {
+    if (ItemType) {
       Item = SpawnEntityChecked(class!Inventory, ItemType, default, default, default, false);
       if (Item) {
         // this shouldn't count for the item statistics
-        if (Item.bCountItem)
-        {
+        if (Item.bCountItem) {
           Item.bCountItem = false;
-          Level.TotalItems--;
+          --Level.TotalItems;
         }
         GaveItem = Item.TryPickup(CurrentSpeakingTo);
         if (!GaveItem) Item.Destroy();
       }
     }
   }
-  if (GaveItem)
-  {
-    if (Item1 != -1)
-    {
-      Item = CurrentSpeakingTo.FindInventory(
-        class!Inventory(GetClassFromID(Choice->NeedItem1)));
+
+  if (GaveItem) {
+    if (Item1 != -1) {
+      Item = CurrentSpeakingTo.FindInventory(class!Inventory(GetClassFromID(Choice->NeedItem1)));
       Item.Amount -= Choice->NeedAmount1;
-      if (Item.Amount <= 0)
-      {
-        Item.Destroy();
-      }
+      if (Item.Amount <= 0) Item.Destroy();
     }
-    if (Item2 != -1)
-    {
-      Item = CurrentSpeakingTo.FindInventory(
-        class!Inventory(GetClassFromID(Choice->NeedItem2)));
+    if (Item2 != -1) {
+      Item = CurrentSpeakingTo.FindInventory(class!Inventory(GetClassFromID(Choice->NeedItem2)));
       Item.Amount -= Choice->NeedAmount2;
-      if (Item.Amount <= 0)
-      {
-        Item.Destroy();
-      }
+      if (Item.Amount <= 0) Item.Destroy();
     }
-    if (Item3 != -1)
-    {
-      Item = CurrentSpeakingTo.FindInventory(
-        class!Inventory(GetClassFromID(Choice->NeedItem3)));
+    if (Item3 != -1) {
+      Item = CurrentSpeakingTo.FindInventory(class!Inventory(GetClassFromID(Choice->NeedItem3)));
       Item.Amount -= Choice->NeedAmount3;
-      if (Item.Amount <= 0)
-      {
-        Item.Destroy();
-      }
+      if (Item.Amount <= 0) Item.Destroy();
     }
   }
-  if (Choice->Objectives)
-  {
-    PlayerEx(CurrentSpeakingTo.Player).SetObjectives(Choice->Objectives);
-  }
-  if (!GaveItem)
-  {
+
+  if (Choice->Objectives) PlayerEx(CurrentSpeakingTo.Player).SetObjectives(Choice->Objectives);
+
+  if (!GaveItem) {
     CurrentSpeakingTo.Player.cprint("%s", Choice->TextNo);
-  }
-  else if (strcmp(Choice->TextOK, "") && strcmp(Choice->TextOK, "_"))
-  {
+  } else if (strcmp(Choice->TextOK, "") && strcmp(Choice->TextOK, "_")) {
     CurrentSpeakingTo.Player.cprint("%s", Choice->TextOK);
   }
-  if (Choice->Next < 0)
-  {
+
+  if (Choice->Next < 0) {
     CurrentSpeaker.CurrentSpeech = -Choice->Next;
-    if (!ConversationSlideshow)
-    {
-      StartSpeech(CurrentSpeaker.GetSpeech());
-    }
-  }
-  else
-  {
-    if (Choice->Next)
-    {
-      CurrentSpeaker.CurrentSpeech = Choice->Next;
-    }
+    if (!ConversationSlideshow) StartSpeech(CurrentSpeaker.GetSpeech());
+  } else {
+    if (Choice->Next) CurrentSpeaker.CurrentSpeech = Choice->Next;
     StopSpeech();
     ConversationSlideshow = false;
   }
 }
+
 
 //==========================================================================
 //
 //  AddPlayerCorpse
 //
 //==========================================================================
-
-/*final*/ void AddPlayerCorpse(EntityEx Corpse)
-{
-  if (bodyqueslot >= BodyQueSize)
-  {
-    // Too many player corpses - remove an old one
-    if (bodyque[bodyqueslot%BodyQueSize])
-    {
+/*final*/ void AddPlayerCorpse (EntityEx Corpse) {
+  if (bodyqueslot >= BodyQueSize) {
+    // too many player corpses, remove an old one
+    if (bodyque[bodyqueslot%BodyQueSize]) {
       bodyque[bodyqueslot%BodyQueSize].Destroy();
     }
   }
   bodyque[bodyqueslot%BodyQueSize] = Corpse;
   Corpse.Translation = XLevel.SetBodyQueueTrans(bodyqueslot%BodyQueSize, Corpse.Translation);
-  bodyqueslot++;
+  ++bodyqueslot;
 }
 
 
@@ -6556,73 +6487,66 @@ override void ParticleEffect (int count, int type1, int type2, TVec origin, floa
 //  UpdateParticle
 //
 //==========================================================================
-
-override void UpdateParticle(particle_t *p, float DeltaTime)
-{
-  float time2, time3;
-  float dvel;
-  float grav;
-
-  time2 = DeltaTime*10.0; // 15;
-  time3 = DeltaTime*15.0;
-  dvel = 4.0*DeltaTime;
-  grav = DeltaTime*p.gravity /*sv_gravity.value * 0.05*/;
+override void UpdateParticle (particle_t *p, float DeltaTime) {
+  float time2 = DeltaTime*10.0; // 15;
+  float time3 = DeltaTime*15.0;
+  float dvel = 4.0*DeltaTime;
+  float grav = DeltaTime*p.gravity /*sv_gravity.value * 0.05*/;
   p.vel.z -= grav;
 
-  switch (p.type)
-  {
-  case pt_static:
-    p.vel += p.accel*DeltaTime;
-    break;
+  switch (p.type) {
+    case pt_static:
+      p.vel += p.accel*DeltaTime;
+      break;
 
-  case pt_explode:
-    p.ramp += time2;
-    if (p.ramp >= 16.0) {
-      p.die = -1.0;
-    } else {
-      p.color = LineSpecialGameInfo.default.ramp1[int(p.ramp)];
-    }
-    p.vel.x += p.vel.x*dvel;
-    p.vel.y += p.vel.y*dvel;
-    p.vel.z += p.vel.z*dvel;
-    p.vel += p.accel*DeltaTime;
-    p.vel.z -= grav;
-    break;
+    case pt_explode:
+      p.ramp += time2;
+      if (p.ramp >= 16.0) {
+        p.die = -1.0;
+      } else {
+        p.color = LineSpecialGameInfo.default.ramp1[int(p.ramp)];
+      }
+      p.vel.x += p.vel.x*dvel;
+      p.vel.y += p.vel.y*dvel;
+      p.vel.z += p.vel.z*dvel;
+      p.vel += p.accel*DeltaTime;
+      p.vel.z -= grav;
+      break;
 
-  case pt_explode2:
-    p.ramp += time3;
-    if (p.ramp >= 16.0) {
-      p.die = -1.0;
-    } else {
-      p.color = LineSpecialGameInfo.default.ramp2[int(p.ramp)];
-    }
-    p.vel.x -= p.vel.x*DeltaTime;
-    p.vel.y -= p.vel.y*DeltaTime;
-    p.vel.z -= p.vel.z*DeltaTime;
-    p.vel += p.accel*DeltaTime;
-    p.vel.z -= grav;
-    break;
+    case pt_explode2:
+      p.ramp += time3;
+      if (p.ramp >= 16.0) {
+        p.die = -1.0;
+      } else {
+        p.color = LineSpecialGameInfo.default.ramp2[int(p.ramp)];
+      }
+      p.vel.x -= p.vel.x*DeltaTime;
+      p.vel.y -= p.vel.y*DeltaTime;
+      p.vel.z -= p.vel.z*DeltaTime;
+      p.vel += p.accel*DeltaTime;
+      p.vel.z -= grav;
+      break;
 
-  case pt_fountain:
-    p.vel += p.accel*DeltaTime;
-    p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0/51.0*35.0*DeltaTime)<<24);
-    break;
+    case pt_fountain:
+      p.vel += p.accel*DeltaTime;
+      p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0/51.0*35.0*DeltaTime)<<24);
+      break;
 
-  case pt_spark:
-    p.vel += p.accel*DeltaTime;
-    p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0/10.0*35.0*DeltaTime)<<24);
-    break;
+    case pt_spark:
+      p.vel += p.accel*DeltaTime;
+      p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0/10.0*35.0*DeltaTime)<<24);
+      break;
 
-  case pt_ice_chunk:
-    p.vel.x -= p.vel.x*DeltaTime;
-    p.vel.y -= p.vel.y*DeltaTime;
-    p.vel.z += p.accel.z*DeltaTime;
-    break;
+    case pt_ice_chunk:
+      p.vel.x -= p.vel.x*DeltaTime;
+      p.vel.y -= p.vel.y*DeltaTime;
+      p.vel.z += p.accel.z*DeltaTime;
+      break;
 
-  case pt_rail:
-    p.vel += p.accel*DeltaTime;
-    p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0*DeltaTime)<<24);
-    break;
+    case pt_rail:
+      p.vel += p.accel*DeltaTime;
+      p.color = (p.color&0x00ffffff)|(int(float(p.color>>24)-255.0*DeltaTime)<<24);
+      break;
   }
 }
 
@@ -6632,62 +6556,45 @@ override void UpdateParticle(particle_t *p, float DeltaTime)
 //  AcsFadeRange
 //
 //==========================================================================
-
-override void AcsFadeRange(float BlendR1, float BlendG1, float BlendB1, float BlendA1,
-  float BlendR2, float BlendG2, float BlendB2, float BlendA2,
-  float Duration, Entity Activator)
+override void AcsFadeRange (float BlendR1, float BlendG1, float BlendB1, float BlendA1,
+                            float BlendR2, float BlendG2, float BlendB2, float BlendA2,
+                            float Duration, Entity Activator)
 {
-  if (Activator)
-  {
-    if (!Activator.bIsPlayer)
-    {
-      return;
-    }
-    StartFlashFader(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2,
-      BlendG2, BlendB2, BlendA2, Duration, Activator);
-  }
-  else
-  {
+  if (Activator) {
+    if (!Activator.bIsPlayer) return;
+    StartFlashFader(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2, BlendG2, BlendB2, BlendA2, Duration, Activator);
+  } else {
     BasePlayer P;
-    foreach AllActivePlayers(P)
-    {
-      StartFlashFader(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2,
-        BlendG2, BlendB2, BlendA2, Duration, P.MO);
+    foreach AllActivePlayers(P) {
+      StartFlashFader(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2, BlendG2, BlendB2, BlendA2, Duration, P.MO);
     }
   }
 }
+
 
 //==========================================================================
 //
 //  StartFlashFader
 //
 //==========================================================================
-
-/*final*/ void StartFlashFader(float BlendR1, float BlendG1, float BlendB1,
-  float BlendA1, float BlendR2, float BlendG2, float BlendB2,
-  float BlendA2, float Duration, Entity ForWho)
+/*final*/ void StartFlashFader (float BlendR1, float BlendG1, float BlendB1, float BlendA1,
+                                float BlendR2, float BlendG2, float BlendB2, float BlendA2,
+                                float Duration, Entity ForWho)
 {
   PlayerEx P = PlayerEx(ForWho.Player);
-  if (Duration <= 0.0)
-  {
+  if (Duration <= 0.0) {
     P.BlendR = BlendR2;
     P.BlendG = BlendG2;
     P.BlendB = BlendB2;
     P.BlendA = BlendA2;
-  }
-  else
-  {
-    if (BlendA1 < 0.0)
-    {
-      if (P.BlendA <= 0.0)
-      {
+  } else {
+    if (BlendA1 < 0.0) {
+      if (P.BlendA <= 0.0) {
         BlendR1 = BlendR2;
         BlendG1 = BlendG2;
         BlendB1 = BlendB2;
         BlendA1 = 0.0;
-      }
-      else
-      {
+      } else {
         BlendR1 = P.BlendR;
         BlendG1 = P.BlendG;
         BlendB1 = P.BlendB;
@@ -6695,8 +6602,9 @@ override void AcsFadeRange(float BlendR1, float BlendG1, float BlendB1, float Bl
       }
     }
     FlashFader F = SpawnThinker(FlashFader);
-    F.Init(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2, BlendG2, BlendB2,
-      BlendA2, Duration, EntityEx(ForWho));
+    if (F && !F.IsDestroyed) {
+      F.Init(BlendR1, BlendG1, BlendB1, BlendA1, BlendR2, BlendG2, BlendB2, BlendA2, Duration, EntityEx(ForWho));
+    }
   }
 }
 
@@ -6801,42 +6709,38 @@ override void SetMarineSprite (int Tid, name SrcClassName, Entity Activator) {
   }
 }
 
+
 //==========================================================================
 //
 //  GetDefaultDoorSound
 //
 //==========================================================================
-
-name GetDefaultDoorSound(sector_t *Sector)
-{
+name GetDefaultDoorSound (sector_t *Sector) {
   return DefaultDoorSound;
 }
+
 
 //==========================================================================
 //
 //  GetClassSpawnFlags
 //
 //==========================================================================
-
-int GetPClassSpawnFlags()
-{
+int GetPClassSpawnFlags () {
   return 0;
 }
+
 
 //==========================================================================
 //
 //  GetDehackedItemType
 //
 //==========================================================================
-
-class!Inventory GetDehackedItemType(EntityEx Ent)
-{
+class!Inventory GetDehackedItemType (EntityEx Ent) {
   return none;
 }
 
 
-defaultproperties
-{
+defaultproperties {
   ExtPlayersBase = 4001;
   Lock103Message = "That doesn't seem to work";
   BodyQueSize = DEFAULT_BODYQUESIZE;
