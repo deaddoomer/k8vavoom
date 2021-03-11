@@ -2498,11 +2498,10 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 /*final*/ void SpawnTransferWallLight (line_t *Line) {
-  if (Line) {
-    WallLightTransfer Tr = SpawnThinker(WallLightTransfer);
-    if (Tr && !Tr.IsDestroyed) {
-      Tr.Init(Line->frontsector, Line->arg1, Line->arg2, Line->arg3, Line->arg4, Line->arg5);
-    }
+  if (!Line) return;
+  WallLightTransfer Tr = SpawnThinker(WallLightTransfer);
+  if (Tr && !Tr.IsDestroyed) {
+    Tr.Init(Line->frontsector, Line->arg1, Line->arg2, Line->arg3, Line->arg4, Line->arg5);
   }
 }
 
@@ -2518,234 +2517,190 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  SpawnScrollingFloor
 //
 //==========================================================================
-
-/*final*/ void SpawnScrollingFloor(sector_t *Sector, int XDir, int YDir,
-  int Speed)
-{
-  Scroller  Scroll;
-
-  Scroll = SpawnThinker(Scroller);
-  Scroll.InitFloor(Sector, XDir, YDir, Speed);
+/*final*/ void SpawnScrollingFloor (sector_t *Sector, int XDir, int YDir, int Speed) {
+  if (!Sector) return;
+  Scroller Scroll = SpawnThinker(Scroller);
+  if (Scroll && !Scroll.IsDestroyed) {
+    Scroll.InitFloor(Sector, XDir, YDir, Speed);
+  }
 }
+
 
 //==========================================================================
 //
 //  SpawnWallScroller
 //
 //==========================================================================
-
-/*final*/ void SpawnWallScroller (line_t *Line, int XDir, int YDir)
-{
-  Scroller  Scroll;
-
-  Scroll = SpawnThinker(Scroller);
-  Scroll.InitWall(Line, XDir, YDir);
+/*final*/ void SpawnWallScroller (line_t *Line, int XDir, int YDir) {
+  if (!Line) return;
+  Scroller Scroll = SpawnThinker(Scroller);
+  if (Scroll && !Scroll.IsDestroyed) {
+    Scroll.InitWall(Line, XDir, YDir);
+  }
 }
+
 
 //==========================================================================
 //
 //  SpawnWallOffsetsScroller
 //
 //==========================================================================
-
-/*final*/ void SpawnWallOffsetsScroller(line_t *Line)
-{
-  Scroller  Scroll;
-
-  Scroll = SpawnThinker(Scroller);
-  Scroll.InitWallOffsets(Line);
+/*final*/ void SpawnWallOffsetsScroller (line_t *Line) {
+  if (!Line) return;
+  Scroller Scroll = SpawnThinker(Scroller);
+  if (Scroll && !Scroll.IsDestroyed) {
+    Scroll.InitWallOffsets(Line);
+  }
 }
+
 
 //==========================================================================
 //
 //  SpawnTextureBothScroller
 //
 //==========================================================================
-
-/*final*/ void SpawnTextureBothScroller (line_t *Line)
-{
-  Scroller  Scroll;
-
-  Scroll = SpawnThinker(Scroller);
-  Scroll.InitTextureBoth(Line, float(Line->arg2-Line->arg3)/64.0,
-    float(Line->arg5-Line->arg4)/64.0, 0, 7);
+/*final*/ void SpawnTextureBothScroller (line_t *Line) {
+  if (!Line) return;
+  Scroller Scroll = SpawnThinker(Scroller);
+  if (Scroll && !Scroll.IsDestroyed) {
+    Scroll.InitTextureBoth(Line, float(Line->arg2-Line->arg3)/64.0, float(Line->arg5-Line->arg4)/64.0, 0, 7);
+  }
 }
+
 
 //==========================================================================
 //
 //  SpawnScrollCeiling
 //
 //==========================================================================
-
-/*final*/ void SpawnScrollCeiling(line_t *Line)
-{
-  Scroller Scroll;
+/*final*/ void SpawnScrollCeiling (line_t *Line) {
+  if (!Line) return;
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Line->arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Line->arg1, hidx))
   {
     int secnum = sec-&XLevel.Sectors[0];
-    Scroll = SpawnThinker(Scroller);
-    Scroll.InitGen(Scroller::SCROLLEV_Ceiling, Line, secnum);
+    Scroller Scroll = SpawnThinker(Scroller);
+    if (Scroll && !Scroll.IsDestroyed) {
+      Scroll.InitGen(Scroller::SCROLLEV_Ceiling, Line, secnum);
+    }
   }
 }
+
 
 //==========================================================================
 //
 //  SpawnScrollFloor
 //
 //==========================================================================
-
-/*final*/ void SpawnScrollFloor(line_t *Line)
-{
-  Scroller Scroll;
+/*final*/ void SpawnScrollFloor (line_t *Line) {
+  if (!Line) return;
   sector_t *sec;
   for (int hidx = XLevel.FindSectorFromTag(out sec, Line->arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Line->arg1, hidx))
   {
     int secnum = sec-&XLevel.Sectors[0];
-    if (Line->arg3 != 1)
-    {
-      //  Scroll the floor texture
-      Scroll = SpawnThinker(Scroller);
-      Scroll.InitGen(Scroller::SCROLLEV_Floor, Line, secnum);
+    if (Line->arg3 != 1) {
+      // scroll the floor texture
+      Scroller Scroll = SpawnThinker(Scroller);
+      if (Scroll && !Scroll.IsDestroyed) {
+        Scroll.InitGen(Scroller::SCROLLEV_Floor, Line, secnum);
+      }
     }
 
-    if (Line->arg3 > 0)
-    {
-      //  Carry objects on the floor
-      Scroll = SpawnThinker(Scroller);
-      Scroll.InitGen(Scroller::SCROLLEV_Carry, Line, secnum);
+    if (Line->arg3 > 0) {
+      // carry objects on the floor
+      Scroller Scroll = SpawnThinker(Scroller);
+      if (Scroll && !Scroll.IsDestroyed) {
+        Scroll.InitGen(Scroller::SCROLLEV_Carry, Line, secnum);
+      }
     }
   }
 }
+
 
 //==========================================================================
 //
 //  SpawnScrollTextureModel
 //
 //  Scroll wall according to linedef
-// (same direction and speed as scrolling floors)
+//  (same direction and speed as scrolling floors)
 //
 //==========================================================================
-
-/*final*/ void SpawnScrollTextureModel(line_t *Line)
-{
-  Scroller  Scroll;
-  int     Searcher;
-  line_t *Other;
-
-  Searcher = -1;
-  for (Other = XLevel.FindLine(Line->arg1, &Searcher); Other;
-    Other = XLevel.FindLine(Line->arg1, &Searcher))
+/*final*/ void SpawnScrollTextureModel (line_t *Line) {
+  if (!Line) return;
+  int Searcher = -1;
+  for (line_t *Other = XLevel.FindLine(Line->arg1, &Searcher); Other;
+       Other = XLevel.FindLine(Line->arg1, &Searcher))
   {
-    if (Line != Other)
-    {
-      Scroll = SpawnThinker(Scroller);
-      Scroll.InitTextureModel(Other, Line);
+    if (Line != Other) {
+      Scroller Scroll = SpawnThinker(Scroller);
+      if (Scroll && !Scroll.IsDestroyed) {
+        Scroll.InitTextureModel(Other, Line);
+      }
     }
   }
 }
+
 
 //==========================================================================
 //
 //  EV_ScrollTextureBoth
 //
 //==========================================================================
-
-/*final*/ bool EV_ScrollTextureBoth(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  if (!Arg1)
-  {
-    //  No lines to adjust.
-    return false;
-  }
+/*final*/ bool EV_ScrollTextureBoth (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  if (!Arg1) return false; // no lines to adjust
 
   int WhichSide = 0;
-  if (Arg1 < 0)
-  {
+  if (Arg1 < 0) {
     WhichSide = 1;
     Arg1 = -Arg1;
   }
 
-  SetWallScroller(Arg1, float(Arg2-Arg3)/64.0, float(Arg5-Arg4)/64.0,
-    WhichSide, 7);
+  SetWallScroller(Arg1, float(Arg2-Arg3)/64.0, float(Arg5-Arg4)/64.0, WhichSide, 7);
   return true;
 }
+
 
 //==========================================================================
 //
 //  EV_ScrollWall
 //
 //==========================================================================
-
-/*final*/ bool EV_ScrollWall(int Arg1, int Arg2, int Arg3, int Arg4,
-  int Arg5)
-{
-  if (!Arg1)
-  {
-    //  No lines to adjust.
-    return false;
-  }
-
-  SetWallScroller(Arg1, float(Arg2)/float(0x10000),
-    float(Arg3)/float(0x10000), !!Arg4, Arg5);
+/*final*/ bool EV_ScrollWall (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  if (!Arg1) return false; // no lines to adjust
+  SetWallScroller(Arg1, float(Arg2)/float(0x10000), float(Arg3)/float(0x10000), !!Arg4, Arg5);
   return true;
 }
+
 
 //==========================================================================
 //
 //  SetWallScroller
 //
 //==========================================================================
-
-/*final*/ void SetWallScroller(int LineId, float XSpeed, float YSpeed,
-  int WhichSide, int Where)
-{
-  Scroller  Scroll;
-  int     i;
+/*final*/ void SetWallScroller (int LineId, float XSpeed, float YSpeed, int WhichSide, int Where) {
+  Scroller Scroll;
 
   Where &= 7;
-  if (!Where)
-  {
-    return;
-  }
+  if (!Where) return;
 
-  if (!XSpeed && !YSpeed)
-  {
-    //  As a special case with no deltas remove any texture scrolers.
-    foreach AllThinkers(Scroller, Scroll)
-    {
-      if (Scroll.Type != Scroller::SCROLLEV_Side)
-      {
-        continue;
-      }
-      //  Check if line has a correct tag.
-      if (!IsLineTagEqual(Scroll.AffecteeSrcLine, LineId))
-      {
-        continue;
-      }
-      //  Check if it's the correct side.
-      if (Scroll.AffecteeSrcLine->sidenum[WhichSide] != Scroll.Affectee)
-      {
-        continue;
-      }
-      //  Check if it's scrolling the same wall parts
-      if (Scroll.SideParts != Where)
-      {
-        continue;
-      }
-      //  OK, destroy the thinker.
+  if (!XSpeed && !YSpeed) {
+    // as a special case with no deltas remove any texture scrolers
+    foreach AllThinkers(Scroller, Scroll) {
+      if (Scroll.Type != Scroller::SCROLLEV_Side) continue;
+      // check if line has a correct tag
+      if (!IsLineTagEqual(Scroll.AffecteeSrcLine, LineId)) continue;
+      // check if it's the correct side
+      if (Scroll.AffecteeSrcLine->sidenum[WhichSide] != Scroll.Affectee) continue;
+      // check if it's scrolling the same wall parts
+      if (Scroll.SideParts != Where) continue;
+      // ok, destroy the thinker
       Scroll.Destroy();
     }
-  }
-  else
-  {
-    array!Scroller   FoundScrollers;
-
-    foreach AllThinkers(Scroller, Scroll)
-    {
+  } else {
+    array!Scroller FoundScrollers;
+    foreach AllThinkers(Scroller, Scroll) {
       if (Scroll.Type != Scroller::SCROLLEV_Side) continue;
       //  Check if line has a correct tag.
       if (!IsLineTagEqual(Scroll.AffecteeSrcLine, LineId)) continue;
@@ -2758,27 +2713,21 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       FoundScrollers[FoundScrollers.length] = Scroll;
     }
 
-    int     Searcher;
-    line_t *Other;
-
-    Searcher = -1;
-    for (Other = XLevel.FindLine(LineId, &Searcher); Other;
-      Other = XLevel.FindLine(LineId, &Searcher))
+    int Searcher = -1;
+    for (line_t *Other = XLevel.FindLine(LineId, &Searcher); Other;
+         Other = XLevel.FindLine(LineId, &Searcher))
     {
-      //  Check if this line already has scroller.
-      for (i = 0; i < FoundScrollers.length; i++)
-      {
-        if (FoundScrollers[i].Affectee == Other->sidenum[WhichSide])
-        {
-          break;
-        }
+      // check if this line already has scroller
+      int i;
+      for (i = 0; i < FoundScrollers.length; ++i) {
+        if (FoundScrollers[i].Affectee == Other->sidenum[WhichSide]) break;
       }
-      if (i == FoundScrollers.length)
-      {
-        //  Start a new scroller.
+      if (i == FoundScrollers.length) {
+        // start a new scroller
         Scroll = SpawnThinker(Scroller);
-        Scroll.InitTextureBoth(Other, XSpeed, YSpeed, WhichSide,
-          Where);
+        if (Scroll && !Scroll.IsDestroyed) {
+          Scroll.InitTextureBoth(Other, XSpeed, YSpeed, WhichSide, Where);
+        }
       }
     }
   }
