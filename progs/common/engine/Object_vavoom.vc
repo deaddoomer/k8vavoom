@@ -778,7 +778,7 @@ static final bool WadIterateNS_opIterInit (out WadLumpIteratorInfoNS it, EWadNam
   return (it.curr >= 0);
 }
 
-static final bool WadIterateNS_opIterNext (out WadLumpIteratorInfoNS it, out int lumpnum) {
+static final bool WadIterateNS_opIterNext (ref WadLumpIteratorInfoNS it, out int lumpnum) {
   if (it.curr < 0) return false; // done
   lumpnum = it.curr;
   it.curr = W_IterateNS(it.curr, it.ns);
@@ -798,7 +798,7 @@ static final bool WadIterateFile_opIterInit (out WadLumpIteratorInfoName it, str
   return (it.curr >= 0);
 }
 
-static final bool WadIterateFile_opIterNext (out WadLumpIteratorInfoName it, out int lumpnum) {
+static final bool WadIterateFile_opIterNext (ref WadLumpIteratorInfoName it, out int lumpnum) {
   if (it.curr < 0) return false; // done
   lumpnum = it.curr;
   it.curr = W_IterateFile(it.curr, it.fname);

@@ -340,7 +340,7 @@ final bool eachTID_opIterInit (out MobjByTIDIteratorInfo it, int tid, optional E
   return true;
 }
 
-final bool eachTID_opIterNext (out MobjByTIDIteratorInfo it, out EntityEx ent) {
+final bool eachTID_opIterNext (ref MobjByTIDIteratorInfo it, out EntityEx ent) {
   ent = EntityEx(it.prev);
   if (!ent) {
     assert(!it.prev);
@@ -1160,7 +1160,7 @@ final bool allTouchingThings_opIterInit (out AllTouchingThingsIter it, sector_t 
 }
 
 
-static final bool allTouchingThings_opIterNext (out AllTouchingThingsIter it, out EntityEx ent) {
+static final bool allTouchingThings_opIterNext (ref AllTouchingThingsIter it, out EntityEx ent) {
   while (it.currnode) {
     ent = EntityEx(it.currnode->Thing);
     it.currnode = it.currnode->SNext;
