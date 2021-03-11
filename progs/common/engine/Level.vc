@@ -558,5 +558,24 @@ void RemoveMapMarker (int markerid) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+struct SectorTagIterationInfo {
+  int tag;
+  int index;
+}
+
+final bool SectorsByTag_opIterInit (out SectorTagIterationInfo it, int tag) {
+  it.tag = tag;
+  it.index = -1;
+  return true;
+}
+
+final bool SectorsByTag_opIterNext (ref SectorTagIterationInfo it, out sector_t *sec) {
+  it.index = FindSectorFromTag(out sec, it.tag, it.index);
+  return (it.index >= 0);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 defaultproperties {
 }
