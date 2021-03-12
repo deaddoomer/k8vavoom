@@ -1301,29 +1301,36 @@ vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, fl
 //
 //==========================================================================
 void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox) {
-  if (bspnum == -1) return; // one-sector map, ignore
-
+ tailcall:
   //if (!CheckSphereVsAABBIgnoreZ(bbox, sl.origin, sl.radius)) return;
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
-    node_t *bsp = &Level->Nodes[bspnum];
+    const node_t *bsp = &Level->Nodes[bspnum];
     // decide which side the light is on
     const float dist = bsp->PointDistance(sl.origin);
-    if (dist > sl.radius) {
+    if (dist >= sl.radius) {
       // light is completely on the front side
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[0], bsp->bbox[0]);
-    } else if (dist < -sl.radius) {
+      //return CalcBSPNodeLMaps(slindex, sl, bsp->children[0], bsp->bbox[0]);
+      bspnum = bsp->children[0];
+      bbox = bsp->bbox[0];
+      goto tailcall;
+    } else if (dist <= -sl.radius) {
       // light is completely on the back side
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[1], bsp->bbox[1]);
+      //return CalcBSPNodeLMaps(slindex, sl, bsp->children[1], bsp->bbox[1]);
+      bspnum = bsp->children[1];
+      bbox = bsp->bbox[1];
+      goto tailcall;
     } else {
-      //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
       CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
       // possibly divide back space
       side ^= 1;
-      return CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
+      //return CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
+      bspnum = bsp->children[side];
+      bbox = bsp->bbox[side];
+      goto tailcall;
     }
   } else {
     //subsector_t *sub = &Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
@@ -1351,13 +1358,10 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
 //
 //  VRenderLevelShared::CalcStaticLightTouchingSubs
 //
+//  FIXME: make this faster!
+//
 //==========================================================================
 void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) {
-  //FIXME: make this faster!
-  float bbox[6];
-  bbox[0] = bbox[1] = bbox[2] = -999999.0f;
-  bbox[3] = bbox[4] = bbox[5] = 999999.0f;
-
   // remove from all subsectors
   if (SubStaticLights.length() < Level->NumSubsectors) SubStaticLights.setLength(Level->NumSubsectors);
   for (auto &&it : sl.touchedSubs) {
@@ -1369,7 +1373,19 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
   if (!sl.active || sl.radius < 2.0f) return;
 
   //sl.touchedPolys.reset();
-  CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1, bbox);
+
+  if (Level->NumSubsectors < 2) {
+    if (Level->NumSubsectors == 1) {
+      subsector_t *sub = &Level->Subsectors[0];
+      if (sub->sector->linecount) {
+        sl.touchedSubs.append(sub);
+        SubStaticLights[0].touchedStatic.put(slindex, true);
+      }
+    }
+  } else {
+    const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
+    CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1, bbox);
+  }
 }
 
 

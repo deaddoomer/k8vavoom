@@ -144,6 +144,7 @@ protected:
 
   void InvalidateSubsectorLMaps (const TVec &org, float radius, int num);
   void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox);
+  void InvalidateLightLMaps (const TVec &org, float radius);
 
 protected:
   void initLightChain ();

@@ -523,6 +523,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
 //
 //==========================================================================
 void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *bbox, unsigned int ssflag) {
+ tailcall:
 #ifdef VV_CLIPPER_FULL_CHECK
   if ((ssflag&FlagAsLight) && LightClip.ClipIsFull()) {
     if ((ssflag &= ~FlagAsLight) == 0) return;
@@ -531,7 +532,6 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *
     if ((ssflag &= ~FlagAsShadow) == 0) return;
   }
 #endif
-
 
   if (bbox) {
     // mirror clip
@@ -546,7 +546,8 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *
   }
   //if (bbox && !CheckSphereVsAABBIgnoreZ(bbox, CurrLightPos, CurrLightRadius)) return;
 
-  if (bspnum == -1) return CollectAdvLightSubsector(0, ssflag);
+  // no need to
+  //if (bspnum == -1) return CollectAdvLightSubsector(0, ssflag);
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
@@ -555,18 +556,27 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *
     const float dist = bsp->PointDistance(CurrLightPos);
     if (dist >= CurrLightRadius) {
       // light is completely on front side
-      return CollectAdvLightBSPNode(bsp->children[0], bsp->bbox[0], ssflag);
+      //return CollectAdvLightBSPNode(bsp->children[0], bsp->bbox[0], ssflag);
+      bspnum = bsp->children[0];
+      bbox = bsp->bbox[0];
+      goto tailcall;
     } else if (dist <= -CurrLightRadius) {
       // light is completely on back side
-      return CollectAdvLightBSPNode(bsp->children[1], bsp->bbox[1], ssflag);
+      //return CollectAdvLightBSPNode(bsp->children[1], bsp->bbox[1], ssflag);
+      bspnum = bsp->children[1];
+      bbox = bsp->bbox[1];
+      goto tailcall;
     } else {
       //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
       CollectAdvLightBSPNode(bsp->children[side], bsp->bbox[side], ssflag);
       // possibly divide back space
-      side ^= 1;
-      return CollectAdvLightBSPNode(bsp->children[side], bsp->bbox[side], ssflag);
+      side ^= 1u;
+      //return CollectAdvLightBSPNode(bsp->children[side], bsp->bbox[side], ssflag);
+      bspnum = bsp->children[side];
+      bbox = bsp->bbox[side];
+      goto tailcall;
     }
   } else {
     return CollectAdvLightSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum), ssflag);

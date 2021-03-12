@@ -172,12 +172,12 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
     const node_t *bsp = &Level->Nodes[bspnum];
     // decide which side the view point is on
     const float dist = bsp->PointDistance(CurrLightPos);
-    if (dist > CurrLightRadius) {
+    if (dist >= CurrLightRadius) {
       // light is completely on the front side
       bspnum = bsp->children[0];
       bbox = bsp->bbox[0];
       goto tailcall;
-    } else if (dist < -CurrLightRadius) {
+    } else if (dist <= -CurrLightRadius) {
       // light is completely on the back side
       bspnum = bsp->children[1];
       bbox = bsp->bbox[1];

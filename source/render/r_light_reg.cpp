@@ -1184,10 +1184,7 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
 //
 //==========================================================================
 void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox) {
-  if (bspnum == -1) {
-    return InvalidateSubsectorLMaps(org, radius, 0);
-  }
-
+ tailcall:
 #ifdef VV_CLIPPER_FULL_CHECK
   if (LightClip.ClipIsFull()) return;
 #endif
@@ -1197,23 +1194,31 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
-    node_t *bsp = &Level->Nodes[bspnum];
+    const node_t *bsp = &Level->Nodes[bspnum];
     // decide which side the light is on
     const float dist = bsp->PointDistance(org);
-    if (dist > radius) {
+    if (dist >= radius) {
       // light is completely on the front side
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[0], bsp->bbox[0]);
-    } else if (dist < -radius) {
+      //return InvalidateBSPNodeLMaps(org, radius, bsp->children[0], bsp->bbox[0]);
+      bspnum = bsp->children[0];
+      bbox = bsp->bbox[0];
+      goto tailcall;
+    } else if (dist <= -radius) {
       // light is completely on the back side
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[1], bsp->bbox[1]);
+      //return InvalidateBSPNodeLMaps(org, radius, bsp->children[1], bsp->bbox[1]);
+      bspnum = bsp->children[1];
+      bbox = bsp->bbox[1];
+      goto tailcall;
     } else {
-      //int side = bsp->PointOnSide(CurrLightPos);
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
       InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
       // possibly divide back space
       side ^= 1;
-      return InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
+      //return InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
+      bspnum = bsp->children[side];
+      bbox = bsp->bbox[side];
+      goto tailcall;
     }
   } else {
     subsector_t *sub = &Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
@@ -1222,6 +1227,23 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
     LightClip.ClipLightAddSubsectorSegs(sub, false);
   }
 }
+
+
+//==========================================================================
+//
+//  VRenderLevelLightmap::InvalidateStaticLightmaps
+//
+//==========================================================================
+void VRenderLevelLightmap::InvalidateLightLMaps (const TVec &org, float radius) {
+  if (Level->NumSubsectors < 2) {
+    if (Level->NumSubsectors == 1) return InvalidateSubsectorLMaps(org, radius, 0);
+    return;
+  }
+  const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
+  LightClip.ClearClipNodes(org, Level, radius);
+  InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
+}
+
 
 /*
 TODO:
@@ -1240,8 +1262,8 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
   //FIXME: make this faster!
   if (radius < 2.0f) return;
   invalidateRelight = relight;
-  float bbox[6];
 #if 0
+  float bbox[6];
   subsector_t *sub = Level->Subsectors;
   for (int count = Level->NumSubsectors; count--; ++sub) {
     if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
@@ -1251,10 +1273,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
     InvalidateSubsectorLMaps(org, radius, (int)(ptrdiff_t)(sub-Level->Subsectors));
   }
 #else
-  bbox[0] = bbox[1] = bbox[2] = -999999.0f;
-  bbox[3] = bbox[4] = bbox[5] = 999999.0f;
-  LightClip.ClearClipNodes(org, Level, radius);
-  InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
+  InvalidateLightLMaps(org, radius);
 #endif
 }
 
