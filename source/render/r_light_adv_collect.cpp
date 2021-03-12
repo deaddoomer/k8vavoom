@@ -99,16 +99,19 @@ static VVA_OKUNUSED inline void ClipSegToLight (TVec &v1, TVec &v2, const TVec &
 //
 //==========================================================================
 void VRenderLevelShadowVolume::AddPolyObjToLightClipper (VViewClipper &clip, subsector_t *sub, int asShadow) {
-  if (sub && sub->HasPObjs() && r_draw_pobj && clip_use_1d_clipper) {
+  if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
+      /*
       seg_t **polySeg = pobj->segs;
       for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
         seg_t *seg = (*polySeg)->drawsegs->seg;
         if (seg->linedef) {
-          clip.CheckAddClipSeg(seg, nullptr/*mirror*/, asShadow);
+          clip.CheckAddClipSeg(seg, nullptr/ *mirror* /, asShadow);
         }
       }
+      */
+      clip.ClipLightAddPObjSegs(pobj, sub, asShadow);
     }
   }
 }

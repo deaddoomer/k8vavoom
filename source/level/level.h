@@ -762,7 +762,7 @@ public:
 public:
   // returns `false` if seg is out of subsector
   // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
-  // will not modify `offset`, `drawsegs`, etc.
+  // will not modify `drawsegs`, etc.
   bool ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept;
 
 public:

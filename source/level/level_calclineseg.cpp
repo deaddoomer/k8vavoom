@@ -134,7 +134,7 @@ void VLevel::CalcSeg (seg_t *seg) {
 //  returns `false` if seg is out of subsector
 //
 //  WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
-//  will not modify `offset`, `drawsegs`, etc.
+//  will not modify `drawsegs`, etc.
 //
 //==========================================================================
 bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
@@ -161,24 +161,28 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
     // need to be split
     if (dot1 < 0.0f) {
       vassert(dot2 >= 0.0f);
-      // move x
+      // if one of normal components is |1|, the other is inevitably `0`
            if (curseg->normal.x == +1.0f) v1->x = curseg->dist;
       else if (curseg->normal.x == -1.0f) v1->x = -curseg->dist;
-      else v1->x += dot1/(dot1-dot2);
-      // move y
-           if (curseg->normal.y == +1.0f) v1->y = curseg->dist;
+      else if (curseg->normal.y == +1.0f) v1->y = curseg->dist;
       else if (curseg->normal.y == -1.0f) v1->y = -curseg->dist;
-      else v1->y += dot1/(dot1-dot2);
+      else {
+        const float idist = dot1/(dot1-dot2);
+        v2->x += (v2->x-v1->x)*idist;
+        v2->y += (v2->y-v1->y)*idist;
+      }
     } else if (dot2 < 0.0f) {
       vassert(dot1 >= 0.0f);
-      // move x
+      // if one of normal components is |1|, the other is inevitably `0`
            if (curseg->normal.x == +1.0f) v2->x = curseg->dist;
       else if (curseg->normal.x == -1.0f) v2->x = -curseg->dist;
-      else v2->x += dot2/(dot2-dot1);
-      // move y
-           if (curseg->normal.y == +1.0f) v2->y = curseg->dist;
+      else if (curseg->normal.y == +1.0f) v2->y = curseg->dist;
       else if (curseg->normal.y == -1.0f) v2->y = -curseg->dist;
-      else v2->y += dot2/(dot2-dot1);
+      else {
+        const float idist = dot2/(dot2-dot1);
+        v2->x += (v1->x-v2->x)*idist;
+        v2->y += (v1->y-v2->y)*idist;
+      }
     } else {
       Sys_Error("ClipPObjSegToSub: oops!");
     }
@@ -189,6 +193,9 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
     updateLen = true;
   }
 
-  if (updateLen) seg->length = sqrtf(lensq);
+  if (updateLen) {
+    //seg->length = sqrtf(lensq);
+    CalcSegLenOfs(seg);
+  }
   return true;
 }

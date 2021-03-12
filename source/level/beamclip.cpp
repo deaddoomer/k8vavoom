@@ -210,6 +210,7 @@ static inline void CopyHeightServer (VLevel *level, rep_sector_t *repsecs, const
 //  IsGoodSegForPoly
 //
 //==========================================================================
+/*
 static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg) noexcept {
   const line_t *ldef = seg->linedef;
   if (!ldef) return true;
@@ -244,6 +245,7 @@ static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg)
 
   return true;
 }
+*/
 
 
 //==========================================================================
@@ -1725,17 +1727,18 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
   if (!clip_enabled) return;
   if (ClipIsFull()) return;
 
-  bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
-  const bool doCheck = !clip_polyobj_new.asBool();
+  //bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
+  //const bool doCheck = !clip_polyobj_new.asBool();
 
   {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int count = sub->numlines; count--; ++seg) {
-      if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
+      //if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
       CheckAddClipSeg(seg, Mirror, clipAll);
     }
   }
 
+  /*
   if (doPoly) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
@@ -1747,6 +1750,28 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
         }
       }
     }
+  }
+  */
+}
+
+
+//==========================================================================
+//
+//  VViewClipper::ClipAddPObjSegs
+//
+//==========================================================================
+void VViewClipper::ClipAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, const TPlane *Mirror, bool clipAll) noexcept {
+  if (!clip_enabled) return;
+  if (ClipIsFull()) return;
+
+  if (/*!sub->HasPObjs() ||*/ !clip_with_polyobj.asBool()) return;
+
+  const seg_t *const *polySeg = pobj->segs;
+  for (int count = pobj->numsegs; count--; ++polySeg) {
+    //const seg_t *seg = *polySeg;
+    const seg_t *seg = (*polySeg)->drawsegs->seg;
+    if (!seg->linedef) continue;
+    CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
   }
 }
 
@@ -2025,17 +2050,18 @@ void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t 
 void VViewClipper::ClipLightAddSubsectorSegs (const subsector_t *sub, int asShadow, const TPlane *Mirror) noexcept {
   if (ClipIsFull()) return;
 
-  bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
-  const bool doCheck = !clip_polyobj_new.asBool();
+  //bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
+  //const bool doCheck = !clip_polyobj_new.asBool();
 
   {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int count = sub->numlines; count--; ++seg) {
-      if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
+      //if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
       CheckLightAddClipSeg(seg, Mirror, asShadow);
     }
   }
 
+  /*
   if (doPoly && !ClipIsFull()) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
@@ -2047,6 +2073,28 @@ void VViewClipper::ClipLightAddSubsectorSegs (const subsector_t *sub, int asShad
         }
       }
     }
+  }
+  */
+}
+
+
+//==========================================================================
+//
+//  VViewClipper::ClipLightAddPObjSegs
+//
+//==========================================================================
+void VViewClipper::ClipLightAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, int asShadow, const TPlane *Mirror) noexcept {
+  if (!clip_enabled) return;
+  if (ClipIsFull()) return;
+
+  if (/*!sub->HasPObjs() ||*/ !clip_with_polyobj.asBool()) return;
+
+  const seg_t *const *polySeg = pobj->segs;
+  for (int count = pobj->numsegs; count--; ++polySeg) {
+    //const seg_t *seg = *polySeg;
+    const seg_t *seg = (*polySeg)->drawsegs->seg;
+    if (!seg->linedef) continue;
+    CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
   }
 }
 #endif
