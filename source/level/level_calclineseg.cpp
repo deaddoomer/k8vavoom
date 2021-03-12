@@ -125,3 +125,70 @@ void VLevel::CalcSeg (seg_t *seg) {
     seg->flags &= ~SF_ZEROLEN;
   }
 }
+
+
+//==========================================================================
+//
+//  VLevel::ClipPObjSegToSub
+//
+//  returns `false` if seg is out of subsector
+//
+//  WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
+//  will not modify `offset`, `drawsegs`, etc.
+//
+//==========================================================================
+bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
+  if (!sub || !seg) return false;
+  if (sub->numlines < 3) return false; // oops, cannot clip
+
+  TVec *v1 = seg->v1;
+  TVec *v2 = seg->v2;
+
+  if (v1->x == v2->x && v1->y == v2->y) return false; // too short, ignore it
+
+  float lensq = seg->length*seg->length;
+  bool updateLen = false;
+
+  seg_t *curseg = &Segs[sub->firstline];
+  for (int f = sub->numlines; f--; ++curseg) {
+    // determine sides for each point
+    const float dot1 = curseg->PointDistance(*v1);
+    const float dot2 = curseg->PointDistance(*v2);
+    // if both dots are outside, the whole seg is outside of subsector
+    if (dot1 <= 0.0f && dot2 <= 0.0f) return false;
+    // if both dots are inside (or coplanar), ignore this plane
+    if (dot1 >= 0.0f && dot2 >= 0.0f) continue;
+    // need to be split
+    if (dot1 < 0.0f) {
+      vassert(dot2 >= 0.0f);
+      // move x
+           if (curseg->normal.x == +1.0f) v1->x = curseg->dist;
+      else if (curseg->normal.x == -1.0f) v1->x = -curseg->dist;
+      else v1->x += dot1/(dot1-dot2);
+      // move y
+           if (curseg->normal.y == +1.0f) v1->y = curseg->dist;
+      else if (curseg->normal.y == -1.0f) v1->y = -curseg->dist;
+      else v1->y += dot1/(dot1-dot2);
+    } else if (dot2 < 0.0f) {
+      vassert(dot1 >= 0.0f);
+      // move x
+           if (curseg->normal.x == +1.0f) v2->x = curseg->dist;
+      else if (curseg->normal.x == -1.0f) v2->x = -curseg->dist;
+      else v2->x += dot2/(dot2-dot1);
+      // move y
+           if (curseg->normal.y == +1.0f) v2->y = curseg->dist;
+      else if (curseg->normal.y == -1.0f) v2->y = -curseg->dist;
+      else v2->y += dot2/(dot2-dot1);
+    } else {
+      Sys_Error("ClipPObjSegToSub: oops!");
+    }
+    const float dx = v2->x-v1->x;
+    const float dy = v2->y-v1->y;
+    lensq = dx*dx+dy*dy;
+    if (lensq <= 0.001f*0.001f) return false; // too short
+    updateLen = true;
+  }
+
+  if (updateLen) seg->length = sqrtf(lensq);
+  return true;
+}

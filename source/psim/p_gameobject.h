@@ -1041,8 +1041,8 @@ public:
 public:
   sector_t *sector;
   subsector_t *seclink; // next subsector for this sector
-  vint32 numlines;
-  vint32 firstline;
+  vint32 numlines; // number of segs in this subsector
+  vint32 firstline; // first seg of this subsector
 
   pobjsubnode_t *polysubnode; // node for first pobj in the subsector
 
@@ -1052,7 +1052,7 @@ public:
   vuint32 updateWorldFrame;
 
   sector_t *deepref; // for deepwater
-  seg_t *firstseg;
+  seg_t *firstseg; // so we can walk all segs without `VLevel` object
 
   //k8: i love bounding boxes! (this one doesn't store z, though)
   float bbox2d[4];

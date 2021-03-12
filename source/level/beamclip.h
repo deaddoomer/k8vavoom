@@ -276,9 +276,11 @@ public:
   void Dump () const noexcept;
 
 public:
-  void CheckAddClipSeg (const seg_t *line, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
+  void CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
+  void CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
 #ifdef CLIENT
-  void CheckLightAddClipSeg (const seg_t *line, const TPlane *Mirror, int asShadow) noexcept;
+  void CheckLightAddClipSeg (const seg_t *seg, const TPlane *Mirror, int asShadow) noexcept;
+  void CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, int asShadow) noexcept;
   // light radius should be valid
   int CheckSubsectorLight (subsector_t *sub) const noexcept;
 #endif

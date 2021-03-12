@@ -760,6 +760,12 @@ public:
                                TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane);
 
 public:
+  // returns `false` if seg is out of subsector
+  // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
+  // will not modify `offset`, `drawsegs`, etc.
+  bool ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept;
+
+public:
   #define VL_ITERATOR(arrname_,itername_,itertype_) \
     class arrname_##Iterator { \
       friend class VLevel; \

@@ -65,6 +65,7 @@ static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimiz
 static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
 static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
 static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
+static VCvarB clip_polyobj_new("clip_polyobj_new", false, "Do clipping with polyobjects using new method?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
 VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit);
 VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);
@@ -132,15 +133,17 @@ static inline bool CopyFloorPlaneIfValid (TPlane *dest, const TPlane *source, co
 //  CopyHeight
 //
 //==========================================================================
-static inline void CopyHeight (const sector_t *sec, TPlane *fplane, TPlane *cplane, int *fpic, int *cpic) noexcept {
+static inline void CopyHeight (const sector_t *sec, TPlane *fplane, TPlane *cplane, int *fpic, int *cpic, const sec_plane_t **sfpl=nullptr, const sec_plane_t **scpl=nullptr) noexcept {
   *cpic = sec->ceiling.pic;
   *fpic = sec->floor.pic;
   *fplane = *(TPlane *)&sec->floor;
   *cplane = *(TPlane *)&sec->ceiling;
+  if (sfpl) *sfpl = &sec->floor;
+  if (scpl) *scpl = &sec->ceiling;
 
   if (clip_use_transfers) {
     // check transferred (k8: do we need more checks here?)
-    const sector_t *hs = sec->heightsec;
+    sector_t *hs = sec->heightsec;
     if (!hs) return;
     if (hs->SectorFlags&sector_t::SF_IgnoreHeightSec) return;
 
@@ -149,22 +152,36 @@ static inline void CopyHeight (const sector_t *sec, TPlane *fplane, TPlane *cpla
         if (!CopyFloorPlaneIfValid(fplane, &hs->floor, &sec->ceiling)) {
           if (hs->SectorFlags&sector_t::SF_FakeFloorOnly) return;
         }
+        if (sfpl) *sfpl = &hs->floor;
         *fpic = hs->floor.pic;
       }
       if (-sec->ceiling.dist < -hs->ceiling.dist) {
         if (!CopyFloorPlaneIfValid(cplane, &hs->ceiling, &sec->floor)) {
           return;
         }
+        if (scpl) *scpl = &hs->ceiling;
         *cpic = hs->ceiling.pic;
       }
     } else {
       if (hs->SectorFlags&sector_t::SF_FakeCeilingOnly) {
-        if (-sec->ceiling.dist < -hs->ceiling.dist) *cplane = *(TPlane *)&hs->ceiling;
+        if (-sec->ceiling.dist < -hs->ceiling.dist) {
+          *cplane = *(TPlane *)&hs->ceiling;
+          if (scpl) *scpl = &hs->ceiling;
+        }
       } else if (hs->SectorFlags&sector_t::SF_FakeFloorOnly) {
-        if (sec->floor.dist > hs->floor.dist) *fplane = *(TPlane *)&hs->floor;
+        if (sec->floor.dist > hs->floor.dist) {
+          *fplane = *(TPlane *)&hs->floor;
+          if (sfpl) *sfpl = &hs->floor;
+        }
       } else {
-        if (-sec->ceiling.dist < -hs->ceiling.dist) *cplane = *(TPlane *)&hs->ceiling;
-        if (sec->floor.dist > hs->floor.dist) *fplane = *(TPlane *)&hs->floor;
+        if (-sec->ceiling.dist < -hs->ceiling.dist) {
+          *cplane = *(TPlane *)&hs->ceiling;
+          if (scpl) *scpl = &hs->ceiling;
+        }
+        if (sec->floor.dist > hs->floor.dist) {
+          *fplane = *(TPlane *)&hs->floor;
+          if (sfpl) *sfpl = &hs->floor;
+        }
       }
     }
   }
@@ -226,6 +243,130 @@ static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg)
   }
 
   return true;
+}
+
+
+//==========================================================================
+//
+//  IsPObjSegAClosedSomething
+//
+//==========================================================================
+static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TVec *lorg=nullptr, const float *lrad=nullptr) noexcept {
+  const line_t *ldef = seg->linedef;
+
+  if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) return false; // skip translucent walls
+  if (ldef->flags&ML_3DMIDTEX) return false; // 3dmidtex never blocks anything
+
+  // mirrors and horizons always block the view
+  switch (ldef->special) {
+    case LNSPEC_LineHorizon:
+    case LNSPEC_LineMirror:
+      return true;
+  }
+
+  auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
+
+  if (midTexType != VTextureManager::TCT_SOLID) return false;
+
+  const TVec vv1 = *seg->v1;
+  const TVec vv2 = *seg->v2;
+
+  // polyobject height
+  float pocz1 = pobj->ceiling.GetPointZ(vv1);
+  float pocz2 = pobj->ceiling.GetPointZ(vv2);
+  float pofz1 = pobj->floor.GetPointZ(vv1);
+  float pofz2 = pobj->floor.GetPointZ(vv2);
+
+  if (pofz1 >= pocz1 || pofz2 >= pocz2) return false; // something strange
+
+  // determine real height using midtex
+  //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
+  VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
+  // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+  const float texh = MTex->GetScaledHeight();
+  float z_org;
+  if (ldef->flags&ML_DONTPEGBOTTOM) {
+    // bottom of texture at bottom
+    // top of texture at top
+    z_org = pobj->floor.TexZ+texh;
+  } else {
+    // top of texture at top
+    z_org = pobj->ceiling.TexZ;
+  }
+  //k8: dunno why
+  if (seg->sidedef->Mid.RowOffset < 0) {
+    z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+  } else {
+    z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+  }
+  //TODO: use proper checks for slopes here
+  if ((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
+    pofz1 = max2(pofz1, z_org-texh);
+    pofz2 = max2(pofz2, z_org-texh);
+  } else {
+    // non-wrapped
+    pofz1 = max2(pofz1, z_org-texh);
+    pofz2 = max2(pofz2, z_org-texh);
+    pocz1 = min2(pocz1, z_org);
+    pocz2 = min2(pocz2, z_org);
+  }
+
+  // base sector height
+  int fcpic, ffpic;
+  TPlane ffplane, fcplane;
+
+  const sec_plane_t *sfpl;
+  const sec_plane_t *scpl;
+
+  CopyHeight(sub->sector, &ffplane, &fcplane, &ffpic, &fcpic, &sfpl, &scpl);
+
+  const float seccz1 = scpl->GetPointZClamped(vv1);
+  const float seccz2 = scpl->GetPointZClamped(vv2);
+  const float secfz1 = sfpl->GetPointZClamped(vv1);
+  const float secfz2 = sfpl->GetPointZClamped(vv2);
+
+  // is midtex fully covers the sector?
+  if (pofz1 <= secfz1 && pofz2 <= secfz2 &&
+      pocz1 >= seccz1 && pocz2 >= seccz2)
+  {
+    return true;
+  }
+
+  // check if light can touch midtex
+  //TODO: check top/bottom visibility and transparency?
+  //TODO: use proper checks for slopes here
+  /*
+  if (lorg) {
+    // checking light
+    if (!seg->SphereTouches(*lorg, *lrad)) return true;
+    // min
+    float bbox[6];
+    bbox[BOX3D_MINX] = min2(vv1.x, vv2.x);
+    bbox[BOX3D_MINY] = min2(vv1.y, vv2.y);
+    bbox[BOX3D_MINZ] = min2(min2(min2(frontfz1, backfz1), frontfz2), backfz2);
+    // max
+    bbox[BOX3D_MAXX] = max2(vv1.x, vv2.x);
+    bbox[BOX3D_MAXY] = max2(vv1.y, vv2.y);
+    bbox[BOX3D_MAXZ] = max2(max2(max2(frontcz1, backcz1), frontcz2), backcz2);
+    FixBBoxZ(bbox);
+
+    if (bbox[BOX3D_MINZ] >= bbox[BOX3D_MAXZ]) return true; // definitely closed
+
+    if (!CheckSphereVsAABB(bbox, *lorg, *lrad)) return true; // cannot see midtex, can block
+  }
+  */
+
+  return false;
+}
+
+
+//==========================================================================
+//
+//  IsPObjSegAClosedSomethingServer
+//
+//==========================================================================
+static bool IsPObjSegAClosedSomethingServer (VLevel *level, const TFrustum *Frustum, polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TVec *lorg=nullptr, const float *lrad=nullptr) noexcept {
+  return IsPObjSegAClosedSomething(level, Frustum, pobj, sub, seg, lorg, lrad);
 }
 
 
@@ -1521,6 +1662,62 @@ void VViewClipper::CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror, bool
 
 //==========================================================================
 //
+//  VViewClipper::CheckAddPObjClipSeg
+//
+//==========================================================================
+void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, bool clipAll) noexcept {
+  if (!clip_polyobj_new.asBool()) return CheckAddClipSeg(seg, Mirror, clipAll);
+
+  const line_t *ldef = seg->linedef;
+  if (!ldef) return; // miniseg
+
+  // do not clip with slopes (yet)
+  if (pobj->floor.isSlope() || pobj->ceiling.isSlope()) return;
+
+  // do not clip with zero-height polyobjects
+  if (pobj->floor.maxz >= pobj->ceiling.minz) return;
+
+  // viewer is in back side or on plane?
+  int orgside = seg->PointOnSide2(Origin);
+  if (orgside == 2) return; // origin is on plane
+
+  // add differently oriented segs too
+  if (orgside) {
+    if (!clip_add_backface_segs) return;
+    // if we have a partner seg, use it, so midtex clipper can do it right
+    // without this, fake walls clips out everything
+    if (seg->partner) { seg = seg->partner; orgside = 0; }
+  }
+
+  // clip pobj seg to subsector
+  seg_t newseg = *seg;
+  TVec sv1 = *seg->v1;
+  TVec sv2 = *seg->v2;
+  newseg.v1 = &sv1;
+  newseg.v2 = &sv2;
+  if (!Level->ClipPObjSegToSub(sub, &newseg)) return; // out of this subsector
+
+  // use new seg for clipping
+  seg = &newseg;
+
+  const TVec &v1 = (!orgside ? *seg->v1 : *seg->v2);
+  const TVec &v2 = (!orgside ? *seg->v2 : *seg->v1);
+
+  if (!MirrorCheck(Mirror, v1, v2)) return;
+
+  // treat each line as two-sided
+  if (!RepSectors) {
+    if (IsPObjSegAClosedSomething(Level, &Frustum, pobj, sub, seg)) return;
+  } else {
+    if (IsPObjSegAClosedSomethingServer(Level, &Frustum, pobj, sub, seg)) return;
+  }
+
+  AddClipRange(v2, v1);
+}
+
+
+//==========================================================================
+//
 //  VViewClipper::ClipAddSubsectorSegs
 //
 //==========================================================================
@@ -1529,11 +1726,12 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
   if (ClipIsFull()) return;
 
   bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
+  const bool doCheck = !clip_polyobj_new.asBool();
 
   {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int count = sub->numlines; count--; ++seg) {
-      if (doPoly && !IsGoodSegForPoly(*this, seg)) doPoly = false;
+      if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
       CheckAddClipSeg(seg, Mirror, clipAll);
     }
   }
@@ -1544,8 +1742,8 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
       const seg_t *const *polySeg = pobj->segs;
       for (int count = pobj->numsegs; count--; ++polySeg) {
         const seg_t *seg = *polySeg;
-        if (IsGoodSegForPoly(*this, seg)) {
-          CheckAddClipSeg(seg, Mirror, clipAll);
+        if (!doCheck || IsGoodSegForPoly(*this, seg)) {
+          CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
         }
       }
     }
@@ -1767,6 +1965,60 @@ void VViewClipper::CheckLightAddClipSeg (const seg_t *seg, const TPlane *Mirror,
 
 //==========================================================================
 //
+//  VViewClipper::CheckLightAddPObjClipSeg
+//
+//==========================================================================
+void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, int asShadow) noexcept {
+  if (!clip_polyobj_new.asBool()) return CheckLightAddClipSeg(seg, Mirror, asShadow);
+  // no need to check light radius, it is already done
+  const line_t *ldef = seg->linedef;
+  if (!ldef) return; // miniseg should not clip
+
+  //if (asShadow == AsShadowMap && (ldef->flags&ML_TWOSIDED)) return; // hack for shadowmaps
+
+  // light has 360 degree FOV, so clip with all walls
+  const TVec *v1, *v2;
+  const int orgside = seg->PointOnSide2(Origin);
+  if (orgside == 2) return; // origin is on plane, we cannot do anything sane
+
+  // clip pobj seg to subsector
+  seg_t newseg = *seg;
+  TVec sv1 = *seg->v1;
+  TVec sv2 = *seg->v2;
+  newseg.v1 = &sv1;
+  newseg.v2 = &sv2;
+  if (!Level->ClipPObjSegToSub(sub, &newseg)) return; // out of this subsector
+
+  // use new seg for clipping
+  seg = &newseg;
+
+#if 1
+  if (orgside == 2) return; // origin is on plane, we cannot do anything sane
+  if (orgside) {
+    if (!asShadow) return;
+    v1 = seg->v2;
+    v2 = seg->v1;
+  } else {
+    v1 = seg->v1;
+    v2 = seg->v2;
+  }
+#else
+  if (orgside > 0) return; // ignore backfacing segs
+  v1 = seg->v1;
+  v2 = seg->v2;
+#endif
+
+  if (!MirrorCheck(Mirror, *v1, *v2)) return;
+
+  // treat each line as two-sided
+  if (IsPObjSegAClosedSomething(Level, /*&Frustum*/nullptr, pobj, sub, seg, &Origin, &Radius)) return;
+
+  AddClipRange(*v2, *v1);
+}
+
+
+//==========================================================================
+//
 //  VViewClipper::ClipLightAddSubsectorSegs
 //
 //==========================================================================
@@ -1774,23 +2026,24 @@ void VViewClipper::ClipLightAddSubsectorSegs (const subsector_t *sub, int asShad
   if (ClipIsFull()) return;
 
   bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
+  const bool doCheck = !clip_polyobj_new.asBool();
 
   {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int count = sub->numlines; count--; ++seg) {
-      if (doPoly && !IsGoodSegForPoly(*this, seg)) doPoly = false;
+      if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
       CheckLightAddClipSeg(seg, Mirror, asShadow);
     }
   }
 
-  if (doPoly && !ClipIsFull() ) {
+  if (doPoly && !ClipIsFull()) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
       const seg_t *const *polySeg = pobj->segs;
       for (int count = pobj->numsegs; count--; ++polySeg) {
         const seg_t *seg = *polySeg;
-        if (IsGoodSegForPoly(*this, seg)) {
-          CheckLightAddClipSeg(seg, Mirror, asShadow);
+        if (!doCheck || IsGoodSegForPoly(*this, seg)) {
+          CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
         }
       }
     }
