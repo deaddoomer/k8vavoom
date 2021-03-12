@@ -744,7 +744,7 @@ void VViewClipper::ClipInitFrustumRange (const TAVec &viewangles, const TVec &vi
   Pts[3] = TVec(-fovx, -fovy, 1.0f);
   TVec clipforward(viewforward.x, viewforward.y, 0.0f);
   //k8: i don't think that we need to normalize it, but...
-  //clipforward.normaliseInPlace();
+  clipforward.normaliseInPlace();
 
   // pseudoangles are not linear, so use real angles here
   const VFloat fwdAngle = viewangles.yaw;
@@ -757,6 +757,7 @@ void VViewClipper::ClipInitFrustumRange (const TAVec &viewangles, const TVec &vi
     TransPts[i].z = VSUM3(Pts[i].x*viewright.z, Pts[i].y*viewup.z, /*Pts[i].z* */viewforward.z);
 
     if (DotProduct(TransPts[i], clipforward) <= 0.01f) { // was 0.0f
+      //GCon->Logf(NAME_Debug, "  ooops; pitch=%g", viewangles.pitch);
       // player can see behind, use back frustum plane to clip
       return;
     }
