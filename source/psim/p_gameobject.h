@@ -871,7 +871,9 @@ struct polyobj_t {
   TVec startSpot;
   TVec *originalPts; // used as the base for the rotations
   TVec *prevPts; // use to restore the old point values
-  sector_t *originalSector; // used to get height
+  //sector_t *originalSector; // used to get height
+  sec_plane_t floor;
+  sec_plane_t ceiling;
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 bbox2d[4];

@@ -68,7 +68,7 @@ void polyobj_t::LinkToSubsector (subsector_t *asub) {
   node->pnodenext = polynode;
   polynode = node;
   // remember original sector (we'll need it to calculate pobj height)
-  if (!originalSector) originalSector = asub->sector;
+  //if (!originalSector) originalSector = asub->sector;
 }
 
 
@@ -207,6 +207,7 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
       }
     }
   }
+
   // now collect segs
   TMapNC<TVec, bool> vseen;
   vseen.put(PolyStart, true);
@@ -247,23 +248,26 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
 }
 
 
-extern "C" {
-  static int cmpPobjSegs (const void *aa, const void *bb, void *linedefBase) {
-    if (aa == bb) return 0;
-    const seg_t *sega = *(const seg_t **)aa;
-    const seg_t *segb = *(const seg_t **)bb;
-    const int seqA = sega->linedef->arg2;
-    const int seqB = segb->linedef->arg2;
-    if (seqA < seqB) return -1;
-    if (seqA > seqB) return 1;
-    // sort by linedef order
-    if (sega->linedef == segb->linedef) return 0;
-    const ptrdiff_t lnumA = (ptrdiff_t)(sega->linedef-((const line_t *)linedefBase));
-    const ptrdiff_t lnumB = (ptrdiff_t)(segb->linedef-((const line_t *)linedefBase));
-    if (lnumA < lnumB) return -1;
-    if (lnumA > lnumB) return 1;
-    return 0;
-  }
+//==========================================================================
+//
+//  cmpPobjSegs
+//
+//==========================================================================
+static int cmpPobjSegs (const void *aa, const void *bb, void *linedefBase) {
+  if (aa == bb) return 0;
+  const seg_t *sega = *(const seg_t **)aa;
+  const seg_t *segb = *(const seg_t **)bb;
+  const int seqA = sega->linedef->arg2;
+  const int seqB = segb->linedef->arg2;
+  if (seqA < seqB) return -1;
+  if (seqA > seqB) return 1;
+  // sort by linedef order
+  if (sega->linedef == segb->linedef) return 0;
+  const ptrdiff_t lnumA = (ptrdiff_t)(sega->linedef-((const line_t *)linedefBase));
+  const ptrdiff_t lnumB = (ptrdiff_t)(segb->linedef-((const line_t *)linedefBase));
+  if (lnumA < lnumB) return -1;
+  if (lnumA > lnumB) return 1;
+  return 0;
 }
 
 
@@ -279,6 +283,11 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   memset((void *)po, 0, sizeof(polyobj_t));
   po->index = index;
   po->tag = tag;
+
+  po->floor.XScale = po->floor.YScale = 1.0f;
+  po->floor.TexZ = -99999.0f;
+  po->ceiling.XScale = po->ceiling.YScale = 1.0f;
+  po->ceiling.TexZ = -99999.0f;
 
   if (crush) po->PolyFlags |= polyobj_t::PF_Crush; else po->PolyFlags &= ~polyobj_t::PF_Crush;
   if (hurt) po->PolyFlags |= polyobj_t::PF_HurtOnTouch; else po->PolyFlags &= ~polyobj_t::PF_HurtOnTouch;
@@ -457,6 +466,15 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   subsector_t *sub = PointInSubsector(avg); // bugfixed algo
   po->UnlinkFromSubsector(sub); // just in case
   po->LinkToSubsector(sub);
+
+  // set initial floor and ceiling
+  if (po->floor.TexZ < -90000.0f) {
+    po->floor = sub->sector->floor;
+    po->floor.pic = 0;
+    po->ceiling = sub->sector->ceiling;
+    po->ceiling.pic = 0;
+  }
+
   UpdatePolySegs(po);
 }
 

@@ -235,7 +235,9 @@ void VRenderLevelShared::UpdateSubRegion (subsector_t *sub, subregion_t *region)
     // update the polyobj
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
+      if (pobj->floor.TexZ <= -90000.0f) continue; // untranslated
       seg_t **polySeg = pobj->segs;
+      /*
       TSecPlaneRef po_floor = region->floorplane;
       TSecPlaneRef po_ceiling = region->ceilplane;
       sector_t *posec = pobj->originalSector;
@@ -246,6 +248,10 @@ void VRenderLevelShared::UpdateSubRegion (subsector_t *sub, subregion_t *region)
         po_floor = region->floorplane;
         po_ceiling = region->ceilplane;
       }
+      */
+      TSecPlaneRef po_floor, po_ceiling;
+      po_floor.set(&pobj->floor, false);
+      po_ceiling.set(&pobj->ceiling, false);
       for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
         UpdateDrawSeg(sub, (*polySeg)->drawsegs, po_floor, po_ceiling);
       }
