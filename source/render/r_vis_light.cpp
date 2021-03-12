@@ -155,6 +155,9 @@ void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
 //==========================================================================
 void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, const float *lightbbox) {
  tailcall:
+  if (!Are3DBBoxesOverlapIn2D(bbox, lightbbox)) return;
+
+ tailcall_no_overlap:
 #ifdef VV_CLIPPER_FULL_CHECK
   if (LightClip.ClipIsFull()) return;
 #endif
@@ -170,14 +173,12 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
     // decide which side the view point is on
     const float dist = bsp->PointDistance(CurrLightPos);
     if (dist > CurrLightRadius) {
-      // light is completely on front side
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], lightbbox)) return;
+      // light is completely on the front side
       bspnum = bsp->children[0];
       bbox = bsp->bbox[0];
       goto tailcall;
     } else if (dist < -CurrLightRadius) {
-      // light is completely on back side
-      if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], lightbbox)) return;
+      // light is completely on the back side
       bspnum = bsp->children[1];
       bbox = bsp->bbox[1];
       goto tailcall;
@@ -192,14 +193,14 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
           CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
           bspnum = bsp->children[1u^side];
           bbox = bsp->bbox[1u^side];
-          goto tailcall;
+          goto tailcall_no_overlap;
         } else {
           // only front
           bspnum = bsp->children[side];
           bbox = bsp->bbox[side];
-          goto tailcall;
+          goto tailcall_no_overlap;
         }
-      } else if (Are3DBBoxesOverlapIn2D(bsp->bbox[1u^side], lightbbox)) {
+      } else {
         bspnum = bsp->children[1u^side];
         bbox = bsp->bbox[1u^side];
         goto tailcall;
