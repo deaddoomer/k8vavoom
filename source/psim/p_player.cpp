@@ -1056,6 +1056,7 @@ IMPLEMENT_FUNCTION(VBasePlayer, ClearPlayer) {
   Self->PSpriteWeaponLoweringStartTime = 0;
   Self->PSpriteWeaponLoweringDuration = 0;
   Self->LastViewObject = nullptr;
+  Self->Attackers.reset();
 
   vuint8 *Def = Self->GetClass()->Defaults;
   for (VField *F = Self->GetClass()->Fields; F; F = F->Next) {

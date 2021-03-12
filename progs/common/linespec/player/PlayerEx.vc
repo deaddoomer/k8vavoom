@@ -3623,6 +3623,8 @@ void ResetPlayerOnSpawn (optional bool keepPlayerState) {
   k8NextSuperBulletTime = 0;
   LastRegenTicTime = 0;
 
+  ResetAttackers();
+
   ResetACSButtons();
 
   k8BossesDetected = 666;
