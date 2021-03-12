@@ -182,6 +182,7 @@ vuint8 *VPngTexture::GetPixels () {
   //delete Strm;
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 

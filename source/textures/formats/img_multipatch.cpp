@@ -797,7 +797,7 @@ vuint8 *VMultiPatchTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
-
+  PrepareBrightmap();
   return Pixels;
 }
 

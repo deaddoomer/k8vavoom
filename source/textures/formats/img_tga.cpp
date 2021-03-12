@@ -408,7 +408,9 @@ vuint8 *VTgaTexture::GetPixels () {
       }
     }
   }
+
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 

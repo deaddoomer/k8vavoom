@@ -152,6 +152,7 @@ vuint8 *VRawPicTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 

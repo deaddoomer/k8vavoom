@@ -136,8 +136,6 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   const int TexSOffset = Tex->SOffset;
   const int TexTOffset = Tex->TOffset;
 
-  //GCon->Logf(NAME_Debug, "PSPRITE: '%s'; size=(%d,%d); ofs=(%d,%d); scale=(%g,%g)", *Tex->Name, TexWidth, TexHeight, TexSOffset, TexTOffset, Tex->SScale, Tex->TScale);
-
   const float scaleX = max2(0.001f, Tex->SScale);
   const float scaleY = max2(0.001f, Tex->TScale);
 
@@ -152,6 +150,8 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
 
   spry -= cl->PSpriteSY;
   spry -= PSpriteOfsAspect;
+
+  //GCon->Logf(NAME_Debug, "PSPRITE: '%s'; size=(%d,%d); ofs=(%d,%d); scale=(%g,%g); sxy=(%g,%g); sprxy=(%g,%g)", *Tex->Name, TexWidth, TexHeight, TexSOffset, TexTOffset, Tex->SScale, Tex->TScale, SX, SY, sprx, spry);
 
   //k8: this is not right, but meh...
   /*

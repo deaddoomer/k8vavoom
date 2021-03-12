@@ -119,6 +119,7 @@ vuint8 *VPatchTexture::GetPixels () {
     Pixels = new vuint8[1];
     Pixels[0] = 0;
     ConvertPixelsToShaded();
+    PrepareBrightmap();
     transFlags |= FlagTransparent;
     return Pixels;
   }
@@ -135,6 +136,7 @@ vuint8 *VPatchTexture::GetPixels () {
     Height = 1;
     checkerFill8(Pixels, Width, Height);
     ConvertPixelsToShaded();
+    PrepareBrightmap();
     return Pixels;
   }
 
@@ -149,6 +151,7 @@ vuint8 *VPatchTexture::GetPixels () {
     GCon->Logf(NAME_Warning, "Patch \"%s\" is too small", *Name);
     checkerFill8(Pixels, Width, Height);
     ConvertPixelsToShaded();
+    PrepareBrightmap();
     return Pixels;
   }
 
@@ -267,5 +270,6 @@ vuint8 *VPatchTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }

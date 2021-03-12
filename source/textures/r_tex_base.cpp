@@ -122,6 +122,7 @@ VTexture::VTexture ()
   , RealHeight(MIN_VINT32)
   , RealWidth(MIN_VINT32)
   , Brightmap(nullptr)
+  , BrightmapBase(nullptr)
   , noDecals(false)
   , staticNoDecals(false)
   , animNoDecals(false)
@@ -147,6 +148,8 @@ VTexture::VTexture ()
   , alreadyCropped(false)
   , croppedOfsX(0)
   , croppedOfsY(0)
+  , precropWidth(0)
+  , precropHeight(0)
 {
 }
 
@@ -157,6 +160,7 @@ VTexture::VTexture ()
 //
 //==========================================================================
 VTexture::~VTexture () {
+  BrightmapBase = nullptr; // anyway
   ReleasePixels();
   // in case it is not from a pak
   if (Pixels) { delete[] Pixels; Pixels = nullptr; }
@@ -240,6 +244,13 @@ void VTexture::ReleasePixels () {
   Pixels8BitValid = Pixels8BitAValid = false;
   mFormat = mOrigFormat; // undo `ConvertPixelsToRGBA()`
   if (Brightmap) Brightmap->ReleasePixels();
+  // restore offset
+  if (alreadyCropped) {
+    SOffset += croppedOfsX;
+    TOffset += croppedOfsY;
+    Width = precropWidth;
+    Height = precropHeight;
+  }
   alreadyCropped = false;
   croppedOfsX = croppedOfsY = 0;
 }
@@ -252,6 +263,7 @@ void VTexture::ReleasePixels () {
 //==========================================================================
 vuint8 *VTexture::GetPixels8 () {
   // if already have converted version, then just return it
+  //GCon->Logf(NAME_Debug, "VTexture::GetPixels8: '%s' (%d: %s) : %p", *Name, SourceLump, *W_FullLumpName(SourceLump), Pixels8Bit);
   if (Pixels8Bit && Pixels8BitValid) return Pixels8Bit;
   vuint8 *pixdata = GetPixels();
   if (Format == TEXFMT_8Pal) {
@@ -303,6 +315,7 @@ vuint8 *VTexture::GetPixels8 () {
 //==========================================================================
 pala_t *VTexture::GetPixels8A () {
   // if already have converted version, then just return it
+  //GCon->Logf(NAME_Debug, "VTexture::GetPixels8A: '%s' (%d: %s) : %p", *Name, SourceLump, *W_FullLumpName(SourceLump), Pixels8BitA);
   if (Pixels8BitA && Pixels8BitAValid) {
     //GCon->Logf("***** ALREADY 8A: '%s", *Name);
     return Pixels8BitA;
@@ -1290,6 +1303,85 @@ void VTexture::WriteToPNG (VStream *strm) {
 
 //==========================================================================
 //
+//  VTexture::PrepareBrightmap
+//
+//  load brightmap texture pixels, crop/resize it if necessary
+//  called from `GetPixels()`
+//
+//==========================================================================
+void VTexture::PrepareBrightmap () {
+  vassert(Pixels);
+  VTexture *base = BrightmapBase;
+  if (!BrightmapBase || base == this) return;
+  if (base->Width == Width && base->Height == Height && alreadyCropped == base->alreadyCropped) return; // nothing to do here
+  //GCon->Logf(NAME_Debug, "***PrepareBrightmap '%s' (for '%s')", *W_FullLumpName(SourceLump), *W_FullLumpName(base->SourceLump));
+  if (base->alreadyCropped) {
+    ResizeCanvas(base->precropWidth, base->precropHeight);
+    CropCanvasTo(base->croppedOfsX, base->croppedOfsY, base->croppedOfsX+base->Width-1, base->croppedOfsY+base->Height-1);
+    alreadyCropped = true;
+    precropWidth = base->precropWidth;
+    precropHeight = base->precropHeight;
+    croppedOfsX = base->croppedOfsX;
+    croppedOfsY = base->croppedOfsY;
+    SOffset -= croppedOfsX;
+    TOffset -= croppedOfsY;
+  } else {
+    // easy deal
+    ResizeCanvas(base->Width, base->Height);
+  }
+}
+
+
+//==========================================================================
+//
+//  VTexture::CropTextureTo
+//
+//  should be called ONLY on uncropped textures!
+//  rectangle is inclusive, and must not be empty
+//  used by `CropTexture()`
+//
+//==========================================================================
+void VTexture::CropCanvasTo (int x0, int y0, int x1, int y1) {
+  vassert(x0 <= x1);
+  vassert(y0 <= y1);
+  vassert(Pixels);
+
+  // release 8-bit pixel data (it should be recreated)
+  if (Pixels8Bit) { delete[] Pixels8Bit; Pixels8Bit = nullptr; }
+  if (Pixels8BitA) { delete[] Pixels8BitA; Pixels8BitA = nullptr; }
+  Pixels8BitValid = Pixels8BitAValid = false;
+
+  int newwdt = x1-x0+1;
+  int newhgt = y1-y0+1;
+  vassert(newwdt > 0);
+  vassert(newhgt > 0);
+
+  ConvertPixelsToRGBA();
+
+  rgba_t *newpic = new rgba_t[newwdt*newhgt];
+  memset((void *)newpic, 0, newwdt*newhgt*sizeof(rgba_t));
+  rgba_t *dest = newpic;
+  const rgba_t *oldpix = (const rgba_t *)Pixels;
+  for (int y = 0; y < newhgt; ++y) {
+    for (int x = 0; x < newwdt; ++x) {
+      const int ox = x0+x;
+      const int oy = y0+y;
+      if (ox >= 0 && oy >= 0 && ox < Width && oy < Height) {
+        dest[y*newwdt+x] = oldpix[oy*Width+ox];
+      }
+    }
+  }
+  delete [] Pixels;
+  Pixels = (vuint8 *)newpic;
+  Width = newwdt;
+  Height = newhgt;
+
+  RealX0 = RealY0 = RealHeight = RealWidth = MIN_VINT32;
+}
+
+
+//==========================================================================
+//
 //  VTexture::CropTexture
 //
 //==========================================================================
@@ -1299,7 +1391,7 @@ void VTexture::CropTexture () {
   if (Width < 1 || Height < 1) return;
 
   //ReleasePixels();
-  GetPixels();
+  (void)GetPixels();
 
   int x0, y0;
   int x1, y1;
@@ -1349,13 +1441,41 @@ void VTexture::CropTexture () {
     y1 = min2(Height-1, y1+1);
   }
 
-  // crop it
-  if (x0 == 0 && y0 == 0 && x1 == Width-1 && y1 == Height-1) return;
-
   const int neww = x1-x0+1;
   const int newh = y1-y0+1;
 
-  if (neww < 1 || newh < 1) return; // just in case
+  // crop it
+  if ((x0 == 0 && y0 == 0 && x1 == Width-1 && y1 == Height-1) || neww < 1 || newh < 1) {
+    // don't do it again
+    precropWidth = Width;
+    precropHeight = Height;
+    alreadyCropped = true;
+    croppedOfsX = 0;
+    croppedOfsY = 0;
+    // fix brightmap
+    if (Brightmap) {
+      Brightmap->precropWidth = Width;
+      Brightmap->precropHeight = Height;
+      Brightmap->alreadyCropped = true;
+      Brightmap->croppedOfsX = 0;
+      Brightmap->croppedOfsY = 0;
+    }
+    return;
+  }
+
+  // release 8-bit pixel data (it should be recreated)
+  if (Pixels8Bit) { delete[] Pixels8Bit; Pixels8Bit = nullptr; }
+  if (Pixels8BitA) { delete[] Pixels8BitA; Pixels8BitA = nullptr; }
+  Pixels8BitValid = Pixels8BitAValid = false;
+
+  // reload brightmap data
+  if (Brightmap) {
+    if (Brightmap->Pixels8Bit) { delete[] Brightmap->Pixels8Bit; Brightmap->Pixels8Bit = nullptr; }
+    if (Brightmap->Pixels8BitA) { delete[] Brightmap->Pixels8BitA; Brightmap->Pixels8BitA = nullptr; }
+    Brightmap->Pixels8BitValid = Brightmap->Pixels8BitAValid = false;
+    (void)Brightmap->GetPixels(); // this will properly crop/resize brightmap to the size of this texture
+    vassert(!Brightmap->alreadyCropped);
+  }
 
   GCon->Logf(NAME_Debug, "%s (%s): crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, *W_FullLumpName(SourceLump), Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
 
@@ -1383,6 +1503,9 @@ void VTexture::CropTexture () {
     Pixels = (vuint8 *)newpic;
   }
 
+  // save original size
+  precropWidth = Width;
+  precropHeight = Height;
   alreadyCropped = true;
   croppedOfsX = x0;
   croppedOfsY = y0;
@@ -1392,6 +1515,22 @@ void VTexture::CropTexture () {
   Height = newh;
 
   RealX0 = RealY0 = RealHeight = RealWidth = MIN_VINT32;
+
+  // crop brightmap data
+  if (Brightmap) {
+    vassert(!Brightmap->alreadyCropped);
+    vassert(Brightmap->Width == precropWidth);
+    vassert(Brightmap->Height == precropHeight);
+    //GCon->Logf(NAME_Debug, "***cropping brightmap '%s' (for '%s')", *W_FullLumpName(Brightmap->SourceLump), *W_FullLumpName(SourceLump));
+    Brightmap->precropWidth = Brightmap->Width;
+    Brightmap->precropHeight = Brightmap->Height;
+    Brightmap->alreadyCropped = true;
+    Brightmap->CropCanvasTo(x0, y0, x1, y1);
+    Brightmap->croppedOfsX = x0;
+    Brightmap->croppedOfsY = y0;
+    Brightmap->SOffset -= x0;
+    Brightmap->TOffset -= y0;
+  }
 }
 
 

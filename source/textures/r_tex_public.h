@@ -230,6 +230,7 @@ public:
   int RealWidth;
 
   VTexture *Brightmap;
+  VTexture *BrightmapBase; // set for brightmap textures
 
   bool noDecals;
   bool staticNoDecals;
@@ -342,6 +343,7 @@ protected:
   // we need those offsets to correctly apply patches in multipatch texture builder
   bool alreadyCropped;
   int croppedOfsX, croppedOfsY;
+  int precropWidth, precropHeight; // so we will be able to restore it in `ReleasePixels()`
 
 public:
   inline bool isCropped () const noexcept { return alreadyCropped; }
@@ -391,6 +393,15 @@ protected:
 
   void CalcRealDimensions ();
 
+  // should be called ONLY on uncropped textures!
+  // rectangle is inclusive, and must not be empty
+  // used by `CropTexture()`
+  void CropCanvasTo (int x0, int y0, int x1, int y1);
+
+  // load brightmap texture pixels, crop/resize it if necessary
+  // called from `GetPixels()`
+  void PrepareBrightmap ();
+
 public:
   static void FilterFringe (rgba_t *pic, int wdt, int hgt);
   static void PremultiplyImage (rgba_t *pic, int wdt, int hgt);
@@ -399,7 +410,7 @@ public:
   rgb_t GetAverageColor (vuint32 maxout);
   void ResizeCanvas (int newwdt, int newhgt);
 
-  void CropTexture ();
+  void CropTexture (); // this also crops brightmap texture
 
   void ConvertXHairPixels ();
 

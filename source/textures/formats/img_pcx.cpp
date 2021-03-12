@@ -345,6 +345,7 @@ vuint8 *VPcxTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 

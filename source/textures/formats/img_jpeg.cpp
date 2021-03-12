@@ -354,6 +354,7 @@ vuint8 *VJpegTexture::GetPixels () {
   //delete Strm;
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 
@@ -456,6 +457,7 @@ vuint8 *VJpegTexture::GetPixels () {
   stbi_image_free(data);
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
 #endif

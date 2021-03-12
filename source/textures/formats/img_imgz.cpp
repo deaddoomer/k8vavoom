@@ -147,5 +147,6 @@ vuint8 *VImgzTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }

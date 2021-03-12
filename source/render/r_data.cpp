@@ -1566,6 +1566,7 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
     }
 
     basetex->Brightmap = bm;
+    bm->BrightmapBase = basetex;
     if (doLoadDump) GCon->Logf(NAME_Warning, "texture '%s' got brightmap '%s' (%p : %p) (lump %d:%s)", *basetex->Name, *bm->Name, basetex, bm, lmp, *W_FullLumpName(lmp));
   }
 #else

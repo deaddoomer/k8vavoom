@@ -145,5 +145,6 @@ vuint8 *VFlatTexture::GetPixels () {
   }
 
   ConvertPixelsToShaded();
+  PrepareBrightmap();
   return Pixels;
 }
