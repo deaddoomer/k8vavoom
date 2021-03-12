@@ -72,25 +72,32 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum) noexcept {
     if (dist >= cboxRadius) {
       // light is completely on front side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], cboxCheckBox)) return false;
-      //return CheckBSPVisibilityBoxSub(bsp->children[0]);
       bspnum = bsp->children[0];
       goto tailcall;
     } else if (dist <= -cboxRadius) {
       // light is completely on back side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], cboxCheckBox)) return false;
-      //return CheckBSPVisibilityBoxSub(bsp->children[1]);
       bspnum = bsp->children[1];
       goto tailcall;
     } else {
-      // it doesn't really matter which subspace we'll check first
-      //const unsigned side = (unsigned)(dist <= 0.0f);
+      /* the order doesn't matter here, because we aren't doing any culling
+      const unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      if (CheckBSPVisibilityBoxSub(bsp->children[0/*side*/])) return true;
+      if (CheckBSPVisibilityBoxSub(bsp->children[side])) return true;
       // recursively divide back space
-      //side ^= 1;
-      //return CheckBSPVisibilityBoxSub(bsp->children[side]);
-      bspnum = bsp->children[1/*side*/];
+      bspnum = bsp->children[1u^side];
       goto tailcall;
+      */
+      if (Are3DBBoxesOverlapIn2D(bsp->bbox[0], cboxCheckBox)) {
+        if (Are3DBBoxesOverlapIn2D(bsp->bbox[1], cboxCheckBox)) {
+          if (CheckBSPVisibilityBoxSub(bsp->children[1])) return true;
+        }
+        bspnum = bsp->children[0];
+        goto tailcall;
+      } else if (Are3DBBoxesOverlapIn2D(bsp->bbox[1], cboxCheckBox)) {
+        bspnum = bsp->children[1];
+        goto tailcall;
+      }
     }
   } else {
     // check subsector

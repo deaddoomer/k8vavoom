@@ -172,40 +172,36 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
     if (dist > CurrLightRadius) {
       // light is completely on front side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], lightbbox)) return;
-      //return CalcLightVisCheckNode(bsp->children[0], bsp->bbox[0], lightbbox);
       bspnum = bsp->children[0];
       bbox = bsp->bbox[0];
       goto tailcall;
     } else if (dist < -CurrLightRadius) {
       // light is completely on back side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], lightbbox)) return;
-      //return CalcLightVisCheckNode(bsp->children[1], bsp->bbox[1], lightbbox);
       bspnum = bsp->children[1];
       bbox = bsp->bbox[1];
       goto tailcall;
     } else {
-      // it doesn't really matter which subspace we'll check first
-      //unsigned side = (unsigned)bsp->PointOnSide(CurrLightPos);
-      //unsigned side = (unsigned)(dist <= 0.0f); //(unsigned)bsp->PointOnSide(CurrLightPos);
-      // recursively divide front space
-      if (Are3DBBoxesOverlapIn2D(bsp->bbox[0/*side*/], lightbbox)) {
-        if (Are3DBBoxesOverlapIn2D(bsp->bbox[1/*1^side*/], lightbbox)) {
-          CalcLightVisCheckNode(bsp->children[0/*side*/], bsp->bbox[0/*side*/], lightbbox);
-          bspnum = bsp->children[1];
-          bbox = bsp->bbox[1];
+      // as we are doing geometry culling, we should use the correct order here
+      const unsigned side = (unsigned)(dist <= 0.0f);
+      // check front side
+      if (Are3DBBoxesOverlapIn2D(bsp->bbox[side], lightbbox)) {
+        // is back side touched too?
+        if (Are3DBBoxesOverlapIn2D(bsp->bbox[1u^side], lightbbox)) {
+          // check both, front first
+          CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
+          bspnum = bsp->children[1u^side];
+          bbox = bsp->bbox[1u^side];
           goto tailcall;
         } else {
-          bspnum = bsp->children[0];
-          bbox = bsp->bbox[0];
+          // only front
+          bspnum = bsp->children[side];
+          bbox = bsp->bbox[side];
           goto tailcall;
         }
-      } else if (Are3DBBoxesOverlapIn2D(bsp->bbox[1/*1^side*/], lightbbox)) {
-        // only back space
-        //side ^= 1;
-        //if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1/*side*/], lightbbox)) return;
-        //return CalcLightVisCheckNode(bsp->children[side], bsp->bbox[side], lightbbox);
-        bspnum = bsp->children[1];
-        bbox = bsp->bbox[1];
+      } else if (Are3DBBoxesOverlapIn2D(bsp->bbox[1u^side], lightbbox)) {
+        bspnum = bsp->children[1u^side];
+        bbox = bsp->bbox[1u^side];
         goto tailcall;
       }
     }
