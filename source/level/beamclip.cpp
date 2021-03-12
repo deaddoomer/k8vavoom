@@ -236,6 +236,7 @@ static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg)
   /* inspired by Zandronum code (actually, most sourceports has this, Zandronum was just a port i looked at) */ \
  \
   /* properly render skies (consider door "open" if both ceilings are sky) */ \
+  /* k8: why? */ \
   if (bcpic == skyflatnum && fcpic == skyflatnum) return false; \
   /* closed door */ \
   if (backcz1 <= frontfz1 && backcz2 <= frontfz2) { \
@@ -266,6 +267,7 @@ static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg)
   /* if door is closed because back is shut */ \
   if (backcz1 <= backfz1 && backcz2 <= backfz2) { \
     /* properly render skies */ \
+    /* k8: why? */ \
     if (bfpic == skyflatnum && ffpic == skyflatnum) return false; \
     /* preserve a kind of transparent door/lift special effect */ \
     if (seg->frontsector == bsec) { \
@@ -395,77 +397,90 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
 
   if (ldef->sidenum[0] < 0 || ldef->sidenum[1] < 0) return true; // one-sided
 
-  const sector_t *fsec = ldef->frontsector;
-  const sector_t *bsec = ldef->backsector;
+  const sector_t *fsec = seg->frontsector;
+  const sector_t *bsec = seg->backsector;
 
   if (fsec == bsec) return false; // self-referenced sector
   if (!fsec || !bsec) return true; // one-sided
 
-  // skip clipping with transdoor sectors
-  if ((seg->frontsector->SectorFlags|seg->backsector->SectorFlags)&sector_t::SF_IsTransDoor) return false;
+  // skip clipping with transdoor sectors (really?)
+  // we should mark transparent door tracks -- they should be used for clipping
+  if ((fsec->SectorFlags|bsec->SectorFlags)&sector_t::SF_IsTransDoor) return false;
 
   auto topTexType = GTextureManager.GetTextureType(seg->sidedef->TopTexture);
   auto botTexType = GTextureManager.GetTextureType(seg->sidedef->BottomTexture);
   auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
 
-  // transparent door hack
-  if (topTexType == VTextureManager::TCT_EMPTY && botTexType == VTextureManager::TCT_EMPTY) return false;
+  int fcpic, ffpic;
+  int bcpic, bfpic;
+
+  TPlane ffplane, fcplane;
+  TPlane bfplane, bcplane;
+
+  CopyHeight(fsec, &ffplane, &fcplane, &ffpic, &fcpic);
+  CopyHeight(bsec, &bfplane, &bcplane, &bfpic, &bcpic);
+
+  //FIXME: check for sky textures here?
+
+  CLIPPER_CALC_FCHEIGHTS
+
+  const bool topvisible = (backcz1 < frontcz1 || backcz2 < frontcz2); // is some part of the top texture visible?
+  const bool botvisible = (backfz1 > frontfz1 || backfz2 > frontfz2); // is some part of the bottom texture visible?
+
+  // turn invisible textures into solid ones (because they essentially are)
+  if (!topvisible) topTexType = VTextureManager::TCT_SOLID;
+  if (!botvisible) botTexType = VTextureManager::TCT_SOLID;
+
+  // transparent door hack (not needed, we'll do it better)
+  //if (topTexType == VTextureManager::TCT_EMPTY && botTexType == VTextureManager::TCT_EMPTY) return false;
 
   if (topTexType == VTextureManager::TCT_SOLID || // a seg without top texture isn't a door
       botTexType == VTextureManager::TCT_SOLID || // a seg without bottom texture isn't an elevator/plat
       midTexType == VTextureManager::TCT_SOLID) // a seg without mid texture isn't a polyobj door
   {
-    int fcpic, ffpic;
-    int bcpic, bfpic;
+    CLIPPER_CHECK_CLOSED_SECTOR();
 
-    TPlane ffplane, fcplane;
-    TPlane bfplane, bcplane;
-
-    CopyHeight(fsec, &ffplane, &fcplane, &ffpic, &fcpic);
-    CopyHeight(bsec, &bfplane, &bcplane, &bfpic, &bcpic);
-
-    CLIPPER_CALC_FCHEIGHTS
-
-    if (clip_midsolid && midTexType) {
-      const bool midSolid = (midTexType && !GTextureManager.IsSeeThrough(seg->sidedef->MidTexture));
-      if (midSolid) {
-        const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
-        VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
-        // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-        const float texh = MTex->GetScaledHeight();
-        float z_org;
-        if (ldef->flags&ML_DONTPEGBOTTOM) {
-          // bottom of texture at bottom
-          // top of texture at top
-          z_org = max2(fsec->floor.TexZ, bsec->floor.TexZ)+texh;
-        } else {
-          // top of texture at top
-          z_org = min2(fsec->ceiling.TexZ, bsec->ceiling.TexZ);
-        }
-        //k8: dunno why
-        if (seg->sidedef->Mid.RowOffset < 0) {
-          z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-        } else {
-          z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-        }
-        float floorz, ceilz;
-        if (sec == fsec) {
-          floorz = min2(frontfz1, frontfz2);
-          ceilz = max2(frontcz1, frontcz2);
-        } else {
-          floorz = min2(backfz1, backfz2);
-          ceilz = max2(backcz1, backcz2);
-        }
-        if ((ldef->flags&ML_WRAP_MIDTEX) || (seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
-          if (z_org-texh <= floorz) return true; // fully covered, as it is wrapped
-        } else {
-          // non-wrapped
-          if (z_org >= ceilz && z_org-texh <= floorz) return true; // fully covered
-        }
+    // clip with solid midtex that covers the whole hole (both other textures should be solid/invisible)
+    if (midTexType == VTextureManager::TCT_SOLID &&
+        topTexType == VTextureManager::TCT_SOLID &&
+        botTexType == VTextureManager::TCT_SOLID &&
+        clip_midsolid.asBool())
+    {
+      //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
+      VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
+      // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+      const float texh = MTex->GetScaledHeight();
+      float z_org;
+      if (ldef->flags&ML_DONTPEGBOTTOM) {
+        // bottom of texture at bottom
+        // top of texture at top
+        z_org = max2(fsec->floor.TexZ, bsec->floor.TexZ)+texh;
+      } else {
+        // top of texture at top
+        z_org = min2(fsec->ceiling.TexZ, bsec->ceiling.TexZ);
+      }
+      //k8: dunno why
+      if (seg->sidedef->Mid.RowOffset < 0) {
+        z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+      } else {
+        z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+      }
+      //TODO: use proper checks for slopes here
+      float floorz, ceilz;
+      if (/*sec == fsec*/bsec == ldef->frontsector) {
+        floorz = min2(frontfz1, frontfz2);
+        ceilz = max2(frontcz1, frontcz2);
+      } else {
+        floorz = min2(backfz1, backfz2);
+        ceilz = max2(backcz1, backcz2);
+      }
+      if ((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
+        if (z_org-texh <= floorz) return true; // fully covered, as it is wrapped
+      } else {
+        // non-wrapped
+        if (z_org >= ceilz && z_org-texh <= floorz) return true; // fully covered
       }
     }
-
-    CLIPPER_CHECK_CLOSED_SECTOR();
 
     if (clip_height &&
         /*((seg->frontsector->SectorFlags|seg->backsector->SectorFlags)&sector_t::SF_IsTransDoor) == 0 &&*/ /* (checked above) don't do this for transdoors */
@@ -484,6 +499,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
       // this way, we can clip alot of things when camera looks at
       // floor/ceiling, and we can clip away too high/low windows.
 
+      //TODO: use proper checks for slopes here
       // midhole quad
       TVec verts[4];
       verts[0] = TVec(vv1.x, vv1.y, max2(frontfz1, backfz1));
@@ -491,63 +507,65 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
       verts[2] = TVec(vv2.x, vv2.y, min2(frontcz2, backcz2));
       verts[3] = TVec(vv2.x, vv2.y, max2(frontfz2, backfz2));
 
-      if (min2(verts[0].z, verts[3].z) >= max2(verts[1].z, verts[2].z)) return true; // definitely closed
+      if (botTexType == VTextureManager::TCT_SOLID &&
+          topTexType == VTextureManager::TCT_SOLID &&
+          min2(verts[0].z, verts[3].z) >= max2(verts[1].z, verts[2].z)) return true; // definitely closed
 
       if (Frustum && Frustum->isValid()) {
-        // check (only top, bottom, and back)
-        if (!Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3]/*, TFrustum::TopBit|TFrustum::BottomBit*/ /*|TFrustum::BackBit*/)) {
-          // check which texture is visible -- top or bottom
-          #if 0
-          bool checkFailed = false;
+        // check if midtex is visible at all
+        if (!Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
+          //return true;
+          // midtex is invisible; yet we still have to check if top or bottom is transparent, and can be visible
+          bool checkPassed = true;
 
-          if (/*botTexType != VTextureManager::TCT_SOLID*/true) {
-            // create bottom pseudo-quad
-            verts[0] = TVec(vv1.x, vv1.y, max2(frontfz1, frontfz2));
-            verts[1] = TVec(vv1.x, vv1.y, -40000);
-            verts[2] = TVec(vv2.x, vv2.y, -40000);
-            verts[3] = TVec(vv2.x, vv2.y, max2(frontfz2, frontfz2));
+          if (botvisible && botTexType != VTextureManager::TCT_SOLID) {
+            // create bottom pseudo-quad (back floor is higher)
+            verts[0] = TVec(vv1.x, vv1.y, backfz1);
+            verts[1] = TVec(vv1.x, vv1.y, frontfz1);
+            verts[2] = TVec(vv2.x, vv2.y, frontfz2);
+            verts[3] = TVec(vv2.x, vv2.y, backfz2);
             if (Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
               // bottom is visible
-              GCon->Logf(NAME_Debug, "line #%d: BOTTOM IS VISIBLE (type=%d)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), botTexType);
-              checkFailed = true;
+              //GCon->Logf(NAME_Debug, "line #%d: BOTTOM IS VISIBLE (type=%d); backfz=(%g : %g); topfz=(%g : %g)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), botTexType, backfz1, backfz2, frontfz1, frontfz2);
+              checkPassed = false;
             }
           }
 
-          if (/*!checkFailed && topTexType != VTextureManager::TCT_SOLID*/true) {
-            // create top pseudo-quad
-            verts[0] = TVec(vv1.x, vv1.y, min2(frontcz1, frontcz2));
-            verts[1] = TVec(vv1.x, vv1.y, 40000);
-            verts[2] = TVec(vv2.x, vv2.y, 40000);
-            verts[3] = TVec(vv2.x, vv2.y, min2(frontcz2, frontcz2));
+          if (checkPassed && topvisible && topTexType != VTextureManager::TCT_SOLID) {
+            // create top pseudo-quad (front ceiling is higher)
+            verts[0] = TVec(vv1.x, vv1.y, frontcz1);
+            verts[1] = TVec(vv1.x, vv1.y, backcz1);
+            verts[2] = TVec(vv2.x, vv2.y, backcz2);
+            verts[3] = TVec(vv2.x, vv2.y, frontcz2);
             if (Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
-              // bottom is visible
-              GCon->Logf(NAME_Debug, "line #%d: TOP IS VISIBLE (type=%d)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), topTexType);
-              checkFailed = true;
+              // top is visible
+              //GCon->Logf(NAME_Debug, "line #%d: TOP IS VISIBLE (type=%d); backcz=(%g : %g); frontcz=(%g : %g); dz1=%a (%s); dz2=%a (%s)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), topTexType, backcz1, backcz2, frontcz1, frontcz2, backcz1-frontcz1, *VStr(backcz1-frontcz1), backcz2-frontcz2, *VStr(backcz2-frontcz2));
+              checkPassed = false;
             }
           }
 
-          /*if (!checkFailed)*/
-          #endif
-          return true;
+          if (checkPassed) return true;
         }
       }
 
       // check if light can touch midtex
+      //TODO: check top/bottom visibility and transparency?
+      //TODO: use proper checks for slopes here
       if (lorg) {
         // checking light
         if (!ldef->SphereTouches(*lorg, *lrad)) return true;
         // min
         float bbox[6];
-        bbox[0] = min2(vv1.x, vv2.x);
-        bbox[1] = min2(vv1.y, vv2.y);
-        bbox[2] = min2(min2(min2(frontfz1, backfz1), frontfz2), backfz2);
+        bbox[BOX3D_MINX] = min2(vv1.x, vv2.x);
+        bbox[BOX3D_MINY] = min2(vv1.y, vv2.y);
+        bbox[BOX3D_MINZ] = min2(min2(min2(frontfz1, backfz1), frontfz2), backfz2);
         // max
-        bbox[3+0] = max2(vv1.x, vv2.x);
-        bbox[3+1] = max2(vv1.y, vv2.y);
-        bbox[3+2] = max2(max2(max2(frontcz1, backcz1), frontcz2), backcz2);
+        bbox[BOX3D_MAXX] = max2(vv1.x, vv2.x);
+        bbox[BOX3D_MAXY] = max2(vv1.y, vv2.y);
+        bbox[BOX3D_MAXZ] = max2(max2(max2(frontcz1, backcz1), frontcz2), backcz2);
         FixBBoxZ(bbox);
 
-        if (bbox[2] >= bbox[3+2]) return true; // definitely closed
+        if (bbox[BOX3D_MINZ] >= bbox[BOX3D_MAXZ]) return true; // definitely closed
 
         if (!CheckSphereVsAABB(bbox, *lorg, *lrad)) return true; // cannot see midtex, can block
       }
