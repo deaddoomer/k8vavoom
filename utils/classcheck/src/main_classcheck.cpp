@@ -1049,7 +1049,7 @@ Type *parseVCType (SemParser *par, bool basic=false) {
     if (par->eat("protected")) continue;
     if (par->eat("public")) continue;
     if (par->eat("[")) { while (!par->eat("]")) par->skipToken(); continue; }
-    if (par->eat("static") || par->eat("override") || par->eat("final")) {
+    if (par->eat("static") || par->eat("override") || par->eat("final") || par->eat("spawner")) {
       // definitely a method
       skipMethod(par);
       return nullptr;
@@ -1417,6 +1417,9 @@ void checkVCType (Type *tp) {
     if (tp->name == "MiAStarGraphBase") return; //FIXME: cannot parse this yet!
     if (tp->name == "event_t") return; //FIXME: cannot parse this yet!
     if (tp->name == "TPlane") return; //FIXME: absent yet!
+    if (tp->name == "WadLumpIteratorInfoNS") return;
+    if (tp->name == "WadLumpIteratorInfoName") return;
+    if (tp->name == "SectorTagIterationInfo") return;
     if (tp->srcfile.indexOf("/progs/common/uibase/") >= 0) return;
     if (tp->srcfile.indexOf("/progs/common/botai/") >= 0) return;
     if (tp->srcfile.indexOf("/progs/hexen/") >= 0) return;
