@@ -1768,8 +1768,8 @@ void VViewClipper::ClipAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, con
 
   const seg_t *const *polySeg = pobj->segs;
   for (int count = pobj->numsegs; count--; ++polySeg) {
-    //const seg_t *seg = *polySeg;
-    const seg_t *seg = (*polySeg)->drawsegs->seg;
+    const seg_t *seg = *polySeg;
+    //const seg_t *seg = (*polySeg)->drawsegs->seg;
     if (!seg->linedef) continue;
     CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
   }
@@ -2091,8 +2091,8 @@ void VViewClipper::ClipLightAddPObjSegs (polyobj_t *pobj, const subsector_t *sub
 
   const seg_t *const *polySeg = pobj->segs;
   for (int count = pobj->numsegs; count--; ++polySeg) {
-    //const seg_t *seg = *polySeg;
-    const seg_t *seg = (*polySeg)->drawsegs->seg;
+    const seg_t *seg = *polySeg;
+    //const seg_t *seg = (*polySeg)->drawsegs->seg;
     if (!seg->linedef) continue;
     CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
   }

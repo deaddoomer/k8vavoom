@@ -787,7 +787,7 @@ VRenderLevelShared::~VRenderLevelShared () {
   for (auto &&seg : Level->allSegs()) {
     drawseg_t *n;
     for (drawseg_t *ds = seg.drawsegs; ds; ds = n) {
-      n = ds->next;
+      n = ds->next1;
       if (ds->top) FreeSegParts(ds->top);
       if (ds->mid) FreeSegParts(ds->mid);
       if (ds->bot) FreeSegParts(ds->bot);
@@ -2231,7 +2231,7 @@ vuint32 VRenderLevelShared::CountAllSurfaces () const noexcept {
   }
 
   for (auto &&seg : Level->allSegs()) {
-    for (drawseg_t *ds = seg.drawsegs; ds; ds = ds->next) {
+    for (drawseg_t *ds = seg.drawsegs; ds; ds = ds->next1) {
       surfCount += CountSegSurfacesInChain(ds->top);
       surfCount += CountSegSurfacesInChain(ds->mid);
       surfCount += CountSegSurfacesInChain(ds->bot);

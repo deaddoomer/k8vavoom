@@ -119,7 +119,7 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
   segpart_t *sp;
 
   dseg->seg = seg;
-  dseg->next = seg->drawsegs;
+  dseg->next1 = seg->drawsegs;
   seg->drawsegs = dseg;
 
   if (!seg->linedef) return; // miniseg
