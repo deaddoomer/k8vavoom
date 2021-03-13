@@ -264,10 +264,13 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
     TSecPlaneRef r_floor = region->floorplane;
     TSecPlaneRef r_ceiling = region->ceilplane;
 
-    drawseg_t *ds = region->lines;
-    if (ds) { // just in case
-      for (int count = sub->numlines; count--; ++ds) {
-        UpdateDrawSeg(sub, ds, r_floor, r_ceiling/*, ClipSegs*/);
+    sec_region_t *secregion = region->secregion;
+
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+      const seg_t *seg = &Level->Segs[sub->firstline];
+      for (int j = sub->numlines; j--; ++seg) {
+        if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+        UpdateDrawSeg(sub, seg->drawsegs, r_floor, r_ceiling);
       }
     }
 
@@ -276,8 +279,8 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       // "zerosky" is set when the sector has zero height, and sky ceiling
       // this is what removes extra floors on Doom II MAP01, for example
       if (region->flags&subregion_t::SRF_ZEROSKY_FLOOR_HACK) {
-        if (region->secregion->eceiling.splane->pic != skyflatnum ||
-            region->secregion->efloor.splane->pic == skyflatnum ||
+        if (secregion->eceiling.splane->pic != skyflatnum ||
+            secregion->efloor.splane->pic == skyflatnum ||
             sub->sector->floor.normal.z != 1.0f || sub->sector->ceiling.normal.z != -1.0f ||
             sub->sector->floor.minz != sub->sector->ceiling.minz)
         {

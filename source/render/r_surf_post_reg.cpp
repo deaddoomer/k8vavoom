@@ -42,7 +42,7 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 static int constexpr cestlen (const char *s, int pos=0) noexcept { return (s && s[pos] ? 1+cestlen(s, pos+1) : 0); }
-static constexpr const char *LMAP_CACHE_DATA_SIGNATURE = "VAVOOM CACHED LMAP VERSION 001.\n";
+static constexpr const char *LMAP_CACHE_DATA_SIGNATURE = "VAVOOM CACHED LMAP VERSION 002.\n";
 enum { CDSLEN = cestlen(LMAP_CACHE_DATA_SIGNATURE) };
 static_assert(CDSLEN == 32, "oops!");
 
@@ -757,14 +757,10 @@ void VRenderLevelLightmap::saveLightmapsInternal (VStream *strm) {
     seg_t *seg = &Level->Segs[i];
     vuint32 snum = (vuint32)i;
     *strm << snum;
-    // count drawsegs (so we can skip them if necessary)
-    vuint32 dscount = 0;
-    for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/) if (ds->seg) ++dscount;
+    vuint8 dscount = (seg->drawsegs ? 1 : 0);
     *strm << dscount;
-    dscount = 0;
-    for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/, ++dscount) {
-      if (!ds->seg) continue; // just in case
-      *strm << dscount;
+    if (seg->drawsegs) {
+      drawseg_t *ds = seg->drawsegs;
       WriteSegLightmaps(Level, strm, ds->top);
       WriteSegLightmaps(Level, strm, ds->mid);
       WriteSegLightmaps(Level, strm, ds->bot);
@@ -1059,52 +1055,45 @@ bool VRenderLevelLightmap::loadLightmapsInternal (VStream *strm) {
   for (int i = 0; i < Level->NumSegs; ++i) {
     seg_t *seg = &Level->Segs[i];
     // count drawsegs (so we can skip them if necessary)
-    vuint32 dscount = 0;
-    for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/) if (ds->seg) ++dscount;
+    vuint8 dscount = (seg->drawsegs ? 1 : 0);
     vuint32 snum = 0xffffffffu;
     *strm << snum;
     if ((int)snum != i) { GCon->Log(NAME_Warning, "invalid lightmap cache seg number"); return false; }
     // check drawseg count
-    vuint32 ccdscount = 0xffffffffu;
+    vuint8 ccdscount = 0xffu;
     *strm << ccdscount;
     if (strm->IsError()) { GCon->Log(NAME_Error, "error reading lightmap cache"); return false; }
+    if (ccdscount > 1) { GCon->Log(NAME_Error, "invalid lightmap cache drawsec count"); return false; }
     if (ccdscount != dscount) {
       GCon->Logf(NAME_Warning, "lightmap cache seg #%d drawseg count mismatch (%u instead of %u)", i, ccdscount, dscount);
-      if (dscount != 0) {
-        for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/, ++dscount) {
-          if (!ds->seg) continue; // just in case
-          lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->top);
-          lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->mid);
-          lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->bot);
-          lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->topsky);
-          lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->extra);
-        }
-      }
-      // skip them
-      while (ccdscount--) {
-        vuint32 n = 0xffffffffu;
-        *strm << n;
-        if (strm->IsError()) { GCon->Log(NAME_Error, "error reading lightmap cache"); return false; }
+      if (dscount) {
+        vassert(ccdscount == 0);
+        drawseg_t *ds = seg->drawsegs;
+        vassert(ds);
+        lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->top);
+        lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->mid);
+        lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->bot);
+        lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->topsky);
+        lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->extra);
+      } else {
+        // skip them
+        vassert(ccdscount == 1);
         if (!SkipLightSegSurfaces(Level, strm)) return false; // top
         if (!SkipLightSegSurfaces(Level, strm)) return false; // mid
         if (!SkipLightSegSurfaces(Level, strm)) return false; // bot
         if (!SkipLightSegSurfaces(Level, strm)) return false; // topsky
         if (!SkipLightSegSurfaces(Level, strm)) return false; // extra
       }
-    } else {
-      dscount = 0;
-      for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/, ++dscount) {
-        if (!ds->seg) continue; // just in case
-        vuint32 n = 0xffffffffu;
-        *strm << n;
-        if (strm->IsError()) { GCon->Log(NAME_Error, "error reading lightmap cache"); return false; }
-        if (n != dscount) { GCon->Log(NAME_Warning, "invalid lightmap cache drawseg number"); return false; }
-        if (!LoadLightSegSurfaces(Level, strm, ds->top, lmcacheUnknownSurfaceCount, missingWarned)) return false;
-        if (!LoadLightSegSurfaces(Level, strm, ds->mid, lmcacheUnknownSurfaceCount, missingWarned)) return false;
-        if (!LoadLightSegSurfaces(Level, strm, ds->bot, lmcacheUnknownSurfaceCount, missingWarned)) return false;
-        if (!LoadLightSegSurfaces(Level, strm, ds->topsky, lmcacheUnknownSurfaceCount, missingWarned)) return false;
-        if (!LoadLightSegSurfaces(Level, strm, ds->extra, lmcacheUnknownSurfaceCount, missingWarned)) return false;
-      }
+    } else if (dscount) {
+      vassert(dscount == 1);
+      vassert(ccdscount == 1);
+      drawseg_t *ds = seg->drawsegs;
+      vassert(ds);
+      if (!LoadLightSegSurfaces(Level, strm, ds->top, lmcacheUnknownSurfaceCount, missingWarned)) return false;
+      if (!LoadLightSegSurfaces(Level, strm, ds->mid, lmcacheUnknownSurfaceCount, missingWarned)) return false;
+      if (!LoadLightSegSurfaces(Level, strm, ds->bot, lmcacheUnknownSurfaceCount, missingWarned)) return false;
+      if (!LoadLightSegSurfaces(Level, strm, ds->topsky, lmcacheUnknownSurfaceCount, missingWarned)) return false;
+      if (!LoadLightSegSurfaces(Level, strm, ds->extra, lmcacheUnknownSurfaceCount, missingWarned)) return false;
     }
     if (i%128 == 0) NET_SendNetworkHeartbeat();
   }
@@ -1213,15 +1202,15 @@ void VRenderLevelLightmap::RelightMap (bool recalcNow, bool onlyMarked) {
   }
 
   for (auto &&seg : Level->allSegs()) {
-    for (drawseg_t *ds = seg.drawsegs; ds; ds = nullptr/*ds->next1*/) {
-      if (!ds->seg) continue; // just in case
+    drawseg_t *ds = seg.drawsegs;
+    if (ds) {
       processed += LightSegSurfaces(this, ds->top, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->mid, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->bot, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->topsky, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->extra, recalcNow, onlyMarked);
+      if (recalcNow) R_PBarUpdate("Lightmaps", processed, (int)surfCount);
     }
-    if (recalcNow) R_PBarUpdate("Lightmaps", processed, (int)surfCount);
   }
 
   if (recalcNow) R_PBarUpdate("Lightmaps", (int)surfCount, (int)surfCount, true);

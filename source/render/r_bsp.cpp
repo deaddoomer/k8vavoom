@@ -1032,41 +1032,17 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
 void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region) {
   sec_region_t *secregion = region->secregion;
 
+  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int j = sub->numlines; j--; ++seg) {
+      if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+      RenderLine(sub, secregion, region, seg->drawsegs);
+    }
+  }
+
   const bool nextFirst = NeedToRenderNextSubFirst(region);
   if (nextFirst) RenderSubRegion(sub, region->next);
 
-  #if 0
-  // this seems to be completely unnecessary
-  DO NOT FORGET TO ENABLE THE FOLLOWING CONDITIONAL TOO!
-  bool drawFloors = true;
-  const bool okregion = ViewClip.ClipCheckRegion(region, sub);
-  #else
-  enum { okregion = true };
-  #endif
-  if (okregion) {
-    int count = sub->numlines;
-    drawseg_t *ds = region->lines;
-    if (ds) { // just in case
-      while (count--) {
-        RenderLine(sub, secregion, region, ds);
-        ++ds;
-      }
-    }
-  }
-  #if 0
-  else {
-    // if there is no polyobj here, we can skip rendering floors
-    if (!sub || !sub->HasPObjs() || !r_draw_pobj) drawFloors = false;
-  }
-
-  // if this subsector has no segs, and not marked as rendered, mark it
-  if (sub->numlines == 0 && (sub->miscFlags&subsector_t::SSMF_Rendered) == 0) {
-    //TODO: check if this subsector is a part of a bigger "not on automap" sector
-    sub->miscFlags |= subsector_t::SSMF_Rendered;
-  }
-
-  if (drawFloors || r_dbg_always_draw_flats)
-  #endif
   {
     sec_surface_t *fsurf[4];
     GetFlatSetToRender(sub, region, fsurf);

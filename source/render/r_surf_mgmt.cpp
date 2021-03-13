@@ -291,8 +291,8 @@ void VRenderLevelShared::InvalidateSegPart (segpart_t *sp) noexcept {
 //==========================================================================
 void VRenderLevelShared::InvalidateWholeSeg (seg_t *seg) noexcept {
   GCon->Logf(NAME_Debug, "*TRANSDOOR INVALIDATION; seg=%p; line %p", seg, seg->linedef);
-  for (drawseg_t *ds = seg->drawsegs; ds; ds = nullptr/*ds->next1*/) {
-    if (!ds->seg) continue; // just in case
+  drawseg_t *ds = seg->drawsegs;
+  if (ds) {
     InvalidateSegPart(ds->top);
     InvalidateSegPart(ds->mid);
     InvalidateSegPart(ds->bot);
@@ -333,9 +333,8 @@ void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
         //GCon->Logf(NAME_Debug, "  ...marking line #%d", (int)(ptrdiff_t)(ln-&Level->Lines[0]));
         // for each seg
         for (seg_t *ns = ln->firstseg; ns; ns = ns->lsnext) {
-          // for each drawseg
-          for (drawseg_t *ds = ns->drawsegs; ds; ds = nullptr/*ds->next1*/) {
-            if (!ds->seg) continue; // just in case
+          drawseg_t *ds = ns->drawsegs;
+          if (ds) {
             // for each segpart
             InvalidateSegPart(ds->top);
             InvalidateSegPart(ds->mid);

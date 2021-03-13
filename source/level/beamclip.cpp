@@ -1411,28 +1411,6 @@ void VViewClipper::ClipAddBBox (const float bbox[6]) noexcept {
 
 //==========================================================================
 //
-//  VViewClipper::ClipCheckRegion
-//
-//==========================================================================
-bool VViewClipper::ClipCheckRegion (const subregion_t *region, const subsector_t *sub) const noexcept {
-  if (!clip_enabled || !clip_subregion) return true;
-  if (ClipIsFull()) return false;
-  const drawseg_t *ds = region->lines;
-  for (auto count = sub->numlines; count--; ++ds) {
-    if (!ds->seg) continue; // just in case
-    const int orgside = ds->seg->PointOnSide2(Origin);
-    if (orgside) {
-      if (orgside == 2) return true; // origin is on plane, we cannot do anything sane
-      continue; // viewer is in back side
-    }
-    if (IsRangeVisible(*ds->seg->v2, *ds->seg->v1)) return true;
-  }
-  return false;
-}
-
-
-//==========================================================================
-//
 //  VViewClipper::ClipCheckSubsector
 //
 //==========================================================================
@@ -1847,6 +1825,7 @@ bool VViewClipper::ClipLightIsBBoxVisible (const float bbox[6]) const noexcept {
 //  VViewClipper::ClipLightCheckRegion
 //
 //==========================================================================
+/*
 bool VViewClipper::ClipLightCheckRegion (const subregion_t *region, subsector_t *sub, int asShadow) const noexcept {
   if (ClipIsFull()) return false;
   const int slight = CheckSubsectorLight(sub);
@@ -1874,6 +1853,7 @@ bool VViewClipper::ClipLightCheckRegion (const subregion_t *region, subsector_t 
   }
   return false;
 }
+*/
 
 
 //==========================================================================

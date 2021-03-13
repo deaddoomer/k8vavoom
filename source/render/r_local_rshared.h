@@ -661,7 +661,7 @@ protected:
   void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec wv[4], vuint32 typeFlags, bool doOffset=false) noexcept;
 
   int CountSegParts (const seg_t *);
-  void CreateSegParts (subsector_t *r_surf_sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg, bool isMainRegion);
+  void CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg);
   void CreateWorldSurfaces ();
   bool CopyPlaneIfValid (sec_plane_t *, const sec_plane_t *, const sec_plane_t *);
   void UpdateFakeFlats (sector_t *);

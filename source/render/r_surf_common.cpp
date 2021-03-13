@@ -100,9 +100,9 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 //==========================================================================
 int VRenderLevelShared::CountSegParts (const seg_t *seg) {
   if (!seg->linedef) return 0; // miniseg
-  if (!seg->backsector) return 2+2; // +2 for horizons
+  if (!seg->backsector) return 2;
   //k8: each backsector 3d floor can require segpart
-  int count = 4+2; // +2 for horizons
+  int count = 4;
   if (!seg->pobj) {
     for (const sec_region_t *reg = seg->backsector->eregions; reg; reg = reg->next) count += 1; // no:just in case, reserve two
   }
@@ -117,23 +117,30 @@ int VRenderLevelShared::CountSegParts (const seg_t *seg) {
 //  create world/wall surfaces
 //
 //==========================================================================
-void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg, bool isMainRegion) {
-  segpart_t *sp;
-
-  vassert(!seg->drawsegs);
-  vassert(isMainRegion);
-  //if (seg->drawsegs) GCon->Logf(NAME_Debug, "seg #%d (line #%d; ofs=%g) has more than one drawseg!", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (seg->linedef ? (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]) : -1), seg->offset);
-  //if (seg->drawsegs) return;
-
-  dseg->seg = seg;
-  //dseg->next1 = seg->drawsegs;
-  seg->drawsegs = dseg;
-
-  // always create empty drawseg for miniseg, because other code expects subsector seg drawsegs in sequence
-  //FIXME: this must be changed!
+void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg) {
   if (!seg->linedef) return; // miniseg
 
-  if (!isMainRegion) return;
+  /*
+  #if 1
+  if (seg->drawsegs) {
+    GCon->Logf(NAME_Error, "seg #%d (line #%d); pobj=%p; ofs=%g; subsector #%d (sector #%d): already has drawseg #%d",
+      (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), seg->pobj, seg->offset,
+      (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]),
+      (int)(ptrdiff_t)(seg->drawsegs-AllocatedDrawSegs));
+  } else {
+    GCon->Logf(NAME_Debug, "seg #%d (line #%d); pobj=%p; ofs=%g; subsector #%d (sector #%d): allocated drawseg #%d",
+      (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), seg->pobj, seg->offset,
+      (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]),
+      (int)(ptrdiff_t)(dseg-AllocatedDrawSegs));
+  }
+  #endif
+  */
+
+  vassert(!seg->drawsegs);
+  dseg->seg = seg;
+  seg->drawsegs = dseg;
+
+  segpart_t *sp;
 
   if (!seg->backsector) {
     // one sided line
@@ -229,62 +236,48 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
   // count regions in all subsectors
   GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
-  int count = 0;
+  int srcount = 0;
   int dscount = 0;
   int spcount = 0;
   for (auto &&sub : Level->allSubsectors()) {
     if (!sub.sector->linecount) continue; // skip sectors containing original polyobjs
     // subregion count
-    count += 4*2; //k8: dunno
-    for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++count;
+    for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++srcount;
     // segpart and drawseg count
-    dscount += sub.numlines;
-    for (int j = 0; j < sub.numlines; ++j) spcount += CountSegParts(&Level->Segs[sub.firstline+j]);
+    for (int j = 0; j < sub.numlines; ++j) {
+      const seg_t *seg = &Level->Segs[sub.firstline+j];
+      if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
+      dscount += 1; // one drawseg for a good seg
+      // segparts (including segparts for 3d floors)
+      spcount += CountSegParts(&Level->Segs[sub.firstline+j]);
+    }
     // polyobjects
     if (sub.HasPObjs()) {
       for (auto &&it : sub.PObjFirst()) {
         polyobj_t *pobj = it.value();
         seg_t *const *polySeg = pobj->segs;
-        dscount += pobj->numsegs;
         for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+          const seg_t *seg = *polySeg;
+          vassert(seg->pobj == pobj);
+          if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
+          dscount += 1; // one drawseg for a good seg
+          // segparts
           spcount += CountSegParts(*polySeg);
         }
       }
     }
-    /*
-    count += 4*2; //k8: dunno
-    for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) {
-      ++count;
-      // only base region has any drawsegs
-      if (reg->regflags&sec_region_t::RF_BaseRegion) {
-        dscount += sub.numlines;
-        if (sub.HasPObjs()) {
-          for (auto &&it : sub.PObjFirst()) dscount += it.value()->numsegs; // polyobj
-        }
-      }
-      for (int j = 0; j < sub.numlines; ++j) spcount += CountSegParts(&Level->Segs[sub.firstline+j]);
-      // only base region has segparts for polyobjects
-      if ((reg->regflags&sec_region_t::RF_BaseRegion) && sub.HasPObjs()) {
-        for (auto &&it : sub.PObjFirst()) {
-          polyobj_t *pobj = it.value();
-          seg_t *const *polySeg = pobj->segs;
-          for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) spcount += CountSegParts(*polySeg);
-        }
-      }
-    }
-    */
   }
 
-  GCon->Logf(NAME_Debug, "%d subregions, %d drawsegs, %d segparts", count, dscount, spcount);
+  GCon->Logf(NAME_Debug, "%d subregions, %d drawsegs, %d segparts", srcount, dscount, spcount);
 
   // get some memory
   NumSegParts = spcount;
-  subregion_t *sreg = new subregion_t[count+1];
+  subregion_t *sreg = new subregion_t[srcount+1];
   drawseg_t *pds = new drawseg_t[dscount+1];
   pspart = new segpart_t[spcount+1];
 
   pspartsLeft = spcount+1;
-  int sregLeft = count+1;
+  int sregLeft = srcount+1;
   int pdsLeft = dscount+1;
 
   memset((void *)sreg, 0, sizeof(subregion_t)*sregLeft);
@@ -329,6 +322,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
         }
       }
 
+      sreg->sub = sub;
       sreg->secregion = reg;
       sreg->floorplane = r_floor;
       sreg->ceilplane = r_ceiling;
@@ -352,31 +346,35 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       // drawsegs for the main subregion
       // only main region has any drawsegs
       if (ridx == 0) {
-        sreg->count = sub->numlines;
-        if (sub->HasPObjs()) {
-          for (auto &&poit : sub->PObjFirst()) sreg->count += poit.value()->numsegs; // polyobj
+        // create segparts for subsector segs
+        if (sub->numlines > 0) {
+          //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+          seg_t *seg = &Level->Segs[sub->firstline];
+          for (int j = sub->numlines; j--; ++seg) {
+            if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
+            if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+            --pdsLeft;
+            CreateSegParts(sub, pds, seg, main_floor, main_ceiling, reg);
+            ++pds;
+          }
         }
 
-        if (pdsLeft < sreg->count) Sys_Error("out of drawsegs in surface creator");
-        sreg->lines = pds;
-        pds += sreg->count;
-        pdsLeft -= sreg->count;
-
-        for (int j = 0; j < sub->numlines; ++j) CreateSegParts(sub, &sreg->lines[j], &Level->Segs[sub->firstline+j], main_floor, main_ceiling, reg, (ridx == 0));
-
         if (sub->HasPObjs()) {
-          int j = sub->numlines;
+          //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) -- polyobjects ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
           for (auto &&poit : sub->PObjFirst()) {
             polyobj_t *pobj = poit.value();
-            seg_t **polySeg = pobj->segs;
-            for (int polyCount = pobj->numsegs; polyCount--; ++polySeg, ++j) {
-              CreateSegParts(sub, &sreg->lines[j], *polySeg, main_floor, main_ceiling, nullptr, true);
+            seg_t *const *polySeg = pobj->segs;
+            for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+              seg_t *seg = *polySeg;
+              vassert(seg->pobj == pobj);
+              if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
+              if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+              --pdsLeft;
+              CreateSegParts(sub, pds, seg, main_floor, main_ceiling, nullptr);
+              ++pds;
             }
           }
         }
-      } else {
-        sreg->count = 0;
-        sreg->lines = nullptr;
       }
 
       // proper append

@@ -643,7 +643,6 @@ struct segpart_t {
 // TODO: document this!
 struct drawseg_t {
   seg_t *seg;
-  //drawseg_t *next1;
 
   segpart_t *top;
   segpart_t *mid;
@@ -1163,8 +1162,8 @@ struct polyobj_t {
 // SubRegion
 //
 struct subregion_t {
-  readonly sec_region_t *secregion;
-  readonly subregion_t *next;
+  native transient readonly sec_region_t *secregion;
+  native transient readonly subregion_t *next;
   native transient readonly TSecPlaneRef floorplane;
   native transient readonly TSecPlaneRef ceilplane;
   native transient readonly sec_surface_t *realfloor;
@@ -1172,8 +1171,9 @@ struct subregion_t {
   native transient readonly sec_surface_t *fakefloor; // can be `nullptr`
   native transient readonly sec_surface_t *fakeceil; // can be `nullptr`
   native transient readonly bool bZeroSkyFloorHack;
-  readonly int count;
-  native transient readonly drawseg_t *lines;
+  //native readonly int count;
+  //native transient readonly drawseg_t *lines;
+  native transient readonly subsector_t *sub; // subsector for this region
 };
 
 

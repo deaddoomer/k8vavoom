@@ -179,10 +179,6 @@ struct VTerrainInfo {
 //==========================================================================
 struct drawseg_t {
   seg_t *seg; // line segment for this drawseg
-  //drawseg_t *next1; // renamed to `next1` to allow easier greping
-    //k8: i don't even know why we need a linked list here: one drawseg should be enough
-    //k8: but yeah, this is a list of all drawsegs for a given seg; in backwards order
-    //k8: (i.e. the last created is the first in this list)
 
   segpart_t *top; // top part of the wall (that one with top texture)
   segpart_t *mid; // middle part of the wall (that one with middle texture)
@@ -1027,8 +1023,9 @@ struct subregion_t {
     SRF_ZEROSKY_FLOOR_HACK = 1u<<0,
   };
   vuint32 flags;
-  vint32 count;
-  drawseg_t *lines;
+  //vint32 count;
+  //drawseg_t *lines;
+  subsector_t *sub; // subsector for this region
 };
 
 

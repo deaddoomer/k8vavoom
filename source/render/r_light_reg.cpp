@@ -1156,6 +1156,7 @@ void VRenderLevelLightmap::InvalidateLineLMaps (const TVec &org, float radius, d
 void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radius, int num) {
   subsector_t *sub = &Level->Subsectors[num];
   if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+
   // polyobj
   if (sub->HasPObjs()) {
     for (auto &&it : sub->PObjFirst()) {
@@ -1166,14 +1167,17 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
       }
     }
   }
+
   //TODO: invalidate only relevant segs
-  for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
-    drawseg_t *ds = subregion->lines;
-    if (ds) { // just in case
-      for (int dscount = sub->numlines; dscount--; ++ds) {
-        InvalidateLineLMaps(org, radius, ds);
-      }
+  if (sub->numlines > 0) {
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int j = sub->numlines; j--; ++seg) {
+      if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+      InvalidateLineLMaps(org, radius, seg->drawsegs);
     }
+  }
+
+  for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
     if (subregion->realfloor) InvalidateSurfacesLMaps(org, radius, subregion->realfloor->surfs);
     if (subregion->realceil) InvalidateSurfacesLMaps(org, radius, subregion->realceil->surfs);
     if (subregion->fakefloor) InvalidateSurfacesLMaps(org, radius, subregion->fakefloor->surfs);
@@ -1713,13 +1717,15 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub)
   }
 
   //TODO: invalidate only relevant segs
-  for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
-    drawseg_t *ds = subregion->lines;
-    if (ds) { // just in case
-      for (int dscount = sub->numlines; dscount--; ++ds) {
-        InvalidateStaticLightmapsLine(ds);
-      }
+  if (sub->numlines > 0) {
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int j = sub->numlines; j--; ++seg) {
+      if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+      InvalidateStaticLightmapsLine(seg->drawsegs);
     }
+  }
+
+  for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
     if (subregion->realfloor) InvalidateStaticLightmapsSurfaces(subregion->realfloor->surfs);
     if (subregion->realceil) InvalidateStaticLightmapsSurfaces(subregion->realceil->surfs);
     if (subregion->fakefloor) InvalidateStaticLightmapsSurfaces(subregion->fakefloor->surfs);

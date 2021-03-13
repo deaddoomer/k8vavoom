@@ -386,26 +386,25 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
 //  Draw one or more line segments.
 //
 //==========================================================================
-void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, subregion_t *region, unsigned int ssflag) {
-  const bool nextFirst = NeedToRenderNextSubFirst(region);
-  if (nextFirst) CollectAdvLightSubRegion(sub, region->next, ssflag);
+void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsigned int ssflag) {
+  // as we will ignore translucent surfaces here, it doesn't matter anymore
+  //const bool nextFirst = NeedToRenderNextSubFirst(region);
+  //if (nextFirst) CollectAdvLightSubRegion(sub, region->next, ssflag);
 
-  sec_region_t *secregion = region->secregion;
+  for (subregion_t *region = sub->regions; region; region = region->next) {
+    //TSecPlaneRef r_floor = region->floorplane;
+    //TSecPlaneRef r_ceiling = region->ceilplane;
 
-  unsigned int ssflagreg = ssflag;
-  if (clip_advlight_regions) {
-    if ((ssflagreg&FlagAsLight) && !LightClip.ClipLightCheckRegion(region, sub, VViewClipper::AsLight)) ssflagreg &= ~FlagAsLight;
-    if ((ssflagreg&FlagAsShadow) && !LightShadowClip.ClipLightCheckRegion(region, sub, collectorShadowType)) ssflagreg &= ~FlagAsShadow;
-  }
+    sec_region_t *secregion = region->secregion;
 
-  if (ssflagreg) {
-    drawseg_t *ds = region->lines;
-    if (ds) { // just in case
-      for (int count = sub->numlines; count--; ++ds) CollectAdvLightLine(sub, secregion, ds, ssflagreg);
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+      const seg_t *seg = &Level->Segs[sub->firstline];
+      for (int j = sub->numlines; j--; ++seg) {
+        if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+        CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
+      }
     }
-  }
 
-  {
     sec_surface_t *fsurf[4];
     GetFlatSetToRender(sub, region, fsurf);
     //bool skipFloor = false;
@@ -449,7 +448,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, subre
     if (fsurf[3]) CollectAdvLightSecSurface(secregion, fsurf[3], secregion->eceiling.splane->SkyBox, ssflag&ceilingFlag, paperThin);
   }
 
-  if (!nextFirst && region->next) return CollectAdvLightSubRegion(sub, region->next, ssflag);
+  //if (!nextFirst && region->next) return CollectAdvLightSubRegion(sub, region->next, ssflag);
 }
 
 
@@ -511,7 +510,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
       CollectAdvLightPolyObj(sub, ssflag);
       AddPolyObjToLightClipper(LightClip, sub, VViewClipper::AsLight);
       if (clip_shadow) AddPolyObjToLightClipper(LightShadowClip, sub, collectorShadowType);
-      CollectAdvLightSubRegion(sub, sub->regions, ssflag);
+      CollectAdvLightSubRegion(sub, ssflag);
       // add subsector's segs to the clipper
       // clipping against mirror is done only for vertical mirror planes
       if (ssflag&FlagAsLight) LightClip.ClipLightAddSubsectorSegs(sub, VViewClipper::AsLight);

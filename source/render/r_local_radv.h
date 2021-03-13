@@ -146,7 +146,7 @@ protected:
   void CollectAdvLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, unsigned int ssflag);
   void CollectAdvLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, unsigned int ssflag, const bool paperThin=false);
   void CollectAdvLightPolyObj (subsector_t *sub, unsigned int ssflag);
-  void CollectAdvLightSubRegion (subsector_t *sub, subregion_t *region, unsigned int ssflag);
+  void CollectAdvLightSubRegion (subsector_t *sub, unsigned int ssflag);
   void CollectAdvLightSubsector (int num, unsigned int ssflag);
   void CollectAdvLightBSPNode (int bspnum, const float *bbox, unsigned int ssflag);
 
