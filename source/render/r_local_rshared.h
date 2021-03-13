@@ -488,8 +488,8 @@ protected:
 
   void UpdateTextureOffsets (subsector_t *sub, seg_t *seg, segpart_t *sp, const side_tex_params_t *tparam, const TPlane *plane=nullptr);
   void UpdateTextureOffsetsEx (subsector_t *sub, seg_t *seg, segpart_t *sp, const side_tex_params_t *tparam, const side_tex_params_t *tparam2); // for 3d floors
-  void UpdateDrawSeg (subsector_t *r_surf_sub, drawseg_t *dseg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
-  void UpdateSubRegion (subsector_t *r_surf_sub, subregion_t *region);
+  void UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
+  void UpdateSubRegions (subsector_t *sub);
 
   void UpdateFakeSectors (subsector_t *viewleaf=nullptr);
   void InitialWorldUpdate ();

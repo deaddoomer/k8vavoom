@@ -759,10 +759,11 @@ void VRenderLevelLightmap::saveLightmapsInternal (VStream *strm) {
     *strm << snum;
     // count drawsegs (so we can skip them if necessary)
     vuint32 dscount = 0;
-    for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1) ++dscount;
+    for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1) if (ds->seg) ++dscount;
     *strm << dscount;
     dscount = 0;
     for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1, ++dscount) {
+      if (!ds->seg) continue; // just in case
       *strm << dscount;
       WriteSegLightmaps(Level, strm, ds->top);
       WriteSegLightmaps(Level, strm, ds->mid);
@@ -1059,7 +1060,7 @@ bool VRenderLevelLightmap::loadLightmapsInternal (VStream *strm) {
     seg_t *seg = &Level->Segs[i];
     // count drawsegs (so we can skip them if necessary)
     vuint32 dscount = 0;
-    for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1) ++dscount;
+    for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1) if (ds->seg) ++dscount;
     vuint32 snum = 0xffffffffu;
     *strm << snum;
     if ((int)snum != i) { GCon->Log(NAME_Warning, "invalid lightmap cache seg number"); return false; }
@@ -1071,6 +1072,7 @@ bool VRenderLevelLightmap::loadLightmapsInternal (VStream *strm) {
       GCon->Logf(NAME_Warning, "lightmap cache seg #%d drawseg count mismatch (%u instead of %u)", i, ccdscount, dscount);
       if (dscount != 0) {
         for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1, ++dscount) {
+          if (!ds->seg) continue; // just in case
           lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->top);
           lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->mid);
           lmcacheUnknownSurfaceCount += CountSegSurfacesInChain(ds->bot);
@@ -1092,6 +1094,7 @@ bool VRenderLevelLightmap::loadLightmapsInternal (VStream *strm) {
     } else {
       dscount = 0;
       for (drawseg_t *ds = seg->drawsegs; ds; ds = ds->next1, ++dscount) {
+        if (!ds->seg) continue; // just in case
         vuint32 n = 0xffffffffu;
         *strm << n;
         if (strm->IsError()) { GCon->Log(NAME_Error, "error reading lightmap cache"); return false; }
@@ -1211,6 +1214,7 @@ void VRenderLevelLightmap::RelightMap (bool recalcNow, bool onlyMarked) {
 
   for (auto &&seg : Level->allSegs()) {
     for (drawseg_t *ds = seg.drawsegs; ds; ds = ds->next1) {
+      if (!ds->seg) continue; // just in case
       processed += LightSegSurfaces(this, ds->top, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->mid, recalcNow, onlyMarked);
       processed += LightSegSurfaces(this, ds->bot, recalcNow, onlyMarked);

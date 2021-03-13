@@ -1419,6 +1419,7 @@ bool VViewClipper::ClipCheckRegion (const subregion_t *region, const subsector_t
   if (ClipIsFull()) return false;
   const drawseg_t *ds = region->lines;
   for (auto count = sub->numlines; count--; ++ds) {
+    if (!ds->seg) continue; // just in case
     const int orgside = ds->seg->PointOnSide2(Origin);
     if (orgside) {
       if (orgside == 2) return true; // origin is on plane, we cannot do anything sane
@@ -1853,6 +1854,7 @@ bool VViewClipper::ClipLightCheckRegion (const subregion_t *region, subsector_t 
   if (slight > 0 && ClipIsEmpty()) return true; // no clip nodes yet
   const drawseg_t *ds = region->lines;
   for (auto count = sub->numlines; count--; ++ds) {
+    if (!ds->seg) continue; // just in case
     if (slight < 0) {
       if (!ds->seg->SphereTouches(Origin, Radius)) continue;
     }

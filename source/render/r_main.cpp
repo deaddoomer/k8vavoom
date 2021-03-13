@@ -2232,6 +2232,7 @@ vuint32 VRenderLevelShared::CountAllSurfaces () const noexcept {
 
   for (auto &&seg : Level->allSegs()) {
     for (drawseg_t *ds = seg.drawsegs; ds; ds = ds->next1) {
+      if (!ds->seg) continue; // just in case
       surfCount += CountSegSurfacesInChain(ds->top);
       surfCount += CountSegSurfacesInChain(ds->mid);
       surfCount += CountSegSurfacesInChain(ds->bot);

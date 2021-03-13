@@ -635,7 +635,9 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
 //
 //==========================================================================
 void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
 
   if (!dseg->HorizonTop) {
     dseg->HorizonTop = (surface_t *)Z_Malloc(HORIZON_SURF_SIZE);
@@ -727,7 +729,9 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
 //
 //==========================================================================
 void VRenderLevelShared::RenderMirror (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
   if (MirrorLevel < r_maxmiror_depth && r_allow_mirrors) {
     if (!dseg->mid) return;
 
@@ -762,7 +766,9 @@ void VRenderLevelShared::RenderMirror (subsector_t *sub, sec_region_t *secregion
 //
 //==========================================================================
 void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
   line_t *linedef = seg->linedef;
 
   // mirror clip
@@ -1040,9 +1046,11 @@ void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region)
   if (okregion) {
     int count = sub->numlines;
     drawseg_t *ds = region->lines;
-    while (count--) {
-      RenderLine(sub, secregion, region, ds);
-      ++ds;
+    if (ds) { // just in case
+      while (count--) {
+        RenderLine(sub, secregion, region, ds);
+        ++ds;
+      }
     }
   }
   #if 0
@@ -1114,7 +1122,7 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
       // update world
       if (sub->updateWorldFrame != updateWorldFrame) {
         sub->updateWorldFrame = updateWorldFrame;
-        if (!r_disable_world_update) UpdateSubRegion(sub, sub->regions);
+        if (!r_disable_world_update) UpdateSubRegions(sub);
       }
 
       // update static light info

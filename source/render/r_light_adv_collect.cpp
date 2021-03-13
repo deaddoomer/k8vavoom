@@ -267,7 +267,9 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
 //
 //==========================================================================
 void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, unsigned int ssflag) {
+  if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
   const line_t *linedef = seg->linedef;
   if (!linedef) return; // miniseg
 
@@ -398,7 +400,9 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, subre
 
   if (ssflagreg) {
     drawseg_t *ds = region->lines;
-    for (int count = sub->numlines; count--; ++ds) CollectAdvLightLine(sub, secregion, ds, ssflagreg);
+    if (ds) { // just in case
+      for (int count = sub->numlines; count--; ++ds) CollectAdvLightLine(sub, secregion, ds, ssflagreg);
+    }
   }
 
   {
@@ -478,7 +482,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
     // update world
     if (sub->updateWorldFrame != updateWorldFrame) {
       sub->updateWorldFrame = updateWorldFrame;
-      if (!r_disable_world_update) UpdateSubRegion(sub, sub->regions);
+      if (!r_disable_world_update) UpdateSubRegions(sub);
     }
 
     // if our light is in frustum, out-of-frustum subsectors are not interesting

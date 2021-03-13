@@ -92,7 +92,9 @@ void VRenderLevelShared::UpdateTextureOffsetsEx (subsector_t *sub, seg_t *seg, s
 //
 //==========================================================================
 void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+  if (!dseg) return; // just in case
   seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
 
   if (!seg->linedef) return; // miniseg
   bool needTJ = false;
@@ -224,11 +226,11 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
 
 //==========================================================================
 //
-//  VRenderLevelShared::UpdateSubRegion
+//  VRenderLevelShared::UpdateSubRegions
 //
 //==========================================================================
-void VRenderLevelShared::UpdateSubRegion (subsector_t *sub, subregion_t *region) {
-  if (!region || !sub) return;
+void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
+  if (!sub) return;
 
   // polyobj cannot be in subsector with 3d floors, so update it once
   if (sub->HasPObjs()) {
@@ -258,13 +260,15 @@ void VRenderLevelShared::UpdateSubRegion (subsector_t *sub, subregion_t *region)
     }
   }
 
-  for (; region; region = region->next) {
+  for (subregion_t *region = sub->regions; region; region = region->next) {
     TSecPlaneRef r_floor = region->floorplane;
     TSecPlaneRef r_ceiling = region->ceilplane;
 
     drawseg_t *ds = region->lines;
-    for (int count = sub->numlines; count--; ++ds) {
-      UpdateDrawSeg(sub, ds, r_floor, r_ceiling/*, ClipSegs*/);
+    if (ds) { // just in case
+      for (int count = sub->numlines; count--; ++ds) {
+        UpdateDrawSeg(sub, ds, r_floor, r_ceiling/*, ClipSegs*/);
+      }
     }
 
     if (region->realfloor) {

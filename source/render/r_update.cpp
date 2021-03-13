@@ -88,7 +88,9 @@ void VRenderLevelShared::UpdateBBoxWithSurface (TVec bbox[2], surface_t *surfs, 
 //
 //==========================================================================
 void VRenderLevelShared::UpdateBBoxWithLine (TVec bbox[2], VEntity *SkyBox, const drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
   if (!seg->linedef) return; // miniseg
   // if light sphere is not touching a plane, do nothing
   const float dist = seg->PointDistance(CurrLightPos);
@@ -144,7 +146,7 @@ void VRenderLevelShared::InitialWorldUpdate () {
   subsector_t *sub = &Level->Subsectors[0];
   for (int scount = Level->NumSubsectors; scount--; ++sub) {
     if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
-    UpdateSubRegion(sub, sub->regions);
+    UpdateSubRegions(sub);
   }
 }
 

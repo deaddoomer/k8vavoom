@@ -118,6 +118,10 @@ int VRenderLevelShared::CountSegParts (const seg_t *seg) {
 void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg, bool isMainRegion) {
   segpart_t *sp;
 
+  //if (!seg->linedef) return; // miniseg
+  //if (seg->drawsegs) GCon->Logf(NAME_Debug, "seg #%d (line #%d; ofs=%g) has more than one drawseg!", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (seg->linedef ? (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]) : -1), seg->offset);
+  //if (seg->drawsegs) return;
+
   dseg->seg = seg;
   dseg->next1 = seg->drawsegs;
   seg->drawsegs = dseg;
@@ -274,7 +278,11 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     int ridx = 0;
     for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++ridx) {
       if (sregLeft == 0) Sys_Error("out of subregions in surface creator");
-      if (ridx == 0 && !(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
+      if (ridx == 0) {
+        if (!(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
+      } else {
+        if (reg->regflags&sec_region_t::RF_BaseRegion) Sys_Error("internal bug in region creation (non-base region is marked as base)");
+      }
 
       TSecPlaneRef r_floor, r_ceiling;
       r_floor = reg->efloor;

@@ -1127,7 +1127,9 @@ void VRenderLevelLightmap::InvalidateSurfacesLMaps (const TVec &org, float radiu
 //
 //==========================================================================
 void VRenderLevelLightmap::InvalidateLineLMaps (const TVec &org, float radius, drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
 
   if (!seg->linedef) return; // miniseg
   if (!seg->SphereTouches(org, radius)) return;
@@ -1167,8 +1169,10 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
   //TODO: invalidate only relevant segs
   for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
     drawseg_t *ds = subregion->lines;
-    for (int dscount = sub->numlines; dscount--; ++ds) {
-      InvalidateLineLMaps(org, radius, ds);
+    if (ds) { // just in case
+      for (int dscount = sub->numlines; dscount--; ++ds) {
+        InvalidateLineLMaps(org, radius, ds);
+      }
     }
     if (subregion->realfloor) InvalidateSurfacesLMaps(org, radius, subregion->realfloor->surfs);
     if (subregion->realceil) InvalidateSurfacesLMaps(org, radius, subregion->realceil->surfs);
@@ -1669,7 +1673,9 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSurfaces (surface_t *surf) {
 //
 //==========================================================================
 void VRenderLevelLightmap::InvalidateStaticLightmapsLine (drawseg_t *dseg) {
+  if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
 
   if (!seg->linedef) return; // miniseg
 
@@ -1709,8 +1715,10 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub)
   //TODO: invalidate only relevant segs
   for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
     drawseg_t *ds = subregion->lines;
-    for (int dscount = sub->numlines; dscount--; ++ds) {
-      InvalidateStaticLightmapsLine(ds);
+    if (ds) { // just in case
+      for (int dscount = sub->numlines; dscount--; ++ds) {
+        InvalidateStaticLightmapsLine(ds);
+      }
     }
     if (subregion->realfloor) InvalidateStaticLightmapsSurfaces(subregion->realfloor->surfs);
     if (subregion->realceil) InvalidateStaticLightmapsSurfaces(subregion->realceil->surfs);
