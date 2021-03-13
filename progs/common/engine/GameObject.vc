@@ -643,7 +643,7 @@ struct segpart_t {
 // TODO: document this!
 struct drawseg_t {
   seg_t *seg;
-  drawseg_t *next1;
+  //drawseg_t *next1;
 
   segpart_t *top;
   segpart_t *mid;

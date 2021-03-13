@@ -179,7 +179,7 @@ struct VTerrainInfo {
 //==========================================================================
 struct drawseg_t {
   seg_t *seg; // line segment for this drawseg
-  drawseg_t *next1; // renamed to `next1` to allow easier greping
+  //drawseg_t *next1; // renamed to `next1` to allow easier greping
     //k8: i don't even know why we need a linked list here: one drawseg should be enough
     //k8: but yeah, this is a list of all drawsegs for a given seg; in backwards order
     //k8: (i.e. the last created is the first in this list)
