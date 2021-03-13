@@ -1313,63 +1313,11 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
 
 //==========================================================================
 //
-//  VRenderLevelShared::RenderResetSavedBspVis
-//
-//==========================================================================
-void VRenderLevelShared::RenderResetSavedBspVis () noexcept {
-  SavedBspVis = nullptr;
-  SavedBspVisSector = nullptr;
-  SavedBspVisFrame = 0;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::RenderSaveBspVis
-//
-//==========================================================================
-void VRenderLevelShared::RenderSaveBspVis () noexcept {
-  if (!SavedBspVisFrame) {
-    SavedBspVisFrame = BspVisFrame;
-    VRenderLevelShared::MarkPortalPool(&SavedBspVisPMark);
-    // notify allocator about minimal node size
-    VRenderLevelShared::SetMinPoolNodeSize((Level->NumSubsectors+Level->NumSectors+2)*sizeof(unsigned));
-    // allocate new bsp vis
-    BspVisData = (unsigned *)VRenderLevelShared::AllocPortalPool((Level->NumSubsectors+Level->NumSectors+2)*sizeof(unsigned));
-    BspVisSectorData = BspVisData+Level->NumSubsectors+1;
-    memset(BspVisData, 0, (Level->NumSubsectors+1)*sizeof(BspVisData[0]));
-    memset(BspVisSectorData, 0, (Level->NumSectors+1)*sizeof(BspVisSectorData[0]));
-  }
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::RenderRestoreBspVis
-//
-//==========================================================================
-void VRenderLevelShared::RenderRestoreBspVis () noexcept {
-  if (SavedBspVisFrame) {
-    SavedBspVisFrame = 0;
-    BspVisData = SavedBspVis;
-    BspVisSectorData = SavedBspVisSector;
-    BspVisFrame = SavedBspVisFrame;
-    VRenderLevelShared::RestorePortalPool(&SavedBspVisPMark);
-  }
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::RenderPortals
 //
 //==========================================================================
 void VRenderLevelShared::RenderPortals () {
   //GCon->Logf(NAME_Debug, "VRenderLevelShared::RenderPortals: PortalLevel=%d; CurrPortal=%s; pcount=%d", PortalLevel, (CurrPortal ? (CurrPortal->IsSky() ? "sky" : "non-sky") : "none"), Portals.length());
-
-  if (PortalLevel == 0) {
-    RenderResetSavedBspVis();
-  }
 
   ++PortalLevel;
 
@@ -1383,7 +1331,6 @@ void VRenderLevelShared::RenderPortals () {
     r_decals = false;
     //bool oldShadows = r_shadows;
     //if (/*Portal->stackedSector &&*/ IsShadowVolumeRenderer()) r_shadows = false;
-    //bool firstPortal = true;
     for (int pnum = 0; pnum < Portals.length(); ++pnum) {
       VPortal *pp = Portals[pnum];
       if (pp && pp->Level == PortalLevel) {
@@ -1394,12 +1341,7 @@ void VRenderLevelShared::RenderPortals () {
           //!if (pp->stackedSector && IsShadowVolumeRenderer()) continue;
           allowDraw = r_allow_stacked_sectors.asBool();
         }
-        if (allowDraw) {
-          const bool sdrl = !pp->IsSky();
-          if (sdrl) { PushDrawLists(); RenderSaveBspVis(); }
-          pp->Draw(true);
-          if (sdrl) PopDrawLists();
-        }
+        if (allowDraw) pp->Draw(true);
       }
     }
     r_decals = oldDecalsEnabled;
@@ -1411,10 +1353,7 @@ void VRenderLevelShared::RenderPortals () {
       for (int pnum = 0; pnum < Portals.length(); ++pnum) {
         VPortal *pp = Portals[pnum];
         if (pp && pp->Level == PortalLevel && pp->IsSky() && !pp->IsSkyBox()) {
-          const bool sdrl = !pp->IsSky();
-          if (sdrl) { PushDrawLists(); RenderSaveBspVis(); }
           pp->Draw(true);
-          if (sdrl) PopDrawLists();
         }
       }
     }
@@ -1429,8 +1368,5 @@ void VRenderLevelShared::RenderPortals () {
   }
 
   --PortalLevel;
-  if (PortalLevel == 0) {
-    RenderRestoreBspVis();
-    Portals.resetNoDtor();
-  }
+  if (PortalLevel == 0) Portals.resetNoDtor();
 }

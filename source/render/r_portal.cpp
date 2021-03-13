@@ -110,6 +110,48 @@ struct AutoSavedView {
 };
 
 
+struct AutoSavedBspVis {
+  VRenderLevelShared *RLev;
+  unsigned *SavedBspVis;
+  unsigned *SavedBspVisSector;
+  unsigned SavedBspVisFrame;
+  VRenderLevelShared::PPMark SavedBspVisPMark;
+
+  AutoSavedBspVis () = delete;
+  AutoSavedBspVis (const AutoSavedView &) = delete;
+  AutoSavedBspVis &operator = (const AutoSavedView &) = delete;
+
+  inline AutoSavedBspVis (VRenderLevelShared *ARLev) noexcept {
+    vassert(ARLev);
+    RLev = ARLev;
+    SavedBspVis = ARLev->BspVisData;
+    SavedBspVisSector = ARLev->BspVisSectorData;
+    SavedBspVisFrame = ARLev->BspVisFrame;
+    VRenderLevelShared::MarkPortalPool(&SavedBspVisPMark);
+    // notify allocator about minimal node size
+    VRenderLevelShared::SetMinPoolNodeSize((ARLev->Level->NumSubsectors+ARLev->Level->NumSectors+2)*sizeof(unsigned));
+    // allocate new bsp vis
+    ARLev->BspVisData = (unsigned *)VRenderLevelShared::AllocPortalPool((ARLev->Level->NumSubsectors+ARLev->Level->NumSectors+2)*sizeof(unsigned));
+    ARLev->BspVisSectorData = ARLev->BspVisData+ARLev->Level->NumSubsectors+1;
+    memset(ARLev->BspVisData, 0, (ARLev->Level->NumSubsectors+1)*sizeof(ARLev->BspVisData[0]));
+    memset(ARLev->BspVisSectorData, 0, (ARLev->Level->NumSectors+1)*sizeof(ARLev->BspVisSectorData[0]));
+    ARLev->PushDrawLists();
+  }
+
+  inline ~AutoSavedBspVis () noexcept {
+    if (RLev) {
+      RLev->BspVisData = SavedBspVis;
+      RLev->BspVisSectorData = SavedBspVisSector;
+      RLev->BspVisFrame = SavedBspVisFrame;
+      VRenderLevelShared::RestorePortalPool(&SavedBspVisPMark);
+      RLev->PopDrawLists();
+      RLev = nullptr;
+    }
+  }
+};
+
+
+
 //==========================================================================
 //
 //  VPortal::VPortal
@@ -228,7 +270,7 @@ void VPortal::Draw (bool UseStencil) {
 
   {
     // save renderer settings
-    AutoSavedView guard(RLev);
+    AutoSavedView guard(RLev/*, !IsSky()*/);
     RLev->CurrPortal = this;
     RLev->forceDisableShadows = true;
     DrawContents();
@@ -388,6 +430,7 @@ void VSkyBoxPortal::DrawContents () {
 
   // prevent recursion
   VEntity::AutoPortalDirty guard(Viewport);
+  AutoSavedBspVis bspvisguard(RLev);
   refdef_t rd = RLev->refdef;
   RLev->CurrPortal = this;
   RLev->RenderScene(&rd, nullptr);
@@ -437,6 +480,7 @@ void VSectorStackPortal::DrawContents () {
 
   // prevent recursion
   VEntity::AutoPortalDirty guard(Viewport);
+  AutoSavedBspVis bspvisguard(RLev);
   RLev->CurrPortal = this;
   RLev->RenderScene(&rd, &Range);
 }
@@ -497,7 +541,10 @@ void VMirrorPortal::DrawContents () {
   VViewClipper Range;
   SetupRanges(rd, Range, true, false);
 
-  RLev->RenderScene(&rd, &Range);
+  {
+    AutoSavedBspVis bspvisguard(RLev);
+    RLev->RenderScene(&rd, &Range);
+  }
 
   --RLev->MirrorLevel;
   Drawer->MirrorFlip = RLev->MirrorLevel&1;

@@ -615,10 +615,6 @@ protected:
   void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip);
   void RenderBSPTree ();
   void RenderBspWorld (const refdef_t *rd, const VViewClipper *Range);
-
-  void RenderResetSavedBspVis () noexcept;
-  void RenderSaveBspVis () noexcept;
-  void RenderRestoreBspVis () noexcept;
   void RenderPortals ();
 
   void SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
@@ -847,12 +843,7 @@ public:
   static void RestorePortalPool (PPMark *mark);
   static vuint8 *AllocPortalPool (int size);
 
-public:
-  // for portals
-  unsigned *SavedBspVis;
-  unsigned *SavedBspVisSector;
-  unsigned SavedBspVisFrame;
-  PPMark SavedBspVisPMark;
+  friend struct AutoSavedBspVis;
 };
 
 
