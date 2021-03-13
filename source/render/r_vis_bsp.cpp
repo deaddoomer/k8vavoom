@@ -72,11 +72,13 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum) noexcept {
     if (dist >= cboxRadius) {
       // light is completely on front side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[0], cboxCheckBox)) return false;
+      //return CheckBSPVisibilityBoxSub(bsp->children[0]);
       bspnum = bsp->children[0];
       goto tailcall;
     } else if (dist <= -cboxRadius) {
       // light is completely on back side
       if (!Are3DBBoxesOverlapIn2D(bsp->bbox[1], cboxCheckBox)) return false;
+      //return CheckBSPVisibilityBoxSub(bsp->children[1]);
       bspnum = bsp->children[1];
       goto tailcall;
     } else {

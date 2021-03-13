@@ -198,11 +198,10 @@ protected:
   unsigned *LightVis; // this will be allocated if necessary; set to `LightFrameNum` for subsectors touched in `CalcLightVis()`
   unsigned *LightBspVis; // this will be allocated if necessary; set to `LightFrameNum` for subsectors touched, and marked in `BspVisData`
   bool HasLightIntersection; // set by `CalcLightVisCheckNode()`: is any touched subsector also marked in `BspVisData`?
-  bool LitVisSubHit; // hit any subsector?
   // set `LitCalcBBox` to true to calculate bbox of all hit surfaces, and all following flags
   bool LitCalcBBox; // set this to `false` disables `LitSurfaces`/`LitSurfaceHit` calculation, and all other arrays
   TVec LitBBox[2]; // bounding box for all hit surfaces
-  bool LitSurfaceHit; // hit any surface in visible subsector? (set only if `LitCalcBBox` is `true`)
+  bool LitSurfaceHit; // hit any surface in visible subsector?
   // nope, not used for now
   //bool HasBackLit; // if there's no backlit surfaces, use zpass
 
@@ -498,6 +497,8 @@ protected:
                               VEntity *SkyBox, bool CheckSkyBoxAlways);
   void UpdateBBoxWithLine (TVec bbox[2], VEntity *SkyBox, const drawseg_t *dseg);
 
+  // the following should not be called directly
+  void CalcLightVisUnstuckLightSubsector (const subsector_t *sub);
   // the following should not be called directly
   void CalcLightVisCheckSubsector (const unsigned subidx);
   // the following should not be called directly
