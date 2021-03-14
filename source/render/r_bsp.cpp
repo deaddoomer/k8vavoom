@@ -1224,14 +1224,14 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
 //==========================================================================
 void VRenderLevelShared::RenderBSPTree () {
   if (Level->NumSubsectors > 1) {
-    vassert(Level->NumNodes > 1);
+    vassert(Level->NumNodes > 0);
     /*static*/ const float bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
     unsigned clipflags = 0;
     const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
     for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) clipflags |= cp->clipflag;
-    RenderBSPNode(Level->NumNodes-1, bbox, clipflags /*(Drawer->MirrorClip ? 0x3f : 0x1f)*/, false);
+    return RenderBSPNode(Level->NumNodes-1, bbox, clipflags /*(Drawer->MirrorClip ? 0x3f : 0x1f)*/, false);
   } else if (Level->NumSubsectors > 0) {
-    RenderSubsector(0, false);
+    return RenderSubsector(0, false);
   }
 }
 

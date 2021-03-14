@@ -101,8 +101,8 @@ void VLevel::LoadNodes (int Lump) {
   } else {
     NumNodes = W_LumpLength(Lump)/28;
   }
-  Nodes = new node_t[NumNodes];
-  memset((void *)Nodes, 0, sizeof(node_t)*NumNodes);
+  Nodes = new node_t[NumNodes+1];
+  memset((void *)Nodes, 0, sizeof(node_t)*(NumNodes+1));
 
   VStream *lumpstream = W_CreateLumpReaderNum(Lump);
   VCheckedStream Strm(lumpstream);

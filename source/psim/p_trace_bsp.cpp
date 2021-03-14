@@ -292,11 +292,20 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
     IncrementValidCount();
     trace.LinePlane.SetPointDirXY(Start, trace.Delta);
     // the head node is the last node output
-    if (CrossBSPNode(trace, NumNodes-1)) {
-      trace.LineEnd = End;
-      // end subsector is known
-      trace.EndSubsector = PointInSubsector(End);
-      return CheckPlanes(trace, trace.EndSubsector->sector);
+    if (NumSubsectors > 1) {
+      if (CrossBSPNode(trace, NumNodes-1)) {
+        trace.LineEnd = End;
+        // end subsector is known
+        trace.EndSubsector = PointInSubsector(End);
+        return CheckPlanes(trace, trace.EndSubsector->sector);
+      }
+    } else if (NumSubsectors == 1) {
+      if (CrossSubsector(trace, 0)) {
+        trace.LineEnd = End;
+        // end subsector is known
+        trace.EndSubsector = &Subsectors[0];
+        return CheckPlanes(trace, trace.EndSubsector->sector);
+      }
     }
   }
   return false;

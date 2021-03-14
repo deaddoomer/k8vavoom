@@ -335,8 +335,8 @@ void VLevel::BuildNodesZD () {
   {
     NumNodes = nodeCount;
     delete[] Nodes;
-    Nodes = new node_t[NumNodes];
-    memset((void *)Nodes, 0, sizeof(node_t)*NumNodes);
+    Nodes = new node_t[NumNodes+1];
+    memset((void *)Nodes, 0, sizeof(node_t)*(NumNodes+1));
     for (int f = 0; f < nodeCount; ++f) CopyNodeZD(f, nodes[f], &Nodes[f]);
     delete[] nodes;
   }

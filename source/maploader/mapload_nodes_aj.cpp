@@ -567,8 +567,8 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
 static void CopyNodes (VLevel *Level, ajbsp::node_t *root_node) {
   Level->NumNodes = ajbsp::num_nodes;
   delete[] Level->Nodes;
-  Level->Nodes = new node_t[Level->NumNodes];
-  memset((void *)Level->Nodes, 0, sizeof(node_t)*Level->NumNodes);
+  Level->Nodes = new node_t[Level->NumNodes+1];
+  memset((void *)Level->Nodes, 0, sizeof(node_t)*(Level->NumNodes+1));
   if (root_node) {
     int NodeIndex = 0;
     CopyNode(Level, NodeIndex, root_node, Level->Nodes);

@@ -223,7 +223,7 @@ void VLevel::LoadSubsectors (int Lump) {
 //
 //==========================================================================
 void VLevel::GroupLines () {
-  LinkNode(NumNodes-1, nullptr);
+  if (NumNodes > 0) LinkNode(NumNodes-1, nullptr);
 
   if (NumSectors > 0) {
     if (Sectors[0].lines) delete[] Sectors[0].lines;

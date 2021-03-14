@@ -345,8 +345,10 @@ void VLevel::RecalcWorldBBoxes () {
     node.bbox[1][3+2] = +99999.0f;
   }
   // special values
-  float dummy_bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
-  RecalcWorldNodeBBox(NumNodes-1, dummy_bbox, skyheight);
+  if (NumNodes) {
+    float dummy_bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };
+    RecalcWorldNodeBBox(NumNodes-1, dummy_bbox, skyheight);
+  }
 }
 
 

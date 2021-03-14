@@ -133,7 +133,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBox (const TVec &org, float radius, c
   }
 
   if (Level->NumSubsectors < 2) return true; // anyway
-  vassert(Level->NumNodes > 1);
+  vassert(Level->NumNodes > 0);
 
   // create light bounding box
   cboxCheckBox[0] = org.x-radius;

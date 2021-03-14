@@ -1245,11 +1245,11 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
 void VRenderLevelLightmap::InvalidateLightLMaps (const TVec &org, float radius) {
   if (Level->NumSubsectors < 2) {
     if (Level->NumSubsectors == 1) return InvalidateSubsectorLMaps(org, radius, 0);
-    return;
+  } else {
+    const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
+    LightClip.ClearClipNodes(org, Level, radius);
+    InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
   }
-  const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
-  LightClip.ClearClipNodes(org, Level, radius);
-  InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
 }
 
 
