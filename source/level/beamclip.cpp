@@ -1688,9 +1688,9 @@ void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub,
 
   // treat each line as two-sided
   if (!RepSectors) {
-    if (IsPObjSegAClosedSomething(Level, &Frustum, pobj, sub, seg)) return;
+    if (!IsPObjSegAClosedSomething(Level, &Frustum, pobj, sub, seg)) return;
   } else {
-    if (IsPObjSegAClosedSomethingServer(Level, &Frustum, pobj, sub, seg)) return;
+    if (!IsPObjSegAClosedSomethingServer(Level, &Frustum, pobj, sub, seg)) return;
   }
 
   AddClipRange(v2, v1);
@@ -2018,7 +2018,7 @@ void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t 
   if (!MirrorCheck(Mirror, *v1, *v2)) return;
 
   // treat each line as two-sided
-  if (IsPObjSegAClosedSomething(Level, /*&Frustum*/nullptr, pobj, sub, seg, &Origin, &Radius)) return;
+  if (!IsPObjSegAClosedSomething(Level, /*&Frustum*/nullptr, pobj, sub, seg, &Origin, &Radius)) return;
 
   AddClipRange(*v2, *v1);
 }
