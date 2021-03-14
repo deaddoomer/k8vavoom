@@ -947,7 +947,8 @@ IMPLEMENT_FREE_FUNCTION(VObject, SetTimerInterval) {
 
 //native static final float GetTickCount ();
 IMPLEMENT_FREE_FUNCTION(VObject, GetTickCount) {
-  RET_FLOAT((float)fsysCurrTick());
+  //RET_FLOAT((float)fsysCurrTick());
+  RET_FLOAT((float)(Sys_Time()+2.0-Sys_Time_Offset()));
 }
 
 
