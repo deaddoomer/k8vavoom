@@ -1312,8 +1312,12 @@ void VNetConnection::SetupFatPVS () {
   //Clipper.check2STextures = false;
   Clipper.RepSectors = (GetLevelChannel() ? GetLevelChannel()->Sectors : nullptr);
 
-  float dummy_bbox[6] = { -99999, -99999, -99999, 99999, 99999, 99999 };
-  SetupPvsNode(Level->NumNodes-1, dummy_bbox);
+  if (Level->NumSubsectors > 1) {
+    const float bbox[6] = { -99999.0f, -99999.0f, -99999.0f, +99999.0f, +99999.0f, +99999.0f };
+    SetupPvsNode(Level, Level->NumNodes-1, bbox);
+  } else if (Level->NumSubsectors == 1) {
+    SetupPvsSubsector(Level, 0);
+  }
 }
 
 
@@ -1349,52 +1353,50 @@ void VNetConnection::PvsAddSector (sector_t *sec) {
 
 //==========================================================================
 //
+//  VNetConnection::SetupPvsSubsector
+//
+//==========================================================================
+void VNetConnection::SetupPvsSubsector (VLevel *Level, int subnum) {
+  subsector_t *sub = &Level->Subsectors[subnum];
+  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (LeafPvs && !(LeafPvs[subnum>>3]&(1<<(subnum&7)))) return;
+  if (Clipper.ClipCheckSubsector(sub)) {
+    //UpdatePvs[subnum>>3] |= 1<<(subnum&7);
+    UpdatedSubsectors.put(subnum, true);
+    PvsAddSector(sub->sector);
+  }
+  Clipper.ClipAddSubsectorSegs(sub);
+}
+
+
+//==========================================================================
+//
 //  VNetConnection::SetupPvsNode
 //
 //==========================================================================
-void VNetConnection::SetupPvsNode (int BspNum, float *BBox) {
-  VLevel *Level = Context->GetLevel();
-  vassert(Level);
+void VNetConnection::SetupPvsNode (VLevel *Level, int BspNum, const float BBox[6]) {
+ tailcall:
 #ifdef VV_CLIPPER_FULL_CHECK
   if (Clipper.ClipIsFull()) return;
 #endif
   if (!Clipper.ClipIsBBoxVisible(BBox)) return;
 
-  if (BspNum == -1) {
-    int SubNum = 0;
-    subsector_t *Sub = &Level->Subsectors[SubNum];
-    if (!Sub->sector->linecount) return; // skip sectors containing original polyobjs
-    if (LeafPvs && !(LeafPvs[SubNum>>3]&(1<<(SubNum&7)))) return;
-    if (Clipper.ClipCheckSubsector(Sub)) {
-      //UpdatePvs[SubNum>>3] |= 1<<(SubNum&7);
-      UpdatedSubsectors.put(SubNum, true);
-      PvsAddSector(Sub->sector);
-    }
-    Clipper.ClipAddSubsectorSegs(Sub);
-    return;
-  }
-
   // found a subsector?
-  if (!(BspNum&NF_SUBSECTOR)) {
-    node_t *Bsp = &Level->Nodes[BspNum];
+  if (!(BspNum&(NF_SUBSECTOR))) {
+    const node_t *node = &Level->Nodes[BspNum];
     // decide which side the view point is on
-    int Side = Bsp->PointOnSide(Owner->ViewOrg);
+    const unsigned side = (unsigned)node->PointOnSide(Owner->ViewOrg);
     // recursively divide front space
-    SetupPvsNode(Bsp->children[Side], Bsp->bbox[Side]);
+    SetupPvsNode(Level, node->children[side], node->bbox[side]);
     // possibly divide back space
-    //if (!Clipper.ClipIsBBoxVisible(Bsp->bbox[Side^1])) return;
-    return SetupPvsNode(Bsp->children[Side^1], Bsp->bbox[Side^1]);
+    //if (!Clipper.ClipIsBBoxVisible(node->bbox[side^1])) return;
+    //return SetupPvsNode(node->children[side^1], node->bbox[side^1]);
+    BspNum = node->children[1u^side];
+    BBox = node->bbox[1u^side];
+    goto tailcall;
   } else {
-    int SubNum = BspNum&~NF_SUBSECTOR;
-    subsector_t *Sub = &Level->Subsectors[SubNum];
-    if (!Sub->sector->linecount) return; // skip sectors containing original polyobjs
-    if (LeafPvs && !(LeafPvs[SubNum>>3]&(1<<(SubNum&7)))) return;
-    if (Clipper.ClipCheckSubsector(Sub)) {
-      //UpdatePvs[SubNum>>3] |= 1<<(SubNum&7);
-      UpdatedSubsectors.put(SubNum, true);
-      PvsAddSector(Sub->sector);
-    }
-    Clipper.ClipAddSubsectorSegs(Sub);
+    const int subnum = BspNum&~NF_SUBSECTOR;
+    return SetupPvsSubsector(Level, subnum);
   }
 }
 
