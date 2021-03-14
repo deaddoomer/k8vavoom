@@ -983,15 +983,6 @@ void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *s
   if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
-      /*
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        seg_t *seg = (*polySeg)->drawsegs->seg;
-        if (seg->linedef) {
-          clip.CheckAddClipSeg(seg, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
-        }
-      }
-      */
       clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
     }
   }
