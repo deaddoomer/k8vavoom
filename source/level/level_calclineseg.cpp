@@ -155,36 +155,38 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
     const float dot1 = curseg->PointDistance(*v1);
     const float dot2 = curseg->PointDistance(*v2);
     // if both dots are outside, the whole seg is outside of subsector
-    if (dot1 < 0.0f && dot2 < 0.0f) return false;
+    if (dot1 < -0.01f && dot2 < -0.01f) return false;
     // if both dots are inside (or coplanar), ignore this plane
     if (dot1 >= 0.0f && dot2 >= 0.0f) continue;
     // need to be split
-    if (dot1 < 0.0f) {
-      vassert(dot2 >= 0.0f);
+    if (dot1 < -0.01f) {
+      vassert(dot2 >= -0.01f);
       // if one of normal components is |1|, the other is inevitably `0`
            if (curseg->normal.x == +1.0f) v1->x = curseg->dist;
       else if (curseg->normal.x == -1.0f) v1->x = -curseg->dist;
       else if (curseg->normal.y == +1.0f) v1->y = curseg->dist;
       else if (curseg->normal.y == -1.0f) v1->y = -curseg->dist;
       else {
-        const float idist = dot1/(dot1-dot2);
+        const float idist = dot1/(dot1-max2(dot2, 0.0f));
         v1->x += (v2->x-v1->x)*idist;
         v1->y += (v2->y-v1->y)*idist;
       }
-    } else if (dot2 < 0.0f) {
-      vassert(dot1 >= 0.0f);
+    } else if (dot2 < -0.01f) {
+      vassert(dot1 >= -0.01f);
       // if one of normal components is |1|, the other is inevitably `0`
            if (curseg->normal.x == +1.0f) v2->x = curseg->dist;
       else if (curseg->normal.x == -1.0f) v2->x = -curseg->dist;
       else if (curseg->normal.y == +1.0f) v2->y = curseg->dist;
       else if (curseg->normal.y == -1.0f) v2->y = -curseg->dist;
       else {
-        const float idist = dot2/(dot2-dot1);
+        const float idist = dot2/(dot2-max2(dot1, 0.0f));
         v2->x += (v1->x-v2->x)*idist;
         v2->y += (v1->y-v2->y)*idist;
       }
     } else {
-      Sys_Error("ClipPObjSegToSub: oops!");
+      // this can happen for very small distances
+      //Sys_Error("ClipPObjSegToSub: oops!");
+      continue;
     }
     const float dx = v2->x-v1->x;
     const float dy = v2->y-v1->y;
