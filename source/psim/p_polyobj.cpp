@@ -464,7 +464,8 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   avg.y /= po->numsegs;
 
   subsector_t *sub = PointInSubsector(avg); // bugfixed algo
-  po->UnlinkFromSubsector(sub); // just in case
+  //po->UnlinkFromSubsector(sub); // just in case
+  po->UnlinkFromAllSubsectors(); // just in case
   po->LinkToSubsector(sub);
 
   // set initial floor and ceiling
@@ -554,9 +555,13 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
 
   // for now, polyobj can be linked only to one subsector
   // this will be changed later
+  //FIXME: make this faster!
   subsector_t *sub = PointInSubsector(avg); // bugfixed algo
   if (sub) {
-    if (!po->IsLinkedToSubsector(sub)) po->LinkToSubsector(sub);
+    if (!po->IsLinkedToSubsector(sub)) {
+      po->UnlinkFromAllSubsectors(); //FIXME: make this faster!
+      po->LinkToSubsector(sub);
+    }
   } else {
     po->UnlinkFromAllSubsectors();
   }
