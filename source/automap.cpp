@@ -235,6 +235,10 @@ static VCvarB am_draw_keys("am_draw_keys", true, "Draw keys on automap?", CVAR_A
 static VCvarF am_keys_blink_time("am_keys_blink_time", "0.4", "Keys blinking time in seconds (set to 0 to disable)", CVAR_Archive);
 
 
+static VCvarS am_cheat_pobj_active_color("am_cheat_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
+static VCvarS am_cheat_pobj_inactive_color("am_cheat_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
+
+
 // cached colors
 static ColorCV WallColor(&am_color_wall, &am_overlay_alpha);
 static ColorCV TSWallColor(&am_color_tswall, &am_overlay_alpha);
@@ -255,6 +259,8 @@ static ColorCV MinisegColor(&am_color_miniseg, &am_overlay_alpha);
 static ColorCV CurrMarkColor(&am_color_current_mark, &am_overlay_alpha);
 static ColorCV MarkBlinkColor(&am_color_mark_blink, &am_overlay_alpha);
 
+static ColorCV PObjActiveColor(&am_cheat_pobj_active_color, &am_overlay_alpha);
+static ColorCV PObjInactiveColor(&am_cheat_pobj_inactive_color, &am_overlay_alpha);
 
 static int leveljuststarted = 1; // kluge until AM_LevelInit() is called
 static int amWholeScale = -1; // -1: unknown
@@ -1359,6 +1365,7 @@ static void AM_UpdateSeen () {
 static void AM_drawWalls () {
   line_t *line = &GClLevel->Lines[0];
   for (unsigned i = GClLevel->NumLines; i--; ++line) {
+    if (!line->firstseg) continue; // just in case
     // do not send the line to GPU if it is not visible
     // simplified check with line bounding box
     if (!AM_isBBox2DVisible(line->bbox2d)) continue;
@@ -1373,6 +1380,54 @@ static void AM_drawWalls () {
     bool cheatOnly = false;
     vuint32 clr = AM_getLineColor(line, &cheatOnly);
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
+
+    // special rendering for polyobject
+    if (am_cheating && line->firstseg->pobj) {
+      const vuint32 aclr = PObjActiveColor;
+      const vuint32 iclr = PObjInactiveColor;
+      const polyobj_t *pobj = line->firstseg->pobj;
+      const subsector_t *sub = pobj->SubSectorFirst().value();
+      if (!sub) continue;
+      for (const seg_t *origseg = line->firstseg; origseg; origseg = origseg->lsnext) {
+        if (!origseg->linedef) continue;
+
+        // clip pobj seg to subsector
+        seg_t newseg = *origseg;
+        TVec sv1 = *origseg->v1;
+        TVec sv2 = *origseg->v2;
+        newseg.v1 = &sv1;
+        newseg.v2 = &sv2;
+        if (!GClLevel->ClipPObjSegToSub(sub, &newseg)) {
+          // out of this subsector
+          mline_t l;
+          l.a.x = origseg->v1->x;
+          l.a.y = origseg->v1->y;
+          l.b.x = origseg->v2->x;
+          l.b.y = origseg->v2->y;
+
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+
+          AM_drawMline(&l, iclr);
+        } else {
+          mline_t l;
+          l.a.x = newseg.v1->x;
+          l.a.y = newseg.v1->y;
+          l.b.x = newseg.v2->x;
+          l.b.y = newseg.v2->y;
+
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+
+          AM_drawMline(&l, aclr);
+        }
+      }
+      continue;
+    }
 
     // fully mapped or automap revealed?
     if (am_full_lines || am_cheating || (line->flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
