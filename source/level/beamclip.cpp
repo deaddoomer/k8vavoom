@@ -68,7 +68,7 @@ static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with pol
 static VCvarB clip_polyobj_new("clip_polyobj_new", false, "Do clipping with polyobjects using new method?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
 VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit);
-VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);
+//VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);
 VCvarB clip_frustum_init_range("clip_frustum_init_range", true, "Init clipper range with frustum?", CVAR_PreInit);
 // set to false, because 1d clipper can clip bboxes too, and node bsp z is miscalculated for some map trickery
 VCvarB clip_frustum_bsp("clip_frustum_bsp", true, "Clip BSP geometry with frustum?", CVAR_PreInit);
@@ -1467,7 +1467,8 @@ bool VViewClipper::ClipCheckSubsector (const subsector_t *sub) noexcept {
 static inline bool MirrorCheck (const TPlane *Mirror, const TVec &v1, const TVec &v2) noexcept {
   if (Mirror) {
     // clip seg with mirror plane
-    if (Mirror->PointOnSideThreshold(v1) && Mirror->PointOnSideThreshold(v2)) return false;
+    //if (Mirror->PointOnSideThreshold(v1) && Mirror->PointOnSideThreshold(v2)) return false;
+    if (Mirror->PointOnSide2(v1) || Mirror->PointOnSide2(v2)) return false;
     // and clip it while we are here
     //const float dist1 = DotProduct(v1, Mirror->normal)-Mirror->dist;
     //const float dist2 = DotProduct(v2, Mirror->normal)-Mirror->dist;

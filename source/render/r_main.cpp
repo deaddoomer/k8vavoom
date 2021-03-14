@@ -695,7 +695,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   CurrLightCalcUnstuck = false;
   //HasBackLit = false;
   doShadows = false;
-  MirrorClipSegs = false;
+  //MirrorClipSegs = false;
 
   VDrawer::LightFadeMult = 1.0f; // for now
   if (Drawer) {

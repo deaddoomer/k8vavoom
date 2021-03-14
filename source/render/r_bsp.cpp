@@ -66,7 +66,7 @@ extern VCvarB r_decals;
 extern VCvarB clip_frustum;
 extern VCvarB clip_frustum_bsp;
 //extern VCvarB clip_frustum_bsp_segs;
-extern VCvarB clip_frustum_mirror;
+//extern VCvarB clip_frustum_mirror;
 extern VCvarB clip_use_1d_clipper;
 // for portals
 extern VCvarB clip_height;
@@ -777,7 +777,8 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   if (!linedef) {
     // miniseg
     // for now
-    sub->miscFlags |= subsector_t::SSMF_Rendered;
+    // check with clipper?
+    //sub->miscFlags |= subsector_t::SSMF_Rendered;
     seg->flags |= SF_MAPPED;
     return;
   }
@@ -801,10 +802,12 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
     return;
   }
 
+  #if 0
   if (MirrorClipSegs && clip_frustum && clip_frustum_mirror && /*clip_frustum_bsp &&*/ Drawer->viewfrustum.planes[TFrustum::Forward].isValid()) {
     // clip away segs that are behind mirror
     if (Drawer->viewfrustum.planes[TFrustum::Forward].PointOnSide(*seg->v1) && Drawer->viewfrustum.planes[TFrustum::Forward].PointOnSide(*seg->v2)) return; // behind mirror
   }
+  #endif
 
   /*
     k8: i don't know what Janis wanted to accomplish with this, but it actually
@@ -983,7 +986,8 @@ void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *s
   if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.value();
-      clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
+      //clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
+      clip.ClipAddPObjSegs(pobj, sub, (Drawer->MirrorClip ? &Drawer->MirrorPlane : nullptr));
     }
   }
 }
@@ -1115,7 +1119,8 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
   // add subsector's segs to the clipper
   // clipping against mirror is done only for vertical mirror planes
   if (clip_use_1d_clipper) {
-    ViewClip.ClipAddSubsectorSegs(sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
+    //ViewClip.ClipAddSubsectorSegs(sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
+    ViewClip.ClipAddSubsectorSegs(sub, (Drawer->MirrorClip ? &Drawer->MirrorPlane : nullptr));
   }
 }
 
@@ -1252,12 +1257,14 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
     if (WorldSurfs.NumAllocated() < 32768) WorldSurfs.Resize(32768);
   }
 
+  /*
   MirrorClipSegs = (Drawer->MirrorClip && !Drawer->viewfrustum.planes[TFrustum::Forward].normal.z);
 
   if (!clip_frustum_mirror) {
     MirrorClipSegs = false;
     Drawer->viewfrustum.planes[TFrustum::Forward].clipflag = 0;
   }
+  */
 
   // mark the leaf we're in as seen
   if (r_viewleaf) r_viewleaf->miscFlags |= subsector_t::SSMF_Rendered;

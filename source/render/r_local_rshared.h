@@ -209,7 +209,7 @@ protected:
 
   // renderer info; put here to avoid passing it around
   // k8: it was a bunch of globals; i will eventually got rid of this
-  bool MirrorClipSegs;
+  //bool MirrorClipSegs;
 
   // set in `CreateWorldSurfaces()`
   int NumSegParts;
