@@ -46,7 +46,10 @@
 */
 #include <new>
 
-const double timeOffset = 4294967296.0; // this will give us a constant time precision
+// this will give us a constant time precision
+#define timeOffset  (4294967296.0)
+
+double Sys_Time_Offset () { return timeOffset; }
 
 #if 0
 moved to zone

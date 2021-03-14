@@ -51,6 +51,8 @@ void *Sys_OpenDir (VStr path, bool wantDirs=false); // nullptr: error
 VStr Sys_ReadDir (void *adir);
 void Sys_CloseDir (void *adir);
 
+double Sys_Time_Offset (); // time starting point
+
 double Sys_Time_CPU (); // this tries to return CPU time used by the process; never returns 0
 double Sys_Time (); // never returns 0
 void Sys_Yield ();
