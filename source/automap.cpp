@@ -235,8 +235,8 @@ static VCvarB am_draw_keys("am_draw_keys", true, "Draw keys on automap?", CVAR_A
 static VCvarF am_keys_blink_time("am_keys_blink_time", "0.4", "Keys blinking time in seconds (set to 0 to disable)", CVAR_Archive);
 
 
-static VCvarS am_cheat_pobj_active_color("am_cheat_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
-static VCvarS am_cheat_pobj_inactive_color("am_cheat_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
+static VCvarS am_cheat_pobj_active_color("am_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
+static VCvarS am_cheat_pobj_inactive_color("am_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
 
 
 // cached colors
