@@ -48,8 +48,7 @@
 
 // this will give us a constant time precision
 #define timeOffset  (4294967296.0)
-
-double Sys_Time_Offset () { return timeOffset; }
+double Sys_Time_Offset () { return timeOffset/1000000.0; }
 
 #if 0
 moved to zone
