@@ -561,15 +561,26 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
     po->UnlinkFromAllSubsectors();
   }
 
-  po->bbox2d[BOX2D_RIGHT] = MapBlock(rightX-BlockMapOrgX);
-  po->bbox2d[BOX2D_LEFT] = MapBlock(leftX-BlockMapOrgX);
-  po->bbox2d[BOX2D_TOP] = MapBlock(topY-BlockMapOrgY);
-  po->bbox2d[BOX2D_BOTTOM] = MapBlock(bottomY-BlockMapOrgY);
+  const int xbboxRight = MapBlock(rightX-BlockMapOrgX);
+  const int xbboxLeft = MapBlock(leftX-BlockMapOrgX);
+  const int xbboxTop = MapBlock(topY-BlockMapOrgY);
+  const int xbboxBottom = MapBlock(bottomY-BlockMapOrgY);
+
+  const int bmxsize = BlockMapWidth;
+  const int bmysize = BlockMapHeight*bmxsize;
+  const int bmyend = xbboxTop*bmxsize;
+
+  po->bmbbox[BOX2D_RIGHT] = xbboxRight;
+  po->bmbbox[BOX2D_LEFT] = xbboxLeft;
+  po->bmbbox[BOX2D_TOP] = xbboxTop;
+  po->bmbbox[BOX2D_BOTTOM] = xbboxBottom;
+
   // add the polyobj to each blockmap section
-  for (int j = po->bbox2d[BOX2D_BOTTOM]*BlockMapWidth; j <= po->bbox2d[BOX2D_TOP]*BlockMapWidth; j += BlockMapWidth) {
-    for (int i = po->bbox2d[BOX2D_LEFT]; i <= po->bbox2d[BOX2D_RIGHT]; ++i) {
-      if (i >= 0 && i < BlockMapWidth && j >= 0 && j < BlockMapHeight*BlockMapWidth) {
-        polyblock_t **link = &PolyBlockMap[j+i];
+  for (int by = xbboxBottom*bmxsize; by <= bmyend; by += bmxsize) {
+    if (by < 0 || by >= bmysize) continue;
+    for (int bx = xbboxLeft; bx <= xbboxRight; ++bx) {
+      if (bx >= 0 && bx < bmxsize) {
+        polyblock_t **link = &PolyBlockMap[by+bx];
         if (!(*link)) {
           // create a new link at the current block cell
           *link = new polyblock_t;
@@ -580,12 +591,9 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
         }
 
         polyblock_t *tempLink = *link;
-        while (tempLink->next != nullptr && tempLink->polyobj != nullptr) {
-          tempLink = tempLink->next;
-        }
+        while (tempLink->next != nullptr && tempLink->polyobj != nullptr) tempLink = tempLink->next;
         if (tempLink->polyobj == nullptr) {
           tempLink->polyobj = po;
-          continue;
         } else {
           tempLink->next = new polyblock_t;
           tempLink->next->next = nullptr;
@@ -593,7 +601,6 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
           tempLink->next->polyobj = po;
         }
       }
-      // else, don't link the polyobj, since it's off the map
     }
   }
 }
@@ -605,20 +612,23 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
 //
 //==========================================================================
 void VLevel::UnLinkPolyobj (polyobj_t *po) {
+  const int xbboxRight = po->bmbbox[BOX2D_RIGHT];
+  const int xbboxLeft = po->bmbbox[BOX2D_LEFT];
+  const int xbboxTop = po->bmbbox[BOX2D_TOP];
+  const int xbboxBottom = po->bmbbox[BOX2D_BOTTOM];
+
+  const int bmxsize = BlockMapWidth;
+  const int bmysize = BlockMapHeight*bmxsize;
+  const int bmyend = xbboxTop*bmxsize;
+
   // remove the polyobj from each blockmap section
-  for (int j = po->bbox2d[BOX2D_BOTTOM]; j <= po->bbox2d[BOX2D_TOP]; ++j) {
-    int index = j*BlockMapWidth;
-    for (int i = po->bbox2d[BOX2D_LEFT]; i <= po->bbox2d[BOX2D_RIGHT]; ++i) {
-      if (i >= 0 && i < BlockMapWidth && j >= 0 && j < BlockMapHeight) {
-        polyblock_t *link = PolyBlockMap[index+i];
-        while (link != nullptr && link->polyobj != po) {
-          link = link->next;
-        }
-        if (link == nullptr) {
-          // polyobj not located in the link cell
-          continue;
-        }
-        link->polyobj = nullptr;
+  for (int by = xbboxBottom*bmxsize; by <= bmyend; by += bmxsize) {
+    if (by < 0 || by >= bmysize) continue;
+    for (int bx = xbboxLeft; bx <= xbboxRight; ++bx) {
+      if (bx >= 0 && bx < bmxsize) {
+        polyblock_t *link = PolyBlockMap[by+bx];
+        while (link != nullptr && link->polyobj != po) link = link->next;
+        if (link) link->polyobj = nullptr;
       }
     }
   }
@@ -800,9 +810,9 @@ bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
 
   bool blocked = false;
 
-  for (int j = bottom*BlockMapWidth; j <= top*BlockMapWidth; j += BlockMapWidth) {
-    for (int i = left; i <= right; ++i) {
-      for (VEntity *mobj = BlockLinks[j+i]; mobj; mobj = mobj->BlockMapNext) {
+  for (int by = bottom*BlockMapWidth; by <= top*BlockMapWidth; by += BlockMapWidth) {
+    for (int bx = left; bx <= right; ++bx) {
+      for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
         if (mobj->EntityFlags&VEntity::EF_ColideWithWorld) {
           if (mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse)) {

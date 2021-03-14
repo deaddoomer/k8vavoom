@@ -880,7 +880,7 @@ struct polyobj_t {
   sec_plane_t ceiling;
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
-  vint32 bbox2d[4];
+  vint32 bmbbox[4]; //WARNING! this is in blockmap coords, not unit coords
   vint32 validcount;
   enum {
     PF_Crush       = 0x01u, // should the polyobj attempt to crush mobjs?

@@ -1147,7 +1147,7 @@ struct polyobj_t {
   sec_plane_t ceiling;
   float angle;
   int tag; // reference tag assigned in HereticEd
-  int[4] bbox2d;
+  int[4] bmbbox; //WARNING! this is in blockmap coords, not unit coords
   int validcount;
   bool bCrush; // should the polyobj attempt to crush mobjs?
   bool bHurtOnTouch;
