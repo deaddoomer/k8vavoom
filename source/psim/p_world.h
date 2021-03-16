@@ -43,6 +43,12 @@
 //
 //==========================================================================
 class VBlockLinesIterator {
+public:
+  enum {
+    POBJ_LINES = 1u<<0,
+    POBJ_POBJ  = 1u<<1,
+    POBJ_ALL = (POBJ_LINES|POBJ_POBJ),
+  };
 private:
   VLevel *Level;
   line_t **LinePtr;
@@ -51,7 +57,7 @@ private:
   vint32 *List;
 
 public:
-  VBlockLinesIterator (VLevel *Level, int x, int y, line_t **);
+  VBlockLinesIterator (VLevel *Level, int x, int y, line_t **, unsigned pobjMode=POBJ_ALL);
   bool GetNext ();
 };
 

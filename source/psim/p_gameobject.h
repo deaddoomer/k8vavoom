@@ -46,6 +46,7 @@ struct VMapInfo;
 
 struct sector_t;
 struct fakefloor_t;
+struct line_t;
 struct seg_t;
 struct subsector_t;
 struct node_t;
@@ -301,6 +302,113 @@ void *tagHashPtr (const TagHash *th, int index);
 int tagHashTag (const TagHash *th, int index);
 
 
+//==========================================================================
+//
+//  SideDef
+//
+//==========================================================================
+enum {
+  SDF_ABSLIGHT   = 1u<<0, // light is absolute value
+  SDF_WRAPMIDTEX = 1u<<1,
+  SDF_CLIPMIDTEX = 1u<<2,
+  SDF_NOFAKECTX  = 1u<<3, // no fake contrast
+  SDF_SMOOTHLIT  = 1u<<4, // smooth lighting, not implemented yet
+  SDF_NODECAL    = 1u<<5,
+  // was the corresponding textures "AASHITTY"?
+  // this is required to fix bridges
+  SDF_AAS_TOP    = 1u<<6,
+  SDF_AAS_BOT    = 1u<<7,
+  SDF_AAS_MID    = 1u<<8,
+};
+
+
+struct side_tex_params_t {
+  float TextureOffset; // x, s axis, column
+  float RowOffset; // y, t axis, top
+  float ScaleX, ScaleY;
+};
+
+
+struct side_t {
+  side_tex_params_t Top;
+  side_tex_params_t Bot;
+  side_tex_params_t Mid;
+
+  // texture indices: we do not maintain names here
+  // 0 means "no texture"; -1 means "i forgot what it is"
+  VTextureID TopTexture;
+  VTextureID BottomTexture;
+  VTextureID MidTexture;
+
+  // sector the SideDef is facing
+  sector_t *Sector;
+
+  vint32 LineNum; // line index in `Lines`
+
+  vuint32 Flags; // SDF_XXX
+
+  vint32 Light;
+};
+
+
+//==========================================================================
+//
+//  LineSeg
+//
+//  moved here, so we'll be able to use it in inline methods
+//
+//==========================================================================
+// seg flags
+enum {
+  SF_MAPPED  = 1u<<0, // some segs of this linedef are visible, but not all
+  SF_ZEROLEN = 1u<<1, // zero-length seg (it has some fake length)
+};
+
+struct seg_t : public TPlane {
+  TVec *v1;
+  TVec *v2;
+
+  float offset;
+  float length;
+  TVec dir; // precalced segment direction, so i don't have to do it again in surface creator; normalized
+
+  side_t *sidedef;
+  line_t *linedef;
+  seg_t *lsnext; // next seg in linedef; set by `VLevel::PostProcessForDecals()`
+
+  // sector references
+  // could be retrieved from linedef, too
+  // backsector is nullptr for one sided lines
+  sector_t *frontsector;
+  sector_t *backsector;
+
+  seg_t *partner; // from glnodes
+  subsector_t *frontsub; // front subsector (we need this for self-referencing deep water)
+
+  // side of line (for light calculations: 0 or 1)
+  vint32 side;
+
+  vuint32 flags; // SF_xxx
+
+  drawseg_t *drawsegs;
+
+  // original polyobject, or `nullptr` for world seg
+  polyobj_t *pobj;
+
+  // decal list
+  decal_t *decalhead;
+  decal_t *decaltail;
+
+  void appendDecal (decal_t *dc) noexcept;
+  void removeDecal (decal_t *dc) noexcept; // will not delete it
+};
+
+
+//==========================================================================
+//
+//  LineDef
+//
+//==========================================================================
 struct line_t : public TPlane {
   // vertices, from v1 to v2
   TVec *v1;
@@ -372,61 +480,16 @@ struct line_t : public TPlane {
   inline line_t *vxLine (int vidx, int idx) noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
   inline const line_t *vxLine (int vidx, int idx) const noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
 
+  polyobj_t *pobject; // do not use this directly!
+
+  inline polyobj_t *pobj () const noexcept { return pobject; }
+
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc
   TPlane *cdPlanes;
 
   vint32 cdPlanesCount;
   TPlane cdPlanesArray[6];
-};
-
-
-//==========================================================================
-//
-//  SideDef
-//
-//==========================================================================
-enum {
-  SDF_ABSLIGHT   = 1u<<0, // light is absolute value
-  SDF_WRAPMIDTEX = 1u<<1,
-  SDF_CLIPMIDTEX = 1u<<2,
-  SDF_NOFAKECTX  = 1u<<3, // no fake contrast
-  SDF_SMOOTHLIT  = 1u<<4, // smooth lighting, not implemented yet
-  SDF_NODECAL    = 1u<<5,
-  // was the corresponding textures "AASHITTY"?
-  // this is required to fix bridges
-  SDF_AAS_TOP    = 1u<<6,
-  SDF_AAS_BOT    = 1u<<7,
-  SDF_AAS_MID    = 1u<<8,
-};
-
-
-struct side_tex_params_t {
-  float TextureOffset; // x, s axis, column
-  float RowOffset; // y, t axis, top
-  float ScaleX, ScaleY;
-};
-
-
-struct side_t {
-  side_tex_params_t Top;
-  side_tex_params_t Bot;
-  side_tex_params_t Mid;
-
-  // texture indices: we do not maintain names here
-  // 0 means "no texture"; -1 means "i forgot what it is"
-  VTextureID TopTexture;
-  VTextureID BottomTexture;
-  VTextureID MidTexture;
-
-  // sector the SideDef is facing
-  sector_t *Sector;
-
-  vint32 LineNum; // line index in `Lines`
-
-  vuint32 Flags; // SDF_XXX
-
-  vint32 Light;
 };
 
 
@@ -939,57 +1002,6 @@ struct PolyAnchorPoint_t {
   float x;
   float y;
   vint32 tag;
-};
-
-
-//==========================================================================
-//
-//  LineSeg
-//
-//==========================================================================
-// seg flags
-enum {
-  SF_MAPPED  = 1u<<0, // some segs of this linedef are visible, but not all
-  SF_ZEROLEN = 1u<<1, // zero-length seg (it has some fake length)
-};
-
-struct seg_t : public TPlane {
-  TVec *v1;
-  TVec *v2;
-
-  float offset;
-  float length;
-  TVec dir; // precalced segment direction, so i don't have to do it again in surface creator; normalized
-
-  side_t *sidedef;
-  line_t *linedef;
-  seg_t *lsnext; // next seg in linedef; set by `VLevel::PostProcessForDecals()`
-
-  // sector references
-  // could be retrieved from linedef, too
-  // backsector is nullptr for one sided lines
-  sector_t *frontsector;
-  sector_t *backsector;
-
-  seg_t *partner; // from glnodes
-  subsector_t *frontsub; // front subsector (we need this for self-referencing deep water)
-
-  // side of line (for light calculations: 0 or 1)
-  vint32 side;
-
-  vuint32 flags; // SF_xxx
-
-  drawseg_t *drawsegs;
-
-  // original polyobject, or `nullptr` for world seg
-  polyobj_t *pobj;
-
-  // decal list
-  decal_t *decalhead;
-  decal_t *decaltail;
-
-  void appendDecal (decal_t *dc) noexcept;
-  void removeDecal (decal_t *dc) noexcept; // will not delete it
 };
 
 

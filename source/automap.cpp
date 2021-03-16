@@ -1382,10 +1382,10 @@ static void AM_drawWalls () {
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
 
     // special rendering for polyobject
-    if (am_cheating && line->firstseg->pobj) {
+    if (am_cheating && line->pobj()) {
       const vuint32 aclr = PObjActiveColor;
       const vuint32 iclr = PObjInactiveColor;
-      const polyobj_t *pobj = line->firstseg->pobj;
+      const polyobj_t *pobj = line->pobj();
       const subsector_t *sub = pobj->SubFirst().sub();
       if (!sub) continue;
       for (const seg_t *origseg = line->firstseg; origseg; origseg = origseg->lsnext) {

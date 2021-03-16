@@ -980,7 +980,10 @@ private:
   void InitPolyBlockMap ();
   void LinkPolyobj (polyobj_t *);
   void UnLinkPolyobj (polyobj_t *);
-  bool PolyCheckMobjBlocking (seg_t *, polyobj_t *);
+
+  bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po);
+  // we don't need the exact blocking line here
+  bool PolyCheckMobjBlocked (polyobj_t *po);
 
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;

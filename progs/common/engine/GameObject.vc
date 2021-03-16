@@ -758,6 +758,8 @@ struct line_t : TPlane {
   //line_t **v2lines;
   //int v2linesCount;
 
+  readonly native polyobj_t *pobject;
+
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc
   TPlane[] cdPlanes;

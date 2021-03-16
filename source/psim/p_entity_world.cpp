@@ -232,6 +232,11 @@ void VEntity::CreateSecNodeList () {
       for (int by = yl; by <= yh; ++by) {
         line_t *ld;
         for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+          // ignore polyobject lines (for now)
+          if (ld->pobj()) continue;
+          // ingore polyobject sectors (for now)
+          if (!ld->frontsector || ld->frontsector->linecount == 0) continue;
+
           // locates all the sectors the object is in by looking at the lines that cross through it.
           // you have already decided that the object is allowed at this location, so don't
           // bother with checking impassable or blocking lines.
@@ -443,8 +448,13 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
+        // ignore polyobjects here, because currently we cannot stand on them
         line_t *ld;
         for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+          // ignore polyobjects (for now)
+          if (ld->pobj()) continue;
+          // ingore polyobject sectors (for now)
+          if (ld->frontsector && ld->frontsector->linecount == 0) continue;
           // we don't care about any blocking line info...
           (void)CheckRelLine(tmtrace, ld, true); // ...and we don't want to process any specials
         }
@@ -734,6 +744,32 @@ bool VEntity::CheckThing (tmtrace_t &cptrace, VEntity *Other) {
   if (!eventTouch(Other, /*noPickups*/true)) return false;
 
   return true;
+}
+
+
+//==========================================================================
+//
+//  VEntity::IsBlockingLine
+//
+//==========================================================================
+bool VEntity::IsBlockingLine (const line_t *ld) const noexcept {
+  if (ld) {
+    const unsigned lflags = ld->flags;
+    // one-sided line is always blocking
+    if (lflags&ML_TWOSIDED) {
+      if (lflags&ML_RAILING) return false;
+      if (lflags&ML_BLOCKEVERYTHING) return true; // explicitly blocking everything
+      const unsigned eflags = EntityFlags;
+      if ((eflags&EF_Missile) && (lflags&ML_BLOCKPROJECTILE)) return true; // blocks projectile
+      if ((eflags&EF_CheckLineBlocking) && (lflags&ML_BLOCKING)) return true; // explicitly blocking everything
+      if ((eflags&EF_CheckLineBlockMonsters) && (lflags&ML_BLOCKMONSTERS)) return true; // block monsters only
+      if ((eflags&EF_IsPlayer) && (lflags&ML_BLOCKPLAYERS)) return true; // block players only
+      if ((eflags&EF_Float) && (lflags&ML_BLOCK_FLOATERS)) return true; // block floaters only
+    } else {
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -2406,6 +2442,9 @@ bool VEntity::FixMapthingPos () {
       for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
         if (ld->frontsector == ld->backsector) continue; // skip two-sided lines inside a single sector
 
+        // ignore polyobject lines (for now)
+        if (ld->pobj()) continue;
+
         // skip two-sided lines without any height difference on either side
         if (ld->frontsector && ld->backsector) {
           if (ld->frontsector->floor.minz == ld->backsector->floor.minz &&
@@ -2525,6 +2564,10 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
     for (int by = yl; by <= yh; ++by) {
       line_t *line;
       for (VBlockLinesIterator It(XLevel, bx, by, &line); It.GetNext(); ) {
+        // ignore polyobject lines (for now)
+        if (line->pobj()) continue;
+        // ingore polyobject sectors (for now)
+        if (!line->frontsector || line->frontsector->linecount == 0) continue;
         if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
         if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
@@ -2591,7 +2634,11 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
     for (int by = yl; by <= yh; ++by) {
       line_t *line;
       for (VBlockLinesIterator It(XLevel, bx, by, &line); It.GetNext(); ) {
-        if (!line->backsector) continue; // ignore one-sided linedefs
+        // ignore polyobject lines (for now)
+        if (line->pobj()) continue;
+        // ingore polyobject sectors (for now)
+        if (!line->frontsector || line->frontsector->linecount == 0) continue;
+        if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
         if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
             tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&

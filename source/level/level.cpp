@@ -474,10 +474,10 @@ void VLevel::Destroy () {
 
   if (PolyBlockMap) {
     for (int i = 0; i < BlockMapWidth*BlockMapHeight; ++i) {
-      for (polyblock_t *pb = PolyBlockMap[i]; pb; ) {
-        polyblock_t *Next = pb->next;
+      polyblock_t *n;
+      for (polyblock_t *pb = PolyBlockMap[i]; pb; pb = n) {
+        n = pb->next;
         delete pb;
-        pb = Next;
       }
     }
     delete[] PolyBlockMap;

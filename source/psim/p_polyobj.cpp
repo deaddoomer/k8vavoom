@@ -264,6 +264,7 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
 //  cmpPobjSegs
 //
 //==========================================================================
+/*
 static int cmpPobjSegs (const void *aa, const void *bb, void *linedefBase) {
   if (aa == bb) return 0;
   const seg_t *sega = *(const seg_t **)aa;
@@ -280,6 +281,7 @@ static int cmpPobjSegs (const void *aa, const void *bb, void *linedefBase) {
   if (lnumA > lnumB) return 1;
   return 0;
 }
+*/
 
 
 //==========================================================================
@@ -322,7 +324,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
 
   TArray<seg_t *> psegs; // collect explicit pobj segs here
   for (auto &&seg : allSegs()) {
-    if (!seg.linedef) continue;
+    if (!seg.linedef) continue; //FIXME: we may need later to render floors, tho
     if (seg.linedef->special == PO_LINE_START && seg.linedef->arg1 == tag) {
       psegs.clear(); // we don't need 'em anymore
       seg.linedef->special = 0;
@@ -357,8 +359,8 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   if (!po->segs) {
     // didn't found a polyobj through PO_LINE_START, build from explicit lines
     if (psegs.length()) {
-      // sort segs (why not?)
-      timsort_r(psegs.ptr(), psegs.length(), sizeof(seg_t *), &cmpPobjSegs, (void *)&Lines[0]);
+      // sort segs (why not?) (why do?)
+      //timsort_r(psegs.ptr(), psegs.length(), sizeof(seg_t *), &cmpPobjSegs, (void *)&Lines[0]);
       po->numsegs = psegs.length();
       po->segs = new seg_t*[po->numsegs+1];
       bool seqSet = false;
@@ -393,7 +395,17 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   for (int c = 0; c < po->numsegs; ++c) {
     line_t *ln = po->segs[c]->linedef;
     vassert(ln);
-    if (!lmap.put(ln, true)) po->lines[lcount++] = ln;
+    if (!lmap.put(ln, true)) {
+      po->lines[lcount++] = ln;
+      if (!ln->pobject) {
+        ln->pobject = po;
+      } else {
+        if (ln->pobject != po) {
+          GCon->Logf(NAME_Error, "invalid pobj tagged %d firstseg (line #%d, old tag #%d)", po->tag, (int)(ptrdiff_t)(ln-&Lines[0]), ln->pobject->tag);
+          ln->pobject = po;
+        }
+      }
+    }
   }
   po->numlines = lcount;
 }
@@ -518,11 +530,16 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 
   // set initial floor and ceiling
   if (po->floor.TexZ < -90000.0f) {
+    // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
     subsector_t *sub = PointInSubsector(avg); // bugfixed algo
     po->floor = sub->sector->floor;
-    po->floor.pic = 0;
+    //po->floor.pic = 0;
+    if (!po->floor.isFloor()) po->floor.flipInPlace();
     po->ceiling = sub->sector->ceiling;
-    po->ceiling.pic = 0;
+    //po->ceiling.pic = 0;
+    if (!po->ceiling.isCeiling()) po->ceiling.flipInPlace();
+  } else {
+    GCon->Logf(NAME_Error, "double-spawned polyobject with tag %d (DON'T DO THIS!)", po->tag);
   }
 
   UpdatePolySegs(po);
@@ -536,14 +553,21 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 //
 //==========================================================================
 void VLevel::UpdatePolySegs (polyobj_t *po) {
-  IncrementValidCount();
+  //IncrementValidCount();
+  line_t **lineList = po->lines;
+  for (int count = po->numlines; count; --count, ++lineList) {
+    CalcLine(*lineList);
+  }
+  // recalc lines
   seg_t **segList = po->segs;
   for (int count = po->numsegs; count; --count, ++segList) {
+    /*
     if ((*segList)->linedef->validcount != validcount) {
       // recalc lines's slope type, bounding box, normal and dist
       CalcLine((*segList)->linedef);
       (*segList)->linedef->validcount = validcount;
     }
+    */
     // recalc seg's normal and dist
     CalcSeg(*segList);
     if (Renderer) Renderer->SegMoved(*segList);
@@ -732,12 +756,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, bool forced) {
 
   UpdatePolySegs(po);
 
-  if (!forced && IsForServer()) {
-    segList = po->segs;
-    for (count = po->numsegs; count; --count, ++segList) {
-      if (PolyCheckMobjBlocking(*segList, po)) blocked = true; //k8: break here?
-    }
-  }
+  if (!forced && IsForServer()) blocked = PolyCheckMobjBlocked(po);
 
   if (blocked) {
     count = po->numsegs;
@@ -808,12 +827,7 @@ bool VLevel::RotatePolyobj (int num, float angle) {
   UpdatePolySegs(po);
 
   bool blocked = false;
-  if (IsForServer()) {
-    segList = po->segs;
-    for (int count = po->numsegs; count; --count, ++segList) {
-      if (PolyCheckMobjBlocking(*segList, po)) blocked = true; //k8: break here?
-    }
-  }
+  if (IsForServer()) blocked = PolyCheckMobjBlocked(po);
 
   // if we are blocked then restore the previous points
   if (blocked) {
@@ -836,12 +850,10 @@ bool VLevel::RotatePolyobj (int num, float angle) {
 
 //==========================================================================
 //
-//  VLevel::PolyCheckMobjBlocking
+//  VLevel::PolyCheckMobjLineBlocking
 //
 //==========================================================================
-bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
-  const line_t *ld = seg->linedef;
-
+bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
   int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY/*+MAXRADIUS*/)+1;
   int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY/*-MAXRADIUS*/)-1;
   int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX/*-MAXRADIUS*/)-1;
@@ -862,8 +874,6 @@ bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
         if (mobj->IsGoingToDie()) continue;
         if (mobj->EntityFlags&VEntity::EF_ColideWithWorld) {
           if (mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse)) {
-            bool isSolid = !!(mobj->EntityFlags&VEntity::EF_Solid);
-
             float tmbbox[4];
             tmbbox[BOX2D_TOP] = mobj->Origin.y+mobj->Radius;
             tmbbox[BOX2D_BOTTOM] = mobj->Origin.y-mobj->Radius;
@@ -877,10 +887,16 @@ bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
             {
               continue;
             }
+
+            // check mobj height (pobj floor and ceiling shouldn't be sloped here)
+            if (mobj->Origin.z > -po->ceiling.dist || mobj->Origin.z+max2(0.0f, mobj->Height) < po->floor.dist) continue;
+
+            if (!mobj->IsBlockingLine(ld)) continue;
+
             if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
 
-            if (isSolid) {
-              mobj->Level->eventPolyThrustMobj(mobj, seg->normal, po);
+            if (mobj->EntityFlags&VEntity::EF_Solid) {
+              mobj->Level->eventPolyThrustMobj(mobj, /*seg*/ld->normal, po);
               blocked = true;
             } else {
               mobj->Level->eventPolyCrushMobj(mobj, po);
@@ -891,6 +907,28 @@ bool VLevel::PolyCheckMobjBlocking (seg_t *seg, polyobj_t *po) {
     }
   }
 
+  return blocked;
+}
+
+
+//==========================================================================
+//
+//  VLevel::PolyCheckMobjBlocked
+//
+//==========================================================================
+bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
+  if (!po || po->numlines == 0) return false;
+  bool blocked = false;
+  /*
+  seg_t **segList = po->segs;
+  for (int count = po->numsegs; count; --count, ++segList) {
+    if (PolyCheckMobjBlocking((*segList)->linedef, po)) blocked = true; //k8: break here?
+  }
+  */
+  line_t **lineList = po->lines;
+  for (int count = po->numlines; count; --count, ++lineList) {
+    if (PolyCheckMobjLineBlocking(*lineList, po)) blocked = true; //k8: break here?
+  }
   return blocked;
 }
 

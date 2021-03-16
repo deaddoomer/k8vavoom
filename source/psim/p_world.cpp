@@ -85,7 +85,7 @@ static float interceptVector (const divline_t &v2, const divline_t &v1) {
 //  VBlockLinesIterator::VBlockLinesIterator
 //
 //==========================================================================
-VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t **ALinePtr)
+VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t **ALinePtr, unsigned pobjMode)
   : Level(ALevel)
   , LinePtr(ALinePtr)
   , PolyLink(nullptr)
@@ -95,10 +95,10 @@ VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t *
   if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
 
   int offset = y*Level->BlockMapWidth+x;
-  PolyLink = Level->PolyBlockMap[offset];
+  if (pobjMode&POBJ_POBJ) PolyLink = Level->PolyBlockMap[offset];
 
   offset = *(Level->BlockMap+offset);
-  List = Level->BlockMapLump+offset+1;
+  if (pobjMode&POBJ_LINES) List = Level->BlockMapLump+offset+1;
 }
 
 
@@ -108,15 +108,12 @@ VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t *
 //
 //==========================================================================
 bool VBlockLinesIterator::GetNext () {
-  if (!List) return false; // off the map
-
   // check polyobj blockmap
   while (PolyLink) {
     if (PolySegIdx >= 0) {
-      while (PolySegIdx < PolyLink->polyobj->numsegs) {
+      for (; PolySegIdx < PolyLink->polyobj->numsegs; ++PolySegIdx) {
         seg_t *Seg = PolyLink->polyobj->segs[PolySegIdx];
-        ++PolySegIdx;
-        if (Seg->linedef->validcount == validcount) continue;
+        if (!Seg->linedef || Seg->linedef->validcount == validcount) continue;
         Seg->linedef->validcount = validcount;
         *LinePtr = Seg->linedef;
         return true;
@@ -133,18 +130,21 @@ bool VBlockLinesIterator::GetNext () {
     PolyLink = PolyLink->next;
   }
 
-  while (*List != -1) {
-    #ifdef PARANOID
-    if (*List < 0 || *List >= Level->NumLines) Host_Error("Broken blockmap - line %d", *List);
-    #endif
-    line_t *Line = &Level->Lines[*List];
-    ++List;
+  if (List) {
+    while (*List != -1) {
+      #ifdef PARANOID
+      if (*List < 0 || *List >= Level->NumLines) Host_Error("Broken blockmap - line %d", *List);
+      #endif
+      line_t *Line = &Level->Lines[*List];
+      ++List;
 
-    if (Line->validcount == validcount) continue; // line has already been checked
+      if (Line->validcount == validcount) continue; // line has already been checked
 
-    Line->validcount = validcount;
-    *LinePtr = Line;
-    return true;
+      Line->validcount = validcount;
+      *LinePtr = Line;
+      return true;
+    }
+    List = nullptr; // just in case
   }
 
   return false;

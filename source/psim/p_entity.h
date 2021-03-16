@@ -815,6 +815,9 @@ public:
     return (vhgt > 0 || (vhgt < 0 && !sv_decoration_block_projectiles) ? fabsf(vhgt) : other->Height);
   }
 
+  // check if the given line should block this entity
+  bool IsBlockingLine (const line_t *ld) const noexcept;
+
 private:
   // world iterator callbacks
   bool CheckThing (tmtrace_t &, VEntity *);
