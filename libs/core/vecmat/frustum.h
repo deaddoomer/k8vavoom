@@ -299,6 +299,7 @@ VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &
 // size, or 0 if the line intersects the box.
 VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noexcept;
 
+
 static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DBBoxesOverlapIn2D (const float bbox0[6], const float bbox1[6]) noexcept {
   return !(
     bbox1[BOX3D_MAXX] < bbox0[BOX3D_MINX] || bbox1[BOX3D_MAXY] < bbox0[BOX3D_MINY] ||
@@ -310,5 +311,12 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are2DBBoxesOverlap (const float 
   return !(
     bbox1[BOX2D_MAXX] < bbox0[BOX2D_MINX] || bbox1[BOX2D_MAXY] < bbox0[BOX2D_MINY] ||
     bbox1[BOX2D_MINX] > bbox0[BOX2D_MAXX] || bbox1[BOX2D_MINY] > bbox0[BOX2D_MAXY]
+  );
+}
+
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const float bbox3D[6], const float bbox2D[4]) {
+  return !(
+    bbox2D[BOX2D_MAXX] < bbox3D[BOX3D_MINX] || bbox2D[BOX2D_MAXY] < bbox3D[BOX3D_MINY] ||
+    bbox2D[BOX2D_MINX] > bbox3D[BOX3D_MAXX] || bbox2D[BOX2D_MINY] > bbox3D[BOX3D_MAXY]
   );
 }
