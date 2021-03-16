@@ -66,7 +66,7 @@ void VRenderLevelShared::SetupFakeFloors (sector_t *sector) {
 //==========================================================================
 void VRenderLevelShared::SegMoved (seg_t *seg) {
   if (!seg->drawsegs) return; // drawsegs not created yet
-  if (!seg->linedef) Sys_Error("R_SegMoved: miniseg");
+  if (!seg->linedef) return;
   if (!seg->drawsegs->mid) return; // no midsurf
 
   //k8: just in case
@@ -90,6 +90,18 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
   //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; sectors=%d:%d", seg->pobj->index, (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1), (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));
   seg->drawsegs->mid->frontTopDist += 0.346f;
   //InvalidateSegPart(seg->drawsegs->mid);
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::PObjMoved
+//
+//  called when polyobject moved
+//
+//==========================================================================
+void VRenderLevelShared::PObjMoved (polyobj_t *po) {
+  // here we should offset and turn flats
 }
 
 
@@ -242,7 +254,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int dscount = 0;
   int spcount = 0;
   for (auto &&sub : Level->allSubsectors()) {
-    if (!sub.sector->linecount) continue; // skip sectors containing original polyobjs
+    if (sub.sector->linecount == 0) continue; // skip original polyobject subsectors
     // subregion count
     for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++srcount;
     // segpart and drawseg count
@@ -259,6 +271,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
         polyobj_t *pobj = it.pobj();
         if (pobj->rendercount != 1) {
           pobj->rendercount = 1; // mark as rendered
+          // create floor and ceiling for it, so they can be used to render polyobj flats
+          //if (pobj->region) ++srcount; //FIXME:NOT YET
           seg_t *const *polySeg = pobj->segs;
           for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
             const seg_t *seg = *polySeg;
@@ -298,8 +312,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   // create sector surfaces
   for (auto &&it : Level->allSubsectorsIdx()) {
     subsector_t *sub = it.value();
-    if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
-
+    if (sub->sector->linecount == 0) continue; // skip original polyobject subsectors
     TSecPlaneRef main_floor = sub->sector->eregions->efloor;
     TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
 
@@ -372,6 +385,11 @@ void VRenderLevelShared::CreateWorldSurfaces () {
             polyobj_t *pobj = poit.pobj();
             if (pobj->rendercount != 1) {
               pobj->rendercount = 1; // mark as rendered
+              // create floor and ceiling for it, so they can be used to render polyobj flats
+              if (pobj->region) {
+                pobj->region->realfloor = CreateSecSurface(nullptr, sub, r_floor, sreg);
+                pobj->region->realceil = CreateSecSurface(nullptr, sub, r_ceiling, sreg);
+              }
               seg_t *const *polySeg = pobj->segs;
               for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
                 seg_t *seg = *polySeg;

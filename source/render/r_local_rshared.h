@@ -769,7 +769,10 @@ public:
 
   virtual void RenderPlayerView () override;
 
+  // fix polyobject segs
   virtual void SegMoved (seg_t *) override;
+  virtual void PObjMoved (polyobj_t *po) override;
+
   virtual void SetupFakeFloors (sector_t *) override;
 
   virtual void ResetStaticLights () override;

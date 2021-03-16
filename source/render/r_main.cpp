@@ -680,6 +680,8 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   ResetVisFrameCount();
   ResetDLightFrameCount();
 
+  Level->ResetPObjRenderCounts(); // we'll need them
+
   renderedSectorCounter = 0;
   forceDisableShadows = false;
 
@@ -781,6 +783,27 @@ VRenderLevelShared::~VRenderLevelShared () {
       }
     }
     sub.regions = nullptr;
+
+    // remove polyobject floor and ceiling
+    if (sub.HasPObjs()) {
+      for (auto &&poit : sub.PObjFirst()) {
+        polyobj_t *pobj = poit.pobj();
+        if (pobj->region) {
+          if (pobj->region->realfloor) {
+            FreeSurfaces(pobj->region->realfloor->surfs);
+            delete pobj->region->realfloor;
+            pobj->region->realfloor = nullptr;
+          }
+          if (pobj->region->realceil) {
+            FreeSurfaces(pobj->region->realceil->surfs);
+            delete pobj->region->realceil;
+            pobj->region->realceil = nullptr;
+          }
+          delete pobj->region;
+          pobj->region = nullptr;
+        }
+      }
+    }
   }
 
   // free seg parts

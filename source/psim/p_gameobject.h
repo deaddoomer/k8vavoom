@@ -963,6 +963,7 @@ public:
   polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   sec_plane_t floor;
   sec_plane_t ceiling;
+  subregion_t *region; // used to render floor and ceiling, can be `nullptr`
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 bmbbox[4]; //WARNING! this is in blockmap coords, not unit coords

@@ -1149,6 +1149,7 @@ struct polyobj_t {
   readonly native polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   sec_plane_t floor;
   sec_plane_t ceiling;
+  subregion_t *region; // used to render floor and ceiling
   float angle;
   int tag; // reference tag assigned in HereticEd
   int[4] bmbbox; //WARNING! this is in blockmap coords, not unit coords

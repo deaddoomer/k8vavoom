@@ -135,6 +135,7 @@ void polyobj_t::Free () {
     c->Free();
     delete c;
   }
+  delete region;
 }
 
 
@@ -551,10 +552,19 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     subsector_t *sub = PointInSubsector(avg); // bugfixed algo
     po->floor = sub->sector->floor;
     //po->floor.pic = 0;
-    if (!po->floor.isFloor()) po->floor.flipInPlace();
+    //if (!po->floor.isFloor()) po->floor.flipInPlace();
     po->ceiling = sub->sector->ceiling;
     //po->ceiling.pic = 0;
-    if (!po->ceiling.isCeiling()) po->ceiling.flipInPlace();
+    //if (!po->ceiling.isCeiling()) po->ceiling.flipInPlace();
+    // setup region
+    subregion_t *reg = po->region;
+    if (!reg) {
+      reg = new subregion_t;
+      memset((void *)reg, 0, sizeof(*reg));
+      po->region = reg;
+    }
+    reg->floorplane.set(&po->floor, po->floor.isFloor());
+    reg->ceilplane.set(&po->ceiling, po->ceiling.isCeiling());
   } else {
     GCon->Logf(NAME_Error, "double-spawned polyobject with tag %d (DON'T DO THIS!)", po->tag);
   }
@@ -589,6 +599,8 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
     CalcSeg(*segList);
     if (Renderer) Renderer->SegMoved(*segList);
   }
+  // fix floor and ceiling heights
+  if (Renderer) Renderer->PObjMoved(po);
 }
 
 
