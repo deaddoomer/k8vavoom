@@ -1132,9 +1132,14 @@ int VLevelChannel::UpdatePolyObj (VMessageOut &Msg, VBitStreamWriter &strm, int 
   vassert(oidx >= 0 && oidx < Level->NumPolyObjs);
 
   polyobj_t *Po = Level->PolyObjs[oidx];
-  for (auto &&it : Po->SubSectorFirst()) {
-    if (!Connection->CheckFatPVS(it.value())) return 0;
+  bool needUpdate = false;
+  for (auto &&it : Po->SubFirst()) {
+    if (Connection->CheckFatPVS(it.sub())) {
+      needUpdate = true;
+      break;
+    }
   }
+  if (!needUpdate) return 0;
 
   rep_polyobj_t *RepPo = &PolyObjs[oidx];
   if (RepPo->startSpot.x == Po->startSpot.x &&

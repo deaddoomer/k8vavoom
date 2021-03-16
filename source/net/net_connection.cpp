@@ -1382,7 +1382,7 @@ void VNetConnection::SetupPvsNode (VLevel *Level, int BspNum, const float BBox[6
   if (!Clipper.ClipIsBBoxVisible(BBox)) return;
 
   // found a subsector?
-  if (!(BspNum&(NF_SUBSECTOR))) {
+  if (BSPIDX_IS_NON_LEAF(BspNum)) {
     const node_t *node = &Level->Nodes[BspNum];
     // decide which side the view point is on
     const unsigned side = (unsigned)node->PointOnSide(Owner->ViewOrg);
@@ -1395,7 +1395,7 @@ void VNetConnection::SetupPvsNode (VLevel *Level, int BspNum, const float BBox[6
     BBox = node->bbox[1u^side];
     goto tailcall;
   } else {
-    const int subnum = BspNum&~NF_SUBSECTOR;
+    const int subnum = (int)BSPIDX_LEAF_SUBSECTOR(BspNum);
     return SetupPvsSubsector(Level, subnum);
   }
 }

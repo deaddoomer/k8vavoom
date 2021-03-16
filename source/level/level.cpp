@@ -190,7 +190,7 @@ static int R_PointOnSideSlow(double xx, double yy, node_t *node)
 //==========================================================================
 subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
   // single subsector is a special case
-  if (!NumNodes) return Subsectors;
+  if (!NumNodes || NumSubsectors < 2) return Subsectors;
   int nodenum = NumNodes-1;
   do {
     const node_t *node = Nodes+nodenum;
@@ -258,8 +258,8 @@ subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
     } else {
       nodenum = node->children[/*node->PointOnSide(point)*/(unsigned)(dist <= 0.0f)];
     }
-  } while ((nodenum&NF_SUBSECTOR) == 0);
-  return &Subsectors[nodenum&~NF_SUBSECTOR];
+  } while (BSPIDX_IS_NON_LEAF(nodenum));
+  return &Subsectors[BSPIDX_LEAF_SUBSECTOR(nodenum)];
 }
 
 
@@ -272,13 +272,13 @@ subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
 //==========================================================================
 subsector_t *VLevel::PointInSubsector (const TVec &point) const noexcept {
   // single subsector is a special case
-  if (!NumNodes) return Subsectors;
+  if (!NumNodes || NumSubsectors < 2) return Subsectors;
   int nodenum = NumNodes-1;
   do {
     const node_t *node = Nodes+nodenum;
     nodenum = node->children[node->PointOnSide(point)];
-  } while ((nodenum&NF_SUBSECTOR) == 0);
-  return &Subsectors[nodenum&~NF_SUBSECTOR];
+  } while (BSPIDX_IS_NON_LEAF(nodenum));
+  return &Subsectors[BSPIDX_LEAF_SUBSECTOR(nodenum)];
 }
 
 
@@ -472,18 +472,6 @@ void VLevel::Destroy () {
     Renderer = nullptr;
   }
 
-  for (int i = 0; i < NumPolyObjs; ++i) {
-    PolyObjs[i]->UnlinkFromAllSubsectors();
-    delete[] PolyObjs[i]->segs;
-    PolyObjs[i]->segs = nullptr;
-    delete[] PolyObjs[i]->originalPts;
-    PolyObjs[i]->originalPts = nullptr;
-    if (PolyObjs[i]->prevPts) {
-      delete[] PolyObjs[i]->prevPts;
-      PolyObjs[i]->prevPts = nullptr;
-    }
-  }
-
   if (PolyBlockMap) {
     for (int i = 0; i < BlockMapWidth*BlockMapHeight; ++i) {
       for (polyblock_t *pb = PolyBlockMap[i]; pb; ) {
@@ -497,7 +485,10 @@ void VLevel::Destroy () {
   }
 
   if (PolyObjs) {
-    for (int i = 0; i < NumPolyObjs; ++i) delete PolyObjs[i];
+    for (int i = 0; i < NumPolyObjs; ++i) {
+      PolyObjs[i]->Free();
+      delete PolyObjs[i];
+    }
     delete[] PolyObjs;
     PolyObjs = nullptr;
   }

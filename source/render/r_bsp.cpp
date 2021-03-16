@@ -994,7 +994,7 @@ bool VRenderLevelShared::NeedToRenderNextSubFirst (const subregion_t *region) no
 void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub) {
   if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
+      polyobj_t *pobj = it.pobj();
       //clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
       clip.ClipAddPObjSegs(pobj, sub, (Drawer->MirrorClip ? &Drawer->MirrorPlane : nullptr));
     }
@@ -1015,10 +1015,13 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
     subregion_t *region = sub->regions;
     sec_region_t *secregion = region->secregion;
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        RenderLine(sub, secregion, region, (*polySeg)->drawsegs);
+      polyobj_t *pobj = it.pobj();
+      if (pobj->rendercount != BspVisFrame) {
+        pobj->rendercount = BspVisFrame; // mark as rendered
+        seg_t **polySeg = pobj->segs;
+        for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+          RenderLine(sub, secregion, region, (*polySeg)->drawsegs);
+        }
       }
     }
   }
@@ -1156,10 +1159,6 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
   if (!onlyClip) {
     // cull the clipping planes if not trivial accept
     if (clipflags && clip_frustum && clip_frustum_bsp) {
-      //static float newbbox[6];
-      //memcpy(newbbox, bbox, sizeof(float)*6);
-      //newbbox[2] = -32767.0f;
-      //newbbox[5] = +32767.0f;
       const TClipPlane *cp = &Drawer->viewfrustum.planes[0];
       for (unsigned i = Drawer->viewfrustum.planeCount; i--; ++cp) {
         if (!(clipflags&cp->clipflag)) continue; // don't need to clip against it

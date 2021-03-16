@@ -545,17 +545,13 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
     Node->splitldef = nullptr;
   }
 
-  { // fuck you, shitcc!
-         if (SrcNode->r.node) Node->children[0] = SrcNode->r.node->index;
-    else if (SrcNode->r.subsec) Node->children[0] = SrcNode->r.subsec->index|NF_SUBSECTOR;
-    else Host_Error("AJBSP: bad left children in BSP");
-  }
+       if (SrcNode->r.node) Node->children[0] = SrcNode->r.node->index;
+  else if (SrcNode->r.subsec) Node->children[0] = SrcNode->r.subsec->index|NF_SUBSECTOR;
+  else Host_Error("AJBSP: bad left children in BSP");
 
-  { // fuck you, shitcc!
-         if (SrcNode->l.node) Node->children[1] = SrcNode->l.node->index;
-    else if (SrcNode->l.subsec) Node->children[1] = SrcNode->l.subsec->index|NF_SUBSECTOR;
-    else Host_Error("AJBSP: bad right children in BSP");
-  }
+       if (SrcNode->l.node) Node->children[1] = SrcNode->l.node->index;
+  else if (SrcNode->l.subsec) Node->children[1] = SrcNode->l.subsec->index|NF_SUBSECTOR;
+  else Host_Error("AJBSP: bad right children in BSP");
 }
 
 

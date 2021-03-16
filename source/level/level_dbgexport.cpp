@@ -334,13 +334,13 @@ void VLevel::DebugSaveLevel (VStream &strm) {
     strm.writef("  bbox_child1_max_y = %g;\n", node->bbox[1][4]);
     strm.writef("  bbox_child1_max_z = %g;\n", node->bbox[1][5]);
     // children
-    if (node->children[0]&NF_SUBSECTOR) {
-      strm.writef("  subsector0 = %d;\n", node->children[0]&(~NF_SUBSECTOR));
+    if (BSPIDX_IS_LEAF(node->children[0])) {
+      strm.writef("  subsector0 = %d;\n", BSPIDX_LEAF_SUBSECTOR(node->children[0]));
     } else {
       strm.writef("  node0 = %d;\n", node->children[0]);
     }
-    if (node->children[1]&NF_SUBSECTOR) {
-      strm.writef("  subsector1 = %d;\n", node->children[1]&(~NF_SUBSECTOR));
+    if (BSPIDX_IS_LEAF(node->children[1])) {
+      strm.writef("  subsector1 = %d;\n", BSPIDX_LEAF_SUBSECTOR(node->children[1]));
     } else {
       strm.writef("  node1 = %d;\n", node->children[1]);
     }

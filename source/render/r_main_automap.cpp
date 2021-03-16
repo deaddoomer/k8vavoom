@@ -106,7 +106,7 @@ void VRenderLevelShared::amFlatsCheckSubsector (int num) {
 //==========================================================================
 void VRenderLevelShared::amFlatsCheckNode (int bspnum) {
   // found a subsector?
-  if (!(bspnum&NF_SUBSECTOR)) {
+  if (BSPIDX_IS_NON_LEAF(bspnum)) {
     // nope, this is a normal node
     node_t *bsp = &Level->Nodes[bspnum];
     // decide which side the view point is on
@@ -120,7 +120,7 @@ void VRenderLevelShared::amFlatsCheckNode (int bspnum) {
     }
   } else {
     // leaf node (subsector)
-    amFlatsCheckSubsector(bspnum&(~NF_SUBSECTOR));
+    amFlatsCheckSubsector(BSPIDX_LEAF_SUBSECTOR(bspnum));
   }
 }
 

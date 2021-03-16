@@ -32,75 +32,148 @@
 
 //==========================================================================
 //
-//  polyobj_t::IsLinkedToSubsector
+//  VLevel::PutBSPPObjBBox
 //
 //==========================================================================
-bool polyobj_t::IsLinkedToSubsector (subsector_t *asub) {
-  if (!asub) return false;
-  for (const pobjsubnode_t *node = asub->polysubnode; node; node = node->snodenext) {
-    if (node->pobj == this) return true;
-  }
-  return false;
-}
-
-
-//==========================================================================
-//
-//  polyobj_t::LinkToSubsector
-//
-//==========================================================================
-void polyobj_t::LinkToSubsector (subsector_t *asub) {
-  // check if this polyobj already linked to the given subsector
-  vassert(asub);
-  for (const pobjsubnode_t *node = asub->polysubnode; node; node = node->snodenext) {
-    if (node->pobj == this) return; // nothing to do
-  }
-  // ok, not linked, link it
-  pobjsubnode_t *node = (pobjsubnode_t *)Z_Calloc(sizeof(pobjsubnode_t)); //FIXME: use pool allocator
-  node->sub = asub;
-  node->pobj = this;
-  // link to subsector
-  if (asub->polysubnode) asub->polysubnode->snodeprev = node;
-  node->snodenext = asub->polysubnode;
-  asub->polysubnode = node;
-  // link pobj
-  if (polynode) polynode->pnodeprev = node;
-  node->pnodenext = polynode;
-  polynode = node;
-  // remember original sector (we'll need it to calculate pobj height)
-  //if (!originalSector) originalSector = asub->sector;
-}
-
-
-//==========================================================================
-//
-//  polyobj_t::UnlinkFromSubsector
-//
-//==========================================================================
-void polyobj_t::UnlinkFromSubsector (subsector_t *asub) {
-  if (!asub) return;
-  for (pobjsubnode_t *node = asub->polysubnode; node; node = node->snodenext) {
-    if (node->pobj == this) {
-      // found it, unlink from subsector node list
-      if (node->snodeprev) node->snodeprev->snodenext = node->snodenext; else node->sub->polysubnode = node->snodenext;
-      if (node->snodenext) node->snodenext->snodeprev = node->snodeprev;
-      // unlink from this pobj node list
-      if (node->pnodeprev) node->pnodeprev->pnodenext = node->pnodenext; else polynode = node->pnodenext;
-      if (node->pnodenext) node->pnodenext->pnodeprev = node->pnodeprev;
-      Z_Free(node); //FIXME: use pool allocator
-      return;
+void VLevel::PutBSPPObjBBox (int bspnum, polyobj_t *po) noexcept {
+ tailcall:
+  // found a subsector?
+  if (BSPIDX_IS_NON_LEAF(bspnum)) {
+    // nope
+    const node_t *bsp = &Nodes[bspnum];
+    // the order doesn't matter here, because we aren't doing any culling
+    if (Are3DAnd2DBBoxesOverlap(bsp->bbox[0], po->bbox2d)) {
+      if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], po->bbox2d)) {
+        PutBSPPObjBBox(bsp->children[1], po);
+      }
+      bspnum = bsp->children[0];
+      goto tailcall;
+    } else if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], po->bbox2d)) {
+      bspnum = bsp->children[1];
+      goto tailcall;
     }
+  } else {
+    // check subsector
+    const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
+    //GCon->Logf(NAME_Debug, "linking pobj #%d to subsector #%d (sector #%d)", po->tag, (int)subidx, (int)(ptrdiff_t)(Subsectors[subidx].sector-&Sectors[0]));
+    po->AddSubsector(&Subsectors[subidx]);
   }
 }
 
 
 //==========================================================================
 //
-//  polyobj_t::UnlinkFromAllSubsectors
+//  VLevel::PutPObjInSubsectors
 //
 //==========================================================================
-void polyobj_t::UnlinkFromAllSubsectors () {
-  while (polynode) UnlinkFromSubsector(polynode->sub);
+void VLevel::PutPObjInSubsectors (polyobj_t *po) noexcept {
+  if (!po) return;
+
+  //TODO: make this faster by calculating overlapping rectangles or something
+  po->RemoveAllSubsectors();
+
+  if (NumSubsectors < 2) {
+    if (NumSubsectors == 1) po->AddSubsector(&Subsectors[0]);
+    return;
+  }
+  vassert(NumNodes > 0);
+
+  //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g)", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY]);
+  return PutBSPPObjBBox(NumNodes-1, po);
+}
+
+
+//==========================================================================
+//
+//  polyobjpart_t::Free
+//
+//==========================================================================
+void polyobjpart_t::Free () noexcept {
+  delete[] segs;
+  segs = nullptr;
+  count = amount = 0;
+}
+
+
+//==========================================================================
+//
+//  polyobjpart_t::Free
+//
+//==========================================================================
+seg_t *polyobjpart_t::allocSeg () noexcept {
+  if (count == amount) {
+    amount += 64; // arbitrary number
+    segs = (seg_t *)Z_Realloc(segs, sizeof(seg_t)*amount);
+  }
+  seg_t *res = &segs[count++];
+  memset((void *)res, 0, sizeof(*res));
+  return res;
+}
+
+
+//==========================================================================
+//
+//  polyobj_t::Free
+//
+//==========================================================================
+void polyobj_t::Free () {
+  delete[] segs;
+  delete[] lines;
+  delete[] originalPts;
+  delete[] prevPts;
+  polyobjpart_t *part = parts;
+  while (part) {
+    polyobjpart_t *c = part;
+    part = part->nextpobj;
+    c->Free();
+    delete c;
+  }
+}
+
+
+//==========================================================================
+//
+//  polyobj_t::RemoveAllSubsectors
+//
+//==========================================================================
+void polyobj_t::RemoveAllSubsectors () {
+  while (parts) {
+    polyobjpart_t *part = parts;
+    parts = part->nextpobj;
+    // remove it
+    subsector_t *sub = part->sub;
+    polyobjpart_t *prev = nullptr;
+    polyobjpart_t *curr = sub->polyparts;
+    while (curr && curr != part) { prev = curr; curr = curr->nextsub; }
+    if (curr) {
+      if (prev) prev->nextsub = part->nextsub; else sub->polyparts = part->nextsub;
+    }
+    delete part;
+  }
+}
+
+
+//==========================================================================
+//
+//  polyobj_t::AddSubsector
+//
+//  no need to check for duplicates here, there won't be any (yet)
+//
+//==========================================================================
+void polyobj_t::AddSubsector (subsector_t *sub) {
+  vassert(sub);
+  polyobjpart_t *pp = new polyobjpart_t;
+  memset((void *)pp, 0, sizeof(*pp));
+  // set owner
+  pp->pobj = this;
+  // add part to our list
+  pp->nextpobj = parts;
+  parts = pp;
+  // set subsector
+  pp->sub = sub;
+  // add part to subsector list
+  pp->nextsub = sub->polyparts;
+  sub->polyparts = pp;
 }
 
 
@@ -117,68 +190,7 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
 {
   if (From == PolyStart) return; // reached starting vertex
   if (NumSegs == 0) Host_Error("no segs (wtf?!)");
-/*
-  GCon->Logf("IterFindPolySegs: from=(%f,%f,%f); count=%d", From.x, From.y, From.z, PolySegCount);
-  for (int i = 0; i < NumSegs; ++i) {
-    if (!Segs[i].linedef) continue; // skip minisegs
-    if (*Segs[i].v1 == From) {
-      if (!segList) {
-        // count segs
-        ++PolySegCount;
-      } else {
-        // add to the list
-        *segList++ = &Segs[i];
-        // set sector's line count to 0 to force it not to be
-        // rendered even if we do a no-clip into it
-        // -- FB -- I'm disabling this behavior
-        // k8: and i am enabling it again
-        Segs[i].frontsector->linecount = 0;
-      }
-      GCon->Logf("IterFindPolySegs: from=(%f,%f,%f); count=%d; recurse with %d", From.x, From.y, From.z, PolySegCount, i);
-      return IterFindPolySegs(*Segs[i].v2, segList, PolySegCount, PolyStart);
-    }
-  }
-*/
-#if 0
-  TArray<vuint8> touched;
-  touched.setLength(NumSegs);
-  memset(touched.ptr(), 0, touched.length());
-  TArray<TVec> vlist;
-  int vlpos = 0;
-  vlist.append(From);
-  while (vlpos < vlist.length()) {
-    TVec v0 = vlist[vlpos++];
-    bool found = false;
-    seg_t *seg = Segs;
-    vuint8 *tptr = touched.ptr();
-    for (int i = NumSegs; i--; ++seg, ++tptr) {
-      if (!seg->linedef) continue; // skip minisegs
-      if (*tptr) continue;
-      if (*seg->v1 == v0) {
-        found = true;
-        *tptr = 1;
-        if (!segList) {
-          // count segs
-          ++PolySegCount;
-        } else {
-          // add to the list
-          *segList++ = seg;
-          // set sector's line count to 0 to force it not to be
-          // rendered even if we do a no-clip into it
-          // -- FB -- I'm disabling this behavior
-          // k8: and i am enabling it again
-          seg->frontsector->linecount = 0;
-        }
-        if (*seg->v2 != PolyStart) {
-          bool gotV2 = false;
-          for (int f = 0; f < vlist.length(); ++f) if (vlist[f] == *seg->v2) { gotV2 = true; break; }
-          if (!gotV2) vlist.append(*seg->v2);
-        }
-      }
-    }
-    if (!found) Host_Error("Non-closed Polyobj located.");
-  }
-#else
+
   struct SegV1Info {
     seg_t *seg;
     SegV1Info *next;
@@ -244,7 +256,6 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
       }
     }
   }
-#endif
 }
 
 
@@ -321,7 +332,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
       IterFindPolySegs(*seg.v2, nullptr, PolySegCount, PolyStart);
 
       po->numsegs = PolySegCount;
-      po->segs = new seg_t*[PolySegCount];
+      po->segs = new seg_t*[PolySegCount+1];
       *(po->segs) = &seg; // insert the first seg
       // set sector's line count to 0 to force it not to be
       // rendered even if we do a no-clip into it
@@ -349,7 +360,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
       // sort segs (why not?)
       timsort_r(psegs.ptr(), psegs.length(), sizeof(seg_t *), &cmpPobjSegs, (void *)&Lines[0]);
       po->numsegs = psegs.length();
-      po->segs = new seg_t*[po->numsegs];
+      po->segs = new seg_t*[po->numsegs+1];
       bool seqSet = false;
       for (int i = 0; i < po->numsegs; ++i) {
         po->segs[i] = psegs[i];
@@ -366,6 +377,37 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
 
   // set seg pobj owner
   for (int c = 0; c < po->numsegs; ++c) po->segs[c]->pobj = po;
+
+  // now collect polyobj lines (we'll need them to build clipped segs)
+  int lcount = 0;
+  TMapNC<line_t *, bool> lmap;
+  for (int c = 0; c < po->numsegs; ++c) {
+    line_t *ln = po->segs[c]->linedef;
+    vassert(ln);
+    if (!lmap.put(ln, true)) ++lcount;
+  }
+
+  po->lines = new line_t*[lcount+1];
+  lmap.reset();
+  lcount = 0;
+  for (int c = 0; c < po->numsegs; ++c) {
+    line_t *ln = po->segs[c]->linedef;
+    vassert(ln);
+    if (!lmap.put(ln, true)) po->lines[lcount++] = ln;
+  }
+  po->numlines = lcount;
+}
+
+
+//==========================================================================
+//
+//  VLevel::ResetPObjRenderCounts
+//
+//  called from renderer
+//
+//==========================================================================
+void VLevel::ResetPObjRenderCounts () noexcept {
+  for (int i = 0; i < NumPolyObjs; ++i) PolyObjs[i]->rendercount = 0;
 }
 
 
@@ -418,7 +460,7 @@ void VLevel::InitPolyobjs () {
   // check for a startspot without an anchor point
   for (int i = 0; i < NumPolyObjs; ++i) {
     if (!PolyObjs[i]->originalPts) {
-      Sys_Error("StartSpot located without an Anchor point: %d", PolyObjs[i]->tag);
+      Host_Error("StartSpot located without an Anchor point: %d", PolyObjs[i]->tag);
     }
   }
 
@@ -436,6 +478,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   if (!po) Host_Error("Unable to match polyobj tag: %d", tag); // didn't match the tag with a polyobj tag
   if (po->segs == nullptr) Host_Error("Anchor point located without a StartSpot point: %d", tag);
   vassert(po->numsegs);
+
   po->originalPts = new TVec[po->numsegs];
   po->prevPts = new TVec[po->numsegs];
   float deltaX = originX-po->startSpot.x;
@@ -444,6 +487,10 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   seg_t **tempSeg = po->segs;
   TVec *tempPt = po->originalPts;
   TVec avg(0, 0, 0); // used to find a polyobj's center, and hence the subsector
+
+  float pobbox[4];
+  pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
+  pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
 
   for (int i = 0; i < po->numsegs; ++i, ++tempSeg, ++tempPt) {
     seg_t **veryTempSeg = po->segs;
@@ -459,17 +506,19 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     avg.y += (*tempSeg)->v1->y;
     // the original Pts are based off the startSpot Pt, and are unique to each seg, not each linedef
     *tempPt = *(*tempSeg)->v1-po->startSpot;
+    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*tempSeg)->v1->x);
+    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*tempSeg)->v1->y);
+    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*tempSeg)->v1->x);
+    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*tempSeg)->v1->y);
   }
   avg.x /= po->numsegs;
   avg.y /= po->numsegs;
 
-  subsector_t *sub = PointInSubsector(avg); // bugfixed algo
-  //po->UnlinkFromSubsector(sub); // just in case
-  po->UnlinkFromAllSubsectors(); // just in case
-  po->LinkToSubsector(sub);
+  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
   // set initial floor and ceiling
   if (po->floor.TexZ < -90000.0f) {
+    subsector_t *sub = PointInSubsector(avg); // bugfixed algo
     po->floor = sub->sector->floor;
     po->floor.pic = 0;
     po->ceiling = sub->sector->ceiling;
@@ -477,6 +526,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   }
 
   UpdatePolySegs(po);
+  PutPObjInSubsectors(po);
 }
 
 
@@ -519,13 +569,6 @@ void VLevel::InitPolyBlockMap () {
 //
 //==========================================================================
 void VLevel::LinkPolyobj (polyobj_t *po) {
-  // calculate the polyobj bbox
-  seg_t **tempSeg = po->segs;
-  float rightX = (*tempSeg)->v1->x;
-  float leftX = (*tempSeg)->v1->x;
-  float topY = (*tempSeg)->v1->y;
-  float bottomY = (*tempSeg)->v1->y;
-
   /* k8 notes
      relink polyobject to the new subsector.
      this somewhat eases rendering glitches until i'll write the proper BSP splitter for pobjs.
@@ -537,39 +580,35 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
      to avoid this, i had to introduce new field to segs, which links back to the
      pobj. and i had to store the initial floor and ceiling planes in the pobj, so
      renderer can use them instead of the corresponding sector planes.
-
-     actually, not the original. on relinking, we have to scan all touching sectors,
-     and get min floor and max ceiling.
   */
-  TVec avg(0, 0, 0); // used to find a polyobj's center, and hence subsector
+
+  // calculate the polyobj bbox
+  /*
+  float rightX = (*tempSeg)->v1->x;
+  float leftX = (*tempSeg)->v1->x;
+  float topY = (*tempSeg)->v1->y;
+  float bottomY = (*tempSeg)->v1->y;
+  */
+  float pobbox[4];
+  pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
+  pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
+  seg_t * const* tempSeg = po->segs;
   for (int i = 0; i < po->numsegs; ++i, ++tempSeg) {
-    if ((*tempSeg)->v1->x > rightX) rightX = (*tempSeg)->v1->x;
-    if ((*tempSeg)->v1->x < leftX) leftX = (*tempSeg)->v1->x;
-    if ((*tempSeg)->v1->y > topY) topY = (*tempSeg)->v1->y;
-    if ((*tempSeg)->v1->y < bottomY) bottomY = (*tempSeg)->v1->y;
-    avg.x += (*tempSeg)->v1->x;
-    avg.y += (*tempSeg)->v1->y;
-  }
-  avg.x /= po->numsegs;
-  avg.y /= po->numsegs;
-
-  // for now, polyobj can be linked only to one subsector
-  // this will be changed later
-  //FIXME: make this faster!
-  subsector_t *sub = PointInSubsector(avg); // bugfixed algo
-  if (sub) {
-    if (!po->IsLinkedToSubsector(sub)) {
-      po->UnlinkFromAllSubsectors(); //FIXME: make this faster!
-      po->LinkToSubsector(sub);
-    }
-  } else {
-    po->UnlinkFromAllSubsectors();
+    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*tempSeg)->v1->x);
+    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*tempSeg)->v1->y);
+    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*tempSeg)->v1->x);
+    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*tempSeg)->v1->y);
   }
 
-  const int xbboxRight = MapBlock(rightX-BlockMapOrgX);
-  const int xbboxLeft = MapBlock(leftX-BlockMapOrgX);
-  const int xbboxTop = MapBlock(topY-BlockMapOrgY);
-  const int xbboxBottom = MapBlock(bottomY-BlockMapOrgY);
+  // just in case
+  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
+
+  PutPObjInSubsectors(po);
+
+  const int xbboxRight = MapBlock(pobbox[BOX2D_MAXX]-BlockMapOrgX);
+  const int xbboxLeft = MapBlock(pobbox[BOX2D_MINX]-BlockMapOrgX);
+  const int xbboxTop = MapBlock(pobbox[BOX2D_MAXY]-BlockMapOrgY);
+  const int xbboxBottom = MapBlock(pobbox[BOX2D_MINY]-BlockMapOrgY);
 
   const int bmxsize = BlockMapWidth;
   const int bmysize = BlockMapHeight*bmxsize;
@@ -637,6 +676,8 @@ void VLevel::UnLinkPolyobj (polyobj_t *po) {
       }
     }
   }
+
+  po->RemoveAllSubsectors();
 }
 
 

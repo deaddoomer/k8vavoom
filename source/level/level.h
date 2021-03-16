@@ -703,6 +703,10 @@ public:
   bool MovePolyobj (int num, float x, float y, bool forced=false); // tag (GetPolyobj)
   bool RotatePolyobj (int num, float angle); // tag (GetPolyobj)
 
+  void ResetPObjRenderCounts () noexcept; // called from renderer
+  void PutBSPPObjBBox (int bspnum, polyobj_t *po) noexcept; // do not call directly!
+  void PutPObjInSubsectors (polyobj_t *po) noexcept;
+
   // `-1` for `crunch` means "ignore stuck mobj"
   bool ChangeSector (sector_t *sector, int crunch);
 

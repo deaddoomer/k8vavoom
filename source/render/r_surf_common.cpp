@@ -234,6 +234,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     R_PBarReset();
   }
 
+  Level->ResetPObjRenderCounts(); // so we won't process polyobjects several times
+
   // count regions in all subsectors
   GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
   int srcount = 0;
@@ -254,21 +256,26 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     // polyobjects
     if (sub.HasPObjs()) {
       for (auto &&it : sub.PObjFirst()) {
-        polyobj_t *pobj = it.value();
-        seg_t *const *polySeg = pobj->segs;
-        for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-          const seg_t *seg = *polySeg;
-          vassert(seg->pobj == pobj);
-          if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
-          dscount += 1; // one drawseg for a good seg
-          // segparts
-          spcount += CountSegParts(*polySeg);
+        polyobj_t *pobj = it.pobj();
+        if (pobj->rendercount != 1) {
+          pobj->rendercount = 1; // mark as rendered
+          seg_t *const *polySeg = pobj->segs;
+          for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+            const seg_t *seg = *polySeg;
+            vassert(seg->pobj == pobj);
+            if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
+            dscount += 1; // one drawseg for a good seg
+            // segparts
+            spcount += CountSegParts(*polySeg);
+          }
         }
       }
     }
   }
 
   GCon->Logf(NAME_Debug, "%d subregions, %d drawsegs, %d segparts", srcount, dscount, spcount);
+
+  Level->ResetPObjRenderCounts(); // cleanup 'em, 'cause they were used above
 
   // get some memory
   NumSegParts = spcount;
@@ -362,16 +369,19 @@ void VRenderLevelShared::CreateWorldSurfaces () {
         if (sub->HasPObjs()) {
           //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) -- polyobjects ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
           for (auto &&poit : sub->PObjFirst()) {
-            polyobj_t *pobj = poit.value();
-            seg_t *const *polySeg = pobj->segs;
-            for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-              seg_t *seg = *polySeg;
-              vassert(seg->pobj == pobj);
-              if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
-              if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-              --pdsLeft;
-              CreateSegParts(sub, pds, seg, main_floor, main_ceiling, nullptr);
-              ++pds;
+            polyobj_t *pobj = poit.pobj();
+            if (pobj->rendercount != 1) {
+              pobj->rendercount = 1; // mark as rendered
+              seg_t *const *polySeg = pobj->segs;
+              for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+                seg_t *seg = *polySeg;
+                vassert(seg->pobj == pobj);
+                if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
+                if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+                --pdsLeft;
+                CreateSegParts(sub, pds, seg, main_floor, main_ceiling, nullptr);
+                ++pds;
+              }
             }
           }
         }
@@ -395,6 +405,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors, Level->NumSubsectors, true);
 
   inWorldCreation = oldIWC;
+
+  Level->ResetPObjRenderCounts(); // cleanup 'em, 'cause they were used above
 
   GCon->Log(NAME_Debug, "surface creation complete");
 }

@@ -41,19 +41,6 @@ static float cboxCheckBox[6];
 
 //==========================================================================
 //
-//  Are3DAnd2DBBoxesOverlap
-//
-//==========================================================================
-static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const float bbox0[6], const float bbox1[4]) {
-  return !(
-    bbox1[2+0] < bbox0[0+0] || bbox1[2+1] < bbox0[0+1] ||
-    bbox1[0+0] > bbox0[3+0] || bbox1[0+1] > bbox0[3+1]
-  );
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::CheckBSPVisibilityBoxSub
 //
 //==========================================================================
@@ -104,14 +91,7 @@ bool VRenderLevelShared::CheckBSPVisibilityBoxSub (int bspnum) noexcept {
   } else {
     // check subsector
     const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
-    if (IsBspVis((int)subidx)) {
-      // no, this check is wrong
-      /*if (Are3DAnd2DBBoxesOverlap(bbox, Level->Subsectors[subidx].bbox2d))*/
-      {
-        //if (dbg_dlight_vis_check_messages) GCon->Logf(NAME_Debug, "***HIT VISIBLE SUBSECTOR #%u", subidx);
-        return true;
-      }
-    }
+    if (IsBspVis((int)subidx)) return true;
   }
   return false;
 }

@@ -181,8 +181,8 @@ void VLevelInfo::PolyobjStartSequence (const polyobj_t *Poly, VName Name, int Mo
   //if (!Poly || !Poly->GetSubsector() || !Poly->GetSubsector()->sector) return;
   if (!Poly) return;
   bool seenNonSilent = false;
-  for (auto &&it : Poly->SubSectorFirst()) {
-    if (it.value()->sector && !(it.value()->sector->SectorFlags&sector_t::SF_Silent)) {
+  for (auto &&it : Poly->SubFirst()) {
+    if (!(it.sub()->sector->SectorFlags&sector_t::SF_Silent)) {
       seenNonSilent = true;
       break;
     }

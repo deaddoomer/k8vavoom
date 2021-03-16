@@ -233,10 +233,11 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
   if (!sub) return;
 
   // polyobj cannot be in subsector with 3d floors, so update it once
+  //FIXME: this does excessive updates; it is safe, but slow
   if (sub->HasPObjs()) {
     // update the polyobj
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
+      polyobj_t *pobj = it.pobj();
       if (pobj->floor.TexZ <= -90000.0f) continue; // untranslated
       seg_t **polySeg = pobj->segs;
       /*

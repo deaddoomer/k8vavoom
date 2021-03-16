@@ -107,7 +107,7 @@ void VRenderLevelShadowVolume::PreRender () {
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::FixFaceTJunctions (surface_t *surf) {
-  // not yet
+  // not yet (and not that we really need it)
   return surf;
 }
 
@@ -129,6 +129,7 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
   //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   // wall segment should always be a quad
   if (!lastRenderQuality || surf->count != 4) return surf; // just in case
+  if (seg->pobj) return surf; // do not fix polyobjects (yet?)
 
   const line_t *line = seg->linedef;
   const sector_t *mysec = seg->frontsector;

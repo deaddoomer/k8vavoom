@@ -59,6 +59,7 @@ struct decal_t;
 struct opening_t;
 
 struct polyobj_t;
+struct polyobjpart_t;
 
 
 // line specials that are used by the loader
@@ -843,101 +844,90 @@ struct sector_t {
 //
 //==========================================================================
 
-//==========================================================================
-//
-//  polyobject-in-subsector node
-//
-//  as polyobjects could occupy more than one subsector, we need a
-//  separate data structure to keep a list of polyobjects in a subsector
-//
-//==========================================================================
-struct pobjsubnode_t {
-  subsector_t *sub; // subsector for this node
-  polyobj_t *pobj; // polyobject pointer
-  // linked list of nodes
-  pobjsubnode_t *snodeprev;
-  pobjsubnode_t *snodenext;
-  // linked list of all nodes for this polyobject
-  pobjsubnode_t *pnodeprev;
-  pobjsubnode_t *pnodenext;
-  // polyobj segs, clipped to the subsector
-  //TArray<seg_t *> segs;
+// visible part of the polyobject
+// this is what resides in subsectors
+// segs are clipped to the correspoinding subsector
+// one subsector can contain alot of parts; they're all linked by `nextsub`
+struct polyobjpart_t {
+public:
+  polyobj_t *pobj; // owning polyobject
+  subsector_t *sub; // subsector containing this node
+  polyobjpart_t *nextpobj; // next polyobject part for this polyobject
+  polyobjpart_t *nextsub; // next polyobject part for this subsector
+
+  // clipped segs for this polypart
+  // polyobjects doesn't have real floors and ceilings, so we can split the whole lines
+  seg_t *segs;
+  vint32 count; // number of used elements in `segs`
+  vint32 amount; // number of allocated elements for `segs`
+
+  inline void reset () noexcept { count = 0; }
+
+  void Free () noexcept;
+
+  seg_t *allocSeg () noexcept;
 };
 
 
 // polyobj data
 struct polyobj_t {
-  friend class PolySubIter;
-  friend class PolySubsectorsIter;
+public:
+  class PolySubIter {
+  private:
+    polyobjpart_t *ppart;
+  public:
+    inline PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
+    inline PolySubIter begin () noexcept { return PolySubIter(ppart); }
+    inline PolySubIter end () noexcept { return PolySubIter(nullptr); }
+    inline bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
+    inline bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
+    inline PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
+    inline void operator ++ () noexcept { if (ppart) ppart = ppart->nextpobj; } /* this is enough for iterator */
+    // accessors
+    inline polyobjpart_t *part () const noexcept { return ppart; }
+    inline subsector_t *sub () const noexcept { return (ppart ? ppart->sub : nullptr); }
+  };
 
-  seg_t **segs;
-  vint32 numsegs;
+public:
+  seg_t **segs; // individual elements points inside the level's `Segs`
+  vint32 numsegs; // number of segs for this polyobject
+  line_t **lines; // individual elements points inside the level's `Lines`
+  vint32 numlines;
   TVec startSpot;
-  TVec *originalPts; // used as the base for the rotations
-  TVec *prevPts; // use to restore the old point values
-  //sector_t *originalSector; // used to get height
+  TVec *originalPts; // used as the base for the rotations; array
+  TVec *prevPts; // use to restore the old point values; array
+  polyobjpart_t *parts; // list of all polyoject parts
   sec_plane_t floor;
   sec_plane_t ceiling;
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 bmbbox[4]; //WARNING! this is in blockmap coords, not unit coords
+  float bbox2d[4]; // *CURRENT* bounding box
   vint32 validcount;
+  vuint32 rendercount; // used in renderer; there is no need to save this for portals
+    // no need to save, because this is used only in renderer, to mark already rendered polyobjects in BSP walker
   enum {
-    PF_Crush       = 0x01u, // should the polyobj attempt to crush mobjs?
-    PF_HurtOnTouch = 0x02u,
+    PF_Crush       = 1u<<0, // should the polyobj attempt to crush mobjs?
+    PF_HurtOnTouch = 1u<<1,
   };
   vuint32 PolyFlags;
   vint32 seqType;
   VThinker *SpecialData; // pointer to a thinker, if the poly is moving
   vint32 index; // required for LevelInfo sound sequences
 
-private:
-  pobjsubnode_t *polynode; // node for first pobj in the subsector
+  // will only free memory, but won't clear any fields
+  // will free parts, but won't remove them from subsector (i.e. `sub->polyparts` will be invalid)
+  void Free ();
 
-public:
-  // it is NOT safe to call this with `nullptr`!
-  void LinkToSubsector (subsector_t *asub);
-  void UnlinkFromSubsector (subsector_t *asub);
-  bool IsLinkedToSubsector (subsector_t *asub);
+  //TODO: make this faster by calculating overlapping rectangles or something
+  void RemoveAllSubsectors ();
+  void AddSubsector (subsector_t *sub);
 
-  void UnlinkFromAllSubsectors ();
-
-public:
-  class PolySubIter {
-  private:
-    pobjsubnode_t *node;
-  public:
-    inline PolySubIter (pobjsubnode_t *anode) noexcept : node(anode) {}
-    inline PolySubIter begin () noexcept { return PolySubIter(node); }
-    inline PolySubIter end () noexcept { return PolySubIter(nullptr); }
-    inline bool operator == (const PolySubIter &b) const noexcept { return (node == b.node); }
-    inline bool operator != (const PolySubIter &b) const noexcept { return (node != b.node); }
-    inline PolySubIter operator * () const noexcept { return PolySubIter(node); } /* required for iterator */
-    inline void operator ++ () noexcept { if (node) node = node->snodenext; } /* this is enough for iterator */
-    // accessors
-    inline polyobj_t *value () const noexcept { return node->pobj; }
-  };
-
-public:
-  class PolySubsectorsIter {
-  private:
-    pobjsubnode_t *node;
-  public:
-    inline PolySubsectorsIter (pobjsubnode_t *anode) noexcept : node(anode) {}
-    inline PolySubsectorsIter begin () noexcept { return PolySubsectorsIter(node); }
-    inline PolySubsectorsIter end () noexcept { return PolySubsectorsIter(nullptr); }
-    inline bool operator == (const PolySubsectorsIter &b) const noexcept { return (node == b.node); }
-    inline bool operator != (const PolySubsectorsIter &b) const noexcept { return (node != b.node); }
-    inline PolySubsectorsIter operator * () const noexcept { return PolySubsectorsIter(node); } /* required for iterator */
-    inline void operator ++ () noexcept { if (node) node = node->pnodenext; } /* this is enough for iterator */
-    // accessors
-    inline subsector_t *value () const noexcept { return node->sub; }
-  };
-
-  inline PolySubsectorsIter SubSectorFirst () const noexcept { return PolySubsectorsIter(polynode); }
+  inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
 };
 
 
+// for polyobj blockmap
 struct polyblock_t {
   polyobj_t *polyobj;
   polyblock_t *prev;
@@ -1044,15 +1034,33 @@ public:
   };
 
 public:
+  class PolySubIter {
+  private:
+    polyobjpart_t *ppart;
+  public:
+    inline PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
+    inline PolySubIter begin () noexcept { return PolySubIter(ppart); }
+    inline PolySubIter end () noexcept { return PolySubIter(nullptr); }
+    inline bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
+    inline bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
+    inline PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
+    inline void operator ++ () noexcept { if (ppart) ppart = ppart->nextsub; } /* this is enough for iterator */
+    // accessors
+    inline polyobjpart_t *part () const noexcept { return ppart; }
+    inline polyobj_t *pobj () const noexcept { return (ppart ? ppart->pobj : nullptr); }
+  };
+
+public:
   sector_t *sector;
   subsector_t *seclink; // next subsector for this sector
   vint32 numlines; // number of segs in this subsector
   vint32 firstline; // first seg of this subsector
 
-  pobjsubnode_t *polysubnode; // node for first pobj in the subsector
+  polyobjpart_t *polyparts; // list of all polyparts in this subsector; linked by `nextsub`
 
-  node_t *parent;
+  node_t *parent; // bsp node for this subsector
   vuint32 parentChild; // our child index in parent node
+
   vuint32 VisFrame;
   vuint32 updateWorldFrame;
 
@@ -1068,8 +1076,8 @@ public:
 
   vuint32 miscFlags; // SSMF_xxx
 
-  inline bool HasPObjs () const noexcept { return !!polysubnode; }
-  inline polyobj_t::PolySubIter PObjFirst () const noexcept { return polyobj_t::PolySubIter(polysubnode); }
+  inline bool HasPObjs () const noexcept { return !!polyparts; }
+  inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
 };
 
 
@@ -1078,6 +1086,10 @@ public:
 //  Node
 //
 //==========================================================================
+
+#define BSPIDX_IS_LEAF(bidx_)         ((bidx_)&(NF_SUBSECTOR))
+#define BSPIDX_IS_NON_LEAF(bidx_)     (!((bidx_)&(NF_SUBSECTOR)))
+#define BSPIDX_LEAF_SUBSECTOR(bidx_)  ((bidx_)&(~(NF_SUBSECTOR)))
 
 // indicate a leaf
 enum {

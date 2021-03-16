@@ -280,7 +280,7 @@ void VLevel::RecalcWorldNodeBBox (int bspnum, float bbox[6], const float skyheig
     return;
   }
   // found a subsector?
-  if (!(bspnum&NF_SUBSECTOR)) {
+  if (BSPIDX_IS_NON_LEAF(bspnum)) {
     // nope, this is a normal node
     node_t *bsp = &Nodes[bspnum];
     // decide which side the view point is on
@@ -299,7 +299,7 @@ void VLevel::RecalcWorldNodeBBox (int bspnum, float bbox[6], const float skyheig
     //bbox[5] = max2(bsp->bbox[0][5], bsp->bbox[1][5]);
   } else {
     // leaf node (subsector)
-    UpdateSubsectorBBox(bspnum&(~NF_SUBSECTOR), bbox, skyheight);
+    UpdateSubsectorBBox(BSPIDX_LEAF_SUBSECTOR(bspnum), bbox, skyheight);
   }
 }
 

@@ -1386,7 +1386,7 @@ static void AM_drawWalls () {
       const vuint32 aclr = PObjActiveColor;
       const vuint32 iclr = PObjInactiveColor;
       const polyobj_t *pobj = line->firstseg->pobj;
-      const subsector_t *sub = pobj->SubSectorFirst().value();
+      const subsector_t *sub = pobj->SubFirst().sub();
       if (!sub) continue;
       for (const seg_t *origseg = line->firstseg; origseg; origseg = origseg->lsnext) {
         if (!origseg->linedef) continue;

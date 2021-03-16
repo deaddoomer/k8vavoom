@@ -58,6 +58,9 @@ void VRenderLevelShadowVolume::CollectLightShadowSurfaces (bool doShadows) {
   lightSurfacesMasked.resetNoDtor();
   collectorForShadowMaps = (r_shadowmaps.asBool() && Drawer->CanRenderShadowMaps());
   collectorShadowType = (collectorForShadowMaps && r_shadowmap_flip_surfaces.asBool() ? VViewClipper::AsShadowMap : VViewClipper::AsShadow);
+  //TODO: create separate frame counter for polyobjects
+  //      it is safe to reset render counters here, because they already used and not needed for anything
+  Level->ResetPObjRenderCounts();
   if (Level->NumSubsectors < 2) {
     if (Level->NumSubsectors == 1) return CollectAdvLightSubsector(0, (doShadows ? FlagAsBoth : FlagAsLight));
   } else {
@@ -99,7 +102,7 @@ static VVA_OKUNUSED inline void ClipSegToLight (TVec &v1, TVec &v2, const TVec &
 void VRenderLevelShadowVolume::AddPolyObjToLightClipper (VViewClipper &clip, subsector_t *sub, int asShadow) {
   if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
+      polyobj_t *pobj = it.pobj();
       clip.ClipLightAddPObjSegs(pobj, sub, asShadow);
     }
   }
@@ -357,10 +360,13 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
     subregion_t *region = sub->regions;
     sec_region_t *secregion = region->secregion;
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        CollectAdvLightLine(sub, secregion, (*polySeg)->drawsegs, ssflag);
+      polyobj_t *pobj = it.pobj();
+      if (pobj->rendercount != BspVisFrame) {
+        pobj->rendercount = BspVisFrame; // mark as rendered
+        seg_t **polySeg = pobj->segs;
+        for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
+          CollectAdvLightLine(sub, secregion, (*polySeg)->drawsegs, ssflag);
+        }
       }
     }
   }

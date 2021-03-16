@@ -65,7 +65,7 @@ static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimiz
 static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
 static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
 static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
-static VCvarB clip_polyobj_new("clip_polyobj_new", false, "Do clipping with polyobjects using new method?", CVAR_PreInit);
+static VCvarB clip_polyobj_new("clip_polyobj_new", true, "Do clipping with polyobjects using new method?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
 VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit);
 //VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);

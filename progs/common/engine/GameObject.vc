@@ -1120,17 +1120,17 @@ struct seg_t : TPlane {
 //  separate data structure to keep a list of polyobjects in a subsector
 //
 //==========================================================================
-struct pobjsubnode_t {
-  subsector_t *sub; // subsector for this node
-  polyobj_t *pobj; // polyobject pointer
-  // linked list of nodes
-  pobjsubnode_t *snodeprev;
-  pobjsubnode_t *snodenext;
-  // linked list of all nodes for this polyobject
-  pobjsubnode_t *pnodeprev;
-  pobjsubnode_t *pnodenext;
-  // polyobj segs, clipped to the subsector
-  //array!(seg_t *) segs;
+struct polyobjpart_t {
+  polyobj_t *pobj; // owning polyobject
+  subsector_t *sub; // subsector containing this node
+  polyobjpart_t *nextpobj; // next polyobject part for this polyobject
+  polyobjpart_t *nextsub; // next polyobject part for this subsector
+
+  // clipped segs for this polypart
+  // polyobjects doesn't have real floors and ceilings, so we can split the whole lines
+  seg_t *segs;
+  int count; // number of used elements in `segs`
+  int amount; // number of allocated elements for `segs`
 };
 
 
@@ -1138,23 +1138,25 @@ struct pobjsubnode_t {
 //  Polyobj data
 //
 struct polyobj_t {
-  seg_t*[] segs;
+  seg_t*[] segs; // individual elements points inside the level's `Segs`
+  line_t*[] lines; // individual elements points inside the level's `Lines`
   TVec startSpot;
   TVec *originalPts; // used as the base for the rotations
   TVec *prevPts; // use to restore the old point values
-  //sector_t *originalSector; // used to get height
+  readonly native polyobjpart_t *parts; // list of all polyoject parts
   sec_plane_t floor;
   sec_plane_t ceiling;
   float angle;
   int tag; // reference tag assigned in HereticEd
   int[4] bmbbox; //WARNING! this is in blockmap coords, not unit coords
+  float[4] bbox2d; // *CURRENT* bounding box
   int validcount;
+  int rendercount; // used in renderer
   bool bCrush; // should the polyobj attempt to crush mobjs?
   bool bHurtOnTouch;
   int seqType;
   Thinker SpecialData;  // pointer a thinker, if the poly is moving
   int index; // required for LevelInfo sound sequences
-  readonly native pobjsubnode_t *polynode; // node for first pobj in the subsector
 };
 
 
@@ -1186,7 +1188,7 @@ struct subsector_t {
   int numlines;
   int firstline;
 
-  readonly native pobjsubnode_t *polysubnode; // node for first pobj in the subsector
+  readonly native polyobjpart_t *polyparts; // list of all polyparts in this subsector; linked by `nextsub`
 
   native transient node_t *parent;
   native transient int parentChild; // our child index in parent node

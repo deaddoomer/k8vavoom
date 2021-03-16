@@ -189,7 +189,7 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
   if (sub->HasPObjs()) {
     // check the polyobjects in the subsector first
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
+      polyobj_t *pobj = it.pobj();
       seg_t **polySeg = pobj->segs;
       for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
         if (!CheckLine(trace, *polySeg)) {
@@ -224,7 +224,7 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
 bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
   if (bspnum == -1) return CrossSubsector(trace, 0); // just in case
 
-  if ((bspnum&NF_SUBSECTOR) == 0) {
+  if (BSPIDX_IS_NON_LEAF(bspnum)) {
     const node_t *bsp = &Nodes[bspnum];
     // decide which side the start point is on
     // if bit 1 is set (i.e. `(side&2) != 0`), the point lies on the plane
@@ -242,7 +242,7 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
     // cross the ending side
     return CrossBSPNode(trace, bsp->children[(side&1)^1]);
   } else {
-    return CrossSubsector(trace, bspnum&(~NF_SUBSECTOR));
+    return CrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
   }
 }
 

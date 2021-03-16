@@ -472,6 +472,7 @@ public:
     if (++BspVisFrame == 0) {
       memset(BspVisData, 0, Level->NumSubsectors*sizeof(BspVisData[0]));
       memset(BspVisSectorData, 0, Level->NumSectors*sizeof(BspVisSectorData[0]));
+      Level->ResetPObjRenderCounts();
     }
   }
 

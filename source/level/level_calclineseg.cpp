@@ -162,27 +162,15 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
     if (dot1 < -0.01f) {
       vassert(dot2 >= -0.01f);
       // if one of normal components is |1|, the other is inevitably `0`
-           if (curseg->normal.x == +1.0f) v1->x = curseg->dist;
-      else if (curseg->normal.x == -1.0f) v1->x = -curseg->dist;
-      else if (curseg->normal.y == +1.0f) v1->y = curseg->dist;
-      else if (curseg->normal.y == -1.0f) v1->y = -curseg->dist;
-      else {
-        const float idist = dot1/(dot1-max2(dot2, 0.0f));
-        v1->x += (v2->x-v1->x)*idist;
-        v1->y += (v2->y-v1->y)*idist;
-      }
+      const float idist = dot1/(dot1-max2(dot2, 0.0f));
+      v1->x = (fabsf(curseg->normal.x) != 1.0f ? v1->x+(v2->x-v1->x)*idist : (curseg->normal.x > 0.0f ? curseg->dist : -curseg->dist));
+      v1->y = (fabsf(curseg->normal.y) != 1.0f ? v1->y+(v2->y-v1->y)*idist : (curseg->normal.y > 0.0f ? curseg->dist : -curseg->dist));
     } else if (dot2 < -0.01f) {
       vassert(dot1 >= -0.01f);
       // if one of normal components is |1|, the other is inevitably `0`
-           if (curseg->normal.x == +1.0f) v2->x = curseg->dist;
-      else if (curseg->normal.x == -1.0f) v2->x = -curseg->dist;
-      else if (curseg->normal.y == +1.0f) v2->y = curseg->dist;
-      else if (curseg->normal.y == -1.0f) v2->y = -curseg->dist;
-      else {
-        const float idist = dot2/(dot2-max2(dot1, 0.0f));
-        v2->x += (v1->x-v2->x)*idist;
-        v2->y += (v1->y-v2->y)*idist;
-      }
+      const float idist = dot2/(dot2-max2(dot1, 0.0f));
+      v2->x = (fabsf(curseg->normal.x) != 1.0f ? v2->x+(v1->x-v2->x)*idist : (curseg->normal.x > 0.0f ? curseg->dist : -curseg->dist));
+      v2->y = (fabsf(curseg->normal.y) != 1.0f ? v2->y+(v1->y-v2->y)*idist : (curseg->normal.y > 0.0f ? curseg->dist : -curseg->dist));
     } else {
       // this can happen for very small distances
       //Sys_Error("ClipPObjSegToSub: oops!");

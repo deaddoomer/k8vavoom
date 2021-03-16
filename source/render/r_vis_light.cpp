@@ -122,8 +122,9 @@ void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
         sec_region_t *curreg = region->secregion;
         if (curreg->regflags&sec_region_t::RF_BaseRegion) {
           if (sub->HasPObjs() && r_draw_pobj.asBool()) {
+            //TODO: this is excessive, check each pobj only once!
             for (auto &&it : sub->PObjFirst()) {
-              polyobj_t *pobj = it.value();
+              polyobj_t *pobj = it.pobj();
               seg_t **polySeg = pobj->segs;
               for (int count = pobj->numsegs; count--; ++polySeg) {
                 UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, (*polySeg)->drawsegs);
