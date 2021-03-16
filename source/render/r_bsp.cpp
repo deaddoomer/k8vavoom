@@ -777,11 +777,12 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   if (!linedef) {
     // miniseg
     // check with clipper?
+    #if 0
     if (!(sub->miscFlags&subsector_t::SSMF_Rendered) && sub->numlines) {
       // check if have any non-miniseg segs
-      seg = &Level->Segs[sub->firstline];
-      for (int f = sub->numlines; f--; ++seg) {
-        linedef = seg->linedef;
+      const *sseg = &Level->Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++sseg) {
+        linedef = sseg->linedef;
         if (linedef && (linedef->flags&ML_DONTDRAW) == 0) return; // no need to mark it, normal line rendering should do it
       }
       // no non-minisegs, mark this subsector as visible
@@ -789,6 +790,10 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
       sub->miscFlags |= subsector_t::SSMF_Rendered;
       seg->flags |= SF_MAPPED;
     }
+    #else
+    sub->miscFlags |= subsector_t::SSMF_Rendered;
+    seg->flags |= SF_MAPPED;
+    #endif
     return;
   }
 
