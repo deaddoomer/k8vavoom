@@ -97,7 +97,7 @@ void polyobjpart_t::Free () noexcept {
 
 //==========================================================================
 //
-//  polyobjpart_t::Free
+//  polyobjpart_t::allocSeg
 //
 //==========================================================================
 seg_t *polyobjpart_t::allocSeg () noexcept {
@@ -128,6 +128,13 @@ void polyobj_t::Free () {
     c->Free();
     delete c;
   }
+  part = freeparts;
+  while (part) {
+    polyobjpart_t *c = part;
+    part = part->nextpobj;
+    c->Free();
+    delete c;
+  }
 }
 
 
@@ -148,7 +155,12 @@ void polyobj_t::RemoveAllSubsectors () {
     if (curr) {
       if (prev) prev->nextsub = part->nextsub; else sub->polyparts = part->nextsub;
     }
-    delete part;
+    // put to free parts pool
+    part->reset();
+    part->sub = nullptr;
+    part->nextsub = nullptr;
+    part->nextpobj = freeparts;
+    freeparts = part;
   }
 }
 
@@ -162,8 +174,13 @@ void polyobj_t::RemoveAllSubsectors () {
 //==========================================================================
 void polyobj_t::AddSubsector (subsector_t *sub) {
   vassert(sub);
-  polyobjpart_t *pp = new polyobjpart_t;
-  memset((void *)pp, 0, sizeof(*pp));
+  polyobjpart_t *pp = freeparts;
+  if (pp) {
+    freeparts = pp->nextpobj;
+  } else {
+    pp = new polyobjpart_t;
+    memset((void *)pp, 0, sizeof(*pp));
+  }
   // set owner
   pp->pobj = this;
   // add part to our list

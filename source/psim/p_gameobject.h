@@ -915,7 +915,7 @@ struct polyobjpart_t {
 public:
   polyobj_t *pobj; // owning polyobject
   subsector_t *sub; // subsector containing this node
-  polyobjpart_t *nextpobj; // next polyobject part for this polyobject
+  polyobjpart_t *nextpobj; // next polyobject part for this polyobject (used or free)
   polyobjpart_t *nextsub; // next polyobject part for this subsector
 
   // clipped segs for this polypart
@@ -960,6 +960,7 @@ public:
   TVec *originalPts; // used as the base for the rotations; array
   TVec *prevPts; // use to restore the old point values; array
   polyobjpart_t *parts; // list of all polyoject parts
+  polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   sec_plane_t floor;
   sec_plane_t ceiling;
   float angle;

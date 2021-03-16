@@ -1146,6 +1146,7 @@ struct polyobj_t {
   TVec *originalPts; // used as the base for the rotations
   TVec *prevPts; // use to restore the old point values
   readonly native polyobjpart_t *parts; // list of all polyoject parts
+  readonly native polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   sec_plane_t floor;
   sec_plane_t ceiling;
   float angle;
