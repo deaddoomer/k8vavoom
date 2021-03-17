@@ -873,37 +873,41 @@ void VZLibStreamWriter::Seek (int pos) {
 void VZLibStreamWriter::Flush () {
   if (!initialised || !dstStream || dstStream->IsError()) SetError();
   if (bError) return;
-
-  zStream.avail_in = 0;
+  int err;
   do {
+    zStream.avail_in = 0;
     zStream.next_out = buffer;
     zStream.avail_out = BUFFER_SIZE;
-    int err = mz_deflate(&zStream, MZ_FULL_FLUSH);
-    if (err == MZ_STREAM_ERROR) { SetError(); return; }
+    err = mz_deflate(&zStream, MZ_FULL_FLUSH);
+    //if (err == MZ_STREAM_ERROR) { SetError(); return; }
+    if (err != MZ_STREAM_END && err != MZ_OK && err != MZ_BUF_ERROR) { SetError(); break; }
     if (zStream.avail_out != BUFFER_SIZE) {
       dstStream->Serialise(buffer, BUFFER_SIZE-zStream.avail_out);
       if (dstStream->IsError()) { SetError(); return; }
     }
-  } while (zStream.avail_out == 0);
+  } while (zStream.avail_out == 0 || err == MZ_BUF_ERROR);
   dstStream->Flush();
-  if (dstStream->IsError()) { SetError(); return; }
+  if (dstStream->IsError()) SetError();
 }
 
 
 bool VZLibStreamWriter::Close () {
   if (initialised) {
     if (!bError) {
-      zStream.avail_in = 0;
+      int err;
       do {
+        zStream.avail_in = 0;
         zStream.next_out = buffer;
         zStream.avail_out = BUFFER_SIZE;
-        int err = mz_deflate(&zStream, MZ_FINISH);
-        if (err == MZ_STREAM_ERROR) { SetError(); break; }
+        err = mz_deflate(&zStream, MZ_FINISH);
+        if (err == MZ_BUF_ERROR) { SetError(); break; } // out of output buffer, and we don't have a bigger one (should not happen)
+        //if (err == MZ_STREAM_ERROR) { SetError(); break; }
+        if (err != MZ_STREAM_END && err != MZ_OK) { SetError(); break; }
         if (zStream.avail_out != BUFFER_SIZE) {
           dstStream->Serialise(buffer, BUFFER_SIZE-zStream.avail_out);
           if (dstStream->IsError()) { SetError(); break; }
         }
-      } while (zStream.avail_out == 0);
+      } while (err != MZ_STREAM_END);
     }
     mz_deflateEnd(&zStream);
     initialised = false;
