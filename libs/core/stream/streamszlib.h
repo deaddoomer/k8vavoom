@@ -114,6 +114,7 @@ public:
 };
 
 
+// don't allocate this on the stack!
 class VZLibStreamWriter : public VStream {
 public:
   // stream type
@@ -123,7 +124,7 @@ public:
     GZIP,
   };
 private:
-  enum { BUFFER_SIZE = 16384 };
+  enum { BUFFER_SIZE = 128*1024 }; // this should be enough even for uncompressible data
 
   VStream *dstStream;
   vuint8 buffer[BUFFER_SIZE];

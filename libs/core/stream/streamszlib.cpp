@@ -508,7 +508,7 @@ int VZLibStreamReader::readSomeBytes (void *buf, int len) {
     // unpack some data
     vuint32 totalOutBefore = zStream.total_out;
     int err = mz_inflate(&zStream, MZ_SYNC_FLUSH/*MZ_NO_FLUSH*/);
-    if (err != MZ_OK && err != MZ_STREAM_END) {
+    if (err != MZ_OK && err != MZ_STREAM_END && err != MZ_BUF_ERROR) {
       GLog.Logf(NAME_Error, "%s (err=%d)", "Error unpacking inflated stream", err);
       SetError();
       //GLog.Logf(NAME_Error, "%s (err=%s)", "Error unpacking inflated stream", zStream.msg);
@@ -517,7 +517,8 @@ int VZLibStreamReader::readSomeBytes (void *buf, int len) {
     }
     vuint32 totalOutAfter = zStream.total_out;
     bytesRead += totalOutAfter-totalOutBefore;
-    if (err != MZ_OK) break;
+    //if (err != MZ_OK) break;
+    if (err == MZ_STREAM_END) break;
   }
   if (bytesRead && doCrcCheck) currCrc32 = mz_crc32(currCrc32, (const vuint8 *)buf, bytesRead);
   return bytesRead;
@@ -843,18 +844,36 @@ void VZLibStreamWriter::Serialise (void *buf, int len) {
 
   if (doCrcCalc) currCrc32 = mz_crc32(currCrc32, (const vuint8 *)buf, len);
 
+  // it is better to properly check for errors here,
+  // but `mz_deflate()` can return only those codes:
+  //   MZ_OK
+  //   MZ_BUF_ERROR
+  //   MZ_STREAM_END
+  //   MZ_STREAM_ERROR
+  // `MZ_STREAM_END` is possible only when finishing/flushing.
+  // this way, the only possible error code is `MZ_STREAM_ERROR`,
+  // and we can safely keep calling `mz_deflate()` until it
+  // produces no more data (in this case it will return `MZ_BUF_ERROR`,
+  // which means "i need more input".
+  //
+  // if `zStream.avail_out` is zero, it may mean that output buffer is not
+  // big enough, but we cannot do anything with that, so simply try to
+  // call `mz_deflate()` again and hope for the best.
+
   zStream.next_in = (vuint8 *)buf;
   zStream.avail_in = len;
+  int err;
   do {
     zStream.next_out = buffer;
     zStream.avail_out = BUFFER_SIZE;
-    int err = mz_deflate(&zStream, MZ_NO_FLUSH);
+    err = mz_deflate(&zStream, MZ_NO_FLUSH);
     if (err == MZ_STREAM_ERROR) { SetError(); return; }
     if (zStream.avail_out != BUFFER_SIZE) {
       dstStream->Serialise(buffer, BUFFER_SIZE-zStream.avail_out);
       if (dstStream->IsError()) { SetError(); return; }
     }
-  } while (zStream.avail_out == 0);
+    if (zStream.avail_out == 0) continue; // just in case
+  } while (err != MZ_BUF_ERROR);
   //vassert(zStream.avail_in == 0);
 }
 
@@ -873,19 +892,20 @@ void VZLibStreamWriter::Seek (int pos) {
 void VZLibStreamWriter::Flush () {
   if (!initialised || !dstStream || dstStream->IsError()) SetError();
   if (bError) return;
+  // see comments in `VZLibStreamWriter::Serialise()`
   int err;
   do {
     zStream.avail_in = 0;
     zStream.next_out = buffer;
     zStream.avail_out = BUFFER_SIZE;
     err = mz_deflate(&zStream, MZ_FULL_FLUSH);
-    //if (err == MZ_STREAM_ERROR) { SetError(); return; }
     if (err != MZ_STREAM_END && err != MZ_OK && err != MZ_BUF_ERROR) { SetError(); break; }
     if (zStream.avail_out != BUFFER_SIZE) {
       dstStream->Serialise(buffer, BUFFER_SIZE-zStream.avail_out);
       if (dstStream->IsError()) { SetError(); return; }
     }
-  } while (zStream.avail_out == 0 || err == MZ_BUF_ERROR);
+    if (zStream.avail_out == 0) continue; // just in case
+  } while (err != MZ_BUF_ERROR && err != MZ_STREAM_END);
   dstStream->Flush();
   if (dstStream->IsError()) SetError();
 }
@@ -894,6 +914,7 @@ void VZLibStreamWriter::Flush () {
 bool VZLibStreamWriter::Close () {
   if (initialised) {
     if (!bError) {
+      // see comments in `VZLibStreamWriter::Serialise()`
       int err;
       do {
         zStream.avail_in = 0;
@@ -901,7 +922,6 @@ bool VZLibStreamWriter::Close () {
         zStream.avail_out = BUFFER_SIZE;
         err = mz_deflate(&zStream, MZ_FINISH);
         if (err == MZ_BUF_ERROR) { SetError(); break; } // out of output buffer, and we don't have a bigger one (should not happen)
-        //if (err == MZ_STREAM_ERROR) { SetError(); break; }
         if (err != MZ_STREAM_END && err != MZ_OK) { SetError(); break; }
         if (zStream.avail_out != BUFFER_SIZE) {
           dstStream->Serialise(buffer, BUFFER_SIZE-zStream.avail_out);
