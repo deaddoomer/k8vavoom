@@ -1147,8 +1147,9 @@ struct polyobj_t {
   TVec *prevPts; // use to restore the old point values
   readonly native polyobjpart_t *parts; // list of all polyoject parts
   readonly native polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
-  sec_plane_t floor;
-  sec_plane_t ceiling;
+  // note that polyobjects can't have sloped flats (yet)
+  sec_plane_t pofloor; // inverted, i.e. looks down
+  sec_plane_t poceiling; // inverted, i.e. looks up
   subregion_t *region; // used to render floor and ceiling
   float angle;
   int tag; // reference tag assigned in HereticEd
@@ -1505,6 +1506,7 @@ native static final bool SectorHas3DSlopes (const sector_t *sector);
 native static final bool CheckPlanePass (const ref TSecPlaneRef plane, const TVec linestart, const TVec lineend,
                                          optional out TVec currhit, optional out bool isSky);
 
+
 //==========================================================================
 //
 //  CheckPassPlanes
@@ -1521,6 +1523,19 @@ native static final bool CheckPassPlanes (const sector_t *sec,
                                           TVec linestart, TVec lineend, int flagmask,
                                           optional out TVec outHitPoint, optional out TVec outHitNormal,
                                           optional out bool outIsSky);
+
+//==========================================================================
+//
+//  CheckPObjPassPlanes
+//
+//  checks polyobject flats, returns `false` if any plane was hit
+//  sets `outXXX` arguments on hit
+//
+//==========================================================================
+native static final bool CheckPObjPassPlanes (const polyobj_t *po,
+                                              TVec linestart, TVec lineend, int flagmask,
+                                              optional out TVec outHitPoint, optional out TVec outHitNormal,
+                                              optional out bool outIsSky);
 
 
 #include "GameObject_lspname.vc"

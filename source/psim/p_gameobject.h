@@ -961,8 +961,9 @@ public:
   TVec *prevPts; // use to restore the old point values; array
   polyobjpart_t *parts; // list of all polyoject parts
   polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
-  sec_plane_t floor;
-  sec_plane_t ceiling;
+  // note that polyobjects can't have sloped flats (yet)
+  sec_plane_t pofloor; // inverted, i.e. looks down
+  sec_plane_t poceiling; // inverted, i.e. looks up
   subregion_t *region; // used to render floor and ceiling, can be `nullptr`
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
@@ -1347,4 +1348,5 @@ public:
 
   DECLARE_FUNCTION(CheckPlanePass)
   DECLARE_FUNCTION(CheckPassPlanes)
+  DECLARE_FUNCTION(CheckPObjPassPlanes)
 };

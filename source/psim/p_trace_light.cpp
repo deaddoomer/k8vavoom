@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
+#include "p_trace_internal.h"
 
 
 //**************************************************************************
@@ -95,56 +96,31 @@ struct LightTraceInfo {
 };
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-struct PlaneHitInfo {
-  TVec linestart;
-  TVec lineend;
-  bool bestIsSky;
-  bool wasHit;
-  float besthtime;
+//==========================================================================
+//
+//  LightCheckPObjPlanes
+//
+//  returns `true` if no hit was detected
+//  sets `trace.LineEnd` if hit was detected
+//
+//==========================================================================
+/*
+static bool LightCheckPObjPlanes (SightTraceInfo &trace, polyobj_t *po) {
+  if (!po) return true;
 
-  inline PlaneHitInfo (const TVec &alinestart, const TVec &alineend) noexcept
-    : linestart(alinestart)
-    , lineend(alineend)
-    , bestIsSky(false)
-    , wasHit(false)
-    , besthtime(9999.0f)
-  {}
+  PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
 
-  inline TVec getPointAtTime (const float time) const noexcept __attribute__((always_inline)) {
-    return linestart+(lineend-linestart)*time;
-  }
+  // implement proper blocking (so we could have transparent polyobjects)
+  //unsigned flagmask = trace.PlaneNoBlockFlags;
+  //flagmask &= SPF_FLAG_MASK;
 
-  inline TVec getHitPoint () const noexcept __attribute__((always_inline)) {
-    return linestart+(lineend-linestart)*(wasHit ? besthtime : 0.0f);
-  }
+  phi.updatePObj(po->pofloor, po->pofloor.minz, po->poceiling.maxz);
+  phi.updatePObj(po->poceiling, po->pofloor.minz, po->poceiling.maxz);
 
-  inline void update (const TSecPlaneRef &plane) noexcept {
-    const float d1 = plane.PointDistance(linestart);
-    if (d1 < 0.0f) return; // don't shoot back side
-
-    const float d2 = plane.PointDistance(lineend);
-    if (d2 >= 0.0f) return; // didn't hit plane
-
-    // d1/(d1-d2) -- from start
-    // d2/(d2-d1) -- from end
-
-    const float time = d1/(d1-d2);
-    if (time < 0.0f || time > 1.0f) return; // hit time is invalid
-
-    if (!wasHit || time < besthtime) {
-      bestIsSky = (plane.splane->pic == skyflatnum);
-      besthtime = time;
-    }
-
-    wasHit = true;
-  }
-
-  inline void update (sec_plane_t &plane, bool flip=false) noexcept __attribute__((always_inline)) {
-    TSecPlaneRef pp(&plane, flip);
-    update(pp);
-  }
-};
+  if (phi.wasHit) trace.LineEnd = phi.getHitPoint();
+  return !phi.wasHit;
+}
+*/
 
 
 //==========================================================================
@@ -156,6 +132,8 @@ struct PlaneHitInfo {
 //
 //==========================================================================
 static bool LightCheckPlanes (LightTraceInfo &trace, sector_t *sector) {
+  if (!sector || sector->linecount == 0) return true; // skip original polyobject subsectors
+
   PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
 
   // make fake floors and ceilings block view
@@ -214,6 +192,13 @@ static bool LightCheckRegions (const sector_t *sec, const TVec point) {
 //
 //==========================================================================
 static bool LightCanPassOpening (const line_t *linedef, const TVec point) {
+  // check polyobject (so polyobjects will be 3d)
+  polyobj_t *po = linedef->pobj();
+  if (po && po->pofloor.minz < po->poceiling.maxz && point.z >= po->pofloor.minz && point.z <= po->poceiling.maxz) {
+    // inside polyobject, cannot pass
+    return false;
+  }
+
   if (linedef->sidenum[1] == -1 || !linedef->backsector) return false; // single sided line
 
   const sector_t *fsec = linedef->frontsector;

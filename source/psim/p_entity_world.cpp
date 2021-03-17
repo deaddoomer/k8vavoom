@@ -794,6 +794,15 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   // a line has been hit
   if (!ld->backsector) return false; // one sided line
 
+  //FIXME: check if we can stand on polyobject (this should fix floor and ceiling heights, i think)
+  polyobj_t *po = ld->pobj();
+  if (po) {
+    if (po->pofloor.minz < po->poceiling.maxz && (cptrace.Pos.z+max2(0.0f, Height) <= po->pofloor.minz || cptrace.Pos.z >= po->poceiling.maxz)) {
+      // outside of polyobject
+      return true;
+    }
+  }
+
   if (!(ld->flags&ML_RAILING)) {
     if (ld->flags&ML_BLOCKEVERYTHING) return false; // explicitly blocking everything
     if ((EntityFlags&VEntity::EF_Missile) && (ld->flags&ML_BLOCKPROJECTILE)) return false; // blocks projectile
@@ -802,6 +811,9 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
     if ((EntityFlags&VEntity::EF_IsPlayer) && (ld->flags&ML_BLOCKPLAYERS)) return false; // block players only
     if ((EntityFlags&VEntity::EF_Float) && (ld->flags&ML_BLOCK_FLOATERS)) return false; // block floaters only
   }
+
+  // no reason to check openings for polyobjects
+  if (po) return true;
 
   // set openrange, opentop, openbottom
   //TVec hit_point = cptrace.Pos-(DotProduct(cptrace.Pos, ld->normal)-ld->dist)*ld->normal;
@@ -1156,6 +1168,19 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     return false;
   }
 
+  //FIXME: check if we can stand on polyobject (this should fix floor and ceiling heights, i think)
+  //FIXME: should properly check if the point is inside a polyobject -- we can be inside, and not touching any pobj line
+  //FIXME: to do this, we should collect all real polyobject subsectors into a separate list
+  polyobj_t *po = ld->pobj();
+  if (po) {
+    TVec hp = tmtrace.End-(ld->PointDistance(tmtrace.End)*ld->normal);
+    //GCon->Logf(NAME_Debug, "tmtz:%g; hpz=%g : %g; pofz=%g (nz=%g; dist=%g); pocz=%g (nz=%g; dist=%g)", tmtrace.End.z, hp.z, hp.z+max2(0.0f, Height), po->pofloor.minz, po->pofloor.normal.z, po->pofloor.dist, po->poceiling.maxz, po->poceiling.normal.z, po->poceiling.dist);
+    if (po->pofloor.minz < po->poceiling.maxz && (hp.z+max2(0.0f, Height) <= po->pofloor.minz || hp.z >= po->poceiling.maxz)) {
+      // outside of polyobject
+      return true;
+    }
+  }
+
   if (!(ld->flags&ML_RAILING)) {
     if (ld->flags&ML_BLOCKEVERYTHING) {
       // explicitly blocking everything
@@ -1199,6 +1224,9 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       return false;
     }
   }
+
+  // no reason to check openings for polyobjects
+  if (po) return true;
 
   // set openrange, opentop, openbottom
   const float hgt = max2(0.0f, Height);

@@ -214,6 +214,56 @@ bool VLevel::CheckPlanePass (const TSecPlaneRef &plane, const TVec &linestart, c
 }
 
 
+//==========================================================================
+//
+//  VLevel::CheckPObjPassPlanes
+//
+//  returns `true` if no hit was detected
+//
+//==========================================================================
+bool VLevel::CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec lineend, unsigned flagmask,
+                                  TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane)
+{
+  if (!po) return true;
+
+  // check polyobject planes
+  TVec chp;
+  float bestdist = 0.0f;
+  bool isSky;
+  bool didHit = false;
+
+  for (unsigned f = 0; f < 2; ++f) {
+    const sec_plane_t *spl = (f ? &po->poceiling : &po->pofloor);
+    if (!spl->isSlope()) {
+      sec_plane_t pl = *spl;
+      //GCon->Logf(NAME_Debug, "000: f=%u; minz=%g; maxz=%g; pl.normal.z=%g; dist=%g", f, po->pofloor.minz, po->poceiling.maxz, pl.normal.z, pl.dist);
+      if (pl.normal.z > 0.0f) {
+        // this is a ceiling
+        pl.dist = min2(pl.dist, po->poceiling.maxz);
+      } else {
+        // this is a floor
+        pl.dist = -max2(-pl.dist, po->pofloor.minz);
+      }
+      //GCon->Logf(NAME_Debug, "001: f=%u; minz=%g; maxz=%g; pl.normal.z=%g; dist=%g", f, po->pofloor.minz, po->poceiling.maxz, pl.normal.z, pl.dist);
+      TSecPlaneRef pp(&pl, false);
+      if (!CheckPlanePass(pp, linestart, lineend, chp, isSky)) {
+        const float dist = (chp-linestart).lengthSquared();
+        if (!didHit || dist < bestdist) {
+          didHit = true;
+          // hit floor or ceiling
+          if (outHitPoint) *outHitPoint = chp;
+          if (outHitNormal) *outHitNormal = pl.normal;
+          if (outIsSky) *outIsSky = false;
+          if (outHitPlane) *outHitPlane = pl;
+        }
+      }
+    }
+  }
+
+  return !didHit;
+}
+
+
 #define UPDATE_PLANE_HIT(plane_)  do { \
   if (!CheckPlanePass((plane_), linestart, lineend, currhit, isSky)) { \
     const float dist = (currhit-linestart).lengthSquared(); \
@@ -247,6 +297,7 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
                               TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane)
 {
   if (!sector) return true;
+  if (sector->linecount == 0) return true; // skip original polyobject subsectors
 
   TVec besthit = lineend;
   TVec bestNormal(0.0f, 0.0f, 0.0f);

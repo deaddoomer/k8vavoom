@@ -274,10 +274,10 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   const TVec vv2 = *seg->v2;
 
   // polyobject height
-  float pocz1 = pobj->ceiling.GetPointZ(vv1);
-  float pocz2 = pobj->ceiling.GetPointZ(vv2);
-  float pofz1 = pobj->floor.GetPointZ(vv1);
-  float pofz2 = pobj->floor.GetPointZ(vv2);
+  float pocz1 = pobj->poceiling.GetPointZ(vv1);
+  float pocz2 = pobj->poceiling.GetPointZ(vv2);
+  float pofz1 = pobj->pofloor.GetPointZ(vv1);
+  float pofz2 = pobj->pofloor.GetPointZ(vv2);
 
   if (pofz1 >= pocz1 || pofz2 >= pocz2) return false; // something strange
 
@@ -290,10 +290,10 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   if (ldef->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
     // top of texture at top
-    z_org = pobj->floor.TexZ+texh;
+    z_org = pobj->pofloor.TexZ+texh;
   } else {
     // top of texture at top
-    z_org = pobj->ceiling.TexZ;
+    z_org = pobj->poceiling.TexZ;
   }
   //k8: dunno why
   if (seg->sidedef->Mid.RowOffset < 0) {
@@ -1654,10 +1654,10 @@ void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub,
   if (!ldef) return; // miniseg
 
   // do not clip with slopes (yet)
-  if (pobj->floor.isSlope() || pobj->ceiling.isSlope()) return;
+  if (pobj->pofloor.isSlope() || pobj->poceiling.isSlope()) return;
 
   // do not clip with zero-height polyobjects
-  if (pobj->floor.maxz >= pobj->ceiling.minz) return;
+  if (pobj->pofloor.maxz >= pobj->poceiling.minz) return;
 
   // viewer is in back side or on plane?
   int orgside = seg->PointOnSide2(Origin);

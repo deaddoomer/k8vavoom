@@ -556,6 +556,11 @@ final EntityEx CheckLineAttackWithCB (TVec dir, float distance, bool delegate (E
       line_t *li = in->line;
       TVec hit_point = shootOrigin+(distance*in->frac)*dir;
 
+      // check if pobj line was hit
+      if (li->pobject && (li->flags&ML_TWOSIDED)) {
+        if (hit_point.z <= li->pobject->pofloor.minz || hit_point.z >= li->pobject->poceiling.maxz) continue;
+      }
+
       sector_t *sec;
       if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
         sec = li->backsector;
@@ -572,7 +577,7 @@ final EntityEx CheckLineAttackWithCB (TVec dir, float distance, bool delegate (E
 
       if (Level.CompatTrace && li->frontsector == li->backsector) continue;
 
-      if (li->flags&ML_TWOSIDED) {
+      if (!li->pobject && (li->flags&ML_TWOSIDED)) {
         // crosses a two sided line
         opening_t *open;
         float opentop = -float.max;

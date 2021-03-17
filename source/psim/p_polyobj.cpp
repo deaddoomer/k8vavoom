@@ -315,10 +315,10 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   po->index = index;
   po->tag = tag;
 
-  po->floor.XScale = po->floor.YScale = 1.0f;
-  po->floor.TexZ = -99999.0f;
-  po->ceiling.XScale = po->ceiling.YScale = 1.0f;
-  po->ceiling.TexZ = -99999.0f;
+  po->pofloor.XScale = po->pofloor.YScale = 1.0f;
+  po->pofloor.TexZ = -99999.0f;
+  po->poceiling.XScale = po->poceiling.YScale = 1.0f;
+  po->poceiling.TexZ = -99999.0f;
 
   if (crush) po->PolyFlags |= polyobj_t::PF_Crush; else po->PolyFlags &= ~polyobj_t::PF_Crush;
   if (hurt) po->PolyFlags |= polyobj_t::PF_HurtOnTouch; else po->PolyFlags &= ~polyobj_t::PF_HurtOnTouch;
@@ -547,24 +547,60 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
   // set initial floor and ceiling
-  if (po->floor.TexZ < -90000.0f) {
+  if (po->pofloor.TexZ < -90000.0f) {
     // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
+    // flip them, because polyobject flats are like 3d floor flats
     subsector_t *sub = PointInSubsector(avg); // bugfixed algo
-    po->floor = sub->sector->floor;
-    //po->floor.pic = 0;
-    //if (!po->floor.isFloor()) po->floor.flipInPlace();
-    po->ceiling = sub->sector->ceiling;
-    //po->ceiling.pic = 0;
-    //if (!po->ceiling.isCeiling()) po->ceiling.flipInPlace();
-    // setup region
+    po->pofloor = sub->sector->floor;
+    //po->pofloor.pic = 0;
+    if (po->pofloor.isFloor()) po->pofloor.flipInPlace();
+    po->poceiling = sub->sector->ceiling;
+    //po->poceiling.pic = 0;
+    if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+
+    // fix polyobject height
+    //FIXME: polyobject segs should not be minisegs!
+    if (po->numlines && (po->segs[0]->linedef->flags&(ML_TWOSIDED|ML_WRAP_MIDTEX)) == ML_TWOSIDED && po->pofloor.maxz < po->poceiling.minz) {
+      const seg_t *seg = po->segs[0];
+      //auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
+
+      // determine real height using midtex
+      //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
+      VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
+      if (MTex && MTex->Type != TEXTYPE_Null) {
+        // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+        const float texh = MTex->GetScaledHeight();
+        float z_org;
+        if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+          // bottom of texture at bottom
+          // top of texture at top
+          z_org = po->pofloor.TexZ+texh;
+        } else {
+          // top of texture at top
+          z_org = po->poceiling.TexZ;
+        }
+        //k8: dunno why
+        if (seg->sidedef->Mid.RowOffset < 0) {
+          z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+        } else {
+          z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+        }
+        po->pofloor.minz = po->pofloor.maxz = z_org-texh;
+        po->poceiling.minz = po->poceiling.maxz = z_org;
+      }
+    }
+
+    //FIXME: setup region (no need to do it yet)
+    /*
     subregion_t *reg = po->region;
     if (!reg) {
       reg = new subregion_t;
       memset((void *)reg, 0, sizeof(*reg));
       po->region = reg;
     }
-    reg->floorplane.set(&po->floor, po->floor.isFloor());
-    reg->ceilplane.set(&po->ceiling, po->ceiling.isCeiling());
+    reg->floorplane.set(&po->pofloor, false);
+    reg->ceilplane.set(&po->poceiling, false);
+    */
   } else {
     GCon->Logf(NAME_Error, "double-spawned polyobject with tag %d (DON'T DO THIS!)", po->tag);
   }
@@ -918,7 +954,9 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
             }
 
             // check mobj height (pobj floor and ceiling shouldn't be sloped here)
-            if (mobj->Origin.z > -po->ceiling.dist || mobj->Origin.z+max2(0.0f, mobj->Height) < po->floor.dist) continue;
+            if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+
+            //TODO: crush corpses!
 
             if (!mobj->IsBlockingLine(ld)) continue;
 

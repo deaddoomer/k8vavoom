@@ -223,14 +223,21 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   tr->didhit = false;
   tr->mobj = none;
 
+  TVec hit_point;
+  line_t *li;
   intercept_t *in;
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
   TVec lineStart = shootOrigin;
   foreach PathTraverse(in, org.x, org.y, dst.x, dst.y, PT_ADDLINES/*|PT_EARLYOUT*/) {
     if (in->bIsALine) {
-      line_t *li = in->line;
-      TVec hit_point = shootOrigin+(distance*in->frac)*dir;
+      li = in->line;
+      hit_point = shootOrigin+(distance*in->frac)*dir;
+
+      // check if pobj line was hit
+      if (li->pobject && (li->flags&ML_TWOSIDED)) {
+        if (hit_point.z <= li->pobject->pofloor.minz || hit_point.z >= li->pobject->poceiling.maxz) continue;
+      }
 
       if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
         side = 1;
@@ -259,7 +266,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
         continue;
       }
 
-      if (li->flags&ML_TWOSIDED) {
+      if (!li->pobject && (li->flags&ML_TWOSIDED)) {
         // crosses a two sided line
         float opentop = -float.max;
 

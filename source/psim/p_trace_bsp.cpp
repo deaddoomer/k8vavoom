@@ -79,8 +79,7 @@ static bool CheckPlanes (linetrace_t &trace, sector_t *sec) {
 //  returns `false` if the line blocked the ray
 //
 //==========================================================================
-bool VLevel::CheckLine (linetrace_t &trace, seg_t *seg) const {
-  line_t *line = seg->linedef;
+bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
   if (!line) return true; // ignore minisegs, they cannot block anything
 
   // allready checked other side?
@@ -127,6 +126,11 @@ bool VLevel::CheckLine (linetrace_t &trace, seg_t *seg) const {
     const bool backside = (dot1 < 0.0f);
   #endif
 
+  polyobj_t *po = line->pobj();
+  if (po) {
+    if (backside) return true;
+  }
+
   // crosses a two sided line
   //sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
   sector_t *front = (backside ? line->backsector : line->frontsector);
@@ -139,17 +143,38 @@ bool VLevel::CheckLine (linetrace_t &trace, seg_t *seg) const {
   const float frac = num/den;
   TVec hitpoint = trace.Start+frac*trace.Delta;
 
+  if (po) {
+    if (!line->backsector) {
+      trace.LineEnd = hitpoint;
+      trace.LineStart = trace.LineEnd;
+      // one-sided polyobject line, blocks everything
+      trace.HitPlaneNormal = (backside ? -line->normal : line->normal);
+      trace.HitPlane = *line;
+      trace.HitLine = line;
+      return false;
+    }
+
+    TVec outHit(0.0f, 0.0f, 0.0f), outNorm(0.0f, 0.0f, 0.0f);
+    if (!VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.LineEnd, trace.PlaneNoBlockFlags, &outHit, &outNorm, nullptr, &trace.HitPlane)) {
+      trace.LineEnd = hitpoint;
+      return false;
+    }
+
+    if (hitpoint.z <= po->pofloor.minz || hitpoint.z >= po->poceiling.maxz) return true;
+  }
+
   trace.LineEnd = hitpoint;
 
   if (front) {
     if (!CheckPlanes(trace, front)) return false;
   }
+
   trace.LineStart = trace.LineEnd;
 
   if (!(line->flags&ML_TWOSIDED) || (line->flags&trace.LineBlockFlags)) {
     trace.Flags |= linetrace_t::SightEarlyOut;
   } else {
-    if (line->flags&ML_TWOSIDED) {
+    if (!po && (line->flags&ML_TWOSIDED)) {
       // crossed a two sided line
       opening_t *open = SV_LineOpenings(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK);
       if (dbg_bsp_trace_strict_flats) {
@@ -190,9 +215,10 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
     // check the polyobjects in the subsector first
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.pobj();
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        if (!CheckLine(trace, *polySeg)) {
+      line_t **polyLines = pobj->lines;
+      for (int polyCount = pobj->numlines; polyCount--; ++polyLines) {
+        //FIXME: this is wrong, we should perform check on properly clipped segs!
+        if (!CheckLine(trace, *polyLines)) {
           trace.EndSubsector = sub;
           return false;
         }
@@ -201,9 +227,9 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
   }
 
   // check lines
-  seg_t *seg = &Segs[sub->firstline];
+  const seg_t *seg = &Segs[sub->firstline];
   for (int count = sub->numlines; count--; ++seg) {
-    if (!CheckLine(trace, seg)) {
+    if (seg->linedef && !CheckLine(trace, seg->linedef)) {
       trace.EndSubsector = sub;
       return false;
     }

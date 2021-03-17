@@ -763,6 +763,9 @@ public:
   static bool CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, unsigned flagmask,
                                TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane);
 
+  static bool CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec lineend, unsigned flagmask,
+                                   TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane);
+
 public:
   // returns `false` if seg is out of subsector
   // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
@@ -988,7 +991,7 @@ private:
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;
   //bool CheckPlanes (linetrace_t &, sector_t *) const;
-  bool CheckLine (linetrace_t &trace, seg_t *seg) const;
+  bool CheckLine (linetrace_t &trace, line_t *line) const;
   bool CrossSubsector (linetrace_t &trace, int num) const;
   bool CrossBSPNode (linetrace_t &trace, int BspNum) const;
 
