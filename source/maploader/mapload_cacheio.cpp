@@ -241,6 +241,7 @@ void VLevel::SaveCachedData (VStream *strm) {
     arrstrm->Serialize(BlockMapLump, BlockMapLumpSize*4);
   }
 
+  arrstrm->Close();
   delete arrstrm;
 
   NET_SendNetworkHeartbeat(true); // forced
