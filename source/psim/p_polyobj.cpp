@@ -155,7 +155,6 @@ void polyobj_t::Free () {
     c->Free();
     delete c;
   }
-  delete region;
 }
 
 
@@ -435,12 +434,15 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
     posec = ld->backsector;
   }
   if (!posec) return;
+  if (posec->ownpobj && posec->ownpobj != po) return; // oopsie
+  posec->ownpobj = po;
 
   TArray<seg_t *> moresegs;
 
   GCon->Logf(NAME_Debug, "pobj #%d (%d) sector #%d", po->tag, tag, (int)(ptrdiff_t)(posec-&Sectors[0]));
-  for (const subsector_t *sub = posec->subsectors; sub; sub = sub->seclink) {
+  for (subsector_t *sub = posec->subsectors; sub; sub = sub->seclink) {
     vassert(sub->sector == posec);
+    sub->ownpobj = po;
     GCon->Logf(NAME_Debug, "  subsector #%d", (int)(ptrdiff_t)(sub-&Subsectors[0]));
     // collect minisegs
     for (int f = 0; f < sub->numlines; ++f) {
@@ -695,19 +697,16 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 
       //GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
       //GCon->Logf(NAME_Debug, "002: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+
     }
 
-    //FIXME: setup region (no need to do it yet)
-    /*
-    subregion_t *reg = po->region;
-    if (!reg) {
-      reg = new subregion_t;
-      memset((void *)reg, 0, sizeof(*reg));
-      po->region = reg;
+    sector_t *sec = po->posector;
+    if (sec) {
+      sec->floor.normal = po->pofloor.normal;
+      sec->floor.dist = po->pofloor.dist;
+      sec->ceiling.normal = po->poceiling.normal;
+      sec->ceiling.dist = po->poceiling.dist;
     }
-    reg->floorplane.set(&po->pofloor, false);
-    reg->ceilplane.set(&po->poceiling, false);
-    */
   }
 
   float pobbox[4];
@@ -743,6 +742,14 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
   for (auto &&it : po->LineFirst()) CalcLine(it.line());
   // recalc seg's normal and dist
   for (auto &&it : po->SegFirst()) CalcSeg(it.seg());
+  // update region heights
+  sector_t *sec = po->posector;
+  if (sec) {
+    sec->floor.normal = po->pofloor.normal;
+    sec->floor.dist = po->pofloor.dist;
+    sec->ceiling.normal = po->poceiling.normal;
+    sec->ceiling.dist = po->poceiling.dist;
+  }
 }
 
 

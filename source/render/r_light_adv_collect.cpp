@@ -364,6 +364,11 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
           const seg_t *seg = sit.seg();
           if (seg->linedef && seg->drawsegs) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
         }
+        if (pobj->posector) {
+          for (subsector_t *posub = pobj->posector->subsectors; posub; posub = posub->seclink) {
+            CollectAdvLightSubRegion(posub, ssflag);
+          }
+        }
       }
     }
   }
@@ -389,7 +394,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsig
 
     sec_region_t *secregion = region->secregion;
 
-    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
       const seg_t *seg = &Level->Segs[sub->firstline];
       for (int j = sub->numlines; j--; ++seg) {
         if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts

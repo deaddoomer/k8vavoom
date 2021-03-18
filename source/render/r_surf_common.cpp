@@ -97,6 +97,20 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 //==========================================================================
 void VRenderLevelShared::PObjModified (polyobj_t *po) {
   // here we should offset and turn flats
+  // update regions
+  sector_t *sec = po->posector;
+  if (sec) {
+    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+      for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
+        if (reg->realfloor) reg->realfloor->edist = sec->floor.dist+0.346f;
+        if (reg->realceil) reg->realceil->edist = sec->ceiling.dist+0.346f;
+        if (reg->fakefloor) reg->fakefloor->edist = sec->floor.dist+0.346f;
+        if (reg->fakeceil) reg->fakeceil->edist = sec->ceiling.dist+0.346f;
+      }
+      //UpdateSubRegions(sub); // schedule it
+    }
+  }
+  // mark segs as dirty
   for (auto &&it : po->SegFirst()) SegMoved(it.seg());
 }
 
@@ -250,7 +264,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int dscount = 0;
   int spcount = 0;
   for (auto &&sub : Level->allSubsectors()) {
-    if (sub.isOriginalPObj()) continue;
+    if (sub.ownpobj) ++srcount; // floor and ceiling
+    // we need flats for 3d polyobject subsectors
+    if (sub.isOriginalPObj() || sub.ownpobj) continue;
     // subregion count
     for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++srcount;
     // segpart and drawseg count
@@ -307,7 +323,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   // create sector surfaces
   for (auto &&it : Level->allSubsectorsIdx()) {
     subsector_t *sub = it.value();
-    if (sub->isOriginalPObj()) continue;
+    // we need flats for 3d polyobject subsectors
+    if (sub->isOriginalPObj() && !sub->ownpobj) continue;
+
     TSecPlaneRef main_floor = sub->sector->eregions->efloor;
     TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
 
@@ -319,6 +337,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       if (ridx == 0) {
         if (!(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
       } else {
+        if (sub->ownpobj) Sys_Error("internal bug in region creation (3d polyobject has more than one region)");
         if (reg->regflags&sec_region_t::RF_BaseRegion) Sys_Error("internal bug in region creation (non-base region is marked as base)");
       }
 
@@ -329,7 +348,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       bool skipFloor = !!(reg->regflags&sec_region_t::RF_SkipFloorSurf);
       bool skipCeil = !!(reg->regflags&sec_region_t::RF_SkipCeilSurf);
 
-      if (ridx != 0 && reg->extraline) {
+      if (ridx != 0 && reg->extraline && !sub->ownpobj) {
         // hack: 3d floor with sky texture seems to be transparent in renderer
         const side_t *extraside = &Level->Sides[reg->extraline->sidenum[0]];
         if (extraside->MidTexture == skyflatnum) {
@@ -345,7 +364,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       sreg->realceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, r_ceiling, sreg));
 
       // create fake floor and ceiling
-      if (ridx == 0 && sub->sector->fakefloors) {
+      if (ridx == 0 && sub->sector->fakefloors && !sub->ownpobj) {
         TSecPlaneRef fakefloor, fakeceil;
         fakefloor.set(&sub->sector->fakefloors->floorplane, false);
         fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
@@ -360,7 +379,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
       // drawsegs for the main subregion
       // only main region has any drawsegs
-      if (ridx == 0) {
+      if (ridx == 0 && !sub->ownpobj) {
         // create segparts for subsector segs
         if (sub->numlines > 0) {
           //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
@@ -381,10 +400,12 @@ void VRenderLevelShared::CreateWorldSurfaces () {
             if (pobj->rendercount != 1) {
               pobj->rendercount = 1; // mark as rendered
               // create floor and ceiling for it, so they can be used to render polyobj flats
+              /*
               if (pobj->region) {
                 pobj->region->realfloor = CreateSecSurface(nullptr, sub, r_floor, sreg);
                 pobj->region->realceil = CreateSecSurface(nullptr, sub, r_ceiling, sreg);
               }
+              */
               for (auto &&sit : pobj->SegFirst()) {
                 seg_t *seg = sit.seg();
                 if (!seg->linedef) continue; // miniseg has no drawsegs/segparts

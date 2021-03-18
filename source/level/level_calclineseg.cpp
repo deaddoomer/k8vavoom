@@ -265,3 +265,56 @@ void VLevel::CheckBSPB2DBox (const float bbox2d[4], bool (*cb) (VLevel *level, s
   //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g)", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY]);
   return (void)CheckBSPB2DBoxNode(NumNodes-1, bbox2d, cb, udata);
 }
+
+
+//==========================================================================
+//
+//  VLevel::IsPointInsideSector
+//
+//==========================================================================
+bool VLevel::IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept {
+  if (!sec) return false;
+  TVec p(x, y, 0.0f);
+  for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+    if (sub->numlines < 3) continue;
+    if (x < sub->bbox2d[BOX2D_MINX] || x > sub->bbox2d[BOX2D_MAXX] ||
+        y < sub->bbox2d[BOX2D_MINY] || y > sub->bbox2d[BOX2D_MAXY])
+    {
+      continue;
+    }
+    const seg_t *seg = &Segs[sub->firstline];
+    bool inside = true;
+    for (int f = sub->numlines; f--; ++seg) {
+      if (seg->PointDistance(p) < 0.0f) {
+        inside = false;
+        break;
+      }
+    }
+    if (inside) return true;
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VLevel::IsBBox2DTouchingSector
+//
+//==========================================================================
+bool VLevel::IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept {
+  if (!sec) return false;
+  for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+    if (sub->numlines < 3) continue;
+    if (!Are2DBBoxesOverlap(sub->bbox2d, bb2d)) continue;
+    const seg_t *seg = &Segs[sub->firstline];
+    bool inside = true;
+    for (int f = sub->numlines; f--; ++seg) {
+      if (!seg->checkBox2D(bb2d)) {
+        inside = false;
+        break;
+      }
+    }
+    if (inside) return true;
+  }
+  return false;
+}

@@ -880,6 +880,8 @@ struct sector_t {
   sector_t *othersecFloor;
   sector_t *othersecCeiling;
 
+  polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
+
 
   inline bool Has3DFloors () const noexcept { return !!eregions->next; }
   inline bool HasAnyExtraFloors () const noexcept { return (!!eregions->next) || (!!heightsec); }
@@ -1032,7 +1034,6 @@ public:
   // note that polyobjects can't have sloped flats (yet)
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
-  subregion_t *region; // used to render floor and ceiling, can be `nullptr`
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
@@ -1158,6 +1159,8 @@ public:
   vuint32 dlightbits; // bitmask of active dynamic lights
   vuint32 dlightframe; // `dlightbits` validity counter
   subregion_t *regions;
+
+  polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
 
   vuint32 miscFlags; // SSMF_xxx
 

@@ -785,6 +785,7 @@ VRenderLevelShared::~VRenderLevelShared () {
     sub.regions = nullptr;
 
     // remove polyobject floor and ceiling
+    /*
     if (sub.HasPObjs()) {
       for (auto &&poit : sub.PObjFirst()) {
         polyobj_t *pobj = poit.pobj();
@@ -804,6 +805,7 @@ VRenderLevelShared::~VRenderLevelShared () {
         }
       }
     }
+    */
   }
 
   // free seg parts

@@ -1072,6 +1072,8 @@ struct sector_t {
   // if sector has more than one neighbour, this is `nullptr`
   sector_t *othersecFloor;
   sector_t *othersecCeiling;
+
+  native transient readonly polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
 };
 
 
@@ -1157,7 +1159,6 @@ struct polyobj_t {
   // note that polyobjects can't have sloped flats (yet)
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
-  subregion_t *region; // used to render floor and ceiling
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   int tag; // reference tag assigned in HereticEd
@@ -1216,7 +1217,8 @@ struct subsector_t {
   int dlightbits;
   int dlightframe;
 
-  native transient subregion_t *regions;
+  native transient readonly subregion_t *regions;
+  native transient readonly polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
 
   // misc flags
   bool bRendered;

@@ -1024,6 +1024,12 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
           const seg_t *seg = sit.seg();
           if (seg->linedef && seg->drawsegs) RenderLine(sub, secregion, region, seg->drawsegs);
         }
+        if (pobj->posector) {
+          for (subsector_t *posub = pobj->posector->subsectors; posub; posub = posub->seclink) {
+            //GCon->Logf(NAME_Debug, "pobj #%d: sub #%d (%p)", pobj->tag, (int)(ptrdiff_t)(posub-&Level->Subsectors[0]), posub->regions);
+            RenderSubRegion(posub, posub->regions);
+          }
+        }
       }
     }
   }
@@ -1041,7 +1047,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
 void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region) {
   sec_region_t *secregion = region->secregion;
 
-  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int j = sub->numlines; j--; ++seg) {
       if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts

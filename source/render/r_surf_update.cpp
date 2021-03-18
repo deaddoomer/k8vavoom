@@ -255,7 +255,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
     sec_region_t *secregion = region->secregion;
 
-    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0) {
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
       const seg_t *seg = &Level->Segs[sub->firstline];
       for (int j = sub->numlines; j--; ++seg) {
         if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
@@ -280,6 +280,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       }
       UpdateSecSurface(region->realfloor, region->floorplane, sub, region);
     }
+
     if (region->fakefloor) {
       TSecPlaneRef fakefloor;
       fakefloor.set(&sub->sector->fakefloors->floorplane, false);
@@ -290,6 +291,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
     }
 
     if (region->realceil) UpdateSecSurface(region->realceil, region->ceilplane, sub, region);
+
     if (region->fakeceil) {
       TSecPlaneRef fakeceil;
       fakeceil.set(&sub->sector->fakefloors->ceilplane, false);

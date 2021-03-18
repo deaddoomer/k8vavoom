@@ -783,6 +783,9 @@ public:
   // will not modify `drawsegs`, etc.
   bool ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept;
 
+  bool IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept;
+  bool IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept;
+
 public:
   #define VL_ITERATOR(arrname_,itername_,itertype_) \
     class arrname_##Iterator { \
