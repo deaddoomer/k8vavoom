@@ -770,8 +770,8 @@ public:
   virtual void RenderPlayerView () override;
 
   // fix polyobject segs
-  virtual void SegMoved (seg_t *) override;
-  virtual void PObjMoved (polyobj_t *po) override;
+  void SegMoved (seg_t *seg); // do not call this directly, it will be called from `PObjModified()`
+  virtual void PObjModified (polyobj_t *po) override;
 
   virtual void SetupFakeFloors (sector_t *) override;
 

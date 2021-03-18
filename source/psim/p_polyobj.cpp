@@ -634,7 +634,13 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
   UpdatePolySegs(po);
+
+  // no need to notify renderer yet (or update subsector list), polyobject spawner will do it all
+  /*
   PutPObjInSubsectors(po);
+  // notify renderer that this polyobject is moved
+  //if (Renderer) Renderer->PObjModified(po);
+  */
 }
 
 
@@ -654,10 +660,7 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
   for (int count = po->numsegs; count; --count, ++segList) {
     // recalc seg's normal and dist
     CalcSeg(*segList);
-    if (Renderer) Renderer->SegMoved(*segList);
   }
-  // fix floor and ceiling heights
-  if (Renderer) Renderer->PObjMoved(po);
 }
 
 
@@ -835,6 +838,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, bool forced) {
   po->startSpot.y += y;
   if (IsForServer()) LinkPolyobj(po);
 
+  // notify renderer that this polyobject is moved
+  if (Renderer) Renderer->PObjModified(po);
+
   return true;
 }
 
@@ -891,6 +897,10 @@ bool VLevel::RotatePolyobj (int num, float angle) {
   //po->angle = AngleMod(po->angle+angle);
   po->angle = an;
   if (IsForServer()) LinkPolyobj(po);
+
+  // notify renderer that this polyobject is moved
+  if (Renderer) Renderer->PObjModified(po);
+
   return true;
 }
 

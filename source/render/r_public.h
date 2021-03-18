@@ -121,9 +121,7 @@ public:
   VRenderLevelPublic () noexcept;
 
   virtual void PreRender () = 0;
-  // fix polyobject segs
-  virtual void SegMoved (seg_t *) = 0;
-  virtual void PObjMoved (polyobj_t *po) = 0;
+  virtual void PObjModified (polyobj_t *po) = 0; // fix polyobject segs
   virtual void SetupFakeFloors (sector_t *) = 0;
   virtual void RenderPlayerView () = 0;
 

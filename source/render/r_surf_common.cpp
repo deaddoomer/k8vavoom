@@ -88,13 +88,16 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 
 //==========================================================================
 //
-//  VRenderLevelShared::PObjMoved
+//  VRenderLevelShared::PObjModified
 //
-//  called when polyobject moved
+//  called when polyobject moved/rotated
+//  pobj is already linked (i.e. subsector lists are valid)
 //
 //==========================================================================
-void VRenderLevelShared::PObjMoved (polyobj_t *po) {
+void VRenderLevelShared::PObjModified (polyobj_t *po) {
   // here we should offset and turn flats
+  seg_t **segList = po->segs;
+  for (int count = po->numsegs; count; --count, ++segList) SegMoved(*segList);
 }
 
 
