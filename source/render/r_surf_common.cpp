@@ -92,6 +92,7 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 //
 //  called when polyobject moved/rotated
 //  pobj is already linked (i.e. subsector lists are valid)
+//  clipsegs aren't created yet, though
 //
 //==========================================================================
 void VRenderLevelShared::PObjModified (polyobj_t *po) {

@@ -1365,6 +1365,8 @@ static void AM_UpdateSeen () {
 //
 //==========================================================================
 static void AM_drawWalls () {
+  TArray<polyobj_t *> pobjs;
+
   line_t *line = &GClLevel->Lines[0];
   for (unsigned i = GClLevel->NumLines; i--; ++line) {
     if (!line->firstseg) continue; // just in case
@@ -1385,40 +1387,9 @@ static void AM_drawWalls () {
 
     // special rendering for polyobject
     if ((am_pobj_debug.asInt()&0x01) && line->pobj()) {
-      //const vuint32 aclr = PObjActiveColor;
-      //const vuint32 iclr = PObjInactiveColor;
-      const vuint32 aclrs[2] = { 0x60c09000, 0x600090c0 };
-      const polyobj_t *pobj = line->pobj();
-      //const subsector_t *sub = pobj->SubFirst().sub();
-      //if (!sub) continue;
-      for (const seg_t *origseg = line->firstseg; origseg; origseg = origseg->lsnext) {
-        if (!origseg->linedef) continue;
-        unsigned aidx = 0u;
-        // clip pobj seg to subsectors
-        for (auto &&it : pobj->SubFirst()) {
-          const subsector_t *sub = it.sub();
-          seg_t newseg = *origseg;
-          TVec sv1 = *origseg->v1;
-          TVec sv2 = *origseg->v2;
-          newseg.v1 = &sv1;
-          newseg.v2 = &sv2;
-          if (GClLevel->ClipPObjSegToSub(sub, &newseg)) {
-            mline_t l;
-            l.a.x = newseg.v1->x;
-            l.a.y = newseg.v1->y;
-            l.b.x = newseg.v2->x;
-            l.b.y = newseg.v2->y;
-
-            if (am_rotate) {
-              AM_rotatePoint(&l.a.x, &l.a.y);
-              AM_rotatePoint(&l.b.x, &l.b.y);
-            }
-
-            AM_drawMline(&l, aclrs[aidx]);
-          }
-          aidx ^= 1u;
-        }
-      }
+      bool found = false;
+      for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line->pobj()) { found = true; break; }
+      if (!found) pobjs.append(line->pobj());
       continue;
     }
 
@@ -1453,6 +1424,33 @@ static void AM_drawWalls () {
         }
 
         AM_drawMline(&l, clr);
+      }
+    }
+  }
+
+  if (pobjs.length()) {
+    const vuint32 aclrs[2] = { 0x60c09000, 0x600090c0 };
+    for (int pn = 0; pn < pobjs.length(); ++pn) {
+      const polyobj_t *pobj = pobjs[pn];
+      unsigned aidx = 0u;
+      for (auto &&it : pobj->SubFirst()) {
+        for (auto &&sit : it.part()->SegFirst()) {
+          const seg_t *seg = sit.seg();
+
+          mline_t l;
+          l.a.x = seg->v1->x;
+          l.a.y = seg->v1->y;
+          l.b.x = seg->v2->x;
+          l.b.y = seg->v2->y;
+
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+
+          AM_drawMline(&l, aclrs[aidx]);
+        }
+        aidx ^= 1u;
       }
     }
   }

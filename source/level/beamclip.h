@@ -266,13 +266,13 @@ public:
   void ClipAddBBox (const float BBox[6]) noexcept;
   // this doesn't add polyobjects (they are processed separately)
   void ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
-  void ClipAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
+  void ClipAddPObjSegs (const subsector_t *sub, const TPlane *Mirror=nullptr, bool clipAll=false) noexcept;
 
 #ifdef CLIENT
   // this doesn't check for radius
   // this doesn't add polyobjects (they are processed separately)
   void ClipLightAddSubsectorSegs (const subsector_t *sub, int asShadow, const TPlane *Mirror=nullptr) noexcept;
-  void ClipLightAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, int asShadow, const TPlane *Mirror=nullptr) noexcept;
+  void ClipLightAddPObjSegs (const subsector_t *sub, int asShadow, const TPlane *Mirror=nullptr) noexcept;
 #endif
 
   // debug

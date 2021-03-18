@@ -65,7 +65,6 @@ static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimiz
 static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
 static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
 static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
-static VCvarB clip_polyobj_new("clip_polyobj_new", true, "Do clipping with polyobjects using new method?", CVAR_PreInit);
 static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
 VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit);
 //VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);
@@ -1648,17 +1647,6 @@ void VViewClipper::CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror, bool
 //
 //==========================================================================
 void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, bool clipAll) noexcept {
-  if (!clip_polyobj_new.asBool()) return CheckAddClipSeg(seg, Mirror, clipAll);
-
-  const line_t *ldef = seg->linedef;
-  if (!ldef) return; // miniseg
-
-  // do not clip with slopes (yet)
-  if (pobj->pofloor.isSlope() || pobj->poceiling.isSlope()) return;
-
-  // do not clip with zero-height polyobjects
-  if (pobj->pofloor.maxz >= pobj->poceiling.minz) return;
-
   // viewer is in back side or on plane?
   int orgside = seg->PointOnSide2(Origin);
   if (orgside == 2) return; // origin is on plane
@@ -1670,17 +1658,6 @@ void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub,
     // without this, fake walls clips out everything
     if (seg->partner) { seg = seg->partner; orgside = 0; }
   }
-
-  // clip pobj seg to subsector
-  seg_t newseg = *seg;
-  TVec sv1 = *seg->v1;
-  TVec sv2 = *seg->v2;
-  newseg.v1 = &sv1;
-  newseg.v2 = &sv2;
-  if (!Level->ClipPObjSegToSub(sub, &newseg)) return; // out of this subsector
-
-  // use new seg for clipping
-  seg = &newseg;
 
   const TVec &v1 = (!orgside ? *seg->v1 : *seg->v2);
   const TVec &v2 = (!orgside ? *seg->v2 : *seg->v1);
@@ -1707,31 +1684,11 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
   if (!clip_enabled) return;
   if (ClipIsFull()) return;
 
-  //bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
-  //const bool doCheck = !clip_polyobj_new.asBool();
-
-  {
-    const seg_t *seg = &Level->Segs[sub->firstline];
-    for (int count = sub->numlines; count--; ++seg) {
-      //if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
-      CheckAddClipSeg(seg, Mirror, clipAll);
-    }
+  const seg_t *seg = &Level->Segs[sub->firstline];
+  for (int count = sub->numlines; count--; ++seg) {
+    //if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
+    CheckAddClipSeg(seg, Mirror, clipAll);
   }
-
-  /*
-  if (doPoly) {
-    for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
-      const seg_t *const *polySeg = pobj->segs;
-      for (int count = pobj->numsegs; count--; ++polySeg) {
-        const seg_t *seg = *polySeg;
-        if (!doCheck || IsGoodSegForPoly(*this, seg)) {
-          CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
-        }
-      }
-    }
-  }
-  */
 }
 
 
@@ -1740,18 +1697,24 @@ void VViewClipper::ClipAddSubsectorSegs (const subsector_t *sub, const TPlane *M
 //  VViewClipper::ClipAddPObjSegs
 //
 //==========================================================================
-void VViewClipper::ClipAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, const TPlane *Mirror, bool clipAll) noexcept {
+void VViewClipper::ClipAddPObjSegs (const subsector_t *sub, const TPlane *Mirror, bool clipAll) noexcept {
   if (!clip_enabled) return;
   if (ClipIsFull()) return;
 
-  if (/*!sub->HasPObjs() ||*/ !clip_with_polyobj.asBool()) return;
+  if (!sub->HasPObjs() || !clip_with_polyobj.asBool()) return;
 
-  const seg_t *const *polySeg = pobj->segs;
-  for (int count = pobj->numsegs; count--; ++polySeg) {
-    const seg_t *seg = *polySeg;
-    //const seg_t *seg = (*polySeg)->drawsegs->seg;
-    if (!seg->linedef) continue;
-    CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
+  for (auto &&it : sub->PObjFirst()) {
+    polyobj_t *pobj = it.pobj();
+    // do not clip with slopes (yet)
+    if (pobj->pofloor.isSlope() || pobj->poceiling.isSlope()) continue;
+    // do not clip with zero-height polyobjects
+    if (pobj->pofloor.maxz >= pobj->poceiling.minz) return;
+    // process clip segs
+    it.part()->EnsureClipSegs(Level);
+    for (auto &&sit : it.part()->SegFirst()) {
+      const seg_t *seg = sit.seg();
+      CheckAddPObjClipSeg(pobj, sub, seg, Mirror, clipAll);
+    }
   }
 }
 
@@ -1977,28 +1940,12 @@ void VViewClipper::CheckLightAddClipSeg (const seg_t *seg, const TPlane *Mirror,
 //
 //==========================================================================
 void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, int asShadow) noexcept {
-  if (!clip_polyobj_new.asBool()) return CheckLightAddClipSeg(seg, Mirror, asShadow);
-  // no need to check light radius, it is already done
-  const line_t *ldef = seg->linedef;
-  if (!ldef) return; // miniseg should not clip
-
   //if (asShadow == AsShadowMap && (ldef->flags&ML_TWOSIDED)) return; // hack for shadowmaps
 
   // light has 360 degree FOV, so clip with all walls
   const TVec *v1, *v2;
   const int orgside = seg->PointOnSide2(Origin);
   if (orgside == 2) return; // origin is on plane, we cannot do anything sane
-
-  // clip pobj seg to subsector
-  seg_t newseg = *seg;
-  TVec sv1 = *seg->v1;
-  TVec sv2 = *seg->v2;
-  newseg.v1 = &sv1;
-  newseg.v2 = &sv2;
-  if (!Level->ClipPObjSegToSub(sub, &newseg)) return; // out of this subsector
-
-  // use new seg for clipping
-  seg = &newseg;
 
 #if 1
   if (orgside == 2) return; // origin is on plane, we cannot do anything sane
@@ -2033,31 +1980,10 @@ void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t 
 void VViewClipper::ClipLightAddSubsectorSegs (const subsector_t *sub, int asShadow, const TPlane *Mirror) noexcept {
   if (ClipIsFull()) return;
 
-  //bool doPoly = (sub->HasPObjs() && clip_with_polyobj && r_draw_pobj);
-  //const bool doCheck = !clip_polyobj_new.asBool();
-
-  {
-    const seg_t *seg = &Level->Segs[sub->firstline];
-    for (int count = sub->numlines; count--; ++seg) {
-      //if (doPoly && doCheck && !IsGoodSegForPoly(*this, seg)) doPoly = false;
-      CheckLightAddClipSeg(seg, Mirror, asShadow);
-    }
+  const seg_t *seg = &Level->Segs[sub->firstline];
+  for (int count = sub->numlines; count--; ++seg) {
+    CheckLightAddClipSeg(seg, Mirror, asShadow);
   }
-
-  /*
-  if (doPoly && !ClipIsFull()) {
-    for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.value();
-      const seg_t *const *polySeg = pobj->segs;
-      for (int count = pobj->numsegs; count--; ++polySeg) {
-        const seg_t *seg = *polySeg;
-        if (!doCheck || IsGoodSegForPoly(*this, seg)) {
-          CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
-        }
-      }
-    }
-  }
-  */
 }
 
 
@@ -2066,18 +1992,24 @@ void VViewClipper::ClipLightAddSubsectorSegs (const subsector_t *sub, int asShad
 //  VViewClipper::ClipLightAddPObjSegs
 //
 //==========================================================================
-void VViewClipper::ClipLightAddPObjSegs (polyobj_t *pobj, const subsector_t *sub, int asShadow, const TPlane *Mirror) noexcept {
+void VViewClipper::ClipLightAddPObjSegs (const subsector_t *sub, int asShadow, const TPlane *Mirror) noexcept {
   if (!clip_enabled) return;
   if (ClipIsFull()) return;
 
-  if (/*!sub->HasPObjs() ||*/ !clip_with_polyobj.asBool()) return;
+  if (!sub->HasPObjs() || !clip_with_polyobj.asBool()) return;
 
-  const seg_t *const *polySeg = pobj->segs;
-  for (int count = pobj->numsegs; count--; ++polySeg) {
-    const seg_t *seg = *polySeg;
-    //const seg_t *seg = (*polySeg)->drawsegs->seg;
-    if (!seg->linedef) continue;
-    CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
+  for (auto &&it : sub->PObjFirst()) {
+    polyobj_t *pobj = it.pobj();
+    // do not clip with slopes (yet)
+    if (pobj->pofloor.isSlope() || pobj->poceiling.isSlope()) continue;
+    // do not clip with zero-height polyobjects
+    if (pobj->pofloor.maxz >= pobj->poceiling.minz) return;
+    // process clip segs
+    it.part()->EnsureClipSegs(Level);
+    for (auto &&sit : it.part()->SegFirst()) {
+      const seg_t *seg = sit.seg();
+      CheckLightAddPObjClipSeg(pobj, sub, seg, Mirror, asShadow);
+    }
   }
 }
 #endif

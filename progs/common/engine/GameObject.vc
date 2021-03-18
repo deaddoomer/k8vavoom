@@ -1128,9 +1128,12 @@ struct polyobjpart_t {
   polyobjpart_t *nextpobj; // next polyobject part for this polyobject
   polyobjpart_t *nextsub; // next polyobject part for this subsector
 
+  bool bClipsegsCreated;
+
   // clipped segs for this polypart
   // polyobjects doesn't have real floors and ceilings, so we can split the whole lines
   seg_t *segs;
+  TVec *verts; // amount*2
   int count; // number of used elements in `segs`
   int amount; // number of allocated elements for `segs`
 };

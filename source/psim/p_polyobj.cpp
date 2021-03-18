@@ -67,7 +67,9 @@ void VLevel::PutPObjInSubsectors (polyobj_t *po) noexcept {
 //==========================================================================
 void polyobjpart_t::Free () noexcept {
   delete[] segs;
+  delete[] verts;
   segs = nullptr;
+  verts = nullptr;
   count = amount = 0;
 }
 
@@ -77,15 +79,53 @@ void polyobjpart_t::Free () noexcept {
 //  polyobjpart_t::allocSeg
 //
 //==========================================================================
-seg_t *polyobjpart_t::allocSeg () noexcept {
+seg_t *polyobjpart_t::allocSeg (const seg_t *oldseg) noexcept {
   if (count == amount) {
     amount += 64; // arbitrary number
     segs = (seg_t *)Z_Realloc(segs, sizeof(seg_t)*amount);
+    verts = (TVec *)Z_Realloc(verts, sizeof(TVec)*(amount*2));
+    for (unsigned f = 0; f < (unsigned)count; ++f) {
+      segs[f].v1 = &verts[f*2u+0];
+      segs[f].v2 = &verts[f*2u+1];
+    }
   }
-  seg_t *res = &segs[count++];
+  seg_t *res = &segs[count];
   memset((void *)res, 0, sizeof(*res));
+  if (oldseg) *res = *oldseg;
+  res->v1 = &verts[count*2+0];
+  res->v2 = &verts[count*2+1];
+  if (oldseg) {
+    *res->v1 = *oldseg->v1;
+    *res->v2 = *oldseg->v2;
+  }
+  ++count;
   return res;
 }
+
+
+//==========================================================================
+//
+//  polyobjpart_t::allocInitedSeg
+//
+//==========================================================================
+void polyobjpart_t::CreateClipSegs (VLevel *level) {
+  reset();
+  flags |= CLIPSEGS_CREATED;
+  // create clip segs for each polyobject part
+  for (auto &&it : pobj->SegFirst()) {
+    // clip pobj seg to subsector
+    const seg_t *seg = it.seg();
+    if (!seg->linedef) continue;
+    seg_t newseg = *seg;
+    TVec sv1 = *seg->v1;
+    TVec sv2 = *seg->v2;
+    newseg.v1 = &sv1;
+    newseg.v2 = &sv2;
+    if (!level->ClipPObjSegToSub(sub, &newseg)) continue; // out of this subsector
+    (void)allocSeg(&newseg);
+  }
+}
+
 
 
 //==========================================================================

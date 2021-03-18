@@ -998,11 +998,8 @@ bool VRenderLevelShared::NeedToRenderNextSubFirst (const subregion_t *region) no
 //==========================================================================
 void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub) {
   if (sub && sub->HasPObjs() /*&& r_draw_pobj*/ && clip_use_1d_clipper) {
-    for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.pobj();
-      //clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
-      clip.ClipAddPObjSegs(pobj, sub, (Drawer->MirrorClip ? &Drawer->MirrorPlane : nullptr));
-    }
+    clip.ClipAddPObjSegs(sub, (Drawer->MirrorClip ? &Drawer->MirrorPlane : nullptr));
+    //clip.ClipAddPObjSegs(pobj, sub, (MirrorClipSegs && Drawer->viewfrustum.planes[TFrustum::Forward].isValid() ? &Drawer->viewfrustum.planes[TFrustum::Forward] : nullptr));
   }
 }
 

@@ -920,17 +920,47 @@ public:
   polyobjpart_t *nextpobj; // next polyobject part for this polyobject (used or free)
   polyobjpart_t *nextsub; // next polyobject part for this subsector
 
-  // clipped segs for this polypart
-  // polyobjects doesn't have real floors and ceilings, so we can split the whole lines
+  enum {
+    CLIPSEGS_CREATED = 1u<<0,
+  };
+  vuint32 flags;
+
+  // clipped segs for this polypart (to use in clipper)
   seg_t *segs;
+  TVec *verts; // amount*2
   vint32 count; // number of used elements in `segs`
   vint32 amount; // number of allocated elements for `segs`
 
-  inline void reset () noexcept { count = 0; }
+  inline void reset () noexcept { count = 0; flags &= ~CLIPSEGS_CREATED; }
 
   void Free () noexcept;
 
-  seg_t *allocSeg () noexcept;
+  inline void EnsureClipSegs (VLevel *level) { if (!(flags&CLIPSEGS_CREATED)) CreateClipSegs(level); }
+
+protected:
+  void CreateClipSegs (VLevel *level);
+
+  seg_t *allocSeg (const seg_t *oldseg) noexcept;
+
+public:
+  class PolySegIter {
+  private:
+    seg_t *segs;
+    int count;
+    int index;
+  public:
+    inline PolySegIter (seg_t *asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
+    inline PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
+    inline PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
+    inline bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
+    inline bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
+    inline PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
+    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    // accessors
+    inline seg_t *seg () const noexcept { return (index < count ? &segs[index] : nullptr); }
+  };
+
+  inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, count); }
 };
 
 
@@ -951,6 +981,40 @@ public:
     // accessors
     inline polyobjpart_t *part () const noexcept { return ppart; }
     inline subsector_t *sub () const noexcept { return (ppart ? ppart->sub : nullptr); }
+  };
+
+  class PolyLineIter {
+  private:
+    line_t **lines;
+    int count;
+    int index;
+  public:
+    inline PolyLineIter (line_t **alines, int acount, int aindex=0) noexcept : lines(alines), count(acount), index(aindex) {}
+    inline PolyLineIter begin () noexcept { return PolyLineIter(lines, count, index); }
+    inline PolyLineIter end () noexcept { return PolyLineIter(lines, count, count); }
+    inline bool operator == (const PolyLineIter &b) const noexcept { return (lines == b.lines && count == b.count && index == b.index); }
+    inline bool operator != (const PolyLineIter &b) const noexcept { return (lines != b.lines || count != b.count || index != b.index); }
+    inline PolyLineIter operator * () const noexcept { return PolyLineIter(lines, count, index); } /* required for iterator */
+    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    // accessors
+    inline line_t *line () const noexcept { return (index < count ? lines[index] : nullptr); }
+  };
+
+  class PolySegIter {
+  private:
+    seg_t **segs;
+    int count;
+    int index;
+  public:
+    inline PolySegIter (seg_t **asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
+    inline PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
+    inline PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
+    inline bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
+    inline bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
+    inline PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
+    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    // accessors
+    inline seg_t *seg () const noexcept { return (index < count ? segs[index] : nullptr); }
   };
 
 public:
@@ -994,6 +1058,8 @@ public:
   void AddSubsector (subsector_t *sub);
 
   inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
+  inline PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
+  inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
 };
 
 
