@@ -237,8 +237,8 @@ static VCvarB am_draw_keys("am_draw_keys", true, "Draw keys on automap?", CVAR_A
 static VCvarF am_keys_blink_time("am_keys_blink_time", "0.4", "Keys blinking time in seconds (set to 0 to disable)", CVAR_Archive);
 
 
-static VCvarS am_cheat_pobj_active_color("am_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
-static VCvarS am_cheat_pobj_inactive_color("am_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
+//static VCvarS am_cheat_pobj_active_color("am_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
+//static VCvarS am_cheat_pobj_inactive_color("am_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
 
 
 // cached colors
@@ -261,8 +261,8 @@ static ColorCV MinisegColor(&am_color_miniseg, &am_overlay_alpha);
 static ColorCV CurrMarkColor(&am_color_current_mark, &am_overlay_alpha);
 static ColorCV MarkBlinkColor(&am_color_mark_blink, &am_overlay_alpha);
 
-static ColorCV PObjActiveColor(&am_cheat_pobj_active_color, &am_overlay_alpha);
-static ColorCV PObjInactiveColor(&am_cheat_pobj_inactive_color, &am_overlay_alpha);
+//static ColorCV PObjActiveColor(&am_cheat_pobj_active_color, &am_overlay_alpha);
+//static ColorCV PObjInactiveColor(&am_cheat_pobj_inactive_color, &am_overlay_alpha);
 
 static int leveljuststarted = 1; // kluge until AM_LevelInit() is called
 static int amWholeScale = -1; // -1: unknown
@@ -1384,48 +1384,39 @@ static void AM_drawWalls () {
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
 
     // special rendering for polyobject
-    if (am_pobj_debug && line->pobj()) {
-      const vuint32 aclr = PObjActiveColor;
-      const vuint32 iclr = PObjInactiveColor;
+    if ((am_pobj_debug.asInt()&0x01) && line->pobj()) {
+      //const vuint32 aclr = PObjActiveColor;
+      //const vuint32 iclr = PObjInactiveColor;
+      const vuint32 aclrs[2] = { 0x60c09000, 0x600090c0 };
       const polyobj_t *pobj = line->pobj();
-      const subsector_t *sub = pobj->SubFirst().sub();
-      if (!sub) continue;
+      //const subsector_t *sub = pobj->SubFirst().sub();
+      //if (!sub) continue;
       for (const seg_t *origseg = line->firstseg; origseg; origseg = origseg->lsnext) {
         if (!origseg->linedef) continue;
+        unsigned aidx = 0u;
+        // clip pobj seg to subsectors
+        for (auto &&it : pobj->SubFirst()) {
+          const subsector_t *sub = it.sub();
+          seg_t newseg = *origseg;
+          TVec sv1 = *origseg->v1;
+          TVec sv2 = *origseg->v2;
+          newseg.v1 = &sv1;
+          newseg.v2 = &sv2;
+          if (GClLevel->ClipPObjSegToSub(sub, &newseg)) {
+            mline_t l;
+            l.a.x = newseg.v1->x;
+            l.a.y = newseg.v1->y;
+            l.b.x = newseg.v2->x;
+            l.b.y = newseg.v2->y;
 
-        // clip pobj seg to subsector
-        seg_t newseg = *origseg;
-        TVec sv1 = *origseg->v1;
-        TVec sv2 = *origseg->v2;
-        newseg.v1 = &sv1;
-        newseg.v2 = &sv2;
-        if (!GClLevel->ClipPObjSegToSub(sub, &newseg)) {
-          // out of this subsector
-          mline_t l;
-          l.a.x = origseg->v1->x;
-          l.a.y = origseg->v1->y;
-          l.b.x = origseg->v2->x;
-          l.b.y = origseg->v2->y;
+            if (am_rotate) {
+              AM_rotatePoint(&l.a.x, &l.a.y);
+              AM_rotatePoint(&l.b.x, &l.b.y);
+            }
 
-          if (am_rotate) {
-            AM_rotatePoint(&l.a.x, &l.a.y);
-            AM_rotatePoint(&l.b.x, &l.b.y);
+            AM_drawMline(&l, aclrs[aidx]);
           }
-
-          AM_drawMline(&l, iclr);
-        } else {
-          mline_t l;
-          l.a.x = newseg.v1->x;
-          l.a.y = newseg.v1->y;
-          l.b.x = newseg.v2->x;
-          l.b.y = newseg.v2->y;
-
-          if (am_rotate) {
-            AM_rotatePoint(&l.a.x, &l.a.y);
-            AM_rotatePoint(&l.b.x, &l.b.y);
-          }
-
-          AM_drawMline(&l, aclr);
+          aidx ^= 1u;
         }
       }
       continue;
@@ -1569,8 +1560,11 @@ static void AM_DrawMinisegs () {
   const seg_t *seg = &GClLevel->Segs[0];
   for (unsigned i = GClLevel->NumSegs; i--; ++seg) {
     if (seg->linedef) continue; // not a miniseg
-    if (seg->frontsub->isOriginalPObj()) continue;
-    AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, MinisegColor);
+    if (seg->frontsub->isOriginalPObj()) {
+      if (am_pobj_debug.asInt()&0x02) AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, 0xffa000a0);
+    } else {
+      AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, MinisegColor);
+    }
   }
 }
 
