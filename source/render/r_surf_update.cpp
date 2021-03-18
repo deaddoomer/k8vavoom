@@ -239,13 +239,12 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.pobj();
       if (pobj->pofloor.TexZ <= -90000.0f) continue; // untranslated
-      seg_t **polySeg = pobj->segs;
       TSecPlaneRef po_floor, po_ceiling;
       po_floor.set(&pobj->pofloor, false);
       po_ceiling.set(&pobj->poceiling, false);
       for (auto &&sit : pobj->SegFirst()) {
         seg_t *seg = sit.seg();
-        if (seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
+        if (seg->linedef && seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
       }
     }
   }

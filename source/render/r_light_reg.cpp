@@ -1162,7 +1162,8 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
     // this is excessive invalidation for polyobj, but meh...
     for (auto &&it : sub->PObjFirst()) {
       for (auto &&sit : it.pobj()->SegFirst()) {
-        InvalidateLineLMaps(org, radius, sit.seg()->drawsegs);
+        const seg_t *seg = sit.seg();
+        if (seg->linedef && seg->drawsegs) InvalidateLineLMaps(org, radius, seg->drawsegs);
       }
     }
   }
@@ -1709,7 +1710,8 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub)
     // this is excessive invalidation for polyobj, but meh...
     for (auto &&it : sub->PObjFirst()) {
       for (auto &&sit : it.pobj()->SegFirst()) {
-        InvalidateStaticLightmapsLine(sit.seg()->drawsegs);
+        const seg_t *seg = sit.seg();
+        if (seg->linedef && seg->drawsegs) InvalidateStaticLightmapsLine(seg->drawsegs);
       }
     }
   }

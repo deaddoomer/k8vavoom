@@ -1022,7 +1022,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
         pobj->rendercount = BspVisFrame; // mark as rendered
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
-          if (seg->drawsegs) RenderLine(sub, secregion, region, seg->drawsegs);
+          if (seg->linedef && seg->drawsegs) RenderLine(sub, secregion, region, seg->drawsegs);
         }
       }
     }
