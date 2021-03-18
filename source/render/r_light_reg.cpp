@@ -1161,10 +1161,8 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
   if (sub->HasPObjs()) {
     // this is excessive invalidation for polyobj, but meh...
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.pobj();
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        InvalidateLineLMaps(org, radius, (*polySeg)->drawsegs);
+      for (auto &&sit : it.pobj()->SegFirst()) {
+        InvalidateLineLMaps(org, radius, sit.seg()->drawsegs);
       }
     }
   }
@@ -1710,10 +1708,8 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub)
   if (sub->HasPObjs()) {
     // this is excessive invalidation for polyobj, but meh...
     for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.pobj();
-      seg_t **polySeg = pobj->segs;
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        InvalidateStaticLightmapsLine((*polySeg)->drawsegs);
+      for (auto &&sit : it.pobj()->SegFirst()) {
+        InvalidateStaticLightmapsLine(sit.seg()->drawsegs);
       }
     }
   }

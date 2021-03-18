@@ -111,11 +111,11 @@ bool VBlockLinesIterator::GetNext () {
   // check polyobj blockmap
   while (PolyLink) {
     if (PolySegIdx >= 0) {
-      for (; PolySegIdx < PolyLink->polyobj->numsegs; ++PolySegIdx) {
-        seg_t *Seg = PolyLink->polyobj->segs[PolySegIdx];
-        if (!Seg->linedef || Seg->linedef->validcount == validcount) continue;
-        Seg->linedef->validcount = validcount;
-        *LinePtr = Seg->linedef;
+      for (; PolySegIdx < PolyLink->polyobj->numlines; ++PolySegIdx) {
+        line_t *linedef = PolyLink->polyobj->lines[PolySegIdx];
+        if (linedef->validcount == validcount) continue;
+        linedef->validcount = validcount;
+        *LinePtr = linedef;
         return true;
       }
       PolySegIdx = -1;

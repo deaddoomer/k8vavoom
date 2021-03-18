@@ -97,8 +97,7 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 //==========================================================================
 void VRenderLevelShared::PObjModified (polyobj_t *po) {
   // here we should offset and turn flats
-  seg_t **segList = po->segs;
-  for (int count = po->numsegs; count; --count, ++segList) SegMoved(*segList);
+  for (auto &&it : po->SegFirst()) SegMoved(it.seg());
 }
 
 
@@ -270,14 +269,13 @@ void VRenderLevelShared::CreateWorldSurfaces () {
           pobj->rendercount = 1; // mark as rendered
           // create floor and ceiling for it, so they can be used to render polyobj flats
           //if (pobj->region) ++srcount; //FIXME:NOT YET
-          seg_t *const *polySeg = pobj->segs;
-          for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-            const seg_t *seg = *polySeg;
+          for (auto &&sit : pobj->SegFirst()) {
+            const seg_t *seg = sit.seg();
             vassert(seg->pobj == pobj);
             if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
             dscount += 1; // one drawseg for a good seg
             // segparts
-            spcount += CountSegParts(*polySeg);
+            spcount += CountSegParts(seg);
           }
         }
       }
@@ -387,10 +385,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
                 pobj->region->realfloor = CreateSecSurface(nullptr, sub, r_floor, sreg);
                 pobj->region->realceil = CreateSecSurface(nullptr, sub, r_ceiling, sreg);
               }
-              seg_t *const *polySeg = pobj->segs;
-              for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-                seg_t *seg = *polySeg;
-                vassert(seg->pobj == pobj);
+              for (auto &&sit : pobj->SegFirst()) {
+                seg_t *seg = sit.seg();
                 if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
                 if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
                 --pdsLeft;

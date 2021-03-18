@@ -690,17 +690,10 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 //
 //==========================================================================
 void VLevel::UpdatePolySegs (polyobj_t *po) {
-  line_t **lineList = po->lines;
-  for (int count = po->numlines; count; --count, ++lineList) {
-    // recalc lines's slope type, bounding box, normal and dist
-    CalcLine(*lineList);
-  }
-  // recalc lines
-  seg_t **segList = po->segs;
-  for (int count = po->numsegs; count; --count, ++segList) {
-    // recalc seg's normal and dist
-    CalcSeg(*segList);
-  }
+  // recalc lines's slope type, bounding box, normal and dist
+  for (auto &&it : po->LineFirst()) CalcLine(it.line());
+  // recalc seg's normal and dist
+  for (auto &&it : po->SegFirst()) CalcSeg(it.seg());
 }
 
 

@@ -125,9 +125,9 @@ void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
             //TODO: this is excessive, check each pobj only once!
             for (auto &&it : sub->PObjFirst()) {
               polyobj_t *pobj = it.pobj();
-              seg_t **polySeg = pobj->segs;
-              for (int count = pobj->numsegs; count--; ++polySeg) {
-                UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, (*polySeg)->drawsegs);
+              for (auto &&sit : pobj->SegFirst()) {
+                const seg_t *pseg = sit.seg();
+                if (pseg->linedef && pseg->drawsegs) UpdateBBoxWithLine(LitBBox, curreg->eceiling.splane->SkyBox, pseg->drawsegs);
               }
             }
           }

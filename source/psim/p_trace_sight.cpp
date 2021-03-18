@@ -373,19 +373,17 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
 //==========================================================================
 static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
   int offset = y*trace.Level->BlockMapWidth+x;
-  polyblock_t *polyLink = trace.Level->PolyBlockMap[offset];
-  while (polyLink) {
-    if (polyLink->polyobj) {
-      // only check non-empty links
-      if (polyLink->polyobj->validcount != validcount) {
-        seg_t **segList = polyLink->polyobj->segs;
-        for (int i = 0; i < polyLink->polyobj->numsegs; ++i, ++segList) {
-          if (!SightCheckLine(trace, (*segList)->linedef)) return false;
+  for (polyblock_t *polyLink = trace.Level->PolyBlockMap[offset]; polyLink; polyLink = polyLink->next) {
+    polyobj_t *pobj = polyLink->polyobj;
+    if (pobj && pobj->validcount != validcount) {
+      pobj->validcount = validcount;
+      for (auto &&sit : pobj->LineFirst()) {
+        line_t *ld = sit.line();
+        if (ld->validcount != validcount) {
+          if (!SightCheckLine(trace, ld)) return false;
         }
-        polyLink->polyobj->validcount = validcount;
       }
     }
-    polyLink = polyLink->next;
   }
 
   offset = *(trace.Level->BlockMap+offset);

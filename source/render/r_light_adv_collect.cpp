@@ -360,9 +360,9 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
       polyobj_t *pobj = it.pobj();
       if (pobj->rendercount != BspVisFrame) {
         pobj->rendercount = BspVisFrame; // mark as rendered
-        seg_t **polySeg = pobj->segs;
-        for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-          CollectAdvLightLine(sub, secregion, (*polySeg)->drawsegs, ssflag);
+        for (auto &&sit : pobj->SegFirst()) {
+          const seg_t *seg = sit.seg();
+          if (seg->linedef && seg->drawsegs) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
         }
       }
     }

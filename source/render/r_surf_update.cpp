@@ -243,8 +243,9 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       TSecPlaneRef po_floor, po_ceiling;
       po_floor.set(&pobj->pofloor, false);
       po_ceiling.set(&pobj->poceiling, false);
-      for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-        UpdateDrawSeg(sub, (*polySeg)->drawsegs, po_floor, po_ceiling);
+      for (auto &&sit : pobj->SegFirst()) {
+        seg_t *seg = sit.seg();
+        if (seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
       }
     }
   }
@@ -299,19 +300,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       //region->fakeceil->texinfo.Tex = GTextureManager[GTextureManager.DefaultTexture];
     }
 
-    /* polyobj cannot be in 3d floor
-    if (updatePoly && sub->HasPObjs()) {
-      // update the polyobj
-      updatePoly = false;
-      for (auto &&it : sub->PObjFirst()) {
-        polyobj_t *pobj = it.value();
-        seg_t **polySeg = pobj->segs;
-        for (int polyCount = pobj->numsegs; polyCount--; ++polySeg) {
-          UpdateDrawSeg(sub, (*polySeg)->drawsegs, r_floor, r_ceiling);
-        }
-      }
-    }
-    */
+    // polyobj cannot be in 3d floor
   }
 }
 
