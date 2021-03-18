@@ -379,7 +379,7 @@ public:
   // WARNING! make sure that the following constants are in sync with `TFrustum` ones!
   enum { OUTSIDE = 0, INSIDE = 1, PARTIALLY = -1 };
 
-  // returns one of TFrustum::OUTSIDE, TFrustum::INSIDE, TFrustum::PARIALLY
+  // returns one of OUTSIDE, INSIDE, PARIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
   inline VVA_CHECKRESULT int checkBoxEx (const float bbox[6]) const noexcept {
     // check reject point
@@ -387,6 +387,21 @@ public:
     // check accept point
     // if accept point on another side (or on plane), assume intersection
     return (DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist < 0.0f ? PARTIALLY : INSIDE);
+  }
+
+  // returns one of OUTSIDE, INSIDE, PARIALLY
+  // if the box is touching the plane from inside, it is still assumed to be inside
+  // returns PARTIALLY for non-vertical planes (because our box is 2d)
+  inline VVA_CHECKRESULT int checkBox2DEx (const float bbox2d[4]) const noexcept {
+    if (normal.z == 0.0f) {
+      // check reject point
+      if (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist <= 0.0f) return OUTSIDE; // entire box on a back side
+      // check accept point
+      // if accept point on another side (or on plane), assume intersection
+      return (DotProduct(normal, get2DBBoxAcceptPoint(bbox2d))-dist < 0.0f ? PARTIALLY : INSIDE);
+    } else {
+      return PARTIALLY;
+    }
   }
 
   // returns `false` if the rect is on the back side of the plane

@@ -32,32 +32,16 @@
 
 //==========================================================================
 //
-//  VLevel::PutBSPPObjBBox
+//  pobjAddSubsector
+//
+//  `*udata` is `polyobj_t`
 //
 //==========================================================================
-void VLevel::PutBSPPObjBBox (int bspnum, polyobj_t *po) noexcept {
- tailcall:
-  // found a subsector?
-  if (BSPIDX_IS_NON_LEAF(bspnum)) {
-    // nope
-    const node_t *bsp = &Nodes[bspnum];
-    // the order doesn't matter here, because we aren't doing any culling
-    if (Are3DAnd2DBBoxesOverlap(bsp->bbox[0], po->bbox2d)) {
-      if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], po->bbox2d)) {
-        PutBSPPObjBBox(bsp->children[1], po);
-      }
-      bspnum = bsp->children[0];
-      goto tailcall;
-    } else if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], po->bbox2d)) {
-      bspnum = bsp->children[1];
-      goto tailcall;
-    }
-  } else {
-    // check subsector
-    const unsigned subidx = BSPIDX_LEAF_SUBSECTOR(bspnum);
-    //GCon->Logf(NAME_Debug, "linking pobj #%d to subsector #%d (sector #%d)", po->tag, (int)subidx, (int)(ptrdiff_t)(Subsectors[subidx].sector-&Sectors[0]));
-    po->AddSubsector(&Subsectors[subidx]);
-  }
+static bool pobjAddSubsector (VLevel *level, subsector_t *sub, void *udata) {
+  polyobj_t *po = (polyobj_t *)udata;
+  po->AddSubsector(sub);
+  //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g) to subsector #%d", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY], (int)(ptrdiff_t)(sub-&level->Subsectors[0]));
+  return true; // continue checking
 }
 
 
@@ -72,14 +56,7 @@ void VLevel::PutPObjInSubsectors (polyobj_t *po) noexcept {
   //TODO: make this faster by calculating overlapping rectangles or something
   po->RemoveAllSubsectors();
 
-  if (NumSubsectors < 2) {
-    if (NumSubsectors == 1) po->AddSubsector(&Subsectors[0]);
-    return;
-  }
-  vassert(NumNodes > 0);
-
-  //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g)", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY]);
-  return PutBSPPObjBBox(NumNodes-1, po);
+  CheckBSPB2DBox(po->bbox2d, &pobjAddSubsector, po);
 }
 
 

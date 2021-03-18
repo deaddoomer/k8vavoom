@@ -189,3 +189,64 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
   }
   return true;
 }
+
+
+//==========================================================================
+//
+//  VLevel::CheckBSPB2DBoxNode
+//
+//==========================================================================
+bool VLevel::CheckBSPB2DBoxNode (int bspnum, const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept {
+ tailcall:
+  // found a subsector?
+  if (BSPIDX_IS_NON_LEAF(bspnum)) {
+    // nope
+    const node_t *bsp = &Nodes[bspnum];
+    const int side = bsp->checkBox2DEx(bbox2d);
+    switch (side) {
+      case TPlane::OUTSIDE: // on a back side
+        bspnum = bsp->children[1];
+        goto tailcall;
+      case TPlane::INSIDE: // on a front side
+        bspnum = bsp->children[0];
+        goto tailcall;
+      default: // check both sides
+        // the order doesn't matter here, because we aren't doing any culling
+        if (Are3DAnd2DBBoxesOverlap(bsp->bbox[0], bbox2d)) {
+          if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], bbox2d)) {
+            if (!CheckBSPB2DBoxNode(bsp->children[1], bbox2d, cb, udata)) return false;
+          }
+          bspnum = bsp->children[0];
+          goto tailcall;
+        } else if (Are3DAnd2DBBoxesOverlap(bsp->bbox[1], bbox2d)) {
+          bspnum = bsp->children[1];
+          goto tailcall;
+        }
+    }
+  } else {
+    // check subsector
+    subsector_t *sub = &Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
+    // do not call with original polyobject sectors
+    if (sub->sector->linecount) return cb(this, sub, udata);
+  }
+  return true; // keep checking
+}
+
+
+//==========================================================================
+//
+//  VLevel::CheckBSPB2DBox
+//
+//==========================================================================
+void VLevel::CheckBSPB2DBox (const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept {
+  if (!cb) return;
+
+  if (NumSubsectors < 2) {
+    if (NumSubsectors == 1) cb(this, &Subsectors[0], udata);
+    return;
+  }
+  vassert(NumNodes > 0);
+
+  //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g)", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY]);
+  return (void)CheckBSPB2DBoxNode(NumNodes-1, bbox2d, cb, udata);
+}

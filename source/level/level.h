@@ -704,8 +704,13 @@ public:
   bool RotatePolyobj (int num, float angle); // tag (GetPolyobj)
 
   void ResetPObjRenderCounts () noexcept; // called from renderer
-  void PutBSPPObjBBox (int bspnum, polyobj_t *po) noexcept; // do not call directly!
   void PutPObjInSubsectors (polyobj_t *po) noexcept;
+
+  // do not call directly!
+  bool CheckBSPB2DBoxNode (int bspnum, const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept;
+  // return `false` from `cb` to stop checking
+  // will not invoke `cb` for original polyobject (sub)sectors
+  void CheckBSPB2DBox (const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept;
 
   // `-1` for `crunch` means "ignore stuck mobj"
   bool ChangeSector (sector_t *sector, int crunch);
