@@ -323,7 +323,7 @@ void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
   const line_t *line = seg->linedef;
   const sector_t *mysec = seg->frontsector;
   // just in case; also, more polyobject checks (skip sectors containing original polyobjs)
-  if (!line || !mysec || !mysec->linecount) return;
+  if (!line || !mysec || line->pobj() || mysec->isOriginalPObj()) return;
   //GCon->Logf(NAME_Debug, "mark tjunctions for line #%d", (int)(ptrdiff_t)(line-&Level->Lines[0]));
   // simply mark all adjacents for recreation
   for (int lvidx = 0; lvidx < 2; ++lvidx) {

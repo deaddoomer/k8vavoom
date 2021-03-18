@@ -227,7 +227,7 @@ bool VLevel::CheckBSPB2DBoxNode (int bspnum, const float bbox2d[4], bool (*cb) (
     // check subsector
     subsector_t *sub = &Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
     // do not call with original polyobject sectors
-    if (sub->sector->linecount) return cb(this, sub, udata);
+    if (!sub->isOriginalPObj()) return cb(this, sub, udata);
   }
   return true; // keep checking
 }

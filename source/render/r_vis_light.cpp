@@ -100,7 +100,7 @@ void VRenderLevelShared::CalcLightVisUnstuckLightSubsector (const subsector_t *s
 //==========================================================================
 void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
   subsector_t *sub = &Level->Subsectors[subidx];
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
 
   if (!LightClip.ClipLightCheckSubsector(sub, false)) {
     return LightClip.ClipLightAddSubsectorSegs(sub, false);

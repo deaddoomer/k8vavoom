@@ -242,7 +242,8 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
         // rendered even if we do a no-clip into it
         // -- FB -- I'm disabling this behavior
         // k8: and i am enabling it again
-        seg->frontsector->linecount = 0;
+        if (seg->frontsector) seg->frontsector->linecount = 0;
+        if (seg->backsector) seg->backsector->linecount = 0; // mark inner polyobject sectors too
       }
       v0 = *seg->v2;
       if (!vseen.put(v0, true)) {
@@ -335,7 +336,8 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
       // rendered even if we do a no-clip into it
       // -- FB -- I'm disabling this behavior
       // k8: and i am enabling it again
-      seg.frontsector->linecount = 0;
+      if (seg.frontsector) seg.frontsector->linecount = 0;
+      if (seg.backsector) seg.backsector->linecount = 0; // mark inner polyobject sectors too
       IterFindPolySegs(*seg.v2, po->segs+1, PolySegCount, PolyStart);
       po->seqType = seg.linedef->arg3;
       //if (po->seqType < 0 || po->seqType >= SEQTYPE_NUMSEQ) po->seqType = 0;
@@ -348,6 +350,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
       // -- FB -- I'm disabling this behavior
       // k8: and i am enabling it again
       if (seg.frontsector) seg.frontsector->linecount = 0;
+      if (seg.backsector) seg.backsector->linecount = 0; // mark inner polyobject sectors too
     }
   }
 

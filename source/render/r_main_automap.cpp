@@ -77,7 +77,7 @@ sec_surface_t *VRenderLevelShared::AM_getFlatSurface (subregion_t *reg, bool doF
 //==========================================================================
 void VRenderLevelShared::amFlatsCheckSubsector (int num) {
   subsector_t *sub = &Level->Subsectors[num];
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
   // first subregion is main sector subregion
   subregion_t *reg = sub->regions;
   if (!reg) return; // just in case

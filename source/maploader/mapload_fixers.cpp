@@ -67,7 +67,11 @@ void VLevel::DetectHiddenSectors () {
    */
   for (auto &&sec : allSectors()) {
     if (sec.SectorFlags&sector_t::SF_Hidden) continue; // this may come from UDMF
-    if (sec.linecount < 1) continue;
+    // hide original pobj sectors, and control sectors
+    if (sec.linecount < 3) {
+      sec.SectorFlags |= sector_t::SF_Hidden;
+      continue;
+    }
 
     if ((sec.SectorFlags&(sector_t::SF_HasExtrafloors|sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource|sector_t::SF_UnderWater))) {
       if (!(sec.SectorFlags&sector_t::SF_IgnoreHeightSec)) continue; // this is special sector, skip it
@@ -376,7 +380,7 @@ void VLevel::FixSelfRefDeepWater () {
 
     if (!seg->linedef) continue; // miniseg?
     if (!seg->frontsub) { GCon->Logf("INTERNAL ERROR IN GLBSP LOADER: FRONT SUBSECTOR IS NOT SET!"); return; }
-    if (seg->frontsub->sector->linecount == 0) continue; // original polyobj sector
+    if (seg->frontsub->isOriginalPObj()) continue;
 
     const int fsnum = (int)(ptrdiff_t)(seg->frontsub-Subsectors);
 

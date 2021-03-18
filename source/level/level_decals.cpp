@@ -375,7 +375,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
     // for two-sided lines, put decal on segs for both sectors
     for (seg_t *seg = li->firstseg; seg; seg = seg->lsnext) {
       if (!seg->linedef) continue; // ignore minisegs (just in case)
-      //if (seg->frontsub->sector->linecount == 0) continue; // ignore original polyobj sectors (just in case)
+      //if (seg->frontsub->isOriginalPObj()) continue; // ignore original polyobj sectors (just in case) -- nope, we want decals on polyobjects too
       if (seg->flags&SF_ZEROLEN) continue; // invalid seg
       vassert(seg->linedef == li);
 

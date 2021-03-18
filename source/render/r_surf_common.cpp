@@ -254,7 +254,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int dscount = 0;
   int spcount = 0;
   for (auto &&sub : Level->allSubsectors()) {
-    if (sub.sector->linecount == 0) continue; // skip original polyobject subsectors
+    if (sub.isOriginalPObj()) continue;
     // subregion count
     for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++srcount;
     // segpart and drawseg count
@@ -312,7 +312,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   // create sector surfaces
   for (auto &&it : Level->allSubsectorsIdx()) {
     subsector_t *sub = it.value();
-    if (sub->sector->linecount == 0) continue; // skip original polyobject subsectors
+    if (sub->isOriginalPObj()) continue;
     TSecPlaneRef main_floor = sub->sector->eregions->efloor;
     TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
 

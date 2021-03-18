@@ -145,8 +145,7 @@ void VRenderLevelShared::UpdateFakeSectors (subsector_t *viewleaf) {
 void VRenderLevelShared::InitialWorldUpdate () {
   subsector_t *sub = &Level->Subsectors[0];
   for (int scount = Level->NumSubsectors; scount--; ++sub) {
-    if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
-    UpdateSubRegions(sub);
+    if (!sub->isOriginalPObj()) UpdateSubRegions(sub);
   }
 }
 

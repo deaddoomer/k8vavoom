@@ -330,6 +330,7 @@ void VLevelChannel::BuildUpdateSets () {
   if (!Connection || Connection->IsClosed()) return; // just in case
   for (auto &&it : Connection->UpdatedSectors.first()) {
     sector_t *sec = &Level->Sectors[it.getKey()];
+    if (sec->isOriginalPObj()) continue;
     // process all lines
     line_t **lines = sec->lines;
     for (int f = sec->linecount; f > 0; --f, ++lines) {

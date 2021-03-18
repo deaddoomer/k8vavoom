@@ -1337,7 +1337,7 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
     //CalcSubsectorLMaps(slindex, sl, BSPIDX_LEAF_SUBSECTOR(bspnum));
     const int num = BSPIDX_LEAF_SUBSECTOR(bspnum);
     subsector_t *sub = &Level->Subsectors[num];
-    if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+    if (sub->isOriginalPObj()) return;
     if (!CheckSphereVs2dAABB(sub->bbox2d, sl.origin, sl.radius)) return;
     // polyobj
     /*
@@ -1377,7 +1377,7 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
   if (Level->NumSubsectors < 2) {
     if (Level->NumSubsectors == 1) {
       subsector_t *sub = &Level->Subsectors[0];
-      if (sub->sector->linecount) {
+      if (!sub->isOriginalPObj()) {
         sl.touchedSubs.append(sub);
         SubStaticLights[0].touchedStatic.put(slindex, true);
       }

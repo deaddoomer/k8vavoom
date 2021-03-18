@@ -235,7 +235,7 @@ void VEntity::CreateSecNodeList () {
           // ignore polyobject lines (for now)
           if (ld->pobj()) continue;
           // ingore polyobject sectors (for now)
-          if (!ld->frontsector || ld->frontsector->linecount == 0) continue;
+          if (!ld->frontsector || ld->frontsector->isOriginalPObj()) continue;
 
           // locates all the sectors the object is in by looking at the lines that cross through it.
           // you have already decided that the object is allowed at this location, so don't
@@ -454,7 +454,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
           // ignore polyobjects (for now)
           if (ld->pobj()) continue;
           // ingore polyobject sectors (for now)
-          if (ld->frontsector && ld->frontsector->linecount == 0) continue;
+          if (ld->frontsector && ld->frontsector->isOriginalPObj()) continue;
           // we don't care about any blocking line info...
           (void)CheckRelLine(tmtrace, ld, true); // ...and we don't want to process any specials
         }
@@ -2595,7 +2595,7 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
         // ignore polyobject lines (for now)
         if (line->pobj()) continue;
         // ingore polyobject sectors (for now)
-        if (!line->frontsector || line->frontsector->linecount == 0) continue;
+        if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
         if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
         if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
@@ -2665,7 +2665,7 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
         // ignore polyobject lines (for now)
         if (line->pobj()) continue;
         // ingore polyobject sectors (for now)
-        if (!line->frontsector || line->frontsector->linecount == 0) continue;
+        if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
         if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
         if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&

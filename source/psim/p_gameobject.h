@@ -898,6 +898,8 @@ struct sector_t {
 
   // `next` is set, everything other is zeroed
   sec_region_t *AllocRegion ();
+
+  inline bool isOriginalPObj () const noexcept { return (linecount == 0); }
 };
 
 
@@ -1093,6 +1095,8 @@ public:
 
   inline bool HasPObjs () const noexcept { return !!polyparts; }
   inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
+
+  inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
 };
 
 

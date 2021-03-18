@@ -1358,7 +1358,7 @@ void VNetConnection::PvsAddSector (sector_t *sec) {
 //==========================================================================
 void VNetConnection::SetupPvsSubsector (VLevel *Level, int subnum) {
   subsector_t *sub = &Level->Subsectors[subnum];
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
   if (LeafPvs && !(LeafPvs[subnum>>3]&(1<<(subnum&7)))) return;
   if (Clipper.ClipCheckSubsector(sub)) {
     //UpdatePvs[subnum>>3] |= 1<<(subnum&7);

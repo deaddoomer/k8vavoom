@@ -455,8 +455,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsig
 void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int ssflag) {
   vassert(num >= 0 && num < Level->NumSubsectors);
   subsector_t *sub = &Level->Subsectors[num];
-
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
 
   // `LightBspVis` is already an intersection, no need to check `BspVisData` here
   //if (!IsSubsectorLitBspVis(num) || !IsBspVis(num)) return;

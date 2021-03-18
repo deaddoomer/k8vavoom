@@ -1155,7 +1155,7 @@ void VRenderLevelLightmap::InvalidateLineLMaps (const TVec &org, float radius, d
 //==========================================================================
 void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radius, int num) {
   subsector_t *sub = &Level->Subsectors[num];
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
 
   // polyobj
   if (sub->HasPObjs()) {
@@ -1275,7 +1275,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
   float bbox[6];
   subsector_t *sub = Level->Subsectors;
   for (int count = Level->NumSubsectors; count--; ++sub) {
-    if (!sub->sector->linecount) continue; // skip sectors containing original polyobjs
+    if (sub->isOriginalPObj()) continue;
     Level->GetSubsectorBBox(sub, bbox);
     if (!CheckSphereVsAABBIgnoreZ(bbox, org, radius)) continue;
     //GCon->Logf("invalidating subsector %d", (int)(ptrdiff_t)(sub-Level->Subsectors));
@@ -1704,7 +1704,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsLine (drawseg_t *dseg) {
 //
 //==========================================================================
 void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub) {
-  if (!sub->sector->linecount) return; // skip sectors containing original polyobjs
+  if (sub->isOriginalPObj()) return;
 
   // polyobj
   if (sub->HasPObjs()) {
