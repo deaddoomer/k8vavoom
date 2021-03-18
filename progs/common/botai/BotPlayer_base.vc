@@ -391,7 +391,7 @@ final bool HavePathToSS (subsector_t *ssdest) {
 //==========================================================================
 final bool HavePathToPoint (TVec dest, optional subsector_t *destsub) {
 #ifdef BOT_PATHER_OLD
-  if (!destsub) destsub = botmo.XLevel.PointInSubsector(dest);
+  if (!destsub) destsub = botmo.XLevel.PointInSubsectorRender(dest);
   return HavePathToSS(destsub);
 #else
   return pather.BuildPath(botmo.Origin, botmo.SubSector, dest, destsub);
@@ -409,7 +409,7 @@ final void TestFindPathTo (TVec dest) {
   if (!mo) return;
   botmo = Actor(mo);
   if (!botmo) return;
-  subsector_t *ss = botmo.XLevel.PointInSubsector(dest);
+  subsector_t *ss = botmo.XLevel.PointInSubsectorRender(dest);
   if (!ss) return;
   pather.debugDump = true;
   scope(exit) pather.debugDump = false;
@@ -556,7 +556,7 @@ final void CheckAndDropNodeAt (subsector_t *ss, optional bool atBotOrigin) {
         if (!reached) {
           dir.z = 0;
           TVec res = node.Origin+dir.normalise2D*pi.maxdist;
-          subsector_t *dss = botmo.XLevel.PointInSubsector(res);
+          subsector_t *dss = botmo.XLevel.PointInSubsectorRender(res);
           if (dss == seg.partner.frontsub) reached = true;
         }
         if (reached) {
@@ -584,7 +584,7 @@ final void CheckAndDropNodeAt (subsector_t *ss, optional bool atBotOrigin) {
         if (!reached) {
           dir.z = 0;
           TVec res = otherNode.Origin+dir.normalise2D*pi.maxdist;
-          subsector_t *dss = botmo.XLevel.PointInSubsector(res);
+          subsector_t *dss = botmo.XLevel.PointInSubsectorRender(res);
           if (dss == ss) reached = true;
         }
         if (reached) {

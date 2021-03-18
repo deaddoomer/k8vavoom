@@ -244,7 +244,7 @@ final void refreshNovePassability (BotPathNode node) {
       if (dir.length2DSquared < 4*4) continue;
       cpos = (*seg->v1)+(dir.normalise2D)*3.5;
       if (IsGoodMapPosition(ref cpos)) {
-        auto dss = lev.PointInSubsector(cpos);
+        auto dss = lev.PointInSubsectorRender(cpos);
         if (dss == sub) {
           node.passable = true;
           node.Origin = cpos;
@@ -311,7 +311,7 @@ final void refreshNodeExit (BotPathNode node, int exitnum) {
   // if not reached, but the destination is in required subsector, consider this node reachable
   if (!reached) {
     TVec res = node.Origin+dir*pi.maxdist;
-    GameObject::subsector_t *dss = lev.PointInSubsector(res);
+    GameObject::subsector_t *dss = lev.PointInSubsectorRender(res);
     if (dss == tr.sub) reached = true;
   }
 
@@ -495,8 +495,8 @@ final bool BuildPath (TVec from, GameObject::subsector_t *fromsub, TVec dest, Ga
   if (!botmo || botmo.Health <= 0) return false; // dead bot cannot go anywhere
   VLevel lev = bot.player.MO.XLevel;
 
-  if (!fromsub) fromsub = lev.PointInSubsector(from);
-  if (!destsub) destsub = lev.PointInSubsector(dest);
+  if (!fromsub) fromsub = lev.PointInSubsectorRender(from);
+  if (!destsub) destsub = lev.PointInSubsectorRender(dest);
 
   // early exit: same subsector is always reachable
   if (fromsub == destsub) {
