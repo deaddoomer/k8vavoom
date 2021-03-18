@@ -62,20 +62,13 @@ void VRenderLevelShared::SetupFakeFloors (sector_t *sector) {
 //  VRenderLevelShared::SegMoved
 //
 //  called when polyobject moved
+//  all seg fields (incliding dir and such) must be already updated
 //
 //==========================================================================
 void VRenderLevelShared::SegMoved (seg_t *seg) {
   if (!seg->drawsegs) return; // drawsegs not created yet
   if (!seg->linedef) return;
   if (!seg->drawsegs->mid) return; // no midsurf
-
-  //k8: just in case
-  if (seg->length <= 0.0f) {
-    seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
-  } else {
-    seg->dir = ((*seg->v2)-(*seg->v1)).normalised2D();
-    if (!seg->dir.isValid() || seg->dir.isZero()) seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
-  }
 
   const side_t *sidedef = seg->sidedef;
 

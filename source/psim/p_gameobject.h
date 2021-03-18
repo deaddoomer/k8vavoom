@@ -957,10 +957,12 @@ public:
   seg_t **segs; // individual elements points inside the level's `Segs`
   vint32 numsegs; // number of segs for this polyobject
   line_t **lines; // individual elements points inside the level's `Lines`
-  vint32 numlines;
-  TVec startSpot;
+  vint32 numlines; // number of lines for this polyobject
+  TVec startSpot; // current offset for `originalPts`
   TVec *originalPts; // used as the base for the rotations; array
-  TVec *prevPts; // use to restore the old point values; array
+  vint32 originalPtsCount; // number of elements in each `*Pts` array
+  TVec **segPts; // all points we need to modify, to avoid looping over segs again and again
+  vint32 segPtsCount; // number of elements in each `*Pts` array
   polyobjpart_t *parts; // list of all polyoject parts
   polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   // note that polyobjects can't have sloped flats (yet)

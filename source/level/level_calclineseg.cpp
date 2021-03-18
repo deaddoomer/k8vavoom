@@ -31,6 +31,21 @@
 //  VLevel::CalcLine
 //
 //==========================================================================
+void VLevel::EnsurePolyPrevPts (int count) {
+  if (count < 1) count = 1; // just in case
+  count |= 0x7f+1;
+  if (polyPrevPtsAlloted < count) {
+    polyPrevPts = (TVec *)Z_Realloc(polyPrevPts, sizeof(polyPrevPts[0])*count);
+    polyPrevPtsAlloted = count;
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::CalcLine
+//
+//==========================================================================
 void VLevel::CalcLine (line_t *line) {
   // calc line's slopetype
   line->dir = (*line->v2)-(*line->v1);

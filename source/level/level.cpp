@@ -549,6 +549,10 @@ void VLevel::Destroy () {
   }
   BodyQueueTrans.Clear();
 
+  if (polyPrevPts) Z_Free(polyPrevPts);
+  polyPrevPts = nullptr;
+  polyPrevPtsAlloted = 0;
+
   GTextureManager.ResetMapTextures();
 
   // call parent class' `Destroy()` method

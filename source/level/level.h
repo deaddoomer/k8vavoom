@@ -478,6 +478,12 @@ class VLevel : public VGameObject {
   VCustomKeyInfo *UserLineIdxKeyInfo; // key: line_index+1
   VCustomKeyInfo *UserSideIdxKeyInfo; // key: side_index+1
 
+  TVec *polyPrevPts; // use to restore the old point values in rotation/movement; scratch array
+  vint32 polyPrevPtsAlloted;
+
+public:
+  void EnsurePolyPrevPts (int count);
+
 protected:
   // temporary working set for decal spreader
   struct DecalLineInfo {

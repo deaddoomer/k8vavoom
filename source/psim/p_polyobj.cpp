@@ -97,7 +97,7 @@ void polyobj_t::Free () {
   delete[] segs;
   delete[] lines;
   delete[] originalPts;
-  delete[] prevPts;
+  delete[] segPts;
   polyobjpart_t *part = parts;
   while (part) {
     polyobjpart_t *c = part;
@@ -257,31 +257,6 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
 
 //==========================================================================
 //
-//  cmpPobjSegs
-//
-//==========================================================================
-/*
-static int cmpPobjSegs (const void *aa, const void *bb, void *linedefBase) {
-  if (aa == bb) return 0;
-  const seg_t *sega = *(const seg_t **)aa;
-  const seg_t *segb = *(const seg_t **)bb;
-  const int seqA = sega->linedef->arg2;
-  const int seqB = segb->linedef->arg2;
-  if (seqA < seqB) return -1;
-  if (seqA > seqB) return 1;
-  // sort by linedef order
-  if (sega->linedef == segb->linedef) return 0;
-  const ptrdiff_t lnumA = (ptrdiff_t)(sega->linedef-((const line_t *)linedefBase));
-  const ptrdiff_t lnumB = (ptrdiff_t)(segb->linedef-((const line_t *)linedefBase));
-  if (lnumA < lnumB) return -1;
-  if (lnumA > lnumB) return 1;
-  return 0;
-}
-*/
-
-
-//==========================================================================
-//
 //  VLevel::SpawnPolyobj
 //
 //==========================================================================
@@ -311,7 +286,6 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
       delete[] Temp;
       Temp = nullptr;
     }
-    //memset((void *)(&PolyObjs[index]), 0, sizeof(polyobj_t));
     PolyObjs[index] = po;
   }
 
@@ -390,7 +364,6 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   po->lines = new line_t*[lcount+1];
   lmap.reset();
   lcount = 0;
-  //int newsegcount = 0;
   for (int c = 0; c < po->numsegs; ++c) {
     line_t *ln = po->segs[c]->linedef;
     vassert(ln);
@@ -462,6 +435,8 @@ void VLevel::AddPolyAnchorPoint (float x, float y, int tag) {
 //
 //  VLevel::InitPolyobjs
 //
+//  called from `LoadMap()` after spawning the world
+//
 //==========================================================================
 void VLevel::InitPolyobjs () {
   for (int i = 0; i < NumPolyAnchorPoints; ++i) {
@@ -485,25 +460,41 @@ void VLevel::InitPolyobjs () {
 //
 //==========================================================================
 void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag) {
-  polyobj_t *po = GetPolyobj(tag);
+  //polyobj_t *po = GetPolyobj(tag);
+  polyobj_t *po = nullptr;
+  for (int i = 0; i < NumPolyObjs; ++i) {
+    if (PolyObjs[i]->tag == tag) {
+      if (!PolyObjs[i]->originalPts) {
+        po = PolyObjs[i];
+        break;
+      } else {
+        if (!po) po = PolyObjs[i];
+      }
+    }
+  }
+
   if (!po) Host_Error("Unable to match polyobj tag: %d", tag); // didn't match the tag with a polyobj tag
   if (po->segs == nullptr) Host_Error("Anchor point located without a StartSpot point: %d", tag);
   vassert(po->numsegs);
 
-  po->originalPts = new TVec[po->numsegs];
-  po->prevPts = new TVec[po->numsegs];
-  float deltaX = originX-po->startSpot.x;
-  float deltaY = originY-po->startSpot.y;
+  if (po->originalPts) {
+    GCon->Logf(NAME_Error, "polyobject with tag #%d is translated to more than one starting point!", po->tag);
+    return; // oopsie
+  }
+
+  const int maxpts = po->numsegs+po->numlines;
+  po->originalPts = new TVec[maxpts];
+  po->segPts = new TVec*[maxpts];
+
+  const float deltaX = originX-po->startSpot.x;
+  const float deltaY = originY-po->startSpot.y;
 
   seg_t **tempSeg = po->segs;
-  TVec *tempPt = po->originalPts;
+  TVec *origPt = po->originalPts;
   TVec avg(0, 0, 0); // used to find a polyobj's center, and hence the subsector
+  int segptnum = 0;
 
-  float pobbox[4];
-  pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
-  pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
-
-  for (int i = 0; i < po->numsegs; ++i, ++tempSeg, ++tempPt) {
+  for (int i = 0; i < po->numsegs; ++i, ++tempSeg) {
     seg_t **veryTempSeg = po->segs;
     for (; veryTempSeg != tempSeg; ++veryTempSeg) {
       if ((*veryTempSeg)->v1 == (*tempSeg)->v1) break;
@@ -516,19 +507,40 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     avg.x += (*tempSeg)->v1->x;
     avg.y += (*tempSeg)->v1->y;
     // the original Pts are based off the startSpot Pt, and are unique to each seg, not each linedef
-    *tempPt = *(*tempSeg)->v1-po->startSpot;
-    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*tempSeg)->v1->x);
-    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*tempSeg)->v1->y);
-    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*tempSeg)->v1->x);
-    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*tempSeg)->v1->y);
+    *origPt++ = *(*tempSeg)->v1-po->startSpot;
+    po->segPts[segptnum++] = (*tempSeg)->v1;
   }
-  avg.x /= po->numsegs;
-  avg.y /= po->numsegs;
+  vassert(segptnum <= po->numsegs);
+  avg.x /= segptnum;
+  avg.y /= segptnum;
 
-  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
+  // now add linedef vertices (if they are missing)
+  for (int i = 0; i < po->numlines; ++i) {
+    line_t *ln = po->lines[i];
+    for (int f = 0; f < 2; ++f) {
+      TVec *v = (f ? ln->v2 : ln->v2);
+      bool found = false;
+      for (int c = 0; c < segptnum; ++c) {
+        if (po->segPts[c] == v) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        // the original Pts are based off the startSpot Pt
+        v->x -= deltaX;
+        v->y -= deltaY;
+        *origPt++ = (*v)-po->startSpot;
+        po->segPts[segptnum++] = v;
+      }
+    }
+  }
+  vassert(segptnum <= po->numsegs+po->numlines);
+  po->originalPtsCount = segptnum;
+  po->segPtsCount = segptnum;
 
   // set initial floor and ceiling
-  if (po->pofloor.TexZ < -90000.0f) {
+  {
     // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
     // flip them, because polyobject flats are like 3d floor flats
     const subsector_t *sub = PointInSubsector(avg); // bugfixed algo
@@ -607,9 +619,19 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     reg->floorplane.set(&po->pofloor, false);
     reg->ceilplane.set(&po->poceiling, false);
     */
-  } else {
-    GCon->Logf(NAME_Error, "double-spawned polyobject with tag %d (DON'T DO THIS!)", po->tag);
   }
+
+  float pobbox[4];
+  pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
+  pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
+  TVec * const *pp = po->segPts;
+  for (int f = segptnum; f--; ++pp) {
+    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*pp)->x);
+    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*pp)->y);
+    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*pp)->x);
+    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*pp)->y);
+  }
+  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
   UpdatePolySegs(po);
   PutPObjInSubsectors(po);
@@ -622,21 +644,14 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 //
 //==========================================================================
 void VLevel::UpdatePolySegs (polyobj_t *po) {
-  //IncrementValidCount();
   line_t **lineList = po->lines;
   for (int count = po->numlines; count; --count, ++lineList) {
+    // recalc lines's slope type, bounding box, normal and dist
     CalcLine(*lineList);
   }
   // recalc lines
   seg_t **segList = po->segs;
   for (int count = po->numsegs; count; --count, ++segList) {
-    /*
-    if ((*segList)->linedef->validcount != validcount) {
-      // recalc lines's slope type, bounding box, normal and dist
-      CalcLine((*segList)->linedef);
-      (*segList)->linedef->validcount = validcount;
-    }
-    */
     // recalc seg's normal and dist
     CalcSeg(*segList);
     if (Renderer) Renderer->SegMoved(*segList);
@@ -678,24 +693,16 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
   */
 
   // calculate the polyobj bbox
-  /*
-  float rightX = (*tempSeg)->v1->x;
-  float leftX = (*tempSeg)->v1->x;
-  float topY = (*tempSeg)->v1->y;
-  float bottomY = (*tempSeg)->v1->y;
-  */
   float pobbox[4];
   pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
   pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
-  seg_t * const* tempSeg = po->segs;
-  for (int i = 0; i < po->numsegs; ++i, ++tempSeg) {
-    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*tempSeg)->v1->x);
-    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*tempSeg)->v1->y);
-    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*tempSeg)->v1->x);
-    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*tempSeg)->v1->y);
+  TVec * const *pp = po->segPts;
+  for (int f = po->segPtsCount; f--; ++pp) {
+    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*pp)->x);
+    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*pp)->y);
+    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*pp)->x);
+    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*pp)->y);
   }
-
-  // just in case
   memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
   PutPObjInSubsectors(po);
@@ -794,58 +801,31 @@ int VLevel::GetPolyobjMirror (int poly) {
 //
 //==========================================================================
 bool VLevel::MovePolyobj (int num, float x, float y, bool forced) {
-  int count;
-  seg_t **segList;
-  seg_t **veryTempSeg;
-  polyobj_t *po;
-  TVec *prevPts;
-  bool blocked;
-
-  po = GetPolyobj(num);
+  polyobj_t *po = GetPolyobj(num);
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
 
   if (IsForServer()) UnLinkPolyobj(po);
 
-  segList = po->segs;
-  prevPts = po->prevPts;
-  blocked = false;
+  EnsurePolyPrevPts(po->segPtsCount);
 
-  for (count = po->numsegs; count; --count, ++segList, ++prevPts) {
-    for (veryTempSeg = po->segs; veryTempSeg != segList; ++veryTempSeg) {
-      if ((*veryTempSeg)->v1 == (*segList)->v1) break;
-    }
-    if (veryTempSeg == segList) {
-      (*segList)->v1->x += x;
-      (*segList)->v1->y += y;
-    }
-    if (IsForServer()) {
-      // previous points are unique for each seg
-      (*prevPts).x += x;
-      (*prevPts).y += y;
-    }
+  const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
+
+  const TVec *origPts = po->originalPts;
+  TVec *prevPts = polyPrevPts;
+  TVec **vptr = po->segPts;
+  for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
+    *prevPts = **vptr;
+    **vptr = (*origPts)+delta;
   }
-
   UpdatePolySegs(po);
 
-  if (!forced && IsForServer()) blocked = PolyCheckMobjBlocked(po);
+  const bool blocked = (!forced && IsForServer() ? PolyCheckMobjBlocked(po) : false);
 
   if (blocked) {
-    count = po->numsegs;
-    segList = po->segs;
-    prevPts = po->prevPts;
-    while (count--) {
-      for (veryTempSeg = po->segs; veryTempSeg != segList; ++veryTempSeg) {
-        if ((*veryTempSeg)->v1 == (*segList)->v1) break;
-      }
-      if (veryTempSeg == segList) {
-        (*segList)->v1->x -= x;
-        (*segList)->v1->y -= y;
-      }
-      (*prevPts).x -= x;
-      (*prevPts).y -= y;
-      ++segList;
-      ++prevPts;
-    }
+    // restore points
+    prevPts = polyPrevPts;
+    vptr = po->segPts;
+    for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
     LinkPolyobj(po); // it is always for server
     return false;
@@ -870,50 +850,46 @@ bool VLevel::RotatePolyobj (int num, float angle) {
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
 
   // calculate the angle
-  float an = po->angle+angle;
+  const float an = AngleMod(po->angle+angle);
   float msinAn, mcosAn;
   msincos(an, &msinAn, &mcosAn);
 
   if (IsForServer()) UnLinkPolyobj(po);
 
-  seg_t **segList = po->segs;
-  TVec *originalPts = po->originalPts;
-  TVec *prevPts = po->prevPts;
+  EnsurePolyPrevPts(po->segPtsCount);
 
-  for (int count = po->numsegs; count; --count, ++segList, ++originalPts, ++prevPts) {
-    if (IsForServer()) {
-      // save the previous points
-      prevPts->x = (*segList)->v1->x;
-      prevPts->y = (*segList)->v1->y;
-    }
-
+  const float ssx = po->startSpot.x;
+  const float ssy = po->startSpot.y;
+  const TVec *origPts = po->originalPts;
+  TVec *prevPts = polyPrevPts;
+  TVec **vptr = po->segPts;
+  for (int f = po->segPtsCount; f--; ++vptr, ++prevPts, ++origPts) {
+    // save the previous point
+    *prevPts = **vptr;
     // get the original X and Y values
-    float tr_x = originalPts->x;
-    float tr_y = originalPts->y;
-
+    const float tr_x = origPts->x;
+    const float tr_y = origPts->y;
     // calculate the new X and Y values
-    (*segList)->v1->x = (tr_x*mcosAn-tr_y*msinAn)+po->startSpot.x;
-    (*segList)->v1->y = (tr_y*mcosAn+tr_x*msinAn)+po->startSpot.y;
+    (*vptr)->x = (tr_x*mcosAn-tr_y*msinAn)+ssx;
+    (*vptr)->y = (tr_y*mcosAn+tr_x*msinAn)+ssy;
   }
   UpdatePolySegs(po);
 
-  bool blocked = false;
-  if (IsForServer()) blocked = PolyCheckMobjBlocked(po);
+  const bool blocked = (IsForServer() ? PolyCheckMobjBlocked(po) : false);
 
   // if we are blocked then restore the previous points
   if (blocked) {
-    segList = po->segs;
-    prevPts = po->prevPts;
-    for (int count = po->numsegs; count; --count, ++segList, ++prevPts) {
-      (*segList)->v1->x = prevPts->x;
-      (*segList)->v1->y = prevPts->y;
-    }
+    // restore points
+    prevPts = polyPrevPts;
+    vptr = po->segPts;
+    for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
     LinkPolyobj(po); // it is always for server
     return false;
   }
 
-  po->angle = AngleMod(po->angle+angle);
+  //po->angle = AngleMod(po->angle+angle);
+  po->angle = an;
   if (IsForServer()) LinkPolyobj(po);
   return true;
 }
@@ -992,12 +968,6 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
   if (!po || po->numlines == 0) return false;
   bool blocked = false;
-  /*
-  seg_t **segList = po->segs;
-  for (int count = po->numsegs; count; --count, ++segList) {
-    if (PolyCheckMobjBlocking((*segList)->linedef, po)) blocked = true; //k8: break here?
-  }
-  */
   line_t **lineList = po->lines;
   for (int count = po->numlines; count; --count, ++lineList) {
     if (PolyCheckMobjLineBlocking(*lineList, po)) blocked = true; //k8: break here?

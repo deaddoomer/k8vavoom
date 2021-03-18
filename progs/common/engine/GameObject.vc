@@ -1143,8 +1143,12 @@ struct polyobj_t {
   seg_t*[] segs; // individual elements points inside the level's `Segs`
   line_t*[] lines; // individual elements points inside the level's `Lines`
   TVec startSpot;
-  TVec *originalPts; // used as the base for the rotations
-  TVec *prevPts; // use to restore the old point values
+  TVec[] originalPts; // used as the base for the rotations
+  //TVec *originalPts; // used as the base for the rotations
+  //int origPtsCount;
+  TVec*[] segPtr;
+  //TVec **segPts; // all points we need to modify, to avoid looping over segs again and again
+  //int segPtsCount;
   readonly native polyobjpart_t *parts; // list of all polyoject parts
   readonly native polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   // note that polyobjects can't have sloped flats (yet)
