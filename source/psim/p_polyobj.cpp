@@ -390,6 +390,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   po->lines = new line_t*[lcount+1];
   lmap.reset();
   lcount = 0;
+  //int newsegcount = 0;
   for (int c = 0; c < po->numsegs; ++c) {
     line_t *ln = po->segs[c]->linedef;
     vassert(ln);

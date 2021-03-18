@@ -148,8 +148,6 @@ void VLevel::PostLoadSubsectors () {
       ss->bbox2d[BOX2D_RIGHT] = max2(ss->bbox2d[BOX2D_RIGHT], max2(seg.v1->x, seg.v2->x));
       ss->bbox2d[BOX2D_TOP] = max2(ss->bbox2d[BOX2D_TOP], max2(seg.v1->y, seg.v2->y));
     }
-
-    ss->firstseg = &Segs[ss->firstline];
   }
 
   for (auto &&it : allSegsIdx()) {

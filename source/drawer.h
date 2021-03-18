@@ -684,7 +684,7 @@ public:
   virtual void BeginShadowVolumesPass () = 0;
   virtual void BeginLightShadowVolumes (const TVec &LightPos, const float Radius, bool useZPass, bool hasScissor, const int scoords[4], const refdef_t *rd) = 0;
   virtual void EndLightShadowVolumes () = 0;
-  virtual void RenderSurfaceShadowVolume (const surface_t *surf, const TVec &LightPos, float Radius) = 0;
+  virtual void RenderSurfaceShadowVolume (VLevel *Level, const surface_t *surf, const TVec &LightPos, float Radius) = 0;
 
   virtual void BeginLightShadowMaps (const TVec &LightPos, const float Radius) = 0;
   virtual void EndLightShadowMaps () = 0;

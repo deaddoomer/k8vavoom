@@ -137,7 +137,7 @@ static bool CanSurfaceSegCastShadow (const surface_t *surf, const TVec LightPos,
 //  CanSurfaceFlatCastShadow
 //
 //==========================================================================
-static bool CanSurfaceFlatCastShadow (const surface_t *surf, const TVec LightPos, float Radius) {
+static bool CanSurfaceFlatCastShadow (VLevel *Level, const surface_t *surf, const TVec LightPos, float Radius) {
   if (!gl_smart_reject_svol_flats) return true;
 
   // flat surfaces in subsectors whose neighbours doesn't change height can't cast any shadow
@@ -161,7 +161,7 @@ static bool CanSurfaceFlatCastShadow (const surface_t *surf, const TVec LightPos
     }
   }
 
-  const seg_t *seg = sub->firstseg;
+  const seg_t *seg = &Level->Segs[sub->firstline];
   for (int cnt = sub->numlines; cnt--; ++seg) {
     const seg_t *backseg = seg->partner;
     if (!backseg) continue;
@@ -219,11 +219,11 @@ static bool CanSurfaceFlatCastShadow (const surface_t *surf, const TVec LightPos
 //  VOpenGLDrawer::AdvRenderCanSurfaceCastShadow
 //
 //==========================================================================
-bool VOpenGLDrawer::AdvRenderCanSurfaceCastShadow (const surface_t *surf, const TVec &LightPos, float Radius) {
+bool VOpenGLDrawer::AdvRenderCanSurfaceCastShadow (VLevel *Level, const surface_t *surf, const TVec &LightPos, float Radius) {
   if (surf->seg) {
     return CanSurfaceSegCastShadow(surf, LightPos, Radius);
   } else if (surf->subsector) {
-    return CanSurfaceFlatCastShadow(surf, LightPos, Radius);
+    return CanSurfaceFlatCastShadow(Level, surf, LightPos, Radius);
   }
   // just in case
   return true;

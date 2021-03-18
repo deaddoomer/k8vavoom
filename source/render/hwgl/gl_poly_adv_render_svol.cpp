@@ -307,12 +307,12 @@ void VOpenGLDrawer::EndLightShadowVolumes () {
 //  FIXME: gozzo 3d-shit extra should be rendered in both directions?
 //
 //==========================================================================
-void VOpenGLDrawer::RenderSurfaceShadowVolume (const surface_t *surf, const TVec &LightPos, float Radius) {
+void VOpenGLDrawer::RenderSurfaceShadowVolume (VLevel *Level, const surface_t *surf, const TVec &LightPos, float Radius) {
   if (gl_dbg_wireframe) return;
   //if (surf->count < 3) return; // just in case
   //if (spotLight && !isSurfaceInSpotlight(surf)) return;
 
-  if (gl_smart_reject_shadows && !AdvRenderCanSurfaceCastShadow(surf, LightPos, Radius)) return;
+  if (gl_smart_reject_shadows && !AdvRenderCanSurfaceCastShadow(Level, surf, LightPos, Radius)) return;
 
   const unsigned vcount = (unsigned)surf->count;
   const SurfVertex *sverts = surf->verts;
@@ -326,7 +326,7 @@ void VOpenGLDrawer::RenderSurfaceShadowVolume (const surface_t *surf, const TVec
   NoteStencilBufferDirty();
 
   if (usingZPass || gl_dbg_use_zpass) {
-    RenderSurfaceShadowVolumeZPassIntr(surf, LightPos, Radius);
+    RenderSurfaceShadowVolumeZPassIntr(Level, surf, LightPos, Radius);
   } else {
     // OpenGL renders vertices with zero `w` as infinitely far -- this is exactly what we want
     // just do it in vertex shader

@@ -594,7 +594,7 @@ void VRenderLevelShadowVolume::CollectAdvLightBSPNode (int bspnum, const float *
 void VRenderLevelShadowVolume::RenderShadowSurfaceList () {
   // non-solid surfaces cannot cast shadows with shadow volumes
   for (auto &&surf : shadowSurfacesSolid) {
-    Drawer->RenderSurfaceShadowVolume(surf, CurrLightPos, CurrLightRadius);
+    Drawer->RenderSurfaceShadowVolume(Level, surf, CurrLightPos, CurrLightRadius);
   }
 }
 

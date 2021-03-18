@@ -112,7 +112,7 @@ static VVA_OKUNUSED void R_ProjectPointsToPlane (TVec *dest, const TVec *src, un
 //  all necessary precondition checks are done in the caller
 //
 //==========================================================================
-void VOpenGLDrawer::RenderSurfaceShadowVolumeZPassIntr (const surface_t *surf, const TVec &LightPos, float Radius) {
+void VOpenGLDrawer::RenderSurfaceShadowVolumeZPassIntr (VLevel *Level, const surface_t *surf, const TVec &LightPos, float Radius) {
   const unsigned vcount = (unsigned)surf->count;
   const SurfVertex *sverts = surf->verts;
   const SurfVertex *v = sverts;

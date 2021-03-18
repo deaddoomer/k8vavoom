@@ -418,7 +418,6 @@ bool VLevel::LoadCachedData (VStream *strm) {
   for (int f = 0; f < NumSubsectors; ++f) {
     subsector_t *ss = &Subsectors[f];
     if (ss->firstline < 0 || ss->firstline >= NumSegs) { GCon->Log("invalid subsector data (read error)"); return false; }
-    ss->firstseg = &Segs[ss->firstline];
   }
 
   return true;
