@@ -30,6 +30,9 @@
 #define PO_LINE_EXPLICIT  (5)
 
 
+static VCvarB dbg_pobj_disable("dbg_pobj_disable", false, "Disable most polyobject operations?", CVAR_PreInit);
+
+
 //==========================================================================
 //
 //  pobjAddSubsector
@@ -420,6 +423,52 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
     }
   }
   po->numlines = lcount;
+
+  // collect 2-sided polyobject subsectors
+  // line backside should point to polyobject sector
+  sector_t *posec = nullptr;
+  for (int f = 0; f < po->numlines; ++f) {
+    const line_t *ld = po->lines[f];
+    if (!(ld->flags&ML_TWOSIDED)) return; // invalid polyobject
+    if (!ld->backsector) return;
+    if (posec && posec != ld->backsector) return;
+    posec = ld->backsector;
+  }
+  if (!posec) return;
+
+  TArray<seg_t *> moresegs;
+
+  GCon->Logf(NAME_Debug, "pobj #%d (%d) sector #%d", po->tag, tag, (int)(ptrdiff_t)(posec-&Sectors[0]));
+  for (const subsector_t *sub = posec->subsectors; sub; sub = sub->seclink) {
+    vassert(sub->sector == posec);
+    GCon->Logf(NAME_Debug, "  subsector #%d", (int)(ptrdiff_t)(sub-&Subsectors[0]));
+    // collect minisegs
+    for (int f = 0; f < sub->numlines; ++f) {
+      seg_t *ss = &Segs[sub->firstline+f];
+      bool found = false;
+      for (int c = 0; c < po->numsegs; ++c) if (po->segs[c] == ss) { found = true; break; }
+      if (!found) for (int c = 0; c < moresegs.length(); ++c) if (moresegs[c] == ss) { found = true; break; }
+      if (!found) {
+        GCon->Logf(NAME_Debug, "    seg #%d is not collected (%d)", (int)(ptrdiff_t)(ss-&Segs[0]), (ss->linedef ? (int)(ptrdiff_t)(ss->linedef-&Lines[0]) : -1));
+        moresegs.append(ss);
+      }
+    }
+  }
+
+  po->posector = posec;
+  if (moresegs.length()) {
+    // apppend minisegs
+    seg_t **ns = new seg_t*[po->numsegs+moresegs.length()];
+    if (po->numsegs) memcpy((void *)ns, po->segs, sizeof(po->segs[0])*po->numsegs);
+    for (int f = 0; f < moresegs.length(); ++f) {
+      seg_t *ss = moresegs[f];
+      ss->pobj = po;
+      ns[po->numsegs+f] = ss;
+    }
+    po->numsegs += moresegs.length();
+    delete[] po->segs;
+    po->segs = ns;
+  }
 }
 
 

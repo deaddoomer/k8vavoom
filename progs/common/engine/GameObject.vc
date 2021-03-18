@@ -1158,6 +1158,7 @@ struct polyobj_t {
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
   subregion_t *region; // used to render floor and ceiling
+  sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   int tag; // reference tag assigned in HereticEd
   int[4] bmbbox; //WARNING! this is in blockmap coords, not unit coords

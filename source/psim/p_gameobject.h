@@ -1033,6 +1033,7 @@ public:
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
   subregion_t *region; // used to render floor and ceiling, can be `nullptr`
+  sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 bmbbox[4]; //WARNING! this is in blockmap coords, not unit coords

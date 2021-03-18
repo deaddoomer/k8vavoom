@@ -1365,6 +1365,7 @@ static void AM_UpdateSeen () {
 //
 //==========================================================================
 static void AM_drawWalls () {
+  const bool debugPObj = (am_pobj_debug.asInt()&0x01);
   TArray<polyobj_t *> pobjs;
 
   line_t *line = &GClLevel->Lines[0];
@@ -1386,7 +1387,7 @@ static void AM_drawWalls () {
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
 
     // special rendering for polyobject
-    if ((am_pobj_debug.asInt()&0x01) && line->pobj()) {
+    if (debugPObj && line->pobj()) {
       bool found = false;
       for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line->pobj()) { found = true; break; }
       if (!found) pobjs.append(line->pobj());
@@ -1555,13 +1556,15 @@ static void AM_DrawBox (float x0, float y0, float x1, float y1, vuint32 color) {
 //
 //==========================================================================
 static void AM_DrawMinisegs () {
+  const bool drawNormal = (am_cheating && am_show_minisegs);
+  const bool drawPObj = (am_pobj_debug.asInt()&0x02);
   const seg_t *seg = &GClLevel->Segs[0];
   for (unsigned i = GClLevel->NumSegs; i--; ++seg) {
     if (seg->linedef) continue; // not a miniseg
-    if (seg->frontsub->isOriginalPObj()) {
-      if (am_pobj_debug.asInt()&0x02) AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, 0xffa000a0);
+    if (seg->pobj) {
+      if (drawPObj) AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, 0xffa000a0);
     } else {
-      AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, MinisegColor);
+      if (drawNormal) AM_DrawSimpleLine(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y, MinisegColor);
     }
   }
 }
@@ -2141,7 +2144,7 @@ void AM_Drawer () {
   if (am_draw_keys || am_show_keys_cheat) AM_drawKeys();
   if (am_cheating && am_show_static_lights) AM_drawStaticLights();
   if (am_cheating && am_show_dynamic_lights) AM_drawDynamicLights();
-  if (am_cheating && am_show_minisegs) AM_DrawMinisegs();
+  if ((am_cheating && am_show_minisegs) || (am_pobj_debug.asInt()&0x02)) AM_DrawMinisegs();
   if (am_cheating && am_show_rendered_nodes) AM_DrawRenderedNodes();
   if (am_cheating && am_show_rendered_subs) AM_DrawRenderedSubs();
   Drawer->EndAutomap();
