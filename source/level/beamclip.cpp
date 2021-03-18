@@ -274,10 +274,10 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   const TVec vv2 = *seg->v2;
 
   // polyobject height
-  float pocz1 = pobj->poceiling.GetPointZ(vv1);
-  float pocz2 = pobj->poceiling.GetPointZ(vv2);
-  float pofz1 = pobj->pofloor.GetPointZ(vv1);
-  float pofz2 = pobj->pofloor.GetPointZ(vv2);
+  float pocz1 = pobj->poceiling.GetPointZClamped(vv1);
+  float pocz2 = pobj->poceiling.GetPointZClamped(vv2);
+  float pofz1 = pobj->pofloor.GetPointZClamped(vv1);
+  float pofz2 = pobj->pofloor.GetPointZClamped(vv2);
 
   if (pofz1 >= pocz1 || pofz2 >= pocz2) return false; // something strange
 

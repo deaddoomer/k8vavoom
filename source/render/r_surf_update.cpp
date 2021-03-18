@@ -240,18 +240,6 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       polyobj_t *pobj = it.pobj();
       if (pobj->pofloor.TexZ <= -90000.0f) continue; // untranslated
       seg_t **polySeg = pobj->segs;
-      /*
-      TSecPlaneRef po_floor = region->floorplane;
-      TSecPlaneRef po_ceiling = region->ceilplane;
-      sector_t *posec = pobj->originalSector;
-      if (posec) {
-        po_floor.set(&posec->floor, false);
-        po_ceiling.set(&posec->ceiling, false);
-      } else {
-        po_floor = region->floorplane;
-        po_ceiling = region->ceilplane;
-      }
-      */
       TSecPlaneRef po_floor, po_ceiling;
       po_floor.set(&pobj->pofloor, false);
       po_ceiling.set(&pobj->poceiling, false);

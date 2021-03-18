@@ -235,26 +235,19 @@ bool VLevel::CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec line
   for (unsigned f = 0; f < 2; ++f) {
     const sec_plane_t *spl = (f ? &po->poceiling : &po->pofloor);
     if (!spl->isSlope()) {
-      sec_plane_t pl = *spl;
-      //GCon->Logf(NAME_Debug, "000: f=%u; minz=%g; maxz=%g; pl.normal.z=%g; dist=%g", f, po->pofloor.minz, po->poceiling.maxz, pl.normal.z, pl.dist);
-      if (pl.normal.z > 0.0f) {
-        // this is a ceiling
-        pl.dist = min2(pl.dist, po->poceiling.maxz);
-      } else {
-        // this is a floor
-        pl.dist = -max2(-pl.dist, po->pofloor.minz);
-      }
-      //GCon->Logf(NAME_Debug, "001: f=%u; minz=%g; maxz=%g; pl.normal.z=%g; dist=%g", f, po->pofloor.minz, po->poceiling.maxz, pl.normal.z, pl.dist);
-      TSecPlaneRef pp(&pl, false);
+      TSecPlaneRef pp((sec_plane_t *)spl, false); // sorry
+      //GCon->Logf(NAME_Debug, "pobj #%d; f=%u; d1=%g; d2=%g", po->tag, f, pp.PointDistance(linestart), pp.PointDistance(lineend));
       if (!CheckPlanePass(pp, linestart, lineend, chp, isSky)) {
         const float dist = (chp-linestart).lengthSquared();
+        //GCon->Logf(NAME_Debug, "pobj #%d; f=%u;   HIT! dist=%g; bestdist=%g; didHit=%d", po->tag, f, dist, bestdist, (int)didHit);
         if (!didHit || dist < bestdist) {
           didHit = true;
+          bestdist = dist;
           // hit floor or ceiling
           if (outHitPoint) *outHitPoint = chp;
-          if (outHitNormal) *outHitNormal = pl.normal;
+          if (outHitNormal) *outHitNormal = spl->normal;
           if (outIsSky) *outIsSky = false;
-          if (outHitPlane) *outHitPlane = pl;
+          if (outHitPlane) *outHitPlane = *spl;
         }
       }
     }

@@ -217,6 +217,8 @@ static VCvarB am_show_dynamic_lights("am_show_dynamic_lights", false, "Show stat
 static VCvarB am_show_rendered_nodes("am_show_rendered_nodes", false, "Show rendered BSP nodes on automap (cheating should be turned on).", 0);
 static VCvarB am_show_rendered_subs("am_show_rendered_subs", false, "Show rendered subsectors on automap (cheating should be turned on).", 0);
 
+static VCvarI am_pobj_debug("am_pobj_debug", "0", "Oops! Automap cheats!", CVAR_Cheat);
+
 static VCvarB am_render_thing_sprites("am_render_thing_sprites", false, "Render sprites instead of triangles for automap things?", CVAR_Archive);
 
 static VCvarF am_overlay_alpha("am_overlay_alpha", "0.4", "Automap overlay alpha", CVAR_Archive);
@@ -1382,7 +1384,7 @@ static void AM_drawWalls () {
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
 
     // special rendering for polyobject
-    if (am_cheating && line->pobj()) {
+    if (am_pobj_debug && line->pobj()) {
       const vuint32 aclr = PObjActiveColor;
       const vuint32 iclr = PObjInactiveColor;
       const polyobj_t *pobj = line->pobj();

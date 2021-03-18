@@ -550,13 +550,32 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   if (po->pofloor.TexZ < -90000.0f) {
     // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
     // flip them, because polyobject flats are like 3d floor flats
-    subsector_t *sub = PointInSubsector(avg); // bugfixed algo
+    const subsector_t *sub = PointInSubsector(avg); // bugfixed algo
+
+    // build floor
     po->pofloor = sub->sector->floor;
     //po->pofloor.pic = 0;
-    if (po->pofloor.isFloor()) po->pofloor.flipInPlace();
+    //if (po->pofloor.isFloor()) po->pofloor.flipInPlace();
+    //const float fdist = -po->pofloor.PointDistance(TVec(avg.x, avg.y, 0.0f));
+    const float fdist = po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f));
+    //GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, fdist, po->pofloor.minz, po->pofloor.maxz);
+    // floor normal points down
+    po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
+    po->pofloor.dist = -fdist;
+    //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+    po->pofloor.minz = po->pofloor.maxz = fdist;
+
+    // build ceiling
     po->poceiling = sub->sector->ceiling;
     //po->poceiling.pic = 0;
-    if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+    //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+    const float cdist = po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f));
+    //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
+    // ceiling normal points up
+    po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
+    po->poceiling.dist = cdist;
+    //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+    po->poceiling.minz = po->poceiling.maxz = cdist;
 
     // fix polyobject height
     //FIXME: polyobject segs should not be minisegs!
@@ -585,9 +604,15 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
         } else {
           z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
         }
+        // and fix floor and ceiling planes
         po->pofloor.minz = po->pofloor.maxz = z_org-texh;
+        po->pofloor.dist = -po->pofloor.maxz;
         po->poceiling.minz = po->poceiling.maxz = z_org;
+        po->poceiling.dist = po->poceiling.maxz;
       }
+
+      //GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+      //GCon->Logf(NAME_Debug, "002: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
     }
 
     //FIXME: setup region (no need to do it yet)

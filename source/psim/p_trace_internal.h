@@ -76,19 +76,4 @@ struct PlaneHitInfo {
     TSecPlaneRef pp(&plane, flip);
     update(pp);
   }
-
-  // this requires non-slope, and will clamp to minz/maxz
-  inline void updatePObj (sec_plane_t &plane, const float minz, const float maxz) noexcept __attribute__((always_inline)) {
-    if (plane.isSlope() || minz >= maxz) return;
-    sec_plane_t pl = plane;
-    if (pl.normal.z > 0.0f) {
-      // this is a ceiling
-      pl.dist = min2(pl.dist, maxz);
-    } else {
-      // this is a floor
-      pl.dist = -min2(-pl.dist, minz);
-    }
-    TSecPlaneRef pp(&pl, false);
-    update(pp);
-  }
 };
