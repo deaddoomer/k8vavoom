@@ -749,6 +749,25 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
     sec->floor.dist = po->pofloor.dist;
     sec->ceiling.normal = po->poceiling.normal;
     sec->ceiling.dist = po->poceiling.dist;
+    // update subsector bounding boxes
+    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+      if (sub->numlines < 1) continue;
+      sub->bbox2d[BOX2D_MINX] = sub->bbox2d[BOX2D_MINY] = +FLT_MAX;
+      sub->bbox2d[BOX2D_MAXX] = sub->bbox2d[BOX2D_MAXY] = -FLT_MAX;
+      const seg_t *seg = &Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++seg) {
+        // v1
+        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v1->x);
+        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v1->y);
+        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v1->x);
+        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v1->y);
+        // v2
+        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v2->x);
+        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v2->y);
+        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v2->x);
+        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v2->y);
+      }
+    }
   }
 }
 

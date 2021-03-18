@@ -151,6 +151,44 @@ bool VBlockLinesIterator::GetNext () {
 }
 
 
+
+//==========================================================================
+//
+//  VBlockPObjIterator::VBlockPObjIterator
+//
+//==========================================================================
+VBlockPObjIterator::VBlockPObjIterator (VLevel *ALevel, int x, int y, polyobj_t **APolyPtr)
+  : Level(ALevel)
+  , PolyPtr(APolyPtr)
+  , PolyLink(nullptr)
+{
+  if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
+
+  const int offset = y*Level->BlockMapWidth+x;
+  PolyLink = Level->PolyBlockMap[offset];
+}
+
+
+//==========================================================================
+//
+//  VBlockPObjIterator::GetNext
+//
+//==========================================================================
+bool VBlockPObjIterator::GetNext () {
+  while (PolyLink) {
+    polyobj_t *po = PolyLink->polyobj;
+    PolyLink = PolyLink->next;
+    if (po && po->validcount != validcount) {
+      po->validcount = validcount;
+      *PolyPtr = po;
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
 //==========================================================================
 //
 //  VRadiusThingsIterator::VRadiusThingsIterator

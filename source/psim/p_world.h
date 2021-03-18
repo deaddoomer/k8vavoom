@@ -38,8 +38,7 @@
 //  VBlockLinesIterator
 //
 //  The validcount flags are used to avoid checking lines that are marked in
-//  multiple mapblocks, so increment validcount before the first call to
-//  SV_BlockLinesIterator, then make one or more calls to it.
+//  multiple mapblocks, so increment validcount before creating this object.
 //
 //==========================================================================
 class VBlockLinesIterator {
@@ -57,7 +56,27 @@ private:
   vint32 *List;
 
 public:
-  VBlockLinesIterator (VLevel *Level, int x, int y, line_t **, unsigned pobjMode=POBJ_ALL);
+  VBlockLinesIterator (VLevel *Level, int x, int y, line_t **ALinePtr, unsigned pobjMode=POBJ_ALL);
+  bool GetNext ();
+};
+
+
+//==========================================================================
+//
+//  VBlockPObjIterator
+//
+//  The validcount flags are used to avoid checking pobjs that are marked in
+//  multiple mapblocks, so increment validcount before creating this object.
+//
+//==========================================================================
+class VBlockPObjIterator {
+private:
+  VLevel *Level;
+  polyobj_t **PolyPtr;
+  polyblock_t *PolyLink;
+
+public:
+  VBlockPObjIterator (VLevel *Level, int x, int y, polyobj_t **APolyPtr);
   bool GetNext ();
 };
 

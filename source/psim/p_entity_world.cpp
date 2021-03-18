@@ -685,6 +685,39 @@ bool VEntity::CheckPosition (TVec Pos) {
       }
     }
 
+    bool inpobj = false;
+    // check if we're inside a polyobject
+    if (XLevel->NumPolyObjs) {
+      // need new validcount
+      XLevel->IncrementValidCount();
+      const float z1 = cptrace.Pos.z+max2(0.0f, Height);
+      for (int bx = xl; bx <= xh; ++bx) {
+        for (int by = yl; by <= yh; ++by) {
+          polyobj_t *po;
+          for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
+            if (!po->posector) continue;
+            if (po->pofloor.minz >= po->poceiling.maxz) continue;
+            if (po->pofloor.minz < po->poceiling.maxz && (z1 <= po->pofloor.minz || cptrace.Pos.z >= po->poceiling.maxz)) {
+              // outside of polyobject
+              continue;
+            }
+            if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
+            // inside?
+            if (!inpobj && z1 > po->pofloor.minz && cptrace.Pos.z < po->poceiling.maxz) inpobj = true;
+            // hit pobj
+            if (cptrace.Pos.z < (po->poceiling.maxz+po->pofloor.minz)*0.5f) {
+              // below
+              cptrace.CeilingZ = min2(cptrace.CeilingZ, po->pofloor.minz);
+            } else {
+              // above
+              cptrace.FloorZ = max2(cptrace.FloorZ, po->poceiling.maxz);
+            }
+            return false; // oops
+          }
+        }
+      }
+    }
+
     if (!good) return false;
   }
 
@@ -1012,6 +1045,40 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
       }
     }
 
+    bool inpobj = false;
+    //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
+    // fix with polyobject heights
+    if (XLevel->NumPolyObjs) {
+      // need new validcount
+      XLevel->IncrementValidCount();
+      const float z1 = tmtrace.End.z+max2(0.0f, Height);
+      for (int bx = xl; bx <= xh; ++bx) {
+        for (int by = yl; by <= yh; ++by) {
+          polyobj_t *po;
+          for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
+            if (!po->posector) continue;
+            //GCon->Logf(NAME_Debug, "000: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1);
+            if (po->pofloor.minz >= po->poceiling.maxz) continue;
+            //GCon->Logf(NAME_Debug, "001: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
+            if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
+            // inside?
+            if (!inpobj && z1 > po->pofloor.minz && tmtrace.End.z < po->poceiling.maxz) inpobj = true;
+            //GCon->Logf(NAME_Debug, "002: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
+            //GCon->Logf(NAME_Debug, "003: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g) (fz=%g; cz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1, tmtrace.FloorZ, tmtrace.CeilingZ);
+            // hit pobj
+            if (tmtrace.End.z < (po->poceiling.maxz+po->pofloor.minz)*0.5f) {
+              // below
+              tmtrace.CeilingZ = min2(tmtrace.CeilingZ, po->pofloor.minz);
+            } else {
+              // above
+              tmtrace.FloorZ = max2(tmtrace.FloorZ, po->poceiling.maxz);
+            }
+            //GCon->Logf(NAME_Debug, "004: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g) (fz=%g; cz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1, tmtrace.FloorZ, tmtrace.CeilingZ);
+          }
+        }
+      }
+    }
+
     if (!good) {
       if (fuckhit) {
         if (!tmtrace.BlockingLine) tmtrace.BlockingLine = fuckhit;
@@ -1030,6 +1097,14 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
         }
         if (!tmtrace.AnyBlockingLine) tmtrace.AnyBlockingLine = fuckhit;
       }
+      return false;
+    }
+
+    if (inpobj) {
+      //if (!tmtrace.AnyBlockingLine) tmtrace.AnyBlockingLine = fuckhit;
+      tmtrace.BlockingMobj = nullptr;
+      tmtrace.BlockingLine = nullptr;
+      tmtrace.AnyBlockingLine = nullptr;
       return false;
     }
   }
@@ -2303,40 +2378,75 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
 //  returns blocking thing
 //
 //=============================================================================
-VEntity *VEntity::TestMobjZ (const TVec &TryOrg) {
-  // can't hit things, or not solid?
-  if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return nullptr;
+bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
+  if (hitent) *hitent = nullptr;
 
   const float rad = GetMoveRadius();
 
-  // the bounding box is extended by MAXRADIUS because mobj_ts are grouped
-  // into mapblocks based on their origin point, and can overlap into adjacent
-  // blocks by up to MAXRADIUS units
-  DeclareMakeBlockMapCoordsMaxRadius(TryOrg.x, TryOrg.y, rad, xl, yl, xh, yh);
-  // xl->xh, yl->yh determine the mapblock set to search
-  for (int bx = xl; bx <= xh; ++bx) {
-    for (int by = yl; by <= yh; ++by) {
-      for (VBlockThingsIterator Other(XLevel, bx, by); Other; ++Other) {
-        if (*Other == this) continue; // don't clip against self
-        //if (OwnerSUId && Other->ServerUId == OwnerSUId) continue;
-        //k8: can't hit corpse
-        if ((Other->EntityFlags&(EF_ColideWithThings|EF_Solid|EF_Corpse)) != (EF_ColideWithThings|EF_Solid)) continue; // can't hit things, or not solid
-        const float ohgt = GetBlockingHeightFor(*Other);
-        if (TryOrg.z > Other->Origin.z+ohgt) continue; // over thing
-        if (TryOrg.z+Height < Other->Origin.z) continue; // under thing
-        const float blockdist = Other->GetMoveRadius()+rad;
-        if (fabsf(Other->Origin.x-TryOrg.x) >= blockdist ||
-            fabsf(Other->Origin.y-TryOrg.y) >= blockdist)
-        {
-          // didn't hit thing
-          continue;
+  // can't hit things, or not solid?
+  if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) == (EF_ColideWithThings|EF_Solid)) {
+    // the bounding box is extended by MAXRADIUS because mobj_ts are grouped
+    // into mapblocks based on their origin point, and can overlap into adjacent
+    // blocks by up to MAXRADIUS units
+    DeclareMakeBlockMapCoordsMaxRadius(TryOrg.x, TryOrg.y, rad, xl, yl, xh, yh);
+    // xl->xh, yl->yh determine the mapblock set to search
+    for (int bx = xl; bx <= xh; ++bx) {
+      for (int by = yl; by <= yh; ++by) {
+        for (VBlockThingsIterator Other(XLevel, bx, by); Other; ++Other) {
+          if (*Other == this) continue; // don't clip against self
+          //if (OwnerSUId && Other->ServerUId == OwnerSUId) continue;
+          //k8: can't hit corpse
+          if ((Other->EntityFlags&(EF_ColideWithThings|EF_Solid|EF_Corpse)) != (EF_ColideWithThings|EF_Solid)) continue; // can't hit things, or not solid
+          const float ohgt = GetBlockingHeightFor(*Other);
+          if (TryOrg.z > Other->Origin.z+ohgt) continue; // over thing
+          if (TryOrg.z+Height < Other->Origin.z) continue; // under thing
+          const float blockdist = Other->GetMoveRadius()+rad;
+          if (fabsf(Other->Origin.x-TryOrg.x) >= blockdist ||
+              fabsf(Other->Origin.y-TryOrg.y) >= blockdist)
+          {
+            // didn't hit thing
+            continue;
+          }
+          if (hitent) *hitent = *Other;
+          return true;
         }
-        return *Other;
       }
     }
   }
 
-  return nullptr;
+  if (XLevel->NumPolyObjs && (EntityFlags&EF_ColideWithWorld)) {
+    float bbox2d[4];
+    bbox2d[BOX2D_TOP] = TryOrg.y+rad;
+    bbox2d[BOX2D_BOTTOM] = TryOrg.y-rad;
+    bbox2d[BOX2D_RIGHT] = TryOrg.x+rad;
+    bbox2d[BOX2D_LEFT] = TryOrg.x-rad;
+    DeclareMakeBlockMapCoordsBBox2D(bbox2d, xl, yl, xh, yh);
+    // need new validcount
+    XLevel->IncrementValidCount();
+    const float z1 = TryOrg.z+max2(0.0f, Height);
+    for (int bx = xl; bx <= xh; ++bx) {
+      for (int by = yl; by <= yh; ++by) {
+        polyobj_t *po;
+        for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
+          if (!po->posector) continue;
+          //GCon->Logf(NAME_Debug, "x00: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
+          if (po->pofloor.minz < po->poceiling.maxz && (z1 <= po->pofloor.minz || TryOrg.z >= po->poceiling.maxz)) {
+            // outside of polyobject
+            continue;
+          }
+          //GCon->Logf(NAME_Debug, "x01: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
+          if (!XLevel->IsBBox2DTouchingSector(po->posector, bbox2d)) continue;
+          //if (!XLevel->IsPointInsideSector2D(po->posector, TryOrg.x, TryOrg.y)) continue;
+          //GCon->Logf(NAME_Debug, "x02: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
+          //GCon->Logf(NAME_Debug, "x02: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
+          // hit pobj
+          return false;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 
@@ -2367,7 +2477,9 @@ TVec VEntity::FakeZMovement () {
 VEntity *VEntity::CheckOnmobj () {
   // can't hit things, or not solid? (check it here to save one VM invocation)
   if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return nullptr;
-  return TestMobjZ(FakeZMovement());
+  VEntity *ee = nullptr;
+  if (TestMobjZ(FakeZMovement(), &ee)) return ee;
+  return nullptr;
 }
 
 
