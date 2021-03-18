@@ -634,10 +634,10 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   {
     // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
     // flip them, because polyobject flats are like 3d floor flats
-    const subsector_t *sub = PointInSubsector(avg); // bugfixed algo
+    sector_t *sec = (po->posector ? po->posector : PointInSubsector(avg)->sector); // bugfixed algo
 
     // build floor
-    po->pofloor = sub->sector->floor;
+    po->pofloor = sec->floor;
     //po->pofloor.pic = 0;
     //if (po->pofloor.isFloor()) po->pofloor.flipInPlace();
     //const float fdist = -po->pofloor.PointDistance(TVec(avg.x, avg.y, 0.0f));
@@ -650,7 +650,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     po->pofloor.minz = po->pofloor.maxz = fdist;
 
     // build ceiling
-    po->poceiling = sub->sector->ceiling;
+    po->poceiling = sec->ceiling;
     //po->poceiling.pic = 0;
     //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
     const float cdist = po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f));
@@ -673,25 +673,29 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
       if (MTex && MTex->Type != TEXTYPE_Null) {
         // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
         const float texh = MTex->GetScaledHeight();
-        float z_org;
+        float z0, z1;
         if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
           // bottom of texture at bottom
           // top of texture at top
-          z_org = po->pofloor.TexZ+texh;
+          z1 = po->pofloor.TexZ+texh;
         } else {
           // top of texture at top
-          z_org = po->poceiling.TexZ;
+          z1 = po->poceiling.TexZ;
         }
         //k8: dunno why
         if (seg->sidedef->Mid.RowOffset < 0) {
-          z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+          z1 += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
         } else {
-          z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+          z1 += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
         }
-        // and fix floor and ceiling planes
-        po->pofloor.minz = po->pofloor.maxz = z_org-texh;
+        z0 = z1-texh;
+        z0 = max2(z0, sec->floor.minz);
+        z1 = min2(z1, sec->ceiling.maxz);
+        if (z1 < z0) z1 = z0;
+        // fix floor and ceiling planes
+        po->pofloor.minz = po->pofloor.maxz = z0;
         po->pofloor.dist = -po->pofloor.maxz;
-        po->poceiling.minz = po->poceiling.maxz = z_org;
+        po->poceiling.minz = po->poceiling.maxz = z1;
         po->poceiling.dist = po->poceiling.maxz;
       }
 
@@ -700,7 +704,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 
     }
 
-    sector_t *sec = po->posector;
+    sec = po->posector;
     if (sec) {
       sec->floor.normal = po->pofloor.normal;
       sec->floor.dist = po->pofloor.dist;

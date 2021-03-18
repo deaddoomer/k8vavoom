@@ -697,10 +697,7 @@ bool VEntity::CheckPosition (TVec Pos) {
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
             if (!po->posector) continue;
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
-            if (po->pofloor.minz < po->poceiling.maxz && (z1 <= po->pofloor.minz || cptrace.Pos.z >= po->poceiling.maxz)) {
-              // outside of polyobject
-              continue;
-            }
+            if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
             // inside?
             if (!inpobj && z1 > po->pofloor.minz && cptrace.Pos.z < po->poceiling.maxz) inpobj = true;
@@ -1059,6 +1056,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             if (!po->posector) continue;
             //GCon->Logf(NAME_Debug, "000: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1);
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
+            if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "001: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
             // inside?
@@ -2434,6 +2432,7 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
             // outside of polyobject
             continue;
           }
+          if (!Are2DBBoxesOverlap(po->bbox2d, bbox2d)) continue;
           //GCon->Logf(NAME_Debug, "x01: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
           if (!XLevel->IsBBox2DTouchingSector(po->posector, bbox2d)) continue;
           //if (!XLevel->IsPointInsideSector2D(po->posector, TryOrg.x, TryOrg.y)) continue;
