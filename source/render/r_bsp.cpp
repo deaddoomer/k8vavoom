@@ -1033,7 +1033,12 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
             RenderLine(sub, secregion, region, seg->drawsegs);
           }
         }
+        // render flats for 3d pobjs
         if (pobj->posector) {
+          // mark this sector as rendered (thing visibility check needs this info)
+          const int secnum = (int)(ptrdiff_t)(pobj->posector-&Level->Sectors[0]);
+          MarkBspVisSector(secnum);
+          markSectorRendered(secnum);
           for (subsector_t *posub = pobj->posector->subsectors; posub; posub = posub->seclink) {
             // update pobj
             if (doUpdates && posub->updateWorldFrame != updateWorldFrame) {
