@@ -205,17 +205,11 @@ void VEntity::Destroy () {
 //
 //=============================================================================
 void VEntity::CreateSecNodeList () {
-  msecnode_t *Node;
-
   // first, clear out the existing Thing fields. as each node is
   // added or verified as needed, Thing will be set properly.
   // when finished, delete all nodes where Thing is still nullptr.
   // these represent the sectors the Thing has vacated.
-  Node = XLevel->SectorList;
-  while (Node) {
-    Node->Thing = nullptr;
-    Node = Node->TNext;
-  }
+  for (msecnode_t *Node = XLevel->SectorList; Node; Node = Node->TNext) Node->Thing = nullptr;
 
   // use RenderRadius here, so we can check sectors in renderer instead of going through all objects
   // no, we cannot do this, because touching sector list is used to move objects too
@@ -223,12 +217,12 @@ void VEntity::CreateSecNodeList () {
   //const float rad = max2(RenderRadius, Radius);
   const float rad = GetMoveRadius();
 
-  //++validcount; // used to make sure we only process a line once
-  XLevel->IncrementValidCount();
+  XLevel->IncrementValidCount(); // used to make sure we only process a line once
 
   sector_t *sec = Sector;
+  //polyobj_t *currpo = (sec->ownpobj ? sec->ownpobj : nullptr);
 
-  if (rad > 1.0f) {
+  if (rad >= 1.0f) {
     float tmbbox[4];
     Create2DBBox(tmbbox, Origin, rad);
     DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
@@ -264,20 +258,20 @@ void VEntity::CreateSecNodeList () {
             //GCon->Logf(NAME_Debug, "CreateSecNodeList: %s(%u):   line #%d is from pobj #%d", GetClass()->GetName(), GetUniqueId(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), po->tag);
             if (po->posector && po->validcount != validcount) {
               if (po->posector != sec) XLevel->SectorList = XLevel->AddSecnode(po->posector, this, XLevel->SectorList);
+              /* no need to check this, it is already done in `LinkToWorld()`
               // check if we're standing on it
               if (Origin.z >= po->poceiling.maxz) {
                 // set current sector to polyobject sector
                 if (FloorZ <= po->poceiling.maxz) {
-                  GCon->Logf(NAME_Debug, "POBJ-SEC-000: %s(%u) is standing on pobj #%d (sector #%d) (%g)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]), Origin.z-po->poceiling.maxz);
-                  EFloor.set(&po->poceiling, false);
-                  FloorZ = EFloor.GetPointZClamped(Origin);
-                  // subsector info required only for bots
-                  SubSector = po->posector->subsectors;
-                  Sector = po->posector;
+                  //GCon->Logf(NAME_Debug, "POBJ-SEC-000: %s(%u) is standing on pobj #%d (sector #%d) (%g)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]), Origin.z-po->poceiling.maxz);
+                  if (FloorZ < po->poceiling.maxz || !currpo || currpo->tag > po->tag) {
+                    EFloor.set(&po->poceiling, false);
+                    FloorZ = EFloor.GetPointZClamped(Origin);
+                    currpo = po;
+                  }
                 }
-              } else {
-                //GCon->Logf(NAME_Debug, "POBJ-SEC-000: %s(%u) is touching pobj #%d (sector #%d)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]));
               }
+              */
             }
             po->validcount = validcount;
             continue;
@@ -319,20 +313,20 @@ void VEntity::CreateSecNodeList () {
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) continue;
             //GCon->Logf(NAME_Debug, "CreateSecNodeList: %s(%u):   pobj #%d HIT", GetClass()->GetName(), GetUniqueId(), po->tag);
             XLevel->SectorList = XLevel->AddSecnode(po->posector, this, XLevel->SectorList);
+            /* no need to check this, it is already done in `LinkToWorld()`
             // check if we're standing on it
             if (Origin.z >= po->poceiling.maxz) {
               // set current sector to polyobject sector
               if (FloorZ <= po->poceiling.maxz) {
-                GCon->Logf(NAME_Debug, "POBJ-SEC-001: %s(%u) is standing on pobj #%d (sector #%d) (%g)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]), Origin.z-po->poceiling.maxz);
-                EFloor.set(&po->poceiling, false);
-                FloorZ = EFloor.GetPointZClamped(Origin);
-                // subsector info required only for bots
-                SubSector = po->posector->subsectors;
-                Sector = po->posector;
+                //GCon->Logf(NAME_Debug, "POBJ-SEC-001: %s(%u) is standing on pobj #%d (sector #%d) (%g)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]), Origin.z-po->poceiling.maxz);
+                if (FloorZ < po->poceiling.maxz || !currpo || currpo->tag > po->tag) {
+                  EFloor.set(&po->poceiling, false);
+                  FloorZ = EFloor.GetPointZClamped(Origin);
+                  currpo = po;
+                }
               }
-            } else {
-              //GCon->Logf(NAME_Debug, "POBJ-SEC-001: %s(%u) is touching pobj #%d (sector #%d)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]));
             }
+            */
           }
         }
       }
@@ -342,10 +336,12 @@ void VEntity::CreateSecNodeList () {
   // add the sector of the (x,y) point to sector_list
   XLevel->SectorList = XLevel->AddSecnode(sec, this, XLevel->SectorList);
 
+  // add base sector
+  if (sec != BaseSector) XLevel->SectorList = XLevel->AddSecnode(BaseSector, this, XLevel->SectorList);
+
   // now delete any nodes that won't be used
   // these are the ones where Thing is still nullptr
-  Node = XLevel->SectorList;
-  while (Node) {
+  for (msecnode_t *Node = XLevel->SectorList; Node; ) {
     if (Node->Thing == nullptr) {
       if (Node == XLevel->SectorList) XLevel->SectorList = Node->TNext;
       Node = XLevel->DelSecnode(Node);
@@ -443,6 +439,9 @@ void VEntity::UnlinkFromWorld () {
 
   SubSector = nullptr;
   Sector = nullptr;
+  BaseSubSector = nullptr;
+  BaseSector = nullptr;
+  PolyObj = nullptr;
 }
 
 
@@ -471,8 +470,9 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   // link into subsector
   subsector_t *ss = XLevel->PointInSubsector_Buggy(Origin);
   //vassert(ss); // meh, it will segfault on `nullptr` anyway
-  SubSector = ss;
-  Sector = ss->sector;
+  BaseSubSector = SubSector = ss;
+  BaseSector = Sector = ss->sector;
+  PolyObj = nullptr;
 
   if (properFloorCheck != -666) {
     if (!IsPlayer()) {
@@ -539,6 +539,51 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     SV_FindGapFloorCeiling(ss->sector, Origin, Height, EFloor, ECeiling);
     FloorZ = EFloor.GetPointZClamped(Origin);
     CeilingZ = ECeiling.GetPointZClamped(Origin);
+  }
+
+  // check polyobjects (we may be completely inside some of them)
+  // we have to do it here, because we need a right `Sector`
+  if (XLevel->NumPolyObjs && rad >= 1.0f) {
+    XLevel->IncrementValidCount(); // used to make sure we only process a line once
+    float tmbbox[4];
+    Create2DBBox(tmbbox, Origin, rad);
+    DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
+    polyobj_t *spo = nullptr;
+    for (int bx = xl; bx <= xh; ++bx) {
+      for (int by = yl; by <= yh; ++by) {
+        polyobj_t *po;
+        for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
+          if (!po->posector) continue;
+          if (po->pofloor.minz >= po->poceiling.maxz) continue;
+          //GCon->Logf(NAME_Debug, "CreateSecNodeList: %s(%u):   checking pobj #%d bounds", GetClass()->GetName(), GetUniqueId(), po->tag);
+          if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) continue;
+          //GCon->Logf(NAME_Debug, "CreateSecNodeList: %s(%u):   checking pobj #%d touching", GetClass()->GetName(), GetUniqueId(), po->tag);
+          if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) continue;
+          //GCon->Logf(NAME_Debug, "CreateSecNodeList: %s(%u):   pobj #%d HIT", GetClass()->GetName(), GetUniqueId(), po->tag);
+          XLevel->SectorList = XLevel->AddSecnode(po->posector, this, XLevel->SectorList);
+          // check if we're standing on it
+          if (Origin.z >= po->poceiling.maxz) {
+            // set current sector to polyobject sector
+            if (FloorZ <= po->poceiling.maxz) {
+              //GCon->Logf(NAME_Debug, "POBJ-SEC-001: %s(%u) is standing on pobj #%d (sector #%d) (%g)", GetClass()->GetName(), GetUniqueId(), po->tag, (int)(ptrdiff_t)(po->posector-&XLevel->Sectors[0]), Origin.z-po->poceiling.maxz);
+              if (FloorZ < po->poceiling.maxz || !spo || spo->tag > po->tag) {
+                EFloor.set(&po->poceiling, false);
+                FloorZ = EFloor.GetPointZClamped(Origin);
+                spo = po;
+              }
+            } else if (!spo) {
+              spo = po;
+            }
+          }
+        }
+      }
+    }
+    if (spo) {
+      // subsector info required only for bots
+      SubSector = spo->posector->subsectors;
+      Sector = spo->posector;
+      PolyObj = spo;
+    }
   }
 
   // link into sector
@@ -1180,14 +1225,15 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     }
   }
 
-  // check lines
-  XLevel->IncrementValidCount();
-
   float thingdropoffz = tmtrace.FloorZ;
   tmtrace.FloorZ = tmtrace.DropOffZ;
   tmtrace.BlockingMobj = nullptr;
 
+  // check lines
   if (EntityFlags&EF_ColideWithWorld) {
+    //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking lines...", GetClass()->GetName(), GetUniqueId());
+    XLevel->IncrementValidCount();
+
     DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
     bool good = true;
     line_t *fuckhit = nullptr;
@@ -1219,10 +1265,10 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     }
 
     polyobj_t *inpobj = nullptr;
-    //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
     // check if we can stand inside some polyobject
     // there is no need to check it if our position is already invalid
     if (good && XLevel->NumPolyObjs) {
+      //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
       // no need for new validcount
       const float z1 = tmtrace.End.z+max2(0.0f, Height);
       for (int bx = xl; bx <= xh; ++bx) {
@@ -1238,11 +1284,14 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             // inside?
             if (z1 > po->pofloor.minz && tmtrace.End.z < po->poceiling.maxz) {
               // find one with the highest ceiling
-              if (!inpobj || po->poceiling.maxz > tmtrace.FloorZ) {
-                inpobj = po;
-                if (tmtrace.FloorZ < po->poceiling.maxz) {
-                  tmtrace.FloorZ = po->poceiling.maxz;
-                  tmtrace.EFloor.set(&po->poceiling, false);
+              //GCon->Logf(NAME_Debug, "002: %s(%u):   stuck in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
+              if (!inpobj || po->poceiling.maxz >= tmtrace.FloorZ) {
+                if (!inpobj || po->poceiling.maxz > tmtrace.FloorZ || inpobj->tag > po->tag) {
+                  inpobj = po;
+                  if (tmtrace.FloorZ < po->poceiling.maxz) {
+                    tmtrace.FloorZ = po->poceiling.maxz;
+                    tmtrace.EFloor.set(&po->poceiling, false);
+                  }
                 }
               }
               continue;
@@ -1436,12 +1485,6 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     return false;
   }
 
-  if (IsBlockingLine(ld)) {
-    if (!skipSpecials) BlockedByLine(ld);
-    tmtrace.BlockingLine = ld;
-    return false;
-  }
-
   const float hgt = max2(0.0f, Height);
   //TVec hitPoint = tmtrace.End-(DotProduct(tmtrace.End, ld->normal)-ld->dist)*ld->normal;
   const TVec hitPoint = tmtrace.End-(ld->PointDistance(tmtrace.End)*ld->normal);
@@ -1449,12 +1492,14 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   // check polyobject
   polyobj_t *po = ld->pobj();
   if (po) {
+    if (!IsBlockingLine(ld)) return true;
     if (po == PolyObjIgnore || !po->posector || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
-    if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
+    if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = hitPoint.z+max2(0.0f, Height);
     // below pobj?
     if (z1 <= po->pofloor.minz) {
+      //GCon->Logf(NAME_Debug, "100: %s(%u):   in pobj #%d (cz=%g; z1=%g; pcz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.CeilingZ, z1, po->pofloor.minz);
       // check if we need to fix CeilingZ
       if (tmtrace.CeilingZ > po->pofloor.minz) {
         tmtrace.CeilingZ = po->pofloor.minz;
@@ -1464,6 +1509,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     }
     // above or on pobj?
     if (hitPoint.z >= po->poceiling.maxz) {
+      //GCon->Logf(NAME_Debug, "101: %s(%u):   in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
       // check if we need to fix FloorZ
       if (tmtrace.FloorZ < po->poceiling.maxz) {
         tmtrace.FloorZ = po->poceiling.maxz;
@@ -1473,7 +1519,24 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       return true;
     }
     // looks like we are inside a polyobject; this cannot happen, so don't fix floor and ceiling
-    tmtrace.PolyObj = po; // stuck in it
+    if (po->poceiling.maxz >= tmtrace.FloorZ) {
+      //GCon->Logf(NAME_Debug, "102: %s(%u):   stuck in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
+      if (!tmtrace.PolyObj || po->poceiling.maxz > tmtrace.FloorZ || tmtrace.PolyObj->tag > po->tag) {
+        tmtrace.PolyObj = po; // stuck in it
+        if (tmtrace.FloorZ < po->poceiling.maxz) {
+          tmtrace.FloorZ = po->poceiling.maxz;
+          tmtrace.EFloor.set(&po->poceiling, false);
+        }
+      }
+    } else {
+      //GCon->Logf(NAME_Debug, "103: %s(%u):   stuck in pobj #%d", GetClass()->GetName(), GetUniqueId(), po->tag);
+    }
+    if (!skipSpecials) BlockedByLine(ld);
+    tmtrace.BlockingLine = ld;
+    return false;
+  }
+
+  if (IsBlockingLine(ld)) {
     if (!skipSpecials) BlockedByLine(ld);
     tmtrace.BlockingLine = ld;
     return false;

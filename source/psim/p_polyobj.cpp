@@ -42,6 +42,7 @@ enum {
 
 static TMapNC<VEntity *, bool> poEntityMap;
 static TMapNC<sector_t *, bool> poSectorMap;
+static TArray<sector_t *> poEntityArray;
 
 
 //==========================================================================
@@ -1187,51 +1188,88 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   polyobj_t *po = GetPolyobj(num);
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
 
+  if (!po->posector) z = 0.0f;
+
   bool unlinked = false;
-  EnsurePolyPrevPts(po->segPtsCount);
 
-  const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
+  //poEntityArray.resetNoDtor();
 
-  const TVec *origPts = po->originalPts;
-  TVec *prevPts = polyPrevPts;
-  TVec **vptr = po->segPts;
-  for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
-    *prevPts = **vptr;
-    **vptr = (*origPts)+delta;
-  }
-  UpdatePolySegs(po);
-  if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
-
-  bool blocked = false;
-  if (IsForServer()) {
-    // check if our 3d pobj can move up
-    // do this even on forced move, because we still want to gib bodies and hurt things
-    if (z != 0.0f && po->posector && po->posector->TouchingThingList) {
-      //if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
-      //GCon->Logf(NAME_Debug, "*** pobj #%d: ChangeSector; z=%g", po->tag, z);
-      blocked = ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
+  // vertical movement
+  if (z != 0.0f) {
+    // move mobjs standing on this pobj up with it
+    const float pofz = po->poceiling.maxz;
+    for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+      VEntity *mobj = n->Thing;
+      if (mobj->IsGoingToDie()) continue;
+      if (mobj->Origin.z == pofz || (mobj->Origin.z > pofz && mobj->Origin.z < pofz+z)) {
+        //poEntityArray.append(mobj);
+        mobj->Origin.z = pofz+z;
+        mobj->FloorZ = pofz+z;
+      }
     }
-    if (!forced && !blocked) {
-      if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
-      blocked = PolyCheckMobjBlocked(po);
+    OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
+    // check order matters!
+    if (po->posector->TouchingThingList &&
+        ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0)) &&
+        !forced)
+    {
+      // oops, move it back
+      //FIXME: save and restore distances instead of adding/subtracting
+      //GCon->Logf(NAME_Debug, "pobj #%d: FUCK!", po->tag);
+      OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
+      // don't bother moving entities back, let gravity do it
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        mobj->LinkToWorld();
+      }
+      return false;
     }
-    if (forced) blocked = false;
+    //GCon->Logf(NAME_Debug, "pobj #%d: Z-MOVED: %g", po->tag, z);
   }
 
-  if (blocked) {
-    // restore points
-    prevPts = polyPrevPts;
-    vptr = po->segPts;
-    for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
+  // horizontal movement
+  if (x || y) {
+    const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
+
+    // save previous points, move horizontally
+    EnsurePolyPrevPts(po->segPtsCount);
+    const TVec *origPts = po->originalPts;
+    TVec *prevPts = polyPrevPts;
+    TVec **vptr = po->segPts;
+    for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
+      *prevPts = **vptr;
+      **vptr = (*origPts)+delta;
+    }
     UpdatePolySegs(po);
-    if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
-    if (unlinked) LinkPolyobj(po); // it is always for server
-    // no need to restore heights, the objects will fall
-    //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
-    return false;
-  }
 
-  OffsetPolyobjFlats(po, -x, -y, 0.0f);
+    bool blocked = false;
+    if (IsForServer()) {
+      if (!forced && !blocked) {
+        if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
+        blocked = PolyCheckMobjBlocked(po);
+      }
+      if (forced) blocked = false;
+    }
+
+    if (blocked) {
+      // restore points
+      prevPts = polyPrevPts;
+      vptr = po->segPts;
+      for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
+      UpdatePolySegs(po);
+      if (z) OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
+      if (unlinked) LinkPolyobj(po); // it is always for server
+      // no need to restore heights, the objects will fall
+      //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
+      return false;
+    }
+
+    OffsetPolyobjFlats(po, -x, -y, 0.0f);
+  } else {
+    UpdatePolySegs(po);
+  }
 
   po->startSpot.x += x;
   po->startSpot.y += y;
@@ -1240,13 +1278,21 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   if (IsForServer()) {
     if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
     LinkPolyobj(po);
-    if (po->posector) {
+    if (po->posector && (x || y)) {
       CollectPObjTouchingThingsRough(po);
       // relink all things, so they can get pobj info right
+      const float pfz = po->poceiling.maxz;
       for (auto &&it : poEntityMap.first()) {
         VEntity *e = it.key();
         //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
-        e->Level->eventPolyMoveMobjBy(e, po, x, y);
+        if (e->Origin.z == pfz) e->Level->eventPolyMoveMobjBy(e, po, x, y);
+      }
+    } else if (po->posector) {
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        mobj->LinkToWorld();
       }
     }
   }

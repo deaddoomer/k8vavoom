@@ -58,7 +58,7 @@ static TMapNC<VEntity *, bool> recSoundSectorSeenEnts;
 //
 //==========================================================================
 void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, sector_t *sec, int soundblocks, VEntity *soundtarget, float maxdistSq, const TVec sndorigin) {
-  if (!sec) return;
+  if (!sec || sec->isOriginalPObj()) return;
 
   // `validcount` and other things were already checked in caller
   // also, caller already set `soundtraversed` and `SoundTarget`
@@ -72,6 +72,8 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
   }
 
   for (VEntity *Ent = sec->ThingList; Ent; Ent = Ent->SNext) {
+    if (Ent->IsGoingToDie()) continue;
+    //GCon->Logf(NAME_Debug, "  sound at sector #%d, entity %s(%u)", (int)(ptrdiff_t)(sec-&Sectors[0]), Ent->GetClass()->GetName(), Ent->GetUniqueId());
     //FIXME: skip some entities that cannot (possibly) react
     //       this can break some code, but... meh
     //       maybe don't omit corpses?
@@ -93,10 +95,11 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
     if (line->sidenum[1] == -1 || !(line->flags&ML_TWOSIDED)) continue;
 
     // ignore self-referenced sectors
-    if (line->frontsector == line->backsector) continue;
+    if (!line->frontsector || line->frontsector == line->backsector) continue;
 
     sector_t *other = (line->frontsector == sec ? line->backsector : line->frontsector);
     if (!other) continue; // just in case
+    if (other == sec || other->isAnyPObj()) continue;
 
     bool addIt = false;
     int sblock = 0;
@@ -124,7 +127,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
         while (op && op->range <= 0.0f) op = op->next;
         if (!op) continue; // closed door
       }
-      //GCon->Logf(NAME_Debug, "  sound to sector: scount=%d; from sector=%d; sector=%d from line %d", sblock, (int)(ptrdiff_t)(sec-&Sectors[0]), (int)(ptrdiff_t)(other-&Sectors[0]), (int)(ptrdiff_t)(check-&Lines[0]));
+      //GCon->Logf(NAME_Debug, "  sound to sector: scount=%d; from sector=%d; sector=%d from line %d", sblock, (int)(ptrdiff_t)(sec-&Sectors[0]), (int)(ptrdiff_t)(other-&Sectors[0]), (int)(ptrdiff_t)(line-&Lines[0]));
       // if both vertices are too far, don't travel this line
       if (!distUnlim && gm_compat_better_sound_distance.asBool()) {
         if (length2DSquared(sndorigin-(*line->v1)) > maxdistSq && length2DSquared(sndorigin-(*line->v2)) > maxdistSq) continue;
@@ -151,7 +154,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
 //
 //==========================================================================
 void VLevel::doRecursiveSound (TArray<VEntity *> &elist, sector_t *sec, VEntity *soundtarget, float maxdist, const TVec sndorigin) {
-  if (!sec) return;
+  if (!sec || sec->isOriginalPObj()) return;
   IncrementValidCount();
 
   // wake up all monsters in this sector

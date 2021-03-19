@@ -241,11 +241,15 @@ class VEntity : public VThinker {
 
   subsector_t *SubSector; // cannot be `nullptr`, it is always set
   sector_t *Sector; // cannot be `nullptr`, it is always set
-  //polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
+  polyobj_t *PolyObj; // polyobject this entity stands on (needed for ChangeSector)
     // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
   polyobj_t *PolyObjIgnore; // transient, used in pobj movement checking
   sector_t *LastSector; // transient; set by `UnlinkFromWorld()`, used to remove excessive gore actors
   TVec PrevTickOrigin; // transient; set in `VEntity::Tick()`
+
+  // non-polyobject
+  subsector_t *BaseSubSector; // cannot be `nullptr`, it is always set
+  sector_t *BaseSector; // cannot be `nullptr`, it is always set
 
   // interaction info, by BLOCKMAP
   // links in blocks (if needed)

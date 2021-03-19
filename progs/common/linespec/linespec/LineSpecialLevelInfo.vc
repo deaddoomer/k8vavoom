@@ -5182,7 +5182,7 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   //ex.PolyObjIgnore = po;
   bool ok = ex.CheckPosition(newpos);
   //ex.PolyObjIgnore = nullptr;
-  printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
+  //printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
   if (ok) {
     ex.Origin = newpos;
   }

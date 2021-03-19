@@ -244,11 +244,15 @@ float ScaleY;
 
 native readonly transient subsector_t *SubSector; // can be `nullptr` for `EF_NoSector` entities
 native readonly transient sector_t *Sector; // can be `nullptr` for `EF_NoSector` entities
-//native readonly transient polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
+native readonly transient polyobj_t *PolyObj; // polyobject this entity stands on (needed for ChangeSector)
     // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
 native readonly transient polyobj_t *PolyObjIgnore; // transient, used in pobj movement checking
 native readonly transient sector_t *LastSector; // set by `UnlinkFromWorld()`, used to remove excessive gore actors
 native readonly transient TVec PrevTickOrigin; // set in `VEntity::Tick()`
+
+  // non-polyobject
+native readonly transient subsector_t *BaseSubSector; // cannot be `nullptr`, it is always set
+native readonly transient sector_t *BaseSector; // cannot be `nullptr`, it is always set
 
 // interaction info, by BLOCKMAP
 // links in blocks (if needed)
