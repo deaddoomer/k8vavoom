@@ -5160,8 +5160,10 @@ override void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
   if (!po || !po->posector || !dangle) return;
   EntityEx ex = EntityEx(A);
   if (!ex) return;
+  float oldyaw = AngleMod360(ex.Angles.yaw);
   ex.Angles.yaw = AngleMod360(ex.Angles.yaw+dangle);
   if (ex.bIsPlayer && ex.Player.MO == self) ex.Player.bFixAngle = true;
+  ex.LastMoveAngles.yaw += ex.Angles.yaw-oldyaw;
 }
 
 
