@@ -30,6 +30,9 @@ float speed;
 float dist;
 float angle;
 bool carryThings;
+// vertical
+float vspeed;
+float vdist;
 
 
 //==========================================================================
@@ -43,9 +46,14 @@ override void Tick (float deltaTime) {
   if (dist < absMove) move = dist*(move < 0.0 ? -1.0 : 1.0);
   float xMove = move*cos(angle);
   float yMove = move*sin(angle);
-  if (XLevel.MovePolyobj(polyobj, xMove, yMove, forced:carryThings)) {
-    dist -= absMove;
-    if (dist <= 0.0) {
+  float zMove = vspeed*deltaTime;
+  if (vdist < fabs(zMove)) zMove = vdist*(zMove < 0.0 ? -1.0 : 1.0);
+  //printdebug("%C(%s): po=%s; vspeed=%s; vdist=%s; zMove=%s", self, UniqueId, polyobj, vspeed, vdist, zMove);
+  if (XLevel.MovePolyobj(polyobj, xMove, yMove, zMove, forced:carryThings)) {
+    dist = fmax(0.0, dist-absMove);
+    vdist = fmax(0.0, vdist-fabs(zMove));
+    if (!dist && !vdist) {
+      //printdebug("%C(%s): done!", self, UniqueId);
       polyobj_t *poly = XLevel.GetPolyobj(polyobj);
       if (poly->SpecialData == self) poly->SpecialData = none;
       PolyobjStopSequence(poly);

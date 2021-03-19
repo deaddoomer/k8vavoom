@@ -1312,9 +1312,8 @@ int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflicto
 //  AcsPolyMoveEx
 //
 //==========================================================================
-int AcsPolyMoveEx (int po, float hspeed, float yawangle, float dist,
-                   float vspeed, float pitchangle, float vdist,
-                   int forced, Entity Activator)
+int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
+                   int vspeed, int vdist, int forced, Entity Activator)
 {
   return 0;
 }
@@ -1325,7 +1324,7 @@ int AcsPolyMoveEx (int po, float hspeed, float yawangle, float dist,
 //  AcsPolyMoveToEx
 //
 //==========================================================================
-int AcsPolyMoveToEx (int po, float speed, float x, float y, float z, int forced, Entity Activator) {
+int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced, Entity Activator) {
   return 0;
 }
 
@@ -1337,7 +1336,7 @@ int AcsPolyMoveToEx (int po, float speed, float x, float y, float z, int forced,
 //  this uses target height too
 //
 //==========================================================================
-int AcsPolyMoveToSpotEx (int po, float speed, int targettid, int forced, Entity Activator) {
+int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, Entity Activator) {
   return 0;
 }
 

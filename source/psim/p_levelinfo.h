@@ -283,17 +283,17 @@ public:
     VMT_RET_INT(method);
   }
 
-  int eventAcsPolyMoveEx (int po, float hspeed, float yawangle, float dist, float vspeed, float pitchangle, float vdist, int override, VEntity *Activator) {
+  int eventAcsPolyMoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveEx");
-    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, pitchangle, vdist, override, Activator);
+    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, override, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToEx (int po, float speed, float x, float y, float z, int override, VEntity *Activator) {
+  int eventAcsPolyMoveToEx (int po, int speed, int x, int y, int z, int override, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveToEx");
     vobjPutParamSelf(po, speed, x, y, z, override, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToSpotEx (int po, float speed, int targettid, int override, VEntity *Activator) {
+  int eventAcsPolyMoveToSpotEx (int po, int speed, int targettid, int override, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveToSpotEx");
     vobjPutParamSelf(po, speed, targettid, override, Activator);
     VMT_RET_INT(method);

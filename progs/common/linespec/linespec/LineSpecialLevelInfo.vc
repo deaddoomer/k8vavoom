@@ -1931,6 +1931,41 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 
 //==========================================================================
 //
+//  AcsPolyMoveEx
+//
+//==========================================================================
+override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
+                            int vspeed, int vdist, int forced, Entity Activator)
+{
+  //printdebug("AcsPolyMoveEx: po=%s; hspeed=%s; yawangle=%s; dist=%s; vspeed=%s; vdist=%s; forced=%s", po, hspeed, yawangle, dist, vspeed, vdist, forced);
+  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist, carryThings:true);
+}
+
+
+//==========================================================================
+//
+//  AcsPolyMoveToEx
+//
+//==========================================================================
+override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced, Entity Activator) {
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  AcsPolyMoveToSpotEx
+//
+//  this uses target height too
+//
+//==========================================================================
+override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, Entity Activator) {
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  EV_StopPoly
 //
 //==========================================================================
@@ -2063,69 +2098,54 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 /*final*/ bool EV_MovePoly (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
                             int Arg5, bool timesEight, bool overRide,
                             optional float floatAngle, optional float floatDist,
-                            optional bool carryThings)
+                            optional bool carryThings,
+                            optional int vspeed, optional int vdist)
 {
-  int mirror;
-  int polyNum;
-  PolyobjMover pe;
-  polyobj_t *poly;
-  float an;
-
-  polyNum = Arg1;
-  poly = XLevel.GetPolyobj(polyNum);
+  int polyNum = Arg1;
+  polyobj_t *poly = XLevel.GetPolyobj(polyNum);
   if (!poly) { printerror("EV_MovePoly: invalid polyobj num %s", polyNum); return false; }
-  if (poly->SpecialData && !overRide) return false; // poly is already moving
-  pe = SpawnThinker(PolyobjMover);
-  pe.polyobj = polyNum;
-  if (timesEight)
-  {
-    pe.dist = float(Arg4)*8.0;
-  }
-  else
-  {
-    pe.dist = float(Arg4); // Distance
-  }
-  if (specified_floatDist) pe.dist = floatDist;
-  pe.speed = float(Arg2)*4.0;
 
-  //THRUST
-  pe.thrust_force = pe.speed/8.0;
+  if (poly->SpecialData && !overRide) return false; // poly is already moving
+
+  float realDist = float(Arg4)*(timesEight ? 8.0 : 1.0);
+  float realVDist = float(vdist)*(timesEight ? 8.0 : 1.0);
+  float realSpeed = float(Arg2)*4.0;
+  float realVSpeed = float(vspeed)*4.0;
+
+  //printdebug("EV_MovePoly: po=%s; vspeed=%s; vdist=%s", polyNum, realVSpeed, realVDist);
+
+  PolyobjMover pe = SpawnThinker(PolyobjMover);
+  pe.polyobj = polyNum;
+  pe.dist = realDist;
+  if (specified_floatDist) pe.dist = floatDist;
+  pe.speed = realSpeed;
+  pe.thrust_force = pe.speed/8.0; //THRUST
+  if (specified_vspeed) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
 
   poly->SpecialData = pe;
 
-  an = (specified_floatAngle ? floatAngle : float(Arg3)*(90.0/64.0));
-
+  float an = (specified_floatAngle ? floatAngle : float(Arg3)*(90.0/64.0));
+  if (!Arg2) an = 0;
   pe.angle = an;
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
-  for (mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(/*polyNum*/mirror)) {
+  for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
     poly = XLevel.GetPolyobj(mirror);
-    if (poly && poly->SpecialData && !overRide)
-    { // mirroring poly is already in motion
-      break;
-    }
+    if (poly && poly->SpecialData && !overRide) break; // mirroring poly is already in motion
     pe = SpawnThinker(PolyobjMover);
     pe.carryThings = carryThings;
     pe.polyobj = mirror;
     poly->SpecialData = pe;
-    if (timesEight)
-    {
-      pe.dist = float(Arg4)*8.0;
-    }
-    else
-    {
-      pe.dist = float(Arg4); // Distance
-    }
-    pe.speed = float(Arg2)*4.0;
+    pe.dist = realDist;
+    pe.speed = realSpeed;
+    pe.thrust_force = pe.speed/8.0; //THRUST
+    if (specified_vspeed) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
 
-    //THRUST
-    pe.thrust_force = pe.speed/8.0;
-
-    an = AngleMod360(an+180.0); // reverse the angle
+    if (Arg2) an = AngleMod360(an+180.0); // reverse the angle
     pe.angle = an;
-    //polyNum = mirror;
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
   }
+
   return true;
 }
 

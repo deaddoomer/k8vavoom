@@ -3898,29 +3898,24 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
       }
       return 0x7FFFFFFF; // doesn't exist
 
-    // Polyobj_MoveEx (int po, float hspeed, float yawangle, float dist, float vspeed, float pitchangle, float vdist, int override)
+    // Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override)
     case ACSF_Polyobj_MoveEx:
-      if (argCount >= 8) {
-        return Level->eventAcsPolyMoveEx(args[0], float(args[1])/65536.0f, float(args[2])/65536.0f,
-                                         float(args[3])/65536.0f, float(args[4])/65536.0f,
-                                         float(args[5])/65536.0f, float(args[6])/65536.0f,
-                                         args[7], Activator);
+      if (argCount >= 7) {
+        return Level->eventAcsPolyMoveEx(args[0], args[1], args[2], args[3], args[4], args[5], args[6], Activator);
       }
       return 0;
 
-    // Polyobj_MoveToEx (int po, float speed, float x, float y, float z, int override)
+    // Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int override)
     case ACSF_Polyobj_MoveToEx:
       if (argCount >= 6) {
-        return Level->eventAcsPolyMoveToEx(args[0], float(args[1])/65536.0f, float(args[2])/65536.0f,
-                                           float(args[3])/65536.0f, float(args[4])/65536.0f,
-                                           args[5], Activator);
+        return Level->eventAcsPolyMoveToEx(args[0], args[1], args[2], args[3], args[4], args[5], Activator);
       }
       return 0;
 
-    // Polyobj_MoveToSpotEx (int po, float speed, int targettid, int override) -- this uses target height too
+    // Polyobj_MoveToSpotEx (int po, int speed, int targettid, int override) -- this uses target height too
     case ACSF_Polyobj_MoveToSpotEx:
       if (argCount >= 4) {
-        return Level->eventAcsPolyMoveToSpotEx(args[0], float(args[1])/65536.0f, args[2], args[3], Activator);
+        return Level->eventAcsPolyMoveToSpotEx(args[0], args[1], args[2], args[3], Activator);
       }
       return 0;
 

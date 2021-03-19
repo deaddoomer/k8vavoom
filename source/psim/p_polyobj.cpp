@@ -1129,6 +1129,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     **vptr = (*origPts)+delta;
   }
   UpdatePolySegs(po);
+  if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
 
   const bool blocked = (!forced && IsForServer() ? PolyCheckMobjBlocked(po) : false);
 
@@ -1138,11 +1139,12 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     vptr = po->segPts;
     for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
+    if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
     LinkPolyobj(po); // it is always for server
     return false;
   }
 
-  OffsetPolyobjFlats(po, -x, y, z);
+  OffsetPolyobjFlats(po, -x, -y, 0.0f);
 
   po->startSpot.x += x;
   po->startSpot.y += y;
