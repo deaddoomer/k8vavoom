@@ -250,7 +250,7 @@ native readonly transient polyobj_t *PolyObjIgnore; // transient, used in pobj m
 native readonly transient sector_t *LastSector; // set by `UnlinkFromWorld()`, used to remove excessive gore actors
 native readonly transient TVec PrevTickOrigin; // set in `VEntity::Tick()`
 
-  // non-polyobject
+// non-polyobject
 native readonly transient subsector_t *BaseSubSector; // cannot be `nullptr`, it is always set
 native readonly transient sector_t *BaseSector; // cannot be `nullptr`, it is always set
 
