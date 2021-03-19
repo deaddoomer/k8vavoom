@@ -402,7 +402,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
 //
 //==========================================================================
 void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
-  if (seg->pobj) return SetupTwoSidedMidWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
+  if (seg->pobj && seg->pobj->posector) return SetupTwoSidedMidWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
 
   FreeWSurfs(sp->surfs);
 
