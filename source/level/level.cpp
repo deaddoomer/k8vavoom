@@ -91,7 +91,7 @@ void VLevel::ResetValidCount () {
   validcount = 1;
   for (auto &&it : allLines()) it.validcount = 0;
   for (auto &&it : allSectors()) it.validcount = 0;
-  for (auto &&it : allPolyObjs()) it->validcount = 0;
+  for (auto &&it : allPolyobjects()) it->validcount = 0;
 }
 
 

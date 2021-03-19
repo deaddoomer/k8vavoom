@@ -304,10 +304,27 @@ bool VLevel::IsPointInsideSector2D (const sector_t *sec, const float x, const fl
 bool VLevel::IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept {
   if (!sec) return false;
   for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
-    if (sub->numlines < 3) continue;
+    if (sub->numlines == 0) continue;
+    // if rectangles aren't intersecting... you got it
     if (!Are2DBBoxesOverlap(sub->bbox2d, bb2d)) continue;
-    const seg_t *seg = &Segs[sub->firstline];
+    // if subsector is fully inside our rect, we're done
+    // strictly speaking, this check is not necessary, because
+    // for each seg `checkBox2D()` will select the point that is
+    // "on the right side", but why not?
+    if (sub->bbox2d[BOX2D_MINX] >= bb2d[BOX2D_MINX] &&
+        sub->bbox2d[BOX2D_MINY] >= bb2d[BOX2D_MINY] &&
+        sub->bbox2d[BOX2D_MAXX] <= bb2d[BOX2D_MAXX] &&
+        sub->bbox2d[BOX2D_MAXY] <= bb2d[BOX2D_MAXY])
+    {
+      return true;
+    }
+    // subsector must be closed (it is guaranteed if it have enough segs)
+    if (sub->numlines < 3) continue;
+    // check subsector segs
+    // if our rect is fully outside of at least one seg, it is outside of subsector
+    // otherwise we are inside, and can return success
     bool inside = true;
+    const seg_t *seg = &Segs[sub->firstline];
     for (int f = sub->numlines; f--; ++seg) {
       if (!seg->checkBox2D(bb2d)) {
         inside = false;

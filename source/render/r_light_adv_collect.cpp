@@ -354,18 +354,32 @@ void VRenderLevelShadowVolume::CollectAdvLightSecSurface (sec_region_t *secregio
 //==========================================================================
 void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigned int ssflag) {
   if (sub && sub->HasPObjs() && r_draw_pobj) {
+    const bool doUpdates = !r_disable_world_update.asBool();
     subregion_t *region = sub->regions;
     sec_region_t *secregion = region->secregion;
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.pobj();
       if (pobj->rendercount != BspVisFrame) {
         pobj->rendercount = BspVisFrame; // mark as rendered
+        TSecPlaneRef po_floor, po_ceiling;
+        po_floor.set(&pobj->pofloor, false);
+        po_ceiling.set(&pobj->poceiling, false);
+        const bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
+        pobj->updateWorldFrame = updateWorldFrame;
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
-          if (seg->linedef && seg->drawsegs) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
+          if (seg->linedef && seg->drawsegs) {
+            if (doSegUpdates) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
+            CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
+          }
         }
         if (pobj->posector) {
           for (subsector_t *posub = pobj->posector->subsectors; posub; posub = posub->seclink) {
+            // update pobj
+            if (doUpdates && posub->updateWorldFrame != updateWorldFrame) {
+              posub->updateWorldFrame = updateWorldFrame;
+              UpdateSubRegions(posub);
+            }
             CollectAdvLightSubRegion(posub, ssflag);
           }
         }

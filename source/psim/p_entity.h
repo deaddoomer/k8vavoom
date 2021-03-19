@@ -239,8 +239,10 @@ class VEntity : public VThinker {
   float ScaleX;
   float ScaleY;
 
-  subsector_t *SubSector;
-  sector_t *Sector;
+  subsector_t *SubSector; // cannot be `nullptr`, it is always set
+  sector_t *Sector; // cannot be `nullptr`, it is always set
+  polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
+    // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
   sector_t *LastSector; // transient; set by `UnlinkFromWorld()`, used to remove excessive gore actors
   TVec PrevTickOrigin; // transient; set in `VEntity::Tick()`
 

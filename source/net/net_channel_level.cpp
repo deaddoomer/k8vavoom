@@ -1188,8 +1188,9 @@ bool VLevelChannel::ParsePolyObj (VMessageIn &Msg) {
   TVec Pos = Po->startSpot;
   if (Msg.ReadBit()) Msg << Pos.x;
   if (Msg.ReadBit()) Msg << Pos.y;
+  if (Msg.ReadBit()) Msg << Pos.z;
   if (Msg.IsError()) return false;
-  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y);
+  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y, Pos.z-Po->startSpot.z);
   if (Msg.ReadBit()) {
     float a = 0;
     Msg << a;

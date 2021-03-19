@@ -1166,6 +1166,7 @@ struct polyobj_t {
   float[4] bbox2d; // *CURRENT* bounding box
   int validcount;
   int rendercount; // used in renderer
+  int updateWorldFrame; // to avoid excessive updates; valid only for segs, for flats, aponymous subsector field is used
   bool bCrush; // should the polyobj attempt to crush mobjs?
   bool bHurtOnTouch;
   int seqType;
@@ -1187,6 +1188,7 @@ struct subregion_t {
   native transient readonly sec_surface_t *fakefloor; // can be `nullptr`
   native transient readonly sec_surface_t *fakeceil; // can be `nullptr`
   native transient readonly bool bZeroSkyFloorHack;
+  native transient bool bForceRecreate; // autoreset
   //native readonly int count;
   //native transient readonly drawseg_t *lines;
   native transient readonly subsector_t *sub; // subsector for this region

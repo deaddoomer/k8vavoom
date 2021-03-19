@@ -296,7 +296,7 @@ struct cptrace_t {
 
 struct tmtrace_t {
   VEntity *StepThing; // not for cptrace_t
-  TVec End; // not for cptrace_t
+  TVec End; // for cptrace_t, this is `Pos`
   float BBox[4]; // valid for cptrace_t
   float FloorZ; // valid for cptrace_t
   float CeilingZ; // valid for cptrace_t
@@ -335,8 +335,11 @@ struct tmtrace_t {
   // note that this is really *any* line, not necessarily first or last crossed!
   line_t *AnyBlockingLine;
 
+  // polyobject we are standing on, valid for cptrace_t
+  polyobj_t *PolyObj;
+
   // from cptrace_t
-  TVec Pos; // valid for cptrace_t
+  //TVec Pos; // valid for cptrace_t
 
   /*
   inline void CopyRegFloor (sec_region_t *r, const TVec *Origin) {

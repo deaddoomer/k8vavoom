@@ -1042,6 +1042,7 @@ public:
   vint32 validcount;
   vuint32 rendercount; // used in renderer; there is no need to save this for portals
     // no need to save, because this is used only in renderer, to mark already rendered polyobjects in BSP walker
+  vuint32 updateWorldFrame; // to avoid excessive updates; valid only for segs, for flats, aponymous subsector field is used
   enum {
     PF_Crush       = 1u<<0, // should the polyobj attempt to crush mobjs?
     PF_HurtOnTouch = 1u<<1,
@@ -1098,11 +1099,16 @@ struct subregion_t {
   sec_surface_t *fakeceil; // can be `nullptr`
   enum {
     SRF_ZEROSKY_FLOOR_HACK = 1u<<0,
+    SRF_FORCE_RECREATE = 1u<<1, // autoreset
   };
   vuint32 flags;
   //vint32 count;
   //drawseg_t *lines;
   subsector_t *sub; // subsector for this region
+
+  inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
+  inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
+  inline bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
 };
 
 

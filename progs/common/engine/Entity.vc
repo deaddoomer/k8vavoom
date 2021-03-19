@@ -196,8 +196,11 @@ struct tmtrace_t {
   // note that this is really *any* line, not necessarily first or last crossed!
   line_t *AnyBlockingLine;
 
+  // polyobject we are standing on, valid for cptrace_t
+  polyobj_t *PolyObj;
+
   // from cptrace_t
-  TVec Pos; // valid for cptrace_t
+  //TVec Pos; // valid for cptrace_t
 };
 
 
@@ -239,8 +242,10 @@ float FloorClip; // value to use for floor clipping
 float ScaleX;
 float ScaleY;
 
-native readonly transient subsector_t *SubSector;
-native readonly transient sector_t *Sector;
+native readonly transient subsector_t *SubSector; // can be `nullptr` for `EF_NoSector` entities
+native readonly transient sector_t *Sector; // can be `nullptr` for `EF_NoSector` entities
+native readonly transient polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
+    // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
 native readonly transient sector_t *LastSector; // set by `UnlinkFromWorld()`, used to remove excessive gore actors
 native readonly transient TVec PrevTickOrigin; // set in `VEntity::Tick()`
 

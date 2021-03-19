@@ -618,7 +618,7 @@ bool VEntity::CheckPosition (TVec Pos) {
   bool good = true;
 
   memset((void *)&cptrace, 0, sizeof(cptrace));
-  cptrace.Pos = Pos;
+  cptrace.End = Pos;
 
   const float rad = GetMoveRadius();
 
@@ -690,7 +690,7 @@ bool VEntity::CheckPosition (TVec Pos) {
     if (XLevel->NumPolyObjs) {
       // need new validcount
       XLevel->IncrementValidCount();
-      const float z1 = cptrace.Pos.z+max2(0.0f, Height);
+      const float z1 = cptrace.End.z+max2(0.0f, Height);
       for (int bx = xl; bx <= xh; ++bx) {
         for (int by = yl; by <= yh; ++by) {
           polyobj_t *po;
@@ -700,9 +700,9 @@ bool VEntity::CheckPosition (TVec Pos) {
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
             // inside?
-            if (!inpobj && z1 > po->pofloor.minz && cptrace.Pos.z < po->poceiling.maxz) inpobj = true;
+            if (!inpobj && z1 > po->pofloor.minz && cptrace.End.z < po->poceiling.maxz) inpobj = true;
             // hit pobj
-            if (cptrace.Pos.z < (po->poceiling.maxz+po->pofloor.minz)*0.5f) {
+            if (cptrace.End.z < (po->poceiling.maxz+po->pofloor.minz)*0.5f) {
               // below
               cptrace.CeilingZ = min2(cptrace.CeilingZ, po->pofloor.minz);
             } else {
@@ -744,8 +744,8 @@ bool VEntity::CheckThing (tmtrace_t &cptrace, VEntity *Other) {
 
   const float blockdist = otherrad+rad;
 
-  if (fabsf(Other->Origin.x-cptrace.Pos.x) >= blockdist ||
-      fabsf(Other->Origin.y-cptrace.Pos.y) >= blockdist)
+  if (fabsf(Other->Origin.x-cptrace.End.x) >= blockdist ||
+      fabsf(Other->Origin.y-cptrace.End.y) >= blockdist)
   {
     // didn't hit it
     return true;
@@ -756,8 +756,8 @@ bool VEntity::CheckThing (tmtrace_t &cptrace, VEntity *Other) {
     // prevent some objects from overlapping
     if (EntityFlags&Other->EntityFlags&EF_DontOverlap) return false;
     // check if a mobj passed over/under another object
-    if (cptrace.Pos.z >= Other->Origin.z+GetBlockingHeightFor(Other)) return true;
-    if (cptrace.Pos.z+Height <= Other->Origin.z) return true; // under thing
+    if (cptrace.End.z >= Other->Origin.z+GetBlockingHeightFor(Other)) return true;
+    if (cptrace.End.z+Height <= Other->Origin.z) return true; // under thing
   }
   */
 
@@ -827,7 +827,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   //FIXME: check if we can stand on polyobject (this should fix floor and ceiling heights, i think)
   polyobj_t *po = ld->pobj();
   if (po) {
-    if (po->pofloor.minz < po->poceiling.maxz && (cptrace.Pos.z+max2(0.0f, Height) <= po->pofloor.minz || cptrace.Pos.z >= po->poceiling.maxz)) {
+    if (po->pofloor.minz < po->poceiling.maxz && (cptrace.End.z+max2(0.0f, Height) <= po->pofloor.minz || cptrace.End.z >= po->poceiling.maxz)) {
       // outside of polyobject
       return true;
     }
@@ -846,10 +846,10 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   if (po) return true;
 
   // set openrange, opentop, openbottom
-  //TVec hit_point = cptrace.Pos-(DotProduct(cptrace.Pos, ld->normal)-ld->dist)*ld->normal;
-  TVec hit_point = cptrace.Pos-(ld->PointDistance(cptrace.Pos)*ld->normal);
+  //TVec hit_point = cptrace.End-(DotProduct(cptrace.End, ld->normal)-ld->dist)*ld->normal;
+  TVec hit_point = cptrace.End-(ld->PointDistance(cptrace.End)*ld->normal);
   opening_t *open = SV_LineOpenings(ld, hit_point, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-  open = SV_FindOpening(open, cptrace.Pos.z, cptrace.Pos.z+Height);
+  open = SV_FindOpening(open, cptrace.End.z, cptrace.End.z+Height);
 
   if (open) {
     // adjust floor / ceiling heights

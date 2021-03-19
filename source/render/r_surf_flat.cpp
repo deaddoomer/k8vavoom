@@ -147,9 +147,9 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   } else {
     // change sector surface
     // we still may have to recreate it if it was a "sky <-> non-sky" change, so check for it
-    recreateSurface = !isSkyFlat || ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat);
+    recreateSurface = !isSkyFlat || ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat) || sreg->IsForcedRecreation();
     if (recreateSurface) {
-      //GCon->Logf("***  RECREATING!");
+      //if (sub->ownpobj) GCon->Logf("***  RECREATING!");
       surf = ReallocSurface(ssurf->surfs, vcount);
     } else {
       updateZ = (FASI(ssurf->edist) != FASI(spl.splane->dist));
@@ -263,6 +263,14 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
   if (!ssurf->esecplane.splane->pic) return; // no texture? nothing to do
 
   TSecPlaneRef splane(ssurf->esecplane);
+
+  if (sreg->IsForcedRecreation()) {
+    sec_surface_t *newsurf = CreateSecSurface(ssurf, sub, RealPlane, sreg, fake);
+    vassert(newsurf == ssurf); // sanity check
+    ssurf->texinfo.ColorMap = ColorMap; // just in case
+    // nothing more to do
+    return;
+  }
 
   if (splane.splane != RealPlane.splane) {
     // check for sky changes

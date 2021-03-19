@@ -38,21 +38,15 @@ bool carryThings;
 //
 //==========================================================================
 override void Tick (float deltaTime) {
-  float move;
-  float absMove;
-  float xMove;
-  float yMove;
-  polyobj_t *poly;
-
-  move = speed*deltaTime;
-  absMove = fabs(move);
+  float move = speed*deltaTime;
+  float absMove = fabs(move);
   if (dist < absMove) move = dist*(move < 0.0 ? -1.0 : 1.0);
-  xMove = move*cos(angle);
-  yMove = move*sin(angle);
-  if (XLevel.MovePolyobj(polyobj, xMove, yMove, carryThings)) {
+  float xMove = move*cos(angle);
+  float yMove = move*sin(angle);
+  if (XLevel.MovePolyobj(polyobj, xMove, yMove, forced:carryThings)) {
     dist -= absMove;
     if (dist <= 0.0) {
-      poly = XLevel.GetPolyobj(polyobj);
+      polyobj_t *poly = XLevel.GetPolyobj(polyobj);
       if (poly->SpecialData == self) poly->SpecialData = none;
       PolyobjStopSequence(poly);
       Destroy();

@@ -228,26 +228,14 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
 //
 //  VRenderLevelShared::UpdateSubRegions
 //
+//  there is no need to update polyobjects here,
+//  bsp renderer will do it explicitly
+//
 //==========================================================================
 void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
   if (!sub) return;
 
-  // polyobj cannot be in subsector with 3d floors, so update it once
-  //FIXME: this does excessive updates; it is safe, but slow
-  if (sub->HasPObjs()) {
-    // update the polyobj
-    for (auto &&it : sub->PObjFirst()) {
-      polyobj_t *pobj = it.pobj();
-      if (pobj->pofloor.TexZ <= -90000.0f) continue; // untranslated
-      TSecPlaneRef po_floor, po_ceiling;
-      po_floor.set(&pobj->pofloor, false);
-      po_ceiling.set(&pobj->poceiling, false);
-      for (auto &&sit : pobj->SegFirst()) {
-        seg_t *seg = sit.seg();
-        if (seg->linedef && seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
-      }
-    }
-  }
+  //if (sub->ownpobj) GCon->Logf(NAME_Debug, "updating subsector for pobj #%d", sub->ownpobj->tag);
 
   for (subregion_t *region = sub->regions; region; region = region->next) {
     TSecPlaneRef r_floor = region->floorplane;
@@ -301,6 +289,8 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
       //region->fakeceil->texinfo.Tex = GTextureManager[GTextureManager.DefaultTexture];
     }
 
+    region->ResetForceRecreation();
+
     // polyobj cannot be in 3d floor
   }
 }
@@ -333,6 +323,7 @@ void VRenderLevelShared::UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dof
         }
         UpdateSecSurface(region->realfloor, region->floorplane, sub, region, true/*no cmap*/); // ignore colormap
       }
+
       if (region->fakefloor) {
         TSecPlaneRef fakefloor;
         fakefloor.set(&sub->sector->fakefloors->floorplane, false);
@@ -341,6 +332,7 @@ void VRenderLevelShared::UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dof
         UpdateSecSurface(region->fakefloor, fakefloor, sub, region, true/*no cmap*/, true/*fake*/); // ignore colormap
       }
     }
+
     if (doceils) {
       if (region->realceil) UpdateSecSurface(region->realceil, region->ceilplane, sub, region);
       if (region->fakeceil) {
@@ -351,5 +343,7 @@ void VRenderLevelShared::UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dof
         UpdateSecSurface(region->fakeceil, fakeceil, sub, region, false/*allow cmap*/, true/*fake*/);
       }
     }
+
+    region->ResetForceRecreation();
   }
 }

@@ -918,6 +918,7 @@ void VRenderLevelShared::ResetDLightFrameCount () noexcept {
 void VRenderLevelShared::ResetUpdateWorldFrame () noexcept {
   updateWorldFrame = 1;
   for (auto &&it : Level->allSubsectors()) it.updateWorldFrame = 0;
+  for (auto &&it : Level->allPolyobjects()) it->updateWorldFrame = 0;
 }
 
 

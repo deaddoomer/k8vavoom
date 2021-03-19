@@ -706,8 +706,12 @@ public:
   void InitPolyobjs ();
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
-  bool MovePolyobj (int num, float x, float y, bool forced=false); // tag (GetPolyobj)
+  bool MovePolyobj (int num, float x, float y, float z=0.0f, bool forced=false); // tag (GetPolyobj)
   bool RotatePolyobj (int num, float angle); // tag (GetPolyobj)
+
+  // this also fixes inner sector height (forces to pobj floor and ceiling)
+  // does nothing for non-3d polyobjects
+  void OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool forceRecreation=false);
 
   void ResetPObjRenderCounts () noexcept; // called from renderer
   void PutPObjInSubsectors (polyobj_t *po) noexcept;
@@ -813,7 +817,7 @@ public:
   VL_ITERATOR(Nodes, allNodes, node_t)
   VL_ITERATOR(Things, allThings, mthing_t)
   VL_ITERATOR(Zones, allZones, vint32)
-  VL_ITERATOR(PolyObjs, allPolyObjs, polyobj_t *)
+  VL_ITERATOR(PolyObjs, allPolyobjects, polyobj_t *)
   VL_ITERATOR(PolyAnchorPoints, allPolyAnchorPoints, PolyAnchorPoint_t)
   VL_ITERATOR(GenericSpeeches, allGenericSpeeches, FRogueConSpeech)
   VL_ITERATOR(LevelSpeeches, allLevelSpeeches, FRogueConSpeech)

@@ -547,6 +547,55 @@ void VLevel::InitPolyobjs () {
 
 //==========================================================================
 //
+//  VLevel::OffsetPolyobjFlats
+//
+//==========================================================================
+void VLevel::OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool forceRecreation) {
+  if (!po) return;
+
+  po->pofloor.dist -= z; // floor dist is negative
+  po->pofloor.TexZ += z;
+  po->poceiling.dist += z; // ceiling dist is positive
+  po->poceiling.TexZ += z;
+
+  sector_t *sec = po->posector;
+  if (!sec) return;
+
+  if (fabsf(x) != 0.0f || fabsf(y) != 0.0f) {
+    forceRecreation = true;
+    VTexture *FTex = GTextureManager(sec->floor.pic);
+    if (FTex && FTex->Type != TEXTYPE_Null) {
+      const float w = FTex->GetScaledWidth();
+      const float h = FTex->GetScaledHeight();
+      if (w > 0.0f) po->pofloor.xoffs = fmodf(po->pofloor.xoffs+x, w);
+      if (h > 0.0f) po->pofloor.yoffs = fmodf(po->pofloor.yoffs-y, h);
+    }
+
+    VTexture *CTex = GTextureManager(sec->ceiling.pic);
+    if (CTex && CTex->Type != TEXTYPE_Null) {
+      const float w = CTex->GetScaledWidth();
+      const float h = CTex->GetScaledHeight();
+      if (w > 0.0f) po->poceiling.xoffs = fmodf(po->poceiling.xoffs+x, w);
+      if (h > 0.0f) po->poceiling.yoffs = fmodf(po->poceiling.yoffs-y, h);
+    }
+  }
+
+  // fix sector
+  sec->floor = po->pofloor;
+  sec->ceiling = po->poceiling;
+
+  if (forceRecreation) {
+    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+      for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
+        reg->ForceRecreation();
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VLevel::TranslatePolyobjToStartSpot
 //
 //==========================================================================
@@ -701,16 +750,9 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 
       //GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
       //GCon->Logf(NAME_Debug, "002: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-
     }
 
-    sec = po->posector;
-    if (sec) {
-      sec->floor.normal = po->pofloor.normal;
-      sec->floor.dist = po->pofloor.dist;
-      sec->ceiling.normal = po->poceiling.normal;
-      sec->ceiling.dist = po->poceiling.dist;
-    }
+    OffsetPolyobjFlats(po, deltaX, deltaY, 0.0f);
   }
 
   float pobbox[4];
@@ -915,7 +957,7 @@ int VLevel::GetPolyobjMirror (int poly) {
 //  VLevel::MovePolyobj
 //
 //==========================================================================
-bool VLevel::MovePolyobj (int num, float x, float y, bool forced) {
+bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   polyobj_t *po = GetPolyobj(num);
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
 
@@ -946,8 +988,11 @@ bool VLevel::MovePolyobj (int num, float x, float y, bool forced) {
     return false;
   }
 
+  OffsetPolyobjFlats(po, -x, y, z);
+
   po->startSpot.x += x;
   po->startSpot.y += y;
+  po->startSpot.z += z;
   if (IsForServer()) LinkPolyobj(po);
 
   // notify renderer that this polyobject is moved
@@ -1135,11 +1180,12 @@ IMPLEMENT_FUNCTION(VLevel, GetPolyobjMirror) {
 
 IMPLEMENT_FUNCTION(VLevel, MovePolyobj) {
   P_GET_BOOL_OPT(forced, false);
+  P_GET_FLOAT_OPT(z, 0);
   P_GET_FLOAT(y);
   P_GET_FLOAT(x);
   P_GET_INT(num);
   P_GET_SELF;
-  RET_BOOL(Self->MovePolyobj(num, x, y, forced));
+  RET_BOOL(Self->MovePolyobj(num, x, y, z, forced));
 }
 
 IMPLEMENT_FUNCTION(VLevel, RotatePolyobj) {
