@@ -103,10 +103,10 @@ void VRenderLevelShared::PObjModified (polyobj_t *po) {
   if (sec) {
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
       for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
-        if (reg->realfloor) reg->realfloor->edist = sec->floor.dist+0.346f;
-        if (reg->realceil) reg->realceil->edist = sec->ceiling.dist+0.346f;
-        if (reg->fakefloor) reg->fakefloor->edist = sec->floor.dist+0.346f;
-        if (reg->fakeceil) reg->fakeceil->edist = sec->ceiling.dist+0.346f;
+        if (reg->realfloor) reg->realfloor->edist = -99999.9f;
+        if (reg->realceil) reg->realceil->edist = -99999.9f;
+        if (reg->fakefloor) reg->fakefloor->edist = -99999.9f;
+        if (reg->fakeceil) reg->fakeceil->edist = -99999.9f;
       }
       //UpdateSubRegions(sub); // schedule it
     }

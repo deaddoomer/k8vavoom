@@ -554,8 +554,19 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->poceiling.dist = po->poceiling.maxz;
   }
 
+  GCon->Logf(NAME_Debug, "SPAWN pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+
   //po->startSpot.z = po->pofloor.minz;
   po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
+
+  // setup seg sectors
+  for (int f = 0; f < po->numsegs; ++po) {
+    seg_t *seg = po->segs[f];
+    if (seg->frontsector) seg->frontsector = po->posector;
+    if (seg->backsector) seg->backsector = po->posector;
+  }
 }
 
 
@@ -643,16 +654,22 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool 
 
   po->pofloor.dist -= z; // floor dist is negative
   po->pofloor.TexZ += z;
+  po->pofloor.minz += z;
+  po->pofloor.maxz += z;
+  po->pofloor.TexZ = po->pofloor.minz;
   po->poceiling.dist += z; // ceiling dist is positive
   po->poceiling.TexZ += z;
+  po->poceiling.minz += z;
+  po->poceiling.maxz += z;
+  po->poceiling.TexZ = po->poceiling.minz;
 
   sector_t *sec = po->posector;
   if (!sec) return;
 
   if (fabsf(x) != 0.0f || fabsf(y) != 0.0f) {
-    forceRecreation = true;
     VTexture *FTex = GTextureManager(sec->floor.pic);
     if (FTex && FTex->Type != TEXTYPE_Null) {
+      forceRecreation = true;
       const float w = FTex->GetScaledWidth();
       const float h = FTex->GetScaledHeight();
       if (w > 0.0f) po->pofloor.xoffs = fmodf(po->pofloor.xoffs+x, w);
@@ -661,6 +678,7 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool 
 
     VTexture *CTex = GTextureManager(sec->ceiling.pic);
     if (CTex && CTex->Type != TEXTYPE_Null) {
+      forceRecreation = true;
       const float w = CTex->GetScaledWidth();
       const float h = CTex->GetScaledHeight();
       if (w > 0.0f) po->poceiling.xoffs = fmodf(po->poceiling.xoffs+x, w);
@@ -856,6 +874,10 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   } else {
     // 3d polyobject
 
+    GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+      po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+
     // clamp height
     if (thing && thing->height > 0.0f) {
       const float hgt = po->poceiling.maxz-po->pofloor.minz;
@@ -866,6 +888,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
         po->poceiling.minz += dz;
         po->poceiling.maxz += dz;
         po->poceiling.dist += dz;
+        po->poceiling.TexZ += dz;
       }
     }
 
@@ -875,9 +898,17 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   GCon->Logf(NAME_Debug, "pobj #%d: height=%g; spot=(%g,%g,%g); dz=%g", po->tag, po->poceiling.maxz-po->pofloor.minz, po->startSpot.x, po->startSpot.y, po->startSpot.z, deltaZ);
 
+  GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+
   OffsetPolyobjFlats(po, deltaX, deltaY, deltaZ, true);
 
   UpdatePolySegs(po);
+
+  GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
 
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
