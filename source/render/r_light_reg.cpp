@@ -1155,11 +1155,12 @@ void VRenderLevelLightmap::InvalidateLineLMaps (const TVec &org, float radius, d
 //==========================================================================
 void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radius, int num) {
   subsector_t *sub = &Level->Subsectors[num];
-  if (sub->isOriginalPObj()) return;
+  if (sub->isAnyPObj()) return;
 
   // polyobj
   if (sub->HasPObjs()) {
     // this is excessive invalidation for polyobj, but meh...
+    //FIXME:POBJ: invalidate flats lightmaps too
     for (auto &&it : sub->PObjFirst()) {
       for (auto &&sit : it.pobj()->SegFirst()) {
         const seg_t *seg = sit.seg();
@@ -1264,6 +1265,8 @@ example.
 //==========================================================================
 //
 //  VRenderLevelLightmap::InvalidateStaticLightmaps
+//
+//  FIXME:POBJ:
 //
 //==========================================================================
 void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight) {
@@ -1712,6 +1715,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmapsSubsector (subsector_t *sub)
       for (auto &&sit : it.pobj()->SegFirst()) {
         const seg_t *seg = sit.seg();
         if (seg->linedef && seg->drawsegs) InvalidateStaticLightmapsLine(seg->drawsegs);
+        // FIXME:POBJ: flats
       }
     }
   }

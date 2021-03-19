@@ -40,6 +40,62 @@ enum {
 };
 
 
+static TMapNC<VEntity *, bool> poEntityMap;
+static TMapNC<sector_t *, bool> poSectorMap;
+
+
+//==========================================================================
+//
+//  CollectPObjTouchingThingsRough
+//
+//  collect all objects from sectors this polyobject may touch
+//
+//==========================================================================
+static void CollectPObjTouchingThingsRough (polyobj_t *po) {
+  //FIXME: do not use static map here
+  poEntityMap.reset();
+  poSectorMap.reset();
+    //const int visCount = Level->nextVisitedCount();
+    //if (n->Visited != visCount) n->Visited = visCount;
+  for (polyobjpart_t *part = po->parts; part; part = part->nextpobj) {
+    sector_t *sec = part->sub->sector;
+    if (sec->isAnyPObj()) continue; // just in case
+    if (!poSectorMap.put(sec, true)) {
+      //GCon->Logf(NAME_Debug, "pobj #%d: checking sector #%d for entities...", po->tag, (int)(ptrdiff_t)(sec-&Sectors[0]));
+      // new sector, process things
+      for (msecnode_t *n = sec->TouchingThingList; n; n = n->SNext) {
+        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+        poEntityMap.put(n->Thing, true);
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  CollectPObjTouchingThingsRough
+//
+//  collect all objects touching this 3d pobj
+//
+//==========================================================================
+/*
+static void CollectPObjThings (polyobj_t *po) {
+  //FIXME: do not use static map here
+  poEntityMap.reset();
+  if (po->posector) {
+    //const int visCount = Level->nextVisitedCount();
+    //if (n->Visited != visCount) n->Visited = visCount;
+    for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+      //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+      poEntityMap.put(n->Thing, true);
+    }
+  }
+}
+*/
+
+
+
 //==========================================================================
 //
 //  pobjAddSubsector
@@ -291,8 +347,9 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
         // rendered even if we do a no-clip into it
         // -- FB -- I'm disabling this behavior
         // k8: and i am enabling it again
-        if (seg->frontsector) seg->frontsector->linecount = 0;
-        if (seg->backsector) seg->backsector->linecount = 0; // mark inner polyobject sectors too
+        if (seg->frontsector && seg->frontsector->linecount) { seg->frontsector->prevlinecount = seg->frontsector->linecount; seg->frontsector->linecount = 0; }
+        // mark inner polyobject sectors too
+        if (seg->backsector && seg->backsector->linecount) { seg->backsector->prevlinecount = seg->backsector->linecount; seg->backsector->linecount = 0; }
       }
       v0 = *seg->v2;
       if (!vseen.put(v0, true)) {
@@ -362,8 +419,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       // rendered even if we do a no-clip into it
       // -- FB -- I'm disabling this behavior
       // k8: and i am enabling it again
-      if (seg.frontsector) seg.frontsector->linecount = 0;
-      if (seg.backsector) seg.backsector->linecount = 0; // mark inner polyobject sectors too
+      if (seg.frontsector && seg.frontsector->linecount) { seg.frontsector->prevlinecount = seg.frontsector->linecount; seg.frontsector->linecount = 0; }
+      // mark inner polyobject sectors too
+      if (seg.backsector && seg.backsector->linecount) { seg.backsector->prevlinecount = seg.backsector->linecount; seg.backsector->linecount = 0; }
       IterFindPolySegs(*seg.v2, po->segs+1, PolySegCount, PolyStart);
       po->seqType = seg.linedef->arg3;
       //if (po->seqType < 0 || po->seqType >= SEQTYPE_NUMSEQ) po->seqType = 0;
@@ -375,8 +433,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       // rendered even if we do a no-clip into it
       // -- FB -- I'm disabling this behavior
       // k8: and i am enabling it again
-      if (seg.frontsector) seg.frontsector->linecount = 0;
-      if (seg.backsector) seg.backsector->linecount = 0; // mark inner polyobject sectors too
+      if (seg.frontsector && seg.frontsector->linecount) { seg.frontsector->prevlinecount = seg.frontsector->linecount; seg.frontsector->linecount = 0; }
+      // mark inner polyobject sectors too
+      if (seg.backsector && seg.backsector->linecount) { seg.backsector->prevlinecount = seg.backsector->linecount; seg.backsector->linecount = 0; }
     }
   }
 
@@ -497,6 +556,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->posector = nullptr;
     return;
   }
+
+  po->posector->linecount = po->posector->prevlinecount; // turn it back to normal sector
+  GCon->Logf(NAME_Debug, "pobj #%d sector #%d, linecount restored to %d", po->tag, (int)(ptrdiff_t)(po->posector-&Sectors[0]), po->posector->linecount);
 
   // build floor
   po->pofloor = po->posector->floor;
@@ -956,7 +1018,6 @@ void VLevel::InitPolyBlockMap () {
 void VLevel::LinkPolyobj (polyobj_t *po) {
   /* k8 notes
      relink polyobject to the new subsector.
-     this somewhat eases rendering glitches until i'll write the proper BSP splitter for pobjs.
      it is not the best way, but at least something.
 
      note that if it moves to the sector with a different height, the renderer
@@ -1060,6 +1121,17 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
       }
     }
   }
+
+  // relink all mobjs this polyobject may touch (if it is 3d pobj)
+  if (po->posector) {
+    CollectPObjTouchingThingsRough(po);
+    // relink all things, so they can get pobj info right
+    for (auto &&it : poEntityMap.first()) {
+      VEntity *e = it.key();
+      //GCon->Logf(NAME_Debug, "pobj #%d: relinking entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
+      e->LinkToWorld(); // relink it
+    }
+  }
 }
 
 
@@ -1115,8 +1187,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   polyobj_t *po = GetPolyobj(num);
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
 
-  if (IsForServer()) UnLinkPolyobj(po);
-
+  bool unlinked = false;
   EnsurePolyPrevPts(po->segPtsCount);
 
   const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
@@ -1131,7 +1202,21 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   UpdatePolySegs(po);
   if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
 
-  const bool blocked = (!forced && IsForServer() ? PolyCheckMobjBlocked(po) : false);
+  bool blocked = false;
+  if (IsForServer()) {
+    // check if our 3d pobj can move up
+    // do this even on forced move, because we still want to gib bodies and hurt things
+    if (z != 0.0f && po->posector && po->posector->TouchingThingList) {
+      //if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
+      //GCon->Logf(NAME_Debug, "*** pobj #%d: ChangeSector; z=%g", po->tag, z);
+      blocked = ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
+    }
+    if (!forced && !blocked) {
+      if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
+      blocked = PolyCheckMobjBlocked(po);
+    }
+    if (forced) blocked = false;
+  }
 
   if (blocked) {
     // restore points
@@ -1140,7 +1225,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
     if (fabsf(z) != 0.0f) OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
-    LinkPolyobj(po); // it is always for server
+    if (unlinked) LinkPolyobj(po); // it is always for server
+    // no need to restore heights, the objects will fall
+    //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
     return false;
   }
 
@@ -1149,9 +1236,19 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   po->startSpot.x += x;
   po->startSpot.y += y;
   po->startSpot.z += z;
+
   if (IsForServer()) {
+    if (!unlinked) { unlinked = true; UnLinkPolyobj(po); }
     LinkPolyobj(po);
-    PolyMobjMoveRotateStanding(po, x, y, 0.0f);
+    if (po->posector) {
+      CollectPObjTouchingThingsRough(po);
+      // relink all things, so they can get pobj info right
+      for (auto &&it : poEntityMap.first()) {
+        VEntity *e = it.key();
+        //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
+        e->Level->eventPolyMoveMobjBy(e, po, x, y);
+      }
+    }
   }
 
   // notify renderer that this polyobject is moved
@@ -1214,7 +1311,15 @@ bool VLevel::RotatePolyobj (int num, float angle) {
   po->angle = an;
   if (IsForServer()) {
     LinkPolyobj(po);
-    PolyMobjMoveRotateStanding(po, 0.0f, 0.0f, angle);
+    // rotate all objects standing on this 3d pobj
+    if (po->posector) {
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        mobj->Level->eventPolyRotateMobj(mobj, po, angle);
+      }
+    }
   }
 
   // notify renderer that this polyobject is moved
@@ -1306,42 +1411,6 @@ bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
     if (PolyCheckMobjLineBlocking(*lineList, po)) blocked = true; //k8: break here?
   }
   return blocked;
-}
-
-
-//==========================================================================
-//
-//  VLevel::PolyMobjMoveRotateStanding
-//
-//==========================================================================
-void VLevel::PolyMobjMoveRotateStanding (polyobj_t *po, float dx, float dy, float dangle) {
-  if (!po || po->numlines == 0 || !po->posector) return;
-
-  int top = MapBlock(po->bbox2d[BOX2D_TOP]-BlockMapOrgY)+1;
-  int bottom = MapBlock(po->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY)-1;
-  int left = MapBlock(po->bbox2d[BOX2D_LEFT]-BlockMapOrgX)-1;
-  int right = MapBlock(po->bbox2d[BOX2D_RIGHT]-BlockMapOrgX)+1;
-
-  if (top < 0 || right < 0 || bottom >= BlockMapHeight || left >= BlockMapWidth) return;
-
-  if (bottom < 0) bottom = 0;
-  if (top >= BlockMapHeight) top = BlockMapHeight-1;
-  if (left < 0) left = 0;
-  if (right >= BlockMapWidth) right = BlockMapWidth-1;
-
-  //GCon->Logf(NAME_Debug, "PolyMobjMoveRotateStanding: pobj #%d", po->tag);
-
-  for (int by = bottom*BlockMapWidth; by <= top*BlockMapWidth; by += BlockMapWidth) {
-    for (int bx = left; bx <= right; ++bx) {
-      for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
-        if (mobj->PolyObj != po || mobj->IsGoingToDie()) continue;
-        //if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
-        //if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
-        GCon->Logf(NAME_Debug, "PolyMobjMoveRotateStanding: pobj #%d; mobj %s(%u); dx=%g; dy=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), dx, dy);
-        mobj->Level->eventPolyZMoveMObjAt(mobj, po, dx, dy, dangle);
-      }
-    }
-  }
 }
 
 

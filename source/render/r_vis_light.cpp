@@ -100,7 +100,7 @@ void VRenderLevelShared::CalcLightVisUnstuckLightSubsector (const subsector_t *s
 //==========================================================================
 void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
   subsector_t *sub = &Level->Subsectors[subidx];
-  if (sub->isOriginalPObj()) return;
+  if (sub->isAnyPObj()) return;
 
   if (!LightClip.ClipLightCheckSubsector(sub, false)) {
     return LightClip.ClipLightAddSubsectorSegs(sub, false);

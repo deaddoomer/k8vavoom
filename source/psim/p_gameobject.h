@@ -806,6 +806,7 @@ struct sector_t {
   // `lines` is never `nullptr`, even if `linecount` is zero
   line_t **lines; // [linecount] size
   vint32 linecount;
+  vint32 prevlinecount; // temp store for 3d pobjs
 
   // neighbouring sectors
   // this is allocated as a big pool, and `nbsecs` points to various parts of that pool
@@ -902,6 +903,8 @@ struct sector_t {
   sec_region_t *AllocRegion ();
 
   inline bool isOriginalPObj () const noexcept { return (linecount == 0); }
+  inline bool isInnerPObj () const noexcept { return (linecount && ownpobj); }
+  inline bool isAnyPObj () const noexcept { return (linecount == 0 || ownpobj); }
 };
 
 
@@ -1176,6 +1179,8 @@ public:
   inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
 
   inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
+  inline bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
+  inline bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }
 };
 
 

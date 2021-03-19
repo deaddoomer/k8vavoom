@@ -132,7 +132,7 @@ static bool LightCheckPObjPlanes (SightTraceInfo &trace, polyobj_t *po) {
 //
 //==========================================================================
 static bool LightCheckPlanes (LightTraceInfo &trace, sector_t *sector) {
-  if (!sector || sector->isOriginalPObj()) return true;
+  if (!sector || sector->isAnyPObj()) return true;
 
   PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
 

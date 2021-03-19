@@ -505,20 +505,20 @@ void AfterUnarchiveThinkers () {}
 
 //==========================================================================
 //
-//  PolyZTestMObjAt
+//  PolyRotateMobj
 //
 //==========================================================================
-bool PolyZTestMObjAt (Entity A, polyobj_t *po, float dx, float dy) {
-  return true;
+void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
 }
 
 
 //==========================================================================
 //
-//  PolyZMoveMObjAt
+//  PolyMoveMobjBy
 //
 //==========================================================================
-void PolyZMoveMObjAt (Entity A, polyobj_t *po, float dx, float dy, float dangle) {
+bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
+  return false;
 }
 
 

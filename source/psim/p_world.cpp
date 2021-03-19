@@ -89,7 +89,7 @@ VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t *
   : Level(ALevel)
   , LinePtr(ALinePtr)
   , PolyLink(nullptr)
-  , PolySegIdx(-1)
+  , PolySegIdx(0)
   , List(nullptr)
 {
   if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
@@ -110,23 +110,17 @@ VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t *
 bool VBlockLinesIterator::GetNext () {
   // check polyobj blockmap
   while (PolyLink) {
-    if (PolySegIdx >= 0) {
-      for (; PolySegIdx < PolyLink->polyobj->numlines; ++PolySegIdx) {
-        line_t *linedef = PolyLink->polyobj->lines[PolySegIdx];
+    polyobj_t *po = PolyLink->polyobj;
+    if (po) {
+      while (PolySegIdx < po->numlines) {
+        line_t *linedef = po->lines[PolySegIdx++];
         if (linedef->validcount == validcount) continue;
         linedef->validcount = validcount;
         *LinePtr = linedef;
         return true;
       }
-      PolySegIdx = -1;
     }
-    if (PolyLink->polyobj) {
-      if (PolyLink->polyobj->validcount != validcount) {
-        PolyLink->polyobj->validcount = validcount;
-        PolySegIdx = 0;
-        continue;
-      }
-    }
+    PolySegIdx = 0;
     PolyLink = PolyLink->next;
   }
 

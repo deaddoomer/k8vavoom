@@ -1299,6 +1299,8 @@ vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, fl
 //
 //  VRenderLevelShared::CalcBSPNodeLMaps
 //
+//  FIXME:POBJ:
+//
 //==========================================================================
 void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox) {
  tailcall:
@@ -1359,6 +1361,7 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
 //  VRenderLevelShared::CalcStaticLightTouchingSubs
 //
 //  FIXME: make this faster!
+//  FIXME:POBJ:
 //
 //==========================================================================
 void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) {

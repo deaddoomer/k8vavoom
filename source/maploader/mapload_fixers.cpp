@@ -380,7 +380,7 @@ void VLevel::FixSelfRefDeepWater () {
 
     if (!seg->linedef) continue; // miniseg?
     if (!seg->frontsub) { GCon->Logf("INTERNAL ERROR IN GLBSP LOADER: FRONT SUBSECTOR IS NOT SET!"); return; }
-    if (seg->frontsub->isOriginalPObj()) continue;
+    if (seg->frontsub->isAnyPObj()) continue;
 
     const int fsnum = (int)(ptrdiff_t)(seg->frontsub-Subsectors);
 

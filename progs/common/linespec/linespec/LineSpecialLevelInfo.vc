@@ -5153,43 +5153,47 @@ override void AcsWarp (Entity Activator, int tid, float xofs, float yofs, float 
 
 //==========================================================================
 //
-//  PolyZTestMObjAt
+//  PolyRotateMobj
 //
 //==========================================================================
-override bool PolyZTestMObjAt (Entity A, polyobj_t *po, float dx, float dy) {
-  // not used yet
-  return true;
+override void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
+  if (!po || !po->posector || !dangle) return;
+  EntityEx ex = EntityEx(A);
+  if (!ex) return;
+  ex.Angles.yaw = AngleMod360(ex.Angles.yaw+dangle);
+  if (ex.bIsPlayer && ex.Player.MO == self) ex.Player.bFixAngle = true;
 }
 
 
 //==========================================================================
 //
-//  PolyZMoveMObjAt
+//  PolyMoveMobjBy
 //
 //==========================================================================
-override void PolyZMoveMObjAt (Entity A, polyobj_t *po, float dx, float dy, float dangle) {
-  if (!po || !po->posector) return;
+override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
+  if (!po || !po->posector) return false;
   EntityEx ex = EntityEx(A);
-  if (!ex) return;
+  if (!ex) return false;
+  if (!dx && !dy) return true; // just in case
   TVec newpos = ex.Origin;
   newpos.x += dx;
   newpos.y += dy;
-  newpos.z = po->poceiling.maxz;
   ex.UnlinkFromWorld();
   //ex.PolyObjIgnore = po;
   bool ok = ex.CheckPosition(newpos);
   //ex.PolyObjIgnore = nullptr;
   printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
-  ex.Origin = newpos;
-  ex.LinkToWorld();
-  if (dangle) {
-    ex.Angles.yaw = AngleMod360(ex.Angles.yaw+dangle);
-    if (ex.bIsPlayer && ex.Player.MO == self) ex.Player.bFixAngle = true;
+  if (ok) {
+    ex.Origin = newpos;
   }
+  ex.LinkToWorld();
+  /*
   if (!ok) {
     // damage other type of actors
     ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
   }
+  */
+  return ok;
 }
 
 

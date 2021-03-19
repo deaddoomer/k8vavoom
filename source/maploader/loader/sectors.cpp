@@ -316,7 +316,7 @@ void VLevel::GroupLines () {
     int nbstotal = 0;
     for (auto &&sector : allSectors()) {
       sector.nbsecs = nbsbuffer; // it doesn't hurt to assign it in pass 0
-      if (sector.isOriginalPObj()) continue; // pobj source sector, ignore
+      if (sector.isAnyPObj()) continue; // pobj source sector, ignore
       memset(ssmark.ptr(), 0, sizeof(vuint8)*NumSectors);
       for (int j = 0; j < sector.linecount; ++j) {
         const line_t *line = sector.lines[j];
@@ -324,7 +324,7 @@ void VLevel::GroupLines () {
         // get neighbour sector
         sector_t *bsec = (&sector == line->frontsector ? line->backsector : line->frontsector);
         if (!bsec || bsec == &sector) continue; // just in case
-        if (bsec->isOriginalPObj()) continue; // pobj source sector, ignore
+        if (bsec->isAnyPObj()) continue; // pobj source sector, ignore
         const int snum = (int)(ptrdiff_t)(bsec-Sectors);
         vassert(snum >= 0 && snum < NumSectors);
         if (ssmark[snum]) continue;

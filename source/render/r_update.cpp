@@ -145,7 +145,7 @@ void VRenderLevelShared::UpdateFakeSectors (subsector_t *viewleaf) {
 void VRenderLevelShared::InitialWorldUpdate () {
   subsector_t *sub = &Level->Subsectors[0];
   for (int scount = Level->NumSubsectors; scount--; ++sub) {
-    if (!sub->isOriginalPObj() || sub->ownpobj) UpdateSubRegions(sub);
+    if (!sub->isOriginalPObj()) UpdateSubRegions(sub);
   }
 }
 

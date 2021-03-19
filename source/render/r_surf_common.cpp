@@ -265,9 +265,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int dscount = 0;
   int spcount = 0;
   for (auto &&sub : Level->allSubsectors()) {
-    if (sub.ownpobj) ++srcount; // floor and ceiling
+    if (sub.isInnerPObj()) ++srcount; // floor and ceiling
     // we need flats for 3d polyobject subsectors
-    if (sub.isOriginalPObj() || sub.ownpobj) continue;
+    if (sub.isAnyPObj()) continue;
     // subregion count
     for (sec_region_t *reg = sub.sector->eregions; reg; reg = reg->next) ++srcount;
     // segpart and drawseg count
@@ -325,7 +325,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   for (auto &&it : Level->allSubsectorsIdx()) {
     subsector_t *sub = it.value();
     // we need flats for 3d polyobject subsectors
-    if (sub->isOriginalPObj() && !sub->ownpobj) continue;
+    if (sub->isOriginalPObj() && !sub->isInnerPObj()) continue;
 
     TSecPlaneRef main_floor = sub->sector->eregions->efloor;
     TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
@@ -338,7 +338,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       if (ridx == 0) {
         if (!(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
       } else {
-        if (sub->ownpobj) Sys_Error("internal bug in region creation (3d polyobject has more than one region)");
+        if (sub->isInnerPObj()) Sys_Error("internal bug in region creation (3d polyobject has more than one region)");
         if (reg->regflags&sec_region_t::RF_BaseRegion) Sys_Error("internal bug in region creation (non-base region is marked as base)");
       }
 
@@ -349,7 +349,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       bool skipFloor = !!(reg->regflags&sec_region_t::RF_SkipFloorSurf);
       bool skipCeil = !!(reg->regflags&sec_region_t::RF_SkipCeilSurf);
 
-      if (ridx != 0 && reg->extraline && !sub->ownpobj) {
+      if (ridx != 0 && reg->extraline && !sub->isInnerPObj()) {
         // hack: 3d floor with sky texture seems to be transparent in renderer
         const side_t *extraside = &Level->Sides[reg->extraline->sidenum[0]];
         if (extraside->MidTexture == skyflatnum) {
@@ -365,7 +365,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       sreg->realceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, r_ceiling, sreg));
 
       // create fake floor and ceiling
-      if (ridx == 0 && sub->sector->fakefloors && !sub->ownpobj) {
+      if (ridx == 0 && sub->sector->fakefloors && !sub->isInnerPObj()) {
         TSecPlaneRef fakefloor, fakeceil;
         fakefloor.set(&sub->sector->fakefloors->floorplane, false);
         fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
@@ -380,7 +380,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
       // drawsegs for the main subregion
       // only main region has any drawsegs
-      if (ridx == 0 && !sub->ownpobj) {
+      if (ridx == 0 && !sub->isInnerPObj()) {
         // create segparts for subsector segs
         if (sub->numlines > 0) {
           //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));

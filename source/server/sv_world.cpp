@@ -1291,11 +1291,14 @@ IMPLEMENT_FUNCTION(VLevel, GetNextVisitedCount) {
 //==========================================================================
 bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
   vassert(sector);
-  int secnum = (int)(ptrdiff_t)(sector-Sectors);
+  const int secnum = (int)(ptrdiff_t)(sector-Sectors);
   if ((csTouched[secnum]&0x7fffffffU) == csTouchCount) return !!(csTouched[secnum]&0x80000000U);
   csTouched[secnum] = csTouchCount;
 
-  CalcSecMinMaxs(sector);
+  if (sector->isOriginalPObj()) return false; // just in case
+
+  // do not recalc bounds for inner 3d pobj sectors
+  if (!sector->isInnerPObj()) CalcSecMinMaxs(sector);
 
   bool ret = false;
 
@@ -1321,6 +1324,7 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
         if (n->Visited != visCount) {
           // unprocessed thing found, mark thing as processed
           n->Visited = visCount;
+          if (n->Thing->IsGoingToDie()) continue;
           // process it
           //TVec oldOrg = n->Thing->Origin;
           if (!n->Thing->eventSectorChanged(crunch)) {
@@ -1357,9 +1361,12 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
 //
 //  `-1` for `crunch` means "ignore stuck mobj"
 //
+//  returns `true` if movement was blocked
+//
 //==========================================================================
 bool VLevel::ChangeSector (sector_t *sector, int crunch) {
   if (!sector || NumSectors == 0) return false; // just in case
+  if (sector->isOriginalPObj()) return false; // this can be done accidentally, and it doesn't do anything anyway
   if (!csTouched) {
     csTouched = (vuint32 *)Z_Calloc(NumSectors*sizeof(csTouched[0]));
     csTouchCount = 0;

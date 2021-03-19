@@ -1061,7 +1061,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
 void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region) {
   sec_region_t *secregion = region->secregion;
 
-  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
+  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->isInnerPObj()) {
     const seg_t *seg = &Level->Segs[sub->firstline];
     for (int j = sub->numlines; j--; ++seg) {
       if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
@@ -1094,7 +1094,7 @@ void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region)
 //==========================================================================
 void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
   subsector_t *sub = &Level->Subsectors[num];
-  if (sub->isOriginalPObj()) return;
+  if (sub->isAnyPObj()) return;
 
   // this should not be necessary, because BSP node rejection does it for us
   /*
@@ -1221,7 +1221,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
   } else {
     // if we have a skybox there, turn off advanced clipping, or stacked sector may glitch
     const sector_t *sec = Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)].sector;
-    if (sec->isOriginalPObj()) return;
+    if (sec->isAnyPObj()) return;
     if (r_skybox_clip_hack.asBool() && (sec->floor.SkyBox || sec->ceiling.SkyBox || MirrorLevel || PortalLevel)) {
       // this is for kdizd z1m3, for example
       const bool old_clip_height = clip_height.asBool();

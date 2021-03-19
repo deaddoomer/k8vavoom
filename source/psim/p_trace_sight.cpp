@@ -139,7 +139,7 @@ static bool SightCheckPObjPlanes (SightTraceInfo &trace, polyobj_t *po) {
 //
 //==========================================================================
 static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector, const bool ignoreSectorBounds) {
-  if (!sector || sector->isOriginalPObj()) return true;
+  if (!sector || sector->isAnyPObj()) return true;
 
   PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
 

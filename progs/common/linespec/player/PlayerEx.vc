@@ -186,7 +186,7 @@ transient subsector_t *lastSubSector;
 
 transient float lastViewOrgZForPfx; // set in `CalcHeight()`, used in `PostfixViewHeight()`
 transient float lastViewOrgVH;
-transient subsector_t *lastViewOrgZSub;
+transient sector_t *lastViewOrgZSector;
 
 // meh, let it cheat a little
 transient int LastRegenTicTime = 0;
@@ -671,10 +671,10 @@ void SanitizeViewOrgZ () {
 void SaveViewOrgFixInfo () {
   if (MO) {
     lastViewOrgZForPfx = MO.Origin.z;
-    lastViewOrgZSub = MO.SubSector;
+    lastViewOrgZSector = MO.Sector;
     lastViewOrgVH = ViewHeight;
   } else {
-    lastViewOrgZSub = nullptr;
+    lastViewOrgZSector = nullptr;
   }
 }
 
@@ -704,13 +704,13 @@ override void ClientSetViewOrg (TVec neworg) {
 //==========================================================================
 override void PostfixViewHeight () {
   if (!MO) return; // just in case
-  if (!lastViewOrgZSub) return;
-  if (lastViewOrgZSub != MO.SubSector) return;
+  if (!lastViewOrgZSector) return;
+  if (lastViewOrgZSector != MO.Sector) return;
   if (lastViewOrgVH != ViewHeight) return;
 
   float zdiff = MO.Origin.z-lastViewOrgZForPfx;
   if (!zdiff) return; // nothing to do
-  lastViewOrgZSub = nullptr; // in case we will be called repeatedly
+  lastViewOrgZSector = nullptr; // in case we will be called repeatedly
 
   // fix flashlight origin, so it won't jerk on lifts
   if (bFlashlightOn) MO.ShiftDlightHeight(FlashlightLightId, zdiff);

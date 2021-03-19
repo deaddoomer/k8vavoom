@@ -1006,8 +1006,6 @@ private:
   // we don't need the exact blocking line here
   bool PolyCheckMobjBlocked (polyobj_t *po);
 
-  void PolyMobjMoveRotateStanding (polyobj_t *po, float dx, float dy, float dangle);
-
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;
   //bool CheckPlanes (linetrace_t &, sector_t *) const;

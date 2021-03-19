@@ -84,11 +84,11 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
     maxz = max2(maxz, max2(hs->floor.minz, hs->ceiling.maxz));
   }
 
-  if (!sector->isOriginalPObj()) {
+  if (!sector->isAnyPObj()) {
     sector_t *const *nbslist = sector->nbsecs;
     for (int nbc = sector->nbseccount; nbc--; ++nbslist) {
       const sector_t *bsec = *nbslist;
-      if (bsec->isOriginalPObj()) continue; // pobj sectors should not come here, but just in case...
+      if (bsec->isAnyPObj()) continue; // pobj sectors should not come here, but just in case...
       float zmin, zmax;
       if (bsec->floor.minz < bsec->ceiling.maxz) {
         zmin = bsec->floor.minz;
@@ -174,7 +174,7 @@ void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
 //
 //==========================================================================
 void VLevel::CalcSecMinMaxs (sector_t *sector) {
-  if (!sector) return; // k8: just in case
+  if (!sector || sector->isAnyPObj()) return; // k8: just in case
 
   enum {
     SlopedFloor   = 1u<<0,
@@ -183,7 +183,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
 
   unsigned slopedFC = 0;
 
-  if (sector->floor.normal.z == 1.0f || sector->isOriginalPObj()) {
+  if (sector->floor.normal.z == 1.0f) {
     // horizontal floor
     sector->floor.minz = sector->floor.maxz = sector->floor.dist;
   } else {
@@ -191,7 +191,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
     slopedFC |= SlopedFloor;
   }
 
-  if (sector->ceiling.normal.z == -1.0f || sector->isOriginalPObj()) {
+  if (sector->ceiling.normal.z == -1.0f) {
     // horizontal ceiling
     sector->ceiling.minz = sector->ceiling.maxz = -sector->ceiling.dist;
   } else {
@@ -249,8 +249,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
 //==========================================================================
 void VLevel::UpdateSubsectorBBox (int num, float bbox[6], const float skyheight) {
   subsector_t *sub = &Subsectors[num];
-  // nope, don't ignore it
-  //if (sub->isOriginalPObj()) return; // original polyobj sector
+  if (sub->isAnyPObj()) return;
 
   float ssbbox[6];
   GetSubsectorBBox(sub, ssbbox);

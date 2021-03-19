@@ -290,7 +290,7 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
                               TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane)
 {
   if (!sector) return true;
-  if (sector->isOriginalPObj()) return true;
+  if (sector->isAnyPObj()) return true;
 
   TVec besthit = lineend;
   TVec bestNormal(0.0f, 0.0f, 0.0f);

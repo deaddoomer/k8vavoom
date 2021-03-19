@@ -149,7 +149,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
     // we still may have to recreate it if it was a "sky <-> non-sky" change, so check for it
     recreateSurface = !isSkyFlat || ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat) || sreg->IsForcedRecreation();
     if (recreateSurface) {
-      //if (sub->ownpobj) GCon->Logf("***  RECREATING!");
+      //if (sub->isInnerPObj()) GCon->Logf("***  RECREATING!");
       surf = ReallocSurface(ssurf->surfs, vcount);
     } else {
       updateZ = (FASI(ssurf->edist) != FASI(spl.splane->dist));

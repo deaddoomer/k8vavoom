@@ -36,7 +36,7 @@
 //
 //==========================================================================
 TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline) {
-  if (!sec || sec->isOriginalPObj()) {
+  if (!sec || sec->isAnyPObj()) {
     if (resline) *resline = nullptr;
     return in;
   }

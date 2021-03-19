@@ -235,7 +235,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
 void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
   if (!sub) return;
 
-  //if (sub->ownpobj) GCon->Logf(NAME_Debug, "updating subsector for pobj #%d", sub->ownpobj->tag);
+  //if (sub->isInnerPObj()) GCon->Logf(NAME_Debug, "updating subsector for pobj #%d", sub->ownpobj->tag);
 
   for (subregion_t *region = sub->regions; region; region = region->next) {
     TSecPlaneRef r_floor = region->floorplane;
@@ -243,7 +243,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
     sec_region_t *secregion = region->secregion;
 
-    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->isInnerPObj()) {
       const seg_t *seg = &Level->Segs[sub->firstline];
       for (int j = sub->numlines; j--; ++seg) {
         if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts

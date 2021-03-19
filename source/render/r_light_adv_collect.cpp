@@ -408,7 +408,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsig
 
     sec_region_t *secregion = region->secregion;
 
-    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->ownpobj) {
+    if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->isInnerPObj()) {
       const seg_t *seg = &Level->Segs[sub->firstline];
       for (int j = sub->numlines; j--; ++seg) {
         if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
@@ -471,7 +471,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsig
 void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int ssflag) {
   vassert(num >= 0 && num < Level->NumSubsectors);
   subsector_t *sub = &Level->Subsectors[num];
-  if (sub->isOriginalPObj()) return;
+  if (sub->isAnyPObj()) return;
 
   // `LightBspVis` is already an intersection, no need to check `BspVisData` here
   //if (!IsSubsectorLitBspVis(num) || !IsBspVis(num)) return;

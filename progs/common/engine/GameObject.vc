@@ -1008,6 +1008,7 @@ struct sector_t {
 
   // all sector lines
   line_t*[] lines;
+  private native readonly int prevlinecount; // temp store for 3d pobjs
 
   // neighbouring sectors
   sector_t*[] nbsecs;
