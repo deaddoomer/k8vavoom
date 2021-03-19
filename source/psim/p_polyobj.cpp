@@ -1201,10 +1201,13 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
       VEntity *mobj = n->Thing;
       if (mobj->IsGoingToDie()) continue;
-      if (mobj->Origin.z == pofz || (mobj->Origin.z > pofz && mobj->Origin.z < pofz+z)) {
+      if (fabsf(mobj->Origin.z-pofz) < 0.01f || (mobj->Origin.z > pofz && mobj->Origin.z < pofz+z)) {
         //poEntityArray.append(mobj);
+        const float oldz = mobj->Origin.z;
         mobj->Origin.z = pofz+z;
         mobj->FloorZ = pofz+z;
+        //mobj->LastMoveOrigin.z = mobj->Origin.z;
+        mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
       }
     }
     OffsetPolyobjFlats(po, 0.0f, 0.0f, z);

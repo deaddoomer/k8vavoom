@@ -5184,7 +5184,9 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   //ex.PolyObjIgnore = nullptr;
   //printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
   if (ok) {
+    TVec df = newpos-ex.Origin;
     ex.Origin = newpos;
+    ex.LastMoveOrigin += df;
   }
   ex.LinkToWorld();
   /*
