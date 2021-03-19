@@ -33,6 +33,13 @@
 static VCvarB dbg_pobj_disable("dbg_pobj_disable", false, "Disable most polyobject operations?", CVAR_PreInit);
 
 
+enum {
+  // thing height is z offset from destination sector floor
+  // polyobject anchor thing z is maximum 3d pobj height (if not zero)
+  PO_SPAWN_3D_TYPE = 9369,
+};
+
+
 //==========================================================================
 //
 //  pobjAddSubsector
@@ -302,8 +309,10 @@ void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
 //  VLevel::SpawnPolyobj
 //
 //==========================================================================
-void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
-  int index = NumPolyObjs++;
+void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt) {
+  const int index = NumPolyObjs++;
+
+  GCon->Logf(NAME_Debug, "SpawnPolyobj: tag=%d; idx=%d; thing=%d", tag, index, (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1));
 
   polyobj_t *po = new polyobj_t;
   memset((void *)po, 0, sizeof(polyobj_t));
@@ -333,6 +342,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
 
   po->startSpot.x = x;
   po->startSpot.y = y;
+  po->startSpot.z = 0;
 
   TArray<seg_t *> psegs; // collect explicit pobj segs here
   for (auto &&seg : allSegs()) {
@@ -410,6 +420,7 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
     line_t *ln = po->segs[c]->linedef;
     vassert(ln);
     if (!lmap.put(ln, true)) {
+      //GCon->Logf(NAME_Debug, "pobj #%d: line #%d", po->tag, (int)(ptrdiff_t)(ln-&Lines[0]));
       po->lines[lcount++] = ln;
       if (!ln->pobject) {
         ln->pobject = po;
@@ -423,13 +434,17 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   }
   po->numlines = lcount;
 
+  if (po->numlines == 0 || !thing || thing->type != PO_SPAWN_3D_TYPE) return;
+
+  // this is 3d polyobject
+
   // collect 2-sided polyobject subsectors
   // line backside should point to polyobject sector
   sector_t *posec = nullptr;
   for (int f = 0; f < po->numlines; ++f) {
     const line_t *ld = po->lines[f];
     if (!(ld->flags&ML_TWOSIDED)) return; // invalid polyobject
-    if (!ld->backsector) return;
+    if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) return; // oops
     if (posec && posec != ld->backsector) return;
     posec = ld->backsector;
   }
@@ -437,6 +452,8 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
   if (posec->ownpobj && posec->ownpobj != po) return; // oopsie
   posec->ownpobj = po;
 
+
+  // collect required minisegs (we need to move their vertices to render flats)
   TArray<seg_t *> moresegs;
 
   GCon->Logf(NAME_Debug, "pobj #%d (%d) sector #%d", po->tag, tag, (int)(ptrdiff_t)(posec-&Sectors[0]));
@@ -457,9 +474,9 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
     }
   }
 
+  // apppend minisegs
   po->posector = posec;
   if (moresegs.length()) {
-    // apppend minisegs
     seg_t **ns = new seg_t*[po->numsegs+moresegs.length()];
     if (po->numsegs) memcpy((void *)ns, po->segs, sizeof(po->segs[0])*po->numsegs);
     for (int f = 0; f < moresegs.length(); ++f) {
@@ -471,6 +488,74 @@ void VLevel::SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt) {
     delete[] po->segs;
     po->segs = ns;
   }
+
+  // find first seg with texture
+  const seg_t *xseg = nullptr;
+  for (int f = 0; f < po->numsegs; ++f) if (po->segs[f]->linedef) { xseg = po->segs[f]; break; }
+  if (!xseg) {
+    GCon->Logf(NAME_Error, "invalid 3d polyobject with tag #%d", po->tag);
+    po->posector = nullptr;
+    return;
+  }
+
+  // build floor
+  po->pofloor = po->posector->floor;
+  //po->pofloor.pic = 0;
+  const float fdist = po->pofloor.GetPointZClamped(*po->lines[0]->v1);
+  //GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, fdist, po->pofloor.minz, po->pofloor.maxz);
+  // floor normal points down
+  po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
+  po->pofloor.dist = -fdist;
+  //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+  po->pofloor.minz = po->pofloor.maxz = fdist;
+
+  // build ceiling
+  po->poceiling = po->posector->ceiling;
+  //po->poceiling.pic = 0;
+  //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+  const float cdist = po->poceiling.GetPointZClamped(*po->lines[0]->v1);
+  //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
+  // ceiling normal points up
+  po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
+  po->poceiling.dist = cdist;
+  //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+  po->poceiling.minz = po->poceiling.maxz = cdist;
+
+  // fix polyobject height
+
+  // determine real height using midtex
+  VTexture *MTex = GTextureManager(xseg->sidedef->MidTexture);
+  if (MTex && MTex->Type != TEXTYPE_Null) {
+    // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+    const float texh = MTex->GetScaledHeight();
+    float z0, z1;
+    if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+      // bottom of texture at bottom
+      // top of texture at top
+      z1 = po->pofloor.TexZ+texh;
+    } else {
+      // top of texture at top
+      z1 = po->poceiling.TexZ;
+    }
+    //k8: dunno why
+    if (xseg->sidedef->Mid.RowOffset < 0) {
+      z1 += (xseg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+    } else {
+      z1 += xseg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+    }
+    z0 = z1-texh;
+    z0 = max2(z0, po->posector->floor.minz);
+    z1 = min2(z1, po->posector->ceiling.maxz);
+    if (z1 < z0) z1 = z0;
+    // fix floor and ceiling planes
+    po->pofloor.minz = po->pofloor.maxz = z0;
+    po->pofloor.dist = -po->pofloor.maxz;
+    po->poceiling.minz = po->poceiling.maxz = z1;
+    po->poceiling.dist = po->poceiling.maxz;
+  }
+
+  //po->startSpot.z = po->pofloor.minz;
+  po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
 }
 
 
@@ -505,8 +590,9 @@ polyobj_t *VLevel::GetPolyobj (int polyNum) noexcept {
 //  VLevel::AddPolyAnchorPoint
 //
 //==========================================================================
-void VLevel::AddPolyAnchorPoint (float x, float y, int tag) {
+void VLevel::AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag) {
   ++NumPolyAnchorPoints;
+
   PolyAnchorPoint_t *Temp = PolyAnchorPoints;
   PolyAnchorPoints = new PolyAnchorPoint_t[NumPolyAnchorPoints];
   if (Temp) {
@@ -515,10 +601,12 @@ void VLevel::AddPolyAnchorPoint (float x, float y, int tag) {
     Temp = nullptr;
   }
 
-  PolyAnchorPoint_t &A = PolyAnchorPoints[NumPolyAnchorPoints-1];
-  A.x = x;
-  A.y = y;
-  A.tag = tag;
+  PolyAnchorPoint_t *A = &PolyAnchorPoints[NumPolyAnchorPoints-1];
+  A->x = x;
+  A->y = y;
+  A->height = height;
+  A->tag = tag;
+  A->thingidx = (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1);
 }
 
 
@@ -531,7 +619,7 @@ void VLevel::AddPolyAnchorPoint (float x, float y, int tag) {
 //==========================================================================
 void VLevel::InitPolyobjs () {
   for (int i = 0; i < NumPolyAnchorPoints; ++i) {
-    TranslatePolyobjToStartSpot(PolyAnchorPoints[i].x, PolyAnchorPoints[i].y, PolyAnchorPoints[i].tag);
+    TranslatePolyobjToStartSpot(&PolyAnchorPoints[i]);
   }
 
   // check for a startspot without an anchor point
@@ -584,7 +672,7 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool 
   sec->floor = po->pofloor;
   sec->ceiling = po->poceiling;
 
-  if (forceRecreation) {
+  if (forceRecreation || fabsf(z) != 0.0f) {
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
       for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
         reg->ForceRecreation();
@@ -599,7 +687,12 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float x, float y, float z, bool 
 //  VLevel::TranslatePolyobjToStartSpot
 //
 //==========================================================================
-void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag) {
+void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
+  vassert(anchor);
+
+  float originX = anchor->x, originY = anchor->y, height = anchor->height;
+  int tag = anchor->tag;
+
   //polyobj_t *po = GetPolyobj(tag);
   polyobj_t *po = nullptr;
   for (int i = 0; i < NumPolyObjs; ++i) {
@@ -628,6 +721,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
 
   const float deltaX = originX-po->startSpot.x;
   const float deltaY = originY-po->startSpot.y;
+  const TVec sspot2d = TVec(po->startSpot.x, po->startSpot.y, 0.0f);
 
   seg_t **tempSeg = po->segs;
   TVec *origPt = po->originalPts;
@@ -647,7 +741,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     avg.x += (*tempSeg)->v1->x;
     avg.y += (*tempSeg)->v1->y;
     // the original Pts are based off the startSpot Pt, and are unique to each seg, not each linedef
-    *origPt++ = *(*tempSeg)->v1-po->startSpot;
+    *origPt++ = *(*tempSeg)->v1-sspot2d;
     po->segPts[segptnum++] = (*tempSeg)->v1;
   }
   vassert(segptnum <= po->numsegs);
@@ -670,7 +764,7 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
         // the original Pts are based off the startSpot Pt
         v->x -= deltaX;
         v->y -= deltaY;
-        *origPt++ = (*v)-po->startSpot;
+        *origPt++ = (*v)-sspot2d;
         po->segPts[segptnum++] = v;
       }
     }
@@ -679,11 +773,20 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
   po->originalPtsCount = segptnum;
   po->segPtsCount = segptnum;
 
+  const float startHeight = po->startSpot.z;
+  const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
+  po->startSpot.z = destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f));
+
+  const mthing_t *thing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
+  //if (!thing && thing->type != PO_SPAWN_3D_TYPE) po->posector = nullptr; // not a 3d polyobject
+
+  float deltaZ = 0.0f;
+
   // set initial floor and ceiling
-  {
+  if (!po->posector) {
     // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
     // flip them, because polyobject flats are like 3d floor flats
-    sector_t *sec = (po->posector ? po->posector : PointInSubsector(avg)->sector); // bugfixed algo
+    sector_t *sec = PointInSubsector(avg)->sector; // bugfixed algo
 
     // build floor
     po->pofloor = sec->floor;
@@ -711,70 +814,73 @@ void VLevel::TranslatePolyobjToStartSpot (float originX, float originY, int tag)
     po->poceiling.minz = po->poceiling.maxz = cdist;
 
     // fix polyobject height
-    //FIXME: polyobject segs should not be minisegs!
-    if (po->numlines && (po->segs[0]->linedef->flags&(ML_TWOSIDED|ML_WRAP_MIDTEX)) == ML_TWOSIDED && po->pofloor.maxz < po->poceiling.minz) {
-      const seg_t *seg = po->segs[0];
-      //auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
-
-      // determine real height using midtex
-      //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
-      VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
-      if (MTex && MTex->Type != TEXTYPE_Null) {
-        // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-        const float texh = MTex->GetScaledHeight();
-        float z0, z1;
-        if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
-          // bottom of texture at bottom
-          // top of texture at top
-          z1 = po->pofloor.TexZ+texh;
-        } else {
-          // top of texture at top
-          z1 = po->poceiling.TexZ;
+    if (!po->posector && (po->numlines && (po->lines[0]->flags&(ML_TWOSIDED|ML_WRAP_MIDTEX|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) && po->pofloor.maxz < po->poceiling.minz) {
+      const seg_t *seg = nullptr;
+      for (int f = 0; f < po->numsegs; ++f) if (po->segs[f]->linedef) { seg = po->segs[f]; break; }
+      if (seg) {
+        // determine real height using midtex
+        //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
+        VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
+        if (MTex && MTex->Type != TEXTYPE_Null) {
+          // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+          const float texh = MTex->GetScaledHeight();
+          float z0, z1;
+          if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+            // bottom of texture at bottom
+            // top of texture at top
+            z1 = po->pofloor.TexZ+texh;
+          } else {
+            // top of texture at top
+            z1 = po->poceiling.TexZ;
+          }
+          //k8: dunno why
+          if (seg->sidedef->Mid.RowOffset < 0) {
+            z1 += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+          } else {
+            z1 += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+          }
+          z0 = z1-texh;
+          z0 = max2(z0, sec->floor.minz);
+          z1 = min2(z1, sec->ceiling.maxz);
+          if (z1 < z0) z1 = z0;
+          // fix floor and ceiling planes
+          po->pofloor.minz = po->pofloor.maxz = z0;
+          po->pofloor.dist = -po->pofloor.maxz;
+          po->poceiling.minz = po->poceiling.maxz = z1;
+          po->poceiling.dist = po->poceiling.maxz;
         }
-        //k8: dunno why
-        if (seg->sidedef->Mid.RowOffset < 0) {
-          z1 += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-        } else {
-          z1 += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-        }
-        z0 = z1-texh;
-        z0 = max2(z0, sec->floor.minz);
-        z1 = min2(z1, sec->ceiling.maxz);
-        if (z1 < z0) z1 = z0;
-        // fix floor and ceiling planes
-        po->pofloor.minz = po->pofloor.maxz = z0;
-        po->pofloor.dist = -po->pofloor.maxz;
-        po->poceiling.minz = po->poceiling.maxz = z1;
-        po->poceiling.dist = po->poceiling.maxz;
       }
-
       //GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
       //GCon->Logf(NAME_Debug, "002: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
     }
+  } else {
+    // 3d polyobject
 
-    OffsetPolyobjFlats(po, deltaX, deltaY, 0.0f);
+    // clamp height
+    if (thing && thing->height > 0.0f) {
+      const float hgt = po->poceiling.maxz-po->pofloor.minz;
+      if (hgt > thing->height) {
+        GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g", po->tag, hgt, thing->height);
+        // fix ceiling, move texture z
+        const float dz = height-hgt;
+        po->poceiling.minz += dz;
+        po->poceiling.maxz += dz;
+        po->poceiling.dist += dz;
+      }
+    }
+
+    // move vertically
+    deltaZ = destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f))+startHeight-po->pofloor.minz;
   }
 
-  float pobbox[4];
-  pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
-  pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
-  TVec * const *pp = po->segPts;
-  for (int f = segptnum; f--; ++pp) {
-    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*pp)->x);
-    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*pp)->y);
-    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*pp)->x);
-    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*pp)->y);
-  }
-  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
+  GCon->Logf(NAME_Debug, "pobj #%d: height=%g; spot=(%g,%g,%g); dz=%g", po->tag, po->poceiling.maxz-po->pofloor.minz, po->startSpot.x, po->startSpot.y, po->startSpot.z, deltaZ);
+
+  OffsetPolyobjFlats(po, deltaX, deltaY, deltaZ, true);
 
   UpdatePolySegs(po);
 
-  // no need to notify renderer yet (or update subsector list), polyobject spawner will do it all
-  /*
-  PutPObjInSubsectors(po);
-  // notify renderer that this polyobject is moved
-  //if (Renderer) Renderer->PObjModified(po);
-  */
+  // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
+  // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
 }
 
 
@@ -795,25 +901,6 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
     sec->floor.dist = po->pofloor.dist;
     sec->ceiling.normal = po->poceiling.normal;
     sec->ceiling.dist = po->poceiling.dist;
-    // update subsector bounding boxes
-    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
-      if (sub->numlines < 1) continue;
-      sub->bbox2d[BOX2D_MINX] = sub->bbox2d[BOX2D_MINY] = +FLT_MAX;
-      sub->bbox2d[BOX2D_MAXX] = sub->bbox2d[BOX2D_MAXY] = -FLT_MAX;
-      const seg_t *seg = &Segs[sub->firstline];
-      for (int f = sub->numlines; f--; ++seg) {
-        // v1
-        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v1->x);
-        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v1->y);
-        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v1->x);
-        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v1->y);
-        // v2
-        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v2->x);
-        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v2->y);
-        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v2->x);
-        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v2->y);
-      }
-    }
   }
 }
 
@@ -853,12 +940,48 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
   float pobbox[4];
   pobbox[BOX2D_MINX] = pobbox[BOX2D_MINY] = +99999.0f;
   pobbox[BOX2D_MAXX] = pobbox[BOX2D_MAXY] = -99999.0f;
-  TVec * const *pp = po->segPts;
-  for (int f = po->segPtsCount; f--; ++pp) {
-    pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*pp)->x);
-    pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*pp)->y);
-    pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*pp)->x);
-    pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*pp)->y);
+  if (po->posector) {
+    // update subsector bounding boxes
+    for (subsector_t *sub = po->posector->subsectors; sub; sub = sub->seclink) {
+      if (sub->numlines < 1) continue;
+      sub->bbox2d[BOX2D_MINX] = sub->bbox2d[BOX2D_MINY] = +FLT_MAX;
+      sub->bbox2d[BOX2D_MAXX] = sub->bbox2d[BOX2D_MAXY] = -FLT_MAX;
+      const seg_t *seg = &Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++seg) {
+        // v1
+        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v1->x);
+        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v1->y);
+        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v1->x);
+        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v1->y);
+        // v2
+        sub->bbox2d[BOX2D_MINX] = min2(sub->bbox2d[BOX2D_MINX], seg->v2->x);
+        sub->bbox2d[BOX2D_MINY] = min2(sub->bbox2d[BOX2D_MINY], seg->v2->y);
+        sub->bbox2d[BOX2D_MAXX] = max2(sub->bbox2d[BOX2D_MAXX], seg->v2->x);
+        sub->bbox2d[BOX2D_MAXY] = max2(sub->bbox2d[BOX2D_MAXY], seg->v2->y);
+      }
+    }
+    // we can use subsector bounding boxes here
+    for (const subsector_t *sub = po->posector->subsectors; sub; sub = sub->seclink) {
+      pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], sub->bbox2d[BOX2D_MINX]);
+      pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], sub->bbox2d[BOX2D_MINY]);
+      pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], sub->bbox2d[BOX2D_MAXX]);
+      pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], sub->bbox2d[BOX2D_MAXY]);
+    }
+  } else {
+    // use polyobject lines
+    line_t * const *ld = po->lines;
+    for (int f = po->numlines; f--; ++ld) {
+      // v1
+      pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*ld)->v1->x);
+      pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*ld)->v1->y);
+      pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*ld)->v1->x);
+      pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*ld)->v1->y);
+      // v2
+      pobbox[BOX2D_MINX] = min2(pobbox[BOX2D_MINX], (*ld)->v2->x);
+      pobbox[BOX2D_MINY] = min2(pobbox[BOX2D_MINY], (*ld)->v2->y);
+      pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], (*ld)->v2->x);
+      pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*ld)->v2->y);
+    }
   }
   memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
 
@@ -1148,49 +1271,53 @@ bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
 //  Script polyobject methods
 //
 //==========================================================================
+//native final void SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt);
 IMPLEMENT_FUNCTION(VLevel, SpawnPolyobj) {
-  P_GET_BOOL(hurt);
-  P_GET_BOOL(crush);
-  P_GET_INT(tag);
-  P_GET_FLOAT(y);
-  P_GET_FLOAT(x);
-  P_GET_SELF;
-  Self->SpawnPolyobj(x, y, tag, crush, hurt);
+  mthing_t *thing;
+  float x, y, height;
+  int tag;
+  bool crush, hurt;
+  vobjGetParamSelf(thing, x, y, height, tag, crush, hurt);
+  Self->SpawnPolyobj(thing, x, y, height, tag, crush, hurt);
 }
 
+//native final void AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag);
 IMPLEMENT_FUNCTION(VLevel, AddPolyAnchorPoint) {
-  P_GET_INT(tag);
-  P_GET_FLOAT(y);
-  P_GET_FLOAT(x);
-  P_GET_SELF;
-  Self->AddPolyAnchorPoint(x, y, tag);
+  mthing_t *thing;
+  float x, y, height;
+  int tag;
+  vobjGetParamSelf(thing, x, y, height, tag);
+  Self->AddPolyAnchorPoint(thing, x, y, height, tag);
 }
 
+//native final polyobj_t *GetPolyobj (int polyNum);
 IMPLEMENT_FUNCTION(VLevel, GetPolyobj) {
-  P_GET_INT(polyNum);
-  P_GET_SELF;
-  RET_PTR(Self->GetPolyobj(polyNum));
+  int tag;
+  vobjGetParamSelf(tag);
+  RET_PTR(Self->GetPolyobj(tag));
 }
 
+//native final int GetPolyobjMirror (int poly);
 IMPLEMENT_FUNCTION(VLevel, GetPolyobjMirror) {
-  P_GET_INT(polyNum);
-  P_GET_SELF;
-  RET_INT(Self->GetPolyobjMirror(polyNum));
+  int tag;
+  vobjGetParamSelf(tag);
+  RET_INT(Self->GetPolyobjMirror(tag));
 }
 
+//native final bool MovePolyobj (int num, float x, float y, optional float z, optional bool forced);
 IMPLEMENT_FUNCTION(VLevel, MovePolyobj) {
-  P_GET_BOOL_OPT(forced, false);
-  P_GET_FLOAT_OPT(z, 0);
-  P_GET_FLOAT(y);
-  P_GET_FLOAT(x);
-  P_GET_INT(num);
-  P_GET_SELF;
-  RET_BOOL(Self->MovePolyobj(num, x, y, z, forced));
+  int tag;
+  float x, y;
+  VOptParamFloat z(0);
+  VOptParamBool forced(false);
+  vobjGetParamSelf(tag, x, y, z, forced);
+  RET_BOOL(Self->MovePolyobj(tag, x, y, z, forced));
 }
 
+//native final bool RotatePolyobj (int num, float angle);
 IMPLEMENT_FUNCTION(VLevel, RotatePolyobj) {
-  P_GET_FLOAT(angle);
-  P_GET_INT(num);
-  P_GET_SELF;
-  RET_BOOL(Self->RotatePolyobj(num, angle));
+  int tag;
+  float angle;
+  vobjGetParamSelf(tag, angle);
+  RET_BOOL(Self->RotatePolyobj(tag, angle));
 }

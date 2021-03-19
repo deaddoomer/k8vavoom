@@ -3885,16 +3885,44 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
 
     case ACSF_GetPolyobjX:
     case ACSF_GetPolyobjY:
+    case ACSF_GetPolyobjZ:
       if (argCount > 0) {
         polyobj_t *pobj = XLevel->GetPolyobj(args[0]);
         if (!pobj) return 0x7FFFFFFF; // doesn't exist
-        if (funcIndex == ACSF_GetPolyobjX) {
-          return (int)(pobj->startSpot.x*65536.0f);
-        } else {
-          return (int)(pobj->startSpot.y*65536.0f);
+        switch (funcIndex) {
+          case ACSF_GetPolyobjX: return (int)(pobj->startSpot.x*65536.0f);
+          case ACSF_GetPolyobjY: return (int)(pobj->startSpot.y*65536.0f);
+          case ACSF_GetPolyobjZ: return (int)(pobj->startSpot.z*65536.0f);
+          default: break;
         }
       }
       return 0x7FFFFFFF; // doesn't exist
+
+    // Polyobj_MoveEx (int po, float hspeed, float yawangle, float dist, float vspeed, float pitchangle, float vdist, int override)
+    case ACSF_Polyobj_MoveEx:
+      if (argCount >= 8) {
+        return Level->eventAcsPolyMoveEx(args[0], float(args[1])/65536.0f, float(args[2])/65536.0f,
+                                         float(args[3])/65536.0f, float(args[4])/65536.0f,
+                                         float(args[5])/65536.0f, float(args[6])/65536.0f,
+                                         args[7], Activator);
+      }
+      return 0;
+
+    // Polyobj_MoveToEx (int po, float speed, float x, float y, float z, int override)
+    case ACSF_Polyobj_MoveToEx:
+      if (argCount >= 6) {
+        return Level->eventAcsPolyMoveToEx(args[0], float(args[1])/65536.0f, float(args[2])/65536.0f,
+                                           float(args[3])/65536.0f, float(args[4])/65536.0f,
+                                           args[5], Activator);
+      }
+      return 0;
+
+    // Polyobj_MoveToSpotEx (int po, float speed, int targettid, int override) -- this uses target height too
+    case ACSF_Polyobj_MoveToSpotEx:
+      if (argCount >= 4) {
+        return Level->eventAcsPolyMoveToSpotEx(args[0], float(args[1])/65536.0f, args[2], args[3], Activator);
+      }
+      return 0;
 
     case ACSF_SpawnParticle:
       return 0;

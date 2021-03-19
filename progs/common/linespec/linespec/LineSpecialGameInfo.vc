@@ -46,6 +46,8 @@ const int
   PO_SPAWNCRUSH_TYPE = 9302,
   PO_SPAWNHURT_TYPE = 9303,
 
+  PO_SPAWN_3D_TYPE = 9369,
+
   SLOPE_FLOOR_POINT_LINE_TYPE = 9500,
   SLOPE_CEILING_POINT_LINE_TYPE = 9501,
   SET_FLOOR_SLOPE_TYPE = 9502,
@@ -1349,8 +1351,9 @@ override void SpawnWorld (VLevel InLevel) {
       case PO_SPAWN_TYPE:
       case PO_SPAWNCRUSH_TYPE:
       case PO_SPAWNHURT_TYPE:
+      case PO_SPAWN_3D_TYPE:
         // Polyobj StartSpot Pt.
-        InLevel.SpawnPolyobj(mthing->x, mthing->y, int(mthing->angle),
+        InLevel.SpawnPolyobj(mthing, mthing->x, mthing->y, mthing->height, int(mthing->angle),
           mthing->type == PO_SPAWNCRUSH_TYPE_HEXEN || mthing->type == PO_SPAWNCRUSH_TYPE || mthing->type == PO_SPAWNHURT_TYPE,
           mthing->type == PO_SPAWNHURT_TYPE);
         mthing->type = 0;
@@ -1360,7 +1363,7 @@ override void SpawnWorld (VLevel InLevel) {
         goto case; //k8: is it right???
       case PO_ANCHOR_TYPE:
         // Polyobj Anchor Pt.
-        InLevel.AddPolyAnchorPoint(mthing->x, mthing->y, int(mthing->angle));
+        InLevel.AddPolyAnchorPoint(mthing, mthing->x, mthing->y, mthing->height, int(mthing->angle));
         mthing->type = 0;
         break;
     }

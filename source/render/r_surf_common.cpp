@@ -81,7 +81,8 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 
   // force update
   //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; sectors=%d:%d", seg->pobj->index, (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1), (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));
-  seg->drawsegs->mid->frontTopDist += 0.346f;
+  //seg->drawsegs->mid->frontTopDist += 0.346f;
+  seg->drawsegs->mid->frontTopDist = -99999.9f;
   //InvalidateSegPart(seg->drawsegs->mid);
 }
 

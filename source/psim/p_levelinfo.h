@@ -282,6 +282,23 @@ public:
     vobjPutParamSelf(targettid, targetptr, inflictortid, inflictorptr, damage, damagetype, Activator);
     VMT_RET_INT(method);
   }
+
+  int eventAcsPolyMoveEx (int po, float hspeed, float yawangle, float dist, float vspeed, float pitchangle, float vdist, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveEx");
+    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, pitchangle, vdist, override, Activator);
+    VMT_RET_INT(method);
+  }
+  int eventAcsPolyMoveToEx (int po, float speed, float x, float y, float z, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveToEx");
+    vobjPutParamSelf(po, speed, x, y, z, override, Activator);
+    VMT_RET_INT(method);
+  }
+  int eventAcsPolyMoveToSpotEx (int po, float speed, int targettid, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveToSpotEx");
+    vobjPutParamSelf(po, speed, targettid, override, Activator);
+    VMT_RET_INT(method);
+  }
+
   void eventSectorDamage (int Tag, int Amount, VName DamageType, VName ProtectionType, int Flags) {
     static VMethodProxy method("SectorDamage");
     vobjPutParamSelf(Tag, Amount, DamageType, ProtectionType, Flags);

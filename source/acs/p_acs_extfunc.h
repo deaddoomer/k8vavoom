@@ -179,6 +179,18 @@
   ACS_EXTFUNC_NUM(SetSectorGlow, 400) // ignored
   ACS_EXTFUNC(SetFogDensity) // ignored
 
+  // k8vavoom polyobjects
+  // note that angles are in degrees
+  // speed is in units per second
+  // Polyobj_MoveEx (int po, float hspeed, float yawangle, float dist, float vspeed, float pitchangle, float vdist, int override)
+  ACS_EXTFUNC_NUM(Polyobj_MoveEx, 800) // implemented
+  // Polyobj_MoveToEx (int po, float speed, float x, float y, float z, int override)
+  ACS_EXTFUNC(Polyobj_MoveToEx) // implemented
+  // Polyobj_MoveToSpotEx (int po, float speed, int targettid, int override) -- this uses target height too
+  ACS_EXTFUNC(Polyobj_MoveToSpotEx) // implemented
+  // GetPolyobjZ (int po)
+  ACS_EXTFUNC(GetPolyobjZ) // implemented
+
   // ZDaemon (not implemented, and will never be)
   ACS_EXTFUNC_NUM(GetTeamScore, 19620) // (int team)
   ACS_EXTFUNC(SetTeamScore) // (int team, int value)

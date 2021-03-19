@@ -1077,7 +1077,9 @@ struct polyblock_t {
 struct PolyAnchorPoint_t {
   float x;
   float y;
+  float height;
   vint32 tag;
+  int thingidx; // can be -1
 };
 
 

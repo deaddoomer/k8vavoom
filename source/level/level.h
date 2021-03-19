@@ -701,8 +701,8 @@ public:
   void TickWorld (float DeltaTime);
 
   // poly-objects
-  void SpawnPolyobj (float x, float y, int tag, bool crush, bool hurt);
-  void AddPolyAnchorPoint (float x, float y, int tag);
+  void SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt);
+  void AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag);
   void InitPolyobjs ();
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
@@ -995,12 +995,12 @@ private:
   void LoadRogueConScript (VName, int, FRogueConSpeech *&, int &) const;
 
   // internal poly-object methods
-  void IterFindPolySegs (const TVec &, seg_t **, int &, const TVec &);
-  void TranslatePolyobjToStartSpot (float, float, int);
-  void UpdatePolySegs (polyobj_t *);
+  void IterFindPolySegs (const TVec &From, seg_t **segList, int &PolySegCount, const TVec &PolyStart);
+  void TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor);
+  void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();
-  void LinkPolyobj (polyobj_t *);
-  void UnLinkPolyobj (polyobj_t *);
+  void LinkPolyobj (polyobj_t *po);
+  void UnLinkPolyobj (polyobj_t *po);
 
   bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po);
   // we don't need the exact blocking line here

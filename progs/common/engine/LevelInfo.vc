@@ -1300,7 +1300,44 @@ int AcsSpawnSpotFacing (name Name, int SpotTid, int Tid, bool forced) {
 //  AcsDamageActor
 //
 //==========================================================================
-int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr, int damage, name damagetype, Entity Activator) {
+int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflictorptr,
+                    int damage, name damagetype, Entity Activator)
+{
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  AcsPolyMoveEx
+//
+//==========================================================================
+int AcsPolyMoveEx (int po, float hspeed, float yawangle, float dist,
+                   float vspeed, float pitchangle, float vdist,
+                   int forced, Entity Activator)
+{
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  AcsPolyMoveToEx
+//
+//==========================================================================
+int AcsPolyMoveToEx (int po, float speed, float x, float y, float z, int forced, Entity Activator) {
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  AcsPolyMoveToSpotEx
+//
+//  this uses target height too
+//
+//==========================================================================
+int AcsPolyMoveToSpotEx (int po, float speed, int targettid, int forced, Entity Activator) {
   return 0;
 }
 
