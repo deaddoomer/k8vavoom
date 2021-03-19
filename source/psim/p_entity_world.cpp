@@ -406,6 +406,8 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   SubSector = ss;
   Sector = ss->sector;
 
+  PolyObj = CheckOnPolyobj(Origin.z);
+
   if (properFloorCheck != -666) {
     if (!IsPlayer()) {
       if (properFloorCheck) {
@@ -679,7 +681,7 @@ bool VEntity::CheckPosition (TVec Pos) {
           //good &= CheckLine(cptrace, ld);
           if (!CheckLine(cptrace, ld)) {
             good = false; // no early exit!
-            //GCon->Logf("%s: collided with line %d", GetClass()->GetName(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]));
+            //GCon->Logf("%s(%u): collided with line %d", GetClass()->GetName(), GetUniqueId(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]));
           }
         }
       }
@@ -695,7 +697,7 @@ bool VEntity::CheckPosition (TVec Pos) {
         for (int by = yl; by <= yh; ++by) {
           polyobj_t *po;
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-            if (!po->posector) continue;
+            if (!po->posector || po == PolyObjIgnore) continue;
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
@@ -709,13 +711,14 @@ bool VEntity::CheckPosition (TVec Pos) {
               // above
               cptrace.FloorZ = max2(cptrace.FloorZ, po->poceiling.maxz);
             }
-            return false; // oops
+            //if (cptrace.End.z >= po->poceiling.max
+            //return false; // oops
           }
         }
       }
     }
 
-    if (!good) return false;
+    if (!good || inpobj) return false;
   }
 
   return true;
@@ -826,7 +829,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
 
   //FIXME: check if we can stand on polyobject (this should fix floor and ceiling heights, i think)
   polyobj_t *po = ld->pobj();
-  if (po) {
+  if (po && po != PolyObjIgnore) {
     if (po->pofloor.minz < po->poceiling.maxz && (cptrace.End.z+max2(0.0f, Height) <= po->pofloor.minz || cptrace.End.z >= po->poceiling.maxz)) {
       // outside of polyobject
       return true;
@@ -897,6 +900,70 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   }
 
   return true;
+}
+
+
+
+//==========================================================================
+//
+//  VEntity::CheckOnPolyobj
+//
+//  check if we are standing on some polyobject
+//  "inside" is not "standing"
+//
+//==========================================================================
+polyobj_t *VEntity::CheckOnPolyobj (float prevz) {
+  if (XLevel->NumPolyObjs == 0 || !(EntityFlags&EF_ColideWithWorld)) return nullptr;
+
+  const float rad = GetMoveRadius();
+  const float myz = Origin.z;
+
+  float bbox2d[4];
+  bbox2d[BOX2D_TOP] = Origin.y+rad;
+  bbox2d[BOX2D_BOTTOM] = Origin.y-rad;
+  bbox2d[BOX2D_RIGHT] = Origin.x+rad;
+  bbox2d[BOX2D_LEFT] = Origin.x-rad;
+
+  DeclareMakeBlockMapCoordsBBox2D(bbox2d, xl, yl, xh, yh);
+
+  const bool precise = (prevz == myz);
+
+  polyobj_t *pores = nullptr;
+  float bestdist = +FLT_MAX;
+
+  // need new validcount
+  XLevel->IncrementValidCount();
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      polyobj_t *po;
+      for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
+        if (!po->posector || po == PolyObjIgnore) continue;
+        if (po->pofloor.minz >= po->poceiling.maxz) continue;
+        // should be above or on it
+        const float zh = myz-po->poceiling.maxz;
+        if (precise) {
+          GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u): pobj #%d; zh=%g", GetClass()->GetName(), GetUniqueId(), po->tag, zh);
+          if (zh < 0.0f || zh >= 0.1f) continue;
+        } else {
+          const float pzh = prevz-po->poceiling.maxz;
+          GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u): pobj #%d; zh=%g; pzh=%g", GetClass()->GetName(), GetUniqueId(), po->tag, zh, pzh);
+          if (zh >= 0.1f) continue;
+          if (pzh < 0.0f) continue;
+          //if (zh < 0.0f || zh >= 0.1f) continue;
+          if (pzh >= bestdist) continue;
+        }
+        if (!Are2DBBoxesOverlap(po->bbox2d, bbox2d)) continue;
+        if (!XLevel->IsBBox2DTouchingSector(po->posector, bbox2d)) continue;
+        GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u):   HIT pobj #%d", GetClass()->GetName(), GetUniqueId(), po->tag);
+        // hit pobj
+        if (precise) return po;
+        pores = po;
+        bestdist = prevz-po->poceiling.maxz;
+      }
+    }
+  }
+
+  return pores;
 }
 
 
@@ -1042,7 +1109,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
       }
     }
 
-    bool inpobj = false;
+    polyobj_t *inpobj = nullptr;
     //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
     // fix with polyobject heights
     if (XLevel->NumPolyObjs) {
@@ -1053,23 +1120,25 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
         for (int by = yl; by <= yh; ++by) {
           polyobj_t *po;
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-            if (!po->posector) continue;
+            if (!po->posector || po == PolyObjIgnore) continue;
             //GCon->Logf(NAME_Debug, "000: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1);
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "001: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
             // inside?
-            if (!inpobj && z1 > po->pofloor.minz && tmtrace.End.z < po->poceiling.maxz) inpobj = true;
+            if (!inpobj && z1 > po->pofloor.minz && tmtrace.End.z < po->poceiling.maxz) inpobj = po;
             //GCon->Logf(NAME_Debug, "002: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             //GCon->Logf(NAME_Debug, "003: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g) (fz=%g; cz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1, tmtrace.FloorZ, tmtrace.CeilingZ);
             // hit pobj
             if (tmtrace.End.z < (po->poceiling.maxz+po->pofloor.minz)*0.5f) {
               // below
-              tmtrace.CeilingZ = min2(tmtrace.CeilingZ, po->pofloor.minz);
+              //tmtrace.CeilingZ = min2(tmtrace.CeilingZ, po->pofloor.minz);
             } else {
               // above
-              tmtrace.FloorZ = max2(tmtrace.FloorZ, po->poceiling.maxz);
+              //tmtrace.FloorZ = max2(tmtrace.FloorZ, po->poceiling.maxz);
+              const float zh = tmtrace.End.z-po->poceiling.maxz;
+              if (zh >= 0.0f && zh < 0.1f) tmtrace.PolyObj = po;
             }
             //GCon->Logf(NAME_Debug, "004: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g) (fz=%g; cz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1, tmtrace.FloorZ, tmtrace.CeilingZ);
           }
@@ -1103,6 +1172,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
       tmtrace.BlockingMobj = nullptr;
       tmtrace.BlockingLine = nullptr;
       tmtrace.AnyBlockingLine = nullptr;
+      if (tmtrace.PolyObj) tmtrace.PolyObj = inpobj;
       return false;
     }
   }
@@ -1245,7 +1315,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   //FIXME: should properly check if the point is inside a polyobject -- we can be inside, and not touching any pobj line
   //FIXME: to do this, we should collect all real polyobject subsectors into a separate list
   polyobj_t *po = ld->pobj();
-  if (po) {
+  if (po && po != PolyObjIgnore) {
     TVec hp = tmtrace.End-(ld->PointDistance(tmtrace.End)*ld->normal);
     //GCon->Logf(NAME_Debug, "tmtz:%g; hpz=%g : %g; pofz=%g (nz=%g; dist=%g); pocz=%g (nz=%g; dist=%g)", tmtrace.End.z, hp.z, hp.z+max2(0.0f, Height), po->pofloor.minz, po->pofloor.normal.z, po->pofloor.dist, po->poceiling.maxz, po->poceiling.normal.z, po->poceiling.dist);
     if (po->pofloor.minz < po->poceiling.maxz && (hp.z+max2(0.0f, Height) <= po->pofloor.minz || hp.z >= po->poceiling.maxz)) {
@@ -2426,7 +2496,7 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
       for (int by = yl; by <= yh; ++by) {
         polyobj_t *po;
         for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-          if (!po->posector) continue;
+          if (!po->posector || po == PolyObjIgnore) continue;
           //GCon->Logf(NAME_Debug, "x00: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
           if (po->pofloor.minz < po->poceiling.maxz && (z1 <= po->pofloor.minz || TryOrg.z >= po->poceiling.maxz)) {
             // outside of polyobject
@@ -3127,6 +3197,12 @@ IMPLEMENT_FUNCTION(VEntity, BounceWall) {
 IMPLEMENT_FUNCTION(VEntity, CheckOnmobj) {
   vobjGetParamSelf();
   RET_REF(Self->CheckOnmobj());
+}
+
+IMPLEMENT_FUNCTION(VEntity, CheckOnPolyobj) {
+  float prevz;
+  vobjGetParamSelf(prevz);
+  RET_PTR(Self->CheckOnPolyobj(prevz));
 }
 
 IMPLEMENT_FUNCTION(VEntity, LinkToWorld) {

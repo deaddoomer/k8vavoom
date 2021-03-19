@@ -231,8 +231,13 @@ public:
   void eventSpawnSpecials () { static VMethodProxy method("SpawnSpecials"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventUpdateSpecials () { static VMethodProxy method("UpdateSpecials"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventAfterUnarchiveThinkers () { static VMethodProxy method("AfterUnarchiveThinkers"); vobjPutParamSelf(); VMT_RET_VOID(method); }
+
   void eventPolyThrustMobj (VEntity *A, TVec thrustDir, polyobj_t *po) { static VMethodProxy method("PolyThrustMobj"); vobjPutParamSelf(A, thrustDir, po); VMT_RET_VOID(method); }
   void eventPolyCrushMobj (VEntity *A, polyobj_t *po) { static VMethodProxy method("PolyCrushMobj"); vobjPutParamSelf(A, po); VMT_RET_VOID(method); }
+
+  bool eventPolyZTestMObjAt (VEntity *A, polyobj_t *po, float dx, float dy) { static VMethodProxy method("PolyZTestMObjAt"); vobjPutParamSelf(A, po, dx, dy); VMT_RET_BOOL(method); }
+  void eventPolyZMoveMObjAt (VEntity *A, polyobj_t *po, float dx, float dy, float dangle) { static VMethodProxy method("PolyZMoveMObjAt"); vobjPutParamSelf(A, po, dx, dy, dangle); VMT_RET_VOID(method); }
+
   bool eventTagBusy (int tag) { static VMethodProxy method("TagBusy"); vobjPutParamSelf(tag); VMT_RET_BOOL(method); }
   bool eventPolyBusy (int polyobj) { static VMethodProxy method("PolyBusy"); vobjPutParamSelf(polyobj); VMT_RET_BOOL(method); }
   int eventThingCount (int type, VName TypeName, int tid, int SectorTag) { static VMethodProxy method("ThingCount"); vobjPutParamSelf(type, TypeName, tid, SectorTag); VMT_RET_INT(method); }

@@ -1149,7 +1149,10 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   po->startSpot.x += x;
   po->startSpot.y += y;
   po->startSpot.z += z;
-  if (IsForServer()) LinkPolyobj(po);
+  if (IsForServer()) {
+    LinkPolyobj(po);
+    PolyMobjMoveRotateStanding(po, x, y, 0.0f);
+  }
 
   // notify renderer that this polyobject is moved
   if (Renderer) Renderer->PObjModified(po);
@@ -1209,7 +1212,10 @@ bool VLevel::RotatePolyobj (int num, float angle) {
 
   //po->angle = AngleMod(po->angle+angle);
   po->angle = an;
-  if (IsForServer()) LinkPolyobj(po);
+  if (IsForServer()) {
+    LinkPolyobj(po);
+    PolyMobjMoveRotateStanding(po, 0.0f, 0.0f, angle);
+  }
 
   // notify renderer that this polyobject is moved
   if (Renderer) Renderer->PObjModified(po);
@@ -1242,39 +1248,43 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
     for (int bx = left; bx <= right; ++bx) {
       for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
-        if (mobj->EntityFlags&VEntity::EF_ColideWithWorld) {
-          if (mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse)) {
-            float tmbbox[4];
-            tmbbox[BOX2D_TOP] = mobj->Origin.y+mobj->Radius;
-            tmbbox[BOX2D_BOTTOM] = mobj->Origin.y-mobj->Radius;
-            tmbbox[BOX2D_LEFT] = mobj->Origin.x-mobj->Radius;
-            tmbbox[BOX2D_RIGHT] = mobj->Origin.x+mobj->Radius;
+        if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
 
-            if (tmbbox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
-                tmbbox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
-                tmbbox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
-                tmbbox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
-            {
-              continue;
-            }
+        float tmbbox[4];
+        tmbbox[BOX2D_TOP] = mobj->Origin.y+mobj->Radius;
+        tmbbox[BOX2D_BOTTOM] = mobj->Origin.y-mobj->Radius;
+        tmbbox[BOX2D_LEFT] = mobj->Origin.x-mobj->Radius;
+        tmbbox[BOX2D_RIGHT] = mobj->Origin.x+mobj->Radius;
 
-            // check mobj height (pobj floor and ceiling shouldn't be sloped here)
-            if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
-
-            //TODO: crush corpses!
-
-            if (!mobj->IsBlockingLine(ld)) continue;
-
-            if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
-
-            if (mobj->EntityFlags&VEntity::EF_Solid) {
-              mobj->Level->eventPolyThrustMobj(mobj, /*seg*/ld->normal, po);
-              blocked = true;
-            } else {
-              mobj->Level->eventPolyCrushMobj(mobj, po);
-            }
-          }
+        if (tmbbox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
+            tmbbox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
+            tmbbox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
+            tmbbox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
+        {
+          continue;
         }
+
+        // check mobj height (pobj floor and ceiling shouldn't be sloped here)
+        //FIXME: check height for 3dmitex pobj
+        if (po->posector) {
+          if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        }
+
+        //TODO: crush corpses!
+
+        if (!mobj->IsBlockingLine(ld)) continue;
+
+        if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
+
+        mobj->PolyObjIgnore = po;
+        if (mobj->EntityFlags&VEntity::EF_Solid) {
+          mobj->Level->eventPolyThrustMobj(mobj, /*seg*/ld->normal, po);
+          blocked = true;
+        } else {
+          mobj->Level->eventPolyCrushMobj(mobj, po);
+        }
+        mobj->PolyObjIgnore = nullptr;
       }
     }
   }
@@ -1296,6 +1306,42 @@ bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
     if (PolyCheckMobjLineBlocking(*lineList, po)) blocked = true; //k8: break here?
   }
   return blocked;
+}
+
+
+//==========================================================================
+//
+//  VLevel::PolyMobjMoveRotateStanding
+//
+//==========================================================================
+void VLevel::PolyMobjMoveRotateStanding (polyobj_t *po, float dx, float dy, float dangle) {
+  if (!po || po->numlines == 0 || !po->posector) return;
+
+  int top = MapBlock(po->bbox2d[BOX2D_TOP]-BlockMapOrgY)+1;
+  int bottom = MapBlock(po->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY)-1;
+  int left = MapBlock(po->bbox2d[BOX2D_LEFT]-BlockMapOrgX)-1;
+  int right = MapBlock(po->bbox2d[BOX2D_RIGHT]-BlockMapOrgX)+1;
+
+  if (top < 0 || right < 0 || bottom >= BlockMapHeight || left >= BlockMapWidth) return;
+
+  if (bottom < 0) bottom = 0;
+  if (top >= BlockMapHeight) top = BlockMapHeight-1;
+  if (left < 0) left = 0;
+  if (right >= BlockMapWidth) right = BlockMapWidth-1;
+
+  //GCon->Logf(NAME_Debug, "PolyMobjMoveRotateStanding: pobj #%d", po->tag);
+
+  for (int by = bottom*BlockMapWidth; by <= top*BlockMapWidth; by += BlockMapWidth) {
+    for (int bx = left; bx <= right; ++bx) {
+      for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
+        if (mobj->PolyObj != po || mobj->IsGoingToDie()) continue;
+        //if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        //if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
+        GCon->Logf(NAME_Debug, "PolyMobjMoveRotateStanding: pobj #%d; mobj %s(%u); dx=%g; dy=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), dx, dy);
+        mobj->Level->eventPolyZMoveMObjAt(mobj, po, dx, dy, dangle);
+      }
+    }
+  }
 }
 
 

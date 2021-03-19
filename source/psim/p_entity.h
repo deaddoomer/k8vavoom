@@ -243,6 +243,7 @@ class VEntity : public VThinker {
   sector_t *Sector; // cannot be `nullptr`, it is always set
   polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
     // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
+  polyobj_t *PolyObjIgnore; // transiend, used in pobj movement checking
   sector_t *LastSector; // transient; set by `UnlinkFromWorld()`, used to remove excessive gore actors
   TVec PrevTickOrigin; // transient; set in `VEntity::Tick()`
 
@@ -458,6 +459,11 @@ protected:
 
   // used in `TryMove()`
   bool CheckBlockingMobj (VEntity *blockmobj);
+
+  // check if we are standing on some polyobject
+  // "inside" is not "standing"
+  // used in `LinkToWorld()`
+  polyobj_t *CheckOnPolyobj (float prevz);
 
 public:
   VVA_CHECKRESULT inline float GetFloorNormalZ () const noexcept { return EFloor.GetNormalZ(); }
@@ -901,6 +907,7 @@ public:
   DECLARE_FUNCTION(SlideMove)
   DECLARE_FUNCTION(BounceWall)
   DECLARE_FUNCTION(CheckOnmobj)
+  DECLARE_FUNCTION(CheckOnPolyobj)
   DECLARE_FUNCTION(LinkToWorld)
   DECLARE_FUNCTION(UnlinkFromWorld)
   DECLARE_FUNCTION(CanSee)

@@ -246,6 +246,7 @@ native readonly transient subsector_t *SubSector; // can be `nullptr` for `EF_No
 native readonly transient sector_t *Sector; // can be `nullptr` for `EF_NoSector` entities
 native readonly transient polyobj_t *PolyObj; // polyobject this entity stands on (even if it is barely touched)
     // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
+native readonly transient polyobj_t *PolyObjIgnore; // transiend, used in pobj movement checking
 native readonly transient sector_t *LastSector; // set by `UnlinkFromWorld()`, used to remove excessive gore actors
 native readonly transient TVec PrevTickOrigin; // set in `VEntity::Tick()`
 
@@ -557,6 +558,7 @@ native final void CheckWater ();
 native final float GetBlockingHeightFor (Entity other);
 
 native final Entity CheckOnmobj ();
+native final polyobj_t *CheckOnPolyobj (float prevz);
 
 // always call this before changing x and y coordinates (z can be changed freely)
 // i.e. first unlink, then change coords, then link again

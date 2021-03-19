@@ -638,6 +638,22 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
 
   //Mass = (Mass.isinf ? 10000 : fclamp(Mass, 0, 10000)); // done in C++ code
 
+  polyobj_t *po = PolyObj;
+
+  if (po) {
+    float newz = oldz+Velocity.z*DeltaTime;
+    float poz = po.poceiling.maxz;
+    if (newz <= poz) {
+      Origin.z = poz;
+      if (oldz > poz) {
+        if (!HitPolyObj(PolyObj, oldz)) return;
+      }
+      Velocity.z = fmax(0.0, Velocity.z);
+      return;
+    }
+    PolyObj = nullptr;
+  }
+
   if (Sector) {
     // [RH] Double gravity only if running off a ledge. Coming down from
     // an upward thrust (e.g. a jump) should not double it.
@@ -703,6 +719,13 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
   // adjust height
   // k8: nope, floatbob is affected by gravity too
   /*if (!bFloatBob)*/ Origin.z += Velocity.z*DeltaTime;
+
+  // check if we landed on polyobject
+  PolyObj = CheckOnPolyobj(oldz);
+  if (PolyObj && Origin.z < PolyObj.poceiling.maxz) {
+    if (!HitPolyObj(PolyObj, oldz)) return;
+  }
+
   float origz = Origin.z;
 
   if (bFloat && !bDormant && Target) {
@@ -1071,6 +1094,104 @@ final bool HitFloor (float prevz, sector_t *OldSector) {
     if (!bIsPlayer && bCanJump && Velocity.z < 0.0 && JumpTime <= 0.0) JumpTime = 0.5; // delay any jumping for a short time
     // do some special action when hitting the floor
     OnHitFloor();
+    if (bIsPlayer && Player) {
+      //k8: dunno why -6, i just pulled it from my ass
+      if (Velocity.z < -6.0 && PlayerEx(Player).JumpTime <= 0.0) {
+        //printdebug("%C: jumpblock! velz=%s; fnz=%s", self, Velocity.z, EFloor.spGetNormalZ);
+        PlayerEx(Player).JumpTime = 0.2; // delay any jumping for a short time
+      }
+      //printdebug("%C: vdot=%s %s (%s)", self, vdot, Velocity.z, -DEFAULT_GRAVITY*0.25);
+      if (/*vdot*/Velocity.z < -DEFAULT_GRAVITY*0.25 && !bNoGravity) {
+        // squat down
+        // decrease ViewHeight for a moment after hitting the ground (hard), and utter appropriate sound
+        PlayerLandedOnThing();
+      }
+    }
+    if (!bSkullFly && Velocity.z < 0.0) Velocity.z = 0.0;
+    //if (bIsPlayer) printdebug("001: %C: Velocity=%s; vdot=%s", self, Velocity, vdot);
+  } else {
+    if (!bSkullFly && Velocity.z < 0.0) Velocity.z = 0.0;
+  }
+
+  if (bSkullFly) {
+    // the skull slammed into something
+    //Velocity.z = -Velocity.z;
+    Velocity.z = fabs(Velocity.z);
+  }
+
+  Crash();
+  return true;
+}
+
+
+//==========================================================================
+//
+//  HitPolyObj
+//
+//==========================================================================
+final bool HitPolyObj (polyobj_t *po, float oldz) {
+  float pobjz = po->poceiling.maxz;
+  bool justLanded = (oldz > pobjz);
+
+  // killough 11/98: touchy objects explode on impact
+  // allow very short drops to be safe, so that a touchy can be summoned without exploding
+  if (bTouchy && (bArmed || IsSentient()) && Velocity.z < -5.0) {
+    bArmed = false; // disarm
+    if (Level.Game.IsAuthority) {
+      // if we have no velocity, don't bother interpolating
+      if (Velocity.xy && Origin.z > pobjz) tmp_phys_z_change += pobjz-Origin.z;
+      Damage(none, none, Health, spawnBlood:true);  // kill object
+    }
+    return true;
+  }
+
+  if (bMissile && (bColideWithWorld || !LineSpecialGameInfo(Level.Game).bNoClipIgnoreFloor)) {
+    // physics caller will setup interpolation with `tmp_phys_z_change`
+    // if we have no velocity, don't bother interpolating
+    if (Velocity.xy && Origin.z > pobjz) tmp_phys_z_change += pobjz-Origin.z;
+    Origin.z = pobjz;
+    if (bBounceFloors || BounceType != BOUNCE_None) {
+      FloorBounceMissile();
+      return false;
+    }
+    if (bNoExplodeFloor) {
+      // the spirit struck the ground
+      Velocity.z = 0.0;
+      HitFloorType(justLanded);
+      return false;
+    }
+    if (bIgnoreFloorStep) {
+      // minotaur floor fire can go up steps
+      return false;
+    }
+    HitFloorType(justLanded);
+    ExplodeMissile(none);
+    return false;
+  }
+
+  float vdot = Velocity.z;
+  if (bMonster && Level.Game.IsAuthority) {
+    // blasted mobj falling
+    if (vdot < -23.0*35.0) MonsterFallingDamage();
+  }
+
+  // physics caller will setup interpolation with `tmp_phys_z_change`
+  // if we have no velocity, don't bother interpolating
+  if (Velocity.xy && Origin.z > pobjz) tmp_phys_z_change += pobjz-Origin.z;
+  Origin.z = pobjz;
+
+  if (vdot < -0.1) {
+    // spawn splashes, etc
+    //if (bIsPlayer) printdebug("000: %C: Velocity=%s; vdot=%s", self, Velocity, vdot);
+    //HitFloorType(justLanded);
+    if (!Inventory(self) && nameicmp(DamageType, 'Ice') == 0 && /*vdot*/Velocity.z < -DEFAULT_GRAVITY*0.25) {
+      StateTime = 0.1;
+      Velocity.z = 0.0;
+      return false;
+    }
+    if (!bIsPlayer && bCanJump && Velocity.z < 0.0 && JumpTime <= 0.0) JumpTime = 0.5; // delay any jumping for a short time
+    // do some special action when hitting the floor
+    //OnHitFloor();
     if (bIsPlayer && Player) {
       //k8: dunno why -6, i just pulled it from my ass
       if (Velocity.z < -6.0 && PlayerEx(Player).JumpTime <= 0.0) {
