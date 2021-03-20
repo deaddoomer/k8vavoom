@@ -1938,7 +1938,7 @@ override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
                             int vspeed, int vdist, int forced, Entity Activator)
 {
   //printdebug("AcsPolyMoveEx: po=%s; hspeed=%s; yawangle=%s; dist=%s; vspeed=%s; vdist=%s; forced=%s", po, hspeed, yawangle, dist, vspeed, vdist, forced);
-  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist, carryThings:true);
+  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist);
 }
 
 
@@ -2098,7 +2098,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 /*final*/ bool EV_MovePoly (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
                             int Arg5, bool timesEight, bool overRide,
                             optional float floatAngle, optional float floatDist,
-                            optional bool carryThings,
+                            optional bool ignoreThings,
                             optional int vspeed, optional int vdist)
 {
   int polyNum = Arg1;
@@ -2133,7 +2133,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
     poly = XLevel.GetPolyobj(mirror);
     if (poly && poly->SpecialData && !overRide) break; // mirroring poly is already in motion
     pe = SpawnThinker(PolyobjMover);
-    pe.carryThings = carryThings;
+    pe.carryThings = ignoreThings;
     pe.polyobj = mirror;
     poly->SpecialData = pe;
     pe.dist = realDist;

@@ -612,26 +612,31 @@ void VLevel::SerialiseOther (VStream &Strm) {
       float polyX = PolyObjs[i]->startSpot.x;
       float polyY = PolyObjs[i]->startSpot.y;
       float polyZ = PolyObjs[i]->startSpot.z;
-      int havez = 1;
       vio.io(VName("angle"), angle);
       vio.io(VName("startSpot.x"), polyX);
       vio.io(VName("startSpot.y"), polyY);
       if (Strm.IsLoading()) {
+        int havez = 0;
         vio.iodef(VName("startSpot.haveZ"), havez, 0);
         if (havez) {
           vio.io(VName("startSpot.z"), polyZ);
         } else {
-          polyZ = -99999.0f;
+          polyZ = 0.0f;
         }
       } else {
+        int havez = 1;
         vio.io(VName("startSpot.haveZ"), havez);
         vio.io(VName("startSpot.z"), polyZ);
       }
       if (Strm.IsLoading()) {
-        RotatePolyobj(PolyObjs[i]->tag, angle);
-        //GCon->Logf("poly #%d: oldpos=(%f,%f)", i, PolyObjs[i]->startSpot.x, PolyObjs[i]->startSpot.y);
-        MovePolyobj(PolyObjs[i]->tag, polyX-PolyObjs[i]->startSpot.x, polyY-PolyObjs[i]->startSpot.y, (polyY < -90000.0f ? 0 : polyY-PolyObjs[i]->startSpot.z));
-        //GCon->Logf("poly #%d: newpos=(%f,%f) (%f,%f)", i, PolyObjs[i].startSpot.x, PolyObjs[i].startSpot.y, polyX, polyY);
+        polyobj_t *po = PolyObjs[i];
+        if (angle) RotatePolyobj(po->tag, angle);
+        //GCon->Logf("poly #%d: oldpos=(%g,%g,%g) -> (%g,%g,%g) : (%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z, polyX, polyY, polyZ, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z);
+        MovePolyobj(po->tag, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z, true); // forced move
+        //GCon->Logf("poly #%d: newpos=(%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z);
+      } else {
+        //polyobj_t *po = PolyObjs[i];
+        //GCon->Logf("saved poly #%d: pos=(%g,%g,%g); angle=%g", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z, po->angle);
       }
       vio.io(VName("SpecialData"), PolyObjs[i]->SpecialData);
     }

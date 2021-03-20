@@ -29,7 +29,7 @@ int polyobj;
 float speed;
 float dist;
 float angle;
-bool carryThings;
+bool carryThings; // this actually means "ignore things", but renaming it will break saves
 // vertical
 float vspeed;
 float vdist;

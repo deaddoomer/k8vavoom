@@ -465,8 +465,6 @@ void VEntity::LinkToWorld (int properFloorCheck) {
 
   const float rad = GetMoveRadius();
 
-  //polyobj_t *po = CheckOnPolyobj(Origin.z);
-
   // link into subsector
   subsector_t *ss = XLevel->PointInSubsector_Buggy(Origin);
   //vassert(ss); // meh, it will segfault on `nullptr` anyway
@@ -1047,69 +1045,6 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   return true;
 }
 
-
-
-//==========================================================================
-//
-//  VEntity::CheckOnPolyobj
-//
-//  check if we are standing on some polyobject
-//  "inside" is not "standing"
-//
-//==========================================================================
-polyobj_t *VEntity::CheckOnPolyobj (float prevz) {
-  if (XLevel->NumPolyObjs == 0 || !(EntityFlags&EF_ColideWithWorld)) return nullptr;
-
-  const float rad = GetMoveRadius();
-  const float myz = Origin.z;
-
-  float bbox2d[4];
-  bbox2d[BOX2D_TOP] = Origin.y+rad;
-  bbox2d[BOX2D_BOTTOM] = Origin.y-rad;
-  bbox2d[BOX2D_RIGHT] = Origin.x+rad;
-  bbox2d[BOX2D_LEFT] = Origin.x-rad;
-
-  DeclareMakeBlockMapCoordsBBox2D(bbox2d, xl, yl, xh, yh);
-
-  const bool precise = (prevz == myz);
-
-  polyobj_t *pores = nullptr;
-  float bestdist = +FLT_MAX;
-
-  XLevel->IncrementValidCount();
-
-  for (int bx = xl; bx <= xh; ++bx) {
-    for (int by = yl; by <= yh; ++by) {
-      polyobj_t *po;
-      for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-        if (!po->posector || po == PolyObjIgnore) continue;
-        if (po->pofloor.minz >= po->poceiling.maxz) continue;
-        // should be above or on it
-        const float zh = myz-po->poceiling.maxz;
-        if (precise) {
-          GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u): pobj #%d; zh=%g", GetClass()->GetName(), GetUniqueId(), po->tag, zh);
-          if (zh < 0.0f || zh >= 0.1f) continue;
-        } else {
-          const float pzh = prevz-po->poceiling.maxz;
-          GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u): pobj #%d; zh=%g; pzh=%g", GetClass()->GetName(), GetUniqueId(), po->tag, zh, pzh);
-          if (zh >= 0.1f) continue;
-          if (pzh < 0.0f) continue;
-          //if (zh < 0.0f || zh >= 0.1f) continue;
-          if (pzh >= bestdist) continue;
-        }
-        if (!Are2DBBoxesOverlap(po->bbox2d, bbox2d)) continue;
-        if (!XLevel->IsBBox2DTouchingSector(po->posector, bbox2d)) continue;
-        GCon->Logf(NAME_Debug, "CheckOnPolyobj:%s(%u):   HIT pobj #%d", GetClass()->GetName(), GetUniqueId(), po->tag);
-        // hit pobj
-        if (precise) return po;
-        pores = po;
-        bestdist = prevz-po->poceiling.maxz;
-      }
-    }
-  }
-
-  return pores;
-}
 
 
 //**************************************************************************
@@ -3290,12 +3225,6 @@ IMPLEMENT_FUNCTION(VEntity, BounceWall) {
 IMPLEMENT_FUNCTION(VEntity, CheckOnmobj) {
   vobjGetParamSelf();
   RET_REF(Self->CheckOnmobj());
-}
-
-IMPLEMENT_FUNCTION(VEntity, CheckOnPolyobj) {
-  float prevz;
-  vobjGetParamSelf(prevz);
-  RET_PTR(Self->CheckOnPolyobj(prevz));
 }
 
 IMPLEMENT_FUNCTION(VEntity, LinkToWorld) {

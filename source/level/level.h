@@ -707,7 +707,7 @@ public:
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
   bool MovePolyobj (int num, float x, float y, float z=0.0f, bool forced=false); // tag (GetPolyobj)
-  bool RotatePolyobj (int num, float angle); // tag (GetPolyobj)
+  bool RotatePolyobj (int num, float angle, bool forced=false); // tag (GetPolyobj)
 
   // this also fixes inner sector height (forces to pobj floor and ceiling)
   // does nothing for non-3d polyobjects
@@ -1000,7 +1000,7 @@ private:
   void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();
   void LinkPolyobj (polyobj_t *po);
-  void UnLinkPolyobj (polyobj_t *po);
+  void UnlinkPolyobj (polyobj_t *po);
 
   bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po);
   // we don't need the exact blocking line here

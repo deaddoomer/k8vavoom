@@ -464,11 +464,6 @@ protected:
   // used in `TryMove()`
   bool CheckBlockingMobj (VEntity *blockmobj);
 
-  // check if we are standing on some polyobject
-  // "inside" is not "standing"
-  // used in `LinkToWorld()`
-  polyobj_t *CheckOnPolyobj (float prevz);
-
 public:
   VVA_CHECKRESULT inline float GetFloorNormalZ () const noexcept { return EFloor.GetNormalZ(); }
   VVA_CHECKRESULT inline float GetCeilingNormalZ () const noexcept { return ECeiling.GetNormalZ(); }
@@ -911,7 +906,6 @@ public:
   DECLARE_FUNCTION(SlideMove)
   DECLARE_FUNCTION(BounceWall)
   DECLARE_FUNCTION(CheckOnmobj)
-  DECLARE_FUNCTION(CheckOnPolyobj)
   DECLARE_FUNCTION(LinkToWorld)
   DECLARE_FUNCTION(UnlinkFromWorld)
   DECLARE_FUNCTION(CanSee)

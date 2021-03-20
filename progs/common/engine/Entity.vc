@@ -562,7 +562,6 @@ native final void CheckWater ();
 native final float GetBlockingHeightFor (Entity other);
 
 native final Entity CheckOnmobj ();
-native final polyobj_t *CheckOnPolyobj (float prevz);
 
 // always call this before changing x and y coordinates (z can be changed freely)
 // i.e. first unlink, then change coords, then link again

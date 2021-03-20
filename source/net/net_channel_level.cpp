@@ -1145,6 +1145,7 @@ int VLevelChannel::UpdatePolyObj (VMessageOut &Msg, VBitStreamWriter &strm, int 
   rep_polyobj_t *RepPo = &PolyObjs[oidx];
   if (RepPo->startSpot.x == Po->startSpot.x &&
       RepPo->startSpot.y == Po->startSpot.y &&
+      RepPo->startSpot.z == Po->startSpot.z &&
       RepPo->angle == Po->angle)
   {
     return 0;
@@ -1157,6 +1158,8 @@ int VLevelChannel::UpdatePolyObj (VMessageOut &Msg, VBitStreamWriter &strm, int 
   if (RepPo->startSpot.x != Po->startSpot.x) strm << Po->startSpot.x;
   strm.WriteBit(RepPo->startSpot.y != Po->startSpot.y);
   if (RepPo->startSpot.y != Po->startSpot.y) strm << Po->startSpot.y;
+  strm.WriteBit(RepPo->startSpot.z != Po->startSpot.z);
+  if (RepPo->startSpot.z != Po->startSpot.z) strm << Po->startSpot.z;
   strm.WriteBit(RepPo->angle != Po->angle);
   if (RepPo->angle != Po->angle) strm << Po->angle;
 
@@ -1190,12 +1193,12 @@ bool VLevelChannel::ParsePolyObj (VMessageIn &Msg) {
   if (Msg.ReadBit()) Msg << Pos.y;
   if (Msg.ReadBit()) Msg << Pos.z;
   if (Msg.IsError()) return false;
-  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y, Pos.z-Po->startSpot.z);
+  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y, Pos.z-Po->startSpot.z, true);
   if (Msg.ReadBit()) {
     float a = 0;
     Msg << a;
     if (Msg.IsError()) return false;
-    Level->RotatePolyobj(Po->tag, a-Po->angle);
+    Level->RotatePolyobj(Po->tag, a-Po->angle, true);
   }
 
   return !Msg.IsError();
