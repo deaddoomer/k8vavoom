@@ -87,6 +87,9 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
     }
   }
 
+  // no need to scan 3d pobj lines
+  if (sec->isInnerPObj()) return;
+
   line_t **slinesptr = sec->lines;
   for (int i = sec->linecount; i--; ++slinesptr) {
     const line_t *line = *slinesptr;
@@ -140,6 +143,35 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
       SoundSectorListItem &sl = recSoundSectorList.alloc();
       sl.sec = other;
       sl.sblock = sblock;
+    }
+  }
+
+  if (NumPolyObjs) {
+    // and 3d pobjs too
+    //FIXME: process pobj "block sound" lines?
+    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+      for (auto &&it : sub->PObjFirst()) {
+        polyobj_t *po = it.pobj();
+        sector_t *other = po->posector;
+        if (other && po->validcount != validcount) {
+          po->validcount = validcount;
+          const int sblock = 0;
+          if (other->validcount == validcount && other->soundtraversed <= sblock+1) continue;
+          /*
+          if (!distUnlim && gm_compat_better_sound_distance.asBool()) {
+            if (length2DSquared(sndorigin-(*line->v1)) > maxdistSq && length2DSquared(sndorigin-(*line->v2)) > maxdistSq) continue;
+          }
+          */
+          // set flags
+          other->validcount = validcount;
+          other->soundtraversed = sblock+1;
+          other->SoundTarget = soundtarget;
+          // add to processing list
+          SoundSectorListItem &sl = recSoundSectorList.alloc();
+          sl.sec = other;
+          sl.sblock = sblock;
+        }
+      }
     }
   }
 }
