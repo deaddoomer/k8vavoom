@@ -1948,7 +1948,23 @@ override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
 //
 //==========================================================================
 override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced, Entity Activator) {
-  return 0;
+  auto poly = XLevel.GetPolyobj(po);
+  if (!poly) return 0;
+
+  TVec dst = vector(x, y, 0);
+  TVec rel = vector(dst.x-poly.startSpot.x, dst.y-poly.startSpot.y, 0);
+  float vdist = z-poly.startSpot.z;
+  if (!rel && !vdist) return 1;
+
+  float dist = length2D(rel);
+  if (dist < 1 || fabs(vdist) < 1) return 1;
+
+  int vspeed = (vdist < 0 ? -speed : speed);
+
+  rel = normalize(rel);
+  TAVec angles;
+  VectorAngles(rel, out angles);
+  return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced, floatAngle:angles.yaw, floatDist:dist, vspeed:vspeed, vdist:cast(int)fabs(vdist));
 }
 
 
@@ -1960,7 +1976,14 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced
 //
 //==========================================================================
 override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, Entity Activator) {
-  return 0;
+  if (!speed || !targettid) return false;
+  Entity ent = Level.FindMobjFromTID(targettid, none);
+  if (!ent) return 0;
+
+  auto poly = XLevel.GetPolyobj(po);
+  if (!poly) return 0;
+
+  return AcsPolyMoveToEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, forced, Activator);
 }
 
 
@@ -2107,10 +2130,16 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 
   if (poly->SpecialData && !overRide) return false; // poly is already moving
 
+  // no z movement for non-3d pobjs
+  if (!poly->posector) { vspeed = 0; vdist = 0; }
+
   float realDist = float(Arg4)*(timesEight ? 8.0 : 1.0);
   float realVDist = float(vdist)*(timesEight ? 8.0 : 1.0);
   float realSpeed = float(Arg2)*4.0;
   float realVSpeed = float(vspeed)*4.0;
+
+  // just in case
+  if (!poly->posector) { realVDist = 0; realVSpeed = 0; }
 
   //printdebug("EV_MovePoly: po=%s; vspeed=%s; vdist=%s", polyNum, realVSpeed, realVDist);
 
