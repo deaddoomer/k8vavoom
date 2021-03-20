@@ -2104,7 +2104,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   rel = normalize(rel);
   TAVec angles;
   VectorAngles(rel, out angles);
-  return EV_MovePoly(line, pnum, speed, 0, 0, 0, timesEight, overRide, angles.yaw, dist/*, carryThings:true*/);
+  return EV_MovePoly(line, pnum, speed, 0, 0, 0, timesEight, overRide, angles.yaw, dist);
 }
 
 
@@ -2121,7 +2121,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 /*final*/ bool EV_MovePoly (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
                             int Arg5, bool timesEight, bool overRide,
                             optional float floatAngle, optional float floatDist,
-                            optional bool ignoreThings,
+                            //optional bool ignoreThings,
                             optional int vspeed, optional int vdist)
 {
   int polyNum = Arg1;
@@ -2144,6 +2144,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   //printdebug("EV_MovePoly: po=%s; vspeed=%s; vdist=%s", polyNum, realVSpeed, realVDist);
 
   PolyobjMover pe = SpawnThinker(PolyobjMover);
+  //pe.ignoreThings = ignoreThings;
   pe.polyobj = polyNum;
   pe.dist = realDist;
   if (specified_floatDist) pe.dist = floatDist;
@@ -2162,7 +2163,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
     poly = XLevel.GetPolyobj(mirror);
     if (poly && poly->SpecialData && !overRide) break; // mirroring poly is already in motion
     pe = SpawnThinker(PolyobjMover);
-    pe.carryThings = ignoreThings;
+    //pe.ignoreThings = ignoreThings;
     pe.polyobj = mirror;
     poly->SpecialData = pe;
     pe.dist = realDist;

@@ -29,7 +29,7 @@ int polyobj;
 float speed;
 float dist;
 float angle;
-bool carryThings; // this actually means "ignore things", but renaming it will break saves
+//bool ignoreThings;
 // vertical
 float vspeed;
 float vdist;
@@ -49,7 +49,7 @@ override void Tick (float deltaTime) {
   float zMove = vspeed*deltaTime;
   if (vdist < fabs(zMove)) zMove = vdist*(zMove < 0.0 ? -1.0 : 1.0);
   //printdebug("%C(%s): po=%s; vspeed=%s; vdist=%s; zMove=%s", self, UniqueId, polyobj, vspeed, vdist, zMove);
-  if (XLevel.MovePolyobj(polyobj, xMove, yMove, zMove, forced:carryThings)) {
+  if (XLevel.MovePolyobj(polyobj, xMove, yMove, zMove/*, forced:ignoreThings*/)) {
     dist = fmax(0.0, dist-absMove);
     vdist = fmax(0.0, vdist-fabs(zMove));
     if (!dist && !vdist) {
