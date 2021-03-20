@@ -1239,8 +1239,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           mobj->Origin.z = it.value();
           mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
           // and relink it
-          //mobj->LinkToWorld();
-          mobj->eventSectorChanged(0); // don't crush
+          mobj->LinkToWorld();
+          //mobj->eventSectorChanged(0); // don't crush
         }
       }
       return false;
