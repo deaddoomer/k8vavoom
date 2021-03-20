@@ -64,7 +64,7 @@ bool VEntity::CanSee (VEntity *Other, bool forShooting, bool alwaysBetter) {
 bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
   if (dbg_disable_cansee) return false;
 
-  if (!Other || !Other->Sector || !Other->SubSector) return false;
+  if (!Other || !Other->BaseSector) return false;
   if (IsGoingToDie()) return false;
   if (Other->IsGoingToDie()) return false;
 
@@ -77,7 +77,7 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
   }
 
   // first check for trivial rejection
-  if (XLevel->IsRejectedVis(Sector, Other->Sector)) return false; // can't possibly be connected
+  if (XLevel->IsRejectedVis(BaseSector, Other->BaseSector)) return false; // can't possibly be connected
 
   // killough 11/98: shortcut for melee situations
   // same subsector? obviously visible
@@ -117,5 +117,5 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
     dirF = dirR = TVec::ZeroVector;
   }
   //if (forShooting) dirR = TVec::ZeroVector; // just in case, lol
-  return XLevel->CastCanSee(Sector, Origin, Height, dirF, dirR, Other->Origin, Other->Radius, Other->Height, !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->Sector, /*alwaysBetter*/cbs, !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
+  return XLevel->CastCanSee(BaseSector, Origin, Height, dirF, dirR, Other->Origin, Other->Radius, Other->Height, !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->BaseSector, /*alwaysBetter*/cbs, !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
 }

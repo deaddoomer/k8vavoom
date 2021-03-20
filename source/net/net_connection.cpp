@@ -1460,7 +1460,7 @@ bool VNetConnection::IsRelevant (VThinker *th) {
     return true;
   }
   //if (Ent->RemoteRole == ROLE_Authority) return false; // this should not end here
-  if (CheckFatPVS(Ent->SubSector)) return true;
+  if (CheckFatPVS(Ent->BaseSubSector)) return true;
   // invisible, but simulated are still relevant
   return SimulatedThinkers.has(Ent);
 }
