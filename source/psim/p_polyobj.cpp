@@ -42,7 +42,8 @@ enum {
 
 static TMapNC<VEntity *, bool> poEntityMap;
 static TMapNC<sector_t *, bool> poSectorMap;
-static TArray<sector_t *> poEntityArray;
+static TMapNC<VEntity *, float> poEntityMapFloat;
+//static TArray<sector_t *> poEntityArray;
 
 
 //==========================================================================
@@ -1192,24 +1193,32 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 
   bool unlinked = false;
 
-  //poEntityArray.resetNoDtor();
-
   // vertical movement
   if (z != 0.0f) {
-    // move mobjs standing on this pobj up with it
+    // move mobjs standing on this pobj up/down with it
+    // this is required for extra-fast platforms, so objects will not fall through
+    // for slow platforms, `ChangeSector()` can do it by itself, but let's play safe
+    // save all force-modified entities along with their z positions, so we could restore them
+    poEntityMapFloat.reset();
     const float pofz = po->poceiling.maxz;
+    //if (po->posector->TouchingThingList) GCon->Logf(NAME_Debug, "pobj #%d: === Z-TRY: %g (%g -> %g)", po->tag, z, pofz, pofz+z);
     for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
       VEntity *mobj = n->Thing;
       if (mobj->IsGoingToDie()) continue;
-      if (fabsf(mobj->Origin.z-pofz) < 0.01f || (mobj->Origin.z > pofz && mobj->Origin.z < pofz+z)) {
-        //poEntityArray.append(mobj);
-        const float oldz = mobj->Origin.z;
+      //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u): z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
+      const float oldz = mobj->Origin.z;
+      poEntityMapFloat.put(mobj, oldz); // save old z coord
+      if ((oldz == pofz && mobj->Velocity.z <= 0.0f) || // standing on a platform -- should go down with it
+          (oldz >= pofz && oldz < pofz+z)) // platform moving up, and goes through the mobj
+      {
+        // force onto platform
         mobj->Origin.z = pofz+z;
-        mobj->FloorZ = pofz+z;
-        //mobj->LastMoveOrigin.z = mobj->Origin.z;
-        mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
+        mobj->FloorZ = pofz+z; // this is required for `ChangeSector()`; but there's no need to change `EFloor`
+        mobj->LastMoveOrigin.z += mobj->Origin.z-oldz; // disable interpolation
+        //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u):   MOVED! z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
       }
     }
+    // move platform vertically
     OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
     // check order matters!
     if (po->posector->TouchingThingList &&
@@ -1218,18 +1227,42 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     {
       // oops, move it back
       //FIXME: save and restore distances instead of adding/subtracting
-      //GCon->Logf(NAME_Debug, "pobj #%d: FUCK!", po->tag);
+      //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
       OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
-      // don't bother moving entities back, let gravity do it
+      // restore `z` of force-modified entities, otherwise they may fall through the platform
+      for (auto &&it : poEntityMapFloat.first()) {
+        VEntity *mobj = it.key();
+        if (!mobj->IsGoingToDie()) {
+          const float oldz = mobj->Origin.z;
+          mobj->Origin.z = it.value();
+          mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
+          // and relink it
+          //mobj->LinkToWorld();
+          mobj->eventSectorChanged(0); // don't crush
+        }
+      }
+      /*
+      // relink all touching entities, to fix their floors and ceilings
+      // also, some entities may already stuck inside a platform, so
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
+        //GCon->Logf(NAME_Debug, "pobj #%d:   relink entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
         VEntity *mobj = n->Thing;
         if (mobj->IsGoingToDie()) continue;
         mobj->LinkToWorld();
       }
       return false;
+      */
     }
-    //GCon->Logf(NAME_Debug, "pobj #%d: Z-MOVED: %g", po->tag, z);
+    /*
+    if (po->posector->TouchingThingList) {
+      GCon->Logf(NAME_Debug, "pobj #%d: +++ Z-MOVED: %g (%g -> %g)", po->tag, z, pofz, po->poceiling.maxz);
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        GCon->Logf(NAME_Debug, "pobj #%d: %s(%u): *** z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
+      }
+    }
+    */
   }
 
   // horizontal movement

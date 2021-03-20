@@ -714,6 +714,48 @@ void VEntity::CheckWater () {
 
 //==========================================================================
 //
+//  Copy3DPObjFloorCeiling
+//
+//  used to fix floor and ceiling info with polyobject
+//
+//  returns `false` if stuck
+//
+//==========================================================================
+static bool Copy3DPObjFloorCeiling (tmtrace_t &tmtrace, polyobj_t *po, const float z0, const float z1) {
+  const float poz0 = po->pofloor.minz;
+  const float poz1 = po->poceiling.maxz;
+  //const float z0 = tmtrace.End.z;
+  //const float z1 = z0+max2(0.0f, height);
+
+  // if below, fix only ceiling
+  if (z0 < poz0) {
+    if (tmtrace.CeilingZ >= poz0) {
+      if (!tmtrace.PolyObj || tmtrace.CeilingZ > poz0 || tmtrace.PolyObj->tag > po->tag) {
+        tmtrace.CeilingZ = poz0;
+        tmtrace.ECeiling.set(&po->pofloor, false);
+        tmtrace.PolyObj = po;
+      }
+    }
+    return (z1 <= poz0); // "stuck" flag
+  } else {
+    // above or inside, fix only floor
+    if (tmtrace.FloorZ <= poz1) {
+      if (!tmtrace.PolyObj || tmtrace.FloorZ < poz1 || tmtrace.PolyObj->tag > po->tag) {
+        tmtrace.FloorZ = po->poceiling.maxz;
+        tmtrace.EFloor.set(&po->poceiling, false);
+        tmtrace.PolyObj = po;
+      }
+      vassert(tmtrace.PolyObj);
+      // hack: prefer pobj we are standing on, even if we already have "stucked" one
+      if (z0 == poz1 && tmtrace.PolyObj->poceiling.maxz != z0) tmtrace.PolyObj = po;
+    }
+    return (z0 >= poz1); // "stuck" flag
+  }
+}
+
+
+//==========================================================================
+//
 //  VEntity::CheckPosition
 //
 //  This is purely informative, nothing is modified
@@ -811,37 +853,7 @@ bool VEntity::CheckPosition (TVec Pos) {
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
-            // inside?
-            if (z1 > po->pofloor.minz && cptrace.End.z < po->poceiling.maxz) {
-              // find one with the highest ceiling
-              if (!cptrace.PolyObj || po->poceiling.maxz > cptrace.FloorZ) {
-                cptrace.PolyObj = po;
-                if (cptrace.FloorZ < po->poceiling.maxz) {
-                  cptrace.FloorZ = po->poceiling.maxz;
-                  cptrace.EFloor.set(&po->poceiling, false);
-                }
-              }
-              inpobj = true;
-              continue;
-            }
-            // fix FloorZ and CeilingZ
-            // below pobj?
-            if (z1 <= po->pofloor.minz) {
-              // check if we need to fix CeilingZ
-              if (cptrace.CeilingZ > po->pofloor.minz) {
-                cptrace.CeilingZ = po->pofloor.minz;
-                cptrace.ECeiling.set(&po->pofloor, false);
-              }
-            }
-            // above or on pobj?
-            if (cptrace.End.z >= po->poceiling.maxz) {
-              // check if we need to fix FloorZ
-              if (cptrace.FloorZ < po->poceiling.maxz) {
-                cptrace.FloorZ = po->poceiling.maxz;
-                cptrace.EFloor.set(&po->poceiling, false);
-              }
-              if (!cptrace.PolyObj && cptrace.End.z == po->poceiling.maxz) cptrace.PolyObj = po; // standing on it
-            }
+            if (!Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1)) inpobj = true;
           }
         }
       }
@@ -958,8 +970,18 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   // a line has been hit
   if (!ld->backsector) return false; // one sided line
 
-  if (!IsBlockingLine(ld)) return true;
+  // check polyobject
+  polyobj_t *po = ld->pobj();
+  if (po) {
+    if (!IsBlockingLine(ld)) return true;
+    if (po == PolyObjIgnore || !po->posector || po->validcount == validcount) return true;
+    po->validcount = validcount; // do not check if we are inside of it, because we definitely are
+    if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
+    const float z1 = cptrace.End.z+max2(0.0f, Height);
+    return Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1);
+  }
 
+  if (!IsBlockingLine(ld)) return true;
   /*
   if (!(ld->flags&ML_RAILING)) {
     if (ld->flags&ML_BLOCKEVERYTHING) return false; // explicitly blocking everything
@@ -970,37 +992,6 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
     if ((EntityFlags&VEntity::EF_Float) && (ld->flags&ML_BLOCK_FLOATERS)) return false; // block floaters only
   }
   */
-
-  // check polyobject
-  polyobj_t *po = ld->pobj();
-  if (po) {
-    if (po == PolyObjIgnore || !po->posector || po->validcount == validcount) return true;
-    po->validcount = validcount; // do not check if we are inside of it, because we definitely are
-    if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
-    const float z1 = cptrace.End.z+max2(0.0f, Height);
-    // below pobj?
-    if (z1 <= po->pofloor.minz) {
-      // check if we need to fix CeilingZ
-      if (cptrace.CeilingZ > po->pofloor.minz) {
-        cptrace.CeilingZ = po->pofloor.minz;
-        cptrace.ECeiling.set(&po->pofloor, false);
-      }
-      return true;
-    }
-    // above or on pobj?
-    if (cptrace.End.z >= po->poceiling.maxz) {
-      // check if we need to fix FloorZ
-      if (cptrace.FloorZ < po->poceiling.maxz) {
-        cptrace.FloorZ = po->poceiling.maxz;
-        cptrace.EFloor.set(&po->poceiling, false);
-      }
-      if (!cptrace.PolyObj && cptrace.End.z == po->poceiling.maxz) cptrace.PolyObj = po; // standing on it
-      return true;
-    }
-    // looks like we are inside a polyobject; this cannot happen, so don't fix floor and ceiling
-    cptrace.PolyObj = po; // stuck in it
-    return false;
-  }
 
   // set openrange, opentop, openbottom
   //TVec hit_point = cptrace.End-(DotProduct(cptrace.End, ld->normal)-ld->dist)*ld->normal;
@@ -1281,41 +1272,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "001: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
-            // inside?
-            if (z1 > po->pofloor.minz && tmtrace.End.z < po->poceiling.maxz) {
-              // find one with the highest ceiling
-              //GCon->Logf(NAME_Debug, "002: %s(%u):   stuck in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
-              if (!inpobj || po->poceiling.maxz >= tmtrace.FloorZ) {
-                if (!inpobj || po->poceiling.maxz > tmtrace.FloorZ || inpobj->tag > po->tag) {
-                  inpobj = po;
-                  if (tmtrace.FloorZ < po->poceiling.maxz) {
-                    tmtrace.FloorZ = po->poceiling.maxz;
-                    tmtrace.EFloor.set(&po->poceiling, false);
-                  }
-                }
-              }
-              continue;
-            }
-            // fix FloorZ and CeilingZ
-            //GCon->Logf(NAME_Debug, "002: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
-            //GCon->Logf(NAME_Debug, "003: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g) (fz=%g; cz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1, tmtrace.FloorZ, tmtrace.CeilingZ);
-            // below pobj?
-            if (z1 <= po->pofloor.minz) {
-              // check if we need to fix CeilingZ
-              if (tmtrace.CeilingZ > po->pofloor.minz) {
-                tmtrace.CeilingZ = po->pofloor.minz;
-                tmtrace.ECeiling.set(&po->pofloor, false);
-              }
-            }
-            // above or on pobj?
-            if (tmtrace.End.z >= po->poceiling.maxz) {
-              // check if we need to fix FloorZ
-              if (tmtrace.FloorZ < po->poceiling.maxz) {
-                tmtrace.FloorZ = po->poceiling.maxz;
-                tmtrace.EFloor.set(&po->poceiling, false);
-              }
-              if (tmtrace.End.z == po->poceiling.maxz) tmtrace.PolyObj = po; // we are standing on it
-            }
+            (void)Copy3DPObjFloorCeiling(tmtrace, po, tmtrace.End.z, z1);
           }
         }
       }
@@ -1497,40 +1454,8 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = hitPoint.z+max2(0.0f, Height);
-    // below pobj?
-    if (z1 <= po->pofloor.minz) {
-      //GCon->Logf(NAME_Debug, "100: %s(%u):   in pobj #%d (cz=%g; z1=%g; pcz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.CeilingZ, z1, po->pofloor.minz);
-      // check if we need to fix CeilingZ
-      if (tmtrace.CeilingZ > po->pofloor.minz) {
-        tmtrace.CeilingZ = po->pofloor.minz;
-        tmtrace.ECeiling.set(&po->pofloor, false);
-      }
-      return true;
-    }
-    // above or on pobj?
-    if (hitPoint.z >= po->poceiling.maxz) {
-      //GCon->Logf(NAME_Debug, "101: %s(%u):   in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
-      // check if we need to fix FloorZ
-      if (tmtrace.FloorZ < po->poceiling.maxz) {
-        tmtrace.FloorZ = po->poceiling.maxz;
-        tmtrace.EFloor.set(&po->poceiling, false);
-      }
-      if (tmtrace.End.z == po->poceiling.maxz) tmtrace.PolyObj = po; // we are standing on it
-      return true;
-    }
-    // looks like we are inside a polyobject; this cannot happen, so don't fix floor and ceiling
-    if (po->poceiling.maxz >= tmtrace.FloorZ) {
-      //GCon->Logf(NAME_Debug, "102: %s(%u):   stuck in pobj #%d (fz=%g; z=%g; pfz=%g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.End.z, po->poceiling.maxz);
-      if (!tmtrace.PolyObj || po->poceiling.maxz > tmtrace.FloorZ || tmtrace.PolyObj->tag > po->tag) {
-        tmtrace.PolyObj = po; // stuck in it
-        if (tmtrace.FloorZ < po->poceiling.maxz) {
-          tmtrace.FloorZ = po->poceiling.maxz;
-          tmtrace.EFloor.set(&po->poceiling, false);
-        }
-      }
-    } else {
-      //GCon->Logf(NAME_Debug, "103: %s(%u):   stuck in pobj #%d", GetClass()->GetName(), GetUniqueId(), po->tag);
-    }
+    if (Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, z1)) return true; // not stuck
+    // stuck
     if (!skipSpecials) BlockedByLine(ld);
     tmtrace.BlockingLine = ld;
     return false;
