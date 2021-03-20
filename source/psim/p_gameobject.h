@@ -1057,8 +1057,10 @@ public:
     // no need to save, because this is used only in renderer, to mark already rendered polyobjects in BSP walker
   vuint32 updateWorldFrame; // to avoid excessive updates; valid only for segs, for flats, aponymous subsector field is used
   enum {
-    PF_Crush       = 1u<<0, // should the polyobj attempt to crush mobjs?
-    PF_HurtOnTouch = 1u<<1,
+    PF_Crush         = 1u<<0, // should the polyobj attempt to crush mobjs?
+    PF_HurtOnTouch   = 1u<<1,
+    PF_NoCarry       = 1u<<2, // 3d pobj should not carry things (only for horizontal; for vertical -- only up, down by gravity)
+    PF_NoAngleChange = 1u<<3, // 3d pobj should not change thing angle on rotation
   };
   vuint32 PolyFlags;
   vint32 seqType;

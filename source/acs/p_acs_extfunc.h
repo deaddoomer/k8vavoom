@@ -190,6 +190,10 @@
   ACS_EXTFUNC(Polyobj_MoveToSpotEx) // implemented
   // GetPolyobjZ (int po)
   ACS_EXTFUNC(GetPolyobjZ) // implemented
+  // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
+  ACS_EXTFUNC(Polyobj_GetFlagsEx)
+  // int Polyobj_SetFlagsEx (int po, int flags, int oper) -- oper: 0 means "clear", 1 means "set", -1 means "replace"
+  ACS_EXTFUNC(Polyobj_SetFlagsEx)
 
   // ZDaemon (not implemented, and will never be)
   ACS_EXTFUNC_NUM(GetTeamScore, 19620) // (int team)

@@ -1196,6 +1196,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   sec_plane_t savedpoceiling = po->poceiling;
 
   bool unlinked = false;
+  const bool nocarry = (po->PolyFlags&polyobj_t::PF_NoCarry);
 
   // vertical movement
   if (z != 0.0f) {
@@ -1213,7 +1214,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       const float oldz = mobj->Origin.z;
       poEntityMapFloat.put(mobj, oldz); // save old z coord
       if (!forced) {
-        if ((oldz == pofz && mobj->Velocity.z <= 0.0f) || // standing on a platform -- should go down with it
+        if ((!nocarry && oldz == pofz && mobj->Velocity.z <= 0.0f) || // standing on a platform -- should go down with it
             (oldz >= pofz && oldz < pofz+z)) // platform moving up, and goes through the mobj
         {
           // force onto platform
@@ -1339,7 +1340,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     if (!unlinked) { unlinked = true; UnlinkPolyobj(po); }
     LinkPolyobj(po);
     // move things
-    if (!forced && po->posector && (x || y)) {
+    if (!forced && po->posector && !nocarry && (x || y)) {
       for (auto &&it : poEntityMapToMove.first()) {
         VEntity *e = it.key();
         //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
@@ -1364,6 +1365,9 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   // get the polyobject
   polyobj_t *po = GetPolyobj(num);
   if (!po) Sys_Error("Invalid polyobj number: %d", num);
+
+  const bool nocarry = (po->PolyFlags&polyobj_t::PF_NoCarry);
+  const bool noangle = (po->PolyFlags&polyobj_t::PF_NoAngleChange);
 
   // calculate the angle
   const float an = AngleMod(po->angle+angle);
@@ -1429,22 +1433,24 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   if (IsForServer()) {
     // relink
     LinkPolyobj(po);
-    if (!forced) {
+    if (!forced && (!nocarry || !noangle)) {
       // move and rotate things
       msincos(AngleMod(angle), &msinAn, &mcosAn);
       for (auto &&it : poEntityMapToMove.first()) {
         VEntity *e = it.key();
         if (!e->IsGoingToDie()) {
-          // rotate around polyobject spot point
-          const float xc = e->Origin.x-ssx;
-          const float yc = e->Origin.y-ssy;
-          //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), xc, yc);
-          // calculate the new X and Y values
-          const float nx = (xc*mcosAn-yc*msinAn);
-          const float ny = (yc*mcosAn+xc*msinAn);
-          //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), nx, ny);
-          e->Level->eventPolyMoveMobjBy(e, po, (nx+ssx)-e->Origin.x, (ny+ssy)-e->Origin.y); // anyway
-          if (angle && !e->IsGoingToDie()) e->Level->eventPolyRotateMobj(e, po, angle);
+          if (!nocarry) {
+            // rotate around polyobject spot point
+            const float xc = e->Origin.x-ssx;
+            const float yc = e->Origin.y-ssy;
+            //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), xc, yc);
+            // calculate the new X and Y values
+            const float nx = (xc*mcosAn-yc*msinAn);
+            const float ny = (yc*mcosAn+xc*msinAn);
+            //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), nx, ny);
+            e->Level->eventPolyMoveMobjBy(e, po, (nx+ssx)-e->Origin.x, (ny+ssy)-e->Origin.y); // anyway
+          }
+          if (!noangle && angle && !e->IsGoingToDie()) e->Level->eventPolyRotateMobj(e, po, angle);
         }
       }
     }

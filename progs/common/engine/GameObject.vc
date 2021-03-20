@@ -1170,6 +1170,8 @@ struct polyobj_t {
   int updateWorldFrame; // to avoid excessive updates; valid only for segs, for flats, aponymous subsector field is used
   bool bCrush; // should the polyobj attempt to crush mobjs?
   bool bHurtOnTouch;
+  bool bNoCarry; // 3d pobj should not carry things
+  bool bNoAngleChange; // 3d pobj should not change thing angle
   int seqType;
   Thinker SpecialData;  // pointer a thinker, if the poly is moving
   int index; // required for LevelInfo sound sequences

@@ -67,6 +67,17 @@
 #define PRINTNAME_LEVEL      (-2)
 #define PRINTNAME_SKILL      (-3)
 
+// for Polyobj_GetFlagsEx and Polyobj_SetFlagsEx
+#define POBJ_FLAG_CRUSH            (1 << 0)
+#define POBJ_FLAG_HURT_ON_TOUCH    (1 << 1)
+#define POBJ_FLAG_NO_CARRY_THINGS  (1 << 2)
+#define POBJ_FLAG_NO_ANGLE_CHANGE  (1 << 3)
+
+// for Polyobj_SetFlagsEx
+#define POBJ_FLAGS_CLEAR    0
+#define POBJ_FLAGS_SET      1
+#define POBJ_FLAGS_REPLACE  -1
+
 
 static VCvarI acs_screenblocks_override("acs_screenblocks_override", "-1", "Overrides 'screenblocks' variable for acs scripts (-1: don't).", CVAR_Archive);
 static VCvarB acs_halt_on_unimplemented_opcode("acs_halt_on_unimplemented_opcode", false, "Halt ACS VM on unimplemented opdode?", CVAR_Archive);
@@ -3918,6 +3929,28 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
         return Level->eventAcsPolyMoveToSpotEx(args[0], args[1], args[2], args[3], Activator);
       }
       return 0;
+
+    // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
+    case ACSF_Polyobj_GetFlagsEx:
+      if (argCount >= 1) {
+        polyobj_t *po = ActiveObject->Level->XLevel->GetPolyobj(args[0]);
+        if (po) return po->PolyFlags;
+      }
+      return -1;
+
+    // int Polyobj_SetFlagsEx (int po, int flags, int oper) -- oper: 0 means "clear", 1 means "set", -1 means "replace"
+    case ACSF_Polyobj_SetFlagsEx:
+      if (argCount >= 3) {
+        polyobj_t *po = ActiveObject->Level->XLevel->GetPolyobj(args[0]);
+        if (po) {
+          vuint32 flg = (vuint32)args[1]&0xffffff;
+               if (args[2] == POBJ_FLAGS_REPLACE) po->PolyFlags = flg;
+          else if (args[2]) po->PolyFlags |= flg;
+          else po->PolyFlags &= ~flg;
+        }
+      }
+      return 0;
+
 
     case ACSF_SpawnParticle:
       return 0;
