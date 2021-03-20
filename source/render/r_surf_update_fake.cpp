@@ -193,13 +193,7 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
   if ((underwater /*&& !back*/) || underwaterView) {
     // head-below-floor hack
     ff->floorplane.pic = (diffTex ? sector->floor.pic : hs->floor.pic);
-    ff->floorplane.xoffs = hs->floor.xoffs;
-    ff->floorplane.yoffs = hs->floor.yoffs;
-    ff->floorplane.XScale = hs->floor.XScale;
-    ff->floorplane.YScale = hs->floor.YScale;
-    ff->floorplane.Angle = hs->floor.Angle;
-    ff->floorplane.BaseAngle = hs->floor.BaseAngle;
-    ff->floorplane.BaseYOffs = hs->floor.BaseYOffs;
+    ff->floorplane.CopyOffsetsFrom(hs->floor);
     //ff->floorplane = hs->floor;
     //*(TPlane *)&ff->floorplane = *(TPlane *)&sector->floor;
     //ff->floorplane.dist -= 42;
@@ -213,22 +207,10 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
       ff->floorplane.normal = -ff->ceilplane.normal;
       ff->floorplane.dist = -ff->ceilplane.dist/* - ff->ceilplane.normal.z*/;
       ff->ceilplane.pic = ff->floorplane.pic;
-      ff->ceilplane.xoffs = ff->floorplane.xoffs;
-      ff->ceilplane.yoffs = ff->floorplane.yoffs;
-      ff->ceilplane.XScale = ff->floorplane.XScale;
-      ff->ceilplane.YScale = ff->floorplane.YScale;
-      ff->ceilplane.Angle = ff->floorplane.Angle;
-      ff->ceilplane.BaseAngle = ff->floorplane.BaseAngle;
-      ff->ceilplane.BaseYOffs = ff->floorplane.BaseYOffs;
+      ff->ceilplane.CopyOffsetsFrom(ff->floorplane);
     } else {
       ff->ceilplane.pic = (diffTex ? sector->floor.pic : hs->ceiling.pic);
-      ff->ceilplane.xoffs = hs->ceiling.xoffs;
-      ff->ceilplane.yoffs = hs->ceiling.yoffs;
-      ff->ceilplane.XScale = hs->ceiling.XScale;
-      ff->ceilplane.YScale = hs->ceiling.YScale;
-      ff->ceilplane.Angle = hs->ceiling.Angle;
-      ff->ceilplane.BaseAngle = hs->ceiling.BaseAngle;
-      ff->ceilplane.BaseYOffs = hs->ceiling.BaseYOffs;
+      ff->ceilplane.CopyOffsetsFrom(hs->ceiling);
     }
 
     // k8: why underwaterView? because of kdizd bugs
@@ -255,23 +237,14 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
 
     ff->ceilplane.pic = diffTex ? sector->ceiling.pic : hs->ceiling.pic;
     ff->floorplane.pic = hs->ceiling.pic;
-    ff->floorplane.xoffs = ff->ceilplane.xoffs = hs->ceiling.xoffs;
-    ff->floorplane.yoffs = ff->ceilplane.yoffs = hs->ceiling.yoffs;
-    ff->floorplane.XScale = ff->ceilplane.XScale = hs->ceiling.XScale;
-    ff->floorplane.YScale = ff->ceilplane.YScale = hs->ceiling.YScale;
-    ff->floorplane.Angle = ff->ceilplane.Angle = hs->ceiling.Angle;
-    ff->floorplane.BaseAngle = ff->ceilplane.BaseAngle = hs->ceiling.BaseAngle;
-    ff->floorplane.BaseYOffs = ff->ceilplane.BaseYOffs = hs->ceiling.BaseYOffs;
+    ff->floorplane.CopyOffsetsFrom(hs->ceiling);
+    ff->ceilplane.CopyOffsetsFrom(hs->ceiling);
 
     if (hs->floor.pic != skyflatnum) {
       ff->ceilplane.normal = sector->ceiling.normal;
       ff->ceilplane.dist = sector->ceiling.dist;
       ff->floorplane.pic = hs->floor.pic;
-      ff->floorplane.xoffs = hs->floor.xoffs;
-      ff->floorplane.yoffs = hs->floor.yoffs;
-      ff->floorplane.XScale = hs->floor.XScale;
-      ff->floorplane.YScale = hs->floor.YScale;
-      ff->floorplane.Angle = hs->floor.Angle;
+      ff->floorplane.CopyOffsetsFrom(hs->floor);
     }
 
     // k8: why underwaterView? because of kdizd bugs

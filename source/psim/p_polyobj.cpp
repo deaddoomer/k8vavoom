@@ -1396,6 +1396,14 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     return false;
   }
 
+  /*
+  po->pofloor.BaseAngle = AngleMod(po->pofloor.BaseAngle+angle);
+  //po->pofloor.xoffs = po->pofloor.yoffs = 0;
+  po->pofloor.BaseYOffs = po->pofloor.yoffs;
+  po->poceiling.BaseAngle = AngleMod(po->poceiling.BaseAngle+angle);
+  //po->poceiling.xoffs = po->poceiling.yoffs = 0;
+  po->poceiling.BaseYOffs = po->poceiling.yoffs;
+  */
   OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
 
   //po->angle = AngleMod(po->angle+angle);

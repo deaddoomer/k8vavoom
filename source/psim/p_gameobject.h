@@ -533,21 +533,31 @@ struct sec_plane_t : public TPlane {
   //sector_t *parent; // can be `nullptr`, has meaning only for `SPF_ALLOCATED` planes
   //vuint32 exflags; // SPF_EX_xxx
 
-  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const {
+  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
     return clampval(GetPointZ(x, y), minz, maxz);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRevClamped (float x, float y) const {
+  inline VVA_CHECKRESULT float GetPointZRevClamped (float x, float y) const noexcept {
     //FIXME: k8: should min and max be switched here?
     return clampval(GetPointZRev(x, y), minz, maxz);
   }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const {
+  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept {
     return GetPointZClamped(v.x, v.y);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRevClamped (const TVec &v) const {
+  inline VVA_CHECKRESULT float GetPointZRevClamped (const TVec &v) const noexcept {
     return GetPointZRevClamped(v.x, v.y);
+  }
+
+  inline void CopyOffsetsFrom (const sec_plane_t &src) noexcept {
+    xoffs = src.xoffs;
+    yoffs = src.yoffs;
+    XScale = src.XScale;
+    YScale = src.YScale;
+    Angle = src.Angle;
+    BaseAngle = src.BaseAngle;
+    BaseYOffs = src.BaseYOffs;
   }
 };
 
