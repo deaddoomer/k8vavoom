@@ -5206,18 +5206,16 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   EntityEx ex = EntityEx(A);
   if (!ex) return false;
   if (!dx && !dy) return true; // just in case
-  TVec newpos = ex.Origin;
-  newpos.x += dx;
-  newpos.y += dy;
+  TVec delta = vector(dx, dy);
+  TVec newpos = ex.Origin+delta;
   ex.UnlinkFromWorld();
   //ex.PolyObjIgnore = po;
   bool ok = ex.CheckPosition(newpos);
   //ex.PolyObjIgnore = nullptr;
   //printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
   if (ok) {
-    TVec df = newpos-ex.Origin;
     ex.Origin = newpos;
-    ex.LastMoveOrigin += df;
+    ex.LastMoveOrigin += delta;
   }
   ex.LinkToWorld();
   /*

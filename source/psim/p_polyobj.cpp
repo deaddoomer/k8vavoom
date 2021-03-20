@@ -1396,6 +1396,8 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     return false;
   }
 
+  OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
+
   //po->angle = AngleMod(po->angle+angle);
   po->angle = an;
   if (IsForServer()) {
@@ -1403,16 +1405,19 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     LinkPolyobj(po);
     if (!forced) {
       // move and rotate things
+      msincos(AngleMod(angle), &msinAn, &mcosAn);
       for (auto &&it : poEntityMapToMove.first()) {
         VEntity *e = it.key();
         if (!e->IsGoingToDie()) {
           // rotate around polyobject spot point
           const float xc = e->Origin.x-ssx;
           const float yc = e->Origin.y-ssy;
+          //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), xc, yc);
           // calculate the new X and Y values
-          const float nx = (xc*mcosAn-yc*msinAn)+ssx;
-          const float ny = (yc*mcosAn+xc*msinAn)+ssy;
-          e->Level->eventPolyMoveMobjBy(e, po, nx, ny); // anyway
+          const float nx = (xc*mcosAn-yc*msinAn);
+          const float ny = (yc*mcosAn+xc*msinAn);
+          //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), nx, ny);
+          e->Level->eventPolyMoveMobjBy(e, po, (nx+ssx)-e->Origin.x, (ny+ssy)-e->Origin.y); // anyway
           if (angle && !e->IsGoingToDie()) e->Level->eventPolyRotateMobj(e, po, angle);
         }
       }
