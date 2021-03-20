@@ -1192,6 +1192,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 
   if (!po->posector) z = 0.0f;
 
+  sec_plane_t savedpofloor = po->pofloor;
+  sec_plane_t savedpoceiling = po->poceiling;
+
   bool unlinked = false;
 
   // vertical movement
@@ -1230,7 +1233,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       // oops, move it back
       //FIXME: save and restore distances instead of adding/subtracting
       //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
-      OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
+      po->pofloor = savedpofloor;
+      po->poceiling = savedpoceiling;
+      OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
       // restore `z` of force-modified entities, otherwise they may fall through the platform
       for (auto &&it : poEntityMapFloat.first()) {
         VEntity *mobj = it.key();
@@ -1240,7 +1245,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
           // and relink it
           mobj->LinkToWorld();
-          //mobj->eventSectorChanged(0); // don't crush
         }
       }
       return false;
@@ -1300,8 +1304,23 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       vptr = po->segPts;
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
       UpdatePolySegs(po);
-      if (z) OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
+      po->pofloor = savedpofloor;
+      po->poceiling = savedpoceiling;
+      OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
       if (unlinked) LinkPolyobj(po); // it is always for server
+      if (z) {
+        //OffsetPolyobjFlats(po, 0.0f, 0.0f, -z);
+        for (auto &&it : poEntityMapFloat.first()) {
+          VEntity *mobj = it.key();
+          if (!mobj->IsGoingToDie()) {
+            const float oldz = mobj->Origin.z;
+            mobj->Origin.z = it.value();
+            mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
+            // and relink it
+            mobj->LinkToWorld();
+          }
+        }
+      }
       // no need to restore heights, the objects will fall
       //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
       return false;
@@ -1318,7 +1337,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 
   if (IsForServer()) {
     if (!unlinked) { unlinked = true; UnlinkPolyobj(po); }
-    // relink
     LinkPolyobj(po);
     // move things
     if (!forced && po->posector && (x || y)) {
