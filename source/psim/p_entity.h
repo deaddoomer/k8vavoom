@@ -847,6 +847,8 @@ public:
   // `list` can be `nullptr`
   int FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos);
 
+  bool IsInPolyObj (polyobj_t *po);
+
   // this is used to move chase camera
   TVec SlideMoveCamera (TVec org, TVec end, float radius);
 
@@ -989,6 +991,7 @@ public:
   DECLARE_FUNCTION(SlideMove)
   DECLARE_FUNCTION(BounceWall)
   DECLARE_FUNCTION(CheckOnmobj)
+  DECLARE_FUNCTION(IsInPolyObj)
   DECLARE_FUNCTION(LinkToWorld)
   DECLARE_FUNCTION(UnlinkFromWorld)
   DECLARE_FUNCTION(CanSee)

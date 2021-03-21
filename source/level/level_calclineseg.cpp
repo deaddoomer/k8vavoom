@@ -311,10 +311,10 @@ bool VLevel::IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) c
     // strictly speaking, this check is not necessary, because
     // for each seg `checkBox2D()` will select the point that is
     // "on the right side", but why not?
-    if (sub->bbox2d[BOX2D_MINX] >= bb2d[BOX2D_MINX] &&
-        sub->bbox2d[BOX2D_MINY] >= bb2d[BOX2D_MINY] &&
-        sub->bbox2d[BOX2D_MAXX] <= bb2d[BOX2D_MAXX] &&
-        sub->bbox2d[BOX2D_MAXY] <= bb2d[BOX2D_MAXY])
+    if (sub->bbox2d[BOX2D_MINX] > bb2d[BOX2D_MINX] &&
+        sub->bbox2d[BOX2D_MINY] > bb2d[BOX2D_MINY] &&
+        sub->bbox2d[BOX2D_MAXX] < bb2d[BOX2D_MAXX] &&
+        sub->bbox2d[BOX2D_MAXY] < bb2d[BOX2D_MAXY])
     {
       return true;
     }

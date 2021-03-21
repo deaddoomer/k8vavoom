@@ -5250,7 +5250,10 @@ override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
   float force;
   PolyobjThinker pe;
 
-  if (!EntityEx(Other).bShootable && !Other.bIsPlayer) return;
+  EntityEx ex = EntityEx(Other);
+  if (!ex) return;
+
+  if (!ex.bShootable && !Other.bIsPlayer) return;
 
   pe = PolyobjThinker(po->SpecialData);
   if (pe) {
@@ -5259,12 +5262,33 @@ override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
     force = 1.0;
   }
 
+  #if 0
+  if (Other.bSolid && (Other.bIsPlayer || Other.bMonster) && pe isa 'PolyobjRotator') {
+    if (Other.IsInPolyObj(po) || !Other.CheckPosition(Other.Origin)) {
+      printdebug("%C(%s): moving from %s", ex, ex.UniqueId, ex.Origin);
+      Other.UnlinkFromWorld();
+      foreach (; 0..16) {
+        Other.Origin += thrustDir.xy*0.4;
+        if (!Other.IsInPolyObj(po)) break;
+      }
+      bool okpos = Other.CheckPosition(Other.Origin);
+      printdebug("%C(%s): moved to %s (ok=%B)", ex, ex.UniqueId, ex.Origin, okpos);
+      Other.LinkToWorld();
+      if (!okpos) {
+        ex.bInvulnerable = false;
+        ex.Damage(none, none, 10000, 'Crush', spawnBlood:true, forced:true, NoArmor:true, ignoreDamageFactors:true, ignorePowerups:true);
+        return;
+      }
+    }
+  }
+  #endif
+
   Other.Velocity += (force*thrustDir)*2.0;
   if (po->bCrush) {
     TVec testPos = Other.Origin+force*thrustDir*Game.frametime;
     if (po->bHurtOnTouch || !Other.CheckPosition(testPos)) {
       // damage other type of actors
-      EntityEx(Other).Damage(none, none, 3, 'Crush', spawnBlood:true);
+      ex.Damage(none, none, 3, 'Crush', spawnBlood:true);
     }
   }
 }

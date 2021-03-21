@@ -1438,7 +1438,31 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   }
   UpdatePolySegs(po);
 
-  const bool blocked = (!forced && IsForServer() ? PolyCheckMobjBlocked(po) : false);
+
+  //const bool blocked = (!forced && IsForServer() ? PolyCheckMobjBlocked(po) : false);
+  bool blocked = false;
+
+  if (!forced && IsForServer()) {
+    #if 0
+    if (po->posector) {
+      LinkPolyobj(po);
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        if (!mobj->IsSolid()) continue;
+        if (mobj->IsInPolyObj(po)) {
+          GCon->Logf(NAME_Debug, "pobj #%d BLOCKED BY %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
+          blocked = true;
+          break;
+        }
+      }
+      UnlinkPolyobj(po);
+    } else
+    #endif
+    {
+      blocked = PolyCheckMobjBlocked(po);
+    }
+  }
 
   // if we are blocked then restore the previous points
   if (blocked) {
@@ -1448,6 +1472,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
     LinkPolyobj(po); // it is always for server
+    /*
     if (po->posector) {
       for (auto &&it : poEntityMapFloat.first()) {
         VEntity *mobj = it.key();
@@ -1460,6 +1485,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
         }
       }
     }
+    */
     return false;
   }
 
@@ -1557,7 +1583,8 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 
         mobj->PolyObjIgnore = po;
         if (mobj->EntityFlags&VEntity::EF_Solid) {
-          mobj->Level->eventPolyThrustMobj(mobj, /*seg*/ld->normal, po);
+          //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
+          mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po);
           blocked = true;
         } else {
           mobj->Level->eventPolyCrushMobj(mobj, po);

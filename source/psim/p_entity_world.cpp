@@ -742,21 +742,43 @@ void VEntity::CheckWater () {
 
 //==========================================================================
 //
+//  VEntity::IsInPolyObj
+//
+//==========================================================================
+bool VEntity::IsInPolyObj (polyobj_t *po) {
+  if (!po) return false;
+  if (!po->posector || po == PolyObjIgnore) return false;
+  if (po->pofloor.minz >= po->poceiling.maxz) return false;
+  float tmbbox[4];
+  const float rad = GetMoveRadius();
+  Create2DBBox(tmbbox, Origin, rad);
+  if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) return false;
+  if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) return false;
+  const float pz0 = po->pofloor.minz;
+  const float pz1 = po->poceiling.maxz;
+  const float z0 = Origin.z;
+  const float z1 = z0+max2(0.0f, Height);
+  return
+    (z0 > pz0 && z0 < pz1) ||
+    (z0 <= pz0 && z1 >= pz0);
+}
+
+
+//==========================================================================
+//
 //  VEntity::CheckPosition
 //
 //  This is purely informative, nothing is modified
 //
-// in:
-//  a mobj_t (can be valid or invalid)
-//  a position to be checked
-//   (doesn't need to be related to the mobj_t->x,y)
+//  in:
+//   a position to be checked (doesn't need to be related to the mobj_t->x,y)
 //
 //==========================================================================
 bool VEntity::CheckPosition (TVec Pos) {
-  //sec_region_t *gap;
-  //sec_region_t *reg;
+  if (!(EntityFlags&(EF_ColideWithThings|EF_ColideWithWorld))) return true;
+
   tmtrace_t cptrace;
-  bool good = true;
+  //bool good = true;
 
   memset((void *)&cptrace, 0, sizeof(cptrace));
   cptrace.End = Pos;
@@ -818,17 +840,18 @@ bool VEntity::CheckPosition (TVec Pos) {
         for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
           //good &= CheckLine(cptrace, ld);
           if (!CheckLine(cptrace, ld)) {
-            good = false; // no early exit!
+            //good = false; // no early exit!
+            return false; // ok to early exit
             //GCon->Logf("%s(%u): collided with line %d", GetClass()->GetName(), GetUniqueId(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]));
           }
         }
       }
     }
 
-    bool inpobj = false;
+    //bool inpobj = false;
     // check if we can stand inside some polyobject
     // there is no need to check it if our position is already invalid
-    if (good && XLevel->NumPolyObjs) {
+    if (/*good &&*/ XLevel->NumPolyObjs) {
       // no need for new validcount
       const float z1 = cptrace.End.z+max2(0.0f, Height);
       for (int bx = xl; bx <= xh; ++bx) {
@@ -839,13 +862,13 @@ bool VEntity::CheckPosition (TVec Pos) {
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
-            if (!Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1)) inpobj = true;
+            if (!Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1)) { return false; /*inpobj = true;*/ }
           }
         }
       }
     }
 
-    if (!good || inpobj) return false;
+    //if (!good || inpobj) return false;
   }
 
   return true;
@@ -3215,6 +3238,12 @@ IMPLEMENT_FUNCTION(VEntity, BounceWall) {
 IMPLEMENT_FUNCTION(VEntity, CheckOnmobj) {
   vobjGetParamSelf();
   RET_REF(Self->CheckOnmobj());
+}
+
+IMPLEMENT_FUNCTION(VEntity, IsInPolyObj) {
+  polyobj_t *po;
+  vobjGetParamSelf(po);
+  RET_BOOL(Self->IsInPolyObj(po));
 }
 
 IMPLEMENT_FUNCTION(VEntity, LinkToWorld) {

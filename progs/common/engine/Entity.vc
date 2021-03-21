@@ -563,6 +563,8 @@ native final float GetBlockingHeightFor (Entity other);
 
 native final Entity CheckOnmobj ();
 
+native final bool IsInPolyObj (polyobj_t *po);
+
 // always call this before changing x and y coordinates (z can be changed freely)
 // i.e. first unlink, then change coords, then link again
 // by default, `LinkToWorld` checks only entity Origin.
