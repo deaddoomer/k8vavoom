@@ -214,10 +214,10 @@ extern void WriteJPG (VStr FileName, const void *Data, int Width, int Height, in
 
 //==========================================================================
 //
-//  ScreenShot_f
+//  Screenshot command
 //
 //==========================================================================
-COMMAND(ScreenShot) {
+COMMAND(Screenshot) {
   int i;
   int bpp;
   bool bot2top;
@@ -225,7 +225,16 @@ COMMAND(ScreenShot) {
   VStr filename;
   char tmpbuf[128];
 
-  VStr sst = screenshot_type.asStr().toLowerCase();
+  VStr ssname;
+  if (Args.length() >= 2) {
+    ssname = Args[1].FixFileSlashes();
+    if (ssname.indexOf('/') >= 0) GCon->Log(NAME_Error, "screenshot file name cannot contain a path");
+    while (!ssname.isEmpty() && ssname.endsWith(".")) ssname.chopRight(1);
+  }
+
+  VStr sst;
+  if (!ssname.isEmpty()) sst = ssname.ExtractFileExtension().toLowerCase();
+  if (sst.isEmpty()) sst = screenshot_type.asStr().toLowerCase();
   if (sst.length() > 0 && sst[0] == '.') sst.chopLeft(1);
   if (sst.strEqu("jpeg")) sst = "jpg";
   if (sst.isEmpty()) { GCon->Log(NAME_Error, "Empty screenshot type"); return; }
@@ -233,17 +242,24 @@ COMMAND(ScreenShot) {
 
   // find a file name to save it to
   VStr BaseDir = FL_GetScreenshotsDir();
-  if (BaseDir.isEmpty()) return;
-
-  for (i = 0; i <= 9999; ++i) {
-    snprintf(tmpbuf, sizeof(tmpbuf), "shot%04d.%s", i, *sst);
-    filename = BaseDir+"/"+tmpbuf;
-    if (!Sys_FileExists(filename)) break; // file doesn't exist
+  if (BaseDir.isEmpty()) {
+    GCon->Logf(NAME_Error, "Invalid engine screenshot directory");
+    return;
   }
 
-  if (i == 10000) {
-    GCon->Log(NAME_Error, "Couldn't create a screenshot file");
-    return;
+  if (ssname.isEmpty()) {
+    for (i = 0; i <= 9999; ++i) {
+      snprintf(tmpbuf, sizeof(tmpbuf), "shot%04d.%s", i, *sst);
+      filename = BaseDir+"/"+tmpbuf;
+      if (!Sys_FileExists(filename)) break; // file doesn't exist
+    }
+
+    if (i == 10000) {
+      GCon->Log(NAME_Error, "Couldn't create a screenshot file");
+      return;
+    }
+  } else {
+    filename = BaseDir.appendPath(ssname);
   }
 
   // save screenshot file
