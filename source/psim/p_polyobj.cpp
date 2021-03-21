@@ -1233,10 +1233,12 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       // check movement
       //FIXME: push stacked mobjs (one atop of another) up
       bool canMove = true;
+      bool seenCorpse = false;
       tmtrace_t tmtrace;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
         VEntity *mobj = n->Thing;
         if (mobj->IsGoingToDie()) continue;
+        seenCorpse = (seenCorpse || mobj->IsRealCorpse());
         if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
         const vuint32 oldFlags = mobj->EntityFlags;
         mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
@@ -1261,6 +1263,15 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           }
         }
         return false;
+      }
+      // crash corpses
+      if (seenCorpse) {
+        VName ctp("PolyObjectGibs");
+        for (auto &&it : poEntityMapFloat.first()) {
+          VEntity *mobj = it.key();
+          if (mobj->IsGoingToDie() || !mobj->IsRealCorpse()) continue;
+          if (mobj->Origin.z+max2(0.0f, mobj->Height) > mobj->CeilingZ) mobj->GibMe(ctp);
+        }
       }
     } else {
       for (auto &&it : poEntityMapFloat.first()) {

@@ -1328,11 +1328,11 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
           n->Visited = visCount;
           if (n->Thing->IsGoingToDie()) continue;
           // process it
-          const TVec oldOrg = n->Thing->Origin;
-          GCon->Logf("CHECKING Thing '%s'(%u) hit (zpos:%g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
+          //const TVec oldOrg = n->Thing->Origin;
+          //GCon->Logf("CHECKING Thing '%s'(%u) hit (zpos:%g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
           if (!n->Thing->eventSectorChanged(crunch)) {
             // doesn't fit, keep checking (crush other things)
-            GCon->Logf("Thing '%s'(%u) hit (old: %g; new: %g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), oldOrg.z, n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
+            //GCon->Logf("Thing '%s'(%u) hit (old: %g; new: %g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), oldOrg.z, n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
             if (ret) csTouched[secnum] |= 0x80000000U;
             ret = true;
           }
