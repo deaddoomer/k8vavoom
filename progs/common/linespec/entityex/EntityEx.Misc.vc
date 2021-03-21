@@ -673,14 +673,6 @@ final bool HeightClip (optional bool skipTriggers, optional bool skipObjects) {
   tmtrace_t tmtrace;
   float OldZ = Origin.z;
 
-  // fix 3d pobj height
-/*
-  if (Sector->ownpobj) {
-    float pz = Sector->ownpobj->poceiling.maxz;
-    if (OldZ < pz) Origin.z = pz;
-  }
-*/
-
   bool onfloor = (Origin.z == FloorZ);
 
   // fix interpolation coordinates on exit
@@ -719,7 +711,7 @@ final bool HeightClip (optional bool skipTriggers, optional bool skipObjects) {
 
   // /*if (Sector->ownpobj)*/ printdebug("%C(%s) old: Floor=%s; Ceiling=%s; FloorZ=%s; CeilingZ=%s; z=%s; onfloor=%B", self, UniqueId, EFloor.splane, ECeiling.splane, FloorZ, CeilingZ, Origin.z, onfloor);
 
-  /*bool isok =*/ CheckRelPosition(out tmtrace, Origin);//, debugDump:bIsPlayer);
+  bool isok = CheckRelPosition(out tmtrace, Origin);//, debugDump:bIsPlayer);
   // what about stranding a monster partially off an edge?
 
   EFloor = tmtrace.EFloor;
@@ -743,6 +735,7 @@ final bool HeightClip (optional bool skipTriggers, optional bool skipObjects) {
         }
         if (CeilingZ-(FloorZ+Height) < onmo.Height) {
           // things don't fit, stop
+          //printdebug("%C(%s): don't fit!", self, UniqueId);
           //if (bIsPlayer) printdebug("   DONTFIT (0)!");
           return false;
         }
@@ -768,6 +761,7 @@ final bool HeightClip (optional bool skipTriggers, optional bool skipObjects) {
         // doesn't fit, stop
         //if (bIsPlayer) printdebug("   DONTFIT (1)!");
         //if (tmtrace.BlockingLine) printdebug("%C: don't fit! line=%s; fz=%s; cz=%s", self, tmtrace.BlockingLine-&XLevel.Lines[0], FloorZ, CeilingZ);
+        //fixme: should non-solid objects block everything?
         return false;
       }
     }
@@ -2123,6 +2117,71 @@ override void Tick (float deltaTime) {
 
 //==========================================================================
 //
+//  GibEntity
+//
+//  crunch bodies to giblets
+//  this entity may be destroyed (replaced with giblets)
+//  returns `nullptr` on failure, or giblets (may return self)
+//  this won't gib entities with `Health > 0`, and non-gibbing
+//  note that returned entity may be already destroyed
+//
+//  `gibtype` is "Death" state suffix (may be '')
+//
+//==========================================================================
+Entity GibEntity (name gibtype) {
+  if (!bCorpse || bDontGib || Health > 0) return none;
+
+  Entity res = self;
+  bool CanDestroy = false;
+
+  state stgibs = (gibtype ? FindClassState(Class, 'Death', gibtype, exact:true) : none);
+  if (stgibs) {
+    bDontGib = true;
+    SetState(stgibs);
+  } else if (!bNoBlood) {
+    class c = FindClass('RealGibs');
+    if (c) c = GetClassReplacement(c);
+    if (c) {
+      state spst = FindClassState(c, 'Spawn');
+      if (!spst || !AreStateSpritesPresent(spst)) c = none;
+    }
+
+    if (c) {
+      Actor Gib = SpawnEntityChecked(class!Actor, RealGibs);
+      if (Gib) {
+        Gib.RenderStyle = RenderStyle;
+        Gib.Alpha = Alpha;
+        Gib.Height = 0.0;
+        Gib.Radius = 0.0;
+        Gib.CopyTranslations(self);
+        //k8: really?
+        //if (BloodTranslation && !Gib.bDontTranslate) Gib.Translation = BloodTranslation;
+        Gib.PlaySound('misc/fallingsplat', /*CHAN_BODY*/CHAN_AUTO);
+        res = Gib;
+        CanDestroy = true;
+      } else {
+        bDontGib = true;
+      }
+    } else {
+      bDontGib = true;
+    }
+  }
+
+  if (bIsPlayer) {
+    bColideWithWorld = false;
+    bColideWithThings = false;
+    bDontGib = true;
+    bInvisible = true;
+  } else {
+    if (CanDestroy) Destroy();
+  }
+
+  return res;
+}
+
+
+//==========================================================================
+//
 //  SectorChanged
 //
 //  CrushChange == -666: loader fix
@@ -2146,47 +2205,7 @@ override bool SectorChanged (int CrushChange) {
   if (CrushChange == -1) return true; // get out!
 
   // crunch bodies to giblets
-  if (bCorpse && !bDontGib && Health <= 0) {
-    bool CanDestroy = false;
-    state stgibs = FindClassState(Class, 'Death', 'SectorGibs', exact:true);
-    if (stgibs) {
-      bDontGib = true;
-      SetState(stgibs);
-    } else if (!bNoBlood) {
-      class c = FindClass('RealGibs');
-      if (c) c = GetClassReplacement(c);
-      if (c) {
-        state spst = FindClassState(c, 'Spawn');
-        if (!spst || !AreStateSpritesPresent(spst)) c = none;
-      }
-
-      if (c) {
-        Actor Gib = SpawnEntityChecked(class!Actor, RealGibs);
-        if (Gib) {
-          Gib.RenderStyle = RenderStyle;
-          Gib.Alpha = Alpha;
-          Gib.Height = 0.0;
-          Gib.Radius = 0.0;
-          Gib.CopyTranslations(self);
-          //k8: really?
-          //if (BloodTranslation && !Gib.bDontTranslate) Gib.Translation = BloodTranslation;
-          Gib.PlaySound('misc/fallingsplat', /*CHAN_BODY*/CHAN_AUTO);
-        }
-        CanDestroy = true;
-      } else {
-        bDontGib = true;
-      }
-    }
-    if (bIsPlayer) {
-      bColideWithWorld = false;
-      bColideWithThings = false;
-      bDontGib = true;
-      bInvisible = true;
-    } else {
-      if (CanDestroy) Destroy();
-    }
-    return true;
-  }
+  if (GibEntity('SectorGibs')) return true;
 
   // crunch dropped items
   if (bDropped) {

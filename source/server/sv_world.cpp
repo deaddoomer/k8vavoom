@@ -1288,6 +1288,8 @@ IMPLEMENT_FUNCTION(VLevel, GetNextVisitedCount) {
 //
 //  `-1` for `crunch` means "ignore stuck mobj"
 //
+//  returns `true` if movement was blocked
+//
 //==========================================================================
 bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
   vassert(sector);
@@ -1326,16 +1328,13 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
           n->Visited = visCount;
           if (n->Thing->IsGoingToDie()) continue;
           // process it
-          //TVec oldOrg = n->Thing->Origin;
+          const TVec oldOrg = n->Thing->Origin;
+          GCon->Logf("CHECKING Thing '%s'(%u) hit (zpos:%g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
           if (!n->Thing->eventSectorChanged(crunch)) {
             // doesn't fit, keep checking (crush other things)
-            // k8: no need to check flags, VC code does this for us
-            /*if (!(n->Thing->EntityFlags&VEntity::EF_NoBlockmap))*/
-            {
-              //GCon->Logf("Thing '%s' hit (old: %g; new: %g)", *n->Thing->GetClass()->GetFullName(), oldOrg.z, n->Thing->Origin.z);
-              if (ret) csTouched[secnum] |= 0x80000000U;
-              ret = true;
-            }
+            GCon->Logf("Thing '%s'(%u) hit (old: %g; new: %g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), oldOrg.z, n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
+            if (ret) csTouched[secnum] |= 0x80000000U;
+            ret = true;
           }
           // exit and start over
           break;

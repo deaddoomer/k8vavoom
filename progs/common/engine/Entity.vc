@@ -1351,6 +1351,46 @@ void SimplifiedTick (float deltaTime) {
 
 //==========================================================================
 //
+//  DamageMe
+//
+//  so we will be able to call this from C++ code
+//
+//==========================================================================
+final int DamageMe (Entity target, Entity inflictor, Entity source, int damage,
+                    name DmgType, bool NoArmor, bool forced,
+                    bool spawnBlood, bool ignoreDamageFactors, bool ignorePowerups)
+{
+  EntityEx etarget = EntityEx(self);
+  if (!etarget) return 0;
+  //k8: clamp damage, just because
+  return etarget.Damage(EntityEx(inflictor), EntityEx(source), clamp(damage, 0, 100000), DmgType, NoArmor, forced, spawnBlood, ignoreDamageFactors, ignorePowerups);
+}
+
+
+//==========================================================================
+//
+//  GibMe
+//
+//  crunch bodies to giblets
+//  this entity may be destroyed (replaced with giblets)
+//  returns `nullptr` on failure, or giblets (may return self)
+//  this won't gib entities with `Health > 0`, and non-gibbing
+//  note that returned entity may be already destroyed
+//
+//  `gibtype` is "Death" state suffix (may be '')
+//
+//  so we will be able to call this from C++ code
+//
+//==========================================================================
+final Entity GibMe (name gibtype) {
+  EntityEx etarget = EntityEx(self);
+  if (!etarget) return none;
+  return etarget.GibEntity(gibtype);
+}
+
+
+//==========================================================================
+//
 //  GetTouchedFloorSector
 //
 //  used for 3d floors

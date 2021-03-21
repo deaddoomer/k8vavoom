@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+//#include "../server/sv_local.h"
 
 // polyobj line start special
 #define PO_LINE_START     (1)
@@ -1227,35 +1228,47 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     }
     // move platform vertically
     OffsetPolyobjFlats(po, 0.0f, 0.0f, z);
-    // check order matters!
-    if (!forced && po->posector->TouchingThingList &&
-        ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0)))
-    {
-      // oops, move it back
-      //FIXME: save and restore distances instead of adding/subtracting
-      //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
-      po->pofloor = savedpofloor;
-      po->poceiling = savedpoceiling;
-      OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
-      // restore `z` of force-modified entities, otherwise they may fall through the platform
-      for (auto &&it : poEntityMapFloat.first()) {
-        VEntity *mobj = it.key();
-        if (!mobj->IsGoingToDie()) {
-          const float oldz = mobj->Origin.z;
-          mobj->Origin.z = it.value();
-          mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
-          // and relink it
-          mobj->LinkToWorld();
-        }
+    if (!forced) {
+      //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 43 : 42))
+      // check movement
+      //FIXME: push stacked mobjs (one atop of another) up
+      bool canMove = true;
+      tmtrace_t tmtrace;
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        const vuint32 oldFlags = mobj->EntityFlags;
+        mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
+        const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+        mobj->EntityFlags = oldFlags;
+        if (!ok) { canMove = false; break; }
       }
-      return false;
-    }
-    if (forced) {
+      if (!canMove) {
+        //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
+        po->pofloor = savedpofloor;
+        po->poceiling = savedpoceiling;
+        OffsetPolyobjFlats(po, 0.0f, 0.0f, 0.0f, true);
+        // restore `z` of force-modified entities, otherwise they may fall through the platform
+        for (auto &&it : poEntityMapFloat.first()) {
+          VEntity *mobj = it.key();
+          if (!mobj->IsGoingToDie()) {
+            const float oldz = mobj->Origin.z;
+            mobj->Origin.z = it.value();
+            mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
+            // and relink it
+            mobj->LinkToWorld();
+          }
+        }
+        return false;
+      }
+    } else {
       for (auto &&it : poEntityMapFloat.first()) {
         VEntity *mobj = it.key();
         if (!mobj->IsGoingToDie()) mobj->LinkToWorld();
       }
     }
+    //GCon->Logf(NAME_Debug, "pobj #%d: Z-MOVED!", po->tag);
     /*
     if (po->posector->TouchingThingList) {
       GCon->Logf(NAME_Debug, "pobj #%d: +++ Z-MOVED: %g (%g -> %g)", po->tag, z, pofz, po->poceiling.maxz);
@@ -1322,8 +1335,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           }
         }
       }
-      // no need to restore heights, the objects will fall
-      //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 1 : 0));
       return false;
     }
 

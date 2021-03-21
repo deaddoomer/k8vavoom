@@ -189,6 +189,68 @@ struct VDamageColorType {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+/*
+struct cptrace_t {
+  TVec Pos;
+  float BBox[4];
+  float FloorZ;
+  float CeilingZ;
+  float DropOffZ;
+  sec_plane_t *EFloor;
+  sec_plane_t *ECeiling;
+};
+*/
+
+struct tmtrace_t {
+  VEntity *StepThing; // not for cptrace_t
+  TVec End; // for cptrace_t, this is `Pos`
+  float BBox[4]; // valid for cptrace_t
+  float FloorZ; // valid for cptrace_t
+  float CeilingZ; // valid for cptrace_t
+  float DropOffZ; // valid for cptrace_t
+
+  // WARNING! keep in sync with VEntity fcflags
+  /*
+  enum {
+    FC_FlipFloor = 1u<<0,
+    FC_FlipCeiling = 1u<<1,
+  };
+  vuint32 fcflags; // valid for cptrace_t
+  */
+  TSecPlaneRef EFloor; // valid for cptrace_t
+  TSecPlaneRef ECeiling; // valid for cptrace_t
+
+  enum {
+    TF_FloatOk = 0x01u, // if true, move would be ok if within tmtrace.FloorZ - tmtrace.CeilingZ
+  };
+  vuint32 TraceFlags;
+
+  // keep track of the line that lowers the ceiling,
+  // so missiles don't explode against sky hack walls
+  line_t *CeilingLine;
+  line_t *FloorLine;
+  // also keep track of the blocking line, for checking
+  // against doortracks
+  line_t *BlockingLine; // only lines without backsector
+
+  // keep track of special lines as they are hit,
+  // but don't process them until the move is proven valid
+  TArray<line_t *> SpecHit;
+
+  VEntity *BlockingMobj;
+  // any blocking line (including passable two-sided!); only has any sense if trace returned `false`
+  // note that this is really *any* line, not necessarily first or last crossed!
+  line_t *AnyBlockingLine;
+
+  // polyobject we are standing on, valid for cptrace_t
+  polyobj_t *PolyObj;
+
+  // from cptrace_t
+  //TVec Pos; // valid for cptrace_t
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 //WARNING: sync this with VC code!
 #define PHYS_MAXMOVE  (1050.0f*30.0f)  /* this is rougly equal to 900 in Vanilla speed */
 
@@ -875,6 +937,27 @@ public:
   void StartSoundSequence (VName, vint32 Channel);
   void AddSoundSequenceChoice (VName);
   void StopSoundSequence ();
+
+  int DamageMe (VEntity *inflictor, VEntity *source, int damage,
+                VName DmgType=NAME_None, bool NoArmor=false, bool forced=false,
+                bool spawnBlood=true, bool ignoreDamageFactors=false, bool ignorePowerups=false)
+  {
+    static VMethodProxy method("DamageMe");
+    vobjPutParamSelf(inflictor, source, damage, DmgType, NoArmor, forced, spawnBlood, ignoreDamageFactors, ignorePowerups);
+    VMT_RET_INT(method);
+  }
+
+  // gib corpse
+  // this won't gib entities with `Health > 0`, and non-gibbing
+  // this entity may be destroyed (replaced with giblets)
+  // returns `nullptr` on failure, or giblets (may return self)
+  // note that returned entity may be already destroyed
+  // `gibtype` is "Death" state suffix (may be NAME_None)
+  VEntity *GibMe (VName gibtype=NAME_None) {
+    static VMethodProxy method("GibMe");
+    vobjPutParamSelf(gibtype);
+    VMT_RET_REF(VEntity, method);
+  }
 
   DECLARE_FUNCTION(SetTID)
   DECLARE_FUNCTION(SetState)

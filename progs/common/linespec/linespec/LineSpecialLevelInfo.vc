@@ -3713,22 +3713,6 @@ override int AcsDamageActor (int targettid, int targetptr, int inflictortid, int
 
 //==========================================================================
 //
-//  DamageActorEx
-//
-//==========================================================================
-override int DamageActorEx (Entity target, Entity inflictor, Entity source, int damage,
-                            name DmgType, bool NoArmor, bool forced,
-                            bool spawnBlood, bool ignoreDamageFactors, bool ignorePowerups)
-{
-  EntityEx etarget = EntityEx(target);
-  if (!etarget) return 0;
-  //k8: clamp damage, just because
-  return etarget.Damage(EntityEx(inflictor), EntityEx(source), clamp(damage, 0, 100000), DmgType, NoArmor, forced, spawnBlood, ignoreDamageFactors, ignorePowerups);
-}
-
-
-//==========================================================================
-//
 //  EV_ThingActivate
 //
 //==========================================================================
@@ -5222,25 +5206,37 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   if (!po || !po->posector) return false;
   EntityEx ex = EntityEx(A);
   if (!ex) return false;
-  if (!dx && !dy) return true; // just in case
+  //if (!dx && !dy) return true; // we may still want to crush it
+  Entity::tmtrace_t tmtrace;
+
   TVec delta = vector(dx, dy);
   TVec newpos = ex.Origin+delta;
   ex.UnlinkFromWorld();
   //ex.PolyObjIgnore = po;
-  bool ok = ex.CheckPosition(newpos);
+  bool killit = false;
+  //bool ok = ex.CheckPosition(newpos);
+  bool ok = ex.CheckRelPosition(out tmtrace, newpos, noPickups:true);
   //ex.PolyObjIgnore = nullptr;
   //printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
   if (ok) {
     ex.Origin = newpos;
     ex.LastMoveOrigin += delta;
+  } else if (po.bCrush && ex.bSolid && (ex.bMonster || ex.bMissile || ex.bIsPlayer)) {
+    bool oldCT = ex.bColideWithThings;
+    ex.bColideWithThings = false;
+    killit = !ex.CheckRelPosition(out tmtrace, ex.Origin, noPickups:true, ignoreMonsters:true, ignorePlayers:true);
+    ex.bColideWithThings = oldCT;
   }
   ex.LinkToWorld();
-  /*
-  if (!ok) {
-    // damage other type of actors
-    ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
+
+  // damage it
+  if (killit) {
+    if (ex.bMonster || ex.bMissile || ex.bIsPlayer) {
+      ex.bInvulnerable = false;
+      ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
+    }
   }
-  */
+
   return ok;
 }
 
@@ -5280,54 +5276,21 @@ override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
 //
 //==========================================================================
 override void PolyCrushMobj (Entity Other, polyobj_t *po) {
-  if (po->bCrush) {
+  EntityEx ex = EntityEx(Other);
+  if (!ex || !po) return;
+
+  if (po.bCrush) {
     // crunch ice corpses
-    if (EntityEx(Other).bIceCorpse) {
+    if (ex.bIceCorpse) {
       // crush ice corpses
-      Actor(Other).A_FreezeDeathChunks();
-      return;
+      if (Actor(Other)) {
+        Actor(Other).A_FreezeDeathChunks();
+        return;
+      }
     }
 
     // crunch bodies to giblets
-    if (EntityEx(Other).bCorpse && !EntityEx(Other).bDontGib && Other.Health <= 0) {
-      bool CanDestroy = false;
-
-      if (!EntityEx(Other).bNoBlood) {
-        auto c = class!Actor(FindClass('RealGibs'));
-        c = class!Actor(c.Replacement);
-
-        if (c) {
-          state sst = FindClassState(c, 'Spawn');
-          if (!sst || !AreStateSpritesPresent(sst)) c = none;
-        }
-
-        if (c) {
-          Actor Gib = SpawnEntityChecked(class!Actor, RealGibs);
-          if (Gib) {
-            Gib.RenderStyle = EntityEx(Other).RenderStyle;
-            Gib.Alpha = EntityEx(Other).Alpha;
-            Gib.Height = 0.0;
-            Gib.Radius = 0.0;
-            Gib.CopyTranslations(Other);
-            //k8: really?
-            //if (EntityEx(Other).BloodTranslation && !Gib.bDontTranslate) Gib.Translation = EntityEx(Other).BloodTranslation;
-            Gib.PlaySound('misc/fallingsplat', /*CHAN_BODY*/CHAN_AUTO);
-          }
-          CanDestroy = true;
-        } else {
-          EntityEx(Other).bDontGib = true;
-        }
-      }
-
-      if (Other.bIsPlayer) {
-        Other.bColideWithWorld = false;
-        Other.bColideWithThings = false;
-        EntityEx(Other).bDontGib = true;
-        EntityEx(Other).bInvisible = true;
-      } else {
-        if (CanDestroy) Other.Destroy();
-      }
-    }
+    ex.GibEntity('PolyObjectGibs');
   }
 }
 

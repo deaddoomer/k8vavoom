@@ -65,6 +65,31 @@ VCvarI r_limit_blood_spots_max("r_limit_blood_spots_max", "96", "Maximum blood s
 VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leva no more than this number of blood spots.", CVAR_Archive);
 
 
+////////////////////////////////////////////////////////////////////////////////
+/*
+inline void CopyRegFloor (sec_region_t *r, const TVec *Origin) {
+  EFloor = r->efloor;
+  if (Origin) FloorZ = EFloor.GetPointZClamped(*Origin);
+}
+
+inline void CopyRegCeiling (sec_region_t *r, const TVec *Origin) {
+  ECeiling = r->eceiling;
+  if (Origin) CeilingZ = ECeiling.GetPointZClamped(*Origin);
+}
+*/
+
+static inline void CopyOpenFloor (tmtrace_t &tmtrace, opening_t *o, bool setz=true) noexcept {
+  tmtrace.EFloor = o->efloor;
+  if (setz) tmtrace.FloorZ = o->bottom;
+}
+
+static inline void CopyOpenCeiling (tmtrace_t &tmtrace, opening_t *o, bool setz=true) noexcept {
+  tmtrace.ECeiling = o->eceiling;
+  if (setz) tmtrace.CeilingZ = o->top;
+}
+
+
+
 //==========================================================================
 //
 //  VEntity::GetMoveRadius
@@ -964,7 +989,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
     // adjust floor / ceiling heights
     /*
     if (!(open->eceiling.splane->flags&SPF_NOBLOCKING) && open->top < cptrace.CeilingZ) {
-      cptrace.CopyOpenCeiling(open);
+      CopyOpenCeiling(cptrace, open);
     }
     */
     if (!(open->eceiling.splane->flags&SPF_NOBLOCKING)) {
@@ -976,13 +1001,13 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
         replaceIt = (cptrace.CeilingZ > open->top || (open->top == cptrace.CeilingZ && cptrace.ECeiling.isSlope()));
       }
       if (replaceIt) {
-        cptrace.CopyOpenCeiling(open);
+        CopyOpenCeiling(cptrace, open);
       }
     }
 
     /*
     if (!(open->efloor.splane->flags&SPF_NOBLOCKING) && open->bottom > cptrace.FloorZ) {
-      cptrace.CopyOpenFloor(open);
+      CopyOpenFloor(cptrace, open);
     }
     */
     if (!(open->efloor.splane->flags&SPF_NOBLOCKING)) {
@@ -994,7 +1019,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
         replaceIt = (open->bottom > cptrace.FloorZ || (open->bottom == cptrace.FloorZ && cptrace.EFloor.isSlope()));
       }
       if (replaceIt) {
-        cptrace.CopyOpenFloor(open);
+        CopyOpenFloor(cptrace, open);
       }
     }
 
@@ -1398,7 +1423,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy ceiling; hgt=%g; z+hgt=%g; top=%g; curcz-top=%g", hgt, Origin.z+hgt, open->top, tmtrace.CeilingZ-open->top);
           #endif
-          tmtrace.CopyOpenCeiling(open);
+          CopyOpenCeiling(tmtrace, open);
           tmtrace.CeilingLine = ld;
         }
       }
@@ -1419,7 +1444,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy floor");
           #endif
-          tmtrace.CopyOpenFloor(open);
+          CopyOpenFloor(tmtrace, open);
           tmtrace.FloorLine = ld;
         }
       }

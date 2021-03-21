@@ -723,6 +723,7 @@ public:
   void CheckBSPB2DBox (const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept;
 
   // `-1` for `crunch` means "ignore stuck mobj"
+  // returns `true` if movement was blocked
   bool ChangeSector (sector_t *sector, int crunch);
 
   // returns `false` on hit
