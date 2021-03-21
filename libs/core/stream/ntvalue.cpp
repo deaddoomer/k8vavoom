@@ -656,7 +656,7 @@ void VNTValueIO::io (VName vname, vint32 &v) {
 
 //==========================================================================
 //
-//  VNTValueIO::io
+//  VNTValueIO::iodef
 //
 //==========================================================================
 void VNTValueIO::iodef (VName vname, vint32 &v, vint32 defval) {
@@ -688,6 +688,23 @@ void VNTValueIO::io (VName vname, vuint32 &v) {
 
 //==========================================================================
 //
+//  VNTValueIO::iodef
+//
+//==========================================================================
+void VNTValueIO::iodef (VName vname, vuint32 &v, vuint32 defval) {
+  if (bError) { v = defval; return; }
+  if (rd) {
+    bool notfound = false;
+    v = (vuint32)rd->readInt(vname, &notfound);
+    if (notfound) v = defval;
+  } else {
+    if (wr->putValue(VNTValue(vname, (vuint32)v))) bError = true;
+  }
+}
+
+
+//==========================================================================
+//
 //  VNTValueIO::io
 //
 //==========================================================================
@@ -695,6 +712,23 @@ void VNTValueIO::io (VName vname, float &v) {
   if (bError) return;
   if (rd) {
     v = rd->readFloat(vname);
+  } else {
+    if (wr->putValue(VNTValue(vname, v))) bError = true;
+  }
+}
+
+
+//==========================================================================
+//
+//  VNTValueIO::iodef
+//
+//==========================================================================
+void VNTValueIO::iodef (VName vname, float &v, float defval) {
+  if (bError) { v = defval; return; }
+  if (rd) {
+    bool notfound = false;
+    v = rd->readFloat(vname, &notfound);
+    if (notfound) v = defval;
   } else {
     if (wr->putValue(VNTValue(vname, v))) bError = true;
   }
@@ -718,6 +752,23 @@ void VNTValueIO::io (VName vname, TVec &v) {
 
 //==========================================================================
 //
+//  VNTValueIO::iodef
+//
+//==========================================================================
+void VNTValueIO::iodef (VName vname, TVec &v, const TVec defval) {
+  if (bError) { v = defval; return; }
+  if (rd) {
+    bool notfound = false;
+    v = rd->readVec(vname, &notfound);
+    if (notfound) v = defval;
+  } else {
+    if (wr->putValue(VNTValue(vname, v))) bError = true;
+  }
+}
+
+
+//==========================================================================
+//
 //  VNTValueIO::io
 //
 //==========================================================================
@@ -733,6 +784,23 @@ void VNTValueIO::io (VName vname, VName &v) {
 
 //==========================================================================
 //
+//  VNTValueIO::iodef
+//
+//==========================================================================
+void VNTValueIO::iodef (VName vname, VName &v, VName defval) {
+  if (bError) { v = defval; return; }
+  if (rd) {
+    bool notfound = false;
+    v = rd->readName(vname, &notfound);
+    if (notfound) v = defval;
+  } else {
+    if (wr->putValue(VNTValue(vname, v))) bError = true;
+  }
+}
+
+
+//==========================================================================
+//
 //  VNTValueIO::io
 //
 //==========================================================================
@@ -740,6 +808,23 @@ void VNTValueIO::io (VName vname, VStr &v) {
   if (bError) return;
   if (rd) {
     v = rd->readStr(vname);
+  } else {
+    if (wr->putValue(VNTValue(vname, v))) bError = true;
+  }
+}
+
+
+//==========================================================================
+//
+//  VNTValueIO::iodef
+//
+//==========================================================================
+void VNTValueIO::iodef (VName vname, VStr &v, VStr defval) {
+  if (bError) { v = defval; return; }
+  if (rd) {
+    bool notfound = false;
+    v = rd->readStr(vname, &notfound);
+    if (notfound) v = defval;
   } else {
     if (wr->putValue(VNTValue(vname, v))) bError = true;
   }

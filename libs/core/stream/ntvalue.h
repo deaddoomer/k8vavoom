@@ -306,6 +306,11 @@ public:
   inline bool IsLoading () const { return !!rd; }
 
   virtual void iodef (VName vname, vint32 &v, vint32 defval);
+  virtual void iodef (VName vname, vuint32 &v, vuint32 defval);
+  virtual void iodef (VName vname, float &v, float defval);
+  virtual void iodef (VName vname, TVec &v, const TVec defval);
+  virtual void iodef (VName vname, VName &v, VName defval);
+  virtual void iodef (VName vname, VStr &v, VStr defval);
 
   virtual void io (VName vname, vint32 &v);
   virtual void io (VName vname, vuint32 &v);
