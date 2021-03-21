@@ -41,6 +41,11 @@ public:
 
   // fuck you, shitplusplus!
   virtual void iodef (VName vname, vint32 &v, vint32 defval) override;
+  virtual void iodef (VName vname, vuint32 &v, vuint32 defval) override;
+  virtual void iodef (VName vname, float &v, float defval) override;
+  virtual void iodef (VName vname, TVec &v, const TVec defval) override;
+  virtual void iodef (VName vname, VName &v, VName defval) override;
+  virtual void iodef (VName vname, VStr &v, VStr defval) override;
 
   virtual void io (VName vname, vint32 &v) override;
   virtual void io (VName vname, vuint32 &v) override;

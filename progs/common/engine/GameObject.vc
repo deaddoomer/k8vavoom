@@ -830,6 +830,10 @@ struct sec_plane_t : TPlane {
   float BaseAngle;
   float BaseYOffs;
 
+  float PObjAngle;
+  float PObjCX;
+  float PObjCY;
+
   int flags;
   float Alpha;
   float MirrorAlpha;

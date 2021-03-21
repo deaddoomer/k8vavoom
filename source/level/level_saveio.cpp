@@ -289,6 +289,9 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("floor.Angle"), sec->floor.Angle);
       vio.io(VName("floor.BaseAngle"), sec->floor.BaseAngle);
       vio.io(VName("floor.BaseYOffs"), sec->floor.BaseYOffs);
+      vio.iodef(VName("floor.PObjAngle"), sec->floor.PObjAngle, 0.0f);
+      vio.iodef(VName("floor.PObjCX"), sec->floor.PObjAngle, 0.0f);
+      vio.iodef(VName("floor.PObjCY"), sec->floor.PObjAngle, 0.0f);
       vio.io(VName("floor.flags"), sec->floor.flags);
       vio.io(VName("floor.Alpha"), sec->floor.Alpha);
       vio.io(VName("floor.MirrorAlpha"), sec->floor.MirrorAlpha);
@@ -304,6 +307,9 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("ceiling.Angle"), sec->ceiling.Angle);
       vio.io(VName("ceiling.BaseAngle"), sec->ceiling.BaseAngle);
       vio.io(VName("ceiling.BaseYOffs"), sec->ceiling.BaseYOffs);
+      vio.iodef(VName("ceiling.PObjAngle"), sec->ceiling.PObjAngle, 0.0f);
+      vio.iodef(VName("ceiling.PObjCX"), sec->ceiling.PObjAngle, 0.0f);
+      vio.iodef(VName("ceiling.PObjCY"), sec->ceiling.PObjAngle, 0.0f);
       vio.io(VName("ceiling.flags"), sec->ceiling.flags);
       vio.io(VName("ceiling.Alpha"), sec->ceiling.Alpha);
       vio.io(VName("ceiling.MirrorAlpha"), sec->ceiling.MirrorAlpha);
@@ -608,34 +614,24 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
     for (i = 0; i < NumPolyObjs; ++i) {
       VNTValueIOEx vio(&Strm);
-      float angle = PolyObjs[i]->angle;
-      float polyX = PolyObjs[i]->startSpot.x;
-      float polyY = PolyObjs[i]->startSpot.y;
-      float polyZ = PolyObjs[i]->startSpot.z;
+      polyobj_t *po = PolyObjs[i];
+      float angle = po->angle;
+      float polyX = po->startSpot.x;
+      float polyY = po->startSpot.y;
+      float polyZ = po->startSpot.z;
+      vuint32 polyFlags = po->PolyFlags;
       vio.io(VName("angle"), angle);
       vio.io(VName("startSpot.x"), polyX);
       vio.io(VName("startSpot.y"), polyY);
+      vio.iodef(VName("startSpot.z"), polyZ, 0.0f);
+      vio.iodef(VName("flags"), polyFlags, 0xffffffffu);
       if (Strm.IsLoading()) {
-        int havez = 0;
-        vio.iodef(VName("startSpot.haveZ"), havez, 0);
-        if (havez) {
-          vio.io(VName("startSpot.z"), polyZ);
-        } else {
-          polyZ = 0.0f;
-        }
-      } else {
-        int havez = 1;
-        vio.io(VName("startSpot.haveZ"), havez);
-        vio.io(VName("startSpot.z"), polyZ);
-      }
-      if (Strm.IsLoading()) {
-        polyobj_t *po = PolyObjs[i];
+        if (polyFlags != 0xffffffffu) po->PolyFlags = polyFlags;
         if (angle) RotatePolyobj(po->tag, angle);
         //GCon->Logf("poly #%d: oldpos=(%g,%g,%g) -> (%g,%g,%g) : (%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z, polyX, polyY, polyZ, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z);
         MovePolyobj(po->tag, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z, true); // forced move
         //GCon->Logf("poly #%d: newpos=(%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z);
       } else {
-        //polyobj_t *po = PolyObjs[i];
         //GCon->Logf("saved poly #%d: pos=(%g,%g,%g); angle=%g", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z, po->angle);
       }
       vio.io(VName("SpecialData"), PolyObjs[i]->SpecialData);

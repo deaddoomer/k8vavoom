@@ -523,6 +523,10 @@ struct sec_plane_t : public TPlane {
   float BaseAngle;
   float BaseYOffs;
 
+  float PObjAngle;
+  float PObjCX;
+  float PObjCY;
+
   vuint32 flags; // SPF_xxx
   float Alpha;
   float MirrorAlpha;

@@ -64,6 +64,56 @@ void VNTValueIOEx::iodef (VName vname, vint32 &v, vint32 defval) {
 
 //==========================================================================
 //
+//  VNTValueIOEx::iodef
+//
+//==========================================================================
+void VNTValueIOEx::iodef (VName vname, vuint32 &v, vuint32 defval) {
+  VNTValueIO::iodef(transformName(vname), v, defval);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIOEx::iodef
+//
+//==========================================================================
+void VNTValueIOEx::iodef (VName vname, float &v, float defval) {
+  VNTValueIO::iodef(transformName(vname), v, defval);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIOEx::iodef
+//
+//==========================================================================
+void VNTValueIOEx::iodef (VName vname, TVec &v, const TVec defval) {
+  VNTValueIO::iodef(transformName(vname), v, defval);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIOEx::iodef
+//
+//==========================================================================
+void VNTValueIOEx::iodef (VName vname, VName &v, VName defval) {
+  VNTValueIO::iodef(transformName(vname), v, defval);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIOEx::iodef
+//
+//==========================================================================
+void VNTValueIOEx::iodef (VName vname, VStr &v, VStr defval) {
+  VNTValueIO::iodef(transformName(vname), v, defval);
+}
+
+
+//==========================================================================
+//
 //  VNTValueIOEx::io
 //
 //==========================================================================

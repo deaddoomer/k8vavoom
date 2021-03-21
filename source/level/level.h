@@ -98,6 +98,9 @@ struct rep_sector_t {
   float floor_Angle;
   float floor_BaseAngle;
   float floor_BaseYOffs;
+  float floor_PObjAngle;
+  float floor_PObjCX;
+  float floor_PObjCY;
   VEntity *floor_SkyBox;
   float floor_MirrorAlpha;
   int ceil_pic;
@@ -109,6 +112,9 @@ struct rep_sector_t {
   float ceil_Angle;
   float ceil_BaseAngle;
   float ceil_BaseYOffs;
+  float ceil_PObjAngle;
+  float ceil_PObjCX;
+  float ceil_PObjCY;
   VEntity *ceil_SkyBox;
   float ceil_MirrorAlpha;
   int Sky;
