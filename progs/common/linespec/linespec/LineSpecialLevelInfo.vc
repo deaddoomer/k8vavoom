@@ -3713,6 +3713,22 @@ override int AcsDamageActor (int targettid, int targetptr, int inflictortid, int
 
 //==========================================================================
 //
+//  DamageActorEx
+//
+//==========================================================================
+override int DamageActorEx (Entity target, Entity inflictor, Entity source, int damage,
+                            name DmgType, bool NoArmor, bool forced,
+                            bool spawnBlood, bool ignoreDamageFactors, bool ignorePowerups)
+{
+  EntityEx etarget = EntityEx(target);
+  if (!etarget) return 0;
+  //k8: clamp damage, just because
+  return etarget.Damage(EntityEx(inflictor), EntityEx(source), clamp(damage, 0, 100000), DmgType, NoArmor, forced, spawnBlood, ignoreDamageFactors, ignorePowerups);
+}
+
+
+//==========================================================================
+//
 //  EV_ThingActivate
 //
 //==========================================================================

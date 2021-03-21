@@ -1328,6 +1328,19 @@ int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflicto
 
 //==========================================================================
 //
+//  DamageActorEx
+//
+//==========================================================================
+int DamageActorEx (Entity target, Entity inflictor, Entity source, int damage,
+                   name DmgType, bool NoArmor, bool forced,
+                   bool spawnBlood, bool ignoreDamageFactors, bool ignorePowerups)
+{
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  AcsPolyMoveEx
 //
 //==========================================================================

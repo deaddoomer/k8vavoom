@@ -288,6 +288,15 @@ public:
     VMT_RET_INT(method);
   }
 
+  int eventDamageActorEx (VEntity *target, VEntity *inflictor, VEntity *source, int damage,
+                          VName DmgType=NAME_None, bool NoArmor=false, bool forced=false,
+                          bool spawnBlood=true, bool ignoreDamageFactors=false, bool ignorePowerups=false)
+  {
+    static VMethodProxy method("DamageActorEx");
+    vobjPutParamSelf(target, inflictor, source, damage, DmgType, NoArmor, forced, spawnBlood, ignoreDamageFactors, ignorePowerups);
+    VMT_RET_INT(method);
+  }
+
   int eventAcsPolyMoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveEx");
     vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, override, Activator);
