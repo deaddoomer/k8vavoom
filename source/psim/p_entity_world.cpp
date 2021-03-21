@@ -137,7 +137,7 @@ static void tmtSetupGap (tmtrace_t *tmtrace, sector_t *sector, float Height, boo
 //
 //==========================================================================
 static bool Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ,
-                                    TSecPlaneRef ECeiling, float CeilingZ, polyobj_t *&PolyObj,
+                                    TSecPlaneRef &ECeiling, float &CeilingZ, polyobj_t *&PolyObj,
                                     const float z0, const float z1)
 {
   const float poz0 = po->pofloor.minz;
@@ -376,11 +376,11 @@ void VEntity::CreateSecNodeList () {
   // add 3d pobj sectors
   for (auto &&s : linkAdditionalSectors) XLevel->SectorList = XLevel->AddSecnode(s, this, XLevel->SectorList);
 
-  // add the sector of the (x,y) point to sector_list
-  XLevel->SectorList = XLevel->AddSecnode(sec, this, XLevel->SectorList);
-
   // add base sector
   if (sec != BaseSector) XLevel->SectorList = XLevel->AddSecnode(BaseSector, this, XLevel->SectorList);
+
+  // add the sector of the (x,y) point to sector_list
+  XLevel->SectorList = XLevel->AddSecnode(sec, this, XLevel->SectorList);
 
   // now delete any nodes that won't be used
   // these are the ones where Thing is still nullptr
@@ -518,7 +518,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   if (properFloorCheck != -666) {
     if (!IsPlayer()) {
       if (properFloorCheck) {
-        if (rad < 4 || (EntityFlags&(EF_ColideWithWorld|EF_NoSector|EF_NoBlockmap|EF_Invisible|EF_Missile|EF_ActLikeBridge)) != EF_ColideWithWorld) {
+        if (rad < 4.0f || (EntityFlags&(EF_ColideWithWorld|EF_NoSector|EF_NoBlockmap|EF_Invisible|EF_Missile|EF_ActLikeBridge)) != EF_ColideWithWorld) {
           properFloorCheck = false;
         }
       }
@@ -1181,7 +1181,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     polyobj_t *inpobj = nullptr;
     // check if we can stand inside some polyobject
     // there is no need to check it if our position is already invalid
-    if (good && XLevel->NumPolyObjs) {
+    if (XLevel->NumPolyObjs) {
       //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
       // no need for new validcount
       const float z1 = tmtrace.End.z+max2(0.0f, Height);
@@ -1193,9 +1193,11 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             //GCon->Logf(NAME_Debug, "000: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1);
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
-            //GCon->Logf(NAME_Debug, "001: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
+            //GCon->Logf(NAME_Debug, "001: %s(%u):   checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
+            //GCon->Logf(NAME_Debug, "002: %s(%u):   HIT pobj #%d (fz=%g; cz=%g); z0=%g; z1=%g", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.CeilingZ, tmtrace.End.z, z1);
             (void)Copy3DPObjFloorCeiling(tmtrace, po, tmtrace.End.z, z1);
+            //GCon->Logf(NAME_Debug, "003: %s(%u):       pobj #%d (fz=%g; cz=%g); z0=%g; z1=%g; pz=(%g : %g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.CeilingZ, tmtrace.End.z, z1, po->pofloor.minz, po->poceiling.maxz);
           }
         }
       }
