@@ -289,9 +289,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("floor.Angle"), sec->floor.Angle);
       vio.io(VName("floor.BaseAngle"), sec->floor.BaseAngle);
       vio.io(VName("floor.BaseYOffs"), sec->floor.BaseYOffs);
-      vio.iodef(VName("floor.PObjAngle"), sec->floor.PObjAngle, 0.0f);
-      vio.iodef(VName("floor.PObjCX"), sec->floor.PObjAngle, 0.0f);
-      vio.iodef(VName("floor.PObjCY"), sec->floor.PObjAngle, 0.0f);
+      vio.iodef(VName("floor.PObjCX"), sec->floor.PObjCX, 0.0f);
+      vio.iodef(VName("floor.PObjCY"), sec->floor.PObjCY, 0.0f);
       vio.io(VName("floor.flags"), sec->floor.flags);
       vio.io(VName("floor.Alpha"), sec->floor.Alpha);
       vio.io(VName("floor.MirrorAlpha"), sec->floor.MirrorAlpha);
@@ -307,9 +306,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("ceiling.Angle"), sec->ceiling.Angle);
       vio.io(VName("ceiling.BaseAngle"), sec->ceiling.BaseAngle);
       vio.io(VName("ceiling.BaseYOffs"), sec->ceiling.BaseYOffs);
-      vio.iodef(VName("ceiling.PObjAngle"), sec->ceiling.PObjAngle, 0.0f);
-      vio.iodef(VName("ceiling.PObjCX"), sec->ceiling.PObjAngle, 0.0f);
-      vio.iodef(VName("ceiling.PObjCY"), sec->ceiling.PObjAngle, 0.0f);
+      vio.iodef(VName("ceiling.PObjCX"), sec->ceiling.PObjCX, 0.0f);
+      vio.iodef(VName("ceiling.PObjCY"), sec->ceiling.PObjCY, 0.0f);
       vio.io(VName("ceiling.flags"), sec->ceiling.flags);
       vio.io(VName("ceiling.Alpha"), sec->ceiling.Alpha);
       vio.io(VName("ceiling.MirrorAlpha"), sec->ceiling.MirrorAlpha);

@@ -87,15 +87,19 @@ static inline bool IsZeroSkyFloorHack (const subsector_t *sub, const sec_region_
 //
 //==========================================================================
 static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef &spl, VTexture *Tex) {
-  const float newsoffs = spl.splane->xoffs*(VRenderLevelShared::TextureSScale(Tex)*spl.splane->XScale);
-  const float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(VRenderLevelShared::TextureTScale(Tex)*spl.splane->YScale);
-  /*
-  const bool offsChanged = (FASI(surf->texinfo.soffs) != FASI(newsoffs) ||
-                           FASI(surf->texinfo.toffs) != FASI(newtoffs));
-  */
+  float newsoffs = spl.splane->xoffs*(VRenderLevelShared::TextureSScale(Tex)*spl.splane->XScale);
+  float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(VRenderLevelShared::TextureTScale(Tex)*spl.splane->YScale);
+
+  const float cx = spl.splane->PObjCX;
+  const float cy = spl.splane->PObjCY;
+  if (cx || cy) {
+    TVec p(cx, cy);
+    newsoffs -= DotProduct(surf->texinfo.saxis, p);
+    newtoffs -= DotProduct(surf->texinfo.taxis, p);
+  }
+
   surf->texinfo.soffs = newsoffs;
   surf->texinfo.toffs = newtoffs;
-  //return offsChanged;
 }
 
 
@@ -176,8 +180,8 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
     float s, c;
     msincos(spl.splane->BaseAngle-spl.splane->Angle, &s, &c);
     ssurf->texinfo.saxisLM = TVec(c,  s, 0);
-    ssurf->texinfo.saxis = TVec(c,  s, 0)*(TextureSScale(Tex)*spl.splane->XScale);
     ssurf->texinfo.taxisLM = TVec(s, -c, 0);
+    ssurf->texinfo.saxis = TVec(c,  s, 0)*(TextureSScale(Tex)*spl.splane->XScale);
     ssurf->texinfo.taxis = TVec(s, -c, 0)*(TextureTScale(Tex)*spl.splane->YScale);
   } else {
     ssurf->texinfo.taxisLM = TVec(0, 0, -1);
