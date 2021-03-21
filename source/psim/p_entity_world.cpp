@@ -1219,7 +1219,10 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             //GCon->Logf(NAME_Debug, "001: %s(%u):   checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
             if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "002: %s(%u):   HIT pobj #%d (fz=%g; cz=%g); z0=%g; z1=%g", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.CeilingZ, tmtrace.End.z, z1);
-            (void)Copy3DPObjFloorCeiling(tmtrace, po, tmtrace.End.z, z1);
+            const float oldFZ = tmtrace.FloorZ;
+            if (Copy3DPObjFloorCeiling(tmtrace, po, tmtrace.End.z, z1)) {
+              if (oldFZ != tmtrace.FloorZ) tmtrace.DropOffZ = tmtrace.FloorZ;
+            }
             //GCon->Logf(NAME_Debug, "003: %s(%u):       pobj #%d (fz=%g; cz=%g); z0=%g; z1=%g; pz=(%g : %g)", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.CeilingZ, tmtrace.End.z, z1, po->pofloor.minz, po->poceiling.maxz);
           }
         }
@@ -1402,7 +1405,12 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = hitPoint.z+max2(0.0f, Height);
-    if (Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, z1)) return true; // not stuck
+    const float oldFZ = tmtrace.FloorZ;
+    if (Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, z1)) {
+      // not stuck
+      if (tmtrace.FloorZ > oldFZ && oldFZ < tmtrace.DropOffZ) tmtrace.DropOffZ = oldFZ;
+      return true;
+    }
     // stuck
     if (!skipSpecials) BlockedByLine(ld);
     tmtrace.BlockingLine = ld;
