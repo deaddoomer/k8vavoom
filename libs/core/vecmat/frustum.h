@@ -320,3 +320,16 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const f
     bbox2D[BOX2D_MINX] > bbox3D[BOX3D_MAXX] || bbox2D[BOX2D_MINY] > bbox3D[BOX3D_MAXY]
   );
 }
+
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside2DBBox (const float x, const float y, const float bbox2d[4]) {
+  return
+    x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
+    y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
+}
+
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside3DBBox (const TVec p, const float bbox3d[6]) {
+  return
+    p.x >= bbox3d[BOX3D_MINX] && p.x <= bbox3d[BOX3D_MAXX] &&
+    p.y >= bbox3d[BOX3D_MINY] && p.y <= bbox3d[BOX3D_MAXY] &&
+    p.z >= bbox3d[BOX3D_MINZ] && p.z <= bbox3d[BOX3D_MAXZ];
+}
