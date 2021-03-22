@@ -736,11 +736,11 @@ public:
   // doesn't check pvs or reject
   // `Sector` can be `nullptr`
   // if `orgdirRight` is zero vector, don't do extra checks
-  bool CastCanSee (subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
-                   const TVec &dest, float radius, float height, bool skipBaseRegion, subsector_t *DestSubSector,
+  bool CastCanSee (const subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
+                   const TVec &dest, float radius, float height, bool skipBaseRegion, const subsector_t *DestSubSector,
                    bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors);
   // this is used to trace light rays (via blockmap)
-  bool CastLightRay (bool textureCheck, sector_t *Sector, const TVec &org, const TVec &dest, sector_t *DestSector=nullptr);
+  bool CastLightRay (bool textureCheck, const subsector_t *SubSector, const TVec &org, const TVec &dest, const subsector_t *DestSubSector=nullptr);
 
   void SetCameraToTexture (VEntity *, VName, int);
 

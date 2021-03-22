@@ -204,7 +204,7 @@ bool VRenderLevelLightmap::IsStaticLightmapTimeLimitExpired () {
 //  Returns the distance between the points, or 0 if blocked
 //
 //==========================================================================
-bool VRenderLevelLightmap::CastStaticRay (float *dist, sector_t *srcsector, const TVec &p1, const TVec &p2, float squaredist) {
+bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector, const TVec &p1, const TVec &p2, float squaredist) {
   const TVec delta = p2-p1;
   const float t = DotProduct(delta, delta);
   if (t >= squaredist) {
@@ -219,7 +219,7 @@ bool VRenderLevelLightmap::CastStaticRay (float *dist, sector_t *srcsector, cons
   }
 
   if (!r_lmap_bsp_trace_static) {
-    if (!Level->CastLightRay(r_lmap_texture_check_static, srcsector, p1, p2)) {
+    if (!Level->CastLightRay(r_lmap_texture_check_static, srcsubsector, p1, p2)) {
       // ray was blocked
       if (dist) *dist = 0.0f;
       return false;
@@ -384,8 +384,8 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
   lmi.didExtra = doExtra;
 
   bool dotrace = !lowres;
-  sector_t *facesec = surf->subsector->sector;
-  if (!facesec) dotrace = false;
+  subsector_t *facesubsec = surf->subsector;
+  if (!facesubsec) dotrace = false;
   if (dotrace && !r_lmap_stfix_enabled) dotrace = false;
 
   lmi.numsurfpt = w*h;
@@ -422,7 +422,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           //const TVec fmss = facemid-(*spt);
           //if (length2DSquared(fmss) < 0.1f) break; // same point, got it
           //!if (Level->TraceLine(Trace, facemid, *spt, SPF_NOBLOCKSIGHT)) break; // got it
-          if (CastStaticRay(nullptr, facesec, facemid, *spt, 999999.0f)) {
+          if (CastStaticRay(nullptr, facesubsec, facemid, *spt, 999999.0f)) {
             //found = true;
             break;
           }
@@ -559,7 +559,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   }
 
   // check it for real
-  sector_t *srcsector = Level->PointInSubsector(lorg)->sector;
+  subsector_t *srcsubsector = Level->PointInSubsector(lorg);
   const TVec *spt = lmi.surfpt;
   const float squaredist = light->radius*light->radius;
   const float rmul = ((light->color>>16)&255)/255.0f;
@@ -589,7 +589,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     }
 
     float raydist;
-    if (!CastStaticRay(&raydist, srcsector, lorg+lnormal, (*spt)+lnormal, squaredist)) {
+    if (!CastStaticRay(&raydist, srcsubsector, lorg+lnormal, (*spt)+lnormal, squaredist)) {
       // light ray is blocked
       continue;
     }
@@ -658,7 +658,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
             for (int dx = -1; dx < 2; ++dx) {
               for (int dz = -1; dz < 2; ++dz) {
                 if ((dx|dy|dz) == 0) continue;
-                if (CastStaticRay(&raydist , srcsector, lorg+lnormal, pt+TVec(4*dx, 4*dy, 4*dz), squaredist)) goto donetrace;
+                if (CastStaticRay(&raydist, srcsubsector, lorg+lnormal, pt+TVec(4*dx, 4*dy, 4*dz), squaredist)) goto donetrace;
               }
             }
           }
@@ -1036,7 +1036,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
     }
 
     //TVec spt(0.0f, 0.0f, 0.0f);
-    sector_t *surfsector = (surf->subsector ? surf->subsector->sector : nullptr);
+    subsector_t *surfsubsector = surf->subsector;
     float attn = 1.0f;
 
     const TVec *spt = lmi.surfpt;
@@ -1069,7 +1069,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
               const TVec &p2 = *spt;
               //const TVec p2 = (*spt)+surfOffs;
               if (!useBSPTrace) {
-                if (!Level->CastLightRay((texCheck && dl.radius > texCheckMinRadius), Level->Subsectors[dlinfo[lnum].leafnum].sector, dorg, p2, surfsector)) {
+                if (!Level->CastLightRay((texCheck && dl.radius > texCheckMinRadius), &Level->Subsectors[dlinfo[lnum].leafnum], dorg, p2, surfsubsector)) {
                   #ifdef VV_DEBUG_BMAP_TRACER
                   if (!Level->TraceLine(Trace, dorg, p2, SPF_NOBLOCKSIGHT)) continue;
                   GCon->Logf(NAME_Debug, "TRACEvsTRACE: org=(%g,%g,%g); dest=(%g,%g,%g); bmap=BLOCK; bsp=NON-BLOCK", dorg.x, dorg.y, dorg.z, p2.x, p2.y, p2.z);

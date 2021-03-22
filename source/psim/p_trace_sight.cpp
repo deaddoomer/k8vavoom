@@ -68,8 +68,8 @@ struct SightTraceInfo {
   // the following should be set
   TVec Start;
   TVec End;
-  subsector_t *StartSubSector;
-  subsector_t *EndSubSector;
+  const subsector_t *StartSubSector;
+  const subsector_t *EndSubSector;
   VLevel *Level;
   unsigned LineBlockMask;
   vuint32 PlaneNoBlockFlags;
@@ -92,7 +92,7 @@ struct SightTraceInfo {
     Plane.dist = 0.0f;
   }
 
-  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, subsector_t *sstart, subsector_t *send) {
+  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) {
     Level = alevel;
     Start = org;
     End = dest;
@@ -180,13 +180,6 @@ static bool SightCheckRegions (const sector_t *sec, const TVec point, const unsi
 //==========================================================================
 static bool SightCanPassOpening (const line_t *linedef, const TVec point, const unsigned flagmask) {
   if (linedef->sidenum[1] == -1 || !linedef->backsector) return false; // single sided line
-
-  // check polyobject (so polyobjects will be 3d)
-  polyobj_t *po = linedef->pobj();
-  if (po && po->pofloor.minz < po->poceiling.maxz && point.z >= po->pofloor.minz && point.z <= po->poceiling.maxz) {
-    // inside polyobject, cannot pass
-    return false;
-  }
 
   const sector_t *fsec = linedef->frontsector;
   const sector_t *bsec = linedef->backsector;
@@ -284,7 +277,7 @@ static bool SightCheckLineHit (SightTraceInfo &trace, const line_t *line, const 
     return true;
   }
 
-  GCon->Logf(NAME_Debug, "linehit: line #%d; frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
+  //GCon->Logf(NAME_Debug, "linehit: line #%d; frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
 
   // normal line (not a 3d pobj part)
   const int s1 = line->PointOnSide2(trace.Start);
@@ -394,9 +387,10 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
 //==========================================================================
 static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
   // it should never happen, but...
-  if (x < 0 || y < 0 || x >= trace.Level->BlockMapWidth || y >= trace.Level->BlockMapHeight) return false;
+  //if (x < 0 || y < 0 || x >= trace.Level->BlockMapWidth || y >= trace.Level->BlockMapHeight) return false;
 
   int offset = y*trace.Level->BlockMapWidth+x;
+
   for (polyblock_t *polyLink = trace.Level->PolyBlockMap[offset]; polyLink; polyLink = polyLink->next) {
     polyobj_t *pobj = polyLink->polyobj;
     if (pobj && pobj->validcount != validcount) {
@@ -604,8 +598,8 @@ static VVA_CHECKRESULT inline bool isNotInsideBM (const TVec &pos, const VLevel 
 //  if better sight is allowed, `orgdirRight` and `orgdirFwd` MUST be valid!
 //
 //==========================================================================
-bool VLevel::CastCanSee (subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
-                         const TVec &dest, float radius, float height, bool skipBaseRegion, subsector_t *DestSubSector,
+bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
+                         const TVec &dest, float radius, float height, bool skipBaseRegion, const subsector_t *DestSubSector,
                          bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors)
 {
   if (lengthSquared(org-dest) <= 2.0f*2.0f) return true; // arbitrary

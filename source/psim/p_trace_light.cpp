@@ -27,6 +27,9 @@
 #include "../server/sv_local.h"
 #include "p_trace_internal.h"
 
+//FIXME: this is almost the same code as sight checking
+//FIXME: factor out common parts
+
 
 //**************************************************************************
 //
@@ -76,8 +79,8 @@ struct LightTraceInfo {
   // the following should be set
   TVec Start;
   TVec End;
-  sector_t *StartSector;
-  sector_t *EndSector;
+  const subsector_t *StartSubSector;
+  const subsector_t *EndSubSector;
   VLevel *Level;
   bool textureCheck;
   // the following are working vars, and should not be set
@@ -86,41 +89,14 @@ struct LightTraceInfo {
   TVec LineStart;
   TVec LineEnd;
 
-  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, sector_t *sstart, sector_t *send) {
+  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) {
     Level = alevel;
     Start = org;
     End = dest;
-    StartSector = (sstart ?: alevel->PointInSubsector(org)->sector);
-    EndSector = (send ?: alevel->PointInSubsector(dest)->sector);
+    StartSubSector = (sstart ?: alevel->PointInSubsector(org));
+    EndSubSector = (send ?: alevel->PointInSubsector(dest));
   }
 };
-
-
-//==========================================================================
-//
-//  LightCheckPObjPlanes
-//
-//  returns `true` if no hit was detected
-//  sets `trace.LineEnd` if hit was detected
-//
-//==========================================================================
-/*
-static bool LightCheckPObjPlanes (SightTraceInfo &trace, polyobj_t *po) {
-  if (!po) return true;
-
-  PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
-
-  // implement proper blocking (so we could have transparent polyobjects)
-  //unsigned flagmask = trace.PlaneNoBlockFlags;
-  //flagmask &= SPF_FLAG_MASK;
-
-  phi.updatePObj(po->pofloor, po->pofloor.minz, po->poceiling.maxz);
-  phi.updatePObj(po->poceiling, po->pofloor.minz, po->poceiling.maxz);
-
-  if (phi.wasHit) trace.LineEnd = phi.getHitPoint();
-  return !phi.wasHit;
-}
-*/
 
 
 //==========================================================================
@@ -192,13 +168,6 @@ static bool LightCheckRegions (const sector_t *sec, const TVec point) {
 //
 //==========================================================================
 static bool LightCanPassOpening (const line_t *linedef, const TVec point) {
-  // check polyobject (so polyobjects will be 3d)
-  polyobj_t *po = linedef->pobj();
-  if (po && po->pofloor.minz < po->poceiling.maxz && point.z >= po->pofloor.minz && point.z <= po->poceiling.maxz) {
-    // inside polyobject, cannot pass
-    return false;
-  }
-
   if (linedef->sidenum[1] == -1 || !linedef->backsector) return false; // single sided line
 
   const sector_t *fsec = linedef->frontsector;
@@ -246,6 +215,42 @@ static bool LightCanPassOpening (const line_t *linedef, const TVec point) {
 //==========================================================================
 static bool LightCheck2SLinePass (LightTraceInfo &trace, const line_t *line, const TVec hitpoint) {
   vassert(line->flags&ML_TWOSIDED);
+
+  // check for 3d pobj
+  polyobj_t *po = line->pobj();
+  if (po && !po->posector) po = nullptr;
+  if (po) {
+    // this must be 2-sided line, no need to check
+    // check easy cases first (totally above or below)
+    const float pz0 = po->pofloor.minz;
+    const float pz1 = po->poceiling.maxz;
+
+    if (trace.LineStart.z > pz0 && hitpoint.z < pz1) {
+      // inside pobj, cannot see anything (because it is solid)
+      return false;
+    }
+
+    // below?
+    if (trace.LineStart.z <= pz0 && hitpoint.z <= pz0) return true; // cannot hit
+    // above?
+    if (trace.LineStart.z >= pz1 && hitpoint.z >= pz1) return true; // cannot hit
+
+    // possible hit
+    PlaneHitInfo phi(trace.LineStart, hitpoint);
+
+    phi.update(po->pofloor);
+    phi.update(po->poceiling);
+
+    trace.LineStart = trace.LineEnd;
+
+    if (phi.wasHit) {
+      trace.LineEnd = phi.getHitPoint();
+      return false;
+    }
+
+    // no hit
+    return true;
+  }
 
   //TVec hitpoint = trace.Start+frac*trace.Delta;
 
@@ -374,13 +379,6 @@ static bool LightCheckLine (LightTraceInfo &trace, line_t *ld) {
   const float num = ld->dist-DotProduct(trace.Start, ld->normal);
   const float frac = num/den;
 
-  // check opening here, so we can stop tracing if the ray cannot pass
-  /*
-  if (!LightCheck2SLinePass(trace, ld, frac)) {
-    return false; // stop checking
-  }
-  */
-
   // store the line for later flat plane intersection testing
   intercept_t *icept;
 
@@ -418,7 +416,11 @@ static bool LightCheckLine (LightTraceInfo &trace, line_t *ld) {
 //
 //==========================================================================
 static bool LightBlockLinesIterator (LightTraceInfo &trace, int x, int y) {
+  // it should never happen, but...
+  //if (x < 0 || y < 0 || x >= trace.Level->BlockMapWidth || y >= trace.Level->BlockMapHeight) return false;
+
   int offset = y*trace.Level->BlockMapWidth+x;
+
   for (polyblock_t *polyLink = trace.Level->PolyBlockMap[offset]; polyLink; polyLink = polyLink->next) {
     polyobj_t *pobj = polyLink->polyobj;
     if (pobj && pobj->validcount != validcount) {
@@ -461,7 +463,54 @@ static bool LightTraverseIntercepts (LightTraceInfo &trace) {
   }
 
   trace.LineEnd = trace.End;
-  return LightCheckPlanes(trace, trace.EndSector);
+  return LightCheckPlanes(trace, trace.EndSubSector->sector);
+}
+
+
+//==========================================================================
+//
+//  LightCheckStartingPObj
+//
+//  check if starting point is inside any 3d pobj
+//  we have to do this to check pobj planes first
+//
+//  returns `true` if no obstacle was hit
+//  sets `trace.LineEnd` if something was hit (and returns `false`)
+//
+//==========================================================================
+static bool LightCheckStartingPObj (LightTraceInfo &trace) {
+  // if starting point is inside a 3d pobj, check pobj plane hits
+  // if no hit, or enter time is more than first interception frac, ignore
+  // otherwise check if hit point is still inside a pobj
+  for (auto &&it : trace.StartSubSector->PObjFirst()) {
+    polyobj_t *po = it.pobj();
+    if (!po->posector) continue;
+    if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+    // starting point is inside 3d pobj inner sector, check pobj planes
+
+    PlaneHitInfo phi(trace.Start, trace.End);
+    // implement proper blocking (so we could have transparent polyobjects)
+    //unsigned flagmask = trace.PlaneNoBlockFlags;
+    //flagmask &= SPF_FLAG_MASK;
+
+    phi.update(po->pofloor);
+    phi.update(po->poceiling);
+
+    if (!phi.wasHit) continue; // no pobj plane hit
+
+    // check if hitpoint is still inside this pobj
+    const TVec hp = phi.getHitPoint();
+    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+
+    // yep, got it; we don't care about "best hit" here, only hit presence matters
+    trace.LineEnd = hp;
+    return false;
+  }
+
+  // no starting hit
+  return true;
 }
 
 
@@ -470,7 +519,7 @@ static bool LightTraverseIntercepts (LightTraceInfo &trace) {
 //  LightPathTraverse
 //
 //  traces a light ray from `trace.Start` to `trace.End`
-//  `trace.StartSector` and `trace.EndSector` must be set
+//  `trace.StartSubSector` and `trace.EndSubSector` must be set
 //
 //  returns `true` if no obstacle was hit
 //  sets `trace.LineEnd` if something was hit
@@ -489,8 +538,11 @@ static bool LightPathTraverse (LightTraceInfo &trace) {
     trace.LineEnd = trace.End;
     // point cannot hit anything!
     if (fabsf(trace.Delta.z) <= 1.0f) return false;
-    return LightCheckPlanes(trace, trace.StartSector);
+    if (!LightCheckStartingPObj(trace)) return false;
+    return LightCheckPlanes(trace, trace.StartSubSector->sector);
   }
+
+  if (!LightCheckStartingPObj(trace)) return false;
 
   if (walker.start(trace.Level, trace.Start.x, trace.Start.y, trace.End.x, trace.End.y)) {
     trace.Plane.SetPointDirXY(trace.Start, trace.Delta);
@@ -534,7 +586,7 @@ static VVA_CHECKRESULT inline bool isNotInsideBM (const TVec &pos, const VLevel 
 //  doesn't check pvs or reject
 //
 //==========================================================================
-bool VLevel::CastLightRay (bool textureCheck, sector_t *startSector, const TVec &org, const TVec &dest, sector_t *endSector) {
+bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector, const TVec &org, const TVec &dest, const subsector_t *endSubSector) {
   // if starting or ending point is out of blockmap bounds, don't bother tracing
   // we can get away with this, because nothing can see anything beyound the map extents
   if (isNotInsideBM(org, this)) return false;
@@ -543,7 +595,7 @@ bool VLevel::CastLightRay (bool textureCheck, sector_t *startSector, const TVec 
   if (lengthSquared(org-dest) <= 2.0f) return true;
 
   LightTraceInfo trace;
-  trace.setup(this, org, dest, startSector, endSector);
+  trace.setup(this, org, dest, startSubSector, endSubSector);
   trace.textureCheck = textureCheck;
   return LightPathTraverse(trace);
 }
@@ -557,9 +609,9 @@ bool VLevel::CastLightRay (bool textureCheck, sector_t *startSector, const TVec 
 IMPLEMENT_FUNCTION(VLevel, CastLightRay) {
   bool textureCheck;
   TVec org, dest;
-  VOptParamPtr<sector_t> startSector(nullptr);
-  VOptParamPtr<sector_t> endSector(nullptr);
-  vobjGetParamSelf(textureCheck, org, dest, startSector, endSector);
-  bool res = Self->CastLightRay(textureCheck, startSector, org, dest, endSector);
+  VOptParamPtr<subsector_t> startSubSector(nullptr);
+  VOptParamPtr<subsector_t> endSubSector(nullptr);
+  vobjGetParamSelf(textureCheck, org, dest, startSubSector, endSubSector);
+  bool res = Self->CastLightRay(textureCheck, startSubSector, org, dest, endSubSector);
   RET_BOOL(res);
 }

@@ -998,7 +998,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
         // trace light that needs shadows
         const int leafnum = dlinfo[i].leafnum;
         if (dynclip && !(dl.flags&dlight_t::NoShadow) && leafnum != snum && dlinfo[i].isNeedTrace()) {
-          if (!RadiusCastRay((texCheck && dl.radius > texCheckRadus), sub->sector, p, (leafnum >= 0 ? Level->Subsectors[leafnum].sector : nullptr), dl.origin, radius)) continue;
+          if (!RadiusCastRay((texCheck && dl.radius > texCheckRadus), sub, p, (leafnum >= 0 ? &Level->Subsectors[leafnum] : nullptr), dl.origin, radius)) continue;
         }
         //!if (dl.type&DLTYPE_Subtractive) add = -add;
         l += add;
@@ -1046,7 +1046,7 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
           if (add <= 1.0f) continue;
         }
         if (dynclip && stl->leafnum != snum) {
-          if (!RadiusCastRay(texCheck, sub->sector, p, (stl->leafnum >= 0 ? Level->Subsectors[stl->leafnum].sector : nullptr), stl->origin, radius)) continue;
+          if (!RadiusCastRay(texCheck, sub, p, (stl->leafnum >= 0 ? &Level->Subsectors[stl->leafnum] : nullptr), stl->origin, radius)) continue;
         }
         l += add;
         lr += add*((stl->color>>16)&255)/255.0f;
@@ -1075,7 +1075,7 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
           if (add <= 1.0f) continue;
         }
         if (!isowned && r_dynamic_clip) {
-          if (!RadiusCastRay(sub->sector, p, stl->origin, radius)) continue;
+          if (!RadiusCastRay(sub, p, stl->origin, radius)) continue;
         }
         l += add;
         lr += add*((stl->color>>16)&255)/255.0f;

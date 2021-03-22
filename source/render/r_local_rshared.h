@@ -718,7 +718,7 @@ protected:
   void SetupRIThingLighting (VEntity *ent, RenderStyleInfo &ri, bool asAmbient, bool allowBM);
 
   // used in sprite lighting checks
-  bool RadiusCastRay (bool textureCheck, sector_t *sector, const TVec &org, sector_t *destsector, const TVec &dest, float radius);
+  bool RadiusCastRay (bool textureCheck, const subsector_t *subsector, const TVec &org, const subsector_t *destsubsector, const TVec &dest, float radius);
 
 protected:
   // use drawer's vieworg, so it can be called only when rendering a scene

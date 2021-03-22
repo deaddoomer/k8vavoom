@@ -326,7 +326,7 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
 //  VRenderLevelShared::RadiusCastRay
 //
 //==========================================================================
-bool VRenderLevelShared::RadiusCastRay (bool textureCheck, sector_t *sector, const TVec &org, sector_t *destsector, const TVec &dest, float radius) {
+bool VRenderLevelShared::RadiusCastRay (bool textureCheck, const subsector_t *subsector, const TVec &org, const subsector_t *destsubsector, const TVec &dest, float radius) {
 #if 0
   // BSP tracing
   float dsq = length2DSquared(org-dest);
@@ -359,6 +359,6 @@ bool VRenderLevelShared::RadiusCastRay (bool textureCheck, sector_t *sector, con
   return false;
 #else
   // blockmap tracing
-  return Level->CastLightRay(textureCheck, sector, org, dest, destsector);
+  return Level->CastLightRay(textureCheck, subsector, org, dest, destsubsector);
 #endif
 }
