@@ -25,6 +25,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
+#include "p_trace_internal.h"
+
 
 static VCvarB dbg_bsp_trace_strict_flats("dbg_bsp_trace_strict_flats", false, "use strict checks for flats?", /*CVAR_Archive|*/CVAR_PreInit);
 
@@ -127,9 +129,7 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
   #endif
 
   polyobj_t *po = line->pobj();
-  if (po) {
-    if (backside) return true;
-  }
+  if (po && !po->posector) po = nullptr;
 
   // crosses a two sided line
   //sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
@@ -142,28 +142,74 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
   const float num = line->dist-DotProduct(trace.Start, line->normal);
   const float frac = num/den;
   TVec hitpoint = trace.Start+frac*trace.Delta;
+  trace.LineEnd = hitpoint;
 
   if (po) {
-    if (!line->backsector) {
-      trace.LineEnd = hitpoint;
+    const float pz0 = po->pofloor.minz;
+    const float pz1 = po->poceiling.maxz;
+
+    // fully under?
+    if (trace.Start.z <= pz0 && trace.End.z <= pz0) return true;
+    // fully over?
+    if (trace.Start.z >= pz1 && trace.End.z >= pz1) return true;
+
+    // easy case: hit pobj?
+    if (hitpoint.z >= pz0 && hitpoint.z <= pz1) {
       trace.LineStart = trace.LineEnd;
-      // one-sided polyobject line, blocks everything
-      trace.HitPlaneNormal = (backside ? -line->normal : line->normal);
+      trace.HitPlaneNormal = line->normal;
       trace.HitPlane = *line;
       trace.HitLine = line;
       return false;
     }
 
-    TVec outHit(0.0f, 0.0f, 0.0f), outNorm(0.0f, 0.0f, 0.0f);
-    if (!VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.LineEnd, trace.PlaneNoBlockFlags, &outHit, &outNorm, nullptr, &trace.HitPlane)) {
-      trace.LineEnd = hitpoint;
-      return false;
+    // check polyobject planes
+
+    float besthit = FLT_MAX;
+    int hitnum = -1;
+
+    for (int pnn = 0; pnn < 2; ++pnn) {
+      const float d1 = (pnn ? po->poceiling.PointDistance(trace.LineStart) : po->pofloor.PointDistance(trace.LineStart));
+      if (d1 < 0.0f) continue; // don't shoot back side
+
+      const float d2 = (pnn ? po->poceiling.PointDistance(trace.End) : po->pofloor.PointDistance(trace.End));
+      if (d2 >= 0.0f) continue; // didn't hit plane
+
+      // d1/(d1-d2) -- from start
+      // d2/(d2-d1) -- from end
+
+      const float time = d1/(d1-d2);
+      if (time < 0.0f || time > 1.0f) continue; // hit time is invalid
+
+      if (hitnum < 0 || time < besthit) {
+        hitnum = pnn;
+        besthit = time;
+      }
     }
 
-    if (hitpoint.z <= po->pofloor.minz || hitpoint.z >= po->poceiling.maxz) return true;
-  }
+    if (hitnum < 0) return true; // no hit
 
-  trace.LineEnd = hitpoint;
+    // ok, we have a hit, check if it is further than hitpoint
+    const TVec phit = trace.LineStart+(trace.End-trace.LineStart)*besthit;
+
+    //GCon->Logf(NAME_Debug, "pobj #%d: pdist=%g; hdist=%g", po->tag, (phit-trace.Start).lengthSquared(), (hitpoint-trace.Start).lengthSquared());
+
+    if ((phit-trace.Start).lengthSquared() > (hitpoint-trace.Start).lengthSquared()) return true; // further, no hit
+
+    // we have a winner!
+    trace.LineEnd = phit;
+    trace.LineStart = trace.LineEnd;
+    if (hitnum == 0) {
+      // floor
+      trace.HitPlaneNormal = po->pofloor.normal;
+      trace.HitPlane = po->pofloor;
+    } else {
+      // ceiling
+      trace.HitPlaneNormal = po->poceiling.normal;
+      trace.HitPlane = po->poceiling;
+    }
+    trace.HitLine = nullptr;
+    return false;
+  }
 
   if (front) {
     if (!CheckPlanes(trace, front)) return false;
@@ -248,8 +294,6 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
 //
 //==========================================================================
 bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
-  if (bspnum == -1) return CrossSubsector(trace, 0); // just in case
-
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     const node_t *bsp = &Nodes[bspnum];
     // decide which side the start point is on
@@ -270,6 +314,71 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
   } else {
     return CrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
   }
+}
+
+
+//==========================================================================
+//
+//  CheckStartingPObj
+//
+//  check if starting point is inside any 3d pobj
+//  we have to do this to check pobj planes first
+//
+//  returns `true` if no obstacle was hit
+//  sets `trace.LineEnd` if something was hit (and returns `false`)
+//
+//==========================================================================
+static bool CheckStartingPObj (VLevel *Level, linetrace_t &trace) {
+  // check if the map has 3d pobjs
+  // as we need to determine starting subsector via BSP, try to avoid it if it is not necessary
+  if (Level->NumPolyObjs == 0) return true;
+  bool has3dPObj = false;
+  polyobj_t **polist = Level->PolyObjs;
+  for (int f = Level->NumPolyObjs; f--; ++polist) {
+    if ((*polist)->posector) {
+      has3dPObj = true;
+      break;
+    }
+  }
+  if (!has3dPObj) return true;
+
+  subsector_t *sub = Level->PointInSubsector(trace.Start);
+
+  //FIXME: check subsector lines, if they are closer, we should go with normal tracing
+  //FIXME: without this, hit point can be invalid (too far away)
+
+  // if starting point is inside a 3d pobj, check pobj plane hits
+  for (auto &&it : sub->PObjFirst()) {
+    polyobj_t *po = it.pobj();
+    if (!po->posector) continue;
+    if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
+    if (!Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+    // starting point is inside 3d pobj inner sector, check pobj planes
+
+    PlaneHitInfo phi(trace.Start, trace.End);
+    // implement proper blocking (so we could have transparent polyobjects)
+    //unsigned flagmask = trace.PlaneNoBlockFlags;
+    //flagmask &= SPF_FLAG_MASK;
+
+    phi.update(po->pofloor);
+    phi.update(po->poceiling);
+
+    if (!phi.wasHit) continue; // no pobj plane hit
+
+    // check if hitpoint is still inside this pobj
+    const TVec hp = phi.getHitPoint();
+    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
+    if (!Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+
+    // yep, got it
+
+    trace.EndSubsector = sub;
+    trace.LineEnd = hp;
+    return false;
+  }
+
+  // no starting hit
+  return true;
 }
 
 
@@ -313,12 +422,14 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
       trace.LineEnd = End;
       return true;
     }
+    if (!CheckStartingPObj(this, trace)) return false;
     return CheckPlanes(trace, trace.EndSubsector->sector);
   } else {
     IncrementValidCount();
     trace.LinePlane.SetPointDirXY(Start, trace.Delta);
     // the head node is the last node output
     if (NumSubsectors > 1) {
+      if (!CheckStartingPObj(this, trace)) return false;
       if (CrossBSPNode(trace, NumNodes-1)) {
         trace.LineEnd = End;
         // end subsector is known
@@ -326,6 +437,7 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
         return CheckPlanes(trace, trace.EndSubsector->sector);
       }
     } else if (NumSubsectors == 1) {
+      if (!CheckStartingPObj(this, trace)) return false;
       if (CrossSubsector(trace, 0)) {
         trace.LineEnd = End;
         // end subsector is known
