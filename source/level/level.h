@@ -781,10 +781,18 @@ public:
   // set `SPF_IGNORE_FAKE_FLOORS` is flagmask to ignore fake floors
   // set `SPF_IGNORE_BASE_REGION` is flagmask to ignore base region
   static bool CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, unsigned flagmask,
-                               TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane);
+                               TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane, float *outTime=nullptr);
 
-  static bool CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec lineend, unsigned flagmask,
-                                   TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane);
+  // returns hit time
+  // negative means "no hit"
+  static float CheckPObjPassPlanes (const polyobj_t *po, const TVec &linestart, const TVec &lineend,
+                                    TVec *outHitPoint=nullptr, TVec *outHitNormal=nullptr, TPlane *outHitPlane=nullptr);
+
+  // returns hit time
+  // negative means "no hit"
+  float CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, const subsector_t *stsub=nullptr,
+                              TVec *outHitPoint=nullptr, TVec *outHitNormal=nullptr, TPlane *outHitPlane=nullptr,
+                              polyobj_t **po=nullptr);
 
 public:
   // returns `false` if seg is out of subsector
@@ -1302,6 +1310,8 @@ private:
   DECLARE_FUNCTION(GetUDMFSectorFloat)
   DECLARE_FUNCTION(GetUDMFSideInt)
   DECLARE_FUNCTION(GetUDMFSideFloat)
+
+  DECLARE_FUNCTION(CheckPObjPlanesPoint)
 };
 
 

@@ -139,27 +139,37 @@ class VPathTraverse : public VScriptIterator {
 private:
   TArray<intercept_t> Intercepts;
 
+  VLevel *Level;
   TPlane trace_plane;
   TVec trace_org;
   TVec trace_dest;
   TVec trace_delta;
   TVec trace_dir;
+  TVec trace_org3d;
+  TVec trace_dir3d; // normalised
   float trace_len;
-  bool seen3DSlopes;
-  bool seenThing;
+  float trace_len3d;
+  bool compat_trace;
+  //bool seen3DSlopes;
+  //bool seenThing;
+  float max_frac;
+  bool was_block_line;
 
   int Count;
   intercept_t *In;
   intercept_t **InPtr;
 
 public:
-  VPathTraverse (VThinker *Self, intercept_t **AInPtr, float InX1, float InY1, float x2, float y2, int flags);
+  VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags);
   virtual bool GetNext () override;
 
 private:
-  void Init (VThinker *Self, float InX1, float InY1, float x2, float y2, int flags);
-  bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool EarlyOut, bool wantThings);
-  void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
+  void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags);
+  void AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool doadd, bool doopening);
+  void AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool doopening);
   intercept_t &NewIntercept (const float frac);
   void RemoveInterceptsAfter (const float frac); // >=
+
+  // calculates proper thing hit and so on
+  void AddProperThingHit (VEntity *th, const float frac, bool doopening);
 };

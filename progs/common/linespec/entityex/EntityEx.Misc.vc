@@ -3734,7 +3734,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   // check things
   float x2 = x1+UseThingRange*useDir.x;
   float y2 = y1+UseThingRange*useDir.y;
-  foreach PathTraverse(in, x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS/*|PT_EARLYOUT*/) {
+  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOPLANES|PT_NOOPENS) {
     if (!in->bIsALine) {
       // check height
       if (Origin.z >= in->Thing.Origin.z+in->Thing.Height ||
@@ -3780,9 +3780,9 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   bool FoundLine = false;
   bool buttonSuccess;
   int useType, useSide;
-  foreach PathTraverse(in, x1, y1, x2, y2, PT_ADDLINES) {
+  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_NOPLANES|PT_NOOPENS) {
     line_t *line = in->line;
-    assert(line);
+    if (!line) continue;
 
     if (!line->special || (!(line->SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack)))) {
       TVec hitPoint = Origin+(UseRange*in->frac)*useDir;

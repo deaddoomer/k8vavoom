@@ -229,13 +229,15 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
   TVec lineStart = shootOrigin;
-  foreach PathTraverse(in, org.x, org.y, dst.x, dst.y, PT_ADDLINES/*|PT_EARLYOUT*/) {
+  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_NOPLANES|PT_NOOPENS) {
+    if (in->bIsAPlane) continue; // just in case
+
     if (in->bIsALine) {
       li = in->line;
       hit_point = shootOrigin+(distance*in->frac)*dir;
 
       // check if pobj line was hit
-      if (li->pobject && (li->flags&ML_TWOSIDED)) {
+      if (li->pobject /*&& (li->flags&ML_TWOSIDED)*/) {
         if (hit_point.z <= li->pobject->pofloor.minz || hit_point.z >= li->pobject->poceiling.maxz) continue;
       }
 
@@ -247,17 +249,21 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
         sec = li->frontsector;
       }
 
-      TVec lineEnd = hit_point;
+      if (!li->pobject) {
+        TVec lineEnd = hit_point;
 
-      // check for shooting floor or ceiling
-      if (!ShootCheckPlanes(sec, li, lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
-        // process floor and ceiling here
-        tr->hit = outHitPoint;
-        tr->didhit = true;
-        return false;
+        // check for shooting floor or ceiling
+        if (!ShootCheckPlanes(sec, lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
+          // process floor and ceiling here
+          tr->hit = outHitPoint;
+          tr->didhit = true;
+          return false;
+        }
+
+        lineStart = lineEnd;
+      } else {
+        lineStart = hit_point;
       }
-
-      lineStart = lineEnd;
 
       if (Level.CompatTrace && li->frontsector == li->backsector) {
         if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
@@ -331,7 +337,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   }
 
   TVec lineEnd = dst;
-  if (!ShootCheckPlanes(XLevel.PointInSector(dst), line:default, lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
+  if (!ShootCheckPlanes(XLevel.PointInSector(dst), lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
     // process floor and ceiling here
     tr->hit = outHitPoint;
     tr->didhit = true;

@@ -2026,8 +2026,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
   } else {
     // old slide code
     intercept_t *in;
-    for (VPathTraverse It(this, &in, x, y, x+SlideDir.x, y+SlideDir.y, PT_ADDLINES); It.GetNext(); ) {
-      if (!(in->Flags&intercept_t::IF_IsALine)) Host_Error("PTR_SlideTraverse: not a line?");
+    for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOPLANES|PT_NOOPENS); It.GetNext(); ) {
+      if (!(in->Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_SlideTraverse: not a line?");*/ }
 
       line_t *li = in->line;
 
@@ -2353,9 +2353,12 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     intercept_t *in;
     float BestSlideFrac = 99999.0f;
 
+    //FIXME: use code from `SlidePathTraverse()` here!
     //GCon->Logf(NAME_Debug, "%s:%u:xxx: vel=(%g,%g,%g); dt=%g; slide=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f, DeltaTime, SlideDir.x, SlideDir.y, SlideDir.z);
-    for (VPathTraverse It(this, &in, SlideOrg.x, SlideOrg.y, SlideOrg.x+SlideDir.x, SlideOrg.y+SlideDir.y, PT_ADDLINES); It.GetNext(); ) {
-      if (!(in->Flags&intercept_t::IF_IsALine)) Host_Error("PTR_BounceTraverse: not a line?");
+    //for (VPathTraverse It(this, &in, SlideOrg.x, SlideOrg.y, SlideOrg.x+SlideDir.x, SlideOrg.y+SlideDir.y, PT_ADDLINES); It.GetNext(); )
+    for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOPLANES|PT_NOOPENS); It.GetNext(); )
+    {
+      if (!(in->Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_BounceTraverse: not a line?");*/ }
       line_t *li = in->line;
       //if (in->frac > 1.0f) continue;
 

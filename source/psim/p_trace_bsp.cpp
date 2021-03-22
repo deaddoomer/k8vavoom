@@ -163,34 +163,12 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
     }
 
     // check polyobject planes
-
-    float besthit = FLT_MAX;
-    int hitnum = -1;
-
-    for (int pnn = 0; pnn < 2; ++pnn) {
-      const float d1 = (pnn ? po->poceiling.PointDistance(trace.LineStart) : po->pofloor.PointDistance(trace.LineStart));
-      if (d1 < 0.0f) continue; // don't shoot back side
-
-      const float d2 = (pnn ? po->poceiling.PointDistance(trace.End) : po->pofloor.PointDistance(trace.End));
-      if (d2 >= 0.0f) continue; // didn't hit plane
-
-      // d1/(d1-d2) -- from start
-      // d2/(d2-d1) -- from end
-
-      const float time = d1/(d1-d2);
-      if (time < 0.0f || time > 1.0f) continue; // hit time is invalid
-
-      if (hitnum < 0 || time < besthit) {
-        hitnum = pnn;
-        besthit = time;
-      }
-    }
-
-    if (hitnum < 0) return true; // no hit
+    TVec phit, pnorm;
+    TPlane pplane;
+    const float ptime = VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.End, &phit, &pnorm, &pplane);
+    if (ptime < 0.0f) return true; // no hit
 
     // ok, we have a hit, check if it is further than hitpoint
-    const TVec phit = trace.LineStart+(trace.End-trace.LineStart)*besthit;
-
     //GCon->Logf(NAME_Debug, "pobj #%d: pdist=%g; hdist=%g", po->tag, (phit-trace.Start).lengthSquared(), (hitpoint-trace.Start).lengthSquared());
 
     if ((phit-trace.Start).lengthSquared() > (hitpoint-trace.Start).lengthSquared()) return true; // further, no hit
@@ -198,15 +176,8 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
     // we have a winner!
     trace.LineEnd = phit;
     trace.LineStart = trace.LineEnd;
-    if (hitnum == 0) {
-      // floor
-      trace.HitPlaneNormal = po->pofloor.normal;
-      trace.HitPlane = po->pofloor;
-    } else {
-      // ceiling
-      trace.HitPlaneNormal = po->poceiling.normal;
-      trace.HitPlane = po->poceiling;
-    }
+    trace.HitPlaneNormal = pnorm;
+    trace.HitPlane = pplane;
     trace.HitLine = nullptr;
     return false;
   }
@@ -329,56 +300,12 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
 //
 //==========================================================================
 static bool CheckStartingPObj (VLevel *Level, linetrace_t &trace) {
-  // check if the map has 3d pobjs
-  // as we need to determine starting subsector via BSP, try to avoid it if it is not necessary
-  if (Level->NumPolyObjs == 0) return true;
-  bool has3dPObj = false;
-  polyobj_t **polist = Level->PolyObjs;
-  for (int f = Level->NumPolyObjs; f--; ++polist) {
-    if ((*polist)->posector) {
-      has3dPObj = true;
-      break;
-    }
-  }
-  if (!has3dPObj) return true;
-
-  subsector_t *sub = Level->PointInSubsector(trace.Start);
-
-  //FIXME: check subsector lines, if they are closer, we should go with normal tracing
-  //FIXME: without this, hit point can be invalid (too far away)
-
-  // if starting point is inside a 3d pobj, check pobj plane hits
-  for (auto &&it : sub->PObjFirst()) {
-    polyobj_t *po = it.pobj();
-    if (!po->posector) continue;
-    if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
-    if (!Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
-    // starting point is inside 3d pobj inner sector, check pobj planes
-
-    PlaneHitInfo phi(trace.Start, trace.End);
-    // implement proper blocking (so we could have transparent polyobjects)
-    //unsigned flagmask = trace.PlaneNoBlockFlags;
-    //flagmask &= SPF_FLAG_MASK;
-
-    phi.update(po->pofloor);
-    phi.update(po->poceiling);
-
-    if (!phi.wasHit) continue; // no pobj plane hit
-
-    // check if hitpoint is still inside this pobj
-    const TVec hp = phi.getHitPoint();
-    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
-    if (!Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
-
-    // yep, got it
-
-    trace.EndSubsector = sub;
-    trace.LineEnd = hp;
-    return false;
-  }
-
-  // no starting hit
-  return true;
+  TVec hp;
+  const float frc = Level->CheckPObjPlanesPoint(trace.Start, trace.End, nullptr, &hp, nullptr, nullptr);
+  if (frc < 0.0f) return true;
+  trace.EndSubsector = Level->PointInSubsector(trace.Start);
+  trace.LineEnd = hp;
+  return false;
 }
 
 

@@ -320,6 +320,11 @@ native final int GetPolyobjMirror (int poly);
 native final bool MovePolyobj (int num, float x, float y, optional float z, optional bool forced);
 native final bool RotatePolyobj (int num, float angle);
 
+// returns hit time
+// negative means "no hit"
+native final float CheckPObjPlanesPoint (const TVec linestart, const TVec lineend,
+                                         optional out TVec outHitPoint, optional out TVec outHitNormal);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // ACS functions

@@ -218,55 +218,155 @@ bool VLevel::CheckPlanePass (const TSecPlaneRef &plane, const TVec &linestart, c
 //
 //  VLevel::CheckPObjPassPlanes
 //
-//  returns `true` if no hit was detected
+//  returns hit time
+//  negative means "no hit"
 //
 //==========================================================================
-bool VLevel::CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec lineend, unsigned flagmask,
-                                  TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane)
+float VLevel::CheckPObjPassPlanes (const polyobj_t *po, const TVec &linestart, const TVec &lineend,
+                                   TVec *outHitPoint, TVec *outHitNormal, TPlane *outHitPlane)
 {
-  if (!po) return true;
+  if (!po) return -1.0f;
 
   // check polyobject planes
-  TVec chp;
-  float bestdist = 0.0f;
-  bool isSky;
-  bool didHit = false;
+  float bestfrac = FLT_MAX;
+  const sec_plane_t *hpl = nullptr;
 
   for (unsigned f = 0; f < 2; ++f) {
     const sec_plane_t *spl = (f ? &po->poceiling : &po->pofloor);
-    if (!spl->isSlope()) {
-      TSecPlaneRef pp((sec_plane_t *)spl, false); // sorry
-      //GCon->Logf(NAME_Debug, "pobj #%d; f=%u; d1=%g; d2=%g", po->tag, f, pp.PointDistance(linestart), pp.PointDistance(lineend));
-      if (!CheckPlanePass(pp, linestart, lineend, chp, isSky)) {
-        const float dist = (chp-linestart).lengthSquared();
-        //GCon->Logf(NAME_Debug, "pobj #%d; f=%u;   HIT! dist=%g; bestdist=%g; didHit=%d", po->tag, f, dist, bestdist, (int)didHit);
-        if (!didHit || dist < bestdist) {
-          didHit = true;
-          bestdist = dist;
-          // hit floor or ceiling
-          if (outHitPoint) *outHitPoint = chp;
-          if (outHitNormal) *outHitNormal = spl->normal;
-          if (outIsSky) *outIsSky = false;
-          if (outHitPlane) *outHitPlane = *spl;
-        }
-      }
+
+    const float d1 = spl->PointDistance(linestart);
+    if (d1 < 0.0f) continue; // don't shoot back side
+
+    const float d2 = spl->PointDistance(lineend);
+    if (d2 >= 0.0f) continue; // didn't hit plane
+
+    //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
+    //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
+
+    const float frac = d1/(d1-d2); // [0..1], from start
+    if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) continue; // just in case
+
+    if (!hpl || frac < bestfrac) {
+      bestfrac = frac;
+      hpl = spl;
     }
   }
 
-  return !didHit;
+  if (!hpl) return -1.0f; // no hit
+
+  if (outHitPoint) *outHitPoint = linestart+(lineend-linestart)*bestfrac;
+  if (outHitNormal) *outHitNormal = hpl->normal;
+  if (outHitPlane) *outHitPlane = *hpl;
+
+  return bestfrac; // hit detected
+}
+
+
+//==========================================================================
+//
+//  VLevel::CheckPObjPlanesPoint
+//
+//  returns hit time
+//  negative means "no hit"
+//
+//==========================================================================
+float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, const subsector_t *stsub,
+                                    TVec *outHitPoint, TVec *outHitNormal, TPlane *outHitPlane, polyobj_t **outpo)
+{
+  // check if the map has 3d pobjs
+  // as we need to determine starting subsector via BSP, try to avoid it if it is not necessary
+  if (NumPolyObjs == 0) return -1.0f;
+  bool has3dPObj = false;
+  polyobj_t **polist = PolyObjs;
+  for (int f = NumPolyObjs; f--; ++polist) {
+    if ((*polist)->posector) {
+      has3dPObj = true;
+      break;
+    }
+  }
+  if (!has3dPObj) return -1.0f;
+
+  const subsector_t *sub = (stsub ?: PointInSubsector(linestart));
+
+  float besttime = FLT_MAX;
+  bool didHit = false;
+  TVec besthp = TVec::ZeroVector, bestnorm = TVec::ZeroVector;
+  TPlane bestplane;
+  polyobj_t *bestpo = nullptr;
+
+  TVec curhp, curnorm;
+  TPlane curplane;
+
+  // if starting point is inside a 3d pobj, check pobj plane hits
+  for (auto &&it : sub->PObjFirst()) {
+    polyobj_t *po = it.pobj();
+    if (!po->posector) continue;
+    if (!IsPointInside2DBBox(linestart.x, linestart.y, po->bbox2d)) continue;
+    if (!IsPointInsideSector2D(po->posector, linestart.x, linestart.y)) continue;
+    // starting point is inside 3d pobj inner sector, check pobj planes
+
+    const float frc = CheckPObjPassPlanes(po, linestart, lineend, &curhp, &curnorm, &curplane);
+    if (frc < 0.0f || frc > besttime) continue;
+
+    // check if hitpoint is still inside this pobj
+    if (!IsPointInside2DBBox(curhp.x, curhp.y, po->bbox2d)) continue;
+    if (!IsPointInsideSector2D(po->posector, curhp.x, curhp.y)) continue;
+
+    // yep, got it
+    didHit = true;
+    besttime = frc;
+    besthp = curhp;
+    bestnorm = curnorm;
+    bestplane = curplane;
+    bestpo = po;
+  }
+
+  if (!didHit) return -1.0f;
+
+  if (outHitPoint) *outHitPoint = besthp;
+  if (outHitNormal) *outHitNormal = bestnorm;
+  if (outHitPlane) *outHitPlane = bestplane;
+  if (outpo) *outpo = bestpo;
+  return besttime;
+}
+
+
+//==========================================================================
+//
+//  CheckPlanePassEx
+//
+//  WARNING: `currhit` should not be the same as `lineend`!
+//
+//  returns hit time (negative for no hit)
+//
+//==========================================================================
+static float CheckPlanePassEx (const TSecPlaneRef &plane, const TVec &linestart, const TVec &lineend, bool &isSky) {
+  const float d1 = plane.PointDistance(linestart);
+  if (d1 < 0.0f) return -1.0f; // don't shoot back side
+
+  const float d2 = plane.PointDistance(lineend);
+  if (d2 >= 0.0f) return -1.0f; // didn't hit plane
+
+  //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
+  //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
+
+  const float frac = d1/(d1-d2); // [0..1], from start
+  if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
+
+  isSky = (plane.splane->pic == skyflatnum);
+  //currhit = linestart+(lineend-linestart)*frac;
+  return frac;
 }
 
 
 #define UPDATE_PLANE_HIT(plane_)  do { \
-  if (!CheckPlanePass((plane_), linestart, lineend, currhit, isSky)) { \
-    const float dist = (currhit-linestart).lengthSquared(); \
-    if (!wasHit || dist < besthdist) { \
-      besthit = currhit; \
-      bestIsSky = isSky; \
-      besthdist = dist; \
-      bestNormal = (plane_).GetNormal(); \
-      if (outHitPlane) bestHitPlane = (plane_).GetPlane(); \
-    } \
+  const float pfrc = CheckPlanePassEx((plane_), linestart, lineend, isSky); \
+  if (pfrc >= 0.0f && (!wasHit || pfrc < besthtime)) { \
+    /*besthit = currhit;*/ \
+    bestIsSky = isSky; \
+    besthtime = pfrc; \
+    bestNormal = (plane_).GetNormal(); \
+    if (outHitPlane) bestHitPlane = (plane_).GetPlane(); \
     wasHit = true; \
   } \
 } while (0)
@@ -287,21 +387,17 @@ bool VLevel::CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec line
 //
 //==========================================================================
 bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, unsigned flagmask,
-                              TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane)
+                              TVec *outHitPoint, TVec *outHitNormal, bool *outIsSky, TPlane *outHitPlane, float *outTime)
 {
   if (!sector) return true;
   if (sector->isAnyPObj()) return true;
 
-  TVec besthit = lineend;
+  /*TVec besthit = lineend;*/
   TVec bestNormal(0.0f, 0.0f, 0.0f);
   bool bestIsSky = false;
-  TVec currhit(0.0f, 0.0f, 0.0f);
+  /*TVec currhit(0.0f, 0.0f, 0.0f);*/
   bool wasHit = false;
-  #ifdef INFINITY
-  float besthdist = INFINITY;
-  #else
-  float besthdist = 9999999.0f;
-  #endif
+  float besthtime = FLT_MAX;
   bool isSky = false;
   TPlane bestHitPlane;
 
@@ -353,10 +449,11 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
 
   if (wasHit) {
     // hit floor or ceiling
-    if (outHitPoint) *outHitPoint = besthit;
+    if (outHitPoint) *outHitPoint = linestart+(lineend-linestart)*besthtime;
     if (outHitNormal) *outHitNormal = bestNormal;
     if (outIsSky) *outIsSky = bestIsSky;
     if (outHitPlane) *outHitPlane = bestHitPlane;
+    if (outTime) *outTime = besthtime;
     return false;
   } else {
     return true;
@@ -435,4 +532,15 @@ IMPLEMENT_FUNCTION(VLevel, CD_SweepLinedefAABB) {
   if (!hitType.specified) hitType = nullptr;
   if (!hitplanenum.specified) hitplanenum = nullptr;
   RET_FLOAT(SweepLinedefAABB(ld, vstart, vend, bmin, bmax, hitPlane, contactPoint, hitType, hitplanenum));
+}
+
+
+//native finalt float CheckPObjPlanesPoint (const TVec linestart, const TVec lineend,
+//                                          optional out TVec outHitPoint, optional out TVec outHitNormal);
+IMPLEMENT_FUNCTION(VLevel, CheckPObjPlanesPoint) {
+  TVec linestart, lineend;
+  VOptParamPtr<TVec> outHitPoint;
+  VOptParamPtr<TVec> outHitNormal;
+  vobjGetParamSelf(linestart, lineend, outHitPoint, outHitNormal);
+  RET_FLOAT(Self->CheckPObjPlanesPoint(linestart, lineend, nullptr, outHitPoint, outHitNormal, nullptr, nullptr));
 }

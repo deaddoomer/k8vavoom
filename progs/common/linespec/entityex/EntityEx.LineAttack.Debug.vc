@@ -1,0 +1,277 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+
+
+//==========================================================================
+//
+//  DebugCheckMidTex
+//
+//==========================================================================
+final void DebugCheckMidTex () {
+  TVec aimDir;
+  //Aim(aimDir, 16.0*64.0, default, /*noAAim*/true);
+  AngleVector(Angles, out aimDir);
+
+  auto shootOrigin = Origin;
+  shootOrigin.z += CalculateLineAttackZOfs();
+
+  trsplat_t tr;
+  TraceLineEx(shootOrigin, aimDir, 8192, allowEntities:false, &tr, stopat3dmidtex:true, nozofs:true);
+  if (tr.didhit && tr.line) {
+    float top, bot;
+    bool ok = P_GetMidTexturePosition(tr.line, tr.side, out top, out bot);
+    printdebug("DebugCheckMidTex(%B): hitpoint=%s; top=%s; bot=%s; flags=0x%08x", ok, tr.hit, top, bot, (tr.line ? tr.line->flags : 0));
+    if (tr.line) {
+      //tr.line.alpha = 1.0;
+      if (tr.line.frontsector && tr.line.backsector /*&&
+          tr.line.frontsector.floor.normal.z == 1 && tr.line.frontsector.ceiling.normal.z == -1 &&
+          tr.line.backsector.floor.normal.z == 1 && tr.line.backsector.ceiling.normal.z == -1*/)
+      {
+        //printdebug("linedef #%d", tr.line-&XLevel.Lines[0]);
+        float ffz1 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v1);
+        float ffz2 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v2);
+        //if (ffz1 != ffz2) Error("OOPS(front floor)");
+        float fcz1 = tr.line.frontsector.ceiling.GetPointZClamped(*tr.line.v1);
+        float fcz2 = tr.line.frontsector.ceiling.GetPointZClamped(*tr.line.v2);
+        //if (fcz1 != fcz2) Error("OOPS(front ceiling)");
+        float bfz1 = tr.line.backsector.floor.GetPointZClamped(*tr.line.v1);
+        float bfz2 = tr.line.backsector.floor.GetPointZClamped(*tr.line.v2);
+        //if (bfz1 != bfz2) Error("OOPS(back floor)");
+        float bcz1 = tr.line.backsector.ceiling.GetPointZClamped(*tr.line.v1);
+        float bcz2 = tr.line.backsector.ceiling.GetPointZClamped(*tr.line.v2);
+        //if (bcz1 != bcz2) Error("OOPS(back ceiling)");
+        printdebug("linedef %d: (f/b secs=%d/%d); ffz=(%f:%f); fcz=(%f:%f); bfz=(%f:%f); bcz=(%f:%f); alpha=%f; special=%s<%s>; arg=(%s,%s,%s,%s,%s)",
+            tr.line-&XLevel.Lines[0],
+            tr.line.frontsector-&XLevel.Sectors[0], tr.line.backsector-&XLevel.Sectors[0],
+            ffz1, ffz2, fcz1, fcz2, bfz1, bfz2, bcz1, bcz2,
+            tr.line.alpha,
+            tr.line.special, LineSpecial2Str(tr.line.special),
+            tr.line.arg1, tr.line.arg2, tr.line.arg3, tr.line.arg4, tr.line.arg5);
+        printdebug("fsec(%d): ceiling=%f; floor=%f", tr.line.frontsector-&XLevel.Sectors[0], tr.line.frontsector.ceiling.minz, tr.line.frontsector.floor.maxz);
+        printdebug("bsec(%d): ceiling=%f; floor=%f", tr.line.backsector-&XLevel.Sectors[0], tr.line.backsector.ceiling.minz, tr.line.backsector.floor.maxz);
+      } else {
+        float ffz1 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v1);
+        float ffz2 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v2);
+        //if (ffz1 != ffz2) Error("OOPS(front floor)");
+        float fcz1 = tr.line.frontsector.ceiling.GetPointZClamped(*tr.line.v1);
+        float fcz2 = tr.line.frontsector.ceiling.GetPointZClamped(*tr.line.v2);
+        //if (fcz1 != fcz2) Error("OOPS(front ceiling)");
+        printdebug("linedef %d: (f sec=%d); ffz=(%f:%f); fcz=(%f:%f); special=%s<%s>; arg=(%s,%s,%s,%s,%s)",
+            tr.line-&XLevel.Lines[0],
+            tr.line.frontsector-&XLevel.Sectors[0],
+            ffz1, ffz2, fcz1, fcz2,
+            tr.line.special, LineSpecial2Str(tr.line.special),
+            tr.line.arg1, tr.line.arg2, tr.line.arg3, tr.line.arg4, tr.line.arg5);
+      }
+      foreach (auto snum; 0..2) {
+        if (tr.line.sidenum[snum] < 0) continue;
+        side_t *sd = &XLevel.Sides[tr.line.sidenum[snum]];
+        printdebug("side %s: toptex(%d)=%s; midtex(%d)=%s; bottex(%d)=%s", snum,
+          sd.TopTexture, GetTextureName(sd.TopTexture),
+          sd.MidTexture, GetTextureName(sd.MidTexture),
+          sd.BottomTexture, GetTextureName(sd.BottomTexture));
+      }
+    }
+
+    auto real_hit_point = tr.hit;
+    auto hitPoint = real_hit_point-(4.0*aimDir);
+    // spawn bullet puff
+    SpawnPuff(hitPoint, /*distance*/8192, BulletPuff, false, tr.sec, tr.line, real_hit_point);
+  }
+
+  /+
+  LineAttack(aimDir, /*Range*/10000, /*damage*/10000,
+    BulletPuff, default, default,
+    default, false);
+  +/
+}
+
+
+//==========================================================================
+//
+//  TraceLineEx
+//
+//  Trace line to the wall or entity.
+//  Returns `true` if wall was hit.
+//  Returns `false` if floor/ceiling was hit, or nothing was hit.
+//
+//==========================================================================
+final bool TraceLineEx (TVec org, TVec dir, float distance, bool allowEntities, optional trsplat_t *tr, optional bool stopat3dmidtex, optional bool nozofs) {
+  TVec dst;
+  intercept_t *in;
+  TVec lineStart;
+  TVec lineEnd;
+  TVec shootOrigin;
+  TVec outHitPoint;
+
+  shootOrigin = org;
+  if (!nozofs) shootOrigin.z += (bIsPlayer ? PlayerEx(Player).GetAttackZOfs : 8.0);
+
+  dst = shootOrigin+distance*dir;
+
+  if (tr) {
+    tr->org = org;
+    tr->hit = dst;
+    tr->line = nullptr;
+    tr->sec = nullptr;
+    tr->didhit = false;
+    tr->mobj = none;
+  }
+
+  TVec hitPoint;
+  line_t *li;
+  int side;
+  sector_t *sec;
+
+  lineStart = shootOrigin;
+  foreach PathTraverse(in, org, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|PT_NOPLANES|PT_NOOPENS) {
+    if (in->bIsALine) {
+      li = in->line;
+      hitPoint = shootOrigin+(distance*in->frac)*dir;
+
+      // check if pobj line was hit
+      if (li->pobject && (li->flags&ML_TWOSIDED)) {
+        if (hitPoint.z <= li->pobject->pofloor.minz || hitPoint.z >= li->pobject->poceiling.maxz) continue;
+      }
+
+      if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
+        side = 1;
+        sec = li->backsector;
+      } else {
+        side = 0;
+        sec = li->frontsector;
+      }
+
+      lineEnd = hitPoint;
+
+      // check for shooting floor or ceiling
+      if (!ShootCheckPlanes(sec, lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
+        // process floor and ceiling here
+        if (tr) { tr->hit = outHitPoint; tr->didhit = true; }
+        return false;
+      }
+
+      lineStart = lineEnd;
+
+      if (Level.CompatTrace && li->frontsector == li->backsector) continue;
+
+      /*if (stopat3dmidtex && (li->flags&ML_3DMIDTEX)) {
+        // stop right here
+        printdebug("!!!!");
+      } else*/ {
+        if (!li->pobject && (li->flags&ML_TWOSIDED)) {
+          // crosses a two sided line
+          float opentop = -float.max;
+
+          opening_t *open = LineOpenings(li, hitPoint, SPF_NOBLOCKING, stopat3dmidtex);
+          if (open) {
+            printdebug("SKYFLAT: %d (%s)", Level.Game.skyflatnum, GetTextureName(Level.Game.skyflatnum));
+            printdebug(":: line #%d (flags=0x%08x) ::", li-&XLevel.Lines[0], li->flags);
+            foreach (auto snum; 0..2) {
+              if (li.sidenum[snum] < 0) continue;
+              side_t *sd = &XLevel.Sides[li.sidenum[snum]];
+              printdebug("side %s: toptex(%d)=%s; midtex(%d)=%s; bottex(%d)=%s", snum,
+                sd.TopTexture, GetTextureName(sd.TopTexture),
+                sd.MidTexture, GetTextureName(sd.MidTexture),
+                sd.BottomTexture, GetTextureName(sd.BottomTexture));
+            }
+            for (opening_t *o = open; o; o = o->next) {
+              printdebug(" opening:");
+              printdebug("  open bot: %s", o->bottom);
+              printdebug("  open top: %s", o->top);
+              printdebug("  open range: %s", o->range);
+              printdebug("  open lowfloor: %s", o->lowfloor);
+              printdebug("  open floor: (%s:%s)", o->efloor.spGetNormal(), o->efloor.spGetDist());
+              printdebug("  open ceiling: (%s:%s)", o->eceiling.spGetNormal(), o->eceiling.spGetDist());
+            }
+          }
+          if (stopat3dmidtex && (li->flags&ML_3DMIDTEX)) {
+            // stop right here
+            printdebug("!!!!");
+            open = nullptr;
+          }
+
+          if (open) opentop = open->top;
+          while (open) {
+            //!opentop = fmax(opentop, open->top);
+            if (open->range > 0.0 && open->bottom <= hitPoint.z && open->top >= hitPoint.z) {
+              if (!(li->flags&ML_BLOCKEVERYTHING)) break; // shot continues
+            }
+            open = open->next;
+          }
+          if (open) continue;
+          printdebug("opening: no opening!");
+
+          if (li->frontsector->ceiling.pic == Level.Game.skyflatnum &&
+              li->backsector->ceiling.pic == Level.Game.skyflatnum &&
+              hitPoint.z > opentop)
+          {
+            // it's a sky hack wall
+            printdebug("opening: skyhack!");
+            if (tr) { tr->hit = hitPoint; tr->didhit = true; }
+            return false;
+          }
+        }
+      }
+
+      outHitPoint = hitPoint;
+
+      if (li->special == LNSPEC_LineHorizon) {
+        if (tr) tr->hit = hitPoint;
+        return false; // don't spawn decals on sky
+      }
+
+      // Hit line
+      if (tr) {
+        tr->hit = hitPoint;
+        tr->line = li;
+        tr->sec = sec;
+        tr->side = side;
+        tr->didhit = true;
+      }
+
+      // don't go any farther
+      return true;
+    } else if (in->Thing && !in->Thing.IsA('DoomPlayer')) {
+      // thing
+      hitPoint = shootOrigin+(distance*in->frac)*dir;
+      if (!CalcProperThingHit(ref hitPoint, in->Thing, shootOrigin, dir, distance)) continue;
+      if (hitPoint.z >= in->Thing.Origin.z && hitPoint.z < in->Thing.Origin.z+in->Thing.Height) {
+        tr->hit = hitPoint;
+        tr->mobj = in->Thing;
+        return false;
+      }
+    }
+  }
+
+  lineEnd = dst;
+  if (!ShootCheckPlanes(XLevel.PointInSector(dst), lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
+    // process floor and ceiling here
+    if (tr) { tr->hit = outHitPoint; tr->didhit = true; }
+  }
+
+  return false;
+}

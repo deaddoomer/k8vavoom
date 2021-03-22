@@ -1324,22 +1324,32 @@ struct FRogueConSpeech {
 //
 //==========================================================================
 enum {
-  PT_ADDLINES  = 1,
-  PT_ADDTHINGS = 2,
-  PT_EARLYOUT  = 4,
+  PT_ADDLINES  = 1<<0,
+  PT_ADDTHINGS = 1<<1,
+  //PT_EARLYOUT  = 1<<2,
+  PT_NOPLANES  = 1<<3, // don't check sector flats
+  PT_COMPAT    = 1<<4, // compat_trace
+  PT_NOOPENS   = 1<<5, // no opening checks (usually implies `PT_NOPLANES`)
 };
 
 
 struct intercept_t {
   float frac; // along trace line
   enum {
-    IF_IsALine  = 1u<<0,
-    IF_BackSide = 1u<<1, // not yet
-    IF_ExtraThingCheck = 1u<<2,
+    IF_IsALine         = 1u<<0,
+    IF_IsABlockingLine = 1u<<1, // not yet
+    IF_IsAPlane        = 1u<<2, // plane hit
+    IF_IsASkyPlane     = 1u<<3, // sky plane hit
   };
   vuint32 Flags;
   VEntity *thing;
   line_t *line;
+  // for plane hit; `sector` is nullptr if pobj was hit
+  sector_t *sector;
+  polyobj_t *po;
+  TPlane plane;
+  // always valid
+  TVec hitpoint;
 };
 
 

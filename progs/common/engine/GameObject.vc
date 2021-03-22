@@ -225,9 +225,12 @@ const [decorate] float ATTN_IDLE   = 2.0; /*GZDoom:1.001*/
 const [decorate] float ATTN_STATIC = 3.0;
 
 enum {
-  PT_ADDLINES  = 1,
-  PT_ADDTHINGS = 2,
-  PT_EARLYOUT  = 4,
+  PT_ADDLINES  = 1<<0,
+  PT_ADDTHINGS = 1<<1,
+  //PT_EARLYOUT  = 1<<2,
+  PT_NOPLANES  = 1<<3, // don't check sector flats
+  PT_COMPAT    = 1<<4, // compat_trace
+  PT_NOOPENS   = 1<<5, // no opening checks (usually implies `PT_NOPLANES`)
 };
 
 const float DEFAULT_GRAVITY = 1225.0;
@@ -1370,10 +1373,17 @@ struct opening_t {
 struct intercept_t {
   float frac; // along trace line
   bool bIsALine;
-  bool bIsABackSide; // not yet
-  bool bExtraThingCheck; // this will be set if we hit some 3d slopes, to perform extra checks
+  bool bIsABlockingLine; // if not set, this is 2d non-blocking line
+  bool bIsAPlane;
+  bool bIsASkyPlane;
   Entity Thing;
   line_t *line;
+  // for plane hit; `sector` is nullptr if pobj was hit
+  sector_t *sector; // set for lines too: sector we're coming at the line from
+  polyobj_t *po;
+  TPlane plane;
+  // always valid
+  TVec hitpoint;
 };
 
 
@@ -1546,14 +1556,12 @@ native static final bool CheckPassPlanes (const sector_t *sec,
 //
 //  CheckPObjPassPlanes
 //
-//  checks polyobject flats, returns `false` if any plane was hit
-//  sets `outXXX` arguments on hit
+//  returns hit time
+//  negative means "no hit"
 //
 //==========================================================================
-native static final bool CheckPObjPassPlanes (const polyobj_t *po,
-                                              TVec linestart, TVec lineend, int flagmask,
-                                              optional out TVec outHitPoint, optional out TVec outHitNormal,
-                                              optional out bool outIsSky);
+native static final float CheckPObjPassPlanes (const polyobj_t *po, TVec linestart, TVec lineend,
+                                               optional out TVec outHitPoint, optional out TVec outHitNormal);
 
 
 #include "GameObject_lspname.vc"

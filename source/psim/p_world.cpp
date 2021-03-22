@@ -30,7 +30,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-//#include "../server/sv_local.h"
+#include "../server/sv_local.h"
 
 static VCvarI dbg_thing_traverser("dbg_thing_traverser", "0", "Thing checking in interceptor: 0=best; 1=Vavoom, better; 2=Vavoom, original", CVAR_PreInit);
 
@@ -268,15 +268,35 @@ static TMapNC<VEntity *, bool> vptSeenThings;
 //  VPathTraverse::VPathTraverse
 //
 //==========================================================================
-VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, float InX1,
-                              float InY1, float x2, float y2, int flags)
-  : seen3DSlopes(false)
-  , seenThing(false)
-  , Count(0)
+static float CheckPlanePassEx (const TPlane &plane, const TVec &linestart, const TVec &lineend, TVec &currhit) {
+  const float d1 = plane.PointDistance(linestart);
+  if (d1 < 0.0f) return -1.0f; // don't shoot back side
+
+  const float d2 = plane.PointDistance(lineend);
+  if (d2 >= 0.0f) return -1.0f; // didn't hit plane
+
+  //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
+  //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
+
+  const float frac = d1/(d1-d2); // [0..1], from start
+  if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
+
+  currhit = linestart+(lineend-linestart)*frac;
+  return frac;
+}
+
+
+//==========================================================================
+//
+//  VPathTraverse::VPathTraverse
+//
+//==========================================================================
+VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags)
+  : Count(0)
   , In(nullptr)
   , InPtr(AInPtr)
 {
-  Init(Self, InX1, InY1, x2, y2, flags);
+  Init(Self, p0, p1, flags);
 }
 
 
@@ -285,18 +305,24 @@ VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, float InX1,
 //  VPathTraverse::Init
 //
 //==========================================================================
-void VPathTraverse::Init (VThinker *Self, float InX1, float InY1, float x2, float y2, int flags) {
+void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags) {
   VBlockMapWalker walker;
+
+  compat_trace = !!(flags&PT_COMPAT);
+
+  float InX1 = p0.x, InY1 = p0.y, x2 = p1.x, y2 = p1.y;
 
   if ((flags&(PT_ADDTHINGS|PT_ADDLINES)) == 0) {
     GCon->Logf(NAME_Warning, "%s: requested traverse without any checks", Self->GetClass()->GetName());
   }
 
-  //GCon->Log(NAME_Debug, "AddLineIntercepts: started...");
+  //GCon->Logf(NAME_Debug, "AddLineIntercepts: started for %s(%u) (%g,%g,%g)-(%g,%g,%g)", Self->GetClass()->GetName(), Self->GetUniqueId(), p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+
+  subsector_t *ssub = nullptr;
 
   //GCon->Logf(NAME_Debug, "000: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, InX1, InY1, x2, y2);
   if (walker.start(Self->XLevel, InX1, InY1, x2, y2)) {
-    float x1 = InX1, y1 = InY1;
+    const float x1 = InX1, y1 = InY1;
 
     //++validcount;
     Self->XLevel->IncrementValidCount();
@@ -310,21 +336,143 @@ void VPathTraverse::Init (VThinker *Self, float InX1, float InY1, float x2, floa
     trace_dest = TVec(x2, y2, 0);
     trace_delta = trace_dest-trace_org;
     trace_dir = Normalise(trace_delta);
-    trace_len = Length(trace_delta);
+    trace_len = trace_delta.length();
     trace_plane.SetPointDirXY(trace_org, trace_delta);
+
+    // for hitpoint calculations
+    trace_org3d = p0;
+    trace_dir3d = p1-p0;
+    trace_len3d = trace_dir3d.length();
+
+    max_frac = FLT_MAX;
+    was_block_line = false;
+
+    Level = Self->XLevel;
 
     vptSeenThings.reset(); // don't shrink buckets
 
     const bool wantThings = (flags&PT_ADDTHINGS);
     const bool wantLines = (flags&PT_ADDLINES);
-    const bool earlyOut = (flags&PT_EARLYOUT);
+    //const bool earlyOut = (flags&PT_EARLYOUT);
+    const bool doopening = !(flags&PT_NOOPENS);
+
+
+    // initial 3d pobj check
+    if (wantLines && !(flags&(PT_NOPLANES|PT_NOOPENS))) {
+      ssub = Level->PointInSubsector(p0);
+      TPlane pobjPlane;
+      polyobj_t *po;
+      const float pobjFrac = Level->CheckPObjPlanesPoint(p0, p1, ssub, nullptr, nullptr, &pobjPlane, &po);
+      if (pobjFrac >= 0.0f) {
+        intercept_t &In = NewIntercept(pobjFrac);
+        In.Flags = intercept_t::IF_IsAPlane;
+        In.po = po;
+        In.plane = pobjPlane;
+        max_frac = pobjFrac;
+      }
+    }
 
     int mapx, mapy;
     while (walker.next(mapx, mapy)) {
-      if (wantThings) AddThingIntercepts(Self, mapx, mapy);
+      if (wantThings) AddThingIntercepts(Self, mapx, mapy, doopening);
+      /*
       if (wantLines) {
         if (!AddLineIntercepts(Self, mapx, mapy, earlyOut, wantThings)) break; // early out
       }
+      */
+      AddLineIntercepts(Self, mapx, mapy, wantLines, doopening);
+      if (was_block_line) break;
+    }
+  }
+
+  // now we have to add sector flats
+  if (ssub && !(flags&PT_NOPLANES)) {
+    //GCon->Logf(NAME_Debug, "AddLineIntercepts: adding planes for %s(%u)", Self->GetClass()->GetName(), Self->GetUniqueId());
+
+    // find first line
+    int iidx = 0;
+    intercept_t *it = nullptr;
+    while (iidx < Intercepts.length()) {
+      it = Intercepts.ptr()+iidx;
+      if (it->line) {
+        if (!it->line->pobj()) break; // it must not be polyobj line
+      }
+      ++iidx;
+    }
+
+    TArray<intercept_t> itmp;
+
+    // check starting sector planes
+    {
+      float pfrac;
+      bool isSky;
+      TVec ohp;
+      TPlane oplane;
+      TVec end = p0+trace_dir3d*min2(1.0f, max_frac);
+      //GCon->Logf(NAME_Debug, "AddLineIntercepts: base planes for %s(%u); max_frac=%g", Self->GetClass()->GetName(), Self->GetUniqueId(), min2(1.0f, max_frac));
+      if (!Level->CheckPassPlanes(ssub->sector, p0, end, SPF_NOBLOCKSHOOT, &ohp, nullptr, &isSky, &oplane, &pfrac)) {
+        // found hit plane, it should be less than first line frac
+        pfrac = CheckPlanePassEx(oplane, p0, p1, ohp);
+        if (pfrac >= 0.0f && (iidx >= Intercepts.length() || pfrac < Intercepts.ptr()[iidx].frac)) {
+          intercept_t &itp = itmp.alloc();
+          memset((void *)&itp, 0, sizeof(itp));
+          itp.frac = pfrac;
+          itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+          itp.sector = ssub->sector;
+          itp.plane = oplane;
+          itp.hitpoint = ohp;
+        }
+      }
+    }
+
+    TVec lineStart = p0;
+    while (iidx < Intercepts.length()) {
+      it = Intercepts.ptr()+iidx;
+      line_t *ld = it->line;
+      vassert(ld);
+      const TVec hitPoint = it->hitpoint;
+      // check line planes
+      sector_t *sec = (/*(ld->flags&ML_TWOSIDED) &&*/ ld->PointOnSide(lineStart) ? ld->backsector : ld->frontsector);
+      if (sec && sec != ssub->sector) {
+        // check sector planes
+        float pfrac;
+        bool isSky;
+        TVec ohp;
+        TPlane oplane;
+        if (!Level->CheckPassPlanes(sec, lineStart, hitPoint, SPF_NOBLOCKSHOOT, nullptr, nullptr, &isSky, &oplane, &pfrac)) {
+          // found hit plane, recalc frac
+          pfrac = CheckPlanePassEx(oplane, p0, p1, ohp);
+          if (pfrac >= 0.0f && pfrac < max_frac) {
+            intercept_t &itp = itmp.alloc();
+            memset((void *)&itp, 0, sizeof(itp));
+            itp.frac = pfrac;
+            itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+            itp.sector = sec;
+            itp.plane = oplane;
+            itp.hitpoint = ohp;
+          }
+        }
+      }
+      // next line
+      if (it->Flags&intercept_t::IF_IsABlockingLine) break;
+      ++iidx;
+      lineStart = hitPoint;
+      while (iidx < Intercepts.length()) {
+        it = Intercepts.ptr()+iidx;
+        if (it->line) {
+          if (!it->line->pobj()) break; // it must not be polyobj line
+        }
+        ++iidx;
+      }
+    }
+
+    // check polyobjects
+
+    // add plane hits
+    //GCon->Logf(NAME_Debug, "AddLineIntercepts: %d plane%s for %s(%u)", itmp.length(), (itmp.length() != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
+    for (auto &&itp : itmp) {
+      intercept_t &In = NewIntercept(itp.frac);
+      In = itp;
     }
   }
 
@@ -332,10 +480,14 @@ void VPathTraverse::Init (VThinker *Self, float InX1, float InY1, float x2, floa
   In = Intercepts.Ptr();
 
   // add "extra thing check" flag
+  /*
   if (seen3DSlopes && seenThing) {
     intercept_t *ip = In;
     for (int f = Count; f > 0; --f, ++ip) ip->Flags |= intercept_t::IF_ExtraThingCheck;
   }
+  */
+
+  //GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
 
   // just in case
   #ifdef PARANOID
@@ -357,14 +509,18 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
   if (pos == 0 || Intercepts[pos-1].frac <= frac) {
     // no need to bubble, just append it
     intercept_t &xit = Intercepts.Alloc();
+    memset((void *)&xit, 0, sizeof(xit));
     xit.frac = frac;
+    xit.hitpoint = trace_org3d+trace_dir3d*frac;
     return xit;
   }
   // bubble
   while (pos > 0 && Intercepts[pos-1].frac > frac) --pos;
   // insert
   intercept_t it;
+  memset((void *)&it, 0, sizeof(it));
   it.frac = frac;
+  it.hitpoint = trace_org3d+trace_dir3d*frac;
   Intercepts.insert(pos, it);
   return Intercepts[pos];
 }
@@ -392,8 +548,10 @@ void VPathTraverse::RemoveInterceptsAfter (const float frac) {
 //  Returns `false` if earlyout and a solid line hit.
 //
 //==========================================================================
-bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool EarlyOut, bool wantThings) {
+void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool doadd, bool doopening) {
   line_t *ld;
+  bool wasLine = false;
+  bool wasNonMax = false;
   for (VBlockLinesIterator It(Self->XLevel, mapx, mapy, &ld); It.GetNext(); ) {
     //const float dot1 = DotProduct(*ld->v1, trace_plane.normal)-trace_plane.dist;
     //const float dot2 = DotProduct(*ld->v2, trace_plane.normal)-trace_plane.dist;
@@ -410,36 +568,206 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool 
 
     // find the fractional intercept point along the trace line
     const float den = DotProduct(ld->normal, trace_delta);
-    if (den == 0) continue;
+    if (den == 0.0f) continue;
 
     const float num = ld->dist-DotProduct(trace_org, ld->normal);
     const float frac = num/den;
-    if (frac < 0 || frac > 1.0f) continue; // behind source or beyond end point
+    if (frac < 0.0f || frac > 1.0f) continue; // behind source or beyond end point
+
+    //GCon->Logf(NAME_Debug, "000: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac);
+
+    wasLine = true;
+    if (frac >= max_frac) continue;
+    wasNonMax = true;
+
+    bool blockFlag;
+    bool isSky = false;
+    // ignore 3d pobj lines we cannot possibly hit
+    // also, if such line was hit, it is blocking, for sure
+    polyobj_t *po = ld->pobj();
+    if (po) {
+      if (!doopening && po->posector) continue;
+      const float hpz = trace_org3d.z+trace_dir3d.z*frac;
+      if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
+        // non-blocking pobj line: check polyobject planes
+        if (po->posector) {
+          // check if we can hit pobj vertically
+          const float tz0 = trace_org3d.z;
+          const float tz1 = trace_org3d.z+trace_dir3d.z;
+          const float tminz = min2(tz0, tz1);
+          const float tmaxz = max2(tz0, tz1);
+          if (tmaxz <= po->pofloor.minz || tminz >= po->poceiling.maxz) continue;
+          // hit is possible, check pobj planes
+          TVec php;
+          TPlane pplane;
+          const float pfrc = Level->CheckPObjPassPlanes(po, trace_org3d, trace_org3d+trace_dir3d, &php, nullptr, &pplane);
+          if (pfrc < 0.0f || pfrc > max_frac) continue; // cannot hit
+          // check if hitpoint is still inside pobj
+          if (!IsPointInside2DBBox(php.x, php.y, po->bbox2d)) continue;
+          if (!Level->IsPointInsideSector2D(po->posector, php.x, php.y)) continue;
+          // yep, it can; add polyobject plane to intercept list
+          intercept_t &itp = NewIntercept(pfrc);
+          itp.Flags = intercept_t::IF_IsAPlane;
+          itp.po = po;
+          itp.plane = pplane;
+        }
+        continue;
+      }
+      blockFlag = true;
+    } else {
+      if (compat_trace && ld->frontsector == ld->backsector) continue;
+
+      if (doopening && (ld->flags&ML_TWOSIDED)) {
+        //opening_t *gaps = SV_LineOpenings(ld, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, /*do3dmidtex*/false)
+        //opening_t *open = SV_FindOpening(gaps, hitPoint.z, hitPoint.z);
+
+        // crosses a two sided line
+        const TVec hitPoint = trace_org3d+trace_dir3d*frac;
+        opening_t *open = SV_LineOpenings(ld, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, /*do3dmidtex*/false);
+        const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
+
+        const float opentop = (open ? open->top : -FLT_MAX);
+
+        while (open) {
+          if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) {
+            if (!(ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN))) break; // shot continues
+          }
+          open = open->next;
+        }
+
+        if (open) {
+          blockFlag = false;
+        } else {
+          blockFlag = true;
+          if (ld->frontsector->ceiling.pic == skyflatnum &&
+              ld->backsector->ceiling.pic == skyflatnum &&
+              hpz > opentop)
+          {
+            // it's a sky hack wall
+            isSky = true;
+          }
+        }
+      } else {
+        blockFlag = !(ld->flags&ML_TWOSIDED);
+      }
+    }
 
     // check if any of line sectors contains 3d floors with slopes
-    if (wantThings && !seen3DSlopes) {
-      if (ld->frontsector && ld->frontsector->Has3DSlopes()) seen3DSlopes = true;
+    /*
+    if (!po && wantThings && !seen3DSlopes) {
+           if (ld->frontsector && ld->frontsector->Has3DSlopes()) seen3DSlopes = true;
       else if (ld->backsector && ld->backsector->Has3DSlopes()) seen3DSlopes = true;
       //if (seen3DSlopes) GCon->Logf(NAME_Debug, "AddLineIntercepts: line #%d has 3d slopes", (int)(ptrdiff_t)(ld-&Self->XLevel->Lines[0]));
     }
+    */
 
+    if (blockFlag) {
+      RemoveInterceptsAfter(frac); // remove all intercepts we are not interested in
+      max_frac = frac;
+      was_block_line = true;
+    }
+    /*
     bool doExit = false;
     // try to early out the check
-    if (EarlyOut && frac < 1.0f && (!ld->backsector || !(ld->flags&ML_TWOSIDED))) {
+    if (EarlyOut && frac < 1.0f && (po || !ld->backsector || !(ld->flags&ML_TWOSIDED))) {
       // stop checking
       RemoveInterceptsAfter(frac); // this will remove blocking line, but we need it, hence the flag
       doExit = true;
     }
+    */
 
-    intercept_t &In = NewIntercept(frac);
-    In.frac = frac;
-    In.Flags = intercept_t::IF_IsALine;
-    In.line = ld;
-    In.thing = nullptr;
+    if (doadd) {
+      if (!isSky && ld->special == LNSPEC_LineHorizon) isSky = true;
+      //GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac);
+      intercept_t &In = NewIntercept(frac);
+      In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+      In.line = ld;
+      // set line sector
+      if (po) {
+        //FIXME: this code is a mess!
+             if (po->posector) In.sector = po->posector; // it's ok for puff checks
+        else if (ld->frontsector) In.sector = ld->frontsector;
+        else In.sector = ld->backsector;
+      } else {
+        In.sector = (ld->PointOnSide(trace_org3d) ? ld->backsector : ld->frontsector);
+      }
+      //GCon->Logf(NAME_Debug, "002: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(In.line-&Level->Lines[0]), In.frac, max_frac);
+    }
 
-    if (doExit) return false; // early out flag
+    //if (doExit) return false; // early out flag
+  }
+  //return true;
+
+  if (wasLine && !wasNonMax) was_block_line = true; // no need to check further
+}
+
+
+//==========================================================================
+//
+//  CalcProperThingHit
+//
+//==========================================================================
+static bool CalcProperThingHit (TVec &hitPoint, VEntity *th, const TVec &shootOrigin, const TVec &dir, const float distance) {
+  const float rad = th->Radius;
+  if (rad <= 0.0f) return false;
+  if (hitPoint.z > th->Origin.z+max2(0.0f, th->Height)) {
+    // trace enters above actor
+    if (dir.z >= 0.0f) return false; // going up: can't hit
+    // does it hit the top of the actor?
+    const float dist = (th->Origin.z+th->Height-shootOrigin.z)/dir.z;
+    if (dist > distance) return false;
+    //float frac = dist/distance;
+    hitPoint = shootOrigin+dir*dist;
+    // calculated coordinate is outside the actor's bounding box
+    if (fabsf(hitPoint.x-th->Origin.x) > rad ||
+        fabsf(hitPoint.y-th->Origin.y) > rad)
+    {
+      return false;
+    }
+  } else if (hitPoint.z < th->Origin.z) {
+    // trace enters below actor
+    if (dir.z <= 0.0f) return false; // going down: can't hit
+    // does it hit the bottom of the actor?
+    const float dist = (th->Origin.z-shootOrigin.z)/dir.z;
+    if (dist > distance) return false;
+    //frac = dist/distance;
+    hitPoint = shootOrigin+dir*dist;
+    // calculated coordinate is outside the actor's bounding box
+    if (fabsf(hitPoint.x-th->Origin.x) > rad ||
+        fabsf(hitPoint.y-th->Origin.y) > rad)
+    {
+      return false;
+    }
   }
   return true;
+}
+
+
+//==========================================================================
+//
+//  VPathTraverse::AddProperThingHit
+//
+//  calculates proper thing hit and so on
+//
+//==========================================================================
+void VPathTraverse::AddProperThingHit (VEntity *th, const float frac, bool doopening) {
+  if (frac >= max_frac) return;
+  TVec hp = trace_org3d+trace_dir3d*frac;
+  if (doopening) {
+    if (!CalcProperThingHit(hp, th, trace_org3d, trace_dir3d, trace_len3d)) return;
+    if (th->Origin.z+max2(0.0f, th->Height) < hp.z) return; // shot over the thing
+    if (th->Origin.z > hp.z) return; // shot under the thing
+    /*
+    if (seen3DSlopes) {
+      linetrace_t trace;
+      if (!Level->TraceLine(trace, trace_org3d, hp, SPF_NOBLOCKING)) return;
+    }
+    */
+  }
+  intercept_t &In = NewIntercept(frac);
+  In.Flags = 0;
+  In.thing = th;
+  In.hitpoint = hp;
 }
 
 
@@ -448,7 +776,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool 
 //  VPathTraverse::AddThingIntercepts
 //
 //==========================================================================
-void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
+void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool doopening) {
   if (!Self) return;
   const int tvt = dbg_thing_traverser.asInt();
   if (!tvt) {
@@ -507,26 +835,18 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
             // if it is, see if the trace crosses it
             if (pointOnDLineSide(line.x, line.y, trace) != pointOnDLineSide(line.x+line.dx, line.y+line.dy, trace)) {
               // it's a hit
-              float frac = interceptVector(trace, line);
-              if (frac < 0 || frac > 1.0f) continue;
-              intercept_t &In = NewIntercept(frac);
-              In.frac = frac;
-              In.Flags = 0;
-              In.line = nullptr;
-              In.thing = *It;
-              seenThing = true;
+              const float frac = interceptVector(trace, line);
+              if (frac < 0.0f || frac > 1.0f) continue;
+              AddProperThingHit(*It, frac, doopening);
               break;
             }
           }
           // if none of the sides was facing the trace, then the trace
           // must have started inside the box, so add it as an intercept
           if (numfronts == 0) {
-            intercept_t &In = NewIntercept(0);
-            In.frac = 0.0f;
+            intercept_t &In = NewIntercept(0.0f);
             In.Flags = 0;
-            In.line = nullptr;
             In.thing = *It;
-            seenThing = true;
           }
         }
       }
@@ -545,12 +865,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           const float frac = dist/trace_len;
           if (frac < 0.0f || frac > 1.0f) continue;
           if (vptSeenThings.put(*It, true)) continue;
-          intercept_t &In = NewIntercept(frac);
-          In.frac = frac;
-          In.Flags = 0;
-          In.line = nullptr;
-          In.thing = *It;
-          seenThing = true;
+          AddProperThingHit(*It, frac, doopening);
         }
       }
     }
@@ -565,12 +880,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
       if (dist < 0.0f) continue; // behind source
       const float frac = dist/trace_len;
       if (frac < 0.0f || frac > 1.0f) continue;
-      intercept_t &In = NewIntercept(frac);
-      In.frac = frac;
-      In.Flags = 0;
-      In.line = nullptr;
-      In.thing = *It;
-      seenThing = true;
+      AddProperThingHit(*It, frac, doopening);
     }
   }
 }

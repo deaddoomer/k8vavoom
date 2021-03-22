@@ -518,13 +518,13 @@ IMPLEMENT_FUNCTION(VThinker, AllActivePlayers) {
   RET_PTR(new VActivePlayersIterator(Self, Out));
 }
 
-// native final iterator PathTraverse (out intercept_t *In, float x1, float y1, float x2, float y2, int flags);
+// native final iterator PathTraverse (out intercept_t *In, TVec p0, TVec p1, int flags);
 IMPLEMENT_FUNCTION(VThinker, PathTraverse) {
   intercept_t **In;
-  float x1, y1, x2, y2;
+  TVec p0, p1;
   int flags;
-  vobjGetParamSelf(In, x1, y1, x2, y2, flags);
-  RET_PTR(new VPathTraverse(Self, In, x1, y1, x2, y2, flags));
+  vobjGetParamSelf(In, p0, p1, flags);
+  RET_PTR(new VPathTraverse(Self, In, p0, p1, flags));
 }
 
 // native final iterator RadiusThings (out Entity Ent, TVec Org, float Radius);

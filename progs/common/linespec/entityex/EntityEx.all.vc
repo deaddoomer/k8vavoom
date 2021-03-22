@@ -26,6 +26,7 @@
 #include "EntityEx.Head.vc"
 #include "EntityEx.Physics.vc"
 #include "EntityEx.LineAttack.vc"
+#include "EntityEx.LineAttack.Debug.vc"
 #include "EntityEx.AiUtils.vc"
 #include "EntityEx.SpawnMissile.vc"
 #include "EntityEx.Damage.HS.vc"
