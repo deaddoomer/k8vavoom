@@ -277,15 +277,11 @@ bool VLevel::IsPointInsideSector2D (const sector_t *sec, const float x, const fl
   TVec p(x, y, 0.0f);
   for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
     if (sub->numlines < 3) continue;
-    if (x < sub->bbox2d[BOX2D_MINX] || x > sub->bbox2d[BOX2D_MAXX] ||
-        y < sub->bbox2d[BOX2D_MINY] || y > sub->bbox2d[BOX2D_MAXY])
-    {
-      continue;
-    }
+    if (!IsPointInside2DBBox(x, y, sub->bbox2d)) continue;
     const seg_t *seg = &Segs[sub->firstline];
     bool inside = true;
     for (int f = sub->numlines; f--; ++seg) {
-      if (seg->PointDistance(p) < 0.0f) {
+      if (seg->PointDistance(p) <= 0.0f) {
         inside = false;
         break;
       }
@@ -311,10 +307,10 @@ bool VLevel::IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) c
     // strictly speaking, this check is not necessary, because
     // for each seg `checkBox2D()` will select the point that is
     // "on the right side", but why not?
-    if (sub->bbox2d[BOX2D_MINX] > bb2d[BOX2D_MINX] &&
-        sub->bbox2d[BOX2D_MINY] > bb2d[BOX2D_MINY] &&
-        sub->bbox2d[BOX2D_MAXX] < bb2d[BOX2D_MAXX] &&
-        sub->bbox2d[BOX2D_MAXY] < bb2d[BOX2D_MAXY])
+    if (sub->bbox2d[BOX2D_MINX] >= bb2d[BOX2D_MINX] &&
+        sub->bbox2d[BOX2D_MINY] >= bb2d[BOX2D_MINY] &&
+        sub->bbox2d[BOX2D_MAXX] <= bb2d[BOX2D_MAXX] &&
+        sub->bbox2d[BOX2D_MAXY] <= bb2d[BOX2D_MAXY])
     {
       return true;
     }

@@ -70,6 +70,8 @@ struct SightTraceInfo {
   TVec End;
   sector_t *StartSector;
   sector_t *EndSector;
+  subsector_t *StartSubSector;
+  subsector_t *EndSubSector;
   VLevel *Level;
   unsigned LineBlockMask;
   vuint32 PlaneNoBlockFlags;
@@ -92,42 +94,17 @@ struct SightTraceInfo {
     Plane.dist = 0.0f;
   }
 
-  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, sector_t *sstart, sector_t *send) {
+  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, subsector_t *sstart, subsector_t *send) {
     Level = alevel;
     Start = org;
     End = dest;
     // use buggy vanilla algo here, because this is what used for world linking
-    StartSector = (sstart ?: alevel->PointInSubsector_Buggy(org)->sector);
-    EndSector = (send ?: alevel->PointInSubsector_Buggy(dest)->sector);
+    StartSubSector = (sstart ?: alevel->PointInSubsector_Buggy(org));
+    EndSubSector = (send ?: alevel->PointInSubsector_Buggy(dest));
+    StartSector = StartSubSector->sector;
+    EndSector = EndSubSector->sector;
   }
 };
-
-
-//==========================================================================
-//
-//  SightCheckPObjPlanes
-//
-//  returns `true` if no hit was detected
-//  sets `trace.LineEnd` if hit was detected
-//
-//==========================================================================
-/*
-static bool SightCheckPObjPlanes (SightTraceInfo &trace, polyobj_t *po) {
-  if (!po) return true;
-
-  PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
-
-  // implement proper blocking (so we could have transparent polyobjects)
-  //unsigned flagmask = trace.PlaneNoBlockFlags;
-  //flagmask &= SPF_FLAG_MASK;
-
-  phi.updatePObj(po->pofloor, po->pofloor.minz, po->poceiling.maxz);
-  phi.updatePObj(po->poceiling, po->pofloor.minz, po->poceiling.maxz);
-
-  if (phi.wasHit) trace.LineEnd = phi.getHitPoint();
-  return !phi.wasHit;
-}
-*/
 
 
 //==========================================================================
@@ -262,20 +239,65 @@ static bool SightCanPassOpening (const line_t *linedef, const TVec point, const 
 //
 //==========================================================================
 static bool SightCheckLineHit (SightTraceInfo &trace, const line_t *line, const float frac) {
-  const int s1 = line->PointOnSide2(trace.Start);
-  sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
   TVec hitpoint = trace.Start+frac*trace.Delta;
   trace.LineEnd = hitpoint;
+
+  // check for 3d pobj
+  polyobj_t *po = line->pobj();
+  if (po && !po->posector) po = nullptr;
+  if (po) {
+    // this must be 2-sided line, no need to check
+    // check easy cases first (totally above or below)
+    const float pz0 = po->pofloor.minz;
+    const float pz1 = po->poceiling.maxz;
+
+    //GCon->Logf(NAME_Debug, "pobj #%d, line #%d, plane check; pz=(%g,%g); lz=(%g,%g)", po->tag, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), pz0, pz1, trace.LineStart.z, hitpoint.z);
+    //GCon->Logf(NAME_Debug, "  frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
+
+    if (trace.LineStart.z > pz0 && hitpoint.z < pz1) {
+      // inside pobj, cannot see anything (because it is solid)
+      //GCon->Logf(NAME_Debug, "!!!! BLOCK");
+      trace.Hit1S = true;
+      return false;
+    }
+
+    // below?
+    if (trace.LineStart.z <= pz0 && hitpoint.z <= pz0) return true; // cannot hit
+    //GCon->Logf(NAME_Debug, "!!!! 000");
+    // above?
+    if (trace.LineStart.z >= pz1 && hitpoint.z >= pz1) return true; // cannot hit
+    //GCon->Logf(NAME_Debug, "!!!! 001");
+
+    // possible hit
+    PlaneHitInfo phi(trace.LineStart, hitpoint);
+    // implement proper blocking (so we could have transparent polyobjects)
+    //unsigned flagmask = trace.PlaneNoBlockFlags;
+    //flagmask &= SPF_FLAG_MASK;
+
+    phi.update(po->pofloor);
+    phi.update(po->poceiling);
+
+    trace.LineStart = trace.LineEnd;
+
+    if (phi.wasHit) {
+      trace.LineEnd = phi.getHitPoint();
+      return false;
+    }
+
+    // no hit
+    return true;
+  }
+
+  GCon->Logf(NAME_Debug, "linehit: line #%d; frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
+
+  // normal line (not a 3d pobj part)
+  const int s1 = line->PointOnSide2(trace.Start);
+  sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
   if (!SightCheckPlanes(trace, front, (front == trace.StartSector))) return false;
 
   trace.LineStart = trace.LineEnd;
 
   if (line->flags&ML_TWOSIDED) {
-    /*
-    // polyobject planes
-    polyobj_t *po = line->pobj();
-    if (po && !SightCheckPObjPlanes(trace, po)) return false;
-    */
     // crosses a two sided line
     if (SightCanPassOpening(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK)) return true;
   } else {
@@ -323,7 +345,10 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
   if (dot1 >= 0.0f && dot2 >= 0.0f) return true; // didn't reached front side
 
   // if we hit an "early exit" line, don't bother doing anything more, the sight is blocked
-  if (!ld->backsector || !(ld->flags&ML_TWOSIDED) || (ld->flags&trace.LineBlockMask)) {
+  // yet this is not true for 3d pobj lines -- they have height!
+  polyobj_t *po = ld->pobj();
+  if (po && !po->posector) po = nullptr;
+  if (!ld->backsector || !(ld->flags&ML_TWOSIDED) || (!po && (ld->flags&trace.LineBlockMask))) {
     // note that we hit 1s line
     trace.Hit1S = true;
     return false;
@@ -372,6 +397,9 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
 //
 //==========================================================================
 static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
+  // it should never happen, but...
+  if (x < 0 || y < 0 || x >= trace.Level->BlockMapWidth || y >= trace.Level->BlockMapHeight) return false;
+
   int offset = y*trace.Level->BlockMapWidth+x;
   for (polyblock_t *polyLink = trace.Level->PolyBlockMap[offset]; polyLink; polyLink = polyLink->next) {
     polyobj_t *pobj = polyLink->polyobj;
@@ -421,6 +449,53 @@ static bool SightTraverseIntercepts (SightTraceInfo &trace) {
 
 //==========================================================================
 //
+//  SightCheckStartingPObj
+//
+//  check if starting point is inside any 3d pobj
+//  we have to do this to check pobj planes first
+//
+//  returns `true` if no obstacle was hit
+//  sets `trace.LineEnd` if something was hit (and returns `false`)
+//
+//==========================================================================
+static bool SightCheckStartingPObj (SightTraceInfo &trace) {
+  // if starting point is inside a 3d pobj, check pobj plane hits
+  // if no hit, or enter time is more than first interception frac, ignore
+  // otherwise check if hit point is still inside a pobj
+  for (auto &&it : trace.StartSubSector->PObjFirst()) {
+    polyobj_t *po = it.pobj();
+    if (!po->posector) continue;
+    if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+    // starting point is inside 3d pobj inner sector, check pobj planes
+
+    PlaneHitInfo phi(trace.Start, trace.End);
+    // implement proper blocking (so we could have transparent polyobjects)
+    //unsigned flagmask = trace.PlaneNoBlockFlags;
+    //flagmask &= SPF_FLAG_MASK;
+
+    phi.update(po->pofloor);
+    phi.update(po->poceiling);
+
+    if (!phi.wasHit) continue; // no pobj plane hit
+
+    // check if hitpoint is still inside this pobj
+    const TVec hp = phi.getHitPoint();
+    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+
+    // yep, got it; we don't care about "best hit" here, only hit presence matters
+    trace.LineEnd = hp;
+    return false;
+  }
+
+  // no starting hit
+  return true;
+}
+
+
+//==========================================================================
+//
 //  SightPathTraverse
 //
 //  traces a sight ray from `trace.Start` to `trace.End`, possibly
@@ -443,6 +518,7 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
 
   if (fabsf(trace.Delta.x) <= 1.0f && fabsf(trace.Delta.y) <= 1.0f) {
     // vertical trace; check starting sector planes and get out
+    //FIXME: this is wrong for 3d pobjs!
     trace.Delta.x = trace.Delta.y = 0; // to simplify further checks
     trace.LineEnd = trace.End;
     // point cannot hit anything!
@@ -451,8 +527,11 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
       trace.Delta.z = 0;
       return false;
     }
+    if (!SightCheckStartingPObj(trace)) return false;
     return SightCheckPlanes(trace, trace.StartSector, true);
   }
+
+  if (!SightCheckStartingPObj(trace)) return false;
 
   if (walker.start(trace.Level, trace.Start.x, trace.Start.y, trace.End.x, trace.End.y)) {
     trace.Plane.SetPointDirXY(trace.Start, trace.Delta);
@@ -485,6 +564,7 @@ static bool SightPathTraverse2 (SightTraceInfo &trace) {
   trace.LineStart = trace.Start;
   if (fabsf(trace.Delta.x) <= 1.0f && fabsf(trace.Delta.y) <= 1.0f) {
     // vertical trace; check starting sector planes and get out
+    //FIXME: this is wrong for 3d pobjs!
     trace.Delta.x = trace.Delta.y = 0; // to simplify further checks
     trace.LineEnd = trace.End;
     // point cannot hit anything!
@@ -493,8 +573,10 @@ static bool SightPathTraverse2 (SightTraceInfo &trace) {
       trace.Delta.z = 0;
       return false;
     }
+    if (!SightCheckStartingPObj(trace)) return false;
     return SightCheckPlanes(trace, trace.StartSector, true);
   }
+  if (!SightCheckStartingPObj(trace)) return false;
   return SightTraverseIntercepts(trace);
 }
 
@@ -526,22 +608,27 @@ static VVA_CHECKRESULT inline bool isNotInsideBM (const TVec &pos, const VLevel 
 //  if better sight is allowed, `orgdirRight` and `orgdirFwd` MUST be valid!
 //
 //==========================================================================
-bool VLevel::CastCanSee (sector_t *Sector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
-                         const TVec &dest, float radius, float height, bool skipBaseRegion, sector_t *DestSector,
-                         bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors) {
-  if (lengthSquared(org-dest) <= 2.0f) return true;
+bool VLevel::CastCanSee (subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
+                         const TVec &dest, float radius, float height, bool skipBaseRegion, subsector_t *DestSubSector,
+                         bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors)
+{
+  if (lengthSquared(org-dest) <= 2.0f*2.0f) return true; // arbitrary
 
   // if starting or ending point is out of blockmap bounds, don't bother tracing
   // we can get away with this, because nothing can see anything beyound the map extents
   if (isNotInsideBM(org, this)) return false;
   if (isNotInsideBM(dest, this)) return false;
 
-  if (radius < 0.0f) radius = 0.0f;
-  if (height < 0.0f) height = 0.0f;
-  if (myheight < 0.0f) myheight = 0.0f;
+  // it should not happen!
+  if (SubSector->sector->isInnerPObj()) GCon->Logf(NAME_Error, "CastCanSee: source sector #%d is 3d pobj inner sector", (int)(ptrdiff_t)(SubSector->sector-&Sectors[0]));
+  if (DestSubSector->sector->isInnerPObj()) GCon->Logf(NAME_Error, "CastCanSee: destination sector #%d is 3d pobj inner sector", (int)(ptrdiff_t)(DestSubSector->sector-&Sectors[0]));
+
+  radius = max2(0.0f, radius);
+  height = max2(0.0f, height);
+  myheight = max2(0.0f, myheight);
 
   SightTraceInfo trace;
-  trace.setup(this, org, dest, Sector, DestSector);
+  trace.setup(this, org, dest, SubSector, DestSubSector);
 
   trace.PlaneNoBlockFlags =
     SPF_NOBLOCKSIGHT|

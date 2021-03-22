@@ -64,23 +64,18 @@ bool VEntity::CanSee (VEntity *Other, bool forShooting, bool alwaysBetter) {
 bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
   if (dbg_disable_cansee) return false;
 
-  if (!Other || !Other->BaseSector) return false;
-  if (IsGoingToDie()) return false;
-  if (Other->IsGoingToDie()) return false;
-
   if (Other == this) return true; // it can see itself (obviously)
 
-  // if we have no subsector for this object, it cannot see anything
-  if (!SubSector) {
-    if (developer) GCon->Logf(NAME_Dev, "EMPTY SUBSECTOR for '%s'", *GetClass()->GetFullName());
-    return false;
-  }
+  // if we have no base sector for any object, it cannot see each other
+  if (!Other || !Other->BaseSector || !BaseSector) return false;
+  if (IsGoingToDie() || Other->IsGoingToDie()) return false;
 
   // first check for trivial rejection
   if (XLevel->IsRejectedVis(BaseSector, Other->BaseSector)) return false; // can't possibly be connected
 
   // killough 11/98: shortcut for melee situations
   // same subsector? obviously visible
+  // this is not true for base sectors, though
   if (SubSector == Other->SubSector) return true;
 
   bool forShooting = !!(flags&CSE_ForShooting);
@@ -117,5 +112,7 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
     dirF = dirR = TVec::ZeroVector;
   }
   //if (forShooting) dirR = TVec::ZeroVector; // just in case, lol
-  return XLevel->CastCanSee(BaseSector, Origin, Height, dirF, dirR, Other->Origin, Other->Radius, Other->Height, !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->BaseSector, /*alwaysBetter*/cbs, !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
+  return XLevel->CastCanSee(BaseSubSector, Origin, Height, dirF, dirR, Other->Origin, Other->Radius, Other->Height,
+                            !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->BaseSubSector, /*alwaysBetter*/cbs,
+                            !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
 }
