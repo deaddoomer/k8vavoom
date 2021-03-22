@@ -291,12 +291,12 @@ static float CheckPlanePassEx (const TPlane &plane, const TVec &linestart, const
 //  VPathTraverse::VPathTraverse
 //
 //==========================================================================
-VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags)
+VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags)
   : Count(0)
   , In(nullptr)
   , InPtr(AInPtr)
 {
-  Init(Self, p0, p1, flags);
+  Init(Self, p0, p1, flags, planeflags, lineflags);
 }
 
 
@@ -305,7 +305,7 @@ VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &
 //  VPathTraverse::Init
 //
 //==========================================================================
-void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags) {
+void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags) {
   VBlockMapWalker walker;
 
   compat_trace = !!(flags&PT_COMPAT);
@@ -318,13 +318,13 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
 
   //GCon->Logf(NAME_Debug, "AddLineIntercepts: started for %s(%u) (%g,%g,%g)-(%g,%g,%g)", Self->GetClass()->GetName(), Self->GetUniqueId(), p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
 
+  const bool doopening = !(flags&PT_NOOPENS);
   subsector_t *ssub = nullptr;
 
   //GCon->Logf(NAME_Debug, "000: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, InX1, InY1, x2, y2);
   if (walker.start(Self->XLevel, InX1, InY1, x2, y2)) {
     const float x1 = InX1, y1 = InY1;
 
-    //++validcount;
     Self->XLevel->IncrementValidCount();
 
     // check if `Length()` and `SetPointDirXY()` are happy
@@ -345,7 +345,6 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     trace_len3d = trace_dir3d.length();
 
     max_frac = FLT_MAX;
-    was_block_line = false;
 
     Level = Self->XLevel;
 
@@ -354,11 +353,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     const bool wantThings = (flags&PT_ADDTHINGS);
     const bool wantLines = (flags&PT_ADDLINES);
     //const bool earlyOut = (flags&PT_EARLYOUT);
-    const bool doopening = !(flags&PT_NOOPENS);
-
 
     // initial 3d pobj check
-    if (wantLines && !(flags&(PT_NOPLANES|PT_NOOPENS))) {
+    if (wantLines && doopening) {
       ssub = Level->PointInSubsector(p0);
       TPlane pobjPlane;
       polyobj_t *po;
@@ -375,18 +372,12 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     int mapx, mapy;
     while (walker.next(mapx, mapy)) {
       if (wantThings) AddThingIntercepts(Self, mapx, mapy, doopening);
-      /*
-      if (wantLines) {
-        if (!AddLineIntercepts(Self, mapx, mapy, earlyOut, wantThings)) break; // early out
-      }
-      */
-      AddLineIntercepts(Self, mapx, mapy, wantLines, doopening);
-      if (was_block_line) break;
+      if (AddLineIntercepts(Self, mapx, mapy, planeflags, lineflags, wantLines, doopening)) break;
     }
   }
 
   // now we have to add sector flats
-  if (ssub && !(flags&PT_NOPLANES)) {
+  if (ssub && doopening) {
     //GCon->Logf(NAME_Debug, "AddLineIntercepts: adding planes for %s(%u)", Self->GetClass()->GetName(), Self->GetUniqueId());
 
     // find first line
@@ -417,7 +408,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
           intercept_t &itp = itmp.alloc();
           memset((void *)&itp, 0, sizeof(itp));
           itp.frac = pfrac;
-          itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+          itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
           itp.sector = ssub->sector;
           itp.plane = oplane;
           itp.hitpoint = ohp;
@@ -432,7 +423,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
       vassert(ld);
       const TVec hitPoint = it->hitpoint;
       // check line planes
-      sector_t *sec = (/*(ld->flags&ML_TWOSIDED) &&*/ ld->PointOnSide(lineStart) ? ld->backsector : ld->frontsector);
+      sector_t *sec = (ld->PointOnSide(lineStart) ? ld->backsector : ld->frontsector);
       if (sec && sec != ssub->sector) {
         // check sector planes
         float pfrac;
@@ -446,7 +437,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
             intercept_t &itp = itmp.alloc();
             memset((void *)&itp, 0, sizeof(itp));
             itp.frac = pfrac;
-            itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+            itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
             itp.sector = sec;
             itp.plane = oplane;
             itp.hitpoint = ohp;
@@ -478,14 +469,6 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
 
   Count = Intercepts.Num();
   In = Intercepts.Ptr();
-
-  // add "extra thing check" flag
-  /*
-  if (seen3DSlopes && seenThing) {
-    intercept_t *ip = In;
-    for (int f = Count; f > 0; --f, ++ip) ip->Flags |= intercept_t::IF_ExtraThingCheck;
-  }
-  */
 
   //GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
 
@@ -542,19 +525,18 @@ void VPathTraverse::RemoveInterceptsAfter (const float frac) {
 //
 //  VPathTraverse::AddLineIntercepts
 //
-//  Looks for lines in the given block that intercept the given trace to add
+//  looks for lines in the given block that intercept the given trace to add
 //  to the intercepts list.
-//  A line is crossed if its endpoints are on opposite sides of the trace.
-//  Returns `false` if earlyout and a solid line hit.
+//  a line is crossed if its endpoints are on opposite sides of the trace.
+//  returns `true` if some blocking line was hit (so we can stop scanning).
 //
 //==========================================================================
-void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool doadd, bool doopening) {
+bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags, bool doadd, bool doopening) {
   line_t *ld;
   bool wasLine = false;
   bool wasNonMax = false;
+  bool wasBlocking = false;
   for (VBlockLinesIterator It(Self->XLevel, mapx, mapy, &ld); It.GetNext(); ) {
-    //const float dot1 = DotProduct(*ld->v1, trace_plane.normal)-trace_plane.dist;
-    //const float dot2 = DotProduct(*ld->v2, trace_plane.normal)-trace_plane.dist;
     const float dot1 = trace_plane.PointDistance(*ld->v1);
     const float dot2 = trace_plane.PointDistance(*ld->v2);
 
@@ -618,19 +600,16 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool 
       if (compat_trace && ld->frontsector == ld->backsector) continue;
 
       if (doopening && (ld->flags&ML_TWOSIDED)) {
-        //opening_t *gaps = SV_LineOpenings(ld, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, /*do3dmidtex*/false)
-        //opening_t *open = SV_FindOpening(gaps, hitPoint.z, hitPoint.z);
-
         // crosses a two sided line
         const TVec hitPoint = trace_org3d+trace_dir3d*frac;
-        opening_t *open = SV_LineOpenings(ld, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, /*do3dmidtex*/false);
+        opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
         const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
 
         const float opentop = (open ? open->top : -FLT_MAX);
 
         while (open) {
           if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) {
-            if (!(ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN))) break; // shot continues
+            if (!(ld->flags&lineflags)) break; // shot continues
           }
           open = open->next;
         }
@@ -652,35 +631,17 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool 
       }
     }
 
-    // check if any of line sectors contains 3d floors with slopes
-    /*
-    if (!po && wantThings && !seen3DSlopes) {
-           if (ld->frontsector && ld->frontsector->Has3DSlopes()) seen3DSlopes = true;
-      else if (ld->backsector && ld->backsector->Has3DSlopes()) seen3DSlopes = true;
-      //if (seen3DSlopes) GCon->Logf(NAME_Debug, "AddLineIntercepts: line #%d has 3d slopes", (int)(ptrdiff_t)(ld-&Self->XLevel->Lines[0]));
-    }
-    */
-
     if (blockFlag) {
       RemoveInterceptsAfter(frac); // remove all intercepts we are not interested in
       max_frac = frac;
-      was_block_line = true;
+      wasBlocking = true;
     }
-    /*
-    bool doExit = false;
-    // try to early out the check
-    if (EarlyOut && frac < 1.0f && (po || !ld->backsector || !(ld->flags&ML_TWOSIDED))) {
-      // stop checking
-      RemoveInterceptsAfter(frac); // this will remove blocking line, but we need it, hence the flag
-      doExit = true;
-    }
-    */
 
     if (doadd) {
       if (!isSky && ld->special == LNSPEC_LineHorizon) isSky = true;
       //GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac);
       intercept_t &In = NewIntercept(frac);
-      In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASkyPlane : 0u);
+      In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASky : 0u);
       In.line = ld;
       // set line sector
       if (po) {
@@ -693,12 +654,10 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool 
       }
       //GCon->Logf(NAME_Debug, "002: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(In.line-&Level->Lines[0]), In.frac, max_frac);
     }
-
-    //if (doExit) return false; // early out flag
   }
-  //return true;
 
-  if (wasLine && !wasNonMax) was_block_line = true; // no need to check further
+  if (wasLine && !wasNonMax) wasBlocking = true; // no need to check further
+  return wasBlocking;
 }
 
 
@@ -757,12 +716,6 @@ void VPathTraverse::AddProperThingHit (VEntity *th, const float frac, bool doope
     if (!CalcProperThingHit(hp, th, trace_org3d, trace_dir3d, trace_len3d)) return;
     if (th->Origin.z+max2(0.0f, th->Height) < hp.z) return; // shot over the thing
     if (th->Origin.z > hp.z) return; // shot under the thing
-    /*
-    if (seen3DSlopes) {
-      linetrace_t trace;
-      if (!Level->TraceLine(trace, trace_org3d, hp, SPF_NOBLOCKING)) return;
-    }
-    */
   }
   intercept_t &In = NewIntercept(frac);
   In.Flags = 0;
@@ -857,7 +810,6 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool
       for (int dx = -1; dx < 2; ++dx) {
         for (VBlockThingsIterator It(Self->XLevel, mapx+dx, mapy+dy); It; ++It) {
           if (It->Radius <= 0.0f || It->Height <= 0.0f) continue;
-          //const float dot = DotProduct(It->Origin, trace_plane.normal)-trace_plane.dist;
           const float dot = trace_plane.PointDistance(It->Origin);
           if (fabsf(dot) >= It->Radius) continue; // thing is too far away
           const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
@@ -873,7 +825,6 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool
     // original
     for (VBlockThingsIterator It(Self->XLevel, mapx, mapy); It; ++It) {
       if (It->Radius <= 0.0f || It->Height <= 0.0f) continue;
-      //const float dot = DotProduct(It->Origin, trace_plane.normal)-trace_plane.dist;
       const float dot = trace_plane.PointDistance(It->Origin);
       if (fabsf(dot) >= It->Radius) continue; // thing is too far away
       const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);

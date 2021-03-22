@@ -147,7 +147,7 @@ final bool TraceLineEx (TVec org, TVec dir, float distance, bool allowEntities, 
   sector_t *sec;
 
   lineStart = shootOrigin;
-  foreach PathTraverse(in, org, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, org, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|PT_NOOPENS) {
     if (in->bIsALine) {
       li = in->line;
       hitPoint = shootOrigin+(distance*in->frac)*dir;

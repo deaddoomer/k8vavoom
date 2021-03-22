@@ -223,7 +223,7 @@ override Entity PickActor (optional TVec org, TVec dir, float distance, optional
   float pobjFrac = XLevel.CheckPObjPlanesPoint(shootOrigin, dst, out pobjHitPoint);
   if (pobjFrac < 0.0) pobjFrac = float.max; // simplify checks
 
-  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_ADDTHINGS|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
     if (in.frac >= pobjFrac) return none; // polyobject was hit first
 
     if (in->bIsAPlane) continue; // just in case
@@ -388,7 +388,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   opening_t *open;
   TVec hitPoint;
 
-  foreach PathTraverse(in, shootOrigin /*was Origin*/, vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, shootOrigin /*was Origin*/, vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
     if (in->bIsAPlane) continue; // just in case
 
     if (in->bIsALine) {
@@ -616,6 +616,7 @@ override void eventLineAttackACS (TVec dir, float distance, int LADamage, name a
 //  decalType of '' means "use default puff decal"
 //
 //  returns `true` if DIDN'T hit anything (not a thing, not a line)
+//  this is used to play melee weapon "miss" sound
 //
 //==========================================================================
 final bool LineAttack (TVec dir, float distance, int LADamage,
@@ -625,36 +626,19 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
                        optional int pufftid, optional bool disableRandomZ,
                        optional out EntityEx hitEntity, optional out EntityEx puffEntity)
 {
-  TVec dst;
-  intercept_t *in;
-  //TVec lineStart;
-  TVec lineEnd;
-  TVec shootOrigin;
-
-  //printdebug("LineAttack: self=<%C>", self);
-
-  //Entity e; printdebug("%f", e.Height);
   puffEntity = none;
   hitEntity = none;
   if (!Level.Game.IsAuthority) return false;
 
-  shootOrigin = Origin;
+  TVec shootOrigin = Origin;
   shootOrigin.z += CalculateLineAttackZOfs();
 
-  dst = shootOrigin+distance*dir;
-  //lineStart = shootOrigin;
-
-  // initial 3d pobj check
-  /*
-  TVec pobjHitPoint;
-  float pobjFrac = XLevel->CheckPObjPlanesPoint(shootOrigin, dst, out pobjHitPoint);
-  if (pobjFrac < 0.0) pobjFrac = float.max; // simplify checks
-  */
+  TVec dst = shootOrigin+distance*dir;
 
   TVec hitPoint, realHitPoint;
   line_t *li;
   EntityEx th;
-  //sector_t *sec;
+  intercept_t *in;
 
 #if 0
   printdebug("%C(%s): === LineAttack (org=%s; dest=%s) ===", self, UniqueId, shootOrigin, dst);
@@ -672,80 +656,20 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
 #endif
 
   //printdebug("=== LineAttack ===");
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0)) {
+  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
     //printdebug("LineAttack: isline=%B; frac=%s; lstart=%s", in->bIsALine, in->frac, lineStart);
-    //if (!in->bIsALine) printdebug("LineAttack:   thing: frac=%s; thing=%C; dist=%s", in->frac, in->Thing, length2D(in.Thing.Origin-Origin));
-    /*!!!
-    if (in.frac >= pobjFrac) {
-      // polyobject hit, spawn puff
-      if (PuffType) puffEntity = SpawnPuff(pobjHitPoint, distance, PuffType, false);
-      return false;
-    }
-    */
+
+    // plane hit?
     if (in->bIsAPlane) {
       // plane hit, no thing found
-      if (!in->bIsASkyPlane && PuffType) puffEntity = SpawnPuff(in->hitpoint, distance, PuffType, false);
+      if (!in->bIsASky && PuffType) puffEntity = SpawnPuff(in->hitpoint, distance, PuffType, false);
       return false;
     }
 
+    // line hit?
     if (in->bIsALine) {
       li = in->line;
-      hitPoint = in.hitpoint; //shootOrigin+(distance*in->frac)*dir;
-
-      /*!!!
-      // check if pobj line was hit (it is always blocking)
-      if (li->pobject) {
-        lineEnd = hitPoint;
-        lineStart = lineEnd;
-      } else {
-        if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
-          sec = li->backsector;
-        } else {
-          sec = li->frontsector;
-        }
-
-        //printdebug("LineAttack:   line hitPoint=%s", hitPoint);
-
-        lineEnd = hitPoint;
-
-        // check for shooting floor or ceiling
-        if (!ShootCheckPlanes(sec, lineStart, lineEnd, distance, PuffType, outHitPoint, puffEntity:puffEntity)) {
-          //printdebug("%C: hit floor/ceiling (puff=%C)", self, PuffType);
-          return false;
-        }
-
-        lineStart = lineEnd;
-
-        if (Level.CompatTrace && li->frontsector == li->backsector) continue;
-      }
-
-      // execute line special after checking for hitting floor or ceiling when we know that it actally hits line
-      if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
-
-      if (!li->pobject && (li->flags&ML_TWOSIDED)) {
-        // crosses a two sided line
-        opening_t *open;
-        float opentop = -float.max;
-
-        open = LineOpenings(li, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT);
-        if (open) opentop = open->top;
-        while (open) {
-          if (open->range > 0.0 && open->bottom <= hitPoint.z && open->top >= hitPoint.z) {
-            if (!(li->flags&(ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN))) break; // shot continues
-          }
-          open = open->next;
-        }
-        if (open) continue;
-        if (li->frontsector->ceiling.pic == Level.Game.skyflatnum &&
-            li->backsector->ceiling.pic == Level.Game.skyflatnum &&
-            hitPoint.z > opentop)
-        {
-          // it's a sky hack wall
-          if (outHitPoint) *outHitPoint = hitPoint;
-          return false;
-        }
-      }
-      */
+      hitPoint = in.hitpoint;
 
       // execute line special when we know that we actally hit this line
       if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
@@ -754,17 +678,14 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
       if (!in->bIsABlockingLine) continue;
 
       // hit blocking line
-
       if (outHitPoint) *outHitPoint = hitPoint;
-
-      //if (li->special == LNSPEC_LineHorizon) return false; // don't spawn puffs on sky
 
       // position a bit closer
       realHitPoint = hitPoint;
       hitPoint -= 4.0*dir;
 
       // spawn bullet puffs
-      if (!in->bIsASkyPlane && PuffType) {
+      if (!in->bIsASky && PuffType) {
         puffEntity = SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint, decalType!optional, pufftid!optional, disableRandomZ!optional);
       }
 
@@ -775,37 +696,16 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
     // shoot a thing
     th = EntityEx(in->Thing);
 
-    //printdebug("  thing: %n (isself:%d)", GetClassName(th.Class), (th == self ? 1 : 0));
-
     if (th == self) continue; // can't shoot self
 
     if (!th.bShootable) continue; // corpse or something
 
-    // check angles to see if the thing can be aimed at
-    hitPoint = in.hitpoint; //shootOrigin+(distance*in->frac)*dir;
-    //printdebug("LineAttack:   thing hitPoint=%s; lineEnd=%s", hitPoint, lineEnd);
-
-    /*!!!
-    if (!CalcProperThingHit(ref hitPoint, th, shootOrigin, dir, distance)) continue;
-    //printdebug("  thing: %C (over:%B; under:%B; tz=(%f,%f); hpz=%f)", th, (th.Origin.z+th.Height < hitPoint.z), (th.Origin.z > hitPoint.z), th.Origin.z, th.Origin.z+th.Height, hitPoint.z);
-
-    if (th.Origin.z+th.Height < hitPoint.z) continue; // shot over the thing
-    if (th.Origin.z > hitPoint.z) continue; // shot under the thing
-    */
-
     // check for physical attacks on a ghost
     if (th.bGhost && NoAttackGhosts) continue;
 
-    /*!!!
-    if (in->bExtraThingCheck && !XLevel.BSPTraceLine(shootOrigin, hitPoint, noBlockFlags:SPF_NOBLOCKING)) {
-      //printdebug("%C: cannot be hit!", th);
-      continue;
-    }
-    */
-
     // hit a thing
+    hitPoint = in.hitpoint;
     // position a bit closer
-    //hitPoint -= 10.0*dir;
     hitPoint -= 2.0*dir;
     if (outHitPoint) *outHitPoint = hitPoint;
 
@@ -847,16 +747,9 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
     return false;
   }
 
-  lineEnd = dst;
-  /*!!!
-  if (!ShootCheckPlanes(XLevel.PointInSector(dst), lineStart, lineEnd, distance, PuffType, outHitPoint, puffEntity:puffEntity)) {
-    return false;
-  }
-  */
-
   if (PuffType) {
     if (PuffType.default.ActiveSound) PlaySound(PuffType.default.ActiveSound, /*CHAN_WEAPON*/CHAN_AUTO); // play miss sound
-    if (PuffType.default.bAlwaysPuff) puffEntity = SpawnPuff(lineEnd, distance, PuffType, false, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
+    if (PuffType.default.bAlwaysPuff) puffEntity = SpawnPuff(dst, distance, PuffType, false, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
   }
 
   return true;
@@ -881,12 +774,6 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
                        optional bool DontPierce, optional float distance,
                        optional float spawnofs_z, optional int pierceLimit)
 {
-  TVec dst;
-  intercept_t *in;
-  TVec lineStart;
-  TVec lineEnd;
-  TVec shootOrigin;
-  float sina, cosa;
 
   if (!Level.Game.IsAuthority) return;
   if (!Silent) PlaySound('weapons/railgf', CHAN_WEAPON);
@@ -898,122 +785,56 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   name DmgType = 'Railgun';
   if (PuffType && PuffType.default.DamageType) DmgType = PuffType.default.DamageType;
 
-  shootOrigin = Origin;
+  TVec shootOrigin = Origin;
   shootOrigin.z += CalculateLineAttackZOfs();
   shootOrigin.z += spawnofs_z;
+  float sina, cosa;
   sincos(Angles.yaw-90.0, out sina, out cosa);
   shootOrigin.x += Offset*cosa;
   shootOrigin.y += Offset*sina;
 
   //float distance = 8192.0;
   if (!specified_distance || !distance) distance = 8192.0;
-  dst = shootOrigin+distance*dir;
-  lineStart = shootOrigin;
-
-  // initial 3d pobj check
-  /*
-  TVec pobjHitPoint;
-  float pobjFrac = XLevel->CheckPObjPlanesPoint(shootOrigin, dst, out pobjHitPoint);
-  if (pobjFrac < 0.0) pobjFrac = float.max; // simplify checks
-  */
+  TVec dst = shootOrigin+distance*dir;
 
   TVec hitPoint, realHitPoint;
   line_t *li;
   EntityEx th;
-  //sector_t *sec;
-  bool DidHit = false;
+  intercept_t *in;
+  TVec lineEnd = dst;
 
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS) {
-    /*!!!
-    if (in.frac >= pobjFrac) {
-      // polyobject hit, spawn puff
-      if (PuffType) {
-        puffEntity = SpawnPuff(pobjHitPoint, distance, PuffType, false);
-      }
-      break;
-    }
-    */
+  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING) {
+    // plane hit?
     if (in->bIsAPlane) {
-      if (!in->bIsASkyPlane && PuffType) SpawnPuff(in->hitpoint, distance, PuffType, false);
+      if (!in->bIsASky && PuffType) SpawnPuff(in->hitpoint, distance, PuffType, false);
+      lineEnd = in->hitpoint;
       break;
     }
 
+    // line hit?
     if (in->bIsALine) {
       li = in->line;
-      hitPoint = in->hitpoint; //shootOrigin+(distance*in->frac)*dir;
+      hitPoint = in->hitpoint;
 
-      /*!!!
-      // check if pobj line was hit
-      if (li->pobject) {
-        lineEnd = hitPoint;
-      } else {
-        if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
-          sec = li->backsector;
-        } else {
-          sec = li->frontsector;
-        }
-
-        lineEnd = hitPoint;
-
-        // check for shooting floor or ceiling
-        if (!RailCheckPlanes(sec, lineStart, lineEnd, distance, PuffType)) {
-          DidHit = true;
-          break;
-        }
-      }
-
-      lineStart = lineEnd;
-
-      // execute line special after checking for hitting floor or ceiling
-      // when we know that it actally hits line
+      // execute line special when we know that we actally hit this line
       if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
 
-      if (!li->pobject && (li->flags&ML_TWOSIDED)) {
-        // crosses a two sided line
-        opening_t *open;
-        float opentop = -float.max;
-
-        open = LineOpenings(li, hitPoint, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT);
-        if (open) opentop = open->top;
-        while (open) {
-          if (open->range > 0.0 && open->bottom <= hitPoint.z && open->top >= hitPoint.z) {
-            if (!(li->flags&ML_BLOCKEVERYTHING)) break; // shot continues
-          }
-          open = open->next;
-        }
-        if (open) continue;
-        if (li->frontsector->ceiling.pic == Level.Game.skyflatnum &&
-            li->backsector->ceiling.pic == Level.Game.skyflatnum &&
-            hitPoint.z > opentop)
-        {
-          // it's a sky hack wall
-          DidHit = true;
-          break;
-        }
-      }
-      */
-
-      // execute line special after checking for hitting floor or ceiling
-      // when we know that it actally hits line
-      if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
-
+      // if this line is not a blocking one, continue checking
       if (!in->bIsABlockingLine) continue;
 
-      // hit line
+      // hit blocking line
 
       // position a bit closer
       realHitPoint = hitPoint;
       hitPoint -= 4.0*dir;
 
       // spawn bullet puffs
-      if (!in->bIsASkyPlane && PuffType) {
+      if (!in->bIsASky && PuffType) {
         SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint);
       }
-      //if (in->bIsASkyPlane && PuffType) SpawnPuff(hitPoint, distance, PuffType, false); // spawn bullet puffs
 
       // don't go any farther
       lineEnd = hitPoint;
-      DidHit = true;
       break;
     }
 
@@ -1024,31 +845,15 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
 
     if (!th.bShootable) continue; // corpse or something
 
-    // check angles to see if the thing can be aimed at
-    hitPoint = in.hitpoint; //shootOrigin+(distance*in->frac)*dir;
-
-    /*
-    if (th.Origin.z+th.Height < hitPoint.z) continue; // shot over the thing
-    if (th.Origin.z > hitPoint.z) continue; // shot under the thing
-    */
+    hitPoint = in.hitpoint;
+    // position a bit closer
+    hitPoint -= 4.0*dir; // was 10
 
     // invulnerable things completely block the shot
     if (th.bInvulnerable) {
-      DidHit = true;
       lineEnd = hitPoint;
       break;
     }
-
-    /*
-    // hit thing
-    if (in->bExtraThingCheck && !XLevel.BSPTraceLine(shootOrigin, hitPoint, noBlockFlags:SPF_NOBLOCKING)) {
-      //printdebug("%C: cannot be hit!", th);
-      continue;
-    }
-    */
-
-    // position a bit closer
-    hitPoint -= 10.0*dir;
 
     // spawn bullet puffs or blood spots, depending on target type
     bool doBlood = false;
@@ -1065,15 +870,9 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
 
     if (th && DontPierce) {
       // we did hit a thing and we can't pierce so we can stop now...
-      DidHit = true;
       lineEnd = hitPoint;
       break;
     }
-  }
-
-  if (!DidHit) {
-    lineEnd = dst;
-    RailCheckPlanes(XLevel.PointInSector(dst), lineStart, lineEnd, distance, PuffType);
   }
 
   // yep, "not specified" is processed in client trail code

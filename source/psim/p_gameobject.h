@@ -1326,10 +1326,8 @@ struct FRogueConSpeech {
 enum {
   PT_ADDLINES  = 1<<0,
   PT_ADDTHINGS = 1<<1,
-  //PT_EARLYOUT  = 1<<2,
-  PT_NOPLANES  = 1<<3, // don't check sector flats
-  PT_COMPAT    = 1<<4, // compat_trace
-  PT_NOOPENS   = 1<<5, // no opening checks (usually implies `PT_NOPLANES`)
+  PT_NOOPENS   = 1<<2, // no sector planes checks (and no 3d pobjs)
+  PT_COMPAT    = 1<<3, // compat_trace
 };
 
 
@@ -1339,7 +1337,7 @@ struct intercept_t {
     IF_IsALine         = 1u<<0,
     IF_IsABlockingLine = 1u<<1, // not yet
     IF_IsAPlane        = 1u<<2, // plane hit
-    IF_IsASkyPlane     = 1u<<3, // sky plane hit
+    IF_IsASky          = 1u<<3, // sky plane/line hit
   };
   vuint32 Flags;
   VEntity *thing;

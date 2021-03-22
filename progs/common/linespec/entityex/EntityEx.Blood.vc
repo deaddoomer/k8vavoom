@@ -229,7 +229,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
   TVec lineStart = shootOrigin;
-  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_NOOPENS) {
     if (in->bIsAPlane) continue; // just in case
 
     if (in->bIsALine) {

@@ -156,7 +156,9 @@ native static final FAmbientSound *GetAmbientSound (int Idx); // can return `nul
 native final iterator AllThinkers (class!Thinker Class, out Thinker Thinker);
 native final iterator AllActivePlayers (out BasePlayer Player);
 // z coords are used when we need to add things, to check slopes/3d floors
-native final iterator PathTraverse (out intercept_t *In, TVec p0, TVec p1, int flags);
+native final iterator PathTraverse (out intercept_t *In, TVec p0, TVec p1, int flags,
+                                    optional int planeflags/*=SPF_NOBLOCKING|SPF_NOBLOCKSHOOT*/,
+                                    optional int lineflags/*=ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN*/);
 native final iterator RadiusThings (out Entity Ent, TVec Org, float Radius);
 
 

@@ -2409,7 +2409,7 @@ bool UsePuzzleItem (int PuzzleItemType) {
   float y1 = MO.Origin.y;
   float x2 = x1+/*DEFAULT_USERANGE*/ur*PuzzleUseDir.x;
   float y2 = y1+/*DEFAULT_USERANGE*/ur*PuzzleUseDir.y;
-  foreach MO.PathTraverse(in, vector(x1, y1, MO.Origin.z), vector(x2, y2, MO.Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOPLANES|PT_NOOPENS) {
+  foreach MO.PathTraverse(in, vector(x1, y1, MO.Origin.z), vector(x2, y2, MO.Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
     EntityEx mobj;
     TVec hit_point;
     opening_t *open;

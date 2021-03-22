@@ -3734,7 +3734,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   // check things
   float x2 = x1+UseThingRange*useDir.x;
   float y2 = y1+UseThingRange*useDir.y;
-  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
     if (!in->bIsALine) {
       // check height
       if (Origin.z >= in->Thing.Origin.z+in->Thing.Height ||
@@ -3780,7 +3780,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   bool FoundLine = false;
   bool buttonSuccess;
   int useType, useSide;
-  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_NOPLANES|PT_NOOPENS) {
+  foreach PathTraverse(in, vector(x1, y1, Origin.z), vector(x2, y2, Origin.z), PT_ADDLINES|PT_NOOPENS) {
     line_t *line = in->line;
     if (!line) continue;
 

@@ -518,13 +518,15 @@ IMPLEMENT_FUNCTION(VThinker, AllActivePlayers) {
   RET_PTR(new VActivePlayersIterator(Self, Out));
 }
 
-// native final iterator PathTraverse (out intercept_t *In, TVec p0, TVec p1, int flags);
+// native final iterator PathTraverse (out intercept_t *In, TVec p0, TVec p1, int flags, optional int planeflags, optional int lineflags);
 IMPLEMENT_FUNCTION(VThinker, PathTraverse) {
   intercept_t **In;
   TVec p0, p1;
   int flags;
-  vobjGetParamSelf(In, p0, p1, flags);
-  RET_PTR(new VPathTraverse(Self, In, p0, p1, flags));
+  VOptParamInt planeflags(SPF_NOBLOCKING|SPF_NOBLOCKSHOOT);
+  VOptParamInt lineflags(ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN);
+  vobjGetParamSelf(In, p0, p1, flags, planeflags, lineflags);
+  RET_PTR(new VPathTraverse(Self, In, p0, p1, flags, (vuint32)planeflags, (vuint32)lineflags));
 }
 
 // native final iterator RadiusThings (out Entity Ent, TVec Org, float Radius);

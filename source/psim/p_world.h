@@ -150,22 +150,21 @@ private:
   float trace_len;
   float trace_len3d;
   bool compat_trace;
-  //bool seen3DSlopes;
-  //bool seenThing;
   float max_frac;
-  bool was_block_line;
 
   int Count;
   intercept_t *In;
   intercept_t **InPtr;
 
 public:
-  VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags);
+  VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags,
+                 vuint32 planeflags=SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, vuint32 lineflags=ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN);
   virtual bool GetNext () override;
 
 private:
-  void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags);
-  void AddLineIntercepts (VThinker *Self, int mapx, int mapy, bool doadd, bool doopening);
+  void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags);
+  // returns `true` if some blocking line was hit
+  bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags, bool doadd, bool doopening);
   void AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool doopening);
   intercept_t &NewIntercept (const float frac);
   void RemoveInterceptsAfter (const float frac); // >=
