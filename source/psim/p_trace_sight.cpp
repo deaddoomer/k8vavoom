@@ -68,8 +68,6 @@ struct SightTraceInfo {
   // the following should be set
   TVec Start;
   TVec End;
-  sector_t *StartSector;
-  sector_t *EndSector;
   subsector_t *StartSubSector;
   subsector_t *EndSubSector;
   VLevel *Level;
@@ -101,8 +99,6 @@ struct SightTraceInfo {
     // use buggy vanilla algo here, because this is what used for world linking
     StartSubSector = (sstart ?: alevel->PointInSubsector_Buggy(org));
     EndSubSector = (send ?: alevel->PointInSubsector_Buggy(dest));
-    StartSector = StartSubSector->sector;
-    EndSector = EndSubSector->sector;
   }
 };
 
@@ -293,7 +289,7 @@ static bool SightCheckLineHit (SightTraceInfo &trace, const line_t *line, const 
   // normal line (not a 3d pobj part)
   const int s1 = line->PointOnSide2(trace.Start);
   sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
-  if (!SightCheckPlanes(trace, front, (front == trace.StartSector))) return false;
+  if (!SightCheckPlanes(trace, front, (front == trace.StartSubSector->sector))) return false;
 
   trace.LineStart = trace.LineEnd;
 
@@ -443,7 +439,7 @@ static bool SightTraverseIntercepts (SightTraceInfo &trace) {
   }
 
   trace.LineEnd = trace.End;
-  return SightCheckPlanes(trace, trace.EndSector, (trace.EndSector == trace.StartSector));
+  return SightCheckPlanes(trace, trace.EndSubSector->sector, (trace.EndSubSector->sector == trace.StartSubSector->sector));
 }
 
 
@@ -501,7 +497,7 @@ static bool SightCheckStartingPObj (SightTraceInfo &trace) {
 //  traces a sight ray from `trace.Start` to `trace.End`, possibly
 //  collecting intercepts
 //
-//  `trace.StartSector` and `trace.EndSector` must be set
+//  `trace.StartSubSector` and `trace.EndSubSector` must be set
 //
 //  returns `true` if no obstacle was hit
 //  sets `trace.LineEnd` if something was hit
@@ -528,7 +524,7 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
       return false;
     }
     if (!SightCheckStartingPObj(trace)) return false;
-    return SightCheckPlanes(trace, trace.StartSector, true);
+    return SightCheckPlanes(trace, trace.StartSubSector->sector, true);
   }
 
   if (!SightCheckStartingPObj(trace)) return false;
@@ -574,7 +570,7 @@ static bool SightPathTraverse2 (SightTraceInfo &trace) {
       return false;
     }
     if (!SightCheckStartingPObj(trace)) return false;
-    return SightCheckPlanes(trace, trace.StartSector, true);
+    return SightCheckPlanes(trace, trace.StartSubSector->sector, true);
   }
   if (!SightCheckStartingPObj(trace)) return false;
   return SightTraverseIntercepts(trace);
