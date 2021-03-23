@@ -2398,52 +2398,63 @@ Weapon GetNextWeapon (Weapon Current) {
 //
 //==========================================================================
 bool UsePuzzleItem (int PuzzleItemType) {
-  TVec PuzzleUseDir;
-  intercept_t* in;
-
   float ur, utr;
   GetUseRanges(out ur, out utr);
 
+  TVec PuzzleUseDir;
   AngleVector(MO.Angles, out PuzzleUseDir);
+
+  TVec start = MO.Origin;
+  TVec end = start+ur*PuzzleUseDir.xy;
+  /*
   float x1 = MO.Origin.x;
   float y1 = MO.Origin.y;
-  float x2 = x1+/*DEFAULT_USERANGE*/ur*PuzzleUseDir.x;
-  float y2 = y1+/*DEFAULT_USERANGE*/ur*PuzzleUseDir.y;
-  foreach MO.PathTraverse(in, vector(x1, y1, MO.Origin.z), vector(x2, y2, MO.Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
-    EntityEx mobj;
-    TVec hit_point;
-    opening_t *open;
+  float x2 = x1+/+DEFAULT_USERANGE+/ur*PuzzleUseDir.x;
+  float y2 = y1+/+DEFAULT_USERANGE+/ur*PuzzleUseDir.y;
+  */
+
+  EntityEx mobj;
+  //TVec hitPoint;
+  //opening_t *open;
+  line_t *ld;
+  intercept_t *in;
+
+  foreach MO.PathTraverse(in, start, end, PT_ADDLINES|PT_ADDTHINGS/*|PT_NOOPENS*//*|PT_AIMTHINGS*/, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
+    if (in->bIsAPlane) break; // plane hit, no usable lines/things found
 
     if (in->bIsALine) {
       // check line
-      hit_point = MO.Origin+(/*DEFAULT_USERANGE*/ur*in->frac)*PuzzleUseDir;
-      if (in->line->special != LNSPEC_UsePuzzleItem) {
-        if (in->line->flags&(ML_BLOCKEVERYTHING|ML_BLOCKUSE)) {
+      ld = in->line;
+      if (ld->special != LNSPEC_UsePuzzleItem) {
+        if (in->bIsABlockingLine) break; // line hit, no actor found
+        /*
+        if (ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKUSE)) {
           // gozzo does this
           open = nullptr;
         } else {
-          open = LineOpenings(in->line, hit_point);
+          hitPoint = MO.Origin+(/+DEFAULT_USERANGE+/ur*in->frac)*PuzzleUseDir;
+          open = LineOpenings(ld, hitPoint);
         }
         if (!open || open->range <= 0.0) {
           if (MO.bIsPlayer) MO.PlaySound('*puzzfail', CHAN_VOICE);
           break; // can't use through a wall
         }
+        */
         continue; // continue searching
       }
-      if (PointOnPlaneSide(MO.Origin, *in->line) == 1) {
+      if (PointOnPlaneSide(start, *ld) == 1) {
         // don't use back sides
         break;
       }
-      if (PuzzleItemType != in->line->arg1) {
+      if (PuzzleItemType != ld->arg1) {
         // item type doesn't match
         break;
       }
-      MO.XLevel.StartACS(in->line->arg2, 0, in->line->arg3,
-        in->line->arg4, in->line->arg5, MO, in->line, 0, false,
-        false);
-      in->line->special = 0;
+      MO.XLevel.StartACS(ld->arg2, 0, ld->arg3, ld->arg4, ld->arg5, MO, ld, 0, false, false);
+      ld->special = 0;
       return true; // stop searching
     }
+
     // check thing
     mobj = EntityEx(in->Thing);
     if (mobj.Special != LNSPEC_UsePuzzleItem) {
@@ -2454,11 +2465,11 @@ bool UsePuzzleItem (int PuzzleItemType) {
       // item type doesn't match
       continue;
     }
-    MO.XLevel.StartACS(mobj.Args[1], 0, mobj.Args[2], mobj.Args[3],
-      mobj.Args[4], MO, nullptr, 0, false, false);
+    MO.XLevel.StartACS(mobj.Args[1], 0, mobj.Args[2], mobj.Args[3], mobj.Args[4], MO, nullptr, 0, false, false);
     mobj.Special = 0;
-    return true; // Stop searching
+    return true; // stop searching
   }
+
   return false;
 }
 
