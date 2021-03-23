@@ -32,7 +32,12 @@
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
 
-static VCvarI dbg_thing_traverser("dbg_thing_traverser", "0", "Thing checking in interceptor: 0=best; 1=Vavoom, better; 2=Vavoom, original", CVAR_PreInit);
+//static VCvarI dbg_thing_traverser("dbg_thing_traverser", "0", "Thing checking in interceptor: 0=best; 1=Vavoom, better; 2=Vavoom, original", CVAR_PreInit);
+
+// 0: best
+// 1: Vavoom, better
+// 2: Vavoom, original
+#define VV_THING_TRAVERSER  0
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -371,7 +376,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
         TPlane oplane;
         TVec end = p0+trace_dir3d*min2(1.0f, max_frac);
         //GCon->Logf(NAME_Debug, "AddLineIntercepts: base planes for %s(%u); max_frac=%g", Self->GetClass()->GetName(), Self->GetUniqueId(), min2(1.0f, max_frac));
-        if (!Level->CheckPassPlanes(ssub->sector, p0, end, SPF_NOBLOCKSHOOT, &ohp, nullptr, &isSky, &oplane, &pfrac)) {
+        if (!Level->CheckPassPlanes(ssub->sector, p0, end, planeflags, &ohp, nullptr, &isSky, &oplane, &pfrac)) {
           // found hit plane, it should be less than first line frac
           pfrac = oplane.IntersectionTime(p0, p1, &ohp);
           if (pfrac >= 0.0f && (iidx >= Intercepts.length() || pfrac < Intercepts.ptr()[iidx].frac)) {
@@ -400,7 +405,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
           bool isSky;
           TVec ohp;
           TPlane oplane;
-          if (!Level->CheckPassPlanes(sec, lineStart, hitPoint, SPF_NOBLOCKSHOOT, nullptr, nullptr, &isSky, &oplane, &pfrac)) {
+          if (!Level->CheckPassPlanes(sec, lineStart, hitPoint, planeflags, nullptr, nullptr, &isSky, &oplane, &pfrac)) {
             // found hit plane, recalc frac
             pfrac = oplane.IntersectionTime(p0, p1, &ohp);
             if (pfrac >= 0.0f && pfrac < max_frac) {
@@ -717,8 +722,8 @@ void VPathTraverse::AddProperThingHit (VEntity *th, const float frac) {
 //==========================================================================
 void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
   if (!Self) return;
-  const int tvt = dbg_thing_traverser.asInt();
-  if (!tvt) {
+  //const int tvt = dbg_thing_traverser.asInt();
+  #if VV_THING_TRAVERSER == 0
     // best, gz
     divline_t trace;
     trace.x = trace_org.x;
@@ -791,7 +796,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         }
       }
     }
-  } else if (tvt == 1) {
+  #elif VV_THING_TRAVERSER == 1
     // better original
     for (int dy = -1; dy < 2; ++dy) {
       for (int dx = -1; dx < 2; ++dx) {
@@ -809,7 +814,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         }
       }
     }
-  } else {
+  #elif VV_THING_TRAVERSER == 2
     // original
     if (!NeedCheckBMCell(mapx, mapy)) return;
     for (VBlockThingsIterator It(Level, mapx, mapy); It; ++It) {
@@ -822,7 +827,9 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
       if (frac < 0.0f || frac > 1.0f) continue;
       AddProperThingHit(*It, frac);
     }
-  }
+  #else
+    #error "VV_THING_TRAVERSER is not properly set!"
+  #endif
 }
 
 
