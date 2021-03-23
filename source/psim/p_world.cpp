@@ -317,7 +317,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     trace_dest = TVec(x2, y2, 0);
     trace_delta = trace_dest-trace_org;
     trace_dir = Normalise(trace_delta);
-    trace_len = trace_delta.length();
+    trace_len = (trace_delta.x || trace_delta.y ? trace_delta.length() : 0.0f);
     trace_plane.SetPointDirXY(trace_org, trace_delta);
 
     // for hitpoint calculations
@@ -765,6 +765,20 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           // [RH] don't check a corner to corner crossection for hit
           // instead, check against the actual bounding box
 
+          if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
+            // center hitpoint
+            const float dot = trace_plane.PointDistance(It->Origin);
+            if (fabsf(dot) >= It->Radius) continue; // thing is too far away
+            const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
+            if (dist < 0.0f) continue; // behind source
+            const float frac = (trace_len ? dist/trace_len : 0.0f);
+            if (frac < 0.0f || frac > 1.0f) continue;
+            intercept_t &In = NewIntercept(frac);
+            In.Flags = 0;
+            In.thing = *It;
+            continue;
+          }
+
           // there's probably a smarter way to determine which two sides
           // of the thing face the trace than by trying all four sides...
           int numfronts = 0;
@@ -831,7 +845,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           if (fabsf(dot) >= It->Radius) continue; // thing is too far away
           const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
           if (dist < 0.0f) continue; // behind source
-          const float frac = dist/trace_len;
+          const float frac = (trace_len ? dist/trace_len : 0.0f);
           if (frac < 0.0f || frac > 1.0f) continue;
           //if (vptSeenThings.put(*It, true)) continue;
           AddProperThingHit(*It, frac);
@@ -847,7 +861,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
       if (fabsf(dot) >= It->Radius) continue; // thing is too far away
       const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
       if (dist < 0.0f) continue; // behind source
-      const float frac = dist/trace_len;
+      const float frac = (trace_len ? dist/trace_len : 0.0f);
       if (frac < 0.0f || frac > 1.0f) continue;
       AddProperThingHit(*It, frac);
     }
