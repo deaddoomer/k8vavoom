@@ -94,6 +94,7 @@ struct Field {
 // ////////////////////////////////////////////////////////////////////////// //
 TMap<VName, Type *> shitppTypes;
 TMap<VName, Type *> vcTypes;
+int errorCount = 0;
 
 
 //==========================================================================
@@ -1437,6 +1438,7 @@ void checkVCType (Type *tp) {
   if (fcount != spt->fieldCount()) {
     if (tp->name != "surface_t") {
       GLog.Logf(NAME_Error, "%s <-> %s: invalid field count (%d : %d)", *tp->toString(), *spt->toString(), fcount, spt->fieldCount());
+      ++errorCount;
       tp->dumpFields();
       spt->dumpFields();
       return;
@@ -1477,6 +1479,7 @@ void checkVCType (Type *tp) {
         wasFail = true;
         doAdd = false;
         GLog.Logf(NAME_Error, "%s <-> %s: field #%d (%s : %s) has different types (%s : %s)", *tp->toString(), *spt->toString(), f, *vcf->name, *spf->name, *vcType->toString(), *spType->toString());
+        ++errorCount;
         //return;
       }
     }
@@ -1609,7 +1612,11 @@ int main (int argc, char **argv) {
     for (auto &&it : passed) {
       GLog.Logf("PASSED: %s <-> %s: (%d : %d)", *it.vcType, *it.ppType, it.vcfcount, it.ppfcount);
     }
-    GLog.Logf("%d types compared", passed.length());
+    if (errorCount) {
+      GLog.Logf(NAME_Error, "%d types compared, %d error%s found!", passed.length(), errorCount, (errorCount != 1 ? "s" : ""));
+    } else {
+      GLog.Logf("%d types compared, 0 errors found", passed.length());
+    }
   }
 
   Z_ShuttingDown();
