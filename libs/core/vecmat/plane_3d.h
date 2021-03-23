@@ -169,6 +169,27 @@ public:
     return DotProduct(p, normal)-dist;
   }
 
+  // returns intersection time
+  // negative means "no intersection" (and `*currhit` is not modified)
+  // yeah, we have too many of those
+  // this one is used in various plane checks in the engine (it happened so historically)
+  inline float IntersectionTime (const TVec &linestart, const TVec &lineend, TVec *currhit=nullptr) noexcept {
+    const float d1 = PointDistance(linestart);
+    if (d1 < 0.0f) return -1.0f; // don't shoot back side
+
+    const float d2 = PointDistance(lineend);
+    if (d2 >= 0.0f) return -1.0f; // didn't hit plane
+
+    //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
+    //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
+
+    const float frac = d1/(d1-d2); // [0..1], from start
+    if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
+
+    if (currhit) *currhit = linestart+(lineend-linestart)*frac;
+    return frac;
+  }
+
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
   inline VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
