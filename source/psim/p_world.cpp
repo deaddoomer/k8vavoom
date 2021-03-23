@@ -603,31 +603,38 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 
       if (ld->flags&ML_TWOSIDED) {
         if (doopening) {
-          // crosses a two sided line, check openings
-          const TVec hitPoint = trace_org3d+trace_dir3d*frac;
-          opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
-          const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
-
-          const float opentop = (open ? open->top : -FLT_MAX);
-
-          while (open) {
-            if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) {
-              if (!(ld->flags&lineflags)) break; // shot continues
-            }
-            open = open->next;
-          }
-
-          if (open) {
-            blockFlag = false;
-          } else {
+          // flag-blocking line
+          if (ld->flags&lineflags) {
             blockFlag = true;
+            // sky hack?
             if (ld->frontsector->ceiling.pic == skyflatnum &&
+                ld->backsector->ceiling.pic == skyflatnum)
+            {
+              const TVec hitPoint = trace_org3d+trace_dir3d*frac;
+              const float hpz = hitPoint.z;
+              opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
+              if (open && hpz > open->top) isSky = true;
+            }
+          } else {
+            // crosses a two sided line, check openings
+            const TVec hitPoint = trace_org3d+trace_dir3d*frac;
+            const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
+            opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
+            if (open &&
+                ld->frontsector->ceiling.pic == skyflatnum &&
                 ld->backsector->ceiling.pic == skyflatnum &&
-                hpz > opentop)
+                hpz > open->top)
             {
               // it's a sky hack wall
               isSky = true;
             }
+            while (open) {
+              if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) {
+                /*if (!(ld->flags&lineflags))*/ break; // shot continues
+              }
+              open = open->next;
+            }
+            blockFlag = !open;
           }
         } else {
           // no opening scan
@@ -651,6 +658,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       intercept_t &In = NewIntercept(frac);
       In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASky : 0u);
       In.line = ld;
+      In.side = ld->PointOnSide(trace_org3d);
       // set line sector
       if (po) {
         //FIXME: this code is a mess!
@@ -658,7 +666,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         else if (ld->frontsector) In.sector = ld->frontsector;
         else In.sector = ld->backsector;
       } else {
-        In.sector = (ld->PointOnSide(trace_org3d) ? ld->backsector : ld->frontsector);
+        In.sector = (In.side ? ld->backsector : ld->frontsector);
       }
       //GCon->Logf(NAME_Debug, "002: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(In.line-&Level->Lines[0]), In.frac, max_frac);
     }

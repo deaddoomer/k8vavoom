@@ -1378,6 +1378,7 @@ struct intercept_t {
   bool bIsASky;
   Entity Thing;
   line_t *line;
+  int side; // for lines: hit side (0 or 1); otherwise undefined
   // for plane hit; `sector` is nullptr if pobj was hit
   sector_t *sector; // set for lines too: sector we're coming at the line from
   polyobj_t *po;

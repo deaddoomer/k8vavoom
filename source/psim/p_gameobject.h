@@ -1365,6 +1365,7 @@ struct intercept_t {
   vuint32 Flags;
   VEntity *thing;
   line_t *line;
+  vint32 side; // for lines: hit side (0 or 1); otherwise undefined
   // for plane hit; `sector` is nullptr if pobj was hit
   sector_t *sector;
   polyobj_t *po;

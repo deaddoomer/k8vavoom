@@ -223,125 +223,69 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   tr->didhit = false;
   tr->mobj = none;
 
-  TVec hit_point;
+  TVec hitPoint;
   line_t *li;
   intercept_t *in;
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
   TVec lineStart = shootOrigin;
-  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_NOOPENS) {
-    if (in->bIsAPlane) continue; // just in case
+
+  // no line can block The Mighty Blood Splats!
+  foreach PathTraverse(in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/, SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
+    if (in->bIsAPlane) {
+      // hit floor or ceiling
+      outHitPoint = hitPoint;
+      tr->hit = in->hitpoint;
+      tr->didhit = true;
+      return false;
+    }
 
     if (in->bIsALine) {
       li = in->line;
-      hit_point = shootOrigin+(distance*in->frac)*dir;
+      hitPoint = in->hitpoint; //shootOrigin+(distance*in->frac)*dir;
 
-      // check if pobj line was hit
-      if (li->pobject /*&& (li->flags&ML_TWOSIDED)*/) {
-        if (hit_point.z <= li->pobject->pofloor.minz || hit_point.z >= li->pobject->poceiling.maxz) continue;
-      }
+      sec = in->sector;
+      side = in->side;
 
-      if ((li->flags&ML_TWOSIDED) && PointOnPlaneSide(shootOrigin, *li)) {
-        side = 1;
-        sec = li->backsector;
+      if (!in->bIsASky) {
+        if (Level.CompatTrace && li->frontsector == li->backsector) {
+          if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
+            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
+          }
+        }
+
+        if (!li->pobject && (li->flags&ML_TWOSIDED)) {
+          // alpha check for various special fx (additive lines are mostly used for fx too)
+          if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
+            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
+          }
+        }
       } else {
-        side = 0;
-        sec = li->frontsector;
+        // sky hit, stop
+        outHitPoint = hitPoint;
+        tr->hit = hitPoint;
+        tr->didhit = true;
+        return false;
       }
 
-      if (!li->pobject) {
-        TVec lineEnd = hit_point;
+      if (!in->bIsABlockingLine) continue;
 
-        // check for shooting floor or ceiling
-        if (!ShootCheckPlanes(sec, lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
-          // process floor and ceiling here
-          tr->hit = outHitPoint;
-          tr->didhit = true;
-          return false;
-        }
-
-        lineStart = lineEnd;
-      } else {
-        lineStart = hit_point;
-      }
-
-      if (Level.CompatTrace && li->frontsector == li->backsector) {
-        if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
-          SpawnDecal(hit_point, aDecalName, side, li, atranslation!optional);
-        }
-        continue;
-      }
-
-      if (!li->pobject && (li->flags&ML_TWOSIDED)) {
-        // crosses a two sided line
-        float opentop = -float.max;
-
-        opening_t *open = nullptr;
-        // no need to scan openings for blocking line
-        if (!(li->flags&(ML_BLOCKING|ML_BLOCKEVERYTHING))) {
-          open = LineOpenings(li, hit_point);
-          if (open) opentop = open->top;
-          while (open) {
-            if (open->range > 0.0 && open->bottom <= hit_point.z-12 && open->top >= hit_point.z+12) {
-              break; // shot continues
-            }
-            open = open->next;
-          }
-          // found good opening?
-          if (open) {
-            // alpha check for various special fx (additive lines are mostly used for fx too)
-            if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
-              SpawnDecal(hit_point, aDecalName, side, li, atranslation!optional);
-            }
-            continue;
-          }
-        }
-
-        if (li->frontsector->ceiling.pic == Level.Game.skyflatnum &&
-            li->backsector->ceiling.pic == Level.Game.skyflatnum)
-        {
-          if (!open) {
-            open = LineOpenings(li, hit_point);
-            if (open) opentop = open->top;
-          }
-          if (hit_point.z > opentop) {
-            // it's a sky hack wall
-            tr->hit = hit_point;
-            tr->didhit = true;
-            return false;
-          }
-        }
-      }
-
-      outHitPoint = hit_point;
-
-      if (li->special == LNSPEC_LineHorizon) {
-        tr->hit = hit_point;
-        return false; // don't spawn decals on sky
-      }
-
-      // hit line
-      tr->hit = hit_point;
+      // hit blocking line
+      outHitPoint = hitPoint;
+      tr->hit = hitPoint;
       tr->line = li;
       tr->sec = sec;
       tr->side = side;
       tr->didhit = true;
 
-      if (aDecalName && !only2S) SpawnDecal(hit_point, aDecalName, side, li, atranslation!optional);
+      if (aDecalName && !only2S) SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
 
-      // don't go any farther if not two-sided
-      if (!(li->flags&ML_TWOSIDED)) return true;
-      // two-sided, go through it if it is not blocking
-      if (li->flags&(ML_BLOCKING|ML_BLOCKEVERYTHING)) return true;
+      return true;
     }
   }
 
-  TVec lineEnd = dst;
-  if (!ShootCheckPlanes(XLevel.PointInSector(dst), lineStart, lineEnd, distance, PuffType:none, &outHitPoint)) {
-    // process floor and ceiling here
-    tr->hit = outHitPoint;
-    tr->didhit = true;
-  }
+  tr->hit = dst;
+  tr->didhit = true;
 
   return false;
 }
