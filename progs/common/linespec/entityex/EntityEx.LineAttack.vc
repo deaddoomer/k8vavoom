@@ -45,94 +45,6 @@ struct trsplat_t {
 
 //==========================================================================
 //
-//  CalcProperThingHit
-//
-//==========================================================================
-static final bool CalcProperThingHit (ref TVec hitPoint, Entity th, const TVec shootOrigin, const TVec dir, const float distance) {
-  if (hitPoint.z > th.Origin.z+th.Height) {
-    // trace enters above actor
-    if (dir.z >= 0) return false; // going up: can't hit
-    // does it hit the top of the actor?
-    float dist = (th.Origin.z+th.Height-shootOrigin.z)/dir.z;
-    if (dist > distance) return false;
-    //float frac = dist/distance;
-    hitPoint = shootOrigin+dir*dist;
-    // calculated coordinate is outside the actor's bounding box
-    if (fabs(hitPoint.x-th.Origin.x) > th.Radius ||
-        fabs(hitPoint.y-th.Origin.y) > th.Radius)
-    {
-      return false;
-    }
-  } else if (hitPoint.z < th.Origin.z) {
-    // trace enters below actor
-    if (dir.z <= 0) return false; // going down: can't hit
-    // does it hit the bottom of the actor?
-    float dist = (th.Origin.z-shootOrigin.z)/dir.z;
-    if (dist > distance) return false;
-    //frac = dist/distance;
-    hitPoint = shootOrigin+dir*dist;
-    // calculated coordinate is outside the actor's bounding box
-    if (fabs(hitPoint.x-th.Origin.x) > th.Radius ||
-        fabs(hitPoint.y-th.Origin.y) > th.Radius)
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-//==========================================================================
-//
-//  ShootCheckPlanes
-//
-//  returns `false` if hit
-//
-//==========================================================================
-final bool ShootCheckPlanes (sector_t *sec, TVec linestart, TVec lineend, float range,
-                             class!EntityEx PuffType, TVec *outHitPoint,
-                             optional out EntityEx puffEntity)
-{
-  if (sec->ownpobj) return true; // polyobjects should be processed separately
-
-  TVec hitpoint, hitnormal;
-  bool hitsky;
-  bool didHit = !CheckPassPlanes(sec, linestart, lineend, SPF_NOBLOCKSHOOT/*|SPF_IGNORE_BASE_REGION*/, out hitpoint, out hitnormal, out hitsky);
-
-  if (didHit) {
-    if (outHitPoint) *outHitPoint = hitpoint;
-    // if we are shooting floor or ceiling we are adjusting position
-    // to spawn puff on floor or ceiling, not on wall
-    if (!hitsky && PuffType) {
-      // position a bit closer
-      //hitpoint += 1.5*hitnormal;
-      // spawn bullet puffs
-      //SpawnPuff(lineend, range, PuffType, false, sec, li); //k8: we can't do decals on non-walls yet
-      //printdebug("%C: spawning puff '%C' from planes", self, PuffType);
-      puffEntity = SpawnPuff(hitpoint, range, PuffType, false);
-    }
-    return false;
-  }
-
-  if (outHitPoint) *outHitPoint = lineend;
-  return true;
-}
-
-
-//==========================================================================
-//
-//  RailCheckPlanes
-//
-//==========================================================================
-final bool RailCheckPlanes (sector_t *sec, TVec linestart, out TVec lineend,
-                            float range, class!EntityEx PuffType)
-{
-  return ShootCheckPlanes(sec, linestart, lineend, range, PuffType, nullptr);
-}
-
-
-//==========================================================================
-//
 //  CalculateLineAttackZOfs
 //
 //  calculate z offset for line attack (will be added to origin)
@@ -428,7 +340,7 @@ final EntityEx Aim (out TVec OutDir, float distance, optional float yaw,
     }
   }
 
-  if (rocketType) printdebug("%C: AIMed at %C; yaw=%s; dir=%s", self, LineTarget, ang.yaw, dir);
+  //if (rocketType) printdebug("%C: AIMed at %C; yaw=%s; dir=%s", self, LineTarget, ang.yaw, dir);
 
   if (aaim) OutDir = dir;
 

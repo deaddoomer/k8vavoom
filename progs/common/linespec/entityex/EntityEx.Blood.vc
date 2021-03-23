@@ -280,7 +280,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   }
 
   tr->hit = dst;
-  tr->didhit = true;
+  tr->didhit = false;
 
   return false;
 }
