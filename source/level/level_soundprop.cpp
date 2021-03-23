@@ -146,7 +146,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
     }
   }
 
-  if (NumPolyObjs) {
+  if (Has3DPolyObjects()) {
     // and 3d pobjs too
     //FIXME: process pobj "block sound" lines?
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {

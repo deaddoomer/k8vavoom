@@ -156,10 +156,11 @@ bool VBlockLinesIterator::GetNext () {
 //  VBlockPObjIterator::VBlockPObjIterator
 //
 //==========================================================================
-VBlockPObjIterator::VBlockPObjIterator (VLevel *ALevel, int x, int y, polyobj_t **APolyPtr)
+VBlockPObjIterator::VBlockPObjIterator (VLevel *ALevel, int x, int y, polyobj_t **APolyPtr, bool all)
   : Level(ALevel)
   , PolyPtr(APolyPtr)
   , PolyLink(nullptr)
+  , returnAll(all)
 {
   if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
 
@@ -174,14 +175,14 @@ VBlockPObjIterator::VBlockPObjIterator (VLevel *ALevel, int x, int y, polyobj_t 
 //
 //==========================================================================
 bool VBlockPObjIterator::GetNext () {
-  while (PolyLink) {
+  for (; PolyLink; PolyLink = PolyLink->next) {
     polyobj_t *po = PolyLink->polyobj;
-    PolyLink = PolyLink->next;
-    if (po && po->validcount != validcount) {
-      po->validcount = validcount;
-      *PolyPtr = po;
-      return true;
-    }
+    if (!po) continue;
+    if (!po->posector && !returnAll) continue;
+    if (po->validcount == validcount) continue;
+    po->validcount = validcount;
+    *PolyPtr = po;
+    return true;
   }
   return false;
 }
@@ -286,7 +287,7 @@ VPathTraverse::VPathTraverse (VThinker *Self, intercept_t *AInPtr, const TVec &p
 //
 //==========================================================================
 VPathTraverse::~VPathTraverse () {
-  if (InPtr) { memset(InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; } // just in case
+  if (InPtr) { memset((void *)InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; } // just in case
   if (Level && poolStart >= 0) {
     Level->ReleasePathInterception(poolStart, poolEnd);
     Level = nullptr;
@@ -349,6 +350,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     max_frac = FLT_MAX;
 
     // initial 3d pobj check
+    // we can optimise this, but there is no reason, because we'll need `ssub` anyway
     if ((flags&(PT_ADDLINES|PT_NOOPENS)) == PT_ADDLINES) {
       ssub = Level->PointInSubsector(p0);
       TPlane pobjPlane;
@@ -609,6 +611,12 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
         // non-blocking pobj line: check polyobject planes
         // if this polyobject plane was already added to list, it is not interesting anymore
+        //
+        // possible optimisation: check this after finishing with line list
+        // this way we'll have sorted lines, and we can skip checking "point-in-sector" (sometimes),
+        // because if pobj plane hit time is bigger than the time of the next line, there's no hit
+        // yet this is complicated by 2-sided non-blocking lines, so maybe we should check hit time
+        // against two lines of the same polyobject (there *MUST* be two of them for enter/exit)
         if (po->posector && po->validcount != validcount) {
           // check if we can hit pobj vertically
           const float tz0 = trace_org3d.z;
@@ -915,7 +923,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
 //
 //==========================================================================
 bool VPathTraverse::GetNext () {
-  if (Index >= Count) { memset(InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
+  if (Index >= Count) { memset((void *)InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
   *InPtr = *GetIntercept(Index++);
   return true;
 }

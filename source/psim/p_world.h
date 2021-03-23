@@ -74,9 +74,11 @@ private:
   VLevel *Level;
   polyobj_t **PolyPtr;
   polyblock_t *PolyLink;
+  bool returnAll;
 
 public:
-  VBlockPObjIterator (VLevel *Level, int x, int y, polyobj_t **APolyPtr);
+  // if `all` is false, return only 3d pobjs
+  VBlockPObjIterator (VLevel *Level, int x, int y, polyobj_t **APolyPtr, bool all=false);
   bool GetNext ();
 };
 

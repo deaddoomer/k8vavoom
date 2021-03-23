@@ -95,6 +95,8 @@ native transient bool bForceNoFloorFloodfillFix;
 native transient bool bForceNoCeilingFloodfillFix;
 // used only in VavoomC
 native transient bool bConvertSectorLightsToStatic;
+// set by pobj spawner
+native transient bool bHas3DPolyObjects;
 
 native transient name UDMFNamespace; // locased
 

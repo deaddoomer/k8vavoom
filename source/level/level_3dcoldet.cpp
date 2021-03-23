@@ -264,6 +264,27 @@ float VLevel::CheckPObjPassPlanes (const polyobj_t *po, const TVec &linestart, c
 
 //==========================================================================
 //
+//  VLevel::CanHave3DPolyObjAt
+//
+//  check polyobj blockmap: if it doesn't have any 3d pobs,
+//  then there is no reason to look for starting subsector/pobj
+//
+//==========================================================================
+bool VLevel::CanHave3DPolyObjAt (const TVec &p) const noexcept {
+  if (!Has3DPolyObjects() || !PolyBlockMap) return false;
+  const int bmx = MapBlock(p.x-BlockMapOrgX);
+  const int bmy = MapBlock(p.y-BlockMapOrgY);
+  if (bmx < 0 || bmx >= BlockMapWidth || bmy < 0 || bmy >= BlockMapHeight) return false;
+  for (polyblock_t *PolyLink = PolyBlockMap[bmy*BlockMapWidth+bmx]; PolyLink; PolyLink = PolyLink->next) {
+    polyobj_t *po = PolyLink->polyobj;
+    if (po && po->posector) return true;
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VLevel::CheckPObjPlanesPoint
 //
 //  returns hit time
@@ -273,18 +294,7 @@ float VLevel::CheckPObjPassPlanes (const polyobj_t *po, const TVec &linestart, c
 float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, const subsector_t *stsub,
                                     TVec *outHitPoint, TVec *outHitNormal, TPlane *outHitPlane, polyobj_t **outpo)
 {
-  // check if the map has 3d pobjs
-  // as we need to determine starting subsector via BSP, try to avoid it if it is not necessary
-  if (NumPolyObjs == 0) return -1.0f;
-  bool has3dPObj = false;
-  polyobj_t **polist = PolyObjs;
-  for (int f = NumPolyObjs; f--; ++polist) {
-    if ((*polist)->posector) {
-      has3dPObj = true;
-      break;
-    }
-  }
-  if (!has3dPObj) return -1.0f;
+  if (!CanHave3DPolyObjAt(linestart)) return -1.0f;
 
   const subsector_t *sub = (stsub ?: PointInSubsector(linestart));
 

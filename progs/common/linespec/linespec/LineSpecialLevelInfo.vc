@@ -5212,11 +5212,9 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   TVec delta = vector(dx, dy);
   TVec newpos = ex.Origin+delta;
   ex.UnlinkFromWorld();
-  //ex.PolyObjIgnore = po;
   bool killit = false;
   //bool ok = ex.CheckPosition(newpos);
   bool ok = ex.CheckRelPosition(out tmtrace, newpos, noPickups:true);
-  //ex.PolyObjIgnore = nullptr;
   //printdebug("%C(%s): posdiff=%s; ok=%B", ex, ex.UniqueId, newpos-ex.Origin, ok);
   if (ok) {
     ex.Origin = newpos;

@@ -323,6 +323,8 @@ class VLevel : public VGameObject {
     LF_ForceNoCeilingFloodfillFix       = 1u<<10,
     // used only in VavoomC
     LF_ConvertSectorLightsToStatic      = 1u<<11,
+    // set by pobj spawner
+    LF_Has3DPolyObjects                 = 1u<<12,
   };
   vuint32 LevelFlags;
 
@@ -864,11 +866,17 @@ public:
   static float CheckPObjPassPlanes (const polyobj_t *po, const TVec &linestart, const TVec &lineend,
                                     TVec *outHitPoint=nullptr, TVec *outHitNormal=nullptr, TPlane *outHitPlane=nullptr);
 
+  // this function is used to check planes of polyobject that *CONTAINS* `linestart`
+  // WARNING! `linestart` must be inside a polyobject!
   // returns hit time
   // negative means "no hit"
   float CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, const subsector_t *stsub=nullptr,
                               TVec *outHitPoint=nullptr, TVec *outHitNormal=nullptr, TPlane *outHitPlane=nullptr,
                               polyobj_t **po=nullptr);
+
+  VVA_CHECKRESULT inline bool Has3DPolyObjects () const noexcept { return (LevelFlags&LF_Has3DPolyObjects); }
+
+  bool CanHave3DPolyObjAt (const TVec &p) const noexcept;
 
 public:
   // returns `false` if seg is out of subsector

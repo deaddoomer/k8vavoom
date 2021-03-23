@@ -983,6 +983,8 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
     po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
 
+  LevelFlags |= LF_Has3DPolyObjects;
+
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
 }
@@ -1581,7 +1583,7 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 
         if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
 
-        mobj->PolyObjIgnore = po;
+        //mobj->PolyObjIgnore = po;
         if (mobj->EntityFlags&VEntity::EF_Solid) {
           //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
           mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po);
@@ -1589,7 +1591,7 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
         } else {
           mobj->Level->eventPolyCrushMobj(mobj, po);
         }
-        mobj->PolyObjIgnore = nullptr;
+        //mobj->PolyObjIgnore = nullptr;
       }
     }
   }

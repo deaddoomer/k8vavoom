@@ -305,7 +305,6 @@ class VEntity : public VThinker {
   sector_t *Sector; // cannot be `nullptr`, it is always set
   polyobj_t *PolyObj; // polyobject this entity stands on (needed for ChangeSector)
     // set by `LinkToWorld()`, required for 3d pobjs -- they need to move/rotate actors
-  polyobj_t *PolyObjIgnore; // transient, used in pobj movement checking
   sector_t *LastSector; // transient; set by `UnlinkFromWorld()`, used to remove excessive gore actors
   TVec PrevTickOrigin; // transient; set in `VEntity::Tick()`
 

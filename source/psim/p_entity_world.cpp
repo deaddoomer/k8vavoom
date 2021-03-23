@@ -579,7 +579,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
 
   // check polyobjects, and remember their sectors (to be added to sector list later)
   // we have to do it here, because we need a right `Sector`
-  if (XLevel->NumPolyObjs) {
+  if (XLevel->Has3DPolyObjects()) {
     XLevel->IncrementValidCount(); // used to make sure we only process a pobj once
     float tmbbox[4];
     Create2DBBox(tmbbox, Origin, max2(1.0f, rad));
@@ -592,7 +592,6 @@ void VEntity::LinkToWorld (int properFloorCheck) {
       for (int by = yl; by <= yh; ++by) {
         polyobj_t *po;
         for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-          if (!po->posector) continue;
           if (po->pofloor.minz >= po->poceiling.maxz) continue;
           if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) continue;
           if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) continue;
@@ -747,7 +746,7 @@ void VEntity::CheckWater () {
 //==========================================================================
 bool VEntity::IsInPolyObj (polyobj_t *po) {
   if (!po) return false;
-  if (!po->posector || po == PolyObjIgnore) return false;
+  if (!po->posector) return false;
   if (po->pofloor.minz >= po->poceiling.maxz) return false;
   float tmbbox[4];
   const float rad = GetMoveRadius();
@@ -851,14 +850,13 @@ bool VEntity::CheckPosition (TVec Pos) {
     //bool inpobj = false;
     // check if we can stand inside some polyobject
     // there is no need to check it if our position is already invalid
-    if (/*good &&*/ XLevel->NumPolyObjs) {
+    if (/*good &&*/ XLevel->Has3DPolyObjects()) {
       // no need for new validcount
       const float z1 = cptrace.End.z+max2(0.0f, Height);
       for (int bx = xl; bx <= xh; ++bx) {
         for (int by = yl; by <= yh; ++by) {
           polyobj_t *po;
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-            if (!po->posector || po == PolyObjIgnore) continue;
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
             if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
@@ -983,7 +981,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   polyobj_t *po = ld->pobj();
   if (po) {
     if (!IsBlockingLine(ld)) return true;
-    if (po == PolyObjIgnore || !po->posector || po->validcount == validcount) return true;
+    if (!po->posector || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = cptrace.End.z+max2(0.0f, Height);
@@ -1204,7 +1202,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     polyobj_t *inpobj = nullptr;
     // check if we can stand inside some polyobject
     // there is no need to check it if our position is already invalid
-    if (XLevel->NumPolyObjs) {
+    if (XLevel->Has3DPolyObjects()) {
       //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
       // no need for new validcount
       const float z1 = tmtrace.End.z+max2(0.0f, Height);
@@ -1212,7 +1210,6 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
         for (int by = yl; by <= yh; ++by) {
           polyobj_t *po;
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-            if (!po->posector || po == PolyObjIgnore) continue;
             //GCon->Logf(NAME_Debug, "000: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, tmtrace.End.z, z1);
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
@@ -1401,7 +1398,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   polyobj_t *po = ld->pobj();
   if (po) {
     if (!IsBlockingLine(ld)) return true;
-    if (po == PolyObjIgnore || !po->posector || po->validcount == validcount) return true;
+    if (!po->posector || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = hitPoint.z+max2(0.0f, Height);
@@ -2534,7 +2531,7 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
     }
   }
 
-  if (XLevel->NumPolyObjs && (EntityFlags&EF_ColideWithWorld)) {
+  if (XLevel->Has3DPolyObjects() && (EntityFlags&EF_ColideWithWorld)) {
     float bbox2d[4];
     bbox2d[BOX2D_TOP] = TryOrg.y+rad;
     bbox2d[BOX2D_BOTTOM] = TryOrg.y-rad;
@@ -2548,7 +2545,6 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
       for (int by = yl; by <= yh; ++by) {
         polyobj_t *po;
         for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
-          if (!po->posector || po == PolyObjIgnore) continue;
           //GCon->Logf(NAME_Debug, "x00: %s(%u): checking pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
           if (po->pofloor.minz < po->poceiling.maxz && (z1 <= po->pofloor.minz || TryOrg.z >= po->poceiling.maxz)) {
             // outside of polyobject
