@@ -231,6 +231,15 @@ private native transient int polyPrevPtsAlloted;
 private native transient int *processedBMCells; // used in thing collector, contains validcount; size is `BlockMapWidth*BlockMapHeight`
 private native transient int processedBMCellsSize;
 
+// common path interception pool, managed by C++ code
+private native transient intercept_t *pathIntercepts;
+private native transient int pathInterceptsAlloted;
+private native transient int pathInterceptsUsed;
+
+private native transient intercept_t *tempPathIntercepts;
+private native transient int tempPathInterceptsAlloted;
+private native transient int tempPathInterceptsUsed;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // natives

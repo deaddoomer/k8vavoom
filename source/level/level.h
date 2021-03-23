@@ -492,8 +492,68 @@ class VLevel : public VGameObject {
   vint32 *processedBMCells; // used in thing collector, contains validcount; size is `BlockMapWidth*BlockMapHeight`
   vint32 processedBMCellsSize;
 
+  // each world tick will reset this
+  // put here to avoid reallocations in `VPathTraverse`
+  // each call to `VPathTraverse` will build a new list from `pathInterceptsUsed`
+  // deleting iterator in order will lower `pathInterceptsUsed`
+  intercept_t *pathIntercepts;
+  vint32 pathInterceptsAlloted;
+  vint32 pathInterceptsUsed;
+
+  intercept_t *tempPathIntercepts;
+  vint32 tempPathInterceptsAlloted;
+  vint32 tempPathInterceptsUsed;
+
 public:
   void EnsurePolyPrevPts (int count);
+
+  inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
+
+  inline int GetTempPathInterceptsCount () const noexcept { return tempPathInterceptsUsed; }
+
+  inline intercept_t *GetTempPathInterceptFirst () noexcept { return tempPathIntercepts; }
+
+  inline intercept_t *AllocTempPathIntercept () noexcept {
+    if (tempPathInterceptsUsed >= tempPathInterceptsAlloted) {
+      tempPathInterceptsAlloted += 8192; // why not?
+      tempPathIntercepts = (intercept_t *)Z_Realloc(tempPathIntercepts, tempPathInterceptsAlloted*sizeof(tempPathIntercepts[0]));
+    }
+    return &tempPathIntercepts[tempPathInterceptsUsed++];
+  }
+
+
+  inline void ResetAllPathIntercepts () noexcept { pathInterceptsUsed = 0; }
+
+  // call before start filling interception array; returns first index
+  inline int StartPathInterception () const noexcept { return pathInterceptsUsed; }
+  // call after finishing filling interception array; returns first unused index
+  inline int EndPathInterception () const noexcept { return pathInterceptsUsed; }
+  // call after finishing filling interception array; returns first unused index
+  inline int CurrentPathInterceptionIndex () const noexcept { return pathInterceptsUsed; }
+
+  inline void PopLastIntercept () noexcept { if (--pathInterceptsUsed < 0) pathInterceptsUsed = 0; }
+
+  // pass results of the above methods here
+  inline void ReleasePathInterception (const int start, const int end) noexcept {
+    vassert(start <= end);
+    vassert(start >= 0);
+    vassert(end >= 0);
+    vassert(end <= pathInterceptsUsed);
+    // release pool items if we can
+    if (end == pathInterceptsUsed) pathInterceptsUsed = start;
+  }
+
+  inline intercept_t *GetPathIntercept (const int idx) const noexcept {
+    return (idx >= 0 && idx < pathInterceptsUsed ? &pathIntercepts[idx] : nullptr);
+  }
+
+  inline intercept_t *AllocPathIntercept () noexcept {
+    if (pathInterceptsUsed >= pathInterceptsAlloted) {
+      pathInterceptsAlloted += 8192; // why not?
+      pathIntercepts = (intercept_t *)Z_Realloc(pathIntercepts, pathInterceptsAlloted*sizeof(pathIntercepts[0]));
+    }
+    return &pathIntercepts[pathInterceptsUsed++];
+  }
 
   inline void EnsureProcessedBMCellsArray () {
     const int size = (int)(BlockMapWidth*BlockMapHeight);

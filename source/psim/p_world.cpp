@@ -269,11 +269,29 @@ bool VRadiusThingsIterator::GetNext () {
 //
 //==========================================================================
 VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags)
-  : Count(0)
-  , In(nullptr)
+  : Level(nullptr)
+  , poolStart(-1)
+  , poolEnd(-1)
   , InPtr(AInPtr)
+  , Count(0)
+  , Index(0)
 {
   Init(Self, p0, p1, flags, planeflags, lineflags);
+}
+
+
+//==========================================================================
+//
+//  VPathTraverse::~VPathTraverse
+//
+//==========================================================================
+VPathTraverse::~VPathTraverse () {
+  if (InPtr) { *InPtr = nullptr; InPtr = nullptr; } // just in case
+  if (Level && poolStart >= 0) {
+    Level->ReleasePathInterception(poolStart, poolEnd);
+    Level = nullptr;
+    poolStart = poolEnd = -1;
+  }
 }
 
 
@@ -300,6 +318,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
   subsector_t *ssub = nullptr;
 
   Level = Self->XLevel;
+
+  // init interception pool
+  poolStart = Level->StartPathInterception();
 
   //GCon->Logf(NAME_Debug, "000: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, InX1, InY1, x2, y2);
   if (walker.start(Level, InX1, InY1, x2, y2)) {
@@ -358,15 +379,15 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
       // find first line
       int iidx = 0;
       intercept_t *it = nullptr;
-      while (iidx < Intercepts.length()) {
-        it = Intercepts.ptr()+iidx;
+      while (iidx < InterceptCount()) {
+        it = GetIntercept(iidx);
         if (it->line) {
           if (!it->line->pobj()) break; // it must not be polyobj line
         }
         ++iidx;
       }
 
-      TArray<intercept_t> itmp;
+      Level->ResetTempPathIntercepts();
 
       // check starting sector planes
       {
@@ -379,21 +400,21 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
         if (!Level->CheckPassPlanes(ssub->sector, p0, end, planeflags, &ohp, nullptr, &isSky, &oplane, &pfrac)) {
           // found hit plane, it should be less than first line frac
           pfrac = oplane.IntersectionTime(p0, p1, &ohp);
-          if (pfrac >= 0.0f && (iidx >= Intercepts.length() || pfrac < Intercepts.ptr()[iidx].frac)) {
-            intercept_t &itp = itmp.alloc();
-            memset((void *)&itp, 0, sizeof(itp));
-            itp.frac = pfrac;
-            itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
-            itp.sector = ssub->sector;
-            itp.plane = oplane;
-            itp.hitpoint = ohp;
+          if (pfrac >= 0.0f && (iidx >= InterceptCount() || pfrac < GetIntercept(iidx)->frac)) {
+            intercept_t *itp = Level->AllocTempPathIntercept();
+            memset((void *)itp, 0, sizeof(*itp));
+            itp->frac = pfrac;
+            itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
+            itp->sector = ssub->sector;
+            itp->plane = oplane;
+            itp->hitpoint = ohp;
           }
         }
       }
 
       TVec lineStart = p0;
-      while (iidx < Intercepts.length()) {
-        it = Intercepts.ptr()+iidx;
+      while (iidx < InterceptCount()) {
+        it = GetIntercept(iidx);
         line_t *ld = it->line;
         vassert(ld);
         const TVec hitPoint = it->hitpoint;
@@ -409,13 +430,13 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
             // found hit plane, recalc frac
             pfrac = oplane.IntersectionTime(p0, p1, &ohp);
             if (pfrac >= 0.0f && pfrac < max_frac) {
-              intercept_t &itp = itmp.alloc();
-              memset((void *)&itp, 0, sizeof(itp));
-              itp.frac = pfrac;
-              itp.Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
-              itp.sector = sec;
-              itp.plane = oplane;
-              itp.hitpoint = ohp;
+              intercept_t *itp = Level->AllocTempPathIntercept();
+              memset((void *)itp, 0, sizeof(*itp));
+              itp->frac = pfrac;
+              itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
+              itp->sector = sec;
+              itp->plane = oplane;
+              itp->hitpoint = ohp;
             }
           }
         }
@@ -423,8 +444,8 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
         if (it->Flags&intercept_t::IF_IsABlockingLine) break;
         ++iidx;
         lineStart = hitPoint;
-        while (iidx < Intercepts.length()) {
-          it = Intercepts.ptr()+iidx;
+        while (iidx < InterceptCount()) {
+          it = GetIntercept(iidx);
           if (it->line) {
             if (!it->line->pobj()) break; // it must not be polyobj line
           }
@@ -433,21 +454,23 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
       }
 
       // add plane hits
-      //GCon->Logf(NAME_Debug, "AddLineIntercepts: %d plane%s for %s(%u)", itmp.length(), (itmp.length() != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
-      for (auto &&itp : itmp) {
-        intercept_t &In = NewIntercept(itp.frac);
-        In = itp;
+      intercept_t *tmpit = Level->GetTempPathInterceptFirst();
+      for (int n = Level->GetTempPathInterceptsCount(); n--; ++tmpit) {
+        intercept_t &In = NewIntercept(tmpit->frac);
+        In = *tmpit;
       }
     }
   }
 
-  Count = Intercepts.Num();
-  In = Intercepts.Ptr();
+  poolEnd = Level->EndPathInterception();
+
+  Count = InterceptCount();
+  Index = 0;
 
   // just in case, drop everything after the first blocking line or blocking plane
   if ((flags&PT_ADDLINES) && Count) {
     const int len = Count;
-    intercept_t *it = Intercepts.ptr();
+    intercept_t *it = GetIntercept(0);
     for (int n = 0; n < len; ++n, ++it) {
       if ((it->Flags&(intercept_t::IF_IsALine|intercept_t::IF_IsABlockingLine)) == (intercept_t::IF_IsALine|intercept_t::IF_IsABlockingLine)) {
         Count = n+1;
@@ -463,9 +486,24 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
   //GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
 
   // just in case
-  #ifdef PARANOID
-  for (int f = 1; f < Count; ++f) if (In[f].frac < In[f-1].frac) Sys_Error("VPathTraverse: internal sorting error");
-  #endif
+  //#ifdef PARANOID
+  for (int f = 1; f < Count; ++f) {
+    if (GetIntercept(f)->frac < GetIntercept(f-1)->frac) {
+      for (int c = 0; c < Count; ++c) {
+        intercept_t *it = GetIntercept(c);
+        GCon->Logf(NAME_Debug, "idx=%d/%d; frac=%g; flags=0x%02x; thing=%s(%d); line=%d; side=%d; sector=%d; po=%d; plane=(%g,%g,%g:%g); hitpoint=(%g,%g,%g)",
+          c, Count-1, it->frac, it->Flags,
+          (it->thing ? it->thing->GetClass()->GetName() : "<none>"), (it->thing ? (int)it->thing->GetUniqueId() : -1),
+          (it->line ? (int)(ptrdiff_t)(it->line-&Level->Lines[0]) : -1), it->side,
+          (it->sector ? (int)(ptrdiff_t)(it->sector-&Level->Sectors[0]) : -1),
+          (it->po ? it->po->tag : -1),
+          it->plane.normal.x, it->plane.normal.y, it->plane.normal.z, it->plane.dist,
+          it->hitpoint.x, it->hitpoint.y, it->hitpoint.z);
+      }
+      Sys_Error("VPathTraverse: internal sorting error at %d", f);
+    }
+  }
+  //#endif
 }
 
 
@@ -478,24 +516,26 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
 //
 //==========================================================================
 intercept_t &VPathTraverse::NewIntercept (const float frac) {
-  int pos = Intercepts.length();
-  if (pos == 0 || Intercepts[pos-1].frac <= frac) {
+  intercept_t *it;
+  int pos = InterceptCount();
+  if (pos == 0 || GetIntercept(pos-1)->frac <= frac) {
     // no need to bubble, just append it
-    intercept_t &xit = Intercepts.Alloc();
-    memset((void *)&xit, 0, sizeof(xit));
-    xit.frac = frac;
-    xit.hitpoint = trace_org3d+trace_dir3d*frac;
-    return xit;
+    it = Level->AllocPathIntercept();
+  } else {
+    // bubble
+    while (pos > 0 && GetIntercept(pos-1)->frac > frac) --pos;
+    // insert
+    // allocate new
+    (void)Level->AllocPathIntercept();
+    // move down
+    it = GetIntercept(pos);
+    memmove((void *)(it+1), (void *)it, (InterceptCount()-pos-1)*sizeof(intercept_t));
+    // setup
   }
-  // bubble
-  while (pos > 0 && Intercepts[pos-1].frac > frac) --pos;
-  // insert
-  intercept_t it;
-  memset((void *)&it, 0, sizeof(it));
-  it.frac = frac;
-  it.hitpoint = trace_org3d+trace_dir3d*frac;
-  Intercepts.insert(pos, it);
-  return Intercepts[pos];
+  memset((void *)it, 0, sizeof(*it));
+  it->frac = frac;
+  it->hitpoint = trace_org3d+trace_dir3d*frac;
+  return *it;
 }
 
 
@@ -505,9 +545,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 //
 //==========================================================================
 void VPathTraverse::RemoveInterceptsAfter (const float frac) {
-  int len = Intercepts.length();
-  while (len > 0 && Intercepts[len-1].frac >= frac) --len;
-  if (len != Intercepts.length()) Intercepts.setLength(len, false); // don't resize
+  while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac >= frac) Level->PopLastIntercept();
 }
 
 
@@ -877,9 +915,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
 //
 //==========================================================================
 bool VPathTraverse::GetNext () {
-  if (!Count) return false; // everything was traversed
-  --Count;
-  //k8: it is already sorted
-  *InPtr = In++;
+  if (Index >= Count) { *InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
+  *InPtr = GetIntercept(Index++);
   return true;
 }

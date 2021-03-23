@@ -558,6 +558,14 @@ void VLevel::Destroy () {
   processedBMCells = nullptr;
   processedBMCellsSize = 0;
 
+  if (pathIntercepts) Z_Free(pathIntercepts);
+  pathIntercepts = nullptr;
+  pathInterceptsAlloted = pathInterceptsUsed = 0;
+
+  if (tempPathIntercepts) Z_Free(tempPathIntercepts);
+  tempPathIntercepts = nullptr;
+  tempPathInterceptsAlloted = tempPathInterceptsUsed = 0;
+
   GTextureManager.ResetMapTextures();
 
   // call parent class' `Destroy()` method

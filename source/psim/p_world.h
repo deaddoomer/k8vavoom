@@ -137,8 +137,6 @@ public:
 //==========================================================================
 class VPathTraverse : public VScriptIterator {
 private:
-  TArray<intercept_t> Intercepts;
-
   VLevel *Level;
   TPlane trace_plane;
   TVec trace_org;
@@ -152,13 +150,18 @@ private:
   float max_frac;
   unsigned scanflags; // PT_xxx
 
-  int Count;
-  intercept_t *In;
+  int poolStart, poolEnd;
+
   intercept_t **InPtr;
+  int Count;
+  int Index;
 
 public:
   VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags,
                  vuint32 planeflags=SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, vuint32 lineflags=ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN);
+
+  virtual ~VPathTraverse ();
+
   virtual bool GetNext () override;
 
 private:
@@ -171,6 +174,9 @@ private:
 
   // calculates proper thing hit and so on
   void AddProperThingHit (VEntity *th, const float frac);
+
+  inline int InterceptCount () const noexcept { return Level->CurrentPathInterceptionIndex()-poolStart; }
+  inline intercept_t *GetIntercept (int idx) noexcept { return Level->GetPathIntercept(poolStart+idx); }
 
   inline bool NeedCheckBMCell (const int bmx, const int bmy) const noexcept {
     if (bmx >= 0 && bmy >= 0 && bmx < Level->BlockMapWidth && bmy < Level->BlockMapHeight) {

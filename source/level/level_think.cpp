@@ -345,6 +345,8 @@ void VLevel::TickWorld (float DeltaTime) {
   if (DeltaTime <= 0.0f) return;
 
   CheckAndRecalcWorldBBoxes();
+  //if (pathInterceptsUsed) GCon->Logf(NAME_Debug, "unbalanced path iterators; used=%d", pathInterceptsUsed);
+  ResetAllPathIntercepts();
 
   double stimet = 0;
 
