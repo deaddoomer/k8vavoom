@@ -700,11 +700,11 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 
     if (doadd) {
       if (!isSky && ld->special == LNSPEC_LineHorizon) isSky = true;
-      //GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac);
       intercept_t &In = NewIntercept(frac);
       In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASky : 0u);
       In.line = ld;
       In.side = ld->PointOnSide(trace_org3d);
+      //GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g; start=(%g,%g,%g); hit=(%g,%g,%g)", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, trace_org3d.x, trace_org3d.y, trace_org3d.z, In.hitpoint.x, In.hitpoint.y, In.hitpoint.z);
       // set line sector
       if (po) {
         //FIXME: this code is a mess!
