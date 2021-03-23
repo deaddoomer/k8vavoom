@@ -201,7 +201,6 @@ bool IsGood2SLineForBloodSplat (const line_t *li) {
 final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *tr, optional float zofs,
                        optional name aDecalName, optional bool pass2S, optional bool only2S, optional int atranslation)
 {
-  TVec outHitPoint;
   trsplat_t temptr;
 
   TVec shootOrigin = org;
@@ -228,13 +227,11 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   intercept_t *in;
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
-  TVec lineStart = shootOrigin;
 
   // no line can block The Mighty Blood Splats!
   foreach PathTraverse(in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/, SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
     if (in->bIsAPlane) {
       // hit floor or ceiling
-      outHitPoint = hitPoint;
       tr->hit = in->hitpoint;
       tr->didhit = true;
       return false;
@@ -262,7 +259,6 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
         }
       } else {
         // sky hit, stop
-        outHitPoint = hitPoint;
         tr->hit = hitPoint;
         tr->didhit = true;
         return false;
@@ -271,7 +267,6 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       if (!in->bIsABlockingLine) continue;
 
       // hit blocking line
-      outHitPoint = hitPoint;
       tr->hit = hitPoint;
       tr->line = li;
       tr->sec = sec;
