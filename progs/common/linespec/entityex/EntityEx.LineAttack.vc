@@ -293,8 +293,9 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   // ???: use slope for monsters?
   float aim_slope;
 
-  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
+  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS) {
     if (in->bIsAPlane) continue; // just in case
+      if (in->bIsABlockingLine) return none; // line hit, no actor found
 
     if (in->bIsALine) {
       li = in->line;

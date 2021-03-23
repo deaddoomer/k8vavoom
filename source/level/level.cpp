@@ -92,6 +92,7 @@ void VLevel::ResetValidCount () {
   for (auto &&it : allLines()) it.validcount = 0;
   for (auto &&it : allSectors()) it.validcount = 0;
   for (auto &&it : allPolyobjects()) it->validcount = 0;
+  if (processedBMCellsSize) memset(processedBMCells, 0, sizeof(processedBMCells[0]));
 }
 
 
@@ -552,6 +553,10 @@ void VLevel::Destroy () {
   if (polyPrevPts) Z_Free(polyPrevPts);
   polyPrevPts = nullptr;
   polyPrevPtsAlloted = 0;
+
+  if (processedBMCells) Z_Free(processedBMCells);
+  processedBMCells = nullptr;
+  processedBMCellsSize = 0;
 
   GTextureManager.ResetMapTextures();
 

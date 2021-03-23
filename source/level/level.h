@@ -165,6 +165,8 @@ struct VCameraTextureInfo {
 // ////////////////////////////////////////////////////////////////////////// //
 class VLevel;
 class VLevelInfo;
+struct VPathTraverseWorkData;
+
 
 class VLevelScriptThinker : public VSerialisable {
 public:
@@ -485,8 +487,22 @@ class VLevel : public VGameObject {
   TVec *polyPrevPts; // use to restore the old point values in rotation/movement; scratch array
   vint32 polyPrevPtsAlloted;
 
+  // temporaries for `VPathTraverse`
+  // it is safe to have only one set of those, because `VPathTraverse` is never called recursively
+  vint32 *processedBMCells; // used in thing collector, contains validcount; size is `BlockMapWidth*BlockMapHeight`
+  vint32 processedBMCellsSize;
+
 public:
   void EnsurePolyPrevPts (int count);
+
+  inline void EnsureProcessedBMCellsArray () {
+    const int size = (int)(BlockMapWidth*BlockMapHeight);
+    if (processedBMCellsSize < size) {
+      processedBMCellsSize = size;
+      processedBMCells = (vint32 *)Z_Realloc(processedBMCells, sizeof(processedBMCells[0])*size);
+      if (size) memset(processedBMCells, 0, sizeof(processedBMCells[0]));
+    }
+  }
 
 protected:
   // temporary working set for decal spreader

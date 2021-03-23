@@ -658,6 +658,27 @@ struct TSecPlaneRef {
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
 
+  // returns intersection time
+  // negative means "no intersection" (and `*currhit` is not modified)
+  // yeah, we have too many of those
+  // this one is used in various plane checks in the engine (it happened so historically)
+  inline float IntersectionTime (const TVec &linestart, const TVec &lineend, TVec *currhit=nullptr) noexcept {
+    const float d1 = PointDistance(linestart);
+    if (d1 < 0.0f) return -1.0f; // don't shoot back side
+
+    const float d2 = PointDistance(lineend);
+    if (d2 >= 0.0f) return -1.0f; // didn't hit plane
+
+    //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
+    //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
+
+    const float frac = d1/(d1-d2); // [0..1], from start
+    if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
+
+    if (currhit) *currhit = linestart+(lineend-linestart)*frac;
+    return frac;
+  }
+
   // distance from point to plane
   // plane must be normalized
   /*
@@ -1323,11 +1344,13 @@ struct FRogueConSpeech {
 //  Misc game structs
 //
 //==========================================================================
+// PathTraverse flags
 enum {
-  PT_ADDLINES  = 1<<0,
-  PT_ADDTHINGS = 1<<1,
-  PT_NOOPENS   = 1<<2, // no sector planes checks (and no 3d pobjs)
-  PT_COMPAT    = 1<<3, // compat_trace
+  PT_ADDLINES  = 1<<0, // add lines to interception list
+  PT_ADDTHINGS = 1<<1, // add things to interception list
+  PT_NOOPENS   = 1<<2, // no opening/sector planes checks (and no 3d pobj checks); note that pobj heights are still checked
+  PT_COMPAT    = 1<<3, // compat_trace (ignore self-referenced lines, don't add them to list)
+  PT_AIMTHINGS = 1<<4, // do not reject things by their z value, do not adjust thing hitpoint (used in autoaim code)
 };
 
 

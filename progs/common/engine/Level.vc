@@ -223,7 +223,13 @@ private native transient /*VCustomKeyInfo*/void *UserSideKeyInfo1;
 private native transient /*VCustomKeyInfo*/void *UserLineIdxKeyInfo;
 private native transient /*VCustomKeyInfo*/void *UserSideIdxKeyInfo;
 
-private native transient TVec*[] polyPrevPts;
+//private native transient TVec*[] polyPrevPts;
+private native transient TVec *polyPrevPts;
+private native transient int polyPrevPtsAlloted;
+
+// temporaries for `VPathTraverse`
+private native transient int *processedBMCells; // used in thing collector, contains validcount; size is `BlockMapWidth*BlockMapHeight`
+private native transient int processedBMCellsSize;
 
 
 // ////////////////////////////////////////////////////////////////////////// //

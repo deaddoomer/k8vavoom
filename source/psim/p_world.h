@@ -149,8 +149,8 @@ private:
   TVec trace_dir3d; // normalised
   float trace_len;
   float trace_len3d;
-  bool compat_trace;
   float max_frac;
+  unsigned scanflags; // PT_xxx
 
   int Count;
   intercept_t *In;
@@ -164,11 +164,22 @@ public:
 private:
   void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags);
   // returns `true` if some blocking line was hit
-  bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags, bool doadd, bool doopening);
-  void AddThingIntercepts (VThinker *Self, int mapx, int mapy, bool doopening);
+  bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
+  void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
   intercept_t &NewIntercept (const float frac);
   void RemoveInterceptsAfter (const float frac); // >=
 
   // calculates proper thing hit and so on
-  void AddProperThingHit (VEntity *th, const float frac, bool doopening);
+  void AddProperThingHit (VEntity *th, const float frac);
+
+  inline bool NeedCheckBMCell (const int bmx, const int bmy) const noexcept {
+    if (bmx >= 0 && bmy >= 0 && bmx < Level->BlockMapWidth && bmy < Level->BlockMapHeight) {
+      vint32 *pp = Level->processedBMCells+(bmy*Level->BlockMapWidth+bmx);
+      if (*pp == validcount) return false;
+      *pp = validcount;
+      return true;
+    } else {
+      return false;
+    }
+  }
 };

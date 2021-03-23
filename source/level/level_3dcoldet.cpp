@@ -331,39 +331,11 @@ float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, 
 }
 
 
-//==========================================================================
-//
-//  CheckPlanePassEx
-//
-//  WARNING: `currhit` should not be the same as `lineend`!
-//
-//  returns hit time (negative for no hit)
-//
-//==========================================================================
-static float CheckPlanePassEx (const TSecPlaneRef &plane, const TVec &linestart, const TVec &lineend, bool &isSky) {
-  const float d1 = plane.PointDistance(linestart);
-  if (d1 < 0.0f) return -1.0f; // don't shoot back side
-
-  const float d2 = plane.PointDistance(lineend);
-  if (d2 >= 0.0f) return -1.0f; // didn't hit plane
-
-  //if (d2 > 0.0f) return true; // didn't hit plane (was >=)
-  //if (fabsf(d2-d1) < 0.0001f) return true; // too close to zero
-
-  const float frac = d1/(d1-d2); // [0..1], from start
-  if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
-
-  isSky = (plane.splane->pic == skyflatnum);
-  //currhit = linestart+(lineend-linestart)*frac;
-  return frac;
-}
-
-
 #define UPDATE_PLANE_HIT(plane_)  do { \
-  const float pfrc = CheckPlanePassEx((plane_), linestart, lineend, isSky); \
+  const float pfrc = (plane_).IntersectionTime(linestart, lineend); \
   if (pfrc >= 0.0f && (!wasHit || pfrc < besthtime)) { \
     /*besthit = currhit;*/ \
-    bestIsSky = isSky; \
+    bestIsSky = ((plane_).splane->pic == skyflatnum); \
     besthtime = pfrc; \
     bestNormal = (plane_).GetNormal(); \
     if (outHitPlane) bestHitPlane = (plane_).GetPlane(); \
@@ -398,7 +370,6 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
   /*TVec currhit(0.0f, 0.0f, 0.0f);*/
   bool wasHit = false;
   float besthtime = FLT_MAX;
-  bool isSky = false;
   TPlane bestHitPlane;
 
   const bool checkFakeFloors = !(flagmask&SPF_IGNORE_FAKE_FLOORS);
