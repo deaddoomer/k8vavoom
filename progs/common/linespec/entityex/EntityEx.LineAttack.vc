@@ -342,42 +342,34 @@ override Entity PickActor (optional TVec org, TVec dir, float distance, optional
 final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
                               optional bool noVertAutoAim, optional class!EntityEx rocketType)
 {
-  float x2, y2;
-  float topangle, botangle;
-  TVec dir;
-  intercept_t *in;
-  EntityEx linetarget; // who got hit (or nullptr)
 
   if (distance <= 0.0) return none; // just in case
 
-  // height if not aiming up or down
-  // ???: use slope for monsters?
-  float aim_z;
-  float aim_range;
-  float aim_slope;
   TVec aim_dir;
-  float aim_topslope;
-  float aim_bottomslope; // slopes to top and bottom of target
-  float aim_range2d;
-
   AngleVector(aangles, out aim_dir);
-  x2 = Origin.x+distance*aim_dir.x;
-  y2 = Origin.y+distance*aim_dir.y;
-  aim_z = Origin.z+(rocketType ? CalculateMissileAttackZOfs(rocketType) : CalculateLineAttackZOfs());
-  aim_range2d = Length2D(vector(distance*aim_dir.x, distance*aim_dir.y));
+  TVec adirdist = aim_dir.xy*distance;
+
+  float aim_z = Origin.z+(rocketType ? CalculateMissileAttackZOfs(rocketType) : CalculateLineAttackZOfs());
+
+  TVec shootOrigin = vector(Origin.x, Origin.y, aim_z);
+  TVec dest = shootOrigin+adirdist;
+  //float x2 = Origin.x+distance*aim_dir.x;
+  //float y2 = Origin.y+distance*aim_dir.y;
+
+  //float aim_range2d = Length2D(vector(distance*aim_dir.x, distance*aim_dir.y));
+  float aim_range2d = adirdist.length2D;
 
   // can't shoot outside view angles
-  topangle = AngleMod180(-aangles.pitch+30.0);
-  botangle = AngleMod180(-aangles.pitch-30.0);
-  if (topangle > 89.0) topangle = 89.0;
-  if (botangle < -89.0) botangle = -89.0;
-  aim_topslope = tan(topangle);
-  aim_bottomslope = tan(botangle);
+  float topangle = fmin(+89.0, AngleMod180(-aangles.pitch+30.0)); //if (topangle > 89.0) topangle = 89.0;
+  float botangle = fmax(-89.0, AngleMod180(-aangles.pitch-30.0)); //if (botangle < -89.0) botangle = -89.0;
 
-  aim_range = distance;
-  linetarget = none;
+  // slopes to top and bottom of target
+  float aim_topslope = tan(topangle);
+  float aim_bottomslope = tan(botangle);
 
-  TVec shootOrigin = vector(Origin.x, Origin.z, aim_z);
+  // height if not aiming up or down
+  float aim_range = distance;
+  EntityEx linetarget = none; // who got hit (or nullptr)
 
   line_t *li;
   EntityEx th;
@@ -387,8 +379,12 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   float slope;
   opening_t *open;
   TVec hitPoint;
+  intercept_t *in;
 
-  foreach PathTraverse(in, shootOrigin /*was Origin*/, vector(x2, y2, Origin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
+  // ???: use slope for monsters?
+  float aim_slope;
+
+  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
     if (in->bIsAPlane) continue; // just in case
 
     if (in->bIsALine) {
@@ -404,9 +400,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
       dist = aim_range*in->frac;
       if (dist < 0.01) continue; // shooter is on the line
 
-      if (!li->pobject) break; // hit something solid
-
-      hitPoint = Origin+dist*aim_dir;
+      hitPoint = /*Origin*/shootOrigin+dist*aim_dir;
 
       //open = LineOpenings(li, hitPoint);
       //open = FindOpening(open, hitPoint.z, hitPoint.z);
@@ -440,31 +434,17 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
     // check angles to see if the thing can be aimed at
     dist = aim_range2d*in->frac;
     if (dist < 0.01) continue; // too close, must be above or below
-    thingtopslope = (th.Origin.z+th.Height-aim_z)/dist;
 
+    thingtopslope = (th.Origin.z+th.Height-aim_z)/dist;
     if (thingtopslope < aim_bottomslope) continue; // shot over the thing
 
     thingbottomslope = (th.Origin.z-aim_z)/dist;
-
     if (thingbottomslope > aim_topslope) continue; // shot under the thing
 
-    // this thing can be hit! (maybe)
-    /*!!!
-    if (in->bExtraThingCheck) {
-      // check angles to see if the thing can be aimed at
-      hitPoint = shootOrigin+(distance*in->frac)*aim_dir;
-      if (!XLevel.BSPTraceLine(shootOrigin, hitPoint, noBlockFlags:SPF_NOBLOCKING)) {
-        //printdebug("%C: cannot be hit!", th);
-        continue;
-      }
-    }
-
-    if (in.frac <= pobjFrac) continue; // polyobject was hit first
-    */
-
-    if (thingtopslope > aim_topslope) thingtopslope = aim_topslope;
-
-    if (thingbottomslope < aim_bottomslope) thingbottomslope = aim_bottomslope;
+    thingtopslope = fmin(thingtopslope, aim_topslope);
+    thingbottomslope = fmax(thingbottomslope, aim_bottomslope);
+    //if (thingtopslope > aim_topslope) thingtopslope = aim_topslope;
+    //if (thingbottomslope < aim_bottomslope) thingbottomslope = aim_bottomslope;
 
     aim_slope = (thingtopslope+thingbottomslope)/2.0;
     linetarget = th;
@@ -473,8 +453,8 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   }
 
   if (linetarget && !noVertAutoAim) aangles.pitch = -atan(aim_slope);
-  AngleVector(aangles, out dir);
-  OutDir = dir;
+
+  AngleVector(aangles, out OutDir);
   return linetarget;
 }
 
