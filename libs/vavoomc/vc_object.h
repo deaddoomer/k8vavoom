@@ -1004,6 +1004,7 @@ inline vuint32 GetTypeHash (const VObject *Obj) { return (Obj ? hashU32(Obj->Get
 // ////////////////////////////////////////////////////////////////////////// //
 class VScriptIterator : public VInterface {
 public:
+  virtual ~VScriptIterator ();
   virtual bool GetNext() = 0;
   // by default, the following does `delete this;`
   virtual void Finished ();
