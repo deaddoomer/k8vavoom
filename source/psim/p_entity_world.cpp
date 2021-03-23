@@ -2025,11 +2025,11 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
     }
   } else {
     // old slide code
-    intercept_t *in;
+    intercept_t in;
     for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS); It.GetNext(); ) {
-      if (!(in->Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_SlideTraverse: not a line?");*/ }
+      if (!(in.Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_SlideTraverse: not a line?");*/ }
 
-      line_t *li = in->line;
+      line_t *li = in.line;
 
       bool IsBlocked = false;
       if (!(li->flags&ML_TWOSIDED) || !li->backsector) {
@@ -2044,12 +2044,12 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
       }
 
       #ifdef VV_DBG_VERBOSE_SLIDE
-      if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: best=%g; frac=%g; line #%d; flags=0x%08x; blocked=%d", GetClass()->GetName(), BestSlideFrac, in->frac, (int)(ptrdiff_t)(li-&XLevel->Lines[0]), li->flags, (int)IsBlocked);
+      if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: best=%g; frac=%g; line #%d; flags=0x%08x; blocked=%d", GetClass()->GetName(), BestSlideFrac, in.frac, (int)(ptrdiff_t)(li-&XLevel->Lines[0]), li->flags, (int)IsBlocked);
       #endif
 
       if (!IsBlocked) {
         // set openrange, opentop, openbottom
-        TVec hpoint = SlideOrg+in->frac*SlideDir;
+        TVec hpoint = SlideOrg+in.frac*SlideDir;
         opening_t *open = SV_LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
         open = SV_FindOpening(open, Origin.z, Origin.z+Height);
 
@@ -2070,8 +2070,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
       }
 
       // the line blocks movement, see if it is closer than best so far
-      if (in->frac < BestSlideFrac) {
-        BestSlideFrac = in->frac;
+      if (in.frac < BestSlideFrac) {
+        BestSlideFrac = in.frac;
         BestSlideLine = li;
       }
 
@@ -2350,7 +2350,7 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     SlideOrg.x += (Velocity.x > 0.0f ? rad : -rad);
     SlideOrg.y += (Velocity.y > 0.0f ? rad : -rad);
     TVec SlideDir = Velocity*DeltaTime;
-    intercept_t *in;
+    intercept_t in;
     float BestSlideFrac = 99999.0f;
 
     //FIXME: use code from `SlidePathTraverse()` here!
@@ -2358,14 +2358,14 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     //for (VPathTraverse It(this, &in, SlideOrg.x, SlideOrg.y, SlideOrg.x+SlideDir.x, SlideOrg.y+SlideDir.y, PT_ADDLINES); It.GetNext(); )
     for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS); It.GetNext(); )
     {
-      if (!(in->Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_BounceTraverse: not a line?");*/ }
-      line_t *li = in->line;
-      //if (in->frac > 1.0f) continue;
+      if (!(in.Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_BounceTraverse: not a line?");*/ }
+      line_t *li = in.line;
+      //if (in.frac > 1.0f) continue;
 
       if (!(li->flags&ML_BLOCKEVERYTHING)) {
         if (li->flags&ML_TWOSIDED) {
           // set openrange, opentop, openbottom
-          TVec hpoint = SlideOrg+in->frac*SlideDir;
+          TVec hpoint = SlideOrg+in.frac*SlideDir;
           opening_t *open = SV_LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
           open = SV_FindOpening(open, Origin.z, Origin.z+Height);
 
@@ -2380,8 +2380,8 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
         }
       }
 
-      if (!BestSlideLine || BestSlideFrac < in->frac) {
-        BestSlideFrac = in->frac;
+      if (!BestSlideLine || BestSlideFrac < in.frac) {
+        BestSlideFrac = in.frac;
         BestSlideLine = li;
       }
       //break;

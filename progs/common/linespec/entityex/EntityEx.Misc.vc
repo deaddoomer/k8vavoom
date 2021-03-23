@@ -3729,7 +3729,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   TVec useDir;
   AngleVector(Angles, out useDir);
 
-  intercept_t *in;
+  intercept_t in;
 
   // check things
   /*
@@ -3747,32 +3747,32 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
   EntityEx ee;
 
-  foreach PathTraverse(in, start, end, /*PT_ADDLINES|*/PT_ADDTHINGS|PT_AIMTHINGS/*|PT_NOOPENS*/, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
-    if (in->bIsAPlane) break; // plane hit, no actor found
+  foreach PathTraverse(out in, start, end, /*PT_ADDLINES|*/PT_ADDTHINGS|PT_AIMTHINGS/*|PT_NOOPENS*/, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
+    if (in.bIsAPlane) break; // plane hit, no actor found
 
     // just in case
-    if (in->bIsALine) {
+    if (in.bIsALine) {
       /*
-      if (!(in->line->flags&ML_TWOSIDED)) break; // stop
+      if (!(in.line->flags&ML_TWOSIDED)) break; // stop
 
-      TVec hitPoint = Origin+(UseThingRange*in->frac)*useDir;
-      //open = LineOpenings(in->line, hitPoint);
+      TVec hitPoint = Origin+(UseThingRange*in.frac)*useDir;
+      //open = LineOpenings(in.line, hitPoint);
       //open = FindOpening(open, hitPoint.z, hitPoint.z+Height);
-      open = FindLineOpening(in->line, hitPoint, Height);
+      open = FindLineOpening(in.line, hitPoint, Height);
       if (!open || open->range < 1.0) break; // can't use through a wall
       */
-      if (in->bIsABlockingLine) break; // blocking line hit, no actor found
+      if (in.bIsABlockingLine) break; // blocking line hit, no actor found
       continue;
     }
 
     // don't use self
-    if (in->Thing == self) continue;
+    if (in.Thing == self) continue;
 
     // check height
-    if (sz0 >= in->Thing.Origin.z+in->Thing.Height || sz1 <= in->Thing.Origin.z) continue;
+    if (sz0 >= in.Thing.Origin.z+in.Thing.Height || sz1 <= in.Thing.Origin.z) continue;
 
     // don't use self
-    ee = EntityEx(in->Thing);
+    ee = EntityEx(in.Thing);
     if (!ee) continue;
     if (checkThingUseDg && !checkThingUseDg(ee)) continue;
     if (!UseThing(ee)) {
@@ -3804,17 +3804,17 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   line_t *ld;
   opening_t *open;
 
-  foreach PathTraverse(in, start, end, PT_ADDLINES|PT_NOOPENS) {
-    if (in->bIsAPlane) break; // plane hit, no actor found
-    if (!in->bIsALine) continue; // just in case
+  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_NOOPENS) {
+    if (in.bIsAPlane) break; // plane hit, no actor found
+    if (!in.bIsALine) continue; // just in case
 
-    ld = in->line;
+    ld = in.line;
     if (!ld) continue; // just in case
 
     if (!ld->special || !(ld->SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack))) {
-      hitPoint = in.hitpoint; //Origin+(UseRange*in->frac)*useDir;
+      hitPoint = in.hitpoint; //Origin+(UseRange*in.frac)*useDir;
 
-      if (in->bIsABlockingLine || (ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKUSE))) {
+      if (in.bIsABlockingLine || (ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKUSE))) {
         // gozzo does this
         open = nullptr;
       } else {

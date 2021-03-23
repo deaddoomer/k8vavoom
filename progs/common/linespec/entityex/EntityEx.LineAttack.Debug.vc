@@ -120,8 +120,6 @@ final void DebugCheckMidTex () {
 //
 //==========================================================================
 private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool allowEntities, optional out trsplat_t tr, optional bool stopat3dmidtex, optional bool nozofs) {
-  intercept_t *in;
-
   TVec shootOrigin = org;
   if (!nozofs) shootOrigin.z += (bIsPlayer ? PlayerEx(Player).GetAttackZOfs : 8.0);
 
@@ -138,19 +136,20 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
   line_t *li;
   int side;
   sector_t *sec;
+  intercept_t in;
 
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING, ML_BLOCKEVERYTHING) {
-    if (in->bIsAPlane) {
-      tr.hit = in->hitpoint;
+  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING, ML_BLOCKEVERYTHING) {
+    if (in.bIsAPlane) {
+      tr.hit = in.hitpoint;
       tr.didhit = true;
       return false;
     }
 
-    if (in->bIsALine) {
-      li = in->line;
-      hitPoint = in->hitpoint;
-      side = in->side;
-      sec = in->sector;
+    if (in.bIsALine) {
+      li = in.line;
+      hitPoint = in.hitpoint;
+      side = in.side;
+      sec = in.sector;
 
       if (!li->pobject && (li->flags&ML_TWOSIDED)) {
         opening_t *open = LineOpenings(li, hitPoint, SPF_NOBLOCKING, stopat3dmidtex);
@@ -178,10 +177,10 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
         if (stopat3dmidtex && (li->flags&ML_3DMIDTEX)) {
           // stop right here
           printdebug("!!!!");
-          in->bIsABlockingLine = true;
+          in.bIsABlockingLine = true;
         }
 
-        if (in->bIsASky) {
+        if (in.bIsASky) {
           // it's a sky hack wall
           printdebug("opening: skyhack!");
           tr.hit = hitPoint;
@@ -190,7 +189,7 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
         }
       }
 
-      if (!in->bIsABlockingLine) continue;
+      if (!in.bIsABlockingLine) continue;
 
       tr.hit = hitPoint;
       tr.line = li;
@@ -203,10 +202,10 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
     }
 
     // thing
-    if (in->Thing == self) continue;
-    hitPoint = in->hitpoint;
+    if (in.Thing == self) continue;
+    hitPoint = in.hitpoint;
     tr.hit = hitPoint;
-    tr.mobj = in->Thing;
+    tr.mobj = in.Thing;
     return false;
   }
 

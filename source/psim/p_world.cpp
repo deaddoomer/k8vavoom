@@ -268,7 +268,7 @@ bool VRadiusThingsIterator::GetNext () {
 //  VPathTraverse::VPathTraverse
 //
 //==========================================================================
-VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags)
+VPathTraverse::VPathTraverse (VThinker *Self, intercept_t *AInPtr, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags)
   : Level(nullptr)
   , poolStart(-1)
   , poolEnd(-1)
@@ -286,7 +286,7 @@ VPathTraverse::VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &
 //
 //==========================================================================
 VPathTraverse::~VPathTraverse () {
-  if (InPtr) { *InPtr = nullptr; InPtr = nullptr; } // just in case
+  if (InPtr) { memset(InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; } // just in case
   if (Level && poolStart >= 0) {
     Level->ReleasePathInterception(poolStart, poolEnd);
     Level = nullptr;
@@ -915,7 +915,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
 //
 //==========================================================================
 bool VPathTraverse::GetNext () {
-  if (Index >= Count) { *InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
-  *InPtr = GetIntercept(Index++);
+  if (Index >= Count) { memset(InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
+  *InPtr = *GetIntercept(Index++);
   return true;
 }

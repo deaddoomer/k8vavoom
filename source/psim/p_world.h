@@ -152,12 +152,12 @@ private:
 
   int poolStart, poolEnd;
 
-  intercept_t **InPtr;
+  intercept_t *InPtr;
   int Count;
   int Index;
 
 public:
-  VPathTraverse (VThinker *Self, intercept_t **AInPtr, const TVec &p0, const TVec &p1, int flags,
+  VPathTraverse (VThinker *Self, intercept_t *AInPtr, const TVec &p0, const TVec &p1, int flags,
                  vuint32 planeflags=SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, vuint32 lineflags=ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN);
 
   virtual ~VPathTraverse ();

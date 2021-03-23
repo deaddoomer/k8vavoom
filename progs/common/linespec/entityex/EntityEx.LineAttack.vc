@@ -123,19 +123,19 @@ override Entity PickActor (optional TVec org, TVec dir, float distance, optional
 
   EntityEx th;
 
-  intercept_t *in;
-  foreach PathTraverse(in, org, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSIGHT|SPF_NOBLOCKSHOOT, wallMask) {
-    if (in->bIsAPlane) return none; // plane hit, no actor found
+  intercept_t in;
+  foreach PathTraverse(out in, org, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSIGHT|SPF_NOBLOCKSHOOT, wallMask) {
+    if (in.bIsAPlane) return none; // plane hit, no actor found
 
-    //printdebug("LineAttack: isline=%d; frac=%f", (in->bIsALine ? 1 : 0), in->frac);
-    //if (!in->bIsALine) printdebug("LineAttack: frac=%f; thing=%C; dist=%f", in->frac, in->Thing, length2D(in.Thing.Origin-org));
-    if (in->bIsALine) {
-      if (in->bIsABlockingLine) return none; // line hit, no actor found
+    //printdebug("LineAttack: isline=%d; frac=%f", (in.bIsALine ? 1 : 0), in.frac);
+    //if (!in.bIsALine) printdebug("LineAttack: frac=%f; thing=%C; dist=%f", in.frac, in.Thing, length2D(in.Thing.Origin-org));
+    if (in.bIsALine) {
+      if (in.bIsABlockingLine) return none; // line hit, no actor found
       continue;
     }
 
     // hit a thing
-    th = EntityEx(in->Thing);
+    th = EntityEx(in.Thing);
 
     if (th == self) continue; // can't pick self
 
@@ -200,23 +200,23 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   float slope;
   opening_t *open;
   TVec hitPoint;
-  intercept_t *in;
+  intercept_t in;
 
   // ???: use slope for monsters?
   float aim_slope;
 
   int lflags = ML_BLOCKEVERYTHING|(rocketType ? ML_BLOCKPROJECTILE : ML_BLOCKHITSCAN);
 
-  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, lflags) {
-    if (in->bIsAPlane) return none; // plane hit, no actor found
+  foreach PathTraverse(out in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, lflags) {
+    if (in.bIsAPlane) return none; // plane hit, no actor found
 
-    if (in->bIsALine) {
-      li = in->line;
-      if (in->bIsABlockingLine || (li->flags&lflags)) return none; // line hit, no actor found
+    if (in.bIsALine) {
+      li = in.line;
+      if (in.bIsABlockingLine || (li->flags&lflags)) return none; // line hit, no actor found
 
       // crosses a two sided line
       // a two sided line will restrict the possible target ranges
-      dist = aim_range*in->frac;
+      dist = aim_range*in.frac;
       if (dist < 0.01) continue; // shooter is on the line
 
       hitPoint = shootOrigin+dist*aim_dir;
@@ -227,7 +227,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
 
       if (!open || open->range <= 0.0) break; // stop
 
-      dist = aim_range2d*in->frac;
+      dist = aim_range2d*in.frac;
 
       slope = (open->bottom-aim_z)/dist;
       if (slope > aim_bottomslope) aim_bottomslope = slope;
@@ -241,7 +241,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
     }
 
     // shoot a thing
-    th = EntityEx(in->Thing);
+    th = EntityEx(in.Thing);
     if (th == self) continue; // can't shoot self
 
     if (!th.bShootable) continue; // corpse or something
@@ -251,7 +251,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
     if (IsTeammate(th)) continue; // don't aim at fellow co-op players
 
     // check angles to see if the thing can be aimed at
-    dist = aim_range2d*in->frac;
+    dist = aim_range2d*in.frac;
     if (dist < 0.01) continue; // too close, must be above or below
 
     thingtopslope = (th.Origin.z+th.Height-aim_z)/dist;
@@ -445,17 +445,17 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
   TVec hitPoint, realHitPoint;
   line_t *li;
   EntityEx th;
-  intercept_t *in;
+  intercept_t in;
 
 #if 0
   printdebug("%C(%s): === LineAttack (org=%s; dest=%s) ===", self, UniqueId, shootOrigin, dst);
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0)) {
-    if (in->bIsAPlane) {
+  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0)) {
+    if (in.bIsAPlane) {
       printdebug("  plane: frac=%s; hp=%s", in.frac, in.hitpoint);
-    } else if (in->bIsALine) {
-      printdebug("  line: frac=%s; hp=%s; block=%B; line #%d", in.frac, in.hitpoint, in.bIsABlockingLine, in->line-&XLevel.Lines[0]);
+    } else if (in.bIsALine) {
+      printdebug("  line: frac=%s; hp=%s; block=%B; line #%d", in.frac, in.hitpoint, in.bIsABlockingLine, in.line-&XLevel.Lines[0]);
     } else {
-      th = EntityEx(in->Thing);
+      th = EntityEx(in.Thing);
       printdebug("  thing: frac=%s; hp=%s; %C(%s)", in.frac, in.hitpoint, th, th.UniqueId);
     }
   }
@@ -463,26 +463,26 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
 #endif
 
   //printdebug("=== LineAttack ===");
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
-    //printdebug("LineAttack: isline=%B; frac=%s; lstart=%s", in->bIsALine, in->frac, lineStart);
+  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
+    //printdebug("LineAttack: isline=%B; frac=%s; lstart=%s", in.bIsALine, in.frac, lineStart);
 
     // plane hit?
-    if (in->bIsAPlane) {
+    if (in.bIsAPlane) {
       // plane hit, no thing found
-      if (!in->bIsASky && PuffType) puffEntity = SpawnPuff(in->hitpoint, distance, PuffType, false);
+      if (!in.bIsASky && PuffType) puffEntity = SpawnPuff(in.hitpoint, distance, PuffType, false);
       return false;
     }
 
     // line hit?
-    if (in->bIsALine) {
-      li = in->line;
+    if (in.bIsALine) {
+      li = in.line;
       hitPoint = in.hitpoint;
 
       // execute line special when we know that we actally hit this line
       if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
 
       // if this line is not a blocking one, continue checking
-      if (!in->bIsABlockingLine) continue;
+      if (!in.bIsABlockingLine) continue;
 
       // hit blocking line
       if (outHitPoint) *outHitPoint = hitPoint;
@@ -492,7 +492,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
       hitPoint -= 4.0*dir;
 
       // spawn bullet puffs
-      if (!in->bIsASky && PuffType) {
+      if (!in.bIsASky && PuffType) {
         puffEntity = SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint, decalType!optional, pufftid!optional, disableRandomZ!optional);
       }
 
@@ -501,7 +501,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
     }
 
     // shoot a thing
-    th = EntityEx(in->Thing);
+    th = EntityEx(in.Thing);
 
     if (th == self) continue; // can't shoot self
 
@@ -607,27 +607,27 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   TVec hitPoint, realHitPoint;
   line_t *li;
   EntityEx th;
-  intercept_t *in;
+  intercept_t in;
   TVec lineEnd = dst;
 
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING) {
+  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING) {
     // plane hit?
-    if (in->bIsAPlane) {
-      if (!in->bIsASky && PuffType) SpawnPuff(in->hitpoint, distance, PuffType, false);
-      lineEnd = in->hitpoint;
+    if (in.bIsAPlane) {
+      if (!in.bIsASky && PuffType) SpawnPuff(in.hitpoint, distance, PuffType, false);
+      lineEnd = in.hitpoint;
       break;
     }
 
     // line hit?
-    if (in->bIsALine) {
-      li = in->line;
-      hitPoint = in->hitpoint;
+    if (in.bIsALine) {
+      li = in.line;
+      hitPoint = in.hitpoint;
 
       // execute line special when we know that we actally hit this line
       if (li->special && !bNoTrigger) LineSpecialLevelInfo(Level).ActivateLine(li, self, 0, SPAC_Impact);
 
       // if this line is not a blocking one, continue checking
-      if (!in->bIsABlockingLine) continue;
+      if (!in.bIsABlockingLine) continue;
 
       // hit blocking line
 
@@ -636,7 +636,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
       hitPoint -= 4.0*dir;
 
       // spawn bullet puffs
-      if (!in->bIsASky && PuffType) {
+      if (!in.bIsASky && PuffType) {
         SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint);
       }
 
@@ -646,7 +646,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
     }
 
     // shoot a thing
-    th = EntityEx(in->Thing);
+    th = EntityEx(in.Thing);
 
     if (th == self) continue; // can't shoot self
 

@@ -224,27 +224,27 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
 
   TVec hitPoint;
   line_t *li;
-  intercept_t *in;
+  intercept_t in;
   int side; // declared here, so VM don't need to clear it in the loop
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
 
   // no line can block The Mighty Blood Splats!
-  foreach PathTraverse(in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/, SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
-    if (in->bIsAPlane) {
+  foreach PathTraverse(out in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/, SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
+    if (in.bIsAPlane) {
       // hit floor or ceiling
-      tr->hit = in->hitpoint;
+      tr->hit = in.hitpoint;
       tr->didhit = true;
       return false;
     }
 
-    if (in->bIsALine) {
-      li = in->line;
-      hitPoint = in->hitpoint; //shootOrigin+(distance*in->frac)*dir;
+    if (in.bIsALine) {
+      li = in.line;
+      hitPoint = in.hitpoint; //shootOrigin+(distance*in.frac)*dir;
 
-      sec = in->sector;
-      side = in->side;
+      sec = in.sector;
+      side = in.side;
 
-      if (!in->bIsASky) {
+      if (!in.bIsASky) {
         if (Level.CompatTrace && li->frontsector == li->backsector) {
           if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
             SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
@@ -264,7 +264,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
         return false;
       }
 
-      if (!in->bIsABlockingLine) continue;
+      if (!in.bIsABlockingLine) continue;
 
       // hit blocking line
       tr->hit = hitPoint;

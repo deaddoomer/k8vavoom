@@ -372,15 +372,15 @@ bool TracePath (float ang, float dist, out PathInfo pi, optional Entity distEnt,
   float x2 = x1+dist*bottracedir.x;
   float y2 = y1+dist*bottracedir.y;
 
-  intercept_t *in;
-  foreach PathTraverse(in, vector(x1, y1, srcOrigin.z), vector(x2, y2, srcOrigin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
-    float currDist = dist*in->frac;
-    if (in->bIsALine) {
+  intercept_t in;
+  foreach PathTraverse(out in, vector(x1, y1, srcOrigin.z), vector(x2, y2, srcOrigin.z), PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS) {
+    float currDist = dist*in.frac;
+    if (in.bIsALine) {
       // line
-      line_t *ld = in->line; // this linedef
-      TVec hit_point = srcOrigin+(bottracerange*in->frac)*bottracedir;
+      line_t *ld = in.line; // this linedef
+      TVec hit_point = srcOrigin+(bottracerange*in.frac)*bottracedir;
 
-      if (currDist <= PlayerPawn::DEFAULT_USERANGE && (in->line->SpacFlags&(SPAC_UseThrough|SPAC_Use))) {
+      if (currDist <= PlayerPawn::DEFAULT_USERANGE && (in.line->SpacFlags&(SPAC_UseThrough|SPAC_Use))) {
         pi.needUse = true;
       }
 
@@ -471,7 +471,7 @@ bool TracePath (float ang, float dist, out PathInfo pi, optional Entity distEnt,
       pi.maxdist = currDist;
     } else {
       // thing
-      Actor th = Actor(in->Thing);
+      Actor th = Actor(in.Thing);
       if (!th || th == self) {
         pi.maxdist = currDist;
         continue;
@@ -542,19 +542,19 @@ final EntityEx CheckLineAttackWithCB (TVec dir, float distance, bool delegate (E
 
   TVec dst = shootOrigin+distance*dir;
 
-  intercept_t *in;
+  intercept_t in;
   EntityEx th;
 
-  foreach PathTraverse(in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
-    if (in->bIsAPlane) return none;
+  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
+    if (in.bIsAPlane) return none;
 
-    if (in->bIsALine) {
-      if (in->bIsABlockingLine) return none;
+    if (in.bIsALine) {
+      if (in.bIsABlockingLine) return none;
       continue;
     }
 
     // shoot a thing
-    th = EntityEx(in->Thing);
+    th = EntityEx(in.Thing);
     if (!th) continue;
     if (th == self) continue; // can't shoot self
     if (!th.bShootable) continue; // corpse or something
