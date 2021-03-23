@@ -293,24 +293,21 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   // ???: use slope for monsters?
   float aim_slope;
 
-  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS) {
-    if (in->bIsAPlane) continue; // just in case
-      if (in->bIsABlockingLine) return none; // line hit, no actor found
+  int lflags = ML_BLOCKEVERYTHING|(rocketType ? ML_BLOCKPROJECTILE : ML_BLOCKHITSCAN);
+
+  foreach PathTraverse(in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, lflags) {
+    if (in->bIsAPlane) return none; // plane hit, no actor found
 
     if (in->bIsALine) {
       li = in->line;
-
-      // check if pobj line was hit (it is always blocking)
-      if (li->pobject) break; // line hit, no thing found
-
-      if (!(li->flags&ML_TWOSIDED) || (li->flags&(ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN))) break; // stop
+      if (in->bIsABlockingLine || (li->flags&lflags)) return none; // line hit, no actor found
 
       // crosses a two sided line
       // a two sided line will restrict the possible target ranges
       dist = aim_range*in->frac;
       if (dist < 0.01) continue; // shooter is on the line
 
-      hitPoint = /*Origin*/shootOrigin+dist*aim_dir;
+      hitPoint = shootOrigin+dist*aim_dir;
 
       //open = LineOpenings(li, hitPoint);
       //open = FindOpening(open, hitPoint.z, hitPoint.z);
@@ -362,7 +359,13 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
     break; // don't go any farther
   }
 
-  if (linetarget && !noVertAutoAim) aangles.pitch = -atan(aim_slope);
+  if (linetarget) {
+    if (!noVertAutoAim) aangles.pitch = -atan(aim_slope);
+    // fix yaw
+    TVec dir = linetarget.Origin-shootOrigin;
+    float yaw = atan2(dir.y, dir.x);
+    if (yaw.isfinite) aangles.yaw = yaw;
+  }
 
   AngleVector(aangles, out OutDir);
   return linetarget;
@@ -424,6 +427,8 @@ final EntityEx Aim (out TVec OutDir, float distance, optional float yaw,
       }
     }
   }
+
+  if (rocketType) printdebug("%C: AIMed at %C; yaw=%s; dir=%s", self, LineTarget, ang.yaw, dir);
 
   if (aaim) OutDir = dir;
 
