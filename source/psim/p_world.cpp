@@ -444,6 +444,22 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
   Count = Intercepts.Num();
   In = Intercepts.Ptr();
 
+  // just in case, drop everything after the first blocking line or blocking plane
+  if ((flags&PT_ADDLINES) && Count) {
+    const int len = Count;
+    intercept_t *it = Intercepts.ptr();
+    for (int n = 0; n < len; ++n, ++it) {
+      if ((it->Flags&(intercept_t::IF_IsALine|intercept_t::IF_IsABlockingLine)) == (intercept_t::IF_IsALine|intercept_t::IF_IsABlockingLine)) {
+        Count = n+1;
+        break; // there is no reason to scan further
+      }
+      if (it->Flags&intercept_t::IF_IsAPlane) {
+        Count = n+1;
+        break; // there is no reason to scan further
+      }
+    }
+  }
+
   //GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
 
   // just in case
