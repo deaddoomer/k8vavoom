@@ -173,7 +173,7 @@ public:
   // negative means "no intersection" (and `*currhit` is not modified)
   // yeah, we have too many of those
   // this one is used in various plane checks in the engine (it happened so historically)
-  inline float IntersectionTime (const TVec &linestart, const TVec &lineend, TVec *currhit=nullptr) noexcept {
+  inline float IntersectionTime (const TVec &linestart, const TVec &lineend, TVec *currhit=nullptr) const noexcept {
     const float d1 = PointDistance(linestart);
     if (d1 < 0.0f) return -1.0f; // don't shoot back side
 
