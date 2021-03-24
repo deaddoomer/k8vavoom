@@ -51,6 +51,11 @@ struct InterceptionList {
   VVA_CHECKRESULT inline unsigned count () const noexcept { return used; }
 
   VVA_CHECKRESULT inline intercept_t *insert (const float frac) noexcept {
+    if (used == alloted) {
+      alloted += 1024;
+      list = (intercept_t *)Z_Realloc(list, sizeof(list[0])*alloted);
+    }
+
     intercept_t *res;
     unsigned ipos = used;
     if (ipos > 0) {
