@@ -230,6 +230,8 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   polyobj_t *po = line->pobj();
   if (po && !po->Is3D()) po = nullptr;
 
+  //GCon->Logf(NAME_Debug, "CHECKING line #%d side #%d (pobj #%d)...", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), side, (po ? po->tag : -1));
+
   if (po) {
     // check easy cases first (totally above or below)
     const float pz0 = po->pofloor.minz;
@@ -239,20 +241,36 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     //GCon->Logf(NAME_Debug, "pobj #%d, line #%d, plane check; pz=(%g,%g); lz=(%g,%g)", po->tag, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), pz0, pz1, trace.LineStart.z, hitpoint.z);
     //GCon->Logf(NAME_Debug, "  frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
 
-    if (trace.LineStart.z > pz0 && hpz < pz1) {
-      // inside pobj, cannot see anything (because it is solid)
-      // this line cannot be considered 1s, tho
+    // hit pobj line?
+    if (hpz >= pz0 && hpz <= pz1) {
+      // this line cannot be considered 1s, tho (otherwise it will block additional checks)
       //trace.Hit1S = true;
       return false;
     }
 
-    // below?
-    if (trace.LineStart.z <= pz0 && hpz <= pz0) return true; // cannot hit
-    // above?
-    if (trace.LineStart.z >= pz1 && hpz >= pz1) return true; // cannot hit
+    // fully below?
+    if (trace.Start.z <= pz0 && hpz <= pz0) return true; // cannot hit
+    // fully above?
+    if (trace.Start.z >= pz1 && hpz >= pz1) return true; // cannot hit
 
     // if we're entering a 3d pobj, no need to do more checks
-    if (side == 0) return true; // cannot hit
+    // but if we have no 3d pobj exiting point, perform a check
+    // (because it means that we stopped inside the pobj)
+    if (side == 0) {
+      for (++iidx; iidx < (int)intercepts.count(); ++iidx) {
+        line_t *prevld = intercepts.list[iidx-1].line;
+        if (prevld && prevld->pobj() == po) {
+          //GCon->Logf(NAME_Debug, "pobj #%d line #%d will be checked on exit", po->tag, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]));
+          // will be checked on exit
+          return true;
+        }
+      }
+      // no exit point, perform planes check
+      const float pfc = VLevel::CheckPObjPassPlanes(po, trace.Start, trace.End, nullptr, nullptr, nullptr);
+      //GCon->Logf(NAME_Debug, "pobj #%d single enter line #%d, frac=%g; pfc=%g; hit=%d", po->tag, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, pfc, (int)(pfc > frac && pfc < 1.0f));
+      //GCon->Logf(NAME_Debug, "  pobjz: %g,%g; sz=%g; ez=%g", pz0, pz1, trace.Start.z, trace.End.z);
+      return !(pfc > frac && pfc <= 1.0f);
+    }
 
     // we're exiting 3d pobj, need to check pobj planes
     // to do this, we have to find a previous 3d pobj line
@@ -260,10 +278,13 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     // if there is no previous 3d pobj plane, assume that previous frac is 0.0
 
     float prevfrac = 0.0f;
+    //int enterline = -1;
     while (iidx > 0) {
       line_t *prevld = intercepts.list[iidx-1].line;
       if (prevld && prevld->pobj() == po) {
         // i found her!
+        // 3d pobj sector must be valid and closed (i.e. should not contain any extra lines or missing sides)
+        //enterline = (int)(ptrdiff_t)(prevld-&trace.Level->Lines[0]);
         prevfrac = intercepts.list[iidx-1].frac;
         break;
       }
@@ -276,7 +297,9 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
 
     // use full line to get a correct frac
     const float pfc = VLevel::CheckPObjPassPlanes(po, trace.Start, trace.End, nullptr, nullptr, nullptr);
-    return (pfc > prevfrac && pfc < frac);
+    //GCon->Logf(NAME_Debug, "pobj #%d enter line #%d, exit line #%d, prevfrac=%g; frac=%g; pfc=%g; hit=%d", po->tag, enterline, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), prevfrac, frac, pfc, (int)(pfc > prevfrac && pfc < frac));
+    //GCon->Logf(NAME_Debug, "  pobjz: %g,%g; sz=%g; ez=%g", pz0, pz1, trace.Start.z, trace.End.z);
+    return !(pfc > prevfrac && pfc < frac);
   }
 
   //GCon->Logf(NAME_Debug, "linehit: line #%d; frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
@@ -505,15 +528,42 @@ static bool SightTraverseIntercepts (SightTraceInfo &trace) {
 //
 //==========================================================================
 static bool SightCheckStartingPObj (SightTraceInfo &trace) {
-  TVec hp;
-  const float frac = trace.Level->CheckPObjPlanesPoint(trace.Start, trace.End, trace.StartSubSector, &hp);
-  if (frac >= 0.0f) {
-    // yep, got it; we don't care about "best hit" here, only hit presence matters
-    //trace.LineEnd = hp;
+  // check if both start point and end point are in the same 3d pobj
+  if (!trace.Level->Has3DPolyObjects()) return true;
+
+  const TVec p0 = trace.Start;
+  const TVec p1 = trace.End;
+
+  #if 0
+  return (trace.Level->CheckPObjPlanesPoint(p0, p1, trace.StartSubSector) < 0.0f);
+  #else
+  for (auto &&it : trace.StartSubSector->PObjFirst()) {
+    polyobj_t *po = it.pobj();
+    if (!po->Is3D()) continue;
+
+    if (!IsPointInside2DBBox(p0.x, p0.y, po->bbox2d)) continue;
+    if (!IsPointInside2DBBox(p1.x, p1.y, po->bbox2d)) continue;
+
+    TVec hp;
+    const float frc = VLevel::CheckPObjPassPlanes(po, p0, p1, &hp, nullptr, nullptr);
+    if (frc < 0.0f || frc > 1.0) continue;
+
+    // check if starting point is inside this pobj
+    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), p0.x, p0.y)) continue;
+
+    // check if hitpoint is still inside this pobj
+    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), hp.x, hp.y)) continue;
+
+    //GCon->Logf(NAME_Debug, "POBJ #%d HIT!", po->tag);
+    // pobj flat hit, no need to trace further
     return false;
   }
+
+  //GCon->Logf(NAME_Debug, "*** NO POBJ HIT!");
   // no starting hit
   return true;
+  #endif
 }
 
 
@@ -585,6 +635,7 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
 //
 //==========================================================================
 static bool SightPathTraverse2 (SightTraceInfo &trace) {
+  // do not check for 3d pobj here (it is not fully right, but meh)
   trace.Delta = trace.End-trace.Start;
   trace.LineStart = trace.Start;
   if (fabsf(trace.Delta.x) <= 1.0f && fabsf(trace.Delta.y) <= 1.0f) {
@@ -597,13 +648,18 @@ static bool SightPathTraverse2 (SightTraceInfo &trace) {
       trace.Delta.z = 0;
       return false;
     }
-    if (/*!SightCheckStartingPObj(trace) ||*/ !SightCheckPlanes(trace, trace.StartSubSector->sector)) {
+    if (!SightCheckStartingPObj(trace) || !SightCheckPlanes(trace, trace.StartSubSector->sector)) {
       trace.Hit1S = true; // block further height checks
       return false;
     }
     return true;
   }
-  //if (!SightCheckStartingPObj(trace)) return false;
+
+  if (!SightCheckStartingPObj(trace)) {
+    trace.Hit1S = true; // block further height checks
+    return false;
+  }
+
   return SightTraverseIntercepts(trace);
 }
 
