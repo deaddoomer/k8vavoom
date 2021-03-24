@@ -30,7 +30,33 @@
 
 //**************************************************************************
 //
-// blockmap light/sight tracing
+//  blockmap light/sight tracing
+//
+//  this basically does ray/convex intersection tests.
+//
+//  because our convex are guaranteed to be... well, convex, we can cheat
+//  and avoid "point in poly" checks.
+//
+//  the basic algorithm is like this:
+//
+//  first, we collecting all ray-line intersections into sorted array.
+//  it is important to have this array sorted.
+//
+//  second, we walk this array, and check each "front side" sector planes.
+//  "front side" here means "sector at the front of the line looking from
+//  the starting point".
+//
+//  because our list is sorted, we can check if ray part from the previous
+//  line hitpoint to the current line hitpoint intersects any sector plane.
+//  it is guaranteed that this ray part is fully inside the sector we're
+//  checking.
+//
+//  the same thing is done for 3d pobjs, but here we should check the ray
+//  part between the previous 3d pobj line and the current one.
+//
+//  one exception: if our starting and ending points are inside the same 3d
+//  pobj, we may hit no pobj lines; this can be optimised, but currently
+//  i am simply doing the full check.
 //
 //**************************************************************************
 static inline __attribute__((const)) float TextureSScale (const VTexture *pic) { return pic->SScale; }
@@ -96,7 +122,8 @@ struct SightTraceInfo {
 static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector) {
   if (!sector || sector->isAnyPObj()) return true;
 
-  PlaneHitInfo phi(trace.LineStart, trace.LineEnd);
+  const TVec p0 = trace.LineStart;
+  const TVec p1 = trace.LineEnd;
 
   const bool ignoreSectorBounds = (!trace.lightCheck && sector == trace.StartSubSector->sector);
 
@@ -111,18 +138,18 @@ static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector) {
     sector_t *hs = sector->heightsec;
     if (hs) {
       if (!textureCheck || GTextureManager.IsSightBlocking(hs->floor.pic)) {
-        if (phi.update(hs->floor)) return false;
+        if (hs->floor.IntersectionTime(p0, p1) >= 0.0f) return false;
       }
       if (!textureCheck || GTextureManager.IsSightBlocking(hs->ceiling.pic)) {
-        if (phi.update(hs->ceiling)) return false;
+        if (hs->ceiling.IntersectionTime(p0, p1) >= 0.0f) return false;
       }
     }
   }
 
   if (checkSectorBounds) {
     // check base sector planes
-    if (phi.update(sector->floor)) return false;
-    if (phi.update(sector->ceiling)) return false;
+    if (sector->floor.IntersectionTime(p0, p1) >= 0.0f) return false;
+    if (sector->ceiling.IntersectionTime(p0, p1) >= 0.0f) return false;
   }
 
   for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
@@ -130,14 +157,14 @@ static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector) {
     if ((reg->efloor.splane->flags&sec_region_t::RF_SkipFloorSurf) == 0) {
       if ((reg->efloor.splane->flags&flagmask) == 0) {
         if (!textureCheck || GTextureManager.IsSightBlocking(reg->efloor.splane->pic)) {
-          if (phi.update(reg->efloor)) return false;
+          if (reg->efloor.IntersectionTime(p0, p1) >= 0.0f) return false;
         }
       }
     }
     if ((reg->efloor.splane->flags&sec_region_t::RF_SkipCeilSurf) == 0) {
       if ((reg->eceiling.splane->flags&flagmask) == 0) {
         if (!textureCheck || GTextureManager.IsSightBlocking(reg->eceiling.splane->pic)) {
-          if (phi.update(reg->eceiling)) return false;
+          if (reg->eceiling.IntersectionTime(p0, p1) >= 0.0f) return false;
         }
       }
     }
