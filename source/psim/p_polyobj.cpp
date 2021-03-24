@@ -952,7 +952,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
 
   // offset flat textures
-  if (deltaX || deltaY) {
+  if (po->posector && (deltaX || deltaY)) {
     if (po->posector->floor.pic != skyflatnum) {
       VTexture *FTex = GTextureManager(po->posector->floor.pic);
       if (FTex && FTex->Type != TEXTYPE_Null) {
