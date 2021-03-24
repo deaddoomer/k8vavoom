@@ -60,8 +60,6 @@
 extern VCvarB gl_gpu_debug;
 extern VCvarF gl_alpha_threshold;
 extern VCvarB gl_sort_textures;
-extern VCvarI r_ambient_min;
-extern VCvarB r_allow_ambient;
 extern VCvarB r_decals;
 extern VCvarB r_decals_wall_masked;
 extern VCvarB r_decals_wall_alpha;
@@ -839,8 +837,7 @@ private:
             gp.floorZ = sec->floor.GetPointZClamped(*surf->seg->v1);
             if (!gtex->IsGlowFullbright()) {
               // fix light level
-              const unsigned slins = (r_allow_ambient ? (surf->Light>>24)&0xff : clampToByte(r_ambient_min));
-              gp.glowCF = (gp.glowCF&0x00ffffffu)|(slins<<24);
+              gp.glowCF = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
             }
           }
         }
@@ -852,8 +849,7 @@ private:
             gp.ceilingZ = sec->ceiling.GetPointZClamped(*surf->seg->v1);
             if (!gtex->IsGlowFullbright()) {
               // fix light level
-              const unsigned slins = (r_allow_ambient ? (surf->Light>>24)&0xff : clampToByte(r_ambient_min));
-              gp.glowCC = (gp.glowCF&0x00ffffffu)|(slins<<24);
+              gp.glowCC = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
             }
           }
         }
@@ -888,7 +884,8 @@ private:
 
 private:
   static inline float getSurfLightLevel (const surface_t *surf) {
-    if (r_glow_flat && surf && !surf->seg && surf->subsector) {
+    if (!surf) return 0;
+    if (r_glow_flat && !surf->seg && surf->subsector) {
       const sector_t *sec = surf->subsector->sector;
       //FIXME: check actual view height here
       if (sec && !sec->heightsec) {
@@ -902,10 +899,7 @@ private:
         }
       }
     }
-    if (!surf) return 0;
-    int slins = (r_allow_ambient ? (surf->Light>>24)&0xff : clampToByte(r_ambient_min));
-    if (slins < r_ambient_min) slins = clampToByte(r_ambient_min);
-    return float(slins)/255.0f;
+    return float((surf->Light>>24)&0xff)/255.0f;
   }
 
   static inline void glVertex (const TVec &v) { glVertex3f(v.x, v.y, v.z); }

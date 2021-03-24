@@ -1111,15 +1111,7 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
     //glowAllowed = !!(regbase->regflags&sec_region_t::RF_BaseRegion);
 
     // region's base light
-    if (r_allow_ambient) {
-      l = reglight->params->lightlevel+ExtraLight;
-      l = midval(0.0f, l, 255.0f);
-      if (r_darken) l = light_remap[(int)l];
-      if (l < r_ambient_min) l = r_ambient_min;
-      l = midval(0.0f, l, 255.0f);
-    } else {
-      l = midval(0.0f, (float)r_ambient_min.asInt(), 255.0f);
-    }
+    l = R_GetLightLevel(0, reglight->params->lightlevel+ExtraLight);
 
     int SecLightColor = reglight->params->LightColor;
     lr = ((SecLightColor>>16)&255)*l/255.0f;

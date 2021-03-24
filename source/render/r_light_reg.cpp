@@ -48,8 +48,6 @@ VCvarB r_lmap_recalc_moved_static("r_lmap_recalc_moved_static", true, "Recalc st
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern VCvarI r_ambient_min;
-extern VCvarB r_allow_ambient;
 extern VCvarB r_dynamic_clip;
 extern VCvarB r_glow_flat;
 extern VCvarB r_draw_queue_warnings;
@@ -116,7 +114,8 @@ static LightmapTracer lmtracer;
 //
 //==========================================================================
 static inline int getSurfLightLevelInt (const surface_t *surf) {
-  if (r_glow_flat && surf && !surf->seg && surf->subsector) {
+  if (!surf) return 0;
+  if (r_glow_flat && !surf->seg && surf->subsector) {
     const sector_t *sec = surf->subsector->sector;
     //FIXME: check actual view height here
     if (sec && !sec->heightsec) {
@@ -130,12 +129,7 @@ static inline int getSurfLightLevelInt (const surface_t *surf) {
       }
     }
   }
-  if (!surf) return 0;
-  if (!r_allow_ambient) return clampToByte(r_ambient_min.asInt());
-  int slins = (surf->Light>>24)&0xff;
-  slins = max2(slins, r_ambient_min.asInt());
-  //if (slins > 255) slins = 255;
-  return clampToByte(slins);
+  return (surf->Light>>24)&0xff;
 }
 
 
@@ -145,7 +139,8 @@ static inline int getSurfLightLevelInt (const surface_t *surf) {
 //
 //==========================================================================
 static inline vuint32 fixSurfLightLevel (const surface_t *surf) {
-  if (r_glow_flat && surf && !surf->seg && surf->subsector) {
+  if (!surf) return 0;
+  if (r_glow_flat && !surf->seg && surf->subsector) {
     const sector_t *sec = surf->subsector->sector;
     //FIXME: check actual view height here
     if (sec && !sec->heightsec) {
@@ -159,11 +154,8 @@ static inline vuint32 fixSurfLightLevel (const surface_t *surf) {
       }
     }
   }
-  if (!surf) return 0;
-  int slins = (r_allow_ambient ? (surf->Light>>24)&0xff : r_ambient_min.asInt());
-  slins = max2(slins, r_ambient_min.asInt());
-  //if (slins > 255) slins = 255;
-  return (surf->Light&0xffffffu)|(((vuint32)clampToByte(slins))<<24);
+  //return (surf->Light&0xffffffu)|(((vuint32)((surf->Light>>24)&0xff))<<24);
+  return surf->Light;
 }
 
 

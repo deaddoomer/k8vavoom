@@ -455,9 +455,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       break;
   }
 
-  lLev = (FixedLight ? FixedLight : lLev+ExtraLight);
-  lLev = midval(0, lLev, 255);
-  if (r_darken) lLev = light_remap[lLev];
+  lLev = R_GetLightLevel(FixedLight, lLev+ExtraLight);
   vuint32 Fade = GetFade(secregion, (surfaceType != SFT_Wall));
 
   /*
@@ -659,8 +657,7 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
       sec_params_t *LightParams = Ceil->esecplane.splane->LightSourceSector != -1 ?
         &Level->Sectors[Ceil->esecplane.splane->LightSourceSector].params :
         secregion->params;
-      int lLev = (FixedLight ? FixedLight : clampval((int)LightParams->lightlevel+(int)ExtraLight, 0, 255));
-      if (r_darken) lLev = light_remap[lLev];
+      int lLev = R_GetLightLevel(FixedLight, LightParams->lightlevel+ExtraLight);
       vuint32 Fade = GetFade(secregion);
 
       surface_t *Surf = dseg->HorizonTop;
@@ -694,8 +691,7 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
       sec_params_t *LightParams = Floor->esecplane.splane->LightSourceSector != -1 ?
         &Level->Sectors[Floor->esecplane.splane->LightSourceSector].params :
         secregion->params;
-      int lLev = (FixedLight ? FixedLight : clampval((int)LightParams->lightlevel+(int)ExtraLight, 0, 255));
-      if (r_darken) lLev = light_remap[lLev];
+      int lLev = R_GetLightLevel(FixedLight, LightParams->lightlevel+ExtraLight);
       vuint32 Fade = GetFade(secregion);
 
       surface_t *Surf = dseg->HorizonBot;
