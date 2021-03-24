@@ -36,22 +36,24 @@
 static VCvarB compat_better_sight("compat_better_sight", true, "Check more points in LOS calculations?", CVAR_Archive);
 static VCvarB dbg_disable_cansee("dbg_disable_cansee", false, "Disable CanSee processing (for debug)?", CVAR_PreInit);
 
-/*
-  enum {
-    CSE_ForShooting      = 1u<<0,
-    CSE_AlwaysBetter     = 1u<<1,
-    CSE_IgnoreBlockAll   = 1u<<2,
-    CSE_IgnoreFakeFloors = 1u<<3,
-  };
-  bool CanSeeEx (VEntity *Ent, unsigned flags=0);
-*/
+//k8: for some reason, sight checks ignores base sector region
+//    i don't think that this is a right thing to do, so i removed that
 
+
+//==========================================================================
+//
+//  VEntity::CanSeeEx
+//
+//  LineOfSight/Visibility checks, uses REJECT Lookup Table. This uses
+//  specialised forms of the maputils routines for optimized performance
+//  Returns true if a straight line between t1 and t2 is unobstructed.
+//
+//==========================================================================
 bool VEntity::CanSee (VEntity *Other, bool forShooting, bool alwaysBetter) {
-  return CanSeeEx(Other, (forShooting ? CSE_ForShooting : 0u)|(alwaysBetter ? CSE_AlwaysBetter : 0u));
+  return CanSeeEx(Other, (forShooting ? CSE_ForShooting : 0u)|(alwaysBetter ? CSE_AlwaysBetter : 0u)|CSE_CheckBaseRegion);
 }
 
 
-//k8: for some reason, sight checks ignores base sector region
 //==========================================================================
 //
 //  VEntity::CanSeeEx
@@ -76,7 +78,17 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
   // killough 11/98: shortcut for melee situations
   // same subsector? obviously visible
   // this is not true for base sectors, though
-  if (SubSector == Other->SubSector) return true;
+  if (SubSector == Other->SubSector) {
+    // if we have some 3d pobjs at this subsector, do not early exit
+    if (!SubSector->Has3DPObjs()) return true;
+    // check for the same polyobject
+    if (SubSector->isInnerPObj()) {
+      // two entities can have some 3d pobj subsector only if they're on or inside a pobj
+      //const float pz1 = SubSector->sector->ownpobj->poceiling.maxz;
+      //if (Origin.z == pz1 || Other.Origin.z == pz1) return true;
+      return true;
+    }
+  }
 
   bool forShooting = !!(flags&CSE_ForShooting);
   bool alwaysBetter = !!(flags&CSE_AlwaysBetter);

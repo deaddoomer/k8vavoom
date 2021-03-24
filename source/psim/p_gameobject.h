@@ -1219,6 +1219,13 @@ public:
   inline bool HasPObjs () const noexcept { return !!polyparts; }
   inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
 
+  inline bool Has3DPObjs () const noexcept {
+    for (const polyobjpart_t *part = polyparts; part; part = part->nextsub) {
+      if (part->pobj->Is3D()) return true;
+    }
+    return false;
+  }
+
   inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
   inline bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
   inline bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }

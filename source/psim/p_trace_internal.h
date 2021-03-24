@@ -104,18 +104,23 @@ struct PlaneHitInfo {
     return linestart+(lineend-linestart)*(wasHit ? besthtime : 0.0f);
   }
 
-  inline void update (const TSecPlaneRef &plane) noexcept {
+  inline float getHitTime () const noexcept __attribute__((always_inline)) {
+    return (wasHit ? besthtime : 2.0f);
+  }
+
+  // returns `true` if the hit was detected
+  inline bool update (const TSecPlaneRef &plane) noexcept {
     const float d1 = plane.PointDistance(linestart);
-    if (d1 < 0.0f) return; // don't shoot back side
+    if (d1 < 0.0f) return false; // don't shoot back side
 
     const float d2 = plane.PointDistance(lineend);
-    if (d2 >= 0.0f) return; // didn't hit plane
+    if (d2 >= 0.0f) return false; // didn't hit plane
 
     // d1/(d1-d2) -- from start
     // d2/(d2-d1) -- from end
 
     const float time = d1/(d1-d2);
-    if (time < 0.0f || time > 1.0f) return; // hit time is invalid
+    if (time < 0.0f || time > 1.0f) return false; // hit time is invalid
 
     if (!wasHit || time < besthtime) {
       bestIsSky = (plane.splane->pic == skyflatnum);
@@ -123,10 +128,12 @@ struct PlaneHitInfo {
     }
 
     wasHit = true;
+    return true;
   }
 
-  inline void update (sec_plane_t &plane, bool flip=false) noexcept __attribute__((always_inline)) {
+  // returns `true` if the hit was detected
+  inline bool update (sec_plane_t &plane, bool flip=false) noexcept __attribute__((always_inline)) {
     TSecPlaneRef pp(&plane, flip);
-    update(pp);
+    return update(pp);
   }
 };
