@@ -218,7 +218,7 @@ static bool LightCheck2SLinePass (LightTraceInfo &trace, const line_t *line, con
 
   // check for 3d pobj
   polyobj_t *po = line->pobj();
-  if (po && !po->posector) po = nullptr;
+  if (po && !po->Is3D()) po = nullptr;
   if (po) {
     // this must be 2-sided line, no need to check
     // check easy cases first (totally above or below)
@@ -484,9 +484,9 @@ static bool LightCheckStartingPObj (LightTraceInfo &trace) {
   // otherwise check if hit point is still inside a pobj
   for (auto &&it : trace.StartSubSector->PObjFirst()) {
     polyobj_t *po = it.pobj();
-    if (!po->posector) continue;
+    if (!po->Is3D()) continue;
     if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
-    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), trace.Start.x, trace.Start.y)) continue;
     // starting point is inside 3d pobj inner sector, check pobj planes
 
     PlaneHitInfo phi(trace.Start, trace.End);
@@ -502,7 +502,7 @@ static bool LightCheckStartingPObj (LightTraceInfo &trace) {
     // check if hitpoint is still inside this pobj
     const TVec hp = phi.getHitPoint();
     if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
-    if (!trace.Level->IsPointInsideSector2D(po->posector, trace.Start.x, trace.Start.y)) continue;
+    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), trace.Start.x, trace.Start.y)) continue;
 
     // yep, got it; we don't care about "best hit" here, only hit presence matters
     trace.LineEnd = hp;

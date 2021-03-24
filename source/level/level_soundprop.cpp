@@ -152,7 +152,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
       for (auto &&it : sub->PObjFirst()) {
         polyobj_t *po = it.pobj();
-        sector_t *other = po->posector;
+        sector_t *other = po->GetSector();
         if (other && po->validcount != validcount) {
           po->validcount = validcount;
           const int sblock = 0;

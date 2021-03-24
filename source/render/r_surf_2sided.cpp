@@ -402,7 +402,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
 //
 //==========================================================================
 void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
-  if (seg->pobj && seg->pobj->posector) return SetupTwoSidedMidWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
+  if (seg->pobj && seg->pobj->Is3D()) return SetupTwoSidedMidWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
 
   FreeWSurfs(sp->surfs);
 
@@ -452,14 +452,14 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     float z_org; // texture top
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      if (seg->pobj && seg->pobj->posector) {
+      if (seg->pobj && seg->pobj->Is3D()) {
         z_org = seg->pobj->pofloor.TexZ+texh;
       } else {
         z_org = max2(seg->frontsector->floor.TexZ, seg->backsector->floor.TexZ)+texh;
       }
     } else {
       // top of texture at top
-      if (seg->pobj && seg->pobj->posector) {
+      if (seg->pobj && seg->pobj->Is3D()) {
         z_org = seg->pobj->poceiling.TexZ;
       } else {
         z_org = min2(seg->frontsector->ceiling.TexZ, seg->backsector->ceiling.TexZ);
@@ -632,14 +632,14 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
     float z_org; // texture top
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      if (seg->pobj && seg->pobj->posector) {
+      if (seg->pobj && seg->pobj->Is3D()) {
         z_org = seg->pobj->pofloor.TexZ+texh;
       } else {
         z_org = max2(seg->frontsector->floor.TexZ, seg->backsector->floor.TexZ)+texh;
       }
     } else {
       // top of texture at top
-      if (seg->pobj && seg->pobj->posector) {
+      if (seg->pobj && seg->pobj->Is3D()) {
         z_org = seg->pobj->poceiling.TexZ;
       } else {
         z_org = min2(seg->frontsector->ceiling.TexZ, seg->backsector->ceiling.TexZ);

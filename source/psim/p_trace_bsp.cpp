@@ -129,7 +129,7 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
   #endif
 
   polyobj_t *po = line->pobj();
-  if (po && !po->posector) po = nullptr;
+  if (po && !po->Is3D()) po = nullptr;
 
   // crosses a two sided line
   //sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);

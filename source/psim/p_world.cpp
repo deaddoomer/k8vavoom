@@ -178,7 +178,7 @@ bool VBlockPObjIterator::GetNext () {
   for (; PolyLink; PolyLink = PolyLink->next) {
     polyobj_t *po = PolyLink->polyobj;
     if (!po) continue;
-    if (!po->posector && !returnAll) continue;
+    if (!po->Is3D() && !returnAll) continue;
     if (po->validcount == validcount) continue;
     po->validcount = validcount;
     *PolyPtr = po;
@@ -605,7 +605,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     // also, if such line was hit, it is blocking, for sure
     polyobj_t *po = ld->pobj();
     if (po) {
-      if (!doopening && po->posector) continue;
+      if (!doopening && po->Is3D()) continue;
       const float hpz = trace_org3d.z+trace_dir3d.z*frac;
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
@@ -617,7 +617,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         // because if pobj plane hit time is bigger than the time of the next line, there's no hit
         // yet this is complicated by 2-sided non-blocking lines, so maybe we should check hit time
         // against two lines of the same polyobject (there *MUST* be two of them for enter/exit)
-        if (po->posector && po->validcount != validcount) {
+        if (po->Is3D() && po->validcount != validcount) {
           // check if we can hit pobj vertically
           const float tz0 = trace_org3d.z;
           const float tz1 = trace_org3d.z+trace_dir3d.z;
@@ -631,7 +631,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
           if (pfrc < 0.0f || pfrc >= max_frac) continue; // cannot hit
           // check if hitpoint is still inside pobj
           if (!IsPointInside2DBBox(php.x, php.y, po->bbox2d)) continue;
-          if (!Level->IsPointInsideSector2D(po->posector, php.x, php.y)) continue;
+          if (!Level->IsPointInsideSector2D(po->GetSector(), php.x, php.y)) continue;
           // yep, it can; add polyobject plane to intercept list
           intercept_t &itp = NewIntercept(pfrc);
           itp.Flags = intercept_t::IF_IsAPlane;
@@ -708,7 +708,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       // set line sector
       if (po) {
         //FIXME: this code is a mess!
-             if (po->posector) In.sector = po->posector; // it's ok for puff checks
+             if (po->Is3D()) In.sector = po->GetSector(); // it's ok for puff checks
         else if (ld->frontsector) In.sector = ld->frontsector;
         else In.sector = ld->backsector;
       } else {

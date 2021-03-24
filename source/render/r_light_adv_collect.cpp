@@ -373,8 +373,8 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
             CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
           }
         }
-        if (pobj->posector) {
-          for (subsector_t *posub = pobj->posector->subsectors; posub; posub = posub->seclink) {
+        if (pobj->Is3D()) {
+          for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
             // update pobj
             if (doUpdates && posub->updateWorldFrame != updateWorldFrame) {
               posub->updateWorldFrame = updateWorldFrame;

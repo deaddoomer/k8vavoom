@@ -1100,9 +1100,13 @@ public:
   void RemoveAllSubsectors ();
   void AddSubsector (subsector_t *sub);
 
-  inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
-  inline PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
-  inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
+  VVA_CHECKRESULT inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
+  VVA_CHECKRESULT inline PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
+  VVA_CHECKRESULT inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
+
+  VVA_CHECKRESULT inline bool Is3D () const noexcept { return posector; }
+  // valid only for 3d pobjs
+  VVA_CHECKRESULT inline sector_t *GetSector () const noexcept { return posector; }
 };
 
 

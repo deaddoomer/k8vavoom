@@ -594,8 +594,8 @@ void VEntity::LinkToWorld (int properFloorCheck) {
         for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
           if (po->pofloor.minz >= po->poceiling.maxz) continue;
           if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) continue;
-          if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) continue;
-          if (needSectorList) linkAdditionalSectors.append(po->posector);
+          if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) continue;
+          if (needSectorList) linkAdditionalSectors.append(po->GetSector());
           if (Copy3DPObjFloorCeiling(po, EFloor, FloorZ, ECeiling, CeilingZ, spo, Origin.z, z1)) {
             if (Origin.z == po->poceiling.maxz && (!standpo || standpo->tag > po->tag)) standpo = po;
           } else {
@@ -607,8 +607,8 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     spo = (insidepo ? insidepo : standpo);
     if (spo) {
       // subsector info required only for bots
-      SubSector = spo->posector->subsectors;
-      Sector = spo->posector;
+      Sector = spo->GetSector();
+      SubSector = Sector->subsectors;
       PolyObj = spo;
     }
   }
@@ -746,13 +746,13 @@ void VEntity::CheckWater () {
 //==========================================================================
 bool VEntity::IsInPolyObj (polyobj_t *po) {
   if (!po) return false;
-  if (!po->posector) return false;
+  if (!po->Is3D()) return false;
   if (po->pofloor.minz >= po->poceiling.maxz) return false;
   float tmbbox[4];
   const float rad = GetMoveRadius();
   Create2DBBox(tmbbox, Origin, rad);
   if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) return false;
-  if (!XLevel->IsBBox2DTouchingSector(po->posector, tmbbox)) return false;
+  if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) return false;
   const float pz0 = po->pofloor.minz;
   const float pz1 = po->poceiling.maxz;
   const float z0 = Origin.z;
@@ -859,7 +859,7 @@ bool VEntity::CheckPosition (TVec Pos) {
           for (VBlockPObjIterator It(XLevel, bx, by, &po); It.GetNext(); ) {
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, cptrace.BBox)) continue;
-            if (!XLevel->IsBBox2DTouchingSector(po->posector, cptrace.BBox)) continue;
+            if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), cptrace.BBox)) continue;
             if (!Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1)) { return false; /*inpobj = true;*/ }
           }
         }
@@ -981,7 +981,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   polyobj_t *po = ld->pobj();
   if (po) {
     if (!IsBlockingLine(ld)) return true;
-    if (!po->posector || po->validcount == validcount) return true;
+    if (!po->Is3D() || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = cptrace.End.z+max2(0.0f, Height);
@@ -1214,7 +1214,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             if (po->pofloor.minz >= po->poceiling.maxz) continue;
             if (!Are2DBBoxesOverlap(po->bbox2d, tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "001: %s(%u):   checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
-            if (!XLevel->IsBBox2DTouchingSector(po->posector, tmtrace.BBox)) continue;
+            if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmtrace.BBox)) continue;
             //GCon->Logf(NAME_Debug, "002: %s(%u):   HIT pobj #%d (fz=%g; cz=%g); z0=%g; z1=%g", GetClass()->GetName(), GetUniqueId(), po->tag, tmtrace.FloorZ, tmtrace.CeilingZ, tmtrace.End.z, z1);
             const float oldFZ = tmtrace.FloorZ;
             if (Copy3DPObjFloorCeiling(tmtrace, po, tmtrace.End.z, z1)) {
@@ -1398,7 +1398,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   polyobj_t *po = ld->pobj();
   if (po) {
     if (!IsBlockingLine(ld)) return true;
-    if (!po->posector || po->validcount == validcount) return true;
+    if (!po->Is3D() || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = hitPoint.z+max2(0.0f, Height);
@@ -2552,8 +2552,8 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
           }
           if (!Are2DBBoxesOverlap(po->bbox2d, bbox2d)) continue;
           //GCon->Logf(NAME_Debug, "x01: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
-          if (!XLevel->IsBBox2DTouchingSector(po->posector, bbox2d)) continue;
-          //if (!XLevel->IsPointInsideSector2D(po->posector, TryOrg.x, TryOrg.y)) continue;
+          if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), bbox2d)) continue;
+          //if (!XLevel->IsPointInsideSector2D(po->GetSector(), TryOrg.x, TryOrg.y)) continue;
           //GCon->Logf(NAME_Debug, "x02: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
           //GCon->Logf(NAME_Debug, "x02: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
           // hit pobj

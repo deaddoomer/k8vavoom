@@ -99,7 +99,7 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 void VRenderLevelShared::PObjModified (polyobj_t *po) {
   // here we should offset and turn flats
   // update regions
-  sector_t *sec = po->posector;
+  sector_t *sec = po->GetSector();
   if (sec) {
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
       for (subregion_t *reg = sub->regions; reg; reg = reg->next) {

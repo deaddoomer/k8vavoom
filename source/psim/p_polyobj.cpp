@@ -537,7 +537,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     }
   }
 
-  // apppend minisegs
+  // append minisegs
   po->posector = posec;
   if (moresegs.length()) {
     seg_t **ns = new seg_t*[po->numsegs+moresegs.length()];

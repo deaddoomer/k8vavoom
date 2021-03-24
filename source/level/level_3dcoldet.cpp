@@ -277,7 +277,7 @@ bool VLevel::CanHave3DPolyObjAt (const TVec &p) const noexcept {
   if (bmx < 0 || bmx >= BlockMapWidth || bmy < 0 || bmy >= BlockMapHeight) return false;
   for (polyblock_t *PolyLink = PolyBlockMap[bmy*BlockMapWidth+bmx]; PolyLink; PolyLink = PolyLink->next) {
     polyobj_t *po = PolyLink->polyobj;
-    if (po && po->posector) return true;
+    if (po && po->Is3D()) return true;
   }
   return false;
 }
@@ -310,9 +310,9 @@ float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, 
   // if starting point is inside a 3d pobj, check pobj plane hits
   for (auto &&it : sub->PObjFirst()) {
     polyobj_t *po = it.pobj();
-    if (!po->posector) continue;
+    if (!po->Is3D()) continue;
     if (!IsPointInside2DBBox(linestart.x, linestart.y, po->bbox2d)) continue;
-    if (!IsPointInsideSector2D(po->posector, linestart.x, linestart.y)) continue;
+    if (!IsPointInsideSector2D(po->GetSector(), linestart.x, linestart.y)) continue;
     // starting point is inside 3d pobj inner sector, check pobj planes
 
     const float frc = CheckPObjPassPlanes(po, linestart, lineend, &curhp, &curnorm, &curplane);
@@ -320,7 +320,7 @@ float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, 
 
     // check if hitpoint is still inside this pobj
     if (!IsPointInside2DBBox(curhp.x, curhp.y, po->bbox2d)) continue;
-    if (!IsPointInsideSector2D(po->posector, curhp.x, curhp.y)) continue;
+    if (!IsPointInsideSector2D(po->GetSector(), curhp.x, curhp.y)) continue;
 
     // yep, got it
     didHit = true;
