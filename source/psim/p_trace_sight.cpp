@@ -33,34 +33,7 @@
 // blockmap tracing
 //
 //**************************************************************************
-static intercept_t *intercepts = nullptr;
-static unsigned interAllocated = 0;
-static unsigned interUsed = 0;
-
-
-//==========================================================================
-//
-//  ResetIntercepts
-//
-//==========================================================================
-static void ResetIntercepts () {
-  interUsed = 0;
-}
-
-
-//==========================================================================
-//
-//  EnsureFreeIntercept
-//
-//==========================================================================
-static inline void EnsureFreeIntercept () {
-  if (interAllocated <= interUsed) {
-    unsigned oldAlloc = interAllocated;
-    interAllocated = ((interUsed+4)|0xfffu)+1;
-    intercepts = (intercept_t *)Z_Realloc(intercepts, interAllocated*sizeof(intercept_t));
-    if (oldAlloc) GCon->Logf(NAME_Debug, "more interceptions allocated; interUsed=%u; allocated=%u (old=%u)", interUsed, interAllocated, oldAlloc);
-  }
-}
+static InterceptionList intercepts;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -350,31 +323,9 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
   const float frac = num/den;
 
   // store the line for later intersection testing
-  intercept_t *icept;
-
-  EnsureFreeIntercept();
-  // find place to put our new record
-  // this is usually faster than sorting records, as we are traversing blockmap
-  // more-or-less in order
-  if (interUsed > 0) {
-    unsigned ipos = interUsed;
-    while (ipos > 0 && frac < intercepts[ipos-1].frac) --ipos;
-    // here we should insert at `ipos` position
-    if (ipos == interUsed) {
-      // as last
-      icept = &intercepts[interUsed++];
-    } else {
-      // make room
-      memmove(intercepts+ipos+1, intercepts+ipos, (interUsed-ipos)*sizeof(intercepts[0]));
-      ++interUsed;
-      icept = &intercepts[ipos];
-    }
-  } else {
-    icept = &intercepts[interUsed++];
-  }
-
+  intercept_t *icept = intercepts.insert(frac);
+  icept->Flags = intercept_t::IF_IsALine; // just in case
   icept->line = ld;
-  icept->frac = frac;
 
   return true; // continue scanning
 }
@@ -422,16 +373,13 @@ static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
 //
 //==========================================================================
 static bool SightTraverseIntercepts (SightTraceInfo &trace) {
-  int count = (int)interUsed;
-
-  if (count > 0) {
+  if (!intercepts.isEmpty()) {
     // go through in order
-    intercept_t *scan = intercepts;
-    for (int i = count; i--; ++scan) {
+    const intercept_t *scan = intercepts.list;
+    for (unsigned i = intercepts.count(); i--; ++scan) {
       if (!SightCheckLineHit(trace, scan->line, scan->frac)) return false; // don't bother going further
     }
   }
-
   trace.LineEnd = trace.End;
   return SightCheckPlanes(trace, trace.EndSubSector->sector, (trace.EndSubSector->sector == trace.StartSubSector->sector));
 }
@@ -449,36 +397,13 @@ static bool SightTraverseIntercepts (SightTraceInfo &trace) {
 //
 //==========================================================================
 static bool SightCheckStartingPObj (SightTraceInfo &trace) {
-  // if starting point is inside a 3d pobj, check pobj plane hits
-  // if no hit, or enter time is more than first interception frac, ignore
-  // otherwise check if hit point is still inside a pobj
-  for (auto &&it : trace.StartSubSector->PObjFirst()) {
-    polyobj_t *po = it.pobj();
-    if (!po->Is3D()) continue;
-    if (!IsPointInside2DBBox(trace.Start.x, trace.Start.y, po->bbox2d)) continue;
-    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), trace.Start.x, trace.Start.y)) continue;
-    // starting point is inside 3d pobj inner sector, check pobj planes
-
-    PlaneHitInfo phi(trace.Start, trace.End);
-    // implement proper blocking (so we could have transparent polyobjects)
-    //unsigned flagmask = trace.PlaneNoBlockFlags;
-    //flagmask &= SPF_FLAG_MASK;
-
-    phi.update(po->pofloor);
-    phi.update(po->poceiling);
-
-    if (!phi.wasHit) continue; // no pobj plane hit
-
-    // check if hitpoint is still inside this pobj
-    const TVec hp = phi.getHitPoint();
-    if (!IsPointInside2DBBox(hp.x, hp.y, po->bbox2d)) continue;
-    if (!trace.Level->IsPointInsideSector2D(po->GetSector(), trace.Start.x, trace.Start.y)) continue;
-
+  TVec hp;
+  const float frac = trace.Level->CheckPObjPlanesPoint(trace.Start, trace.End, trace.StartSubSector, &hp);
+  if (frac >= 0.0f) {
     // yep, got it; we don't care about "best hit" here, only hit presence matters
     trace.LineEnd = hp;
     return false;
   }
-
   // no starting hit
   return true;
 }
@@ -500,7 +425,7 @@ static bool SightCheckStartingPObj (SightTraceInfo &trace) {
 static bool SightPathTraverse (SightTraceInfo &trace) {
   VBlockMapWalker walker;
 
-  ResetIntercepts();
+  intercepts.reset();
 
   trace.LineStart = trace.Start;
   trace.Delta = trace.End-trace.Start;
@@ -658,7 +583,7 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
       // check middle
       trace.End.z += height*0.5f;
       if (SightPathTraverse(trace)) return true;
-      if (trace.Hit1S || interUsed == 0) continue;
+      if (trace.Hit1S || intercepts.isEmpty() == 0) continue;
 
       // check eyes (roughly)
       trace.End = dest;

@@ -28,6 +28,54 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+struct InterceptionList {
+  VV_DISABLE_COPY(InterceptionList)
+
+  intercept_t *list;
+  unsigned alloted;
+  unsigned used;
+
+  inline InterceptionList () noexcept : list(nullptr), alloted(0), used(0) {}
+  inline ~InterceptionList () noexcept { clear(); }
+
+  inline void clear () noexcept {
+    if (list) Z_Free(list);
+    list = nullptr;
+    alloted = used = 0;
+  }
+
+  inline void reset () noexcept { used = 0; }
+
+  VVA_CHECKRESULT inline bool isEmpty () const noexcept { return (used == 0); }
+
+  VVA_CHECKRESULT inline unsigned count () const noexcept { return used; }
+
+  VVA_CHECKRESULT inline intercept_t *insert (const float frac) noexcept {
+    intercept_t *res;
+    unsigned ipos = used;
+    if (ipos > 0) {
+      while (ipos > 0 && frac < list[ipos-1].frac) --ipos;
+      // here we should insert at `ipos` position
+      if (ipos == used) {
+        // as last
+        res = &list[used++];
+      } else {
+        // make room
+        memmove((void *)(list+ipos+1), (void *)(list+ipos), (used-ipos)*sizeof(list[0]));
+        ++used;
+        res = &list[ipos];
+      }
+    } else {
+      res = &list[used++];
+    }
+    res->frac = frac;
+    res->Flags = 0u;
+    return res;
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 struct PlaneHitInfo {
   TVec linestart;
   TVec lineend;
