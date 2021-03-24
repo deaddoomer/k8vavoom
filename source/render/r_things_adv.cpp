@@ -173,8 +173,8 @@ void VRenderLevelShadowVolume::BuildMobjsInCurrLight (bool doShadows, bool colle
       RenderStyleInfo ri;
       for (int bx = xl; bx <= xh; ++bx) {
         for (int by = yl; by <= yh; ++by) {
-          for (VBlockThingsIterator It(Level, bx, by); It; ++It) {
-            VEntity *ent = *It;
+          for (auto &&it : Level->allBlockThings(bx, by)) {
+            VEntity *ent = it.entity();
             if (!ent->IsRenderable()) continue;
             if (ent->GetRenderRadius() < 1) continue;
             //TODO: use `RenderRadius` here to check subsectors

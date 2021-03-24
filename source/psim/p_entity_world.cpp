@@ -820,8 +820,8 @@ bool VEntity::CheckPosition (TVec Pos) {
     DeclareMakeBlockMapCoordsBBox2DMaxRadius(cptrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        for (VBlockThingsIterator It(XLevel, bx, by); It; ++It) {
-          if (!CheckThing(cptrace, *It)) {
+        for (auto &&it : XLevel->allBlockThings(bx, by)) {
+          if (!CheckThing(cptrace, it.entity())) {
             //GCon->Logf("%s: collided with thing `%s`", GetClass()->GetName(), (*It)->GetClass()->GetName());
             return false;
           }
@@ -1125,13 +1125,13 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     DeclareMakeBlockMapCoordsBBox2DMaxRadius(tmtrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        for (VBlockThingsIterator It(XLevel, bx, by); It; ++It) {
+        for (auto &&it : XLevel->allBlockThings(bx, by)) {
+          VEntity *ent = it.entity();
           if (ignoreMonsters || ignorePlayers) {
-            VEntity *ent = *It;
             if (ignorePlayers && ent->IsPlayer()) continue;
             if (ignoreMonsters && (ent->IsMissile() || ent->IsMonster())) continue;
           }
-          if (!CheckRelThing(tmtrace, *It, noPickups)) {
+          if (!CheckRelThing(tmtrace, ent, noPickups)) {
             // continue checking for other things in to see if we hit something
             if (!tmtrace.BlockingMobj || Level->GetNoPassOver()) {
               // slammed into something
@@ -2509,12 +2509,13 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
     // xl->xh, yl->yh determine the mapblock set to search
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        for (VBlockThingsIterator Other(XLevel, bx, by); Other; ++Other) {
-          if (*Other == this) continue; // don't clip against self
+        for (auto &&it : XLevel->allBlockThings(bx, by)) {
+          VEntity *Other = it.entity();
+          if (Other == this) continue; // don't clip against self
           //if (OwnerSUId && Other->ServerUId == OwnerSUId) continue;
           //k8: can't hit corpse
           if ((Other->EntityFlags&(EF_ColideWithThings|EF_Solid|EF_Corpse)) != (EF_ColideWithThings|EF_Solid)) continue; // can't hit things, or not solid
-          const float ohgt = GetBlockingHeightFor(*Other);
+          const float ohgt = GetBlockingHeightFor(Other);
           if (TryOrg.z > Other->Origin.z+ohgt) continue; // over thing
           if (TryOrg.z+Height < Other->Origin.z) continue; // under thing
           const float blockdist = Other->GetMoveRadius()+rad;
@@ -2524,7 +2525,7 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
             // didn't hit thing
             continue;
           }
-          if (hitent) *hitent = *Other;
+          if (hitent) *hitent = Other;
           return true;
         }
       }

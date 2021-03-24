@@ -1098,7 +1098,7 @@ public:
     inline bool operator == (const VAllBlockLines &b) const noexcept { return (Level == b.Level && PolyLink == b.PolyLink && PolySegIdx == b.PolySegIdx && List == b.List && Line == b.Line); } /* required for iterator */
     inline bool operator != (const VAllBlockLines &b) const noexcept { return !(*this == b); }
     inline VAllBlockLines operator * () const noexcept { return VAllBlockLines(*this, false); } /* required for iterator */
-    inline void operator ++ () noexcept { advance(); } /* this is enough for iterator */
+    inline void operator ++ () noexcept { advance(); } /* required for iterator */
     inline VAllBlockLines begin () noexcept { return VAllBlockLines(*this, false); } /* required for iterator */
     inline VAllBlockLines end () noexcept { return VAllBlockLines(*this, true); } /* required for iterator */
 
@@ -1108,6 +1108,42 @@ public:
   // The validcount flags are used to avoid checking lines that are marked in
   // multiple mapblocks, so increment validcount before creating this object.
   inline VAllBlockLines allBlockLines (int x, int y, unsigned pobjMode=BLINES_ALL) const noexcept { return VAllBlockLines(this, x, y, pobjMode); }
+
+
+private:
+  // need to have this due to `VEntity` being defined after `VLevel`
+  static VEntity *GetNextBlockmapEntity (VEntity *ent) noexcept;
+  static VEntity *GetFirstBlockmapEntity (VEntity *ent) noexcept;
+
+public:
+  class VAllBlockThings {
+  private:
+    VEntity *Ent;
+
+  public:
+    inline VAllBlockThings (const VLevel *Level, int x, int y) noexcept {
+      if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) {
+        Ent = nullptr;
+      } else {
+        Ent = GetFirstBlockmapEntity(Level->BlockLinks[y*Level->BlockMapWidth+x]);
+      }
+    }
+
+    inline VAllBlockThings (const VAllBlockThings &src, bool asEnd) noexcept {
+      Ent = (!asEnd ? src.Ent : nullptr);
+    }
+
+    inline bool operator == (const VAllBlockThings &b) const noexcept { return (Ent == b.Ent); } /* required for iterator */
+    inline bool operator != (const VAllBlockThings &b) const noexcept { return (Ent != b.Ent); }
+    inline VAllBlockThings operator * () const noexcept { return VAllBlockThings(*this, false); } /* required for iterator */
+    inline void operator ++ () noexcept { Ent = GetNextBlockmapEntity(Ent); } /* required for iterator */
+    inline VAllBlockThings begin () noexcept { return VAllBlockThings(*this, false); } /* required for iterator */
+    inline VAllBlockThings end () noexcept { return VAllBlockThings(*this, true); } /* required for iterator */
+
+    inline VEntity *entity () const noexcept { return Ent; }
+  };
+
+  inline VAllBlockThings allBlockThings (int bmx, int bmy) const noexcept { return VAllBlockThings(this, bmx, bmy); }
 
 private:
   // map loaders

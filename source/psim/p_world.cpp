@@ -739,23 +739,24 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
     for (int dy = 0; dy < 3; ++dy) {
       for (int dx = 0; dx < 3; ++dx) {
         if (!NeedCheckBMCell(mapx+deltas[dx], mapy+deltas[dy])) continue;
-        for (VBlockThingsIterator It(Level, mapx+deltas[dx], mapy+deltas[dy]); It; ++It) {
-          if (It->Radius <= 0.0f || It->Height <= 0.0f) continue;
+        for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
+          VEntity *ent = it.entity();
+          if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
           //if (vptSeenThings.put(*It, true)) continue;
           // [RH] don't check a corner to corner crossection for hit
           // instead, check against the actual bounding box
 
           if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
             // center hitpoint
-            const float dot = trace_plane.PointDistance(It->Origin);
-            if (fabsf(dot) >= It->Radius) continue; // thing is too far away
-            const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
+            const float dot = trace_plane.PointDistance(ent->Origin);
+            if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
+            const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
             if (dist < 0.0f) continue; // behind source
             const float frac = (trace_len ? dist/trace_len : 0.0f);
             if (frac < 0.0f || frac > 1.0f) continue;
             intercept_t &In = NewIntercept(frac);
             In.Flags = 0;
-            In.thing = *It;
+            In.thing = ent;
             continue;
           }
 
@@ -765,32 +766,32 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           for (int i = 0; i < 4; ++i) {
             switch (i) {
               case 0: // top edge
-                line.y = It->Origin.y+It->Radius;
+                line.y = ent->Origin.y+ent->Radius;
                 if (trace_org.y < line.y) continue;
-                line.x = It->Origin.x+It->Radius;
-                line.dx = -It->Radius*2.0f;
+                line.x = ent->Origin.x+ent->Radius;
+                line.dx = -ent->Radius*2.0f;
                 line.dy = 0.0f;
                 break;
               case 1: // right edge
-                line.x = It->Origin.x+It->Radius;
+                line.x = ent->Origin.x+ent->Radius;
                 if (trace_org.x < line.x) continue;
-                line.y = It->Origin.y-It->Radius;
+                line.y = ent->Origin.y-ent->Radius;
                 line.dx = 0.0f;
-                line.dy = It->Radius*2.0f;
+                line.dy = ent->Radius*2.0f;
                 break;
               case 2: // bottom edge
-                line.y = It->Origin.y-It->Radius;
+                line.y = ent->Origin.y-ent->Radius;
                 if (trace_org.y > line.y) continue;
-                line.x = It->Origin.x-It->Radius;
-                line.dx = It->Radius*2.0f;
+                line.x = ent->Origin.x-ent->Radius;
+                line.dx = ent->Radius*2.0f;
                 line.dy = 0.0f;
                 break;
               case 3: // left edge
-                line.x = It->Origin.x-It->Radius;
+                line.x = ent->Origin.x-ent->Radius;
                 if (trace_org.x > line.x) continue;
-                line.y = It->Origin.y+It->Radius;
+                line.y = ent->Origin.y+ent->Radius;
                 line.dx = 0.0f;
-                line.dy = -It->Radius*2.0f;
+                line.dy = -ent->Radius*2.0f;
                 break;
             }
             ++numfronts;
@@ -800,7 +801,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
               // it's a hit
               const float frac = interceptVector(trace, line);
               if (frac < 0.0f || frac > 1.0f) continue;
-              AddProperThingHit(*It, frac);
+              AddProperThingHit(ent, frac);
               break;
             }
           }
@@ -809,7 +810,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           if (numfronts == 0) {
             intercept_t &In = NewIntercept(0.0f);
             In.Flags = 0;
-            In.thing = *It;
+            In.thing = ent;
           }
         }
       }
@@ -819,31 +820,33 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
     for (int dy = -1; dy < 2; ++dy) {
       for (int dx = -1; dx < 2; ++dx) {
         if (!NeedCheckBMCell(mapx+dx, mapy+dy)) continue;
-        for (VBlockThingsIterator It(Level, mapx+dx, mapy+dy); It; ++It) {
-          if (It->Radius <= 0.0f || It->Height <= 0.0f) continue;
-          const float dot = trace_plane.PointDistance(It->Origin);
-          if (fabsf(dot) >= It->Radius) continue; // thing is too far away
-          const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
+        for (auto &&it : Level->allBlockThings(mapx+dx, mapy+dy)) {
+          VEntity *ent = it.entity();
+          if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
+          const float dot = trace_plane.PointDistance(ent->Origin);
+          if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
+          const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
           if (dist < 0.0f) continue; // behind source
           const float frac = (trace_len ? dist/trace_len : 0.0f);
           if (frac < 0.0f || frac > 1.0f) continue;
           //if (vptSeenThings.put(*It, true)) continue;
-          AddProperThingHit(*It, frac);
+          AddProperThingHit(ent, frac);
         }
       }
     }
   #elif VV_THING_TRAVERSER == 2
     // original
     if (!NeedCheckBMCell(mapx, mapy)) return;
-    for (VBlockThingsIterator It(Level, mapx, mapy); It; ++It) {
-      if (It->Radius <= 0.0f || It->Height <= 0.0f) continue;
-      const float dot = trace_plane.PointDistance(It->Origin);
-      if (fabsf(dot) >= It->Radius) continue; // thing is too far away
-      const float dist = DotProduct((It->Origin-trace_org), trace_dir); //dist -= sqrt(It->radius * It->radius - dot * dot);
+    for (auto &&it : Level->allBlockThings(mapx, mapy)) {
+      VEntity *ent = it.entity();
+      if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
+      const float dot = trace_plane.PointDistance(ent->Origin);
+      if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
+      const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
       if (dist < 0.0f) continue; // behind source
       const float frac = (trace_len ? dist/trace_len : 0.0f);
       if (frac < 0.0f || frac > 1.0f) continue;
-      AddProperThingHit(*It, frac);
+      AddProperThingHit(ent, frac);
     }
   #else
     #error "VV_THING_TRAVERSER is not properly set!"

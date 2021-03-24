@@ -72,6 +72,28 @@ VLevelScriptThinker::~VLevelScriptThinker () {
 
 //==========================================================================
 //
+//  VLevel::GetFirstBlockmapEntity
+//
+//==========================================================================
+VEntity *VLevel::GetFirstBlockmapEntity (VEntity *ent) noexcept {
+  while (ent && ent->IsGoingToDie()) ent = ent->BlockMapNext;
+  return ent;
+}
+
+
+//==========================================================================
+//
+//  VLevel::GetNextBlockmapEntity
+//
+//==========================================================================
+VEntity *VLevel::GetNextBlockmapEntity (VEntity *ent) noexcept {
+  if (ent) do { ent = ent->BlockMapNext; } while (ent && ent->IsGoingToDie());
+  return ent;
+}
+
+
+//==========================================================================
+//
 //  VLevel::PostCtor
 //
 //==========================================================================

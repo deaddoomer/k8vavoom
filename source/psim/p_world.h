@@ -57,32 +57,6 @@ public:
 
 //==========================================================================
 //
-//  VBlockThingsIterator
-//
-//==========================================================================
-class VBlockThingsIterator {
-private:
-  VEntity *Ent;
-
-public:
-  inline VBlockThingsIterator (VLevel *Level, int x, int y) noexcept {
-    if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) {
-      Ent = nullptr;
-    } else {
-      Ent = Level->BlockLinks[y*Level->BlockMapWidth+x];
-      while (Ent && Ent->IsGoingToDie()) Ent = Ent->BlockMapNext;
-    }
-  }
-
-  inline operator bool () const noexcept { return !!Ent; }
-  inline void operator ++ () noexcept { if (Ent) do { Ent = Ent->BlockMapNext; } while (Ent && Ent->IsGoingToDie()); }
-  inline VEntity *operator * () const noexcept { return Ent; }
-  inline VEntity *operator -> () const noexcept { return Ent; }
-};
-
-
-//==========================================================================
-//
 //  VRadiusThingsIterator
 //
 //==========================================================================
