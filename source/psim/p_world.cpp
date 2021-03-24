@@ -87,72 +87,6 @@ static float interceptVector (const divline_t &v2, const divline_t &v1) {
 
 //==========================================================================
 //
-//  VBlockLinesIterator::VBlockLinesIterator
-//
-//==========================================================================
-VBlockLinesIterator::VBlockLinesIterator (VLevel *ALevel, int x, int y, line_t **ALinePtr, unsigned pobjMode)
-  : Level(ALevel)
-  , LinePtr(ALinePtr)
-  , PolyLink(nullptr)
-  , PolySegIdx(0)
-  , List(nullptr)
-{
-  if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
-
-  int offset = y*Level->BlockMapWidth+x;
-  if (pobjMode&POBJ_POBJ) PolyLink = Level->PolyBlockMap[offset];
-
-  offset = *(Level->BlockMap+offset);
-  if (pobjMode&POBJ_LINES) List = Level->BlockMapLump+offset+1;
-}
-
-
-//==========================================================================
-//
-//  VBlockLinesIterator::GetNext
-//
-//==========================================================================
-bool VBlockLinesIterator::GetNext () {
-  // check polyobj blockmap
-  while (PolyLink) {
-    polyobj_t *po = PolyLink->polyobj;
-    if (po) {
-      while (PolySegIdx < po->numlines) {
-        line_t *linedef = po->lines[PolySegIdx++];
-        if (linedef->validcount == validcount) continue;
-        linedef->validcount = validcount;
-        *LinePtr = linedef;
-        return true;
-      }
-    }
-    PolySegIdx = 0;
-    PolyLink = PolyLink->next;
-  }
-
-  if (List) {
-    while (*List != -1) {
-      #ifdef PARANOID
-      if (*List < 0 || *List >= Level->NumLines) Host_Error("Broken blockmap - line %d", *List);
-      #endif
-      line_t *Line = &Level->Lines[*List];
-      ++List;
-
-      if (Line->validcount == validcount) continue; // line has already been checked
-
-      Line->validcount = validcount;
-      *LinePtr = Line;
-      return true;
-    }
-    List = nullptr; // just in case
-  }
-
-  return false;
-}
-
-
-
-//==========================================================================
-//
 //  VBlockPObjIterator::VBlockPObjIterator
 //
 //==========================================================================
@@ -567,11 +501,11 @@ void VPathTraverse::RemoveInterceptsAfter (const float frac) {
 //
 //==========================================================================
 bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
-  line_t *ld;
   bool wasBlocking = false;
   const bool doopening = !(scanflags&PT_NOOPENS);
   const bool doadd = (scanflags&PT_ADDLINES);
-  for (VBlockLinesIterator It(Level, mapx, mapy, &ld); It.GetNext(); ) {
+  for (auto &&it : Level->allBlockLines(mapx, mapy)) {
+    line_t *ld = it.line();
     const float dot1 = trace_plane.PointDistance(*ld->v1);
     const float dot2 = trace_plane.PointDistance(*ld->v2);
 

@@ -35,34 +35,6 @@
 
 //==========================================================================
 //
-//  VBlockLinesIterator
-//
-//  The validcount flags are used to avoid checking lines that are marked in
-//  multiple mapblocks, so increment validcount before creating this object.
-//
-//==========================================================================
-class VBlockLinesIterator {
-public:
-  enum {
-    POBJ_LINES = 1u<<0,
-    POBJ_POBJ  = 1u<<1,
-    POBJ_ALL = (POBJ_LINES|POBJ_POBJ),
-  };
-private:
-  VLevel *Level;
-  line_t **LinePtr;
-  polyblock_t *PolyLink;
-  vint32 PolySegIdx;
-  vint32 *List;
-
-public:
-  VBlockLinesIterator (VLevel *Level, int x, int y, line_t **ALinePtr, unsigned pobjMode=POBJ_ALL);
-  bool GetNext ();
-};
-
-
-//==========================================================================
-//
 //  VBlockPObjIterator
 //
 //  The validcount flags are used to avoid checking pobjs that are marked in

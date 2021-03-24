@@ -330,9 +330,9 @@ void VEntity::CreateSecNodeList () {
     // check lines
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        line_t *ld;
         // ignore polyobject lines (we already did 3d pobj scan in `LinkToWorld()`)
-        for (VBlockLinesIterator It(XLevel, bx, by, &ld, VBlockLinesIterator::POBJ_LINES); It.GetNext(); ) {
+        for (auto &&it : XLevel->allBlockLines(bx, by, VLevel::BLINES_LINES)) {
+          line_t *ld = it.line();
           if (ld->pobj()) continue; // just in case
           // ignore original polyobject sectors
           if (!ld->frontsector || ld->frontsector->isOriginalPObj()) continue;
@@ -551,8 +551,8 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         // ignore polyobjects here, because we already know our polyobject
-        line_t *ld;
-        for (VBlockLinesIterator It(XLevel, bx, by, &ld, VBlockLinesIterator::POBJ_LINES); It.GetNext(); ) {
+        for (auto &&it : XLevel->allBlockLines(bx, by, VLevel::BLINES_LINES)) {
+          line_t *ld = it.line();
           if (ld->pobj()) continue; // just in case
           // ingore polyobject sectors (for now)
           if (ld->frontsector && ld->frontsector->isOriginalPObj()) continue;
@@ -835,8 +835,8 @@ bool VEntity::CheckPosition (TVec Pos) {
     DeclareMakeBlockMapCoordsBBox2D(cptrace.BBox, xl, yl, xh, yh);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        line_t *ld;
-        for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+        for (auto &&it : XLevel->allBlockLines(bx, by)) {
+          line_t *ld = it.line();
           //good &= CheckLine(cptrace, ld);
           if (!CheckLine(cptrace, ld)) {
             //good = false; // no early exit!
@@ -1175,8 +1175,8 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
     float lastFrac = 1e7f;
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        line_t *ld;
-        for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+        for (auto &&it : XLevel->allBlockLines(bx, by)) {
+          line_t *ld = it.line();
           //good &= CheckRelLine(tmtrace, ld);
           // if we don't want pickups, don't activate specials
           if (!CheckRelLine(tmtrace, ld, noPickups)) {
@@ -1933,8 +1933,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
     XLevel->IncrementValidCount();
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
-        line_t *li;
-        for (VBlockLinesIterator It(XLevel, bx, by, &li); It.GetNext(); ) {
+        for (auto &&it : XLevel->allBlockLines(bx, by)) {
+          line_t *li = it.line();
           bool IsBlocked = false;
           if (!(li->flags&ML_TWOSIDED) || !li->backsector) {
             if (li->PointOnSide(Origin)) continue; // don't hit the back side
@@ -2637,8 +2637,8 @@ bool VEntity::CheckSides (TVec lsPos) {
   XLevel->IncrementValidCount();
   for (int bx = xl; bx <= xh; ++bx) {
     for (int by = yl; by <= yh; ++by) {
-      line_t *ld;
-      for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *ld = it.line();
         // Checks to see if a PE->LS trajectory line crosses a blocking
         // line. Returns false if it does.
         //
@@ -2695,8 +2695,8 @@ bool VEntity::FixMapthingPos () {
   XLevel->IncrementValidCount();
   for (int bx = xl; bx <= xh; ++bx) {
     for (int by = yl; by <= yh; ++by) {
-      line_t *ld;
-      for (VBlockLinesIterator It(XLevel, bx, by, &ld); It.GetNext(); ) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *ld = it.line();
         if (ld->frontsector == ld->backsector) continue; // skip two-sided lines inside a single sector
 
         // ignore polyobject lines (for now)
@@ -2819,8 +2819,8 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
   XLevel->IncrementValidCount();
   for (int bx = xl; bx <= xh; ++bx) {
     for (int by = yl; by <= yh; ++by) {
-      line_t *line;
-      for (VBlockLinesIterator It(XLevel, bx, by, &line); It.GetNext(); ) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *line = it.line();
         // ignore polyobject lines (for now)
         if (line->pobj()) continue;
         // ingore polyobject sectors (for now)
@@ -2889,8 +2889,8 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
   XLevel->IncrementValidCount();
   for (int bx = xl; bx <= xh; ++bx) {
     for (int by = yl; by <= yh; ++by) {
-      line_t *line;
-      for (VBlockLinesIterator It(XLevel, bx, by, &line); It.GetNext(); ) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *line = it.line();
         // ignore polyobject lines (for now)
         if (line->pobj()) continue;
         // ingore polyobject sectors (for now)
