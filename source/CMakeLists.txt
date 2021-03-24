@@ -341,8 +341,9 @@ set(PSIM_SOURCES
   psim/p_thinker.cpp
   psim/p_thinker.h
   psim/p_trace_bsp.cpp
-  psim/p_trace_sight.cpp
-  psim/p_trace_light.cpp
+  #psim/p_trace_sight.cpp
+  #psim/p_trace_light.cpp
+  psim/p_trace_sightlight.cpp
   psim/p_world.cpp
   psim/p_world.h
   psim/p_worldinfo.cpp
