@@ -1075,6 +1075,7 @@ public:
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
+  vint32 mirror; // 0 usually means "none"
   vint32 bmbbox[4]; //WARNING! this is in blockmap coords, not unit coords
   float bbox2d[4]; // *CURRENT* bounding box
   vint32 validcount;

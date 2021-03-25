@@ -1234,7 +1234,6 @@ private:
   void LoadRogueConScript (VName, int, FRogueConSpeech *&, int &) const;
 
   // internal poly-object methods
-  void IterFindPolySegs (const TVec &From, seg_t **segList, int &PolySegCount, const TVec &PolyStart);
   void TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor);
   void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();

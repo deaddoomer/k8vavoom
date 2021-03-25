@@ -1170,6 +1170,7 @@ struct polyobj_t {
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
   float angle;
   int tag; // reference tag assigned in HereticEd
+  int mirror; // 0 usually means "none"
   int[4] bmbbox; //WARNING! this is in blockmap coords, not unit coords
   float[4] bbox2d; // *CURRENT* bounding box
   int validcount;

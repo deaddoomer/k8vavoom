@@ -283,90 +283,6 @@ void polyobj_t::AddSubsector (subsector_t *sub) {
 
 //==========================================================================
 //
-//  VLevel::IterFindPolySegs
-//
-//  Passing nullptr for segList will cause IterFindPolySegs to count the number
-//  of segs in the polyobj
-//
-//==========================================================================
-void VLevel::IterFindPolySegs (const TVec &From, seg_t **segList,
-                               int &PolySegCount, const TVec &PolyStart)
-{
-  if (From == PolyStart) return; // reached starting vertex
-  if (NumSegs == 0) Host_Error("no segs (wtf?!)");
-
-  struct SegV1Info {
-    seg_t *seg;
-    SegV1Info *next;
-  };
-
-  // first, build map with all segs, keyed by v1
-  TMapNC<TVec, SegV1Info *> smap;
-  TArray<SegV1Info> sinfo;
-  sinfo.setLength(NumSegs);
-  int sinfoCount = 0;
-  {
-    seg_t *seg = Segs;
-    for (int i = NumSegs; i--; ++seg) {
-      if (!seg->frontsector) continue;
-      if (!seg->linedef) continue; // skip minisegs
-      SegV1Info *si = &sinfo[sinfoCount++];
-      si->seg = seg;
-      si->next = nullptr;
-      auto mp = smap.find(*seg->v1);
-      if (mp) {
-        SegV1Info *l = *mp;
-        while (l->next) l = l->next;
-        l->next = si;
-      } else {
-        smap.put(*seg->v1, si);
-      }
-    }
-  }
-
-  // now collect segs
-  TMapNC<TVec, bool> vseen;
-  vseen.put(PolyStart, true);
-  TArray<TVec> vlist;
-  int vlpos = 0;
-  vlist.append(From);
-  while (vlpos < vlist.length()) {
-    TVec v0 = vlist[vlpos++];
-    auto mp = smap.find(v0);
-    if (!mp) {
-      //Host_Error("Non-closed Polyobj located (vlpos=%d; vlcount=%d).", vlpos, vlist.length());
-      continue;
-    }
-    SegV1Info *si = *mp;
-    smap.del(v0);
-    for (; si; si = si->next) {
-      seg_t *seg = si->seg;
-      if (!segList) {
-        // count segs
-        ++PolySegCount;
-      } else {
-        // add to the list
-        *segList++ = seg;
-        // set sector's line count to 0 to force it not to be
-        // rendered even if we do a no-clip into it
-        // -- FB -- I'm disabling this behavior
-        // k8: and i am enabling it again
-        if (seg->frontsector && seg->frontsector->linecount) { seg->frontsector->prevlinecount = seg->frontsector->linecount; seg->frontsector->linecount = 0; }
-        // mark inner polyobject sectors too
-        if (seg->backsector && seg->backsector->linecount) { seg->backsector->prevlinecount = seg->backsector->linecount; seg->backsector->linecount = 0; }
-      }
-      v0 = *seg->v2;
-      if (!vseen.put(v0, true)) {
-        // new vertex
-        vlist.append(v0);
-      }
-    }
-  }
-}
-
-
-//==========================================================================
-//
 //  VLevel::SpawnPolyobj
 //
 //==========================================================================
@@ -405,234 +321,310 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   po->startSpot.y = y;
   po->startSpot.z = 0;
 
-  TArray<seg_t *> psegs; // collect explicit pobj segs here
-  for (auto &&seg : allSegs()) {
-    if (!seg.linedef) continue; //FIXME: we may need later to render floors, tho
-    if (seg.linedef->special == PO_LINE_START && seg.linedef->arg1 == tag) {
-      psegs.clear(); // we don't need 'em anymore
-      seg.linedef->special = 0;
-      seg.linedef->arg1 = 0;
-      int PolySegCount = 1;
-      TVec PolyStart = *seg.v1;
-      IterFindPolySegs(*seg.v2, nullptr, PolySegCount, PolyStart);
 
-      po->numsegs = PolySegCount;
-      po->segs = new seg_t*[PolySegCount+1];
-      *(po->segs) = &seg; // insert the first seg
-      // set sector's line count to 0 to force it not to be
-      // rendered even if we do a no-clip into it
-      // -- FB -- I'm disabling this behavior
-      // k8: and i am enabling it again
-      if (seg.frontsector && seg.frontsector->linecount) { seg.frontsector->prevlinecount = seg.frontsector->linecount; seg.frontsector->linecount = 0; }
-      // mark inner polyobject sectors too
-      if (seg.backsector && seg.backsector->linecount) { seg.backsector->prevlinecount = seg.backsector->linecount; seg.backsector->linecount = 0; }
-      IterFindPolySegs(*seg.v2, po->segs+1, PolySegCount, PolyStart);
-      po->seqType = seg.linedef->arg3;
+  // find either "explicit" or "line start" special for this polyobject
+  TArray<line_t *> explines; // the first item is "explicit line" if `lstart` is `nullptr`
+  line_t *lstart = nullptr; // if this is set, this is "line start"
+
+  for (auto &&itline : allLines()) {
+    line_t *line = &itline;
+    if (line->special == PO_LINE_START && line->arg1 == tag) {
+      if (lstart) Host_Error("found two `Polyobj_StartLine` specials for polyobject with tag #%d (lines #%d and #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]), (int)(ptrdiff_t)(line-&Lines[0]));
+      if (explines.length()) Host_Error("found both `Polyobj_StartLine` and `Polyobj_ExplicitLine` specials for polyobject with tag #%d (implicit line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
+      lstart = line;
+    } else if (line->special == PO_LINE_EXPLICIT && line->arg1 == tag) {
+      if (lstart) Host_Error("found both `Polyobj_StartLine` and `Polyobj_ExplicitLine` specials for polyobject with tag #%d (implicit line #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]));
+      explines.append(line);
+    }
+  }
+
+  if (!lstart && explines.length() == 0) Host_Error("no lines found for polyobject with tag #%d", tag);
+
+  // now collect lines for "start line" type
+  if (lstart) {
+    vassert(explines.length() == 0);
+    IncrementValidCount();
+    explines.append(lstart);
+    line_t *ld = lstart;
+    ld->validcount = validcount;
+    for (;;) {
+      // take first line and go
+      if (ld->vxCount(1) == 0) Host_Error("missing line for implicit polyobject with tag #%d (at line #%d)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      ld = ld->vxLine(1, 0);
+      if (ld->validcount == validcount) Host_Error("found loop in implicit polyobject with tag #%d (at line #%d)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      ld->validcount = validcount;
+      explines.append(ld);
+      if (ld->v2 == lstart->v1) break;
+    }
+  }
+
+  // mark pobj sectors as "empty"
+  // set sector's line count to 0 to force it not to be rendered even if we do a no-clip into it
+  for (auto &&ld : explines) {
+    sector_t *sec = ld->frontsector;
+    if (sec && sec->linecount) { sec->prevlinecount = sec->linecount; sec->linecount = 0; }
+    sec = ld->backsector;
+    if (sec && sec->linecount) { sec->prevlinecount = sec->linecount; sec->linecount = 0; }
+  }
+
+  // now check if this is a valid 3d pobj
+  // valid 3d pobj should have properly closed contours without "orphan" lines
+  // all lines should be two-sided, with the same frontsector and same backsector (and those sectors must be different)
+
+  // check if all lines are two-sided, with valid sectors
+  bool valid3d = true;
+  sector_t *sfront = nullptr;
+  sector_t *sback = nullptr;
+
+  // but don't bother if we don't want to spawn 3d pobj
+  if (thing && thing->type == PO_SPAWN_3D_TYPE) {
+    for (auto &&ld : explines) {
+      if (!(ld->flags&ML_TWOSIDED)) { valid3d = false; break; } // found one-sided line
+      if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) { valid3d = false; break; } // invalid sectors
+      if (!sfront) { sfront = ld->frontsector; sback = ld->backsector; }
+      if (ld->frontsector != sfront || ld->backsector != sback) { valid3d = false; break; } // invalid sectors
+      // this seems to be a valid line
+    }
+    if (!sback) valid3d = false;
+
+    if (valid3d) {
+      // all lines seems to be valid, check for properly closed contours
+      IncrementValidCount();
+      for (auto &&ld : explines) {
+        if (ld->validcount == validcount) continue; // already processed
+        // walk the contour, marking all lines
+        line_t *curr = ld;
+        do {
+          curr->validcount = validcount;
+          // find v2 line
+          int idx = -1;
+          for (int f = 0; f < explines.length(); ++f) {
+            line_t *l = explines[f];
+            if (l == ld) { idx = f; break; }
+            if (l->validcount == validcount) continue; // already used
+            if (l->v1 == curr->v2) { idx = f; break; }
+          }
+          if (idx < 0) {
+            // no contour continuation found, invalid pobj
+            valid3d = false;
+            break;
+          }
+          curr = explines[idx];
+        } while (curr != ld);
+        if (!valid3d) break;
+      }
+      // now check if we have any unmarked lines
+      if (valid3d) {
+        for (auto &&ld : explines) {
+          if (ld->validcount != validcount) {
+            // oops
+            valid3d = false;
+            break;
+          }
+        }
+      }
+    }
+  } else {
+    // not a 3d pobj spawn
+    valid3d = false;
+  }
+
+  if (thing && thing->type == PO_SPAWN_3D_TYPE && !valid3d) Host_Error("trying to spawn 3d pobj #%d, which is not a valid 3d pobj", po->tag);
+
+  // we know all pobj lines, so store 'em
+  // also, set args
+  vassert(explines.length());
+  po->lines = new line_t*[explines.length()];
+  po->numlines = 0;
+  for (auto &&ld : explines) {
+    int linetag = 0;
+    if (ld->special == PO_LINE_START) {
+      // implicit
+      vassert(lstart);
+      if (ld == lstart) {
+        po->mirror = ld->arg2;
+        po->seqType = ld->arg3;
+        linetag = ld->arg4;
+        ld->special = 0;
+        ld->arg1 = 0;
+      }
       //if (po->seqType < 0 || po->seqType >= SEQTYPE_NUMSEQ) po->seqType = 0;
-      break;
-    } else if (seg.linedef->special == PO_LINE_EXPLICIT && seg.linedef->arg1 == tag) {
-      // collect explicit segs
-      psegs.append(&seg);
-      // set sector's line count to 0 to force it not to be
-      // rendered even if we do a no-clip into it
-      // -- FB -- I'm disabling this behavior
-      // k8: and i am enabling it again
-      if (seg.frontsector && seg.frontsector->linecount) { seg.frontsector->prevlinecount = seg.frontsector->linecount; seg.frontsector->linecount = 0; }
-      // mark inner polyobject sectors too
-      if (seg.backsector && seg.backsector->linecount) { seg.backsector->prevlinecount = seg.backsector->linecount; seg.backsector->linecount = 0; }
+    } else if (!lstart) {
+      vassert(ld->special == PO_LINE_EXPLICIT && ld->arg1 == tag);
+      // explicit
+      if (!po->mirror && ld->arg3) po->mirror = ld->arg3;
+      if (!po->seqType && ld->arg4) po->seqType = ld->arg4;
+      //if (po->seqType < 0 || po->seqType >= SEQTYPE_NUMSEQ) po->seqType = 0;
+      linetag = ld->arg5;
+      // just in case
+      ld->special = 0;
+      ld->arg1 = 0;
+      ld->arg2 = ld->arg3;
+      ld->arg3 = ld->arg4;
+      ld->arg4 = ld->arg5;
+      ld->arg5 = 0;
     }
+    // set line id
+    if (linetag) GCon->Logf(NAME_Debug, "pobj #%d line #%d, setting tag %d (%d)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]), linetag, (int)ld->IsTagEqual(linetag));
+    if (linetag && !ld->IsTagEqual(linetag)) {
+      if (ld->lineTag == 0) ld->lineTag = linetag; else ld->moreTags.append(linetag);
+    }
+    po->lines[po->numlines++] = ld;
   }
+  vassert(po->numlines == explines.length());
 
-  if (!po->segs) {
-    // didn't found a polyobj through PO_LINE_START, build from explicit lines
-    if (psegs.length()) {
-      // sort segs (why not?) (why do?)
-      //timsort_r(psegs.ptr(), psegs.length(), sizeof(seg_t *), &cmpPobjSegs, (void *)&Lines[0]);
-      po->numsegs = psegs.length();
-      po->segs = new seg_t*[po->numsegs+1];
-      bool seqSet = false;
-      for (int i = 0; i < po->numsegs; ++i) {
-        po->segs[i] = psegs[i];
-        if (!seqSet && psegs[i]->linedef->arg4) {
-          seqSet = true;
-          po->seqType = psegs[i]->linedef->arg4;
-        }
+  // now we can collect pobj segs
+  // for 3d pobjs we will collect minisegs too
+  int segcount = 0;
+  // collect line segments
+  for (auto &&ld : explines) {
+    for (seg_t *seg = ld->firstseg; seg; seg = seg->lsnext) {
+      if (!seg->pobj) {
+        seg->pobj = po;
+        ++segcount;
       }
-      //po->seqType = (*po->segs)->linedef->arg4;
-      // next, change the polyobjs first line to point to a mirror if it exists
-      po->segs[0]->linedef->arg2 = po->segs[0]->linedef->arg3;
     }
   }
-
-  // set seg pobj owner
-  for (int c = 0; c < po->numsegs; ++c) po->segs[c]->pobj = po;
-
-  // now collect polyobj lines (we'll need them to build clipped segs)
-  int lcount = 0;
-  TMapNC<line_t *, bool> lmap;
-  for (int c = 0; c < po->numsegs; ++c) {
-    line_t *ln = po->segs[c]->linedef;
-    vassert(ln);
-    if (!lmap.put(ln, true)) ++lcount;
-  }
-
-  po->lines = new line_t*[lcount+1];
-  lmap.reset();
-  lcount = 0;
-  for (int c = 0; c < po->numsegs; ++c) {
-    line_t *ln = po->segs[c]->linedef;
-    vassert(ln);
-    if (!lmap.put(ln, true)) {
-      //GCon->Logf(NAME_Debug, "pobj #%d: line #%d", po->tag, (int)(ptrdiff_t)(ln-&Lines[0]));
-      po->lines[lcount++] = ln;
-      if (!ln->pobject) {
-        ln->pobject = po;
-      } else {
-        if (ln->pobject != po) {
-          GCon->Logf(NAME_Error, "invalid pobj tagged %d firstseg (line #%d, old tag #%d)", po->tag, (int)(ptrdiff_t)(ln-&Lines[0]), ln->pobject->tag);
-          ln->pobject = po;
+  // collect minisegs for 3d pobjs
+  if (valid3d) {
+    // back sector is "inner" one
+    vassert(sback);
+    for (subsector_t *sub = sback->subsectors; sub; sub = sub->seclink) {
+      for (int f = 0; f < sub->numlines; ++f) {
+        seg_t *ss = &Segs[sub->firstline+f];
+        if (!ss->pobj && !ss->linedef) {
+          ss->pobj = po;
+          ++segcount;
         }
       }
     }
   }
-  po->numlines = lcount;
+  vassert(segcount);
 
-  if (po->numlines == 0 || !thing || thing->type != PO_SPAWN_3D_TYPE) return;
-
-  // this is 3d polyobject
-
-  // collect 2-sided polyobject subsectors
-  // line backside should point to polyobject sector
-  sector_t *posec = nullptr;
-  for (int f = 0; f < po->numlines; ++f) {
-    const line_t *ld = po->lines[f];
-    if (!(ld->flags&ML_TWOSIDED)) return; // invalid polyobject
-    if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) return; // oops
-    if (posec && posec != ld->backsector) return;
-    posec = ld->backsector;
+  // copy segs
+  po->segs = new seg_t*[segcount];
+  po->numsegs = 0;
+  for (auto &&seg : allSegs()) {
+    if (seg.pobj == po) po->segs[po->numsegs++] = &seg;
   }
-  if (!posec) return;
-  if (posec->ownpobj && posec->ownpobj != po) return; // oopsie
-  posec->ownpobj = po;
+  vassert(po->numsegs == segcount);
 
-
-  // collect required minisegs (we need to move their vertices to render flats)
-  TArray<seg_t *> moresegs;
-
-  GCon->Logf(NAME_Debug, "pobj #%d (%d) sector #%d", po->tag, tag, (int)(ptrdiff_t)(posec-&Sectors[0]));
-  for (subsector_t *sub = posec->subsectors; sub; sub = sub->seclink) {
-    vassert(sub->sector == posec);
-    sub->ownpobj = po;
-    GCon->Logf(NAME_Debug, "  subsector #%d", (int)(ptrdiff_t)(sub-&Subsectors[0]));
-    // collect minisegs
-    for (int f = 0; f < sub->numlines; ++f) {
-      seg_t *ss = &Segs[sub->firstline+f];
-      bool found = false;
-      for (int c = 0; c < po->numsegs; ++c) if (po->segs[c] == ss) { found = true; break; }
-      if (!found) for (int c = 0; c < moresegs.length(); ++c) if (moresegs[c] == ss) { found = true; break; }
-      if (!found) {
-        GCon->Logf(NAME_Debug, "    seg #%d is not collected (%d)", (int)(ptrdiff_t)(ss-&Segs[0]), (ss->linedef ? (int)(ptrdiff_t)(ss->linedef-&Lines[0]) : -1));
-        moresegs.append(ss);
-      }
+  // is this a 3d pobj?
+  if (valid3d) {
+    // back sector is "inner" one
+    vassert(sback);
+    po->posector = sback;
+    po->posector->linecount = po->posector->prevlinecount; // turn it back to normal sector (it should be normal)
+    po->posector->ownpobj = po;
+    // set ownpobj for all subsectors
+    for (subsector_t *sub = po->posector->subsectors; sub; sub = sub->seclink) {
+      vassert(sub->sector == po->posector);
+      sub->ownpobj = po;
     }
-  }
-
-  // append minisegs
-  po->posector = posec;
-  if (moresegs.length()) {
-    seg_t **ns = new seg_t*[po->numsegs+moresegs.length()];
-    if (po->numsegs) memcpy((void *)ns, po->segs, sizeof(po->segs[0])*po->numsegs);
-    for (int f = 0; f < moresegs.length(); ++f) {
-      seg_t *ss = moresegs[f];
-      ss->pobj = po;
-      ns[po->numsegs+f] = ss;
+    // make all segs reference to the inner sector
+    for (int f = 0; f < po->numsegs; ++po) {
+      seg_t *seg = po->segs[f];
+      if (seg->frontsector) seg->frontsector = po->posector;
+      if (seg->backsector) seg->backsector = po->posector;
     }
-    po->numsegs += moresegs.length();
-    delete[] po->segs;
-    po->segs = ns;
+    //po->startSpot.z = po->pofloor.minz;
+    po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
   }
 
   // find first seg with texture
   const seg_t *xseg = nullptr;
-  for (int f = 0; f < po->numsegs; ++f) if (po->segs[f]->linedef) { xseg = po->segs[f]; break; }
-  if (!xseg) {
-    GCon->Logf(NAME_Error, "invalid 3d polyobject with tag #%d", po->tag);
-    po->posector = nullptr;
-    return;
+  const sector_t *refsec = nullptr;
+  for (int f = 0; f < po->numsegs; ++f) {
+    // only front sides
+    if (po->segs[f]->linedef && po->segs[f]->side == 0) {
+      VTexture *MTex = GTextureManager(po->segs[f]->sidedef->MidTexture);
+      if (MTex && MTex->Type != TEXTYPE_Null) {
+        xseg = po->segs[f];
+        break;
+      }
+    }
+  }
+  //FIXME: this *may* be allowed, why not?
+  if (!xseg) GCon->Logf(NAME_Warning, "trying to spawn pobj #%d without any midtextures", po->tag);
+
+  if (valid3d) {
+    refsec = po->posector;
+    LevelFlags |= LF_Has3DPolyObjects;
+  } else {
+    if (xseg) refsec = xseg->linedef->frontsector;
+    /*
+    if (!refsec) {
+      for (auto &&ld : explines) {
+        refsec = ld->frontsector;
+        if (refsec) break;
+      }
+    }
+    */
+    refsec = PointInSubsector(TVec(x, y, 0.0f))->sector;
   }
 
-  po->posector->linecount = po->posector->prevlinecount; // turn it back to normal sector
-  GCon->Logf(NAME_Debug, "pobj #%d sector #%d, linecount restored to %d", po->tag, (int)(ptrdiff_t)(po->posector-&Sectors[0]), po->posector->linecount);
+  if (refsec) {
+    // build floor
+    po->pofloor = refsec->floor;
+    //po->pofloor.pic = 0;
+    const float fdist = po->pofloor.GetPointZClamped(*po->lines[0]->v1);
+    //GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, fdist, po->pofloor.minz, po->pofloor.maxz);
+    // floor normal points down
+    po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
+    po->pofloor.dist = -fdist;
+    //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+    po->pofloor.minz = po->pofloor.maxz = fdist;
 
-  // build floor
-  po->pofloor = po->posector->floor;
-  //po->pofloor.pic = 0;
-  const float fdist = po->pofloor.GetPointZClamped(*po->lines[0]->v1);
-  //GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, fdist, po->pofloor.minz, po->pofloor.maxz);
-  // floor normal points down
-  po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
-  po->pofloor.dist = -fdist;
-  //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-  po->pofloor.minz = po->pofloor.maxz = fdist;
+    // build ceiling
+    po->poceiling = refsec->ceiling;
+    //po->poceiling.pic = 0;
+    //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+    const float cdist = po->poceiling.GetPointZClamped(*po->lines[0]->v1);
+    //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
+    // ceiling normal points up
+    po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
+    po->poceiling.dist = cdist;
+    //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
+    po->poceiling.minz = po->poceiling.maxz = cdist;
 
-  // build ceiling
-  po->poceiling = po->posector->ceiling;
-  //po->poceiling.pic = 0;
-  //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
-  const float cdist = po->poceiling.GetPointZClamped(*po->lines[0]->v1);
-  //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
-  // ceiling normal points up
-  po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
-  po->poceiling.dist = cdist;
-  //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-  po->poceiling.minz = po->poceiling.maxz = cdist;
+    // fix polyobject height
 
-  // fix polyobject height
-
-  // determine real height using midtex
-  VTexture *MTex = GTextureManager(xseg->sidedef->MidTexture);
-  if (MTex && MTex->Type != TEXTYPE_Null) {
-    // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-    const float texh = MTex->GetScaledHeight();
-    float z0, z1;
-    if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
-      // bottom of texture at bottom
-      // top of texture at top
-      z1 = po->pofloor.TexZ+texh;
-    } else {
-      // top of texture at top
-      z1 = po->poceiling.TexZ;
+    // determine real height using midtex
+    VTexture *MTex = GTextureManager(xseg->sidedef->MidTexture);
+    if (MTex && MTex->Type != TEXTYPE_Null) {
+      // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+      const float texh = MTex->GetScaledHeight();
+      float z0, z1;
+      if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+        // bottom of texture at bottom
+        // top of texture at top
+        z1 = po->pofloor.TexZ+texh;
+      } else {
+        // top of texture at top
+        z1 = po->poceiling.TexZ;
+      }
+      //k8: dunno why
+      if (xseg->sidedef->Mid.RowOffset < 0) {
+        z1 += (xseg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+      } else {
+        z1 += xseg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+      }
+      z0 = z1-texh;
+      z0 = max2(z0, refsec->floor.minz);
+      z1 = min2(z1, refsec->ceiling.maxz);
+      if (z1 < z0) z1 = z0;
+      // fix floor and ceiling planes
+      po->pofloor.minz = po->pofloor.maxz = z0;
+      po->pofloor.dist = -po->pofloor.maxz;
+      po->poceiling.minz = po->poceiling.maxz = z1;
+      po->poceiling.dist = po->poceiling.maxz;
     }
-    //k8: dunno why
-    if (xseg->sidedef->Mid.RowOffset < 0) {
-      z1 += (xseg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-    } else {
-      z1 += xseg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-    }
-    z0 = z1-texh;
-    z0 = max2(z0, po->posector->floor.minz);
-    z1 = min2(z1, po->posector->ceiling.maxz);
-    if (z1 < z0) z1 = z0;
-    // fix floor and ceiling planes
-    po->pofloor.minz = po->pofloor.maxz = z0;
-    po->pofloor.dist = -po->pofloor.maxz;
-    po->poceiling.minz = po->poceiling.maxz = z1;
-    po->poceiling.dist = po->poceiling.maxz;
   }
 
-  GCon->Logf(NAME_Debug, "SPAWN pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+  GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g", (valid3d ? "3D" : "2D"), po->tag,
     po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
-
-  //po->startSpot.z = po->pofloor.minz;
-  po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
-
-  // setup seg sectors
-  for (int f = 0; f < po->numsegs; ++po) {
-    seg_t *seg = po->segs[f];
-    if (seg->frontsector) seg->frontsector = po->posector;
-    if (seg->backsector) seg->backsector = po->posector;
-  }
+    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
+    po->numlines, po->numsegs, po->poceiling.maxz-po->pofloor.minz);
 }
 
 
@@ -700,9 +692,27 @@ void VLevel::InitPolyobjs () {
   }
 
   // check for a startspot without an anchor point
-  for (int i = 0; i < NumPolyObjs; ++i) {
-    if (!PolyObjs[i]->originalPts) {
-      Host_Error("StartSpot located without an Anchor point: %d", PolyObjs[i]->tag);
+  for (auto &&po : allPolyobjects()) {
+    if (!po->originalPts) {
+      GCon->Logf(NAME_Warning, "pobj #%d has no anchor point, using centroid", po->tag);
+      vassert(po->numlines && po->numsegs);
+      float x = 0.0f;
+      float y = 0.0f;
+      for (auto &&it : po->LineFirst()) {
+        x += it.line()->v1->x;
+        y += it.line()->v1->y;
+      }
+      x /= (float)po->numlines;
+      y /= (float)po->numlines;
+
+      PolyAnchorPoint_t anchor;
+      memset((void *)&anchor, 0, sizeof(anchor));
+      anchor.x = x;
+      anchor.y = y;
+      anchor.height = 0.0f;
+      anchor.tag = po->tag;
+      anchor.thingidx = -1; // no thing
+      TranslatePolyobjToStartSpot(&anchor);
     }
   }
 
@@ -792,7 +802,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   seg_t **tempSeg = po->segs;
   TVec *origPt = po->originalPts;
-  TVec avg(0, 0, 0); // used to find a polyobj's center, and hence the subsector
+  //TVec avg(0, 0, 0); // used to find a polyobj's center, and hence the subsector
   int segptnum = 0;
 
   for (int i = 0; i < po->numsegs; ++i, ++tempSeg) {
@@ -805,15 +815,15 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
       (*tempSeg)->v1->x -= deltaX;
       (*tempSeg)->v1->y -= deltaY;
     }
-    avg.x += (*tempSeg)->v1->x;
-    avg.y += (*tempSeg)->v1->y;
+    //avg.x += (*tempSeg)->v1->x;
+    //avg.y += (*tempSeg)->v1->y;
     // the original Pts are based off the startSpot Pt, and are unique to each seg, not each linedef
     *origPt++ = *(*tempSeg)->v1-sspot2d;
     po->segPts[segptnum++] = (*tempSeg)->v1;
   }
   vassert(segptnum <= po->numsegs);
-  avg.x /= segptnum;
-  avg.y /= segptnum;
+  //avg.x /= segptnum;
+  //avg.y /= segptnum;
 
   // now add linedef vertices (if they are missing)
   for (int i = 0; i < po->numlines; ++i) {
@@ -841,7 +851,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   po->segPtsCount = segptnum;
 
   const float startHeight = po->startSpot.z;
-  const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
+  //const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
   po->startSpot.z = 0.0f; // this is actually offset from "default z point" destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f));
 
   const mthing_t *thing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
@@ -849,78 +859,8 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   float deltaZ = 0.0f;
 
-  // set initial floor and ceiling
-  if (!po->posector) {
-    // do not set pics to nothing, let polyobjects have floors and ceilings, why not?
-    // flip them, because polyobject flats are like 3d floor flats
-    sector_t *sec = PointInSubsector(avg)->sector; // bugfixed algo
-
-    // build floor
-    po->pofloor = sec->floor;
-    //po->pofloor.pic = 0;
-    //if (po->pofloor.isFloor()) po->pofloor.flipInPlace();
-    //const float fdist = -po->pofloor.PointDistance(TVec(avg.x, avg.y, 0.0f));
-    const float fdist = po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f));
-    //GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, fdist, po->pofloor.minz, po->pofloor.maxz);
-    // floor normal points down
-    po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
-    po->pofloor.dist = -fdist;
-    //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-    po->pofloor.minz = po->pofloor.maxz = fdist;
-
-    // build ceiling
-    po->poceiling = sec->ceiling;
-    //po->poceiling.pic = 0;
-    //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
-    const float cdist = po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f));
-    //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
-    // ceiling normal points up
-    po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
-    po->poceiling.dist = cdist;
-    //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-    po->poceiling.minz = po->poceiling.maxz = cdist;
-
-    // fix polyobject height
-    if (!po->posector && (po->numlines && (po->lines[0]->flags&(ML_TWOSIDED|ML_WRAP_MIDTEX|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) && po->pofloor.maxz < po->poceiling.minz) {
-      const seg_t *seg = nullptr;
-      for (int f = 0; f < po->numsegs; ++f) if (po->segs[f]->linedef) { seg = po->segs[f]; break; }
-      if (seg) {
-        // determine real height using midtex
-        //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
-        VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
-        if (MTex && MTex->Type != TEXTYPE_Null) {
-          // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-          const float texh = MTex->GetScaledHeight();
-          float z0, z1;
-          if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
-            // bottom of texture at bottom
-            // top of texture at top
-            z1 = po->pofloor.TexZ+texh;
-          } else {
-            // top of texture at top
-            z1 = po->poceiling.TexZ;
-          }
-          //k8: dunno why
-          if (seg->sidedef->Mid.RowOffset < 0) {
-            z1 += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-          } else {
-            z1 += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-          }
-          z0 = z1-texh;
-          z0 = max2(z0, sec->floor.minz);
-          z1 = min2(z1, sec->ceiling.maxz);
-          if (z1 < z0) z1 = z0;
-          // fix floor and ceiling planes
-          po->pofloor.minz = po->pofloor.maxz = z0;
-          po->pofloor.dist = -po->pofloor.maxz;
-          po->poceiling.minz = po->poceiling.maxz = z1;
-          po->poceiling.dist = po->poceiling.maxz;
-        }
-      }
-      //GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-      //GCon->Logf(NAME_Debug, "002: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-    }
-  } else {
+  // set initial floor and ceiling for non-3d pobj
+  if (po->posector) {
     // 3d polyobject
 
     GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
@@ -942,7 +882,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     }
 
     // move vertically
-    deltaZ = destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f))+startHeight-po->pofloor.minz;
+    deltaZ = startHeight;
   }
 
   GCon->Logf(NAME_Debug, "pobj #%d: height=%g; spot=(%g,%g,%g); dz=%g", po->tag, po->poceiling.maxz-po->pofloor.minz, po->startSpot.x, po->startSpot.y, po->startSpot.z, deltaZ);
@@ -982,8 +922,6 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
     po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
     po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
-
-  LevelFlags |= LF_Has3DPolyObjects;
 
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
@@ -1187,7 +1125,8 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 int VLevel::GetPolyobjMirror (int poly) {
   //FIXME: make this faster!
   polyobj_t *po = GetPolyobj(poly);
-  return (po ? po->segs[0]->linedef->arg2 : 0);
+  //return (po ? po->segs[0]->linedef->arg2 : 0);
+  return (po ? po->mirror : 0);
 }
 
 

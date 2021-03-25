@@ -703,6 +703,19 @@ load_again:
   }
   ConvTime += Sys_Time();
 
+  // "decal processor" must be called before creating polyobjects
+  // this is because it creates necessary lists
+
+  // this creates list of segs for each line
+  DecalProcessingTime = -Sys_Time();
+  PostProcessForDecals();
+  DecalProcessingTime += Sys_Time();
+
+  //GCon->Logf("Building Lidedef VV list");
+  double LineVVListTime = -Sys_Time();
+  BuildDecalsVVList();
+  LineVVListTime += Sys_Time();
+
   // set up polyobjs, slopes, 3D floors and some other static stuff
   GCon->Log("spawning the world...");
   double SpawnWorldTime = -Sys_Time();
@@ -715,6 +728,11 @@ load_again:
 
   double InitPolysTime = -Sys_Time();
   InitPolyobjs(); // Initialise the polyobjs
+  if (NumPolyObjs) {
+    // hash it all again, 'cause spawner may change something
+    HashSectors();
+    HashLines();
+  }
   InitPolysTime += Sys_Time();
 
   double MinMaxTime = -Sys_Time();
@@ -757,21 +775,12 @@ load_again:
   CreateRepBase();
   RepBaseTime += Sys_Time();
 
-  //GCon->Logf("Building Lidedef VV list");
-  double LineVVListTime = -Sys_Time();
-  BuildDecalsVVList();
-  LineVVListTime += Sys_Time();
-
   // end of map lump processing
   if (AuxiliaryMap || auxCloser.doCloseAux) {
     // close the auxiliary file(s)
     auxCloser.doCloseAux = false;
     W_CloseAuxiliary();
   }
-
-  DecalProcessingTime = -Sys_Time();
-  PostProcessForDecals();
-  DecalProcessingTime += Sys_Time();
 
   // do it here, so it won't touch sloped floors
   // it will set `othersec` for sectors too

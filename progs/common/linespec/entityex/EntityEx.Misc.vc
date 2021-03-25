@@ -3775,7 +3775,9 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
     ee = EntityEx(in.Thing);
     if (!ee) continue;
     if (checkThingUseDg && !checkThingUseDg(ee)) continue;
+    //printdebug("%C: trying to use thing %C(%s)", self, ee, ee.UniqueId);
     if (!UseThing(ee)) {
+      //printdebug("%C:   used thing %C(%s)", self, ee, ee.UniqueId);
       if (!hitLineOrThing) {
         if (ee.bSolid && !ee.bCorpse && !ee.bMissile && !ee.bMonster && !ee.bInvisible) hitLineOrThing = true;
       }
@@ -3804,7 +3806,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   line_t *ld;
   opening_t *open;
 
-  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_NOOPENS) {
+  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_NOOPENS, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
     if (in.bIsAPlane) break; // plane hit, no actor found
     if (!in.bIsALine) continue; // just in case
 
@@ -3827,6 +3829,8 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
         if (checkLineUseDg && !checkLineUseDg(ld)) continue;
 
         DoSecAct = false;
+
+        //printdebug("%C: trying to use blocking line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
 
         // let sector intercept the use
         if (Sector && Sector->ActionList && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
@@ -3880,6 +3884,8 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
     // check delegate callback
     if (checkLineUseDg && !checkLineUseDg(ld)) continue;
+
+    //printdebug("%C: trying to use non-blocking line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
 
     // check height here?
     hitLineOrThing = true;

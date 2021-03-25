@@ -481,7 +481,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 //
 //==========================================================================
 void VPathTraverse::RemoveInterceptsAfter (const float frac) {
-  while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac >= frac) Level->PopLastIntercept();
+  while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac > frac) Level->PopLastIntercept();
 }
 
 
@@ -627,8 +627,8 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
 
     if (blockFlag) {
-      RemoveInterceptsAfter(frac); // remove all intercepts we are not interested in
-      max_frac = frac;
+      //RemoveInterceptsAfter(frac); // remove all intercepts we are not interested in (later)
+      max_frac = frac; // we cannot travel further anyway
       wasBlocking = true;
     }
 
@@ -652,6 +652,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
   }
 
+  if (wasBlocking) RemoveInterceptsAfter(max_frac); // remove all intercepts we are not interested in
   return wasBlocking;
 }
 
