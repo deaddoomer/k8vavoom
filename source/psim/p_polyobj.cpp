@@ -455,6 +455,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   po->lines = new line_t*[explines.length()];
   po->numlines = 0;
   for (auto &&ld : explines) {
+    if (ld->pobj()) Host_Error("pobj #%d includes a line referenced by another pobj #%d", po->tag, ld->pobj()->tag);
     int linetag = 0;
     if (ld->special == PO_LINE_START) {
       // implicit
