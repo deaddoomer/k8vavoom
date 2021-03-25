@@ -395,6 +395,8 @@ class VLevel : public VGameObject {
   PolyAnchorPoint_t *PolyAnchorPoints;
   vint32 NumPolyAnchorPoints;
 
+  TMapNC<int, int> *PolyTagMap; // key: tag; value: index in PolyObjs
+
   // sound environments for sector zones
   vint32 *Zones;
   vint32 NumZones;
@@ -851,6 +853,8 @@ public:
 private:
   void AddExtraFloorSane (line_t *line, sector_t *dst); // k8vavoom
   void AddExtraFloorShitty (line_t *line, sector_t *dst); // gozzo
+
+  void RegisterPolyObj (int poidx) noexcept; // NOT a tag!
 
 public:
   static void dumpRegion (const sec_region_t *reg);

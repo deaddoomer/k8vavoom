@@ -132,6 +132,7 @@ native FRogueConSpeech[] LevelSpeeches;
 // list of all poly-objects on the level
 native readonly private /*int*/void *[] PolyObjs;
 native readonly private /*int*/void *[] PolyAnchorPoints; // this is not `void *`, but meh...
+native readonly private /*TMapNC<int, int>*/ void *PolyTagMap; // key: tag; value: index in PolyObjs
 
 // sound environments for sector zones
 native int[] Zones;

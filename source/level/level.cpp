@@ -100,6 +100,7 @@ VEntity *VLevel::GetNextBlockmapEntity (VEntity *ent) noexcept {
 void VLevel::PostCtor () {
   lineTags = tagHashAlloc();
   sectorTags = tagHashAlloc();
+  PolyTagMap = new TMapNC<int, int>();
   Super::PostCtor();
 }
 
@@ -317,9 +318,9 @@ void VLevel::ClearReferences () {
     VLevelScriptThinker *sth = scriptThinkers[scidx];
     if (sth && !sth->destroyed) sth->ClearReferences();
   }
-  // clear other refs
+  // clear sector refs
   sector_t *sec = Sectors;
-  for (int i = NumSectors-1; i >= 0; --i, ++sec) {
+  for (int i = NumSectors; i--; ++sec) {
     if (sec->SoundTarget && sec->SoundTarget->IsRefToCleanup()) sec->SoundTarget = nullptr;
     if (sec->FloorData && sec->FloorData->IsRefToCleanup()) sec->FloorData = nullptr;
     if (sec->CeilingData && sec->CeilingData->IsRefToCleanup()) sec->CeilingData = nullptr;
@@ -327,16 +328,17 @@ void VLevel::ClearReferences () {
     if (sec->AffectorData && sec->AffectorData->IsRefToCleanup()) sec->AffectorData = nullptr;
     if (sec->ActionList && sec->ActionList->IsRefToCleanup()) sec->ActionList = nullptr;
   }
-  // polyobjects
-  for (int i = 0; i < NumPolyObjs; ++i) {
-    if (PolyObjs[i]->SpecialData && PolyObjs[i]->SpecialData->IsRefToCleanup()) {
-      PolyObjs[i]->SpecialData = nullptr;
-    }
+  // clear polyobject refs
+  polyobj_t **pop = PolyObjs;
+  for (int i = NumPolyObjs; i--; ++pop) {
+    polyobj_t *po = *pop;
+    if (po->SpecialData && po->SpecialData->IsRefToCleanup()) po->SpecialData = nullptr;
   }
   // cameras
-  for (int i = 0; i < CameraTextures.Num(); ++i) {
-    if (CameraTextures[i].Camera && CameraTextures[i].Camera->IsRefToCleanup()) {
-      CameraTextures[i].Camera = nullptr;
+  if (CameraTextures.length()) {
+    VCameraTextureInfo *cam = CameraTextures.ptr();
+    for (int i = CameraTextures.length(); i--; ++cam) {
+      if (cam->Camera && cam->Camera->IsRefToCleanup()) cam->Camera = nullptr;
     }
   }
   // static lights will be cleaned in thinker remover
@@ -514,6 +516,11 @@ void VLevel::Destroy () {
     }
     delete[] PolyObjs;
     PolyObjs = nullptr;
+  }
+  if (PolyTagMap) {
+    PolyTagMap->clear();
+    delete PolyTagMap;
+    PolyTagMap = nullptr;
   }
 
   if (PolyAnchorPoints) {

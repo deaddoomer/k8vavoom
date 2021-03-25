@@ -78,30 +78,6 @@ static void CollectPObjTouchingThingsRough (polyobj_t *po) {
 
 //==========================================================================
 //
-//  CollectPObjTouchingThingsRough
-//
-//  collect all objects touching this 3d pobj
-//
-//==========================================================================
-/*
-static void CollectPObjThings (polyobj_t *po) {
-  //FIXME: do not use static map here
-  poEntityMap.reset();
-  if (po->posector) {
-    //const int visCount = Level->nextVisitedCount();
-    //if (n->Visited != visCount) n->Visited = visCount;
-    for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-      //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
-      poEntityMap.put(n->Thing, true);
-    }
-  }
-}
-*/
-
-
-
-//==========================================================================
-//
 //  pobjAddSubsector
 //
 //  `*udata` is `polyobj_t`
@@ -283,6 +259,65 @@ void polyobj_t::AddSubsector (subsector_t *sub) {
 
 //==========================================================================
 //
+//  VLevel::ResetPObjRenderCounts
+//
+//  called from renderer
+//
+//==========================================================================
+void VLevel::ResetPObjRenderCounts () noexcept {
+  for (int i = 0; i < NumPolyObjs; ++i) PolyObjs[i]->rendercount = 0;
+}
+
+
+//==========================================================================
+//
+//  VLevel::RegisterPolyObj
+//
+//  `poidx` is NOT a tag!
+//
+//==========================================================================
+void VLevel::RegisterPolyObj (int poidx) noexcept {
+  vassert(poidx >= 0 && poidx < NumPolyObjs);
+  vassert(PolyTagMap);
+  if (!PolyTagMap->has(PolyObjs[poidx]->tag)) {
+    PolyTagMap->put(PolyObjs[poidx]->tag, poidx);
+  } else {
+    GCon->Logf(NAME_Error, "duplicate pobj tag #%d", PolyObjs[poidx]->tag);
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::GetPolyobj
+//
+//==========================================================================
+polyobj_t *VLevel::GetPolyobj (int polyNum) noexcept {
+  /*
+  //FIXME: make this faster!
+  for (int i = 0; i < NumPolyObjs; ++i) {
+    if (PolyObjs[i]->tag == polyNum) return PolyObjs[i];
+  }
+  return nullptr;
+  */
+  auto pip = PolyTagMap->find(polyNum);
+  return (pip ? PolyObjs[*pip] : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VLevel::GetPolyobjMirror
+//
+//==========================================================================
+int VLevel::GetPolyobjMirror (int poly) {
+  polyobj_t *po = GetPolyobj(poly);
+  return (po ? po->mirror : 0);
+}
+
+
+//==========================================================================
+//
 //  explinesCompare
 //
 //==========================================================================
@@ -330,6 +365,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     }
     PolyObjs[index] = po;
   }
+  RegisterPolyObj(index);
 
   po->startSpot.x = x;
   po->startSpot.y = y;
@@ -652,32 +688,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
 
 //==========================================================================
 //
-//  VLevel::ResetPObjRenderCounts
-//
-//  called from renderer
-//
-//==========================================================================
-void VLevel::ResetPObjRenderCounts () noexcept {
-  for (int i = 0; i < NumPolyObjs; ++i) PolyObjs[i]->rendercount = 0;
-}
-
-
-//==========================================================================
-//
-//  VLevel::GetPolyobj
-//
-//==========================================================================
-polyobj_t *VLevel::GetPolyobj (int polyNum) noexcept {
-  //FIXME: make this faster!
-  for (int i = 0; i < NumPolyObjs; ++i) {
-    if (PolyObjs[i]->tag == polyNum) return PolyObjs[i];
-  }
-  return nullptr;
-}
-
-
-//==========================================================================
-//
 //  VLevel::AddPolyAnchorPoint
 //
 //==========================================================================
@@ -792,18 +802,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   float originX = anchor->x, originY = anchor->y, height = anchor->height;
   int tag = anchor->tag;
 
-  //polyobj_t *po = GetPolyobj(tag);
-  polyobj_t *po = nullptr;
-  for (int i = 0; i < NumPolyObjs; ++i) {
-    if (PolyObjs[i]->tag == tag) {
-      if (!PolyObjs[i]->originalPts) {
-        po = PolyObjs[i];
-        break;
-      } else {
-        if (!po) po = PolyObjs[i];
-      }
-    }
-  }
+  polyobj_t *po = GetPolyobj(tag);
 
   if (!po) Host_Error("Unable to match polyobj tag: %d", tag); // didn't match the tag with a polyobj tag
   if (po->segs == nullptr) Host_Error("Anchor point located without a StartSpot point: %d", tag);
@@ -1128,19 +1127,6 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
   }
 
   po->RemoveAllSubsectors();
-}
-
-
-//==========================================================================
-//
-//  VLevel::GetPolyobjMirror
-//
-//==========================================================================
-int VLevel::GetPolyobjMirror (int poly) {
-  //FIXME: make this faster!
-  polyobj_t *po = GetPolyobj(poly);
-  //return (po ? po->segs[0]->linedef->arg2 : 0);
-  return (po ? po->mirror : 0);
 }
 
 
