@@ -891,6 +891,14 @@ public:
   sec_region_t *PointRegionLight (const subsector_t *sub, const TVec &p, unsigned *glowFlags=nullptr);
 
 public:
+  static void GetBaseSectorOpening (opening_t &op, sector_t *sector, const TVec point, bool usePoint);
+  static void InsertOpening (TArray<opening_t> &dest, const opening_t &op);
+  static void Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
+
+  void BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, sector_t *sector, const TVec point,
+                            unsigned NoBlockFlags, bool linkList, bool usePoint, bool skipNonSolid=false, bool forSurface=false);
+
+public:
   // returns `false` if seg is out of subsector
   // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
   // will not modify `drawsegs`, etc.

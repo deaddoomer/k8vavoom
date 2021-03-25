@@ -279,6 +279,7 @@ set(VLEVEL_CLASS_SOURCES
   level/level_dbgexport.cpp
   level/level_decals.cpp
   level/level_light.cpp
+  level/level_opening.cpp
   level/level_miscapi.cpp
   level/level_nodebbox.cpp
   level/level_saveio.cpp

@@ -1433,6 +1433,44 @@ struct VMapMarkerInfo {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+struct opening_t {
+  float top;
+  float bottom;
+  float range; // top-bottom, to avoid calculations
+  float lowfloor; // this is used for dropoffs: floor height on the other side (always lower then, or equal to bottom)
+  float highceiling; // ceiling height on the other side (always higher than, or equal to top)
+  TSecPlaneRef efloor;
+  TSecPlaneRef eceiling;
+  TSecPlaneRef elowfloor;
+  TSecPlaneRef ehighceiling;
+  // for this list
+  opening_t *next;
+  //opening_t *prev;
+  // allocated list is double-linked, free list only using `listnext`
+  opening_t *listprev;
+  opening_t *listnext;
+
+  inline void copyFrom (const opening_t *op) {
+    if (op == this) return;
+    if (op) {
+      top = op->top;
+      bottom = op->bottom;
+      range = op->range;
+      lowfloor = op->lowfloor;
+      highceiling = op->highceiling;
+      efloor = op->efloor;
+      eceiling = op->eceiling;
+      elowfloor = op->elowfloor;
+      ehighceiling = op->ehighceiling;
+    } else {
+      top = bottom = range = lowfloor = 0.0f;
+      efloor.splane = eceiling.splane = elowfloor.splane = ehighceiling.splane = nullptr;
+    }
+  }
+};
+
+
 
 //==========================================================================
 //
