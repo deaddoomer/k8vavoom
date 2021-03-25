@@ -283,6 +283,20 @@ void polyobj_t::AddSubsector (subsector_t *sub) {
 
 //==========================================================================
 //
+//  explinesCompare
+//
+//==========================================================================
+static int explinesCompare (const void *aa, const void *bb, void *) {
+  if (aa == bb) return 0; // just in case
+  const line_t *a = *(const line_t **)aa;
+  const line_t *b = *(const line_t **)bb;
+  //GCon->Logf(NAME_Debug, "compare lines; specials=(%d,%d); order=(%d,%d)", a->special, b->special, a->arg2, b->arg2);
+  return a->arg2-b->arg2;
+}
+
+
+//==========================================================================
+//
 //  VLevel::SpawnPolyobj
 //
 //==========================================================================
@@ -321,7 +335,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   po->startSpot.y = y;
   po->startSpot.z = 0;
 
-
   // find either "explicit" or "line start" special for this polyobject
   TArray<line_t *> explines; // the first item is "explicit line" if `lstart` is `nullptr`
   line_t *lstart = nullptr; // if this is set, this is "line start"
@@ -339,6 +352,11 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   }
 
   if (!lstart && explines.length() == 0) Host_Error("no lines found for polyobject with tag #%d", tag);
+
+  // sort explicit lines by order (it doesn't matter, but why not?)
+  if (!lstart && explines.length() > 1) {
+    timsort_r(explines.ptr(), explines.length(), sizeof(explines[0]), &explinesCompare, nullptr);
+  }
 
   // now collect lines for "start line" type
   if (lstart) {
@@ -469,6 +487,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     if (linetag && !ld->IsTagEqual(linetag)) {
       if (ld->lineTag == 0) ld->lineTag = linetag; else ld->moreTags.append(linetag);
     }
+    ld->pobject = po;
     po->lines[po->numlines++] = ld;
   }
   vassert(po->numlines == explines.length());
@@ -521,11 +540,16 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       vassert(sub->sector == po->posector);
       sub->ownpobj = po;
     }
-    // make all segs reference to the inner sector
-    for (int f = 0; f < po->numsegs; ++po) {
-      seg_t *seg = po->segs[f];
+    // make all segs reference the inner sector
+    for (auto &&it : po->SegFirst()) {
+      seg_t *seg = it.seg();
       if (seg->frontsector) seg->frontsector = po->posector;
       if (seg->backsector) seg->backsector = po->posector;
+    }
+    // make all lines reference the inner sector
+    for (auto &&it : po->LineFirst()) {
+      line_t *ld = it.line();
+      ld->frontsector = ld->backsector = po->posector;
     }
     //po->startSpot.z = po->pofloor.minz;
     po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
@@ -544,7 +568,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       }
     }
   }
-  //FIXME: this *may* be allowed, why not?
   if (!xseg) GCon->Logf(NAME_Warning, "trying to spawn pobj #%d without any midtextures", po->tag);
 
   if (valid3d) {
@@ -552,14 +575,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     LevelFlags |= LF_Has3DPolyObjects;
   } else {
     if (xseg) refsec = xseg->linedef->frontsector;
-    /*
-    if (!refsec) {
-      for (auto &&ld : explines) {
-        refsec = ld->frontsector;
-        if (refsec) break;
-      }
-    }
-    */
     refsec = PointInSubsector(TVec(x, y, 0.0f))->sector;
   }
 
@@ -619,6 +634,12 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       po->poceiling.minz = po->poceiling.maxz = z1;
       po->poceiling.dist = po->poceiling.maxz;
     }
+  }
+
+  if (po->posector) {
+    // raise it to destination sector height
+    refsec = PointInSubsector(TVec(x, y, 0.0f))->sector;
+    po->startSpot.z += refsec->floor.GetPointZ(TVec(x, y, 0.0f))-po->pofloor.minz;
   }
 
   GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g", (valid3d ? "3D" : "2D"), po->tag,
@@ -792,7 +813,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     return; // oopsie
   }
 
-  const int maxpts = po->numsegs+po->numlines;
+  const int maxpts = po->numsegs*2+po->numlines*2;
   po->originalPts = new TVec[maxpts];
   po->segPts = new TVec*[maxpts];
 
@@ -800,55 +821,46 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   const float deltaY = originY-po->startSpot.y;
   const TVec sspot2d = TVec(po->startSpot.x, po->startSpot.y, 0.0f);
 
-  seg_t **tempSeg = po->segs;
-  TVec *origPt = po->originalPts;
-  //TVec avg(0, 0, 0); // used to find a polyobj's center, and hence the subsector
+  //TVec *origPt = po->originalPts;
   int segptnum = 0;
 
-  for (int i = 0; i < po->numsegs; ++i, ++tempSeg) {
-    seg_t **veryTempSeg = po->segs;
-    for (; veryTempSeg != tempSeg; ++veryTempSeg) {
-      if ((*veryTempSeg)->v1 == (*tempSeg)->v1) break;
+  TMapNC<TVec *, bool> seenVtx;
+  // seg points
+  for (auto &&it : po->SegFirst()) {
+    seg_t *seg = it.seg();
+    if (!seenVtx.put(seg->v1, true)) {
+      if (segptnum >= maxpts) Sys_Error("too many seg points for pobj #%d", po->tag);
+      po->segPts[segptnum++] = seg->v1;
     }
-    if (veryTempSeg == tempSeg) {
-      // the point hasn't been translated yet
-      (*tempSeg)->v1->x -= deltaX;
-      (*tempSeg)->v1->y -= deltaY;
-    }
-    //avg.x += (*tempSeg)->v1->x;
-    //avg.y += (*tempSeg)->v1->y;
-    // the original Pts are based off the startSpot Pt, and are unique to each seg, not each linedef
-    *origPt++ = *(*tempSeg)->v1-sspot2d;
-    po->segPts[segptnum++] = (*tempSeg)->v1;
-  }
-  vassert(segptnum <= po->numsegs);
-  //avg.x /= segptnum;
-  //avg.y /= segptnum;
-
-  // now add linedef vertices (if they are missing)
-  for (int i = 0; i < po->numlines; ++i) {
-    line_t *ln = po->lines[i];
-    for (int f = 0; f < 2; ++f) {
-      TVec *v = (f ? ln->v2 : ln->v2);
-      bool found = false;
-      for (int c = 0; c < segptnum; ++c) {
-        if (po->segPts[c] == v) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        // the original Pts are based off the startSpot Pt
-        v->x -= deltaX;
-        v->y -= deltaY;
-        *origPt++ = (*v)-sspot2d;
-        po->segPts[segptnum++] = v;
-      }
+    if (!seenVtx.put(seg->v2, true)) {
+      if (segptnum >= maxpts) Sys_Error("too many seg points for pobj #%d", po->tag);
+      po->segPts[segptnum++] = seg->v2;
     }
   }
-  vassert(segptnum <= po->numsegs+po->numlines);
+  // line points, just in case
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (!seenVtx.put(ld->v1, true)) {
+      if (segptnum >= maxpts) Sys_Error("too many line points for pobj #%d", po->tag);
+      po->segPts[segptnum++] = ld->v1;
+    }
+    if (!seenVtx.put(ld->v2, true)) {
+      if (segptnum >= maxpts) Sys_Error("too many line points for pobj #%d", po->tag);
+      po->segPts[segptnum++] = ld->v2;
+    }
+  }
+  vassert(segptnum > 0);
   po->originalPtsCount = segptnum;
   po->segPtsCount = segptnum;
+  GCon->Logf(NAME_Debug, "pobj #%d has %d vertices", po->tag, segptnum);
+
+  // save and translate points
+  for (int f = 0; f < segptnum; ++f) {
+    TVec *v = po->segPts[f];
+    v->x -= deltaX;
+    v->y -= deltaY;
+    po->originalPts[f] = (*v)-sspot2d;
+  }
 
   const float startHeight = po->startSpot.z;
   //const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
@@ -859,13 +871,14 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   float deltaZ = 0.0f;
 
-  // set initial floor and ceiling for non-3d pobj
+  // clamp 3d pobj height if necessary
   if (po->posector) {
     // 3d polyobject
 
-    GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+    GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g  deltaZ=%g", po->tag,
       po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
+      startHeight);
 
     // clamp height
     if (thing && thing->height > 0.0f) {
@@ -919,7 +932,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   UpdatePolySegs(po);
 
-  GCon->Logf(NAME_Debug, "002: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+  GCon->Logf(NAME_Debug, "translated %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", (po->posector ? "3d" : "2d"), po->tag,
     po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
     po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
 
