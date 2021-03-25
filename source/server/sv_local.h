@@ -284,10 +284,6 @@ struct opening_t {
 // ////////////////////////////////////////////////////////////////////////// //
 int SV_PointContents (sector_t *sector, const TVec &p, bool dbgDump=false);
 
-// returns region to use as light param source, and additionally glow flags (`glowFlags` can be nullptr)
-// glowFlags: bit 0: floor glow allowed; bit 1: ceiling glow allowed
-sec_region_t *SV_PointRegionLight (sector_t *sector, const TVec &p, unsigned *glowFlags=nullptr);
-
 // the one that is lower
 //sec_region_t *SV_GetPrevRegion (sector_t *sector, sec_region_t *srcreg);
 // the one that is higher

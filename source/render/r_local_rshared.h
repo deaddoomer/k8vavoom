@@ -381,7 +381,7 @@ protected:
     return
       ent && ent->State && !ent->IsGoingToDie() &&
       !(ent->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible)) &&
-      ent->SubSector;
+      ent->BaseSubSector;
   }
   */
 

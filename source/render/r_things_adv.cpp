@@ -396,7 +396,7 @@ void VRenderLevelShadowVolume::RenderMobjsFog () {
     //RenderThingFog(ent);
     if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
       if (ri.isAdditive()) continue;
-      vuint32 Fade = GetFade(SV_PointRegionLight(ent->Sector, ent->Origin));
+      vuint32 Fade = GetFade(Level->PointRegionLight(ent->SubSector, ent->Origin));
       if (Fade) {
         ri.light = 0xffffffffu;
         ri.fade = Fade;

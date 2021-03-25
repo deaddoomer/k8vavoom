@@ -304,7 +304,7 @@ void VRenderLevelShared::RenderThing (VEntity *mobj, ERenderPass Pass) {
   */
 
   SetupRIThingLighting(mobj, ri, false/*asAmbient*/, true/*allowBM*/);
-  ri.fade = GetFade(SV_PointRegionLight(mobj->Sector, mobj->Origin));
+  ri.fade = GetFade(Level->PointRegionLight(mobj->SubSector, mobj->Origin));
 
   // try to draw a model
   // if it's a script and it doesn't specify model for this frame, draw sprite instead

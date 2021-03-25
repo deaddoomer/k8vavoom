@@ -268,7 +268,7 @@ COMMAND(my_sector_info) {
   Player->Printf("  ceil : %f %f", sec->ceiling.minz, sec->ceiling.maxz);
   Player->Printf("  floor: %f %f", sec->floor.minz, sec->floor.maxz);
 
-  sec_region_t *reg = SV_PointRegionLight(sec, Player->MO->Origin);
+  sec_region_t *reg = Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin);
   Player->Printf("  Fade : 0x%08x", reg->params->Fade);
   Player->Printf("  floor light source sector: %d", sec->floor.LightSourceSector);
   Player->Printf("  ceiling light source sector: %d", sec->ceiling.LightSourceSector);
@@ -288,17 +288,17 @@ COMMAND(my_sector_info) {
     Player->Printf(" gap floor: %g (%g,%g,%g:%g)", floor.GetPointZClamped(Player->MO->Origin), floor.GetNormal().x, floor.GetNormal().y, floor.GetNormal().z, floor.GetDist());
     Player->Printf(" gap ceil : %g (%g,%g,%g:%g)", ceiling.GetPointZClamped(Player->MO->Origin), ceiling.GetNormal().x, ceiling.GetNormal().y, ceiling.GetNormal().z, ceiling.GetDist());
     /*
-    sec_region_t *gap = SV_PointRegionLight(sec, Player->MO->Origin, true);
+    sec_region_t *gap = Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin, true);
     if (gap) Player->Printf("=== PT0: %p", gap);
-    gap = SV_PointRegionLight(sec, Player->MO->Origin+TVec(0.0f, 0.0f, Player->MO->Height*0.5f), true);
+    gap = Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin+TVec(0.0f, 0.0f, Player->MO->Height*0.5f), true);
     if (gap) Player->Printf("=== PT1: %p", gap);
-    gap = SV_PointRegionLight(sec, Player->MO->Origin+TVec(0.0f, 0.0f, Player->MO->Height), true);
+    gap = Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin+TVec(0.0f, 0.0f, Player->MO->Height), true);
     if (gap) Player->Printf("=== PT2: %p", gap);
     */
     //GCon->Log("=== light ===");
-    //(void)SV_PointRegionLight(sec, Player->MO->Origin, true);
+    //(void)Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin, true);
     //GCon->Log("=== light sub ===");
-    //(void)SV_PointRegionLightSub(Player->MO->SubSector, Player->MO->Origin, nullptr, true);
+    //(void)Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin, nullptr, true);
 
     #ifdef CLIENT
       if (Args.length() > 3) {

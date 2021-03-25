@@ -244,7 +244,6 @@ void VRenderLevelShared::MoveStaticLightByOwner (vuint32 OwnerUId, const TVec &o
   //if (sl.origin == origin) return;
   if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, false);
   sl.origin = origin;
-  //sl.leafnum = (int)(ptrdiff_t)((Owner->SubSector ? Owner->SubSector : Level->PointInSubsector(sl.origin))-Level->Subsectors);
   sl.leafnum = (int)(ptrdiff_t)(Level->PointInSubsector(sl.origin)-Level->Subsectors);
   CalcStaticLightTouchingSubs(*stp, sl);
   if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, true);
@@ -1104,7 +1103,7 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
   //FIXME: this is slightly wrong (and slow)
   if (/*!skipAmbient &&*/ sub->regions) {
     //sec_region_t *regbase;
-    sec_region_t *reglight = SV_PointRegionLight(sub->sector, p, &glowFlags);
+    sec_region_t *reglight = Level->PointRegionLight(sub, p, &glowFlags);
 
     // allow glow only for bottom regions
     //FIXME: this is not right, we should calculate glow for translucent/transparent floors too!

@@ -394,7 +394,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
     }
   }
 
-  const vuint32 basefase = GetFade(SV_PointRegionLight(r_viewleaf->sector, cl->ViewOrg));
+  const vuint32 basefase = GetFade(Level->PointRegionLight(r_viewleaf, cl->ViewOrg));
 
   // draw all active psprites
   for (int ii = 0; ii < NUMPSPRITES; ++ii) {

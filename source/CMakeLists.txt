@@ -278,11 +278,12 @@ set(VLEVEL_CLASS_SOURCES
   level/level_calclineseg.cpp
   level/level_dbgexport.cpp
   level/level_decals.cpp
+  level/level_light.cpp
+  level/level_miscapi.cpp
   level/level_nodebbox.cpp
   level/level_saveio.cpp
   level/level_secnode.cpp
   level/level_soundprop.cpp
-  level/level_miscapi.cpp
   level/level_think.cpp
   level/beamclip.cpp
   level/beamclip.h

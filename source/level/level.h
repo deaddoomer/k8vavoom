@@ -885,6 +885,12 @@ public:
   bool CanHave3DPolyObjAt (const TVec &p) const noexcept;
 
 public:
+  // returns region to use as light param source, and additionally glow flags (`glowFlags` can be nullptr)
+  // glowFlags: bit 0: floor glow allowed; bit 1: ceiling glow allowed
+  // `sub` can be `nullptr`
+  sec_region_t *PointRegionLight (const subsector_t *sub, const TVec &p, unsigned *glowFlags=nullptr);
+
+public:
   // returns `false` if seg is out of subsector
   // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
   // will not modify `drawsegs`, etc.
