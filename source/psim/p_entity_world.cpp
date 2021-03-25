@@ -1588,21 +1588,24 @@ bool VEntity::CheckRelPositionPoint (tmtrace_t &tmtrace, TVec Pos) {
       const float pz1 = po->poceiling.maxz;
       if (pz0 >= pz1) continue; // paper-thin
       if (Pos.z > pz0 && Pos.z < pz1) { res = false; continue; } // inside, nothing to do
-      if (!XLevel->IsPointInsideSector2D(po->GetSector(), Pos.x, Pos.y)) continue;
       // fix floor and ceiling
       if (Pos.z <= pz0) {
         // below, fix ceiling
         if (pz0 < tmtrace.CeilingZ) {
-          tmtrace.ECeiling.set(&po->pofloor, false);
-          tmtrace.CeilingZ = pz0;
+          if (XLevel->IsPointInsideSector2D(po->GetSector(), Pos.x, Pos.y)) {
+            tmtrace.ECeiling.set(&po->pofloor, false);
+            tmtrace.CeilingZ = pz0;
+          }
         }
         continue;
       }
       if (Pos.z >= pz1) {
         // above, fix floor
         if (pz1 > tmtrace.FloorZ) {
-          tmtrace.EFloor.set(&po->poceiling, false);
-          tmtrace.FloorZ = pz1;
+          if (XLevel->IsPointInsideSector2D(po->GetSector(), Pos.x, Pos.y)) {
+            tmtrace.EFloor.set(&po->poceiling, false);
+            tmtrace.FloorZ = pz1;
+          }
         }
         continue;
       }
