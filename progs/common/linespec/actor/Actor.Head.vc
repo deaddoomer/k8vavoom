@@ -542,6 +542,7 @@ override void Destroyed () {
 //
 //==========================================================================
 [decorate] final void A_LayToFloorWithYaw (float yaw) {
+  /*
   tmtrace_t tmtrace;
   GetFloorAndCeiling(out tmtrace);
   if (!tmtrace.EFloor.splane) {
@@ -551,6 +552,8 @@ override void Destroyed () {
     return;
   }
   TVec norm = tmtrace.EFloor.spGetNormal();
+  */
+  TVec norm = EFloor.spGetNormal();
 
   /*
   auto sec = Level.XLevel.PointInSector(Origin);
@@ -579,7 +582,11 @@ override void Destroyed () {
     // alas
     //Angles.yaw = yaw;
   }
-  Origin.z = tmtrace.FloorZ;
+  float newz = /*tmtrace.*/FloorZ;
+  if (Origin.z != newz) {
+    Origin.z = newz;
+    LinkToWorld();
+  }
   bIntrJustMoved = false; // disable interpolation
 }
 
@@ -590,6 +597,7 @@ override void Destroyed () {
 //
 //==========================================================================
 [decorate] final void A_LayToCeilingWithYaw (float yaw) {
+  /*
   tmtrace_t tmtrace;
   GetFloorAndCeiling(out tmtrace);
   if (!tmtrace.ECeiling.splane) {
@@ -599,6 +607,8 @@ override void Destroyed () {
     return;
   }
   TVec norm = tmtrace.ECeiling.spGetNormal();
+  */
+  TVec norm = ECeiling.spGetNormal();
 
   /*
   auto sec = Level.XLevel.PointInSector(Origin);
@@ -623,7 +633,11 @@ override void Destroyed () {
     // alas
     //Angles.yaw = yaw;
   }
-  Origin.z = tmtrace.CeilingZ-Height;
+  float newz = /*tmtrace.*/CeilingZ-Height;
+  if (Origin.z != newz) {
+    Origin.z = newz;
+    LinkToWorld();
+  }
   bIntrJustMoved = false; // disable interpolation
 }
 
@@ -634,6 +648,7 @@ override void Destroyed () {
 //
 //==========================================================================
 [decorate] final void A_LayToFloorWithYawSprite (float yaw) {
+  /*
   tmtrace_t tmtrace;
   GetFloorAndCeiling(out tmtrace);
   if (!tmtrace.EFloor.splane) {
@@ -643,9 +658,12 @@ override void Destroyed () {
     return;
   }
   TVec norm = tmtrace.EFloor.spGetNormal();
+  */
+  TVec norm = EFloor.spGetNormal();
 
-  //print("floor normal: %v", norm);
+  //print("%C: floor normal: %v; floorz=%s", self, norm, FloorZ);
   if (norm.x == 0 && norm.y == 0) {
+    //printdebug("  !!!");
     //VectorAngles(norm, Angles);
     Angles.roll = 0;
     Angles.yaw = yaw;
@@ -659,7 +677,11 @@ override void Destroyed () {
     //RotateVectorAroundVector
     //Angles.yaw = yaw;
   }
-  Origin.z = tmtrace.FloorZ;
+  float newz = /*tmtrace.*/FloorZ;
+  if (Origin.z != newz) {
+    Origin.z = newz;
+    LinkToWorld();
+  }
   bIntrJustMoved = false; // disable interpolation
 }
 
@@ -670,6 +692,7 @@ override void Destroyed () {
 //
 //==========================================================================
 [decorate] final void A_LayToCeilingWithYawSprite (float yaw) {
+  /*
   tmtrace_t tmtrace;
   GetFloorAndCeiling(out tmtrace);
   if (!tmtrace.ECeiling.splane) {
@@ -679,6 +702,8 @@ override void Destroyed () {
     return;
   }
   TVec norm = tmtrace.ECeiling.spGetNormal();
+  */
+  TVec norm = ECeiling.spGetNormal();
 
   //print("ceiling normal: %v", norm);
   if (norm.x == 0 && norm.y == 0) {
@@ -694,7 +719,11 @@ override void Destroyed () {
     // alas
     //Angles.yaw = yaw;
   }
-  Origin.z = tmtrace.CeilingZ-Height;
+  float newz = /*tmtrace.*/CeilingZ-Height;
+  if (Origin.z != newz) {
+    Origin.z = newz;
+    LinkToWorld();
+  }
   bIntrJustMoved = false; // disable interpolation
 }
 

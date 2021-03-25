@@ -1170,9 +1170,7 @@ sec_region_t *SV_GetNextRegion (sector_t *sector, sec_region_t *srcreg) {
 //
 //  SV_GetLowestSolidPointZ
 //
-//  used for silent teleports
-//
-//  FIXME: this ignores 3d floors (this is prolly the right thing to do)
+//  FIXME: this ignores 3d pobjs!
 //
 //==========================================================================
 float SV_GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors) {
@@ -1200,11 +1198,8 @@ float SV_GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3
 //
 //  SV_GetHighestSolidPointZ
 //
-//  used for silent teleports
-//
-//  FIXME: this ignores 3d floors (this is prolly the right thing to do)
-//
 //==========================================================================
+/*
 float SV_GetHighestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors) {
   if (!sector) return 0.0f; // idc
   if (ignore3dFloors || !sector->Has3DFloors()) return sector->ceiling.GetPointZClamped(point); // cannot be higher than this
@@ -1224,6 +1219,7 @@ float SV_GetHighestSolidPointZ (sector_t *sector, const TVec &point, bool ignore
   }
   return bestz;
 }
+*/
 
 
 //**************************************************************************

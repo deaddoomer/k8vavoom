@@ -1183,15 +1183,15 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             good = false;
             // find the fractional intercept point along the trace line
             const float den = DotProduct(ld->normal, tmtrace.End-Pos);
-            if (den == 0) {
+            if (den == 0.0f) {
               fuckhit = ld;
               lastFrac = 0;
             } else {
               const float num = ld->dist-DotProduct(Pos, ld->normal);
-              const float frac = num/den;
-              if (fabsf(frac) < lastFrac) {
+              const float frac = fabsf(num/den);
+              if (frac < lastFrac) {
                 fuckhit = ld;
-                lastFrac = fabsf(frac);
+                lastFrac = frac;
               }
             }
           }
@@ -1513,6 +1513,103 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
 void VEntity::BlockedByLine (line_t *ld) {
   if (EntityFlags&EF_Blasted) eventBlastedHitLine();
   if (ld->special) eventCheckForPushSpecial(ld, 0);
+}
+
+
+//==========================================================================
+//
+//  VEntity::CheckRelPositionPoint
+//
+//==========================================================================
+bool VEntity::CheckRelPositionPoint (tmtrace_t &tmtrace, TVec Pos) {
+  memset((void *)&tmtrace, 0, sizeof(tmtrace));
+
+  tmtrace.End = Pos;
+
+  const subsector_t *sub = XLevel->PointInSubsector_Buggy(Pos);
+  sector_t *sec = sub->sector;
+
+  const float ffz = sec->floor.GetPointZClamped(Pos);
+  const float fcz = sec->ceiling.GetPointZClamped(Pos);
+
+  tmtrace.EFloor.set(&sec->floor, false);
+  tmtrace.FloorZ = tmtrace.DropOffZ = ffz;
+  tmtrace.ECeiling.set(&sec->ceiling, false);
+  tmtrace.CeilingZ = fcz;
+
+  // below or above?
+  if (Pos.z < ffz || Pos.z > fcz) return false;
+
+  // closed sector?
+  if (ffz >= fcz) return false;
+
+  // on the floor, or on the ceiling?
+  if (Pos.z == ffz || Pos.z == fcz) return true;
+
+  bool res = true;
+
+  // check regions
+  if (sec->Has3DFloors()) {
+    for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
+      if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
+      //if (((reg->efloor.splane->flags|reg->eceiling.splane->flags)&flagmask) != 0) continue; // bad flags
+      // get opening points
+      const float fz = reg->efloor.GetPointZClamped(Pos);
+      const float cz = reg->eceiling.GetPointZClamped(Pos);
+      if (fz >= cz) continue; // ignore paper-thin regions
+      if (Pos.z <= cz) {
+        // below, fix ceiling
+        if (cz < tmtrace.CeilingZ) {
+          tmtrace.ECeiling = reg->eceiling;
+          tmtrace.CeilingZ = cz;
+        }
+        continue;
+      }
+      if (Pos.z >= fz) {
+        // above, fix floor
+        if (fz > tmtrace.FloorZ) {
+          tmtrace.EFloor = reg->efloor;
+          tmtrace.FloorZ = fz;
+        }
+        continue;
+      }
+      // inside, ignore it
+      res = false; // blocked
+    }
+  }
+
+  // check polyobjects
+  if (XLevel->CanHave3DPolyObjAt(Pos)) {
+    for (auto &&it : sub->PObjFirst()) {
+      polyobj_t *po = it.pobj();
+      if (!po->Is3D()) continue;
+      if (!IsPointInside2DBBox(Pos.x, Pos.y, po->bbox2d)) continue;
+      const float pz0 = po->pofloor.minz;
+      const float pz1 = po->poceiling.maxz;
+      if (pz0 >= pz1) continue; // paper-thin
+      if (Pos.z > pz0 && Pos.z < pz1) { res = false; continue; } // inside, nothing to do
+      if (!XLevel->IsPointInsideSector2D(po->GetSector(), Pos.x, Pos.y)) continue;
+      // fix floor and ceiling
+      if (Pos.z <= pz0) {
+        // below, fix ceiling
+        if (pz0 < tmtrace.CeilingZ) {
+          tmtrace.ECeiling.set(&po->pofloor, false);
+          tmtrace.CeilingZ = pz0;
+        }
+        continue;
+      }
+      if (Pos.z >= pz1) {
+        // above, fix floor
+        if (pz1 > tmtrace.FloorZ) {
+          tmtrace.EFloor.set(&po->poceiling, false);
+          tmtrace.FloorZ = pz1;
+        }
+        continue;
+      }
+    }
+  }
+
+  return res;
 }
 
 
@@ -3190,6 +3287,16 @@ IMPLEMENT_FUNCTION(VEntity, CheckRelPosition) {
   vobjGetParamSelf(tmtrace, Pos, noPickups, ignoreMonsters, ignorePlayers);
   if (!tmtrace) tmtrace = &tmp;
   RET_BOOL(Self->CheckRelPosition(*tmtrace, Pos, noPickups, ignoreMonsters, ignorePlayers));
+}
+
+// native final bool CheckRelPositionPoint (out tmtrace_t tmtrace, TVec Pos);
+IMPLEMENT_FUNCTION(VEntity, CheckRelPositionPoint) {
+  tmtrace_t tmp;
+  tmtrace_t *tmtrace = nullptr;
+  TVec Pos;
+  vobjGetParamSelf(tmtrace, Pos);
+  if (!tmtrace) tmtrace = &tmp;
+  RET_BOOL(Self->CheckRelPositionPoint(*tmtrace, Pos));
 }
 
 IMPLEMENT_FUNCTION(VEntity, CheckSides) {

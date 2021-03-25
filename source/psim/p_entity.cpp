@@ -368,22 +368,32 @@ void VEntity::Tick (float deltaTime) {
     // stick to floor or ceiling?
     if (SubSector) {
       if (eflagsex&(EFEX_StickToFloor|EFEX_StickToCeiling)) {
+        tmtrace_t tmtrace;
+        CheckRelPositionPoint(tmtrace, Origin);
         if (eflagsex&EFEX_StickToFloor) {
-          Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
+          //Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
+          Origin.z = tmtrace.FloorZ;
         } else {
           #ifdef CLIENT
           //const float oldz = Origin.z;
           #endif
-          Origin.z = SV_GetHighestSolidPointZ(SubSector->sector, Origin, false)-Height; // don't ignore 3d floors
+          //Origin.z = SV_GetHighestSolidPointZ(SubSector->sector, Origin, false)-Height; // don't ignore 3d floors
+          Origin.z = tmtrace.CeilingZ;
           #ifdef CLIENT
           //GCon->Logf(NAME_Debug, "*** %s ***: stick to ceiling; oldz=%g; newz=%g", GetClass()->GetName(), oldz, Origin.z);
           #endif
         }
       } else if (!(EntityFlags&EF_NoGravity)) {
         // it is always at floor level
-        Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
+        tmtrace_t tmtrace;
+        CheckRelPositionPoint(tmtrace, Origin);
         #ifdef CLIENT
-        //GCon->Logf(NAME_Debug, "  : %s down to earth", GetClass()->GetName());
+        //const float oldz = Origin.z;
+        #endif
+        //Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
+        Origin.z = tmtrace.FloorZ;
+        #ifdef CLIENT
+        //GCon->Logf(NAME_Debug, "*** %s ***: down to earth; oldz=%g; newz=%g", GetClass()->GetName(), oldz, Origin.z);
         #endif
       }
     }

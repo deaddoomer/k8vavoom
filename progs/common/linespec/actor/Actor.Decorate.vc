@@ -757,7 +757,7 @@ private final float clampPitch (float newpitch) {
     return GetPointZClamped(ref sec->ceiling, org);
   } else {
     tmtrace_t tmtrace;
-    tgt.GetFloorAndCeilingEx(out tmtrace, org, collideWorld:true, collideThings:false);
+    tgt.GetFloorAndCeilingEx(out tmtrace, org, collideWorld:true);
     return (flags&GZF_CEILING ? tmtrace.CeilingZ : tmtrace.FloorZ);
   }
 }
@@ -1873,7 +1873,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
   float fz, cz;
   if (spot.bNoSector) {
     tmtrace_t tmtrace;
-    tgt.GetFloorAndCeilingEx(out tmtrace, dpos, collideWorld:true, collideThings:false);
+    tgt.GetFloorAndCeilingEx(out tmtrace, dpos, collideWorld:true);
     fz = tmtrace.FloorZ;
     cz = tmtrace.CeilingZ;
   } else {

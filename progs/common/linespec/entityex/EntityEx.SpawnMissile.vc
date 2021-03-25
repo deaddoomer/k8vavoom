@@ -675,7 +675,7 @@ final EntityEx SpawnPlayerMissileEx (class!EntityEx type, bool RetExploded,
         A.Origin.z = cz-A.Height-min(4, cast(int)(rng-Height)/2);
       }
       // now move it a slightly forward, and check there
-      A.GetFloorAndCeilingEx(tmtrace, A.Origin+A.Velocity.xy.normalise*8);
+      A.GetFloorAndCeilingEx(tmtrace, A.Origin+A.Velocity.xy.normalise*8, collideWorld:true);
       rng = tmtrace.CeilingZ-tmtrace.FloorZ;
       float nz = (A.Origin.z+A.Height)-tmtrace.CeilingZ;
       if (rng >= A.Height && nz > 0 && nz < 8) {

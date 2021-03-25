@@ -42,6 +42,7 @@ const float AUTOCROUCH_LIMIT = 0.75;
 //
 //==========================================================================
 final void GetFloorAndCeiling (out tmtrace_t tmtrace) {
+  /*
   bool oldWithThings = bColideWithThings;
   bool oldWithWorld = bColideWithWorld;
   scope(exit) {
@@ -50,8 +51,9 @@ final void GetFloorAndCeiling (out tmtrace_t tmtrace) {
   }
   bColideWithThings = false;
   bColideWithWorld = false;
+  */
   // find new position
-  CheckRelPosition(out tmtrace, Origin, noPickups:true, ignoreMonsters:true, ignorePlayers:true);
+  CheckRelPositionPoint(out tmtrace, Origin);
 }
 
 
@@ -59,18 +61,24 @@ final void GetFloorAndCeiling (out tmtrace_t tmtrace) {
 //
 //  GetFloorAndCeilingEx
 //
+//  if `collideWorld` is `false`, does point check
+//  never checks things
+//
 //==========================================================================
-final void GetFloorAndCeilingEx (out tmtrace_t tmtrace, TVec org, optional bool collideWorld, optional bool collideThings) {
-  bool oldWithThings = bColideWithThings;
-  bool oldWithWorld = bColideWithWorld;
-  scope(exit) {
-    bColideWithThings = oldWithThings;
-    bColideWithWorld = oldWithWorld;
+final void GetFloorAndCeilingEx (out tmtrace_t tmtrace, TVec org, optional bool collideWorld) {
+  if (collideWorld) {
+    bool oldWithThings = bColideWithThings;
+    bool oldWithWorld = bColideWithWorld;
+    scope(exit) {
+      bColideWithThings = oldWithThings;
+      bColideWithWorld = oldWithWorld;
+    }
+    bColideWithThings = false;
+    bColideWithWorld = true;
+    CheckRelPosition(out tmtrace, org, noPickups:true, ignoreMonsters:true, ignorePlayers:true);
+  } else {
+    CheckRelPositionPoint(out tmtrace, org);
   }
-  bColideWithThings = collideThings;
-  bColideWithWorld = collideWorld;
-  // find new position
-  CheckRelPosition(out tmtrace, org, noPickups:true, ignoreMonsters:true, ignorePlayers:true);
 }
 
 
@@ -554,7 +562,6 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
         PlayerEx pex = PlayerEx(Player);
         // can we crouch at all?
         if (pex && pex.CanCrouch()) {
-          //GetFloorAndCeilingEx(out tmtrace, vector(ptryx, ptryy, Origin.z), collideWorld:true, collideThings:true);
           float hgt = PlayerPawn(self).GetRealHeight();
           float rng = tmtrace.CeilingZ-tmtrace.FloorZ;
           //printdebug("%C: 001: Height=%s; hgt=%s; rng=%s; hgtmin=%s", self, Height, hgt, rng, hgt*0.7);

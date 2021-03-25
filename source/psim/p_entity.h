@@ -831,6 +831,7 @@ public:
   bool CheckPosition (TVec);
   // `tmtrace` is output
   bool CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups=false, bool ignoreMonsters=false, bool ignorePlayers=false);
+  bool CheckRelPositionPoint (tmtrace_t &tmtrace, TVec Pos);
   // `tmtrace` is output
   bool TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool checkOnly=false, bool noPickups=false);
   bool TestMobjZ (const TVec &TryOrg, VEntity **hitent=nullptr);
@@ -984,6 +985,7 @@ public:
   DECLARE_FUNCTION(FindDropOffLine)
   DECLARE_FUNCTION(CheckPosition)
   DECLARE_FUNCTION(CheckRelPosition)
+  DECLARE_FUNCTION(CheckRelPositionPoint)
   DECLARE_FUNCTION(TryMove)
   DECLARE_FUNCTION(TryMoveEx)
   DECLARE_FUNCTION(TestMobjZ)
