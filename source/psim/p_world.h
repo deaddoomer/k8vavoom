@@ -118,7 +118,6 @@ private:
   bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
   void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
   intercept_t &NewIntercept (const float frac);
-  void RemoveInterceptsAfter (const float frac); // >
 
   // calculates proper thing hit and so on
   void AddProperThingHit (VEntity *th, const float frac);

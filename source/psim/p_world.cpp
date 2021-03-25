@@ -477,16 +477,6 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 
 //==========================================================================
 //
-//  VPathTraverse::RemoveInterceptsAfter
-//
-//==========================================================================
-void VPathTraverse::RemoveInterceptsAfter (const float frac) {
-  while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac > frac) Level->PopLastIntercept();
-}
-
-
-//==========================================================================
-//
 //  VPathTraverse::AddLineIntercepts
 //
 //  looks for lines in the given block that intercept the given trace to add
@@ -627,7 +617,6 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
 
     if (blockFlag) {
-      //RemoveInterceptsAfter(frac); // remove all intercepts we are not interested in (later)
       max_frac = frac; // we cannot travel further anyway
       wasBlocking = true;
     }
@@ -652,7 +641,12 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
   }
 
-  if (wasBlocking) RemoveInterceptsAfter(max_frac); // remove all intercepts we are not interested in
+  if (wasBlocking && !(scanflags&PT_ADDLINES)) {
+    // remove things we may hit beyound the blocking line
+    // there is no need to do this if we're collecting lines, because it will be done in `Init()`
+    while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac >= max_frac) Level->PopLastIntercept();
+  }
+
   return wasBlocking;
 }
 
