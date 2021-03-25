@@ -1,5 +1,11 @@
 configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 
+file(GLOB hexen_pak_SRC CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
+  ${CMAKE_SOURCE_DIR}/progs/hexen/cgame/*.vc
+  ${CMAKE_SOURCE_DIR}/progs/hexen/game/*.vc
+  )
+
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
@@ -10,9 +16,6 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     graphics/fonta63.lmp
     palette.pcx
     basepak.ls.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
-    ${CMAKE_SOURCE_DIR}/progs/hexen/cgame/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/hexen/game/*.vc
   )
 add_custom_target(hexen_basepak ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3)
 

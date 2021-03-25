@@ -5,6 +5,13 @@ configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 #  DEPENDS ${CMAKE_SOURCE_DIR}/utils/editing/acs/*.acs acc
 #  )
 
+file(GLOB strife_pak_SRC CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
+  #${CMAKE_CURRENT_BINARY_DIR}/strfhelp.o
+  ${CMAKE_SOURCE_DIR}/progs/strife/cgame/*.vc
+  ${CMAKE_SOURCE_DIR}/progs/strife/game/*.vc
+  )
+
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
@@ -15,10 +22,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     graphics/croshai3.lmp
     basepak.ls.in
     bigfont.pcx
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
-    #${CMAKE_CURRENT_BINARY_DIR}/strfhelp.o
-    ${CMAKE_SOURCE_DIR}/progs/strife/cgame/*.vc
-    ${CMAKE_SOURCE_DIR}/progs/strife/game/*.vc
+    ${strife_pak_SRC}
   )
 add_custom_target(strife_basepak ALL
   DEPENDS

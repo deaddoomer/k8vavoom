@@ -1,13 +1,17 @@
 configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 
+file(GLOB chexmod_pak_SRC CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/language.en
+  ${CMAKE_CURRENT_SOURCE_DIR}/actors/chex/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/progs/chex/*
+  )
+
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
     basepak.ls.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
-    ${CMAKE_CURRENT_SOURCE_DIR}/language.en
-    ${CMAKE_CURRENT_SOURCE_DIR}/actors/chex/*
-    ${CMAKE_CURRENT_SOURCE_DIR}/progs/chex/*
+    ${chexmod_pak_SRC}
   )
 add_custom_target(chex_modpak ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3)
 
