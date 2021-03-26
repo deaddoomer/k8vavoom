@@ -30,7 +30,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../server/sv_local.h"
 
 //static VCvarI dbg_thing_traverser("dbg_thing_traverser", "0", "Thing checking in interceptor: 0=best; 1=Vavoom, better; 2=Vavoom, original", CVAR_PreInit);
 

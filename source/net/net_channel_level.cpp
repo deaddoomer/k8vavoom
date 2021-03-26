@@ -27,7 +27,6 @@
 #include "network.h"
 #include "net_message.h"
 #include "../client/cl_local.h"
-#include "../server/sv_local.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //

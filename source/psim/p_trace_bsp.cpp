@@ -24,7 +24,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../server/sv_local.h"
 #include "p_trace_internal.h"
 
 

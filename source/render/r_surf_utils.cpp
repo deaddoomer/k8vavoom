@@ -25,8 +25,6 @@
 //**************************************************************************
 // this is directly included where necessary
 //**************************************************************************
-#include "../server/sv_local.h"
-
 
 // it seems that `segsidedef` offset is in effect, but scaling is not
 //#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE

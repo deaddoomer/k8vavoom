@@ -28,7 +28,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../server/sv_local.h"
 
 //#define VV_DBG_VERBOSE_TRYMOVE
 //#define VV_DBG_VERBOSE_REL_LINE_FC

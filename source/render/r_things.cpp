@@ -34,7 +34,6 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "r_local.h"
-#include "../server/sv_local.h"
 
 //#define VV_THING_COLLECTOR_STATS
 
