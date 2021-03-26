@@ -183,6 +183,7 @@ void polyobj_t::Free () {
   delete[] lines;
   delete[] originalPts;
   delete[] segPts;
+  delete[] prevPts;
   polyobjpart_t *part = parts;
   while (part) {
     polyobjpart_t *c = part;
@@ -687,6 +688,25 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
 
 //==========================================================================
 //
+//  VLevel::Add3DPolyobjLink
+//
+//==========================================================================
+void VLevel::Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid) {
+  if (!srcpid || !destpid) return;
+  const int idx = NumPolyLinks3D++;
+
+  VPolyLink3D *nl = new VPolyLink3D[NumPolyLinks3D];
+  for (int f = 0; f < NumPolyLinks3D-1; ++f) nl[f] = PolyLinks3D[f];
+  delete[] PolyLinks3D;
+  PolyLinks3D = nl;
+
+  nl[idx].srcpid = srcpid;
+  nl[idx].destpid = destpid;
+}
+
+
+//==========================================================================
+//
 //  VLevel::AddPolyAnchorPoint
 //
 //==========================================================================
@@ -744,6 +764,34 @@ void VLevel::InitPolyobjs () {
       anchor.tag = po->tag;
       anchor.thingidx = -1; // no thing
       TranslatePolyobjToStartSpot(&anchor);
+    }
+  }
+
+  // now assign polyobject links
+  for (int f = 0; f < NumPolyLinks3D; ++f) {
+    const int src = PolyLinks3D[f].srcpid;
+    const int dest = PolyLinks3D[f].destpid;
+    if (!src || !dest) continue;
+    if (src == dest) Host_Error("pobj #%d is linked to itself", src);
+    polyobj_t *psrc = GetPolyobj(src);
+    if (!psrc) Host_Error("there is no pobj #%d for link source", src);
+    polyobj_t *pdest = GetPolyobj(dest);
+    if (!pdest) Host_Error("there is no pobj #%d for link destination", dest);
+    if (psrc == pdest) Host_Error("pobj #%d is linked to itself", src);
+    if (psrc->polink) Host_Error("pobj #%d is already linked to pobj #%d", src, psrc->polink->tag);
+    psrc->polink = pdest;
+  }
+
+  // check for loops
+  for (auto &&pofirst : allPolyobjects()) {
+    polyobj_t *po0 = pofirst;
+    polyobj_t *po1 = pofirst;
+    bool dostep = false;
+    while (po0) {
+      po0 = po0->polink;
+      if (dostep) po1 = po1->polink;
+      if (po0 && po0 == po1) Host_Error("pobj #%d has link loop", pofirst->tag);
+      dostep = !dostep;
     }
   }
 
@@ -860,6 +908,10 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     v->y -= deltaY;
     po->originalPts[f] = (*v)-sspot2d;
   }
+
+  // allocate temporary storage
+  po->prevPts = new TVec[segptnum];
+  po->prevPtsCount = segptnum;
 
   const float startHeight = po->startSpot.z;
   //const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
@@ -1136,108 +1188,109 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 //==========================================================================
 bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   polyobj_t *po = GetPolyobj(num);
-  if (!po) Sys_Error("Invalid polyobj number: %d", num);
+  if (!po) { GCon->Logf(NAME_Error, "MovePolyobj: Invalid pobj #%d", num); return false; }
 
   if (!po->posector) z = 0.0f;
 
-  sec_plane_t savedpofloor = po->pofloor;
-  sec_plane_t savedpoceiling = po->poceiling;
+  polyobj_t *pofirst = po;
 
-  bool unlinked = false;
+  // collect `poEntityMapFloat`, and save planes
+  if (pofirst->posector) {
+    poEntityMapFloat.reset();
+    for (po = pofirst; po; po = po->polink) {
+      po->savedFloor = po->pofloor;
+      po->savedCeiling = po->poceiling;
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        VEntity *mobj = n->Thing;
+        if (mobj->IsGoingToDie()) continue;
+        poEntityMapFloat.put(mobj, mobj->Origin); // save old z coord
+      }
+    }
+    po = pofirst;
+  }
+
+  //sec_plane_t savedpofloor = po->pofloor;
+  //sec_plane_t savedpoceiling = po->poceiling;
+
   const bool nocarry = (po->PolyFlags&polyobj_t::PF_NoCarry);
 
   // vertical movement
-  if (po->posector) {
+  if (pofirst->posector && z != 0.0f) {
     // move mobjs standing on this pobj up/down with it
     // this is required for extra-fast platforms, so objects will not fall through
     // for slow platforms, `ChangeSector()` can do it by itself, but let's play safe
     // save all force-modified entities along with their z positions, so we could restore them
-    poEntityMapFloat.reset();
-    const float pofz = po->poceiling.maxz;
-    //if (po->posector->TouchingThingList) GCon->Logf(NAME_Debug, "pobj #%d: === Z-TRY: %g (%g -> %g)", po->tag, z, pofz, pofz+z);
-    for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-      VEntity *mobj = n->Thing;
-      if (mobj->IsGoingToDie()) continue;
-      //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u): z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
-      const float oldz = mobj->Origin.z;
-      poEntityMapFloat.put(mobj, mobj->Origin); // save old z coord
-      if (!forced) {
-        if ((!nocarry && oldz == pofz && mobj->Velocity.z <= 0.0f) || // standing on a platform -- should go down with it
-            (oldz >= pofz && oldz < pofz+z)) // platform moving up, and goes through the mobj
-        {
-          // force onto platform
-          mobj->Origin.z = pofz+z;
-          mobj->FloorZ = pofz+z; // this is required for `ChangeSector()`; but there's no need to change `EFloor`
-          mobj->LastMoveOrigin.z += mobj->Origin.z-oldz; // disable interpolation
-          //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u):   MOVED! z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
+    if (!forced) {
+      for (auto &&it : poEntityMapFloat.first()) {
+        VEntity *mobj = it.key();
+        const float oldz = mobj->Origin.z;
+        const bool moveup = (mobj->Velocity.z > 0.0f);
+        for (po = pofirst; po; po = po->polink) {
+          const float pofz = po->poceiling.maxz;
+          if ((!nocarry && !moveup && oldz == pofz) || // standing on a platform -- should go down with it
+              (oldz >= pofz && oldz < pofz+z)) // platform moving up, and goes through the mobj
+          {
+            // force onto platform
+            mobj->Origin.z = pofz+z;
+            mobj->FloorZ = pofz+z; // this is required for `ChangeSector()`; but there's no need to change `EFloor`
+            mobj->LastMoveOrigin.z += mobj->Origin.z-oldz; // disable interpolation
+            //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u):   MOVED! z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
+          }
         }
       }
     }
-    if (z != 0.0f) {
-      // move platform vertically
-      OffsetPolyobjFlats(po, z);
-      if (!forced) {
-        //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 43 : 42))
-        // check movement
-        //FIXME: push stacked mobjs (one atop of another) up
+    // move platform vertically
+    for (po = pofirst; po; po = po->polink) OffsetPolyobjFlats(po, z);
+    // check if not blocked
+    if (!forced) {
+      //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 43 : 42))
+      // check movement
+      //FIXME: push stacked mobjs (one atop of another) up
+      bool seenCorpse = false;
+      tmtrace_t tmtrace;
+      for (auto &&it : poEntityMapFloat.first()) {
+        VEntity *mobj = it.key();
+        seenCorpse = (seenCorpse || mobj->IsRealCorpse());
+        if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        const vuint32 oldFlags = mobj->EntityFlags;
+        mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
         bool canMove = true;
-        bool seenCorpse = false;
-        tmtrace_t tmtrace;
-        for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-          VEntity *mobj = n->Thing;
-          if (mobj->IsGoingToDie()) continue;
-          seenCorpse = (seenCorpse || mobj->IsRealCorpse());
-          if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
-          const vuint32 oldFlags = mobj->EntityFlags;
-          mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
+        for (po = pofirst; po; po = po->polink) {
           const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-          mobj->EntityFlags = oldFlags;
           if (!ok) { canMove = false; break; }
         }
+        mobj->EntityFlags = oldFlags;
         if (!canMove) {
+          // restore mobjs and platforms positions
           //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
-          po->pofloor = savedpofloor;
-          po->poceiling = savedpoceiling;
-          OffsetPolyobjFlats(po, 0.0f, true);
+          for (po = pofirst; po; po = po->polink) {
+            po->pofloor = po->savedFloor;
+            po->poceiling = po->savedCeiling;
+            OffsetPolyobjFlats(po, 0.0f, true);
+          }
           // restore `z` of force-modified entities, otherwise they may fall through the platform
-          for (auto &&it : poEntityMapFloat.first()) {
-            VEntity *mobj = it.key();
-            if (!mobj->IsGoingToDie()) {
-              const float oldz = mobj->Origin.z;
-              mobj->Origin.z = it.value().z;
-              mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
+          for (auto &&eit : poEntityMapFloat.first()) {
+            VEntity *e = eit.key();
+            if (!e->IsGoingToDie()) {
+              const float oldz = e->Origin.z;
+              e->Origin.z = eit.value().z;
+              e->LastMoveOrigin.z += e->Origin.z-oldz;
               // and relink it
-              mobj->LinkToWorld();
+              e->LinkToWorld();
             }
           }
           return false;
         }
-        // crash corpses
-        if (seenCorpse) {
-          VName ctp("PolyObjectGibs");
-          for (auto &&it : poEntityMapFloat.first()) {
-            VEntity *mobj = it.key();
-            if (mobj->IsGoingToDie() || !mobj->IsRealCorpse()) continue;
-            if (mobj->Origin.z+max2(0.0f, mobj->Height) > mobj->CeilingZ) mobj->GibMe(ctp);
-          }
-        }
-      } else {
+      }
+      // crash corpses
+      if (seenCorpse) {
+        VName ctp("PolyObjectGibs");
         for (auto &&it : poEntityMapFloat.first()) {
           VEntity *mobj = it.key();
-          if (!mobj->IsGoingToDie()) mobj->LinkToWorld();
+          if (mobj->IsGoingToDie() || !mobj->IsRealCorpse()) continue;
+          if (mobj->Origin.z+max2(0.0f, mobj->Height) > mobj->CeilingZ) mobj->GibMe(ctp);
         }
       }
-      //GCon->Logf(NAME_Debug, "pobj #%d: Z-MOVED!", po->tag);
-      /*
-      if (po->posector->TouchingThingList) {
-        GCon->Logf(NAME_Debug, "pobj #%d: +++ Z-MOVED: %g (%g -> %g)", po->tag, z, pofz, po->poceiling.maxz);
-        for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-          VEntity *mobj = n->Thing;
-          if (mobj->IsGoingToDie()) continue;
-          GCon->Logf(NAME_Debug, "pobj #%d: %s(%u): *** z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
-        }
-      }
-      */
     }
   }
 
@@ -1245,82 +1298,106 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 
   // horizontal movement
   if (x || y) {
-    const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
-
-    if (po->posector) {
-      const float pfz = po->poceiling.maxz;
-      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-        VEntity *e = n->Thing;
-        if (!e->IsGoingToDie() && e->Origin.z == pfz) poEntityMapToMove.put(n->Thing, true);
+    // collect entities to move
+    if (!nocarry && !forced && pofirst->posector) {
+      for (po = pofirst; po; po = po->polink) {
+        const float pfz = po->poceiling.maxz;
+        for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+          VEntity *e = n->Thing;
+          if (!e->IsGoingToDie() && e->Origin.z == pfz) poEntityMapToMove.put(n->Thing, true);
+        }
       }
     }
 
-    // save previous points, move horizontally
-    EnsurePolyPrevPts(po->segPtsCount);
-    const TVec *origPts = po->originalPts;
-    TVec *prevPts = polyPrevPts;
-    TVec **vptr = po->segPts;
-    for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
-      *prevPts = **vptr;
-      **vptr = (*origPts)+delta;
-    }
-    UpdatePolySegs(po);
+    // move all linked polyobjects
+    for (po = pofirst; po; po = po->polink) {
+      if (!forced && IsForServer()) UnlinkPolyobj(po);
+      const TVec delta(po->startSpot.x+x, po->startSpot.y+y, 0.0f);
 
+      // save previous points, move horizontally
+      const TVec *origPts = po->originalPts;
+      TVec *prevPts = po->prevPts;
+      TVec **vptr = po->segPts;
+      for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
+        *prevPts = **vptr;
+        **vptr = (*origPts)+delta;
+      }
+      UpdatePolySegs(po);
+    }
+
+    // check for blocked movement
     bool blocked = false;
     if (!forced && IsForServer()) {
-      if (!unlinked) { unlinked = true; UnlinkPolyobj(po); }
-      blocked = PolyCheckMobjBlocked(po);
+      for (po = pofirst; po; po = po->polink) {
+        blocked = PolyCheckMobjBlocked(po);
+        if (blocked) break; // process all?
+      }
     }
 
+    // restore position if blocked
     if (blocked) {
-      // restore points
-      prevPts = polyPrevPts;
-      vptr = po->segPts;
-      for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
-      UpdatePolySegs(po);
-      po->pofloor = savedpofloor;
-      po->poceiling = savedpoceiling;
-      OffsetPolyobjFlats(po, 0.0f, true);
-      if (unlinked) LinkPolyobj(po); // it is always for server
-      if (po->posector) {
+      for (po = pofirst; po; po = po->polink) {
+        po->pofloor = po->savedFloor;
+        po->poceiling = po->savedCeiling;
+        // restore points
+        TVec *prevPts = po->prevPts;
+        TVec **vptr = po->segPts;
+        for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
+        UpdatePolySegs(po);
+        OffsetPolyobjFlats(po, 0.0f, true);
+        LinkPolyobj(po); // it is always for server
+      }
+      // restore object positions (no?) and relink them
+      /*
+      if (pofirst->posector) {
         for (auto &&it : poEntityMapFloat.first()) {
           VEntity *mobj = it.key();
           if (!mobj->IsGoingToDie()) {
-            const TVec oldpos = mobj->Origin;
-            mobj->Origin = it.value();
-            mobj->LastMoveOrigin += mobj->Origin-oldpos;
+            //const TVec oldpos = mobj->Origin;
+            //mobj->Origin = it.value();
+            //mobj->LastMoveOrigin += mobj->Origin-oldpos;
             // and relink it
             mobj->LinkToWorld();
           }
         }
       }
+      */
       return false;
     }
   } else {
-    UpdatePolySegs(po);
+    for (po = pofirst; po; po = po->polink) {
+      if (!forced && IsForServer()) UnlinkPolyobj(po);
+      UpdatePolySegs(po);
+    }
   }
 
-  po->startSpot.x += x;
-  po->startSpot.y += y;
-  po->startSpot.z += z;
+  for (po = pofirst; po; po = po->polink) {
+    po->startSpot.x += x;
+    po->startSpot.y += y;
+    po->startSpot.z += z;
+    OffsetPolyobjFlats(po, 0.0f, true);
+    if (IsForServer()) LinkPolyobj(po);
+  }
 
-  OffsetPolyobjFlats(po, 0.0f, true);
-
-  if (IsForServer()) {
-    if (!unlinked) { unlinked = true; UnlinkPolyobj(po); }
-    LinkPolyobj(po);
-    // move things
-    if (!forced && po->posector && !nocarry && (x || y)) {
-      for (auto &&it : poEntityMapToMove.first()) {
-        VEntity *e = it.key();
-        //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
-        if (!e->IsGoingToDie()) e->Level->eventPolyMoveMobjBy(e, po, x, y);
+  // carry things
+  if (!forced && !nocarry && pofirst->posector && IsForServer() && (x || y)) {
+    for (auto &&it : poEntityMapToMove.first()) {
+      VEntity *e = it.key();
+      //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
+      //FIXME: make this faster!
+      float edx = x, edy = y;
+      for (po = pofirst; po; po = po->polink) {
+        if (e->IsGoingToDie()) break;
+        e->Level->eventPolyMoveMobjBy(e, po, edx, edy);
+        edx = edy = 0.0f;
       }
     }
   }
 
   // notify renderer that this polyobject is moved
-  if (Renderer) Renderer->PObjModified(po);
+  if (Renderer) {
+    for (po = pofirst; po; po = po->polink) Renderer->PObjModified(po);
+  }
 
   return true;
 }
@@ -1334,7 +1411,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   // get the polyobject
   polyobj_t *po = GetPolyobj(num);
-  if (!po) Sys_Error("Invalid polyobj number: %d", num);
+  if (!po) { GCon->Logf(NAME_Error, "RotatePolyobj: Invalid pobj #%d", num); return false; }
 
   const bool nocarry = (po->PolyFlags&polyobj_t::PF_NoCarry);
   const bool noangle = (po->PolyFlags&polyobj_t::PF_NoAngleChange);
@@ -1359,12 +1436,10 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
 
   if (IsForServer()) UnlinkPolyobj(po);
 
-  EnsurePolyPrevPts(po->segPtsCount);
-
   const float ssx = po->startSpot.x;
   const float ssy = po->startSpot.y;
   const TVec *origPts = po->originalPts;
-  TVec *prevPts = polyPrevPts;
+  TVec *prevPts = po->prevPts;
   TVec **vptr = po->segPts;
   for (int f = po->segPtsCount; f--; ++vptr, ++prevPts, ++origPts) {
     // save the previous point
@@ -1407,7 +1482,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   // if we are blocked then restore the previous points
   if (blocked) {
     // restore points
-    prevPts = polyPrevPts;
+    prevPts = po->prevPts;
     vptr = po->segPts;
     for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
     UpdatePolySegs(po);
@@ -1576,6 +1651,14 @@ IMPLEMENT_FUNCTION(VLevel, AddPolyAnchorPoint) {
   int tag;
   vobjGetParamSelf(thing, x, y, height, tag);
   Self->AddPolyAnchorPoint(thing, x, y, height, tag);
+}
+
+//native final void Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid);
+IMPLEMENT_FUNCTION(VLevel, Add3DPolyobjLink) {
+  mthing_t *thing;
+  int srcpid, destpid;
+  vobjGetParamSelf(thing, srcpid, destpid);
+  Self->Add3DPolyobjLink(thing, srcpid, destpid);
 }
 
 //native final polyobj_t *GetPolyobj (int polyNum);

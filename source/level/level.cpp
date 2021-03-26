@@ -517,15 +517,24 @@ void VLevel::Destroy () {
     delete[] PolyObjs;
     PolyObjs = nullptr;
   }
-  if (PolyTagMap) {
-    PolyTagMap->clear();
-    delete PolyTagMap;
-    PolyTagMap = nullptr;
-  }
+  NumPolyObjs = 0;
 
   if (PolyAnchorPoints) {
     delete[] PolyAnchorPoints;
     PolyAnchorPoints = nullptr;
+  }
+  NumPolyAnchorPoints = 0;
+
+  if (PolyLinks3D) {
+    delete[] PolyLinks3D;
+    PolyLinks3D = nullptr;
+  }
+  NumPolyLinks3D = 0;
+
+  if (PolyTagMap) {
+    PolyTagMap->clear();
+    delete PolyTagMap;
+    PolyTagMap = nullptr;
   }
 
   ClearAllMapData();
@@ -578,10 +587,6 @@ void VLevel::Destroy () {
     }
   }
   BodyQueueTrans.Clear();
-
-  if (polyPrevPts) Z_Free(polyPrevPts);
-  polyPrevPts = nullptr;
-  polyPrevPtsAlloted = 0;
 
   if (processedBMCells) Z_Free(processedBMCells);
   processedBMCells = nullptr;

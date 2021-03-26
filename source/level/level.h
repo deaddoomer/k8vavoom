@@ -256,6 +256,12 @@ struct VLightParams {
 };
 
 
+struct VPolyLink3D {
+  vint32 srcpid;
+  vint32 destpid;
+};
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 struct VCustomKeyInfo {
   struct Value {
@@ -395,6 +401,10 @@ class VLevel : public VGameObject {
   PolyAnchorPoint_t *PolyAnchorPoints;
   vint32 NumPolyAnchorPoints;
 
+  // this is used only once, on pobj initialisation
+  VPolyLink3D *PolyLinks3D;
+  vint32 NumPolyLinks3D;
+
   TMapNC<int, int> *PolyTagMap; // key: tag; value: index in PolyObjs
 
   // sound environments for sector zones
@@ -490,9 +500,6 @@ class VLevel : public VGameObject {
   VCustomKeyInfo *UserLineIdxKeyInfo; // key: line_index+1
   VCustomKeyInfo *UserSideIdxKeyInfo; // key: side_index+1
 
-  TVec *polyPrevPts; // use to restore the old point values in rotation/movement; scratch array
-  vint32 polyPrevPtsAlloted;
-
   // temporaries for `VPathTraverse`
   // it is safe to have only one set of those, because `VPathTraverse` is never called recursively
   vint32 *processedBMCells; // used in thing collector, contains validcount; size is `BlockMapWidth*BlockMapHeight`
@@ -511,8 +518,6 @@ class VLevel : public VGameObject {
   vint32 tempPathInterceptsUsed;
 
 public:
-  void EnsurePolyPrevPts (int count);
-
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
 
   inline int GetTempPathInterceptsCount () const noexcept { return tempPathInterceptsUsed; }
@@ -789,6 +794,7 @@ public:
   // poly-objects
   void SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt);
   void AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag);
+  void Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid);
   void InitPolyobjs ();
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
@@ -1554,6 +1560,7 @@ private:
   //  Polyobj functions
   DECLARE_FUNCTION(SpawnPolyobj)
   DECLARE_FUNCTION(AddPolyAnchorPoint)
+  DECLARE_FUNCTION(Add3DPolyobjLink)
   DECLARE_FUNCTION(GetPolyobj)
   DECLARE_FUNCTION(GetPolyobjMirror)
   DECLARE_FUNCTION(MovePolyobj)

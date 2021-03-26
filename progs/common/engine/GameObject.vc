@@ -1157,17 +1157,17 @@ struct polyobj_t {
   line_t*[] lines; // individual elements points inside the level's `Lines`
   TVec startSpot;
   TVec[] originalPts; // used as the base for the rotations
-  //TVec *originalPts; // used as the base for the rotations
-  //int origPtsCount;
-  TVec*[] segPtr;
-  //TVec **segPts; // all points we need to modify, to avoid looping over segs again and again
-  //int segPtsCount;
+  TVec*[] segPtr; // all points we need to modify, to avoid looping over segs again and again
+  TVec[] prevPts; // need to be here due to linked polyobjects
+  sec_plane_t savedFloor;
+  sec_plane_t savedCeiling;
   readonly native polyobjpart_t *parts; // list of all polyoject parts
   readonly native polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   // note that polyobjects can't have sloped flats (yet)
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
+  polyobj_t *polink; // next polyobject in link chain
   float angle;
   int tag; // reference tag assigned in HereticEd
   int mirror; // 0 usually means "none"

@@ -1085,12 +1085,17 @@ public:
   vint32 originalPtsCount; // number of elements in each `*Pts` array
   TVec **segPts; // all points we need to modify, to avoid looping over segs again and again
   vint32 segPtsCount; // number of elements in each `*Pts` array
+  TVec *prevPts; // need to be here due to linked polyobjects
+  vint32 prevPtsCount; // need to be here due to linked polyobjects
+  sec_plane_t savedFloor;
+  sec_plane_t savedCeiling;
   polyobjpart_t *parts; // list of all polyoject parts
   polyobjpart_t *freeparts; // list of all unused polyoject parts (so we can avoid constant reallocation)
   // note that polyobjects can't have sloped flats (yet)
   sec_plane_t pofloor; // inverted, i.e. looks down
   sec_plane_t poceiling; // inverted, i.e. looks up
   sector_t *posector; // for 3d polyobjects this is their "inside" sector
+  polyobj_t *polink; // next polyobject in link chain
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 mirror; // 0 usually means "none"

@@ -46,6 +46,7 @@ const int
   PO_SPAWNCRUSH_TYPE = 9302,
   PO_SPAWNHURT_TYPE = 9303,
 
+  PO_3D_LINK = 9368,
   PO_SPAWN_3D_TYPE = 9369,
 
   SLOPE_FLOOR_POINT_LINE_TYPE = 9500,
@@ -1364,6 +1365,10 @@ override void SpawnWorld (VLevel InLevel) {
       case PO_ANCHOR_TYPE:
         // Polyobj Anchor Pt.
         InLevel.AddPolyAnchorPoint(mthing, mthing->x, mthing->y, mthing->height, int(mthing->angle));
+        mthing->type = 0;
+        break;
+      case PO_3D_LINK:
+        InLevel.Add3DPolyobjLink(mthing, mthing->args[0], mthing->args[1]);
         mthing->type = 0;
         break;
     }
