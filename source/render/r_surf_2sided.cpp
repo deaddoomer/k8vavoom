@@ -494,7 +494,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       bottomCheck = true;
     }
 
-    for (opening_t *cop = SV_SectorOpenings(seg->frontsector, true); cop; cop = cop->next) {
+    for (opening_t *cop = GetSectorOpenings(seg->frontsector, true); cop; cop = cop->next) {
       if (extopz <= cop->bottom || exbotz >= cop->top) {
         if (doDump) { GCon->Log(" SKIP opening"); DumpOpening(cop); }
         //continue;
@@ -551,11 +551,11 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
           GCon->Log(" === front regions ===");
           VLevel::dumpSectorRegions(seg->frontsector);
           GCon->Log(" === front openings ===");
-          for (opening_t *bop = SV_SectorOpenings2(seg->frontsector, true); bop; bop = bop->next) DumpOpening(bop);
+          for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) DumpOpening(bop);
           GCon->Log(" === back regions ===");
           VLevel::dumpSectorRegions(seg->backsector);
           GCon->Log(" === back openings ===");
-          for (opening_t *bop = SV_SectorOpenings2(seg->backsector, true); bop; bop = bop->next) DumpOpening(bop);
+          for (opening_t *bop = GetSectorOpenings2(seg->backsector, true); bop; bop = bop->next) DumpOpening(bop);
         }
         hgts[0] = max2(midbotz1, z_org-texh);
         hgts[1] = min2(midtopz1, z_org);

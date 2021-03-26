@@ -817,6 +817,10 @@ private: // automap
 
   void amFlatsCollectSurfaces ();
 
+protected: // sector openings for surface builder
+  opening_t *GetSectorOpenings (sector_t *sector, bool skipNonSolid=false);
+  opening_t *GetSectorOpenings2 (sector_t *sector, bool skipNonSolid=false);
+
 public: // k8: so i don't have to fuck with friends
   struct PPNode {
     vuint8 *mem;

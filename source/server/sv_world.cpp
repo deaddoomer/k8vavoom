@@ -103,68 +103,6 @@ static VVA_OKUNUSED void DumpOpPlanes (TArray<opening_t> &list) {
 }
 
 
-static TArray<opening_t> oplist_sop;
-
-//==========================================================================
-//
-//  SV_SectorOpenings
-//
-//  used in surface creator
-//
-//==========================================================================
-opening_t *SV_SectorOpenings (sector_t *sector, bool skipNonSolid) {
-  vassert(sector);
-  oplist_sop.resetNoDtor();
-  GetLevelObject()->BuildSectorOpenings(nullptr, oplist_sop, sector, TVec::ZeroVector, 0/*nbflags*/, true/*linkList*/, false/*usePoint*/, skipNonSolid, true/*forSurface*/);
-  //vassert(oplist_sop.length() > 0);
-  if (oplist_sop.length() == 0) {
-    //k8: why, it is ok to have zero openings (it seems)
-    //    i've seen this in Hurt.wad, around (7856 -2146)
-    //    just take the armor, and wait until the pool will start filling with blood
-    //    this seems to be a bug, but meh... at least there is no reason to crash.
-    #ifdef CLIENT
-    //GCon->Logf(NAME_Warning, "SV_SectorOpenings: zero openings for sector #%d", (int)(ptrdiff_t)(sector-&GClLevel->Sectors[0]));
-    #endif
-    return nullptr;
-  }
-  return oplist_sop.ptr();
-}
-
-
-static TArray<opening_t> oplist_sop2;
-
-
-//==========================================================================
-//
-//  SV_SectorOpenings2
-//
-//  used in surface creator
-//
-//==========================================================================
-opening_t *SV_SectorOpenings2 (sector_t *sector, bool skipNonSolid) {
-  /*
-  vassert(sector);
-  oplist_sop2.resetNoDtor();
-  GetLevelObject()->BuildSectorOpenings(nullptr, oplist_sop2, sector, TVec::ZeroVector, 0, false/ *linkList* /, false/ *usePoint* /, skipNonSolid);
-  vassert(oplist_sop2.length() > 0);
-  if (oplist_sop2.length() > MAX_OPENINGS) Host_Error("too many sector openings");
-  opening_t *dest = openings;
-  opening_t *src = oplist_sop2.ptr();
-  for (int count = oplist_sop2.length(); count--; ++dest, ++src) {
-    *dest = *src;
-    dest->next = dest+1;
-  }
-  openings[oplist_sop2.length()-1].next = nullptr;
-  return openings;
-  */
-  vassert(sector);
-  oplist_sop2.resetNoDtor();
-  GetLevelObject()->BuildSectorOpenings(nullptr, oplist_sop2, sector, TVec::ZeroVector, 0, true/*linkList*/, false/*usePoint*/, skipNonSolid, true/*forSurface*/);
-  vassert(oplist_sop2.length() > 0);
-  return oplist_sop2.ptr();
-}
-
-
 static TArray<opening_t> op0list_lop;
 static TArray<opening_t> op1list_lop;
 

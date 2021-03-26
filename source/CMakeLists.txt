@@ -163,6 +163,7 @@ set(RENDERBASE_SOURCES
   render/r_surf_2sextra.cpp
   render/r_surf_post_adv.cpp
   render/r_surf_post_reg.cpp
+  render/r_utils_openings.cpp
   render/r_maskqueue.cpp
   render/r_psprites.cpp
   render/r_things.cpp
