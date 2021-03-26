@@ -247,6 +247,34 @@ struct tmtrace_t {
 
   // from cptrace_t
   //TVec Pos; // valid for cptrace_t
+
+  inline void setupGap (VLevel *XLevel, sector_t *sector, float Height) {
+    XLevel->FindGapFloorCeiling(sector, End, Height, EFloor, ECeiling);
+    FloorZ = DropOffZ = EFloor.GetPointZClamped(End);
+    CeilingZ = ECeiling.GetPointZClamped(End);
+  }
+
+  /*
+  inline void CopyRegFloor (sec_region_t *r, const TVec *Origin) {
+    EFloor = r->efloor;
+    if (Origin) FloorZ = EFloor.GetPointZClamped(*Origin);
+  }
+
+  inline void CopyRegCeiling (sec_region_t *r, const TVec *Origin) {
+    ECeiling = r->eceiling;
+    if (Origin) CeilingZ = ECeiling.GetPointZClamped(*Origin);
+  }
+  */
+
+  inline void CopyOpenFloor (opening_t *o, bool setz=true) noexcept {
+    EFloor = o->efloor;
+    if (setz) FloorZ = o->bottom;
+  }
+
+  inline void CopyOpenCeiling (opening_t *o, bool setz=true) noexcept {
+    ECeiling = o->eceiling;
+    if (setz) CeilingZ = o->top;
+  }
 };
 
 
@@ -910,6 +938,16 @@ private:
       }
       if ((st->Frame&VState::FF_DONTCHANGE) == 0) DispSpriteFrame = (DispSpriteFrame&0x00ffffff)|((st->Frame&VState::FF_FRAMEMASK)<<24);
     }
+  }
+
+  // used to fix floor and ceiling info with polyobject
+  // returns `false` if stuck
+  static bool Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ,
+                                      TSecPlaneRef &ECeiling, float &CeilingZ, polyobj_t *&PolyObj,
+                                      const float z0, const float z1);
+
+  static inline bool Copy3DPObjFloorCeiling (tmtrace_t &tmtrace, polyobj_t *po, const float z0, const float z1) {
+    return Copy3DPObjFloorCeiling(po, tmtrace.EFloor, tmtrace.FloorZ, tmtrace.ECeiling, tmtrace.CeilingZ, tmtrace.PolyObj, z0, z1);
   }
 
 public:

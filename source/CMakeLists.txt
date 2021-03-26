@@ -329,12 +329,19 @@ set(ACS_SOURCES
 )
 
 set(PSIM_SOURCES
-  psim/p_decal.cpp
   psim/p_decal.h
-  psim/p_entity.cpp
+  psim/p_decal.cpp
   psim/p_entity.h
+  psim/p_entity.cpp
+  psim/p_entity_misc.cpp
   psim/p_entity_sight.cpp
-  psim/p_entity_world.cpp
+  #psim/p_entity_world.cpp
+  psim/p_entity_checkpos.cpp
+  psim/p_entity_checkrelpos.cpp
+  psim/p_entity_worldlink.cpp
+  psim/p_entity_worldtrymove.cpp
+  psim/p_entity_worldslide.cpp
+  psim/p_entity_worldbounce.cpp
   psim/p_gameinfo.cpp
   psim/p_gameinfo.h
   psim/p_gameobject.cpp

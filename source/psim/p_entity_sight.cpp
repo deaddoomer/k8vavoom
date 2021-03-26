@@ -128,3 +128,32 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
                             !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->BaseSubSector, /*alwaysBetter*/cbs,
                             !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
 }
+
+
+
+//==========================================================================
+//
+//  Script natives
+//
+//==========================================================================
+IMPLEMENT_FUNCTION(VEntity, CanSee) {
+  VEntity *Other;
+  VOptParamBool disableBetterSight(false);
+  vobjGetParamSelf(Other, disableBetterSight);
+  //if (!Self) { VObject::VMDumpCallStack(); Sys_Error("empty `self`!"); }
+  RET_BOOL(Self->CanSee(Other, disableBetterSight));
+}
+
+IMPLEMENT_FUNCTION(VEntity, CanSeeAdv) {
+  VEntity *Other;
+  vobjGetParamSelf(Other);
+  //if (!Self) { VObject::VMDumpCallStack(); Sys_Error("empty `self`!"); }
+  RET_BOOL(Self->CanSee(Other, false, true));
+}
+
+IMPLEMENT_FUNCTION(VEntity, CanShoot) {
+  VEntity *Other;
+  vobjGetParamSelf(Other);
+  //if (!Self) { VObject::VMDumpCallStack(); Sys_Error("empty `self`!"); }
+  RET_BOOL(Self->CanShoot(Other));
+}
