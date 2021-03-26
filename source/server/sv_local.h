@@ -51,24 +51,6 @@ enum {
 };
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// WARNING! keep in sync with script code!
-enum {
-  CONTENTS_EMPTY,
-  CONTENTS_WATER,
-  CONTENTS_LAVA,
-  CONTENTS_NUKAGE,
-  CONTENTS_SLIME,
-  CONTENTS_HELLSLIME,
-  CONTENTS_BLOOD,
-  CONTENTS_SLUDGE,
-  CONTENTS_HAZARD,
-  CONTENTS_BOOMWATER,
-
-  CONTENTS_SOLID = -1
-};
-
-
 //==========================================================================
 //
 //  sv_acs
@@ -239,48 +221,6 @@ public:
 
 //==========================================================================
 //
-//  sv_world
-//
-//  Map utilites
-//
-//==========================================================================
-
-int SV_PointContents (sector_t *sector, const TVec &p, bool dbgDump=false);
-
-// the one that is lower
-//sec_region_t *SV_GetPrevRegion (sector_t *sector, sec_region_t *srcreg);
-// the one that is higher
-sec_region_t *SV_GetNextRegion (sector_t *sector, sec_region_t *srcreg);
-
-sec_surface_t *SV_DebugFindNearestFloor (subsector_t *sub, const TVec &p);
-
-// find region for thing, and return best floor/ceiling
-// `p.z` is bottom
-void SV_FindGapFloorCeiling (sector_t *sector, const TVec point, float height, TSecPlaneRef &floor, TSecPlaneRef &ceiling, bool debugDump=false);
-
-// find sector gap that contains the given point, and return its floor and ceiling
-void SV_GetSectorGapCoords (sector_t *sector, const TVec point, float &floorz, float &ceilz);
-
-// build list of openings for the given line and point
-// note that returned list can be reused on next call to `SV_LineOpenings()`
-opening_t *SV_LineOpenings (const line_t *linedef, const TVec point, unsigned NoBlockFlags, bool do3dmidtex=false, bool usePoint=true);
-
-// it is used to find lowest sector point for silent teleporters
-float SV_GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors=true);
-//float SV_GetHighestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors=true);
-
-// find "best fit" opening for the given coordz
-// `z1` is feet, `z2` is head
-opening_t *SV_FindOpening (opening_t *gaps, float z1, float z2);
-
-// find "rel best fit" opening for the given coordz
-// `z1` is feet, `z2` is head
-// used in sector movement, so it tries hard to not leave current opening
-opening_t *SV_FindRelOpening (opening_t *gaps, float z1, float z2);
-
-
-//==========================================================================
-//
 //  sv_switch
 //
 //  Switches
@@ -355,6 +295,21 @@ static inline VVA_OKUNUSED VBasePlayer *SV_GetPlayerByNum (int pidx) {
   if (pidx < 0 || pidx >= MAXPLAYERS) return nullptr;
   return GPlayersBase[pidx];
 }
+
+
+//==========================================================================
+//
+//  GetLevelObject
+//
+//  have to do this, because this function can be called
+//  both in server and in client
+//
+//==========================================================================
+/*
+static inline VVA_OKUNUSED VVA_CHECKRESULT VLevel *GetLevelObject () noexcept {
+  return (GClLevel ? GClLevel : GLevel);
+}
+*/
 
 
 #endif

@@ -4542,7 +4542,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
     float tfh = thing.Origin.z-thing.FloorZ;
     // adjust z position to be same height above ground as before
     // ground level at the exit is measured as the higher of the two floor heights at the exit linedef
-    float newgh = fmax(GetSectorFloorPointZ(l->frontsector, newPos), GetSectorFloorPointZ(l->backsector, newPos));
+    float newgh = fmax(XLevel.GetSectorFloorPointZ(l->frontsector, newPos), XLevel.GetSectorFloorPointZ(l->backsector, newPos));
     newPos.z = tfh+newgh;
 
     // attempt to teleport, aborting if blocked

@@ -75,13 +75,13 @@ static bool CheckPlanes (linetrace_t &trace, sector_t *sec) {
 
 //==========================================================================
 //
-//  VLevel::CheckLine
+//  VLevel::BSPCheckLine
 //
 //  returns `true` if the line isn't crossed
 //  returns `false` if the line blocked the ray
 //
 //==========================================================================
-bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
+bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
   if (!line) return true; // ignore minisegs, they cannot block anything
 
   // allready checked other side?
@@ -193,7 +193,7 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
   } else {
     if (!po && (line->flags&ML_TWOSIDED)) {
       // crossed a two sided line
-      opening_t *open = SV_LineOpenings(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK);
+      opening_t *open = LineOpenings(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK);
       if (dbg_bsp_trace_strict_flats) {
         while (open) {
           if (open->range > 0.0f && open->bottom < hitpoint.z && open->top > hitpoint.z) return true;
@@ -220,12 +220,12 @@ bool VLevel::CheckLine (linetrace_t &trace, line_t *line) const {
 
 //==========================================================================
 //
-//  VLevel::CrossSubsector
+//  VLevel::BSPCrossSubsector
 //
 //  Returns true if trace crosses the given subsector successfully.
 //
 //==========================================================================
-bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
+bool VLevel::BSPCrossSubsector (linetrace_t &trace, int num) {
   subsector_t *sub = &Subsectors[num];
 
   if (sub->HasPObjs()) {
@@ -235,7 +235,7 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
       line_t **polyLines = pobj->lines;
       for (int polyCount = pobj->numlines; polyCount--; ++polyLines) {
         //FIXME: this is wrong, we should perform check on properly clipped segs!
-        if (!CheckLine(trace, *polyLines)) {
+        if (!BSPCheckLine(trace, *polyLines)) {
           trace.EndSubsector = sub;
           return false;
         }
@@ -246,7 +246,7 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
   // check lines
   const seg_t *seg = &Segs[sub->firstline];
   for (int count = sub->numlines; count--; ++seg) {
-    if (seg->linedef && !CheckLine(trace, seg->linedef)) {
+    if (seg->linedef && !BSPCheckLine(trace, seg->linedef)) {
       trace.EndSubsector = sub;
       return false;
     }
@@ -264,7 +264,7 @@ bool VLevel::CrossSubsector (linetrace_t &trace, int num) const {
 //  Returns true if trace crosses the given node successfully.
 //
 //==========================================================================
-bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
+bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) {
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     const node_t *bsp = &Nodes[bspnum];
     // decide which side the start point is on
@@ -283,7 +283,7 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) const {
     // cross the ending side
     return CrossBSPNode(trace, bsp->children[(side&1)^1]);
   } else {
-    return CrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
+    return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
   }
 }
 
@@ -365,7 +365,7 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
       }
     } else if (NumSubsectors == 1) {
       if (!CheckStartingPObj(this, trace)) return false;
-      if (CrossSubsector(trace, 0)) {
+      if (BSPCrossSubsector(trace, 0)) {
         trace.LineEnd = End;
         // end subsector is known
         trace.EndSubsector = &Subsectors[0];

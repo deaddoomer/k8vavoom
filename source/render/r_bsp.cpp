@@ -419,7 +419,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     if (surfaceType == SFT_Floor && secregion->extraline &&
         (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0)
     {
-      sec_region_t *nreg = SV_GetNextRegion(sub->sector, secregion);
+      sec_region_t *nreg = GetHigherRegion(sub->sector, secregion);
       if (nreg->params) {
         LightParams = nreg->params;
         lightColor = LightParams->LightColor;

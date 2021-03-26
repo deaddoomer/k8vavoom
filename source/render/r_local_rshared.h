@@ -821,6 +821,9 @@ protected: // sector openings for surface builder
   opening_t *GetSectorOpenings (sector_t *sector, bool skipNonSolid=false);
   opening_t *GetSectorOpenings2 (sector_t *sector, bool skipNonSolid=false);
 
+  // the one that is higher
+  sec_region_t *GetHigherRegion (sector_t *sector, sec_region_t *srcreg);
+
 public: // k8: so i don't have to fuck with friends
   struct PPNode {
     vuint8 *mem;

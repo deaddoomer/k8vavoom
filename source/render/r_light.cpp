@@ -753,86 +753,6 @@ static inline float getFPlaneDist (const sec_surface_t *floor, const TVec &p) {
 
 //==========================================================================
 //
-//  SV_DebugFindNearestFloor
-//
-//==========================================================================
-sec_surface_t *SV_DebugFindNearestFloor (subsector_t *sub, const TVec &p) {
-  sec_surface_t *rfloor = nullptr;
-  //reg = sub->regions;
-  float bestdist = 999999.0f;
-  for (subregion_t *r = sub->regions; r; r = r->next) {
-    //const float d = DotProduct(p, reg->floor->secplane->normal)-reg->floor->secplane->dist;
-    // floors
-    {
-      const float d = getFPlaneDist(r->fakefloor, p);
-      if (d >= 0.0f && d < bestdist) {
-        bestdist = d;
-        rfloor = r->fakefloor;
-        GCon->Log(NAME_Debug, "  HIT!");
-      }
-    }
-    {
-      const float d = getFPlaneDist(r->realfloor, p);
-      if (d >= 0.0f && d < bestdist) {
-        bestdist = d;
-        rfloor = r->realfloor;
-        GCon->Log(NAME_Debug, "  HIT!");
-      }
-    }
-    // ceilings
-    {
-      const float d = getFPlaneDist(r->fakeceil, p);
-      if (d >= 0.0f && d < bestdist) {
-        bestdist = d;
-        rfloor = r->fakeceil;
-        GCon->Log(NAME_Debug, "  HIT!");
-      }
-    }
-    {
-      const float d = getFPlaneDist(r->realceil, p);
-      if (d >= 0.0f && d < bestdist) {
-        bestdist = d;
-        rfloor = r->realceil;
-        GCon->Log(NAME_Debug, "  HIT!");
-      }
-    }
-  }
-
-  if (rfloor /*&& !IsShadowVolumeRenderer()*/) {
-    //int s = (int)(DotProduct(p, rfloor->texinfo.saxis)+rfloor->texinfo.soffs);
-    //int t = (int)(DotProduct(p, rfloor->texinfo.taxis)+rfloor->texinfo.toffs);
-    int s = (int)(DotProduct(p, rfloor->texinfo.saxisLM));
-    int t = (int)(DotProduct(p, rfloor->texinfo.taxisLM));
-    int ds, dt;
-    for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
-      if (surf->lightmap == nullptr) continue;
-      if (surf->count < 3) continue; // wtf?!
-      //if (s < surf->texturemins[0] || t < surf->texturemins[1]) continue;
-
-      ds = s-surf->texturemins[0];
-      dt = t-surf->texturemins[1];
-
-      if (ds < 0 || dt < 0 || ds > surf->extents[0] || dt > surf->extents[1]) continue;
-
-      GCon->Logf(NAME_Debug, "  lightmap hit! (%d,%d)", ds, dt);
-      if (surf->lightmap_rgb) {
-        //l += surf->lightmap[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
-        const rgb_t *rgbtmp = &surf->lightmap_rgb[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
-        GCon->Logf(NAME_Debug, "    (%d,%d,%d)", rgbtmp->r, rgbtmp->g, rgbtmp->b);
-      } else {
-        int ltmp = surf->lightmap[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
-        GCon->Logf(NAME_Debug, "    (%d)", ltmp);
-      }
-      break;
-    }
-  }
-
-  return rfloor;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::GetNearestFloor
 //
 //  used to find a lightmap
@@ -889,6 +809,33 @@ sec_surface_t *VRenderLevelShared::GetNearestFloor (const subsector_t *sub, cons
   }
   return rfloor;
 }
+
+// get lightmap
+int s = (int)(DotProduct(p, rfloor->texinfo.saxisLM));
+int t = (int)(DotProduct(p, rfloor->texinfo.taxisLM));
+int ds, dt;
+for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
+  if (surf->lightmap == nullptr) continue;
+  if (surf->count < 3) continue; // wtf?!
+  //if (s < surf->texturemins[0] || t < surf->texturemins[1]) continue;
+
+  ds = s-surf->texturemins[0];
+  dt = t-surf->texturemins[1];
+
+  if (ds < 0 || dt < 0 || ds > surf->extents[0] || dt > surf->extents[1]) continue;
+
+  GCon->Logf(NAME_Debug, "  lightmap hit! (%d,%d)", ds, dt);
+  if (surf->lightmap_rgb) {
+    //l += surf->lightmap[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
+    const rgb_t *rgbtmp = &surf->lightmap_rgb[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
+    GCon->Logf(NAME_Debug, "    (%d,%d,%d)", rgbtmp->r, rgbtmp->g, rgbtmp->b);
+  } else {
+    int ltmp = surf->lightmap[(ds>>4)+(dt>>4)*((surf->extents[0]>>4)+1)];
+    GCon->Logf(NAME_Debug, "    (%d)", ltmp);
+  }
+  break;
+}
+
 */
 
 

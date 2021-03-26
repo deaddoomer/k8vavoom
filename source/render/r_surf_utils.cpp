@@ -34,20 +34,6 @@
 
 //==========================================================================
 //
-//  DumpOpening
-//
-//==========================================================================
-static VVA_OKUNUSED void DumpOpening (const opening_t *op) {
-  GCon->Logf("  %p: floor=%g (%g,%g,%g:%g); ceil=%g (%g,%g,%g:%g); lowfloor=%g; range=%g",
-    op,
-    op->bottom, op->efloor.GetNormal().x, op->efloor.GetNormal().y, op->efloor.GetNormal().z, op->efloor.GetDist(),
-    op->top, op->eceiling.GetNormal().x, op->eceiling.GetNormal().y, op->eceiling.GetNormal().z, op->eceiling.GetDist(),
-    op->lowfloor, op->range);
-}
-
-
-//==========================================================================
-//
 //  SetupTextureAxesOffset
 //
 //  used only for normal wall textures: top, mid, bottom

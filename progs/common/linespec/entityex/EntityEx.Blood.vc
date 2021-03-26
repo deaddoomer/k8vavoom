@@ -146,13 +146,13 @@ final void BloodAddZClamped (ref TVec spos, float delta, float aheight) {
   auto sec = XLevel.PointInSector(spos);
   aheight = fmax(0, aheight);
   float fz, cz;
-  GetSectorGapCoords(sec, spos, out fz, out cz);
+  XLevel.GetSectorGapCoords(sec, spos, out fz, out cz);
   if (cz-fz <= aheight) return;
   spos.z += delta;
   spos.z = fclamp(fz, spos.z, cz-aheight);
   /*
   opening_t *open = BuildSectorOpeningsAt(sec, spos, SPF_NOBLOCKSHOOT); // each sector has at least one
-  open = FindOpening(open, spos.z, spos.z+fmax(0, aheight));
+  open = XLevel.FindOpening(open, spos.z, spos.z+fmax(0, aheight));
   if (open) {
     if (delta > 0) {
       // positive delta (up)

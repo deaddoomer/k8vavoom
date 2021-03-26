@@ -582,14 +582,14 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
             {
               const TVec hitPoint = trace_org3d+trace_dir3d*frac;
               const float hpz = hitPoint.z;
-              opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
+              opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
               if (open && hpz > open->top) isSky = true;
             }
           } else {
             // crosses a two sided line, check openings
             const TVec hitPoint = trace_org3d+trace_dir3d*frac;
             const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
-            opening_t *open = SV_LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
+            opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, /*do3dmidtex*/false);
             if (open &&
                 ld->frontsector->ceiling.pic == skyflatnum &&
                 ld->backsector->ceiling.pic == skyflatnum &&

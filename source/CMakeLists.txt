@@ -280,11 +280,12 @@ set(VLEVEL_CLASS_SOURCES
   level/level_dbgexport.cpp
   level/level_decals.cpp
   level/level_light.cpp
-  level/level_opening.cpp
   level/level_miscapi.cpp
   level/level_nodebbox.cpp
+  level/level_opening.cpp
   level/level_saveio.cpp
   level/level_secnode.cpp
+  level/level_sector_change.cpp
   level/level_soundprop.cpp
   level/level_think.cpp
   level/beamclip.cpp
@@ -297,7 +298,6 @@ set(SV_SOURCES
   server/sv_local.h
   server/sv_main.cpp
   server/sv_save.cpp
-  server/sv_world.cpp
 )
 
 set(MAPLOADER_SOURCES

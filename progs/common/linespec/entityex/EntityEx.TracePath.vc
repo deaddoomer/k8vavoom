@@ -431,7 +431,7 @@ bool TracePath (float ang, float dist, out PathInfo pi, optional Entity distEnt,
       }
 
       // crosses a two sided line
-      opening_t *open = FindLineOpening(ld, hit_point, Height, do3dmidtex:true);
+      opening_t *open = XLevel.FindLineOpening(ld, hit_point, Height, do3dmidtex:true);
       // no valid openings
       if (!open) {
         CalcBestDistBack(srcOrigin, bottracedir, ref pi.maxdist, currDist, ignoreMonsters);

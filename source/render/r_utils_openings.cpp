@@ -70,3 +70,36 @@ opening_t *VRenderLevelShared::GetSectorOpenings2 (sector_t *sector, bool skipNo
   if (oplist_sop2.length() == 0) return nullptr;
   return oplist_sop2.ptr();
 }
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::GetHigherRegion
+//
+//  the one that is higher
+//  valid only if `srcreg` is solid and insane
+//
+//==========================================================================
+sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_t *srcreg) {
+  vassert(sector);
+  if (!srcreg || !sector->eregions->next) return sector->eregions;
+  // get distance to ceiling
+  // we want the best sector that is higher
+  const float srcrtopz = srcreg->eceiling.GetRealDist();
+  float bestdist = 99999.0f;
+  sec_region_t *bestreg = sector->eregions;
+  for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+    if (reg == srcreg || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) != 0) continue;
+    const float rtopz = reg->eceiling.GetRealDist();
+    const float rbotz = reg->efloor.GetRealDist();
+    // ignore paper-thin regions
+    if (rtopz <= rbotz) continue; // invalid, or paper-thin, ignore
+    const float dist = srcrtopz-rbotz;
+    if (dist <= 0.0f) continue; // too low
+    if (dist < bestdist) {
+      bestdist = dist;
+      bestreg = reg;
+    }
+  }
+  return bestreg;
+}

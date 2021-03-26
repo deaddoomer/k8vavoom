@@ -703,13 +703,6 @@ IMPLEMENT_FUNCTION(VGameObject, GetPointZRevClamped) {
   RET_FLOAT(res);
 }
 
-//native static final float GetSectorFloorPointZ (const sector_t *sector, const ref TVec point);
-IMPLEMENT_FUNCTION(VGameObject, GetSectorFloorPointZ) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(sector_t, sector);
-  RET_FLOAT(SV_GetLowestSolidPointZ(sector, *point));
-}
-
 //native static final bool SectorHas3DFloors (const sector_t *sector);
 IMPLEMENT_FUNCTION(VGameObject, SectorHas3DFloors) {
   P_GET_PTR(sector_t, sector);

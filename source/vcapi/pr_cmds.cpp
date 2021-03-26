@@ -64,21 +64,6 @@ IMPLEMENT_FREE_FUNCTION(VObject, SectorClosestLine) {
 }
 
 
-//==========================================================================
-//
-//  LineOpenings
-//
-//==========================================================================
-IMPLEMENT_FREE_FUNCTION(VObject, LineOpenings) {
-  line_t *linedef;
-  TVec *point;
-  VOptParamInt blockmask(SPF_NOBLOCKING);
-  VOptParamBool do3dmidtex(false);
-  vobjGetParam(linedef, point, blockmask, do3dmidtex);
-  RET_PTR(SV_LineOpenings(linedef, *point, blockmask, do3dmidtex));
-}
-
-
 // native static final bool P_GetMidTexturePosition (const line_t *line, int sideno, out float ptextop, out float ptexbot);
 IMPLEMENT_FREE_FUNCTION(VObject, P_GetMidTexturePosition) {
   line_t *ld;
@@ -87,25 +72,6 @@ IMPLEMENT_FREE_FUNCTION(VObject, P_GetMidTexturePosition) {
   float *ptexbot;
   vobjGetParam(ld, sideno, ptextop, ptexbot);
   RET_BOOL(P_GetMidTexturePosition(ld, sideno, ptextop, ptexbot));
-}
-
-
-//native static final void GetSectorGapCoords (const GameObject::sector_t *sector, const ref TVec point, out float floorz, out float ceilz);
-IMPLEMENT_FREE_FUNCTION(VObject, GetSectorGapCoords) {
-  sector_t *sector;
-  TVec *point;
-  float *floorz;
-  float *ceilz;
-  vobjGetParam(sector, point, floorz, ceilz);
-  SV_GetSectorGapCoords(sector, *point, *floorz, *ceilz);
-}
-
-
-IMPLEMENT_FREE_FUNCTION(VObject, FindOpening) {
-  opening_t *gaps;
-  float z1, z2;
-  vobjGetParam(gaps, z1, z2);
-  RET_PTR(SV_FindOpening(gaps, z1, z2));
 }
 
 

@@ -890,13 +890,45 @@ public:
   // `sub` can be `nullptr`
   sec_region_t *PointRegionLight (const subsector_t *sub, const TVec &p, unsigned *glowFlags=nullptr);
 
-public:
+public: // regions and openings internal functions
+  static void DumpRegion (const sec_region_t *inregion) noexcept;
+  static void DumpOpening (const opening_t *op) noexcept;
+  static void DumpOpPlanes (const TArray<opening_t> &list) noexcept;
+
   static void GetBaseSectorOpening (opening_t &op, sector_t *sector, const TVec point, bool usePoint);
   static void InsertOpening (TArray<opening_t> &dest, const opening_t &op);
   static void Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
 
   void BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, sector_t *sector, const TVec point,
                             unsigned NoBlockFlags, bool linkList, bool usePoint, bool skipNonSolid=false, bool forSurface=false);
+
+public: // regions
+  // returns `CONTENTS_xxx` or sector content value
+  int PointContents (sector_t *sector, const TVec &p, bool dbgDump=false);
+
+  // find region for thing, and return best floor/ceiling
+  // `p.z` is bottom
+  void FindGapFloorCeiling (sector_t *sector, const TVec point, float height, TSecPlaneRef &floor, TSecPlaneRef &ceiling, bool debugDump=false);
+
+  // find sector gap that contains the given point, and return its floor and ceiling
+  void GetSectorGapCoords (sector_t *sector, const TVec point, float &floorz, float &ceilz);
+
+  // it is used to find lowest sector point for silent teleporters
+  float GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors=true);
+
+public: // openings
+  // build list of openings for the given line and point
+  // note that returned list can be reused on next call to `LineOpenings()`
+  opening_t *LineOpenings (const line_t *linedef, const TVec point, unsigned NoBlockFlags, bool do3dmidtex=false, bool usePoint=true);
+
+  // find "best fit" opening for the given coordz
+  // `z1` is feet, `z2` is head
+  static opening_t *FindOpening (opening_t *gaps, float z1, float z2);
+
+  // find "rel best fit" opening for the given coordz
+  // `z1` is feet, `z2` is head
+  // used in sector movement, so it tries hard to not leave current opening
+  static opening_t *FindRelOpening (opening_t *gaps, float z1, float z2) noexcept;
 
 public:
   // returns `false` if seg is out of subsector
@@ -1265,9 +1297,9 @@ private:
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;
   //bool CheckPlanes (linetrace_t &, sector_t *) const;
-  bool CheckLine (linetrace_t &trace, line_t *line) const;
-  bool CrossSubsector (linetrace_t &trace, int num) const;
-  bool CrossBSPNode (linetrace_t &trace, int BspNum) const;
+  bool BSPCheckLine (linetrace_t &trace, line_t *line);
+  bool BSPCrossSubsector (linetrace_t &trace, int num);
+  bool CrossBSPNode (linetrace_t &trace, int BspNum);
 
   int SetBodyQueueTrans (int, int);
 
@@ -1555,6 +1587,12 @@ private:
   DECLARE_FUNCTION(GetUDMFSideFloat)
 
   DECLARE_FUNCTION(CheckPObjPlanesPoint)
+
+  DECLARE_FUNCTION(GetSectorFloorPointZ)
+  DECLARE_FUNCTION(GetSectorGapCoords)
+
+  DECLARE_FUNCTION(FindOpening)
+  DECLARE_FUNCTION(LineOpenings)
 };
 
 

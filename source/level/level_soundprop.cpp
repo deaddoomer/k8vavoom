@@ -123,10 +123,10 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
       // don't add one sector several times
       if (other->validcount == validcount && other->soundtraversed <= sblock+1) continue; // already flooded
       // check for closed door
-      opening_t *op = SV_LineOpenings(line, *line->v1, 0xffffffff);
+      opening_t *op = LineOpenings(line, *line->v1, 0xffffffff);
       while (op && op->range <= 0.0f) op = op->next;
       if (!op) {
-        op = SV_LineOpenings(line, *line->v2, 0xffffffff);
+        op = LineOpenings(line, *line->v2, 0xffffffff);
         while (op && op->range <= 0.0f) op = op->next;
         if (!op) continue; // closed door
       }

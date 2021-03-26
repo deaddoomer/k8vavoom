@@ -152,7 +152,7 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
       sec = in.sector;
 
       if (!li->pobject && (li->flags&ML_TWOSIDED)) {
-        opening_t *open = LineOpenings(li, hitPoint, SPF_NOBLOCKING, stopat3dmidtex);
+        opening_t *open = XLevel.LineOpenings(li, hitPoint, SPF_NOBLOCKING, stopat3dmidtex);
         if (open) {
           printdebug("SKYFLAT: %d (%s)", Level.Game.skyflatnum, GetTextureName(Level.Game.skyflatnum));
           printdebug(":: line #%d (flags=0x%08x) ::", li-&XLevel.Lines[0], li->flags);

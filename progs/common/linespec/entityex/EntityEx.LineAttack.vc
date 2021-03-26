@@ -221,9 +221,9 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
 
       hitPoint = shootOrigin+dist*aim_dir;
 
-      //open = LineOpenings(li, hitPoint);
-      //open = FindOpening(open, hitPoint.z, hitPoint.z);
-      open = FindLineOpening(li, hitPoint, 0, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT);
+      //open = XLevel.LineOpenings(li, hitPoint);
+      //open = XLevel.FindOpening(open, hitPoint.z, hitPoint.z);
+      open = XLevel.FindLineOpening(li, hitPoint, 0, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT);
 
       if (!open || open->range <= 0.0) break; // stop
 

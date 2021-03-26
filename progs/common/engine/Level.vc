@@ -345,6 +345,27 @@ native final float CheckPObjPlanesPoint (const TVec linestart, const TVec lineen
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+native final void GetSectorGapCoords (const GameObject::sector_t *sector, const ref TVec point, out float floorz, out float ceilz);
+native final float GetSectorFloorPointZ (const sector_t *sector, const ref TVec point);
+
+// warning! never change openings, they are cached!
+// default blockmask is `SPF_NOBLOCKING`
+native final GameObject::opening_t *LineOpenings (GameObject::line_t *linedef, const ref TVec point, optional int blockmask, optional bool do3dmidtex);
+
+// find the best opening
+// warning! never change openings, they are cached!
+native static final GameObject::opening_t *FindOpening (const GameObject::opening_t *gaps, float z1, float z2);
+
+// find the best opening
+// warning! never change openings, they are cached!
+final GameObject::opening_t *FindLineOpening (GameObject::line_t *linedef, const ref TVec point, float Height, optional int blockmask, optional bool do3dmidtex) {
+  auto open = LineOpenings(linedef, point, blockmask!optional, do3dmidtex!optional);
+  if (!open) return nullptr;
+  return FindOpening(open, point.z, point.z+fmax(0, Height));
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // ACS functions
 native final int StartACS (int number, int map, int arg1, int arg2, int arg3,
                            Entity activator, line_t *line, int side, bool Always, bool WantResult);

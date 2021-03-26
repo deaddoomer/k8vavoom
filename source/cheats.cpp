@@ -274,7 +274,7 @@ COMMAND(my_sector_info) {
   Player->Printf("  ceiling light source sector: %d", sec->ceiling.LightSourceSector);
 
   GCon->Log("=== contents ===");
-  int ct = SV_PointContents(sec, Player->MO->Origin, true);
+  int ct = Player->MO->XLevel->PointContents(sec, Player->MO->Origin, true);
   Player->Printf("contents: %d", ct);
 
   if (Args.length() > 1) {
@@ -284,7 +284,7 @@ COMMAND(my_sector_info) {
   }
   if (Args.length() > 2) {
     TSecPlaneRef floor, ceiling;
-    SV_FindGapFloorCeiling(sec, Player->MO->Origin, Player->MO->Height, floor, ceiling, true);
+    Player->MO->XLevel->FindGapFloorCeiling(sec, Player->MO->Origin, Player->MO->Height, floor, ceiling, true);
     Player->Printf(" gap floor: %g (%g,%g,%g:%g)", floor.GetPointZClamped(Player->MO->Origin), floor.GetNormal().x, floor.GetNormal().y, floor.GetNormal().z, floor.GetDist());
     Player->Printf(" gap ceil : %g (%g,%g,%g:%g)", ceiling.GetPointZClamped(Player->MO->Origin), ceiling.GetNormal().x, ceiling.GetNormal().y, ceiling.GetNormal().z, ceiling.GetDist());
     /*
@@ -300,11 +300,13 @@ COMMAND(my_sector_info) {
     //GCon->Log("=== light sub ===");
     //(void)Player->MO->XLevel->PointRegionLight(Player->MO->SubSector, Player->MO->Origin, nullptr, true);
 
+    /*
     #ifdef CLIENT
       if (Args.length() > 3) {
         SV_DebugFindNearestFloor(Player->MO->SubSector, Player->MO->Origin);
       }
     #endif
+    */
   }
 }
 

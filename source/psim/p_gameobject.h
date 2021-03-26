@@ -112,6 +112,24 @@ enum {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// WARNING! keep in sync with script code!
+enum {
+  CONTENTS_EMPTY,
+  CONTENTS_WATER,
+  CONTENTS_LAVA,
+  CONTENTS_NUKAGE,
+  CONTENTS_SLIME,
+  CONTENTS_HELLSLIME,
+  CONTENTS_BLOOD,
+  CONTENTS_SLUDGE,
+  CONTENTS_HAZARD,
+  CONTENTS_BOOMWATER,
+
+  CONTENTS_SOLID = -1
+};
+
+
 //==========================================================================
 //
 //  VSplashInfo

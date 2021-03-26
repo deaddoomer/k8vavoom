@@ -218,9 +218,9 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
     GCon->Log(" === front regions ===");
     VLevel::dumpSectorRegions(seg->frontsector);
     GCon->Log(" === front openings ===");
-    for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) DumpOpening(bop);
+    for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) VLevel::DumpOpening(bop);
     GCon->Log(" === real openings ===");
-    //for (opening_t *bop = ops; bop; bop = bop->next) DumpOpening(bop);
+    //for (opening_t *bop = ops; bop; bop = bop->next) VLevel::DumpOpening(bop);
   }
 
   if (seg->backsector && seg->backsector-&Level->Sectors[0] == 70) {
@@ -229,9 +229,9 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
     GCon->Log(" === front regions ===");
     VLevel::dumpSectorRegions(seg->frontsector);
     GCon->Log(" === front openings ===");
-    for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) DumpOpening(bop);
+    for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) VLevel::DumpOpening(bop);
     GCon->Log(" === real openings ===");
-    for (opening_t *bop = GetSectorOpenings(seg->frontsector); bop; bop = bop->next) DumpOpening(bop);
+    for (opening_t *bop = GetSectorOpenings(seg->frontsector); bop; bop = bop->next) VLevel::DumpOpening(bop);
   }
   */
 
@@ -242,9 +242,9 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
     GCon->Log(NAME_Debug, "=== REGIONS:BACK ===");
     VLevel::dumpSectorRegions(seg->backsector);
     GCon->Log(NAME_Debug, "=== OPENINGS:FRONT ===");
-    for (opening_t *bop = GetSectorOpenings(seg->frontsector); bop; bop = bop->next) DumpOpening(bop);
+    for (opening_t *bop = GetSectorOpenings(seg->frontsector); bop; bop = bop->next) VLevel::DumpOpening(bop);
     GCon->Log(NAME_Debug, "=== OPENINGS:BACK ===");
-    for (opening_t *bop = GetSectorOpenings(seg->backsector); bop; bop = bop->next) DumpOpening(bop);
+    for (opening_t *bop = GetSectorOpenings(seg->backsector); bop; bop = bop->next) VLevel::DumpOpening(bop);
     //ops = GetSectorOpenings(seg->frontsector); // this should be done to update openings
   }
 

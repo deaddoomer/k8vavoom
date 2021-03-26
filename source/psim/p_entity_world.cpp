@@ -119,8 +119,8 @@ float VEntity::GetMoveRadius () const noexcept {
 //  any contacted lines the step closer together will adjust them
 //
 //==========================================================================
-static void tmtSetupGap (tmtrace_t *tmtrace, sector_t *sector, float Height, bool debugDump) {
-  SV_FindGapFloorCeiling(sector, tmtrace->End, Height, tmtrace->EFloor, tmtrace->ECeiling, debugDump);
+static void tmtSetupGap (VLevel *XLevel, tmtrace_t *tmtrace, sector_t *sector, float Height, bool debugDump) {
+  XLevel->FindGapFloorCeiling(sector, tmtrace->End, Height, tmtrace->EFloor, tmtrace->ECeiling, debugDump);
   tmtrace->FloorZ = tmtrace->EFloor.GetPointZClamped(tmtrace->End);
   tmtrace->DropOffZ = tmtrace->FloorZ;
   tmtrace->CeilingZ = tmtrace->ECeiling.GetPointZClamped(tmtrace->End);
@@ -543,7 +543,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     tmtrace.BBox[BOX2D_RIGHT] = Pos.x+rad;
     tmtrace.BBox[BOX2D_LEFT] = Pos.x-rad;
 
-    tmtSetupGap(&tmtrace, newsubsec->sector, Height, false);
+    tmtSetupGap(XLevel, &tmtrace, newsubsec->sector, Height, false);
 
     // check lines
     XLevel->IncrementValidCount();
@@ -567,7 +567,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   } else {
     // simplified check
     TSecPlaneRef floor, ceiling;
-    SV_FindGapFloorCeiling(ss->sector, Origin, Height, EFloor, ECeiling);
+    XLevel->FindGapFloorCeiling(ss->sector, Origin, Height, EFloor, ECeiling);
     FloorZ = EFloor.GetPointZClamped(Origin);
     CeilingZ = ECeiling.GetPointZClamped(Origin);
   }
@@ -713,19 +713,19 @@ void VEntity::CheckWater () {
 
   TVec point = Origin;
   point.z += 1.0f;
-  const int contents = SV_PointContents(Sector, point);
+  const int contents = XLevel->PointContents(Sector, point);
   if (contents > 0) {
     WaterType = contents;
     WaterLevel = 1;
     point.z = Origin.z+Height*0.5f;
-    if (SV_PointContents(Sector, point) > 0) {
+    if (XLevel->PointContents(Sector, point) > 0) {
       WaterLevel = 2;
       if (EntityFlags&EF_IsPlayer) {
         point = Player->ViewOrg;
-        if (SV_PointContents(Sector, point) > 0) WaterLevel = 3;
+        if (XLevel->PointContents(Sector, point) > 0) WaterLevel = 3;
       } else {
         point.z = Origin.z+Height*0.75f;
-        if (SV_PointContents(Sector, point) > 0) WaterLevel = 3;
+        if (XLevel->PointContents(Sector, point) > 0) WaterLevel = 3;
       }
     }
   }
@@ -793,7 +793,7 @@ bool VEntity::CheckPosition (TVec Pos) {
 
   // The base floor / ceiling is from the subsector that contains the point.
   // Any contacted lines the step closer together will adjust them.
-  SV_FindGapFloorCeiling(newsubsec->sector, Pos, Height, cptrace.EFloor, cptrace.ECeiling);
+  XLevel->FindGapFloorCeiling(newsubsec->sector, Pos, Height, cptrace.EFloor, cptrace.ECeiling);
   cptrace.DropOffZ = cptrace.FloorZ = cptrace.EFloor.GetPointZClamped(Pos);
   cptrace.CeilingZ = cptrace.ECeiling.GetPointZClamped(Pos);
   /*
@@ -1003,8 +1003,8 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   // set openrange, opentop, openbottom
   //TVec hit_point = cptrace.End-(DotProduct(cptrace.End, ld->normal)-ld->dist)*ld->normal;
   TVec hit_point = cptrace.End-(ld->PointDistance(cptrace.End)*ld->normal);
-  opening_t *open = SV_LineOpenings(ld, hit_point, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-  open = SV_FindOpening(open, cptrace.End.z, cptrace.End.z+Height);
+  opening_t *open = XLevel->LineOpenings(ld, hit_point, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+  open = VLevel::FindOpening(open, cptrace.End.z, cptrace.End.z+Height);
 
   if (open) {
     // adjust floor / ceiling heights
@@ -1107,7 +1107,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
   subsector_t *newsubsec = XLevel->PointInSubsector_Buggy(Pos);
   tmtrace.CeilingLine = nullptr;
 
-  tmtSetupGap(&tmtrace, newsubsec->sector, Height, false);
+  tmtSetupGap(XLevel, &tmtrace, newsubsec->sector, Height, false);
 
   XLevel->IncrementValidCount();
   tmtrace.SpecHit.resetNoDtor(); // was `Clear()`
@@ -1421,7 +1421,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   }
 
   // set openrange, opentop, openbottom
-  opening_t *open = SV_LineOpenings(ld, hitPoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+  opening_t *open = XLevel->LineOpenings(ld, hitPoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
 
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
   if (IsPlayer()) {
@@ -1432,7 +1432,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   }
   #endif
 
-  open = SV_FindRelOpening(open, tmtrace.End.z, tmtrace.End.z+hgt);
+  open = VLevel::FindRelOpening(open, tmtrace.End.z, tmtrace.End.z+hgt);
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
   if (IsPlayer()) GCon->Logf(NAME_Debug, "  open=%p", open);
   #endif
@@ -2057,8 +2057,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
           if (!IsBlocked) {
             const TVec hpoint = contactPoint; //SlideOrg+fdist*SlideDir;
             // set openrange, opentop, openbottom
-            opening_t *open = SV_LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-            open = SV_FindOpening(open, Origin.z, Origin.z+Height);
+            opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+            open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
             if (open && open->range >= Height && // fits
                 open->top-Origin.z >= Height && // mobj is not too high
                 open->bottom-Origin.z <= MaxStepHeight) // not too big a step up
@@ -2147,8 +2147,8 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
       if (!IsBlocked) {
         // set openrange, opentop, openbottom
         TVec hpoint = SlideOrg+in.frac*SlideDir;
-        opening_t *open = SV_LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-        open = SV_FindOpening(open, Origin.z, Origin.z+Height);
+        opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+        open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
 
         if (open && open->range >= Height && // fits
             open->top-Origin.z >= Height && // mobj is not too high
@@ -2463,8 +2463,8 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
         if (li->flags&ML_TWOSIDED) {
           // set openrange, opentop, openbottom
           TVec hpoint = SlideOrg+in.frac*SlideDir;
-          opening_t *open = SV_LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-          open = SV_FindOpening(open, Origin.z, Origin.z+Height);
+          opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+          open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
 
           if (open && open->range >= Height && // fits
               Origin.z+Height <= open->top &&
@@ -2943,8 +2943,8 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
           */
           TSecPlaneRef ffloor, fceiling;
           TSecPlaneRef bfloor, bceiling;
-          SV_FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
-          SV_FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
+          XLevel->FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
+          XLevel->FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
           const float front = ffloor.GetPointZClamped(Origin);
           const float back = bfloor.GetPointZClamped(Origin);
 
@@ -3013,8 +3013,8 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
           */
           TSecPlaneRef ffloor, fceiling;
           TSecPlaneRef bfloor, bceiling;
-          SV_FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
-          SV_FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
+          XLevel->FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
+          XLevel->FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
           const float front = ffloor.GetPointZClamped(Origin);
           const float back = bfloor.GetPointZClamped(Origin);
 
