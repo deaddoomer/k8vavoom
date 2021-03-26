@@ -364,3 +364,10 @@ static inline VVA_OKUNUSED bool IsPointInsideBBox2D (const float x, const float 
     x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
     y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
 }
+
+
+#define Create2DBBoxFrom3DBBox(destb_,srcb_)  \
+  const float destb_[4] = { (srcb_)[BOX3D_MAXY], (srcb_)[BOX3D_MINY], (srcb_)[BOX3D_MINX], (srcb_)[BOX3D_MAXX] }
+
+#define Create3DBBoxFrom2DBBox(destb_,srcb_,zmin_,zmax_)  \
+  const float destb_[6] = { (srcb_)[BOX2D_MINX], (srcb_)[BOX2D_MINY], (zmin_), (srcb_)[BOX2D_MAXX], (srcb_)[BOX2D_MAXY], (zmax_) }
