@@ -880,9 +880,30 @@ public:
                               TVec *outHitPoint=nullptr, TVec *outHitNormal=nullptr, TPlane *outHitPlane=nullptr,
                               polyobj_t **po=nullptr);
 
+  // returns `false` if seg is out of subsector
+  // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
+  // will not modify `drawsegs`, etc.
+  bool ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept;
+
   VVA_CHECKRESULT inline bool Has3DPolyObjects () const noexcept { return (LevelFlags&LF_Has3DPolyObjects); }
 
-  bool CanHave3DPolyObjAt (const TVec &p) const noexcept;
+  //WARNING! coords and bounding boxes MUST be valid for the following methods!
+  // sctor and polyobject may be `nullptr` or non-3d, tho
+
+  bool CanHave3DPolyObjAt2DPoint (const float x, float y) const noexcept;
+  bool CanHave3DPolyObjAt3DPoint (const TVec &p) const noexcept;
+
+  bool CanHave3DPolyObjAt2DBBox (const float bb2d[4]) const noexcept;
+  bool CanHave3DPolyObjAt3DBBox (const float bb3d[6]) const noexcept;
+
+  bool IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept;
+  bool IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept;
+
+  bool Is2DPointInside3DPolyObj (const polyobj_t *po, const float x, const float y) const noexcept;
+  bool Is3DPointInside3DPolyObj (const polyobj_t *po, const TVec &pos) const noexcept;
+
+  bool IsBBox2DTouching3DPolyObj (const polyobj_t *po, const float bb2d[4]) const noexcept;
+  bool IsBBox3DTouching3DPolyObj (const polyobj_t *po, const float bb3d[6]) const noexcept;
 
 public:
   // returns region to use as light param source, and additionally glow flags (`glowFlags` can be nullptr)
@@ -929,15 +950,6 @@ public: // openings
   // `z1` is feet, `z2` is head
   // used in sector movement, so it tries hard to not leave current opening
   static opening_t *FindRelOpening (opening_t *gaps, float z1, float z2) noexcept;
-
-public:
-  // returns `false` if seg is out of subsector
-  // WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
-  // will not modify `drawsegs`, etc.
-  bool ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept;
-
-  bool IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept;
-  bool IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept;
 
 public:
   #define VL_ITERATOR(arrname_,itername_,itertype_) \

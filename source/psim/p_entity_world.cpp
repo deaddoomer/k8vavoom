@@ -1578,7 +1578,7 @@ bool VEntity::CheckRelPositionPoint (tmtrace_t &tmtrace, TVec Pos) {
   }
 
   // check polyobjects
-  if (XLevel->CanHave3DPolyObjAt(Pos)) {
+  if (XLevel->CanHave3DPolyObjAt2DPoint(Pos.x, Pos.y)) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *po = it.pobj();
       if (!po->Is3D()) continue;

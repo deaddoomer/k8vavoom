@@ -276,6 +276,7 @@ set(VLEVEL_CLASS_SOURCES
   level/level.cpp
   level/level_3dcoldet.cpp
   level/level_3dfloors.cpp
+  level/level_3dpobj_coldet.cpp
   level/level_calclineseg.cpp
   level/level_dbgexport.cpp
   level/level_decals.cpp

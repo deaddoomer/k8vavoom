@@ -89,7 +89,7 @@ sec_region_t *VLevel::PointRegionLight (const subsector_t *sub, const TVec &p, u
   }
 
   // check polyobjects
-  if (!wasInsideSwimmable && CanHave3DPolyObjAt(p)) {
+  if (!wasInsideSwimmable && CanHave3DPolyObjAt2DPoint(p.x, p.y)) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *po = it.pobj();
       if (!po->Is3D()) continue;
