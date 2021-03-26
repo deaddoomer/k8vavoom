@@ -451,6 +451,125 @@ void VEntity::LinkToWorld (int properFloorCheck) {
 }
 
 
+//==========================================================================
+//
+//  VEntity::FixMapthingPos
+//
+//  if the thing is exactly on a line, move it into the sector
+//  slightly in order to resolve clipping issues in the renderer
+//
+//  code adapted from GZDoom
+//
+//==========================================================================
+bool VEntity::FixMapthingPos () {
+  sector_t *sec = XLevel->PointInSubsector_Buggy(Origin)->sector; // here buggy original should be used!
+  bool res = false;
+  const float rad = GetMoveRadius();
+  float tmbbox[4];
+  Create2DBBox(tmbbox, Origin, rad);
+  DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
+
+  // xl->xh, yl->yh determine the mapblock set to search
+  //++validcount; // prevents checking same line twice
+  XLevel->IncrementValidCount();
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *ld = it.line();
+        if (ld->frontsector == ld->backsector) continue; // skip two-sided lines inside a single sector
+
+        // ignore polyobject lines (for now)
+        if (ld->pobj()) continue;
+
+        // skip two-sided lines without any height difference on either side
+        if (ld->frontsector && ld->backsector) {
+          if (ld->frontsector->floor.minz == ld->backsector->floor.minz &&
+              ld->frontsector->floor.maxz == ld->backsector->floor.maxz &&
+              ld->frontsector->ceiling.minz == ld->backsector->ceiling.minz &&
+              ld->frontsector->ceiling.maxz == ld->backsector->ceiling.maxz)
+          {
+            continue;
+          }
+        }
+
+        // check line bounding box for early out
+        if (tmbbox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
+            tmbbox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
+            tmbbox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
+            tmbbox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
+        {
+          continue;
+        }
+
+        // get the exact distance to the line
+        float linelen = ld->dir.length();
+        if (linelen < 0.0001f) continue; // just in case
+
+        //divline_t dll, dlv;
+        //P_MakeDivline(ld, &dll);
+        float dll_x = ld->v1->x;
+        float dll_y = ld->v1->y;
+        float dll_dx = ld->dir.x;
+        float dll_dy = ld->dir.y;
+
+        float dlv_x = Origin.x;
+        float dlv_y = Origin.y;
+        float dlv_dx = dll_dy/linelen;
+        float dlv_dy = -dll_dx/linelen;
+
+        //double distance = fabs(P_InterceptVector(&dlv, &dll));
+        float distance = 0;
+        {
+          const double v1x = dll_x;
+          const double v1y = dll_y;
+          const double v1dx = dll_dx;
+          const double v1dy = dll_dy;
+          const double v2x = dlv_x;
+          const double v2y = dlv_y;
+          const double v2dx = dlv_dx;
+          const double v2dy = dlv_dy;
+
+          const double den = v1dy*v2dx - v1dx*v2dy;
+
+          if (den == 0) {
+            // parallel
+            distance = 0;
+          } else {
+            const double num = (v1x-v2x)*v1dy+(v2y-v1y)*v1dx;
+            distance = num/den;
+          }
+        }
+
+        if (distance < rad) {
+          /*
+          float angle = matan(ld->dir.y, ld->dir.x);
+          angle += (ld->backsector && ld->backsector == sec ? 90 : -90);
+          // get the distance we have to move the object away from the wall
+          distance = rad-distance;
+          UnlinkFromWorld();
+          Origin += AngleVectorYaw(angle)*distance;
+          LinkToWorld();
+          */
+
+          //k8: we already have a normal to a wall, let's use it instead
+          TVec movedir = ld->normal;
+          if (ld->backsector && ld->backsector == sec) movedir = -movedir;
+          // get the distance we have to move the object away from the wall
+          distance = rad-distance;
+          UnlinkFromWorld();
+          Origin += movedir*distance;
+          LinkToWorld();
+
+          res = true;
+        }
+      }
+    }
+  }
+
+  return res;
+}
+
+
 
 //==========================================================================
 //
@@ -466,4 +585,9 @@ IMPLEMENT_FUNCTION(VEntity, LinkToWorld) {
 IMPLEMENT_FUNCTION(VEntity, UnlinkFromWorld) {
   vobjGetParamSelf();
   Self->UnlinkFromWorld();
+}
+
+IMPLEMENT_FUNCTION(VEntity, FixMapthingPos) {
+  vobjGetParamSelf();
+  RET_BOOL(Self->FixMapthingPos());
 }

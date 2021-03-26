@@ -302,6 +302,192 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
 }
 
 
+//==========================================================================
+//
+//  VEntity::CheckWater
+//
+//  this sets `WaterLevel` and `WaterType`
+//
+//==========================================================================
+void VEntity::CheckWater () {
+  WaterLevel = 0;
+  WaterType = 0;
+
+  TVec point = Origin;
+  point.z += 1.0f;
+  const int contents = XLevel->PointContents(Sector, point);
+  if (contents > 0) {
+    WaterType = contents;
+    WaterLevel = 1;
+    point.z = Origin.z+Height*0.5f;
+    if (XLevel->PointContents(Sector, point) > 0) {
+      WaterLevel = 2;
+      if (EntityFlags&EF_IsPlayer) {
+        point = Player->ViewOrg;
+        if (XLevel->PointContents(Sector, point) > 0) WaterLevel = 3;
+      } else {
+        point.z = Origin.z+Height*0.75f;
+        if (XLevel->PointContents(Sector, point) > 0) WaterLevel = 3;
+      }
+    }
+  }
+  //return (WaterLevel > 1);
+}
+
+
+//=============================================================================
+//
+//  CheckDropOff
+//
+//  killough 11/98:
+//
+//  Monsters try to move away from tall dropoffs.
+//
+//  In Doom, they were never allowed to hang over dropoffs, and would remain
+//  stuck if involuntarily forced over one. This logic, combined with P_TryMove,
+//  allows monsters to free themselves without making them tend to hang over
+//  dropoffs.
+//
+//=============================================================================
+void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
+  // try to move away from a dropoff
+  DeltaX = DeltaY = 0;
+
+  const float rad = GetMoveRadius();
+  float tmbbox[4];
+  Create2DBBox(tmbbox, Origin, rad);
+  DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
+
+  // check lines
+  //++validcount;
+  XLevel->IncrementValidCount();
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *line = it.line();
+        // ignore polyobject lines (for now)
+        if (line->pobj()) continue;
+        // ingore polyobject sectors (for now)
+        if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
+        if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
+        // linedef must be contacted
+        if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
+            tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
+            tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
+            tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
+            P_BoxOnLineSide(tmbbox, line) == -1)
+        {
+          // new logic for 3D Floors
+          /*
+          sec_region_t *FrontReg = SV_FindThingGap(line->frontsector, Origin, Height);
+          sec_region_t *BackReg = SV_FindThingGap(line->backsector, Origin, Height);
+          float front = FrontReg->efloor.GetPointZClamped(Origin);
+          float back = BackReg->efloor.GetPointZClamped(Origin);
+          */
+          TSecPlaneRef ffloor, fceiling;
+          TSecPlaneRef bfloor, bceiling;
+          XLevel->FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
+          XLevel->FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
+          const float front = ffloor.GetPointZClamped(Origin);
+          const float back = bfloor.GetPointZClamped(Origin);
+
+          // the monster must contact one of the two floors, and the other must be a tall dropoff
+          TVec Dir;
+          if (back == Origin.z && front < Origin.z-MaxDropoffHeight) {
+            // front side dropoff
+            Dir = line->normal;
+          } else if (front == Origin.z && back < Origin.z-MaxDropoffHeight) {
+            // back side dropoff
+            Dir = -line->normal;
+          } else {
+            continue;
+          }
+          // move away from dropoff at a standard speed
+          // multiple contacted linedefs are cumulative (e.g. hanging over corner)
+          DeltaX -= Dir.x*baseSpeed;
+          DeltaY -= Dir.y*baseSpeed;
+        }
+      }
+    }
+  }
+}
+
+
+//=============================================================================
+//
+//  FindDropOffLines
+//
+//  find dropoff lines (the same as `CheckDropOff()` is using)
+//
+//=============================================================================
+int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
+  int res = 0;
+
+  const float rad = GetMoveRadius();
+  float tmbbox[4];
+  Create2DBBox(tmbbox, Origin, rad);
+  DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
+
+  // check lines
+  //++validcount;
+  XLevel->IncrementValidCount();
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *line = it.line();
+        // ignore polyobject lines (for now)
+        if (line->pobj()) continue;
+        // ingore polyobject sectors (for now)
+        if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
+        if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
+        // linedef must be contacted
+        if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
+            tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
+            tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
+            tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
+            P_BoxOnLineSide(tmbbox, line) == -1)
+        {
+          // new logic for 3D Floors
+          /*
+          sec_region_t *FrontReg = SV_FindThingGap(line->frontsector, Origin, Height);
+          sec_region_t *BackReg = SV_FindThingGap(line->backsector, Origin, Height);
+          float front = FrontReg->efloor.GetPointZClamped(Origin);
+          float back = BackReg->efloor.GetPointZClamped(Origin);
+          */
+          TSecPlaneRef ffloor, fceiling;
+          TSecPlaneRef bfloor, bceiling;
+          XLevel->FindGapFloorCeiling(line->frontsector, Origin, Height, ffloor, fceiling);
+          XLevel->FindGapFloorCeiling(line->backsector, Origin, Height, bfloor, bceiling);
+          const float front = ffloor.GetPointZClamped(Origin);
+          const float back = bfloor.GetPointZClamped(Origin);
+
+          // the monster must contact one of the two floors, and the other must be a tall dropoff
+          int side;
+          if (back == Origin.z && front < Origin.z-MaxDropoffHeight) {
+            // front side dropoff
+            side = 0;
+          } else if (front == Origin.z && back < Origin.z-MaxDropoffHeight) {
+            // back side dropoff
+            side = 1;
+          } else {
+            continue;
+          }
+
+          ++res;
+          if (list) {
+            VDropOffLineInfo *la = &list->alloc();
+            la->line = line;
+            la->side = side;
+          }
+        }
+      }
+    }
+  }
+
+  return res;
+}
+
+
 
 //==========================================================================
 //
@@ -312,4 +498,25 @@ IMPLEMENT_FUNCTION(VEntity, CheckPosition) {
   TVec pos;
   vobjGetParamSelf(pos);
   RET_BOOL(Self->CheckPosition(pos));
+}
+
+IMPLEMENT_FUNCTION(VEntity, CheckWater) {
+  vobjGetParamSelf();
+  Self->CheckWater();
+}
+
+IMPLEMENT_FUNCTION(VEntity, CheckDropOff) {
+  float *DeltaX;
+  float *DeltaY;
+  VOptParamFloat baseSpeed(32.0f);
+  vobjGetParamSelf(DeltaX, DeltaY, baseSpeed);
+  Self->CheckDropOff(*DeltaX, *DeltaY, baseSpeed);
+}
+
+// native final int FindDropOffLine (ref array!VDropOffLineInfo list, TVec pos);
+IMPLEMENT_FUNCTION(VEntity, FindDropOffLine) {
+  TArray<VDropOffLineInfo> *list;
+  TVec pos;
+  vobjGetParamSelf(list, pos);
+  RET_INT(Self->FindDropOffLine(list, pos));
 }
