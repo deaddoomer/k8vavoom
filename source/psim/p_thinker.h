@@ -67,7 +67,7 @@ class VThinker : public VGameObject {
   VThinker *Next;
 
   float SpawnTime; // `Spawn()` function sets this to game time
-  vint32 validcount; // transient
+  vint32 ValidCount; // transient
 
   vuint8 Role;
   vuint8 RemoteRole;

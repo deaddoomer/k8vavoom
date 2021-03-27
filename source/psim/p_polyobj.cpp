@@ -1222,8 +1222,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       po->savedCeiling = po->poceiling;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
         VEntity *mobj = n->Thing;
-        if (mobj->validcount == visCount) continue;
-        mobj->validcount = visCount;
+        if (mobj->ValidCount == visCount) continue;
+        mobj->ValidCount = visCount;
         if (mobj->IsGoingToDie()) continue;
         //GCon->Logf(NAME_Debug, "  %s(%u): z=%g (poz1=%g); sector=%p; basesector=%p", mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, pofirst->poceiling.maxz, mobj->Sector, mobj->BaseSector);
         SavedEntityData &edata = poAffectedEnitities.alloc();
@@ -1237,8 +1237,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     for (po = pofirst; po; po = po->polink) {
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
         VEntity *mobj = n->Thing;
-        if (mobj->validcount == visCount) continue;
-        mobj->validcount = visCount;
+        if (mobj->ValidCount == visCount) continue;
+        mobj->ValidCount = visCount;
         if (mobj->IsGoingToDie()) continue;
         SavedEntityData &edata = poAffectedEnitities.alloc();
         edata.mobj = mobj;
@@ -1499,8 +1499,8 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
         // unprocessed thing found, mark thing as processed
         n->Visited = visCount;
         VEntity *mobj = n->Thing;
-        if (mobj->validcount == visCount) continue;
-        mobj->validcount = visCount;
+        if (mobj->ValidCount == visCount) continue;
+        mobj->ValidCount = visCount;
         if (mobj->IsGoingToDie()) continue;
         if (mobj->Origin.z != pz1) continue;
         if (!mobj->Sector->isInnerPObj()) continue; // this should be properly set in `LinkToWorld()`

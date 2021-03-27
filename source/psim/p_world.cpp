@@ -736,8 +736,8 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         if (!NeedCheckBMCell(mapx+deltas[dx], mapy+deltas[dy])) continue;
         for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
           VEntity *ent = it.entity();
-          if (ent->validcount == validcount) continue;
-          ent->validcount = validcount;
+          if (ent->ValidCount == validcount) continue;
+          ent->ValidCount = validcount;
           if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
           //if (vptSeenThings.put(*It, true)) continue;
           // [RH] don't check a corner to corner crossection for hit
@@ -819,8 +819,8 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         if (!NeedCheckBMCell(mapx+dx, mapy+dy)) continue;
         for (auto &&it : Level->allBlockThings(mapx+dx, mapy+dy)) {
           VEntity *ent = it.entity();
-          if (ent->validcount == validcount) continue;
-          ent->validcount = validcount;
+          if (ent->ValidCount == validcount) continue;
+          ent->ValidCount = validcount;
           if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
           const float dot = trace_plane.PointDistance(ent->Origin);
           if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
@@ -838,8 +838,8 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
     if (!NeedCheckBMCell(mapx, mapy)) return;
     for (auto &&it : Level->allBlockThings(mapx, mapy)) {
       VEntity *ent = it.entity();
-      if (ent->validcount == validcount) continue;
-      ent->validcount = validcount;
+      if (ent->ValidCount == validcount) continue;
+      ent->ValidCount = validcount;
       if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
       const float dot = trace_plane.PointDistance(ent->Origin);
       if (fabsf(dot) >= ent->Radius) continue; // thing is too far away

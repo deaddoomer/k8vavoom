@@ -274,7 +274,7 @@ native float DropOffZ;
 native TSecPlaneRef EFloor;
 native TSecPlaneRef ECeiling;
 
-//native transient int validcount; // moved to VThinker
+//native transient int ValidCount; // moved to VThinker
 
 // flags
 bool bSolid; // blocks
