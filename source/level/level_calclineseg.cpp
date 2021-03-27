@@ -146,6 +146,12 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
 
   if (v1->x == v2->x && v1->y == v2->y) return false; // too short, ignore it
 
+  // check is seg is outside of subsector bounding box
+  if (min2(v1->x, v2->x) > sub->bbox2d[BOX2D_MAXX]) return false;
+  if (min2(v1->y, v2->y) > sub->bbox2d[BOX2D_MAXY]) return false;
+  if (max2(v1->x, v2->x) < sub->bbox2d[BOX2D_MINX]) return false;
+  if (max2(v1->y, v2->y) < sub->bbox2d[BOX2D_MINY]) return false;
+
   float lensq = seg->length*seg->length;
   bool updateLen = false;
 
