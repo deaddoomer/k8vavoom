@@ -325,51 +325,50 @@ float VEntity::GetMoveRadius () const noexcept {
 //
 //  used to fix floor and ceiling info with polyobject
 //
-//  returns `false` if stuck
+//  returns `false` if stuck inside
 //
 //==========================================================================
-bool VEntity::Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ,
+bool VEntity::Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ, float &DropOffZ,
                                       TSecPlaneRef &ECeiling, float &CeilingZ, polyobj_t *&PolyObj,
                                       const float z0, const float z1)
 {
-  const float poz0 = po->pofloor.minz;
-  const float poz1 = po->poceiling.maxz;
+  const float pz0 = po->pofloor.minz;
+  const float pz1 = po->poceiling.maxz;
 
-  // if below, fix only ceiling
-  if (z0 < poz0) {
-    // feet are below platform floor, fix ceiling z
-    if (CeilingZ >= poz0) {
-      if (!PolyObj || CeilingZ > poz0 || PolyObj->tag > po->tag) {
-        CeilingZ = poz0;
-        ECeiling.set(&po->pofloor, false);
-        PolyObj = po;
-      }
-    }
-    if (z1 > poz0) {
-      // head is above platform floor, stuck
-      PolyObj = po;
-      return false;
-    }
-    return true;
+  if (pz0 >= pz1) return true; // paper-thin or invalid polyobject
+
+  bool fixFloor = false, fixCeiling = false, res = true;
+
+  // check relative position
+  if (z0 == pz0) {
+    // standing on, fix floor
+    fixFloor = true;
+    if (!PolyObj || PolyObj->tag > po->tag) PolyObj = po;
+  } else if (z1 > pz1) {
+    // head is above, fix floor
+    fixFloor = true;
+    if (!PolyObj || (PolyObj->tag > po->tag && PolyObj->poceiling.maxz != z0)) PolyObj = po;
+  } else if (z0 < pz0) {
+    // feet are below, fix ceiling
+    fixCeiling = true;
   } else {
-    // feet are above or on platform floor, fix floor z
-    if (FloorZ <= poz1) {
-      if (!PolyObj || FloorZ < poz1 || PolyObj->tag > po->tag) {
-        FloorZ = poz1;
-        EFloor.set(&po->poceiling, false);
-        PolyObj = po;
-      }
-      vassert(PolyObj);
-      // hack: prefer pobj we are standing on, even if we already have "stucked" one
-      if (z0 == poz1 && PolyObj->poceiling.maxz != z0) PolyObj = po;
-    }
-    if (z0 < poz1) {
-      // feet are below platform ceiling, stuck
-      PolyObj = po;
-      return false;
-    }
-    return true;
+    // fully inside, still fix ceiling
+    fixCeiling = true;
+    res = false;
+    if (!PolyObj || (PolyObj->tag > po->tag && PolyObj->poceiling.maxz != z0)) PolyObj = po;
   }
+
+  if (fixFloor && FloorZ <= pz1) {
+    if (FloorZ < pz1) DropOffZ = FloorZ; // fix dropoff
+    FloorZ = pz1;
+    EFloor.set(&po->poceiling, false);
+  }
+  if (fixCeiling && CeilingZ >= pz0) {
+    CeilingZ = pz0;
+    ECeiling.set(&po->pofloor, false);
+  }
+
+  return res;
 }
 
 

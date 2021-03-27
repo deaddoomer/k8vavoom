@@ -374,42 +374,12 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     if (!IsBlockingLine(ld)) return true;
     if (!po->Is3D() || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
-    const float pz0 = po->pofloor.minz;
-    const float pz1 = po->poceiling.maxz;
-    if (pz0 >= pz1) return true; // paper-thin or invalid polyobject
-    const float hz0 = hitPoint.z;
-    const float hz1 = hz0+max2(0.0f, Height);
-    bool fixFloor = false, fixCeiling = false;
-    // if we are fully inside, there is no opening
-    if (hz0 >= pz0 && hz1 <= pz1) {
-      // fix ceiling to pobj floor (dunno what to do here)
-      //tmtrace.DropOffZ = max2(tmtrace.DropOffZ, tmtrace.FloorZ);
-      //tmtrace.FloorZ = tmtrace.DropOffZ = pz0;
-      //tmtrace.EFloor.set(&po->pofloor, false);
-      tmtrace.CeilingZ = pz0;
-      tmtrace.ECeiling.set(&po->pofloor, false);
-      // blocked
+    if (!Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, hitPoint.z+max2(0.0f, Height))) {
+      // stuck inside, blocked
       if (!skipSpecials) BlockedByLine(ld);
       tmtrace.BlockingLine = ld;
       return false;
     }
-    // check relative position
-         if (hz0 >= pz1) fixFloor = true; // fully above, fix floor
-    else if (hz1 <= pz0) fixCeiling = true; // fully below, fix ceiling
-    // we have a possible "opening", fix floor/ceiling (so `TryMove()` will be able to step up/autocrouch)
-    else if (hz1 > pz1) fixFloor = true; // opening above, fix floor
-    else { vassert(hz0 < pz0); fixCeiling = true; } // opening below, fix ceiling
-
-    if (fixFloor && tmtrace.FloorZ <= pz1) {
-      if (tmtrace.FloorZ < pz1) tmtrace.DropOffZ = tmtrace.FloorZ; // fix dropoff
-      tmtrace.FloorZ = pz1;
-      tmtrace.EFloor.set(&po->poceiling, false);
-    }
-    if (fixCeiling && tmtrace.CeilingZ >= pz0) {
-      tmtrace.CeilingZ = pz0;
-      tmtrace.ECeiling.set(&po->pofloor, false);
-    }
-
     return true;
   }
 

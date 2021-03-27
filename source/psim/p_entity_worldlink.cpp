@@ -344,23 +344,24 @@ void VEntity::LinkToWorld (int properFloorCheck) {
           if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) continue;
           if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) continue;
           if (needSectorList) linkAdditionalSectors.append(po->GetSector());
-          // hack for loader -- allow slightly stuck objects
+          (void)Copy3DPObjFloorCeiling(po, EFloor, FloorZ, DropOffZ, ECeiling, CeilingZ, spo, Origin.z, Origin.z+max2(0.0f, Height));
+          /*
           const float pz0 = po->pofloor.maxz;
           const float pz1 = po->poceiling.maxz;
           const float z0 = Origin.z;
           const float z1 = z0+max2(0.0f, Height);
           bool fixFloor = false, fixCeiling = false;
           const float dz = z0-pz1;
-          //FIXME: hack for loader (it should be removed later)
+          //FIXME: hack for loader -- allow slightly stuck objects (it should be removed later)
           if (dz >= -0.1f && dz <= 0.0f) {
             Origin.z = pz1;
             fixFloor = true;
             if (!spo || spo->tag > po->tag) spo = po;
-          } else if (z1 > po->poceiling.maxz) {
+          } else if (z1 > pz1) {
             // our head is above, check and fix floor
             fixFloor = true;
             if (!spo || (spo->tag > po->tag && spo->poceiling.maxz != z0)) spo = po;
-          } else if (z0 <= po->pofloor.maxz) {
+          } else if (z0 <= pz0) {
             // our feet are below, check and fix ceiling
             fixCeiling = true;
           } else {
@@ -378,6 +379,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
             CeilingZ = pz0;
             ECeiling.set(&po->pofloor, false);
           }
+          */
           /*
           if (Copy3DPObjFloorCeiling(po, EFloor, FloorZ, ECeiling, CeilingZ, spo, Origin.z, z1)) {
             if (Origin.z == po->poceiling.maxz && (!standpo || standpo->tag > po->tag)) standpo = po;

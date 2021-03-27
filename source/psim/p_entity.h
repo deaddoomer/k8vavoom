@@ -941,12 +941,12 @@ private:
 
   // used to fix floor and ceiling info with polyobject
   // returns `false` if stuck
-  static bool Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ,
+  static bool Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float &FloorZ, float &DropOffZ,
                                       TSecPlaneRef &ECeiling, float &CeilingZ, polyobj_t *&PolyObj,
                                       const float z0, const float z1);
 
   static inline bool Copy3DPObjFloorCeiling (tmtrace_t &tmtrace, polyobj_t *po, const float z0, const float z1) {
-    return Copy3DPObjFloorCeiling(po, tmtrace.EFloor, tmtrace.FloorZ, tmtrace.ECeiling, tmtrace.CeilingZ, tmtrace.PolyObj, z0, z1);
+    return Copy3DPObjFloorCeiling(po, tmtrace.EFloor, tmtrace.FloorZ, tmtrace.DropOffZ, tmtrace.ECeiling, tmtrace.CeilingZ, tmtrace.PolyObj, z0, z1);
   }
 
 public:
