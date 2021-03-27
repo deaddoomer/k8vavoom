@@ -353,7 +353,10 @@ bool VEntity::Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float
     fixCeiling = true;
   } else {
     // fully inside, still fix ceiling
-    fixCeiling = true;
+    // arbitrary height: for very small objects, pull 'em up
+    //if (z1-z0 <= 2.0f) fixCeiling = true; else fixFloor = true;
+    // if feet are below half of pobj height, fix ceiling, else fix floor
+    if (z0 < pz0+(pz1-pz0)*0.5f) fixCeiling = true; else fixFloor = true;
     res = false;
     if (!PolyObj || (PolyObj->tag > po->tag && PolyObj->poceiling.maxz != z0)) PolyObj = po;
   }
