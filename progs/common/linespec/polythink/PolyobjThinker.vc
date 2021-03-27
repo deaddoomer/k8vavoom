@@ -93,7 +93,7 @@ bool Accumulate (PolyobjThinker other) {
 //==========================================================================
 final void AppendTo (polyobj_t *po) {
   if (!po) { Destroy(); return; }
-  assert(polyobj == 0);
+  assert(polyobj == default.polyobj);
   //printdebug("adding pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, po.tag);
   if (po.SpecialData) assert(PolyobjThinker(po.SpecialData));
   // check for additive
@@ -137,7 +137,7 @@ final void RemoveFromThinkerChain () {
     if (prev) prev.NextAction = NextAction; else po.SpecialData = NextAction;
     //printdebug("removed pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, po.tag);
   }
-  polyobj = 0;
+  polyobj = default.polyobj;
   NextAction = none;
 }
 
@@ -163,4 +163,5 @@ final void PolyobjStopSequence (polyobj_t *mobj) {
 
 
 defaultproperties {
+  polyobj = 0x7fff_ffff;
 }

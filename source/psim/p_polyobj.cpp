@@ -345,6 +345,8 @@ static int explinesCompare (const void *aa, const void *bb, void *) {
 //
 //==========================================================================
 void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt) {
+  if (/*tag == 0 ||*/ tag == 0x7fffffff) Host_Error("the map tried to spawn polyobject with invalid tag: %d", tag);
+
   const int index = NumPolyObjs++;
 
   GCon->Logf(NAME_Debug, "SpawnPolyobj: tag=%d; idx=%d; thing=%d", tag, index, (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1));
@@ -387,7 +389,10 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   for (auto &&itline : allLines()) {
     line_t *line = &itline;
     if (line->special == PO_LINE_START && line->arg1 == tag) {
-      if (lstart) Host_Error("found two `Polyobj_StartLine` specials for polyobject with tag #%d (lines #%d and #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]), (int)(ptrdiff_t)(line-&Lines[0]));
+      if (lstart) {
+        Host_Error("found two `Polyobj_StartLine` specials for polyobject with tag #%d (lines #%d and #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]), (int)(ptrdiff_t)(line-&Lines[0]));
+        //continue;
+      }
       if (explines.length()) Host_Error("found both `Polyobj_StartLine` and `Polyobj_ExplicitLine` specials for polyobject with tag #%d (implicit line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
       lstart = line;
     } else if (line->special == PO_LINE_EXPLICIT && line->arg1 == tag) {
@@ -651,7 +656,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     // fix polyobject height
 
     // determine real height using midtex
-    VTexture *MTex = GTextureManager(xseg->sidedef->MidTexture);
+    VTexture *MTex = (xseg ? GTextureManager(xseg->sidedef->MidTexture) : nullptr);
     if (MTex && MTex->Type != TEXTYPE_Null) {
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
       const float texh = MTex->GetScaledHeight();
@@ -720,6 +725,8 @@ void VLevel::Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid) {
 //
 //==========================================================================
 void VLevel::AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag) {
+  if (/*tag == 0 ||*/ tag == 0x7fffffff) { GCon->Logf(NAME_Error, "ignored anchor point invalid tag: %d", tag); return; }
+
   ++NumPolyAnchorPoints;
 
   PolyAnchorPoint_t *Temp = PolyAnchorPoints;
