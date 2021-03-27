@@ -347,6 +347,9 @@ void VEntity::LinkToWorld (int properFloorCheck) {
           if (!Are2DBBoxesOverlap(po->bbox2d, tmbbox)) continue;
           if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) continue;
           if (needSectorList) linkAdditionalSectors.append(po->GetSector());
+          // hack for loader -- allow slightly stuck objects
+          const float dz = Origin.z-po->poceiling.maxz;
+          if (dz >= -0.1f && dz < 0.0f) Origin.z = po->poceiling.maxz;
           if (Copy3DPObjFloorCeiling(po, EFloor, FloorZ, ECeiling, CeilingZ, spo, Origin.z, z1)) {
             if (Origin.z == po->poceiling.maxz && (!standpo || standpo->tag > po->tag)) standpo = po;
           } else {
