@@ -25,14 +25,60 @@
 //**************************************************************************
 class PolyobjMover : PolyobjThinker;
 
-int polyobj;
 float speed;
 float dist;
 float angle;
-//bool ignoreThings;
 // vertical
 float vspeed;
 float vdist;
+
+
+//==========================================================================
+//
+//  Accumulate
+//
+//==========================================================================
+override bool Accumulate (PolyobjThinker other) {
+  PolyobjMover t = PolyobjMover(other);
+  if (!t) return false;
+  if (t.vdist > 0.0 && t.dist == 0.0) {
+    // t is strictly vertical, can we merge it?
+    if (vdist == 0 || vspeed == t.vspeed) {
+      vdist += t.vdist;
+      vspeed = t.vspeed;
+      return true;
+    }
+  } else if (t.dist > 0 && t.vdist == 0.0) {
+    // t is strictly horizontal, can we merge it?
+    if (dist == 0 || (angle == t.angle && speed == t.speed)) {
+      dist += t.dist;
+      angle = t.angle;
+      speed = t.speed;
+      return true;
+    }
+  } else {
+    // t is diagonal, can we merge?
+    /*
+    if ((vdist == 0 || vspeed == t.vspeed) &&
+        (dist == 0 || (angle == t.angle && speed == t.speed)))
+    {
+      dist += t.dist;
+      angle = t.angle;
+      speed = t.speed;
+      vdist += t.vdist;
+      vspeed = t.vspeed;
+      return true;
+    }
+    */
+  }
+  // cannot merge, override previous mover
+  speed = t.speed;
+  dist = t.dist;
+  angle = t.angle;
+  vspeed = t.vspeed;
+  vdist = t.vdist;
+  return true;
+}
 
 
 //==========================================================================
@@ -55,8 +101,7 @@ override void Tick (float deltaTime) {
     if (!dist && !vdist) {
       //printdebug("%C(%s): done!", self, UniqueId);
       polyobj_t *poly = XLevel.GetPolyobj(polyobj);
-      if (poly->SpecialData == self) poly->SpecialData = none;
-      PolyobjStopSequence(poly);
+      if (poly) PolyobjStopSequence(poly);
       Destroy();
       return;
     }

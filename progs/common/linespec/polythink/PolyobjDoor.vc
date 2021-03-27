@@ -32,7 +32,6 @@ enum {
 };
 
 int type;
-int polyobj;
 float speed;
 float dist;
 float xSpeed; // for sliding walls
@@ -78,7 +77,6 @@ override void Tick (float deltaTime) {
             xSpeed = -xSpeed;
             ySpeed = -ySpeed;
           } else {
-            if (poly->SpecialData == self) poly->SpecialData = none;
             Destroy();
           }
         }
@@ -110,7 +108,6 @@ override void Tick (float deltaTime) {
             time = waitTime;
             speed = -speed;
           } else {
-            if (poly->SpecialData == self) poly->SpecialData = none;
             Destroy();
           }
         }

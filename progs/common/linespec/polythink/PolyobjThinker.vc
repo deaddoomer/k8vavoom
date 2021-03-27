@@ -25,7 +25,121 @@
 //**************************************************************************
 class PolyobjThinker : Thinker abstract;
 
+int polyobj;
 float thrust_force;
+PolyobjThinker NextAction;
+
+
+//==========================================================================
+//
+//  Destroy
+//
+//==========================================================================
+override void Destroy () {
+  //printdebug("removing pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, polyobj);
+  RemoveFromThinkerChain();
+  ::Destroy();
+}
+
+
+//==========================================================================
+//
+//  ClearPolyobjThinkers
+//
+//==========================================================================
+static final void ClearPolyobjThinkers (polyobj_t *po) {
+  if (!po) return;
+  while (po.SpecialData) {
+    PolyobjThinker curr = PolyobjThinker(po.SpecialData);
+    assert(curr);
+    delete curr;
+  }
+}
+
+
+//==========================================================================
+//
+//  IsPolyobjBusy
+//
+//==========================================================================
+static final bool IsPolyobjBusy (polyobj_t *po) {
+  if (!po) return false;
+  while (po.SpecialData) {
+    PolyobjThinker curr = PolyobjThinker(po.SpecialData);
+    assert(curr);
+    if (!curr.isDestroyed) return true;
+    curr = curr.NextAction;
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
+//  Accumulate
+//
+//  returns `true` if `other` was accumulated (but won't destroy it)
+//
+//==========================================================================
+bool Accumulate (PolyobjThinker other) {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  AppendTo
+//
+//==========================================================================
+final void AppendTo (polyobj_t *po) {
+  if (!po) { Destroy(); return; }
+  assert(polyobj == 0);
+  //printdebug("adding pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, po.tag);
+  if (po.SpecialData) assert(PolyobjThinker(po.SpecialData));
+  // check for additive
+  int count = 0;
+  for (PolyobjThinker curr = PolyobjThinker(po.SpecialData); curr; curr = curr.NextAction) {
+    if (curr.IsDestroyed) continue; // just in case
+    if (curr.Accumulate(self)) { Destroy(); return; }
+    ++count;
+  }
+  // protection from morons
+  if (count > 64) {
+    printerror("pobj #%d has %s action thinkers, this is too much. penalizing for bad behavior.", po.tag, count);
+    ClearPolyobjThinkers(po);
+  }
+  // insert into list
+  polyobj = po.tag;
+  NextAction = PolyobjThinker(po.SpecialData);
+  po.SpecialData = self;
+}
+
+
+//==========================================================================
+//
+//  RemoveFromThinkerChain
+//
+//==========================================================================
+final void RemoveFromThinkerChain () {
+  polyobj_t *po = XLevel.GetPolyobj(polyobj);
+  if (!po) return;
+  assert(po.tag == polyobj);
+  if (po.SpecialData) assert(PolyobjThinker(po.SpecialData));
+  PolyobjThinker prev = none;
+  PolyobjThinker curr = PolyobjThinker(po.SpecialData);
+  while (curr && curr != self) {
+    prev = curr;
+    curr = curr.NextAction;
+  }
+  if (!curr) {
+    printerror("cannot remove pobj thinker `%C`(%s) from pobj #%d (not in chain)", self, UniqueId, po.tag);
+  } else {
+    if (prev) prev.NextAction = NextAction; else po.SpecialData = NextAction;
+    //printdebug("removed pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, po.tag);
+  }
+  polyobj = 0;
+  NextAction = none;
+}
 
 
 //==========================================================================

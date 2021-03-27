@@ -25,9 +25,40 @@
 //**************************************************************************
 class PolyobjRotator : PolyobjThinker;
 
-int polyobj;
 float dist;
 float speed;
+
+
+//==========================================================================
+//
+//  Accumulate
+//
+//==========================================================================
+override bool Accumulate (PolyobjThinker other) {
+  PolyobjRotator t = PolyobjRotator(other);
+  if (!t) return false;
+  if (dist < 0.0 && t.dist < 0.0) {
+    // both are perpetual
+    //speed = fclamp(speed+t.speed, -10000, +10000);
+    speed += t.speed;
+    while (speed <= -10000) speed += 10000;
+    while (speed >= +10000) speed -= 10000;
+    return true;
+  }
+  // same speed?
+  if (speed == t.speed) {
+    if (dist >= 0.0 && t.dist >= 0.0) {
+      dist = fmax(dist, t.dist);
+    } else {
+      dist = -1.0;
+    }
+    return true;
+  }
+  // cannot merge, override previous mover
+  dist = t.dist;
+  speed = t.speed;
+  return true;
+}
 
 
 //==========================================================================
@@ -48,8 +79,7 @@ override void Tick (float deltaTime) {
     dist -= absMove;
     if (dist <= 0.0) {
       poly = XLevel.GetPolyobj(polyobj);
-      if (poly->SpecialData == self) poly->SpecialData = none;
-      PolyobjStopSequence(poly);
+      if (poly) PolyobjStopSequence(poly);
       Destroy();
       return;
     }
