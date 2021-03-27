@@ -39,7 +39,8 @@
 class VDecalDef;
 struct opening_t;
 
-extern int validcount; // defined in "sv_main.cpp"
+extern int validcount;
+extern vint64 validcountState;
 
 
 // WARNING! keep in sync with VavoomC code!
@@ -482,6 +483,8 @@ class VLevel : public VGameObject {
   TArray<TVec> ssCenters;
 
   vint32 tsVisitedCount;
+  // for sector height cache
+  vint32 validcountSZCache;
 
   // set in `LoadMap()`, can be used by renderer to load/save lightmap cache
   VStr cacheFileBase; // can be empty, otherwise it is path and file name w/o extension
@@ -687,8 +690,6 @@ public:
   void SuspendNamedScriptThinkers (VStr name, int map);
   void TerminateNamedScriptThinkers (VStr name, int map);
 
-  vint32 nextVisitedCount ();
-
 public:
   // basic coldet code
   enum CD_HitType {
@@ -707,10 +708,13 @@ public:
 
 public:
   void ResetValidCount ();
-  void IncrementValidCount ();
+  inline void IncrementValidCount () { if (++validcount == MAX_VINT32) ResetValidCount(); }
 
   void ResetSZValidCount ();
-  void IncrementSZValidCount ();
+  inline void IncrementSZValidCount () { if (++validcountSZCache == MAX_VINT32) ResetSZValidCount(); }
+
+  void ResetVisitedCount ();
+  inline vint32 nextVisitedCount () { if (++tsVisitedCount == MAX_VINT32) ResetVisitedCount(); return tsVisitedCount; }
 
   // this saves everything except thinkers, so i can load it for further experiments
   void DebugSaveLevel (VStream &strm);

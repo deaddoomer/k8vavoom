@@ -130,12 +130,6 @@ static VCvarB __dbg_cl_always_allow_pause("__dbg_cl_always_allow_pause", false, 
 server_t sv;
 server_static_t svs;
 
-// increment every time a check is made
-int validcount = 1;
-vint64 validcountState = 1;
-// for sector height cache
-int validcountSZCache = 1;
-
 bool sv_loading = false;
 bool sv_map_travel = false;
 int sv_load_num_players = 0;

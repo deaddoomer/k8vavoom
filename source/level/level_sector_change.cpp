@@ -57,24 +57,14 @@ void VLevel::ChangeOneSectorInternal (sector_t *sector) {
 
 //==========================================================================
 //
-//  VLevel::nextVisitedCount
+//  VLevel::ResetVisitedCount
 //
 //==========================================================================
-vint32 VLevel::nextVisitedCount () {
-  if (tsVisitedCount == MAX_VINT32) {
-    tsVisitedCount = 1;
-    for (auto &&sector : allSectors()) {
-      for (msecnode_t *n = sector.TouchingThingList; n; n = n->SNext) n->Visited = 0;
-    }
-  } else {
-    ++tsVisitedCount;
+void VLevel::ResetVisitedCount () {
+  tsVisitedCount = 1;
+  for (auto &&sector : allSectors()) {
+    for (msecnode_t *n = sector.TouchingThingList; n; n = n->SNext) n->Visited = 0;
   }
-  return tsVisitedCount;
-}
-
-IMPLEMENT_FUNCTION(VLevel, GetNextVisitedCount) {
-  vobjGetParamSelf();
-  RET_INT(Self->nextVisitedCount());
 }
 
 
@@ -176,4 +166,11 @@ bool VLevel::ChangeSector (sector_t *sector, int crunch) {
   }
   IncrementSZValidCount();
   return ChangeSectorInternal(sector, crunch);
+}
+
+
+
+IMPLEMENT_FUNCTION(VLevel, GetNextVisitedCount) {
+  vobjGetParamSelf();
+  RET_INT(Self->nextVisitedCount());
 }

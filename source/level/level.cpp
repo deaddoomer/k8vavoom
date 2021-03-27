@@ -35,6 +35,11 @@ IMPLEMENT_CLASS_NAMED(VLevel, VLevel);
 VLevel *GLevel;
 VLevel *GClLevel;
 
+// for entity state management
+vint64 validcountState = 1;
+// increment every time a check is made
+int validcount = 1;
+
 
 //==========================================================================
 //
@@ -122,32 +127,12 @@ void VLevel::ResetValidCount () {
 
 //==========================================================================
 //
-//  VLevel::IncrementValidCount
-//
-//==========================================================================
-void VLevel::IncrementValidCount () {
-  if (++validcount == 0x7fffffff) ResetValidCount();
-}
-
-
-//==========================================================================
-//
 //  VLevel::ResetSZValidCount
 //
 //==========================================================================
 void VLevel::ResetSZValidCount () {
   validcountSZCache = 1;
   for (auto &&it : allSectors()) it.ZExtentsCacheId = 0;
-}
-
-
-//==========================================================================
-//
-//  VLevel::IncrementSZValidCount
-//
-//==========================================================================
-void VLevel::IncrementSZValidCount () {
-  if (++validcountSZCache == 0x7fffffff) ResetSZValidCount();
 }
 
 
@@ -1294,6 +1279,10 @@ void SV_LoadLevel (VName MapName) {
 
   GLevel->LoadMap(MapName);
   Host_ResetSkipFrames();
+
+  // reset valid counts
+  validcount = 0;
+  validcountState = 0;
 }
 #endif
 

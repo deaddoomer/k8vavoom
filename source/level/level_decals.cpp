@@ -773,7 +773,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   //GCon->Logf(NAME_Debug, "Decal '%s', texture '%s'", *dec->name, *DTex->Name);
 
-  if (++decanimuid == 0x7fffffff) {
+  if (++decanimuid == MAX_VINT32) {
     decanimuid = 1;
     for (int f = 0; f < NumLines; ++f) {
       line_t *ld = Lines+f;

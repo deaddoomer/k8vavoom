@@ -217,6 +217,7 @@ native transient private array!Ctl2DestLink ControlLinks;
 native transient array!TVec ssCenters;
 
 native transient private int tsVisitedCount;
+native transient private int validcountSZCache; // for sector height cache
 
 native transient private string cacheFileBase;
 native transient private bool cacheIgnore;
