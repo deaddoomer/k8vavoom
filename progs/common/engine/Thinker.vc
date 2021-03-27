@@ -79,6 +79,7 @@ native readonly private Thinker Next;
 // `Spawn()` function sets this to game time
 // this can be used to remove various old items and such
 float SpawnTime;
+native transient int validcount; // moved to VThinker
 
 // network roles
 ubyte Role;

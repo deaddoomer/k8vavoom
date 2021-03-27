@@ -3951,6 +3951,14 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
       }
       return 0;
 
+    // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
+    case ACSF_Polyobj_IsBusy:
+      if (argCount >= 1) {
+        polyobj_t *po = ActiveObject->Level->XLevel->GetPolyobj(args[0]);
+        if (po) return (Level->eventPolyBusy(args[0]) ? 1 : 0);
+      }
+      return -1;
+
 
     case ACSF_SpawnParticle:
       return 0;

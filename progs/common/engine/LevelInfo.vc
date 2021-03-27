@@ -508,7 +508,7 @@ void AfterUnarchiveThinkers () {}
 //  PolyRotateMobj
 //
 //==========================================================================
-void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
+void PolyRotateMobj (Entity A, int poflags, float dangle) {
 }
 
 
@@ -517,7 +517,7 @@ void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
 //  PolyMoveMobjBy
 //
 //==========================================================================
-bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
+bool PolyMoveMobjBy (Entity A, int poflags, float dx, float dy) {
   return false;
 }
 

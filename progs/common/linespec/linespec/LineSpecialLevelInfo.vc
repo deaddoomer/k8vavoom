@@ -5186,8 +5186,8 @@ override void AcsWarp (Entity Activator, int tid, float xofs, float yofs, float 
 //  PolyRotateMobj
 //
 //==========================================================================
-override void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
-  if (!po || !po->posector || !dangle) return;
+override void PolyRotateMobj (Entity A, int poflags, float dangle) {
+  if (!dangle) return;
   EntityEx ex = EntityEx(A);
   if (!ex) return;
   float oldyaw = AngleMod360(ex.Angles.yaw);
@@ -5202,8 +5202,7 @@ override void PolyRotateMobj (Entity A, polyobj_t *po, float dangle) {
 //  PolyMoveMobjBy
 //
 //==========================================================================
-override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
-  if (!po || !po->posector) return false;
+override bool PolyMoveMobjBy (Entity A, int poflags, float dx, float dy) {
   EntityEx ex = EntityEx(A);
   if (!ex) return false;
   //if (!dx && !dy) return true; // we may still want to crush it
@@ -5219,7 +5218,7 @@ override bool PolyMoveMobjBy (Entity A, polyobj_t *po, float dx, float dy) {
   if (ok) {
     ex.Origin = newpos;
     ex.LastMoveOrigin += delta;
-  } else if (po.bCrush && ex.bSolid && (ex.bMonster || ex.bMissile || ex.bIsPlayer)) {
+  } else if ((poflags&PF_Crush) && ex.bSolid && (ex.bMonster || ex.bMissile || ex.bIsPlayer)) {
     bool oldCT = ex.bColideWithThings;
     ex.bColideWithThings = false;
     killit = !ex.CheckRelPosition(out tmtrace, ex.Origin, noPickups:true, ignoreMonsters:true, ignorePlayers:true);

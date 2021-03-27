@@ -371,8 +371,7 @@ class VEntity : public VThinker {
   TSecPlaneRef EFloor;
   TSecPlaneRef ECeiling;
 
-  // if == validcount, already checked
-  //vint32 ValidCount;
+  //vint32 validcount; // moved to VThinker
 
   // flags
   enum {

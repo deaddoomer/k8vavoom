@@ -1149,6 +1149,14 @@ struct polyobjpart_t {
 };
 
 
+// used in 3d pobj movers
+enum {
+  PF_Crush         = 1<<0, // should the polyobj attempt to crush mobjs?
+  PF_HurtOnTouch   = 1<<1,
+  PF_NoCarry       = 1<<2, // 3d pobj should not carry things (only for horizontal; for vertical -- only up, down by gravity)
+  PF_NoAngleChange = 1<<3, // 3d pobj should not change thing angle on rotation
+};
+
 //
 //  Polyobj data
 //
