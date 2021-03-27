@@ -625,7 +625,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.iodef(VName("flags"), polyFlags, 0xffffffffu);
       if (Strm.IsLoading()) {
         if (polyFlags != 0xffffffffu) po->PolyFlags = polyFlags;
-        if (angle) RotatePolyobj(po->tag, angle);
+        if (angle) RotatePolyobj(po->tag, angle, true); // forced rotate
         //GCon->Logf("poly #%d: oldpos=(%g,%g,%g) -> (%g,%g,%g) : (%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z, polyX, polyY, polyZ, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z);
         MovePolyobj(po->tag, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z, true); // forced move
         //GCon->Logf("poly #%d: newpos=(%g,%g,%g)", po->tag, po->startSpot.x, po->startSpot.y, po->startSpot.z);

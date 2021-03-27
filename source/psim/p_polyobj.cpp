@@ -1194,6 +1194,8 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 //
 //  VLevel::MovePolyobj
 //
+//  `forced` is used on map loading, and we don't need to follow link chain
+//
 //==========================================================================
 bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   polyobj_t *po = GetPolyobj(num);
@@ -1202,7 +1204,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   if (!po->posector) z = 0.0f;
 
   polyobj_t *pofirst = po;
-
 
   const bool docarry = (pofirst->posector && !(pofirst->PolyFlags&polyobj_t::PF_NoCarry));
   bool flatsSaved = false;
@@ -1227,6 +1228,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         edata.mobj = mobj;
         edata.Origin = mobj->Origin;
       }
+      if (forced) break;
     }
   }
 
@@ -1254,7 +1256,10 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       }
     }
     // move platform vertically
-    for (po = pofirst; po; po = po->polink) OffsetPolyobjFlats(po, z);
+    for (po = pofirst; po; po = po->polink) {
+      OffsetPolyobjFlats(po, z);
+      if (forced) break;
+    }
     // check if not blocked
     if (!forced) {
       //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 43 : 42))
@@ -1328,10 +1333,12 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         **vptr = (*origPts)+delta;
       }
       UpdatePolySegs(po);
+      if (forced) break;
     }
 
     // check for blocked movement
     bool blocked = false;
+
     if (!forced) {
       for (po = pofirst; po; po = po->polink) {
         blocked = PolyCheckMobjBlocked(po);
@@ -1374,6 +1381,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     unlinked = false;
     for (po = pofirst; po; po = po->polink) {
       UpdatePolySegs(po);
+      if (forced) break;
     }
   }
 
@@ -1383,6 +1391,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     po->startSpot.z += z;
     OffsetPolyobjFlats(po, 0.0f, true);
     if (unlinked) LinkPolyobj(po);
+    if (forced) break;
   }
 
   // carry things
@@ -1412,7 +1421,10 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 
   // notify renderer that this polyobject is moved
   if (Renderer) {
-    for (po = pofirst; po; po = po->polink) Renderer->PObjModified(po);
+    for (po = pofirst; po; po = po->polink) {
+      Renderer->PObjModified(po);
+      if (forced) break;
+    }
   }
 
   return true;
@@ -1422,6 +1434,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 //==========================================================================
 //
 //  VLevel::RotatePolyobj
+//
+//  `forced` is used on map loading, and we don't need to follow link chain
 //
 //==========================================================================
 bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
@@ -1444,7 +1458,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   const bool flatsSaved = (pofirst->posector);
 
   // collect objects we need to move/rotate
-  if (pofirst->posector && (docarry || doangle)) {
+  if (!forced && pofirst->posector && (docarry || doangle)) {
     IncrementValidCount();
     const int visCount = validcount;
     for (po = pofirst; po; po = po->polink) {
@@ -1490,6 +1504,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
       (*vptr)->y = (tr_y*mcosAn+tr_x*msinAn)+ssy;
     }
     UpdatePolySegs(po);
+    if (forced) break;
   }
 
   bool blocked = false;
@@ -1518,47 +1533,46 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     return false;
   }
 
-  if (flatsSaved) {
-    for (po = pofirst; po; po = po->polink) {
+  for (po = pofirst; po; po = po->polink) {
+    po->angle = an;
+    if (flatsSaved) {
       po->pofloor.BaseAngle = AngleMod(po->pofloor.BaseAngle+angle);
       po->poceiling.BaseAngle = AngleMod(po->poceiling.BaseAngle+angle);
       OffsetPolyobjFlats(po, 0.0f, true);
     }
-  }
-
-  for (po = pofirst; po; po = po->polink) {
-    po->angle = an;
     LinkPolyobj(po);
+    if (forced) break;
   }
 
   // move and rotate things
-  if (flatsSaved && poAffectedEnitities.length()) {
-    if (!forced && (docarry || doangle)) {
-      msincos(AngleMod(angle), &msinAn, &mcosAn);
-      for (auto &&edata : poAffectedEnitities) {
-        VEntity *e = edata.mobj;
-        if (e->IsGoingToDie()) continue;
-        if (docarry) {
-          const float ssx = edata.po->startSpot.x;
-          const float ssy = edata.po->startSpot.y;
-          // rotate around polyobject spot point
-          const float xc = e->Origin.x-ssx;
-          const float yc = e->Origin.y-ssy;
-          //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), xc, yc);
-          // calculate the new X and Y values
-          const float nx = (xc*mcosAn-yc*msinAn);
-          const float ny = (yc*mcosAn+xc*msinAn);
-          //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), nx, ny);
-          e->Level->eventPolyMoveMobjBy(e, edata.po->PolyFlags, (nx+ssx)-e->Origin.x, (ny+ssy)-e->Origin.y); // anyway
-        }
-        if (doangle && angle && !e->IsGoingToDie()) e->Level->eventPolyRotateMobj(e, edata.po->PolyFlags, angle);
+  if (!forced && flatsSaved && (docarry || doangle) && poAffectedEnitities.length()) {
+    msincos(AngleMod(angle), &msinAn, &mcosAn);
+    for (auto &&edata : poAffectedEnitities) {
+      VEntity *e = edata.mobj;
+      if (e->IsGoingToDie()) continue;
+      if (docarry) {
+        const float ssx = edata.po->startSpot.x;
+        const float ssy = edata.po->startSpot.y;
+        // rotate around polyobject spot point
+        const float xc = e->Origin.x-ssx;
+        const float yc = e->Origin.y-ssy;
+        //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), xc, yc);
+        // calculate the new X and Y values
+        const float nx = (xc*mcosAn-yc*msinAn);
+        const float ny = (yc*mcosAn+xc*msinAn);
+        //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), nx, ny);
+        e->Level->eventPolyMoveMobjBy(e, edata.po->PolyFlags, (nx+ssx)-e->Origin.x, (ny+ssy)-e->Origin.y); // anyway
       }
+      if (doangle && angle && !e->IsGoingToDie()) e->Level->eventPolyRotateMobj(e, edata.po->PolyFlags, angle);
     }
   }
 
   // notify renderer that this polyobject is moved
   if (Renderer) {
-    for (po = pofirst; po; po = po->polink) Renderer->PObjModified(po);
+    for (po = pofirst; po; po = po->polink) {
+      Renderer->PObjModified(po);
+      if (forced) break;
+    }
   }
 
   return true;
