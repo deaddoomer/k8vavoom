@@ -336,9 +336,6 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     Create2DBBox(tmbbox, Origin, max2(1.0f, rad));
     DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
     polyobj_t *spo = nullptr;
-    polyobj_t *standpo = nullptr;
-    polyobj_t *insidepo = nullptr;
-    const float z1 = Origin.z+max2(0.0f, Height);
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         polyobj_t *po;
@@ -348,17 +345,50 @@ void VEntity::LinkToWorld (int properFloorCheck) {
           if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) continue;
           if (needSectorList) linkAdditionalSectors.append(po->GetSector());
           // hack for loader -- allow slightly stuck objects
-          const float dz = Origin.z-po->poceiling.maxz;
-          if (dz >= -0.1f && dz < 0.0f) Origin.z = po->poceiling.maxz;
+          const float pz0 = po->pofloor.maxz;
+          const float pz1 = po->poceiling.maxz;
+          const float z0 = Origin.z;
+          const float z1 = z0+max2(0.0f, Height);
+          bool fixFloor = false, fixCeiling = false;
+          const float dz = z0-pz1;
+          //FIXME: hack for loader (it should be removed later)
+          if (dz >= -0.1f && dz <= 0.0f) {
+            Origin.z = pz1;
+            fixFloor = true;
+            if (!spo || spo->tag > po->tag) spo = po;
+          } else if (z1 > po->poceiling.maxz) {
+            // our head is above, check and fix floor
+            fixFloor = true;
+            if (!spo || (spo->tag > po->tag && spo->poceiling.maxz != z0)) spo = po;
+          } else if (z0 <= po->pofloor.maxz) {
+            // our feet are below, check and fix ceiling
+            fixCeiling = true;
+          } else {
+            // we are fully inside, still check and fix ceiling
+            fixCeiling = true;
+            if (!spo || spo->tag > po->tag) spo = po;
+          }
+          //GCon->Logf(NAME_Debug, "***LinkToWorld:%s(%u): pobj #%d: pz0=%f; pz1=%f; z0=%f; z1=%f; dz=%f; fixFloor=%d; fixCeiling=%d; FloorZ=%f (DropOffZ=%f); CeilingZ=%f", GetClass()->GetName(), GetUniqueId(), po->tag, pz0, pz1, z0, z1, dz, (int)fixFloor, (int)fixCeiling, FloorZ, DropOffZ, CeilingZ);
+          if (fixFloor && FloorZ <= pz1) {
+            if (FloorZ < pz1) DropOffZ = FloorZ; // fix dropoff
+            FloorZ = pz1;
+            EFloor.set(&po->poceiling, false);
+          }
+          if (fixCeiling && CeilingZ >= pz0) {
+            CeilingZ = pz0;
+            ECeiling.set(&po->pofloor, false);
+          }
+          /*
           if (Copy3DPObjFloorCeiling(po, EFloor, FloorZ, ECeiling, CeilingZ, spo, Origin.z, z1)) {
             if (Origin.z == po->poceiling.maxz && (!standpo || standpo->tag > po->tag)) standpo = po;
           } else {
             if (!insidepo || insidepo->tag > spo->tag) insidepo = spo;
           }
+          */
         }
       }
     }
-    spo = (insidepo ? insidepo : standpo);
+    //GCon->Logf(NAME_Debug, "***LinkToWorld:%s(%u): SPO #%d; z0=%f; z1=%f; FloorZ=%f (DropOffZ=%f); CeilingZ=%f", GetClass()->GetName(), GetUniqueId(), (spo ? spo->tag : 0), Origin.z, Origin.z+max2(0.0f, Height), FloorZ, DropOffZ, CeilingZ);
     if (spo) {
       // subsector info required only for bots
       Sector = spo->GetSector();

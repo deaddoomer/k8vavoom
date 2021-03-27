@@ -30,7 +30,6 @@
 #include "../gamedefs.h"
 
 //#define VV_DBG_VERBOSE_TRYMOVE
-//#define VV_DBG_VERBOSE_REL_LINE_FC
 
 
 #ifdef VV_DBG_VERBOSE_TRYMOVE
@@ -95,14 +94,14 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
   check = CheckRelPosition(tmtrace, newPos, skipEffects);
   tmtrace.TraceFlags &= ~tmtrace_t::TF_FloatOk;
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "trying to move from (%g,%g,%g) to (%g,%g,%g); check=%d", Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, (int)check);
-  TMDbgF("%s: trying to move from (%g,%g,%g) to (%g,%g,%g); check=%d", GetClass()->GetName(), Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, (int)check);
+  TMDbgF("%s: trying to move from (%g,%g,%g) to (%g,%g,%g); check=%d; tmt.FloorZ=%g; tmt.DropOffZ=%g; tmt.CeilingZ=%g", GetClass()->GetName(), Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, (int)check, tmtrace.FloorZ, tmtrace.DropOffZ, tmtrace.CeilingZ);
 
   if (isClient) skipEffects = true;
 
   if (!check) {
     // cannot fit into destination point
     VEntity *O = tmtrace.BlockingMobj;
-    TMDbgF("%s:   HIT %s", GetClass()->GetName(), (O ? O->GetClass()->GetName() : "<none>"));
+    TMDbgF("%s:   HIT: entity=%s, line #%d", GetClass()->GetName(), (O ? O->GetClass()->GetName() : "<none>"), (tmtrace.BlockingLine ? (int)(ptrdiff_t)(tmtrace.BlockingLine-&XLevel->Lines[0]) : -1));
     if (!O) {
       // can't step up or doesn't fit
       PushLine(tmtrace, skipEffects);
@@ -126,6 +125,8 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       return false;
     }
   }
+
+  // check passed
 
   if (EntityFlags&EF_ColideWithWorld) {
     if (tmtrace.CeilingZ-tmtrace.FloorZ < Height) {
@@ -254,7 +255,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       TMDbgF("%s:   SECTORSTAY(0)!", GetClass()->GetName());
       return false;
     }
-  }
+  } // (EntityFlags&EF_ColideWithWorld)
 
   bool OldAboveFakeFloor = false;
   bool OldAboveFakeCeiling = false;

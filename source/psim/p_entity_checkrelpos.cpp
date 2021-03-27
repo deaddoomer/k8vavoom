@@ -29,6 +29,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
+//#define VV_DBG_VERBOSE_REL_LINE_FC
+
 
 //==========================================================================
 //
@@ -79,6 +81,8 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
 
   XLevel->IncrementValidCount();
   tmtrace.SpecHit.resetNoDtor(); // was `Clear()`
+
+  //GCon->Logf(NAME_Debug, "xxx: %s(%u): CheckRelPosition (vc=%d)", GetClass()->GetName(), GetUniqueId(), validcount);
 
   tmtrace.BlockingMobj = nullptr;
   tmtrace.StepThing = nullptr;
@@ -132,10 +136,13 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
   tmtrace.FloorZ = tmtrace.DropOffZ;
   tmtrace.BlockingMobj = nullptr;
 
+  //bool gotNewValid = false;
+
   // check lines
   if (EntityFlags&EF_ColideWithWorld) {
     //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking lines...", GetClass()->GetName(), GetUniqueId());
-    XLevel->IncrementValidCount();
+    //XLevel->IncrementValidCount();
+    //gotNewValid = true;
 
     DeclareMakeBlockMapCoordsBBox2D(tmtrace.BBox, xl, yl, xh, yh);
     bool good = true;
@@ -169,10 +176,9 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
 
     polyobj_t *inpobj = nullptr;
     // check if we can stand inside some polyobject
-    // there is no need to check it if our position is already invalid
     if (XLevel->Has3DPolyObjects()) {
-      //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)...", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs);
-      // no need for new validcount
+      //if (!gotNewValid) XLevel->IncrementValidCount();
+      //GCon->Logf(NAME_Debug, "xxx: %s(%u): checking pobjs (%d)... (vc=%d)", GetClass()->GetName(), GetUniqueId(), XLevel->NumPolyObjs, validcount);
       const float z1 = tmtrace.End.z+max2(0.0f, Height);
       for (int bx = xl; bx <= xh; ++bx) {
         for (int by = yl; by <= yh; ++by) {
@@ -350,7 +356,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   //     it seems that the original intent was to immediately process blocking lines,
   //     but push non-blocking lines. wtf?!
 
-  if (!ld->backsector) {
+  if (!ld->backsector || !(ld->flags&ML_TWOSIDED)) {
     // one sided line
     if (!skipSpecials) BlockedByLine(ld);
     // mark the line as blocking line
@@ -368,18 +374,43 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     if (!IsBlockingLine(ld)) return true;
     if (!po->Is3D() || po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
-    if (po->pofloor.minz >= po->poceiling.maxz) return true; // paper-thin or invalid polyobject
-    const float z1 = hitPoint.z+max2(0.0f, Height);
-    const float oldFZ = tmtrace.FloorZ;
-    if (Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, z1)) {
-      // not stuck
-      if (tmtrace.FloorZ > oldFZ && oldFZ < tmtrace.DropOffZ) tmtrace.DropOffZ = oldFZ;
-      return true;
+    const float pz0 = po->pofloor.minz;
+    const float pz1 = po->poceiling.maxz;
+    if (pz0 >= pz1) return true; // paper-thin or invalid polyobject
+    const float hz0 = hitPoint.z;
+    const float hz1 = hz0+max2(0.0f, Height);
+    bool fixFloor = false, fixCeiling = false;
+    // if we are fully inside, there is no opening
+    if (hz0 >= pz0 && hz1 <= pz1) {
+      // fix ceiling to pobj floor (dunno what to do here)
+      //tmtrace.DropOffZ = max2(tmtrace.DropOffZ, tmtrace.FloorZ);
+      //tmtrace.FloorZ = tmtrace.DropOffZ = pz0;
+      //tmtrace.EFloor.set(&po->pofloor, false);
+      tmtrace.CeilingZ = pz0;
+      tmtrace.ECeiling.set(&po->pofloor, false);
+      // blocked
+      if (!skipSpecials) BlockedByLine(ld);
+      tmtrace.BlockingLine = ld;
+      return false;
     }
-    // stuck
-    if (!skipSpecials) BlockedByLine(ld);
-    tmtrace.BlockingLine = ld;
-    return false;
+    // check relative position
+         if (hz0 >= pz1) fixFloor = true; // fully above, fix floor
+    else if (hz1 <= pz0) fixCeiling = true; // fully below, fix ceiling
+    // we have a possible "opening", fix floor/ceiling (so `TryMove()` will be able to step up/autocrouch)
+    else if (hz1 > pz1) fixFloor = true; // opening above, fix floor
+    else { vassert(hz0 < pz0); fixCeiling = true; } // opening below, fix ceiling
+
+    if (fixFloor && tmtrace.FloorZ <= pz1) {
+      if (tmtrace.FloorZ < pz1) tmtrace.DropOffZ = tmtrace.FloorZ; // fix dropoff
+      tmtrace.FloorZ = pz1;
+      tmtrace.EFloor.set(&po->poceiling, false);
+    }
+    if (fixCeiling && tmtrace.CeilingZ >= pz0) {
+      tmtrace.CeilingZ = pz0;
+      tmtrace.ECeiling.set(&po->pofloor, false);
+    }
+
+    return true;
   }
 
   if (IsBlockingLine(ld)) {
