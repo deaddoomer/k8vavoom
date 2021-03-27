@@ -3720,7 +3720,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
   if (!Level.Game.IsAuthority) return false;
 
-  printdebug("%C: UseLines! thing range:%s; line range:%s", self, UseThingRange, UseRange);
+  //printdebug("%C: UseLines! thing range:%s; line range:%s", self, UseThingRange, UseRange);
 
   bool anythingUsed = false;
   bool action = false;
@@ -3775,9 +3775,9 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
     ee = EntityEx(in.Thing);
     if (!ee) continue;
     if (checkThingUseDg && !checkThingUseDg(ee)) continue;
-    printdebug("%C: trying to use thing %C(%s)", self, ee, ee.UniqueId);
+    //printdebug("%C: trying to use thing %C(%s)", self, ee, ee.UniqueId);
     if (!UseThing(ee)) {
-      printdebug("%C:   used thing %C(%s)", self, ee, ee.UniqueId);
+      //printdebug("%C:   used thing %C(%s)", self, ee, ee.UniqueId);
       if (!hitLineOrThing) {
         if (ee.bSolid && !ee.bCorpse && !ee.bMissile && !ee.bMonster && !ee.bInvisible) hitLineOrThing = true;
       }
@@ -3955,7 +3955,7 @@ bool UseThing (EntityEx Other) {
   if (Other.bUseSpecial && Other.Special) {
     auto swd = SwitchableDecoration(Other);
     if (swd && swd.ActivationType) {
-      printwarn("activation type for thing specials aren't implemented yet! %C:ActivationType=0x%08x", Other, swd.ActivationType);
+      printwarn("activation types for thing specials aren't implemented yet! %C:ActivationType=0x%08x", Other, swd.ActivationType);
     }
     if (Level.ExecuteActionSpecial(
       Other.Special, Other.Args[0], Other.Args[1], Other.Args[2],
