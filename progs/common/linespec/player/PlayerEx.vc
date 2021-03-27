@@ -2425,6 +2425,14 @@ bool UsePuzzleItem (int PuzzleItemType) {
     if (in.bIsALine) {
       // check line
       ld = in.line;
+
+      // check 3d pobj line
+      if (ld->pobject && ld->pobject->posector) {
+        polyobj_t *po = ld->pobject;
+        // 3d pobj, check height
+        if (MO.Origin.z+fmax(0.0, MO.Height) <= po->pofloor.minz || MO.Origin.z >= po->poceiling.maxz) continue;
+      }
+
       if (ld->special != LNSPEC_UsePuzzleItem) {
         if (in.bIsABlockingLine) break; // line hit, no actor found
         /*

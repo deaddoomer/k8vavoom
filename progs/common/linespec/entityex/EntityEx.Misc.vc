@@ -3798,7 +3798,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   end = start+UseRange*useDir.xy;
   float pheight = Origin.z+Height/2.0;
 
-  TVec hitPoint;
+  //TVec hitPoint;
   bool DoSecAct = true;
   bool FoundLine = false;
   bool buttonSuccess;
@@ -3813,16 +3813,28 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
     ld = in.line;
     if (!ld) continue; // just in case
 
-    if (!ld->special || !(ld->SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack))) {
-      hitPoint = in.hitpoint; //Origin+(UseRange*in.frac)*useDir;
+    //printdebug("%C: testing line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
 
+    // check 3d pobj line
+    if (ld->pobject && ld->pobject->posector) {
+      polyobj_t *po = ld->pobject;
+      // 3d pobj, check height
+      if (Origin.z+fmax(0.0, Height) <= po->pofloor.minz || Origin.z >= po->poceiling.maxz) continue;
+    }
+
+    if (!ld->special || !(ld->SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack))) {
       if (in.bIsABlockingLine || (ld->flags&(ML_BLOCKEVERYTHING|ML_BLOCKUSE))) {
         // gozzo does this
         open = nullptr;
       } else {
         //open = XLevel.LineOpenings(ld, hitPoint);
         //open = XLevel.FindOpening(open, hitPoint.z, hitPoint.z+Height);
-        open = XLevel.FindLineOpening(ld, hitPoint, Height);
+        if (ld->pobject && ld->pobject->posector) {
+          open = nullptr;
+        } else {
+          //hitPoint = in.hitpoint; //Origin+(UseRange*in.frac)*useDir;
+          open = XLevel.FindLineOpening(ld, in.hitpoint, Height);
+        }
       }
 
       if (!open || open->range <= 0.0 || (ld->special && Level.CompatUseBlocking)) {
@@ -3830,20 +3842,22 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
         DoSecAct = false;
 
-        printdebug("%C: trying to use blocking line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
+        //printdebug("%C: trying to use blocking line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
 
-        // let sector intercept the use
-        if (Sector && Sector->ActionList && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
-          if (onLineUsedDg) onLineUsedDg(ld);
-          anythingUsed = true;
-          break;
-        }
+        if (!ld->pobject || !ld->pobject->posector) {
+          // let sector intercept the use
+          if (Sector && Sector->ActionList && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
+            if (onLineUsedDg) onLineUsedDg(ld);
+            anythingUsed = true;
+            break;
+          }
 
-        sector_t *sec = (PointOnPlaneSide(Origin, *ld) == 0 ? ld->frontsector : ld->backsector);
-        if (sec && sec->ActionList && SectorAction(sec->ActionList).TriggerAction(self, SectorAction::SECSPAC_UseWall)) {
-          if (onLineUsedDg) onLineUsedDg(ld);
-          anythingUsed = true;
-          break;
+          sector_t *sec = (PointOnPlaneSide(Origin, *ld) == 0 ? ld->frontsector : ld->backsector);
+          if (sec && sec->ActionList && SectorAction(sec->ActionList).TriggerAction(self, SectorAction::SECSPAC_UseWall)) {
+            if (onLineUsedDg) onLineUsedDg(ld);
+            anythingUsed = true;
+            break;
+          }
         }
 
         //!if (FailSound) PlaySound(FailSound, CHAN_VOICE);
@@ -3885,7 +3899,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
     // check delegate callback
     if (checkLineUseDg && !checkLineUseDg(ld)) continue;
 
-    printdebug("%C: trying to use non-blocking line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
+    //printdebug("%C: trying to use line #%s (special %s)", self, ld-&XLevel.Lines[0], ld->special);
 
     // check height here?
     hitLineOrThing = true;
@@ -3908,6 +3922,8 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       DoSecAct = false;
       break;
     }
+
+    if (in.bIsABlockingLine) break;
   }
 
   if (DoSecAct && Sector->ActionList) {
