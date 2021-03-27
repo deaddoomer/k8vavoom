@@ -411,17 +411,24 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   //TODO: do this in 3d floor setup
   sec_params_t *LightParams;
   if (LightSourceSector < 0 || LightSourceSector >= Level->NumSectors) {
-    LightParams = secregion->params;
-    lightColor = LightParams->LightColor;
-    // if this is top flat of insane 3d floor, its light level should be taken from the upper region (or main sector, if this region is the last one)
-    //??? should we ignore visual regions here? (sec_region_t::RF_OnlyVisual)
-    if (surfaceType == SFT_Floor && secregion->extraline &&
-        (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0)
-    {
-      sec_region_t *nreg = GetHigherRegion(sub->sector, secregion);
-      if (nreg->params) {
-        LightParams = nreg->params;
-        lightColor = LightParams->LightColor;
+    sector_t *pobjsector = (seg && seg->pobj ? seg->pobj->GetSector() : nullptr);
+    if (pobjsector) {
+      // use original 3d polyobject sector for lighting
+      LightParams = pobjsector->eregions->params;
+      lightColor = LightParams->LightColor;
+    } else {
+      LightParams = secregion->params;
+      lightColor = LightParams->LightColor;
+      // if this is top flat of insane 3d floor, its light level should be taken from the upper region (or main sector, if this region is the last one)
+      //??? should we ignore visual regions here? (sec_region_t::RF_OnlyVisual)
+      if (surfaceType == SFT_Floor && secregion->extraline &&
+          (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0)
+      {
+        sec_region_t *nreg = GetHigherRegion(sub->sector, secregion);
+        if (nreg->params) {
+          LightParams = nreg->params;
+          lightColor = LightParams->LightColor;
+        }
       }
     }
   } else {
@@ -986,9 +993,7 @@ bool VRenderLevelShared::NeedToRenderNextSubFirst (const subregion_t *region) no
 //
 //  VRenderLevelShared::AddPolyObjToClipper
 //
-//  we have to do this separately, because for now we have to add
-//  invisible segs to clipper too
-//  i don't yet know why
+//  we have to do this separately, because pobj shape is arbitrary
 //
 //==========================================================================
 void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub) {
@@ -1003,8 +1008,7 @@ void VRenderLevelShared::AddPolyObjToClipper (VViewClipper &clip, subsector_t *s
 //
 //  VRenderLevelShared::RenderPolyObj
 //
-//  render the polyobj in the subsector, and optionally add it to clipper
-//  this blocks view with polydoors
+//  render all polyobjects in the subsector
 //
 //==========================================================================
 void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
