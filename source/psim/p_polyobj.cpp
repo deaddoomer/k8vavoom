@@ -1263,8 +1263,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           {
             // force onto platform
             mobj->Origin.z = pofz+z;
-            mobj->FloorZ = pofz+z; // this is required for `ChangeSector()`; but there's no need to change `EFloor`
-            mobj->LastMoveOrigin.z += mobj->Origin.z-oldz; // disable interpolation
             //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u):   MOVED! z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
           }
         }
@@ -1277,52 +1275,57 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     }
     // check if not blocked
     if (!forced) {
-      //ChangeSector(po->posector, (po->PolyFlags&polyobj_t::PF_Crush ? 43 : 42))
       // check movement
       //FIXME: push stacked mobjs (one atop of another) up
-      bool seenCorpse = false;
+      bool canMove = true;
       tmtrace_t tmtrace;
       for (auto &&edata : poAffectedEnitities) {
         VEntity *mobj = edata.mobj;
-        seenCorpse = (seenCorpse || mobj->IsRealCorpse());
-        if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        //if (!mobj->IsSolid() || !(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
         const vuint32 oldFlags = mobj->EntityFlags;
         mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
-        bool canMove = true;
-        for (po = pofirst; po; po = po->polink) {
-          const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-          if (!ok) { canMove = false; break; }
+        const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+        if (!ok) {
+          canMove = false;
+          mobj->EntityFlags = oldFlags;
+          break;
+        } else {
+          // fix z if necessary
+          if (mobj->Origin.z < tmtrace.FloorZ) {
+            // hit something
+            mobj->Origin.z = tmtrace.FloorZ;
+          }
         }
         mobj->EntityFlags = oldFlags;
-        if (!canMove) {
-          vassert(flatsSaved);
-          // restore mobjs and platforms positions
-          //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
-          for (po = pofirst; po; po = po->polink) {
-            po->pofloor = po->savedFloor;
-            po->poceiling = po->savedCeiling;
-            OffsetPolyobjFlats(po, 0.0f, true);
-          }
-          // restore `z` of force-modified entities, otherwise they may fall through the platform
-          for (auto &&ed2 : poAffectedEnitities) {
-            VEntity *e = ed2.mobj;
-            if (!e->IsGoingToDie()) {
-              const float oldz = e->Origin.z;
-              e->Origin.z = ed2.Origin.z;
-              e->LastMoveOrigin.z += e->Origin.z-oldz;
-              // and relink it
-              e->LinkToWorld();
-            }
-          }
-          return false;
-        }
       }
-      // crash corpses
-      if (seenCorpse) {
-        VName ctp("PolyObjectGibs");
+      // blocked?
+      if (!canMove) {
+        vassert(flatsSaved);
+        // restore mobjs and platforms positions
+        //GCon->Logf(NAME_Debug, "pobj #%d: BLOCKED!", po->tag);
+        for (po = pofirst; po; po = po->polink) {
+          po->pofloor = po->savedFloor;
+          po->poceiling = po->savedCeiling;
+          OffsetPolyobjFlats(po, 0.0f, true);
+        }
+        // restore `z` of force-modified entities, otherwise they may fall through the platform
         for (auto &&edata : poAffectedEnitities) {
-          VEntity *mobj = edata.mobj;
-          if (mobj->IsGoingToDie() || !mobj->IsRealCorpse()) continue;
+          VEntity *e = edata.mobj;
+          if (!e->IsGoingToDie()) {
+            e->Origin.z = edata.Origin.z;
+            e->LinkToWorld(); // relink it, just in case
+          }
+        }
+        return false;
+      }
+      // relink, and crash corpses
+      VName ctp("PolyObjectGibs");
+      for (auto &&edata : poAffectedEnitities) {
+        VEntity *mobj = edata.mobj;
+        if (mobj->IsGoingToDie()) continue;
+        mobj->LinkToWorld(); // relink it
+        mobj->LastMoveOrigin.z += mobj->Origin.z-edata.Origin.z;
+        if (mobj->IsRealCorpse()) {
           if (mobj->Origin.z+max2(0.0f, mobj->Height) > mobj->CeilingZ) mobj->GibMe(ctp);
         }
       }
@@ -1368,9 +1371,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         for (auto &&edata : poAffectedEnitities) {
           VEntity *mobj = edata.mobj;
           if (!mobj->IsGoingToDie()) {
-            const float oldz = mobj->Origin.z;
+            mobj->LastMoveOrigin.z -= mobj->Origin.z-edata.Origin.z;
             mobj->Origin.z = edata.Origin.z;
-            mobj->LastMoveOrigin.z += mobj->Origin.z-oldz;
             // and relink it
             //mobj->LinkToWorld();
           }
@@ -1427,7 +1429,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
       vuint32 poflags = 0;
       for (po = pofirst; po; po = po->polink) {
         //GCon->Logf(NAME_Debug, "    pobj #%d: %s(%u): z=%g (poz1=%g); sector=%p; basesector=%p (onit=%d : %g : %f : %a) fz=%g", po->tag, e->GetClass()->GetName(), e->GetUniqueId(), e->Origin.z, po->poceiling.maxz, e->Sector, e->BaseSector, (int)(e->Origin.z == po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), e->FloorZ);
-        if (e->Origin.z == po->poceiling.maxz) {
+        if (e->Sector == po->posector || e->Origin.z == po->poceiling.maxz) {
           needmove = true;
           poflags = po->PolyFlags;
           break;
@@ -1502,11 +1504,12 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
         if (mobj->ValidCount == visCount) continue;
         mobj->ValidCount = visCount;
         if (mobj->IsGoingToDie()) continue;
-        if (mobj->Origin.z != pz1) continue;
+        if (mobj->Origin.z != pz1) continue; // just in case
         if (!mobj->Sector->isInnerPObj()) continue; // this should be properly set in `LinkToWorld()`
         SavedEntityData &edata = poAffectedEnitities.alloc();
         edata.mobj = mobj;
         edata.Origin = mobj->Origin;
+        // need to save it, because entity relinking may change/reset it
         edata.po = mobj->Sector->ownpobj;
       }
     }
