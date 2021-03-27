@@ -1526,8 +1526,10 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
     }
   }
 
-  po->angle = an;
-  for (po = pofirst; po; po = po->polink) LinkPolyobj(po);
+  for (po = pofirst; po; po = po->polink) {
+    po->angle = an;
+    LinkPolyobj(po);
+  }
 
   // move and rotate things
   if (flatsSaved && poAffectedEnitities.length()) {
