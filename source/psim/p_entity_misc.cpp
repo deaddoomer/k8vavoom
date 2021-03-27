@@ -340,14 +340,15 @@ bool VEntity::Copy3DPObjFloorCeiling (polyobj_t *po, TSecPlaneRef &EFloor, float
   bool fixFloor = false, fixCeiling = false, res = true;
 
   // check relative position
-  if (z0 == pz0) {
+  if (z0 == pz1) {
     // standing on, fix floor
     fixFloor = true;
     if (!PolyObj || PolyObj->tag > po->tag) PolyObj = po;
   } else if (z1 > pz1) {
     // head is above, fix floor
     fixFloor = true;
-    if (!PolyObj || (PolyObj->tag > po->tag && PolyObj->poceiling.maxz != z0)) PolyObj = po;
+    // fix current pobj if there is an intersection
+    if (z0 < pz1 && (!PolyObj || (PolyObj->tag > po->tag && PolyObj->poceiling.maxz != z0))) PolyObj = po;
   } else if (z0 < pz0) {
     // feet are below, fix ceiling
     fixCeiling = true;
