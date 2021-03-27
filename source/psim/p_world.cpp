@@ -527,8 +527,8 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     // ignore 3d pobj lines we cannot possibly hit
     // also, if such line was hit, it is blocking, for sure
     polyobj_t *po = ld->pobj();
-    if (po) {
-      if (!doopening && po->Is3D()) continue;
+    if (doopening && po && po->Is3D()) {
+      //if (!doopening && po->Is3D()) continue;
       const float hpz = trace_org3d.z+trace_dir3d.z*frac;
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
@@ -566,6 +566,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         continue;
       }
       blockFlag = true;
+      if (!doopening && po && po->Is3D()) blockFlag = false;
     } else {
       // in "compat" mode, lines of self-referenced sectors are ignored
       if (ld->frontsector == ld->backsector && (scanflags&PT_COMPAT)) continue;
