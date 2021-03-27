@@ -1216,9 +1216,25 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     flatsSaved = true;
     IncrementValidCount();
     const int visCount = validcount;
+    //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
     for (po = pofirst; po; po = po->polink) {
       po->savedFloor = po->pofloor;
       po->savedCeiling = po->poceiling;
+      for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
+        VEntity *mobj = n->Thing;
+        if (mobj->validcount == visCount) continue;
+        mobj->validcount = visCount;
+        if (mobj->IsGoingToDie()) continue;
+        //GCon->Logf(NAME_Debug, "  %s(%u): z=%g (poz1=%g); sector=%p; basesector=%p", mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, pofirst->poceiling.maxz, mobj->Sector, mobj->BaseSector);
+        SavedEntityData &edata = poAffectedEnitities.alloc();
+        edata.mobj = mobj;
+        edata.Origin = mobj->Origin;
+      }
+    }
+  } else if (forced && pofirst->posector) {
+    IncrementValidCount();
+    const int visCount = validcount;
+    for (po = pofirst; po; po = po->polink) {
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
         VEntity *mobj = n->Thing;
         if (mobj->validcount == visCount) continue;
@@ -1228,7 +1244,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         edata.mobj = mobj;
         edata.Origin = mobj->Origin;
       }
-      if (forced) break;
     }
   }
 
@@ -1317,7 +1332,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   bool unlinked;
 
   // horizontal movement
-  if (x || y) {
+  if (forced || x || y) {
     unlinked = true;
 
     // unlink and move all linked polyobjects
@@ -1375,6 +1390,11 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         OffsetPolyobjFlats(po, 0.0f, true);
         LinkPolyobj(po);
       }
+      // relink all mobjs (just in case)
+      for (auto &&edata : poAffectedEnitities) {
+        VEntity *mobj = edata.mobj;
+        if (!mobj->IsGoingToDie()) mobj->LinkToWorld();
+      }
       return false;
     }
   } else {
@@ -1394,18 +1414,19 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     if (forced) break;
   }
 
-  // carry things
+  // carry things?
   if (!forced && docarry && pofirst->posector && (x || y)) {
     //for (po = pofirst; po; po = po->polink) poflags |= po->PolyFlags;
-    //GCon->Logf(NAME_Debug, "===================");
+    //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
     for (auto &&edata : poAffectedEnitities) {
       VEntity *e = edata.mobj;
       if (e->IsGoingToDie()) continue;
-      //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u)", po->tag, e->GetClass()->GetName(), e->GetUniqueId());
+      //GCon->Logf(NAME_Debug, "  moving entity %s(%u)", e->GetClass()->GetName(), e->GetUniqueId());
       //FIXME: make this faster!
       bool needmove = false;
       vuint32 poflags = 0;
       for (po = pofirst; po; po = po->polink) {
+        //GCon->Logf(NAME_Debug, "    pobj #%d: %s(%u): z=%g (poz1=%g); sector=%p; basesector=%p (onit=%d : %g : %f : %a) fz=%g", po->tag, e->GetClass()->GetName(), e->GetUniqueId(), e->Origin.z, po->poceiling.maxz, e->Sector, e->BaseSector, (int)(e->Origin.z == po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), (e->Origin.z-po->poceiling.maxz), e->FloorZ);
         if (e->Origin.z == po->poceiling.maxz) {
           needmove = true;
           poflags = po->PolyFlags;
@@ -1413,8 +1434,18 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         }
       }
       if (needmove) {
-        //GCon->Logf(NAME_Debug, "pobj #%d: moving entity %s(%u) by (%g,%g)", pofirst->tag, e->GetClass()->GetName(), e->GetUniqueId(), x, y);
+        //GCon->Logf(NAME_Debug, "      moving entity %s(%u) by (%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), x, y);
         e->Level->eventPolyMoveMobjBy(e, poflags, x, y);
+      }
+    }
+  } else if (forced) {
+    // relink all mobjs (just in case)
+    //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
+    for (auto &&edata : poAffectedEnitities) {
+      VEntity *mobj = edata.mobj;
+      if (!mobj->IsGoingToDie()) {
+        //GCon->Logf(NAME_Debug, "  fixing entity %s(%u)", mobj->GetClass()->GetName(), mobj->GetUniqueId());
+        mobj->LinkToWorld();
       }
     }
   }
