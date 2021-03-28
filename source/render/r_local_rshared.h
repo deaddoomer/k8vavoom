@@ -678,6 +678,10 @@ public:
   // WARNING! this may modify `quad`
   void CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset=false) noexcept;
 
+  // cut quad with regions (used to cut out parts obscured by 3d floors)
+  // WARNING! this may modify `quad`
+  void CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset=false) noexcept;
+
 protected:
   // doesn't check quad direction
   static inline bool isValidQuad (const TVec quad[4]) noexcept {
@@ -690,8 +694,36 @@ protected:
     return true;
   }
 
-  static bool ClipQuadWithPlane (TVec quad[4], const TVec normal, const float dist) noexcept;
-  static sec_region_t *ClipQuadWithRegions (TVec quad[4], sector_t *sec) noexcept;
+  // doesn't check quad direction
+  // quad points are:
+  //   [0]: left bottom point
+  //   [1]: left top point
+  //   [2]: right top point
+  //   [3]: right bottom point
+  static inline bool isValidNormalQuad (const TVec quad[4]) noexcept {
+    if (quad[0].z >= quad[1].z || quad[3].z >= quad[2].z) return false;
+    return isValidQuad(quad);
+  }
+
+  // leaves bottom part
+  static bool ClipQuadWithPlaneBottom (TVec quad[4], const TVec normal, const float dist) noexcept;
+  static inline bool ClipQuadWithPlaneBottom (TVec quad[4], const TPlane &pl) noexcept { return ClipQuadWithPlaneBottom(quad, pl.normal, pl.dist); }
+  static inline bool ClipQuadWithPlaneBottom (TVec quad[4], const TSecPlaneRef &pl) noexcept { return ClipQuadWithPlaneBottom(quad, pl.GetNormal(), pl.GetDist()); }
+
+  // leaves top part
+  static bool ClipQuadWithPlaneTop (TVec quad[4], const TVec normal, const float dist) noexcept;
+  static inline bool ClipQuadWithPlaneTop (TVec quad[4], const TPlane &pl) noexcept { return ClipQuadWithPlaneTop(quad, pl.normal, pl.dist); }
+  static inline bool ClipQuadWithPlaneTop (TVec quad[4], const TSecPlaneRef &pl) noexcept { return ClipQuadWithPlaneTop(quad, pl.GetNormal(), pl.GetDist()); }
+
+  // start with the given region
+  static sec_region_t *ClipQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg) noexcept;
+  static inline sec_region_t *ClipQuadWithRegionsBottom (TVec quad[4], sector_t *sec) noexcept { return ClipQuadWithRegionsBottom(quad, sec->eregions); }
+
+  // start with the given region
+  static sec_region_t *ClipQuadWithRegionsTop (TVec quad[4], sec_region_t *reg) noexcept;
+  static inline sec_region_t *ClipQuadWithRegionsTop (TVec quad[4], sector_t *sec) noexcept { return ClipQuadWithRegionsTop(quad, sec->eregions); }
+
+  static bool isPointInsideSolidReg (const TVec lv, const float pz, sec_region_t *streg, sec_region_t *ignorereg) noexcept;
 
 public:
   int CountSegParts (const seg_t *);
@@ -856,6 +888,7 @@ private: // automap
   void amFlatsCollectSurfaces ();
 
 protected: // sector openings for surface builder
+  opening_t *GetBaseSectorOpening (sector_t *sector);
   opening_t *GetSectorOpenings (sector_t *sector, bool skipNonSolid=false);
   opening_t *GetSectorOpenings2 (sector_t *sector, bool skipNonSolid=false);
 

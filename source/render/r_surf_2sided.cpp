@@ -126,6 +126,8 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   if (TTex->Type != TEXTYPE_Null) {
     TVec wv[4];
 
+    //GCon->Logf(NAME_Debug, "2S-TOP: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
+
     // see `SetupTwoSidedBotWSurf()` for explanation
     const float topz1 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, ceiling, *seg->v1, seg->frontsector, r_ceiling) : r_ceiling.GetPointZ(*seg->v1));
     const float topz2 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, ceiling, *seg->v2, seg->frontsector, r_ceiling) : r_ceiling.GetPointZ(*seg->v2));
@@ -237,7 +239,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
   //       also, invert "lower unpegged" flag for this case
   int peghack = 0;
   unsigned hackflag = 0;
-  //if (r_hack_transparent_doors && TTex->Type == TEXTYPE_Null) GCon->Logf(NAME_Debug, "line #%d, side #%d: transdoor check=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), IsTransDoorHackTop(seg));
+  //if (r_hack_transparent_doors && BTex->Type == TEXTYPE_Null) GCon->Logf(NAME_Debug, "line #%d, side #%d: transdoor check=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), IsTransDoorHackTop(seg));
   if (!seg->pobj &&
       ((sub->sector->SectorFlags&sector_t::SF_IsTransDoorBot) || (r_hack_transparent_doors && BTex->Type == TEXTYPE_Null && IsTransDoorHackBot(seg))))
   {
@@ -256,6 +258,8 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
 
   if (BTex->Type != TEXTYPE_Null) {
     TVec wv[4];
+
+    //GCon->Logf(NAME_Debug, "2S-BOTTOM: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
 
     float topz1 = r_ceiling.GetPointZ(*seg->v1);
     float topz2 = r_ceiling.GetPointZ(*seg->v2);
@@ -494,7 +498,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       bottomCheck = true;
     }
 
-    for (opening_t *cop = GetSectorOpenings(seg->frontsector, true); cop; cop = cop->next) {
+    for (opening_t *cop = (lastQuadSplit ? GetBaseSectorOpening(seg->frontsector) : GetSectorOpenings(seg->frontsector, true)); cop; cop = cop->next) {
       if (extopz <= cop->bottom || exbotz >= cop->top) {
         if (doDump) { GCon->Log(" SKIP opening"); VLevel::DumpOpening(cop); }
         //continue;
@@ -547,6 +551,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       } else {
         if (z_org <= max2(midbotz1, midbotz2)) continue;
         if (z_org-texh >= max2(midtopz1, midtopz2)) continue;
+        /*
         if (doDump) {
           GCon->Log(" === front regions ===");
           VLevel::dumpSectorRegions(seg->frontsector);
@@ -557,6 +562,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
           GCon->Log(" === back openings ===");
           for (opening_t *bop = GetSectorOpenings2(seg->backsector, true); bop; bop = bop->next) VLevel::DumpOpening(bop);
         }
+        */
         hgts[0] = max2(midbotz1, z_org-texh);
         hgts[1] = min2(midtopz1, z_org);
         hgts[2] = min2(midtopz2, z_org);

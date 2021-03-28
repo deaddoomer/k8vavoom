@@ -281,59 +281,99 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
 
   // hack: 3d floor with sky texture seems to be transparent in renderer
   if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum) {
-    TVec wv[4];
+    TVec quad[4];
 
     //const bool wrapped = !!((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
     // side 3d floor midtex should always be wrapped
     enum { wrapped = 1 };
 
-    WallFace *facehead = nullptr;
-    WallFace *facetail = nullptr;
-    WallFace *face = new WallFace;
-    face->setup(reg, seg->v1, seg->v2);
+    if (lastQuadSplit) {
+      quad[0].x = quad[1].x = seg->v1->x;
+      quad[0].y = quad[1].y = seg->v1->y;
+      quad[2].x = quad[3].x = seg->v2->x;
+      quad[2].y = quad[3].y = seg->v2->y;
 
-    const bool isNonSolid = !!(reg->regflags&sec_region_t::RF_NonSolid);
-    facehead = facetail = face;
-    for (WallFace *cface = facehead; cface; cface = cface->next) {
-      if (isNonSolid || r_3dfloor_clip_both_sides) CutWallFace(cface, seg->frontsector, reg, isNonSolid, facetail);
-      CutWallFace(cface, seg->backsector, reg, isNonSolid, facetail);
-    }
+      float topz1 = reg->eceiling.GetPointZ(*seg->v1);
+      float topz2 = reg->eceiling.GetPointZ(*seg->v2);
 
-    // now create all surfaces
-    for (WallFace *cface = facehead; cface; cface = cface->next) {
-      if (!cface->isValid()) continue;
+      float botz1 = reg->efloor.GetPointZ(*seg->v1);
+      float botz2 = reg->efloor.GetPointZ(*seg->v2);
 
-      float topz1 = cface->topz[0];
-      float topz2 = cface->topz[1];
-      float botz1 = cface->botz[0];
-      float botz2 = cface->botz[1];
+      if (botz1 < topz1 && botz2 < topz2 &&
+          ((!r_floor.PointOnSide(TVec(seg->v1->x, seg->v1->y, topz1)) || !r_floor.PointOnSide(TVec(seg->v2->x, seg->v2->y, topz2))) ||
+           (!r_ceiling.PointOnSide(TVec(seg->v1->x, seg->v1->y, botz1)) || !r_ceiling.PointOnSide(TVec(seg->v2->x, seg->v2->y, botz2)))))
+      {
+        quad[0].z = botz1;
+        quad[1].z = topz1;
+        quad[2].z = topz2;
+        quad[3].z = botz2;
 
-      // check texture limits
-      if (!wrapped) {
-        if (max2(topz1, topz2) <= z_org-texhsc) continue;
-        if (min2(botz1, botz2) >= z_org) continue;
+        // clip with floor and ceiling
+        ClipQuadWithPlaneBottom(quad, r_ceiling);
+        ClipQuadWithPlaneTop(quad, r_floor);
+
+        if (isValidNormalQuad(quad)) {
+          // clip with other 3d floors
+          // clip only with the following regions, to avoid holes
+          // if we have a back sector, split with it too
+          bool found = false;
+          for (sec_region_t *sr = seg->frontsector->eregions->next; sr; sr = sr->next) if (sr == reg) { found = true; break; }
+          sector_t *bsec = (found ? seg->backsector : seg->frontsector);
+          if (seg->frontsector == seg->backsector) bsec = nullptr;
+          //bsec = nullptr;
+          CreateWorldSurfFromWVSplitFromReg(reg->next, bsec, sub, seg, sp, quad, surface_t::TF_MIDDLE);
+        }
+      }
+    } else {
+      // old code
+      WallFace *facehead = nullptr;
+      WallFace *facetail = nullptr;
+      WallFace *face = new WallFace;
+      face->setup(reg, seg->v1, seg->v2);
+
+      const bool isNonSolid = !!(reg->regflags&sec_region_t::RF_NonSolid);
+      facehead = facetail = face;
+      for (WallFace *cface = facehead; cface; cface = cface->next) {
+        if (isNonSolid || r_3dfloor_clip_both_sides) CutWallFace(cface, seg->frontsector, reg, isNonSolid, facetail);
+        CutWallFace(cface, seg->backsector, reg, isNonSolid, facetail);
       }
 
-      wv[0].x = wv[1].x = seg->v1->x;
-      wv[0].y = wv[1].y = seg->v1->y;
-      wv[2].x = wv[3].x = seg->v2->x;
-      wv[2].y = wv[3].y = seg->v2->y;
+      // now create all surfaces
+      for (WallFace *cface = facehead; cface; cface = cface->next) {
+        if (!cface->isValid()) continue;
 
-      if (wrapped) {
-        wv[0].z = botz1;
-        wv[1].z = topz1;
-        wv[2].z = topz2;
-        wv[3].z = botz2;
-      } else {
-        wv[0].z = max2(botz1, z_org-texhsc);
-        wv[1].z = min2(topz1, z_org);
-        wv[2].z = min2(topz2, z_org);
-        wv[3].z = max2(botz2, z_org-texhsc);
+        float topz1 = cface->topz[0];
+        float topz2 = cface->topz[1];
+        float botz1 = cface->botz[0];
+        float botz2 = cface->botz[1];
+
+        // check texture limits
+        if (!wrapped) {
+          if (max2(topz1, topz2) <= z_org-texhsc) continue;
+          if (min2(botz1, botz2) >= z_org) continue;
+        }
+
+        quad[0].x = quad[1].x = seg->v1->x;
+        quad[0].y = quad[1].y = seg->v1->y;
+        quad[2].x = quad[3].x = seg->v2->x;
+        quad[2].y = quad[3].y = seg->v2->y;
+
+        if (wrapped) {
+          quad[0].z = botz1;
+          quad[1].z = topz1;
+          quad[2].z = topz2;
+          quad[3].z = botz2;
+        } else {
+          quad[0].z = max2(botz1, z_org-texhsc);
+          quad[1].z = min2(topz1, z_org);
+          quad[2].z = min2(topz2, z_org);
+          quad[3].z = max2(botz2, z_org-texhsc);
+        }
+
+        if (doDump) for (int wf = 0; wf < 4; ++wf) GCon->Logf("   wf #%d: (%g,%g,%g)", wf, quad[wf].x, quad[wf].y, quad[wf].z);
+
+        CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_MIDDLE);
       }
-
-      if (doDump) for (int wf = 0; wf < 4; ++wf) GCon->Logf("   wf #%d: (%g,%g,%g)", wf, wv[wf].x, wv[wf].y, wv[wf].z);
-
-      CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
     }
 
     if (sp->surfs && (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || MTex->isTranslucent())) {

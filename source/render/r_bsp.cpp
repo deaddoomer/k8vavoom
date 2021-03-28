@@ -445,6 +445,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
               lightColor = LightParams->LightColor;
             }
             //lightColor = 0xff00ff00;
+            //if (!(secregion->regflags&sec_region_t::RF_BaseRegion)) return;
           }
         } else if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !FixedLight && !AbsSideLight && r_better_quad_split.asBool()) {
           // if we don't have regions that may affect light, don't do it
@@ -617,6 +618,14 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   } // done skybox rendering
 
   vuint32 sflight = (lLev<<24)|lightColor;
+
+  /* 3d floor flat debug code
+  if (surfaceType == SFT_Floor) {
+    if ((secregion->extraline && (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0)) {
+      texinfo->Alpha = 0.4f;
+    }
+  }
+  */
 
   // note that masked surfaces (i.e. textures with binary transparency) processed by the normal renderers.
   // only alpha-blended and additive surfaces must be rendered in a separate pass.

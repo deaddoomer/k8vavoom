@@ -246,7 +246,7 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 //
 //==========================================================================
 void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
-  if (!isValidQuad(quad)) return;
+  if (!isValidNormalQuad(quad)) return;
 
   if (!seg->linedef || !lastQuadSplit || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
@@ -274,7 +274,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
       quad[2].x, quad[2].y, quad[2].z,
       quad[3].x, quad[3].y, quad[3].z);
     #endif
-    sec_region_t *creg = ClipQuadWithRegions(quad, clipsec);
+    sec_region_t *creg = ClipQuadWithRegionsBottom(quad, clipsec);
     #ifdef VV_QUAD_SPLIT_DEBUG
     GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
       quad[0].x, quad[0].y, quad[0].z,
@@ -291,7 +291,79 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
     if (tzv1 >= orig[1].z && tzv2 >= orig[2].z) return; // out of quad
     orig[0].z = tzv1;
     orig[3].z = tzv2;
-    if (orig[0].z > orig[1].z || orig[3].z > orig[2].z || !isValidQuad(orig)) return;
+    if (!isValidNormalQuad(orig)) return;
+    memcpy(quad, orig, sizeof(orig));
+  }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg
+//
+//  split quad to parts unobscured by 3d walls
+//
+//  quad points (usually) are:
+//   [0]: left bottom point
+//   [1]: left top point
+//   [2]: right top point
+//   [3]: right bottom point
+//
+//==========================================================================
+void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+  if (!isValidNormalQuad(quad)) return;
+
+  if (bsec && bsec->isAnyPObj()) bsec = nullptr;
+
+  if (!reg && bsec) return CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
+
+  if (!reg || !seg->linedef || !lastQuadSplit || !seg || seg->pobj) {
+    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+  }
+
+  TVec orig[4];
+  memcpy(orig, quad, sizeof(orig));
+
+  #ifdef VV_QUAD_SPLIT_DEBUG
+  GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+    (int)(ptrdiff_t)(seg-&Level->Segs[0]),
+    (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+    quad[0].x, quad[0].y, quad[0].z,
+    quad[1].x, quad[1].y, quad[1].z,
+    quad[2].x, quad[2].y, quad[2].z,
+    quad[3].x, quad[3].y, quad[3].z);
+  #endif
+
+  for (;;) {
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+    #endif
+    sec_region_t *creg = ClipQuadWithRegionsBottom(quad, reg);
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+    VLevel::DumpRegion(creg, true);
+    #endif
+    if (bsec) {
+      CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
+    } else {
+      CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+    }
+    if (!creg) return; // done with it
+    // start with clip region top
+    const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
+    const float tzv2 = creg->eceiling.GetPointZ(*seg->v2);
+    if (tzv1 >= orig[1].z && tzv2 >= orig[2].z) return; // out of quad
+    orig[0].z = tzv1;
+    orig[3].z = tzv2;
+    if (!isValidNormalQuad(orig)) return;
     memcpy(quad, orig, sizeof(orig));
   }
 }

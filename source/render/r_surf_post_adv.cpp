@@ -249,14 +249,15 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
 
         // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
         if (do3dfloors && sec->Has3DFloors()) {
-          for (sec_region_t *reg = sec->eregions; reg; reg = reg->next) {
+          //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
+          for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
             if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
             cz = reg->eceiling.GetPointZ(lv);
             fz = reg->efloor.GetPointZ(lv);
             if (cz < fz) continue; // invisible region
             // paper-thin regions will split planes too
-            if (fz > minz[vidx]) tjunkHList.push(fz);
-            if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+            if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) tjunkHList.push(fz);
+            if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) tjunkHList.push(cz);
           }
         }
 

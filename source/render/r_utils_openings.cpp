@@ -36,6 +36,21 @@ static TArray<opening_t> oplist_sop2;
 
 //==========================================================================
 //
+//  VRenderLevelShared::GetBaseSectorOpening
+//
+//==========================================================================
+opening_t *VRenderLevelShared::VRenderLevelShared::GetBaseSectorOpening (sector_t *sector) {
+  vassert(sector);
+  oplist_sop.resetNoDtor();
+  opening_t *op = &oplist_sop.alloc();
+  memset((void *)op, 0, sizeof(*op));
+  Level->GetBaseSectorOpening(*op, sector, TVec::ZeroVector, false); // don't use point
+  return op;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::GetSectorOpenings
 //
 //==========================================================================
