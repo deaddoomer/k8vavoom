@@ -217,6 +217,8 @@ protected:
   segpart_t *pspart;
   int pspartsLeft;
   bool lastRenderQuality;
+  bool lastQuadSplit;
+
   // used in t-junction fixer, put there to avoid constant memory reallocating
   TBinHeapNC<float> tjunkHList;
   TArray<TVec> tjunkTri0, tjunkTri1;
@@ -576,6 +578,7 @@ protected:
   void InitSky ();
   void AnimateSky (float);
 
+public:
   // checks if surface is not queued twice, sets various flags
   // returns `false` if the surface should not be queued
   bool SurfPrepareForRender (surface_t *surf);
@@ -599,6 +602,7 @@ protected:
   };
   void CommonQueueSurface (surface_t *surf, SFCType type);
 
+public:
   void DrawSurfaces (subsector_t *sub, sec_region_t *secregion, seg_t *seg, surface_t *InSurfs,
                      texinfo_t *texinfo, VEntity *SkyBox, int LightSourceSector, int SideLight,
                      bool AbsSideLight, bool CheckSkyBoxAlways);
@@ -623,6 +627,7 @@ protected:
   void RenderBspWorld (const refdef_t *rd, const VViewClipper *Range);
   void RenderPortals ();
 
+public:
   void SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
   void SetupOneSidedSkyWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
   void SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
@@ -636,6 +641,7 @@ protected:
   // surf methods
   void SetupSky ();
 
+public:
   void FlushSurfCaches (surface_t *InSurfs) noexcept;
 
   // `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
@@ -651,6 +657,7 @@ protected:
   void FreeWSurfs (surface_t *&InSurfs) noexcept;
   surface_t *ReallocSurface (surface_t *surfs, int vcount) noexcept;
 
+public:
   // can be called to recreate all world surfaces
   // call only after world surfaces were created for the first time!
   void InvaldateAllSegParts () noexcept;
@@ -661,9 +668,32 @@ protected:
   void MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept;
   void MarkTJunctions (seg_t *seg) noexcept;
 
+public:
   surface_t *CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept;
-  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec wv[4], vuint32 typeFlags, bool doOffset=false) noexcept;
 
+  // WARNING! this may modify `quad`
+  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset=false) noexcept;
+
+  // cut quad with regions (used to cut out parts obscured by 3d floors)
+  // WARNING! this may modify `quad`
+  void CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset=false) noexcept;
+
+protected:
+  // doesn't check quad direction
+  static inline bool isValidQuad (const TVec quad[4]) noexcept {
+    // degenerate surface?
+    if (quad[0].z == quad[1].z && quad[1].z == quad[2].z && quad[2].z == quad[3].z) return false;
+    // degenerate surface (thin line)?
+    if (quad[0].z == quad[1].z && quad[2].z == quad[3].z) return false;
+    // degenerate surface (thin line)?
+    if (quad[0].z == quad[2].z && quad[1].z == quad[3].z) return false;
+    return true;
+  }
+
+  static bool ClipQuadWithPlane (TVec quad[4], const TVec normal, const float dist) noexcept;
+  static sec_region_t *ClipQuadWithRegions (TVec quad[4], sector_t *sec) noexcept;
+
+public:
   int CountSegParts (const seg_t *);
   void CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg);
   void CreateWorldSurfaces ();
@@ -676,6 +706,7 @@ protected:
   void FreeSurfaces (surface_t *) noexcept;
   void FreeSegParts (segpart_t *) noexcept;
 
+public:
   // models
   bool DrawAliasModel (VEntity *mobj, const TVec &Org, const TAVec &Angles,
     float ScaleX, float ScaleY, VModel *Mdl,

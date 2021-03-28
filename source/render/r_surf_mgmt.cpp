@@ -157,6 +157,12 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) noe
 //
 //  this is used to create world/wall surface
 //
+//  quad points (usually) are:
+//   [0]: left bottom point
+//   [1]: left top point
+//   [2]: right top point
+//   [3]: right bottom point
+//
 //==========================================================================
 surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept {
   if (wvcount < 3) return nullptr;
@@ -193,32 +199,25 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
 //
 //  VRenderLevelShared::CreateWorldSurfFromWV
 //
+//  quad points (usually) are:
+//   [0]: left bottom point
+//   [1]: left top point
+//   [2]: right top point
+//   [3]: right bottom point
+//
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec wv[4], vuint32 typeFlags, bool doOffset) noexcept {
-  if (wv[0].z == wv[1].z && wv[1].z == wv[2].z && wv[2].z == wv[3].z) {
-    // degenerate surface, no need to create it
-    return;
-  }
+void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+  if (!isValidQuad(quad)) return;
 
-  if (wv[0].z == wv[1].z && wv[2].z == wv[3].z) {
-    // degenerate surface (thin line), cannot create it (no render support)
-    return;
-  }
-
-  if (wv[0].z == wv[2].z && wv[1].z == wv[3].z) {
-    // degenerate surface (thin line), cannot create it (no render support)
-    return;
-  }
-
-  TVec *wstart = wv;
+  TVec *wstart = quad;
   int wcount = 4;
-  if (wv[0].z == wv[1].z) {
+  if (quad[0].z == quad[1].z) {
     // can reduce to triangle
-    wstart = wv+1;
+    wstart = quad+1;
     wcount = 3;
-  } else if (wv[2].z == wv[3].z) {
+  } else if (quad[2].z == quad[3].z) {
     // can reduce to triangle
-    wstart = wv;
+    wstart = quad;
     wcount = 3;
   }
 
@@ -228,6 +227,45 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
   if (doOffset) for (unsigned f = 0; f < (unsigned)wcount; ++f) wstart[f] -= seg->normal*0.01f;
 
   AppendSurfaces(sp, CreateWSurf(wstart, &sp->texinfo, seg, sub, wcount, typeFlags));
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::CreateWorldSurfFromWVSplit
+//
+//  split quad to parts unobscured by 3d walls
+//
+//  quad points (usually) are:
+//   [0]: left bottom point
+//   [1]: left top point
+//   [2]: right top point
+//   [3]: right bottom point
+//
+//==========================================================================
+void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+  if (!isValidQuad(quad)) return;
+
+  if (!lastQuadSplit || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
+    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+  }
+
+  TVec orig[4];
+  memcpy(orig, quad, sizeof(orig));
+
+  for (;;) {
+    sec_region_t *creg = ClipQuadWithRegions(quad, clipsec);
+    CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+    if (!creg) return; // done with it
+    // start with clip region top
+    const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
+    const float tzv2 = creg->eceiling.GetPointZ(*seg->v2);
+    if (tzv1 >= orig[1].z && tzv2 >= orig[2].z) return; // out of quad
+    orig[0].z = tzv1;
+    orig[3].z = tzv2;
+    if (orig[0].z > orig[1].z || orig[3].z > orig[2].z || !isValidQuad(orig)) return;
+    memcpy(quad, orig, sizeof(orig));
+  }
 }
 
 

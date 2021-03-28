@@ -146,6 +146,8 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
   const sector_t *mysec = seg->frontsector;
   if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
 
+  const bool do3dfloors = lastQuadSplit;
+
   // invariant, actually
   // it is called from `CreateWSurf()`, so it can't have any linked surfaces
   // the only case it can is when it was subdivided, but advanced render doesn't do any subdivisions
@@ -245,10 +247,8 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
           }
         }
 
-        // this works, but we don't split textures by 3d floors yet
-        #if 0
         // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
-        if (sec->Has3DFloors()) {
+        if (do3dfloors && sec->Has3DFloors()) {
           for (sec_region_t *reg = sec->eregions; reg; reg = reg->next) {
             if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
             cz = reg->eceiling.GetPointZ(lv);
@@ -259,7 +259,6 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
             if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
           }
         }
-        #endif
 
         #if 0
         //FIXME: cache this info

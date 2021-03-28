@@ -159,7 +159,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
         }
       }
 
-      if ((sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack && hsec) {
+      if (hsec && (sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack) {
         // do nothing
       } else {
         for (int f = 0; f < sec->linecount; ++f) {
@@ -179,6 +179,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
           const side_t *lsd = &Level->Sides[ldef->sidenum[0]];
 
           if ((sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack) {
+            // do nothing
           } else {
             if (GTextureManager.IsEmptyTexture(lsd->MidTexture)) continue;
 
@@ -227,7 +228,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].z = topz2;
     wv[3].z = botz2;
 
-    CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+    CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE);
   }
 
   sp->frontTopDist = r_ceiling.splane->dist;
