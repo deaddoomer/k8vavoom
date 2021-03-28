@@ -422,15 +422,17 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       if (sub->sector->Has3DFloors()) {
         // if this is top flat of insane 3d floor, its light level should be taken from the upper region (or main sector, if this region is the last one)
         //??? should we ignore visual regions here? (sec_region_t::RF_OnlyVisual)
-        if (surfaceType == SFT_Floor && secregion->extraline &&
-            (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0)
-        {
-          sec_region_t *nreg = GetHigherRegion(sub->sector, secregion);
-          if (nreg->params) {
-            LightParams = nreg->params;
-            lightColor = LightParams->LightColor;
+        if (surfaceType == SFT_Floor) {
+          if ((secregion->extraline && (secregion->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0) ||
+              (secregion->regflags&sec_region_t::RF_BaseRegion))
+          {
+            sec_region_t *nreg = GetHigherRegion(sub->sector, secregion);
+            if (nreg->params) {
+              LightParams = nreg->params;
+              lightColor = LightParams->LightColor;
+            }
+            //lightColor = 0xff00ff00;
           }
-          //lightColor = 0xff00ff00;
         }
       }
     }

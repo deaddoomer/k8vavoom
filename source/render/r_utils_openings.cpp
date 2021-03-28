@@ -84,8 +84,8 @@ sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_
   if (!srcreg || !sector->eregions->next) return sector->eregions;
   // get distance to ceiling
   // we want the nearest ceiling
-  const float srcrtopz = srcreg->eceiling.GetRealDist();
-  float bestdist = 99999.0f;
+  const float srcrtopz = (srcreg->regflags&sec_region_t::RF_BaseRegion ? srcreg->efloor.GetRealDist() : srcreg->eceiling.GetRealDist());
+  float bestdist = FLT_MAX;
   sec_region_t *bestreg = sector->eregions;
   for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
     // ignore sane regions here, because they don't change lighting underneath
