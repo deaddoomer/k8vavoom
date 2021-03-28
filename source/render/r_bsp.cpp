@@ -395,6 +395,17 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
 
   if (!texinfo->Tex || texinfo->Tex->Type == TEXTYPE_Null) return;
 
+  // check mirror clipping plane for non-walls
+  // FIXME: dunno if this is really necessary
+  if (Drawer->MirrorClip && Drawer->MirrorPlane.normal.z) {
+    for (const surface_t *ss = surf; ss; ss = ss->next) {
+      if (ss->count < 3) continue;
+      for (int f = 0; f < ss->count; ++f) {
+        if (Drawer->MirrorPlane.PointOnSide2(ss->verts[f].vec())) return;
+      }
+    }
+  }
+
   enum {
     SFT_Wall,
     SFT_Floor,
@@ -406,6 +417,8 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     (surf->plane.normal.z > 0.0f ? SFT_Floor : SFT_Ceiling);
 
   vuint32 lightColor;
+
+  bool complexLight = false; // do we need to set wall surfaces to proper light level from 3d floors?
 
   // calculate lighting for floors and ceilings
   //TODO: do this in 3d floor setup
@@ -432,6 +445,14 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
               lightColor = LightParams->LightColor;
             }
             //lightColor = 0xff00ff00;
+          }
+        } else if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !FixedLight && !AbsSideLight && r_better_quad_split.asBool()) {
+          // if we don't have regions that may affect light, don't do it
+          for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
+            if ((reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0) {
+              complexLight = true;
+              break;
+            }
           }
         }
       }
@@ -476,17 +497,6 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     Fade = FADE_LIGHT;
   }
   */
-
-  // check mirror clipping plane for non-walls
-  // FIXME: dunno if this is really necessary
-  if (Drawer->MirrorClip && Drawer->MirrorPlane.normal.z) {
-    for (const surface_t *ss = surf; ss; ss = ss->next) {
-      if (ss->count < 3) continue;
-      for (int f = 0; f < ss->count; ++f) {
-        if (Drawer->MirrorPlane.PointOnSide2(ss->verts[f].vec())) return;
-      }
-    }
-  }
 
   // sky/skybox/stacked sector rendering
 
@@ -612,7 +622,28 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   // only alpha-blended and additive surfaces must be rendered in a separate pass.
   const bool isCommon = (texinfo->Alpha >= 1.0f && !texinfo->Additive && !texinfo->Tex->isTranslucent());
 
+  sec_region_t *lastWallRegion = sub->sector->eregions; // default region for walls
+
   for (; surf; surf = surf->next) {
+    // calculate proper light level for wall parts
+    if (complexLight && surf->count >= 3) {
+      //FIXME: make this faster!
+      float mz = FLT_MAX;
+      const SurfVertex *sv = &surf->verts[0];
+      for (int f = surf->count; f--; ++sv) mz = min2(mz, sv->z);
+      sec_region_t *nreg = GetHigherRegionAtZ(sub->sector, mz-0.1f);
+      if (nreg != lastWallRegion) {
+        // `AbsSideLight` and `FixedLight` are definitely `false` here
+        LightParams = nreg->params;
+        lightColor = LightParams->LightColor;
+        lLev = LightParams->lightlevel+SideLight;
+        lLev = R_GetLightLevel(0, lLev+ExtraLight);
+        //Fade = GetFade(secregion, (surfaceType != SFT_Wall));
+        sflight = (lLev<<24)|lightColor;
+        lastWallRegion = nreg;
+      }
+    }
+
     surf->texinfo = texinfo; //k8:should we force texinfo here?
     surf->Light = sflight;
     surf->Fade = Fade;
@@ -622,6 +653,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     surf->glowCeilingHeight = glowCeilingHeight;
     surf->glowFloorColor = glowFloorColor;
     surf->glowCeilingColor = glowCeilingColor;
+
     if (isCommon) {
       CommonQueueSurface(surf, SFCType::SFCT_World);
     } else if (surf->queueframe != currQueueFrame) {

@@ -860,7 +860,8 @@ protected: // sector openings for surface builder
   opening_t *GetSectorOpenings2 (sector_t *sector, bool skipNonSolid=false);
 
   // the one that is higher
-  sec_region_t *GetHigherRegion (sector_t *sector, sec_region_t *srcreg);
+  sec_region_t *GetHigherRegionAtZ (sector_t *sector, const float srcrtopz, const sec_region_t *reg2skip=nullptr) noexcept;
+  sec_region_t *GetHigherRegion (sector_t *sector, sec_region_t *srcreg) noexcept;
 
 public: // k8: so i don't have to fuck with friends
   struct PPNode {

@@ -73,23 +73,22 @@ opening_t *VRenderLevelShared::GetSectorOpenings2 (sector_t *sector, bool skipNo
 
 //==========================================================================
 //
-//  VRenderLevelShared::GetHigherRegion
+//  VRenderLevelShared::GetHigherRegionAtZ
 //
 //  the one that is higher
 //  valid only if `srcreg` is solid and insane
 //
 //==========================================================================
-sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_t *srcreg) {
+sec_region_t *VRenderLevelShared::GetHigherRegionAtZ (sector_t *sector, const float srcrtopz, const sec_region_t *reg2skip) noexcept {
   vassert(sector);
-  if (!srcreg || !sector->eregions->next) return sector->eregions;
+  if (!sector->eregions->next) return sector->eregions;
   // get distance to ceiling
   // we want the nearest ceiling
-  const float srcrtopz = (srcreg->regflags&sec_region_t::RF_BaseRegion ? srcreg->efloor.GetRealDist() : srcreg->eceiling.GetRealDist());
   float bestdist = FLT_MAX;
   sec_region_t *bestreg = sector->eregions;
   for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
     // ignore sane regions here, because they don't change lighting underneath
-    if (reg == srcreg || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) != 0) continue;
+    if (reg == reg2skip || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) != 0) continue;
     const float rtopz = reg->eceiling.GetRealDist();
     if (srcrtopz >= rtopz) continue; // source region is higher
     const float rbotz = reg->efloor.GetRealDist();
@@ -103,4 +102,22 @@ sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_
     }
   }
   return bestreg;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::GetHigherRegion
+//
+//  the one that is higher
+//  valid only if `srcreg` is solid and insane
+//
+//==========================================================================
+sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_t *srcreg) noexcept {
+  vassert(sector);
+  if (!srcreg || !sector->eregions->next) return sector->eregions;
+  // get distance to ceiling
+  // we want the nearest ceiling
+  const float srcrtopz = (srcreg->regflags&sec_region_t::RF_BaseRegion ? srcreg->efloor.GetRealDist() : srcreg->eceiling.GetRealDist());
+  return GetHigherRegionAtZ(sector, srcrtopz, srcreg);
 }
