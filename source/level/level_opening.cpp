@@ -74,9 +74,24 @@ void VLevel::DumpOpPlanes (const TArray<opening_t> &list) noexcept {
 //  VLevel::DumpRegion
 //
 //==========================================================================
-void VLevel::DumpRegion (const sec_region_t *inregion) noexcept {
+void VLevel::DumpRegion (const sec_region_t *inregion, bool extendedflags) noexcept {
   if (!inregion) { GCon->Log(NAME_Debug, "  <nullregion>"); return; }
-  GCon->Logf(NAME_Debug, "  %p: floor=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; ceil=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; eline=%d; rflags=0x%02x",
+
+  VStr flg;
+  if (extendedflags) {
+    if (inregion->regflags&sec_region_t::RF_BaseRegion) flg += ",BASE";
+    if (inregion->regflags&sec_region_t::RF_SaneRegion) flg += ",SANE";
+    if (inregion->regflags&sec_region_t::RF_NonSolid) flg += ",NONSOLID";
+    if (inregion->regflags&sec_region_t::RF_OnlyVisual) flg += ",VISUAL";
+    if (inregion->regflags&sec_region_t::RF_SkipFloorSurf) flg += ",NOFLOOR";
+    if (inregion->regflags&sec_region_t::RF_SkipCeilSurf) flg += ",NOCEIL";
+    if (!flg.isEmpty()) {
+      flg += "]";
+      flg.getMutableCStr()[0] = '[';
+    }
+  }
+
+  GCon->Logf(NAME_Debug, "  %p: floor=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; ceil=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; eline=%d; rflags=0x%02x%s%s",
     inregion,
     inregion->efloor.GetNormal().x,
     inregion->efloor.GetNormal().y,
@@ -91,7 +106,7 @@ void VLevel::DumpRegion (const sec_region_t *inregion) noexcept {
     inregion->eceiling.splane->minz, inregion->eceiling.splane->maxz,
     inregion->eceiling.splane->flags,
     (inregion->extraline ? 1 : 0),
-    inregion->regflags);
+    inregion->regflags, (flg.isEmpty() ? "" : " "), *flg);
 }
 
 

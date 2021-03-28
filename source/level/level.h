@@ -922,7 +922,7 @@ public:
   sec_region_t *PointRegionLight (const subsector_t *sub, const TVec &p, unsigned *glowFlags=nullptr);
 
 public: // regions and openings internal functions
-  static void DumpRegion (const sec_region_t *inregion) noexcept;
+  static void DumpRegion (const sec_region_t *inregion, bool extendedflags=false) noexcept;
   static void DumpOpening (const opening_t *op) noexcept;
   static void DumpOpPlanes (const TArray<opening_t> &list) noexcept;
 
