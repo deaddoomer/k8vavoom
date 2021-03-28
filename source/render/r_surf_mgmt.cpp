@@ -230,6 +230,8 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 }
 
 
+//#define VV_QUAD_SPLIT_DEBUG
+
 //==========================================================================
 //
 //  VRenderLevelShared::CreateWorldSurfFromWVSplit
@@ -246,15 +248,41 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
   if (!isValidQuad(quad)) return;
 
-  if (!lastQuadSplit || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
+  if (!seg->linedef || !lastQuadSplit || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
   }
 
   TVec orig[4];
   memcpy(orig, quad, sizeof(orig));
 
+  #ifdef VV_QUAD_SPLIT_DEBUG
+  GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, clipsec #%d; quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+    (int)(ptrdiff_t)(seg-&Level->Segs[0]),
+    (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+    (int)(ptrdiff_t)(clipsec-&Level->Sectors[0]),
+    quad[0].x, quad[0].y, quad[0].z,
+    quad[1].x, quad[1].y, quad[1].z,
+    quad[2].x, quad[2].y, quad[2].z,
+    quad[3].x, quad[3].y, quad[3].z);
+  #endif
+
   for (;;) {
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+    #endif
     sec_region_t *creg = ClipQuadWithRegions(quad, clipsec);
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+    VLevel::DumpRegion(creg, true);
+    #endif
     CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
     if (!creg) return; // done with it
     // start with clip region top

@@ -63,7 +63,7 @@ bool VRenderLevelShared::ClipQuadWithPlane (TVec quad[4], const TVec normal, con
     const float dot2 = pl.PointDistance(quad[1]);
     // do not use multiplication to check: zero speedup, lost accuracy
     //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
-    if (dot1 < 0.0f && dot2 < 0.0f) break; // didn't reached back side
+    if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
     if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
     // find the fractional intersection time
     const TVec dir = quad[1]-quad[0];
@@ -84,7 +84,7 @@ bool VRenderLevelShared::ClipQuadWithPlane (TVec quad[4], const TVec normal, con
     const float dot2 = pl.PointDistance(quad[2]);
     // do not use multiplication to check: zero speedup, lost accuracy
     //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
-    if (dot1 < 0.0f && dot2 < 0.0f) break; // didn't reached back side
+    if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
     if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
     // find the fractional intersection time
     const TVec dir = quad[2]-quad[3];
