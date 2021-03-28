@@ -315,47 +315,78 @@ void VRenderLevelShared::InvaldateAllSegParts () noexcept {
 
 //==========================================================================
 //
+//  VRenderLevelShared::MarkAdjacentTJunctions
+//
+//  do not mark lines belongs only to `fsec`
+//
+//==========================================================================
+void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept {
+  if (!line || line->pobj()) return; // no line, or polyobject line
+  vassert(fsec != nullptr);
+  const unsigned lineidx = (unsigned)(ptrdiff_t)(line-&Level->Lines[0]);
+  if (tjLineMarkCheck[lineidx] == updateWorldFrame) return; // already processed at this frame
+  tjLineMarkCheck[lineidx] = updateWorldFrame;
+  //GCon->Logf(NAME_Debug, "mark tjunctions for line #%d", (int)(ptrdiff_t)(line-&Level->Lines[0]));
+  // simply mark all adjacents for recreation
+  for (int lvidx = 0; lvidx < 2; ++lvidx) {
+    for (int f = 0; f < line->vxCount(lvidx); ++f) {
+      const line_t *ln = line->vxLine(lvidx, f);
+      if (ln == line) continue;
+      if (ln->frontsector) {
+        if (ln->backsector) {
+          // 2-sided
+          if (ln->frontsector == fsec && ln->backsector == fsec) continue;
+        } else {
+          // 1-sided
+          if (ln->frontsector == fsec) continue;
+        }
+      } else if (ln->backsector) {
+        // very strange 1-sided
+        if (ln->backsector == fsec) continue;
+      }
+      const unsigned lnidx = (unsigned)(ptrdiff_t)(ln-&Level->Lines[0]);
+      if (tjLineMarkFix[lnidx] == updateWorldFrame) continue; // already marked (and maybe processed) at this frame
+      tjLineMarkFix[lnidx] = updateWorldFrame;
+      //GCon->Logf(NAME_Debug, "  ...marking line #%d", (int)(ptrdiff_t)(ln-&Level->Lines[0]));
+      // for each seg
+      for (seg_t *ns = ln->firstseg; ns; ns = ns->lsnext) {
+        // ignore "inner" seg (i.e. that one which doesn't start or end on line vertex)
+        // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
+        // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
+        if (ns->v1 != ln->v1 && ns->v1 != ln->v2 &&
+            ns->v2 != ln->v1 && ns->v2 != ln->v2)
+        {
+          continue;
+        }
+        drawseg_t *ds = ns->drawsegs;
+        if (ds) {
+          // for each segpart
+          InvalidateSegPart(ds->top);
+          InvalidateSegPart(ds->mid);
+          InvalidateSegPart(ds->bot);
+          InvalidateSegPart(ds->topsky);
+          // i'm pretty sure that we don't have to fix 3d floors
+          //InvalidateSegPart(ds->extra);
+        }
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::MarkTJunctions
 //
 //==========================================================================
 void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
   if (seg->pobj) return; // don't do anything for polyobjects (for now)
   const line_t *line = seg->linedef;
-  if (!line || line->pobj()) return; // miniseg
-  // ignore "inner" seg (i.e. that one which doesn't start or end on line vertex)
-  // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
-  // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
-  if (seg->v1 != line->v1 && seg->v1 != line->v2 &&
-      seg->v2 != line->v1 && seg->v2 != line->v2)
-  {
-    // midseg, do nothing
-    //GCon->Logf(NAME_Debug, "seg #%d (line #%d) is a midseg", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(line-&Level->Lines[0]));
-    return;
-  }
+  if (!line || line->pobj()) return; // miniseg, or polyobject line
   const sector_t *mysec = seg->frontsector;
   // just in case; also, more polyobject checks (skip sectors containing original polyobjs)
   if (!mysec || mysec->isAnyPObj()) return;
-  //GCon->Logf(NAME_Debug, "mark tjunctions for line #%d", (int)(ptrdiff_t)(line-&Level->Lines[0]));
-  // simply mark all adjacents for recreation
-  for (int lvidx = 0; lvidx < 2; ++lvidx) {
-    for (int f = 0; f < line->vxCount(lvidx); ++f) {
-      const line_t *ln = line->vxLine(lvidx, f);
-      if (ln != line) {
-        //GCon->Logf(NAME_Debug, "  ...marking line #%d", (int)(ptrdiff_t)(ln-&Level->Lines[0]));
-        // for each seg
-        for (seg_t *ns = ln->firstseg; ns; ns = ns->lsnext) {
-          drawseg_t *ds = ns->drawsegs;
-          if (ds) {
-            // for each segpart
-            InvalidateSegPart(ds->top);
-            InvalidateSegPart(ds->mid);
-            InvalidateSegPart(ds->bot);
-            InvalidateSegPart(ds->topsky);
-            // i'm pretty sure that we don't have to fix 3d floors
-            //InvalidateSegPart(ds->extra);
-          }
-        }
-      }
-    }
-  }
+  const unsigned lineidx = (unsigned)(ptrdiff_t)(line-&Level->Lines[0]);
+  if (tjLineMarkCheck[lineidx] == updateWorldFrame) return; // already processed at this frame
+  return MarkAdjacentTJunctions(mysec, line);
 }

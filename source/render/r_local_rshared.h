@@ -235,6 +235,7 @@ protected:
   AMCheckSubsectorCB amCheckSubsector;
   float amX, amY, amX2, amY2;
 
+public:
   inline bool AM_isBBox3DVisible (const float bbox3d[6]) const noexcept {
     return
       amX2 >= bbox3d[0+0] && amY2 >= bbox3d[0+1] &&
@@ -274,6 +275,11 @@ private:
   }
 
 protected:
+  // it is of `Level->NumLines` size, to avoid marking lines twice in `SectorModified`; marked with `updateWorldFrame`
+  vuint32 *tjLineMarkCheck; // some segment of this line was processed in `MarkTJunctions()`
+  vuint32 *tjLineMarkFix; // this line was fully processed in `MarkTJunctions()` (i.e. as adjacent line)
+
+protected:
   void NewBSPFloodVisibilityFrame () noexcept;
 
   bool CheckBSPFloodVisibilitySub (const TVec &org, const float radius, const subsector_t *currsub, const seg_t *firsttravel) noexcept;
@@ -284,29 +290,27 @@ protected:
   bool CheckBSPVisibilityBox (const TVec &org, float radius, const subsector_t *sub=nullptr) noexcept;
 
   void ResetVisFrameCount () noexcept;
-  inline vuint32 IncVisFrameCount () noexcept {
-    if ((++currVisFrame) == 0x7fffffff) ResetVisFrameCount();
-    return currVisFrame;
+  inline void IncVisFrameCount () noexcept {
+    if ((++currVisFrame) == 0x7fffffffu) ResetVisFrameCount();
   }
 
   void ResetDLightFrameCount () noexcept;
-  inline int IncDLightFrameCount () noexcept {
-    if ((++currDLightFrame) == 0xffffffff) ResetDLightFrameCount();
-    return currDLightFrame;
+  inline void IncDLightFrameCount () noexcept {
+    if ((++currDLightFrame) == 0) ResetDLightFrameCount();
   }
 
   void ResetUpdateWorldFrame () noexcept;
   inline void IncUpdateWorldFrame () noexcept {
-    if ((++updateWorldFrame) == 0xffffffff) ResetUpdateWorldFrame();
+    if ((++updateWorldFrame) == 0) ResetUpdateWorldFrame();
   }
 
   inline void IncQueueFrameCount () noexcept {
-    //if ((++currQueueFrame) == 0xffffffff) ResetQueueFrameCount();
-    ++currQueueFrame;
-    if (currQueueFrame == 0xffffffff) {
+    //if ((++currQueueFrame) == 0) ResetQueueFrameCount();
+    if ((++currQueueFrame) == 0) {
       // there is nothing we can do with this yet
       // resetting this is too expensive, and doesn't worth the efforts
       // i am not expecting for someone to play one level for that long in one seat
+      // it is more than a half of a year for 200 FPS, so should be pretty safe (around 240 days)
       Sys_Error("*************** WARNING!!! QUEUE FRAME COUNT OVERFLOW!!! ***************");
     }
   }
@@ -654,6 +658,7 @@ protected:
   static void InvalidateSegPart (segpart_t *sp) noexcept;
   static void InvalidateWholeSeg (seg_t *seg) noexcept;
 
+  void MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept;
   void MarkTJunctions (seg_t *seg) noexcept;
 
   surface_t *CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept;
@@ -774,8 +779,6 @@ public:
   void SegMoved (seg_t *seg); // do not call this directly, it will be called from `PObjModified()`
   virtual void PObjModified (polyobj_t *po) override;
 
-  virtual void BeginSectorModifications () override; // called on `ChangeSector` entering
-  virtual void EndSectorModifications () override; // called on `ChangeSector` leaving
   virtual void SectorModified (sector_t *sec) override; // this sector *may* be moved
 
   virtual void SetupFakeFloors (sector_t *) override;

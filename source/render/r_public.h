@@ -125,8 +125,6 @@ public:
   virtual void SetupFakeFloors (sector_t *) = 0;
   virtual void RenderPlayerView () = 0;
 
-  virtual void BeginSectorModifications () = 0; // called on `ChangeSector` entering
-  virtual void EndSectorModifications () = 0; // called on `ChangeSector` leaving
   virtual void SectorModified (sector_t *sec) = 0; // this sector *may* be moved
 
   virtual void ResetStaticLights () = 0;

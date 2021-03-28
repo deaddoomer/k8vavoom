@@ -640,6 +640,9 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   currQueueFrame = 0;
   currVisFrame = 0;
 
+  tjLineMarkCheck = (vuint32 *)Z_Calloc((Level->NumLines+1)*sizeof(tjLineMarkCheck[0]));
+  tjLineMarkFix = (vuint32 *)Z_Calloc((Level->NumLines+1)*sizeof(tjLineMarkFix[0]));
+
   PortalDepth = 0;
   PortalUsingStencil = 0;
   //VPortal::ResetFrame();
@@ -858,6 +861,11 @@ VRenderLevelShared::~VRenderLevelShared () {
     SideSkies[i] = nullptr;
   }
 
+  Z_Free(tjLineMarkCheck);
+  tjLineMarkCheck = nullptr;
+  Z_Free(tjLineMarkFix);
+  tjLineMarkFix = nullptr;
+
   KillPortalPool();
 }
 
@@ -919,6 +927,10 @@ void VRenderLevelShared::ResetUpdateWorldFrame () noexcept {
   updateWorldFrame = 1;
   for (auto &&it : Level->allSubsectors()) it.updateWorldFrame = 0;
   for (auto &&it : Level->allPolyobjects()) it->updateWorldFrame = 0;
+  if (Level->NumLines) {
+    if (tjLineMarkCheck) memset((void *)tjLineMarkCheck, 0, Level->NumLines*sizeof(tjLineMarkCheck[0]));
+    if (tjLineMarkFix) memset((void *)tjLineMarkFix, 0, Level->NumLines*sizeof(tjLineMarkFix[0]));
+  }
 }
 
 
@@ -1428,7 +1440,7 @@ void VRenderLevelShared::MarkLeaves () {
   r_viewleaf = Level->PointInSubsector(Drawer->vieworg);
 
   // we need this for debug automap view
-  (void)IncVisFrameCount();
+  IncVisFrameCount();
   r_oldviewleaf = r_viewleaf;
 }
 

@@ -350,7 +350,7 @@ void VRenderLevelShared::MarkLights (dlight_t *light, vuint32 bit, int bspnum, i
 //==========================================================================
 void VRenderLevelShared::PushDlights () {
   //???:if (GGameInfo->IsPaused() || (Level->LevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen)) return;
-  (void)IncDLightFrameCount();
+  IncDLightFrameCount();
 
   if (!r_dynamic_lights) return;
 

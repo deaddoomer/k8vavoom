@@ -169,8 +169,5 @@ bool VLevel::ChangeSector (sector_t *sector, int crunch) {
     csTouchCount = 1;
   }
   IncrementSZValidCount();
-  if (Renderer) Renderer->BeginSectorModifications();
-  const bool res = ChangeSectorInternal(sector, crunch);
-  if (Renderer) Renderer->EndSectorModifications();
-  return res;
+  return ChangeSectorInternal(sector, crunch);
 }

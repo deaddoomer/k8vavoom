@@ -118,28 +118,6 @@ void VRenderLevelShared::PObjModified (polyobj_t *po) {
 
 //==========================================================================
 //
-//  VRenderLevelShared::BeginSectorModifications
-//
-//  called on `ChangeSector` entering
-//
-//==========================================================================
-void VRenderLevelShared::BeginSectorModifications () {
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::EndSectorModifications
-//
-//  called on `ChangeSector` leaving
-//
-//==========================================================================
-void VRenderLevelShared::EndSectorModifications () {
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::SectorModified
 //
 //  called when `VLevel::ChangeSector()` is called
@@ -153,6 +131,10 @@ void VRenderLevelShared::EndSectorModifications () {
 //==========================================================================
 void VRenderLevelShared::SectorModified (sector_t *sec) {
   if (sec->isAnyPObj()) return;
+  line_t **lptr = sec->lines;
+  for (int f = sec->linecount; f--; ++lptr) {
+    MarkAdjacentTJunctions(sec, *lptr);
+  }
 }
 
 
