@@ -110,6 +110,14 @@ bool VRenderLevelShared::ClipQuadWithPlane (TVec quad[4], const TVec normal, con
 //  this is used to split the wall with 3d surfaces
 //  returns the lowest clipping region
 //
+//  note that *partially* overlapping 3d floors with slopes is UB
+//  the clipper will shit itself with such configuration
+//
+//  i.e. if you have one sloped 3d floor that penetrates another 3d floor,
+//  the clipper WILL glitch badly
+//
+//  non-sloped 3d floor penetration should be ok, tho (yet it is still UB)
+//
 //==========================================================================
 sec_region_t *VRenderLevelShared::ClipQuadWithRegions (TVec quad[4], sector_t *sec) noexcept {
   // no need to split with base region
