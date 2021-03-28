@@ -124,6 +124,13 @@ surface_t *VRenderLevelShadowVolume::FixFaceTJunctions (surface_t *surf) {
 //  WARNING! this is temporary solution, we should do it in renderer,
 //  because moving flats can invalidate neighbour surfaces
 //
+//  i mean, real fixing is done when the renderer hits the subsector
+//  this may be wrong, because we may hit adjacent subsectors first,
+//  and only then updater will mark them for fixing.
+//
+//  this is not fatal, because it will be fixed on the next frame, but
+//  it may be better to mark adjacents in `ChangeSector()`, for example
+//
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
@@ -133,9 +140,11 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
 
   const line_t *line = seg->linedef;
   const sector_t *mysec = seg->frontsector;
-  if (!line || !mysec) return surf; // just in case
+  if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
 
   // invariant, actually
+  // it is called from `CreateWSurf()`, so it can't have any linked surfaces
+  // the only case it can is when it was subdivided, but advanced render doesn't do any subdivisions
   if (surf->next) {
     GCon->Logf(NAME_Warning, "line #%d, seg #%d: has surface chain", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
     return surf;
@@ -231,6 +240,22 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
             if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
           }
         }
+
+        // this works, but we don't split textures by 3d floors yet
+        #if 0
+        // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
+        if (sec->Has3DFloors()) {
+          for (sec_region_t *reg = sec->eregions; reg; reg = reg->next) {
+            if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+            cz = reg->eceiling.GetPointZ(lv);
+            fz = reg->efloor.GetPointZ(lv);
+            if (cz < fz) continue; // invisible region
+            // paper-thin regions will split planes too
+            if (fz > minz[vidx]) tjunkHList.push(fz);
+            if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+          }
+        }
+        #endif
 
         #if 0
         //FIXME: cache this info

@@ -118,6 +118,24 @@ void VRenderLevelShared::PObjModified (polyobj_t *po) {
 
 //==========================================================================
 //
+//  VRenderLevelShared::SectorModified
+//
+//  called when `VLevel::ChangeSector()` is called
+//  we can mark adjacent walls for t-junction fixing here
+//
+//  currently we do nothing, tho, and allow 1-frame latency in fixer
+//  i should prolly add an option (or "extra quality" mode) for this
+//
+//  do we need a flag that prevents walking the same sector several times?
+//
+//==========================================================================
+void VRenderLevelShared::SectorModified (sector_t *sec) {
+  if (sec->isAnyPObj()) return;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::CountSegParts
 //
 //==========================================================================

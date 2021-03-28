@@ -773,6 +773,7 @@ public:
   // fix polyobject segs
   void SegMoved (seg_t *seg); // do not call this directly, it will be called from `PObjModified()`
   virtual void PObjModified (polyobj_t *po) override;
+  virtual void SectorModified (sector_t *sec) override; // this sector *may* be moved
 
   virtual void SetupFakeFloors (sector_t *) override;
 

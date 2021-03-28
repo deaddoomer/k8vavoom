@@ -290,7 +290,7 @@ void VRenderLevelShared::InvalidateSegPart (segpart_t *sp) noexcept {
 //
 //==========================================================================
 void VRenderLevelShared::InvalidateWholeSeg (seg_t *seg) noexcept {
-  GCon->Logf(NAME_Debug, "*TRANSDOOR INVALIDATION; seg=%p; line %p", seg, seg->linedef);
+  //GCon->Logf(NAME_Debug, "*TRANSDOOR INVALIDATION; seg=%p; line %p", seg, seg->linedef);
   drawseg_t *ds = seg->drawsegs;
   if (ds) {
     InvalidateSegPart(ds->top);
@@ -321,9 +321,21 @@ void VRenderLevelShared::InvaldateAllSegParts () noexcept {
 void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
   if (seg->pobj) return; // don't do anything for polyobjects (for now)
   const line_t *line = seg->linedef;
+  if (!line || line->pobj()) return; // miniseg
+  // ignore "inner" seg (i.e. that one which doesn't start or end on line vertex)
+  // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
+  if (seg->offset != 0.0f) {
+    if (seg->v1 != line->v1 && seg->v1 != line->v2 &&
+        seg->v2 != line->v1 && seg->v2 != line->v2)
+    {
+      // midseg, do nothing
+      //GCon->Logf(NAME_Debug, "seg #%d (line #%d) is a midseg", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(line-&Level->Lines[0]));
+      return;
+    }
+  }
   const sector_t *mysec = seg->frontsector;
   // just in case; also, more polyobject checks (skip sectors containing original polyobjs)
-  if (!line || !mysec || line->pobj() || mysec->isAnyPObj()) return;
+  if (!mysec || mysec->isAnyPObj()) return;
   //GCon->Logf(NAME_Debug, "mark tjunctions for line #%d", (int)(ptrdiff_t)(line-&Level->Lines[0]));
   // simply mark all adjacents for recreation
   for (int lvidx = 0; lvidx < 2; ++lvidx) {
@@ -340,7 +352,8 @@ void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
             InvalidateSegPart(ds->mid);
             InvalidateSegPart(ds->bot);
             InvalidateSegPart(ds->topsky);
-            InvalidateSegPart(ds->extra);
+            // i'm pretty sure that we don't have to fix 3d floors
+            //InvalidateSegPart(ds->extra);
           }
         }
       }

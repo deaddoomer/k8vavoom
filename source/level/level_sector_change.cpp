@@ -90,7 +90,11 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
   if (sector->isOriginalPObj()) return false; // just in case
 
   // do not recalc bounds for inner 3d pobj sectors
-  if (!sector->isInnerPObj()) CalcSecMinMaxs(sector);
+  if (!sector->isInnerPObj()) {
+    CalcSecMinMaxs(sector);
+    // notify renderer, so it may schedule adjacent surfaces for t-junction fixing
+    if (Renderer) Renderer->SectorModified(sector);
+  }
 
   bool ret = false;
 

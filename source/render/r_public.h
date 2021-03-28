@@ -122,6 +122,7 @@ public:
 
   virtual void PreRender () = 0;
   virtual void PObjModified (polyobj_t *po) = 0; // fix polyobject segs
+  virtual void SectorModified (sector_t *sec) = 0; // this sector *may* be moved
   virtual void SetupFakeFloors (sector_t *) = 0;
   virtual void RenderPlayerView () = 0;
 

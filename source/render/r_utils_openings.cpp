@@ -83,18 +83,20 @@ sec_region_t *VRenderLevelShared::GetHigherRegion (sector_t *sector, sec_region_
   vassert(sector);
   if (!srcreg || !sector->eregions->next) return sector->eregions;
   // get distance to ceiling
-  // we want the best sector that is higher
+  // we want the nearest ceiling
   const float srcrtopz = srcreg->eceiling.GetRealDist();
   float bestdist = 99999.0f;
   sec_region_t *bestreg = sector->eregions;
   for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+    // ignore sane regions here, because they don't change lighting underneath
     if (reg == srcreg || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) != 0) continue;
     const float rtopz = reg->eceiling.GetRealDist();
+    if (srcrtopz >= rtopz) continue; // source region is higher
     const float rbotz = reg->efloor.GetRealDist();
-    // ignore paper-thin regions
-    if (rtopz <= rbotz) continue; // invalid, or paper-thin, ignore
+    // ignore paper-thin regions (nope, it sill may influence lighting)
+    if (rtopz < rbotz) continue; // invalid, ignore
     const float dist = srcrtopz-rbotz;
-    if (dist <= 0.0f) continue; // too low
+    //if (dist <= 0.0f) continue; // too low
     if (dist < bestdist) {
       bestdist = dist;
       bestreg = reg;

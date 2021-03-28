@@ -99,6 +99,9 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
   if (!seg->linedef) return; // miniseg
   bool needTJ = false;
 
+  // note that we need to check for "any flat height changed" in recreation code path
+  // this is to avoid constantly recreating the whole map when we only need to fix t-junctions
+
   if (!seg->backsector) {
     // one-sided seg
     // top sky
