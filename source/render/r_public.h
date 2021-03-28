@@ -122,9 +122,12 @@ public:
 
   virtual void PreRender () = 0;
   virtual void PObjModified (polyobj_t *po) = 0; // fix polyobject segs
-  virtual void SectorModified (sector_t *sec) = 0; // this sector *may* be moved
   virtual void SetupFakeFloors (sector_t *) = 0;
   virtual void RenderPlayerView () = 0;
+
+  virtual void BeginSectorModifications () = 0; // called on `ChangeSector` entering
+  virtual void EndSectorModifications () = 0; // called on `ChangeSector` leaving
+  virtual void SectorModified (sector_t *sec) = 0; // this sector *may* be moved
 
   virtual void ResetStaticLights () = 0;
   virtual void AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar) = 0;

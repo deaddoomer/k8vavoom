@@ -324,14 +324,13 @@ void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
   if (!line || line->pobj()) return; // miniseg
   // ignore "inner" seg (i.e. that one which doesn't start or end on line vertex)
   // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
-  if (seg->offset != 0.0f) {
-    if (seg->v1 != line->v1 && seg->v1 != line->v2 &&
-        seg->v2 != line->v1 && seg->v2 != line->v2)
-    {
-      // midseg, do nothing
-      //GCon->Logf(NAME_Debug, "seg #%d (line #%d) is a midseg", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(line-&Level->Lines[0]));
-      return;
-    }
+  // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
+  if (seg->v1 != line->v1 && seg->v1 != line->v2 &&
+      seg->v2 != line->v1 && seg->v2 != line->v2)
+  {
+    // midseg, do nothing
+    //GCon->Logf(NAME_Debug, "seg #%d (line #%d) is a midseg", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(line-&Level->Lines[0]));
+    return;
   }
   const sector_t *mysec = seg->frontsector;
   // just in case; also, more polyobject checks (skip sectors containing original polyobjs)

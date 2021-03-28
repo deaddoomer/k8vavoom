@@ -118,6 +118,28 @@ void VRenderLevelShared::PObjModified (polyobj_t *po) {
 
 //==========================================================================
 //
+//  VRenderLevelShared::BeginSectorModifications
+//
+//  called on `ChangeSector` entering
+//
+//==========================================================================
+void VRenderLevelShared::BeginSectorModifications () {
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::EndSectorModifications
+//
+//  called on `ChangeSector` leaving
+//
+//==========================================================================
+void VRenderLevelShared::EndSectorModifications () {
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::SectorModified
 //
 //  called when `VLevel::ChangeSector()` is called

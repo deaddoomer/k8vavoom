@@ -238,9 +238,6 @@ bool Physics (float DeltaTime) {
             if (waterheight > hgt && eorgz >= waterheight) continue;
           }
           // don't process sectors twice (eh, it is guaranteed by the list builder)
-          //if (!vismark) vismark = XLevel.GetNextVisitedCount();
-          //if (mnode.Visited == vismark) continue;
-          //mnode.Visited = vismark;
           CummX += scrollx;
           CummY += scrolly;
           if (scrollx) ++CountX;
