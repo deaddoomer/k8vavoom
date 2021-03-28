@@ -317,12 +317,14 @@ void VRenderLevelShared::InvaldateAllSegParts () noexcept {
 //
 //  VRenderLevelShared::MarkAdjacentTJunctions
 //
-//  do not mark lines belongs only to `fsec`
+//  (do not mark lines belongs only to `fsec`)
+//  this doesn't seem to be required, and should not give a huge speedup
+//  so i removed this check
 //
 //==========================================================================
 void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept {
   if (!line || line->pobj()) return; // no line, or polyobject line
-  vassert(fsec != nullptr);
+  //vassert(fsec);
   const unsigned lineidx = (unsigned)(ptrdiff_t)(line-&Level->Lines[0]);
   if (tjLineMarkCheck[lineidx] == updateWorldFrame) return; // already processed at this frame
   tjLineMarkCheck[lineidx] = updateWorldFrame;
@@ -332,6 +334,8 @@ void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const lin
     for (int f = 0; f < line->vxCount(lvidx); ++f) {
       const line_t *ln = line->vxLine(lvidx, f);
       if (ln == line) continue;
+      // do not perform front sector checks, i'm not sure that i will not miss anything with them
+      /*
       if (ln->frontsector) {
         if (ln->backsector) {
           // 2-sided
@@ -344,6 +348,7 @@ void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const lin
         // very strange 1-sided
         if (ln->backsector == fsec) continue;
       }
+      */
       const unsigned lnidx = (unsigned)(ptrdiff_t)(ln-&Level->Lines[0]);
       if (tjLineMarkFix[lnidx] == updateWorldFrame) continue; // already marked (and maybe processed) at this frame
       tjLineMarkFix[lnidx] = updateWorldFrame;

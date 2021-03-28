@@ -121,15 +121,19 @@ surface_t *VRenderLevelShadowVolume::FixFaceTJunctions (surface_t *surf) {
 //
 //  we'll fix t-junctions here
 //
-//  WARNING! this is temporary solution, we should do it in renderer,
-//  because moving flats can invalidate neighbour surfaces
-//
 //  i mean, real fixing is done when the renderer hits the subsector
 //  this may be wrong, because we may hit adjacent subsectors first,
 //  and only then updater will mark them for fixing.
 //
 //  this is not fatal, because it will be fixed on the next frame, but
 //  it may be better to mark adjacents in `ChangeSector()`, for example
+//
+//  the text above is not true anymore, because `ChangeSector()` calls
+//  `SectorModified()`, which in turn calls `MarkAdjacentTJunctions()`
+//  for all sector lines. this may be excessive, but why not?
+//
+//  i am also using `updateWorldFrame` as validcounter, so no lines
+//  will be processed twice in one frame.
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *seg) {
