@@ -61,6 +61,7 @@ void VRenderLevelShadowVolume::CollectLightShadowSurfaces (bool doShadows) {
   //TODO: create separate frame counter for polyobjects
   //      it is safe to reset render counters here, because they already used and not needed for anything
   Level->ResetPObjRenderCounts();
+  nextRenderedLineCounter();
   if (Level->NumSubsectors < 2) {
     if (Level->NumSubsectors == 1) return CollectAdvLightSubsector(0, (doShadows ? FlagAsBoth : FlagAsLight));
   } else {
@@ -261,6 +262,21 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   if (!seg) return; // just in case
   const line_t *linedef = seg->linedef;
   if (!linedef) return; // miniseg
+
+  #if 1
+  // render (queue) translucent lines by segs (for sorter)
+  if (IsShadowVolumeRenderer() && (!seg->backsector || (linedef->exFlags&ML_EX_NON_TRANSLUCENT))) {
+    side_t *side = (seg->side == 0 ? linedef->frontside : linedef->backside);
+    //vassert(side);
+    if (side->rendercount == renderedLineCounter) return; // already rendered
+    side->rendercount = renderedLineCounter;
+
+    seg = side->fullseg;
+    //vassert(seg);
+    dseg = seg->drawsegs;
+    //vassert(dseg);
+  }
+  #endif
 
   const bool goodTwoSided = (seg->backsector && (linedef->flags&ML_TWOSIDED));
   //const bool baseReg = (secregion->regflags&sec_region_t::RF_BaseRegion);

@@ -185,6 +185,7 @@ protected:
   TArray<int> renderedSectors; // sector numbers
   TArray<int> renderedSectorMarks; // contiains counter; sized by number of sectors
   int renderedSectorCounter;
+  vuint32 renderedLineCounter;
   TMapNC<VEntity *, bool> renderedThingMarks;
 
   BSPVisInfo *bspVisRadius;
@@ -248,9 +249,15 @@ public:
     if (++renderedSectorCounter == MAX_VINT32) {
       renderedSectorCounter = 1;
       for (auto &&rs : renderedSectorMarks) rs = 0;
-      for (auto &&sd : Level->allSides()) sd.rendercount = 0;
     }
     renderedSectors.resetNoDtor();
+  }
+
+  inline void nextRenderedLineCounter () noexcept {
+    if (++renderedLineCounter == 0) {
+      renderedLineCounter = 1;
+      for (auto &&sd : Level->allSides()) sd.rendercount = 0;
+    }
   }
 
   inline void markSectorRendered (int secnum) noexcept {

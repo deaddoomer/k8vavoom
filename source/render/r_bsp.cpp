@@ -848,11 +848,11 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
 
   #if 1
   // render (queue) translucent lines by segs (for sorter)
-  if (!seg->backsector || (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
+  if (IsShadowVolumeRenderer() && (!seg->backsector || (linedef->exFlags&ML_EX_NON_TRANSLUCENT))) {
     side_t *side = (seg->side == 0 ? linedef->frontside : linedef->backside);
     //vassert(side);
-    if (side->rendercount == (unsigned)renderedSectorCounter) return; // already rendered
-    side->rendercount = renderedSectorCounter;
+    if (side->rendercount == renderedLineCounter) return; // already rendered
+    side->rendercount = renderedLineCounter;
 
     seg = side->fullseg;
     //vassert(seg);
@@ -1319,6 +1319,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
 //
 //==========================================================================
 void VRenderLevelShared::RenderBSPTree () {
+  nextRenderedLineCounter();
   if (Level->NumSubsectors > 1) {
     vassert(Level->NumNodes > 0);
     /*static*/ const float bbox[6] = { -99999.0f, -99999.0f, -99999.0f, 99999.0f, 99999.0f, 99999.0f };

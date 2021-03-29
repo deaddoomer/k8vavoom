@@ -690,6 +690,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   Level->ResetPObjRenderCounts(); // we'll need them
 
   renderedSectorCounter = 0;
+  renderedLineCounter = 0;
   forceDisableShadows = false;
 
   ColorMap = 0;
