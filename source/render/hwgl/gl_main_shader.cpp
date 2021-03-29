@@ -32,7 +32,6 @@
 #include <stdarg.h>
 
 #include "gl_local.h"
-#include "../r_local.h" /* for VRenderLevelShared */
 
 
 static VCvarB gl_shader_on_demand("gl_shader_on_demand", true, "Compile shaders on demand?", CVAR_PreInit|CVAR_Archive);

@@ -32,7 +32,6 @@
 #include <stdarg.h>
 
 #include "gl_local.h"
-#include "../r_local.h" /* for VRenderLevelShared */
 
 
 static ColorCV letterboxColor(&gl_letterbox_color);
