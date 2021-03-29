@@ -31,9 +31,11 @@
 //
 //  VRenderLevelShared::isPointInsideSolidReg
 //
+//  exactly on the floor/ceiling is "inside" too
+//
 //==========================================================================
-bool VRenderLevelShared::isPointInsideSolidReg (const TVec lv, const float pz, sec_region_t *streg, sec_region_t *ignorereg) noexcept {
-  for (sec_region_t *reg = streg; reg; reg = reg->next) {
+bool VRenderLevelShared::isPointInsideSolidReg (const TVec lv, const float pz, const sec_region_t *streg, const sec_region_t *ignorereg) noexcept {
+  for (const sec_region_t *reg = streg; reg; reg = reg->next) {
     if (reg == ignorereg || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) != 0) continue;
     const float cz = reg->eceiling.GetPointZ(lv);
     const float fz = reg->efloor.GetPointZ(lv);
@@ -47,159 +49,86 @@ bool VRenderLevelShared::isPointInsideSolidReg (const TVec lv, const float pz, s
 
 //==========================================================================
 //
-//  VRenderLevelShared::ClipQuadWithPlaneBottom
+//  VRenderLevelShared::SplitQuadWithPlane
 //
-//  clip quad with non-vertical plane, leaves bottom part
-//  quad itself must be vertical
-//
-//  as our quad is vertical, planes can only cut it in half
-//  ignore planes above or below the quad
-//
-//  returns `true` if was cut; `quad` contains new "bottom" quad
-//  if returned `false`, `quad` is unchanged
-//
-//  quad points are:
-//   [0]: left bottom point
-//   [1]: left top point
-//   [2]: right top point
-//   [3]: right bottom point
+//  splits quad with a non-vertical plane
+//  returns `false` if there was no split
+//  (both `qbottom` and `qtop` will contain the original quad in this case)
+//  `qbottom` and/or `qtop` can be `nullptr`
+//  plane orientation doesn't matter
+//  `qbottom` or `qtop` can be the same as `quad`
 //
 //==========================================================================
-bool VRenderLevelShared::ClipQuadWithPlaneBottom (TVec quad[4], const TVec normal, const float dist) noexcept {
-  vassert(isFiniteF(normal.z) && normal.z != 0.0f);
-  vassert(isFiniteF(dist));
-  TPlane pl;
-  pl.normal = normal;
-  pl.dist = dist;
-  //if (pl.normal.z < 0.0f) pl.flipInPlace(); // now our plane points up -- doesn't matter
+bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], const TPlane &pl, TVec qbottom[4], TVec qtop[4]) noexcept {
+  vassert(quad);
+  vassert(pl.isValid());
+  vassert(!pl.isVertical());
 
   bool wasHit = false;
+  if (qbottom && qbottom != quad) memcpy(qbottom, quad, sizeof(quad[0])*4);
+  if (qtop && qtop != quad) memcpy(qtop, quad, sizeof(quad[0])*4);
 
   // left hitpoint
   do {
-    const float dot1 = pl.PointDistance(quad[0]);
-    const float dot2 = pl.PointDistance(quad[1]);
+    const float dot1 = pl.PointDistance(quad[QUAD_V1_BOTTOM]);
+    const float dot2 = pl.PointDistance(quad[QUAD_V1_TOP]);
     // do not use multiplication to check: zero speedup, lost accuracy
     //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
     if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
     if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
     // find the fractional intersection time
-    const TVec dir = quad[1]-quad[0];
+    const TVec dir = quad[QUAD_V1_TOP]-quad[QUAD_V1_BOTTOM];
     const float den = DotProduct(pl.normal, dir);
     if (den == 0.0f) break;
-    const float num = pl.dist-DotProduct(quad[0], pl.normal);
+    const float num = pl.dist-DotProduct(quad[QUAD_V1_BOTTOM], pl.normal);
     const float frac = num/den;
     if (frac < 0.0f || frac > 1.0f) break; // behind source or beyond end point
     // now we have a hitpoint
     wasHit = true;
     // split it: cut original quad top
-    quad[1] = quad[0]+dir*frac;
+    const TVec hp = quad[QUAD_V1_BOTTOM]+dir*frac;
+    if (qbottom) qbottom[QUAD_V1_TOP] = hp;
+    if (qtop) qtop[QUAD_V1_BOTTOM] = hp;
   } while (0);
 
   // right hitpoint
   do {
-    const float dot1 = pl.PointDistance(quad[3]);
-    const float dot2 = pl.PointDistance(quad[2]);
+    const float dot1 = pl.PointDistance(quad[QUAD_V2_BOTTOM]);
+    const float dot2 = pl.PointDistance(quad[QUAD_V2_TOP]);
     // do not use multiplication to check: zero speedup, lost accuracy
     //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
     if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
     if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
     // find the fractional intersection time
-    const TVec dir = quad[2]-quad[3];
+    const TVec dir = quad[QUAD_V2_TOP]-quad[QUAD_V2_BOTTOM];
     const float den = DotProduct(pl.normal, dir);
     if (den == 0.0f) break;
-    const float num = pl.dist-DotProduct(quad[3], pl.normal);
+    const float num = pl.dist-DotProduct(quad[QUAD_V2_BOTTOM], pl.normal);
     const float frac = num/den;
     if (frac < 0.0f || frac > 1.0f) break; // behind source or beyond end point
     // now we have a hitpoint
     wasHit = true;
     // split it: cut original quad top
-    quad[2] = quad[3]+dir*frac;
+    const TVec hp = quad[QUAD_V2_BOTTOM]+dir*frac;
+    if (qbottom) qbottom[QUAD_V2_TOP] = hp;
+    if (qtop) qtop[QUAD_V2_BOTTOM] = hp;
   } while (0);
 
   return wasHit;
 }
 
 
-//==========================================================================
-//
-//  VRenderLevelShared::ClipQuadWithPlaneTop
-//
-//  clip quad with non-vertical plane, leaves top part
-//  quad itself must be vertical
-//
-//  as our quad is vertical, planes can only cut it in half
-//  ignore planes above or below the quad
-//
-//  returns `true` if was cut; `quad` contains new "bottom" quad
-//  if returned `false`, `quad` is unchanged
-//
-//  quad points are:
-//   [0]: left bottom point
-//   [1]: left top point
-//   [2]: right top point
-//   [3]: right bottom point
-//
-//==========================================================================
-bool VRenderLevelShared::ClipQuadWithPlaneTop (TVec quad[4], const TVec normal, const float dist) noexcept {
-  vassert(isFiniteF(normal.z) && normal.z != 0.0f);
-  vassert(isFiniteF(dist));
-  TPlane pl;
-  pl.normal = normal;
-  pl.dist = dist;
-  //if (pl.normal.z < 0.0f) pl.flipInPlace(); // now our plane points up -- doesn't matter
-
-  bool wasHit = false;
-
-  // left hitpoint
-  do {
-    const float dot1 = pl.PointDistance(quad[0]);
-    const float dot2 = pl.PointDistance(quad[1]);
-    // do not use multiplication to check: zero speedup, lost accuracy
-    //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
-    if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
-    if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
-    // find the fractional intersection time
-    const TVec dir = quad[1]-quad[0];
-    const float den = DotProduct(pl.normal, dir);
-    if (den == 0.0f) break;
-    const float num = pl.dist-DotProduct(quad[0], pl.normal);
-    const float frac = num/den;
-    if (frac < 0.0f || frac > 1.0f) break; // behind source or beyond end point
-    // now we have a hitpoint
-    wasHit = true;
-    // split it: cut original quad bottom
-    quad[0] += dir*frac;
-  } while (0);
-
-  // right hitpoint
-  do {
-    const float dot1 = pl.PointDistance(quad[3]);
-    const float dot2 = pl.PointDistance(quad[2]);
-    // do not use multiplication to check: zero speedup, lost accuracy
-    //if (dot1*dot2 >= 0.0f) break; // plane isn't crossed
-    if (dot1 <= 0.0f && dot2 <= 0.0f) break; // didn't reached back side (or on the plane)
-    if (dot1 >= 0.0f && dot2 >= 0.0f) break; // didn't reached front side (or on the plane)
-    // find the fractional intersection time
-    const TVec dir = quad[2]-quad[3];
-    const float den = DotProduct(pl.normal, dir);
-    if (den == 0.0f) break;
-    const float num = pl.dist-DotProduct(quad[3], pl.normal);
-    const float frac = num/den;
-    if (frac < 0.0f || frac > 1.0f) break; // behind source or beyond end point
-    // now we have a hitpoint
-    wasHit = true;
-    // split it: cut original quad top
-    quad[3] += dir*frac;
-  } while (0);
-
-  return wasHit;
-}
+  // starts with the given region
+  // modifies `quad`
+  enum {
+    QSPLIT_BOTTOM = 0, // leaves bottom part
+    QSPLIT_TOP = 1, // leaves top part
+  };
 
 
 //==========================================================================
 //
-//  VRenderLevelShared::ClipQuadWithRegionsBottom
+//  VRenderLevelShared::SplitQuadWithRegions
 //
 //  this is used to split the wall with 3d surfaces
 //  returns the lowest clipping region
@@ -213,41 +142,23 @@ bool VRenderLevelShared::ClipQuadWithPlaneTop (TVec quad[4], const TVec normal, 
 //  non-sloped 3d floor penetration should be ok, tho (yet it is still UB)
 //
 //==========================================================================
-sec_region_t *VRenderLevelShared::ClipQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg) noexcept {
-  // no need to split with base region
+sec_region_t *VRenderLevelShared::SplitQuadWithRegions (const int mode, TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg) noexcept {
   sec_region_t *clipreg = nullptr;
   for (; reg; reg = reg->next) {
-    if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion/*|sec_region_t::RF_SaneRegion*/)) continue;
-    const float z1 = reg->eceiling.GetRealDist();
-    const float z0 = reg->efloor.GetRealDist();
-    if (z1 < z0) continue; // invalid region
-    // clip only with floor, ceiling is never lower than it
-    if (ClipQuadWithPlaneBottom(quad, reg->efloor)) {
-      clipreg = reg;
-    }
-  }
-  return clipreg;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::ClipQuadWithRegionsTop
-//
-//  see above
-//
-//==========================================================================
-sec_region_t *VRenderLevelShared::ClipQuadWithRegionsTop (TVec quad[4], sec_region_t *reg) noexcept {
-  // no need to split with base region
-  sec_region_t *clipreg = nullptr;
-  for (; reg; reg = reg->next) {
-    if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion/*|sec_region_t::RF_SaneRegion*/)) continue;
-    const float z1 = reg->eceiling.GetRealDist();
-    const float z0 = reg->efloor.GetRealDist();
-    if (z1 < z0) continue; // invalid region
-    // clip only with floor, ceiling is never lower than it
-    if (ClipQuadWithPlaneTop(quad, reg->eceiling)) {
-      clipreg = reg;
+    if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+    // check for invalid region (and ignore it)
+    const float fz1 = reg->efloor.GetPointZClamped(quad[QUAD_V1_TOP]);
+    const float cz1 = reg->eceiling.GetPointZClamped(quad[QUAD_V1_TOP]);
+    if (fz1 > cz1) continue; // invalid region
+    const float fz2 = reg->efloor.GetPointZClamped(quad[QUAD_V2_TOP]);
+    const float cz2 = reg->eceiling.GetPointZClamped(quad[QUAD_V2_TOP]);
+    if (fz2 > cz2) continue; // invalid region
+    if (mode == QSPLIT_BOTTOM) {
+      // clip only with floor, ceiling is never lower than it
+      if (SplitQuadWithPlane(quad, reg->efloor, quad, nullptr)) clipreg = reg; // leave bottom
+    } else {
+      // clip only with ceiling, floor is never lower than it
+      if (SplitQuadWithPlane(quad, reg->eceiling, nullptr, quad)) clipreg = reg; // leave top
     }
   }
   return clipreg;

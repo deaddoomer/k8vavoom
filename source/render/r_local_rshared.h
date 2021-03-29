@@ -683,14 +683,22 @@ public:
   void CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset=false) noexcept;
 
 protected:
+  // quad vertex indicies
+  enum {
+    QUAD_V1_BOTTOM = 0,
+    QUAD_V1_TOP    = 1,
+    QUAD_V2_TOP    = 2,
+    QUAD_V2_BOTTOM = 3,
+  };
+
   // doesn't check quad direction
   static inline bool isValidQuad (const TVec quad[4]) noexcept {
     // degenerate surface?
-    if (quad[0].z == quad[1].z && quad[1].z == quad[2].z && quad[2].z == quad[3].z) return false;
+    if (quad[QUAD_V1_BOTTOM].z == quad[QUAD_V1_TOP].z && quad[QUAD_V1_TOP].z == quad[QUAD_V2_TOP].z && quad[QUAD_V2_TOP].z == quad[QUAD_V2_BOTTOM].z) return false;
     // degenerate surface (thin line)?
-    if (quad[0].z == quad[1].z && quad[2].z == quad[3].z) return false;
+    if (quad[QUAD_V1_BOTTOM].z == quad[QUAD_V1_TOP].z && quad[QUAD_V2_TOP].z == quad[QUAD_V2_BOTTOM].z) return false;
     // degenerate surface (thin line)?
-    if (quad[0].z == quad[2].z && quad[1].z == quad[3].z) return false;
+    if (quad[QUAD_V1_BOTTOM].z == quad[QUAD_V2_TOP].z && quad[QUAD_V1_TOP].z == quad[QUAD_V2_BOTTOM].z) return false;
     return true;
   }
 
@@ -701,29 +709,42 @@ protected:
   //   [2]: right top point
   //   [3]: right bottom point
   static inline bool isValidNormalQuad (const TVec quad[4]) noexcept {
-    if (quad[0].z >= quad[1].z || quad[3].z >= quad[2].z) return false;
+    if (quad[QUAD_V1_BOTTOM].z >= quad[QUAD_V1_TOP].z || quad[QUAD_V2_BOTTOM].z >= quad[QUAD_V2_TOP].z) return false;
     return isValidQuad(quad);
   }
 
-  // leaves bottom part
-  static bool ClipQuadWithPlaneBottom (TVec quad[4], const TVec normal, const float dist) noexcept;
-  static inline bool ClipQuadWithPlaneBottom (TVec quad[4], const TPlane &pl) noexcept { return ClipQuadWithPlaneBottom(quad, pl.normal, pl.dist); }
-  static inline bool ClipQuadWithPlaneBottom (TVec quad[4], const TSecPlaneRef &pl) noexcept { return ClipQuadWithPlaneBottom(quad, pl.GetNormal(), pl.GetDist()); }
+  // exactly on the floor/ceiling is "inside" too
+  static bool isPointInsideSolidReg (const TVec lv, const float pz, const sec_region_t *streg, const sec_region_t *ignorereg) noexcept;
 
-  // leaves top part
-  static bool ClipQuadWithPlaneTop (TVec quad[4], const TVec normal, const float dist) noexcept;
-  static inline bool ClipQuadWithPlaneTop (TVec quad[4], const TPlane &pl) noexcept { return ClipQuadWithPlaneTop(quad, pl.normal, pl.dist); }
-  static inline bool ClipQuadWithPlaneTop (TVec quad[4], const TSecPlaneRef &pl) noexcept { return ClipQuadWithPlaneTop(quad, pl.GetNormal(), pl.GetDist()); }
+  // splits quad with a non-vertical plane
+  // returns `false` if there was no split
+  // (both `qbottom` and `qtop` will contain the original quad in this case)
+  // `qbottom` and/or `qtop` can be `nullptr`
+  // plane orientation doesn't matter
+  // `qbottom` or `qtop` can be the same as `quad`
+  static bool SplitQuadWithPlane (const TVec quad[4], const TPlane &pl, TVec qbottom[4], TVec qtop[4]) noexcept;
 
-  // start with the given region
-  static sec_region_t *ClipQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg) noexcept;
-  static inline sec_region_t *ClipQuadWithRegionsBottom (TVec quad[4], sector_t *sec) noexcept { return ClipQuadWithRegionsBottom(quad, sec->eregions); }
+  static inline bool SplitQuadWithPlane (const TVec quad[4], const TSecPlaneRef &pl, TVec qbottom[4], TVec qtop[4]) noexcept {
+    TPlane pp(pl.GetNormal(), pl.GetDist());
+    return SplitQuadWithPlane(quad, pp, qbottom, qtop);
+  }
 
-  // start with the given region
-  static sec_region_t *ClipQuadWithRegionsTop (TVec quad[4], sec_region_t *reg) noexcept;
-  static inline sec_region_t *ClipQuadWithRegionsTop (TVec quad[4], sector_t *sec) noexcept { return ClipQuadWithRegionsTop(quad, sec->eregions); }
+  // starts with the given region
+  // modifies `quad`
+  enum {
+    QSPLIT_BOTTOM = 0, // leaves bottom part
+    QSPLIT_TOP = 1, // leaves top part
+  };
+  // will not split with non-solid regions
+  static sec_region_t *SplitQuadWithRegions (const int mode, TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept;
 
-  static bool isPointInsideSolidReg (const TVec lv, const float pz, sec_region_t *streg, sec_region_t *ignorereg) noexcept;
+  // starts with the given region
+  static inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_BOTTOM, quad, reg, ignorereg); }
+  static inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsBottom(quad, sec->eregions); }
+
+  // starts with the given region
+  static inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_TOP, quad, reg, ignorereg); }
+  static inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsTop(quad, sec->eregions); }
 
 public:
   int CountSegParts (const seg_t *);

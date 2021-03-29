@@ -309,8 +309,8 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
         quad[3].z = botz2;
 
         // clip with floor and ceiling
-        ClipQuadWithPlaneBottom(quad, r_ceiling);
-        ClipQuadWithPlaneTop(quad, r_floor);
+        SplitQuadWithPlane(quad, r_ceiling, quad, nullptr); // leave bottom part
+        SplitQuadWithPlane(quad, r_floor, nullptr, quad); // leave top part
 
         if (isValidNormalQuad(quad)) {
           // clip with other 3d floors

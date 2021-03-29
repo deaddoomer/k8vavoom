@@ -274,7 +274,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
       quad[2].x, quad[2].y, quad[2].z,
       quad[3].x, quad[3].y, quad[3].z);
     #endif
-    sec_region_t *creg = ClipQuadWithRegionsBottom(quad, clipsec);
+    sec_region_t *creg = SplitQuadWithRegionsBottom(quad, clipsec);
     #ifdef VV_QUAD_SPLIT_DEBUG
     GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
       quad[0].x, quad[0].y, quad[0].z,
@@ -342,7 +342,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
       quad[2].x, quad[2].y, quad[2].z,
       quad[3].x, quad[3].y, quad[3].z);
     #endif
-    sec_region_t *creg = ClipQuadWithRegionsBottom(quad, reg);
+    sec_region_t *creg = SplitQuadWithRegionsBottom(quad, reg);
     #ifdef VV_QUAD_SPLIT_DEBUG
     GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
       quad[0].x, quad[0].y, quad[0].z,
