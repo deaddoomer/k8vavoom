@@ -217,7 +217,6 @@ protected:
   segpart_t *pspart;
   int pspartsLeft;
   bool lastRenderQuality;
-  bool lastQuadSplit;
 
   // used in t-junction fixer, put there to avoid constant memory reallocating
   TBinHeapNC<float> tjunkHList;
@@ -908,11 +907,7 @@ private: // automap
 
   void amFlatsCollectSurfaces ();
 
-protected: // sector openings for surface builder
-  opening_t *GetBaseSectorOpening (sector_t *sector);
-  opening_t *GetSectorOpenings (sector_t *sector, bool skipNonSolid=false);
-  opening_t *GetSectorOpenings2 (sector_t *sector, bool skipNonSolid=false);
-
+protected:
   // the one that is higher
   sec_region_t *GetHigherRegionAtZ (sector_t *sector, const float srcrtopz, const sec_region_t *reg2skip=nullptr) noexcept;
   sec_region_t *GetHigherRegion (sector_t *sector, sec_region_t *srcreg) noexcept;

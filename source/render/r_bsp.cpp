@@ -447,7 +447,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
             //lightColor = 0xff00ff00;
             //if (!(secregion->regflags&sec_region_t::RF_BaseRegion)) return;
           }
-        } else if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !FixedLight && !AbsSideLight && r_better_quad_split.asBool()) {
+        } else if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !FixedLight && !AbsSideLight) {
           // if we don't have regions that may affect light, don't do it
           for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
             if ((reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0) {

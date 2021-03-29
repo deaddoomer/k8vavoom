@@ -446,8 +446,8 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     const float back_botz1 = bfloor->GetPointZ(*seg->v1);
     const float back_botz2 = bfloor->GetPointZ(*seg->v2);
 
-    const float exbotz = min2(back_botz1, back_botz2);
-    const float extopz = max2(back_topz1, back_topz2);
+    //const float exbotz = min2(back_botz1, back_botz2);
+    //const float extopz = max2(back_topz1, back_topz2);
 
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); back_botz=(%g : %g); back_topz=(%g : %g), exbotz=%g; extopz=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, back_botz1, back_botz2, back_topz1, back_topz2, exbotz, extopz);
 
@@ -499,23 +499,18 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       bottomCheck = true;
     }
 
-    for (opening_t *cop = (lastQuadSplit ? GetBaseSectorOpening(seg->frontsector) : GetSectorOpenings(seg->frontsector, true)); cop; cop = cop->next) {
-      if (extopz <= cop->bottom || exbotz >= cop->top) {
-        if (doDump) { GCon->Log(" SKIP opening"); VLevel::DumpOpening(cop); }
-        //continue;
-      }
-      if (doDump) { GCon->Logf(" ACCEPT opening"); VLevel::DumpOpening(cop); }
-      // ok, we are at least partially in this opening
+    const sector_t *fsec = seg->frontsector;
 
+    do {
       wv[0].x = wv[1].x = seg->v1->x;
       wv[0].y = wv[1].y = seg->v1->y;
       wv[2].x = wv[3].x = seg->v2->x;
       wv[2].y = wv[3].y = seg->v2->y;
 
-      const float topz1 = min2(back_topz1, cop->eceiling.GetPointZ(*seg->v1));
-      const float topz2 = min2(back_topz2, cop->eceiling.GetPointZ(*seg->v2));
-      const float botz1 = max2(back_botz1, cop->efloor.GetPointZ(*seg->v1));
-      const float botz2 = max2(back_botz2, cop->efloor.GetPointZ(*seg->v2));
+      const float topz1 = min2(back_topz1, fsec->ceiling.GetPointZ(*seg->v1));
+      const float topz2 = min2(back_topz2, fsec->ceiling.GetPointZ(*seg->v2));
+      const float botz1 = max2(back_botz1, fsec->floor.GetPointZ(*seg->v1));
+      const float botz2 = max2(back_botz2, fsec->floor.GetPointZ(*seg->v2));
 
       float midtopz1 = topz1;
       float midtopz2 = topz2;
@@ -525,16 +520,16 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g)", z_org-texh, z_org, midbotz1, midbotz2, midtopz1, midtopz2); }
 
       if (sidedef->TopTexture > 0) {
-        midtopz1 = min2(midtopz1, cop->eceiling.GetPointZ(*seg->v1));
-        midtopz2 = min2(midtopz2, cop->eceiling.GetPointZ(*seg->v2));
+        midtopz1 = min2(midtopz1, fsec->ceiling.GetPointZ(*seg->v1));
+        midtopz2 = min2(midtopz2, fsec->ceiling.GetPointZ(*seg->v2));
       }
 
       if (sidedef->BottomTexture > 0) {
-        midbotz1 = max2(midbotz1, cop->efloor.GetPointZ(*seg->v1));
-        midbotz2 = max2(midbotz2, cop->efloor.GetPointZ(*seg->v2));
+        midbotz1 = max2(midbotz1, fsec->floor.GetPointZ(*seg->v1));
+        midbotz2 = max2(midbotz2, fsec->floor.GetPointZ(*seg->v2));
       }
 
-      if (midbotz1 >= midtopz1 || midbotz2 >= midtopz2) continue;
+      if (midbotz1 >= midtopz1 || midbotz2 >= midtopz2) break;
 
       if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g); backbotz=(%g,%g); backtopz=(%g,%g)", z_org-texh, z_org, midbotz1, midbotz2, midtopz1, midtopz2, back_botz1, back_botz2, back_topz1, back_topz2); }
 
@@ -550,18 +545,14 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
         hgts[2] = midtopz2;
         hgts[3] = midbotz2;
       } else {
-        if (z_org <= max2(midbotz1, midbotz2)) continue;
-        if (z_org-texh >= max2(midtopz1, midtopz2)) continue;
+        if (z_org <= max2(midbotz1, midbotz2)) break;
+        if (z_org-texh >= max2(midtopz1, midtopz2)) break;
         /*
         if (doDump) {
           GCon->Log(" === front regions ===");
           VLevel::dumpSectorRegions(seg->frontsector);
-          GCon->Log(" === front openings ===");
-          for (opening_t *bop = GetSectorOpenings2(seg->frontsector, true); bop; bop = bop->next) VLevel::DumpOpening(bop);
           GCon->Log(" === back regions ===");
           VLevel::dumpSectorRegions(seg->backsector);
-          GCon->Log(" === back openings ===");
-          for (opening_t *bop = GetSectorOpenings2(seg->backsector, true); bop; bop = bop->next) VLevel::DumpOpening(bop);
         }
         */
         hgts[0] = max2(midbotz1, z_org-texh);
@@ -586,7 +577,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       }
 
       CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE, doOffset);
-    }
+    } while (0);
   } else {
     // empty midtexture
     sp->texinfo.Alpha = 1.1f;

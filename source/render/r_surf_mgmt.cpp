@@ -252,7 +252,7 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
   if (!isValidNormalQuad(quad)) return;
 
-  if (!seg->linedef || !lastQuadSplit || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
+  if (!seg->linedef || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
   }
 
@@ -383,7 +383,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
 
   if (!reg && bsec) return CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
 
-  if (!reg || !seg->linedef || !lastQuadSplit || !seg || seg->pobj) {
+  if (!reg || !seg->linedef || !seg || seg->pobj) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
   }
 

@@ -29,63 +29,6 @@
 #include "r_local.h"
 
 
-// sorry
-static TArray<opening_t> oplist_sop;
-static TArray<opening_t> oplist_sop2;
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::GetBaseSectorOpening
-//
-//==========================================================================
-opening_t *VRenderLevelShared::VRenderLevelShared::GetBaseSectorOpening (sector_t *sector) {
-  vassert(sector);
-  oplist_sop.resetNoDtor();
-  opening_t *op = &oplist_sop.alloc();
-  memset((void *)op, 0, sizeof(*op));
-  Level->GetBaseSectorOpening(*op, sector, TVec::ZeroVector, false); // don't use point
-  return op;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::GetSectorOpenings
-//
-//==========================================================================
-opening_t *VRenderLevelShared::VRenderLevelShared::GetSectorOpenings (sector_t *sector, bool skipNonSolid) {
-  vassert(sector);
-  oplist_sop.resetNoDtor();
-  Level->BuildSectorOpenings(nullptr, oplist_sop, sector, TVec::ZeroVector, 0/*nbflags*/, true/*linkList*/, false/*usePoint*/, skipNonSolid, true/*forSurface*/);
-  if (oplist_sop.length() == 0) {
-    //k8: why, it is ok to have zero openings (it seems)
-    //    i've seen this in Hurt.wad, around (7856 -2146)
-    //    just take the armor, and wait until the pool will start filling with blood
-    //    this seems to be a bug, but meh... at least there is no reason to crash.
-    #ifdef CLIENT
-    //GCon->Logf(NAME_Warning, "GetSectorOpenings: zero openings for sector #%d", (int)(ptrdiff_t)(sector-&GClLevel->Sectors[0]));
-    #endif
-    return nullptr;
-  }
-  return oplist_sop.ptr();
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::GetSectorOpenings2
-//
-//==========================================================================
-opening_t *VRenderLevelShared::GetSectorOpenings2 (sector_t *sector, bool skipNonSolid) {
-  vassert(sector);
-  oplist_sop2.resetNoDtor();
-  Level->BuildSectorOpenings(nullptr, oplist_sop2, sector, TVec::ZeroVector, 0, true/*linkList*/, false/*usePoint*/, skipNonSolid, true/*forSurface*/);
-  if (oplist_sop2.length() == 0) return nullptr;
-  return oplist_sop2.ptr();
-}
-
-
 //==========================================================================
 //
 //  VRenderLevelShared::GetHigherRegionAtZ

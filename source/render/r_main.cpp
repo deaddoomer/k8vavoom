@@ -101,8 +101,6 @@ VCvarF r_fade_mult_regular("r_fade_mult_regular", "1", "Light fade multiplier fo
 VCvarF r_fade_mult_advanced("r_fade_mult_advanced", "0.8", "Light fade multiplier for advanced renderer.", CVAR_Archive);
 VCvarF r_sky_bright_factor("r_sky_bright_factor", "1", "Skybright actor factor.", CVAR_Archive);
 
-VCvarB r_better_quad_split("r_better_quad_split", true, "Try to cut wall quads with 3d floor regions? (experimental, may glitch!)", CVAR_Archive);
-
 // was 3072
 VCvarF r_lights_radius("r_lights_radius", "6192", "Lights out of this radius (from camera) will be dropped.", CVAR_Archive);
 //static VCvarB r_lights_cast_many_rays("r_lights_cast_many_rays", false, "Cast more rays to better check light visibility (usually doesn't make visuals any better)?", CVAR_Archive);
@@ -637,7 +635,6 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , pspartsLeft(0)
 {
   lastRenderQuality = r_fix_tjunctions.asBool();
-  lastQuadSplit = r_better_quad_split.asBool();
   currDLightFrame = 0;
   currQueueFrame = 0;
   currVisFrame = 0;
@@ -1465,10 +1462,9 @@ void R_RenderPlayerView () {
 void VRenderLevelShared::RenderPlayerView () {
   if (!Level->LevelInfo) return;
 
-  if (lastRenderQuality != r_fix_tjunctions.asBool() || lastQuadSplit != r_better_quad_split.asBool()) {
+  if (lastRenderQuality != r_fix_tjunctions.asBool()) {
     lastRenderQuality = r_fix_tjunctions.asBool();
-    lastQuadSplit = r_better_quad_split.asBool();
-    GCon->Logf(NAME_Debug, "render quality changed to '%s', invalidating all surfaces (3d floor split is %s)", (lastRenderQuality ? "quality" : "speed"), (lastQuadSplit ? "ON" : "OFF"));
+    GCon->Logf(NAME_Debug, "render quality changed to '%s', invalidating all surfaces", (lastRenderQuality ? "quality" : "speed"));
     InvaldateAllSegParts();
   }
 
