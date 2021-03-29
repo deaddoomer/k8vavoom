@@ -360,6 +360,8 @@ struct side_t {
 
   // sector the SideDef is facing
   sector_t *Sector;
+  seg_t *fullseg; // "whole line" segment (allocated in `Segs`, tho)
+  vuint32 rendercount; // used to avoid rendering lines several times (with full segments)
 
   vint32 LineNum; // line index in `Lines`
 
