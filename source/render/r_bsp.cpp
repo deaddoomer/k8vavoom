@@ -846,6 +846,21 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
     return;
   }
 
+  #if 1
+  // render (queue) translucent lines by segs (for sorter)
+  if (!seg->backsector || (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
+    side_t *side = (seg->side == 0 ? linedef->frontside : linedef->backside);
+    //vassert(side);
+    if (side->rendercount == (unsigned)renderedSectorCounter) return; // already rendered
+    side->rendercount = renderedSectorCounter;
+
+    seg = side->fullseg;
+    //vassert(seg);
+    dseg = seg->drawsegs;
+    //vassert(dseg);
+  }
+  #endif
+
   if (seg->PointOnSide(Drawer->vieworg)) {
     // viewer is in back side or on plane
     // gozzo 3d floors should be rendered regardless of orientation

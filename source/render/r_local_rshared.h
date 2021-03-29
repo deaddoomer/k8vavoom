@@ -248,6 +248,7 @@ public:
     if (++renderedSectorCounter == MAX_VINT32) {
       renderedSectorCounter = 1;
       for (auto &&rs : renderedSectorMarks) rs = 0;
+      for (auto &&sd : Level->allSides()) sd.rendercount = 0;
     }
     renderedSectors.resetNoDtor();
   }

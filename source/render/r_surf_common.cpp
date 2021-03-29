@@ -163,7 +163,9 @@ int VRenderLevelShared::CountSegParts (const seg_t *seg) {
 //
 //==========================================================================
 void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_t *seg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling, sec_region_t *curreg) {
-  if (!seg->linedef) return; // miniseg
+  line_t *ld = seg->linedef;
+  if (!ld) return; // miniseg
+  ld->exFlags |= ML_EX_NON_TRANSLUCENT;
 
   /*
   #if 1
@@ -230,6 +232,9 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
     sp = dseg->mid;
     sp->basereg = curreg;
     SetupTwoSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
+    if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
+      if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+    }
 
     // create region sides
     // this creates sides for neightbour 3d floors
@@ -247,6 +252,9 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
         dseg->extra = sp;
 
         SetupTwoSidedMidExtraWSurf(reg, sub, seg, sp, r_floor, r_ceiling);
+        if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
+          if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+        }
       }
 
       if (transDoorHack != !!(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) InvalidateWholeSeg(seg);
@@ -286,6 +294,15 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int srcount = 0;
   int dscount = 0;
   int spcount = 0;
+  for (auto &&ld : Level->allLines()) {
+    for (unsigned f = 0; f < 2; ++f) {
+      side_t *side = (f ? ld.backside : ld.frontside);
+      if (!side || !side->fullseg) continue;
+      dscount += 1; // one drawseg for a good seg
+      // segparts (including segparts for 3d floors)
+      spcount += CountSegParts(side->fullseg);
+    }
+  }
   for (auto &&sub : Level->allSubsectors()) {
     if (sub.isInnerPObj()) ++srcount; // floor and ceiling
     // we need flats for 3d polyobject subsectors
@@ -452,6 +469,31 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     }
 
     if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), Level->NumSubsectors);
+  }
+
+  // create "fullsegs"
+  for (auto &&ld : Level->allLines()) {
+    for (unsigned f = 0; f < 2; ++f) {
+      side_t *side = (f ? ld.backside : ld.frontside);
+      if (!side || !side->fullseg) continue;
+
+      sector_t *fsec = (f ? ld.backsector : ld.frontsector);
+      vassert(fsec);
+
+      subsector_t *sub = fsec->subsectors;
+      vassert(sub);
+
+      TSecPlaneRef main_floor = sub->sector->eregions->efloor;
+      TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
+
+      seg_t *seg = side->fullseg;
+      if (seg->linedef) {
+        if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+        --pdsLeft;
+        CreateSegParts(sub, pds, seg, main_floor, main_ceiling, sub->sector->eregions);
+        ++pds;
+      }
+    }
   }
 
   GCon->Log(NAME_Debug, "performing initial world update...");

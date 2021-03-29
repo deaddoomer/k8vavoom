@@ -138,6 +138,8 @@ void VLevel::FinaliseLines () {
     // setup side references
     ldef->frontside = (ldef->sidenum[0] >= 0 ? &Sides[ldef->sidenum[0]] : nullptr);
     ldef->backside = (ldef->sidenum[1] >= 0 ? &Sides[ldef->sidenum[1]] : nullptr);
+    vassert((ldef->sidenum[0] < 0 && !ldef->frontside) || (ldef->sidenum[0] >= 0 && ldef->frontside));
+    vassert((ldef->sidenum[1] < 0 && !ldef->backside) || (ldef->sidenum[1] >= 0 && ldef->backside));
     // setup sector references
     ldef->frontsector = (ldef->frontside ? ldef->frontside->Sector : nullptr/*&Sectors[0]*//*just in case*/);
     ldef->backsector = (ldef->backside ? ldef->backside->Sector : nullptr);

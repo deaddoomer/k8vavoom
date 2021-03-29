@@ -766,6 +766,7 @@ struct line_t : TPlane {
   // so we'll be able to check those without `VLevel` object
   side_t *frontside;
   side_t *backside;
+  int updateWorldFrame;
 
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc

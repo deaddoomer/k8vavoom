@@ -356,8 +356,8 @@ bool VLevel::LoadCachedData (VStream *strm) {
   *arrstrm << NumSegs;
   GCon->Logf("cache: reading %d segs", NumSegs);
   delete [] Segs;
-  Segs = new seg_t[NumSegs+NumLines+1];
-  memset((void *)Segs, 0, (NumSegs+NumLines+1)*sizeof(seg_t));
+  Segs = new seg_t[NumSegs+NumLines*2+1];
+  memset((void *)Segs, 0, (NumSegs+NumLines*2+1)*sizeof(seg_t));
   for (int f = 0; f < NumSegs; ++f) {
     seg_t *seg = Segs+f;
     doPlaneIO(arrstrm, seg);

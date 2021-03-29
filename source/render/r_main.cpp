@@ -684,6 +684,8 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
 
   ResetVisFrameCount();
   ResetDLightFrameCount();
+  ResetUpdateWorldFrame();
+  for (auto &&sd : Level->allSides()) sd.rendercount = 0;
 
   Level->ResetPObjRenderCounts(); // we'll need them
 
@@ -929,6 +931,7 @@ void VRenderLevelShared::ResetUpdateWorldFrame () noexcept {
   updateWorldFrame = 1;
   for (auto &&it : Level->allSubsectors()) it.updateWorldFrame = 0;
   for (auto &&it : Level->allPolyobjects()) it->updateWorldFrame = 0;
+  for (auto &&ld : Level->allLines()) ld.updateWorldFrame = 0;
   if (Level->NumLines) {
     if (tjLineMarkCheck) memset((void *)tjLineMarkCheck, 0, Level->NumLines*sizeof(tjLineMarkCheck[0]));
     if (tjLineMarkFix) memset((void *)tjLineMarkFix, 0, Level->NumLines*sizeof(tjLineMarkFix[0]));

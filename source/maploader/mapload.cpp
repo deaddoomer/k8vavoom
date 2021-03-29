@@ -620,6 +620,7 @@ load_again:
   // this creates list of segs for each line
   DecalProcessingTime = -Sys_Time();
   PostProcessForDecals();
+  CreateFullLineSegs();
   DecalProcessingTime += Sys_Time();
 
   //GCon->Logf("Building Lidedef VV list");
@@ -772,6 +773,14 @@ load_again:
   RecalcWorldBBoxes();
 
   cacheFileBase = cacheFileName;
+
+  for (auto &&ld : allLines()) {
+    // setup side references
+    vassert((ld.sidenum[0] < 0 && !ld.frontside) || (ld.sidenum[0] >= 0 && ld.frontside));
+    vassert((ld.sidenum[1] < 0 && !ld.backside) || (ld.sidenum[1] >= 0 && ld.backside));
+    vassert(!ld.frontside || ld.frontside->fullseg);
+    vassert(!ld.backside || ld.backside->fullseg);
+  }
 
   eventAfterLevelLoaded();
 }

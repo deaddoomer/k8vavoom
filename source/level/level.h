@@ -1236,6 +1236,7 @@ private:
   void PostLoadNodes ();
   void PostLoadSegs ();
   void PostLoadSubsectors ();
+  void CreateFullLineSegs ();
 
   // called by map loader, in postprocessing stage
   // sector `deepref`, `othersecFloor`, and `othersecCeiling` fields

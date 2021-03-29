@@ -274,6 +274,7 @@ enum {
 enum {
   ML_EX_PARTIALLY_MAPPED = 1u<<0, // some segs are visible, but not all
   ML_EX_CHECK_MAPPED     = 1u<<1, // check if all segs are mapped (done in automap drawer
+  ML_EX_NON_TRANSLUCENT  = 1u<<2, // set and used in renderer
 };
 
 // Special activation types
@@ -360,6 +361,7 @@ struct side_t {
 
   // sector the SideDef is facing
   sector_t *Sector;
+
   seg_t *fullseg; // "whole line" segment (allocated in `Segs`, tho)
   vuint32 rendercount; // used to avoid rendering lines several times (with full segments)
 
@@ -507,6 +509,7 @@ struct line_t : public TPlane {
   // so we'll be able to check those without `VLevel` object
   side_t *frontside;
   side_t *backside;
+  vuint32 updateWorldFrame;
 
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc

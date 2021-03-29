@@ -167,3 +167,78 @@ void VLevel::PostLoadSubsectors () {
     }
   }
 }
+
+
+//==========================================================================
+//
+//  VLevel::CreateFullLineSegs
+//
+//  must be called after saving cached data
+//  must have enough extra segs allocated
+//
+//==========================================================================
+void VLevel::CreateFullLineSegs () {
+  for (auto &&sd : allSides()) {
+    vassert(!sd.fullseg);
+  }
+
+  for (auto &&ld : allLines()) {
+    side_t *fside = (ld.sidenum[0] >= 0 ? &Sides[ld.sidenum[0]] : nullptr);
+    side_t *bside = (ld.sidenum[1] >= 0 ? &Sides[ld.sidenum[1]] : nullptr);
+    if (!fside && !bside) continue;
+
+    seg_t *fseg = nullptr;
+    seg_t *bseg = nullptr;
+    for (seg_t *seg = ld.firstseg; seg; seg = seg->lsnext) {
+      //GCon->Logf(NAME_Debug, "line #%d, seg: size=%d; offset=%g", (int)(ptrdiff_t)(&ld-&Lines[0]), seg->side, seg->offset);
+      if (seg->offset == 0.0f) {
+        if (seg->side == 0) fseg = seg; else bseg = seg;
+      }
+    }
+
+    seg_t *newfseg = nullptr;
+    seg_t *newbseg = nullptr;
+
+    if (fside) {
+      if (!fseg) Sys_Error("cannot find starting front seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      newfseg = &Segs[NumSegs++];
+      fside->fullseg = newfseg;
+      *newfseg = *fseg;
+      newfseg->v1 = ld.v1;
+      newfseg->v2 = ld.v2;
+      vassert(newfseg->sidedef == fside);
+      vassert(newfseg->linedef == &ld);
+      // link to list
+      newfseg->lsnext = ld.firstseg;
+      ld.firstseg = newfseg;
+
+      CalcSegLenOfs(newfseg);
+      CalcSeg(newfseg); // this will check for zero-length segs
+
+      fside->fullseg = newfseg;
+    }
+
+    if (bside) {
+      if (!bseg) Sys_Error("cannot find starting back seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      newbseg = &Segs[NumSegs++];
+      bside->fullseg = newbseg;
+      *newbseg = *bseg;
+      newbseg->v1 = ld.v2;
+      newbseg->v2 = ld.v1;
+      vassert(newbseg->sidedef == bside);
+      vassert(newbseg->linedef == &ld);
+      // link to list
+      newbseg->lsnext = ld.firstseg;
+      ld.firstseg = newbseg;
+
+      CalcSegLenOfs(newbseg);
+      CalcSeg(newbseg); // this will check for zero-length segs
+
+      bside->fullseg = newbseg;
+    }
+
+    // fix partner segs
+    if (newfseg) newfseg->partner = newbseg;
+    if (newbseg) newbseg->partner = newfseg;
+  }
+}

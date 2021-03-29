@@ -96,7 +96,10 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
   seg_t *seg = dseg->seg;
   if (!seg) return; // just in case
 
-  if (!seg->linedef) return; // miniseg
+  line_t *ld = seg->linedef;
+  if (!ld) return; // miniseg
+  ld->exFlags |= ML_EX_NON_TRANSLUCENT;
+
   bool needTJ = false;
 
   // note that we need to check for "any flat height changed" in recreation code path
@@ -122,7 +125,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; RECREATING; needTJ=%d", seg->pobj->index, (int)needTJ);
         sp->ResetFixTJunk();
         SetupOneSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
-      } else {
+      } else if (sp->surfs) {
         //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; OFFSETING", seg->pobj->index);
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Mid);
       }
@@ -157,8 +160,8 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedTopWSurf(sub, seg, sp, r_floor, r_ceiling);
-        //if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) GCon->Logf(NAME_Debug, "FUCK! line #%d", (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]));
-      } else {
+        //if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) GCon->Logf(NAME_Debug, "FUCK! line #%d", (int)(ptrdiff_t)(ld-&Level->Lines[0]));
+      } else if (sp->surfs) {
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Top);
       }
       sp->texinfo.ColorMap = ColorMap;
@@ -171,7 +174,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedBotWSurf(sub, seg, sp, r_floor, r_ceiling);
-      } else {
+      } else if (sp->surfs) {
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Bot);
       }
       sp->texinfo.ColorMap = ColorMap;
@@ -184,11 +187,15 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
-      } else {
+        if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
+          if (ld->alpha < 1.0f || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+        }
+      } else if (sp->surfs) {
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Mid);
         if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
-          sp->texinfo.Alpha = seg->linedef->alpha;
-          sp->texinfo.Additive = !!(seg->linedef->flags&ML_ADDITIVE);
+          sp->texinfo.Alpha = ld->alpha;
+          sp->texinfo.Additive = !!(ld->flags&ML_ADDITIVE);
+          if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
         } else {
           sp->texinfo.Alpha = 1.1f;
           sp->texinfo.Additive = false;
@@ -214,8 +221,19 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
         if (CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedMidExtraWSurf(reg, sub, seg, sp, r_floor, r_ceiling);
-      } else {
+        if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
+          if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+        }
+      } else if (sp->surfs) {
         UpdateTextureOffsetsEx(sub, seg, sp, &extraside->Mid, &seg->sidedef->Mid);
+        if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
+          sp->texinfo.Alpha = ld->alpha;
+          sp->texinfo.Additive = !!(ld->flags&ML_ADDITIVE);
+          if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+        } else {
+          sp->texinfo.Alpha = 1.1f;
+          sp->texinfo.Additive = false;
+        }
       }
       sp->texinfo.ColorMap = ColorMap;
     }
@@ -295,6 +313,20 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
     region->ResetForceRecreation();
 
     // polyobj cannot be in 3d floor
+  }
+
+  // update fullsegs
+  if (sub->numlines) {
+    TSecPlaneRef r_floor = sub->regions->floorplane;
+    TSecPlaneRef r_ceiling = sub->regions->ceilplane;
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int j = sub->numlines; j--; ++seg) {
+      line_t *ld = seg->linedef;
+      if (!ld || ld->updateWorldFrame == updateWorldFrame) continue;
+      ld->updateWorldFrame = updateWorldFrame;
+      if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
+      if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
+    }
   }
 }
 

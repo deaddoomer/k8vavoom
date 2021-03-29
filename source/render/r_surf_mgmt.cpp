@@ -38,9 +38,9 @@
 //  AppendSurfaces
 //
 //==========================================================================
-static void AppendSurfaces (segpart_t *sp, surface_t *newsurfs) noexcept {
+static inline void AppendSurfaces (segpart_t *sp, surface_t *newsurfs) noexcept {
   vassert(sp);
-  if (!newsurfs) return; // nothing to do
+  if (!newsurfs) return; // nothing to d
   // new list will start with `newsurfs`
   surface_t *ss = sp->surfs;
   if (ss) {
