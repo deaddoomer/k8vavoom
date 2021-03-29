@@ -229,7 +229,7 @@ int VXMPAudioCodec::Decode (vint16 *Data, int NumFrames) {
         //fprintf(stderr, "LOOP DETECTED (finished=%d)\n", (int)Finished());
         break;
       }
-      memcpy(frmbuf, mi.buffer, mi.buffer_size);
+      if (mi.buffer_size) memcpy(frmbuf, mi.buffer, mi.buffer_size);
       frmbufPos = 0;
       frmbufUsed = (vint32)mi.buffer_size;
       //fprintf(stderr, "got %d bytes of data (loopcount: %d)\n", frmbufUsed, (int)mi.loop_count);
@@ -238,7 +238,7 @@ int VXMPAudioCodec::Decode (vint16 *Data, int NumFrames) {
     int toread = (NumFrames-CurFrame);
     if (toread > frames) toread = frames;
     //fprintf(stderr, "  reading %d frames (%d frames left)\n", toread, NumFrames-CurFrame);
-    memcpy(Data+CurFrame*2, frmbuf+frmbufPos, toread*4);
+    if (toread) memcpy(Data+CurFrame*2, frmbuf+frmbufPos, toread*4);
     frmbufPos += toread*4;
     CurFrame += toread;
   }

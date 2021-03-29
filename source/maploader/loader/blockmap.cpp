@@ -234,9 +234,9 @@ void VLevel::CreateBlockMap () {
   }
 
   // copy data
-  BlockMapLump = new vint32[BMap.Num()];
+  BlockMapLump = new vint32[BMap.Num()+1];
   BlockMapLumpSize = BMap.Num();
-  memcpy(BlockMapLump, BMap.Ptr(), BMap.Num()*sizeof(vint32));
+  if (BMap.Num()) memcpy(BlockMapLump, BMap.Ptr(), BMap.Num()*sizeof(vint32));
 
   delete[] BlockLines;
 }

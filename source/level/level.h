@@ -573,8 +573,8 @@ public:
     const int size = (int)(BlockMapWidth*BlockMapHeight);
     if (processedBMCellsSize < size) {
       processedBMCellsSize = size;
-      processedBMCells = (vint32 *)Z_Realloc(processedBMCells, sizeof(processedBMCells[0])*size);
-      if (size) memset(processedBMCells, 0, sizeof(processedBMCells[0]));
+      processedBMCells = (vint32 *)Z_Realloc(processedBMCells, size*sizeof(processedBMCells[0]));
+      if (size) memset(processedBMCells, 0, size*sizeof(processedBMCells[0]));
     }
   }
 

@@ -120,7 +120,7 @@ void VLevel::ResetValidCount () {
   for (auto &&it : allLines()) it.validcount = 0;
   for (auto &&it : allSectors()) it.validcount = 0;
   for (auto &&it : allPolyobjects()) it->validcount = 0;
-  if (processedBMCellsSize) memset(processedBMCells, 0, sizeof(processedBMCells[0]));
+  if (processedBMCellsSize) memset(processedBMCells, 0, processedBMCellsSize*sizeof(processedBMCells[0]));
   for (VThinker *th = ThinkerHead; th; th = th->Next) th->ValidCount = 0;
 }
 

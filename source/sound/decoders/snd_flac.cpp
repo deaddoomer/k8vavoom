@@ -268,7 +268,7 @@ FLAC__StreamDecoderWriteStatus VFlacSampleLoader::FStream::write_callback (const
 
   void *Temp = self->Data;
   self->Data = Z_Malloc(self->DataSize+frame->header.blocksize*self->SampleBits/8);
-  memcpy(self->Data, Temp, self->DataSize);
+  if (self->DataSize) memcpy(self->Data, Temp, self->DataSize);
   Z_Free(Temp);
 
   const FLAC__int32 *pSrc = buffer[0];

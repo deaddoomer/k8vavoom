@@ -76,7 +76,7 @@ void FNodeBuilder::GetGLNodes (MapNodeEx *&outNodes, int &nodeCount,
 
   segCount = segs.Size ();
   outSegs = new MapSegGLEx[segCount];
-  memcpy (outSegs, &segs[0], segCount*sizeof(MapSegGLEx));
+  if (segCount) memcpy (outSegs, &segs[0], segCount*sizeof(MapSegGLEx));
 
   for (i = 0; i < segCount; ++i)
   {
@@ -422,7 +422,7 @@ void FNodeBuilder::GetNodes (MapNodeEx *&outNodes, int &nodeCount,
 
   segCount = segs.Size ();
   outSegs = new MapSegEx[segCount];
-  memcpy (outSegs, &segs[0], segCount*sizeof(MapSegEx));
+  if (segCount) memcpy (outSegs, &segs[0], segCount*sizeof(MapSegEx));
 
   D(DumpNodes(outNodes, nodeCount));
 #ifdef DD

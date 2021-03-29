@@ -565,7 +565,7 @@ void VOpenGLDrawer::UploadTexture8 (int Width, int Height, const vuint8 *Data, c
     }
     if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
   } else {
-    memset((void *)NewData, 0, w*h*4);
+    if (w && h) memset((void *)NewData, 0, w*h*4);
   }
   UploadTexture(w, h, databuf, false, -1, hitype);
   //Z_Free(NewData);
@@ -598,7 +598,7 @@ void VOpenGLDrawer::UploadTexture8A (int Width, int Height, const pala_t *Data, 
     }
     if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
   } else {
-    memset((void *)NewData, 0, w*h*4);
+    if (w && h) memset((void *)NewData, 0, w*h*4);
   }
   UploadTexture(w, h, databuf, false, -1, hitype);
   //Z_Free(NewData);
@@ -640,7 +640,7 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
   if (w != width || h != height) {
     // smooth transparent edges
     if (width <= maxTexSize && height <= maxTexSize) {
-      memcpy(pmimage, data, width*height*4);
+      if (width && height) memcpy(pmimage, data, width*height*4);
       VTexture::SmoothEdges(pmimage, width, height);
       // must rescale image to get "top" mipmap texture image
       VTexture::ResampleTexture(width, height, pmimage, w, h, image, multisampling_sample);
@@ -648,7 +648,7 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
       VTexture::ResampleTexture(width, height, (const vuint8 *)data, w, h, image, multisampling_sample);
     }
   } else {
-    memcpy(image, data, w*h*4);
+    if (w && h) memcpy(image, data, w*h*4);
     if (doFringeRemove) VTexture::SmoothEdges(image, w, h);
     //if (doFringeRemove) VTexture::FilterFringe((rgba_t *)image, w, h);
     //VTexture::PremultiplyImage((rgba_t *)image, w, h);

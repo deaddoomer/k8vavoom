@@ -763,7 +763,7 @@ void VOpenGLDrawer::ReadFBOPixels (FBO *srcfbo, int Width, int Height, rgba_t *D
   const int fboheight = srcfbo->getHeight();
 
   if (fbowidth < 1 || fboheight < 1) {
-    memset((void *)Dest, 0, Width*Height*sizeof(rgba_t));
+    if (Width && Height) memset((void *)Dest, 0, Width*Height*sizeof(rgba_t));
     return;
   }
 
@@ -783,14 +783,16 @@ void VOpenGLDrawer::ReadFBOPixels (FBO *srcfbo, int Width, int Height, rgba_t *D
   glBindTexture(GL_TEXTURE_2D, oldbindtex);
 
   if (Width <= fbowidth) {
-    size_t blen = Width*sizeof(rgba_t);
-    for (int y = 0; y < Height; ++y) memcpy(Dest+y*Width, temp+(fboheight-y-1)*fbowidth, blen);
+    const size_t blen = Width*sizeof(rgba_t);
+    if (blen) {
+      for (int y = 0; y < Height; ++y) memcpy(Dest+y*Width, temp+(fboheight-y-1)*fbowidth, blen);
+    }
   } else {
-    size_t blen = fbowidth*sizeof(rgba_t);
-    size_t restlen = Width*sizeof(rgba_t)-blen;
+    const size_t blen = fbowidth*sizeof(rgba_t);
+    const size_t restlen = Width*sizeof(rgba_t)-blen;
     for (int y = 0; y < Height; ++y) {
-      memcpy(Dest+y*Width, temp+(fboheight-y-1)*fbowidth, blen);
-      memset((void *)(Dest+y*Width+fbowidth), 0, restlen);
+      if (blen) memcpy(Dest+y*Width, temp+(fboheight-y-1)*fbowidth, blen);
+      if (restlen) memset((void *)(Dest+y*Width+fbowidth), 0, restlen);
     }
   }
 }

@@ -35,8 +35,8 @@
 //==========================================================================
 void VLevel::LoadLineDefs1 (int Lump, int NumBaseVerts, const VMapInfo &MInfo) {
   NumLines = W_LumpLength(Lump)/14;
+  if (NumLines <= 0) Host_Error("Map '%s' has no lines!", *MapName);
   Lines = new line_t[NumLines];
-  if (Lines <= 0) Host_Error("Map '%s' has no lines!", *MapName);
   memset((void *)Lines, 0, sizeof(line_t)*NumLines);
 
   VStream *lumpstream = W_CreateLumpReaderNum(Lump);

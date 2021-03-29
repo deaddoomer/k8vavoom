@@ -239,7 +239,7 @@ void VMeshModel::Load_MD2 (vuint8 *Data, int DataSize) {
   TArray<vuint8> validTri;
   if (pmodel->numframes == 1) {
     validTri.setLength((int)pmodel->numtris);
-    memset(validTri.ptr(), 0, pmodel->numtris);
+    if (pmodel->numtris) memset(validTri.ptr(), 0, pmodel->numtris);
   }
 
   this->Frames.SetNum(pmodel->numframes);
@@ -337,7 +337,7 @@ void VMeshModel::Load_MD2 (vuint8 *Data, int DataSize) {
       if (Frame.TriCount == 0) Sys_Error("model %s has no valid triangles", *this->Name);
       // replace index array
       this->Tris.setLength(NewTris.length());
-      memcpy(this->Tris.ptr(), NewTris.ptr(), NewTris.length()*sizeof(VMeshTri));
+      if (NewTris.length()) memcpy(this->Tris.ptr(), NewTris.ptr(), NewTris.length()*sizeof(VMeshTri));
       pmodel->numtris = Frame.TriCount;
       if (showError) {
         GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u! model rebuilt.", *this->Name, triIgnored, pmodel->numtris);

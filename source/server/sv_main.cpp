@@ -1863,7 +1863,9 @@ void SV_ShutdownGame () {
       // save net pointer
       VNetConnection *OldNet = GPlayersBase[i]->Net;
       GPlayersBase[i]->GetClass()->DestructObject(GPlayersBase[i]);
-      memset((vuint8 *)GPlayersBase[i]+sizeof(VObject), 0, GPlayersBase[i]->GetClass()->ClassSize-sizeof(VObject));
+      if (GPlayersBase[i]->GetClass()->ClassSize > (int)sizeof(VObject)) {
+        memset((vuint8 *)GPlayersBase[i]+sizeof(VObject), 0, GPlayersBase[i]->GetClass()->ClassSize-sizeof(VObject));
+      }
       // restore pointer
       GPlayersBase[i]->Net = OldNet;
     }

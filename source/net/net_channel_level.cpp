@@ -133,8 +133,8 @@ void VLevelChannel::SetLevel (VLevel *ALevel) {
     memcpy(Sides, Level->BaseSides, sizeof(rep_side_t)*Level->NumSides);
     Sectors = new rep_sector_t[Level->NumSectors];
     memcpy(Sectors, Level->BaseSectors, sizeof(rep_sector_t)*Level->NumSectors);
-    PolyObjs = new rep_polyobj_t[Level->NumPolyObjs];
-    memcpy(PolyObjs, Level->BasePolyObjs, sizeof(rep_polyobj_t)*Level->NumPolyObjs);
+    PolyObjs = new rep_polyobj_t[Level->NumPolyObjs+1];
+    if (Level->NumPolyObjs) memcpy((void *)PolyObjs, Level->BasePolyObjs, sizeof(rep_polyobj_t)*Level->NumPolyObjs);
   }
 }
 

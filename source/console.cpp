@@ -656,7 +656,8 @@ static void AddLine (const char *Data) noexcept {
     line.alloced = newsz;
   }
   line.len = len;
-  memcpy(line.str, Data, len+1);
+  if (len) memcpy(line.str, Data, len);
+  line.str[len] = 0;
   /*
   VStr::NCpy(clines[(num_lines+first_line)%MAX_LINES], Data, MAX_LINE_LENGTH);
   clines[(num_lines+first_line)%MAX_LINES][MAX_LINE_LENGTH-1] = 0;

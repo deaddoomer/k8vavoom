@@ -58,8 +58,8 @@ void VLevel::LoadGLSegs (int Lump, int NumBaseVerts) {
   }
 
   // allocate memory for segs data
-  Segs = new seg_t[NumSegs];
-  memset((void *)Segs, 0, sizeof(seg_t)*NumSegs);
+  Segs = new seg_t[NumSegs+1];
+  memset((void *)Segs, 0, sizeof(seg_t)*(NumSegs+1));
 
   // read data
   VStream *lumpstream = W_CreateLumpReaderNum(Lump);

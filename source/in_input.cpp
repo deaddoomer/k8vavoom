@@ -332,10 +332,10 @@ void VInputPublic::UnpressAll () {
 //
 //==========================================================================
 VInput::VInput () : Device(0) {
-  memset((void *)&KeyBindingsAll[0], 0, sizeof(KeyBindingsAll[0]));
-  memset((void *)&KeyBindingsStrife[0], 0, sizeof(KeyBindingsStrife[0]));
-  memset((void *)&KeyBindingsNonStrife[0], 0, sizeof(KeyBindingsNonStrife[0]));
-  memset((void *)&ModKeyBindingsActive[0], 0, sizeof(ModKeyBindingsActive[0]));
+  memset((void *)&KeyBindingsAll[0], 0, sizeof(KeyBindingsAll));
+  memset((void *)&KeyBindingsStrife[0], 0, sizeof(KeyBindingsStrife));
+  memset((void *)&KeyBindingsNonStrife[0], 0, sizeof(KeyBindingsNonStrife));
+  memset((void *)&ModKeyBindingsActive[0], 0, sizeof(ModKeyBindingsActive));
   memset(keysPressed, 0, sizeof(keysPressed));
 }
 

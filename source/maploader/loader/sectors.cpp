@@ -35,8 +35,8 @@
 void VLevel::LoadSectors (int Lump) {
   // allocate memory for sectors
   NumSectors = W_LumpLength(Lump)/26;
+  if (NumSectors <= 0) Host_Error("Map '%s' has no sectors!", *MapName);
   Sectors = new sector_t[NumSectors];
-  if (Sectors <= 0) Host_Error("Map '%s' has no sectors!", *MapName);
   memset((void *)Sectors, 0, sizeof(sector_t)*NumSectors);
 
   // load sectors
@@ -187,8 +187,8 @@ void VLevel::LoadSubsectors (int Lump) {
   }
 
   // allocate memory for subsectors
+  if (NumSubsectors <= 0) Host_Error("Map '%s' has no subsectors!", *MapName);
   Subsectors = new subsector_t[NumSubsectors];
-  if (Subsectors <= 0) Host_Error("Map '%s' has no subsectors!", *MapName);
   memset((void *)Subsectors, 0, sizeof(subsector_t)*NumSubsectors);
 
   // read data
@@ -257,7 +257,7 @@ void VLevel::GroupLines () {
   // assign lines for each sector
   TArray<int> SecLineCount;
   SecLineCount.setLength(NumSectors);
-  memset(SecLineCount.ptr(), 0, sizeof(int)*SecLineCount.length());
+  if (SecLineCount.length()) memset(SecLineCount.ptr(), 0, sizeof(int)*SecLineCount.length());
 
   for (auto &&line : allLines()) {
     if (line.frontsector) {
@@ -317,7 +317,7 @@ void VLevel::GroupLines () {
     for (auto &&sector : allSectors()) {
       sector.nbsecs = nbsbuffer; // it doesn't hurt to assign it in pass 0
       if (sector.isAnyPObj()) continue; // pobj source sector, ignore
-      memset(ssmark.ptr(), 0, sizeof(vuint8)*NumSectors);
+      if (NumSectors) memset(ssmark.ptr(), 0, sizeof(vuint8)*NumSectors);
       for (int j = 0; j < sector.linecount; ++j) {
         const line_t *line = sector.lines[j];
         if (!(line->flags&ML_TWOSIDED)) continue;

@@ -489,7 +489,7 @@ template<typename T> void FilterLightmap (T *lmap, const int wdt, const int hgt)
       lmnew[y*wdt+x] = sum;
     }
   }
-  memcpy(lmap, lmnew, lmnewSize*sizeof(T));
+  if (lmnewSize) memcpy(lmap, lmnew, lmnewSize*sizeof(T));
 }
 
 
@@ -562,7 +562,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   int h = (surf->extents[1]>>4)+1;
 
   bool doMidFilter = (!lmi.didExtra && r_lmap_filtering > 0);
-  if (doMidFilter) memset(lmtracer.lightmapHit, 0, /*w*h*/lmi.numsurfpt);
+  if (doMidFilter && lmi.numsurfpt) memset(lmtracer.lightmapHit, 0, /*w*h*/lmi.numsurfpt);
 
   bool wasAnyHit = false;
   const TVec lnormal = surf->GetNormal();
@@ -1445,9 +1445,12 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
       lmtracer.blocklightsgNew[pos] = lmtracer.blocklightsg[pos];
       lmtracer.blocklightsbNew[pos] = lmtracer.blocklightsb[pos];
     }
-    memcpy(lmtracer.blocklightsr+smax, lmtracer.blocklightsrNew+smax, smax*(tmax-2)*sizeof(lmtracer.blocklightsr[0]));
-    memcpy(lmtracer.blocklightsg+smax, lmtracer.blocklightsgNew+smax, smax*(tmax-2)*sizeof(lmtracer.blocklightsg[0]));
-    memcpy(lmtracer.blocklightsb+smax, lmtracer.blocklightsbNew+smax, smax*(tmax-2)*sizeof(lmtracer.blocklightsb[0]));
+    const unsigned sz = (unsigned)(smax*(tmax-2));
+    if (sz) {
+      memcpy(lmtracer.blocklightsr+smax, lmtracer.blocklightsrNew+smax, sz*sizeof(lmtracer.blocklightsr[0]));
+      memcpy(lmtracer.blocklightsg+smax, lmtracer.blocklightsgNew+smax, sz*sizeof(lmtracer.blocklightsg[0]));
+      memcpy(lmtracer.blocklightsb+smax, lmtracer.blocklightsbNew+smax, sz*sizeof(lmtracer.blocklightsb[0]));
+    }
   }
   #endif
 }

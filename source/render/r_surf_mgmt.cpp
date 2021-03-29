@@ -232,6 +232,10 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 
 //#define VV_QUAD_SPLIT_DEBUG
 
+//surface_t::TF_TOP
+//surface_t::TF_BOTTOM
+//surface_t::TF_MIDDLE
+
 //==========================================================================
 //
 //  VRenderLevelShared::CreateWorldSurfFromWVSplit
@@ -253,7 +257,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
   }
 
   TVec orig[4];
-  memcpy(orig, quad, sizeof(orig));
+  memcpy((void *)orig, quad, sizeof(orig));
 
   #ifdef VV_QUAD_SPLIT_DEBUG
   GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, clipsec #%d; quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
@@ -292,7 +296,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
     orig[0].z = tzv1;
     orig[3].z = tzv2;
     if (!isValidNormalQuad(orig)) return;
-    memcpy(quad, orig, sizeof(orig));
+    memcpy((void *)quad, orig, sizeof(orig));
   }
 }
 
@@ -322,7 +326,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
   }
 
   TVec orig[4];
-  memcpy(orig, quad, sizeof(orig));
+  memcpy((void *)orig, quad, sizeof(orig));
 
   #ifdef VV_QUAD_SPLIT_DEBUG
   GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
@@ -364,7 +368,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
     orig[0].z = tzv1;
     orig[3].z = tzv2;
     if (!isValidNormalQuad(orig)) return;
-    memcpy(quad, orig, sizeof(orig));
+    memcpy((void *)quad, orig, sizeof(orig));
   }
 }
 

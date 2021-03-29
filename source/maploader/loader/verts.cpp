@@ -50,8 +50,8 @@ void VLevel::LoadVertexes (int Lump, int GLLump, int &NumBaseVerts) {
   NumVertexes = NumBaseVerts+NumGLVerts;
 
   // allocate memory for vertexes
-  Vertexes = new TVec[NumVertexes];
-  if (NumVertexes) memset((void *)Vertexes, 0, sizeof(TVec)*NumVertexes);
+  Vertexes = new TVec[NumVertexes+1];
+  memset((void *)Vertexes, 0, sizeof(TVec)*(NumVertexes+1));
 
   // load base vertexes
   TVec *pDst;

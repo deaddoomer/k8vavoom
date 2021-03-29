@@ -257,7 +257,7 @@ vuint8 *VPcxTexture::GetPixels () {
     vuint8 *dest = (vuint8 *)(&Pixels[y*(Width*pixelsPitch)]);
     if (mFormat == TEXFMT_8Pal) {
       // paletted, simply copy the data
-      memcpy(dest, src, Width);
+      if (Width) memcpy(dest, src, Width);
     } else {
       if (pcx.color_planes != 1) {
         // planar

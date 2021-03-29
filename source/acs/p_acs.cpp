@@ -748,7 +748,7 @@ VAcsObject::VAcsObject (VAcsLevel *ALevel, int Lump) : Functions(), Level(ALevel
     vassert(datasize >= (int)sizeof(VAcsHeader));
     Data = new vuint8[datasize];
     Strm->Serialise(Data, Strm->TotalSize());
-    if (Strm->IsError()) memset(Data, 0, datasize);
+    if (Strm->IsError() && datasize) memset(Data, 0, datasize);
     delete Strm;
     header = (VAcsHeader *)Data;
   }
@@ -937,8 +937,8 @@ void VAcsObject::LoadEnhancedObject () {
   if (buffer) {
     if (Data[3] != 0) {
       NumScripts = LittleLong(buffer[1])/12;
-      Scripts = new VAcsInfo[NumScripts];
-      memset((void *)Scripts, 0, NumScripts*sizeof(VAcsInfo));
+      Scripts = new VAcsInfo[NumScripts+1];
+      memset((void *)Scripts, 0, (NumScripts+1)*sizeof(VAcsInfo));
       buffer += 2;
 
       for (i = 0, info = Scripts; i < NumScripts; ++i, ++info) {
@@ -953,8 +953,8 @@ void VAcsObject::LoadEnhancedObject () {
       }
     } else {
       NumScripts = LittleLong(buffer[1])/8;
-      Scripts = new VAcsInfo[NumScripts];
-      memset((void *)Scripts, 0, NumScripts*sizeof(VAcsInfo));
+      Scripts = new VAcsInfo[NumScripts+1];
+      memset((void *)Scripts, 0, (NumScripts+1)*sizeof(VAcsInfo));
       buffer += 2;
 
       for (i = 0, info = Scripts; i < NumScripts; ++i, ++info) {
@@ -1072,8 +1072,8 @@ void VAcsObject::LoadEnhancedObject () {
   buffer = (vint32 *)FindChunk("ARAY");
   if (buffer) {
     NumArrays = LittleLong(buffer[1])/8;
-    ArrayStore = new VArrayInfo[NumArrays];
-    memset((void *)ArrayStore, 0, sizeof(*ArrayStore)*NumArrays);
+    ArrayStore = new VArrayInfo[NumArrays+1];
+    memset((void *)ArrayStore, 0, sizeof(*ArrayStore)*(NumArrays+1));
     for (i = 0; i < NumArrays; ++i) {
       MapVarStore[LittleLong(buffer[2+i*2])] = i;
       ArrayStore[i].Size = LittleLong(buffer[3+i*2]);

@@ -195,7 +195,7 @@ void VRenderLevelShared::QueueSpritePoly (const TVec *sv, int lump, const Render
 
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
   trans_sprite_t *spr = AllocTransSpr(ri);
-  memcpy(spr->Verts, sv, sizeof(TVec)*4);
+  memcpy((void *)spr->Verts, sv, sizeof(TVec)*4);
   spr->dist = dist;
   spr->lump = lump;
   spr->normal = normal;

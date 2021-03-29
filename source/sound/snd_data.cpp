@@ -165,7 +165,7 @@ void VSampleLoader::LoadFromAudioCodec (sfxinfo_t &Sfx, VAudioCodec *Codec) {
   // copy data
   Sfx.DataSize = realLen*2;
   Sfx.Data = (vuint8 *)Z_Malloc(realLen*2);
-  memcpy(Sfx.Data, Data.Ptr(), realLen*2);
+  if (realLen) memcpy(Sfx.Data, Data.Ptr(), realLen*2);
 }
 
 
@@ -515,7 +515,7 @@ void VSoundManager::ParseSndinfo (VScriptParser *sc, int fileid) {
         // only add non-empty random lists
         S_sfx[id].Link = list.length();
         S_sfx[id].Sounds = new int[list.length()];
-        memcpy(S_sfx[id].Sounds, &list[0], sizeof(int)*list.length());
+        if (list.length()) memcpy(S_sfx[id].Sounds, &list[0], sizeof(int)*list.length());
         S_sfx[id].bRandomHeader = true;
       }
     } else if (sc->Check("$playersound")) {
@@ -755,7 +755,7 @@ void VSoundManager::ParseSndinfo (VScriptParser *sc, int fileid) {
           // only add non-empty random lists
           S_sfx[id].Link = list.length();
           S_sfx[id].Sounds = new int[list.length()];
-          memcpy(S_sfx[id].Sounds, &list[0], sizeof(int)*list.length());
+          if (list.length()) memcpy(S_sfx[id].Sounds, &list[0], sizeof(int)*list.length());
           S_sfx[id].bRandomHeader = true;
         }
       } else {
@@ -1456,7 +1456,7 @@ void VSoundManager::ParseSequenceScript (VScriptParser *sc) {
         TempData.Append(SSCMD_End);
         int tmplen = TempData.length()*4;
         SeqInfo[SeqId].Data = (vint32 *)Z_Malloc(tmplen);
-        memset(SeqInfo[SeqId].Data, 0, tmplen);
+        if (tmplen) memset(SeqInfo[SeqId].Data, 0, tmplen);
         if (TempData.length()) memcpy(SeqInfo[SeqId].Data, TempData.Ptr(), TempData.length()*sizeof(vint32));
         inSequence = false;
         sc->SetCMode(false);
@@ -1572,7 +1572,7 @@ void VSoundManager::ParseSequenceScript (VScriptParser *sc) {
       //SeqInfo[SeqId].Data = new vint32[TempData.length()];
       int tmplen = TempData.length()*4;
       SeqInfo[SeqId].Data = (vint32 *)Z_Malloc(tmplen);
-      memset(SeqInfo[SeqId].Data, 0, tmplen);
+      if (tmplen) memset(SeqInfo[SeqId].Data, 0, tmplen);
       if (TempData.length()) memcpy(SeqInfo[SeqId].Data, TempData.Ptr(), TempData.length()*sizeof(vint32));
       inSequence = false;
     } else {

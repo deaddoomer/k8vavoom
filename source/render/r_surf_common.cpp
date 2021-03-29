@@ -335,9 +335,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   int sregLeft = srcount+1;
   int pdsLeft = dscount+1;
 
-  memset((void *)sreg, 0, sizeof(subregion_t)*sregLeft);
-  memset((void *)pds, 0, sizeof(drawseg_t)*pdsLeft);
-  memset((void *)pspart, 0, sizeof(segpart_t)*pspartsLeft);
+  if (sregLeft) memset((void *)sreg, 0, sizeof(subregion_t)*sregLeft);
+  if (pdsLeft) memset((void *)pds, 0, sizeof(drawseg_t)*pdsLeft);
+  if (pspartsLeft) memset((void *)pspart, 0, sizeof(segpart_t)*pspartsLeft);
 
   AllocatedSubRegions = sreg;
   AllocatedDrawSegs = pds;

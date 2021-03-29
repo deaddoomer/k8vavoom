@@ -65,8 +65,8 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], const TPlane &p
   vassert(!pl.isVertical());
 
   bool wasHit = false;
-  if (qbottom && qbottom != quad) memcpy(qbottom, quad, sizeof(quad[0])*4);
-  if (qtop && qtop != quad) memcpy(qtop, quad, sizeof(quad[0])*4);
+  if (qbottom && qbottom != quad) memcpy((void *)qbottom, quad, sizeof(quad[0])*4);
+  if (qtop && qtop != quad) memcpy((void *)qtop, quad, sizeof(quad[0])*4);
 
   // left hitpoint
   do {

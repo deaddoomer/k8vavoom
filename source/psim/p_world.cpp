@@ -861,7 +861,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
 //
 //==========================================================================
 bool VPathTraverse::GetNext () {
-  if (Index >= Count) { memset((void *)InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
+  if (Index >= Count) { if (InPtr) memset((void *)InPtr, 0, sizeof(*InPtr)); InPtr = nullptr; Index = 0; Count = 0; return false; } // everything was traversed
   *InPtr = *GetIntercept(Index++);
   return true;
 }

@@ -1633,7 +1633,7 @@ int VDatagramSocket::GetMessage (void *dest, size_t destSize) {
       return -1;
     }
 
-    memcpy(dest, data, length);
+    if (length) memcpy(dest, data, length);
     return length;
   }
   abort();

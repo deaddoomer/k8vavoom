@@ -282,7 +282,8 @@ VScriptParser::VScriptParser (VStr name, const char *atext)
   if (atext && atext[0]) {
     ScriptSize = (int)strlen(atext);
     ScriptBuffer = new char[ScriptSize+1];
-    memcpy(ScriptBuffer, atext, ScriptSize+1);
+    if (ScriptSize) memcpy(ScriptBuffer, atext, ScriptSize);
+    ScriptBuffer[ScriptSize] = 0;
   } else {
     ScriptSize = 1;
     ScriptBuffer = new char[ScriptSize+1];

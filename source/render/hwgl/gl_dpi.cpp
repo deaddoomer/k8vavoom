@@ -85,7 +85,7 @@ static float tryXRandrGetDPI (Display *display, Window window) {
   if (!isXRandRAvailable(display)) return 1.0f;
   if (!OS_SDL_IsXRandRAspectAllowed()) return 1.0f;
 
-  memset(&attr,0,sizeof(attr));
+  memset(&attr, 0, sizeof(attr));
   XGetWindowAttributes(display, window, &attr);
   XTranslateCoordinates(display, window, DefaultRootWindow(display), 0, 0, &x, &y, &child );
 

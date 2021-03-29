@@ -245,9 +245,9 @@ bool VLevel::LoadCompressedGLNodes (int Lump, char hdr[4]) {
     if (OrgVerts+NewVerts != (vuint32)NumVertexes) {
       TVec *OldVerts = Vertexes;
       NumVertexes = OrgVerts+NewVerts;
-      Vertexes = new TVec[NumVertexes];
-      if (NumVertexes) memset((void *)Vertexes, 0, sizeof(TVec)*NumVertexes);
-      if (OldVerts) memcpy((void *)Vertexes, (void *)OldVerts, OrgVerts*sizeof(TVec));
+      Vertexes = new TVec[NumVertexes+1];
+      if (NumVertexes) memset((void *)Vertexes, 0, sizeof(TVec)*(NumVertexes+1));
+      if (OldVerts && OrgVerts) memcpy((void *)Vertexes, (void *)OldVerts, OrgVerts*sizeof(TVec));
       // fix up vertex pointers in linedefs
       for (int i = 0; i < NumLines; ++i) {
         line_t &L = Lines[i];
@@ -274,8 +274,8 @@ bool VLevel::LoadCompressedGLNodes (int Lump, char hdr[4]) {
   {
     NumSubsectors = Streamer<vuint32>(*Strm);
     if (NumSubsectors == 0 || NumSubsectors > 0x1fffffff || Strm->IsError()) Host_Error("error reading GL nodes (got %u subsectors)", NumSubsectors);
-    Subsectors = new subsector_t[NumSubsectors];
-    memset((void *)Subsectors, 0, sizeof(subsector_t)*NumSubsectors);
+    Subsectors = new subsector_t[NumSubsectors+1];
+    memset((void *)Subsectors, 0, sizeof(subsector_t)*(NumSubsectors+1));
     subsector_t *ss = Subsectors;
 
     for (int i = 0; i < NumSubsectors; ++i, ++ss) {
@@ -293,8 +293,8 @@ bool VLevel::LoadCompressedGLNodes (int Lump, char hdr[4]) {
     NumSegs = Streamer<vuint32>(*Strm);
     if (NumSegs != FirstSeg || Strm->IsError()) Host_Error("error reading GL nodes (got %d segs, expected %d segs)", NumSegs, FirstSeg);
 
-    Segs = new seg_t[NumSegs];
-    memset((void *)Segs, 0, sizeof(seg_t)*NumSegs);
+    Segs = new seg_t[NumSegs+1];
+    memset((void *)Segs, 0, sizeof(seg_t)*(NumSegs+1));
     for (int i = 0; i < NumSubsectors; ++i) {
       for (int j = 0; j < Subsectors[i].numlines; ++j) {
         vuint32 v1, partner, linedef;
@@ -335,8 +335,8 @@ bool VLevel::LoadCompressedGLNodes (int Lump, char hdr[4]) {
   {
     NumNodes = Streamer<vuint32>(*Strm);
     if (NumNodes == 0 || NumNodes > 0x1fffffff || Strm->IsError()) Host_Error("error reading GL nodes (got %u nodes)", NumNodes);
-    Nodes = new node_t[NumNodes];
-    memset((void *)Nodes, 0, sizeof(node_t)*NumNodes);
+    Nodes = new node_t[NumNodes+1];
+    memset((void *)Nodes, 0, sizeof(node_t)*(NumNodes+1));
     node_t *no = Nodes;
     for (int i = 0; i < NumNodes; ++i, ++no) {
       vuint32 children[2];

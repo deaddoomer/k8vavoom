@@ -198,6 +198,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     }
 
     if (createSurf) {
+      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
       CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
       if (sp->surfs) {
         sp->texinfo.Tex = TTex;

@@ -683,7 +683,7 @@ void VLevel::BuildNodesAJ () {
       if (RejectMatrixSize) {
         TArray<vuint8> &arr = xms->GetArray();
         RejectMatrix = new vuint8[RejectMatrixSize];
-        memcpy(RejectMatrix, arr.ptr(), RejectMatrixSize);
+        if (RejectMatrixSize) memcpy(RejectMatrix, arr.ptr(), RejectMatrixSize);
         // check if it's an all-zeroes lump, in which case it's useless and can be discarded
         // k8: don't do it, or k8vavoom will try to rebuild/reload it
       }

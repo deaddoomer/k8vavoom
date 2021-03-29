@@ -1099,7 +1099,7 @@ bool OPLPlayer::loadGenMIDI (const void *data, size_t datasize) {
   if (memcmp(data, "#OPL_II#", 8) != 0) return false;
   memset((void *)&mGenMidi, 0, sizeof(GenMidi));
   if (datasize > sizeof(GenMidi)+8) datasize = sizeof(GenMidi)+8;
-  memcpy((void *)&mGenMidi, ((const uint8_t *)data)+8, datasize-8);
+  if (datasize > 8) memcpy((void *)&mGenMidi, ((const uint8_t *)data)+8, datasize-8);
   mGenMidiLoaded = true;
   return true;
 }
@@ -1162,7 +1162,7 @@ bool OPLPlayer::load (const void *data, size_t datasize) {
   if (!data || datasize == 0) return false;
   songlen = (uint32_t)datasize;
   songdata = (uint8_t *)malloc(datasize);
-  memcpy(songdata, data, datasize);
+  if (datasize) memcpy(songdata, data, datasize);
   if (MUS_LoadSong() || MIDI_LoadSong()) return true;
   clearSong();
   return false;
