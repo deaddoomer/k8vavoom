@@ -206,7 +206,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
 //   [3]: right bottom point
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
   if (!isValidQuad(quad)) return;
 
   TVec *wstart = quad;
@@ -220,11 +220,6 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
     wstart = quad;
     wcount = 3;
   }
-
-  //k8: HACK! HACK! HACK!
-  //    move middle wall backwards a little, so it will be hidden behind up/down surfaces
-  //    this is required for sectors with 3d floors, until i wrote a proper texture clipping math
-  if (doOffset) for (unsigned f = 0; f < (unsigned)wcount; ++f) wstart[f] -= seg->normal*0.01f;
 
   AppendSurfaces(sp, CreateWSurf(wstart, &sp->texinfo, seg, sub, wcount, typeFlags));
 }
@@ -249,11 +244,11 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 //   [3]: right bottom point
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
   if (!isValidNormalQuad(quad)) return;
 
   if (!seg->linedef || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
-    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
   TVec orig[4];
@@ -334,7 +329,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
       VLevel::DumpRegion(creg, true);
     }
     #endif
-    CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+    CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
     if (!creg) return; // done with it
     // start with clip region top
     const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
@@ -376,15 +371,15 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
 //   [3]: right bottom point
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, bool doOffset) noexcept {
+void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
   if (!isValidNormalQuad(quad)) return;
 
   if (bsec && bsec->isAnyPObj()) bsec = nullptr;
 
-  if (!reg && bsec) return CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
+  if (!reg && bsec) return CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags);
 
   if (!reg || !seg->linedef || !seg || seg->pobj) {
-    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
   TVec orig[4];
@@ -431,9 +426,9 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
     }
     #endif
     if (bsec) {
-      CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
+      CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags);
     } else {
-      CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
+      CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
     }
     if (!creg) return; // done with it
     // start with clip region top

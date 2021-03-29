@@ -27,6 +27,8 @@
 #include "r_local.h"
 #include "r_surf_utils.cpp"
 
+//#ifdef VV_DEBUG_MIDW
+
 
 //**************************************************************************
 //**
@@ -475,6 +477,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
 
+    #ifdef VV_DEBUG_MIDW
     //bool doDump = ((ptrdiff_t)(linedef-Level->Lines) == 7956);
     enum { doDump = 0 };
     //const bool doDump = !!seg->pobj;
@@ -482,16 +485,12 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     //if (linedef->alpha < 1.0f) GCon->Logf("=== MIDSURF FOR LINE #%d (fs=%d; bs=%d) ===", (int)(ptrdiff_t)(linedef-Level->Lines), (int)(ptrdiff_t)(seg->frontsector-Level->Sectors), (int)(ptrdiff_t)(seg->backsector-Level->Sectors));
     if (doDump) { GCon->Logf("   LINEWRAP=%u; SIDEWRAP=%u; ADDITIVE=%u; Alpha=%g; botpeg=%u; z_org=%g; texh=%g", (linedef->flags&ML_WRAP_MIDTEX), (sidedef->Flags&SDF_WRAPMIDTEX), (linedef->flags&ML_ADDITIVE), linedef->alpha, linedef->flags&ML_DONTPEGBOTTOM, z_org, texh); }
     if (doDump) { GCon->Logf("   tx is '%s'; size=(%d,%d); scale=(%g,%g)", *MTex->Name, MTex->GetWidth(), MTex->GetHeight(), MTex->SScale, MTex->TScale); }
-
-    //k8: HACK! HACK! HACK!
-    //    move middle wall backwards a little, so it will be hidden behind up/down surfaces
-    //    this is required for sectors with 3d floors, until i wrote a proper texture clipping math
-    const bool doOffset = seg->backsector->Has3DFloors();
+    #endif
 
     // another hack (Doom II MAP31)
     // if we have no 3d floors here, and the front sector can be covered with midtex, cover it
     bool bottomCheck = false;
-    if (!doOffset && !seg->frontsector->Has3DFloors() && sidedef->BottomTexture < 1 &&
+    if (!seg->frontsector->Has3DFloors() && sidedef->BottomTexture < 1 &&
         seg->frontsector->floor.normal.z == 1.0f && seg->backsector->floor.normal.z == 1.0f &&
         seg->frontsector->floor.minz < seg->backsector->floor.minz)
     {
@@ -517,7 +516,9 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       float midbotz1 = botz1;
       float midbotz2 = botz2;
 
+      #ifdef VV_DEBUG_MIDW
       if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g)", z_org-texh, z_org, midbotz1, midbotz2, midtopz1, midtopz2); }
+      #endif
 
       if (sidedef->TopTexture > 0) {
         midtopz1 = min2(midtopz1, fsec->ceiling.GetPointZ(*seg->v1));
@@ -531,7 +532,9 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
       if (midbotz1 >= midtopz1 || midbotz2 >= midtopz2) break;
 
+      #ifdef VV_DEBUG_MIDW
       if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g); backbotz=(%g,%g); backtopz=(%g,%g)", z_org-texh, z_org, midbotz1, midbotz2, midtopz1, midtopz2, back_botz1, back_botz2, back_topz1, back_topz2); }
+      #endif
 
       float hgts[4];
 
@@ -571,12 +574,14 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       wv[2].z = hgts[2];
       wv[3].z = hgts[3];
 
+      #ifdef VV_DEBUG_MIDW
       if (doDump) {
         GCon->Logf("  z:(%g,%g,%g,%g)", hgts[0], hgts[1], hgts[2], hgts[3]);
         for (int wc = 0; wc < 4; ++wc) GCon->Logf("  wc #%d: (%g,%g,%g)", wc, wv[wc].x, wv[wc].y, wv[wc].z);
       }
+      #endif
 
-      CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE, doOffset);
+      CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE);
     } while (0);
   } else {
     // empty midtexture
@@ -691,7 +696,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
         wv[2].z = hgts[2];
         wv[3].z = hgts[3];
 
-        CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE, /*doOffset*/false);
+        CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
       }
     }
   } else {
