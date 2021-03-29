@@ -146,6 +146,13 @@ sec_region_t *VRenderLevelShared::SplitQuadWithRegions (const int mode, TVec qua
   sec_region_t *clipreg = nullptr;
   for (; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+    const line_t *ld = reg->extraline;
+    if (ld) {
+      if (ld->sidenum[0] < 0 || ld->alpha < 1.0f || (ld->flags&ML_ADDITIVE)) continue;
+      const side_t *sd = &Level->Sides[ld->sidenum[0]];
+      VTexture *MTex = GTextureManager(sd->MidTexture);
+      if (!MTex || MTex->Type == TEXTYPE_Null || MTex->isSeeThrough()) continue;
+    }
     // check for invalid region (and ignore it)
     const float fz1 = reg->efloor.GetPointZClamped(quad[QUAD_V1_TOP]);
     const float cz1 = reg->eceiling.GetPointZClamped(quad[QUAD_V1_TOP]);

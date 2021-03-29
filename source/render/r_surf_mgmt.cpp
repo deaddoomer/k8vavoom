@@ -260,41 +260,103 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
   memcpy((void *)orig, quad, sizeof(orig));
 
   #ifdef VV_QUAD_SPLIT_DEBUG
-  GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, clipsec #%d; quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-    (int)(ptrdiff_t)(seg-&Level->Segs[0]),
-    (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
-    (int)(ptrdiff_t)(clipsec-&Level->Sectors[0]),
-    quad[0].x, quad[0].y, quad[0].z,
-    quad[1].x, quad[1].y, quad[1].z,
-    quad[2].x, quad[2].y, quad[2].z,
-    quad[3].x, quad[3].y, quad[3].z);
+  const int lidx = (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]);
+  const bool doDump =
+    lidx == 2662 /*|| lidx == 1050 || lidx == 1051*/ ||
+    false;
+  #endif
+
+  #ifdef VV_QUAD_SPLIT_DEBUG
+  if (doDump) {
+    GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, clipsec #%d; quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      (int)(ptrdiff_t)(seg-&Level->Segs[0]),
+      (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+      (int)(ptrdiff_t)(clipsec-&Level->Sectors[0]),
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+    GCon->Log(NAME_Debug, "======== REGIONS ========");
+    for (const sec_region_t *rr = clipsec->eregions; rr; rr = rr->next) {
+      VLevel::DumpRegion(rr, true);
+      const line_t *ld = rr->extraline;
+      if (!ld) continue;
+      GCon->Logf(NAME_Debug, "  eline #%d; fsec=%d; bsec=%d; alpha=%g; 2s=%d",
+        (int)(ptrdiff_t)(ld-&Level->Lines[0]),
+        (ld->frontsector ? (int)(ptrdiff_t)(ld->frontsector-&Level->Sectors[0]) : -1),
+        (ld->backsector ? (int)(ptrdiff_t)(ld->backsector-&Level->Sectors[0]) : -1),
+        ld->alpha, (ld->flags&ML_TWOSIDED ? 1 : 0));
+      const side_t *sd = (ld->sidenum[0] >= 0 ? &Level->Sides[ld->sidenum[0]] : nullptr);
+      if (sd) {
+        VTexture *tt = GTextureManager(sd->TopTexture);
+        VTexture *bt = GTextureManager(sd->BottomTexture);
+        VTexture *mt = GTextureManager(sd->MidTexture);
+        GCon->Logf(NAME_Debug, "    front side: toptex=%s (%u); bottex=%s (%u); midtex=%s (%u)",
+          (tt ? *tt->Name : "<none>"), sd->TopTexture.id,
+          (bt ? *bt->Name : "<none>"), sd->BottomTexture.id,
+          (mt ? *mt->Name : "<none>"), sd->MidTexture.id);
+      }
+      sd = (ld->sidenum[1] >= 0 ? &Level->Sides[ld->sidenum[1]] : nullptr);
+      if (sd) {
+        VTexture *tt = GTextureManager(sd->TopTexture);
+        VTexture *bt = GTextureManager(sd->BottomTexture);
+        VTexture *mt = GTextureManager(sd->MidTexture);
+        GCon->Logf(NAME_Debug, "    back side: toptex=%s (%u); bottex=%s (%u); midtex=%s (%u)",
+          (tt ? *tt->Name : "<none>"), sd->TopTexture.id,
+          (bt ? *bt->Name : "<none>"), sd->BottomTexture.id,
+          (mt ? *mt->Name : "<none>"), sd->MidTexture.id);
+      }
+    }
+    GCon->Log(NAME_Debug, "=========================");
+  }
   #endif
 
   for (;;) {
     #ifdef VV_QUAD_SPLIT_DEBUG
-    GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-      quad[0].x, quad[0].y, quad[0].z,
-      quad[1].x, quad[1].y, quad[1].z,
-      quad[2].x, quad[2].y, quad[2].z,
-      quad[3].x, quad[3].y, quad[3].z);
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g) (ok=%d)",
+        quad[0].x, quad[0].y, quad[0].z,
+        quad[1].x, quad[1].y, quad[1].z,
+        quad[2].x, quad[2].y, quad[2].z,
+        quad[3].x, quad[3].y, quad[3].z,
+        (int)isValidNormalQuad(quad));
+    }
     #endif
     sec_region_t *creg = SplitQuadWithRegionsBottom(quad, clipsec);
     #ifdef VV_QUAD_SPLIT_DEBUG
-    GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-      quad[0].x, quad[0].y, quad[0].z,
-      quad[1].x, quad[1].y, quad[1].z,
-      quad[2].x, quad[2].y, quad[2].z,
-      quad[3].x, quad[3].y, quad[3].z);
-    VLevel::DumpRegion(creg, true);
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g) (ok=%d)",
+        quad[0].x, quad[0].y, quad[0].z,
+        quad[1].x, quad[1].y, quad[1].z,
+        quad[2].x, quad[2].y, quad[2].z,
+        quad[3].x, quad[3].y, quad[3].z,
+        (int)isValidNormalQuad(quad));
+      VLevel::DumpRegion(creg, true);
+    }
     #endif
     CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags, doOffset);
     if (!creg) return; // done with it
     // start with clip region top
     const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
     const float tzv2 = creg->eceiling.GetPointZ(*seg->v2);
-    if (tzv1 >= orig[1].z && tzv2 >= orig[2].z) return; // out of quad
-    orig[0].z = tzv1;
-    orig[3].z = tzv2;
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "---  tzv1=%g (v1top=%g); tzv2=%g (v2top=%g); exit=%d", tzv1, orig[QUAD_V1_TOP].z, tzv2, orig[QUAD_V2_TOP].z, (int)(tzv1 >= orig[QUAD_V1_TOP].z && tzv2 >= orig[QUAD_V2_TOP].z));
+    }
+    #endif
+    if (tzv1 >= orig[QUAD_V1_TOP].z && tzv2 >= orig[QUAD_V2_TOP].z) return; // out of quad
+    orig[QUAD_V1_BOTTOM].z = tzv1;
+    orig[QUAD_V2_BOTTOM].z = tzv2;
+    #ifdef VV_QUAD_SPLIT_DEBUG
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "--- new quad: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g) (ok=%d)",
+        orig[0].x, orig[0].y, orig[0].z,
+        orig[1].x, orig[1].y, orig[1].z,
+        orig[2].x, orig[2].y, orig[2].z,
+        orig[3].x, orig[3].y, orig[3].z,
+        (int)isValidNormalQuad(orig));
+    }
+    #endif
     if (!isValidNormalQuad(orig)) return;
     memcpy((void *)quad, orig, sizeof(orig));
   }
@@ -329,31 +391,44 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
   memcpy((void *)orig, quad, sizeof(orig));
 
   #ifdef VV_QUAD_SPLIT_DEBUG
-  GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplit: seg #%d, line #%d, quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-    (int)(ptrdiff_t)(seg-&Level->Segs[0]),
-    (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
-    quad[0].x, quad[0].y, quad[0].z,
-    quad[1].x, quad[1].y, quad[1].z,
-    quad[2].x, quad[2].y, quad[2].z,
-    quad[3].x, quad[3].y, quad[3].z);
+  const int lidx = (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]);
+  const bool doDump =
+    lidx == 2662 /*|| lidx == 1050 || lidx == 1051*/ ||
+    false;
+  #endif
+
+  #ifdef VV_QUAD_SPLIT_DEBUG
+  if (doDump) {
+    GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplitFromReg: seg #%d, line #%d, quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+      (int)(ptrdiff_t)(seg-&Level->Segs[0]),
+      (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+      quad[0].x, quad[0].y, quad[0].z,
+      quad[1].x, quad[1].y, quad[1].z,
+      quad[2].x, quad[2].y, quad[2].z,
+      quad[3].x, quad[3].y, quad[3].z);
+  }
   #endif
 
   for (;;) {
     #ifdef VV_QUAD_SPLIT_DEBUG
-    GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-      quad[0].x, quad[0].y, quad[0].z,
-      quad[1].x, quad[1].y, quad[1].z,
-      quad[2].x, quad[2].y, quad[2].z,
-      quad[3].x, quad[3].y, quad[3].z);
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+        quad[0].x, quad[0].y, quad[0].z,
+        quad[1].x, quad[1].y, quad[1].z,
+        quad[2].x, quad[2].y, quad[2].z,
+        quad[3].x, quad[3].y, quad[3].z);
+    }
     #endif
     sec_region_t *creg = SplitQuadWithRegionsBottom(quad, reg);
     #ifdef VV_QUAD_SPLIT_DEBUG
-    GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-      quad[0].x, quad[0].y, quad[0].z,
-      quad[1].x, quad[1].y, quad[1].z,
-      quad[2].x, quad[2].y, quad[2].z,
-      quad[3].x, quad[3].y, quad[3].z);
-    VLevel::DumpRegion(creg, true);
+    if (doDump) {
+      GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
+        quad[0].x, quad[0].y, quad[0].z,
+        quad[1].x, quad[1].y, quad[1].z,
+        quad[2].x, quad[2].y, quad[2].z,
+        quad[3].x, quad[3].y, quad[3].z);
+      VLevel::DumpRegion(creg, true);
+    }
     #endif
     if (bsec) {
       CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags, doOffset);
@@ -364,9 +439,9 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, s
     // start with clip region top
     const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
     const float tzv2 = creg->eceiling.GetPointZ(*seg->v2);
-    if (tzv1 >= orig[1].z && tzv2 >= orig[2].z) return; // out of quad
-    orig[0].z = tzv1;
-    orig[3].z = tzv2;
+    if (tzv1 >= orig[QUAD_V1_TOP].z && tzv2 >= orig[QUAD_V2_TOP].z) return; // out of quad
+    orig[QUAD_V1_BOTTOM].z = tzv1;
+    orig[QUAD_V2_BOTTOM].z = tzv2;
     if (!isValidNormalQuad(orig)) return;
     memcpy((void *)quad, orig, sizeof(orig));
   }
