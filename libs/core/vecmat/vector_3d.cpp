@@ -27,6 +27,7 @@
 
 
 const TVec TVec::ZeroVector = TVec(0.0f, 0.0f, 0.0f);
+const TVec TVec::InvalidVector = TVec(NAN, NAN, NAN);
 
 
 //==========================================================================

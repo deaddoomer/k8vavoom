@@ -59,8 +59,11 @@ public:
   }
 
 public:
-  //TPlane () : TVec(1.0f, 0.0f, 0.0f), dist(0.0f) {}
-  //TPlane (ENoInit) {}
+  // fuck you, shitpp! i have to define all ctors when i want only one or two
+  inline TPlane () noexcept {}
+  inline TPlane (ENoInit) noexcept {}
+  inline TPlane (const TVec &anormal, const float adist) noexcept : normal(anormal), dist(adist) {}
+  inline TPlane (const TPlane &src) noexcept : normal(src.normal), dist(src.dist) {}
 
   inline VVA_CHECKRESULT bool isValid () const noexcept { return (normal.isValid() && !normal.isZero() && isFiniteF(dist)); }
   inline VVA_CHECKRESULT bool isVertical () const noexcept { return (normal.z == 0.0f); }
@@ -261,7 +264,7 @@ public:
   inline VVA_CHECKRESULT TVec IntersectionPoint (const TPlane &plane2, const TPlane &plane3) const noexcept {
     const float det = normal.cross(plane2.normal).dot(plane3.normal);
     // if the determinant is 0, that means parallel planes, no intersection
-    if (fabs(det) < 0.001f) return TVec::Invalid();
+    if (fabs(det) < 0.001f) return TVec::InvalidVector;
     return
       (plane2.normal.cross(plane3.normal)*(-dist)+
        plane3.normal.cross(normal)*(-plane2.dist)+

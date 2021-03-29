@@ -89,6 +89,7 @@ public:
 
 public:
   static const TVec ZeroVector;
+  static const TVec InvalidVector;
 
 public:
   inline TVec () noexcept {}
@@ -96,8 +97,7 @@ public:
   //nope;TVec () : x(0.0f), y(0.0f), z(0.0f) {}
   inline TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
   inline TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
-
-  static inline VVA_CHECKRESULT TVec Invalid () noexcept { return TVec(NAN, NAN, NAN); }
+  inline TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
 
   inline VVA_CHECKRESULT const float &operator [] (size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
   inline VVA_CHECKRESULT float &operator [] (size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
