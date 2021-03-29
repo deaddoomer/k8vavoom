@@ -205,12 +205,24 @@ void VOpenGLDrawer::DeleteTexture (VTexture *Tex) {
 //  VOpenGLDrawer::PrecacheTexture
 //
 //==========================================================================
-void VOpenGLDrawer::PrecacheTexture (VTexture *Tex) {
+void VOpenGLDrawer::PrecacheTexture (VTexture *Tex, bool doCrop) {
   if (!Tex) return;
   if (Tex->bIsCameraTexture) return;
   ResetTextureUpdateFrames();
-  SetTexture(Tex, 0);
-  if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
+  if (doCrop) {
+    //GCon->Logf(NAME_Debug, "precache with cropping: %s", *Tex->Name);
+    const int oldRelease = gl_release_ram_textures_mode.asInt();
+    const bool cropIt = (oldRelease < 2 && gl_crop_sprites.asBool());
+    if (cropIt) gl_release_ram_textures_mode = 0;
+    if (doCrop) Tex->CropTexture();
+    //SetSpriteTexture(sprite_filter, Tex, nullptr, 0, true);
+    SetTexture(Tex, 0);
+    if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
+    if (cropIt) gl_release_ram_textures_mode = oldRelease;
+  } else {
+    SetTexture(Tex, 0);
+    if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
+  }
 }
 
 

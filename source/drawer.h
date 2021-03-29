@@ -582,7 +582,7 @@ public:
   }
 
   // texture stuff
-  virtual void PrecacheTexture (VTexture *) = 0;
+  virtual void PrecacheTexture (VTexture *Tex, bool doCrop=false) = 0;
   virtual void FlushOneTexture (VTexture *tex, bool forced=false) = 0; // unload one texture
   virtual void FlushTextures (bool forced=false) = 0; // unload all textures
 

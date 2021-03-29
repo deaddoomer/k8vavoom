@@ -800,6 +800,7 @@ bool R_IsAnimatedTexture (int texid);
 void R_UpdateSkyFlatNum (bool force=false);
 
 // ////////////////////////////////////////////////////////////////////////// //
+extern bool GTextureCropMessages;
 extern VTextureManager GTextureManager;
 extern int skyflatnum;
 extern int screenBackTexNum;

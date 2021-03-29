@@ -525,7 +525,7 @@ public:
   virtual void EndView (bool ignoreColorTint=false) override;
 
   // texture stuff
-  virtual void PrecacheTexture (VTexture *) override;
+  virtual void PrecacheTexture (VTexture *Tex, bool doCrop=false) override;
 
   virtual void BeforeDrawWorldLMap () override;
   virtual void BeforeDrawWorldSV () override;

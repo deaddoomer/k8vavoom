@@ -141,6 +141,9 @@ static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reup
 static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive);
 static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive);
 static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
+static VCvarB r_precache_weapon_sprite_textures("r_precache_weapon_sprite_textures", true, "Precache weapon textures?", CVAR_Archive);
+static VCvarB r_precache_ammo_sprite_textures("r_precache_ammo_sprite_textures", true, "Precache ammo textures?", CVAR_Archive);
+static VCvarB r_precache_player_sprite_textures("r_precache_player_sprite_textures", false, "Precache player sprite textures?", CVAR_Archive);
 static VCvarB r_precache_all_sprite_textures("r_precache_all_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
 static VCvarI r_precache_max_sprites("r_precache_max_sprites", "3072", "Maxumum number of sprite textures to precache?", CVAR_Archive);
 static VCvarI r_level_renderer("r_level_renderer", "0", "Level renderer type (0:auto; 1:lightmap; 2:stenciled).", CVAR_Archive);
@@ -1794,14 +1797,18 @@ void R_DrawSpritePatch (float x, float y, int sprite, int frame, int rot,
 struct SpriteScanInfo {
 public:
   TArray<bool> *texturepresent;
+  TArray<bool> *texturecrop;
   TMapNC<VClass *, bool> classSeen;
   TMapNC<VState *, bool> stateSeen;
   TMapNC<vuint32, bool> spidxSeen;
+  TMapNC<vint32, bool> textureIgnore;
   int sprtexcount;
+  bool putToIgnore;
+  bool doCrop;
 
 public:
   VV_DISABLE_COPY(SpriteScanInfo)
-  inline SpriteScanInfo (TArray<bool> &txps) noexcept : texturepresent(&txps), stateSeen(), spidxSeen(), sprtexcount(0) {}
+  inline SpriteScanInfo (TArray<bool> &txps, TArray<bool> &txcrop) noexcept : texturepresent(&txps), texturecrop(&txcrop), stateSeen(), spidxSeen(), textureIgnore(), sprtexcount(0), putToIgnore(false), doCrop(false) {}
 
   inline void clearStates () { stateSeen.reset(); }
 };
@@ -1832,13 +1839,12 @@ static void ProcessSpriteState (VState *st, SpriteScanInfo &ssi) {
                 int stid = spf->lump[lidx];
                 if (stid < 1) continue;
                 vassert(stid < ssi.texturepresent->length());
+                if (ssi.putToIgnore) { ssi.textureIgnore.put(stid, true); continue; }
+                if (ssi.textureIgnore.has(stid)) continue;
                 if (!(*ssi.texturepresent)[stid]) {
                   (*ssi.texturepresent)[stid] = true;
+                  if (ssi.doCrop) (*ssi.texturecrop)[stid] = true;
                   ++ssi.sprtexcount;
-                  if (gl_crop_sprites.asBool() && gl_release_ram_textures_mode.asInt() < 2) {
-                    VTexture *tex = GTextureManager[stid];
-                    if (tex) tex->CropTexture();
-                  }
                 }
               }
             }
@@ -1876,18 +1882,29 @@ static void ProcessSpriteClass (VClass *cls, SpriteScanInfo &ssi) {
 //  do not precache player pawn textures
 //
 //==========================================================================
-int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent) {
+int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent, TArray<bool> &texturecrop) {
   // scan all thinkers, and add sprites from all states, because why not?
   VClass *eexCls = VClass::FindClass("EntityEx");
   if (!eexCls) return 0;
+  SpriteScanInfo ssi(texturepresent, texturecrop);
+  ssi.doCrop = true;
+  // player
+  ssi.putToIgnore = !r_precache_player_sprite_textures.asBool();
   VClass *pawnCls = VClass::FindClass("PlayerPawn");
-  SpriteScanInfo ssi(texturepresent);
   for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
     if (th->IsGoingToDie()) continue;
     if (!th->IsA(eexCls)) continue;
     if (pawnCls && th->IsA(pawnCls)) continue;
     ProcessSpriteClass(th->GetClass(), ssi);
   }
+  // wapons
+  ssi.putToIgnore = !r_precache_weapon_sprite_textures.asBool();
+  VClass::ForEachChildOf("Weapon", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
+  ssi.putToIgnore = !r_precache_ammo_sprite_textures.asBool();
+  VClass::ForEachChildOf("Ammo", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
+  // other
+  ssi.doCrop = false;
+  ssi.putToIgnore = false;
   // precache gore mod sprites
   VClass::ForEachChildOf("K8Gore_BloodBase", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
   VClass::ForEachChildOf("K8Gore_BloodBaseTransient", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
@@ -1899,9 +1916,6 @@ int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent) {
     ProcessSpriteClass(bloodRepl, ssi);
     bloodRepl = bloodRepl->GetSuperClass();
   }
-  // precache weapon and ammo sprites, because why not?
-  VClass::ForEachChildOf("Ammo", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
-  VClass::ForEachChildOf("Weapon", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
   return ssi.sprtexcount;
 }
 
@@ -1923,8 +1937,12 @@ void VRenderLevelShared::PrecacheLevel () {
   const int maxtex = GTextureManager.GetNumTextures();
 
   TArray<bool> texturepresent;
+  TArray<bool> texturecrop;
   texturepresent.setLength(maxtex);
+  texturecrop.setLength(maxtex);
+  texturecrop.setLength(maxtex);
   for (auto &&b : texturepresent) b = false;
+  for (auto &&b : texturecrop) b = false;
 
   if (r_precache_textures || r_precache_textures_override > 0) {
     for (int f = 0; f < Level->NumSectors; ++f) {
@@ -1989,7 +2007,7 @@ void VRenderLevelShared::PrecacheLevel () {
         }
       }
     } else {
-      sprtexcount = CollectSpriteTextures(texturepresent);
+      sprtexcount = CollectSpriteTextures(texturepresent, texturecrop);
     }
     if (sprlimit && sprtexcount > sprlimit) {
       GCon->Logf(NAME_Warning, "too many sprite textures (%d), aborted at %d!", sprtexcount, sprlimit);
@@ -2007,14 +2025,16 @@ void VRenderLevelShared::PrecacheLevel () {
   R_PBarReset();
 
   if (maxpbar > 0) {
+    GTextureCropMessages = false;
     GCon->Logf("precaching %d textures", maxpbar);
     for (int f = 1; f < maxtex; ++f) {
       if (texturepresent[f]) {
         ++currpbar;
         R_PBarUpdate("Textures", currpbar, maxpbar);
-        Drawer->PrecacheTexture(GTextureManager[f]);
+        Drawer->PrecacheTexture(GTextureManager[f], texturecrop[f]);
       }
     }
+    GTextureCropMessages = true;
   }
 
   R_PBarUpdate("Textures", maxpbar, maxpbar, true); // final update

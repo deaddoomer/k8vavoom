@@ -1477,7 +1477,9 @@ void VTexture::CropTexture () {
     vassert(!Brightmap->alreadyCropped);
   }
 
-  GCon->Logf(NAME_Debug, "%s (%s): crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, *W_FullLumpName(SourceLump), Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
+  if (GTextureCropMessages) {
+    GCon->Logf(NAME_Debug, "%s (%s): crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, *W_FullLumpName(SourceLump), Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
+  }
 
   if (Format == TEXFMT_RGBA) {
     const rgba_t *pic = (const rgba_t *)Pixels;

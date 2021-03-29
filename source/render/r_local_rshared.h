@@ -563,7 +563,7 @@ protected:
   void MarkLeaves ();
   bool UpdateCameraTexture (VEntity *Camera, int TexNum, int FOV); // returns `true` if camera texture was updated
   vuint32 GetFade (sec_region_t *reg, bool isFloorCeiling=false);
-  int CollectSpriteTextures (TArray<bool> &texturepresent); // this is actually private, but meh... returns number of new textures
+  int CollectSpriteTextures (TArray<bool> &texturepresent, TArray<bool> &texturecrop); // this is actually private, but meh... returns number of new textures
   VTextureTranslation *GetTranslation (int);
   void BuildPlayerTranslations ();
 

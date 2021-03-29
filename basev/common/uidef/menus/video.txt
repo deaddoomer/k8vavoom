@@ -72,6 +72,30 @@ menudef VideoOptions {
   }
 
   option bool {
+    title = "Precache Player Textures";
+    cvar = r_precache_player_sprite_textures;
+    help =
+      "Precache player sprite textures (upload them to GPU) on level loading?",
+      "Won't do anything if sprite precaching is turned off.";
+  }
+
+  option bool {
+    title = "Precache Weapon Textures";
+    cvar = r_precache_weapon_sprite_textures;
+    help =
+      "Precache player sprite textures (upload them to GPU) on level loading?",
+      "Won't do anything if sprite precaching is turned off.";
+  }
+
+  option bool {
+    title = "Precache Ammo Textures";
+    cvar = r_precache_ammo_sprite_textures;
+    help =
+      "Precache player sprite textures (upload them to GPU) on level loading?",
+      "Won't do anything if sprite precaching is turned off.";
+  }
+
+  option bool {
     title = "Precache *ALL* Sprite Textures";
     cvar = r_precache_all_sprite_textures;
     help =
