@@ -133,17 +133,12 @@ void VLevel::FinaliseLines () {
   for (int lleft = NumLines; lleft--; ++ldef) {
     // calculate line's plane, slopetype, etc
     CalcLine(ldef);
-    // set up sector references
-    if (ldef->sidenum[0] >= 0) {
-      ldef->frontsector = Sides[ldef->sidenum[0]].Sector;
-    } else {
-      ldef->frontsector = &Sectors[0]; // just in case
-    }
-    if (ldef->sidenum[1] != -1) {
-      ldef->backsector = Sides[ldef->sidenum[1]].Sector;
-    } else {
-      ldef->backsector = nullptr;
-    }
+    // setup side references
+    ldef->frontside = (ldef->sidenum[0] >= 0 ? &Sides[ldef->sidenum[0]] : nullptr);
+    ldef->backside = (ldef->sidenum[1] >= 0 ? &Sides[ldef->sidenum[1]] : nullptr);
+    // setup sector references
+    ldef->frontsector = (ldef->frontside ? ldef->frontside->Sector : nullptr/*&Sectors[0]*//*just in case*/);
+    ldef->backsector = (ldef->backside ? ldef->backside->Sector : nullptr);
   }
 }
 

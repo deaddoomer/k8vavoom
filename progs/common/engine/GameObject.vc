@@ -763,6 +763,10 @@ struct line_t : TPlane {
 
   readonly native polyobj_t *pobject;
 
+  // so we'll be able to check those without `VLevel` object
+  side_t *frontside;
+  side_t *backside;
+
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc
   TPlane[] cdPlanes;

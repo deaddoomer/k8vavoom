@@ -502,6 +502,10 @@ struct line_t : public TPlane {
 
   inline polyobj_t *pobj () const noexcept { return pobject; }
 
+  // so we'll be able to check those without `VLevel` object
+  side_t *frontside;
+  side_t *backside;
+
   // collision detection planes
   // first plane is usually a duplicate of a normal line plane, but idc
   TPlane *cdPlanes;
@@ -765,6 +769,15 @@ struct sec_region_t {
     RF_SaneRegion    = 1u<<5, // k8vavoom-style 3d floor region
   };
   vuint32 regflags;
+
+  bool isBlockingTexture (const int id) const noexcept;
+
+  inline bool isBlockingExtraLine () const noexcept {
+    if (!extraline) return false;
+    if (!extraline->frontside || extraline->alpha < 1.0f || (extraline->flags&ML_ADDITIVE)) return false;
+    if (extraline->frontside->MidTexture.id <= 0) return false; // texture 0 is "none" (null)
+    return isBlockingTexture(extraline->frontside->MidTexture.id);
+  }
 };
 
 

@@ -239,6 +239,19 @@ int tagHashTag (const TagHash *th, int index) {
 
 //==========================================================================
 //
+//  sec_region_t::isBlockingTexture
+//
+//==========================================================================
+bool sec_region_t::isBlockingTexture (const int id) const noexcept {
+  if (id <= 0) return false; // null texture
+  VTexture *tex = GTextureManager[id]; // unanimated, nobody cares here
+  return (tex && tex->Type != TEXTYPE_Null && !tex->isSeeThrough());
+}
+
+
+
+//==========================================================================
+//
 //  sector_t::CreateBaseRegion
 //
 //==========================================================================
