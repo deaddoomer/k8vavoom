@@ -419,8 +419,8 @@ static void CopySegs (VLevel *Level, CopyInfo &nfo) {
   Level->NumSegs = 0;
   delete[] Level->Segs;
   Level->NumSegs = ajbsp::num_segs;
-  Level->Segs = new seg_t[ajbsp::num_segs]; //k8: this may overallocate, but i don't care
-  memset((void *)Level->Segs, 0, sizeof(seg_t)*ajbsp::num_segs);
+  Level->Segs = new seg_t[ajbsp::num_segs+Level->NumLines+1]; //k8: this may overallocate, but i don't care
+  memset((void *)Level->Segs, 0, sizeof(seg_t)*(ajbsp::num_segs+Level->NumLines+1));
 
   for (int i = 0; i < ajbsp::num_segs; ++i) {
     ajbsp::seg_t *srcseg = ajbsp::LookupSeg(i);

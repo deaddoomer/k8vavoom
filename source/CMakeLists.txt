@@ -306,13 +306,10 @@ set(MAPLOADER_SOURCES
   maploader/mapload.cpp
   maploader/mapload_cacheio.cpp
   maploader/mapload_udmf.cpp
-  maploader/loader/nodes.cpp
   maploader/loader/lines.cpp
   maploader/loader/sectors.cpp
   maploader/loader/verts.cpp
   maploader/loader/sides.cpp
-  maploader/loader/segs.cpp
-  maploader/loader/blockmap.cpp
   maploader/loader/reject.cpp
   maploader/loader/things.cpp
   maploader/loader/acs.cpp
@@ -321,6 +318,8 @@ set(MAPLOADER_SOURCES
   maploader/mapload_nodes_aj.cpp
   maploader/mapload_nodes_zd.cpp
   maploader/mapload_fixers.cpp
+  maploader/mapload_postload.cpp
+  maploader/mapload_blockmap.cpp
 )
 
 set(ACS_SOURCES

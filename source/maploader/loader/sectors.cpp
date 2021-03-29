@@ -104,116 +104,6 @@ void VLevel::LoadSectors (int Lump) {
 
 //==========================================================================
 //
-//  VLevel::PostLoadSubsectors
-//
-//==========================================================================
-void VLevel::PostLoadSubsectors () {
-  // this can be called with already linked sector<->subsectors, so don't assume anything
-  for (auto &&sec : allSectors()) sec.subsectors = nullptr;
-  for (auto &&sub : allSubsectors()) sub.seclink = nullptr;
-
-  for (auto &&it : allSubsectorsIdx()) {
-    const int idx = it.index();
-    subsector_t *ss = it.value();
-    if (ss->firstline < 0 || ss->firstline >= NumSegs) Host_Error("Bad seg index %d", ss->firstline);
-    if (ss->numlines <= 0 || ss->firstline+ss->numlines > NumSegs) Host_Error("Bad segs range %d %d", ss->firstline, ss->numlines);
-
-    // look up sector number for each subsector
-    // (and link this subsector to its parent sector)
-    ss->sector = nullptr;
-    for (auto &&seg : allSubSegs(ss)) {
-      if (seg.linedef) {
-        vassert(seg.sidedef);
-        vassert(seg.sidedef->Sector);
-        ss->sector = seg.sidedef->Sector;
-        ss->seclink = ss->sector->subsectors;
-        ss->sector->subsectors = ss;
-        break;
-      }
-    }
-    if (!ss->sector) Host_Error("Subsector %d contains only minisegs; this is nodes builder bug!", idx);
-
-    // calculate bounding box
-    // also, setup frontsector and backsector for segs
-    ss->bbox2d[BOX2D_LEFT] = ss->bbox2d[BOX2D_BOTTOM] = 999999.0f;
-    ss->bbox2d[BOX2D_RIGHT] = ss->bbox2d[BOX2D_TOP] = -999999.0f;
-    for (auto &&seg : allSubSegs(ss)) {
-      seg.frontsub = ss;
-      // for minisegs, set front and back sectors to subsector owning sector
-      if (!seg.linedef) seg.frontsector = seg.backsector = ss->sector;
-      // min
-      ss->bbox2d[BOX2D_LEFT] = min2(ss->bbox2d[BOX2D_LEFT], min2(seg.v1->x, seg.v2->x));
-      ss->bbox2d[BOX2D_BOTTOM] = min2(ss->bbox2d[BOX2D_BOTTOM], min2(seg.v1->y, seg.v2->y));
-      // max
-      ss->bbox2d[BOX2D_RIGHT] = max2(ss->bbox2d[BOX2D_RIGHT], max2(seg.v1->x, seg.v2->x));
-      ss->bbox2d[BOX2D_TOP] = max2(ss->bbox2d[BOX2D_TOP], max2(seg.v1->y, seg.v2->y));
-    }
-  }
-
-  for (auto &&it : allSegsIdx()) {
-    if (it.value()->frontsub == nullptr) Host_Error("Seg %d: frontsub is not set!", it.index());
-    if (it.value()->frontsector == nullptr) {
-      if (it.value()->backsector == nullptr) {
-        Host_Error("Seg %d: front sector is not set!", it.index());
-      } else {
-        GCon->Logf(NAME_Warning, "Seg %d: only back sector is set (this may be a bug, but i am not sure)", it.index());
-      }
-    }
-  }
-}
-
-
-//==========================================================================
-//
-//  VLevel::LoadSubsectors
-//
-//==========================================================================
-void VLevel::LoadSubsectors (int Lump) {
-  // determine format of the subsectors data
-  int Format;
-  if (LevelFlags&LF_GLNodesV5) {
-    Format = 5;
-    NumSubsectors = W_LumpLength(Lump)/8;
-  } else {
-    char Header[4];
-    W_ReadFromLump(Lump, Header, 0, 4);
-    if (memcmp(Header, GL_V3_MAGIC, 4) == 0) {
-      Format = 3;
-      NumSubsectors = (W_LumpLength(Lump)-4)/8;
-    } else {
-      Format = 1;
-      NumSubsectors = W_LumpLength(Lump)/4;
-    }
-  }
-
-  // allocate memory for subsectors
-  if (NumSubsectors <= 0) Host_Error("Map '%s' has no subsectors!", *MapName);
-  Subsectors = new subsector_t[NumSubsectors];
-  memset((void *)Subsectors, 0, sizeof(subsector_t)*NumSubsectors);
-
-  // read data
-  VStream *lumpstream = W_CreateLumpReaderNum(Lump);
-  VCheckedStream Strm(lumpstream);
-  if (Format == 3) Strm.Seek(4);
-  subsector_t *ss = Subsectors;
-  for (int i = 0; i < NumSubsectors; ++i, ++ss) {
-    if (Format < 3) {
-      vuint16 numsegs, firstseg;
-      Strm << numsegs << firstseg;
-      ss->numlines = numsegs;
-      ss->firstline = firstseg;
-    } else {
-      vint32 numsegs, firstseg;
-      Strm << numsegs << firstseg;
-      ss->numlines = numsegs;
-      ss->firstline = firstseg;
-    }
-  }
-}
-
-
-//==========================================================================
-//
 //  VLevel::GroupLines
 //
 //  builds sector line lists and subsector sector numbers
@@ -221,8 +111,6 @@ void VLevel::LoadSubsectors (int Lump) {
 //
 //==========================================================================
 void VLevel::GroupLines () {
-  if (NumNodes > 0) LinkNode(NumNodes-1, nullptr);
-
   if (NumSectors > 0) {
     if (Sectors[0].lines) delete[] Sectors[0].lines;
     if (Sectors[0].nbsecs) delete[] Sectors[0].nbsecs;

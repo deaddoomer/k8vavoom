@@ -27,7 +27,7 @@
 
 
 static int constexpr cestlen (const char *s, int pos=0) noexcept { return (s && s[pos] ? 1+cestlen(s, pos+1) : 0); }
-static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 009.\n";
+static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 010.\n";
 enum { CDSLEN = cestlen(CACHE_DATA_SIGNATURE) };
 static_assert(CDSLEN == 32, "oops!");
 
@@ -356,8 +356,8 @@ bool VLevel::LoadCachedData (VStream *strm) {
   *arrstrm << NumSegs;
   GCon->Logf("cache: reading %d segs", NumSegs);
   delete [] Segs;
-  Segs = new seg_t[NumSegs];
-  memset((void *)Segs, 0, NumSegs*sizeof(seg_t));
+  Segs = new seg_t[NumSegs+NumLines+1];
+  memset((void *)Segs, 0, (NumSegs+NumLines+1)*sizeof(seg_t));
   for (int f = 0; f < NumSegs; ++f) {
     seg_t *seg = Segs+f;
     doPlaneIO(arrstrm, seg);

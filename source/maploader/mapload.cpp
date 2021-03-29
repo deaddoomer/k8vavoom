@@ -42,16 +42,6 @@ static VCvarB loader_cache_rebuild_data("loader_cache_rebuild_data", true, "Cach
 VCvarB loader_cache_data("loader_cache_data", true, "Cache built level data?", CVAR_Archive);
 VCvarF loader_cache_time_limit("loader_cache_time_limit", "3", "Cache data if building took more than this number of seconds.", CVAR_Archive);
 
-//static VCvarB strict_level_errors("strict_level_errors", true, "Strict level errors mode?", 0);
-VCvarB loader_build_blockmap("loader_force_blockmap_rebuild", false, "Force blockmap rebuild on map loading?", CVAR_Archive);
-//static VCvarB show_level_load_times("show_level_load_times", false, "Show loading times?", CVAR_Archive);
-
-// there seems to be a bug in compressed GL nodes reader, hence the flag
-//static VCvarB nodes_allow_compressed_old("nodes_allow_compressed_old", true, "Allow loading v0 compressed GL nodes?", CVAR_Archive);
-VCvarB nodes_allow_compressed("nodes_allow_compressed", false, "Allow loading v1+ compressed GL nodes?", CVAR_Archive);
-
-static VCvarB loader_force_nodes_rebuild("loader_force_nodes_rebuild", true, "Force node rebuilding?", CVAR_Archive);
-
 
 extern VCvarI nodes_builder_type;
 #ifdef CLIENT
@@ -317,19 +307,15 @@ load_again:
   R_OSDMsgShowMain("LOADING");
 
   bool saveCachedData = false;
-  int gl_lumpnum = -100;
   int ThingsLump = -1;
   int LinesLump = -1;
   int SidesLump = -1;
   int VertexesLump = -1;
   int SectorsLump = -1;
   int RejectLump = -1;
-  int BlockmapLumpNum = -1;
   int BehaviorLump = -1;
   int DialogueLump = -1;
-  int CompressedGLNodesLump = -1;
-  bool UseComprGLNodes = false;
-  bool NeedNodesBuild = false;
+  bool NeedNodesBuild = true;
   char GLNodesHdr[4];
   const VMapInfo &MInfo = P_GetMapInfo(MapName);
   memset(GLNodesHdr, 0, sizeof(GLNodesHdr));
@@ -353,32 +339,25 @@ load_again:
       if (LName == NAME_endmap) break;
       if (LName == NAME_None || LName == NAME_textmap) Host_Error("Map %s is not a valid UDMF map", *MapName);
            if (LName == NAME_behavior) BehaviorLump = lumpnum+i;
-      else if (LName == NAME_blockmap) BlockmapLumpNum = lumpnum+i;
+      else if (LName == NAME_blockmap) {}
       else if (LName == NAME_reject) RejectLump = lumpnum+i;
       else if (LName == NAME_dialogue) DialogueLump = lumpnum+i;
-      else if (LName == NAME_znodes) {
-        if (!loader_cache_rebuild_data && nodes_allow_compressed) {
-          CompressedGLNodesLump = lumpnum+i;
-          UseComprGLNodes = true;
-          NeedNodesBuild = false;
-        }
-      }
+      else if (LName == NAME_znodes) {}
     }
     sha224valid = hashLump(&sha224ctx, &md5ctx, lumpnum+1);
   } else {
     // find all lumps
     int LIdx = lumpnum+1;
-    int SubsectorsLump = -1;
     if (W_LumpName(LIdx) == NAME_things) ThingsLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_linedefs) LinesLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_sidedefs) SidesLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_vertexes) VertexesLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_segs) LIdx++;
-    if (W_LumpName(LIdx) == NAME_ssectors) SubsectorsLump = LIdx++;
+    if (W_LumpName(LIdx) == NAME_ssectors) LIdx++;
     if (W_LumpName(LIdx) == NAME_nodes) LIdx++;
     if (W_LumpName(LIdx) == NAME_sectors) SectorsLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_reject) RejectLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_blockmap) BlockmapLumpNum = LIdx++;
+    if (W_LumpName(LIdx) == NAME_blockmap) LIdx++;
 
     sha224valid = hashLump(nullptr, &md5ctx, lumpnum); // md5
     if (sha224valid) sha224valid = hashLump(nullptr, &md5ctx, ThingsLump); // md5
@@ -406,27 +385,6 @@ load_again:
       if (VertexesLump == -1) nf += " vertexes";
       if (SectorsLump == -1) nf += " sectors";
       Host_Error("Map '%s' is not a valid map (%s), %s", *MapName, *W_FullLumpName(lumpnum), *nf);
-    }
-
-    if (SubsectorsLump != -1) {
-      VStream *TmpStrm = W_CreateLumpReaderNum(SubsectorsLump);
-      if (TmpStrm->TotalSize() > 4) {
-        TmpStrm->Serialise(GLNodesHdr, 4);
-        if (TmpStrm->IsError()) GLNodesHdr[0] = 0;
-        if ((GLNodesHdr[0] == 'Z' || GLNodesHdr[0] == 'X') &&
-            GLNodesHdr[1] == 'G' && GLNodesHdr[2] == 'L' &&
-            (GLNodesHdr[3] == 'N' || GLNodesHdr[3] == '2' || GLNodesHdr[3] == '3'))
-        {
-          UseComprGLNodes = true;
-          CompressedGLNodesLump = SubsectorsLump;
-        } /*else if ((GLNodesHdr[0] == 'Z' || GLNodesHdr[0] == 'X') &&
-                    GLNodesHdr[1] == 'N' && GLNodesHdr[2] == 'O' && GLNodesHdr[3] == 'D')
-        {
-          UseComprGLNodes = true;
-          CompressedGLNodesLump = SubsectorsLump;
-        }*/
-      }
-      delete TmpStrm;
     }
   }
   InitTime += Sys_Time();
@@ -482,28 +440,6 @@ load_again:
     }
   }
 
-  //bool glNodesFound = false;
-
-  if (hasCacheFile) {
-    UseComprGLNodes = false;
-    CompressedGLNodesLump = -1;
-    NeedNodesBuild = false;
-  } else {
-    if (!loader_force_nodes_rebuild && !(LevelFlags&LF_TextMap) && !UseComprGLNodes) {
-      gl_lumpnum = FindGLNodes(MapLumpName);
-      if (gl_lumpnum < lumpnum) {
-        GCon->Logf("no GL nodes found, k8vavoom will use internal node builder");
-        NeedNodesBuild = true;
-      } else {
-        //glNodesFound = true;
-      }
-    } else {
-      if ((LevelFlags&LF_TextMap) != 0 || !UseComprGLNodes) NeedNodesBuild = true;
-    }
-  }
-
-
-  int NumBaseVerts;
   double VertexTime = 0;
   double SectorsTime = 0;
   double LinesTime = 0;
@@ -526,20 +462,19 @@ load_again:
     } else {
       // Note: most of this ordering is important
       VertexTime = -Sys_Time();
-      LevelFlags &= ~LF_GLNodesV5;
-      LoadVertexes(VertexesLump, gl_lumpnum+ML_GL_VERT, NumBaseVerts);
+      LoadVertexes(VertexesLump);
       VertexTime += Sys_Time();
       SectorsTime = -Sys_Time();
       LoadSectors(SectorsLump);
       SectorsTime += Sys_Time();
       LinesTime = -Sys_Time();
       if (!(LevelFlags&LF_Extended)) {
-        LoadLineDefs1(LinesLump, NumBaseVerts, MInfo);
+        LoadLineDefs1(LinesLump, MInfo);
         LinesTime += Sys_Time();
         ThingsTime = -Sys_Time();
         LoadThings1(ThingsLump);
       } else {
-        LoadLineDefs2(LinesLump, NumBaseVerts, MInfo);
+        LoadLineDefs2(LinesLump, MInfo);
         LinesTime += Sys_Time();
         ThingsTime = -Sys_Time();
         LoadThings2(ThingsLump);
@@ -578,11 +513,11 @@ load_again:
       Sys_FileDelete(cacheFileName);
       ClearAllMapData();
       goto load_again;
-      //if (!glNodesFound) NeedNodesBuild = true;
     }
     delete strm;
     if (cachedDataLoaded) {
       forceNodeRebuildFromFixer = false; //k8: is this right?
+      NeedNodesBuild = false;
       // touch cache file, so it will survive longer
       Sys_Touch(cacheFileName);
     }
@@ -591,27 +526,14 @@ load_again:
   bool forceNewBlockmap = false;
   double NodesTime = -Sys_Time();
   // and again; sorry!
-  if (!cachedDataLoaded || forceNodeRebuildFromFixer) {
-    if (NeedNodesBuild || forceNodeRebuildFromFixer) {
-      GCon->Logf("building GL nodes");
-      //R_OSDMsgShowSecondary("BUILDING NODES");
-      BuildNodes();
-      forceNewBlockmap = true;
-      saveCachedData = true;
-    } else if (UseComprGLNodes) {
-      if (!LoadCompressedGLNodes(CompressedGLNodesLump, GLNodesHdr)) {
-        GCon->Logf("rebuilding GL nodes");
-        //R_OSDMsgShowSecondary("BUILDING NODES");
-        BuildNodes();
-        forceNewBlockmap = true;
-        saveCachedData = true;
-      }
-    } else {
-      LoadGLSegs(gl_lumpnum+ML_GL_SEGS, NumBaseVerts);
-      LoadSubsectors(gl_lumpnum+ML_GL_SSECT);
-      LoadNodes(gl_lumpnum+ML_GL_NODES);
-    }
+  if (NeedNodesBuild || forceNodeRebuildFromFixer) {
+    GCon->Logf("building GL nodes");
+    //R_OSDMsgShowSecondary("BUILDING NODES");
+    BuildNodes();
+    forceNewBlockmap = true;
+    saveCachedData = true;
   }
+  PostLoadNodes();
 
   HashSectors();
   HashLines();
@@ -626,24 +548,13 @@ load_again:
     delete[] BlockMapLump;
     BlockMapLump = nullptr;
     BlockMapLumpSize = 0;
-    BlockmapLumpNum = -1;
   }
 
   NodesTime += Sys_Time();
 
-  // load blockmap
-  if (BlockMapLump && (loader_build_blockmap || forceNodeRebuildFromFixer)) {
-    GCon->Logf("blockmap will be rebuilt");
-    delete[] BlockMapLump;
-    BlockMapLump = nullptr;
-    BlockMapLumpSize = 0;
-  }
-
-  //GCon->Logf("*** BlockmapLumpNum=%d; BlockMapLump=%p; BlockMapLumpSize=%d", BlockmapLumpNum, BlockMapLump, BlockMapLumpSize);
-
   double BlockMapTime = -Sys_Time();
   if (!BlockMapLump || BlockMapLumpSize <= 0) {
-    LoadBlockMap(forceNodeRebuildFromFixer || NeedNodesBuild ? -1 : BlockmapLumpNum);
+    CreateBlockMap();
     saveCachedData = true;
   }
   vassert(BlockMapLump);

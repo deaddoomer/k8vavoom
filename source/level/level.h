@@ -320,20 +320,19 @@ class VLevel : public VGameObject {
   enum {
     LF_ForServer = 1u<<0, // true if this level belongs to the server
     LF_Extended  = 1u<<1, // true if level was in Hexen format (or extended namespace for UDMF)
-    LF_GLNodesV5 = 1u<<2, // true if using version 5 GL nodes
-    LF_TextMap   = 1u<<3, // UDMF format map
+    LF_TextMap   = 1u<<2, // UDMF format map
     // used in map fixer
-    LF_ForceRebuildNodes                = 1u<<4,
-    LF_ForceAllowSeveralPObjInSubsector = 1u<<5, // this is not used anymore, but kept for compatibility
-    LF_ForceNoTexturePrecache           = 1u<<6,
-    LF_ForceNoPrecalcStaticLights       = 1u<<7,
-    LF_ForceNoDeepwaterFix              = 1u<<8,
-    LF_ForceNoFloorFloodfillFix         = 1u<<9,
-    LF_ForceNoCeilingFloodfillFix       = 1u<<10,
+    LF_ForceRebuildNodes                = 1u<<3,
+    LF_ForceAllowSeveralPObjInSubsector = 1u<<4, // this is not used anymore, but kept for compatibility
+    LF_ForceNoTexturePrecache           = 1u<<5,
+    LF_ForceNoPrecalcStaticLights       = 1u<<6,
+    LF_ForceNoDeepwaterFix              = 1u<<7,
+    LF_ForceNoFloorFloodfillFix         = 1u<<8,
+    LF_ForceNoCeilingFloodfillFix       = 1u<<9,
     // used only in VavoomC
-    LF_ConvertSectorLightsToStatic      = 1u<<11,
+    LF_ConvertSectorLightsToStatic      = 1u<<10,
     // set by pobj spawner
-    LF_Has3DPolyObjects                 = 1u<<12,
+    LF_Has3DPolyObjects                 = 1u<<11,
   };
   vuint32 LevelFlags;
 
@@ -1219,16 +1218,11 @@ public:
 
 private:
   // map loaders
-  void LoadVertexes (int, int, int &);
+  void LoadVertexes (int Lump);
   void LoadSectors (int);
   void LoadSideDefs (int);
-  void LoadLineDefs1 (int, int, const VMapInfo &);
-  void LoadLineDefs2 (int, int, const VMapInfo &);
-  void LoadGLSegs (int, int);
-  void LoadSubsectors (int);
-  void LoadNodes (int);
-  bool LoadCompressedGLNodes (int Lump, char hdr[4]);
-  void LoadBlockMap (int);
+  void LoadLineDefs1 (int, const VMapInfo &);
+  void LoadLineDefs2 (int, const VMapInfo &);
   void LoadReject (int);
   void LoadThings1 (int);
   void LoadThings2 (int);
@@ -1239,6 +1233,7 @@ private:
   void SetupThingsFromMapinfo ();
 
   // call this after level is loaded or nodes are built
+  void PostLoadNodes ();
   void PostLoadSegs ();
   void PostLoadSubsectors ();
 
@@ -1262,7 +1257,6 @@ private:
   static void doCacheCleanup ();
 
   // map loading helpers
-  int FindGLNodes (VName) const;
   int TexNumForName (const char *name, int Type, bool CMap=false) const;
   int TexNumOrColor (const char *, int, bool &, vuint32 &) const;
   void CreateSides ();

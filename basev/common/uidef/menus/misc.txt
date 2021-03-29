@@ -233,27 +233,6 @@ menudef MiscOptions {
   }
 
 
-  header "Prebuilt Nodes (dev)" [__k8vavoom_developer_version > 0];
-
-  option bool [__k8vavoom_developer_version > 0] {
-    title = "Force node rebuilding";
-    cvar = loader_force_nodes_rebuild;
-    help =
-      "Always rebuild nodes for a map."
-      "\cJIf in doubt, leave this 'ON'.";
-  }
-
-  option bool [__k8vavoom_developer_version > 0] {
-    title = "Allow PWAD z-nodes";
-    cvar = nodes_allow_compressed;
-    help =
-      "Load prebuilt GL Nodes?"
-      "If turned off, the engine will use internal node builder."
-      "\cJIf in doubt, set this to 'OFF'."
-      "\cGWARNING: GL Node loader is buggy, and may not work.";
-  }
-
-
   header "Cache options";
 
   option bool {

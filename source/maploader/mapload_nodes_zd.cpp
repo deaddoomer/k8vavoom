@@ -304,8 +304,8 @@ void VLevel::BuildNodesZD () {
   {
     NumSegs = segCount;
     delete[] Segs;
-    Segs = new seg_t[segCount];
-    memset((void *)Segs, 0, sizeof(seg_t)*segCount);
+    Segs = new seg_t[segCount+NumLines+1];
+    memset((void *)Segs, 0, sizeof(seg_t)*(segCount+NumLines+1));
 
     seg_t *destseg = &Segs[0];
     for (int i = 0; i < segCount; ++i, ++destseg) {
