@@ -32,11 +32,13 @@
 //  VRenderLevelShared::isPointInsideSolidReg
 //
 //  exactly on the floor/ceiling is "inside" too
+//  used only in t-junction fixer
 //
 //==========================================================================
 bool VRenderLevelShared::isPointInsideSolidReg (const TVec lv, const float pz, const sec_region_t *streg, const sec_region_t *ignorereg) noexcept {
   for (const sec_region_t *reg = streg; reg; reg = reg->next) {
     if (reg == ignorereg || (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) != 0) continue;
+    if (!reg->isBlockingExtraLine()) continue;
     const float cz = reg->eceiling.GetPointZ(lv);
     const float fz = reg->efloor.GetPointZ(lv);
     if (cz <= fz) continue; // invisible region
@@ -118,14 +120,6 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], const TPlane &p
 }
 
 
-  // starts with the given region
-  // modifies `quad`
-  enum {
-    QSPLIT_BOTTOM = 0, // leaves bottom part
-    QSPLIT_TOP = 1, // leaves top part
-  };
-
-
 //==========================================================================
 //
 //  VRenderLevelShared::SplitQuadWithRegions
@@ -146,13 +140,7 @@ sec_region_t *VRenderLevelShared::SplitQuadWithRegions (const int mode, TVec qua
   sec_region_t *clipreg = nullptr;
   for (; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
-    const line_t *ld = reg->extraline;
-    if (ld) {
-      if (ld->sidenum[0] < 0 || ld->alpha < 1.0f || (ld->flags&ML_ADDITIVE)) continue;
-      const side_t *sd = &Level->Sides[ld->sidenum[0]];
-      VTexture *MTex = GTextureManager(sd->MidTexture);
-      if (!MTex || MTex->Type == TEXTYPE_Null || MTex->isSeeThrough()) continue;
-    }
+    if (!reg->isBlockingExtraLine()) continue;
     // check for invalid region (and ignore it)
     const float fz1 = reg->efloor.GetPointZClamped(quad[QUAD_V1_TOP]);
     const float cz1 = reg->eceiling.GetPointZClamped(quad[QUAD_V1_TOP]);

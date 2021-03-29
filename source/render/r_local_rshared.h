@@ -736,15 +736,15 @@ protected:
     QSPLIT_TOP = 1, // leaves top part
   };
   // will not split with non-solid regions
-  sec_region_t *SplitQuadWithRegions (const int mode, TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept;
+  static sec_region_t *SplitQuadWithRegions (const int mode, TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept;
 
   // starts with the given region
-  inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_BOTTOM, quad, reg, ignorereg); }
-  inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsBottom(quad, sec->eregions); }
+  static inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_BOTTOM, quad, reg, ignorereg); }
+  static inline sec_region_t *SplitQuadWithRegionsBottom (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsBottom(quad, sec->eregions); }
 
   // starts with the given region
-  inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_TOP, quad, reg, ignorereg); }
-  inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsTop(quad, sec->eregions); }
+  static inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sec_region_t *reg, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(QSPLIT_TOP, quad, reg, ignorereg); }
+  static inline sec_region_t *SplitQuadWithRegionsTop (TVec quad[4], sector_t *sec) noexcept { return SplitQuadWithRegionsTop(quad, sec->eregions); }
 
 public:
   int CountSegParts (const seg_t *);

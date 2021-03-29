@@ -252,6 +252,7 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
           //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
           for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
             if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+            if (!reg->isBlockingExtraLine()) continue;
             cz = reg->eceiling.GetPointZ(lv);
             fz = reg->efloor.GetPointZ(lv);
             if (cz < fz) continue; // invisible region
