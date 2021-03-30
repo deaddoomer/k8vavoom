@@ -138,7 +138,7 @@ void VRenderLevelShared::amFlatsCollectSurfaces () {
   // for "view whole map"
   if (am_draw_texture_with_bsp) {
     if (Level->NumNodes == 0) {
-      amFlatsCheckSubsector(0);
+      if (Level->NumSubsectors) amFlatsCheckSubsector(0);
     } else {
       amFlatsCheckNode(Level->NumNodes-1);
     }

@@ -846,6 +846,8 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
     return;
   }
 
+  bool useFullseg = false;
+
   #if 1
   // render (queue) translucent lines by segs (for sorter)
   if (r_dbg_use_fullsegs.asBool() && !linedef->pobj() && IsShadowVolumeRenderer() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
@@ -855,6 +857,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
       side->rendercount = renderedLineCounter;
       seg = side->fullseg;
       dseg = seg->drawsegs;
+      useFullseg = true;
     }
   }
   #endif
@@ -921,17 +924,31 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   // automap
   // mark only autolines that allowed to be seen on the automap
   if ((linedef->flags&ML_DONTDRAW) == 0) {
-    if ((linedef->flags&ML_MAPPED) == 0) {
-      // this line is at least partially mapped; let automap drawer do the rest
-      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-      automapUpdateSeen = true;
-    }
-    if ((seg->flags&SF_MAPPED) == 0) {
-      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-      seg->flags |= SF_MAPPED;
-      automapUpdateSeen = true;
-      // mark subsector as rendered (but only if linedef is allowed to be seen on the automap)
-      if ((linedef->flags&ML_DONTDRAW) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
+    if (useFullseg) {
+      //FIXME: make this faster and better
+      if ((linedef->flags&ML_MAPPED) == 0) {
+        linedef->flags |= ML_MAPPED;
+        linedef->exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
+        // mark all sector subsectors as rendered
+        if ((linedef->flags&ML_DONTDRAW) == 0) {
+          for (subsector_t *s = sub->sector->subsectors; s; s = s->seclink) {
+            s->miscFlags |= subsector_t::SSMF_Rendered;
+          }
+        }
+      }
+    } else {
+      if ((linedef->flags&ML_MAPPED) == 0) {
+        // this line is at least partially mapped; let automap drawer do the rest
+        linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
+        automapUpdateSeen = true;
+      }
+      if ((seg->flags&SF_MAPPED) == 0) {
+        linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
+        seg->flags |= SF_MAPPED;
+        automapUpdateSeen = true;
+        // mark subsector as rendered (but only if linedef is allowed to be seen on the automap)
+        if ((linedef->flags&ML_DONTDRAW) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
+      }
     }
   }
 

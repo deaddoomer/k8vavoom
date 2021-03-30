@@ -149,6 +149,8 @@ static VCvarB am_active("am_active", false, "Is automap active?", 0);
 extern VCvarI screen_size;
 extern VCvarB ui_freemouse;
 
+extern VCvarB r_dbg_use_fullsegs;
+
 VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive);
 
 
@@ -1314,6 +1316,8 @@ static void AM_UpdateSeen () {
   if (!automapUpdateSeen) return;
   automapUpdateSeen = false;
 
+  const bool doUseFullsegs = r_dbg_use_fullsegs.asBool();
+
   line_t *line = &GClLevel->Lines[0];
   for (unsigned i = GClLevel->NumLines; i--; ++line) {
     if (line->flags&ML_DONTDRAW) {
@@ -1333,7 +1337,18 @@ static void AM_UpdateSeen () {
                if (line->sidenum[0] >= 0) defSide = (line->sidenum[1] >= 0 ? -1 : 0);
           else if (line->sidenum[1] >= 0) defSide = 1;
           else break;
+          const seg_t *fullfront = nullptr;
+          const seg_t *fullback = nullptr;
+          if (doUseFullsegs && !line->pobj() && (line->exFlags&ML_EX_NON_TRANSLUCENT)) {
+            if (line->frontside && line->frontside->fullseg && line->frontside->fullseg->drawsegs) fullfront = line->frontside->fullseg;
+            if (line->backside && line->backside->fullseg && line->backside->fullseg->drawsegs) fullback = line->backside->fullseg;
+          }
+          const bool checkFullSegs = (fullfront || fullback);
           for (const seg_t *seg = line->firstseg; seg; seg = seg->lsnext) {
+            if (!seg->drawsegs) continue;
+            if (checkFullSegs) {
+              if (seg != fullfront && seg != fullback) continue;
+            }
             int side = defSide;
             if (side < 0) side = (int)(seg->sidedef == &GClLevel->Sides[line->sidenum[1]]);
             if (seg->flags&SF_MAPPED) ++seenSides[side]; else ++unseenSides[side];
@@ -1367,6 +1382,8 @@ static void AM_UpdateSeen () {
 static void AM_drawWalls () {
   const bool debugPObj = (am_pobj_debug.asInt()&0x01);
   TArray<polyobj_t *> pobjs;
+
+  const bool doUseFullsegs = r_dbg_use_fullsegs.asBool();
 
   line_t *line = &GClLevel->Lines[0];
   for (unsigned i = GClLevel->NumLines; i--; ++line) {
@@ -1409,9 +1426,19 @@ static void AM_drawWalls () {
 
       AM_drawMline(&l, clr);
     } else {
+      const seg_t *fullfront = nullptr;
+      const seg_t *fullback = nullptr;
+      if (doUseFullsegs && !line->pobj() && (line->exFlags&ML_EX_NON_TRANSLUCENT)) {
+        if (line->frontside && line->frontside->fullseg && line->frontside->fullseg->drawsegs) fullfront = line->frontside->fullseg;
+        if (line->backside && line->backside->fullseg && line->backside->fullseg->drawsegs) fullback = line->backside->fullseg;
+      }
+      const bool checkFullSegs = (fullfront || fullback);
       // render segments
       for (const seg_t *seg = line->firstseg; seg; seg = seg->lsnext) {
-        if (!(seg->flags&SF_MAPPED)) continue;
+        if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
+        if (checkFullSegs) {
+          if (seg != fullfront && seg != fullback) continue;
+        }
 
         mline_t l;
         l.a.x = seg->v1->x;
