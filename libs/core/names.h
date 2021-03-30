@@ -31,14 +31,14 @@
 // define a message as an enumeration
 #ifndef REGISTER_NAME
   #define REGISTER_NAME(name) NAME_##name,
+  #define REGISTER_NAME_EX(name,str_) NAME_##name,
   #define REGISTERING_ENUM
-  #define NAME_None  NAME_none
   enum EName {
     // special zero value, meaning no name
     NAME_none,
-#else
-  #define NAME_None  NAME_none
 #endif
+
+#define NAME_None  NAME_none
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -397,11 +397,14 @@ REGISTER_NAME(MiAStarNodeBase)
 
 REGISTER_NAME(EntityGridBase)
 
+REGISTER_NAME_EX(Minus_Sign, "-")
+
 
 // closing
 #ifdef REGISTERING_ENUM
     NUM_HARDCODED_NAMES
   };
   #undef REGISTER_NAME
+  #undef REGISTER_NAME_EX
   #undef REGISTERING_ENUM
 #endif

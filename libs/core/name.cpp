@@ -52,6 +52,8 @@ static int constexpr stlen (const char *s) { return (s && *s ? 1+stlen(s+1) : 0)
 
 
 #define REGISTER_NAME(name)   { HashNext:nullptr, Index:NAME_##name, Flags:0, length:0/*stlen(#name)*/, alloted:0/*stlen(#name)+1*/, rc:-0x00ffffff, dummy:0, /*Name:*/ #name },
+#define REGISTER_NAME_EX(name,str_)  { HashNext:nullptr, Index:NAME_##name, Flags:0, length:0/*stlen(#name)*/, alloted:0/*stlen(#name)+1*/, rc:-0x00ffffff, dummy:0, /*Name:*/ str_ },
+
 VName::VNameEntry VName::AutoNames[] = {
   { HashNext:nullptr, Index:NAME_none, Flags:0, length:0, alloted:1, rc:-0x00ffffff, dummy:0, /*Name:*/"" },
 #include "names.h"
