@@ -359,7 +359,7 @@ static inline VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, 
 }
 
 
-static inline VVA_OKUNUSED bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
+static inline VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
   return
     x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
     y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
@@ -371,3 +371,19 @@ static inline VVA_OKUNUSED bool IsPointInsideBBox2D (const float x, const float 
 
 #define Create3DBBoxFrom2DBBox(destb_,srcb_,zmin_,zmax_)  \
   const float destb_[6] = { (srcb_)[BOX2D_MINX], (srcb_)[BOX2D_MINY], (zmin_), (srcb_)[BOX2D_MAXX], (srcb_)[BOX2D_MAXY], (zmax_) }
+
+
+static inline VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec &corg, const float radiusSq, const TVec &v0, const TVec &v1) noexcept {
+  const TVec s0qp = corg-v0;
+  if (s0qp.length2DSquared() <= radiusSq) return true;
+  if ((corg-v1).length2DSquared() <= radiusSq) return true;
+  const TVec s0s1 = v1-v0;
+  const float a = s0s1.dot2D(s0s1);
+  if (a == 0.0f) return false;
+  const float b = s0s1.dot2D(s0qp);
+  const float t = b/a; // length of projection of s0qp onto s0s1
+  if (t < 0.0f || t > 1.0f) return false;
+  const float c = s0qp.dot2D(s0qp);
+  const float r2 = c-a*t*t;
+  return (r2 < radiusSq); // true if collides
+}
