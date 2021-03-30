@@ -173,7 +173,19 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   }
 
   const bool smaps = collectorForShadowMaps;
-  const bool doflip = (smaps && r_shadowmap_flip_surfaces.asBool() && SurfaceType >= SurfTypeMiddle);
+  const bool doflip = ((ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() && SurfaceType >= SurfTypeMiddle);
+
+  // all surfaces must lie on the same plane, so this is invariant
+  const float dist = InSurfs->PointDistance(CurrLightPos);
+  const bool distInFront = (dist > 0.0f);
+  if (ssflag&FlagAsShadow) {
+    if (!doflip && !distInFront) return;
+  } else {
+    if (!distInFront) return;
+  }
+  //if (fabsf(dist) >= CurrLightRadius) continue; // was for light
+  //vassert(fabsf(dist) < CurrLightRadius);
+  const bool isLightVisible = (ssflag&FlagAsLight) && distInFront && InSurfs->IsVisibleFor(Drawer->vieworg);
 
   for (surface_t *surf = InSurfs; surf; surf = surf->next) {
     if (surf->count < 3) continue; // just in case
@@ -189,13 +201,12 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
     if (ti->Alpha < 1.0f || ti->Additive) continue;
     if (tex->isTranslucent()) continue; // this is translucent texture
 
-    const float dist = surf->PointDistance(CurrLightPos);
-    if (!doflip && dist <= 0.0f) continue;
-    if (fabsf(dist) >= CurrLightRadius) continue; // was for light
-
     // light
     if (ssflag&FlagAsLight) {
-      if (dist > 0.0f && surf->IsPlVisible()) {
+      // `IsPlVisible()` is used here to reject some unlit surfaces
+      // it is not reliable (properly set only for surfaces visible at this frame)
+      // but it doesn't matter, because in the worst case we'll only get some overdraw (trivially rejected by GPU)
+      if (isLightVisible /*&& dist > 0.0f && surf->IsPlVisible()*/) {
         // viewer is in front
         if (tex->isTransparent()) lightSurfacesMasked.append(surf); else lightSurfacesSolid.append(surf);
       }
@@ -203,7 +214,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
 
     // shadow
     if (ssflag&FlagAsShadow) {
-      if (!smaps && (dist <= 0.0f || tex->isSeeThrough())) continue; // this is masked texture, shadow volumes cannot process it
+      if (!smaps && (!distInFront || tex->isSeeThrough())) continue; // this is masked texture, shadow volumes cannot process it
       if (tex->isTransparent()) {
         // we need to flip it if the player is behind it
         // this is not fully right, because it is better to check partner seg here, for example
@@ -220,7 +231,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
             // paper-thin surface, ceiling: leave it if it is almost invisible
             if (sdist < -0.1f) continue;
           }
-          if (dist <= 0.0f) {
+          if (!distInFront) {
             if (!isGood2Flip(Level, surf, SurfaceType)) continue;
             surf->drawflags |= surface_t::DF_SMAP_FLIP;
           } else {
@@ -229,7 +240,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
           #else
           if (surf->plane.PointOnSide(Drawer->vieworg)) continue; // if the camera cannot see it, no need to render it
           // flip if the light cannot see it
-          if (dist <= 0.0f) {
+          if (!distInFront) {
             if (!isGood2Flip(Level, surf, SurfaceType)) continue;
             surf->drawflags |= surface_t::DF_SMAP_FLIP;
           } else {
@@ -237,12 +248,13 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
           }
           #endif
         } else {
-          if (dist <= 0.0f) continue; // light cannot see it
+          if (!distInFront) continue; // light cannot see it
           surf->drawflags &= ~surface_t::DF_SMAP_FLIP;
         }
         shadowSurfacesMasked.append(surf);
       } else {
-        if (dist > 0.0f) shadowSurfacesSolid.append(surf);
+        // solid surfaces are one-sided
+        if (distInFront) shadowSurfacesSolid.append(surf);
       }
     }
   }
@@ -265,7 +277,7 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
 
   #if 1
   // render (queue) translucent lines by segs (for sorter)
-  if (!linedef->pobj() && IsShadowVolumeRenderer() && (!seg->backsector || (linedef->exFlags&ML_EX_NON_TRANSLUCENT))) {
+  if (r_dbg_use_fullsegs.asBool() && !linedef->pobj() && IsShadowVolumeRenderer() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
     side_t *side = (seg->side == 0 ? linedef->frontside : linedef->backside);
     //vassert(side);
     if (side->fullseg) {

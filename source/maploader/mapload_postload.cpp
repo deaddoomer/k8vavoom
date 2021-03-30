@@ -26,6 +26,10 @@
 #include "../gamedefs.h"
 
 
+VCvarB loader_create_fullsegs("loader_create_fullsegs", true, "Create full line segs for rendering? (Requires map reload on change.)", CVAR_Archive);
+
+
+
 //==========================================================================
 //
 //  VLevel::LinkNode
@@ -181,7 +185,7 @@ void VLevel::CreateFullLineSegs () {
   for (auto &&sd : allSides()) {
     vassert(!sd.fullseg);
   }
-  return;
+  if (!loader_create_fullsegs.asBool()) return;
 
   for (auto &&ld : allLines()) {
     side_t *fside = (ld.sidenum[0] >= 0 ? &Sides[ld.sidenum[0]] : nullptr);
