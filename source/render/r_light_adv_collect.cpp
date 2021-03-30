@@ -163,6 +163,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
 
   if (!texinfo || !texinfo->Tex || texinfo->Tex->Type == TEXTYPE_Null) return;
   if (texinfo->Alpha < 1.0f || texinfo->Additive) return;
+  if (texinfo->Tex->isTranslucent()) return;
 
   if (SkyBox && SkyBox->IsPortalDirty()) SkyBox = nullptr;
 
@@ -185,7 +186,13 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   }
   //if (fabsf(dist) >= CurrLightRadius) continue; // was for light
   //vassert(fabsf(dist) < CurrLightRadius);
-  const bool isLightVisible = (ssflag&FlagAsLight) && distInFront && InSurfs->IsVisibleFor(Drawer->vieworg);
+
+  const bool isLightVisible = ((ssflag&FlagAsLight) && distInFront && InSurfs->IsVisibleFor(Drawer->vieworg));
+  const bool floorSurface = (SurfaceType == SurfTypePaperFlatEx && InSurfs->plane.normal.z >= 0.0f);
+  const bool dropPaperThinFloor = (floorSurface && InSurfs->plane.PointDistance(Drawer->vieworg) < -0.1f);
+
+  const bool transTex = texinfo->Tex->isTransparent();
+  const bool seeTroughTex = (smaps && texinfo->Tex->isSeeThrough());
 
   for (surface_t *surf = InSurfs; surf; surf = surf->next) {
     if (surf->count < 3) continue; // just in case
@@ -194,28 +201,21 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
     // check transdoor hacks
     //if (surf->drawflags&surface_t::TF_TOPHACK) continue;
 
-    texinfo_t *ti = texinfo; //(surf->texinfo ? surf->texinfo : texinfo);
-    // ignore translucent
-    VTexture *tex = ti->Tex;
-    if (!tex || tex->Type == TEXTYPE_Null) continue;
-    if (ti->Alpha < 1.0f || ti->Additive) continue;
-    if (tex->isTranslucent()) continue; // this is translucent texture
-
     // light
     if (ssflag&FlagAsLight) {
       // `IsPlVisible()` is used here to reject some unlit surfaces
       // it is not reliable (properly set only for surfaces visible at this frame)
       // but it doesn't matter, because in the worst case we'll only get some overdraw (trivially rejected by GPU)
-      if (isLightVisible /*&& dist > 0.0f && surf->IsPlVisible()*/) {
+      if (isLightVisible && surf->IsPlVisible()) {
         // viewer is in front
-        if (tex->isTransparent()) lightSurfacesMasked.append(surf); else lightSurfacesSolid.append(surf);
+        if (transTex) lightSurfacesMasked.append(surf); else lightSurfacesSolid.append(surf);
       }
     }
 
     // shadow
     if (ssflag&FlagAsShadow) {
-      if (!smaps && (!distInFront || tex->isSeeThrough())) continue; // this is masked texture, shadow volumes cannot process it
-      if (tex->isTransparent()) {
+      if (!smaps && (!distInFront || seeTroughTex)) continue; // this is masked texture, shadow volumes cannot process it
+      if (transTex) {
         // we need to flip it if the player is behind it
         // this is not fully right, because it is better to check partner seg here, for example
         // but not for now; let map authors care about setting proper textures on 2-sided walls instead
@@ -225,11 +225,15 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
           // this is for flats: when the camera is almost on a flat, it's shadow disappears
           // this is because we cannot see neither up, nor down surface
           // in this case, leave down one
-          const float sdist = surf->plane.PointDistance(Drawer->vieworg);
-          if (sdist <= 0.0f) {
-            if (SurfaceType != SurfTypePaperFlatEx || surf->plane.normal.z >= 0.0f) continue;
-            // paper-thin surface, ceiling: leave it if it is almost invisible
-            if (sdist < -0.1f) continue;
+          if (floorSurface) {
+            if (dropPaperThinFloor) continue;
+            /*
+            const float sdist = surf->plane.PointDistance(Drawer->vieworg);
+            if (sdist <= 0.0f) {
+              // paper-thin surface, ceiling: leave it if it is almost invisible
+              if (sdist < -0.1f) continue;
+            }
+            */
           }
           if (!distInFront) {
             if (!isGood2Flip(Level, surf, SurfaceType)) continue;
