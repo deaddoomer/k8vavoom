@@ -490,15 +490,13 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
       subsector_t *sub = fsec->subsectors;
       vassert(sub);
-
-      TSecPlaneRef main_floor = sub->sector->eregions->efloor;
-      TSecPlaneRef main_ceiling = sub->sector->eregions->eceiling;
+      vassert(sub->sector == fsec);
 
       seg_t *seg = side->fullseg;
       if (seg->linedef) {
         if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
         --pdsLeft;
-        CreateSegParts(sub, pds, seg, main_floor, main_ceiling, sub->sector->eregions);
+        CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
         ++pds;
       }
     }

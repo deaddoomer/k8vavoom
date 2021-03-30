@@ -267,8 +267,17 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
     if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->isInnerPObj()) {
       const seg_t *seg = &Level->Segs[sub->firstline];
       for (int j = sub->numlines; j--; ++seg) {
-        if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
-        UpdateDrawSeg(sub, seg->drawsegs, r_floor, r_ceiling);
+        line_t *ld = seg->linedef;
+        if (ld) {
+          // miniseg has no drawsegs/segparts
+          if (seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, r_floor, r_ceiling);
+          // update fullsegs
+          if (ld->updateWorldFrame != updateWorldFrame) {
+            ld->updateWorldFrame = updateWorldFrame;
+            if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
+            if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
+          }
+        }
       }
     }
 
@@ -314,20 +323,68 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
     // polyobj cannot be in 3d floor
   }
+}
 
-  // update fullsegs
-  if (sub->numlines) {
-    TSecPlaneRef r_floor = sub->regions->floorplane;
-    TSecPlaneRef r_ceiling = sub->regions->ceilplane;
-    const seg_t *seg = &Level->Segs[sub->firstline];
-    for (int j = sub->numlines; j--; ++seg) {
-      line_t *ld = seg->linedef;
-      if (!ld || ld->updateWorldFrame == updateWorldFrame) continue;
-      ld->updateWorldFrame = updateWorldFrame;
-      if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
-      if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
+
+//==========================================================================
+//
+//  VRenderLevelShared::UpdatePObjSub
+//
+//==========================================================================
+void VRenderLevelShared::UpdatePObjSub (subsector_t *sub) {
+  if (!sub || !sub->numlines) return;
+  vassert(sub->isInnerPObj());
+
+  // polyobject have only one region (this is invariant)
+  subregion_t *region = sub->regions;
+
+  TSecPlaneRef r_floor = region->floorplane;
+  TSecPlaneRef r_ceiling = region->ceilplane;
+
+  // update subsector
+  const seg_t *poseg = &Level->Segs[sub->firstline];
+  for (int j = sub->numlines; j--; ++poseg) {
+    line_t *ld = poseg->linedef;
+    if (ld) {
+      // miniseg has no drawsegs/segparts
+      if (poseg->drawsegs) UpdateDrawSeg(sub, poseg->drawsegs, r_floor, r_ceiling);
+      // update fullsegs
+      if (ld->updateWorldFrame != updateWorldFrame) {
+        ld->updateWorldFrame = updateWorldFrame;
+        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
+        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
+      }
     }
   }
+
+  // update flags
+  if (region->realfloor) {
+    // check if we have to remove zerosky flag
+    // "zerosky" is set when the sector has zero height, and sky ceiling
+    // this is what removes extra floors on Doom II MAP01, for example
+    region->flags &= ~subregion_t::SRF_ZEROSKY_FLOOR_HACK;
+    UpdateSecSurface(region->realfloor, region->floorplane, sub, region);
+  }
+
+  if (region->fakefloor) {
+    TSecPlaneRef fakefloor;
+    fakefloor.set(&sub->sector->fakefloors->floorplane, false);
+    if (!fakefloor.isFloor()) fakefloor.Flip();
+    if (!region->fakefloor->esecplane.isFloor()) region->fakefloor->esecplane.Flip();
+    UpdateSecSurface(region->fakefloor, fakefloor, sub, region, false/*allow cmap*/, true/*fake*/);
+  }
+
+  if (region->realceil) UpdateSecSurface(region->realceil, region->ceilplane, sub, region);
+
+  if (region->fakeceil) {
+    TSecPlaneRef fakeceil;
+    fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
+    if (!fakeceil.isCeiling()) fakeceil.Flip();
+    if (!region->fakeceil->esecplane.isCeiling()) region->fakeceil->esecplane.Flip();
+    UpdateSecSurface(region->fakeceil, fakeceil, sub, region, false/*allow cmap*/, true/*fake*/);
+  }
+
+  region->ResetForceRecreation();
 }
 
 

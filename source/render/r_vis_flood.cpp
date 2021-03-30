@@ -41,6 +41,7 @@ extern VCvarB dbg_vischeck_time;
 //  isCircleTouchingLine
 //
 //==========================================================================
+/*
 static inline bool isCircleTouchingLine (const TVec &corg, const float radiusSq, const TVec &v0, const TVec &v1) noexcept {
   const TVec s0qp = corg-v0;
   if (s0qp.length2DSquared() <= radiusSq) return true;
@@ -58,6 +59,7 @@ static inline bool isCircleTouchingLine (const TVec &corg, const float radiusSq,
   }
   return false;
 }
+*/
 
 
 //==========================================================================

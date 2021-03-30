@@ -1084,8 +1084,19 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
         TSecPlaneRef po_floor, po_ceiling;
         po_floor.set(&pobj->pofloor, false);
         po_ceiling.set(&pobj->poceiling, false);
-        const bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
+        bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
         pobj->updateWorldFrame = updateWorldFrame;
+        // render flats for 3d pobjs
+        if (doSegUpdates && pobj->Is3D()) {
+          for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
+            // update pobj
+            if (posub->updateWorldFrame != updateWorldFrame && posub->numlines == 0) {
+              posub->updateWorldFrame = updateWorldFrame;
+              UpdatePObjSub(posub);
+            }
+          }
+          doSegUpdates = false;
+        }
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
           if (seg->linedef && seg->drawsegs) {
@@ -1100,11 +1111,6 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
           MarkBspVisSector(secnum);
           markSectorRendered(secnum);
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
-            // update pobj
-            if (doUpdates && posub->updateWorldFrame != updateWorldFrame) {
-              posub->updateWorldFrame = updateWorldFrame;
-              UpdateSubRegions(posub);
-            }
             //GCon->Logf(NAME_Debug, "pobj #%d: sub #%d (%p)", pobj->tag, (int)(ptrdiff_t)(posub-&Level->Subsectors[0]), posub->regions);
             RenderSubRegion(posub, posub->regions);
           }

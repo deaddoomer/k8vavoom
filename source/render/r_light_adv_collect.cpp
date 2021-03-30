@@ -156,7 +156,7 @@ static bool isGood2Flip (VLevel *level, const surface_t *surf, int SurfaceType) 
 //==========================================================================
 void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texinfo_t *texinfo,
                                                         VEntity *SkyBox, bool CheckSkyBoxAlways, int SurfaceType,
-                                                        unsigned int ssflag)
+                                                        unsigned int ssflag, const bool distInFront)
 {
   if (!InSurfs) return;
   if (!(ssflag&FlagAsBoth)) return;
@@ -176,8 +176,8 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   const bool doflip = ((ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() && SurfaceType >= SurfTypeMiddle);
 
   // all surfaces must lie on the same plane, so this is invariant
-  const float dist = InSurfs->PointDistance(CurrLightPos);
-  const bool distInFront = (dist > 0.0f);
+  //const float dist = InSurfs->PointDistance(CurrLightPos);
+  //const bool distInFront = (dist > 0.0f);
   if (ssflag&FlagAsShadow) {
     if (!doflip && !distInFront) return;
   } else {
@@ -293,14 +293,19 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   //const bool baseReg = (secregion->regflags&sec_region_t::RF_BaseRegion);
 
   const float dist = seg->PointDistance(CurrLightPos);
+  const bool distInFront = (dist > 0.0f);
   //if (dist <= -CurrLightRadius || dist > CurrLightRadius) return; // light sphere is not touching a plane
   // we cannot flip one-sided walls
-  if ((!collectorForShadowMaps || !goodTwoSided) && dist <= 0.0f) return;
+  if ((!collectorForShadowMaps || !goodTwoSided) && !distInFront) return;
   if (fabsf(dist) >= CurrLightRadius) return; // was for light
+
+  // check this, because why not?
+  // this may give nothing for shadowmaps (or even some small slowdown), but may win a little speed for shadow volumes
+  if (!isCircleTouchingLine(CurrLightPos, CurrLightRadius*CurrLightRadius, *seg->v1, *seg->v2)) return;
 
   //k8: here we can call `ClipSegToLight()`, but i see no reasons to do so
   if (ssflag&FlagAsLight) {
-    if (dist <= 0.0f || !LightClip.IsRangeVisible(*seg->v2, *seg->v1)) {
+    if (!distInFront || !LightClip.IsRangeVisible(*seg->v2, *seg->v1)) {
       if ((ssflag &= ~FlagAsLight) == 0) return;
     }
   }
@@ -310,7 +315,7 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
     } else {
       // here `dist` should be positive, but check it anyway (for now)
       //const bool isVis = (dist > 0.0f ? LightShadowClip.IsRangeVisible(*seg->v2, *seg->v1) : LightShadowClip.IsRangeVisible(*seg->v1, *seg->v2));
-      if (dist <= 0.0f || !LightShadowClip.IsRangeVisible(*seg->v2, *seg->v1)) {
+      if (!distInFront || !LightShadowClip.IsRangeVisible(*seg->v2, *seg->v1)) {
         if ((ssflag &= ~FlagAsShadow) == 0) return;
       }
     }
@@ -332,15 +337,15 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   */
 
   VEntity *skybox = secregion->eceiling.splane->SkyBox;
-  if (dseg->mid) CollectAdvLightSurfaces(dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag);
+  if (dseg->mid) CollectAdvLightSurfaces(dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront);
   if (seg->backsector) {
     // two sided line
-    if (dseg->top) CollectAdvLightSurfaces(dseg->top->surfs, &dseg->top->texinfo, skybox, false, (goodTwoSided ? SurfTypeTop : SurfTypeOneSided), ssflag);
+    if (dseg->top) CollectAdvLightSurfaces(dseg->top->surfs, &dseg->top->texinfo, skybox, false, (goodTwoSided ? SurfTypeTop : SurfTypeOneSided), ssflag, distInFront);
     //k8: horizon/sky cannot block light, and cannot receive light
-    //if (dseg->topsky) CollectAdvLightSurfaces(dseg->topsky->surfs, &dseg->topsky->texinfo, skybox, false, SurfTypeOneSided, ssflag);
-    if (dseg->bot) CollectAdvLightSurfaces(dseg->bot->surfs, &dseg->bot->texinfo, skybox, false, (goodTwoSided ? SurfTypeBottom : SurfTypeOneSided), ssflag);
+    //if (dseg->topsky) CollectAdvLightSurfaces(dseg->topsky->surfs, &dseg->topsky->texinfo, skybox, false, SurfTypeOneSided, ssflag, distInFront);
+    if (dseg->bot) CollectAdvLightSurfaces(dseg->bot->surfs, &dseg->bot->texinfo, skybox, false, (goodTwoSided ? SurfTypeBottom : SurfTypeOneSided), ssflag, distInFront);
     for (segpart_t *sp = dseg->extra; sp; sp = sp->next) {
-      CollectAdvLightSurfaces(sp->surfs, &sp->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag);
+      CollectAdvLightSurfaces(sp->surfs, &sp->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront);
     }
   }
 }
@@ -358,10 +363,11 @@ void VRenderLevelShadowVolume::CollectAdvLightSecSurface (sec_region_t *secregio
   if (!ssurf->esecplane.splane->pic) return;
 
   const float dist = ssurf->PointDistance(CurrLightPos);
+  const bool distInFront = (dist > 0.0f);
   //if (dist <= -CurrLightRadius || dist > CurrLightRadius) return; // light is in back side or on plane
-  if ((!collectorForShadowMaps || !paperThin) && dist <= 0.0f) return;
+  if ((!collectorForShadowMaps || !paperThin) && !distInFront) return;
   if (fabsf(dist) >= CurrLightRadius) return; // was for light
-  if ((ssflag&FlagAsShadow) == 0 && dist <= 0.0f) return;
+  if ((ssflag&FlagAsShadow) == 0 && !distInFront) return;
 
   int stype;
   if (secregion->regflags&sec_region_t::RF_BaseRegion) {
@@ -370,7 +376,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSecSurface (sec_region_t *secregio
     stype = (paperThin ? SurfTypePaperFlatEx : SurfTypeFlatEx);
   }
 
-  CollectAdvLightSurfaces(ssurf->surfs, &ssurf->texinfo, SkyBox, true, stype, ssflag);
+  CollectAdvLightSurfaces(ssurf->surfs, &ssurf->texinfo, SkyBox, true, stype, ssflag, distInFront);
 }
 
 
@@ -391,8 +397,18 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
         TSecPlaneRef po_floor, po_ceiling;
         po_floor.set(&pobj->pofloor, false);
         po_ceiling.set(&pobj->poceiling, false);
-        const bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
+        bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
         pobj->updateWorldFrame = updateWorldFrame;
+        if (doSegUpdates && pobj->Is3D()) {
+          for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
+            // update pobj
+            if (posub->updateWorldFrame != updateWorldFrame && posub->numlines > 0) {
+              posub->updateWorldFrame = updateWorldFrame;
+              UpdateSubRegions(posub);
+            }
+          }
+          doSegUpdates = false;
+        }
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
           if (seg->linedef && seg->drawsegs) {
@@ -402,11 +418,6 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
         }
         if (pobj->Is3D()) {
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
-            // update pobj
-            if (doUpdates && posub->updateWorldFrame != updateWorldFrame) {
-              posub->updateWorldFrame = updateWorldFrame;
-              UpdateSubRegions(posub);
-            }
             CollectAdvLightSubRegion(posub, ssflag);
           }
         }
