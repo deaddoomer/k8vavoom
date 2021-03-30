@@ -71,7 +71,7 @@ menudef VideoOptions {
       "Turn this 'ON' if you have a box with 3+GB of RAM and non-integrated GPU.";
   }
 
-  option bool {
+  option bool [__k8vavoom_developer_version > 0] {
     title = "Precache Player Textures";
     cvar = r_precache_player_sprite_textures;
     help =
@@ -79,7 +79,7 @@ menudef VideoOptions {
       "Won't do anything if sprite precaching is turned off.";
   }
 
-  option bool {
+  option bool [__k8vavoom_developer_version > 0] {
     title = "Precache Weapon Textures";
     cvar = r_precache_weapon_sprite_textures;
     help =
@@ -87,7 +87,7 @@ menudef VideoOptions {
       "Won't do anything if sprite precaching is turned off.";
   }
 
-  option bool {
+  option bool [__k8vavoom_developer_version > 0] {
     title = "Precache Ammo Textures";
     cvar = r_precache_ammo_sprite_textures;
     help =
