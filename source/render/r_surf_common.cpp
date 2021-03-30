@@ -285,6 +285,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     }
   }
 
+  const bool allowFullSegs = IsShadowVolumeRenderer();
+  const int totalSegCount = Level->NumSubsectors+(allowFullSegs ? Level->NumLines : 0);
+
   if (inWorldCreation) {
     R_OSDMsgShowSecondary("CREATING WORLD SURFACES");
     R_PBarReset();
@@ -292,18 +295,26 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
   Level->ResetPObjRenderCounts(); // so we won't process polyobjects several times
 
+  nextRenderedLineCounter();
+
   // count regions in all subsectors
-  GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors+Level->NumLines);
+  if (allowFullSegs) {
+    GCon->Logf(NAME_Debug, "processing %d subsectors and %d lines...", Level->NumSubsectors, Level->NumLines);
+  } else {
+    GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
+  }
   int srcount = 0;
   int dscount = 0;
   int spcount = 0;
-  for (auto &&ld : Level->allLines()) {
-    for (unsigned f = 0; f < 2; ++f) {
-      side_t *side = (f ? ld.backside : ld.frontside);
-      if (!side || !side->fullseg) continue;
-      dscount += 1; // one drawseg for a good seg
-      // segparts (including segparts for 3d floors)
-      spcount += CountSegParts(side->fullseg);
+  if (allowFullSegs) {
+    for (auto &&ld : Level->allLines()) {
+      for (unsigned f = 0; f < 2; ++f) {
+        side_t *side = (f ? ld.backside : ld.frontside);
+        if (!side || !side->fullseg) continue;
+        dscount += 1; // one drawseg for a good seg
+        // segparts (including segparts for 3d floors)
+        spcount += CountSegParts(side->fullseg);
+      }
     }
   }
   for (auto &&sub : Level->allSubsectors()) {
@@ -362,8 +373,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   AllocatedSubRegions = sreg;
   AllocatedDrawSegs = pds;
   AllocatedSegParts = pspart;
-
-  nextRenderedLineCounter();
 
   // create sector surfaces
   for (auto &&it : Level->allSubsectorsIdx()) {
@@ -473,35 +482,37 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       --sregLeft;
     }
 
-    if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), Level->NumSubsectors+Level->NumLines);
+    if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), totalSegCount);
   }
 
   // create "fullsegs"
-  int lfscount = 0;
-  for (auto &&ld : Level->allLines()) {
-    for (unsigned f = 0; f < 2; ++f) {
-      side_t *side = (f ? ld.backside : ld.frontside);
-      if (!side || !side->fullseg) continue;
-      if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
+  if (allowFullSegs) {
+    int lfscount = 0;
+    for (auto &&ld : Level->allLines()) {
+      for (unsigned f = 0; f < 2; ++f) {
+        side_t *side = (f ? ld.backside : ld.frontside);
+        if (!side || !side->fullseg) continue;
+        if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
 
-      sector_t *fsec = (f ? ld.backsector : ld.frontsector);
-      vassert(fsec);
-      if (fsec->linecount == 0) continue; // no need to create 'em
+        sector_t *fsec = (f ? ld.backsector : ld.frontsector);
+        vassert(fsec);
+        if (fsec->linecount == 0) continue; // no need to create 'em
 
-      subsector_t *sub = fsec->subsectors;
-      vassert(sub);
-      vassert(sub->sector == fsec);
+        subsector_t *sub = fsec->subsectors;
+        vassert(sub);
+        vassert(sub->sector == fsec);
 
-      seg_t *seg = side->fullseg;
-      if (seg->linedef) {
-        if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-        --pdsLeft;
-        CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
-        ++pds;
+        seg_t *seg = side->fullseg;
+        if (seg->linedef) {
+          if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+          --pdsLeft;
+          CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
+          ++pds;
+        }
       }
-    }
 
-    if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), Level->NumSubsectors+Level->NumLines);
+      if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), totalSegCount);
+    }
   }
 
   GCon->Log(NAME_Debug, "performing initial world update...");

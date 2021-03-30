@@ -282,9 +282,8 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   #if 1
   // render (queue) translucent lines by segs (for sorter)
   if (r_dbg_use_fullsegs.asBool() && !linedef->pobj() && IsShadowVolumeRenderer() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
-    side_t *side = (seg->side == 0 ? linedef->frontside : linedef->backside);
-    //vassert(side);
-    if (side->fullseg) {
+    side_t *side = seg->sidedef;
+    if (side->fullseg && side->fullseg->drawsegs) {
       if (side->rendercount == renderedLineCounter) return; // already rendered
       side->rendercount = renderedLineCounter;
       seg = side->fullseg;
