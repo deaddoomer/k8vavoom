@@ -566,11 +566,11 @@ private:
 public:
   vint32 DefaultTexture;
   float Time; // time value for warp textures
+  //WARNING! as we have only one global texture manager object, it is safe to make this static
+  static VName DummyTextureName; // this must be taken from `TEXTUREn` lump, because it can be anything
 
 public:
-  static inline bool IsDummyTextureName (VName n) {
-    return (n != NAME_None && (n == "-" || VStr::ICmp(*n, "AASTINKY") == 0));
-  }
+  static inline bool IsDummyTextureName (VName n) noexcept { return (n == NAME_None || n == NAME_Minus_Sign || n == DummyTextureName); }
 
   struct Iter {
   private:

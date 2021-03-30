@@ -1483,7 +1483,7 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
   }
   // there is no need to load brightmap textures for server
 #ifdef CLIENT
-  if (img != NAME_None && !VTextureManager::IsDummyTextureName(img) && !bmap.isEmpty()) {
+  if (!VTextureManager::IsDummyTextureName(img) && !bmap.isEmpty()) {
     const bool doWarn = (cli_WAll > 0 || cli_WarnBrightmaps > 0);
     const bool doLoadDump = (cli_DumpBrightmaps > 0);
 
@@ -1586,7 +1586,7 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
 //
 //==========================================================================
 static void ApplyGlowToExactTexture (VName txname, bool isWall, bool allowOtherType, bool fullbright, bool iwad, vuint32 clr=0u) {
-  if (txname != NAME_None && !VTextureManager::IsDummyTextureName(txname)) {
+  if (!VTextureManager::IsDummyTextureName(txname)) {
     VTexture *basetex = GTextureManager.GetExistingTextureByName(VStr(txname), (isWall ? TEXTYPE_Wall : TEXTYPE_Flat));
     if (!basetex && allowOtherType) basetex = GTextureManager.GetExistingTextureByName(VStr(txname), (!isWall ? TEXTYPE_Wall : TEXTYPE_Flat));
     if (basetex) {
@@ -1637,7 +1637,7 @@ static bool GlowNameMaskCheck (const char *name, const char *mask) {
 //==========================================================================
 static void ApplyGlowToTexture (VName txname, VStr txnamefull, bool isWall, bool allowOtherType, bool fullbright, bool iwad, bool basename, vuint32 clr=0u) {
 #ifdef CLIENT
-  if (txname == NAME_None || VTextureManager::IsDummyTextureName(txname)) return;
+  if (VTextureManager::IsDummyTextureName(txname)) return;
   if (r_glow_ignore_iwad) iwad = false;
   if (!basename) {
     //GCon->Logf(NAME_Debug, "applying glow '%s'", *txname);

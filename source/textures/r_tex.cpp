@@ -69,6 +69,7 @@
 // ////////////////////////////////////////////////////////////////////////// //
 bool GTextureCropMessages = true;
 VTextureManager GTextureManager;
+VName VTextureManager::DummyTextureName = NAME_None;
 
 
 static int cli_WipeWallPatches = 0;
@@ -399,12 +400,20 @@ void VTextureManager::ResetMapTextures () {
 int VTextureManager::AddTexture (VTexture *Tex) {
   if (!Tex) return -1;
 
-  if (Tex->Name == NAME_None && Textures.length()) {
-    R_DumpTextures();
-    abort();
+  if (Tex->Name == NAME_None) {
+    if (Textures.length()) {
+      R_DumpTextures();
+      Sys_Error("internal error: tried to add dummy texture in inappropriate moment");
+    }
+  } else {
+    //FIXME: real dummy name should be checked only for wall textures, i guess
+    // it is safe to use `IsDummyTextureName()` here, as `NAME_None` already checked
+    if (IsDummyTextureName(Tex->Name)) {
+      GCon->Logf(NAME_Warning, "tried to add dummy texture with name '%s' as a normal one (from lump '%s')", *VStr(Tex->Name).toUpperCase(), *W_FullLumpName(Tex->SourceLump));
+      abort();
+      return 0; // "no texture"
+    }
   }
-
-  if (Tex->Name == "-") return 0; // "no texture"
 
   int devTexDump = (cli_AddTextureDump > 0);
 
@@ -556,7 +565,7 @@ int VTextureManager::CheckNumForName (VName Name, int Type, bool bOverload) {
   if ((unsigned)Type >= (unsigned)TEXTYPE_MAX) return -1; // oops
 
   Name = Name.GetLowerNoCreate();
-  if (Name == NAME_None) return -1;
+  //if (Name == NAME_None) return -1;
   if (IsDummyTextureName(Name)) return 0;
 
   if (strchr(*Name, '/')) {
@@ -687,7 +696,7 @@ int VTextureManager::FindPatchByName (VName Name) {
 //==========================================================================
 int VTextureManager::FindWallByName (VName Name, bool bOverload) {
   Name = Name.GetLowerNoCreate();
-  if (Name == NAME_None) return -1;
+  //if (Name == NAME_None) return -1;
   if (IsDummyTextureName(Name)) return 0;
 
   int seenOther = -1;
@@ -735,7 +744,7 @@ int VTextureManager::FindWallByName (VName Name, bool bOverload) {
 //==========================================================================
 int VTextureManager::FindFlatByName (VName Name, bool bOverload) {
   Name = Name.GetLowerNoCreate();
-  if (Name == NAME_None) return -1;
+  //if (Name == NAME_None) return -1;
   if (IsDummyTextureName(Name)) return 0;
 
   int seenOther = -1;
@@ -782,8 +791,8 @@ int VTextureManager::FindFlatByName (VName Name, bool bOverload) {
 //
 //==========================================================================
 int VTextureManager::NumForName (VName Name, int Type, bool bOverload, bool bAllowLoadAsMapTexture) {
-  if (Name == NAME_None) return 0;
-  if (IsDummyTextureName(Name)) return 0;
+  //if (Name == NAME_None) return 0;
+  if (IsDummyTextureName(Name)) return 0; // was -1
   int i = CheckNumForName(Name, Type, bOverload);
   if (i == -1) {
     if (bAllowLoadAsMapTexture) {
@@ -897,7 +906,7 @@ void VTextureManager::GetTextureInfo (int TexNum, picinfo_t *info) {
 //
 //==========================================================================
 static int findAndLoadTexture (VTextureManager &txman, VName Name, int Type, EWadNamespace NS) {
-  if (Name == NAME_None) return -1;
+  //if (Name == NAME_None) return -1;
   if (VTextureManager::IsDummyTextureName(Name)) return 0;
   VName PatchName = Name.GetLower8();
 
@@ -960,7 +969,7 @@ static int findAndLoadTexture (VTextureManager &txman, VName Name, int Type, EWa
 //
 //==========================================================================
 static int findAndLoadTextureShaded (VTextureManager &txman, VName Name, VName shName, int Type, EWadNamespace NS, int shade) {
-  if (Name == NAME_None) return -1;
+  //if (Name == NAME_None) return -1;
   if (VTextureManager::IsDummyTextureName(Name)) return 0;
   VName PatchName = Name.GetLower8();
 
@@ -1058,7 +1067,6 @@ static void FixTextureNSList (EWadNamespace nslist[], int Type) {
 //
 //==========================================================================
 int VTextureManager::AddPatch (VName Name, int Type, bool Silent, bool asXHair) {
-  if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
 
   // check if it's already registered
@@ -1127,7 +1135,6 @@ int VTextureManager::AddPatchLump (int LumpNum, VName Name, int Type, bool Silen
 //
 //==========================================================================
 int VTextureManager::AddRawWithPal (VName Name, VName PalName) {
-  if (Name == NAME_None) abort();
   if (IsDummyTextureName(Name)) abort();
   //TODO
   int LumpNum = W_CheckNumForName(Name, WADNS_Graphics);
@@ -1189,7 +1196,6 @@ static int tryHardToFindTheImageLump (VStr filename) {
 //
 //==========================================================================
 int VTextureManager::AddFileTextureChecked (VName Name, int Type, VName forceName) {
-  if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
 
   int i = CheckNumForName(Name, Type);
@@ -1232,7 +1238,6 @@ int VTextureManager::AddFileTextureChecked (VName Name, int Type, VName forceNam
 //
 //==========================================================================
 int VTextureManager::AddFileTexture (VName Name, int Type) {
-  if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
   int i = AddFileTextureChecked(Name, Type);
   if (i == -1) {
@@ -1253,7 +1258,6 @@ int VTextureManager::AddFileTexture (VName Name, int Type) {
 int VTextureManager::AddFileTextureShaded (VName Name, int Type, int shade) {
   if (shade == -1) return AddFileTexture(Name, Type);
 
-  if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
 
   VName shName = VName(va("%s %08x", *Name, (vuint32)shade));
@@ -1286,7 +1290,6 @@ int VTextureManager::AddFileTextureShaded (VName Name, int Type, int shade) {
 int VTextureManager::AddPatchShaded (VName Name, int Type, int shade, bool Silent) {
   if (shade == -1) return AddPatch(Name, Type, Silent);
 
-  if (Name == NAME_None) return 0;
   if (IsDummyTextureName(Name)) return 0;
 
   VName shName = VName(va("%s %08x", *Name, (vuint32)shade));
@@ -1689,7 +1692,6 @@ void VTextureManager::AddTexturesLump (TArray<WallPatchInfo> &patchtexlookup, in
   VName tlname = W_LumpName(TexLump);
   TMapNC<VName, bool> tseen; // only the first seen texture is relevant, so ignore others
 
-  VName dashName = VName("-"); // empty texture
   int pncount = 0;
   int TexFile = W_LumpFile(TexLump);
   while (TexLump >= 0 && W_LumpFile(TexLump) == TexFile) {
@@ -1730,12 +1732,20 @@ void VTextureManager::AddTexturesLump (TArray<WallPatchInfo> &patchtexlookup, in
       // copy dimensions of the first texture to the dummy texture in case they are used, and
       // set it to be `TEXTYPE_Null`, as this is how DooM works
       if (i == 0 && First) {
+        // the very first texture, it is dummy; no need to append it
         Textures[0]->Width = Tex->Width;
         Textures[0]->Height = Tex->Height;
         Tex->Type = TEXTYPE_Null;
+        DummyTextureName = Tex->Name;
+        GCon->Logf(NAME_Init, "dummy texture name is '%s', from the lump '%s'", *VStr(DummyTextureName).toUpperCase(), *W_FullLumpName(TexLump));
+        delete Tex;
+        continue;
+      } else {
+        // ignore empty textures
+        // use `IsDummyTextureName()` here, to reject duplicate dummy textures (this should not happen, tho)
+        if (IsDummyTextureName(Tex->Name)) { delete Tex; continue; }
+        //if (Tex->Name == NAME_Minus_Sign) { delete Tex; continue; }
       }
-      // ignore empty textures
-      if (Tex->Name == NAME_None || Tex->Name == dashName) { delete Tex; continue; }
       // but keep duplicate ones, because later pwads can replace some of them
       if (Tex->SourceLump < TexLump) Tex->SourceLump = TexLump;
       if (tseen.has(Tex->Name)) {
@@ -1787,7 +1797,7 @@ void VTextureManager::AddGroup (int Type, EWadNamespace Namespace) {
 //
 //==========================================================================
 int VTextureManager::FindHiResToReplace (VName Name, int Type, bool bOverload) {
-  if (Name == NAME_None) return -1;
+  if (IsDummyTextureName(Name)) return -1;
   // find texture to replace
   int OldIdx = CheckNumForName(Name, Type, bOverload);
   if (OldIdx > 0) return OldIdx;
@@ -2010,8 +2020,8 @@ void VTextureManager::ParseTextureTextLump (int lump, bool asHiRes) {
 
       int OldIdx = FindHiResToReplace(Name, TEXTYPE_Overload, false);
       if (OldIdx >= 0) {
-        // replacing old texture (this is wrong, but...)
-        //if (OldIdx == 0) continue; // there is no reason to replace "AASHITTY" and such
+        // replacing old texture
+        //if (IsEmptyTexture(OldIdx)) continue; // there is no reason to replace "AASHITTY" and such (this is checked in `FindHiResToReplace()`
         // don't do it if hires textures are disabled, or we're loading normal textures
         if (!asHiRes) continue; // loading normal textures
         if (!r_hirestex) continue; // hires texture replacements are disabled

@@ -775,6 +775,7 @@ load_again:
   cacheFileBase = cacheFileName;
 
   #if 0
+  // nope, some lines don't need fullsegs
   for (auto &&ld : allLines()) {
     // setup side references
     vassert((ld.sidenum[0] < 0 && !ld.frontside) || (ld.sidenum[0] >= 0 && ld.frontside));
@@ -796,7 +797,9 @@ load_again:
 static int texForceLoad (const char *name, int Type, bool CMap) {
   if (!name || !name[0]) return 0; // just in case
   if (name[0] == '-' && !name[1]) return 0; // just in case
-  if (VStr::strEquCI(name, "aashitty") || VStr::strEquCI(name, "aastinky")) return 0;
+  //if (VStr::strEquCI(name, "aashitty") || VStr::strEquCI(name, "aastinky")) return 0;
+  VName tmpname = VName(name, VName::FindLower);
+  if (tmpname != NAME_None && VTextureManager::IsDummyTextureName(tmpname)) return 0;
   int i = -1;
 
   //GCon->Logf("texForceLoad(*): <%s>", name);
@@ -897,7 +900,6 @@ IMPLEMENT_FUNCTION(VLevel, LdrTexNumForName) {
 //
 //==========================================================================
 int VLevel::TexNumForName (const char *name, int Type, bool CMap) const {
-  if (!name || !name[0] || VStr::Cmp(name, "-") == 0) return 0;
   return texForceLoad(name, Type, CMap);
 }
 
