@@ -245,6 +245,36 @@ void VLevel::CreateFullLineSegs () {
       continue;
     }
 
+    // find good subsectors for front and back sides
+    subsector_t *fsub = nullptr;
+    subsector_t *bsub = nullptr;
+
+    if (fside) {
+      for (subsector_t *sub = ld.frontsector->subsectors; sub; sub = sub->seclink) {
+        if (sub->numlines >= 3) {
+          vassert(sub->sector == ld.frontsector);
+          fsub = sub;
+        }
+      }
+      if (!fsub) {
+        GCon->Logf(NAME_Warning, "cannot find valid front subsector for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+        continue;
+      }
+    }
+
+    if (bside) {
+      for (subsector_t *sub = ld.backsector->subsectors; sub; sub = sub->seclink) {
+        if (sub->numlines >= 3) {
+          vassert(sub->sector == ld.backsector);
+          bsub = sub;
+        }
+      }
+      if (!bsub) {
+        GCon->Logf(NAME_Warning, "cannot find valid back subsector for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+        continue;
+      }
+    }
+
     seg_t *newfseg = nullptr;
     seg_t *newbseg = nullptr;
 
@@ -263,6 +293,7 @@ void VLevel::CreateFullLineSegs () {
       }
       vassert(fseg->frontsub->sector == ld.frontsector);
       vassert(fseg->side == 0);
+      vassert(fsub);
 
       newfseg = &Segs[NumSegs++];
       fside->fullseg = newfseg;
@@ -271,7 +302,7 @@ void VLevel::CreateFullLineSegs () {
       newfseg->v2 = ld.v2;
       newfseg->drawsegs = nullptr;
       newfseg->partner = nullptr;
-      //newfseg->frontsub = nullptr; // it doesn't belong to any subsector
+      newfseg->frontsub = fsub;
       // link to list
       newfseg->lsnext = ld.firstseg;
       ld.firstseg = newfseg;
@@ -297,6 +328,7 @@ void VLevel::CreateFullLineSegs () {
       }
       vassert(bseg->frontsub->sector == ld.backsector);
       vassert(bseg->side == 1);
+      vassert(bsub);
 
       newbseg = &Segs[NumSegs++];
       bside->fullseg = newbseg;
@@ -305,7 +337,7 @@ void VLevel::CreateFullLineSegs () {
       newbseg->v2 = ld.v1;
       newbseg->drawsegs = nullptr;
       newbseg->partner = nullptr;
-      //newbseg->frontsub = nullptr; // it doesn't belong to any subsector
+      newbseg->frontsub = bsub;
       // link to list
       newbseg->lsnext = ld.firstseg;
       ld.firstseg = newbseg;
