@@ -91,13 +91,13 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
 
 //==========================================================================
 //
-//  P_BoxOnLineSide
+//  P_Box2DOnLineSide
 //
 //  considers the line to be infinite
 //  returns side 0 or 1, -1 if box crosses the line
 //
 //==========================================================================
-int P_BoxOnLineSide (const float *tmbox, const line_t *ld) {
+int P_Box2DOnLineSide (const float tmbox[4], const line_t *ld) {
   int p1 = 0;
   int p2 = 0;
 

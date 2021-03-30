@@ -219,7 +219,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
     return true;
   }
 
-  if (P_BoxOnLineSide(&cptrace.BBox[0], ld) != -1) return true;
+  if (P_Box2DOnLineSide(&cptrace.BBox[0], ld) != -1) return true;
 
   // a line has been hit
   if (!ld->backsector) return false; // one sided line
@@ -375,7 +375,7 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
             tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
             tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
             tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
-            P_BoxOnLineSide(tmbbox, line) == -1)
+            P_Box2DOnLineSide(tmbbox, line) == -1)
         {
           // new logic for 3D Floors
           /*
@@ -445,7 +445,7 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
             tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
             tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
             tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
-            P_BoxOnLineSide(tmbbox, line) == -1)
+            P_Box2DOnLineSide(tmbbox, line) == -1)
         {
           // new logic for 3D Floors
           /*

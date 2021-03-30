@@ -38,6 +38,7 @@ void VLevel::CalcLine (line_t *line) {
 
   if (line->dir.x == 0.0f) {
     line->slopetype = ST_VERTICAL;
+    if (line->dir.y == 0.0f) line->dir.x = 1.0f; // fix invalid dir
   } else if (line->dir.y == 0.0f) {
     line->slopetype = ST_HORIZONTAL;
   } else {
@@ -69,6 +70,8 @@ void VLevel::CalcSegLenOfs (seg_t *seg) {
   if (ldef) {
     const TVec *vv = (seg->side ? ldef->v2 : ldef->v1);
     seg->offset = seg->v1->DistanceTo2D(*vv);
+  } else {
+    seg->offset = 0.0f; // just in case
   }
   seg->length = seg->v2->DistanceTo2D(*seg->v1);
   if (!isFiniteF(seg->length)) seg->length = 0.0f; // just in case
@@ -77,10 +80,10 @@ void VLevel::CalcSegLenOfs (seg_t *seg) {
 
 //==========================================================================
 //
-//  VLevel::CalcSeg
+//  VLevel::CalcSegPlaneDir
 //
 //==========================================================================
-void VLevel::CalcSeg (seg_t *seg) {
+void VLevel::CalcSegPlaneDir (seg_t *seg) {
   seg->Set2Points(*seg->v1, *seg->v2);
   bool valid = (isFiniteF(seg->length) && seg->length >= 0.0001f);
   if (valid) {

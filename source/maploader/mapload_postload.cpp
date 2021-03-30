@@ -107,7 +107,7 @@ void VLevel::PostLoadSegs () {
     }
 
     CalcSegLenOfs(seg);
-    CalcSeg(seg); // this will check for zero-length segs
+    CalcSegPlaneDir(seg); // this will check for zero-length segs
   }
 }
 
@@ -218,7 +218,7 @@ void VLevel::CreateFullLineSegs () {
       ld.firstseg = newfseg;
 
       CalcSegLenOfs(newfseg);
-      CalcSeg(newfseg); // this will check for zero-length segs
+      CalcSegPlaneDir(newfseg); // this will check for zero-length segs
 
       fside->fullseg = newfseg;
     }
@@ -237,7 +237,7 @@ void VLevel::CreateFullLineSegs () {
       ld.firstseg = newbseg;
 
       CalcSegLenOfs(newbseg);
-      CalcSeg(newbseg); // this will check for zero-length segs
+      CalcSegPlaneDir(newbseg); // this will check for zero-length segs
 
       bside->fullseg = newbseg;
     }

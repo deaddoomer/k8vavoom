@@ -1017,7 +1017,7 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
   // recalc lines's slope type, bounding box, normal and dist
   for (auto &&it : po->LineFirst()) CalcLine(it.line());
   // recalc seg's normal and dist
-  for (auto &&it : po->SegFirst()) CalcSeg(it.seg());
+  for (auto &&it : po->SegFirst()) CalcSegPlaneDir(it.seg());
   // update region heights
   sector_t *sec = po->posector;
   if (sec) {
@@ -1671,7 +1671,7 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 
         if (!mobj->IsBlockingLine(ld)) continue;
 
-        if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
+        if (P_Box2DOnLineSide(tmbbox, ld) != -1) continue;
 
         //mobj->PolyObjIgnore = po;
         if (mobj->EntityFlags&VEntity::EF_Solid) {

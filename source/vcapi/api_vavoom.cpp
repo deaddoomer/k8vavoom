@@ -312,12 +312,9 @@ IMPLEMENT_FREE_FUNCTION(VObject, BoxOnLineSide2D) {
   P_GET_PTR(line_t, ld);
   P_GET_VEC(bmax);
   P_GET_VEC(bmin);
-  float tmbox[4];
-  tmbox[BOX2D_TOP] = bmax.y;
-  tmbox[BOX2D_BOTTOM] = bmin.y;
-  tmbox[BOX2D_LEFT] = bmin.x;
-  tmbox[BOX2D_RIGHT] = bmax.x;
-  RET_INT(P_BoxOnLineSide(tmbox, ld));
+  // 2d bbox points are in this strange order
+  const float tmbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  RET_INT(P_Box2DOnLineSide(tmbox, ld));
 }
 
 

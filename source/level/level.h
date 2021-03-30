@@ -857,7 +857,7 @@ public:
   void CalcLine (line_t *line); // this calls `CalcLineCDPlanes()`
   void CalcLineCDPlanes (line_t *line);
   void CalcSegLenOfs (seg_t *seg); // only length and offset
-  void CalcSeg (seg_t *seg); // plane, direction, but length and offset should be already set
+  void CalcSegPlaneDir (seg_t *seg); // plane, direction, but length and offset should be already set
 
 private:
   void AddExtraFloorSane (line_t *line, sector_t *dst); // k8vavoom
@@ -1688,7 +1688,7 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline=
 
 // considers the line to be infinite
 // returns side 0 or 1, -1 if box crosses the line
-int P_BoxOnLineSide (const float *tmbox, const line_t *ld);
+int P_Box2DOnLineSide (const float tmbox2d[4], const line_t *ld);
 
 // used only in debug code
 bool P_GetMidTexturePosition (const line_t *line, int sideno, float *ptextop, float *ptexbot);

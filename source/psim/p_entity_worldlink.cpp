@@ -127,7 +127,7 @@ void VEntity::CreateSecNodeList () {
             continue;
           }
 
-          if (P_BoxOnLineSide(tmbbox, ld) != -1) continue;
+          if (P_Box2DOnLineSide(tmbbox, ld) != -1) continue;
 
           // this line crosses through the object
 

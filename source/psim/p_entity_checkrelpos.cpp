@@ -341,7 +341,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     return true;
   }
 
-  if (P_BoxOnLineSide(&tmtrace.BBox[0], ld) != -1) return true;
+  if (P_Box2DOnLineSide(&tmtrace.BBox[0], ld) != -1) return true;
 
   // a line has been hit
 
