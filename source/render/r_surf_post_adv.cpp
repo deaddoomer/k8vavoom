@@ -202,14 +202,25 @@ surface_t *VRenderLevelShadowVolume::FixSegTJunctions (surface_t *surf, seg_t *s
   for (int vidx = 0; vidx < 2; ++vidx) {
     // do not fix anything for seg vertex that doesn't touch line vertex
     // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
+    // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
     int lvidx;
     if (vidx == 0) {
+      /*
            if (seg->v1->x == line->v1->x && seg->v1->y == line->v1->y) lvidx = 0;
       else if (seg->v1->x == line->v2->x && seg->v1->y == line->v2->y) lvidx = 1;
       else continue;
+      */
+           if (seg->v1 == line->v1) lvidx = 0;
+      else if (seg->v1 == line->v2) lvidx = 1;
+      else continue;
     } else {
+      /*
            if (seg->v2->x == line->v1->x && seg->v2->y == line->v1->y) lvidx = 0;
       else if (seg->v2->x == line->v2->x && seg->v2->y == line->v2->y) lvidx = 1;
+      else continue;
+      */
+           if (seg->v2 == line->v1) lvidx = 0;
+      else if (seg->v2 == line->v2) lvidx = 1;
       else continue;
     }
 
