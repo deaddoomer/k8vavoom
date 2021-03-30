@@ -190,29 +190,88 @@ void VLevel::CreateFullLineSegs () {
   for (auto &&ld : allLines()) {
     side_t *fside = (ld.sidenum[0] >= 0 ? &Sides[ld.sidenum[0]] : nullptr);
     side_t *bside = (ld.sidenum[1] >= 0 ? &Sides[ld.sidenum[1]] : nullptr);
+
+    if (!ld.frontsector) fside = nullptr;
+    if (!ld.backsector) bside = nullptr;
+    if (!fside && !bside) continue;
+
+    // more checks
+    if (fside) {
+      if (!ld.frontsector || !ld.frontsector->subsectors || ld.frontsector->subsectors->sector != ld.frontsector) {
+        GCon->Logf(NAME_Warning, "invalid front side at line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+        fside = nullptr;
+      }
+    }
+
+    if (bside) {
+      if (!ld.backsector || !ld.backsector->subsectors || ld.backsector->subsectors->sector != ld.backsector) {
+        GCon->Logf(NAME_Warning, "invalid back side at line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+        bside = nullptr;
+      }
+    }
+
     if (!fside && !bside) continue;
 
     seg_t *fseg = nullptr;
     seg_t *bseg = nullptr;
+    // actually, we don't care about exact segment offset, any segment will do
     for (seg_t *seg = ld.firstseg; seg; seg = seg->lsnext) {
       //GCon->Logf(NAME_Debug, "line #%d, seg: size=%d; offset=%g", (int)(ptrdiff_t)(&ld-&Lines[0]), seg->side, seg->offset);
-      if (seg->offset == 0.0f) {
-        if (seg->side == 0) fseg = seg; else bseg = seg;
+      if (seg->side == 0) {
+        if (!fseg && seg->frontsub && seg->frontsub->sector == ld.frontsector) {
+          fseg = seg;
+          if (bseg) break;
+        }
+      } else {
+        if (!bseg && seg->frontsub && seg->frontsub->sector == ld.backsector) {
+          bseg = seg;
+          if (fseg) break;
+        }
       }
+    }
+
+    const bool nofseg = (fside && !fseg);
+    const bool nobseg = (bside && !bseg);
+    if (nofseg || nobseg) {
+      // it is ok to not have 'em
+      if (nofseg && nobseg) {
+        GCon->Logf(NAME_Warning, "cannot find starting front and back segs for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      } else if (nofseg) {
+        GCon->Logf(NAME_Warning, "cannot find starting front seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      } else {
+        vassert(nobseg);
+        GCon->Logf(NAME_Warning, "cannot find starting back seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      }
+      continue;
     }
 
     seg_t *newfseg = nullptr;
     seg_t *newbseg = nullptr;
 
     if (fside) {
-      if (!fseg) Sys_Error("cannot find starting front seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      vassert(fseg->sidedef == fside);
+      vassert(fseg->linedef == &ld);
+      vassert(fseg->frontsector == ld.frontsector);
+      vassert(fseg->backsector == ld.backsector);
+      vassert(fseg->frontsub);
+      if (fseg->frontsub->sector != ld.frontsector) {
+        GCon->Logf(NAME_Warning, "front seg for line #%d points to subsector #%d, and back to sector #%d instead of sector #%d",
+          (int)(ptrdiff_t)(&ld-&Lines[0]),
+          (fseg->frontsub ? (int)(ptrdiff_t)(fseg->frontsub-&Subsectors[0]) : -1),
+          (fseg->frontsub ? (int)(ptrdiff_t)(fseg->frontsub->sector-&Sectors[0]) : -1),
+          (ld.frontsector ? (int)(ptrdiff_t)(ld.frontsector-&Sectors[0]) : -1));
+      }
+      vassert(fseg->frontsub->sector == ld.frontsector);
+      vassert(fseg->side == 0);
+
       newfseg = &Segs[NumSegs++];
       fside->fullseg = newfseg;
       *newfseg = *fseg;
       newfseg->v1 = ld.v1;
       newfseg->v2 = ld.v2;
-      vassert(newfseg->sidedef == fside);
-      vassert(newfseg->linedef == &ld);
+      newfseg->drawsegs = nullptr;
+      newfseg->partner = nullptr;
+      //newfseg->frontsub = nullptr; // it doesn't belong to any subsector
       // link to list
       newfseg->lsnext = ld.firstseg;
       ld.firstseg = newfseg;
@@ -224,14 +283,29 @@ void VLevel::CreateFullLineSegs () {
     }
 
     if (bside) {
-      if (!bseg) Sys_Error("cannot find starting back seg for line #%d", (int)(ptrdiff_t)(&ld-&Lines[0]));
+      vassert(bseg->sidedef == bside);
+      vassert(bseg->linedef == &ld);
+      vassert(bseg->frontsector == ld.backsector);
+      vassert(bseg->backsector == ld.frontsector);
+      vassert(bseg->frontsub);
+      if (bseg->frontsub->sector != ld.backsector) {
+        GCon->Logf(NAME_Warning, "back seg for line #%d points to subsector #%d, and back to sector #%d instead of sector #%d",
+          (int)(ptrdiff_t)(&ld-&Lines[0]),
+          (bseg->frontsub ? (int)(ptrdiff_t)(bseg->frontsub-&Subsectors[0]) : -1),
+          (bseg->frontsub ? (int)(ptrdiff_t)(bseg->frontsub->sector-&Sectors[0]) : -1),
+          (ld.backsector ? (int)(ptrdiff_t)(ld.backsector-&Sectors[0]) : -1));
+      }
+      vassert(bseg->frontsub->sector == ld.backsector);
+      vassert(bseg->side == 1);
+
       newbseg = &Segs[NumSegs++];
       bside->fullseg = newbseg;
       *newbseg = *bseg;
       newbseg->v1 = ld.v2;
       newbseg->v2 = ld.v1;
-      vassert(newbseg->sidedef == bside);
-      vassert(newbseg->linedef == &ld);
+      newbseg->drawsegs = nullptr;
+      newbseg->partner = nullptr;
+      //newbseg->frontsub = nullptr; // it doesn't belong to any subsector
       // link to list
       newbseg->lsnext = ld.firstseg;
       ld.firstseg = newbseg;
