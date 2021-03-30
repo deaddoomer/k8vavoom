@@ -12,7 +12,6 @@ menudef ClipperOptions {
   header "Polyobject";
 
   option bool { title = "Clip with polyobj"; cvar = clip_with_polyobj; }
-  option bool { title = "Use new method"; cvar = clip_polyobj_new; }
 
   header "Other";
 

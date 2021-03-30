@@ -167,7 +167,6 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
   if (!ld) return; // miniseg
   ld->exFlags |= ML_EX_NON_TRANSLUCENT;
 
-  /*
   #if 1
   if (seg->drawsegs) {
     GCon->Logf(NAME_Error, "seg #%d (line #%d); pobj=%p; ofs=%g; subsector #%d (sector #%d): already has drawseg #%d",
@@ -175,13 +174,14 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
       (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]),
       (int)(ptrdiff_t)(seg->drawsegs-AllocatedDrawSegs));
   } else {
+    #if 0
     GCon->Logf(NAME_Debug, "seg #%d (line #%d); pobj=%p; ofs=%g; subsector #%d (sector #%d): allocated drawseg #%d",
       (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), seg->pobj, seg->offset,
       (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]),
       (int)(ptrdiff_t)(dseg-AllocatedDrawSegs));
+    #endif
   }
   #endif
-  */
 
   vassert(!seg->drawsegs);
   dseg->seg = seg;
@@ -242,6 +242,9 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
       for (sec_region_t *reg = seg->backsector->eregions->next; reg; reg = reg->next) {
         if (!reg->extraline) continue; // no need to create extra side
 
+        if (reg->extraline->frontside) reg->extraline->frontside->rendercount = renderedLineCounter;
+        if (reg->extraline->backside) reg->extraline->backside->rendercount = renderedLineCounter;
+
         // hack: 3d floor with sky texture seems to be transparent in renderer
         const side_t *sidedef = &Level->Sides[reg->extraline->sidenum[0]];
         if (sidedef->MidTexture == skyflatnum) continue;
@@ -290,7 +293,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   Level->ResetPObjRenderCounts(); // so we won't process polyobjects several times
 
   // count regions in all subsectors
-  GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
+  GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors+Level->NumLines);
   int srcount = 0;
   int dscount = 0;
   int spcount = 0;
@@ -359,6 +362,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   AllocatedSubRegions = sreg;
   AllocatedDrawSegs = pds;
   AllocatedSegParts = pspart;
+
+  nextRenderedLineCounter();
 
   // create sector surfaces
   for (auto &&it : Level->allSubsectorsIdx()) {
@@ -468,17 +473,20 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       --sregLeft;
     }
 
-    if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), Level->NumSubsectors);
+    if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), Level->NumSubsectors+Level->NumLines);
   }
 
   // create "fullsegs"
+  int lfscount = 0;
   for (auto &&ld : Level->allLines()) {
     for (unsigned f = 0; f < 2; ++f) {
       side_t *side = (f ? ld.backside : ld.frontside);
       if (!side || !side->fullseg) continue;
+      if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
 
       sector_t *fsec = (f ? ld.backsector : ld.frontsector);
       vassert(fsec);
+      if (fsec->linecount == 0) continue; // no need to create 'em
 
       subsector_t *sub = fsec->subsectors;
       vassert(sub);
@@ -494,6 +502,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
         ++pds;
       }
     }
+
+    if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), Level->NumSubsectors+Level->NumLines);
   }
 
   GCon->Log(NAME_Debug, "performing initial world update...");

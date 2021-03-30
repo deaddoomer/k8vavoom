@@ -181,6 +181,7 @@ void VLevel::CreateFullLineSegs () {
   for (auto &&sd : allSides()) {
     vassert(!sd.fullseg);
   }
+  return;
 
   for (auto &&ld : allLines()) {
     side_t *fside = (ld.sidenum[0] >= 0 ? &Sides[ld.sidenum[0]] : nullptr);

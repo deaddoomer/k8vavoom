@@ -774,6 +774,7 @@ load_again:
 
   cacheFileBase = cacheFileName;
 
+  #if 0
   for (auto &&ld : allLines()) {
     // setup side references
     vassert((ld.sidenum[0] < 0 && !ld.frontside) || (ld.sidenum[0] >= 0 && ld.frontside));
@@ -781,6 +782,7 @@ load_again:
     vassert(!ld.frontside || ld.frontside->fullseg);
     vassert(!ld.backside || ld.backside->fullseg);
   }
+  #endif
 
   eventAfterLevelLoaded();
 }
