@@ -237,6 +237,64 @@ struct surface_t {
     }
   }
 
+
+  // there should be enough room for vertex
+  inline void InsertVertexAt (int idx, subsector_t *ownsub, const TVec &p) noexcept {
+    if (idx < 0) idx = 0; else if (idx > count) idx = count;
+    if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
+    ++count;
+    SurfVertex *dv = &verts[idx];
+    memset((void *)dv, 0, sizeof(*dv)); // just in case
+    dv->x = p.x;
+    dv->y = p.y;
+    dv->z = p.z;
+    dv->ownersub = ownsub;
+  }
+
+  inline void RemoveVertexAt (int idx) noexcept {
+    if (idx >= 0 && idx < count) {
+      memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
+      --count;
+    }
+  }
+
+  void RemoveCentroid () noexcept {
+    if (isCentroidCreated()) {
+      vassert(count > 3);
+      vassert(verts[1].vec() == verts[count-1].vec());
+      resetCentroidCreated();
+      // `-2`, because we don't need the last point
+      memmove((void *)&verts[0], (void *)&verts[1], (count-2)*sizeof(verts[0]));
+      count -= 2;
+    }
+  }
+
+  // there should be enough room for two new points
+  // works only for floor and ceiling surfaces
+  void AddCentroidFlat () noexcept {
+    vassert(plane.normal.z != 0.0f);
+    if (count >= 3) {
+      TVec cp(0.0f, 0.0f, 0.0f);
+      const SurfVertex *sf = &verts[0];
+      for (int f = count; f--; ++sf) {
+        cp.x += sf->x;
+        cp.y += sf->y;
+      }
+      cp.x /= (float)count;
+      cp.y /= (float)count;
+      cp.z = plane.GetPointZ(cp);
+      InsertVertexAt(0, nullptr, cp);
+      setCentroidCreated();
+      // and re-add the previous first point as the final one
+      // (so the final triangle will be rendered too)
+      // this is not required for quad, but required for "real" triangle fan
+      // need to copy the point first, because we're passing a reference to it
+      cp = verts[1].vec();
+      InsertVertexAt(count, nullptr, cp);
+    }
+  }
+
+
   inline bool NeedRecalcStaticLightmap () const noexcept { return (drawflags&DF_CALC_LMAP); }
   inline bool IsMasked () const noexcept { return (drawflags&DF_MASKED); }
   inline bool IsTwoSided () const noexcept { return (drawflags&DF_NO_FACE_CULL); }

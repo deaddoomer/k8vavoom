@@ -49,8 +49,18 @@ void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t 
 //  axes are two lightmap axes
 //
 //==========================================================================
-surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane) {
-  // advanced renderer can draw whole surface
+surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
+  // always create centroid for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  vassert(!surf->next);
+
+  if (surf->count > 4 && !surf->isCentroidCreated()) {
+    // make room
+    surf = EnsureSurfacePoints(surf, surf->count+2, surf, nullptr);
+    // insert centroid
+    surf->AddCentroidFlat();
+  }
+
   return surf;
 }
 

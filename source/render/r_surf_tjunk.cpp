@@ -51,17 +51,6 @@ static inline bool BinHeapLess (float a, float b) noexcept {
 
 //==========================================================================
 //
-//  VRenderLevelShared::FixFaceTJunctions
-//
-//==========================================================================
-surface_t *VRenderLevelShared::FixFaceTJunctions (surface_t *surf) {
-  // not yet (and not that we really need it)
-  return surf;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::FixSegTJunctions
 //
 //  this is used to subdivide wall segments

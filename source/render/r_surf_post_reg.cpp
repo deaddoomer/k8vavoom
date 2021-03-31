@@ -429,26 +429,6 @@ static inline bool IsPointOnLine (const TVec &v0, const TVec &v1, const TVec &p)
 
 //==========================================================================
 //
-//  SurfInsertPointAt
-//
-//  there should be enough room for point
-//
-//==========================================================================
-static inline void SurfInsertPointAt (surface_t *surf, int idx, subsector_t *ownsub, const TVec &p) noexcept {
-  if (idx < surf->count) {
-    memmove((void *)(&surf->verts[idx+1]), (void *)(&surf->verts[idx]), (surf->count-idx)*sizeof(SurfVertex));
-  }
-  ++surf->count;
-  SurfVertex *dv = &surf->verts[idx];
-  memset((void *)dv, 0, sizeof(*dv)); // just in case
-  dv->x = p.x;
-  dv->y = p.y;
-  dv->z = p.z;
-}
-
-
-//==========================================================================
-//
 //  surfDrop
 //
 //==========================================================================
@@ -477,52 +457,6 @@ static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr
   int res = 0;
   while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
   return (surfs == curr ? res : -666);
-}
-
-
-//==========================================================================
-//
-//  surfRemoveCentroid
-//
-//  returns `true` if the centroid was removed
-//
-//==========================================================================
-static bool surfRemoveCentroid (surface_t *surf) {
-  if (!surf->isCentroidCreated()) return false;
-  vassert(surf->verts[1].vec() == surf->verts[surf->count-1].vec());
-  surf->resetCentroidCreated();
-  // `-2`, because we don't need the last point
-  memmove((void *)&surf->verts[0], (void *)&surf->verts[1], (surf->count-2)*sizeof(SurfVertex));
-  surf->count -= 2;
-  return true;
-}
-
-
-//==========================================================================
-//
-//  surfAddCentroid
-//
-//  there should be enough room for two new points
-//
-//==========================================================================
-static void surfAddCentroid (surface_t *surf) {
-  TVec cp(0.0f, 0.0f, 0.0f);
-  const SurfVertex *sf = &surf->verts[0];
-  for (int f = surf->count; f--; ++sf) {
-    cp.x += sf->x;
-    cp.y += sf->y;
-  }
-  cp.x /= (float)surf->count;
-  cp.y /= (float)surf->count;
-  cp.z = surf->plane.GetPointZ(cp);
-  SurfInsertPointAt(surf, 0, nullptr, cp);
-  surf->setCentroidCreated();
-  // and re-add the previous first point as the final one
-  // (so the final triangle will be rendered too)
-  // this is not required for quad, but required for "real" triangle fan
-  // need to copy the point first, because we're passing a reference to it
-  cp = surf->verts[1].vec();
-  SurfInsertPointAt(surf, surf->count, nullptr, cp);
 }
 
 
@@ -576,11 +510,11 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, subsector_t 
     surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
     // create centroid
     if (!surf->isCentroidCreated()) {
-      surfAddCentroid(surf);
+      surf->AddCentroidFlat();
       ++pn0;
     }
     // insert point
-    SurfInsertPointAt(surf, pn0+1, ownsub, p);
+    surf->InsertVertexAt(pn0+1, ownsub, p);
     // the point cannot be inserted into several lines,
     // so we're finished with this surface
     break;
@@ -645,7 +579,7 @@ static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, subsector_t *ownsu
 //  VRenderLevelLightmap::SubdivideFace
 //
 //==========================================================================
-surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane) {
+surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
   subsector_t *sub = surf->subsector;
   vassert(sub);
 
@@ -668,52 +602,69 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
     }
   }
 
-  // we'll re-add it later
-  const bool wasCentroid = surfRemoveCentroid(surf);
+  if (doSubdivisions) {
+    // we'll re-add it later
+    surf->RemoveCentroid();
 
-  surf = SubdivideFaceInternal(surf, axis, nextaxis, plane);
-  vassert(surf);
+    surf = SubdivideFaceInternal(surf, axis, nextaxis, plane);
+    vassert(surf);
 
-  if (!lastRenderQuality /*|| !surf->next*/) return surf; // no subdivisions --> nothing to do
-
-  // re-add centroids to all surfaces
-  // this is suboptimal, but meh... i'm ok with it for now
-  if (wasCentroid) {
-    surface_t *prev = nullptr;
-    for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
-      vassert(!ss->isCentroidCreated());
-      vassert(ss->count >= 3);
-      // make room
-      ss = EnsureSurfacePoints(ss, surf->count+2, surf, prev);
-      // add insert centroid
-      surfAddCentroid(ss);
-      vassert(ss->isCentroidCreated());
-    }
-  }
-
-  // fix splitted surfaces
-  // this is stupid brute-force approach, but i may do something with it later
-  if (surf->next) {
-    // surface to check
-    surface_t *prev = nullptr;
-    for (surface_t *sfcheck = surf; sfcheck; prev = sfcheck, sfcheck = sfcheck->next) {
-      #if 0
-      GCon->Logf(NAME_Debug, "==== FIXING SURFACE #%d : %p (%d) ===", surfIndex(surf, sfcheck), sfcheck, sfcheck->isCentroidCreated());
-      for (int pn0 = (int)sfcheck->isCentroidCreated(); pn0 < sfcheck->count-(int)sfcheck->isCentroidCreated(); ++pn0) {
-        GCon->Logf("  pt #%2d/%2d: (%g,%g,%g)", pn0, sfcheck->count, sfcheck->verts[pn0].x, sfcheck->verts[pn0].y, sfcheck->verts[pn0].z);
-      }
-      #endif
-      // check with other surfaces' points
-      for (surface_t *sfother = surf; sfother; sfother = sfother->next) {
-        if (sfcheck == sfother) continue;
-        for (int spn = (int)sfother->isCentroidCreated(); spn < sfother->count-(int)sfother->isCentroidCreated(); ++spn) {
-          #if 0
-          GCon->Logf(NAME_Debug, "  checker surface #%d : %p, point #%d: (%g,%g,%g)", surfIndex(surf, sfother), sfother, spn, sfother->verts[spn].x, sfother->verts[spn].y, sfother->verts[spn].z);
-          #endif
-          sfcheck = FlatSurfaceInsertPoint(this, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
+    // always create centroids for complex surfaces
+    // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+    {
+      surface_t *prev = nullptr;
+      for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
+        if (ss->count > 4 && !ss->isCentroidCreated()) {
+          // make room
+          ss = EnsureSurfacePoints(ss, surf->count+2, surf, prev);
+          // add insert centroid
+          ss->AddCentroidFlat();
         }
       }
     }
+
+    if (!lastRenderQuality /*|| !surf->next*/) return surf; // no subdivisions --> nothing to do
+
+    // fix splitted surfaces
+    // this is stupid brute-force approach, but i may do something with it later
+    if (surf->next) {
+      // surface to check
+      surface_t *prev = nullptr;
+      for (surface_t *sfcheck = surf; sfcheck; prev = sfcheck, sfcheck = sfcheck->next) {
+        #if 0
+        GCon->Logf(NAME_Debug, "==== FIXING SURFACE #%d : %p (%d) ===", surfIndex(surf, sfcheck), sfcheck, sfcheck->isCentroidCreated());
+        for (int pn0 = (int)sfcheck->isCentroidCreated(); pn0 < sfcheck->count-(int)sfcheck->isCentroidCreated(); ++pn0) {
+          GCon->Logf("  pt #%2d/%2d: (%g,%g,%g)", pn0, sfcheck->count, sfcheck->verts[pn0].x, sfcheck->verts[pn0].y, sfcheck->verts[pn0].z);
+        }
+        #endif
+        // check with other surfaces' points
+        for (surface_t *sfother = surf; sfother; sfother = sfother->next) {
+          if (sfcheck == sfother) continue;
+          for (int spn = (int)sfother->isCentroidCreated(); spn < sfother->count-(int)sfother->isCentroidCreated(); ++spn) {
+            #if 0
+            GCon->Logf(NAME_Debug, "  checker surface #%d : %p, point #%d: (%g,%g,%g)", surfIndex(surf, sfother), sfother, spn, sfother->verts[spn].x, sfother->verts[spn].y, sfother->verts[spn].z);
+            #endif
+            sfcheck = FlatSurfaceInsertPoint(this, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
+          }
+        }
+      }
+    }
+  } else {
+    // always create centroids for complex surfaces
+    // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+    {
+      surface_t *prev = nullptr;
+      for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
+        if (ss->count > 4 && !ss->isCentroidCreated()) {
+          // make room
+          ss = EnsureSurfacePoints(ss, surf->count+2, surf, prev);
+          // add insert centroid
+          ss->AddCentroidFlat();
+          vassert(ss->isCentroidCreated());
+        }
+      }
+    }
+    if (!lastRenderQuality) return surf;
   }
 
   // do not fix polyobjects, or invalid subsectors (yet)

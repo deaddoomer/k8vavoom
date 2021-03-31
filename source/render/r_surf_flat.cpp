@@ -225,11 +225,15 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
 
     if (isSkyFlat) {
       // don't subdivide sky, as it cannot have lightmap
-      ssurf->surfs = surf;
+      // but we still need to fix possible t-junctions
+      //ssurf->surfs = surf;
+      ssurf->surfs = SubdivideFace(surf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane, false);
+      vassert(!ssurf->surfs->next);
       surf->texinfo = &ssurf->texinfo;
+      surf->plane = plane;
     } else {
       //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
-      ssurf->surfs = SubdivideFace(FixFaceTJunctions(surf), ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane);
+      ssurf->surfs = SubdivideFace(surf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane);
       InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
     }
   } else if (updateZ) {

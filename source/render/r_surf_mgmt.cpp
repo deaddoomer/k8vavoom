@@ -121,7 +121,7 @@ surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount,
   const int newalloted = snew->alloted;
   vassert(newalloted >= vcount);
   // copy old surface data
-  memcpy((void *)snew, (void *)surf, sizeof(surf)+(surf->count > 1 ? (surf->count-1)*sizeof(SurfVertex) : 0));
+  memcpy((void *)snew, (void *)surf, surfsize);
   // fix new fields
   snew->allocflags = (snew->allocflags&surface_t::ALLOC_WORLD)|allocflags;
   snew->alloted = newalloted;
@@ -189,8 +189,7 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) noe
   vassert(vcount >= 0); // just in case
   surface_t *surf = surfs;
   if (surf) {
-    const int maxcount = (surf->isWorldAllocated() ? surface_t::MAXWVERTS : (surf->count|3)+1);
-    if (vcount > maxcount) {
+    if (vcount > surf->alloted) {
       FreeWSurfs(surf);
       return NewWSurf(vcount);
     }

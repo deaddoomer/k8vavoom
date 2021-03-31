@@ -54,7 +54,7 @@ struct SurfVertex {
   // it can be `nullptr` if this is the original point
   // (or added from the subsector that owns the surface)
   // used to remove points we don't need anymore before creating new ones
-  subsector_t *owner;
+  subsector_t *ownersub;
 
   inline SurfVertex () noexcept {}
   inline ~SurfVertex () noexcept {}
