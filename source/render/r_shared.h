@@ -224,6 +224,7 @@ struct surface_t {
 
   inline bool isCentroidCreated () const noexcept { return !!(allocflags&CENTROID_CREATED); }
   inline void setCentroidCreated () noexcept { allocflags |= CENTROID_CREATED; }
+  inline void resetCentroidCreated () noexcept { allocflags &= ~CENTROID_CREATED; }
 
   // used to fill subdivided surfaces
   inline void copyRequiredFrom (const surface_t &other) noexcept {

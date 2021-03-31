@@ -422,7 +422,7 @@ static inline bool IsPointOnLine (const TVec &v0, const TVec &v1, const TVec &p)
     const float intercept = v0.y-slope*v0.x; // which is same as (v1.y-slope*v1.x)
 
     const float spy = slope*p.x+intercept;
-    return (fabsf(spy-p.y) <= 0.0001f); // y position should match
+    return (fabsf(spy-p.y) <= 0.001f); // y position should match
   }
 }
 
@@ -476,6 +476,52 @@ static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr
   int res = 0;
   while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
   return (surfs == curr ? res : -666);
+}
+
+
+//==========================================================================
+//
+//  surfRemoveCentroid
+//
+//  returns `true` if the centroid was removed
+//
+//==========================================================================
+static bool surfRemoveCentroid (surface_t *surf) {
+  if (!surf->isCentroidCreated()) return false;
+  vassert(surf->verts[1].vec() == surf->verts[surf->count-1].vec());
+  surf->resetCentroidCreated();
+  // `-2`, because we don't need the last point
+  memmove((void *)&surf->verts[0], (void *)&surf->verts[1], (surf->count-2)*sizeof(SurfVertex));
+  surf->count -= 2;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  surfAddCentroid
+//
+//  there should be enough room for two new points
+//
+//==========================================================================
+static void surfAddCentroid (surface_t *surf) {
+  TVec cp(0.0f, 0.0f, 0.0f);
+  const SurfVertex *sf = &surf->verts[0];
+  for (int f = surf->count; f--; ++sf) {
+    cp.x += sf->x;
+    cp.y += sf->y;
+  }
+  cp.x /= (float)surf->count;
+  cp.y /= (float)surf->count;
+  cp.z = surf->plane.GetPointZ(cp);
+  SurfInsertPointAt(surf, 0, cp);
+  surf->setCentroidCreated();
+  // and re-add the previous first point as the final one
+  // (so the final triangle will be rendered too)
+  // this is not required for quad, but required for "real" triangle fan
+  // need to copy the point first, because we're passing a reference to it
+  cp = surf->verts[1].vec();
+  SurfInsertPointAt(surf, surf->count, cp);
 }
 
 
@@ -536,22 +582,7 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
     surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
     // create centroid
     if (!surf->isCentroidCreated()) {
-      TVec cp(0.0f, 0.0f, 0.0f);
-      for (int f = 0; f < surf->count; ++f) {
-        cp.x += surf->verts[f].x;
-        cp.y += surf->verts[f].y;
-      }
-      cp.x /= (float)surf->count;
-      cp.y /= (float)surf->count;
-      cp.z = surf->plane.GetPointZ(cp);
-      SurfInsertPointAt(surf, 0, cp);
-      surf->setCentroidCreated();
-      // and re-add the previous first point as the final one
-      // (so the final triangle will be rendered too)
-      // this is not required for quad, but required for "real" triangle fan
-      // need to copy the point first, because we're passing a reference to it
-      cp = surf->verts[1].vec();
-      SurfInsertPointAt(surf, surf->count, cp);
+      surfAddCentroid(surf);
       ++pn0;
     }
     // insert point
@@ -603,14 +634,58 @@ static inline void FixSecSurface (VRenderLevelShared *RLev, sec_surface_t *secsu
 //
 //==========================================================================
 surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane) {
+  subsector_t *sub = surf->subsector;
+  vassert(sub);
+
+  // add points from the adjacent subsectors to this one
+  if (lastRenderQuality) {
+    seg_t *seg = &Level->Segs[sub->firstline];
+    for (int f = sub->numlines; f--; ++seg) {
+      vassert(seg->frontsub == sub);
+      seg_t *partner = seg->partner;
+      if (!partner) continue; // one-sided seg
+      subsector_t *psub = partner->frontsub;
+      if (psub == sub) continue; // just in case
+      //if ((ptrdiff_t)(psub-&Level->Subsectors[0]) != 2) continue;
+      // check floor and ceiling
+      for (subregion_t *region = psub->regions; region; region = region->next) {
+        //FixSecSurface(this, region->realfloor, p);
+        for (surface_t *ss = region->realfloor->surfs; ss; ss = ss->next) {
+          for (int pn0 = (int)ss->isCentroidCreated(); pn0 < ss->count-(int)ss->isCentroidCreated(); ++pn0) {
+            surf = FlatSurfaceInsertPoint(this, surf, surf, nullptr, ss->verts[pn0].vec());
+          }
+        }
+        /*
+        FixSecSurface(this, region->realceil, p);
+        FixSecSurface(this, region->fakefloor, p);
+        FixSecSurface(this, region->fakeceil, p);
+        */
+      }
+    }
+  }
+
+  // we'll re-add it later
+  const bool wasCentroid = surfRemoveCentroid(surf);
+
   surf = SubdivideFaceInternal(surf, axis, nextaxis, plane);
   vassert(surf);
 
   if (!lastRenderQuality /*|| !surf->next*/) return surf; // no subdivisions --> nothing to do
 
-  // check adjacent subsectors
-  subsector_t *sub = surf->subsector;
-  vassert(sub);
+  // re-add centroids to all surfaces
+  // this is suboptimal, but meh... i'm ok with it for now
+  if (wasCentroid) {
+    surface_t *prev = nullptr;
+    for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
+      vassert(!ss->isCentroidCreated());
+      vassert(ss->count >= 3);
+      // make room
+      ss = EnsureSurfacePoints(ss, surf->count+2, surf, prev);
+      // add insert centroid
+      surfAddCentroid(ss);
+      vassert(ss->isCentroidCreated());
+    }
+  }
 
   // fix splitted surfaces
   // this is stupid brute-force approach, but i may do something with it later
@@ -638,9 +713,18 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
   }
 
   // do not fix polyobjects, or invalid subsectors (yet)
-  if (sub->isAnyPObj() || sub->numlines < 3) return surf;
+  if (sub->isAnyPObj() || sub->numlines < 1) return surf;
 
-  //if ((ptrdiff_t)(sub-&Level->Subsectors[0]) != 4) return surf;
+  /*
+  if ((ptrdiff_t)(sub-&Level->Subsectors[0]) != 2) return surf;
+  #if 1
+  //surf = surf->next;
+  surf->next = nullptr;
+  return surf;
+  #endif
+  */
+
+  // fix adjacent subsectors
   //GCon->Logf(NAME_Debug, "=== checking subdivided flats for source subsector #%d ===", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]));
   for (surface_t *ss = surf; ss; ss = ss->next) {
     for (int spn = (int)ss->isCentroidCreated(); spn < ss->count-(int)ss->isCentroidCreated(); ++spn) {
@@ -656,9 +740,11 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
         // check floor and ceiling
         for (subregion_t *region = psub->regions; region; region = region->next) {
           FixSecSurface(this, region->realfloor, p);
+          /*
           FixSecSurface(this, region->realceil, p);
           FixSecSurface(this, region->fakefloor, p);
           FixSecSurface(this, region->fakeceil, p);
+          */
         }
       }
     }
