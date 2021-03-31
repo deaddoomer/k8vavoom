@@ -950,6 +950,30 @@ private:
   }
 
 public:
+  inline void Create2DBox (float box2d[4]) const noexcept {
+    box2d[BOX2D_MAXY] = Origin.y+Radius;
+    box2d[BOX2D_MINY] = Origin.y-Radius;
+    box2d[BOX2D_MINX] = Origin.x-Radius;
+    box2d[BOX2D_MAXX] = Origin.x+Radius;
+  }
+
+  // doesn't check any line flags
+  inline bool LineIntersects (const line_t *ld) const noexcept {
+    if (ld && Radius > 0.0f) {
+      // this is the order of 2d box points
+      const float tmbbox[4] = {
+        Origin.y+Radius, // maxy
+        Origin.y-Radius, // miny
+        Origin.x-Radius, // minx
+        Origin.x+Radius, // maxx
+      };
+      return ld->Box2DHit(tmbbox);
+    } else {
+      return false;
+    }
+  }
+
+public:
   bool SetDecorateFlag (VStr, bool); // true: flag was found and set
   bool GetDecorateFlag (VStr);
 

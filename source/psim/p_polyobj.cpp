@@ -1647,31 +1647,16 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
         if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
         if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
 
-        float tmbbox[4];
-        tmbbox[BOX2D_TOP] = mobj->Origin.y+mobj->Radius;
-        tmbbox[BOX2D_BOTTOM] = mobj->Origin.y-mobj->Radius;
-        tmbbox[BOX2D_LEFT] = mobj->Origin.x-mobj->Radius;
-        tmbbox[BOX2D_RIGHT] = mobj->Origin.x+mobj->Radius;
-
-        if (tmbbox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
-            tmbbox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
-            tmbbox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
-            tmbbox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
-        {
-          continue;
-        }
-
         // check mobj height (pobj floor and ceiling shouldn't be sloped here)
         //FIXME: check height for 3dmitex pobj
         if (po->posector) {
           if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         }
 
-        //TODO: crush corpses!
-
         if (!mobj->IsBlockingLine(ld)) continue;
+        if (!mobj->LineIntersects(ld)) continue;
 
-        if (P_Box2DOnLineSide(tmbbox, ld) != -1) continue;
+        //TODO: crush corpses!
 
         //mobj->PolyObjIgnore = po;
         if (mobj->EntityFlags&VEntity::EF_Solid) {

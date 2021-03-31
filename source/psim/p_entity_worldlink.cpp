@@ -119,15 +119,7 @@ void VEntity::CreateSecNodeList () {
           // locates all the sectors the object is in by looking at the lines that cross through it.
           // you have already decided that the object is allowed at this location, so don't
           // bother with checking impassable or blocking lines.
-          if (tmbbox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
-              tmbbox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
-              tmbbox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
-              tmbbox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
-          {
-            continue;
-          }
-
-          if (P_Box2DOnLineSide(tmbbox, ld) != -1) continue;
+          if (!ld->Box2DHit(tmbbox)) continue;
 
           // this line crosses through the object
 

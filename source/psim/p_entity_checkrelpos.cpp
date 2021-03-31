@@ -332,16 +332,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   if (GGameInfo->NetMode == NM_Client) skipSpecials = true;
 
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "  trying line: %d", (int)(ptrdiff_t)(ld-&XLevel->Lines[0]));
-  // check line bounding box for early out
-  if (tmtrace.BBox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
-      tmtrace.BBox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
-      tmtrace.BBox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
-      tmtrace.BBox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
-  {
-    return true;
-  }
-
-  if (P_Box2DOnLineSide(&tmtrace.BBox[0], ld) != -1) return true;
+  if (!ld->Box2DHit(tmtrace.BBox)) return true; // no intersection
 
   // a line has been hit
 

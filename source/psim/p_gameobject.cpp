@@ -337,6 +337,41 @@ void seg_t::removeDecal (decal_t *dc) noexcept {
 
 //==========================================================================
 //
+//  line_t::Box2DSide
+//
+//  considers the line to be infinite
+//  returns side 0 or 1, -1 if box crosses the line
+//
+//==========================================================================
+int line_t::Box2DSide (const float tmbox[4]) const noexcept {
+  unsigned p1 = 0, p2 = 0;
+  switch (slopetype) {
+    case ST_HORIZONTAL:
+      p1 = (tmbox[BOX2D_TOP] > v1->y);
+      p2 = (tmbox[BOX2D_BOTTOM] > v1->y);
+      if (dir.x < 0.0f) { p1 ^= 1; p2 ^= 1; }
+      break;
+    case ST_VERTICAL:
+      p1 = (tmbox[BOX2D_RIGHT] < v1->x);
+      p2 = (tmbox[BOX2D_LEFT] < v1->x);
+      if (dir.y < 0.0f) { p1 ^= 1; p2 ^= 1; }
+      break;
+    case ST_POSITIVE:
+      p1 = PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_TOP], 0.0f));
+      p2 = PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_BOTTOM], 0.0f));
+      break;
+    case ST_NEGATIVE:
+      p1 = PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_TOP], 0.0f));
+      p2 = PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_BOTTOM], 0.0f));
+      break;
+  }
+  return (p1 == p2 ? (int)p1 : -1);
+}
+
+
+
+//==========================================================================
+//
 //  getFieldPtr
 //
 //==========================================================================

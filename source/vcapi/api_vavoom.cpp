@@ -307,14 +307,24 @@ IMPLEMENT_FREE_FUNCTION(VObject, R_CreateColorTranslation) {
 }
 
 
-// native static final int BoxOnLineSide2D (const TVec bmin, const TVec bmax, const ref GameObject::line_t line);
+// native static final int BoxOnLineSide2D (const ref GameObject::line_t line, const TVec bmin, const TVec bmax);
 IMPLEMENT_FREE_FUNCTION(VObject, BoxOnLineSide2D) {
-  P_GET_PTR(line_t, ld);
   P_GET_VEC(bmax);
   P_GET_VEC(bmin);
+  P_GET_PTR(line_t, ld);
   // 2d bbox points are in this strange order
   const float tmbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
-  RET_INT(P_Box2DOnLineSide(tmbox, ld));
+  RET_INT((ld ? ld->Box2DSide(tmbox) : 0));
+}
+
+// native static final bool BoxLineHit2D (const ref GameObject::line_t line, const TVec bmin, const TVec bmax);
+IMPLEMENT_FREE_FUNCTION(VObject, BoxLineHit2D) {
+  P_GET_VEC(bmax);
+  P_GET_VEC(bmin);
+  P_GET_PTR(line_t, ld);
+  // 2d bbox points are in this strange order
+  const float tmbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  RET_BOOL((ld ? ld->Box2DHit(tmbox) : false));
 }
 
 

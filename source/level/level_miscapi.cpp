@@ -89,43 +89,6 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
 }
 
 
-//==========================================================================
-//
-//  P_Box2DOnLineSide
-//
-//  considers the line to be infinite
-//  returns side 0 or 1, -1 if box crosses the line
-//
-//==========================================================================
-int P_Box2DOnLineSide (const float tmbox[4], const line_t *ld) {
-  int p1 = 0;
-  int p2 = 0;
-
-  switch (ld->slopetype) {
-    case ST_HORIZONTAL:
-      p1 = (tmbox[BOX2D_TOP] > ld->v1->y);
-      p2 = (tmbox[BOX2D_BOTTOM] > ld->v1->y);
-      if (ld->dir.x < 0.0f) { p1 ^= 1; p2 ^= 1; }
-      break;
-    case ST_VERTICAL:
-      p1 = (tmbox[BOX2D_RIGHT] < ld->v1->x);
-      p2 = (tmbox[BOX2D_LEFT] < ld->v1->x);
-      if (ld->dir.y < 0.0f) { p1 ^= 1; p2 ^= 1; }
-      break;
-    case ST_POSITIVE:
-      p1 = ld->PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_TOP], 0.0f));
-      p2 = ld->PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_BOTTOM], 0.0f));
-      break;
-    case ST_NEGATIVE:
-      p1 = ld->PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_TOP], 0.0f));
-      p2 = ld->PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_BOTTOM], 0.0f));
-      break;
-  }
-
-  return (p1 == p2 ? p1 : -1);
-}
-
-
 //============================================================================
 //
 //  P_GetMidTexturePosition

@@ -211,15 +211,7 @@ bool VEntity::CheckThing (tmtrace_t &cptrace, VEntity *Other) {
 //
 //==========================================================================
 bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
-  if (cptrace.BBox[BOX2D_RIGHT] <= ld->bbox2d[BOX2D_LEFT] ||
-      cptrace.BBox[BOX2D_LEFT] >= ld->bbox2d[BOX2D_RIGHT] ||
-      cptrace.BBox[BOX2D_TOP] <= ld->bbox2d[BOX2D_BOTTOM] ||
-      cptrace.BBox[BOX2D_BOTTOM] >= ld->bbox2d[BOX2D_TOP])
-  {
-    return true;
-  }
-
-  if (P_Box2DOnLineSide(&cptrace.BBox[0], ld) != -1) return true;
+  if (!ld->Box2DHit(cptrace.BBox)) return true; // no intersection
 
   // a line has been hit
   if (!ld->backsector) return false; // one sided line
@@ -371,12 +363,7 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
         if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
         if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
-        if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
-            tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
-            tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
-            tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
-            P_Box2DOnLineSide(tmbbox, line) == -1)
-        {
+        if (line->Box2DHit(tmbbox)) {
           // new logic for 3D Floors
           /*
           sec_region_t *FrontReg = SV_FindThingGap(line->frontsector, Origin, Height);
@@ -441,12 +428,7 @@ int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
         if (!line->frontsector || line->frontsector->isOriginalPObj()) continue;
         if (!line->backsector || line->frontsector == line->backsector) continue; // ignore one-sided linedefs and selfrefs
         // linedef must be contacted
-        if (tmbbox[BOX2D_RIGHT] > line->bbox2d[BOX2D_LEFT] &&
-            tmbbox[BOX2D_LEFT] < line->bbox2d[BOX2D_RIGHT] &&
-            tmbbox[BOX2D_TOP] > line->bbox2d[BOX2D_BOTTOM] &&
-            tmbbox[BOX2D_BOTTOM] < line->bbox2d[BOX2D_TOP] &&
-            P_Box2DOnLineSide(tmbbox, line) == -1)
-        {
+        if (line->Box2DHit(tmbbox)) {
           // new logic for 3D Floors
           /*
           sec_region_t *FrontReg = SV_FindThingGap(line->frontsector, Origin, Height);

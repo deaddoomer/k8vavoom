@@ -535,7 +535,8 @@ enum {
 // returns 0 - front, 1 - back, -1 - box crosses the line
 native static final int BoxOnLineSide2DV (const TVec bmin, const TVec bmax, const TVec v1, const TVec v2);
 #ifndef VCC_STANDALONE_EXECUTOR
-native static final int BoxOnLineSide2D (const TVec bmin, const TVec bmax, const ref GameObject::line_t line);
+native static final int BoxOnLineSide2D (const ref GameObject::line_t line, const TVec bmin, const TVec bmax);
+native static final bool BoxLineHit2D (const ref GameObject::line_t line, const TVec bmin, const TVec bmax);
 #endif
 // rotates a direction vector
 native static final TVec RotateDirectionVector (const TVec vec, const TAVec rot);

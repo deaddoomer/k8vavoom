@@ -517,6 +517,24 @@ struct line_t : public TPlane {
 
   vint32 cdPlanesCount;
   TPlane cdPlanesArray[6];
+
+  // considers the line to be infinite
+  // returns side 0 or 1, -1 if box crosses the line
+  int Box2DSide (const float tmbox[4]) const noexcept;
+
+  // returns `true` if the line hits the box
+  // line is finite
+  inline bool Box2DHit (const float tmbox[4]) const noexcept {
+    if (tmbox[BOX2D_RIGHT] <= bbox2d[BOX2D_LEFT] ||
+        tmbox[BOX2D_LEFT] >= bbox2d[BOX2D_RIGHT] ||
+        tmbox[BOX2D_TOP] <= bbox2d[BOX2D_BOTTOM] ||
+        tmbox[BOX2D_BOTTOM] >= bbox2d[BOX2D_TOP])
+    {
+      return false;
+    } else {
+      return (Box2DSide(tmbox) == -1);
+    }
+  }
 };
 
 
