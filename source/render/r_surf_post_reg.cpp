@@ -483,6 +483,9 @@ static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr
 //
 //  FlatSurfaceInsertPoint
 //
+//  do not use reference to `p` here!
+//  it may be a vector from some source that can be modified
+//
 //==========================================================================
 static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
   if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
@@ -515,24 +518,15 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
       p.x, p.y, p.z, (int)IsPointOnLine(v0, v1, p));
     #endif
     if (!IsPointOnLine(v0, v1, p)) continue;
-    // new point
-    //TVec np = pl.Project(p);
-    TVec np = p;
-    // check corners (no need to, it is already done for `p`)
-    //if ((v0-np).length2DSquared() < 1.0f || (v1-np).length2DSquared() < 1.0f) continue;
-    // check if it lies on the line (no need to, `p` should be already on line)
-    //if (!IsPointOnLine(v0, v1, np)) continue;
-    // new height
-    np.z = surf->plane.GetPointZ(np);
-    if (fabsf(np.z-p.z) > 0.001f) continue;
-    // no need to check, i believe
-    //if (fabsf(surf->PointDistance(np)) > 0.01f) continue;
+    // check height (just in case)
+    const float nz = surf->plane.GetPointZ(p);
+    if (fabsf(nz-p.z) > 0.001f) continue;
     #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; newpoint=(%g,%g,%g); orgpoint=(%g,%g,%g)",
+    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g)",
       sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
       v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
       surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      np.x, np.y, np.z, p.x, p.y, p.z);
+      p.x, p.y, p.z);
     #endif
     // insert a new point
     if (!prev && surf != surfhead) {
@@ -552,16 +546,19 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
       cp.z = surf->plane.GetPointZ(cp);
       SurfInsertPointAt(surf, 0, cp);
       surf->setCentroidCreated();
-      // and re-add final fist point as the final one
+      // and re-add the previous first point as the final one
+      // (so the final triangle will be rendered too)
+      // this is not required for quad, but required for "real" triangle fan
+      // need to copy the point first, because we're passing a reference to it
       cp = surf->verts[1].vec();
       SurfInsertPointAt(surf, surf->count, cp);
       ++pn0;
     }
     // insert point
-    SurfInsertPointAt(surf, pn0+1, np);
-    // nothing to do anymore in this surface
-    //break;
-    ++pn0;
+    SurfInsertPointAt(surf, pn0+1, p);
+    // the point cannot be inserted into several lines,
+    // so we're finished with this surface
+    break;
   }
 
   return surf;
@@ -572,8 +569,11 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
 //
 //  FlatSurfacesInsertPoint
 //
+//  do not pass surface vertices as `p`!
+//  it may be a vertex from some source that can be modified
+//
 //==========================================================================
-static surface_t *FlatSurfacesInsertPoint (VRenderLevelShared *RLev, surface_t *surfhead, const TVec p) {
+static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, surface_t *&surfhead, const TVec &p) {
   surface_t *surf = surfhead;
   surface_t *prev = nullptr;
   while (surf) {
@@ -581,7 +581,19 @@ static surface_t *FlatSurfacesInsertPoint (VRenderLevelShared *RLev, surface_t *
     prev = surf;
     surf = surf->next;
   }
-  return surfhead;
+}
+
+
+//==========================================================================
+//
+//  FixSecSurface
+//
+//  do not pass surface vertices as `p`!
+//  it may be a vertex from some source that can be modified
+//
+//==========================================================================
+static inline void FixSecSurface (VRenderLevelShared *RLev, sec_surface_t *secsurf, const TVec &p) {
+  if (secsurf && secsurf->surfs) FlatSurfacesInsertPoint(RLev, secsurf->surfs, p);
 }
 
 
@@ -601,6 +613,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
   vassert(sub);
 
   // fix splitted surfaces
+  // this is stupid brute-force approach, but i may do something with it later
   if (surf->next) {
     // surface to check
     surface_t *prev = nullptr;
@@ -611,7 +624,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
         GCon->Logf("  pt #%2d/%2d: (%g,%g,%g)", pn0, sfcheck->count, sfcheck->verts[pn0].x, sfcheck->verts[pn0].y, sfcheck->verts[pn0].z);
       }
       #endif
-      // check with other surface points
+      // check with other surfaces' points
       for (surface_t *sfother = surf; sfother; sfother = sfother->next) {
         if (sfcheck == sfother) continue;
         for (int spn = (int)sfother->isCentroidCreated(); spn < sfother->count-(int)sfother->isCentroidCreated(); ++spn) {
@@ -624,9 +637,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
     }
   }
 
-  //if ((ptrdiff_t)(sub-&Level->Subsectors[0]) == 2) surf = surfDrop(surf, 2);
-  //return surf;
-
+  // do not fix polyobjects, or invalid subsectors (yet)
   if (sub->isAnyPObj() || sub->numlines < 3) return surf;
 
   //if ((ptrdiff_t)(sub-&Level->Subsectors[0]) != 4) return surf;
@@ -644,22 +655,10 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
         //if ((ptrdiff_t)(psub-&Level->Subsectors[0]) != 2) continue;
         // check floor and ceiling
         for (subregion_t *region = psub->regions; region; region = region->next) {
-          if (region->realfloor && region->realfloor->surfs) {
-            //GCon->Logf(NAME_Debug, "checking floor surfaces for subsector #%d with point (%g,%g,%g)", (int)(ptrdiff_t)(psub-&Level->Subsectors[0]), p.x, p.y, p.z);
-            region->realfloor->surfs = FlatSurfacesInsertPoint(this, region->realfloor->surfs, p);
-          }
-          if (region->realceil && region->realceil->surfs) {
-            //GCon->Logf(NAME_Debug, "checking ceil surfaces for subsector #%d with point (%g,%g,%g)", (int)(ptrdiff_t)(psub-&Level->Subsectors[0]), p.x, p.y, p.z);
-            region->realceil->surfs = FlatSurfacesInsertPoint(this, region->realceil->surfs, p);
-          }
-          if (region->fakefloor && region->fakefloor->surfs) {
-            //GCon->Logf(NAME_Debug, "checking floor surfaces for subsector #%d with point (%g,%g,%g)", (int)(ptrdiff_t)(psub-&Level->Subsectors[0]), p.x, p.y, p.z);
-            region->fakefloor->surfs = FlatSurfacesInsertPoint(this, region->fakefloor->surfs, p);
-          }
-          if (region->fakeceil && region->fakeceil->surfs) {
-            //GCon->Logf(NAME_Debug, "checking ceil surfaces for subsector #%d with point (%g,%g,%g)", (int)(ptrdiff_t)(psub-&Level->Subsectors[0]), p.x, p.y, p.z);
-            region->fakeceil->surfs = FlatSurfacesInsertPoint(this, region->fakeceil->surfs, p);
-          }
+          FixSecSurface(this, region->realfloor, p);
+          FixSecSurface(this, region->realceil, p);
+          FixSecSurface(this, region->fakefloor, p);
+          FixSecSurface(this, region->fakeceil, p);
         }
       }
     }
