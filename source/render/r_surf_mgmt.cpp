@@ -88,11 +88,52 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
   surface_t *surf = free_wsurfs;
   free_wsurfs = surf->next;
 
-  memset((void *)surf, 0, WSURFSIZE);
+  memset((void *)surf, 0, /*WSURFSIZE*/sizeof(surface_t)-sizeof(SurfVertex)); // do not clear vertices, there is no reason to do it
   surf->allocflags = surface_t::ALLOC_WORLD;
 
   surf->count = vcount;
   return surf;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::EnsureSurfacePoints
+//
+//  can recreate surface; will copy all old surface data
+//  will reinsert it in surface list
+//
+//==========================================================================
+surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *&prev) noexcept {
+  const int maxcount = (surf->isWorldAllocated() ? surface_t::MAXWVERTS : (surf->count|3)+1);
+  if (vcount <= maxcount) return surf; // nothing to do
+  // need new surface
+  const unsigned allocflags = surf->allocflags&~surface_t::ALLOC_WORLD;
+  surface_t *snew = NewWSurf(vcount);
+  //GCon->Logf(NAME_Debug, "...reallocated surface %p, new is %p", surf, snew);
+  memcpy((void *)snew, (void *)surf, sizeof(surf)+(surf->count > 1 ? (surf->count-1)*sizeof(SurfVertex) : 0));
+  snew->allocflags = (snew->allocflags&surface_t::ALLOC_WORLD)|allocflags;
+  // reinsert into list
+  if (prev) {
+    vassert(prev->next == surf);
+    prev->next = snew;
+  } else {
+    vassert(listhead == surf);
+    listhead = snew;
+  }
+  // fix various caches
+  for (surfcache_t *sc = snew->CacheSurf; sc; sc = sc->chain) {
+    if (sc->surf == surf) sc->surf = snew;
+  }
+  // free old surface
+  if (surf->isWorldAllocated()) {
+    surf->next = free_wsurfs;
+    free_wsurfs = surf;
+  } else {
+    Z_Free(surf);
+  }
+  // done
+  return snew;
 }
 
 
@@ -131,7 +172,7 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) noe
   vassert(vcount >= 0); // just in case
   surface_t *surf = surfs;
   if (surf) {
-    const int maxcount = (surf->isWorldAllocated() ? surface_t::MAXWVERTS : surf->count);
+    const int maxcount = (surf->isWorldAllocated() ? surface_t::MAXWVERTS : (surf->count|3)+1);
     if (vcount > maxcount) {
       FreeWSurfs(surf);
       return NewWSurf(vcount);

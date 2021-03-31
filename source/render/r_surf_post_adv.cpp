@@ -49,7 +49,7 @@ void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t 
 //  axes are two lightmap axes
 //
 //==========================================================================
-surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis) {
+surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane) {
   // advanced renderer can draw whole surface
   return surf;
 }

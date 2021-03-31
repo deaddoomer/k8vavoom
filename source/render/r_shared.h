@@ -179,6 +179,11 @@ struct surface_t {
   enum {
     // allocation type; it prolly doesn't belong there, but meh
     ALLOC_WORLD = 1u<<0,
+    // used in lightmap t-junction fixing after subdivision
+    // set if this surface was already converted to centroid-based triangle fan
+    // in this case vertex 0 is a centroid
+    // also, last vertex is a duplicate of `verts[1]` (this is required for correct fan)
+    CENTROID_CREATED = 1u<<1,
   };
 
   surface_t *next;
@@ -216,6 +221,9 @@ struct surface_t {
 
 
   inline bool isWorldAllocated () const noexcept { return !!(allocflags&ALLOC_WORLD); }
+
+  inline bool isCentroidCreated () const noexcept { return !!(allocflags&CENTROID_CREATED); }
+  inline void setCentroidCreated () noexcept { allocflags |= CENTROID_CREATED; }
 
   // used to fill subdivided surfaces
   inline void copyRequiredFrom (const surface_t &other) noexcept {

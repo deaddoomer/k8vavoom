@@ -551,7 +551,7 @@ protected:
   surface_t *FixSegTJunctions (surface_t *surf, seg_t *seg);
 
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) = 0;
-  virtual surface_t *SubdivideFace (surface_t *InF, const TVec &axis, const TVec *nextaxis) = 0;
+  virtual surface_t *SubdivideFace (surface_t *InF, const TVec &axis, const TVec *nextaxis, const TPlane *plane) = 0;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
 
   virtual void QueueWorldSurface (surface_t *surf) = 0;
@@ -653,6 +653,8 @@ public:
   void SetupSky ();
 
 public:
+  inline VLevel *GetLevel () const noexcept { return Level; }
+
   void FlushSurfCaches (surface_t *InSurfs) noexcept;
 
   // `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
@@ -667,6 +669,9 @@ public:
   // frees *the* *whole* *surface* *chain*!
   void FreeWSurfs (surface_t *&InSurfs) noexcept;
   surface_t *ReallocSurface (surface_t *surfs, int vcount) noexcept;
+
+  // used to grow surface in lightmap t-junction fixer
+  surface_t *EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *&prev) noexcept;
 
 public:
   // can be called to recreate all world surfaces
