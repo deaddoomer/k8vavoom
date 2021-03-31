@@ -372,7 +372,8 @@ void VOpenGLDrawer::DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, 
 
   currentActiveShader->UploadChangedUniforms();
   if (surf->drawflags&surface_t::DF_NO_FACE_CULL) glDisable(GL_CULL_FACE);
-  glBegin(GL_POLYGON);
+  //glBegin(GL_POLYGON);
+  glBegin(GL_TRIANGLE_FAN);
     for (int i = 0; i < surf->count; ++i) glVertex(surf->verts[i].vec());
   glEnd();
   if (surf->drawflags&surface_t::DF_NO_FACE_CULL) glEnable(GL_CULL_FACE);
