@@ -162,6 +162,7 @@ set(RENDERBASE_SOURCES
   render/r_surf_1sided.cpp
   render/r_surf_2sided.cpp
   render/r_surf_2sextra.cpp
+  render/r_surf_tjunk.cpp
   render/r_surf_post_adv.cpp
   render/r_surf_post_reg.cpp
   render/r_utils_openings.cpp

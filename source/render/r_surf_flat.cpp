@@ -229,7 +229,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
       surf->texinfo = &ssurf->texinfo;
     } else {
       //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
-      ssurf->surfs = FixFaceTJunctions(SubdivideFace(surf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM));
+      ssurf->surfs = SubdivideFace(FixFaceTJunctions(surf), ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM);
       InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
     }
   } else if (updateZ) {
