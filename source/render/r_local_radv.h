@@ -142,7 +142,8 @@ protected:
   // we can collect surfaces for lighting and shadowing in one pass
   // don't forget to reset `shadowSurfaces` and `lightSurfaces`
   void CollectAdvLightSurfaces (surface_t *InSurfs, texinfo_t *texinfo,
-                                VEntity *SkyBox, bool CheckSkyBoxAlways, int SurfaceType, unsigned int ssflag, const bool distInFront);
+                                VEntity *SkyBox, bool CheckSkyBoxAlways, int SurfaceType,
+                                unsigned int ssflag, const bool distInFront);
   void CollectAdvLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, unsigned int ssflag);
   void CollectAdvLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, unsigned int ssflag, const bool paperThin=false);
   void CollectAdvLightPolyObj (subsector_t *sub, unsigned int ssflag);
