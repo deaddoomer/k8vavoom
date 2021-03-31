@@ -40,7 +40,9 @@ extern VCvarF r_lights_radius;
 
 // ////////////////////////////////////////////////////////////////////////// //
 // TVec is not packed too
-struct /*__attribute__((packed))*/ SurfVertex {
+// WARNING! make sure that our union is the same as TVec!
+// /*__attribute__((packed))*/
+struct SurfVertex {
   union {
     TVec v;
     struct {
@@ -48,6 +50,11 @@ struct /*__attribute__((packed))*/ SurfVertex {
     };
   };
   //float s, t; // nope, we don't need this; sky will be rendered with internal buffer
+  // `owner` will be set in lightmap t-junction fixer
+  // it can be `nullptr` if this is the original point
+  // (or added from the subsector that owns the surface)
+  // used to remove points we don't need anymore before creating new ones
+  subsector_t *owner;
 
   inline SurfVertex () noexcept {}
   inline ~SurfVertex () noexcept {}
@@ -58,7 +65,7 @@ struct /*__attribute__((packed))*/ SurfVertex {
   inline void setVec (const float ax, const float ay, const float az) noexcept { x = ax; y = ay; z = az; }
   inline void setVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; }
 };
-static_assert(sizeof(SurfVertex) == sizeof(float)*3, "invalid SurfVertex size");
+//static_assert(sizeof(SurfVertex) == sizeof(float)*3+sizeof(subsector_t *), "invalid SurfVertex size");
 
 
 // ////////////////////////////////////////////////////////////////////////// //

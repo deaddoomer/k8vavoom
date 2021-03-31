@@ -54,8 +54,8 @@ extern int light_mem;
 // ////////////////////////////////////////////////////////////////////////// //
 static float *spvPoolDots = nullptr;
 static int *spvPoolSides = nullptr;
-static TVec *spvPoolV1 = nullptr;
-static TVec *spvPoolV2 = nullptr;
+static SurfVertex *spvPoolV1 = nullptr;
+static SurfVertex *spvPoolV2 = nullptr;
 static int spvPoolSize = 0;
 
 
@@ -66,8 +66,8 @@ static inline void spvReserve (int size) {
     spvPoolSize = size;
     spvPoolDots = (float *)Z_Realloc(spvPoolDots, spvPoolSize*sizeof(spvPoolDots[0])); if (!spvPoolDots) Sys_Error("OOM!");
     spvPoolSides = (int *)Z_Realloc(spvPoolSides, spvPoolSize*sizeof(spvPoolSides[0])); if (!spvPoolSides) Sys_Error("OOM!");
-    spvPoolV1 = (TVec *)Z_Realloc(spvPoolV1, spvPoolSize*sizeof(spvPoolV1[0])); if (!spvPoolV1) Sys_Error("OOM!");
-    spvPoolV2 = (TVec *)Z_Realloc(spvPoolV2, spvPoolSize*sizeof(spvPoolV2[0])); if (!spvPoolV2) Sys_Error("OOM!");
+    spvPoolV1 = (SurfVertex *)Z_Realloc(spvPoolV1, spvPoolSize*sizeof(spvPoolV1[0])); if (!spvPoolV1) Sys_Error("OOM!");
+    spvPoolV2 = (SurfVertex *)Z_Realloc(spvPoolV2, spvPoolSize*sizeof(spvPoolV2[0])); if (!spvPoolV2) Sys_Error("OOM!");
   }
 }
 
@@ -218,7 +218,7 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
 // ////////////////////////////////////////////////////////////////////////// //
 struct SClipInfo {
   int vcount[2];
-  TVec *verts[2];
+  SurfVertex *verts[2];
 };
 
 
@@ -260,8 +260,8 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
 
   float *dots = spvPoolDots;
   int *sides = spvPoolSides;
-  TVec *verts1 = spvPoolV1;
-  TVec *verts2 = spvPoolV2;
+  SurfVertex *verts1 = spvPoolV1;
+  SurfVertex *verts2 = spvPoolV2;
 
   const SurfVertex *vt = surf->verts;
 
@@ -287,13 +287,13 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
   vt = surf->verts;
   for (int i = 0; i < surfcount; ++i) {
     if (sides[i] == PlaneCoplanar) {
-      clip.verts[0][clip.vcount[0]++] = vt[i].vec();
-      clip.verts[1][clip.vcount[1]++] = vt[i].vec();
+      clip.verts[0][clip.vcount[0]++] = vt[i];
+      clip.verts[1][clip.vcount[1]++] = vt[i];
       continue;
     }
 
     unsigned cvidx = (sides[i] == PlaneFront ? 0 : 1);
-    clip.verts[cvidx][clip.vcount[cvidx]++] = vt[i].vec();
+    clip.verts[cvidx][clip.vcount[cvidx]++] = vt[i];
 
     if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
 
@@ -309,8 +309,8 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
       else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
     }
 
-    clip.verts[0][clip.vcount[0]++] = mid;
-    clip.verts[1][clip.vcount[1]++] = mid;
+    clip.verts[0][clip.vcount[0]++].setVec(mid);
+    clip.verts[1][clip.vcount[1]++].setVec(mid);
   }
 
   return (clip.vcount[0] >= 3 && clip.vcount[1] >= 3);
@@ -434,12 +434,13 @@ static inline bool IsPointOnLine (const TVec &v0, const TVec &v1, const TVec &p)
 //  there should be enough room for point
 //
 //==========================================================================
-static inline void SurfInsertPointAt (surface_t *surf, int idx, const TVec &p) noexcept {
+static inline void SurfInsertPointAt (surface_t *surf, int idx, subsector_t *ownsub, const TVec &p) noexcept {
   if (idx < surf->count) {
     memmove((void *)(&surf->verts[idx+1]), (void *)(&surf->verts[idx]), (surf->count-idx)*sizeof(SurfVertex));
   }
   ++surf->count;
   SurfVertex *dv = &surf->verts[idx];
+  memset((void *)dv, 0, sizeof(*dv)); // just in case
   dv->x = p.x;
   dv->y = p.y;
   dv->z = p.z;
@@ -514,14 +515,14 @@ static void surfAddCentroid (surface_t *surf) {
   cp.x /= (float)surf->count;
   cp.y /= (float)surf->count;
   cp.z = surf->plane.GetPointZ(cp);
-  SurfInsertPointAt(surf, 0, cp);
+  SurfInsertPointAt(surf, 0, nullptr, cp);
   surf->setCentroidCreated();
   // and re-add the previous first point as the final one
   // (so the final triangle will be rendered too)
   // this is not required for quad, but required for "real" triangle fan
   // need to copy the point first, because we're passing a reference to it
   cp = surf->verts[1].vec();
-  SurfInsertPointAt(surf, surf->count, cp);
+  SurfInsertPointAt(surf, surf->count, nullptr, cp);
 }
 
 
@@ -533,7 +534,7 @@ static void surfAddCentroid (surface_t *surf) {
 //  it may be a vector from some source that can be modified
 //
 //==========================================================================
-static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
+static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, subsector_t *ownsub, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
   if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
   //surface_t *prev = nullptr;
   #if 0
@@ -547,13 +548,6 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
     TVec v0 = TVec(surf->verts[pn0].x, surf->verts[pn0].y);
     TVec v1 = TVec(surf->verts[pn1].x, surf->verts[pn1].y);
     if ((v1-v0).length2DSquared() < 1.0f) continue; // ignore, it is too small
-    /*
-    // create plane for checks
-    TPlane pl;
-    pl.Set2Points(v0, v1);
-    const float dist = pl.PointDistance(p);
-    if (fabsf(dist) > 0.01f) continue;
-    */
     // check corners
     if ((v0-p).length2DSquared() < 1.0f || (v1-p).length2DSquared() < 1.0f) continue;
     #if 0
@@ -586,7 +580,7 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
       ++pn0;
     }
     // insert point
-    SurfInsertPointAt(surf, pn0+1, p);
+    SurfInsertPointAt(surf, pn0+1, ownsub, p);
     // the point cannot be inserted into several lines,
     // so we're finished with this surface
     break;
@@ -604,11 +598,11 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, surface_t *s
 //  it may be a vertex from some source that can be modified
 //
 //==========================================================================
-static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, surface_t *&surfhead, const TVec &p) {
+static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, subsector_t *ownsub, surface_t *&surfhead, const TVec &p) {
   surface_t *surf = surfhead;
   surface_t *prev = nullptr;
   while (surf) {
-    surf = FlatSurfaceInsertPoint(RLev, surf, surfhead, prev, p);
+    surf = FlatSurfaceInsertPoint(RLev, ownsub, surf, surfhead, prev, p);
     prev = surf;
     surf = surf->next;
   }
@@ -623,8 +617,26 @@ static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, surface_t *&surfh
 //  it may be a vertex from some source that can be modified
 //
 //==========================================================================
-static inline void FixSecSurface (VRenderLevelShared *RLev, sec_surface_t *secsurf, const TVec &p) {
-  if (secsurf && secsurf->surfs) FlatSurfacesInsertPoint(RLev, secsurf->surfs, p);
+static inline void FixSecSurface (VRenderLevelShared *RLev, subsector_t *ownsub, sec_surface_t *secsurf, const TVec &p) {
+  if (secsurf && secsurf->surfs) FlatSurfacesInsertPoint(RLev, ownsub, secsurf->surfs, p);
+}
+
+
+//==========================================================================
+//
+//  FixOwnSecSurface
+//
+//  fixes one surface
+//  must be called before subdivisions
+//
+//==========================================================================
+static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, subsector_t *ownsub, surface_t *surf, sec_surface_t *secsfc) {
+  for (const surface_t *srcsurf = (secsfc ? secsfc->surfs : nullptr); srcsurf; srcsurf = srcsurf->next) {
+    for (int pn0 = (int)srcsurf->isCentroidCreated(); pn0 < srcsurf->count-(int)srcsurf->isCentroidCreated(); ++pn0) {
+      surf = FlatSurfaceInsertPoint(RLev, ownsub, surf, surf, nullptr, srcsurf->verts[pn0].vec());
+    }
+  }
+  return surf;
 }
 
 
@@ -646,20 +658,12 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
       if (!partner) continue; // one-sided seg
       subsector_t *psub = partner->frontsub;
       if (psub == sub) continue; // just in case
-      //if ((ptrdiff_t)(psub-&Level->Subsectors[0]) != 2) continue;
       // check floor and ceiling
       for (subregion_t *region = psub->regions; region; region = region->next) {
-        //FixSecSurface(this, region->realfloor, p);
-        for (surface_t *ss = region->realfloor->surfs; ss; ss = ss->next) {
-          for (int pn0 = (int)ss->isCentroidCreated(); pn0 < ss->count-(int)ss->isCentroidCreated(); ++pn0) {
-            surf = FlatSurfaceInsertPoint(this, surf, surf, nullptr, ss->verts[pn0].vec());
-          }
-        }
-        /*
-        FixSecSurface(this, region->realceil, p);
-        FixSecSurface(this, region->fakefloor, p);
-        FixSecSurface(this, region->fakeceil, p);
-        */
+        surf = FixOwnSecSurface(this, psub, surf, region->realfloor);
+        surf = FixOwnSecSurface(this, psub, surf, region->realceil);
+        surf = FixOwnSecSurface(this, psub, surf, region->fakefloor);
+        surf = FixOwnSecSurface(this, psub, surf, region->fakeceil);
       }
     }
   }
@@ -706,7 +710,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
           #if 0
           GCon->Logf(NAME_Debug, "  checker surface #%d : %p, point #%d: (%g,%g,%g)", surfIndex(surf, sfother), sfother, spn, sfother->verts[spn].x, sfother->verts[spn].y, sfother->verts[spn].z);
           #endif
-          sfcheck = FlatSurfaceInsertPoint(this, sfcheck, surf, prev, sfother->verts[spn].vec());
+          sfcheck = FlatSurfaceInsertPoint(this, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
         }
       }
     }
@@ -739,12 +743,10 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
         //if ((ptrdiff_t)(psub-&Level->Subsectors[0]) != 2) continue;
         // check floor and ceiling
         for (subregion_t *region = psub->regions; region; region = region->next) {
-          FixSecSurface(this, region->realfloor, p);
-          /*
-          FixSecSurface(this, region->realceil, p);
-          FixSecSurface(this, region->fakefloor, p);
-          FixSecSurface(this, region->fakeceil, p);
-          */
+          FixSecSurface(this, sub, region->realfloor, p);
+          FixSecSurface(this, sub, region->realceil, p);
+          FixSecSurface(this, sub, region->fakefloor, p);
+          FixSecSurface(this, sub, region->fakeceil, p);
         }
       }
     }

@@ -216,7 +216,8 @@ struct surface_t {
   int shaderClass; // used in renderers
   int firstIndex; // address in VBO buffer; only used in world rendering
   GlowParams gp; // used in renderer to cache glow info
-  int count; // number of vertices
+  int alloted; // number of allocated vertices (valid even for world surfaces)
+  int count; // number of used vertices
   SurfVertex verts[1]; // dynamic array of vertices
 
 

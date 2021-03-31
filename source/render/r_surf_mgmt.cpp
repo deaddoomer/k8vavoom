@@ -67,13 +67,17 @@ static inline void AppendSurfaces (segpart_t *sp, surface_t *newsurfs) noexcept 
 surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
   vassert(vcount >= 0);
   enum { WSURFSIZE = sizeof(surface_t)+sizeof(SurfVertex)*(surface_t::MAXWVERTS-1) };
+
+  // do we need to dynamically allocate a surface?
   if (vcount > surface_t::MAXWVERTS) {
-    const int vcnt = (vcount|3)+1;
+    const int vcnt = (vcount|0x0f)+1;
     surface_t *res = (surface_t *)Z_Calloc(sizeof(surface_t)+(vcnt-1)*sizeof(SurfVertex));
+    res->alloted = vcnt;
     res->count = vcount;
     return res;
   }
-  // fits into "standard" surface
+
+  // fits into "standard" world surface
   if (!free_wsurfs) {
     // allocate some more surfs
     vuint8 *tmp = (vuint8 *)Z_Calloc(WSURFSIZE*4096+sizeof(void *));
@@ -85,12 +89,14 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
       free_wsurfs = (surface_t *)tmp;
     }
   }
+
   surface_t *surf = free_wsurfs;
   free_wsurfs = surf->next;
 
-  memset((void *)surf, 0, /*WSURFSIZE*/sizeof(surface_t)-sizeof(SurfVertex)); // do not clear vertices, there is no reason to do it
+  memset((void *)surf, 0, WSURFSIZE);
   surf->allocflags = surface_t::ALLOC_WORLD;
 
+  surf->alloted = surface_t::MAXWVERTS;
   surf->count = vcount;
   return surf;
 }
@@ -100,20 +106,31 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
 //
 //  VRenderLevelShared::EnsureSurfacePoints
 //
-//  can recreate surface; will copy all old surface data
-//  will reinsert it in surface list
+//  used to grow surface in lightmap t-junction fixer
+//  returns new surface, and may modify `listhead` (and `pref->next`)
+//  if `prev` is `nullptr`, will try to find the proper `prev`
+//  vertex counter is not changed
 //
 //==========================================================================
-surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *&prev) noexcept {
-  const int maxcount = (surf->isWorldAllocated() ? surface_t::MAXWVERTS : (surf->count|3)+1);
-  if (vcount <= maxcount) return surf; // nothing to do
+surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept {
+  if (vcount <= surf->alloted) return surf; // nothing to do
   // need new surface
   const unsigned allocflags = surf->allocflags&~surface_t::ALLOC_WORLD;
+  const size_t surfsize = sizeof(surf)+(surf->count > 1 ? (surf->count-1)*sizeof(SurfVertex) : 0);
   surface_t *snew = NewWSurf(vcount);
-  //GCon->Logf(NAME_Debug, "...reallocated surface %p, new is %p", surf, snew);
+  const int newalloted = snew->alloted;
+  vassert(newalloted >= vcount);
+  // copy old surface data
   memcpy((void *)snew, (void *)surf, sizeof(surf)+(surf->count > 1 ? (surf->count-1)*sizeof(SurfVertex) : 0));
+  // fix new fields
   snew->allocflags = (snew->allocflags&surface_t::ALLOC_WORLD)|allocflags;
-  // reinsert into list
+  snew->alloted = newalloted;
+  // fix `prev` if necessary
+  if (!prev && surf != listhead) {
+    prev = listhead;
+    while (prev->next != surf) prev = prev->next;
+  }
+  // reinsert into surface list
   if (prev) {
     vassert(prev->next == surf);
     prev->next = snew;

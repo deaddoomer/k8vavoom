@@ -671,7 +671,10 @@ public:
   surface_t *ReallocSurface (surface_t *surfs, int vcount) noexcept;
 
   // used to grow surface in lightmap t-junction fixer
-  surface_t *EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *&prev) noexcept;
+  // returns new surface, and may modify `listhead` (and `pref->next`)
+  // if `prev` is `nullptr`, will try to find the proper `prev`
+  // vertex counter is not changed
+  surface_t *EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept;
 
 public:
   // can be called to recreate all world surfaces
