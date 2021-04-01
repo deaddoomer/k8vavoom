@@ -397,6 +397,9 @@ REGISTER_NAME(MiAStarNodeBase)
 
 REGISTER_NAME(EntityGridBase)
 
+REGISTER_NAME(Level_K8BDW)
+REGISTER_NAME(Level_K8Gore)
+
 REGISTER_NAME_EX(Minus_Sign, "-")
 
 
