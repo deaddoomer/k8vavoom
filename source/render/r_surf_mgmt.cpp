@@ -26,6 +26,8 @@
 #include "../gamedefs.h"
 #include "r_local.h"
 
+//#define VV_ENSURE_POINTS_DEBUG
+
 
 //**************************************************************************
 //**
@@ -114,17 +116,38 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
 //==========================================================================
 surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept {
   if (vcount <= surf->alloted) return surf; // nothing to do
+  #ifdef VV_ENSURE_POINTS_DEBUG
+  if (surf->isCentroidCreated()) {
+    vassert(surf->verts[1].vec() == surf->verts[surf->count-1].vec());
+  }
   // need new surface
-  const unsigned allocflags = surf->allocflags&~surface_t::ALLOC_WORLD;
-  const size_t surfsize = sizeof(surf)+(surf->count > 1 ? (surf->count-1)*sizeof(SurfVertex) : 0);
+  GCon->Logf(NAME_Debug, "allocating new surface; old count=%d; old alloted=%d; new count=%d; oldflags=0x%04x", surf->count, surf->alloted, vcount, surf->allocflags);
+  #endif
+  const size_t surfsize = sizeof(*surf)-sizeof(surf->verts[0])+surf->count*sizeof(surf->verts[0]);
   surface_t *snew = NewWSurf(vcount);
+  if (vcount > surface_t::MAXWVERTS) {
+    vassert(!snew->isWorldAllocated());
+  } else {
+    vassert(snew->isWorldAllocated());
+  }
+  const bool iswalloc = snew->isWorldAllocated();
   const int newalloted = snew->alloted;
   vassert(newalloted >= vcount);
   // copy old surface data
   memcpy((void *)snew, (void *)surf, surfsize);
   // fix new fields
-  snew->allocflags = (snew->allocflags&surface_t::ALLOC_WORLD)|allocflags;
+  #ifdef VV_ENSURE_POINTS_DEBUG
+  GCon->Logf(NAME_Debug, "allocated new surface; old count=%d; old alloted=%d; new count=%d; new alloted=%d; newflags=0x%04x", surf->count, surf->alloted, snew->count, snew->alloted, snew->allocflags);
+  #endif
+  if (iswalloc) {
+    snew->allocflags |= surface_t::ALLOC_WORLD;
+  } else {
+    snew->allocflags &= ~surface_t::ALLOC_WORLD;
+  }
   snew->alloted = newalloted;
+  #ifdef VV_ENSURE_POINTS_DEBUG
+  GCon->Logf(NAME_Debug, "allocated new surface; old count=%d; old alloted=%d; new count=%d; new alloted=%d; newflags=0x%04x", surf->count, surf->alloted, snew->count, snew->alloted, snew->allocflags);
+  #endif
   // fix `prev` if necessary
   if (!prev && surf != listhead) {
     prev = listhead;
@@ -150,6 +173,11 @@ surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount,
     Z_Free(surf);
   }
   // done
+  #ifdef VV_ENSURE_POINTS_DEBUG
+  if (snew->isCentroidCreated()) {
+    vassert(snew->verts[1].vec() == snew->verts[snew->count-1].vec());
+  }
+  #endif
   return snew;
 }
 
