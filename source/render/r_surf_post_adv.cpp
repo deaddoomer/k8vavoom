@@ -83,6 +83,16 @@ surface_t *VRenderLevelShadowVolume::SubdivideSeg (surface_t *surf, const TVec &
 
 //==========================================================================
 //
+//  VRenderLevelShadowVolume::FixSegSurfaceTJunctions
+//
+//==========================================================================
+surface_t *VRenderLevelShadowVolume::FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) {
+  return surf;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShadowVolume::PreRender
 //
 //==========================================================================

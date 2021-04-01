@@ -548,8 +548,11 @@ protected:
   // returns attenuation multiplier (0 means "out of cone")
   static float CheckLightPointCone (VEntity *lowner, const TVec &p, const float radius, const float height, const TVec &coneOrigin, const TVec &coneDir, const float coneAngle);
 
-  // base fixers, need not to be virtual
+  // base fixer, need not to be virtual
   surface_t *FixSegTJunctions (surface_t *surf, seg_t *seg);
+
+  // surface fixer for lightmaps
+  virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) = 0;
 
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) = 0;
   virtual surface_t *SubdivideFace (surface_t *InF, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;

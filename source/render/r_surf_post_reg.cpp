@@ -809,3 +809,13 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
 surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis, const TVec *nextaxis, seg_t *seg) {
   return SubdivideSegInternal(surf, axis, nextaxis, seg);
 }
+
+
+//==========================================================================
+//
+//  VRenderLevelLightmap::FixSegSurfaceTJunctions
+//
+//==========================================================================
+surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) {
+  return surf;
+}
