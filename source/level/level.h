@@ -1092,26 +1092,11 @@ public:
     vint32 *List;
     line_t *Line;
 
+  private:
+    void advance () noexcept;
+
   public:
-    inline VAllBlockLines (const VLevel *ALevel, int x, int y, unsigned pobjMode) noexcept
-      : Level(ALevel)
-      , PolyLink(nullptr)
-      , PolySegIdx(0)
-      , List(nullptr)
-      , Line(nullptr)
-    {
-      if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
-
-      int offset = y*Level->BlockMapWidth+x;
-      if (pobjMode&BLINES_POBJ) PolyLink = Level->PolyBlockMap[offset];
-
-      if (pobjMode&BLINES_LINES) {
-        offset = *(Level->BlockMap+offset);
-        List = Level->BlockMapLump+offset+1;
-      }
-
-      advance(); // advance to the first item
-    }
+    VAllBlockLines (const VLevel *ALevel, int x, int y, unsigned pobjMode) noexcept;
 
     inline VAllBlockLines (const VAllBlockLines &src, bool asEnd) noexcept {
       Level = src.Level;
@@ -1128,44 +1113,6 @@ public:
       }
     }
 
-    inline void advance () noexcept {
-      // check polyobj blockmap
-      while (PolyLink) {
-        polyobj_t *po = PolyLink->polyobj;
-        if (po) {
-          while (PolySegIdx < po->numlines) {
-            line_t *linedef = po->lines[PolySegIdx++];
-            if (linedef->validcount == validcount) continue;
-            linedef->validcount = validcount;
-            Line = linedef;
-            return;
-          }
-        }
-        PolySegIdx = 0;
-        PolyLink = PolyLink->next;
-      }
-
-      if (List) {
-        while (*List != -1) {
-          #ifdef PARANOID
-          if (*List < 0 || *List >= Level->NumLines) Host_Error("Broken blockmap - line %d", *List);
-          #endif
-          line_t *linedef = &Level->Lines[*List];
-          ++List;
-          if (linedef->validcount == validcount) continue; // line has already been checked
-          linedef->validcount = validcount;
-          Line = linedef;
-          return;
-        }
-      }
-
-      // just in case
-      PolyLink = nullptr;
-      PolySegIdx = 0;
-      List = nullptr;
-      Line = nullptr;
-    }
-
     inline bool operator == (const VAllBlockLines &b) const noexcept { return (Level == b.Level && PolyLink == b.PolyLink && PolySegIdx == b.PolySegIdx && List == b.List && Line == b.Line); } /* required for iterator */
     inline bool operator != (const VAllBlockLines &b) const noexcept { return !(*this == b); }
     inline VAllBlockLines operator * () const noexcept { return VAllBlockLines(*this, false); } /* required for iterator */
@@ -1173,7 +1120,7 @@ public:
     inline VAllBlockLines begin () noexcept { return VAllBlockLines(*this, false); } /* required for iterator */
     inline VAllBlockLines end () noexcept { return VAllBlockLines(*this, true); } /* required for iterator */
 
-    inline line_t *line () const noexcept { return Line; }
+    inline VVA_CHECKRESULT line_t *line () const noexcept { return Line; }
   };
 
   // The validcount flags are used to avoid checking lines that are marked in

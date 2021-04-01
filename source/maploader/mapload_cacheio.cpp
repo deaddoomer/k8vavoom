@@ -27,7 +27,7 @@
 
 
 static int constexpr cestlen (const char *s, int pos=0) noexcept { return (s && s[pos] ? 1+cestlen(s, pos+1) : 0); }
-static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 010.\n";
+static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 011.\n";
 enum { CDSLEN = cestlen(CACHE_DATA_SIGNATURE) };
 static_assert(CDSLEN == 32, "oops!");
 

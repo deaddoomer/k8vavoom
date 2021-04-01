@@ -73,39 +73,30 @@ void VLevel::CreateBlockMap () {
   int MaxX = ceilf(MaxXflt);
   int MaxY = ceilf(MaxYflt);
 
-  int Width = MapBlock(MaxX-MinX)+1;
-  int Height = MapBlock(MaxY-MinY)+1;
+  const int Width = MapBlock(MaxX-MinX)+1;
+  const int Height = MapBlock(MaxY-MinY)+1;
 
   GCon->Logf("blockmap size: %dx%d (%d,%d)-(%d,%d)", Width, Height, MinX, MinY, MaxX, MaxY);
 
   // add all lines to their corresponding blocks
   // but skip zero-length lines
   TArray<int> *BlockLines = new TArray<int>[Width*Height];
-  for (int i = 0; i < NumLines; ++i) {
+  for (auto &&line : allLines()) {
+    // ignore very short lines
+    // this may be not right, because technically "dots" should still block the movement, but meh
+    if (((*line.v2)-(*line.v1)).length2DSquared() < 1.0f) continue; // too short, ignore it
+
     // determine starting and ending blocks
-    const line_t &line = Lines[i];
-
-    const TVec ldir = (*line.v2)-(*line.v1);
-    double ssq = ldir.x*ldir.x+ldir.y*ldir.y;
-    if (ssq < 1.0f) continue;
-    ssq = sqrt(ssq);
-    if (ssq < 1.0f) continue;
-
     int X1 = MapBlock(line.v1->x-MinX);
     int Y1 = MapBlock(line.v1->y-MinY);
     int X2 = MapBlock(line.v2->x-MinX);
     int Y2 = MapBlock(line.v2->y-MinY);
 
-    if (X1 > X2) {
-      int Tmp = X2;
-      X2 = X1;
-      X1 = Tmp;
-    }
-    if (Y1 > Y2) {
-      int Tmp = Y2;
-      Y2 = Y1;
-      Y1 = Tmp;
-    }
+    if (X1 > X2) { int tmp = X2; X2 = X1; X1 = tmp; }
+    if (Y1 > Y2) { int tmp = Y2; Y2 = Y1; Y1 = tmp; }
+
+    // line index
+    const int i = (int)(ptrdiff_t)(&line-&Lines[0]);
 
     if (X1 == X2 && Y1 == Y2) {
       // line is inside a single block
@@ -124,7 +115,7 @@ void VLevel::CreateBlockMap () {
       // diagonal line
       for (int x = X1; x <= X2; ++x) {
         for (int y = Y1; y <= Y2; ++y) {
-          // check if line crosses the block
+          // check if the line crosses the block
           if (line.slopetype == ST_POSITIVE) {
             int p1 = line.PointOnSide(TVec(MinX+x*128, MinY+(y+1)*128, 0));
             int p2 = line.PointOnSide(TVec(MinX+(x+1)*128, MinY+y*128, 0));
@@ -141,30 +132,35 @@ void VLevel::CreateBlockMap () {
   }
 
   // build blockmap lump
+  // k8vavoom extension:
+  //   for each cell, we will store the center point subsector
+  //   this is stored after offsets table
+  //   it will be filled later
+  const int tableSize = Width*Height;
   TArray<vint32> BMap;
-  BMap.SetNum(4+Width*Height);
+  BMap.setLength(4+tableSize*2); // info, offsets table, subsectors table
+  memset(BMap.ptr(), 0, sizeof(vint32)*BMap.length()); // just in case
+  // create header
   BMap[0] = (int)MinX;
   BMap[1] = (int)MinY;
   BMap[2] = Width;
   BMap[3] = Height;
-  for (int i = 0; i < Width*Height; ++i) {
+  for (int i = 0; i < tableSize; ++i) {
     // write offset
-    BMap[i+4] = BMap.Num();
+    BMap[i+4] = BMap.length();
     TArray<int> &Block = BlockLines[i];
     // add dummy start marker
     BMap.Append(0);
     // add lines in this block
-    for (int j = 0; j < Block.Num(); ++j) {
-      BMap.Append(Block[j]);
-    }
+    for (auto &&val : Block) BMap.Append(val);
     // add terminator marker
     BMap.Append(-1);
   }
 
   // copy data
-  BlockMapLump = new vint32[BMap.Num()+1];
-  BlockMapLumpSize = BMap.Num();
-  if (BMap.Num()) memcpy(BlockMapLump, BMap.Ptr(), BMap.Num()*sizeof(vint32));
+  BlockMapLump = new vint32[BMap.length()];
+  BlockMapLumpSize = BMap.length();
+  memcpy(BlockMapLump, BMap.ptr(), BMap.length()*sizeof(vint32));
 
   delete[] BlockLines;
 }

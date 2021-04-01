@@ -75,6 +75,78 @@ VLevelScriptThinker::~VLevelScriptThinker () {
 }
 
 
+
+//==========================================================================
+//
+//  VLevel::VAllBlockLines::VAllBlockLines
+//
+//==========================================================================
+VLevel::VAllBlockLines::VAllBlockLines (const VLevel *ALevel, int x, int y, unsigned pobjMode) noexcept
+  : Level(ALevel)
+  , PolyLink(nullptr)
+  , PolySegIdx(0)
+  , List(nullptr)
+  , Line(nullptr)
+{
+  if (x < 0 || x >= Level->BlockMapWidth || y < 0 || y >= Level->BlockMapHeight) return; // off the map
+
+  int offset = y*Level->BlockMapWidth+x;
+  if (pobjMode&BLINES_POBJ) PolyLink = Level->PolyBlockMap[offset];
+
+  if (pobjMode&BLINES_LINES) {
+    offset = *(Level->BlockMap+offset);
+    List = Level->BlockMapLump+offset+1;
+  }
+
+  advance(); // advance to the first item
+}
+
+
+//==========================================================================
+//
+//  VLevel::VAllBlockLines::advance
+//
+//==========================================================================
+void VLevel::VAllBlockLines::advance () noexcept {
+  // check polyobj blockmap
+  while (PolyLink) {
+    polyobj_t *po = PolyLink->polyobj;
+    if (po) {
+      while (PolySegIdx < po->numlines) {
+        line_t *linedef = po->lines[PolySegIdx++];
+        if (linedef->validcount == validcount) continue;
+        linedef->validcount = validcount;
+        Line = linedef;
+        return;
+      }
+    }
+    PolySegIdx = 0;
+    PolyLink = PolyLink->next;
+  }
+
+  if (List) {
+    while (*List != -1) {
+      #ifdef PARANOID
+      if (*List < 0 || *List >= Level->NumLines) Host_Error("Broken blockmap - line %d", *List);
+      #endif
+      line_t *linedef = &Level->Lines[*List];
+      ++List;
+      if (linedef->validcount == validcount) continue; // line has already been checked
+      linedef->validcount = validcount;
+      Line = linedef;
+      return;
+    }
+  }
+
+  // just in case
+  PolyLink = nullptr;
+  PolySegIdx = 0;
+  List = nullptr;
+  Line = nullptr;
+}
+
+
+
 //==========================================================================
 //
 //  VLevel::GetFirstBlockmapEntity

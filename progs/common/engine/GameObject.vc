@@ -773,7 +773,7 @@ struct line_t : TPlane {
   //   [1] is a reversed line
   //   other possible planes are axis-aligned caps
   // this way, the line is a convex closed object, which can be considered solid
-  // so we can use the usual Minkowski sum to inflate the line, and use segment-plane intersection
+  // so we can use the usual Minkowski sum to inflate the line, and perform segment-plane intersection
   TPlane[] cdPlanes;
   private TPlane[6] cdPlanesArray;
 };
