@@ -467,10 +467,11 @@ static bool skipCallbackInited = false;
 //
 //==========================================================================
 static bool checkSkipClassCB (VObject *self, VName clsname) {
-  if (clsname == "Level_K8BDW" || clsname == "Level_K8Gore") {
+  if (clsname == NAME_Level_K8BDW || clsname == NAME_Level_K8Gore) {
     // allow any level descendant
     for (VClass *cls = self->GetClass(); cls; cls = cls->GetSuperClass()) {
-      if (VStr::strEqu(cls->GetName(), "VLevel")) return true;
+      //if (VStr::strEqu(cls->GetName(), "VLevel")) return true;
+      if (cls->GetVName() == NAME_VLevel) return true;
     }
   }
   return false;
@@ -487,7 +488,8 @@ static void SV_SetupSkipCallback () {
   skipCallbackInited = true;
   VObject::CanSkipReadingClassCBList.append(&checkSkipClassCB);
   // translate old `Level` class to `VLevel`
-  VObject::IOClassNameTranslation.put(VName("Level"), VName("VLevel"));
+  // nope, don;t do that
+  //VObject::IOClassNameTranslation.put(VName("Level"), NAME_VLevel);
 }
 #endif
 
