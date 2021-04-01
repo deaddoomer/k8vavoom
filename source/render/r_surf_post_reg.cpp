@@ -576,6 +576,22 @@ static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, subsector_t *ownsu
 
 //==========================================================================
 //
+//  FlatInsertPointsFromAllSurfaces
+//
+//  used to insert points from wall surfaces
+//
+//==========================================================================
+static void FlatInsertPointsFromAllSurfaces (VRenderLevelShared *RLev, subsector_t *ownsub, surface_t *slist, surface_t *&surfhead) {
+  for (; slist; slist = slist->next) {
+    for (int spn = (int)slist->isCentroidCreated(); spn < slist->count-(int)slist->isCentroidCreated(); ++spn) {
+      FlatSurfacesInsertPoint(RLev, ownsub, surfhead, slist->verts[spn].vec());
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelLightmap::SubdivideFace
 //
 //==========================================================================
@@ -655,6 +671,20 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
           }
         }
       }
+    }
+
+    // append points from wall surfaces
+    seg_t *seg = &Level->Segs[sub->firstline];
+    for (int f = sub->numlines; f--; ++seg) {
+      drawseg_t *ds = seg->drawsegs;
+      if (!ds) continue;
+      if (ds->top) FlatInsertPointsFromAllSurfaces(this, sub, ds->top->surfs, surf);
+      if (ds->mid) FlatInsertPointsFromAllSurfaces(this, sub, ds->mid->surfs, surf);
+      if (ds->bot) FlatInsertPointsFromAllSurfaces(this, sub, ds->bot->surfs, surf);
+      if (ds->topsky) FlatInsertPointsFromAllSurfaces(this, sub, ds->topsky->surfs, surf);
+      //if (ds->extra) FlatInsertPointsFromAllSurfaces(this, sub, ds->extra->surfs, surf);
+      FlatInsertPointsFromAllSurfaces(this, sub, ds->HorizonTop, surf);
+      FlatInsertPointsFromAllSurfaces(this, sub, ds->HorizonBot, surf);
     }
   } else {
     // always create centroids for complex surfaces
