@@ -414,22 +414,9 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       sreg->secregion = reg;
       sreg->floorplane = r_floor;
       sreg->ceilplane = r_ceiling;
-      sreg->realfloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, r_floor, sreg));
-      sreg->realceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, r_ceiling, sreg));
 
-      // create fake floor and ceiling
-      if (ridx == 0 && sub->sector->fakefloors && !sub->isInnerPObj()) {
-        TSecPlaneRef fakefloor, fakeceil;
-        fakefloor.set(&sub->sector->fakefloors->floorplane, false);
-        fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
-        if (!fakefloor.isFloor()) fakefloor.Flip();
-        if (!fakeceil.isCeiling()) fakeceil.Flip();
-        sreg->fakefloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, fakefloor, sreg, true));
-        sreg->fakeceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, fakeceil, sreg, true));
-      } else {
-        sreg->fakefloor = nullptr;
-        sreg->fakeceil = nullptr;
-      }
+      // will be created later
+      sreg->realfloor = sreg->realceil = sreg->fakefloor = sreg->fakeceil = nullptr;
 
       // drawsegs for the main subregion
       // only main region has any drawsegs
@@ -471,6 +458,24 @@ void VRenderLevelShared::CreateWorldSurfaces () {
             }
           }
         }
+      }
+
+      // create flat surfaces
+      // do it after wall surface creation, so t-junction fixer can do its job
+      sreg->realfloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, r_floor, sreg));
+      sreg->realceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, r_ceiling, sreg));
+
+      // create fake floor and ceiling
+      if (ridx == 0 && sub->sector->fakefloors && !sub->isInnerPObj()) {
+        TSecPlaneRef fakefloor, fakeceil;
+        fakefloor.set(&sub->sector->fakefloors->floorplane, false);
+        fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
+        if (!fakefloor.isFloor()) fakefloor.Flip();
+        if (!fakeceil.isCeiling()) fakeceil.Flip();
+        sreg->fakefloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, fakefloor, sreg, true));
+        sreg->fakeceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, fakeceil, sreg, true));
+      } else {
+        sreg->fakefloor = sreg->fakeceil = nullptr;
       }
 
       // proper append
