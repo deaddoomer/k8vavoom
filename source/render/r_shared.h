@@ -242,7 +242,7 @@ struct surface_t {
 
 
   // there should be enough room for vertex
-  inline void InsertVertexAt (int idx, subsector_t *ownsub, const TVec &p) noexcept {
+  inline void InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept {
     vassert(idx >= 0 && idx <= count);
     if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
     ++count;
@@ -251,7 +251,8 @@ struct surface_t {
     dv->x = p.x;
     dv->y = p.y;
     dv->z = p.z;
-    dv->ownersub = ownsub;
+    dv->ownerssf = ownssf;
+    dv->ownerseg = ownseg;
   }
 
   inline void RemoveVertexAt (int idx) noexcept {
@@ -286,14 +287,14 @@ struct surface_t {
       cp.x /= (float)count;
       cp.y /= (float)count;
       cp.z = plane.GetPointZ(cp);
-      InsertVertexAt(0, nullptr, cp);
+      InsertVertexAt(0, cp, nullptr, nullptr);
       setCentroidCreated();
       // and re-add the previous first point as the final one
       // (so the final triangle will be rendered too)
       // this is not required for quad, but required for "real" triangle fan
       // need to copy the point first, because we're passing a reference to it
       cp = verts[1].vec();
-      InsertVertexAt(count, nullptr, cp);
+      InsertVertexAt(count, cp, nullptr, nullptr);
       vassert(verts[1].vec() == verts[count-1].vec());
     }
   }
@@ -314,41 +315,32 @@ struct surface_t {
       cp.x /= (float)count;
       cp.y /= (float)count;
       cp.z /= (float)count;
-      InsertVertexAt(0, nullptr, cp);
+      // just in case, project it on the plane
+      if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
+      InsertVertexAt(0, cp, nullptr, nullptr);
       setCentroidCreated();
       // and re-add the previous first point as the final one
       // (so the final triangle will be rendered too)
       // this is not required for quad, but required for "real" triangle fan
       // need to copy the point first, because we're passing a reference to it
       cp = verts[1].vec();
-      InsertVertexAt(count, nullptr, cp);
+      InsertVertexAt(count, cp, nullptr, nullptr);
       vassert(verts[1].vec() == verts[count-1].vec());
     }
   }
 
   // remove all vertices with this owning subsector
-  void RemoveSubOwnVertices (const subsector_t *sub) noexcept {
+  void RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept {
+    if (!ssf) return;
     int idx = 0;
-    while (idx < count) {
-      if (verts[idx].ownersub == sub) {
-        RemoveVertexAt(idx);
-      } else {
-        ++idx;
-      }
-    }
+    while (idx < count) if (verts[idx].ownerssf == ssf) RemoveVertexAt(idx); else ++idx;
   }
 
-  // remove all vertices with any owning subsector
-  // original surface vertices has `nullptr` as owner
-  void RemoveAllSubOwnVertices () noexcept {
+  // remove all vertices with this owning subsector
+  void RemoveSegOwnVertices (const seg_t *seg) noexcept {
+    if (!seg) return;
     int idx = 0;
-    while (idx < count) {
-      if (verts[idx].ownersub) {
-        RemoveVertexAt(idx);
-      } else {
-        ++idx;
-      }
-    }
+    while (idx < count) if (verts[idx].ownerseg == seg) RemoveVertexAt(idx); else ++idx;
   }
 
 

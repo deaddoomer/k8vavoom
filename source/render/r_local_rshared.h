@@ -241,6 +241,7 @@ protected:
 
   // temp array for `FixSegSurfaceTJunctions()`
   TArray<seg_t *> adjSegs;
+  TArray<subsector_t *> adjSubs;
 
 public:
   inline bool AM_isBBox3DVisible (const float bbox3d[6]) const noexcept {
@@ -558,7 +559,7 @@ protected:
   virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) = 0;
 
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) = 0;
-  virtual surface_t *SubdivideFace (surface_t *InF, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;
+  virtual surface_t *SubdivideFace (surface_t *InF, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
 
   virtual void QueueWorldSurface (surface_t *surf) = 0;

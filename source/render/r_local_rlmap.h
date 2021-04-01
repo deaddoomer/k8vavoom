@@ -187,7 +187,7 @@ protected:
 
   // surf methods
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) override;
-  virtual surface_t *SubdivideFace (surface_t *InF, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) override;
+  virtual surface_t *SubdivideFace (surface_t *InF, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) override;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) override;
 
   surface_t *SubdivideFaceInternal (surface_t *InF, const TVec &axis, const TVec *nextaxis, const TPlane *plane);
