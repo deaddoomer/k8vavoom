@@ -102,6 +102,11 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
       continue;
     }
 
+    if (surf->isCentroidCreated()) {
+      GCon->Logf(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to centroid presence (%p : %p)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->next, listhead);
+      continue;
+    }
+
     // ignore paper-thin surfaces
     if (surf->verts[0].z == surf->verts[1].z &&
         surf->verts[2].z == surf->verts[3].z)
