@@ -175,4 +175,37 @@ void VLevel::CreateBlockMap () {
 //
 //==========================================================================
 void VLevel::CleanupBlockMap () {
+  // remove all polyobject lines from blockmap
+  // we don't need 'em there, pobjs are checked with the separate blockmap anyway
+  // to do this, process all blockmap blocks, and remove any lines we don't need
+  if (NumPolyObjs > 0) {
+    //GCon->Logf("removing polyobject lines from blockmap");
+    int ofsofs = 0;
+    for (int y = 0; y < BlockMapHeight; ++y) {
+      for (int x = 0; x < BlockMapWidth; ++x, ++ofsofs) {
+        #if 0
+        int ofs = BlockMap[ofsofs]; // first item is always 0 (dunno why, prolly because vanilla did it this way)
+        GCon->Logf(NAME_Debug, "blockmap cell (%d,%d); ofsofs=%d; ofs=%d)", x, y, ofsofs, ofs);
+        do {
+          GCon->Logf(NAME_Debug, "  %8d: %d", ofs, BlockMapLump[ofs]);
+        } while (BlockMapLump[ofs++] != -1);
+        #else
+        int ofs = BlockMap[ofsofs]+1; // first item is always 0 (dunno why, prolly because vanilla did it this way)
+        if (BlockMapLump[ofs-1] != 0) GCon->Logf(NAME_Debug, "blockmap shit at (%d,%d) == %d (ofsofs=%d; ofs=%d)", x, y, BlockMapLump[ofs-1], ofsofs, ofs);
+        vassert(BlockMapLump[ofs-1] == 0);
+        while (BlockMapLump[ofs] != -1) {
+          const int lidx = BlockMapLump[ofs];
+          vassert(lidx >= 0 && lidx < NumLines);
+          const line_t *ld = &Lines[lidx];
+          if (ld->pobj()) {
+            //GCon->Logf(NAME_Debug, "removing line #%d from blockmap cell (%d,%d) (pobj #%d)", lidx, x, y, ld->pobj()->tag);
+            for (int c = ofs; BlockMapLump[c] != -1; ++c) BlockMapLump[c] = BlockMapLump[c+1];
+          } else {
+            ++ofs;
+          }
+        }
+        #endif
+      }
+    }
+  }
 }
