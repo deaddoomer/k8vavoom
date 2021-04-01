@@ -298,6 +298,59 @@ struct surface_t {
     }
   }
 
+  // there should be enough room for two new points
+  // works only for all (strictly vertical) surfaces
+  void AddCentroidWall () noexcept {
+    vassert(plane.normal.z == 0.0f);
+    vassert(!isCentroidCreated());
+    if (count >= 3) {
+      TVec cp(0.0f, 0.0f, 0.0f);
+      const SurfVertex *sf = &verts[0];
+      for (int f = count; f--; ++sf) {
+        cp.x += sf->x;
+        cp.y += sf->y;
+        cp.z += sf->z;
+      }
+      cp.x /= (float)count;
+      cp.y /= (float)count;
+      cp.z /= (float)count;
+      InsertVertexAt(0, nullptr, cp);
+      setCentroidCreated();
+      // and re-add the previous first point as the final one
+      // (so the final triangle will be rendered too)
+      // this is not required for quad, but required for "real" triangle fan
+      // need to copy the point first, because we're passing a reference to it
+      cp = verts[1].vec();
+      InsertVertexAt(count, nullptr, cp);
+      vassert(verts[1].vec() == verts[count-1].vec());
+    }
+  }
+
+  // remove all vertices with this owning subsector
+  void RemoveSubOwnVertices (const subsector_t *sub) noexcept {
+    int idx = 0;
+    while (idx < count) {
+      if (verts[idx].ownersub == sub) {
+        RemoveVertexAt(idx);
+      } else {
+        ++idx;
+      }
+    }
+  }
+
+  // remove all vertices with any owning subsector
+  // original surface vertices has `nullptr` as owner
+  void RemoveAllSubOwnVertices () noexcept {
+    int idx = 0;
+    while (idx < count) {
+      if (verts[idx].ownersub) {
+        RemoveVertexAt(idx);
+      } else {
+        ++idx;
+      }
+    }
+  }
+
 
   inline bool NeedRecalcStaticLightmap () const noexcept { return (drawflags&DF_CALC_LMAP); }
   inline bool IsMasked () const noexcept { return (drawflags&DF_MASKED); }

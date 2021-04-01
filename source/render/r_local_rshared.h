@@ -239,6 +239,9 @@ protected:
   AMCheckSubsectorCB amCheckSubsector;
   float amX, amY, amX2, amY2;
 
+  // temp array for `FixSegSurfaceTJunctions()`
+  TArray<seg_t *> adjSegs;
+
 public:
   inline bool AM_isBBox3DVisible (const float bbox3d[6]) const noexcept {
     return
