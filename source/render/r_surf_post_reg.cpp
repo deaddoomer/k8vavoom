@@ -580,8 +580,14 @@ static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, subsector_t *ownsu
 //
 //==========================================================================
 surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
+  if (!surf) return surf;
+
   subsector_t *sub = surf->subsector;
   vassert(sub);
+
+  if (surf->count < 3 || sub->isOriginalPObj()) return surf; // nobody cares
+
+  vassert(!surf->isCentroidCreated());
 
   // add points from the adjacent subsectors to this one
   if (lastRenderQuality) {
@@ -603,6 +609,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, const TVec &axi
   }
 
   if (doSubdivisions) {
+    //GCon->Logf(NAME_Debug, "removing centroid from default %s surface of subsector #%d (vcount=%d; hasc=%d)", (plane->isFloor() ? "floor" : "ceiling"), (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), surf->count, surf->isCentroidCreated());
     // we'll re-add it later
     surf->RemoveCentroid();
 

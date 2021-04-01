@@ -116,9 +116,21 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   int vcount = sub->numlines;
 
   if (vcount < 3) {
-    GCon->Logf(NAME_Warning, "CreateSecSurface: subsector #%d of sector #%d has only #%d vertices", (int)(ptrdiff_t)(sub-Level->Subsectors), (sub->sector ? (int)(ptrdiff_t)(sub->sector-Level->Sectors) : -1), vcount);
-    if (vcount < 1) Sys_Error("ONE VERTEX. WTF?!");
-    if (ssurf) return ssurf;
+    GCon->Logf(NAME_Warning, "CreateSecSurface: subsector #%d of sector #%d has only #%d seg%s", (int)(ptrdiff_t)(sub-Level->Subsectors), (int)(ptrdiff_t)(sub->sector-Level->Sectors), vcount, (vcount != 1 ? "s" : ""));
+    if (vcount < 1) Sys_Error("ZERO SEGS. WTF?!");
+    if (!ssurf) {
+      // new sector surface
+      ssurf = new sec_surface_t;
+      memset((void *)ssurf, 0, sizeof(sec_surface_t));
+    } else {
+      vassert(!ssurf->surfs);
+    }
+    TSecPlaneRef spl(InSplane);
+    ssurf->esecplane = spl;
+    ssurf->edist = spl.splane->dist;
+    ssurf->XScale = 1.0f;
+    ssurf->YScale = 1.0f;
+    return ssurf;
   }
   //vassert(vcount >= 3);
 

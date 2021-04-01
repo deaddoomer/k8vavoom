@@ -221,9 +221,9 @@ struct surface_t {
   SurfVertex verts[1]; // dynamic array of vertices
 
 
-  inline bool isWorldAllocated () const noexcept { return !!(allocflags&ALLOC_WORLD); }
+  inline bool isWorldAllocated () const noexcept { return (allocflags&ALLOC_WORLD); }
 
-  inline bool isCentroidCreated () const noexcept { return !!(allocflags&CENTROID_CREATED); }
+  inline bool isCentroidCreated () const noexcept { return (allocflags&CENTROID_CREATED); }
   inline void setCentroidCreated () noexcept { allocflags |= CENTROID_CREATED; }
   inline void resetCentroidCreated () noexcept { allocflags &= ~CENTROID_CREATED; }
 
@@ -240,7 +240,7 @@ struct surface_t {
 
   // there should be enough room for vertex
   inline void InsertVertexAt (int idx, subsector_t *ownsub, const TVec &p) noexcept {
-    if (idx < 0) idx = 0; else if (idx > count) idx = count;
+    vassert(idx >= 0 && idx <= count);
     if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
     ++count;
     SurfVertex *dv = &verts[idx];
@@ -252,10 +252,9 @@ struct surface_t {
   }
 
   inline void RemoveVertexAt (int idx) noexcept {
-    if (idx >= 0 && idx < count) {
-      memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
-      --count;
-    }
+    vassert(idx >= 0 && idx < count);
+    if (idx < count-1) memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
+    --count;
   }
 
   void RemoveCentroid () noexcept {
@@ -273,6 +272,7 @@ struct surface_t {
   // works only for floor and ceiling surfaces
   void AddCentroidFlat () noexcept {
     vassert(plane.normal.z != 0.0f);
+    vassert(!isCentroidCreated());
     if (count >= 3) {
       TVec cp(0.0f, 0.0f, 0.0f);
       const SurfVertex *sf = &verts[0];
@@ -291,6 +291,7 @@ struct surface_t {
       // need to copy the point first, because we're passing a reference to it
       cp = verts[1].vec();
       InsertVertexAt(count, nullptr, cp);
+      vassert(verts[1].vec() == verts[count-1].vec());
     }
   }
 

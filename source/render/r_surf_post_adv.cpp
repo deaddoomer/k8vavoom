@@ -54,6 +54,11 @@ surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, const TVec 
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
   vassert(!surf->next);
 
+  subsector_t *sub = surf->subsector;
+  vassert(sub);
+
+  if (surf->count < 3 || sub->isOriginalPObj()) return surf; // nobody cares
+
   if (surf->count > 4 && !surf->isCentroidCreated()) {
     // make room
     surf = EnsureSurfacePoints(surf, surf->count+2, surf, nullptr);
