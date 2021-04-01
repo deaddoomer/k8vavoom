@@ -301,7 +301,7 @@ bool VLevel::LoadCachedData (VStream *strm) {
     *arrstrm << n->sx << n->sy << n->dx << n->dy;
   }
 
-  delete [] Vertexes;
+  delete[] Vertexes;
   *arrstrm << NumVertexes;
   GCon->Logf("cache: reading %d vertexes", NumVertexes);
   Vertexes = new TVec[NumVertexes];
@@ -330,7 +330,7 @@ bool VLevel::LoadCachedData (VStream *strm) {
   // subsectors
   *arrstrm << NumSubsectors;
   GCon->Logf("cache: reading %d subsectors", NumSubsectors);
-  delete [] Subsectors;
+  delete[] Subsectors;
   Subsectors = new subsector_t[NumSubsectors];
   memset((void *)Subsectors, 0, NumSubsectors*sizeof(subsector_t));
   for (int f = 0; f < NumSubsectors; ++f) {
@@ -355,7 +355,7 @@ bool VLevel::LoadCachedData (VStream *strm) {
   // segs
   *arrstrm << NumSegs;
   GCon->Logf("cache: reading %d segs", NumSegs);
-  delete [] Segs;
+  delete[] Segs;
   Segs = new seg_t[NumSegs+NumLines*2+1];
   memset((void *)Segs, 0, (NumSegs+NumLines*2+1)*sizeof(seg_t));
   for (int f = 0; f < NumSegs; ++f) {

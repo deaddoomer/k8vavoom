@@ -95,7 +95,7 @@ VLevel::VAllBlockLines::VAllBlockLines (const VLevel *ALevel, int x, int y, unsi
 
   if (pobjMode&BLINES_LINES) {
     offset = *(Level->BlockMap+offset);
-    List = Level->BlockMapLump+offset+1;
+    List = Level->BlockMapLump+offset+1; // first item is always 0 (dunno why, prolly because vanilla did it this way)
   }
 
   advance(); // advance to the first item

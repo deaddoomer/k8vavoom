@@ -1141,7 +1141,7 @@ void VTexture::ResizeCanvas (int newwdt, int newhgt) {
       }
     }
   }
-  delete [] Pixels;
+  delete[] Pixels;
   Pixels = (vuint8 *)newpic;
   Width = newwdt;
   Height = newhgt;
@@ -1371,7 +1371,7 @@ void VTexture::CropCanvasTo (int x0, int y0, int x1, int y1) {
       }
     }
   }
-  delete [] Pixels;
+  delete[] Pixels;
   Pixels = (vuint8 *)newpic;
   Width = newwdt;
   Height = newhgt;

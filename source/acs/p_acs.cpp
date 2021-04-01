@@ -1328,7 +1328,7 @@ void VAcsObject::LoadEnhancedObject () {
       } else {
         GCon->Logf(NAME_Error, "ACS ERROR: invalid `SNAM` chunk!");
       }
-      delete [] sbuf;
+      delete[] sbuf;
     }
   }
 

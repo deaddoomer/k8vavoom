@@ -567,7 +567,7 @@ load_again:
 
     // clear out mobj chains
     int count = BlockMapWidth*BlockMapHeight;
-    delete [] BlockLinks;
+    delete[] BlockLinks;
     BlockLinks = new VEntity *[count];
     memset(BlockLinks, 0, sizeof(VEntity *)*count);
   }
