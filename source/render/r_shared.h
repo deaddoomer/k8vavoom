@@ -230,6 +230,9 @@ struct surface_t {
   // used to fill subdivided surfaces
   inline void copyRequiredFrom (const surface_t &other) noexcept {
     if (&other != this) {
+      texinfo = other.texinfo;
+      plane = other.plane;
+      HorizonPlane = other.HorizonPlane;
       subsector = other.subsector;
       seg = other.seg;
       typeFlags = other.typeFlags;
