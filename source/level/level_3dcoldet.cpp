@@ -321,6 +321,10 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
 //
 //  create collision detection planes (line/reverse line plane, and caps)
 //
+//  [0] is always the line itself
+//  [1] is a reversed line
+//  other possible planes are axis-aligned caps
+//
 //==========================================================================
 void VLevel::CalcLineCDPlanes (line_t *line) {
   if (line->v1->y == line->v2->y) {
@@ -330,9 +334,9 @@ void VLevel::CalcLineCDPlanes (line_t *line) {
       line->cdPlanesCount = 4;
       // point, create four axial planes to represent it as a box
       line->cdPlanesArray[0].normal = TVec( 0, -1, 0); line->cdPlanesArray[0].dist = -line->v1->y; // top
-      line->cdPlanesArray[1].normal = TVec( 0,  1, 0); line->cdPlanesArray[1].dist = line->v1->y; // bottom
+      line->cdPlanesArray[1].normal = TVec( 0,  1, 0); line->cdPlanesArray[1].dist = +line->v1->y; // bottom
       line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -line->v1->x; // left
-      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = line->v1->x; // right
+      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +line->v1->x; // right
     } else {
       // a horizontal line
       line->cdPlanesCount = 4;
@@ -341,31 +345,35 @@ void VLevel::CalcLineCDPlanes (line_t *line) {
       line->cdPlanesArray[botidx].normal = TVec( 0,  1, 0); line->cdPlanesArray[botidx].dist = line->v1->y; // bottom
       // add left and right bevels
       line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
-      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = max2(line->v1->x, line->v2->x); // right
+      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
     }
   } else if (line->v1->x == line->v2->x) {
     // a vertical line
     line->cdPlanesCount = 4;
     int rightidx = (line->v1->y > line->v2->y);
     line->cdPlanesArray[1-rightidx].normal = TVec(-1,  0, 0); line->cdPlanesArray[1-rightidx].dist = -line->v1->x; // left
-    line->cdPlanesArray[rightidx].normal = TVec( 1,  0, 0); line->cdPlanesArray[rightidx].dist = line->v1->x; // right
+    line->cdPlanesArray[  rightidx].normal = TVec( 1,  0, 0); line->cdPlanesArray[  rightidx].dist = +line->v1->x; // right
     // add top and bottom bevels
     line->cdPlanesArray[2].normal = TVec( 0, -1, 0); line->cdPlanesArray[2].dist = -min2(line->v1->y, line->v2->y); // top
-    line->cdPlanesArray[3].normal = TVec( 0,  1, 0); line->cdPlanesArray[3].dist = max2(line->v1->y, line->v2->y); // bottom
+    line->cdPlanesArray[3].normal = TVec( 0,  1, 0); line->cdPlanesArray[3].dist = +max2(line->v1->y, line->v2->y); // bottom
   } else {
     // ok, not an ortho-axis line, create line planes the old way
     line->cdPlanesCount = 6;
     // two line planes
+    // normal
     line->cdPlanesArray[0].normal = line->normal;
     line->cdPlanesArray[0].dist = line->dist;
+    // reversed
     line->cdPlanesArray[1].normal = -line->cdPlanesArray[0].normal;
     line->cdPlanesArray[1].dist = -line->cdPlanesArray[0].dist;
     // caps
     line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
-    line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = max2(line->v1->x, line->v2->x); // right
+    line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
     line->cdPlanesArray[4].normal = TVec( 0, -1, 0); line->cdPlanesArray[4].dist = -min2(line->v1->y, line->v2->y); // top
-    line->cdPlanesArray[5].normal = TVec( 0,  1, 0); line->cdPlanesArray[5].dist = max2(line->v1->y, line->v2->y); // bottom
+    line->cdPlanesArray[5].normal = TVec( 0,  1, 0); line->cdPlanesArray[5].dist = +max2(line->v1->y, line->v2->y); // bottom
   }
+
+  // VavoomC helper
   line->cdPlanes = &line->cdPlanesArray[0];
 }
 

@@ -512,10 +512,13 @@ struct line_t : public TPlane {
   vuint32 updateWorldFrame;
 
   // collision detection planes
-  // first plane is usually a duplicate of a normal line plane, but idc
-  TPlane *cdPlanes;
-
-  vint32 cdPlanesCount;
+  //   [0] is always the line itself
+  //   [1] is a reversed line
+  //   other possible planes are axis-aligned caps
+  // this way, the line is a convex closed object, which can be considered solid
+  // so we can use the usual Minkowski sum to inflate the line, and perform segment-plane intersection
+  TPlane *cdPlanes; // this field is for VavoomC, so i'll be able to use slice there
+  vint32 cdPlanesCount; // this field must follow the pointer!
   TPlane cdPlanesArray[6];
 
   // considers the line to be infinite
