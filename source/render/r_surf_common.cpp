@@ -285,7 +285,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     }
   }
 
-  const bool allowFullSegs = IsShadowVolumeRenderer();
+  const bool allowFullSegs = (Level->HasFullSegs() && IsShadowVolumeRenderer());
   const int totalSegCount = Level->NumSubsectors+(allowFullSegs ? Level->NumLines : 0);
 
   if (inWorldCreation) {
@@ -514,6 +514,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), totalSegCount);
     }
   }
+
+  createdFullSegs = allowFullSegs;
 
   GCon->Log(NAME_Debug, "performing initial world update...");
   InitialWorldUpdate();

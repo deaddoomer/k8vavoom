@@ -86,9 +86,9 @@ native readonly int LSSHash; // xxHash32 of linedefs, sidedefs, sectors (in this
 native readonly int SegHash; // xxHash32 of segs
 
 // flags
-native readonly private bool bForServer; // true if this level belongs to the server
-native readonly bool bExtended; // true if level was in Hexen format (or extended namespace for UDMF)
-native readonly bool bTextMap; // UDMF format map
+native transient readonly bool bForServer; // true if this level belongs to the server
+native transient readonly bool bExtended; // true if level was in Hexen format (or extended namespace for UDMF)
+native transient readonly bool bTextMap; // UDMF format map
 // used in map fixer
 native transient bool bForceRebuildNodes;
 native transient bool bForceAllowSeveralPObjInSubsector; // this is not used anymore, but kept for compatibility
@@ -100,7 +100,9 @@ native transient bool bForceNoCeilingFloodfillFix;
 // used only in VavoomC
 native transient bool bConvertSectorLightsToStatic;
 // set by pobj spawner
-native transient bool bHas3DPolyObjects;
+native transient readonly bool bHas3DPolyObjects;
+// set by loader
+native transient readonly bool bHasFullSegs;
 
 native transient name UDMFNamespace; // locased
 

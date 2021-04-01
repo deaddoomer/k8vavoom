@@ -258,6 +258,8 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
   //if (sub->isInnerPObj()) GCon->Logf(NAME_Debug, "updating subsector for pobj #%d", sub->ownpobj->tag);
 
+  const bool updateFullSegs = (createdFullSegs && r_dbg_use_fullsegs.asBool());
+
   for (subregion_t *region = sub->regions; region; region = region->next) {
     TSecPlaneRef r_floor = region->floorplane;
     TSecPlaneRef r_ceiling = region->ceilplane;
@@ -272,7 +274,7 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
           // miniseg has no drawsegs/segparts
           if (seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, r_floor, r_ceiling);
           // update fullsegs
-          if (ld->updateWorldFrame != updateWorldFrame) {
+          if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
             ld->updateWorldFrame = updateWorldFrame;
             if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
             if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
@@ -335,6 +337,8 @@ void VRenderLevelShared::UpdatePObjSub (subsector_t *sub) {
   if (!sub || !sub->numlines) return;
   vassert(sub->isInnerPObj());
 
+  const bool updateFullSegs = (createdFullSegs && r_dbg_use_fullsegs.asBool());
+
   // polyobject have only one region (this is invariant)
   subregion_t *region = sub->regions;
 
@@ -349,7 +353,7 @@ void VRenderLevelShared::UpdatePObjSub (subsector_t *sub) {
       // miniseg has no drawsegs/segparts
       if (poseg->drawsegs) UpdateDrawSeg(sub, poseg->drawsegs, r_floor, r_ceiling);
       // update fullsegs
-      if (ld->updateWorldFrame != updateWorldFrame) {
+      if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
         ld->updateWorldFrame = updateWorldFrame;
         if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
         if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);

@@ -850,7 +850,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
 
   #if 1
   // render (queue) translucent lines by segs (for sorter)
-  if (r_dbg_use_fullsegs.asBool() && !linedef->pobj() && IsShadowVolumeRenderer() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
+  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && !linedef->pobj() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
     side_t *side = seg->sidedef;
     if (side->fullseg && side->fullseg->drawsegs) {
       if (side->rendercount == renderedLineCounter) return; // already rendered

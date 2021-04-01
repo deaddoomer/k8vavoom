@@ -351,5 +351,6 @@ void VLevel::CreateFullLineSegs () {
     // fix partner segs
     if (newfseg) newfseg->partner = newbseg;
     if (newbseg) newbseg->partner = newfseg;
+    LevelFlags |= LF_HasFullSegs;
   }
 }

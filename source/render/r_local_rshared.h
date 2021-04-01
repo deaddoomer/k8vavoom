@@ -219,6 +219,8 @@ protected:
   int pspartsLeft;
   bool lastRenderQuality;
 
+  bool createdFullSegs;
+
   // used in t-junction fixer, put there to avoid constant memory reallocating
   TBinHeapNC<float> tjunkHList;
   TArray<TVec> tjunkTri0, tjunkTri1;

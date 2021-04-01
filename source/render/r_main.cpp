@@ -640,6 +640,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , pspart(nullptr)
   , pspartsLeft(0)
 {
+  createdFullSegs = false;
   lastRenderQuality = r_fix_tjunctions.asBool();
   currDLightFrame = 0;
   currQueueFrame = 0;

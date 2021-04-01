@@ -164,3 +164,15 @@ void VLevel::CreateBlockMap () {
 
   delete[] BlockLines;
 }
+
+
+//==========================================================================
+//
+//  VLevel::CreateBlockMap
+//
+//  this will remove polyobject and invalid lines from blockmap
+//  it will also fill blockmap subsector info
+//
+//==========================================================================
+void VLevel::CleanupBlockMap () {
+}

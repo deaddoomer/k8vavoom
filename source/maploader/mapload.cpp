@@ -694,6 +694,10 @@ load_again:
     W_CloseAuxiliary();
   }
 
+  // this will remove polyobject and invalid lines from blockmap
+  // it will also fill blockmap subsector info
+  CleanupBlockMap();
+
   // do it here, so it won't touch sloped floors
   // it will set `othersec` for sectors too
   // also, it will detect "transparent door" sectors

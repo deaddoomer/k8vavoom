@@ -333,6 +333,8 @@ class VLevel : public VGameObject {
     LF_ConvertSectorLightsToStatic      = 1u<<10,
     // set by pobj spawner
     LF_Has3DPolyObjects                 = 1u<<11,
+    // set by loader
+    LF_HasFullSegs                      = 1u<<12,
   };
   vuint32 LevelFlags;
 
@@ -738,6 +740,8 @@ public:
   void UpdateSectorHeightCache (sector_t *sector);
   void GetSubsectorBBox (subsector_t *sub, float bbox[6]);
   void CalcSecMinMaxs (sector_t *sector); // also, update BSP bounding boxes
+
+  inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
 
 public:
   virtual void PostCtor () override;
@@ -1211,6 +1215,7 @@ private:
   void FinaliseLines ();
   void CreateRepBase ();
   void CreateBlockMap ();
+  void CleanupBlockMap ();
 
   enum { BSP_AJ, BSP_ZD };
   int GetNodesBuilder () const; // valid only after `LevelFlags` are set
