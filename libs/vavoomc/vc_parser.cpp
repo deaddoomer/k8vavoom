@@ -2419,6 +2419,9 @@ void VParser::ParseStates (VClass *InClass) {
   //bool wasActionAfterLabel = false;
   //bool firstFrame = true;
 
+  // goto that follows goto should be ignored
+  bool lastWasGoto = false;
+
   while (!Lex.Check(TK_RBrace)) {
     TLocation TmpLoc = Lex.Location;
     VName TmpName = ParseStateString();
@@ -2440,6 +2443,9 @@ void VParser::ParseStates (VClass *InClass) {
         ParseError(Lex.Location, "Goto before first state frame");
         continue;
       }
+
+      if (!PrevState && lastWasGoto) ParseError(Lex.Location, "`Goto` after `Goto`/`Stop`/`Loop`");
+      lastWasGoto = true;
 
       // if we have no defined states for latest labels, create dummy state to attach gotos to it
       // simple redirection won't work, because this label can be used as `A_JumpXXX()` destination, for example
@@ -2482,6 +2488,9 @@ void VParser::ParseStates (VClass *InClass) {
         ParseError(Lex.Location, "Stop before first state");
         continue;
       }
+
+      if (!PrevState && lastWasGoto) ParseError(Lex.Location, "`Stop` after `Goto`/`Stop`/`Loop`");
+      lastWasGoto = true;
 
       // see above for the reason to introduce this dummy state
       if (!PrevState) {
@@ -2540,10 +2549,15 @@ void VParser::ParseStates (VClass *InClass) {
     if (TmpName == NAME_Loop) {
       if (!PrevState) { ParseError(Lex.Location, "Loop before first state"); continue; }
       if (!LoopStart) { ParseError(Lex.Location, "Loop without defined states"); continue; }
+      if (lastWasGoto) ParseError(Lex.Location, "`Loop` after `Goto`/`Stop`/`Loop`");
+      lastWasGoto = true;
       PrevState->NextState = LoopStart;
       PrevState = nullptr;
       continue;
     }
+
+    // this is definitely not a goto
+    lastWasGoto = false;
 
     // check for label
     if (Lex.Check(TK_Colon)) {
