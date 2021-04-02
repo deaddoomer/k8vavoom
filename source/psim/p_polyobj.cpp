@@ -390,13 +390,19 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     line_t *line = &itline;
     if (line->special == PO_LINE_START && line->arg1 == tag) {
       if (lstart) {
-        Host_Error("found two `Polyobj_StartLine` specials for polyobject with tag #%d (lines #%d and #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]), (int)(ptrdiff_t)(line-&Lines[0]));
-        //continue;
+        GCon->Logf(NAME_Error, "ignored extra `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (the first is at line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]), (int)(ptrdiff_t)(lstart-&Lines[0]));
+        continue;
       }
-      if (explines.length()) Host_Error("found both `Polyobj_StartLine` and `Polyobj_ExplicitLine` specials for polyobject with tag #%d (implicit line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
+      if (explines.length()) {
+        GCon->Logf(NAME_Error, "ignored `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_ExplicitLine` special)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
+        continue;
+      }
       lstart = line;
     } else if (line->special == PO_LINE_EXPLICIT && line->arg1 == tag) {
-      if (lstart) Host_Error("found both `Polyobj_StartLine` and `Polyobj_ExplicitLine` specials for polyobject with tag #%d (implicit line #%d)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]));
+      if (lstart) {
+        GCon->Logf(NAME_Error, "ignored `Polyobj_ExplicitLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_StartLine` special)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]));
+        continue;
+      }
       explines.append(line);
     }
   }
