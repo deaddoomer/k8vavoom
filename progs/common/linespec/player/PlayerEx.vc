@@ -2057,7 +2057,7 @@ bool CommonFireWeapon (int firetype, state firestate) {
       if (!st) st = ee.MissileState;
     }
     if (st && !StateIsInSequence(ee.State, st)) {
-      //printdebug("%C: setting attack state %s", self, st);
+      //printdebug("%C: weapon=%C; ee=%C; setting attack state %s", self, ReadyWeapon, ee, st);
       ee.SetState(st);
     }
   }
