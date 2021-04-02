@@ -1464,6 +1464,9 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
   //FIXME: this may leak!
   ParseStatesStack.resetNoDtor();
 
+  // goto that follows goto should be ignored
+  bool lastWasGoto = false;
+
   sc->Expect("{");
   // disable escape sequences in states
   sc->SetEscape(false);
@@ -1528,6 +1531,12 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           sc->ExpectNumber();
           GotoOffset = sc->Number;
         }
+        if (lastWasGoto && LastState) {
+          GLog.Logf(NAME_Error, "%s: `Goto` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
+          if (!sc->Crossed && sc->Check(";")) {}
+          continue;
+        }
+        lastWasGoto = true;
         // some degenerative mod authors do this
         if (LastState && GotoOffset == 0 && VStr::strEquCI(*GotoLabel, "Fail")) {
           if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: fixed `Goto Fail`, mod author is a mo...dder.", *TmpLoc.toStringNoCol());
@@ -1587,6 +1596,12 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (CanBeSpriteName(sc)) {
         sc->Message(va("`%s` sprite name is not recommended!", *TmpName));
       } else {
+        if (lastWasGoto && LastState) {
+          GLog.Logf(NAME_Error, "%s: `Stop` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
+          if (!sc->Crossed && sc->Check(";")) {}
+          continue;
+        }
+        lastWasGoto = true;
         if (!LastState && NewLabelsStart == Class->StateLabelDefs.Num()) {
           if (!getIgnoreMoronicStateCommands()) sc->Error("'Stop' before first state frame");
           sc->Message("'Stop' before first state frame");
@@ -1640,6 +1655,12 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (CanBeSpriteName(sc)) {
         sc->Message(va("`%s` sprite name is not recommended!", *TmpName));
       } else {
+        if (lastWasGoto && LastState) {
+          GLog.Logf(NAME_Error, "%s: `Wait`/`Fail` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
+          if (!sc->Crossed && sc->Check(";")) {}
+          continue;
+        }
+        lastWasGoto = true;
         if (!LastState) {
           if (!getIgnoreMoronicStateCommands()) sc->Error(va("'%s' before first state frame", *TmpName));
           sc->Message(va("'%s' before first state frame", *TmpName));
@@ -1657,6 +1678,12 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (CanBeSpriteName(sc)) {
         sc->Message(va("`%s` sprite name is not recommended!", *TmpName));
       } else {
+        if (lastWasGoto && LastState) {
+          GLog.Logf(NAME_Error, "%s: `Loop` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
+          if (!sc->Crossed && sc->Check(";")) {}
+          continue;
+        }
+        lastWasGoto = true;
         if (!LastState) {
           if (!getIgnoreMoronicStateCommands()) sc->Error("'Loop' before first state frame");
           sc->Message("'Loop' before first state frame");
@@ -1668,6 +1695,9 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         continue;
       }
     }
+
+    // this is definitely not a goto
+    lastWasGoto = false;
 
     // create new state
     VState *State = new VState(va("S_%d", States.Num()), Class, TmpLoc);
