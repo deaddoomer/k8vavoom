@@ -329,6 +329,10 @@ struct surface_t {
     }
   }
 
+  inline void AddCentroid () noexcept {
+    if (plane.normal.z == 0.0f) return AddCentroidWall(); else return AddCentroidFlat();
+  }
+
   // remove all vertices with this owning subsector
   void RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept {
     if (!ssf) return;

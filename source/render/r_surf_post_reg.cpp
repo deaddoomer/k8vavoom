@@ -538,78 +538,13 @@ static VVA_OKUNUSED inline bool IsPointOnLine2D (const TVec &v0, const TVec &v1,
 
 //==========================================================================
 //
-//  FlatSurfaceInsertPoint
+//  SurfaceInsertPointIntoEdge
 //
 //  do not use reference to `p` here!
 //  it may be a vector from some source that can be modified
 //
 //==========================================================================
-static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
-  if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
-  //surface_t *prev = nullptr;
-  #if 0
-  VLevel *Level = RLev->GetLevel();
-  const int sfidx = surfIndex(surfhead, surf);
-  #endif
-  // check each surface line
-  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
-    int pn1 = (pn0+1)%surf->count;
-    if (surf->isCentroidCreated()) vassert(pn1 != 0);
-    const TVec v0 = surf->verts[pn0].vec();
-    const TVec v1 = surf->verts[pn1].vec();
-    if ((v1-v0).length2DSquared() < 1.0f) continue; // ignore, it is too small
-    // check corners
-    if ((v0-p).length2DSquared() < 1.0f || (v1-p).length2DSquared() < 1.0f) continue;
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
-    #endif
-    if (!IsPointOnLine2D(v0, v1, p)) continue;
-    // check height (just in case)
-    const float nz = surf->plane.GetPointZ(p);
-    if (fabsf(nz-p.z) > 0.01f) continue;
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g)",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z);
-    #endif
-    // insert a new point
-    if (!prev && surf != surfhead) {
-      prev = surfhead;
-      while (prev->next != surf) prev = prev->next;
-    }
-    surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
-    // create centroid
-    if (!surf->isCentroidCreated()) {
-      surf->AddCentroidFlat();
-      ++pn0;
-    }
-    // insert point
-    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
-    // the point cannot be inserted into several lines,
-    // so we're finished with this surface
-    break;
-  }
-
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  WallSurfaceInsertPoint
-//
-//  do not use reference to `p` here!
-//  it may be a vector from some source that can be modified
-//
-//  this actually works for any surface, not only for walls
-//==========================================================================
-static VVA_OKUNUSED surface_t *WallSurfaceInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
+static VVA_OKUNUSED surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
   if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
   //surface_t *prev = nullptr;
   #if 0
@@ -652,7 +587,7 @@ static VVA_OKUNUSED surface_t *WallSurfaceInsertPoint (VRenderLevelShared *RLev,
     surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
     // create centroid
     if (!surf->isCentroidCreated()) {
-      surf->AddCentroidWall();
+      surf->AddCentroid();
       ++pn0;
     }
     // insert point
@@ -686,7 +621,7 @@ static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ow
   surface_t *surf = surfhead;
   surface_t *prev = nullptr;
   while (surf) {
-    surf = FlatSurfaceInsertPoint(RLev, ownssf, ownseg, surf, surfhead, prev, p);
+    surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surfhead, prev, p);
     prev = surf;
     surf = surf->next;
   }
@@ -705,7 +640,7 @@ static void WallSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ow
   surface_t *surf = surfhead;
   surface_t *prev = nullptr;
   while (surf) {
-    surf = WallSurfaceInsertPoint(RLev, ownssf, ownseg, surf, surfhead, prev, p);
+    surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surfhead, prev, p);
     prev = surf;
     surf = surf->next;
   }
@@ -736,7 +671,7 @@ static inline void FixSecSurface (VRenderLevelShared *RLev, sec_surface_t *ownss
 static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, sec_surface_t *secsfc) {
   for (const surface_t *srcsurf = (secsfc ? secsfc->surfs : nullptr); srcsurf; srcsurf = srcsurf->next) {
     for (int pn0 = (int)srcsurf->isCentroidCreated(); pn0 < srcsurf->count-(int)srcsurf->isCentroidCreated(); ++pn0) {
-      surf = FlatSurfaceInsertPoint(RLev, ownssf, ownseg, surf, surf, nullptr, srcsurf->verts[pn0].vec());
+      surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surf, nullptr, srcsurf->verts[pn0].vec());
     }
   }
   return surf;
@@ -932,7 +867,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
       for (surface_t *sfother = surf; sfother; sfother = sfother->next) {
         if (sfcheck == sfother) continue;
         for (int spn = (int)sfother->isCentroidCreated(); spn < sfother->count-(int)sfother->isCentroidCreated(); ++spn) {
-          sfcheck = FlatSurfaceInsertPoint(this, nullptr, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
+          sfcheck = SurfaceInsertPointIntoEdge(this, nullptr, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
         }
       }
     }
