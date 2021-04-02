@@ -1,7 +1,8 @@
 //------------------------------------------------------------------------------
 class DoomPlayer
 {
-  frame PLAYF { light MuzzleFlash }
+  // this was "PLAYF", and it was wrong
+  frame PLAYE { light MuzzleFlash }
 }
 
 class ZombieMan

@@ -25,12 +25,13 @@ actor DoomPlayer : PlayerPawn
   See:
     PLAY ABCD 4
     Loop
-  Missile:
+  Missile: // this state will be lighted
     PLAY E 12
     Goto Spawn
   Melee:
     PLAY F 6 Bright
-    Goto Missile
+    Goto Spawn
+    //Goto Missile // old goto, nope
   Pain:
     PLAY G 4
     PLAY G 4 A_Pain
