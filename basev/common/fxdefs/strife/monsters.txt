@@ -1,7 +1,8 @@
 //------------------------------------------------------------------------------
 class StrifePlayer
 {
-  frame PLAYF { light MuzzleFlash }
+  // this was "PLAYF", and it was wrong
+  frame PLAYE { light MuzzleFlash }
   frame BURNA { light MuzzleFlash }
   frame BURNB { light MuzzleFlash }
   frame BURNC { light MuzzleFlash }
