@@ -33,6 +33,8 @@ int demosequence;
 float pagetime;
 int page_pic;
 
+bool waitingMusic; // set if waiting for music end
+
 
 //==========================================================================
 //
@@ -42,6 +44,8 @@ int page_pic;
 //
 //==========================================================================
 void AdvanceDemo () {
+  waitingMusic = false;
+
   if (StartTitleMap()) return;
 
   if (IsAutoloadingMapFromCLI()) {
@@ -53,6 +57,8 @@ void AdvanceDemo () {
     return;
   }
 
+  bool attractionMode = GetCvarB('d_attraction_mode');
+
   ++demosequence;
   if (!IsAnyDoom2) {
     demosequence %= (WadLumpPresent('e4m1') ? 7 : 6);
@@ -62,47 +68,50 @@ void AdvanceDemo () {
 
   switch (demosequence) {
     case 0:
+      waitingMusic = MUS_IsMusicAvailable();
+      pagetime = 2.0;
       page_pic = R_RegisterPic('titlepic');
       if (!IsAnyDoom2) {
-        pagetime = 170.0 / 35.0;
+        if (!waitingMusic) pagetime = 170.0/35.0;
         CmdBuf_AddText("music play d_intro\n");
       } else {
-        pagetime = 11.0;
+        if (!waitingMusic) pagetime = 11.0;
         CmdBuf_AddText("music play d_dm2ttl\n");
       }
       break;
 
     case 1:
-      if (GetCvarB('d_attraction_mode')) CmdBuf_AddText("PlayDemo demo1\n");
+      if (attractionMode) CmdBuf_AddText("PlayDemo demo1\n");
       break;
 
     case 2:
-      pagetime = 200.0 / 35.0;
+      pagetime = 200.0/35.0;
       page_pic = R_RegisterPic('credit');
       break;
 
     case 3:
-      if (GetCvarB('d_attraction_mode')) CmdBuf_AddText("PlayDemo demo2\n");
+      if (attractionMode) CmdBuf_AddText("PlayDemo demo2\n");
       break;
 
     case 4:
       if (!IsAnyDoom2) {
-        pagetime = 200.0 / 35.0;
+        pagetime = 200.0/35.0;
         page_pic = R_RegisterPic(WadLumpPresent('e4m1') ? 'credit' : 'help2');
       } else {
-        pagetime = 11.0;
+        waitingMusic = MUS_IsMusicAvailable();
+        pagetime = (waitingMusic ? 2.0 : 11.0);
         page_pic = R_RegisterPic('titlepic');
         CmdBuf_AddText("music play d_dm2ttl\n");
       }
       break;
 
     case 5:
-      if (GetCvarB('d_attraction_mode')) CmdBuf_AddText("PlayDemo demo3\n");
+      if (attractionMode) CmdBuf_AddText("PlayDemo demo3\n");
       break;
 
     // THE DEFINITIVE DOOM Special Edition demo
     case 6:
-      if (!IsAnyDoom2 && GetCvarB('d_attraction_mode')) CmdBuf_AddText("PlayDemo demo4\n");
+      if (!IsAnyDoom2 && attractionMode) CmdBuf_AddText("PlayDemo demo4\n");
       break;
   }
 }
@@ -137,6 +146,14 @@ override void OnVisibilityChanged (bool bNewVisibility) {
 override void Tick (float DeltaTime) {
   pagetime -= DeltaTime;
   if (demosequence == -1 || (/*!ClGame.MenuActive() &&*/ pagetime < 0.0)) {
+    if (waitingMusic && demosequence >= 0 && pagetime < 0.0) {
+      if (MUS_GetMusicLoopCounter() == 0) {
+        pagetime = 0;
+        return;
+      }
+      waitingMusic = false;
+      pagetime = 2.0; // wait a litte
+    }
     AdvanceDemo();
   }
 }
