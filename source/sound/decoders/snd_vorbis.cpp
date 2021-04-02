@@ -297,6 +297,6 @@ void VVorbisSampleLoader::Load (sfxinfo_t &Sfx, VStream &Stream) {
 //  VVorbisSampleLoader::GetName
 //
 //==========================================================================
-const char *VMp3SampleLoader::GetName () const noexcept {
+const char *VVorbisSampleLoader::GetName () const noexcept {
   return "vorbis";
 }
