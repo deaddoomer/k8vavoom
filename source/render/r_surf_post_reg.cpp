@@ -82,6 +82,7 @@ static inline void spvReserve (int size) {
 //  surfDrop
 //
 //==========================================================================
+/*
 static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
   surface_t *prev = nullptr;
   surface_t *curr = surfs;
@@ -95,6 +96,7 @@ static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
   }
   return surfs;
 }
+*/
 
 
 //==========================================================================
@@ -102,12 +104,14 @@ static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
 //  surfIndex
 //
 //==========================================================================
+/*
 static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
   if (!curr) return -1;
   int res = 0;
   while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
   return (surfs == curr ? res : -666);
 }
+*/
 
 
 //==========================================================================
@@ -469,7 +473,7 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
 //  IsPointOnLine3D
 //
 //==========================================================================
-static VVA_OKUNUSED inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
+static inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
   const TVec ldir = v1-v0;
   const float llensq = ldir.lengthSquared();
   if (llensq < 1.0f) return false; // dot
@@ -492,59 +496,13 @@ static VVA_OKUNUSED inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1,
 
 //==========================================================================
 //
-//  IsPointOnLine2D
-//
-//  this is faster for 2d case than the above code
-//
-//==========================================================================
-static VVA_OKUNUSED inline bool IsPointOnLine2D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
-  if (v0.x == v1.x) {
-    // vertical line
-    if (fabsf(p.x-v0.x) > 0.001f) return false;
-    return (v0.y < v1.y ? (p.y >= v0.y && p.y <= v1.y) : (p.y >= v1.y && p.y <= v0.y));
-  } else if (v0.y == v1.y) {
-    // horizontal line
-    if (fabsf(p.y-v0.y) > 0.001f) return false;
-    return (v0.x < v1.x ? (p.x >= v0.x && p.x <= v1.x) : (p.x >= v1.x && p.x <= v0.x));
-  } else {
-    // bounding box check
-    if (v0.x < v1.x) {
-      if (p.x < v0.x || p.x > v1.x) return false;
-    } else {
-      if (p.x < v1.x || p.x > v0.x) return false;
-    }
-
-    if (v0.y < v1.y) {
-      if (p.y < v0.y || p.y > v1.y) return false;
-    } else {
-      if (p.y < v1.y || p.y > v0.y) return false;
-    }
-
-    // diagonal line with valid bounding box
-    const float dx = v1.x-v0.x;
-    const float dy = v1.y-v0.y;
-
-    const float slope = dy/dx;
-
-    // y = mx + c
-    // intercept c = y - mx
-    const float intercept = v0.y-slope*v0.x; // which is same as (v1.y-slope*v1.x)
-
-    const float spy = slope*p.x+intercept;
-    return (fabsf(spy-p.y) <= 0.01f); // y position should match
-  }
-}
-
-
-//==========================================================================
-//
 //  SurfaceInsertPointIntoEdge
 //
 //  do not use reference to `p` here!
 //  it may be a vector from some source that can be modified
 //
 //==========================================================================
-static VVA_OKUNUSED surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
+static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
   if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
   //surface_t *prev = nullptr;
   #if 0
