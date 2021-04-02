@@ -590,6 +590,13 @@ native static final bool IsLocalSoundPlaying (name Name);
 // stops all local sounds
 native static final void StopLocalSounds ();
 
+native static final bool MUS_IsMusicAvailable ();
+native static final bool MUS_IsMusicPlaying ();
+native static final void MUS_ResetMusicLoopCounter ();
+native static final int MUS_GetMusicLoopCounter ();
+native static final void MUS_IncMusicLoopCounter ();
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // soundfont list
 

@@ -653,7 +653,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, LocalSound) {
   VName name;
   vobjGetParam(name);
   #ifdef CLIENT
-  GAudio->PlaySound(GSoundManager->GetSoundID(name), TVec(0, 0, 0), TVec(0, 0, 0), 0, 0, 1, 0, false);
+  if (GAudio) GAudio->PlaySound(GSoundManager->GetSoundID(name), TVec(0, 0, 0), TVec(0, 0, 0), 0, 0, 1, 0, false);
   #endif
 }
 
@@ -661,7 +661,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsLocalSoundPlaying) {
   VName name;
   vobjGetParam(name);
   #ifdef CLIENT
-  RET_BOOL(GAudio->IsSoundPlaying(0, GSoundManager->GetSoundID(name)));
+  RET_BOOL(GAudio ? GAudio->IsSoundPlaying(0, GSoundManager->GetSoundID(name)) : false);
   #else
   RET_BOOL(false);
   #endif
@@ -669,7 +669,48 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsLocalSoundPlaying) {
 
 IMPLEMENT_FREE_FUNCTION(VObject, StopLocalSounds) {
   #ifdef CLIENT
-  GAudio->StopSound(0, 0);
+  if (GAudio) GAudio->StopSound(0, 0);
+  #endif
+}
+
+//native static final bool MUS_IsMusicAvailable ();
+IMPLEMENT_FREE_FUNCTION(VObject, MUS_IsMusicAvailable) {
+  #ifdef CLIENT
+  RET_BOOL(GAudio ? GAudio->IsMusicAvailable() : false);
+  #else
+  RET_BOOL(false);
+  #endif
+}
+
+//native static final bool MUS_IsMusicPlaying ();
+IMPLEMENT_FREE_FUNCTION(VObject, MUS_IsMusicPlaying) {
+  #ifdef CLIENT
+  RET_BOOL(GAudio ? GAudio->IsMusicPlaying() : false);
+  #else
+  RET_BOOL(false);
+  #endif
+}
+
+//native static final void MUS_ResetMusicLoopCounter ();
+IMPLEMENT_FREE_FUNCTION(VObject, MUS_ResetMusicLoopCounter) {
+  #ifdef CLIENT
+  if (GAudio) GAudio->ResetMusicLoopCounter();
+  #endif
+}
+
+//native static final int MUS_GetMusicLoopCounter ();
+IMPLEMENT_FREE_FUNCTION(VObject, MUS_GetMusicLoopCounter) {
+  #ifdef CLIENT
+  RET_INT(GAudio ? GAudio->GetMusicLoopCounter() : 0);
+  #else
+  RET_INT(0);
+  #endif
+}
+
+//native static final void MUS_IncMusicLoopCounter ();
+IMPLEMENT_FREE_FUNCTION(VObject, MUS_IncMusicLoopCounter) {
+  #ifdef CLIENT
+  if (GAudio) GAudio->IncMusicLoopCounter();
   #endif
 }
 

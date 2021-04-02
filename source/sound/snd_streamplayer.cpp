@@ -71,6 +71,7 @@ static bool doTick (VStreamMusicPlayer *strm) {
       decodedFromLoop += SamplesDecoded;
       if (strm->Codec->Finished() || SamplesDecoded <= 0) {
         // stream ended
+        strm->IncLoopCounter();
         if (strm->CurrLoop) {
           // restart stream
           strm->Codec->Restart();
@@ -251,7 +252,7 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
         case VStreamMusicPlayer::STP_PlaySong:
           SDLOG("STP:   play song X");
           doLoadNewSong = true;
-          doLoop = (strm->stpcmd == VStreamMusicPlayer::STP_PlaySongLooped);
+          doLoop = (strm->stpcmd != VStreamMusicPlayer::STP_PlaySong);
           newSongName = VStr(strm->namebuf);
           break;
       }
@@ -264,6 +265,7 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
     }
     // load new song
     if (doLoadNewSong) {
+      strm->ResetLoopCounter();
       doLoadNewSong = false;
       bool wasPlaying;
       // stop current song

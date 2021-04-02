@@ -202,7 +202,7 @@ public:
   virtual bool IsSoundPlaying (int, int) = 0;
   virtual void MoveSounds (int origin_id, const TVec &neworigin) = 0;
 
-  // ,usic and general sound control
+  // music and general sound control
   virtual void StartSong (VName, bool) = 0;
   virtual void PauseSound () = 0;
   virtual void ResumeSound () = 0;
@@ -224,6 +224,13 @@ public:
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!
   virtual void NotifySoundLoaded (int sound_id, bool success) = 0;
+
+  // returns `false` if music device is unavailable
+  virtual bool IsMusicAvailable () = 0;
+  virtual bool IsMusicPlaying () = 0;
+  virtual void ResetMusicLoopCounter () = 0;
+  virtual int GetMusicLoopCounter () = 0;
+  virtual void IncMusicLoopCounter () = 0;
 
   static VAudioPublic *Create ();
 };

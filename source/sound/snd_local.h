@@ -406,6 +406,10 @@ public:
   double FinishTime;
   VOpenALDevice *SoundDevice; // `nullptr` means "shutdown called"
 
+private:
+  atomic_int loopCounter;
+
+public:
   VStreamMusicPlayer (VOpenALDevice *InSoundDevice)
     : lastVolume(1.0f)
     , threadInited(false)
@@ -415,6 +419,7 @@ public:
     , Stopping(false)
     , Paused(false)
     , SoundDevice(InSoundDevice)
+    , loopCounter(0)
     , stpIsPlaying(false)
     , stpNewPitch(1.0f)
     , stpNewVolume(1.0f)
@@ -431,6 +436,11 @@ public:
   bool IsPlaying ();
   void SetPitch (float pitch);
   void SetVolume (float volume, bool fromStreamThread=false);
+
+  // all play functions will reset loop counter
+  inline void ResetLoopCounter () noexcept { atomic_set(&loopCounter, 0); }
+  inline int GetLoopCounter () noexcept { return atomic_get(&loopCounter); }
+  inline void IncLoopCounter () noexcept { atomic_increment(&loopCounter); }
 
   void LoadAndPlay (const char *InName, bool InLoop);
 

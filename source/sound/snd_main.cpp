@@ -109,6 +109,12 @@ public:
   // returns codec or nullptr
   virtual VAudioCodec *LoadSongInternal (const char *Song, bool wasPlaying, bool fromStreamThread) override;
 
+  virtual bool IsMusicAvailable () override;
+  virtual bool IsMusicPlaying () override;
+  virtual void ResetMusicLoopCounter () override;
+  virtual int GetMusicLoopCounter () override;
+  virtual void IncMusicLoopCounter () override;
+
 public:
   // console variables
   static VCvarF snd_sfx_volume;
@@ -285,6 +291,56 @@ VAudio::VAudio ()
 //==========================================================================
 VAudio::~VAudio () {
   Shutdown();
+}
+
+
+//==========================================================================
+//
+//  VAudio::IsMusicAvailable
+//
+//==========================================================================
+bool VAudio::IsMusicAvailable () {
+  return !!StreamMusicPlayer;
+}
+
+
+//==========================================================================
+//
+//  VAudio::IsMusicPlaying
+//
+//==========================================================================
+bool VAudio::IsMusicPlaying () {
+  return (StreamMusicPlayer ? StreamMusicPlayer->IsPlaying() : false);
+}
+
+
+//==========================================================================
+//
+//  VAudio::ResetMusicLoopCounter
+//
+//==========================================================================
+void VAudio::ResetMusicLoopCounter () {
+  if (StreamMusicPlayer) StreamMusicPlayer->ResetLoopCounter();
+}
+
+
+//==========================================================================
+//
+//  VAudio::GetMusicLoopCounter
+//
+//==========================================================================
+int VAudio::GetMusicLoopCounter () {
+  return (StreamMusicPlayer ? StreamMusicPlayer->GetLoopCounter() : 0);
+}
+
+
+//==========================================================================
+//
+//  VAudio::IncMusicLoopCounter
+//
+//==========================================================================
+void VAudio::IncMusicLoopCounter () {
+  if (StreamMusicPlayer) StreamMusicPlayer->IncLoopCounter();
 }
 
 
