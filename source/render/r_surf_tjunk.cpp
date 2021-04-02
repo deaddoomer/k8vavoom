@@ -23,24 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-
-//==========================================================================
-//
-//  BinHeapLess
-//
-//  it has to be here, sorry
-//
-//==========================================================================
-static inline bool BinHeapLess (float a, float b) noexcept {
-  return (a < b);
-}
-
-
 #include "../gamedefs.h"
 #include "r_local.h"
 
 
-#define VV_TJUNCTION_VERBOSE
+//#define VV_TJUNCTION_VERBOSE
 
 #ifdef VV_TJUNCTION_VERBOSE
 # define TJLOG(...)  if (dbg_fix_tjunctions) GCon->Logf(__VA_ARGS__)
@@ -51,7 +38,58 @@ static inline bool BinHeapLess (float a, float b) noexcept {
 
 //==========================================================================
 //
+//  InsertEdgePoint
+//
+//  insert point into quad edge
+//  returns `true` if the point was inserted
+//
+//==========================================================================
+static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t *&surf, int vf0, int &vf1, const bool goUp, bool &wasChanged, const int linenum) {
+  // find the index to insert new vertex (before)
+  int insidx = vf0;
+  if (goUp) {
+    // z goes up
+    if (hz <= surf->verts[vf0].z) return; // too low
+    if (hz >= surf->verts[vf1-1].z) return; // too high
+    while (insidx < vf1 && hz > surf->verts[insidx].z) ++insidx;
+  } else {
+    // z goes down
+    if (hz >= surf->verts[vf0].z) return; // too high
+    if (hz <= surf->verts[vf1-1].z) return; // too low
+    while (insidx < vf1 && hz < surf->verts[insidx].z) ++insidx;
+  }
+
+  #ifdef VV_TJUNCTION_VERBOSE
+  if (!wasChanged) {
+    TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", linenum, vf0, vf1, surf->count, (int)goUp);
+
+    TJLOG(NAME_Debug, "    found index %d [%d..%d) for hz=%g prev=(%g,%g,%g); next=(%g,%g,%g)", insidx, vf0, vf1, hz,
+      (insidx > 0 ? surf->verts[insidx-1].x : -NAN), (insidx > 0 ? surf->verts[insidx-1].y : -NAN), (insidx > 0 ? surf->verts[insidx-1].z : -NAN),
+      (insidx < surf->count ? surf->verts[insidx].x : -NAN), (insidx < surf->count ? surf->verts[insidx].y : -NAN), (insidx < surf->count ? surf->verts[insidx].z : -NAN));
+  }
+  #endif
+
+  if (insidx >= vf1 || surf->verts[insidx].z == hz) return; // cannot insert, or duplicate point
+
+  TJLOG(NAME_Debug, "      inserting before index %d, hz=%g", insidx, hz);
+  surf = RLev->EnsureSurfacePoints(surf, surf->count+1, surf, nullptr);
+
+  const TVec np = TVec(surf->verts[vf0].x, surf->verts[vf0].y, hz);
+  surf->InsertVertexAt(insidx, np, nullptr, nullptr);
+
+  ++vf1; // our range was increased
+  wasChanged = true;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::FixSegTJunctions
+//
+//  new code, that will not create two triangles,
+//  but will use centroid instead
+//
+//  note that we should get a single valid vertical quad here
 //
 //  we'll fix t-junctions here
 //
@@ -68,340 +106,6 @@ static inline bool BinHeapLess (float a, float b) noexcept {
 //
 //  i am also using `updateWorldFrame` as validcounter, so no lines
 //  will be processed twice in one frame.
-//
-//==========================================================================
-#if 0
-old code
-surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
-  //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
-  // wall segment should always be a quad
-  if (!lastRenderQuality /*|| surf->count != 4*/) return surf; // just in case
-  if (seg->pobj) return surf; // do not fix polyobjects (yet?)
-
-  const line_t *line = seg->linedef;
-  const sector_t *mysec = seg->frontsector;
-  if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
-
-  /* nope, this is not right anymore
-  // invariant, actually
-  // it is called from `CreateWSurf()`, so it can't have any linked surfaces
-  // the only case it can is when it was subdivided, but advanced render doesn't do any subdivisions
-  if (surf->next) {
-    GCon->Logf(NAME_Warning, "line #%d, seg #%d: has surface chain", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    return surf;
-  }
-  */
-
-  surface_t *listhead = surf;
-  surface_t *prev = nullptr;
-
-  for (; surf; prev = surf, surf = surf->next) {
-    if (surf->count != 4) {
-      TJLOG(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to not being a quad (%d) (%p : %p)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->count, surf->next, listhead);
-      continue;
-    }
-
-    if (surf->isCentroidCreated()) {
-      GCon->Logf(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to centroid presence (%p : %p)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->next, listhead);
-      continue;
-    }
-
-    // ignore paper-thin surfaces
-    if (surf->verts[0].z == surf->verts[1].z &&
-        surf->verts[2].z == surf->verts[3].z)
-    {
-      TJLOG(NAME_Debug, "line #%d, seg #%d: ignore due to being paper-thin", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-      continue;
-    }
-
-    // good wall quad should consist of two vertical lines
-    if (surf->verts[0].x != surf->verts[1].x || surf->verts[0].y != surf->verts[1].y ||
-        surf->verts[2].x != surf->verts[3].x || surf->verts[2].y != surf->verts[3].y)
-    {
-      if (warn_fix_tjunctions) GCon->Logf(NAME_Warning, "line #%d, seg #%d: bad quad (0)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-      if (warn_fix_tjunctions) {
-        GCon->Logf(NAME_Debug, " (%g,%g,%g)-(%g,%g,%g)", seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-        for (int f = 0; f < surf->count; ++f) GCon->Logf(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z);
-      }
-      continue;
-    }
-
-    //GCon->Logf(NAME_Debug, "*** checking line #%d...", (int)(ptrdiff_t)(line-&Level->Lines[0]));
-
-    float minz[2];
-    float maxz[2];
-    int v0idx;
-         if (fabsf(surf->verts[0].x-seg->v1->x) < 0.1f && fabsf(surf->verts[0].y-seg->v1->y) < 0.1f) v0idx = 0;
-    else if (fabsf(surf->verts[0].x-seg->v2->x) < 0.1f && fabsf(surf->verts[0].y-seg->v2->y) < 0.1f) v0idx = 2;
-    else {
-      if (warn_fix_tjunctions) GCon->Logf(NAME_Warning, "line #%d, seg #%d: bad quad (1)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-      if (warn_fix_tjunctions) {
-        GCon->Logf(NAME_Debug, " (%g,%g,%g)-(%g,%g,%g)", seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-        for (int f = 0; f < surf->count; ++f) GCon->Logf(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z);
-      }
-      continue;
-    }
-    minz[0] = min2(surf->verts[v0idx].z, surf->verts[v0idx+1].z);
-    maxz[0] = max2(surf->verts[v0idx].z, surf->verts[v0idx+1].z);
-    minz[1] = min2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
-    maxz[1] = max2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
-
-    // the surface will be split to two triangles, so rendering with triangle fans will work with added vertices
-    tjunkTri0.resetNoDtor();
-    tjunkTri1.resetNoDtor();
-    //TJLOG(NAME_Debug, "*** minz=%g; maxz=%g", minz, maxz);
-    // for each seg vertex
-    for (int vidx = 0; vidx < 2; ++vidx) {
-      // do not fix anything for seg vertex that doesn't touch line vertex
-      // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
-      // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
-      int lvidx;
-      if (vidx == 0) {
-        /*
-             if (seg->v1->x == line->v1->x && seg->v1->y == line->v1->y) lvidx = 0;
-        else if (seg->v1->x == line->v2->x && seg->v1->y == line->v2->y) lvidx = 1;
-        else continue;
-        */
-             if (seg->v1 == line->v1) lvidx = 0;
-        else if (seg->v1 == line->v2) lvidx = 1;
-        else continue;
-
-        // in lightmapped renderer surface can be inside a seg, check for this
-        if (listhead->next &&
-            (surf->verts[v0idx].x != seg->v1->x || surf->verts[v0idx+1].x != seg->v1->x ||
-             surf->verts[v0idx].y != seg->v1->y || surf->verts[v0idx+1].y != seg->v1->y))
-        {
-          TJLOG(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to not being a v1 border quad (%d) (%p : %p)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->count, surf->next, listhead);
-          continue;
-        }
-      } else {
-        /*
-             if (seg->v2->x == line->v1->x && seg->v2->y == line->v1->y) lvidx = 0;
-        else if (seg->v2->x == line->v2->x && seg->v2->y == line->v2->y) lvidx = 1;
-        else continue;
-        */
-             if (seg->v2 == line->v1) lvidx = 0;
-        else if (seg->v2 == line->v2) lvidx = 1;
-        else continue;
-
-        // in lightmapped renderer surface can be inside a seg, check for this
-        if (listhead->next &&
-            (surf->verts[2-v0idx].x != seg->v2->x || surf->verts[2-v0idx+1].x != seg->v2->x ||
-             surf->verts[2-v0idx].y != seg->v2->y || surf->verts[2-v0idx+1].y != seg->v2->y))
-        {
-          TJLOG(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to not being a v2 border quad (%d) (%p : %p)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->count, surf->next, listhead);
-          continue;
-        }
-      }
-
-      // collect all possible height fixes
-      const int lvxCount = line->vxCount(lvidx);
-      if (!lvxCount) continue;
-      const TVec lv = (lvidx ? *line->v2 : *line->v1);
-      tjunkHList.resetNoDtor();
-      for (int f = 0; f < lvxCount; ++f) {
-        const line_t *ln = line->vxLine(lvidx, f);
-        if (ln == line) continue;
-        //TJLOG(NAME_Debug, "  vidx=%d; other line #%d...", vidx, (int)(ptrdiff_t)(ln-&Level->Lines[0]));
-        for (int sn = 0; sn < 2; ++sn) {
-          const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
-          if (!sec || sec == mysec) continue;
-          if (sn && ln->frontsector == ln->backsector) continue; // self-referenced line
-          /*const*/ float fz = sec->floor.GetPointZClamped(lv);
-          /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
-          if (fz > cz) continue; // just in case
-          if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
-          //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
-          if (fz > minz[vidx]) tjunkHList.push(fz);
-          if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
-
-          if (true /*(sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack*/) {
-            if (sec->heightsec) {
-              const sector_t *fsec = sec->heightsec;
-              cz = fsec->ceiling.GetPointZ(lv);
-              fz = fsec->floor.GetPointZ(lv);
-              TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
-              if (fz > minz[vidx]) tjunkHList.push(fz);
-              if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
-            }
-          }
-
-          // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
-          if (sec->Has3DFloors()) {
-            //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
-            for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
-              if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
-              if (!reg->isBlockingExtraLine()) continue;
-              cz = reg->eceiling.GetPointZ(lv);
-              fz = reg->efloor.GetPointZ(lv);
-              if (cz < fz) continue; // invisible region
-              // paper-thin regions will split planes too
-              if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) tjunkHList.push(fz);
-              if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) tjunkHList.push(cz);
-            }
-          }
-
-          #if 0
-          //FIXME: cache this info
-          if ((sec->SectorFlags&(sector_t::SF_IsTransDoorTop|sector_t::SF_IsTransDoorTrack)) == sector_t::SF_IsTransDoorTrack) {
-            for (int ff = 0; ff < sec->linecount; ++ff) {
-              const line_t *ldef = sec->lines[ff];
-              if (ldef == ln || ldef == line) continue;
-              if (ldef->sidenum[0] < 0) continue;
-              if ((ldef->flags&(ML_TWOSIDED|ML_3DMIDTEX)) != ML_TWOSIDED) continue;
-
-              const sector_t *fsec = ldef->frontsector;
-              const sector_t *bsec = ldef->backsector;
-              if (!fsec || !bsec) continue; // one-sided
-              if (fsec == bsec) continue; // self-referenced sector
-              if (/*fsec != sec &&*/ bsec != sec) continue;
-              TJLOG(NAME_Debug, "  other line #%d: fsec=%d; fz=%g; cz=%g; bsec=%d; fz=%g; cz=%g",
-                (int)(ptrdiff_t)(ldef-&Level->Lines[0]),
-                  (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fsec->floor.GetPointZ(lv), fsec->ceiling.GetPointZ(lv),
-                  (int)(ptrdiff_t)(bsec-&Level->Sectors[0]), bsec->floor.GetPointZ(lv), bsec->ceiling.GetPointZ(lv)
-              );
-
-              cz = fsec->ceiling.GetPointZ(lv);
-              fz = fsec->floor.GetPointZ(lv);
-              if (fz > minz[vidx]) tjunkHList.push(fz);
-              if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
-
-              cz = bsec->ceiling.GetPointZ(lv);
-              fz = bsec->floor.GetPointZ(lv);
-              if (fz > minz[vidx]) tjunkHList.push(fz);
-              if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
-            }
-          }
-          #endif
-        }
-      }
-      if (!tjunkHList.length()) continue;
-
-      TJLOG(NAME_Debug, "line #%d, vertex %d: at most %d additional %s", (int)(ptrdiff_t)(line-&Level->Lines[0]), lvidx, tjunkHList.length(), (tjunkHList.length() != 1 ? "vertices" : "vertex"));
-      // split quad to two triangles if it wasn't done yet
-      if (!tjunkTri1.length()) {
-        // invariant: first triangle edge is a vertical line
-        vassert(surf->count == 4);
-        #ifdef VV_TJUNCTION_VERBOSE
-          TJLOG(NAME_Debug, " minz=%g:%g; maxz=%g:%g; (%g,%g,%g)-(%g,%g,%g)", minz[0], minz[1], maxz[0], maxz[1], seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-          for (int f = 0; f < surf->count; ++f) TJLOG(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z);
-        #endif
-        // first triangle
-        tjunkTri0.append(surf->verts[(v0idx+0)&3].vec());
-        tjunkTri0.append(surf->verts[(v0idx+1)&3].vec());
-        tjunkTri0.append(surf->verts[(v0idx+2)&3].vec());
-        // second triangle
-        tjunkTri1.append(surf->verts[(v0idx+2)&3].vec());
-        tjunkTri1.append(surf->verts[(v0idx+3)&3].vec());
-        tjunkTri1.append(surf->verts[(v0idx+0)&3].vec());
-      }
-
-      // get triangle to fix
-      TArray<TVec> &tri = (vidx ? tjunkTri1 : tjunkTri0);
-
-      if (tri.length() == 3 && tri[0].z == tri[1].z) {
-        TJLOG(NAME_Debug, "line #%d, seg #%d: ignore side due to being paper-thin", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-        continue;
-      }
-
-      // insert vertices
-      float prevhz = -FLT_MAX;
-      while (tjunkHList.length()) {
-        const float hz = tjunkHList.pop();
-        if (hz != prevhz) {
-          #ifdef VV_TJUNCTION_VERBOSE
-          TJLOG(NAME_Debug, " y=%g; minz=%g:%g; maxz=%g:%g; (%g,%g,%g)-(%g,%g,%g)", hz, minz[0], minz[1], maxz[0], maxz[1], seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-          for (int f = 0; f < tri.length(); ++f) TJLOG(NAME_Debug, "  %d: (%g,%g,%g)", f, tri[f].x, tri[f].y, tri[f].z);
-          #endif
-          prevhz = hz;
-          // find the index to insert new vertex (before)
-          int f = 0;
-          if (tri[0].z < tri[1].z) {
-            while (f < tri.length() && tri[f].z < hz) ++f;
-          } else {
-            while (f < tri.length() && hz < tri[f].z) ++f;
-          }
-          if (f < 1) {
-            TJLOG(NAME_Debug, "  OOPS! (0)");
-            continue;
-          }
-          if (f >= tri.length()) {
-            TJLOG(NAME_Debug, "  OOPS! (1)");
-            continue;
-          }
-          if (tri[0].x != tri[f].x || tri[0].y != tri[f].y) {
-            TJLOG(NAME_Debug, "  OOPS! (2); f=%d", f);
-            continue;
-          }
-          tri.Insert(f, TVec(tri[0].x, tri[0].y, hz));
-          #ifdef VV_TJUNCTION_VERBOSE
-          TJLOG(NAME_Debug, "   INSERTED AT %d", f);
-          for (int ff = 0; ff < tri.length(); ++ff) TJLOG(NAME_Debug, "      %d: (%g,%g,%g)", ff, tri[ff].x, tri[ff].y, tri[ff].z);
-          #endif
-        }
-      }
-    }
-
-    // create new surfaces
-    // starting from the last tri point is guaranteed to create a valid triangle fan
-    // but don't bother if no new vertices were added
-    if (tjunkTri0.length() > 3 || tjunkTri1.length() > 3) {
-      vassert(surf->lmsize == 0);
-      vassert(surf->lmrgbsize == 0);
-      vassert(!surf->lightmap);
-      vassert(!surf->lightmap_rgb);
-      vassert(!surf->CacheSurf);
-      // s0
-      surface_t *s0 = NewWSurf(tjunkTri0.length());
-      s0->copyRequiredFrom(*surf);
-      s0->count = tjunkTri0.length();
-      TJLOG(NAME_Debug, " *** tjunkTri0 ***");
-      for (int f = 0; f < s0->count; ++f) {
-        const int vn = (s0->count-1+f)%s0->count;
-        TJLOG(NAME_Debug, "   %d(%d): (%g,%g,%g)", f, vn, tjunkTri0[vn].x, tjunkTri0[vn].y, tjunkTri0[vn].z);
-        s0->verts[f].x = tjunkTri0[vn].x;
-        s0->verts[f].y = tjunkTri0[vn].y;
-        s0->verts[f].z = tjunkTri0[vn].z;
-      }
-      // s1
-      surface_t *s1 = NewWSurf(tjunkTri1.length());
-      s1->copyRequiredFrom(*surf);
-      s1->count = tjunkTri1.length();
-      TJLOG(NAME_Debug, " *** tjunkTri1 ***");
-      for (int f = 0; f < s1->count; ++f) {
-        const int vn = (s1->count-1+f)%s1->count;
-        TJLOG(NAME_Debug, "   %d(%d): (%g,%g,%g)", f, vn, tjunkTri1[vn].x, tjunkTri1[vn].y, tjunkTri1[vn].z);
-        s1->verts[f].x = tjunkTri1[vn].x;
-        s1->verts[f].y = tjunkTri1[vn].y;
-        s1->verts[f].z = tjunkTri1[vn].z;
-      }
-      // link them
-      s0->next = s1;
-      s1->next = surf->next;
-      // insert instead of `surf`
-      if (prev) prev->next = s0; else listhead = s0;
-      surf->next = nullptr; // break link
-      FreeWSurfs(surf);
-      prev = s0;
-      surf = s1;
-      //
-      if (dbg_fix_tjunctions.asBool()) GCon->Logf(NAME_Debug, "line #%d, seg #%d: fixed t-junctions", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    }
-  }
-
-  return listhead;
-}
-#endif
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::FixSegTJunctions
-//
-//  new code, that will not create two triangles,
-//  but will use centroid instead
-//
-//  note that we should get a single valid vertical quad here
 //
 //==========================================================================
 surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
@@ -473,6 +177,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   maxz[1] = max2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
 
   bool wasChanged = false;
+  const int linenum = (int)(ptrdiff_t)(line-&Level->Lines[0]);
 
   //TJLOG(NAME_Debug, "*** minz=%g; maxz=%g", minz, maxz);
   // for each seg vertex
@@ -496,7 +201,29 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
     if (!lvxCount) continue;
     const TVec lv = (lvidx ? *line->v2 : *line->v1);
 
-    tjunkHList.resetNoDtor();
+    // get side indicies
+    const TVec *segv = (vidx == 0 ? seg->v1 : seg->v2);
+
+    int vf0 = 0;
+    while (vf0 < surf->count && (surf->verts[vf0].x != segv->x || surf->verts[vf0].y != segv->y)) ++vf0;
+    if (vf0 >= surf->count-1) {
+      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (0) with a seg of line #%d!", linenum);
+      continue;
+    }
+
+    int vf1 = vf0+1;
+    while (vf1 < surf->count && surf->verts[vf1].x == segv->x && surf->verts[vf1].y == segv->y) ++vf1;
+    if (vf1-vf0 < 2) {
+      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (1) with a seg of line #%d!", linenum);
+      continue;
+    }
+
+    const bool goUp = (surf->verts[vf0].z <= surf->verts[vf1].z);
+    // our edge is [vf0..vf1)
+
+    //TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", linenum, vf0, vf1, surf->count, (int)goUp);
+
+    // insert points; order doesn't matter
     for (int f = 0; f < lvxCount; ++f) {
       const line_t *ln = line->vxLine(lvidx, f);
       if (ln == line) continue;
@@ -505,13 +232,14 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
         const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
         if (!sec || sec == mysec) continue;
         if (sn && ln->frontsector == ln->backsector) continue; // self-referenced line
+
         /*const*/ float fz = sec->floor.GetPointZClamped(lv);
         /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
         if (fz > cz) continue; // just in case
         if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
         //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
-        if (fz > minz[vidx]) tjunkHList.push(fz);
-        if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+        if (fz > minz[vidx]) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+        if (cz != fz && cz < maxz[vidx]) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
 
         // fake floors
         if (sec->heightsec) {
@@ -519,8 +247,8 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
           cz = fsec->ceiling.GetPointZ(lv);
           fz = fsec->floor.GetPointZ(lv);
           TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
-          if (fz > minz[vidx]) tjunkHList.push(fz);
-          if (cz != fz && cz < maxz[vidx]) tjunkHList.push(cz);
+          if (fz > minz[vidx]) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+          if (cz != fz && cz < maxz[vidx]) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
         }
 
         // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
@@ -533,67 +261,10 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
             fz = reg->efloor.GetPointZ(lv);
             if (cz < fz) continue; // invisible region
             // paper-thin regions will split planes too
-            if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) tjunkHList.push(fz);
-            if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) tjunkHList.push(cz);
+            if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+            if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
           }
         }
-      }
-    }
-    if (!tjunkHList.length()) continue;
-
-    TJLOG(NAME_Debug, "line #%d, vertex %d: at most %d additional %s", (int)(ptrdiff_t)(line-&Level->Lines[0]), lvidx, tjunkHList.length(), (tjunkHList.length() != 1 ? "vertices" : "vertex"));
-
-    // get side to fix
-    const TVec *segv = (vidx == 0 ? seg->v1 : seg->v2);
-
-    int vf0 = 0;
-    while (vf0 < surf->count && (surf->verts[vf0].x != segv->x || surf->verts[vf0].y != segv->y)) ++vf0;
-    if (vf0 >= surf->count-1) {
-      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (0) with a seg of line #%d!", (int)(ptrdiff_t)(line-&Level->Lines[0]));
-      break;
-    }
-    int vf1 = vf0+1;
-    while (vf1 < surf->count && surf->verts[vf1].x == segv->x && surf->verts[vf1].y == segv->y) ++vf1;
-    if (vf1-vf0 < 2) {
-      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (1) with a seg of line #%d!", (int)(ptrdiff_t)(line-&Level->Lines[0]));
-      break;
-    }
-
-    const bool goUp = (surf->verts[vf0].z <= surf->verts[vf1].z);
-    // our edge is [vf0..vf1)
-
-    TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", (int)(ptrdiff_t)(line-&Level->Lines[0]), vf0, vf1, surf->count, (int)goUp);
-
-    // insert vertices
-    float prevhz = -FLT_MAX;
-    while (tjunkHList.length()) {
-      const float hz = tjunkHList.pop();
-      TJLOG(NAME_Debug, "  hz=%g; prevhz=%g", hz, prevhz);
-      if (hz != prevhz) {
-        prevhz = hz;
-        // find the index to insert new vertex (before)
-        int insidx = vf0;
-        if (goUp) {
-          // z goes up
-          if (hz <= surf->verts[vf0].z) continue; // too low
-          if (hz >= surf->verts[vf1-1].z) continue; // too high
-          while (insidx < vf1 && hz > surf->verts[insidx].z) ++insidx;
-        } else {
-          // z goes down
-          if (hz >= surf->verts[vf0].z) continue; // too high
-          if (hz <= surf->verts[vf1-1].z) continue; // too low
-          while (insidx < vf1 && hz < surf->verts[insidx].z) ++insidx;
-        }
-        TJLOG(NAME_Debug, "    found index %d [%d..%d) for hz=%g prev=(%g,%g,%g); next=(%g,%g,%g)", insidx, vf0, vf1, hz,
-          (insidx > 0 ? surf->verts[insidx-1].x : -NAN), (insidx > 0 ? surf->verts[insidx-1].y : -NAN), (insidx > 0 ? surf->verts[insidx-1].z : -NAN),
-          (insidx < surf->count ? surf->verts[insidx].x : -NAN), (insidx < surf->count ? surf->verts[insidx].y : -NAN), (insidx < surf->count ? surf->verts[insidx].z : -NAN));
-        if (insidx >= vf1 || surf->verts[insidx].z == hz) continue; // cannot insert, or duplicate point
-        TJLOG(NAME_Debug, "      inserting before index %d, hz=%g", insidx, hz);
-        surf = EnsureSurfacePoints(surf, surf->count+1, surf, nullptr);
-        const TVec np = TVec(surf->verts[vf0].x, surf->verts[vf0].y, hz);
-        surf->InsertVertexAt(insidx, np, nullptr, nullptr);
-        ++vf1; // we have more points here
-        wasChanged = true;
       }
     }
   }
@@ -605,7 +276,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
     surf->AddCentroidWall();
   }
 
-  if (wasChanged && dbg_fix_tjunctions.asBool()) GCon->Logf(NAME_Debug, "line #%d, seg #%d: fixed t-junctions", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
+  if (wasChanged && dbg_fix_tjunctions.asBool()) GCon->Logf(NAME_Debug, "line #%d, seg #%d: fixed t-junctions", linenum, (int)(ptrdiff_t)(seg-&Level->Segs[0]));
 
   return surf;
 }

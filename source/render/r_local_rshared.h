@@ -221,10 +221,6 @@ protected:
 
   bool createdFullSegs;
 
-  // used in t-junction fixer, put there to avoid constant memory reallocating
-  TBinHeapNC<float> tjunkHList;
-  TArray<TVec> tjunkTri0, tjunkTri1;
-
   vuint32 currVisFrame;
 
   // chasecam
