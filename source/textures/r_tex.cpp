@@ -409,8 +409,9 @@ int VTextureManager::AddTexture (VTexture *Tex) {
     //FIXME: real dummy name should be checked only for wall textures, i guess
     // it is safe to use `IsDummyTextureName()` here, as `NAME_None` already checked
     if (IsDummyTextureName(Tex->Name)) {
-      GCon->Logf(NAME_Warning, "tried to add dummy texture with name '%s' as a normal one (from lump '%s')", *VStr(Tex->Name).toUpperCase(), *W_FullLumpName(Tex->SourceLump));
-      abort();
+      // ignore this texture
+      // this is memory leak, but i don't care -- broken mods cannot work right anyway
+      GCon->Logf(NAME_Error, "tried to add dummy texture with name '%s' (%s) as a normal one (from lump '%s')", *VStr(Tex->Name).toUpperCase(), VTexture::TexTypeToStr(Tex->Type), *W_FullLumpName(Tex->SourceLump));
       return 0; // "no texture"
     }
   }
@@ -2037,13 +2038,32 @@ void VTextureManager::ParseTextureTextLump (int lump, bool asHiRes) {
       continue;
     }
 
-    if (sc->Check("walltexture")) { if (!asHiRes) AddTexture(new VMultiPatchTexture(sc, TEXTYPE_Wall)); else sc->SkipBracketed(false); continue; }
-    if (sc->Check("flat")) { if (!asHiRes) AddTexture(new VMultiPatchTexture(sc, TEXTYPE_Flat)); else sc->SkipBracketed(false); continue; }
-    if (sc->Check("texture")) { if (!asHiRes) AddTexture(new VMultiPatchTexture(sc, TEXTYPE_Overload)); else sc->SkipBracketed(false); continue; }
-    if (sc->Check("sprite")) { if (!asHiRes) AddTexture(new VMultiPatchTexture(sc, TEXTYPE_Sprite)); else sc->SkipBracketed(false); continue; }
-    if (sc->Check("graphic")) { if (!asHiRes) AddTexture(new VMultiPatchTexture(sc, TEXTYPE_Pic)); else sc->SkipBracketed(false); continue; }
+    int ttype = TEXTYPE_Null;
+    const TLocation loc = sc->GetLoc();
 
-    sc->Error(va("Bad texture command: '%s'", *sc->String));
+         if (sc->Check("walltexture")) ttype = TEXTYPE_Wall;
+    else if (sc->Check("flat")) ttype = TEXTYPE_Flat;
+    else if (sc->Check("texture")) ttype = TEXTYPE_Overload;
+    else if (sc->Check("sprite")) ttype = TEXTYPE_Sprite;
+    else if (sc->Check("graphic")) ttype = TEXTYPE_Pic;
+    else sc->Error(va("Bad texture command: '%s'", *sc->String));
+
+    //GCon->Logf(NAME_Debug, "%s: ***ttype=%s", *loc.toStringNoCol(), VTexture::TexTypeToStr(ttype));
+    if (asHiRes) { sc->SkipBracketed(false); continue; }
+
+    VTexture *Tex = new VMultiPatchTexture(sc, ttype);
+    if (!Tex) {
+      GCon->Logf(NAME_Warning, "%s: cannot add texture with type '%s'", *loc.toStringNoCol(), VTexture::TexTypeToStr(ttype));
+      continue;
+    }
+
+    if (Textures.length() && IsDummyTextureName(Tex->Name)) {
+      GCon->Logf(NAME_Error, "tried to add dummy texture with name '%s' (%s) as a normal one (from lump '%s')", *VStr(Tex->Name).toUpperCase(), VTexture::TexTypeToStr(Tex->Type), *W_FullLumpName(Tex->SourceLump));
+      delete Tex;
+      continue;
+    }
+
+    AddTexture(Tex);
   }
   delete sc;
 }
