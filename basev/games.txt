@@ -229,6 +229,7 @@ game "nerve" {
 
 
 // Doom:Complete
+/*
 game "complete" {
   description = "Doom: Complete";
   game = "basev/complete";
@@ -249,6 +250,7 @@ game "complete" {
     "doom.id.doom2.wadsmoosh",
   }
 }
+*/
 
 
 // Chex Quest 1
