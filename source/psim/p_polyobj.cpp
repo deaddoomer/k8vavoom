@@ -347,6 +347,8 @@ static int explinesCompare (const void *aa, const void *bb, void *) {
 void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt) {
   if (/*tag == 0 ||*/ tag == 0x7fffffff) Host_Error("the map tried to spawn polyobject with invalid tag: %d", tag);
 
+  const bool want3DPobj = (thing && thing->type == PO_SPAWN_3D_TYPE);
+
   const int index = NumPolyObjs++;
 
   GCon->Logf(NAME_Debug, "SpawnPolyobj: tag=%d; idx=%d; thing=%d", tag, index, (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1));
@@ -390,17 +392,23 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     line_t *line = &itline;
     if (line->special == PO_LINE_START && line->arg1 == tag) {
       if (lstart) {
-        GCon->Logf(NAME_Error, "ignored extra `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (the first is at line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]), (int)(ptrdiff_t)(lstart-&Lines[0]));
+        const char *msg = va("ignored extra `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (the first is at line #%d)", tag, (int)(ptrdiff_t)(line-&Lines[0]), (int)(ptrdiff_t)(lstart-&Lines[0]));
+        if (want3DPobj) Host_Error("%s", msg);
+        GCon->Log(NAME_Error, msg);
         continue;
       }
       if (explines.length()) {
-        GCon->Logf(NAME_Error, "ignored `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_ExplicitLine` special)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
+        const char *msg = va("ignored `Polyobj_StartLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_ExplicitLine` special)", tag, (int)(ptrdiff_t)(line-&Lines[0]));
+        if (want3DPobj) Host_Error("%s", msg);
+        GCon->Log(NAME_Error, msg);
         continue;
       }
       lstart = line;
     } else if (line->special == PO_LINE_EXPLICIT && line->arg1 == tag) {
       if (lstart) {
-        GCon->Logf(NAME_Error, "ignored `Polyobj_ExplicitLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_StartLine` special)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]));
+        const char *msg = va("ignored `Polyobj_ExplicitLine` special for polyobject with tag #%d at line #%d (due to previous `Polyobj_StartLine` special)", tag, (int)(ptrdiff_t)(lstart-&Lines[0]));
+        if (want3DPobj) Host_Error("%s", msg);
+        GCon->Log(NAME_Error, msg);
         continue;
       }
       explines.append(line);
@@ -451,7 +459,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   sector_t *sback = nullptr;
 
   // but don't bother if we don't want to spawn 3d pobj
-  if (thing && thing->type == PO_SPAWN_3D_TYPE) {
+  if (want3DPobj) {
     for (auto &&ld : explines) {
       if (!(ld->flags&ML_TWOSIDED)) { valid3d = false; break; } // found one-sided line
       if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) { valid3d = false; break; } // invalid sectors
@@ -503,7 +511,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     valid3d = false;
   }
 
-  if (thing && thing->type == PO_SPAWN_3D_TYPE && !valid3d) Host_Error("trying to spawn 3d pobj #%d, which is not a valid 3d pobj", po->tag);
+  if (want3DPobj && !valid3d) Host_Error("trying to spawn 3d pobj #%d, which is not a valid 3d pobj", po->tag);
 
   // we know all pobj lines, so store 'em
   // also, set args
@@ -940,7 +948,6 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   po->startSpot.z = 0.0f; // this is actually offset from "default z point" destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f));
 
   const mthing_t *thing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
-  //if (!thing && thing->type != PO_SPAWN_3D_TYPE) po->posector = nullptr; // not a 3d polyobject
 
   float deltaZ = 0.0f;
 
