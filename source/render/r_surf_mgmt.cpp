@@ -274,7 +274,8 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   }
 
   //!GCon->Logf(NAME_Debug, "sfcS:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", surf, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z, texinfo->saxisLM.x, texinfo->saxisLM.y, texinfo->saxisLM.z, texinfo->taxisLM.x, texinfo->taxisLM.y, texinfo->taxisLM.z);
-  surf = FixSegTJunctions(SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg), seg);
+  //surf = FixSegTJunctions(SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg), seg);
+  surf = SubdivideSeg(FixSegTJunctions(surf, seg), texinfo->saxisLM, &texinfo->taxisLM, seg);
   surf = FixSegSurfaceTJunctions(surf, seg);
   InitSurfs(true, surf, texinfo, seg, sub); // recalc static lightmaps
   return surf;

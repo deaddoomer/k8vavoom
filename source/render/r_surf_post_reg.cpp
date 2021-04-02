@@ -61,6 +61,11 @@ static SurfVertex *spvPoolV2 = nullptr;
 static int spvPoolSize = 0;
 
 
+//==========================================================================
+//
+//  spvReserve
+//
+//==========================================================================
 static inline void spvReserve (int size) {
   if (size < 1) size = 1;
   size = (size|0xfff)+1;
@@ -72,6 +77,49 @@ static inline void spvReserve (int size) {
     spvPoolV2 = (SurfVertex *)Z_Realloc(spvPoolV2, spvPoolSize*sizeof(spvPoolV2[0])); if (!spvPoolV2) Sys_Error("OOM!");
   }
 }
+
+
+//==========================================================================
+//
+//  RemoveCentroids
+//
+//  always create centroids for complex surfaces
+//  this is required to avoid omiting some triangles
+//  in renderer (which can cause t-junctions)
+//
+//==========================================================================
+static surface_t *RemoveCentroids (surface_t *surf) {
+  for (surface_t *ss = surf; ss; ss = ss->next) {
+    if (ss->isCentroidCreated()) ss->RemoveCentroid();
+  }
+  return surf;
+}
+
+
+//==========================================================================
+//
+//  RecreateCentroids
+//
+//  always create centroids for complex surfaces
+//  this is required to avoid omiting some triangles
+//  in renderer (which can cause t-junctions)
+//
+//==========================================================================
+static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf, bool asFlat) {
+  surface_t *prev = nullptr;
+  for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
+    if (ss->count > 4 && !ss->isCentroidCreated()) {
+      // make room
+      ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
+      // add insert centroid
+      if (asFlat) ss->AddCentroidFlat(); else ss->AddCentroidWall();
+    }
+  }
+  return surf;
+}
+
+static inline surface_t *RecreateFlatCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, true); }
+static inline surface_t *RecreateWallCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, false); }
 
 
 //==========================================================================
@@ -1147,25 +1195,14 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
   if (doSubdivisions) {
     //GCon->Logf(NAME_Debug, "removing centroid from default %s surface of subsector #%d (vcount=%d; hasc=%d)", (plane->isFloor() ? "floor" : "ceiling"), (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), surf->count, surf->isCentroidCreated());
     // we'll re-add it later; subdivision works better without it
-    surf->RemoveCentroid();
-
+    surf = RemoveCentroids(surf);
     surf = SubdivideFaceInternal(surf, axis, nextaxis, plane);
     vassert(surf);
   }
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  {
-    surface_t *prev = nullptr;
-    for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
-      if (ss->count > 4 && !ss->isCentroidCreated()) {
-        // make room
-        ss = EnsureSurfacePoints(ss, surf->count+2, surf, prev);
-        // add insert centroid
-        ss->AddCentroidFlat();
-      }
-    }
-  }
+  surf = RecreateFlatCentroids(this, surf);
 
   if (!lastRenderQuality) return surf; // no "quality fixes" required
 
@@ -1310,7 +1347,14 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
 //
 //==========================================================================
 surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis, const TVec *nextaxis, seg_t *seg) {
-  return SubdivideSegInternal(surf, axis, nextaxis, seg);
+  vassert(!surf->next);
+  // remove centroid (it could be added by wall t-junction fixer)
+  surf = RemoveCentroids(surf);
+  surf = SubdivideSegInternal(surf, axis, nextaxis, seg);
+  // always create centroids for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  surf = RecreateWallCentroids(this, surf);
+  return surf;
 }
 
 
@@ -1330,7 +1374,7 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 
   if (sub->isOriginalPObj()) return surf; // nobody cares
 
-  vassert(!surf->isCentroidCreated());
+  surf = RemoveCentroids(surf);
 
   // collect all segs we may modify
   adjSegs.resetNoDtor();
@@ -1375,17 +1419,8 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
     }
   }
 
-  /*
-  if (adjSegs.length() == 0) {
-    GCon->Logf(NAME_Debug, "seg #%d of line #%d has no adjacent segs", (int)(ptrdiff_t)(myseg-&Level->Segs[0]), (int)(ptrdiff_t)(myseg->linedef-&Level->Lines[0]));
-    return surf; // nothing to do (yet, maybe)
-  }
-  */
-
   // remove all vertices we may add to adjacent surfaces
   for (auto &&seg : adjSegs) CleanupSurfaceLists(seg->drawsegs, nullptr, myseg);
-
-  //if (surf->count < 3) return surf; // nothing to do here
 
   // add points to adjacent surfaces
   if (surf->next) {
@@ -1463,20 +1498,14 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
     }
   }
 
-  if (surf->count < 3) return surf; // nothing to do here
+  //if (surf->count < 3) return surf; // nothing to do here
 
   // add all points from adjacent surfaces
   for (auto &&seg : adjSegs) AddWallPointsFromSegSurfaces(this, seg, surf);
 
-  // testing code
-  #if 0
-  for (surface_t *ss = surf; ss; ss = ss->next) {
-    if (!ss->isCentroidCreated()) {
-      ss = EnsureSurfacePoints(ss, surf->count+2, surf, nullptr);
-      ss->AddCentroidWall();
-    }
-  }
-  #endif
+  // always create centroids for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  surf = RecreateWallCentroids(this, surf);
 
   return surf;
 }
