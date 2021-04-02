@@ -163,11 +163,15 @@ override Entity PickActor (optional TVec org, TVec dir, float distance, optional
 final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
                               optional bool noVertAutoAim, optional class!EntityEx rocketType)
 {
-
-  if (distance <= 0.0) return none; // just in case
-
   TVec aim_dir;
   AngleVector(aangles, out aim_dir);
+
+  // just in case
+  if (distance <= 0.0) {
+    OutDir = aim_dir;
+    return none;
+  }
+
   TVec adirdist = aim_dir.xy*distance;
 
   float aim_z = Origin.z+(rocketType ? CalculateMissileAttackZOfs(rocketType) : CalculateLineAttackZOfs());
@@ -208,11 +212,11 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
   int lflags = ML_BLOCKEVERYTHING|(rocketType ? ML_BLOCKPROJECTILE : ML_BLOCKHITSCAN);
 
   foreach PathTraverse(out in, shootOrigin, dest, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS|PT_AIMTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, lflags) {
-    if (in.bIsAPlane) return none; // plane hit, no actor found
+    if (in.bIsAPlane) break; // plane hit, no actor found
 
     if (in.bIsALine) {
       li = in.line;
-      if (in.bIsABlockingLine || (li->flags&lflags)) return none; // line hit, no actor found
+      if (in.bIsABlockingLine || (li->flags&lflags)) break; // line hit, no actor found
 
       // crosses a two sided line
       // a two sided line will restrict the possible target ranges
