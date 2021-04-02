@@ -36,8 +36,6 @@
 // float mantissa is 24 bits, but let's play safe, and use 20 bits
 //#define EXTMAX  (0x100000)
 
-#define VV_TJUNK_USE_WALL_ANY
-
 
 // ////////////////////////////////////////////////////////////////////////// //
 VCvarB r_precalc_static_lights("r_precalc_static_lights", true, "Precalculate static lights?", CVAR_Archive);
@@ -76,6 +74,39 @@ static inline void spvReserve (int size) {
     spvPoolV1 = (SurfVertex *)Z_Realloc(spvPoolV1, spvPoolSize*sizeof(spvPoolV1[0])); if (!spvPoolV1) Sys_Error("OOM!");
     spvPoolV2 = (SurfVertex *)Z_Realloc(spvPoolV2, spvPoolSize*sizeof(spvPoolV2[0])); if (!spvPoolV2) Sys_Error("OOM!");
   }
+}
+
+
+//==========================================================================
+//
+//  surfDrop
+//
+//==========================================================================
+static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
+  surface_t *prev = nullptr;
+  surface_t *curr = surfs;
+  while (curr) {
+    if (idx-- == 0) {
+      if (prev) prev->next = curr->next; else surfs = curr->next;
+      break;
+    }
+    prev = curr;
+    curr = curr->next;
+  }
+  return surfs;
+}
+
+
+//==========================================================================
+//
+//  surfIndex
+//
+//==========================================================================
+static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
+  if (!curr) return -1;
+  int res = 0;
+  while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
+  return (surfs == curr ? res : -666);
 }
 
 
@@ -435,65 +466,10 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
 
 //==========================================================================
 //
-//  DumpLineCheck
+//  IsPointOnLine3D
 //
 //==========================================================================
-static void VVA_OKUNUSED DumpLineCheck (const TVec &v0, const TVec &v1, const TVec &p) {
-  //const TVec ldir = v1-v0;
-  const double ldirx = (double)v1.x-(double)v0.x;
-  const double ldiry = (double)v1.y-(double)v0.y;
-  const double ldirz = (double)v1.z-(double)v0.z;
-  const double llensq = ldirx*ldirx+ldiry*ldiry+ldirz*ldirz;
-  //if (llensq < 1.0f) return false; // dot
-  const double llen = sqrt(llensq);
-  //const TVec p0 = p-v0;
-  const double p0x = (double)p.x-(double)v0.x;
-  const double p0y = (double)p.y-(double)v0.y;
-  const double p0z = (double)p.z-(double)v0.z;
-  // check projection
-  //const TVec ndir = ldir*(1.0f/llen);
-  const double ndirx = ldirx/llen;
-  const double ndiry = ldiry/llen;
-  const double ndirz = ldirz/llen;
-  //const double prj = ndir.dot(p0);
-  const double prj = ndirx*p0x+ndiry*p0y+ndirz*p0z;
-  //if (prj < 1.0f || prj > llen-1.0f) return false; // projection is too big
-  // check distance
-  //const double dist = p0.cross(p-v1).length()/llen;
-  const double p1x = (double)p.x-(double)v1.x;
-  const double p1y = (double)p.y-(double)v1.y;
-  const double p1z = (double)p.z-(double)v1.z;
-  const double crossx = p0y*p1z-p0z*p1y;
-  const double crossy = p0z*p1x-p0x*p1z;
-  const double crossz = p0x*p1y-p0y*p1x;
-  const double crosslensq = crossx*crossx+crossy*crossy+crossz*crossz;
-  const double crosslen = sqrt(crosslensq);
-  const double dist = crosslen/llen;
-  const double distsq = crosslensq/llensq;
-  //return (dist < 0.001f);
-
-  // diagonal line with valid bounding box
-  const double dx = (double)v1.x-(double)v0.x;
-  const double dy = (double)v1.y-(double)v0.y;
-
-  const double slope = dy/dx;
-
-  // y = mx + c
-  // intercept c = y - mx
-  const double intercept = (double)v0.y-slope*(double)v0.x; // which is same as (v1.y-slope*v1.x)
-  const double spy = slope*(double)p.x+intercept;
-  //return (fabsf(spy-p.y) <= 0.001f); // y position should match
-
-  GCon->Logf(NAME_Error, "  llen=%g; prj=%g; dist=%f (clen=%f; llen=%f); distsq=%f (clensq=%f; llensq=%f); intercept=%f; spy=%f; diff=%f", llen, prj, dist, crosslen, llen, distsq, crosslensq, llensq, intercept, spy, fabs(spy-(double)p.y));
-}
-
-
-//==========================================================================
-//
-//  IsPointOnLineEx
-//
-//==========================================================================
-static VVA_OKUNUSED inline bool IsPointOnLineEx (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
+static VVA_OKUNUSED inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
   const TVec ldir = v1-v0;
   const float llensq = ldir.lengthSquared();
   if (llensq < 1.0f) return false; // dot
@@ -507,7 +483,7 @@ static VVA_OKUNUSED inline bool IsPointOnLineEx (const TVec &v0, const TVec &v1,
   const TVec ndir = ldir/llen;
   const float prj = ndir.dot(p0);
   if (prj < 1.0f || prj > llen-1.0f) return false; // projection is too big
-  // check distance
+  // check point distance
   const float dist = p0.cross(p1).length()/llen;
   //const float dist = p0.cross(p1).lengthSquared()/llensq;
   return (dist < 0.001f);
@@ -516,10 +492,12 @@ static VVA_OKUNUSED inline bool IsPointOnLineEx (const TVec &v0, const TVec &v1,
 
 //==========================================================================
 //
-//  IsPointOnLine
+//  IsPointOnLine2D
+//
+//  this is faster for 2d case than the above code
 //
 //==========================================================================
-static VVA_OKUNUSED inline bool IsPointOnLine (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
+static VVA_OKUNUSED inline bool IsPointOnLine2D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
   if (v0.x == v1.x) {
     // vertical line
     if (fabsf(p.x-v0.x) > 0.001f) return false;
@@ -560,39 +538,6 @@ static VVA_OKUNUSED inline bool IsPointOnLine (const TVec &v0, const TVec &v1, c
 
 //==========================================================================
 //
-//  surfDrop
-//
-//==========================================================================
-static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
-  surface_t *prev = nullptr;
-  surface_t *curr = surfs;
-  while (curr) {
-    if (idx-- == 0) {
-      if (prev) prev->next = curr->next; else surfs = curr->next;
-      break;
-    }
-    prev = curr;
-    curr = curr->next;
-  }
-  return surfs;
-}
-
-
-//==========================================================================
-//
-//  surfIndex
-//
-//==========================================================================
-static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
-  if (!curr) return -1;
-  int res = 0;
-  while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
-  return (surfs == curr ? res : -666);
-}
-
-
-//==========================================================================
-//
 //  FlatSurfaceInsertPoint
 //
 //  do not use reference to `p` here!
@@ -620,44 +565,12 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, sec_surface_
       sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
       v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
       surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine(v0, v1, p));
+      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
     #endif
-    if (!IsPointOnLine(v0, v1, p)) {
-      /*
-      if (IsPointOnLineEx(v0, v1, p)) {
-        GCon->Logf(NAME_Error, "point-on-line conflict #0:0: v0=(%g,%g,%g); v1=(%g,%g,%g); p=(%g,%g,%g)", v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, p.x, p.y, p.z);
-        DumpLineCheck(v0, v1, p);
-      }
-      */
-      continue;
-    }
-    /*
-    else {
-      if (!IsPointOnLineEx(v0, v1, p)) {
-        GCon->Log(NAME_Error, "point-on-line conflict #0:1");
-        DumpLineCheck(v0, v1, p);
-      }
-    }
-    */
+    if (!IsPointOnLine2D(v0, v1, p)) continue;
     // check height (just in case)
     const float nz = surf->plane.GetPointZ(p);
-    if (fabsf(nz-p.z) > 0.001f) {
-      /*
-      if (IsPointOnLineEx(v0, v1, p)) {
-        GCon->Log(NAME_Error, "point-on-line conflict #1:0");
-        DumpLineCheck(v0, v1, p);
-      }
-      */
-      continue;
-    }
-    /*
-    else {
-      if (!IsPointOnLineEx(v0, v1, p)) {
-        GCon->Log(NAME_Error, "point-on-line conflict #1:1");
-        DumpLineCheck(v0, v1, p);
-      }
-    }
-    */
+    if (fabsf(nz-p.z) > 0.01f) continue;
     #if 0
     GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g)",
       sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
@@ -689,186 +602,14 @@ static surface_t *FlatSurfaceInsertPoint (VRenderLevelShared *RLev, sec_surface_
 
 //==========================================================================
 //
-//  WallSurfaceInsertPointToVertical
+//  WallSurfaceInsertPoint
 //
 //  do not use reference to `p` here!
 //  it may be a vector from some source that can be modified
 //
+//  this actually works for any surface, not only for walls
 //==========================================================================
-static VVA_OKUNUSED surface_t *WallSurfaceInsertPointToVertical (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
-  if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
-  //surface_t *prev = nullptr;
-  #if 0
-  VLevel *Level = RLev->GetLevel();
-  const int sfidx = surfIndex(surfhead, surf);
-  #endif
-  // check each surface line
-  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
-    int pn1 = (pn0+1)%surf->count;
-    if (surf->isCentroidCreated()) vassert(pn1 != 0);
-    const TVec v0 = surf->verts[pn0].vec();
-    const TVec v1 = surf->verts[pn1].vec();
-    // ignore horizontal (or near-horizontal) lines, we aren't interested
-    if (fabsf(v0.z-v1.z) < 1.0f) continue;
-    // ignore sloped lines, we aren't interested (yet?)
-    if (fabsf(v0.x-v1.x) > 0.001f) continue;
-    if (fabsf(v0.y-v1.y) > 0.001f) continue;
-    // now we have a strictly vertical line
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine(v0, v1, p));
-    #endif
-    // check if our point is on the line
-    if (fabsf(p.x-v0.x) > 0.001f || fabsf(p.y-v0.y) > 0.001f) {
-      if (IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "VERT: point-on-line conflict #0:0");
-      continue; // oops
-    }
-    // check corners, and "on line"
-    // as our line is strictly vertical, it is quite easy
-    if (v0.z < v1.z) {
-      // line goes down
-      if (p.z <= v0.z+0.1f || p.z >= v1.z-0.1f) {
-        if (IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "VERT: point-on-line conflict #0:1");
-        continue;
-      }
-    } else {
-      // line goes up
-      if (p.z <= v1.z+0.1f || p.z >= v0.z-0.1f) {
-        if (IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "VERT: point-on-line conflict #0:2");
-        continue;
-      }
-    }
-    if (!IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "VERT: point-on-line conflict #1:0");
-    // check height (just in case)
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g)",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z);
-    #endif
-    // insert a new point
-    if (!prev && surf != surfhead) {
-      prev = surfhead;
-      while (prev->next != surf) prev = prev->next;
-    }
-    surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
-    // create centroid
-    if (!surf->isCentroidCreated()) {
-      surf->AddCentroidWall();
-      ++pn0;
-    }
-    // insert point
-    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
-    // the point cannot be inserted into several lines,
-    // so we're finished with this surface
-    break;
-  }
-
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  WallSurfaceInsertPointToHorizontal
-//
-//  do not use reference to `p` here!
-//  it may be a vector from some source that can be modified
-//
-//==========================================================================
-static VVA_OKUNUSED surface_t *WallSurfaceInsertPointToHorizontal (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
-  if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
-  //surface_t *prev = nullptr;
-  #if 0
-  VLevel *Level = RLev->GetLevel();
-  const int sfidx = surfIndex(surfhead, surf);
-  #endif
-  // check each surface line
-  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
-    int pn1 = (pn0+1)%surf->count;
-    if (surf->isCentroidCreated()) vassert(pn1 != 0);
-    const TVec v0 = surf->verts[pn0].vec();
-    const TVec v1 = surf->verts[pn1].vec();
-    // ignore vertical (or near-vertical) lines, we aren't interested
-    if (fabsf(v0.z-v1.z) != 0.0f) continue;
-    // ignore points
-    if (fabsf(v0.x-v1.x) < 1.0f && fabsf(v0.y-v1.y) < 1.0f) continue;
-    // now we have a non-vertical line
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine(v0, v1, p));
-    #endif
-    // check height
-    if (fabsf(v0.z-p.z) != 0.0f) continue;
-    // check corners
-    if ((v0-p).length2DSquared() < 1.0f) continue;
-    if ((v1-p).length2DSquared() < 1.0f) continue;
-    // check if our point is on the line
-    if (!IsPointOnLine(v0, v1, p)) {
-      if (IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "HORIZ: point-on-line conflict #0:0");
-      continue;
-    } else {
-      if (!IsPointOnLineEx(v0, v1, p)) GCon->Log(NAME_Error, "HORIZ: point-on-line conflict #0:1");
-    }
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point before %d; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g) (cp=%d)",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]), pn0+1,
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)surf->isCentroidCreated());
-    GCon->Logf(NAME_Debug, "=== BEFORE (%d) ===", surf->count);
-    for (int f = 0; f < surf->count; ++f) {
-      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%p, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
-        surf->verts[f].ownerssf,
-        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
-    }
-    #endif
-    // insert a new point
-    if (!prev && surf != surfhead) {
-      prev = surfhead;
-      while (prev->next != surf) prev = prev->next;
-    }
-    surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
-    // create centroid
-    if (!surf->isCentroidCreated()) {
-      surf->AddCentroidWall();
-      ++pn0;
-    }
-    // insert point
-    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
-    #if 0
-    GCon->Logf(NAME_Debug, "=== AFTER (%d) ===", surf->count);
-    for (int f = 0; f < surf->count; ++f) {
-      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%d, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
-        surf->verts[f].ownerssf,
-        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
-    }
-    #endif
-    // the point cannot be inserted into several lines,
-    // so we're finished with this surface
-    break;
-  }
-
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  WallSurfaceInsertPointToAny
-//
-//  do not use reference to `p` here!
-//  it may be a vector from some source that can be modified
-//
-//==========================================================================
-static VVA_OKUNUSED surface_t *WallSurfaceInsertPointToAny (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
+static VVA_OKUNUSED surface_t *WallSurfaceInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
   if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
   //surface_t *prev = nullptr;
   #if 0
@@ -886,10 +627,10 @@ static VVA_OKUNUSED surface_t *WallSurfaceInsertPointToAny (VRenderLevelShared *
       sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
       v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
       surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine(v0, v1, p));
+      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
     #endif
-    // check height
-    if (!IsPointOnLineEx(v0, v1, p)) continue;
+    // this also checks for corners, and for very short lines
+    if (!IsPointOnLine3D(v0, v1, p)) continue;
     #if 0
     GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point before %d; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g) (cp=%d)",
       sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]), pn0+1,
@@ -954,44 +695,17 @@ static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ow
 
 //==========================================================================
 //
-//  WallSurfacesInsertPointToVertical
+//  WallSurfacesInsertPoint
 //
 //  do not pass surface vertices as `p`!
 //  it may be a vertex from some source that can be modified
 //
 //==========================================================================
-static void WallSurfacesInsertPointToVertical (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *&surfhead, const TVec p) {
+static void WallSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *&surfhead, const TVec p) {
   surface_t *surf = surfhead;
   surface_t *prev = nullptr;
   while (surf) {
-    #ifdef VV_TJUNK_USE_WALL_ANY
-    surf = WallSurfaceInsertPointToAny(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    #else
-    surf = WallSurfaceInsertPointToVertical(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    #endif
-    prev = surf;
-    surf = surf->next;
-  }
-}
-
-
-//==========================================================================
-//
-//  WallSurfacesInsertPointToHorizontal
-//
-//  do not pass surface vertices as `p`!
-//  it may be a vertex from some source that can be modified
-//
-//==========================================================================
-static void WallSurfacesInsertPointToHorizontal (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *&surfhead, const TVec p) {
-  surface_t *surf = surfhead;
-  surface_t *prev = nullptr;
-  while (surf) {
-    #ifdef VV_TJUNK_USE_WALL_ANY
-    surf = WallSurfaceInsertPointToAny(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    #else
-    surf = WallSurfaceInsertPointToHorizontal(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    #endif
+    surf = WallSurfaceInsertPoint(RLev, ownssf, ownseg, surf, surfhead, prev, p);
     prev = surf;
     surf = surf->next;
   }
@@ -1086,7 +800,7 @@ static void AddWallPointsFromSurfaceList (VRenderLevelShared *RLev, surface_t *s
     for (int spn = (int)surf->isCentroidCreated(); spn < surf->count-(int)surf->isCentroidCreated(); ++spn) {
       const SurfVertex *sv = &surf->verts[spn];
       if (sv->ownerseg == seg) continue; // fast reject, just in case
-      WallSurfacesInsertPointToVertical(RLev, nullptr, seg, surfhead, sv->vec());
+      WallSurfacesInsertPoint(RLev, nullptr, seg, surfhead, sv->vec());
     }
   }
 }
@@ -1121,13 +835,13 @@ static void AddFloorPointToSegWalls (VRenderLevelShared *RLev, seg_t *seg, sec_s
   if (!seg) return;
   drawseg_t *ds = seg->drawsegs;
   if (!ds) return;
-  if (ds->top) WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->top->surfs, p);
-  if (ds->mid) WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->mid->surfs, p);
-  if (ds->bot) WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->bot->surfs, p);
-  if (ds->topsky) WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->topsky->surfs, p);
-  //if (ds->extra) WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->extra->surfs, p);
-  //WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->HorizonTop, p);
-  //WallSurfacesInsertPointToHorizontal(RLev, ownssf, nullptr, ds->HorizonBot, p);
+  if (ds->top) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->top->surfs, p);
+  if (ds->mid) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->mid->surfs, p);
+  if (ds->bot) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->bot->surfs, p);
+  if (ds->topsky) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->topsky->surfs, p);
+  //if (ds->extra) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->extra->surfs, p);
+  //WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->HorizonTop, p);
+  //WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->HorizonBot, p);
 }
 
 
