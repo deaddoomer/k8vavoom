@@ -203,7 +203,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       }
     }
 
-    if (sp->surfs && (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || MTex->isTranslucent())) {
+    if (sp->surfs && (sp->texinfo.Additive || sp->texinfo.Alpha < 1.0f || MTex->isTranslucent())) {
       for (surface_t *sf = sp->surfs; sf; sf = sf->next) sf->drawflags |= surface_t::DF_NO_FACE_CULL;
     }
   } else {

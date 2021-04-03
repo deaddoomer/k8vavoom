@@ -225,18 +225,20 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
           if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
         }
       } else if (sp->surfs) {
-        const bool oldTranslucent = (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || MTex->isTranslucent());
+        const bool translucentTex = MTex->isTranslucent();
+        const bool oldTranslucent = (translucentTex || sp->texinfo.Additive || sp->texinfo.Alpha < 1.0f);
         UpdateTextureOffsetsEx(sub, seg, sp, &extraside->Mid, &seg->sidedef->Mid);
         if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
           // not from a line!
           sp->texinfo.Alpha = (reg->efloor.splane->Alpha < 1.0f ? reg->efloor.splane->Alpha : 1.1f);
           sp->texinfo.Additive = !!(reg->efloor.splane->flags&SPF_ADDITIVE);
-          if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
-          if (oldTranslucent != (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || MTex->isTranslucent())) {
-            if (oldTranslucent) {
-              for (surface_t *sf = sp->surfs; sf; sf = sf->next) sf->drawflags &= ~surface_t::DF_NO_FACE_CULL;
-            } else {
+          const bool newTranslucent = (translucentTex || sp->texinfo.Additive || sp->texinfo.Alpha < 1.0f);
+          if (newTranslucent) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
+          if (oldTranslucent != newTranslucent) {
+            if (newTranslucent) {
               for (surface_t *sf = sp->surfs; sf; sf = sf->next) sf->drawflags |= surface_t::DF_NO_FACE_CULL;
+            } else {
+              for (surface_t *sf = sp->surfs; sf; sf = sf->next) sf->drawflags &= ~surface_t::DF_NO_FACE_CULL;
             }
           }
         } else {
