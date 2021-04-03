@@ -429,6 +429,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
             if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
             if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
             --pdsLeft;
+            vassert(!(seg->flags&SF_FULLSEG));
             CreateSegParts(sub, pds, seg, main_floor, main_ceiling, reg);
             ++pds;
           }
@@ -449,6 +450,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
               */
               for (auto &&sit : pobj->SegFirst()) {
                 seg_t *seg = sit.seg();
+                if (seg->flags&SF_FULLSEG) continue; // fullsegs will be created later
                 if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
                 if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
                 --pdsLeft;
@@ -508,12 +510,16 @@ void VRenderLevelShared::CreateWorldSurfaces () {
         vassert(sub->sector == fsec);
 
         seg_t *seg = side->fullseg;
-        if (seg->linedef) {
-          if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-          --pdsLeft;
-          CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
-          ++pds;
+        vassert(seg->linedef);
+        vassert(seg->flags&SF_FULLSEG);
+        if (seg->drawsegs) {
+          GCon->Logf(NAME_Error, "fullseg of line #%d (side %d) already has drawsegs for some reason", (int)(ptrdiff_t)(&ld-&Level->Lines[0]), seg->side);
+          continue;
         }
+        if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+        --pdsLeft;
+        CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
+        ++pds;
       }
 
       if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), totalSegCount);

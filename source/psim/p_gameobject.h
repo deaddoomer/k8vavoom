@@ -384,6 +384,7 @@ struct side_t {
 enum {
   SF_MAPPED  = 1u<<0, // some segs of this linedef are visible, but not all
   SF_ZEROLEN = 1u<<1, // zero-length seg (it has some fake length)
+  SF_FULLSEG = 1u<<2, // is this a "fullseg"?
 };
 
 struct seg_t : public TPlane {

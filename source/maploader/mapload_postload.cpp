@@ -303,6 +303,8 @@ void VLevel::CreateFullLineSegs () {
       newfseg->drawsegs = nullptr;
       newfseg->partner = nullptr;
       newfseg->frontsub = fsub;
+      vassert(!(newfseg->flags&SF_FULLSEG));
+      newfseg->flags |= SF_FULLSEG;
       // link to list
       newfseg->lsnext = ld.firstseg;
       ld.firstseg = newfseg;
@@ -338,6 +340,8 @@ void VLevel::CreateFullLineSegs () {
       newbseg->drawsegs = nullptr;
       newbseg->partner = nullptr;
       newbseg->frontsub = bsub;
+      vassert(!(newbseg->flags&SF_FULLSEG));
+      newbseg->flags |= SF_FULLSEG;
       // link to list
       newbseg->lsnext = ld.firstseg;
       ld.firstseg = newbseg;

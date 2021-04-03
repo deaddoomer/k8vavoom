@@ -275,12 +275,13 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
   if (!seg) return; // just in case
+  if (seg->flags&SF_FULLSEG) Sys_Error("CollectAdvLightLine: fullsegs should not end up here!"); // it should not came here
   const line_t *linedef = seg->linedef;
   if (!linedef) return; // miniseg
 
   #if 1
   // render (queue) translucent lines by segs (for sorter)
-  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && !linedef->pobj() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
+  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && /*!linedef->pobj() &&*/ (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
     side_t *side = seg->sidedef;
     if (side->fullseg && side->fullseg->drawsegs) {
       if (side->rendercount == renderedLineCounter) return; // already rendered
@@ -337,7 +338,6 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   /*
   if (!LightClip.CheckSegFrustum(sub, seg)) return;
   */
-
 
   VEntity *skybox = secregion->eceiling.splane->SkyBox;
   if (dseg->mid) CollectAdvLightSurfaces(dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront);
@@ -406,7 +406,7 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
         }
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
-          if (seg->drawsegs) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
+          if (seg->drawsegs && !(seg->flags&SF_FULLSEG)) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
         }
         if (pobj->Is3D()) {
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {

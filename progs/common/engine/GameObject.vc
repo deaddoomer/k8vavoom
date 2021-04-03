@@ -1123,6 +1123,7 @@ struct seg_t : TPlane {
   //int flags; // SF_xxx
   bool bMapped; // some segs of this linedef are visible, but not all
   bool bZeroLen;
+  bool bFullSeg;
 
   native transient readonly drawseg_t *drawsegs;
 

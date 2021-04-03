@@ -818,6 +818,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   if (!dseg) return; // just in case
   seg_t *seg = dseg->seg;
   if (!seg) return; // just in case
+  if (seg->flags&SF_FULLSEG) Sys_Error("RenderLine: fullsegs should not end up here!"); // it should not came here
   line_t *linedef = seg->linedef;
 
   // mirror clip
@@ -846,18 +847,15 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
     return;
   }
 
-  bool useFullseg = false;
-
   #if 1
   // render (queue) translucent lines by segs (for sorter)
-  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && !linedef->pobj() && (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
+  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && /*!linedef->pobj() &&*/ (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
     side_t *side = seg->sidedef;
     if (side->fullseg && side->fullseg->drawsegs) {
       if (side->rendercount == renderedLineCounter) return; // already rendered
       side->rendercount = renderedLineCounter;
       seg = side->fullseg;
       dseg = seg->drawsegs;
-      useFullseg = true;
     }
   }
   #endif
@@ -924,31 +922,25 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   // automap
   // mark only autolines that allowed to be seen on the automap
   if ((linedef->flags&ML_DONTDRAW) == 0) {
-    if (useFullseg) {
-      //FIXME: make this faster and better
-      if ((linedef->flags&ML_MAPPED) == 0) {
-        linedef->flags |= ML_MAPPED;
-        linedef->exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
-        // mark all sector subsectors as rendered
-        if ((linedef->flags&ML_DONTDRAW) == 0) {
-          for (subsector_t *s = sub->sector->subsectors; s; s = s->seclink) {
-            s->miscFlags |= subsector_t::SSMF_Rendered;
-          }
-        }
+    // fullseg: mark all line segs for that side
+    if ((seg->flags&(SF_FULLSEG|SF_MAPPED)) == SF_FULLSEG) {
+      for (seg_t *lseg = linedef->firstseg; lseg; lseg = lseg->lsnext) {
+        if (lseg->side != seg->side) continue;
+        lseg->flags |= SF_MAPPED;
       }
-    } else {
-      if ((linedef->flags&ML_MAPPED) == 0) {
-        // this line is at least partially mapped; let automap drawer do the rest
-        linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-        automapUpdateSeen = true;
-      }
-      if ((seg->flags&SF_MAPPED) == 0) {
-        linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-        seg->flags |= SF_MAPPED;
-        automapUpdateSeen = true;
-        // mark subsector as rendered (but only if linedef is allowed to be seen on the automap)
-        if ((linedef->flags&ML_DONTDRAW) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
-      }
+    }
+    // any seg
+    if ((linedef->flags&ML_MAPPED) == 0) {
+      // this line is at least partially mapped; let automap drawer do the rest
+      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
+      automapUpdateSeen = true;
+    }
+    if ((seg->flags&SF_MAPPED) == 0) {
+      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
+      seg->flags |= SF_MAPPED;
+      automapUpdateSeen = true;
+      // mark subsector as rendered (but only if linedef is allowed to be seen on the automap)
+      if ((linedef->flags&ML_DONTDRAW) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
     }
   }
 
@@ -1106,7 +1098,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
         }
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
-          if (seg->drawsegs) RenderLine(sub, secregion, region, seg->drawsegs);
+          if (seg->drawsegs && !(seg->flags&SF_FULLSEG)) RenderLine(sub, secregion, region, seg->drawsegs);
         }
         // render flats for 3d pobjs
         if (pobj->Is3D()) {
