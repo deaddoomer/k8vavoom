@@ -120,8 +120,8 @@ void VLevel::PutPObjInSubsectors (polyobj_t *po) noexcept {
 //
 //==========================================================================
 void polyobjpart_t::Free () noexcept {
-  delete[] segs;
-  delete[] verts;
+  Z_Free(segs);
+  Z_Free(verts);
   segs = nullptr;
   verts = nullptr;
   count = amount = 0;
@@ -612,9 +612,14 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       if (seg->backsector) seg->backsector = po->posector;
     }
     // make all lines reference the inner sector
+    // also, fix line flags
     for (auto &&it : po->LineFirst()) {
       line_t *ld = it.line();
       ld->frontsector = ld->backsector = po->posector;
+      if (!(ld->flags&ML_BLOCKING)) {
+        GCon->Logf(NAME_Error, "pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+        ld->flags |= ML_BLOCKING;
+      }
     }
     //po->startSpot.z = po->pofloor.minz;
     po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
