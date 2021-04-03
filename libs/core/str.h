@@ -87,7 +87,7 @@ protected:
   // this also clears `data`
   inline void decref () noexcept {
     if (dataptr) {
-      if (atomicGetRC() > 0) {
+      if (!atomicIsImmutable()) {
         if (atomicDecRC() == 0) {
           #ifdef VAVOOM_TEST_VSTR
           fprintf(stderr, "VStr: freeing %p\n", dataptr);
