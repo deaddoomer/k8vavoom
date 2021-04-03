@@ -242,8 +242,8 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
       for (sec_region_t *reg = seg->backsector->eregions->next; reg; reg = reg->next) {
         if (!reg->extraline) continue; // no need to create extra side
 
-        if (reg->extraline->frontside) reg->extraline->frontside->rendercount = renderedLineCounter;
-        if (reg->extraline->backside) reg->extraline->backside->rendercount = renderedLineCounter;
+        //if (reg->extraline->frontside) reg->extraline->frontside->rendercount = renderedLineCounter;
+        //if (reg->extraline->backside) reg->extraline->backside->rendercount = renderedLineCounter;
 
         // hack: 3d floor with sky texture seems to be transparent in renderer
         const side_t *sidedef = &Level->Sides[reg->extraline->sidenum[0]];
@@ -295,7 +295,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
   Level->ResetPObjRenderCounts(); // so we won't process polyobjects several times
 
-  nextRenderedLineCounter();
+  // not used
+  //nextRenderedLineCounter();
 
   // count regions in all subsectors
   if (allowFullSegs) {
@@ -499,7 +500,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       for (unsigned f = 0; f < 2; ++f) {
         side_t *side = (f ? ld.backside : ld.frontside);
         if (!side || !side->fullseg) continue;
-        if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
+        //if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
 
         sector_t *fsec = (f ? ld.backsector : ld.frontsector);
         vassert(fsec);
