@@ -347,11 +347,17 @@ void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
     const seg_t *seg = sit.seg();
     line_t *ld = seg->linedef;
     if (ld) {
-      UpdateDrawSeg(seg->frontsub, seg->drawsegs, po_floor, po_ceiling);
+      subsector_t *sub = seg->frontsub;
+      //FIXME: this should be done in pobj loader!
+      if (po->Is3D() && !sub->isInnerPObj()) {
+        seg_t *partner = seg->partner;
+        if (partner && partner->frontsub && partner->frontsub->isInnerPObj()) sub = partner->frontsub;
+      }
+      UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
       if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
         ld->updateWorldFrame = updateWorldFrame;
-        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(seg->frontsub, ld->frontside->fullseg->drawsegs, po_floor, po_ceiling);
-        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(seg->frontsub, ld->backside->fullseg->drawsegs, po_floor, po_ceiling);
+        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, po_floor, po_ceiling);
+        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, po_floor, po_ceiling);
       }
     }
   }
