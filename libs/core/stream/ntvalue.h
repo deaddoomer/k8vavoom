@@ -70,12 +70,17 @@ private:
   inline void zeroSelf () noexcept { memset((void *)this, 0, sizeof(VNTValue)); }
 
   inline void incRef () const noexcept {
-    if (blobRC) ++(*blobRC);
+    if (blobRC) {
+      //GLog.Logf(NAME_Debug, "incrementing blob %p (%d) rc %p; old=%d; new=%d", blob, blobSize, blobRC, *blobRC, (*blobRC)+1);
+      ++(*blobRC);
+    }
   }
 
-  inline void decRef () {
+  inline void decRef () noexcept {
     if (blobRC) {
+      //GLog.Logf(NAME_Debug, "decrementing blob %p (%d) rc %p; old=%d; new=%d", blob, blobSize, blobRC, *blobRC, (*blobRC)-1);
       if (--(*blobRC) == 0) {
+        //GLog.Logf(NAME_Debug, "freeing blob %p (%d) rc %p", blob, blobSize, blobRC);
         Z_Free(blob);
         Z_Free(blobRC);
       }
@@ -85,7 +90,7 @@ private:
     blobSize = 0;
   }
 
-  inline void newBlob (int len) {
+  inline void newBlob (int len) noexcept {
     vassert(blobRC == nullptr);
     vassert(blob == nullptr);
     vassert(blobSize == 0);
@@ -94,6 +99,7 @@ private:
       blobRC = (vuint32 *)Z_Malloc(sizeof(vuint32));
       *blobRC = 1;
       blob = (vuint8 *)Z_Malloc(len);
+      //GLog.Logf(NAME_Debug, "allocated blob %p (%d) rc %p; rc=%d", blob, len, blobRC, *blobRC);
     } else {
       blobRC = nullptr;
       blob = nullptr;
@@ -106,7 +112,7 @@ private:
 
 public:
   inline VNTValue () noexcept { memset((void *)this, 0, sizeof(VNTValue)); }
-  inline ~VNTValue () { clear(); }
+  inline ~VNTValue () noexcept { clear(); }
 
   inline VNTValue (const VNTValue &s) noexcept {
     zeroSelf();
@@ -121,21 +127,21 @@ public:
     }
   }
 
-  VNTValue (VName aname, vint32 val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Int; name = aname; ud.ival = val; }
-  VNTValue (VName aname, vuint32 val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Int; name = aname; ud.ival = (vint32)val; }
-  VNTValue (VName aname, float val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Float; name = aname; ud.fval = val; }
-  VNTValue (VName aname, const TVec &val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Vec; name = aname; vval = val; }
-  VNTValue (VName aname, VName val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Name; name = aname; nval = val; }
-  VNTValue (VName aname, VStr val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Str; name = aname; sval = val; }
-  VNTValue (VName aname, VClass *val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Class; name = aname; ud.cval = (VMemberBase *)val; }
-  VNTValue (VName aname, VObject *val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Obj; name = aname; ud.oval = val; }
-  VNTValue (VName aname, VSerialisable *val) : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_XObj; name = aname; ud.xoval = val; }
+  inline VNTValue (VName aname, vint32 val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Int; name = aname; ud.ival = val; }
+  inline VNTValue (VName aname, vuint32 val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Int; name = aname; ud.ival = (vint32)val; }
+  inline VNTValue (VName aname, float val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Float; name = aname; ud.fval = val; }
+  inline VNTValue (VName aname, const TVec &val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Vec; name = aname; vval = val; }
+  inline VNTValue (VName aname, VName val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Name; name = aname; nval = val; }
+  inline VNTValue (VName aname, VStr val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Str; name = aname; sval = val; }
+  inline VNTValue (VName aname, VClass *val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Class; name = aname; ud.cval = (VMemberBase *)val; }
+  inline VNTValue (VName aname, VObject *val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_Obj; name = aname; ud.oval = val; }
+  inline VNTValue (VName aname, VSerialisable *val) noexcept : vval(0, 0, 0), nval(NAME_None), sval() { zeroSelf(); type = T_XObj; name = aname; ud.xoval = val; }
 
-  VNTValue (VName aname, const vuint8 *buf, int bufsz, bool doCopyData=true);
+  VNTValue (VName aname, const vuint8 *buf, int bufsz, bool doCopyData=true) noexcept;
 
-  VNTValue &operator = (const VNTValue &s) {
+  VNTValue &operator = (const VNTValue &s) noexcept {
     if ((void *)this == (void *)&s) return *this;
-    if (s.type == T_Blob) s.incRef();
+    if (s.type == T_Blob) s.incRef(); // it should be here for `clear()`
     // clear this value
     clear();
     type = s.type;
@@ -145,7 +151,7 @@ public:
       case T_Vec: vval = s.vval; break;
       case T_Name: nval = s.nval; break;
       case T_Str: sval = s.sval; break;
-      case T_Blob: blobRC = s.blobRC; blob = s.blob; blobSize = s.blobSize; incRef(); break;
+      case T_Blob: blobRC = s.blobRC; blob = s.blob; blobSize = s.blobSize; break;
       default: memcpy((void *)&ud, &s.ud, sizeof(ud)); break;
     }
     return *this;
@@ -154,7 +160,7 @@ public:
   bool operator == (const VNTValue &) = delete;
   bool operator != (const VNTValue &) = delete;
 
-  inline void clear () {
+  inline void clear () noexcept {
     switch (type) {
       case T_Str: sval = VStr::EmptyString; break;
       case T_Blob: decRef(); break;

@@ -36,7 +36,7 @@
 //  VNTValue::VNTValue
 //
 //==========================================================================
-VNTValue::VNTValue (VName aname, const vuint8 *buf, int bufsz, bool doCopyData) {
+VNTValue::VNTValue (VName aname, const vuint8 *buf, int bufsz, bool doCopyData) noexcept {
   vassert(bufsz >= 0);
   zeroSelf();
   type = T_Blob;
@@ -894,6 +894,6 @@ VNTValue VNTValueIO::readBlob (VName vname) {
 //==========================================================================
 void VNTValueIO::writeBlob (VName vname, const void *buf, int len) {
   if (!wr || bError) return;
-  VNTValue v = VNTValue(vname, (const vuint8 *)buf, len, true); // need to copy it, because it isn't written immediately
+  VNTValue v(vname, (const vuint8 *)buf, len, true); // need to copy it, because it isn't written immediately
   if (wr->putValue(v)) bError = true;
 }
