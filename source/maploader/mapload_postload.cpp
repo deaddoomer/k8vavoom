@@ -26,7 +26,7 @@
 #include "../gamedefs.h"
 
 
-VCvarB loader_create_fullsegs("loader_create_fullsegs", true, "Create full line segs for rendering? (Requires map reload on change.)", CVAR_Archive);
+VCvarB loader_create_fullsegs("loader_create_fullsegs", false, "Create full line segs for rendering? (Requires map reload on change.)", CVAR_Archive);
 
 
 
