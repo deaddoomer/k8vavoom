@@ -227,8 +227,10 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
       } else if (sp->surfs) {
         UpdateTextureOffsetsEx(sub, seg, sp, &extraside->Mid, &seg->sidedef->Mid);
         if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
-          sp->texinfo.Alpha = ld->alpha;
-          sp->texinfo.Additive = !!(ld->flags&ML_ADDITIVE);
+          //sp->texinfo.Alpha = ld->alpha;
+          //sp->texinfo.Additive = !!(ld->flags&ML_ADDITIVE);
+          sp->texinfo.Alpha = (reg->efloor.splane->Alpha < 1.0f ? reg->efloor.splane->Alpha : 1.1f);
+          sp->texinfo.Additive = !!(reg->efloor.splane->flags&SPF_ADDITIVE);
           if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
         } else {
           sp->texinfo.Alpha = 1.1f;
