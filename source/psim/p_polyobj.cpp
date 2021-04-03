@@ -851,6 +851,16 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation) {
   sector_t *sec = po->posector;
   if (!sec) return;
 
+  if (!forceRecreation && fabsf(z) != 0.0f) forceRecreation = true;
+
+  if (!forceRecreation &&
+      (FASI(po->pofloor.PObjCX) != FASI(po->startSpot.x) ||
+       FASI(po->pofloor.PObjCY) != FASI(po->startSpot.y) ||
+       FASI(po->poceiling.PObjCX) != FASI(po->startSpot.x) ||
+       FASI(po->poceiling.PObjCY) != FASI(po->startSpot.y)))
+  {
+    forceRecreation = true;
+  }
   po->pofloor.PObjCX = po->poceiling.PObjCX = po->startSpot.x;
   po->pofloor.PObjCY = po->poceiling.PObjCY = po->startSpot.y;
 
@@ -858,12 +868,33 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation) {
   sec->floor = po->pofloor;
   sec->ceiling = po->poceiling;
 
-  if (forceRecreation || fabsf(z) != 0.0f) {
+  if (forceRecreation) {
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
       for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
         reg->ForceRecreation();
       }
     }
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::UpdatePolySegs
+//
+//==========================================================================
+void VLevel::UpdatePolySegs (polyobj_t *po) {
+  // recalc lines's slope type, bounding box, normal and dist
+  for (auto &&it : po->LineFirst()) CalcLine(it.line());
+  // recalc seg's normal and dist
+  for (auto &&it : po->SegFirst()) CalcSegPlaneDir(it.seg());
+  // update region heights
+  sector_t *sec = po->posector;
+  if (sec) {
+    sec->floor.normal = po->pofloor.normal;
+    sec->floor.dist = po->pofloor.dist;
+    sec->ceiling.normal = po->poceiling.normal;
+    sec->ceiling.dist = po->poceiling.dist;
   }
 }
 
@@ -1018,27 +1049,6 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
-}
-
-
-//==========================================================================
-//
-//  VLevel::UpdatePolySegs
-//
-//==========================================================================
-void VLevel::UpdatePolySegs (polyobj_t *po) {
-  // recalc lines's slope type, bounding box, normal and dist
-  for (auto &&it : po->LineFirst()) CalcLine(it.line());
-  // recalc seg's normal and dist
-  for (auto &&it : po->SegFirst()) CalcSegPlaneDir(it.seg());
-  // update region heights
-  sector_t *sec = po->posector;
-  if (sec) {
-    sec->floor.normal = po->pofloor.normal;
-    sec->floor.dist = po->pofloor.dist;
-    sec->ceiling.normal = po->poceiling.normal;
-    sec->ceiling.dist = po->poceiling.dist;
-  }
 }
 
 
