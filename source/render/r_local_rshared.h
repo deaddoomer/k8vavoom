@@ -505,7 +505,7 @@ protected:
   void UpdateTextureOffsetsEx (subsector_t *sub, seg_t *seg, segpart_t *sp, const side_tex_params_t *tparam, const side_tex_params_t *tparam2); // for 3d floors
   void UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);
   void UpdateSubRegions (subsector_t *sub);
-  void UpdatePObjSub (subsector_t *sub); // shorter and faster, should be used for 3d polyobjects
+  void UpdatePObj (polyobj_t *po); // should be used for polyobjects instead of normal updaters
 
   void UpdateFakeSectors (subsector_t *viewleaf=nullptr);
   void InitialWorldUpdate ();

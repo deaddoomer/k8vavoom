@@ -330,65 +330,74 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
 //==========================================================================
 //
-//  VRenderLevelShared::UpdatePObjSub
+//  VRenderLevelShared::UpdatePObj
 //
 //==========================================================================
-void VRenderLevelShared::UpdatePObjSub (subsector_t *sub) {
-  if (!sub || !sub->numlines) return;
-  vassert(sub->isInnerPObj());
+void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
+  if (!po) return;
+
+  TSecPlaneRef po_floor, po_ceiling;
+  po_floor.set(&po->pofloor, false);
+  po_ceiling.set(&po->poceiling, false);
 
   const bool updateFullSegs = (createdFullSegs && r_dbg_use_fullsegs.asBool());
 
-  // polyobject have only one region (this is invariant)
-  subregion_t *region = sub->regions;
-
-  TSecPlaneRef r_floor = region->floorplane;
-  TSecPlaneRef r_ceiling = region->ceilplane;
-
-  // update subsector
-  const seg_t *poseg = &Level->Segs[sub->firstline];
-  for (int j = sub->numlines; j--; ++poseg) {
-    line_t *ld = poseg->linedef;
+  // update polyobject segs
+  for (auto &&sit : po->SegFirst()) {
+    const seg_t *seg = sit.seg();
+    line_t *ld = seg->linedef;
     if (ld) {
-      // miniseg has no drawsegs/segparts
-      if (poseg->drawsegs) UpdateDrawSeg(sub, poseg->drawsegs, r_floor, r_ceiling);
-      // update fullsegs
+      UpdateDrawSeg(seg->frontsub, seg->drawsegs, po_floor, po_ceiling);
       if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
         ld->updateWorldFrame = updateWorldFrame;
-        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
-        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
+        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(seg->frontsub, ld->frontside->fullseg->drawsegs, po_floor, po_ceiling);
+        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(seg->frontsub, ld->backside->fullseg->drawsegs, po_floor, po_ceiling);
       }
     }
   }
 
-  // update flags
-  if (region->realfloor) {
-    // check if we have to remove zerosky flag
-    // "zerosky" is set when the sector has zero height, and sky ceiling
-    // this is what removes extra floors on Doom II MAP01, for example
-    region->flags &= ~subregion_t::SRF_ZEROSKY_FLOOR_HACK;
-    UpdateSecSurface(region->realfloor, region->floorplane, sub, region);
+  if (!po->Is3D()) return;
+
+  // update polyobject flats
+  for (subsector_t *sub = po->GetSector()->subsectors; sub; sub = sub->seclink) {
+    vassert(sub->isInnerPObj());
+
+    // polyobject have only one region (this is invariant)
+    subregion_t *region = sub->regions;
+    vassert(!region->next);
+
+    //TSecPlaneRef r_floor = region->floorplane;
+    //TSecPlaneRef r_ceiling = region->ceilplane;
+
+    // update flags
+    if (region->realfloor) {
+      // check if we have to remove zerosky flag
+      // "zerosky" is set when the sector has zero height, and sky ceiling
+      // this is what removes extra floors on Doom II MAP01, for example
+      region->flags &= ~subregion_t::SRF_ZEROSKY_FLOOR_HACK;
+      UpdateSecSurface(region->realfloor, region->floorplane, sub, region);
+    }
+
+    if (region->fakefloor) {
+      TSecPlaneRef fakefloor;
+      fakefloor.set(&sub->sector->fakefloors->floorplane, false);
+      if (!fakefloor.isFloor()) fakefloor.Flip();
+      if (!region->fakefloor->esecplane.isFloor()) region->fakefloor->esecplane.Flip();
+      UpdateSecSurface(region->fakefloor, fakefloor, sub, region, false/*allow cmap*/, true/*fake*/);
+    }
+
+    if (region->realceil) UpdateSecSurface(region->realceil, region->ceilplane, sub, region);
+
+    if (region->fakeceil) {
+      TSecPlaneRef fakeceil;
+      fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
+      if (!fakeceil.isCeiling()) fakeceil.Flip();
+      if (!region->fakeceil->esecplane.isCeiling()) region->fakeceil->esecplane.Flip();
+      UpdateSecSurface(region->fakeceil, fakeceil, sub, region, false/*allow cmap*/, true/*fake*/);
+    }
+
+    region->ResetForceRecreation();
   }
-
-  if (region->fakefloor) {
-    TSecPlaneRef fakefloor;
-    fakefloor.set(&sub->sector->fakefloors->floorplane, false);
-    if (!fakefloor.isFloor()) fakefloor.Flip();
-    if (!region->fakefloor->esecplane.isFloor()) region->fakefloor->esecplane.Flip();
-    UpdateSecSurface(region->fakefloor, fakefloor, sub, region, false/*allow cmap*/, true/*fake*/);
-  }
-
-  if (region->realceil) UpdateSecSurface(region->realceil, region->ceilplane, sub, region);
-
-  if (region->fakeceil) {
-    TSecPlaneRef fakeceil;
-    fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
-    if (!fakeceil.isCeiling()) fakeceil.Flip();
-    if (!region->fakeceil->esecplane.isCeiling()) region->fakeceil->esecplane.Flip();
-    UpdateSecSurface(region->fakeceil, fakeceil, sub, region, false/*allow cmap*/, true/*fake*/);
-  }
-
-  region->ResetForceRecreation();
 }
 
 

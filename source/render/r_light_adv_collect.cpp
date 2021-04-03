@@ -400,24 +400,13 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
         TSecPlaneRef po_floor, po_ceiling;
         po_floor.set(&pobj->pofloor, false);
         po_ceiling.set(&pobj->poceiling, false);
-        bool doSegUpdates = (doUpdates && pobj->updateWorldFrame != updateWorldFrame);
-        pobj->updateWorldFrame = updateWorldFrame;
-        if (doSegUpdates && pobj->Is3D()) {
-          for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
-            // update pobj
-            if (posub->updateWorldFrame != updateWorldFrame && posub->numlines > 0) {
-              posub->updateWorldFrame = updateWorldFrame;
-              UpdateSubRegions(posub);
-            }
-          }
-          doSegUpdates = false;
+        if (doUpdates && pobj->updateWorldFrame != updateWorldFrame) {
+          pobj->updateWorldFrame = updateWorldFrame;
+          UpdatePObj(pobj);
         }
         for (auto &&sit : pobj->SegFirst()) {
           const seg_t *seg = sit.seg();
-          if (seg->linedef && seg->drawsegs) {
-            if (doSegUpdates) UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
-            CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
-          }
+          if (seg->drawsegs) CollectAdvLightLine(sub, secregion, seg->drawsegs, ssflag);
         }
         if (pobj->Is3D()) {
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
