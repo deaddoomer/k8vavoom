@@ -25,6 +25,9 @@
 //**************************************************************************
 #include "r_light_adv.h"
 
+#define VV_SMAP_PAPERTHIN_FIX
+
+
 static VCvarB clip_shadow("clip_shadow", true, "Use clipper to drop unnecessary shadow surfaces?", CVAR_PreInit);
 static VCvarB clip_advlight_regions("clip_advlight_regions", false, "Clip (1D) light regions?", CVAR_PreInit);
 
@@ -119,37 +122,6 @@ enum {
 
 //==========================================================================
 //
-//  isGood2Flip
-//
-//  check if this wall is "ok" to be flipped
-//
-//  many 2s walls has no good textures on the other side
-//  (because it never meant to be seen), and we should not flip such walls
-//
-//  so we'll check if the side is present, and if it has good midtexture
-//  (only midtexture, because this is the only texture we'll flip anyway)
-//
-//==========================================================================
-/*
-static bool isGood2Flip (const surface_t *surf, int SurfaceType) noexcept {
-  if (!surf || SurfaceType < SurfTypeFlatEx) return false;
-  const seg_t *seg =surf->seg;
-  if (!seg) return true;
-  if (!seg->frontsector || !seg->backsector || !seg->sidedef) return false;
-  const line_t *line = seg->linedef;
-  if (!line || !(line->flags&ML_TWOSIDED)) return false;
-  const side_t *side = seg->sidedef;
-  if (side->MidTexture <= 0) return false;
-  VTexture *tex = GTextureManager[side->MidTexture];
-  if (!tex || tex->Type == TEXTYPE_Null) return false;
-  //return (!tex->isTranslucent() && tex->isTransparent());
-  return tex->isTransparent();
-}
-*/
-
-
-//==========================================================================
-//
 //  VRenderLevelShadowVolume::CollectAdvLightSurfaces
 //
 //==========================================================================
@@ -189,8 +161,8 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   //vassert(fabsf(dist) < CurrLightRadius);
 
   const bool isLightVisible = ((ssflag&FlagAsLight) && distInFront && InSurfs->IsVisibleFor(Drawer->vieworg));
-  const bool floorSurface = (SurfaceType == SurfTypePaperFlatEx && InSurfs->plane.normal.z >= 0.0f);
-  const bool dropPaperThinFloor = (floorSurface && InSurfs->plane.PointDistance(Drawer->vieworg) < -0.1f);
+  const bool paperFloor = (SurfaceType == SurfTypePaperFlatEx && InSurfs->plane.normal.z >= 0.0f);
+  const bool dropPaperThinFloor = (paperFloor && InSurfs->plane.PointDistance(Drawer->vieworg) <= 0.0f && InSurfs->plane.PointDistance(Drawer->vieworg) < -0.1f);
 
   const bool transTex = texinfo->Tex->isTransparent();
   const bool seeTroughTex = (!smaps && texinfo->Tex->isSeeThrough());
@@ -225,7 +197,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
           // this is for flats: when the camera is almost on a flat, it's shadow disappears
           // this is because we cannot see neither up, nor down surface
           // in this case, leave down one
-          if (floorSurface) {
+          if (paperFloor) {
             if (dropPaperThinFloor) continue;
             /*
             const float sdist = surf->plane.PointDistance(Drawer->vieworg);
