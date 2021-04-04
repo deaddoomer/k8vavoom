@@ -327,6 +327,10 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
 {
   if (!isValidQuad(quad)) return;
 
+  if (!seg->linedef || seg->pobj || sub->isAnyPObj()) {
+    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+  }
+
   vassert(seg->frontsub == sub);
   vassert(seg->frontsector == sub->sector);
 
@@ -335,9 +339,8 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
 
   sector_t *frontsec = seg->frontsector;
   if (frontsec && (frontsec->isAnyPObj() || !frontsec->Has3DFloors())) frontsec = nullptr;
-  //frontsec = nullptr;
 
-  if (!seg->linedef || seg->pobj || sub->isAnyPObj() || (!clipsec && !frontsec)) {
+  if (!clipsec && !frontsec) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
