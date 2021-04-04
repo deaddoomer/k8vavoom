@@ -48,7 +48,8 @@ void VRenderLevelShared::SetupOneSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->texinfo.Additive = false;
   sp->texinfo.ColorMap = 0;
 
-  if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
+  // not for polyobjects
+  if (sp->texinfo.Tex->Type != TEXTYPE_Null && !seg->pobj) {
     TVec wv[4];
 
     const float topz1 = r_ceiling.GetPointZ(*seg->v1);
