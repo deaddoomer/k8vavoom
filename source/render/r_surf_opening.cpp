@@ -51,15 +51,6 @@ static int CheckQuadLine (const TVec &v0, const TVec &v1, const TSecPlaneRef &pl
   }
   const float v1distbot = DotProduct(v0, normal)-dist;
   const float v1disttop = DotProduct(v1, normal)-dist;
-  /*
-  float v1distbot = plane.PointDistance(v0);
-  float v1disttop = plane.PointDistance(v1);
-  if (plane.GetNormalZ() < 0.0f) {
-    // plane points down, invert the distances
-    v1distbot = -v1distbot;
-    v1disttop = -v1disttop;
-  }
-  */
   // positive distance means "above"
   if (isFloor) {
     if (v1disttop >= 0.0f && v1distbot >= 0.0f) return QTop;
@@ -74,12 +65,12 @@ static int CheckQuadLine (const TVec &v0, const TVec &v1, const TSecPlaneRef &pl
 
 //==========================================================================
 //
-//  VRenderLevelShared::CheckQuadVsRegion
+//  VRenderLevelShared::ClassifyQuadVsRegion
 //
 //  quad must be valid
 //
 //==========================================================================
-int VRenderLevelShared::CheckQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept {
+int VRenderLevelShared::ClassifyQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept {
   const float fz1 = reg->efloor.GetPointZClamped(quad[QUAD_V1_TOP]);
   const float cz1 = reg->eceiling.GetPointZClamped(quad[QUAD_V1_TOP]);
   if (fz1 > cz1) return QInvalid; // invalid region
@@ -112,42 +103,6 @@ int VRenderLevelShared::CheckQuadVsRegion (const TVec quad[4], const sec_region_
 
   // we are completely inside
   return QInside;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::ClassifyRegionsVsQuad
-//
-//  sets region flags
-//  quad must be valid
-//  returns `true` if the quad is completely inside some region
-//
-//==========================================================================
-bool VRenderLevelShared::ClassifyRegionsVsQuad (const TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg) noexcept {
-  const vuint32 mask = (onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion;
-  for (; reg; reg = reg->next) {
-    reg->regflags &= ~sec_region_t::RF_SplitMask;
-    if (reg == ignorereg || (reg->regflags&mask) || (onlySolid && !reg->isBlockingExtraLine())) {
-      reg->regflags |= sec_region_t::RF_Invalid;
-      /*
-      if (reg == ignorereg) reg->regflags |= sec_region_t::RF_QuadIntersects;
-      if (reg->regflags&mask) reg->regflags |= sec_region_t::RF_QuadAbove;
-      if (onlySolid && !reg->isBlockingExtraLine()) reg->regflags |= sec_region_t::RF_QuadBelow;
-      */
-      continue;
-    }
-    const int rclass = CheckQuadVsRegion(quad, reg);
-    switch (rclass) {
-      case QInvalid: reg->regflags |= sec_region_t::RF_Invalid; break;
-      case QIntersect: reg->regflags |= sec_region_t::RF_QuadIntersects; break;
-      case QTop: reg->regflags |= sec_region_t::RF_QuadAbove; break;
-      case QBottom: reg->regflags |= sec_region_t::RF_QuadBelow; break;
-      case QInside: return true; // completely inside
-      default: Sys_Error("invalid quad-vs-region class");
-    }
-  }
-  return false;
 }
 
 
@@ -206,7 +161,7 @@ bool VRenderLevelShared::isPointInsideSolidReg (const TVec lv, const float pz, c
 //  `qbottom` or `qtop` can be the same as `quad`
 //
 //==========================================================================
-bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec qbottom[4], TVec qtop[4], bool isFloor) noexcept {
+bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec qbottom[4], TVec qtop[4]) noexcept {
   vassert(quad);
   vassert(pl.isValid());
   vassert(!pl.isVertical());
@@ -218,19 +173,8 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   TPlane::ClipWorkData cd;
   int topcount = 0, botcount = 0;
 
-  #if 1
-  GCon->Logf(NAME_Debug, "quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
-    quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
-    quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
-    quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
-    quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z);
-  GCon->Logf(NAME_Debug, "plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
-  #endif
-  pl.ClipPoly(cd, quad, 4, qtop, &topcount, qbottom, &botcount, /*(isFloor ? TPlane::CoplanarFront : TPlane::CoplanarBack)*/TPlane::CoplanarNone, 0.0f);
+  pl.ClipPoly(cd, quad, 4, qtop, &topcount, qbottom, &botcount, TPlane::CoplanarNone, 0.0f);
   // check invariants
-  #if 1
-  GCon->Logf(NAME_Debug, "topcount=%d; botcount=%d; valid=%d", topcount, botcount, (int)isValidQuad(quad));
-  #endif
   vassert(topcount == 0 || topcount == 3 || topcount == 4);
   vassert(botcount == 0 || botcount == 3 || botcount == 4);
 
@@ -241,15 +185,6 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
     } else if (topcount == 3) {
       ConvertTriToQuad(qtop);
     }
-    #if 1
-    if (topcount) {
-      GCon->Logf(NAME_Debug, "*** top quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
-        qtop[QUAD_V1_BOTTOM].x, qtop[QUAD_V1_BOTTOM].y, qtop[QUAD_V1_BOTTOM].z,
-        qtop[QUAD_V1_TOP].x, qtop[QUAD_V1_TOP].y, qtop[QUAD_V1_TOP].z,
-        qtop[QUAD_V2_TOP].x, qtop[QUAD_V2_TOP].y, qtop[QUAD_V2_TOP].z,
-        qtop[QUAD_V2_BOTTOM].x, qtop[QUAD_V2_BOTTOM].y, qtop[QUAD_V2_BOTTOM].z);
-    }
-    #endif
   }
 
   if (qbottom) {
@@ -259,15 +194,6 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
     } else if (botcount == 3) {
       ConvertTriToQuad(qbottom);
     }
-    #if 1
-    if (botcount) {
-      GCon->Logf(NAME_Debug, "*** bottom quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
-        qbottom[QUAD_V1_BOTTOM].x, qbottom[QUAD_V1_BOTTOM].y, qbottom[QUAD_V1_BOTTOM].z,
-        qbottom[QUAD_V1_TOP].x, qbottom[QUAD_V1_TOP].y, qbottom[QUAD_V1_TOP].z,
-        qbottom[QUAD_V2_TOP].x, qbottom[QUAD_V2_TOP].y, qbottom[QUAD_V2_TOP].z,
-        qbottom[QUAD_V2_BOTTOM].x, qbottom[QUAD_V2_BOTTOM].y, qbottom[QUAD_V2_BOTTOM].z);
-    }
-    #endif
   }
 
   if (qtop && qbottom) return ((botcount|topcount) != 0);
@@ -299,7 +225,7 @@ sec_region_t *VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region
     if (reg == ignorereg) continue;
     if (reg->regflags&mask) continue;
     if (onlySolid && !reg->isBlockingExtraLine()) continue;
-    const int rtype = CheckQuadVsRegion(quad, reg);
+    const int rtype = ClassifyQuadVsRegion(quad, reg);
     // invalid or at the top? ignore such regions
     if (rtype == QInvalid || rtype == QTop) continue;
     // inside?
@@ -310,7 +236,7 @@ sec_region_t *VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region
     }
     // intersects?
     if (rtype == QIntersect) {
-      if (!SplitQuadWithPlane(quad, reg->efloor, quad, nullptr, true/*isFloor*/)) return reg; // completely splitted away
+      if (!SplitQuadWithPlane(quad, reg->efloor, quad, nullptr)) return reg; // completely splitted away
       continue;
     }
     // completely at the bottom, nothing to do

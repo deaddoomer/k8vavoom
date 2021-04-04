@@ -750,11 +750,7 @@ protected:
   };
 
   // quad must be valid; returns one of the `Q*` constants above
-  static int CheckQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept;
-
-  // sets region flags
-  // returns `true` if the quad is completely inside some region
-  static bool ClassifyRegionsVsQuad (const TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg=nullptr) noexcept;
+  static int ClassifyQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept;
 
   // splits quad with a non-vertical plane
   // returns `false` if there is no bottom quad
@@ -763,11 +759,11 @@ protected:
   // `qbottom` or `qtop` can be the same as `quad`
   // see comments in "r_surf_opening.cpp"
   // input quad must be valid
-  static bool SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec qbottom[4], TVec qtop[4], bool isFloor) noexcept;
+  static bool SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec qbottom[4], TVec qtop[4]) noexcept;
 
-  static inline bool SplitQuadWithPlane (const TVec quad[4], const TSecPlaneRef &pl, TVec qbottom[4], TVec qtop[4], bool isFloor) noexcept {
+  static inline bool SplitQuadWithPlane (const TVec quad[4], const TSecPlaneRef &pl, TVec qbottom[4], TVec qtop[4]) noexcept {
     TPlane pp(pl.GetNormal(), pl.GetDist());
-    return SplitQuadWithPlane(quad, pp, qbottom, qtop, isFloor);
+    return SplitQuadWithPlane(quad, pp, qbottom, qtop);
   }
 
   // starts with the given region

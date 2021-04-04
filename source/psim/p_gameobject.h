@@ -794,12 +794,6 @@ struct sec_region_t {
     RF_SkipFloorSurf = 1u<<3, // do not create floor surface for this region
     RF_SkipCeilSurf  = 1u<<4, // do not create ceiling surface for this region
     RF_SaneRegion    = 1u<<5, // k8vavoom-style 3d floor region
-    // temporary flags, set and reset by quad splitter
-    RF_Invalid   = 1u<<28,
-    RF_QuadAbove = 1u<<29,
-    RF_QuadBelow = 1u<<30,
-    RF_QuadIntersects = 1u<<31,
-    RF_SplitMask = (RF_Invalid|RF_QuadAbove|RF_QuadBelow|RF_QuadIntersects),
   };
   vuint32 regflags;
 

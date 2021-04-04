@@ -197,8 +197,8 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
 
         if (isValidQuad(quad)) {
           // clip with passed floor and ceiling (just in case)
-          const bool valid0 = SplitQuadWithPlane(quad, r_ceiling, quad, nullptr, false/*isFloor*/); // leave bottom part
-          const bool valid1 = (valid0 && SplitQuadWithPlane(quad, r_floor, nullptr, quad, true/*isFloor*/)); // leave top part
+          const bool valid0 = SplitQuadWithPlane(quad, r_ceiling, quad, nullptr); // leave bottom part
+          const bool valid1 = (valid0 && SplitQuadWithPlane(quad, r_floor, nullptr, quad)); // leave top part
 
           if (valid0 && valid1 && isValidQuad(quad)) {
             sec_region_t *backregs = (sub == seg->frontsub ? (seg->backsector ? seg->backsector->eregions : nullptr) : (seg->frontsector ? seg->frontsector->eregions : nullptr));
