@@ -39,7 +39,7 @@ menudef SoundOptions {
       "Changing soundfont will also save current FluidSynth settings,",
       "and load previous settings for the given soundfont.",
       "",
-      "Your new sound will be used on the next music chane.";
+      "Your new sound will be used on the next music change.";
   }
 
 
