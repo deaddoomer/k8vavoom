@@ -152,61 +152,76 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   sp->texinfo.Additive = !!(reg->efloor.splane->flags&SPF_ADDITIVE);
 
   // hack: 3d floor with sky texture seems to be transparent in renderer
-  if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum) {
+  // "only visual" regions has no walls, they are used to render floors and ceilings when the camera is inside a region
+  if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum && (reg->regflags&sec_region_t::RF_OnlyVisual) == 0) {
     TVec quad[4];
 
-    quad[0].x = quad[1].x = seg->v1->x;
-    quad[0].y = quad[1].y = seg->v1->y;
-    quad[2].x = quad[3].x = seg->v2->x;
-    quad[2].y = quad[3].y = seg->v2->y;
+    const bool isSolid = !(reg->regflags&sec_region_t::RF_NonSolid);
 
-    const float topz1 = reg->eceiling.GetPointZ(*seg->v1);
-    const float topz2 = reg->eceiling.GetPointZ(*seg->v2);
-
-    const float botz1 = reg->efloor.GetPointZ(*seg->v1);
-    const float botz2 = reg->efloor.GetPointZ(*seg->v2);
-
-    //const bool wrapped = !!((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
-    // side 3d floor midtex should always be wrapped
-    /*
-    // 3d midtextures are always wrapped
-    // check texture limits
-    if (!wrapped) {
-      if (max2(topz1, topz2) <= z_org-texhsc) continue;
-      if (min2(botz1, botz2) >= z_org) continue;
-    }
-    */
-
-    if (botz1 < topz1 && botz2 < topz2 &&
-        ((!r_floor.PointOnSide(TVec(seg->v1->x, seg->v1->y, topz1)) || !r_floor.PointOnSide(TVec(seg->v2->x, seg->v2->y, topz2))) ||
-         (!r_ceiling.PointOnSide(TVec(seg->v1->x, seg->v1->y, botz1)) || !r_ceiling.PointOnSide(TVec(seg->v2->x, seg->v2->y, botz2)))))
-    {
-      quad[0].z = botz1;
-      quad[1].z = topz1;
-      quad[2].z = topz2;
-      quad[3].z = botz2;
-
-      // clip with floor and ceiling
-      SplitQuadWithPlane(quad, r_ceiling, quad, nullptr); // leave bottom part
-      SplitQuadWithPlane(quad, r_floor, nullptr, quad); // leave top part
-
-      if (isValidNormalQuad(quad)) {
-        // clip with other 3d floors
-        // clip only with the following regions, to avoid holes
-        // if we have a back sector, split with it too
-        bool found = false;
-        for (sec_region_t *sr = seg->frontsector->eregions->next; sr; sr = sr->next) if (sr == reg) { found = true; break; }
-        sector_t *bsec = (found ? seg->backsector : seg->frontsector);
-        if (seg->frontsector == seg->backsector) bsec = nullptr;
-        //bsec = nullptr;
-        CreateWorldSurfFromWVSplitFromReg(reg->next, bsec, sub, seg, sp, quad, surface_t::TF_MIDDLE);
+    do {
+      // if non-solid region is inside a sector (i.e. both subsectors belong to the same sector), don't create a wall
+      if (!isSolid && seg->frontsector && seg->backsector && seg->frontsector == seg->backsector) {
+        break;
       }
-    }
+
+      quad[0].x = quad[1].x = seg->v1->x;
+      quad[0].y = quad[1].y = seg->v1->y;
+      quad[2].x = quad[3].x = seg->v2->x;
+      quad[2].y = quad[3].y = seg->v2->y;
+
+      const float topz1 = reg->eceiling.GetPointZ(*seg->v1);
+      const float topz2 = reg->eceiling.GetPointZ(*seg->v2);
+
+      const float botz1 = reg->efloor.GetPointZ(*seg->v1);
+      const float botz2 = reg->efloor.GetPointZ(*seg->v2);
+
+      //const bool wrapped = !!((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
+      // side 3d floor midtex should always be wrapped
+      /*
+      // 3d midtextures are always wrapped
+      // check texture limits
+      if (!wrapped) {
+        if (max2(topz1, topz2) <= z_org-texhsc) continue;
+        if (min2(botz1, botz2) >= z_org) continue;
+      }
+      */
+
+      if (botz1 < topz1 && botz2 < topz2 /*&&
+          ((!r_floor.PointOnSide(TVec(seg->v1->x, seg->v1->y, topz1)) || !r_floor.PointOnSide(TVec(seg->v2->x, seg->v2->y, topz2))) ||
+           (!r_ceiling.PointOnSide(TVec(seg->v1->x, seg->v1->y, botz1)) || !r_ceiling.PointOnSide(TVec(seg->v2->x, seg->v2->y, botz2))))*/)
+      {
+        quad[0].z = botz1;
+        quad[1].z = topz1;
+        quad[2].z = topz2;
+        quad[3].z = botz2;
+
+        if (isValidQuad(quad)) {
+          // clip with passed floor and ceiling (just in case)
+          const bool valid0 = SplitQuadWithPlane(quad, r_ceiling, quad, nullptr, false/*isFloor*/); // leave bottom part
+          const bool valid1 = (valid0 && SplitQuadWithPlane(quad, r_floor, nullptr, quad, true/*isFloor*/)); // leave top part
+
+          if (valid0 && valid1 && isValidQuad(quad)) {
+            sec_region_t *backregs = (sub == seg->frontsub ? (seg->backsector ? seg->backsector->eregions : nullptr) : (seg->frontsector ? seg->frontsector->eregions : nullptr));
+            if (isSolid) {
+              // solid region; clip only with the following regions
+              CreateWorldSurfFromWVSplitFromReg(reg, backregs, sub, seg, sp, quad, surface_t::TF_MIDDLE, true/*onlySolid*/, reg/*ignorereg*/);
+            } else {
+              // non-solid region: clip with all subsector regions
+              CreateWorldSurfFromWVSplitFromReg(sub->sector->eregions, backregs, sub, seg, sp, quad, surface_t::TF_MIDDLE, false/*onlySolid*/, reg/*ignorereg*/);
+            }
+          }
+        }
+      }
+    } while (0);
 
     if (sp->surfs && (sp->texinfo.Additive || sp->texinfo.Alpha < 1.0f || MTex->isTranslucent())) {
       for (surface_t *sf = sp->surfs; sf; sf = sf->next) sf->drawflags |= surface_t::DF_NO_FACE_CULL;
     }
   } else {
+    vassert(!sp->surfs);
+  }
+
+  if (!sp->surfs) {
     if (sidedef->MidTexture.id != skyflatnum) {
       sp->texinfo.Alpha = 1.1f;
       sp->texinfo.Additive = false;

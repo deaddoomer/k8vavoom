@@ -79,6 +79,155 @@ static inline void spvReserve (int size) {
 
 //==========================================================================
 //
+//  CalcSurfMinMax
+//
+//  surface must be valid
+//
+//==========================================================================
+static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, const TVec axis/*, const float offs=0.0f*/) {
+  float mins = +99999.0f;
+  float maxs = -99999.0f;
+  const SurfVertex *vt = surf->verts;
+  for (int i = surf->count; i--; ++vt) {
+    if (!vt->vec().isValid()) {
+      GCon->Log(NAME_Warning, "ERROR(SF): invalid surface vertex; THIS IS INTERNAL K8VAVOOM BUG!");
+      surf->count = 0;
+      outmins = outmaxs = 0.0f;
+      return false;
+    }
+    // ignore offset, we don't need it anymore
+    //const float dot = DotProduct(*vt, axis)+offs;
+    const float dot = DotProduct(vt->vec(), axis);
+    if (dot < mins) mins = dot;
+    if (dot > maxs) maxs = dot;
+  }
+  // always zero-based (why?)
+  //maxs -= mins;
+  //mins = 0;
+  outmins = clampval(mins, -32767.0f, 32767.0f);
+  outmaxs = clampval(maxs, -32767.0f, 32767.0f);
+  return true;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct SClipInfo {
+  int vcount[2];
+  SurfVertex *verts[2];
+
+  inline void appendVertex (const int pidx, const SurfVertex &v) noexcept {
+    verts[pidx][vcount[pidx]++] = v;
+  }
+
+  inline void appendPoint (const int pidx, const TVec p) noexcept {
+    verts[pidx][vcount[pidx]++].clearSetVec(p);
+  }
+};
+
+
+//==========================================================================
+//
+//  SplitSurface
+//
+//  returns `false` if surface cannot be split
+//  axis must be valid
+//
+//  WARNING! thread-unsafe!
+//  WARNING! returned vertices memory in `clip` will be reused!
+//
+//==========================================================================
+static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
+  clip.vcount[0] = clip.vcount[1] = 0;
+  if (!surf || surf->count < 3) return false; // cannot split
+
+  float mins, maxs;
+  if (!CalcSurfMinMax(surf, mins, maxs, axis)) {
+    // invalid surface
+    surf->count = 0;
+    return false;
+  }
+
+  if (maxs-mins <= SUBDIVIDE_SIZE) return false;
+
+  TPlane plane;
+  plane.normal = axis;
+  const float dot0 = Length(plane.normal);
+  plane.normal.normaliseInPlace();
+  plane.dist = (mins+SUBDIVIDE_SIZE-16)/dot0;
+
+  enum {
+    PlaneBack = -1,
+    PlaneCoplanar = 0,
+    PlaneFront = 1,
+  };
+
+  const int surfcount = surf->count;
+  spvReserve(surfcount*2+2); //k8: `surf->count+1` is enough, but...
+
+  float *dots = spvPoolDots;
+  int *sides = spvPoolSides;
+  SurfVertex *verts1 = spvPoolV1;
+  SurfVertex *verts2 = spvPoolV2;
+
+  const SurfVertex *vt = surf->verts;
+
+  bool hasFrontSomething = false;
+  bool hasBackSomething = false;
+  for (int i = 0; i < surfcount; ++i, ++vt) {
+    //const float dot = DotProduct(vt->vec(), plane.normal)-plane.dist;
+    const float dot = plane.PointDistance(vt->vec());
+    dots[i] = dot;
+         if (dot < -ON_EPSILON) { sides[i] = PlaneBack; hasBackSomething = true; }
+    else if (dot > +ON_EPSILON) { sides[i] = PlaneFront; hasFrontSomething = true; }
+    else sides[i] = PlaneCoplanar;
+  }
+
+  if (!hasBackSomething || !hasFrontSomething) {
+    // totally coplanar, or completely on one side
+    return false;
+  }
+
+  dots[surfcount] = dots[0];
+  sides[surfcount] = sides[0];
+
+  TVec mid(0, 0, 0);
+  clip.verts[0] = verts1;
+  clip.verts[1] = verts2;
+
+  vt = surf->verts;
+  for (int i = 0; i < surfcount; ++i) {
+    if (sides[i] == PlaneCoplanar) {
+      clip.appendVertex(0, vt[i]);
+      clip.appendVertex(1, vt[i]);
+      continue;
+    }
+
+    clip.appendVertex((sides[i] == PlaneBack), vt[i]);
+
+    if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
+
+    // generate a split point
+    const TVec &p1 = vt[i].vec();
+    const TVec &p2 = vt[(i+1)%surfcount].vec();
+
+    const float dot = dots[i]/(dots[i]-dots[i+1]);
+    for (int j = 0; j < 3; ++j) {
+      // avoid round off error when possible
+           if (plane.normal[j] == +1.0f) mid[j] = plane.dist;
+      else if (plane.normal[j] == -1.0f) mid[j] = -plane.dist;
+      else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
+    }
+
+    clip.appendPoint(0, mid);
+    clip.appendPoint(1, mid);
+  }
+
+  return (clip.vcount[0] >= 3 && clip.vcount[1] >= 3);
+}
+
+
+//==========================================================================
+//
 //  surfDrop
 //
 //==========================================================================
@@ -155,39 +304,6 @@ static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf, 
 
 static inline surface_t *RecreateFlatCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, true); }
 static inline surface_t *RecreateWallCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, false); }
-
-
-//==========================================================================
-//
-//  CalcSurfMinMax
-//
-//  surface must be valid
-//
-//==========================================================================
-static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, const TVec axis/*, const float offs=0.0f*/) {
-  float mins = +99999.0f;
-  float maxs = -99999.0f;
-  const SurfVertex *vt = surf->verts;
-  for (int i = surf->count; i--; ++vt) {
-    if (!vt->vec().isValid()) {
-      GCon->Log(NAME_Warning, "ERROR(SF): invalid surface vertex; THIS IS INTERNAL K8VAVOOM BUG!");
-      surf->count = 0;
-      outmins = outmaxs = 0.0f;
-      return false;
-    }
-    // ignore offset, we don't need it anymore
-    //const float dot = DotProduct(*vt, axis)+offs;
-    const float dot = DotProduct(vt->vec(), axis);
-    if (dot < mins) mins = dot;
-    if (dot > maxs) maxs = dot;
-  }
-  // always zero-based (why?)
-  //maxs -= mins;
-  //mins = 0;
-  outmins = clampval(mins, -32767.0f, 32767.0f);
-  outmaxs = clampval(maxs, -32767.0f, 32767.0f);
-  return true;
-}
 
 
 //==========================================================================
@@ -297,108 +413,6 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
       }
     }
   }
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-struct SClipInfo {
-  int vcount[2];
-  SurfVertex *verts[2];
-};
-
-
-//==========================================================================
-//
-//  SplitSurface
-//
-//  returns `false` if surface cannot be split
-//  axis must be valid
-//
-//==========================================================================
-static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
-  clip.vcount[0] = clip.vcount[1] = 0;
-  if (!surf || surf->count < 3) return false; // cannot split
-
-  float mins, maxs;
-  if (!CalcSurfMinMax(surf, mins, maxs, axis)) {
-    // invalid surface
-    surf->count = 0;
-    return false;
-  }
-
-  if (maxs-mins <= SUBDIVIDE_SIZE) return false;
-
-  TPlane plane;
-  plane.normal = axis;
-  const float dot0 = Length(plane.normal);
-  plane.normal.normaliseInPlace();
-  plane.dist = (mins+SUBDIVIDE_SIZE-16)/dot0;
-
-  enum {
-    PlaneBack = -1,
-    PlaneCoplanar = 0,
-    PlaneFront = 1,
-  };
-
-  const int surfcount = surf->count;
-  spvReserve(surfcount*2+2); //k8: `surf->count+1` is enough, but...
-
-  float *dots = spvPoolDots;
-  int *sides = spvPoolSides;
-  SurfVertex *verts1 = spvPoolV1;
-  SurfVertex *verts2 = spvPoolV2;
-
-  const SurfVertex *vt = surf->verts;
-
-  int backSideCount = 0, frontSideCount = 0;
-  for (int i = 0; i < surfcount; ++i, ++vt) {
-    //const float dot = DotProduct(vt->vec(), plane.normal)-plane.dist;
-    const float dot = plane.PointDistance(vt->vec());
-    dots[i] = dot;
-         if (dot < -ON_EPSILON) { ++backSideCount; sides[i] = PlaneBack; }
-    else if (dot > ON_EPSILON) { ++frontSideCount; sides[i] = PlaneFront; }
-    else sides[i] = PlaneCoplanar;
-  }
-  dots[surfcount] = dots[0];
-  sides[surfcount] = sides[0];
-
-  // completely on one side?
-  if (!backSideCount || !frontSideCount) return false;
-
-  TVec mid(0, 0, 0);
-  clip.verts[0] = verts1;
-  clip.verts[1] = verts2;
-
-  vt = surf->verts;
-  for (int i = 0; i < surfcount; ++i) {
-    if (sides[i] == PlaneCoplanar) {
-      clip.verts[0][clip.vcount[0]++] = vt[i];
-      clip.verts[1][clip.vcount[1]++] = vt[i];
-      continue;
-    }
-
-    unsigned cvidx = (sides[i] == PlaneFront ? 0 : 1);
-    clip.verts[cvidx][clip.vcount[cvidx]++] = vt[i];
-
-    if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
-
-    // generate a split point
-    const TVec &p1 = vt[i].vec();
-    const TVec &p2 = vt[(i+1)%surfcount].vec();
-
-    const float dot = dots[i]/(dots[i]-dots[i+1]);
-    for (int j = 0; j < 3; ++j) {
-      // avoid round off error when possible
-           if (plane.normal[j] == 1.0f) mid[j] = plane.dist;
-      else if (plane.normal[j] == -1.0f) mid[j] = -plane.dist;
-      else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
-    }
-
-    clip.verts[0][clip.vcount[0]++].clearSetVec(mid);
-    clip.verts[1][clip.vcount[1]++].clearSetVec(mid);
-  }
-
-  return (clip.vcount[0] >= 3 && clip.vcount[1] >= 3);
 }
 
 

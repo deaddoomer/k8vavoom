@@ -327,20 +327,44 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 //
 //  split quad to parts unobscured by 3d walls
 //
-//  quad points (usually) are:
-//   [0]: left bottom point
-//   [1]: left top point
-//   [2]: right top point
-//   [3]: right bottom point
-//
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
-  if (!isValidNormalQuad(quad)) return;
+void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags,
+                                                     bool onlySolid, const sec_region_t *ignorereg) noexcept
+{
+  if (!isValidQuad(quad)) return;
 
-  if (!seg->linedef || !clipsec || !seg || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
+  if (!seg || !seg->linedef || !clipsec || !clipsec->eregions->next || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
+  // check regions, mark those we are interested in
+  sec_region_t *clipregs = clipsec->eregions->next;
+  if (ClassifyRegionsVsQuad(quad, clipregs, true/*onlySolid*/)) return; // completely inside some region
+
+  // this is absolutely fucked, it can be made much faster
+  // bit meh, i don't care for now
+  for (sec_region_t *reg = clipregs; reg; reg = reg->next) {
+    // we are interested only in intersecting regions here
+    if ((reg->regflags&sec_region_t::RF_QuadIntersects) == 0) continue;
+    // cut bottom part with all regions
+    TVec orig[4];
+    memcpy((void *)orig, (void *)quad, 4*sizeof(quad[0]));
+    SplitQuadWithRegions(quad, clipregs, true/*onlySolid*/);
+    if (isValidQuad(quad)) {
+      CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+    }
+    // now split quad with current region ceiling, and get the top part
+    if (!SplitQuadWithPlane(orig, reg->eceiling, nullptr, quad, false/*isFloor*/)) return; // we're done
+    // just in case
+    if (!isValidQuad(quad)) return;
+    // recaluclate flags
+    if (ClassifyRegionsVsQuad(quad, clipregs, true/*onlySolid*/)) return; // completely inside some region
+  }
+
+  // what is left here is the top part of the quad, append it too
+  if (isValidQuad(quad)) CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+
+#if 0
   TVec orig[4];
   memcpy((void *)orig, quad, sizeof(orig));
 
@@ -404,7 +428,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
         quad[1].x, quad[1].y, quad[1].z,
         quad[2].x, quad[2].y, quad[2].z,
         quad[3].x, quad[3].y, quad[3].z,
-        (int)isValidNormalQuad(quad));
+        (int)isValidQuad(quad));
     }
     #endif
     sec_region_t *creg = SplitQuadWithRegionsBottom(quad, clipsec);
@@ -415,7 +439,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
         quad[1].x, quad[1].y, quad[1].z,
         quad[2].x, quad[2].y, quad[2].z,
         quad[3].x, quad[3].y, quad[3].z,
-        (int)isValidNormalQuad(quad));
+        (int)isValidQuad(quad));
       VLevel::DumpRegion(creg, true);
     }
     #endif
@@ -439,12 +463,25 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
         orig[1].x, orig[1].y, orig[1].z,
         orig[2].x, orig[2].y, orig[2].z,
         orig[3].x, orig[3].y, orig[3].z,
-        (int)isValidNormalQuad(orig));
+        (int)isValidQuad(orig));
     }
     #endif
-    if (!isValidNormalQuad(orig)) return;
+    if (!isValidQuad(orig)) return;
     memcpy((void *)quad, orig, sizeof(orig));
   }
+#endif
+}
+
+
+static float PlaneDistAbove (const TSecPlaneRef &plane, const TVec &p) {
+  TVec normal = plane.GetNormal();
+  float dist = plane.GetDist();
+  if (normal.z < 0.0f) {
+    // plane points down, invert the plane
+    normal = -normal;
+    dist = -dist;
+  }
+  return DotProduct(p, normal)-dist;
 }
 
 
@@ -452,84 +489,263 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsecto
 //
 //  VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg
 //
-//  split quad to parts unobscured by 3d walls
-//
-//  quad points (usually) are:
-//   [0]: left bottom point
-//   [1]: left top point
-//   [2]: right top point
-//   [3]: right bottom point
-//
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *reg, sector_t *bsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
-  if (!isValidNormalQuad(quad)) return;
+void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *frontreg, sec_region_t *backreg, subsector_t *sub, seg_t *seg, segpart_t *sp,
+                                                            TVec quad[4], vuint32 typeFlags,
+                                                            bool onlySolid, const sec_region_t *ignorereg) noexcept
+{
+  if (!isValidQuad(quad)) return;
 
-  if (bsec && bsec->isAnyPObj()) bsec = nullptr;
-
-  if (!reg && bsec) return CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags);
-
-  if (!reg || !seg->linedef || !seg || seg->pobj) {
-    return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+  if (!onlySolid) {
+    GCon->Logf(NAME_Debug, "+++++ region %p (back: %p) for subsector #%d (line #%d) (ignorereg=%p) ++++", frontreg, backreg, (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), ignorereg);
+    VLevel::DumpRegion(frontreg, true);
+    if (backreg) { GCon->Logf(NAME_Debug, "=== BACK ==="); VLevel::DumpRegion(backreg, true); }
+    if (ignorereg) { GCon->Logf(NAME_Debug, "=== IGNORE ==="); VLevel::DumpRegion(ignorereg, true); }
   }
 
-  TVec orig[4];
-  memcpy((void *)orig, quad, sizeof(orig));
+  if (!frontreg && !backreg) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+  // just in case
+  if (!seg || !seg->linedef || seg->pobj) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
 
-  #ifdef VV_QUAD_SPLIT_DEBUG
-  const int lidx = (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]);
-  const bool doDump =
-    lidx == 2662 /*|| lidx == 1050 || lidx == 1051*/ ||
-    false;
+  if (!onlySolid) GCon->Logf(NAME_Debug, "  000");
+  // check regions, mark those we are interested in
+  if (ClassifyRegionsVsQuad(quad, frontreg, onlySolid, ignorereg)) return; // completely inside some region
+  if (!onlySolid) GCon->Logf(NAME_Debug, "  001");
+  if (ClassifyRegionsVsQuad(quad, backreg, onlySolid, ignorereg)) return; // completely inside some region
+  if (!onlySolid) GCon->Logf(NAME_Debug, "  002");
+
+  // list all front regions
+  #if 1
+  if (!onlySolid) {
+    GCon->Logf(NAME_Debug, "--- FRONT REGIONS ---");
+    for (sec_region_t *reg = frontreg; reg; reg = reg->next) {
+      VLevel::DumpRegion(reg, true);
+      GCon->Logf(NAME_Debug, "  invalid   : %d", (int)!!(reg->regflags&sec_region_t::RF_Invalid));
+      GCon->Logf(NAME_Debug, "  intersects: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadIntersects));
+      GCon->Logf(NAME_Debug, "  quad_above: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadAbove));
+      GCon->Logf(NAME_Debug, "  quad_below: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadBelow));
+    }
+    GCon->Logf(NAME_Debug, "--- BACK REGIONS ---");
+    for (sec_region_t *reg = backreg; reg; reg = reg->next) {
+      VLevel::DumpRegion(reg, true);
+      GCon->Logf(NAME_Debug, "  invalid   : %d", (int)!!(reg->regflags&sec_region_t::RF_Invalid));
+      GCon->Logf(NAME_Debug, "  intersects: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadIntersects));
+      GCon->Logf(NAME_Debug, "  quad_above: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadAbove));
+      GCon->Logf(NAME_Debug, "  quad_below: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadBelow));
+    }
+    GCon->Logf(NAME_Debug, "--- SPLITTING ---");
+    GCon->Logf(NAME_Debug, "***STARTING quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+      quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+      quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+      quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+      quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z);
+  }
   #endif
 
-  #ifdef VV_QUAD_SPLIT_DEBUG
-  if (doDump) {
-    GCon->Logf(NAME_Debug, "***CreateWorldSurfFromWVSplitFromReg: seg #%d, line #%d, quad=(%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-      (int)(ptrdiff_t)(seg-&Level->Segs[0]),
-      (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
-      quad[0].x, quad[0].y, quad[0].z,
-      quad[1].x, quad[1].y, quad[1].z,
-      quad[2].x, quad[2].y, quad[2].z,
-      quad[3].x, quad[3].y, quad[3].z);
+  // this is absolutely fucked, it can be made much faster
+  // bit meh, i don't care for now
+  for (sec_region_t *reg = frontreg; reg; reg = reg->next) {
+    // we are interested only in intersecting regions here
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "*** FRONT region %p", reg);
+      VLevel::DumpRegion(reg, true);
+      GCon->Logf(NAME_Debug, "  invalid   : %d", (int)!!(reg->regflags&sec_region_t::RF_Invalid));
+      GCon->Logf(NAME_Debug, "  intersects: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadIntersects));
+      GCon->Logf(NAME_Debug, "  quad_above: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadAbove));
+      GCon->Logf(NAME_Debug, "  quad_below: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadBelow));
+      const int cc = CheckQuadVsRegion(quad, reg);
+      switch (cc) {
+        case QInvalid: GCon->Log("    INVALID"); break;
+        case QIntersect: GCon->Log("    INTERSECT"); break;
+        case QTop: GCon->Log("    TOP"); break;
+        case QBottom: GCon->Log("    BOTTOM"); break;
+        case QInside: GCon->Log("    INSIDE"); break;
+        default: GCon->Logf("    FUCKED! %d", cc); break;
+      }
+      GCon->Logf(NAME_Debug, "***current quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z);
+    }
+    #endif
+    if (reg->regflags&sec_region_t::RF_Invalid) continue;
+    if ((reg->regflags&sec_region_t::RF_QuadIntersects) == 0) continue;
+    // cut bottom part with all regions
+    TVec orig[4];
+    memcpy((void *)orig, (void *)quad, 4*sizeof(quad[0]));
+    GCon->Logf(NAME_Debug, "...splitting with front regions...");
+    SplitQuadWithRegions(quad, frontreg, onlySolid, ignorereg);
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...front-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+    }
+    #endif
+    if (isValidQuad(quad)) {
+      SplitQuadWithRegions(quad, backreg, onlySolid, ignorereg);
+      #if 1
+      if (!onlySolid) {
+        GCon->Logf(NAME_Debug, "...back-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+          quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+          quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+          quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+          quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+      }
+      #endif
+      if (isValidQuad(quad)) {
+        #if 1
+        if (!onlySolid) GCon->Logf(NAME_Debug, "!!!*** ADDED QUAD ***!!!");
+        #endif
+        CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+      }
+    }
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...orig quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+        orig[QUAD_V1_BOTTOM].x, orig[QUAD_V1_BOTTOM].y, orig[QUAD_V1_BOTTOM].z,
+        orig[QUAD_V1_TOP].x, orig[QUAD_V1_TOP].y, orig[QUAD_V1_TOP].z,
+        orig[QUAD_V2_TOP].x, orig[QUAD_V2_TOP].y, orig[QUAD_V2_TOP].z,
+        orig[QUAD_V2_BOTTOM].x, orig[QUAD_V2_BOTTOM].y, orig[QUAD_V2_BOTTOM].z);
+    }
+    #endif
+    // now split quad with current region ceiling, and get the top part
+    if (!SplitQuadWithPlane(orig, reg->eceiling, nullptr, quad, false/*isFloor*/)) return; // we're done
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...ceiling-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+    }
+    #endif
+    // just in case
+    if (!isValidQuad(quad)) return;
+    // recaluclate flags
+    if (ClassifyRegionsVsQuad(quad, frontreg, onlySolid, ignorereg)) return; // completely inside some region
+    if (ClassifyRegionsVsQuad(quad, backreg, onlySolid, ignorereg)) return; // completely inside some region
+  }
+
+#if 0
+  // split by back regions too
+  // this is absolutely fucked, it can be made much faster
+  // bit meh, i don't care for now
+  for (sec_region_t *reg = backreg; reg; reg = reg->next) {
+    // we are interested only in intersecting regions here
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "*** BACK region %p", reg);
+      VLevel::DumpRegion(reg, true);
+      GCon->Logf(NAME_Debug, "  invalid   : %d", (int)!!(reg->regflags&sec_region_t::RF_Invalid));
+      GCon->Logf(NAME_Debug, "  intersects: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadIntersects));
+      GCon->Logf(NAME_Debug, "  quad_above: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadAbove));
+      GCon->Logf(NAME_Debug, "  quad_below: %d", (int)!!(reg->regflags&sec_region_t::RF_QuadBelow));
+      const int cc = CheckQuadVsRegion(quad, reg);
+      switch (cc) {
+        case QInvalid: GCon->Log("    INVALID"); break;
+        case QIntersect: GCon->Log("    INTERSECT"); break;
+        case QTop: GCon->Log("    TOP"); break;
+        case QBottom: GCon->Log("    BOTTOM"); break;
+        case QInside: GCon->Log("    INSIDE"); break;
+        default: GCon->Logf("    FUCKED! %d", cc); break;
+      }
+      GCon->Logf(NAME_Debug, "***current quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z);
+      GCon->Logf(NAME_Debug, "   ::: v1bot dist: floor=%f; ceiling=%f", PlaneDistAbove(reg->efloor, quad[QUAD_V1_BOTTOM]), PlaneDistAbove(reg->eceiling, quad[QUAD_V1_BOTTOM]));
+      GCon->Logf(NAME_Debug, "   ::: v1top dist: floor=%f; ceiling=%f", PlaneDistAbove(reg->efloor, quad[QUAD_V1_TOP]), PlaneDistAbove(reg->eceiling, quad[QUAD_V1_TOP]));
+      GCon->Logf(NAME_Debug, "   ::: v2top dist: floor=%f; ceiling=%f", PlaneDistAbove(reg->efloor, quad[QUAD_V2_TOP]), PlaneDistAbove(reg->eceiling, quad[QUAD_V2_TOP]));
+      GCon->Logf(NAME_Debug, "   ::: v2bot dist: floor=%f; ceiling=%f", PlaneDistAbove(reg->efloor, quad[QUAD_V2_BOTTOM]), PlaneDistAbove(reg->eceiling, quad[QUAD_V2_BOTTOM]));
+    }
+    #endif
+    if (reg->regflags&sec_region_t::RF_Invalid) continue;
+    if ((reg->regflags&sec_region_t::RF_QuadIntersects) == 0) continue;
+    // cut bottom part with all regions
+    TVec orig[4];
+    memcpy((void *)orig, (void *)quad, 4*sizeof(quad[0]));
+    GCon->Logf(NAME_Debug, "...splitting with front regions...");
+    SplitQuadWithRegions(quad, frontreg, onlySolid, ignorereg);
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...front-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+    }
+    #endif
+    if (isValidQuad(quad)) {
+      SplitQuadWithRegions(quad, backreg, onlySolid, ignorereg);
+      #if 1
+      if (!onlySolid) {
+        GCon->Logf(NAME_Debug, "...back-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+          quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+          quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+          quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+          quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+      }
+      #endif
+      if (isValidQuad(quad)) {
+        #if 1
+        if (!onlySolid) GCon->Logf(NAME_Debug, "!!!*** ADDED QUAD ***!!!");
+        #endif
+        CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+      }
+    }
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...orig quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+        orig[QUAD_V1_BOTTOM].x, orig[QUAD_V1_BOTTOM].y, orig[QUAD_V1_BOTTOM].z,
+        orig[QUAD_V1_TOP].x, orig[QUAD_V1_TOP].y, orig[QUAD_V1_TOP].z,
+        orig[QUAD_V2_TOP].x, orig[QUAD_V2_TOP].y, orig[QUAD_V2_TOP].z,
+        orig[QUAD_V2_BOTTOM].x, orig[QUAD_V2_BOTTOM].y, orig[QUAD_V2_BOTTOM].z);
+    }
+    #endif
+    // now split quad with current region ceiling, and get the top part
+    if (!SplitQuadWithPlane(orig, reg->eceiling, nullptr, quad, false/*isFloor*/)) return; // we're done
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "...ceiling-splitted quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z, (int)isValidQuad(quad));
+    }
+    #endif
+    // just in case
+    if (!isValidQuad(quad)) return;
+    // recaluclate flags
+    if (ClassifyRegionsVsQuad(quad, frontreg, onlySolid, ignorereg)) return; // completely inside some region
+    if (ClassifyRegionsVsQuad(quad, backreg, onlySolid, ignorereg)) return; // completely inside some region
+  }
+#endif
+
+  // what is left here is the top part of the quad, append it too
+  if (isValidQuad(quad)) {
+    #if 1
+    if (!onlySolid) {
+      GCon->Logf(NAME_Debug, "!!!last quad: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g)",
+        quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+        quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+        quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+        quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z);
+    }
+    #endif
+    CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+  }
+
+  #if 1
+  if (!onlySolid) {
+    GCon->Logf("============================================================================");
   }
   #endif
-
-  for (;;) {
-    #ifdef VV_QUAD_SPLIT_DEBUG
-    if (doDump) {
-      GCon->Logf(NAME_Debug, "--- original: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-        quad[0].x, quad[0].y, quad[0].z,
-        quad[1].x, quad[1].y, quad[1].z,
-        quad[2].x, quad[2].y, quad[2].z,
-        quad[3].x, quad[3].y, quad[3].z);
-    }
-    #endif
-    sec_region_t *creg = SplitQuadWithRegionsBottom(quad, reg);
-    #ifdef VV_QUAD_SPLIT_DEBUG
-    if (doDump) {
-      GCon->Logf(NAME_Debug, "--- split to: (%g,%g,%g):(%g,%g,%g):(%g,%g,%g):(%g,%g,%g)",
-        quad[0].x, quad[0].y, quad[0].z,
-        quad[1].x, quad[1].y, quad[1].z,
-        quad[2].x, quad[2].y, quad[2].z,
-        quad[3].x, quad[3].y, quad[3].z);
-      VLevel::DumpRegion(creg, true);
-    }
-    #endif
-    if (bsec) {
-      CreateWorldSurfFromWVSplit(bsec, sub, seg, sp, quad, typeFlags);
-    } else {
-      CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
-    }
-    if (!creg) return; // done with it
-    // start with clip region top
-    const float tzv1 = creg->eceiling.GetPointZ(*seg->v1);
-    const float tzv2 = creg->eceiling.GetPointZ(*seg->v2);
-    if (tzv1 >= orig[QUAD_V1_TOP].z && tzv2 >= orig[QUAD_V2_TOP].z) return; // out of quad
-    orig[QUAD_V1_BOTTOM].z = tzv1;
-    orig[QUAD_V2_BOTTOM].z = tzv2;
-    if (!isValidNormalQuad(orig)) return;
-    memcpy((void *)quad, orig, sizeof(orig));
-  }
 }
 
 
