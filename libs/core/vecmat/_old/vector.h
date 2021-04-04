@@ -231,16 +231,16 @@ public:
   // range must be valid
   inline void clampScaleInPlace (float fabsmax) noexcept {
     if (isValid()) {
-      if (fabsmax > 0.0f && (fabs(x) > fabsmax || fabs(y) > fabsmax || fabs(z) > fabsmax)) {
+      if (fabsmax > 0.0f && (fabsf(x) > fabsmax || fabsf(y) > fabsmax || fabsf(z) > fabsmax)) {
         // need to rescale
         // find abs of the longest axis
         float vv;
-        float absmax = fabs(x);
+        float absmax = fabsf(x);
         // y
-        vv = fabs(y);
+        vv = fabsf(y);
         if (vv > absmax) absmax = vv;
         // z
-        vv = fabs(z);
+        vv = fabsf(z);
         if (vv > absmax) absmax = vv;
         // now rescale to range size
         const float rngscale = fabsmax/absmax;
@@ -564,7 +564,7 @@ public:
   // plane must be normalized
   inline VVA_CHECKRESULT TVec landAlongNormal (const TVec &point) const noexcept {
     const float pdist = DotProduct(point, normal)-dist;
-    return (fabs(pdist) > 0.0001f ? point-normal*pdist : point);
+    return (fabsf(pdist) > 0.0001f ? point-normal*pdist : point);
   }
 
   // plane must be normalized
@@ -612,7 +612,7 @@ public:
   inline VVA_CHECKRESULT TVec IntersectionPoint (const TPlane &plane2, const TPlane &plane3) const noexcept {
     const float det = normal.cross(plane2.normal).dot(plane3.normal);
     // if the determinant is 0, that means parallel planes, no intersection
-    if (fabs(det) < 0.001f) return TVec::Invalid();
+    if (fabsf(det) < 0.001f) return TVec::Invalid();
     return
       (plane2.normal.cross(plane3.normal)*(-dist)+
        plane3.normal.cross(normal)*(-plane2.dist)+

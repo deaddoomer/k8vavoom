@@ -216,7 +216,7 @@ public:
   // plane must be normalized
   inline VVA_CHECKRESULT TVec landAlongNormal (const TVec &point) const noexcept {
     const float pdist = DotProduct(point, normal)-dist;
-    return (fabs(pdist) > 0.0001f ? point-normal*pdist : point);
+    return (fabsf(pdist) > 0.0001f ? point-normal*pdist : point);
   }
 
   // plane must be normalized
@@ -264,7 +264,7 @@ public:
   inline VVA_CHECKRESULT TVec IntersectionPoint (const TPlane &plane2, const TPlane &plane3) const noexcept {
     const float det = normal.cross(plane2.normal).dot(plane3.normal);
     // if the determinant is 0, that means parallel planes, no intersection
-    if (fabs(det) < 0.001f) return TVec::InvalidVector;
+    if (fabsf(det) < 0.001f) return TVec::InvalidVector;
     return
       (plane2.normal.cross(plane3.normal)*(-dist)+
        plane3.normal.cross(normal)*(-plane2.dist)+

@@ -3086,9 +3086,9 @@ func_loop:
             {
               TVec v0(sp[-3].f, sp[-2].f, sp[-1].f);
               if (v0.isValid()) {
-                sp[-1].f = fabs(v0.z);
-                sp[-2].f = fabs(v0.y);
-                sp[-3].f = fabs(v0.x);
+                sp[-1].f = fabsf(v0.z);
+                sp[-2].f = fabsf(v0.y);
+                sp[-3].f = fabsf(v0.x);
               }
               break;
             }

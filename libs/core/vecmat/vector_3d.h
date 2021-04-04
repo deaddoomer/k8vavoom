@@ -139,7 +139,7 @@ public:
   inline VVA_CHECKRESULT float invlength2D () const noexcept { return 1.0f/sqrtf(VSUM2(x*x, y*y)); }
 #endif
 
-  inline VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabs(x), fabs(y), fabs(z)); }
+  inline VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
 
   inline VVA_CHECKRESULT float Length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
   inline VVA_CHECKRESULT float length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
@@ -216,16 +216,16 @@ public:
   // range must be valid
   inline void clampScaleInPlace (float fabsmax) noexcept {
     if (isValid()) {
-      if (fabsmax > 0.0f && (fabs(x) > fabsmax || fabs(y) > fabsmax || fabs(z) > fabsmax)) {
+      if (fabsmax > 0.0f && (fabsf(x) > fabsmax || fabsf(y) > fabsmax || fabsf(z) > fabsmax)) {
         // need to rescale
         // find abs of the longest axis
         float vv;
-        float absmax = fabs(x);
+        float absmax = fabsf(x);
         // y
-        vv = fabs(y);
+        vv = fabsf(y);
         if (vv > absmax) absmax = vv;
         // z
-        vv = fabs(z);
+        vv = fabsf(z);
         if (vv > absmax) absmax = vv;
         // now rescale to range size
         const float rngscale = fabsmax/absmax;
