@@ -142,17 +142,21 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 //  precondition: vcount >= 3
 //
 //==========================================================================
-int TPlane::ClipPoly (ClipWorkData &wdata, TVec *dest, const TVec *src, int vcount, const float eps) const noexcept {
+void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
+                       TVec *destfront, int *frontcount, TVec *destback, int *backcount,
+                       const float eps) const noexcept
+{
   enum {
     PlaneBack = -1,
     PlaneCoplanar = 0,
     PlaneFront = 1,
   };
 
-  if (vcount < 3) return 0; // why not?
-  vassert(dest);
+  if (frontcount) *frontcount = 0;
+  if (backcount) *backcount = 0;
+
+  if (vcount < 3) return; // why not?
   vassert(src);
-  vassert(dest != src);
   //vassert(vcount >= 3);
 
   wdata.ensure(vcount+1);
@@ -166,40 +170,66 @@ int TPlane::ClipPoly (ClipWorkData &wdata, TVec *dest, const TVec *src, int vcou
 
   // determine sides for each point
   bool hasFrontSomething = false;
+  bool hasBackSomething = false;
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
     const float dot = DotProduct(src[i], norm)-pdst;
     dots[i] = dot;
-         if (dot < -eps) sides[i] = PlaneBack;
-    else if (dot > eps) { sides[i] = PlaneFront; hasFrontSomething = true; }
+         if (dot < -eps) { sides[i] = PlaneBack; hasBackSomething = true; }
+    else if (dot > +eps) { sides[i] = PlaneFront; hasFrontSomething = true; }
     else sides[i] = PlaneCoplanar;
   }
 
-  if (!hasFrontSomething) return 0; // completely clipped away
+  if (!hasFrontSomething) {
+    if (!hasBackSomething) return; // completely clipped away
+    // totally on the back side, copy it
+    if (backcount) *backcount = vcount;
+    if (destback) memcpy((void *)destback, (void *)src, vcount*sizeof(src[0]));
+    return;
+  } else if (!hasBackSomething) {
+    // totally on the front side, copy it
+    if (frontcount) *frontcount = vcount;
+    if (destfront) memcpy((void *)destfront, (void *)src, vcount*sizeof(src[0]));
+    return;
+  }
+
+  // must be split
 
   dots[vcount] = dots[0];
   sides[vcount] = sides[0];
 
-  unsigned dcount = 0;
+  unsigned fcount = 0;
+  unsigned bcount = 0;
 
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
     if (sides[i] == PlaneCoplanar) {
-      dest[dcount++] = src[i];
+      if (destfront) destfront[fcount] = src[i]; ++fcount; // not a bug
+      if (destback) destback[bcount] = src[i]; ++bcount; // not a bug
       continue;
     }
-    if (sides[i] == PlaneFront) dest[dcount++] = src[i];
+
+    if (sides[i] == PlaneFront) {
+      if (destfront) destfront[fcount] = src[i]; ++fcount; // not a bug
+    } else {
+      if (destback) destback[bcount] = src[i]; ++bcount; // not a bug
+    }
+
     if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
+
     // generate a split point
     const TVec &p1 = src[i];
     const TVec &p2 = src[(i+1u)%(unsigned)vcount];
     const float idist = dots[i]/(dots[i]-dots[i+1]);
-    TVec &mid = dest[dcount++];
+    TVec mid;
     for (unsigned j = 0; j < 3; ++j) {
       // avoid roundoff error when possible
-           if (norm[j] == 1) mid[j] = pdst;
-      else if (norm[j] == -1) mid[j] = -pdst;
+           if (norm[j] == +1.0f) mid[j] = pdst;
+      else if (norm[j] == -1.0f) mid[j] = -pdst;
       else mid[j] = p1[j]+idist*(p2[j]-p1[j]);
     }
+    if (destfront) destfront[fcount] = mid; ++fcount; // not a bug
+    if (destback) destback[bcount] = mid; ++bcount; // not a bug
   }
 
-  return (int)dcount;
+  if (frontcount) *frontcount = (int)fcount;
+  if (backcount) *backcount = (int)bcount;
 }

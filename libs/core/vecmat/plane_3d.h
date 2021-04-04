@@ -492,10 +492,9 @@ public:
   };
 
   // clip convex polygon to this plane
-  // returns number of new vertices (it can be 0 if the poly is completely clipped away)
   // `dest` should have room for at least `vcount+1` vertices, and should not be equal to `src`
   // precondition: vcount >= 3
-  int ClipPoly (ClipWorkData &wdata, TVec *dest, const TVec *src, int vcount, const float eps=0.1f) const noexcept;
+  void ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount, TVec *destfront, int *frontcount, TVec *destback, int *backcount, const float eps=0.1f) const noexcept;
 };
 
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");
