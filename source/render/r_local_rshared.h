@@ -708,7 +708,7 @@ public:
 
   // cut quad with regions (used to cut out parts obscured by 3d floors)
   // WARNING! this may modify `quad`
-  void CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags,
+  void CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags,
                                    bool onlySolid=true, const sec_region_t *ignorereg=nullptr) noexcept;
 
   // cut quad with regions (used to cut out parts obscured by 3d floors)
@@ -749,6 +749,27 @@ protected:
     QInside = 3, // the quad is completely inside the region
   };
 
+  static inline const char *GetQTypeStr (int cc) noexcept {
+    switch (cc) {
+      case QInvalid: return "QInvalid";
+      case QIntersect: return "QIntersect";
+      case QTop: return "QTop";
+      case QBottom: return "QBottom";
+      case QInside: return "QInside";
+      default: break;
+    }
+    return "QWutafuck";
+  }
+
+  static void DumpQuad (const char *name, const TVec quad[4]) noexcept {
+    GCon->Logf(NAME_Debug, " %s: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d", name,
+      quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
+      quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
+      quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
+      quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z,
+      (int)isValidQuad(quad));
+  }
+
   // quad must be valid; returns one of the `Q*` constants above
   static int ClassifyQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept;
 
@@ -768,8 +789,8 @@ protected:
 
   // starts with the given region
   // modifies `quad`
-  static sec_region_t *SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg=nullptr) noexcept;
-  static inline sec_region_t *SplitQuadWithRegions (TVec quad[4], sector_t *sec, bool onlySolid, const sec_region_t *ignorereg=nullptr) noexcept { return SplitQuadWithRegions(quad, sec->eregions, onlySolid, ignorereg); }
+  static void SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg=nullptr, const bool debug=false) noexcept;
+  static inline void SplitQuadWithRegions (TVec quad[4], sector_t *sec, bool onlySolid, const sec_region_t *ignorereg=nullptr, const bool debug=false) noexcept { return SplitQuadWithRegions(quad, sec->eregions, onlySolid, ignorereg, debug); }
 
 public:
   int CountSegParts (const seg_t *);

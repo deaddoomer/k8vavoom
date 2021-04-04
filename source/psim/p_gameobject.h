@@ -797,14 +797,7 @@ struct sec_region_t {
   };
   vuint32 regflags;
 
-  bool isBlockingTexture (const int id) const noexcept;
-
-  inline bool isBlockingExtraLine () const noexcept {
-    if (!extraline) return false;
-    if (!extraline->frontside || extraline->alpha < 1.0f || (extraline->flags&ML_ADDITIVE)) return false;
-    if (extraline->frontside->MidTexture.id <= 0) return false; // texture 0 is "none" (null)
-    return isBlockingTexture(extraline->frontside->MidTexture.id);
-  }
+  bool isBlockingExtraLine () const noexcept;
 };
 
 

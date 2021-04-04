@@ -201,7 +201,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 
     if (createSurf) {
       //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
-      CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
       if (sp->surfs) {
         sp->texinfo.Tex = TTex;
         sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
@@ -382,7 +382,8 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     }
 
     if (createSurf) {
-      CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
+      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
       if (sp->surfs) {
         sp->texinfo.Tex = BTex;
         sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
@@ -581,7 +582,8 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       }
       #endif
 
-      CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE);
+      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);
     } while (0);
   } else {
     // empty midtexture

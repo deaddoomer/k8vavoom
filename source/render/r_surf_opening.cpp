@@ -71,6 +71,8 @@ static int CheckQuadLine (const TVec &v0, const TVec &v1, const TSecPlaneRef &pl
 //
 //==========================================================================
 int VRenderLevelShared::ClassifyQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept {
+  if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) return QInvalid; // invalid region
+
   const float fz1 = reg->efloor.GetPointZClamped(quad[QUAD_V1_TOP]);
   const float cz1 = reg->eceiling.GetPointZClamped(quad[QUAD_V1_TOP]);
   if (fz1 > cz1) return QInvalid; // invalid region
@@ -219,29 +221,41 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
 //  non-sloped 3d floor penetration should be ok, tho (yet it is still UB)
 //
 //==========================================================================
-sec_region_t *VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg) noexcept {
+void VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg, const bool debug) noexcept {
+  if (debug) { GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: ENTER ***"); DumpQuad(" initial quad", quad); }
+  if (!isValidQuad(quad)) {
+    memset((void *)quad, 0, 4*sizeof(quad[0])); // this creates invalid quad
+    if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- badquad ***");
+    return;
+  }
   const vuint32 mask = (onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion;
   for (; reg; reg = reg->next) {
     if (reg == ignorereg) continue;
     if (reg->regflags&mask) continue;
     if (onlySolid && !reg->isBlockingExtraLine()) continue;
+    if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) continue;
     const int rtype = ClassifyQuadVsRegion(quad, reg);
-    // invalid or at the top? ignore such regions
-    if (rtype == QInvalid || rtype == QTop) continue;
+    if (debug) { GCon->Logf(NAME_Debug, "*** TRYING SPLIT REGION (%s)", GetQTypeStr(rtype)); VLevel::DumpRegion(reg, true); }
     // inside?
     if (rtype == QInside) {
       // nothing to do anymore
       memset((void *)quad, 0, 4*sizeof(quad[0])); // this creates invalid quad
-      return reg;
+      if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- inside ***");
+      return;
     }
     // intersects?
     if (rtype == QIntersect) {
-      if (!SplitQuadWithPlane(quad, reg->efloor, quad, nullptr)) return reg; // completely splitted away
+      if (debug) DumpQuad("  before split quad", quad);
+      if (!SplitQuadWithPlane(quad, reg->efloor, quad, nullptr)) {
+        // completely splitted away
+        if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- eaten ***");
+        return;
+      }
+      if (debug) DumpQuad("  after split quad", quad);
       continue;
     }
-    // completely at the bottom, nothing to do
-    vassert(rtype == QBottom);
+    // check it just in case
+    vassert(rtype == QBottom || rtype == QTop || rtype == QInvalid);
   }
-  // no splits were found
-  return nullptr;
+  if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT ***");
 }

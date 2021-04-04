@@ -92,18 +92,18 @@ void VLevel::DumpRegion (const sec_region_t *inregion, bool extendedflags) noexc
     }
   }
 
-  GCon->Logf(NAME_Debug, "  %p: floor=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; ceil=(%g,%g,%g:%g); (%g : %g), flags=0x%04x; eline=%d; rflags=0x%02x%s%s",
+  GCon->Logf(NAME_Debug, "  %p: floor=(%g,%g,%g:%g):%g; (%g : %g), flags=0x%04x; ceil=(%g,%g,%g:%g):%g; (%g : %g), flags=0x%04x; eline=%d; rflags=0x%02x%s%s",
     inregion,
     inregion->efloor.GetNormal().x,
     inregion->efloor.GetNormal().y,
     inregion->efloor.GetNormal().z,
-    inregion->efloor.GetDist(),
+    inregion->efloor.GetDist(), inregion->efloor.GetRealDist(),
     inregion->efloor.splane->minz, inregion->efloor.splane->maxz,
     inregion->efloor.splane->flags,
     inregion->eceiling.GetNormal().x,
     inregion->eceiling.GetNormal().y,
     inregion->eceiling.GetNormal().z,
-    inregion->eceiling.GetDist(),
+    inregion->eceiling.GetDist(), inregion->eceiling.GetRealDist(),
     inregion->eceiling.splane->minz, inregion->eceiling.splane->maxz,
     inregion->eceiling.splane->flags,
     (inregion->extraline ? 1 : 0),

@@ -228,7 +228,8 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].z = topz2;
     wv[3].z = botz2;
 
-    CreateWorldSurfFromWVSplit(seg->frontsector, sub, seg, sp, wv, surface_t::TF_MIDDLE);
+    //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+    CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);
   }
 
   sp->frontTopDist = r_ceiling.splane->dist;

@@ -239,12 +239,15 @@ int tagHashTag (const TagHash *th, int index) {
 
 //==========================================================================
 //
-//  sec_region_t::isBlockingTexture
+//  sec_region_t::isBlockingExtraLine
 //
 //==========================================================================
-bool sec_region_t::isBlockingTexture (const int id) const noexcept {
-  if (id <= 0) return false; // null texture
-  VTexture *tex = GTextureManager[id]; // unanimated, nobody cares here
+bool sec_region_t::isBlockingExtraLine () const noexcept {
+  if (!extraline) return false;
+  if (!extraline->frontside || extraline->alpha < 1.0f || (extraline->flags&ML_ADDITIVE)) return false;
+  if (extraline->frontside->MidTexture.id <= 0) return false; // texture 0 is "none" (null)
+  if (efloor.splane->Alpha < 1.0f || (efloor.splane->flags&SPF_ADDITIVE)) return false;
+  VTexture *tex = GTextureManager[extraline->frontside->MidTexture.id]; // unanimated, nobody cares here
   return (tex && tex->Type != TEXTYPE_Null && !tex->isSeeThrough());
 }
 

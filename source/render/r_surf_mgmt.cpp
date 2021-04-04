@@ -322,16 +322,63 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
 //  split quad to parts unobscured by 3d walls
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWVSplit (sector_t *clipsec, subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags,
+void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags,
                                                      bool onlySolid, const sec_region_t *ignorereg) noexcept
 {
   if (!isValidQuad(quad)) return;
 
-  if (!seg || !seg->linedef || !clipsec || !clipsec->eregions->next || seg->pobj || clipsec->isAnyPObj() || !clipsec->Has3DFloors()) {
+  vassert(seg->frontsub == sub);
+  vassert(seg->frontsector == sub->sector);
+
+  sector_t *clipsec = seg->backsector;
+  if (clipsec && (clipsec->isAnyPObj() || !clipsec->Has3DFloors())) clipsec = nullptr;
+
+  sector_t *frontsec = seg->frontsector;
+  if (frontsec && (frontsec->isAnyPObj() || !frontsec->Has3DFloors())) frontsec = nullptr;
+  //frontsec = nullptr;
+
+  if (!seg->linedef || seg->pobj || sub->isAnyPObj() || (!clipsec && !frontsec)) {
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
-  return CreateWorldSurfFromWVSplitFromReg(clipsec->eregions->next, nullptr, sub, seg, sp, quad, typeFlags, onlySolid, ignorereg);
+  //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 157);
+  enum { dump = false };
+
+  if (dump) {
+    GCon->Log(NAME_Debug, "========================================");
+
+    GCon->Logf(NAME_Debug, "  frontsec=%d; clipsec=%d; onlySolid=%d",
+      (frontsec ? (int)(ptrdiff_t)(frontsec-&Level->Sectors[0]) : -1),
+      (clipsec ? (int)(ptrdiff_t)(clipsec-&Level->Sectors[0]) : -1),
+      (int)onlySolid);
+
+    GCon->Logf(NAME_Debug, "*** seg of line #%d: side=%d; frontsub=%d; partner=%d; frontsec=%d; backsec=%d",
+      (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+      seg->side, (int)(ptrdiff_t)(seg->frontsub-&Level->Subsectors[0]),
+      (seg->partner ? 1 : 0),
+      (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]),
+      (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));
+
+    DumpQuad("quad", quad);
+
+    if (ignorereg) {
+      GCon->Log(NAME_Debug, "--- IGNORE REGION ---");
+      VLevel::DumpRegion(ignorereg, true);
+      GCon->Log(NAME_Debug, "---------------------");
+    }
+
+    GCon->Logf(NAME_Debug, "--- FRONT REGIONS (sector #%d) ---", (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]));
+    for (const sec_region_t *reg = seg->frontsector->eregions; reg; reg = reg->next) VLevel::DumpRegion(reg, true);
+
+    if (seg->backsector) {
+      GCon->Logf(NAME_Debug, "--- BACK REGIONS (sector #%d) ---", (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]));
+      for (const sec_region_t *reg = seg->backsector->eregions; reg; reg = reg->next) VLevel::DumpRegion(reg, true);
+    }
+
+    GCon->Log(NAME_Debug, "========================================");
+  }
+
+  return CreateWorldSurfFromWVSplitFromReg((clipsec ? clipsec->eregions->next : nullptr), (frontsec ? frontsec->eregions->next : nullptr), sub, seg, sp, quad, typeFlags, onlySolid, ignorereg);
 }
 
 
@@ -352,38 +399,80 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *frontr
 
   if (!frontreg && backreg) { frontreg = backreg; backreg = nullptr; } // just in case
 
+  //if (onlySolid) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+
+  //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 157);
+  enum { dump = false };
+
   // this is absolutely fucked, it can be made much faster
   // bit meh, i don't care for now
   const vuint32 mask = (onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion;
+
+  if (dump) {
+    GCon->Logf(NAME_Debug, "::::::::: mask=0x%04x :::::::::", mask);
+    if (ignorereg) {
+      GCon->Log(NAME_Debug, "--- IGNORE REGION ---");
+      VLevel::DumpRegion(ignorereg, true);
+      GCon->Log(NAME_Debug, "---------------------");
+    }
+  }
+
   for (sec_region_t *reg = frontreg; reg; reg = reg->next) {
+    if (dump) {
+      const int cc = ClassifyQuadVsRegion(quad, reg);
+      GCon->Logf(NAME_Debug, "+++ region: %s +++", GetQTypeStr(cc));
+      if (reg == ignorereg) GCon->Log(NAME_Debug, "  IGNOREREG");
+      if (reg->regflags&mask) GCon->Log(NAME_Debug, "  SKIP-BY-MASK");
+      if (onlySolid && !reg->isBlockingExtraLine()) GCon->Log(NAME_Debug, "  SKIP-BY-LINE");
+      VLevel::DumpRegion(reg, true);
+      GCon->Log(NAME_Debug, "++++++++++++++");
+    }
+
     if (reg == ignorereg || (reg->regflags&mask) || (onlySolid && !reg->isBlockingExtraLine())) continue;
+
+    if (dump) DumpQuad("### CHECKING QUAD", quad);
+
     // we are interested only in intersecting regions here
     const int cc = ClassifyQuadVsRegion(quad, reg);
     if (cc == QInside) return; // completely inside, nothing to do anymore
     if (cc != QIntersect) continue;
+
+    if (dump) DumpQuad("  splitting quad", quad);
+
     // cut bottom part with all regions
     TVec orig[4];
     memcpy((void *)orig, (void *)quad, 4*sizeof(quad[0]));
-    SplitQuadWithRegions(quad, frontreg, onlySolid, ignorereg);
+    SplitQuadWithRegions(quad, (onlySolid ? reg : frontreg), onlySolid, ignorereg, dump);
+
+    if (dump) DumpQuad("  front-splitted quad", quad);
+
     if (isValidQuad(quad)) {
       do { // so i could use `break`
         if (backreg) {
-          SplitQuadWithRegions(quad, backreg, onlySolid, ignorereg);
+          SplitQuadWithRegions(quad, backreg, onlySolid, ignorereg, dump);
+          if (dump) DumpQuad("  back-splitted quad", quad);
           if (!isValidQuad(quad)) break;
         }
         CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
       } while (0);
     }
+
     // now split quad with the current region ceiling, and get the top part
     if (!SplitQuadWithPlane(orig, reg->eceiling, nullptr, quad)) return; // we're done
+
+    if (dump) DumpQuad("### new (top) quad", quad);
+
     // just in case
     if (!isValidQuad(quad)) return;
   }
 
   // what is left here is the top part of the quad, append it too
   if (isValidQuad(quad)) {
+    if (dump) DumpQuad("!!! last quad", quad);
     CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
+
+  if (dump) GCon->Log(NAME_Debug, "::::::::::::::::::::::::::::::::::::::");
 }
 
 
