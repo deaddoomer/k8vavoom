@@ -347,6 +347,26 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
   if (!po) return;
 
+  // check refsector for normal pobj
+  if (!po->Is3D() && po->refsector) {
+    const float rfh = po->refsector->floor.GetRealDist();
+    const float dz = rfh-po->refsectorOldFloorHeight;
+    if (dz != 0.0f) {
+      // fix height
+      po->pofloor.dist -= dz; // floor dist is negative
+      po->pofloor.TexZ += dz;
+      po->pofloor.minz += dz;
+      po->pofloor.maxz += dz;
+      po->pofloor.TexZ = po->pofloor.minz;
+      po->poceiling.dist += dz; // ceiling dist is positive
+      po->poceiling.TexZ += dz;
+      po->poceiling.minz += dz;
+      po->poceiling.maxz += dz;
+      po->poceiling.TexZ = po->poceiling.minz;
+      po->refsectorOldFloorHeight = rfh;
+    }
+  }
+
   TSecPlaneRef po_floor, po_ceiling;
   po_floor.set(&po->pofloor, false);
   po_ceiling.set(&po->poceiling, false);

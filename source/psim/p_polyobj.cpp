@@ -644,8 +644,10 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     refsec = po->posector;
     LevelFlags |= LF_Has3DPolyObjects;
   } else {
-    if (xseg) refsec = xseg->linedef->frontsector;
-    refsec = PointInSubsector(TVec(x, y, 0.0f))->sector;
+    //if (xseg) refsec = xseg->linedef->frontsector;
+    po->refsector = PointInSubsector(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
+    refsec = po->refsector;
+    po->refsectorOldFloorHeight = refsec->floor.GetRealDist();
   }
 
   if (refsec) {
