@@ -680,13 +680,19 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
       const float texh = MTex->GetScaledHeight();
       float z0, z1;
-      if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+      if (po->segs[0]->linedef->flags&ML_3DMIDTEX) {
+        if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+          // bottom of texture at bottom
+          // top of texture at top
+          z1 = po->pofloor.TexZ+texh;
+        } else {
+          // top of texture at top
+          z1 = po->poceiling.TexZ;
+        }
+      } else {
         // bottom of texture at bottom
         // top of texture at top
         z1 = po->pofloor.TexZ+texh;
-      } else {
-        // top of texture at top
-        z1 = po->poceiling.TexZ;
       }
       //k8: dunno why
       if (xseg->sidedef->Mid.RowOffset < 0) {
@@ -712,10 +718,11 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->startSpot.z += refsec->floor.GetPointZ(TVec(x, y, 0.0f))-po->pofloor.minz;
   }
 
-  GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g", (valid3d ? "3D" : "2D"), po->tag,
+  GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g; refsec=%d", (valid3d ? "3D" : "2D"), po->tag,
     po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
     po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
-    po->numlines, po->numsegs, po->poceiling.maxz-po->pofloor.minz);
+    po->numlines, po->numsegs, po->poceiling.maxz-po->pofloor.minz,
+    (refsec ? (int)(ptrdiff_t)(refsec-&Sectors[0]) : -1));
 }
 
 
