@@ -140,11 +140,12 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 //  returns number of new vertices (it can be 0 if the poly is completely clipped away)
 //  `dest` should have room for at least `vcount+1` vertices, and should not be equal to `src`
 //  precondition: vcount >= 3
+//  coplanarSide: 0 is front, 1 is back, >1 is both, negative is none
 //
 //==========================================================================
 void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
                        TVec *destfront, int *frontcount, TVec *destback, int *backcount,
-                       const float eps) const noexcept
+                       const int coplanarSide, const float eps) const noexcept
 {
   enum {
     PlaneBack = -1,
@@ -163,67 +164,89 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
 
   int *sides = wdata.sides;
   float *dots = wdata.dots;
+  TVec *points = wdata.points;
 
   // cache values
-  const TVec norm = this->normal;
-  const float pdst = this->dist;
+  const TVec norm = normal;
+  const float pdist = dist;
 
-  // determine sides for each point
+  // classify points
   bool hasFrontSomething = false;
   bool hasBackSomething = false;
+  bool hasCoplanarSomething = false;
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
-    const float dot = DotProduct(src[i], norm)-pdst;
+    points[i] = src[i];
+    const float dot = DotProduct(src[i], norm)-pdist;
     dots[i] = dot;
          if (dot < -eps) { sides[i] = PlaneBack; hasBackSomething = true; }
     else if (dot > +eps) { sides[i] = PlaneFront; hasFrontSomething = true; }
-    else sides[i] = PlaneCoplanar;
+    else { sides[i] = PlaneCoplanar; hasCoplanarSomething = true; }
+  }
+
+  if (!hasBackSomething && !hasFrontSomething) {
+    // totally coplanar
+    vassert(hasCoplanarSomething);
+    if (coplanarSide == CoplanarFront || coplanarSide == CoplanarBoth) {
+      if (frontcount) *frontcount = vcount;
+      if (destfront) memcpy((void *)destfront, (void *)points, vcount*sizeof(points[0]));
+    }
+    if (coplanarSide == CoplanarBack || coplanarSide == CoplanarBoth) {
+      if (backcount) *backcount = vcount;
+      if (destback) memcpy((void *)destback, (void *)points, vcount*sizeof(points[0]));
+    }
+    return;
+  }
+
+  if (!hasBackSomething) {
+    // totally on the front side (possibly touching the plane), copy it
+    vassert(hasFrontSomething);
+    if (frontcount) *frontcount = vcount;
+    if (destfront) memcpy((void *)destfront, (void *)points, vcount*sizeof(points[0]));
+    return;
   }
 
   if (!hasFrontSomething) {
-    if (!hasBackSomething) return; // completely clipped away
-    // totally on the back side, copy it
+    // totally on the back side (possibly touching the plane), copy it
+    vassert(hasBackSomething);
     if (backcount) *backcount = vcount;
-    if (destback) memcpy((void *)destback, (void *)src, vcount*sizeof(src[0]));
-    return;
-  } else if (!hasBackSomething) {
-    // totally on the front side, copy it
-    if (frontcount) *frontcount = vcount;
-    if (destfront) memcpy((void *)destfront, (void *)src, vcount*sizeof(src[0]));
+    if (destback) memcpy((void *)destback, (void *)points, vcount*sizeof(points[0]));
     return;
   }
 
   // must be split
 
+  // copy, so we can avoid modulus
   dots[vcount] = dots[0];
   sides[vcount] = sides[0];
+  points[vcount] = points[0];
 
   unsigned fcount = 0;
   unsigned bcount = 0;
 
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
     if (sides[i] == PlaneCoplanar) {
-      if (destfront) destfront[fcount] = src[i]; ++fcount; // not a bug
-      if (destback) destback[bcount] = src[i]; ++bcount; // not a bug
+      if (destfront) destfront[fcount] = points[i]; ++fcount; // not a bug
+      if (destback) destback[bcount] = points[i]; ++bcount; // not a bug
       continue;
     }
 
     if (sides[i] == PlaneFront) {
-      if (destfront) destfront[fcount] = src[i]; ++fcount; // not a bug
+      if (destfront) destfront[fcount] = points[i]; ++fcount; // not a bug
     } else {
-      if (destback) destback[bcount] = src[i]; ++bcount; // not a bug
+      if (destback) destback[bcount] = points[i]; ++bcount; // not a bug
     }
 
     if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
 
     // generate a split point
-    const TVec &p1 = src[i];
-    const TVec &p2 = src[(i+1u)%(unsigned)vcount];
+    const TVec &p1 = points[i];
+    const TVec &p2 = points[i+1];
     const float idist = dots[i]/(dots[i]-dots[i+1]);
     TVec mid;
     for (unsigned j = 0; j < 3; ++j) {
       // avoid roundoff error when possible
-           if (norm[j] == +1.0f) mid[j] = pdst;
-      else if (norm[j] == -1.0f) mid[j] = -pdst;
+           if (norm[j] == +1.0f) mid[j] = +pdist;
+      else if (norm[j] == -1.0f) mid[j] = -pdist;
       else mid[j] = p1[j]+idist*(p2[j]-p1[j]);
     }
     if (destfront) destfront[fcount] = mid; ++fcount; // not a bug

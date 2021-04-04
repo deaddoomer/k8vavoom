@@ -462,16 +462,18 @@ public:
     enum { INLINE_SIZE = 42 };
     int inlsides[INLINE_SIZE];
     float inldots[INLINE_SIZE];
+    TVec inlpoints[INLINE_SIZE];
 
   public:
     int *sides;
     float *dots;
+    TVec *points;
     int tbsize;
 
   public:
     VV_DISABLE_COPY(ClipWorkData)
 
-    inline ClipWorkData () noexcept : sides(&inlsides[0]), dots(&inldots[0]), tbsize(INLINE_SIZE) {}
+    inline ClipWorkData () noexcept : sides(&inlsides[0]), dots(&inldots[0]), points(&inlpoints[0]), tbsize(INLINE_SIZE) {}
     inline ~ClipWorkData () noexcept { clear(); }
 
     inline void clear () noexcept {
@@ -479,22 +481,36 @@ public:
       sides = &inlsides[0];
       if (dots && dots != &inldots[0]) Z_Free(dots);
       dots = &inldots[0];
+      if (points && points != &inlpoints[0]) Z_Free(points);
       tbsize = INLINE_SIZE;
     }
 
     inline void ensure (int newsize) noexcept {
       if (tbsize < newsize) {
         tbsize = (newsize|0x7f)+1;
+        if (sides == &inlsides[0]) sides = nullptr;
         sides = (int *)Z_Realloc(sides, tbsize*sizeof(sides[0]));
+        if (dots == &inldots[0]) dots = nullptr;
         dots = (float *)Z_Realloc(dots, tbsize*sizeof(dots[0]));
+        if (points == &inlpoints[0]) points = nullptr;
+        points = (TVec *)Z_Realloc(points, tbsize*sizeof(points[0]));
       }
     }
   };
 
+  // if the poly is *FULLY* coplanar, where `ClipPoly()` should send it?
+  enum {
+    CoplanarNone = -1,
+    CoplanarFront = 0,
+    CoplanarBack = 1,
+    CoplanarBoth = 2,
+  };
+
   // clip convex polygon to this plane
-  // `dest` should have room for at least `vcount+1` vertices, and should not be equal to `src`
+  // `dest` should have room for at least `vcount+1` vertices (and can be equad to `src`, or `nullptr`)
   // precondition: vcount >= 3
-  void ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount, TVec *destfront, int *frontcount, TVec *destback, int *backcount, const float eps=0.1f) const noexcept;
+  void ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount, TVec *destfront, int *frontcount, TVec *destback, int *backcount,
+                 const int coplanarSide=CoplanarBoth, const float eps=0.1f) const noexcept;
 };
 
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");
