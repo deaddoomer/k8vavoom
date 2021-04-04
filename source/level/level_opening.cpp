@@ -79,9 +79,10 @@ void VLevel::DumpRegion (const sec_region_t *inregion, bool extendedflags) noexc
 
   VStr flg;
   if (extendedflags) {
-    if (inregion->regflags&sec_region_t::RF_BaseRegion) flg += ",BASE";
+    const bool baseReg = (inregion->regflags&sec_region_t::RF_BaseRegion);
+    if (baseReg) flg += ",BASE"; else flg += ",NON-BASE";
     if (inregion->regflags&sec_region_t::RF_SaneRegion) flg += ",SANE";
-    if (inregion->regflags&sec_region_t::RF_NonSolid) flg += ",NONSOLID";
+    if (inregion->regflags&sec_region_t::RF_NonSolid) flg += ",NONSOLID"; else { if (!baseReg) flg += ",SOLID"; }
     if (inregion->regflags&sec_region_t::RF_OnlyVisual) flg += ",VISUAL";
     if (inregion->regflags&sec_region_t::RF_SkipFloorSurf) flg += ",NOFLOOR";
     if (inregion->regflags&sec_region_t::RF_SkipCeilSurf) flg += ",NOCEIL";
