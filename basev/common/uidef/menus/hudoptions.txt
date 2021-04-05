@@ -14,6 +14,13 @@ menudef HUDOptions {
     }
   }
 
+  option bool {
+    title = "Damage Indicator";
+    cvar = r_statusbar_advdamage;
+    help = "Draw advanced damage indicator around the crosshair?";
+  }
+
+
   header "HUD Messages";
 
   /*
