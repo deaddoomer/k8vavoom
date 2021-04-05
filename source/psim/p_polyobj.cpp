@@ -682,7 +682,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
       const float texh = MTex->GetScaledHeight();
       float z0, z1;
-      if (po->segs[0]->linedef->flags&ML_3DMIDTEX) {
+      if (valid3d || (po->segs[0]->linedef->flags&ML_3DMIDTEX)) {
         if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
           // bottom of texture at bottom
           // top of texture at top
@@ -691,18 +691,27 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
           // top of texture at top
           z1 = po->poceiling.TexZ;
         }
+        z0 = z1-texh;
       } else {
-        // bottom of texture at bottom
-        // top of texture at top
-        z1 = po->pofloor.TexZ+texh;
+        // for normal polyobjects, texture is simply warped
+        z0 = z1 = po->pofloor.TexZ;
+        //FIXME!
+        while (z1 < po->poceiling.TexZ) z1 += texh;
+        const float ofs = z1-po->poceiling.TexZ;
+        //k8: i don't know what i am doing here
+        if (ofs > 0.0f) {
+          po->pofloor.TexZ -= ofs;
+          po->poceiling.TexZ -= ofs;
+        }
       }
       //k8: dunno why
+      /*
       if (xseg->sidedef->Mid.RowOffset < 0) {
         z1 += (xseg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
       } else {
         z1 += xseg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
       }
-      z0 = z1-texh;
+      */
       z0 = max2(z0, refsec->floor.minz);
       z1 = min2(z1, refsec->ceiling.maxz);
       if (z1 < z0) z1 = z0;
