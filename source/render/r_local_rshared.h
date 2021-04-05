@@ -718,8 +718,28 @@ public:
                                           TVec quad[4], vuint32 typeFlags,
                                           bool onlySolid, const sec_region_t *ignorereg=nullptr) noexcept;
 
-protected:
+public:
+  enum {
+    QInvalid = -1, // invalid region
+    QIntersect = 0, // the quad intersects the region
+    QTop = 1, // the quad is completely above the region
+    QBottom = 2, // the quad is completely below the region
+    QInside = 3, // the quad is completely inside the region
+  };
 
+  static inline const char *GetQTypeStr (int cc) noexcept {
+    switch (cc) {
+      case QInvalid: return "QInvalid";
+      case QIntersect: return "QIntersect";
+      case QTop: return "QTop";
+      case QBottom: return "QBottom";
+      case QInside: return "QInside";
+      default: break;
+    }
+    return "QWutafuck";
+  }
+
+protected:
   // doesn't really check quad direction, only valid z order
   // quad points are:
   //   [0]: left bottom point
@@ -742,33 +762,15 @@ protected:
   // exactly on the floor/ceiling is "inside" too
   static bool isPointInsideSolidReg (const TVec lv, const float pz, const sec_region_t *streg, const sec_region_t *ignorereg) noexcept;
 
-  enum {
-    QInvalid = -1, // invalid region
-    QIntersect = 0, // the quad intersects the region
-    QTop = 1, // the quad is completely above the region
-    QBottom = 2, // the quad is completely below the region
-    QInside = 3, // the quad is completely inside the region
-  };
-
-  static inline const char *GetQTypeStr (int cc) noexcept {
-    switch (cc) {
-      case QInvalid: return "QInvalid";
-      case QIntersect: return "QIntersect";
-      case QTop: return "QTop";
-      case QBottom: return "QBottom";
-      case QInside: return "QInside";
-      default: break;
-    }
-    return "QWutafuck";
-  }
-
   static void DumpQuad (const char *name, const TVec quad[4]) noexcept {
-    GCon->Logf(NAME_Debug, " %s: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d", name,
+    GCon->Logf(NAME_Debug, " %s: v1bot=(%g,%g,%g); v1top=(%g,%g,%g); v2top=(%g,%g,%g); v2bot=(%g,%g,%g); valid=%d (v0=%d; v1=%d)", name,
       quad[QUAD_V1_BOTTOM].x, quad[QUAD_V1_BOTTOM].y, quad[QUAD_V1_BOTTOM].z,
       quad[QUAD_V1_TOP].x, quad[QUAD_V1_TOP].y, quad[QUAD_V1_TOP].z,
       quad[QUAD_V2_TOP].x, quad[QUAD_V2_TOP].y, quad[QUAD_V2_TOP].z,
       quad[QUAD_V2_BOTTOM].x, quad[QUAD_V2_BOTTOM].y, quad[QUAD_V2_BOTTOM].z,
-      (int)isValidQuad(quad));
+      (int)isValidQuad(quad),
+      (int)(!(quad[QUAD_V1_BOTTOM].z > quad[QUAD_V1_TOP].z)),
+      (int)(!(quad[QUAD_V2_BOTTOM].z > quad[QUAD_V2_TOP].z)));
   }
 
   // quad must be valid; returns one of the `Q*` constants above

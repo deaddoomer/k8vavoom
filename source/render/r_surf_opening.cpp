@@ -27,15 +27,6 @@
 #include "r_local.h"
 
 
-enum {
-  QInvalid = -1, // invalid region
-  QIntersect = 0,
-  QTop = 1,
-  QBottom = 2,
-  QInside = 3,
-};
-
-
 //==========================================================================
 //
 //  CheckQuadLine
@@ -53,13 +44,13 @@ static int CheckQuadLine (const TVec &v0, const TVec &v1, const TSecPlaneRef &pl
   const float v1disttop = DotProduct(v1, normal)-dist;
   // positive distance means "above"
   if (isFloor) {
-    if (v1disttop >= 0.0f && v1distbot >= 0.0f) return QTop;
-    if (v1disttop < 0.0f && v1distbot < 0.0f) return QBottom;
+    if (v1disttop >= 0.0f && v1distbot >= 0.0f) return VRenderLevelShared::QTop;
+    if (v1disttop < 0.0f && v1distbot < 0.0f) return VRenderLevelShared::QBottom;
   } else {
-    if (v1disttop > 0.0f && v1distbot > 0.0f) return QTop;
-    if (v1disttop <= 0.0f && v1distbot <= 0.0f) return QBottom;
+    if (v1disttop > 0.0f && v1distbot > 0.0f) return VRenderLevelShared::QTop;
+    if (v1disttop <= 0.0f && v1distbot <= 0.0f) return VRenderLevelShared::QBottom;
   }
-  return QIntersect;
+  return VRenderLevelShared::QIntersect;
 }
 
 
@@ -271,6 +262,8 @@ void VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, 
     if (reg->regflags&mask) continue;
     if (onlySolid && !reg->isBlockingExtraLine()) continue;
     if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) continue;
+    // do not clip with sloped regions... for now
+    //if (reg->efloor.isSlope() || reg->eceiling.isSlope()) continue;
     const int rtype = ClassifyQuadVsRegion(quad, reg);
     if (debug) { GCon->Logf(NAME_Debug, "*** TRYING SPLIT REGION (%s)", GetQTypeStr(rtype)); VLevel::DumpRegion(reg, true); }
     // inside?

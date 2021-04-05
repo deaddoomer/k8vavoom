@@ -439,6 +439,9 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *frontr
 
     if (reg == ignorereg || (reg->regflags&mask) || (onlySolid && !reg->isBlockingExtraLine())) continue;
 
+    // do not clip with sloped regions... for now
+    //if (reg->efloor.isSlope() || reg->eceiling.isSlope()) continue;
+
     if (dump) DumpQuad("### CHECKING QUAD", quad);
 
     // we are interested only in intersecting regions here
