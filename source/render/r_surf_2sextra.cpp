@@ -202,13 +202,16 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
           const bool valid1 = (valid0 && SplitQuadWithPlane(quad, r_floor, nullptr, quad)); // leave top part
 
           if (valid0 && valid1 && isValidQuad(quad)) {
+            unsigned typeFlags = surface_t::TF_MIDDLE;
+            if ((reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_SaneRegion)) == 0) typeFlags |= surface_t::TF_3DFLOOR;
+
             sec_region_t *backregs = (sub == seg->frontsub ? (seg->backsector ? seg->backsector->eregions : nullptr) : (seg->frontsector ? seg->frontsector->eregions : nullptr));
             if (isSolid) {
               // solid region; clip only with the following regions
-              CreateWorldSurfFromWVSplitFromReg(reg, backregs, sub, seg, sp, quad, surface_t::TF_MIDDLE, true/*onlySolid*/, reg/*ignorereg*/);
+              CreateWorldSurfFromWVSplitFromReg(reg, backregs, sub, seg, sp, quad, typeFlags, true/*onlySolid*/, reg/*ignorereg*/);
             } else {
               // non-solid region: clip with all subsector regions
-              CreateWorldSurfFromWVSplitFromReg(sub->sector->eregions, backregs, sub, seg, sp, quad, surface_t::TF_MIDDLE, false/*onlySolid*/, reg/*ignorereg*/);
+              CreateWorldSurfFromWVSplitFromReg(sub->sector->eregions, backregs, sub, seg, sp, quad, typeFlags, false/*onlySolid*/, reg/*ignorereg*/);
             }
           }
         }

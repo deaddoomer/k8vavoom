@@ -173,6 +173,7 @@ struct surface_t {
     TF_FLOOR   = 1u<<3,
     TF_CEILING = 1u<<4,
     TF_TOPHACK = 1u<<5,
+    TF_3DFLOOR = 1u<<6, // this surface comes from gzdoom-style 3d floor
   };
 
   // internal allocator flags

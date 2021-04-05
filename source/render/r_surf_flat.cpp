@@ -175,6 +175,8 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   }
 
   vuint32 typeFlags = (spl.GetNormalZ() > 0.0f ? surface_t::TF_FLOOR : surface_t::TF_CEILING);
+  const sec_region_t *reg = sreg->secregion;
+  if ((reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_SaneRegion)) == 0) typeFlags |= surface_t::TF_3DFLOOR;
 
   // this is required to calculate static lightmaps, and for other business
   for (surface_t *ss = surf; ss; ss = ss->next) {
