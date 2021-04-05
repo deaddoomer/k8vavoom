@@ -202,8 +202,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
           const bool valid1 = (valid0 && SplitQuadWithPlane(quad, r_floor, nullptr, quad)); // leave top part
 
           if (valid0 && valid1 && isValidQuad(quad)) {
-            unsigned typeFlags = surface_t::TF_MIDDLE;
-            if ((reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_SaneRegion)) == 0) typeFlags |= surface_t::TF_3DFLOOR;
+            const unsigned typeFlags = surface_t::TF_MIDDLE;
 
             sec_region_t *backregs = (sub == seg->frontsub ? (seg->backsector ? seg->backsector->eregions : nullptr) : (seg->frontsector ? seg->frontsector->eregions : nullptr));
             if (isSolid) {

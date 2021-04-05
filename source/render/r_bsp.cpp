@@ -676,11 +676,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       ri.fade = Fade;
       // fix gzdoom bug with translucent 3d floors
       if (surf->typeFlags&surface_t::TF_3DFLOOR) {
-        if (surf->typeFlags&(surface_t::TF_FLOOR|surface_t::TF_CEILING)) {
-          if (texinfo->Alpha < 1.0f) {
-            surf->Light |= 255<<24;
-          }
-        }
+        if (texinfo->Alpha < 1.0f) surf->Light |= 255<<24;
       }
       QueueTranslucentSurface(surf, ri);
     }
