@@ -175,47 +175,52 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   TPlane::ClipWorkData cd;
   int topcount = 0, botcount = 0;
 
-  TVec orig[4];
-  memcpy((void *)orig, quad, 4*sizeof(orig[0]));
+  TVec qtoptemp[8];
+  TVec qbottemp[8];
 
-  pl.ClipPoly(cd, quad, 4, qtop, &topcount, qbottom, &botcount, TPlane::CoplanarNone, 0.0f);
+  pl.ClipPoly(cd, quad, 4, qtoptemp, &topcount, qbottemp, &botcount, TPlane::CoplanarNone, 0.0f);
+
   // check invariants (nope, we can get 5 vertices)
-  /*
+  //vassert(topcount == 0 || topcount == 3 || topcount == 4);
+  //vassert(botcount == 0 || botcount == 3 || botcount == 4);
   if (!(topcount == 0 || topcount == 3 || topcount == 4)) {
     GCon->Logf(NAME_Error, "FUCK! topcount=%d", topcount);
-    DumpQuad("original quad", orig);
-    GCon->Logf(NAME_Debug, "plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
-    if (qtop) DumpQuad("FUCKED TOP QUAD", qtop);
+    DumpQuad("original quad", quad);
+    GCon->Logf(NAME_Debug, "  plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
+    VStr s; for (int f = 0; f < topcount; ++f) { if (f) s += ", "; s += va("(%g,%g,%g)", qtoptemp[f].x, qtoptemp[f].y, qtoptemp[f].z); }
+    GCon->Logf(NAME_Debug, "  resulting top poly: %s", *s);
   }
   if (!(botcount == 0 || botcount == 3 || botcount == 4)) {
     GCon->Logf(NAME_Error, "FUCK! botcount=%d", botcount);
-    DumpQuad("original quad", orig);
-    GCon->Logf(NAME_Debug, "plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
-    if (qtop) DumpQuad("FUCKED BOTTOM QUAD", qbottom);
+    DumpQuad("original quad", quad);
+    GCon->Logf(NAME_Debug, "  plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
+    VStr s; for (int f = 0; f < botcount; ++f) { if (f) s += ", "; s += va("(%g,%g,%g)", qbottemp[f].x, qbottemp[f].y, qbottemp[f].z); }
+    GCon->Logf(NAME_Debug, "  resulting bottom poly: %s", *s);
   }
-  vassert(topcount == 0 || topcount == 3 || topcount == 4);
-  vassert(botcount == 0 || botcount == 3 || botcount == 4);
-  */
 
   // don't bother with 5-gons, we cannot process them
   // this can happen with some idiotic/weird sloped 3d floor configurations
 
-  if (topcount == 5 && qtop) {
-    topcount = 0;
-    memset((void *)qtop, 0, 4*sizeof(qtop[0]));
+  if (topcount == 5) {
+    // send the whole quad to the top
+    memcpy((void *)qtoptemp, (void *)quad, 4*sizeof(qtoptemp[0]));
+    topcount = 4;
   }
 
-  if (botcount == 5 && qbottom) {
-    botcount = 0;
-    memset((void *)qbottom, 0, 4*sizeof(qbottom[0]));
+  if (botcount == 5) {
+    // send the whole quad to the bottom
+    memcpy((void *)qbottemp, (void *)quad, 4*sizeof(qbottemp[0]));
+    botcount = 4;
   }
 
   if (qtop) {
     if (topcount == 0) {
       // no top quad
       memset((void *)qtop, 0, 4*sizeof(qtop[0]));
-    } else if (topcount == 3) {
-      ConvertTriToQuad(qtop);
+    } else {
+      vassert(topcount == 3 || topcount == 4);
+      memcpy((void *)qtop, (void *)qtoptemp, topcount*sizeof(qtop[0]));
+      if (topcount == 3) ConvertTriToQuad(qtop);
     }
   }
 
@@ -223,8 +228,10 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
     if (botcount == 0) {
       // no top quad
       memset((void *)qbottom, 0, 4*sizeof(qbottom[0]));
-    } else if (botcount == 3) {
-      ConvertTriToQuad(qbottom);
+    } else {
+      vassert(botcount == 3 || botcount == 4);
+      memcpy((void *)qbottom, (void *)qbottemp, botcount*sizeof(qbottom[0]));
+      if (botcount == 3) ConvertTriToQuad(qbottom);
     }
   }
 
