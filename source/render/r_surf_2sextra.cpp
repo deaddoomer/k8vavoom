@@ -172,8 +172,9 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       const float topz1 = reg->eceiling.GetPointZ(*seg->v1);
       const float topz2 = reg->eceiling.GetPointZ(*seg->v2);
 
-      const float botz1 = reg->efloor.GetPointZ(*seg->v1);
-      const float botz2 = reg->efloor.GetPointZ(*seg->v2);
+      // those `min2()` fixes some slopes
+      const float botz1 = min2(topz1, reg->efloor.GetPointZ(*seg->v1));
+      const float botz2 = min2(topz2, reg->efloor.GetPointZ(*seg->v2));
 
       //const bool wrapped = !!((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
       // side 3d floor midtex should always be wrapped
@@ -186,7 +187,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       }
       */
 
-      if (botz1 < topz1 && botz2 < topz2 /*&&
+      if (botz1 <= topz1 && botz2 <= topz2 /*&&
           ((!r_floor.PointOnSide(TVec(seg->v1->x, seg->v1->y, topz1)) || !r_floor.PointOnSide(TVec(seg->v2->x, seg->v2->y, topz2))) ||
            (!r_ceiling.PointOnSide(TVec(seg->v1->x, seg->v1->y, botz1)) || !r_ceiling.PointOnSide(TVec(seg->v2->x, seg->v2->y, botz2))))*/)
       {

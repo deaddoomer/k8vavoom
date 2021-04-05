@@ -123,17 +123,11 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].x = wv[3].x = seg->v2->x;
     wv[2].y = wv[3].y = seg->v2->y;
 
-    /*
-    const float topz1 = r_ceiling.GetPointZ(*seg->v1);
-    const float topz2 = r_ceiling.GetPointZ(*seg->v2);
-    const float botz1 = r_floor.GetPointZ(*seg->v1);
-    const float botz2 = r_floor.GetPointZ(*seg->v2);
-    */
-
     float topz1 = r_ceiling.GetPointZ(*seg->v1);
     float topz2 = r_ceiling.GetPointZ(*seg->v2);
-    float botz1 = r_floor.GetPointZ(*seg->v1);
-    float botz2 = r_floor.GetPointZ(*seg->v2);
+    // those `min2()` fixes some slopes
+    float botz1 = min2(topz1, r_floor.GetPointZ(*seg->v1));
+    float botz2 = min2(topz2, r_floor.GetPointZ(*seg->v2));
 
     const sector_t *sec = sub->sector;
 
@@ -224,10 +218,11 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       }
     }
 
-    wv[0].z = botz1;
+    // just in case
+    wv[0].z = min2(topz1, botz1);
     wv[1].z = topz1;
     wv[2].z = topz2;
-    wv[3].z = botz2;
+    wv[3].z = min2(topz2, botz2);
 
     //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
     CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);

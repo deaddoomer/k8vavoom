@@ -174,10 +174,10 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].x = wv[3].x = seg->v2->x;
     wv[2].y = wv[3].y = seg->v2->y;
 
-    wv[0].z = max2(back_topz1, botz1);
+    wv[0].z = min2(top_topz1, max2(back_topz1, botz1));  // was without outer min
     wv[1].z = top_topz1;
     wv[2].z = top_topz2;
-    wv[3].z = max2(back_topz2, botz2);
+    wv[3].z = min2(top_topz2, max2(back_topz2, botz2));  // was without outer min
 
     bool createSurf = true;
 
@@ -267,6 +267,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     float topz1 = r_ceiling.GetPointZ(*seg->v1);
     float topz2 = r_ceiling.GetPointZ(*seg->v2);
 
+
     // some map authors are making floor decorations with height transfer
     // (that is so player won't wobble walking on such floors)
     // so we should use minimum front height here (sigh)
@@ -336,8 +337,8 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].y = wv[3].y = seg->v2->y;
 
     wv[0].z = botz1;
-    wv[1].z = min2(back_botz1, topz1);
-    wv[2].z = min2(back_botz2, topz2);
+    wv[1].z = max2(botz1, min2(back_botz1, topz1)); // was without outer max
+    wv[2].z = max2(botz2, min2(back_botz2, topz2)); // was without outer max
     wv[3].z = botz2;
 
     /* k8: boomedit.wad -- debug crap */
@@ -509,8 +510,9 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
       const float topz1 = min2(back_topz1, fsec->ceiling.GetPointZ(*seg->v1));
       const float topz2 = min2(back_topz2, fsec->ceiling.GetPointZ(*seg->v2));
-      const float botz1 = max2(back_botz1, fsec->floor.GetPointZ(*seg->v1));
-      const float botz2 = max2(back_botz2, fsec->floor.GetPointZ(*seg->v2));
+      // those `min2()` fixes some slopes
+      const float botz1 = min2(topz1, max2(back_botz1, fsec->floor.GetPointZ(*seg->v1)));
+      const float botz2 = min2(topz2, max2(back_botz2, fsec->floor.GetPointZ(*seg->v2)));
 
       float midtopz1 = topz1;
       float midtopz2 = topz2;
@@ -570,10 +572,11 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
         }
       }
 
-      wv[0].z = hgts[0];
-      wv[1].z = hgts[1];
-      wv[2].z = hgts[2];
-      wv[3].z = hgts[3];
+      // just in case
+      wv[QUAD_V1_BOTTOM].z = min2(hgts[1], hgts[0]);
+      wv[QUAD_V1_TOP].z = hgts[1];
+      wv[QUAD_V2_TOP].z = hgts[2];
+      wv[QUAD_V2_BOTTOM].z = min2(hgts[2], hgts[3]);
 
       #ifdef VV_DEBUG_MIDW
       if (doDump) {
