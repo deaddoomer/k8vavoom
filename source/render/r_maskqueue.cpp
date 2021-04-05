@@ -1071,6 +1071,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           if (surf->plane.PointDistance(spr.origin) >= 0.0f) break; // but *before* this
         }
         // move behind all sprites
+        sfc = dls.DrawSurfListAlpha.ptr();
         while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;
         vassert(idx >= 0 && idx <= count);
         //GCon->Logf(NAME_Debug, "  final position: %d", idx);
