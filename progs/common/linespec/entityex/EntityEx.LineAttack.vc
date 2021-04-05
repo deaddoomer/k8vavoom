@@ -452,18 +452,20 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
   intercept_t in;
 
 #if 0
-  printdebug("%C(%s): === LineAttack (org=%s; dest=%s) ===", self, UniqueId, shootOrigin, dst);
-  foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0)) {
-    if (in.bIsAPlane) {
-      printdebug("  plane: frac=%s; hp=%s", in.frac, in.hitpoint);
-    } else if (in.bIsALine) {
-      printdebug("  line: frac=%s; hp=%s; block=%B; line #%d", in.frac, in.hitpoint, in.bIsABlockingLine, in.line-&XLevel.Lines[0]);
-    } else {
-      th = EntityEx(in.Thing);
-      printdebug("  thing: frac=%s; hp=%s; %C(%s)", in.frac, in.hitpoint, th, th.UniqueId);
+  if (bIsPlayer) {
+    printdebug("%C(%s): === LineAttack (org=%s; dest=%s) ===", self, UniqueId, shootOrigin, dst);
+    foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN) {
+      if (in.bIsAPlane) {
+        printdebug("  plane: frac=%s; hp=%s", in.frac, in.hitpoint);
+      } else if (in.bIsALine) {
+        printdebug("  line: frac=%s; hp=%s; block=%B; line #%d", in.frac, in.hitpoint, in.bIsABlockingLine, in.line-&XLevel.Lines[0]);
+      } else {
+        th = EntityEx(in.Thing);
+        printdebug("  thing: frac=%s; hp=%s; %C(%s)", in.frac, in.hitpoint, th, th.UniqueId);
+      }
     }
+    printdebug("------------------------");
   }
-  printdebug("------------------------");
 #endif
 
   //printdebug("=== LineAttack ===");
