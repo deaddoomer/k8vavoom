@@ -626,6 +626,10 @@ public:
   };
   void CommonQueueSurface (surface_t *surf, SFCType type);
 
+protected:
+  // used in `RenderSubRegions()`
+  TArray<subregion_t *> sortedRegs;
+
 public:
   void DrawSurfaces (subsector_t *sub, sec_region_t *secregion, seg_t *seg, surface_t *InSurfs,
                      texinfo_t *texinfo, VEntity *SkyBox, int LightSourceSector, int SideLight,
@@ -634,9 +638,6 @@ public:
   void GetFlatSetToRender (subsector_t *sub, subregion_t *region, sec_surface_t *surfs[4]);
   void ChooseFlatSurfaces (sec_surface_t *&f0, sec_surface_t *&f1, sec_surface_t *flat0, sec_surface_t *flat1);
 
-  // used in `RenderSubRegion()` and other similar methods
-  bool NeedToRenderNextSubFirst (const subregion_t *region) noexcept;
-
   void RenderHorizon (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg);
   void RenderMirror (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg);
   void RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg);
@@ -644,7 +645,7 @@ public:
   void RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox);
   void AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub);
   void RenderPolyObj (subsector_t *sub);
-  void RenderSubRegion (subsector_t *sub, subregion_t *region);
+  void RenderSubRegions (subsector_t *sub);
   void RenderSubsector (int num, bool onlyClip);
   void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip);
   void RenderBSPTree ();

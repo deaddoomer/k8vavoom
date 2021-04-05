@@ -50,7 +50,7 @@ static VCvarB r_enable_sky_portals("r_enable_sky_portals", true, "Enable renderi
 
 static VCvarB dbg_max_portal_depth_warning("dbg_max_portal_depth_warning", false, "Show maximum allowed portal depth warning?", 0/*CVAR_Archive*/);
 
-static VCvarB r_ordered_subregions("r_ordered_subregions", false, "Order subregions in renderer?", CVAR_Archive);
+static VCvarB r_ordered_subregions("r_ordered_subregions", true, "Order subregions in renderer (needed for translucency)?", CVAR_Archive);
 
 VCvarB r_draw_queue_warnings("r_draw_queue_warnings", false, "Show 'queued twice' and other warnings?", CVAR_PreInit);
 
@@ -1037,29 +1037,6 @@ void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secre
 
 //==========================================================================
 //
-//  VRenderLevelShared::NeedToRenderNextSubFirst
-//
-//  this orders subregions to avoid overdraw (partially)
-//
-//==========================================================================
-bool VRenderLevelShared::NeedToRenderNextSubFirst (const subregion_t *region) noexcept {
-  if (!region->next || !r_ordered_subregions) return false;
-  const sec_surface_t *floor = region->fakefloor;
-  if (floor) {
-    const float d = floor->PointDistance(Drawer->vieworg);
-    if (d <= 0.0f) return true;
-  }
-  floor = region->realfloor;
-  if (floor) {
-    const float d = floor->PointDistance(Drawer->vieworg);
-    if (d <= 0.0f) return true;
-  }
-  return false;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::AddPolyObjToClipper
 //
 //  we have to do this separately, because pobj shape is arbitrary
@@ -1108,7 +1085,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
           markSectorRendered(secnum);
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
             //GCon->Logf(NAME_Debug, "pobj #%d: sub #%d (%p)", pobj->tag, (int)(ptrdiff_t)(posub-&Level->Subsectors[0]), posub->regions);
-            RenderSubRegion(posub, posub->regions);
+            RenderSubRegions(posub);
           }
         }
       }
@@ -1119,27 +1096,86 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
 
 //==========================================================================
 //
-//  VRenderLevelShared::RenderSubRegion
+//  GetRegionDist
+//
+//==========================================================================
+static float GetRegionDist (const subregion_t *region) noexcept {
+  /*
+  float res = FLT_MAX; // dunno
+  bool wasFloor = false;
+
+  const sec_surface_t *floor = region->fakefloor;
+  if (floor) {
+    res = floor->PointDistance(Drawer->vieworg);
+    wasFloor = true;
+  }
+  floor = region->realfloor;
+  if (floor) {
+    const float d = floor->PointDistance(Drawer->vieworg);
+    res = min2(res, d);
+    wasFloor = true;
+  }
+
+  if (!wasFloor) {
+    const sec_surface_t *ceil = region->fakeceil;
+    if (ceil) res = ceil->PointDistance(Drawer->vieworg);
+    ceil = region->realceil;
+    if (ceil) {
+      const float d = ceil->PointDistance(Drawer->vieworg);
+      res = min2(res, d);
+    }
+  }
+
+  return res;
+  */
+
+  float res = FLT_MAX; // dunno
+  if (region->fakefloor) res = region->fakefloor->GetRealDist();
+  if (region->realfloor) res = min2(res, region->realfloor->GetRealDist());
+  if (region->fakeceil) res = region->fakeceil->GetRealDist();
+  if (region->realceil) res = min2(res, region->realceil->GetRealDist());
+  return res;
+}
+
+
+//==========================================================================
+//
+//  sortRegionsCmp
+//
+//==========================================================================
+static int sortRegionsCmp (const void *a, const void *b, void *) {
+  if (a == b) return 0;
+  const subregion_t *r0 = *(const subregion_t **)a;
+  const subregion_t *r1 = *(const subregion_t **)b;
+
+  const float r0dist = GetRegionDist(r0);
+  const float r1dist = GetRegionDist(r1);
+  if (r0dist < r1dist) return -1;
+  if (r0dist > r1dist) return +1;
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::RenderSubRegions
 //
 //  Determine floor/ceiling planes.
 //  Draw one or more line segments.
 //
 //==========================================================================
-void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region) {
-  sec_region_t *secregion = region->secregion;
+void VRenderLevelShared::RenderSubRegions (subsector_t *sub) {
+  sortedRegs.resetNoDtor();
+  for (subregion_t *reg = sub->regions; reg; reg = reg->next) sortedRegs.append(reg);
 
-  if ((secregion->regflags&sec_region_t::RF_BaseRegion) && sub->numlines > 0 && !sub->isInnerPObj()) {
-    const seg_t *seg = &Level->Segs[sub->firstline];
-    for (int j = sub->numlines; j--; ++seg) {
-      if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
-      RenderLine(sub, secregion, region, seg->drawsegs);
-    }
+  if (r_ordered_subregions.asBool()) {
+    timsort_r(sortedRegs.ptr(), sortedRegs.length(), sizeof(sortedRegs[0]), &sortRegionsCmp, nullptr);
   }
 
-  const bool nextFirst = NeedToRenderNextSubFirst(region);
-  if (nextFirst) RenderSubRegion(sub, region->next);
+  for (auto &&region : sortedRegs) {
+    vassert(region);
 
-  {
+    sec_region_t *secregion = region->secregion;
     sec_surface_t *fsurf[4];
     GetFlatSetToRender(sub, region, fsurf);
 
@@ -1149,8 +1185,6 @@ void VRenderLevelShared::RenderSubRegion (subsector_t *sub, subregion_t *region)
     if (fsurf[2]) RenderSecSurface(sub, secregion, fsurf[2], secregion->eceiling.splane->SkyBox);
     if (fsurf[3]) RenderSecSurface(sub, secregion, fsurf[3], secregion->eceiling.splane->SkyBox);
   }
-
-  if (!nextFirst && region->next) return RenderSubRegion(sub, region->next);
 }
 
 
@@ -1208,12 +1242,25 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
         }
       }
 
-      // render the polyobj in the subsector first, and add it to clipper
-      // this blocks view with polydoors
-      //FIXME: (it is broken now, because we need to dynamically split pobj with BSP)
+      // render subsector regions
+      RenderSubRegions(sub);
+
+      // render polyobject
       RenderPolyObj(sub);
+      // add polyobject to clipper, so closed doors and such will clip the view
       AddPolyObjToClipper(ViewClip, sub);
-      RenderSubRegion(sub, sub->regions);
+
+      // render subsector segs
+      if (sub->numlines) {
+        subregion_t *region = sub->regions;
+        sec_region_t *secregion = region->secregion;
+        vassert(secregion->regflags&sec_region_t::RF_BaseRegion);
+        const seg_t *seg = &Level->Segs[sub->firstline];
+        for (int j = sub->numlines; j--; ++seg) {
+          if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+          RenderLine(sub, secregion, region, seg->drawsegs);
+        }
+      }
     }
   }
 

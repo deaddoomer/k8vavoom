@@ -159,7 +159,9 @@ struct sec_surface_t {
   float Angle;
   surface_t *surfs;
 
-  inline float PointDistance (const TVec &p) const { return esecplane.PointDistance(p); }
+  inline float PointDistance (const TVec &p) const noexcept { return esecplane.PointDistance(p); }
+  inline float GetPointZ (const TVec &p) const noexcept { return esecplane.GetPointZ(p); }
+  inline float GetRealDist () const noexcept { return esecplane.GetRealDist(); }
 };
 
 

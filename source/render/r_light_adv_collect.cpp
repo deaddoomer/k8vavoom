@@ -400,10 +400,6 @@ void VRenderLevelShadowVolume::CollectAdvLightPolyObj (subsector_t *sub, unsigne
 //
 //==========================================================================
 void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsigned int ssflag) {
-  // as we will ignore translucent surfaces here, it doesn't matter anymore
-  //const bool nextFirst = NeedToRenderNextSubFirst(region);
-  //if (nextFirst) CollectAdvLightSubRegion(sub, region->next, ssflag);
-
   for (subregion_t *region = sub->regions; region; region = region->next) {
     //TSecPlaneRef r_floor = region->floorplane;
     //TSecPlaneRef r_ceiling = region->ceilplane;
@@ -460,8 +456,6 @@ void VRenderLevelShadowVolume::CollectAdvLightSubRegion (subsector_t *sub, unsig
     if (fsurf[2]) CollectAdvLightSecSurface(secregion, fsurf[2], secregion->eceiling.splane->SkyBox, ssflag&ceilingFlag, paperThin);
     if (fsurf[3]) CollectAdvLightSecSurface(secregion, fsurf[3], secregion->eceiling.splane->SkyBox, ssflag&ceilingFlag, paperThin);
   }
-
-  //if (!nextFirst && region->next) return CollectAdvLightSubRegion(sub, region->next, ssflag);
 }
 
 
