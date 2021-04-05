@@ -655,40 +655,36 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 //
 //  CalcProperThingHit
 //
+//  returns new frac, or -1
+//
 //==========================================================================
-static bool CalcProperThingHit (TVec &hitPoint, VEntity *th, const TVec &shootOrigin, const TVec &dir, const float distance) {
+static float CalcProperThingHit (TVec &hitPoint, VEntity *th, const TVec &shootOrigin, const TVec &dir, const float frac) {
   const float rad = th->Radius;
-  if (rad <= 0.0f) return false;
-  if (hitPoint.z > th->Origin.z+max2(0.0f, th->Height)) {
+  float dist;
+  if (hitPoint.z > th->Origin.z+th->Height) {
     // trace enters above actor
-    if (dir.z >= 0.0f) return false; // going up: can't hit
+    if (dir.z >= 0.0f) return -1.0f; // going up: can't hit
     // does it hit the top of the actor?
-    const float dist = (th->Origin.z+th->Height-shootOrigin.z)/dir.z;
-    if (dist > distance) return false;
-    //float frac = dist/distance;
-    hitPoint = shootOrigin+dir*dist;
-    // calculated coordinate is outside the actor's bounding box
-    if (fabsf(hitPoint.x-th->Origin.x) > rad ||
-        fabsf(hitPoint.y-th->Origin.y) > rad)
-    {
-      return false;
-    }
+    dist = (th->Origin.z+th->Height-shootOrigin.z)/dir.z;
   } else if (hitPoint.z < th->Origin.z) {
     // trace enters below actor
-    if (dir.z <= 0.0f) return false; // going down: can't hit
+    if (dir.z <= 0.0f) return -1.0f; // going down: can't hit
     // does it hit the bottom of the actor?
-    const float dist = (th->Origin.z-shootOrigin.z)/dir.z;
-    if (dist > distance) return false;
-    //frac = dist/distance;
-    hitPoint = shootOrigin+dir*dist;
-    // calculated coordinate is outside the actor's bounding box
-    if (fabsf(hitPoint.x-th->Origin.x) > rad ||
-        fabsf(hitPoint.y-th->Origin.y) > rad)
-    {
-      return false;
-    }
+    dist = (th->Origin.z-shootOrigin.z)/dir.z;
+  } else {
+    // hitpoint is either inside, or on a side (this is checked by the caller)
+    return frac;
   }
-  return true;
+  // top/bottom hitpoint
+  if (dist < 0.0f || dist > 1.0f) return -1.0f;
+  hitPoint = shootOrigin+dir*dist;
+  // calculated coordinate is outside the actor's bounding box
+  if (fabsf(hitPoint.x-th->Origin.x) > rad ||
+      fabsf(hitPoint.y-th->Origin.y) > rad)
+  {
+    return -1.0f;
+  }
+  return dist;
 }
 
 
@@ -699,13 +695,20 @@ static bool CalcProperThingHit (TVec &hitPoint, VEntity *th, const TVec &shootOr
 //  calculates proper thing hit and so on
 //
 //==========================================================================
-void VPathTraverse::AddProperThingHit (VEntity *th, const float frac) {
+void VPathTraverse::AddProperThingHit (VEntity *th, float frac) {
   if (frac >= max_frac) return;
   TVec hp = trace_org3d+trace_dir3d*frac;
   if (!(scanflags&(PT_NOOPENS|PT_AIMTHINGS))) {
-    if (!CalcProperThingHit(hp, th, trace_org3d, trace_dir3d, trace_len3d)) return;
-    if (th->Origin.z+max2(0.0f, th->Height) < hp.z) return; // shot over the thing
+    //GCon->Logf(NAME_Debug, "%s: hpz=%g; tz0=%g; tz1=%g", th->GetClass()->GetName(), hp.z, th->Origin.z, th->Origin.z+th->Height);
+    const float newfrac = CalcProperThingHit(hp, th, trace_org3d, trace_dir3d, frac);
+    if (newfrac < 0.0f) return;
+    if (th->Origin.z+th->Height < hp.z) return; // shot over the thing
     if (th->Origin.z > hp.z) return; // shot under the thing
+    // recalc frac
+    //GCon->Logf(NAME_Debug, "%s: oldfrac=%g; calcfrac=%g; newfrac=%g; new2dfrac=%g", th->GetClass()->GetName(), frac, newfrac, (hp-trace_org3d).length()/trace_len3d, (TVec(hp.x, hp.y)-trace_org).length()/trace_len);
+    //frac = (hp-trace_org3d).length()/trace_len3d;
+    if (newfrac >= max_frac) return; // cannot hit
+    frac = newfrac;
   }
   intercept_t &In = NewIntercept(frac);
   In.Flags = 0;
@@ -738,7 +741,9 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           VEntity *ent = it.entity();
           if (ent->ValidCount == validcount) continue;
           ent->ValidCount = validcount;
-          if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
+          if (ent->Height <= 0.0f) continue;
+          const float rad = ent->Radius;
+          if (rad <= 0.0f) continue;
           //if (vptSeenThings.put(*It, true)) continue;
           // [RH] don't check a corner to corner crossection for hit
           // instead, check against the actual bounding box
@@ -746,7 +751,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
             // center hitpoint
             const float dot = trace_plane.PointDistance(ent->Origin);
-            if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
+            if (fabsf(dot) >= rad) continue; // thing is too far away
             const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
             if (dist < 0.0f) continue; // behind source
             const float frac = (trace_len ? dist/trace_len : 0.0f);
@@ -763,32 +768,32 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           for (int i = 0; i < 4; ++i) {
             switch (i) {
               case 0: // top edge
-                line.y = ent->Origin.y+ent->Radius;
+                line.y = ent->Origin.y+rad;
                 if (trace_org.y < line.y) continue;
-                line.x = ent->Origin.x+ent->Radius;
-                line.dx = -ent->Radius*2.0f;
+                line.x = ent->Origin.x+rad;
+                line.dx = -rad*2.0f;
                 line.dy = 0.0f;
                 break;
               case 1: // right edge
-                line.x = ent->Origin.x+ent->Radius;
+                line.x = ent->Origin.x+rad;
                 if (trace_org.x < line.x) continue;
-                line.y = ent->Origin.y-ent->Radius;
+                line.y = ent->Origin.y-rad;
                 line.dx = 0.0f;
-                line.dy = ent->Radius*2.0f;
+                line.dy = rad*2.0f;
                 break;
               case 2: // bottom edge
-                line.y = ent->Origin.y-ent->Radius;
+                line.y = ent->Origin.y-rad;
                 if (trace_org.y > line.y) continue;
-                line.x = ent->Origin.x-ent->Radius;
-                line.dx = ent->Radius*2.0f;
+                line.x = ent->Origin.x-rad;
+                line.dx = rad*2.0f;
                 line.dy = 0.0f;
                 break;
               case 3: // left edge
-                line.x = ent->Origin.x-ent->Radius;
+                line.x = ent->Origin.x-rad;
                 if (trace_org.x > line.x) continue;
-                line.y = ent->Origin.y+ent->Radius;
+                line.y = ent->Origin.y+rad;
                 line.dx = 0.0f;
-                line.dy = -ent->Radius*2.0f;
+                line.dy = -rad*2.0f;
                 break;
             }
             ++numfronts;
@@ -805,9 +810,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
           // if none of the sides was facing the trace, then the trace
           // must have started inside the box, so add it as an intercept
           if (numfronts == 0) {
-            intercept_t &In = NewIntercept(0.0f);
-            In.Flags = 0;
-            In.thing = ent;
+            AddProperThingHit(ent, 0.0f);
           }
         }
       }
