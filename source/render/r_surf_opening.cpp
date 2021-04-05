@@ -175,10 +175,40 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   TPlane::ClipWorkData cd;
   int topcount = 0, botcount = 0;
 
+  TVec orig[4];
+  memcpy((void *)orig, quad, 4*sizeof(orig[0]));
+
   pl.ClipPoly(cd, quad, 4, qtop, &topcount, qbottom, &botcount, TPlane::CoplanarNone, 0.0f);
-  // check invariants
+  // check invariants (nope, we can get 5 vertices)
+  /*
+  if (!(topcount == 0 || topcount == 3 || topcount == 4)) {
+    GCon->Logf(NAME_Error, "FUCK! topcount=%d", topcount);
+    DumpQuad("original quad", orig);
+    GCon->Logf(NAME_Debug, "plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
+    if (qtop) DumpQuad("FUCKED TOP QUAD", qtop);
+  }
+  if (!(botcount == 0 || botcount == 3 || botcount == 4)) {
+    GCon->Logf(NAME_Error, "FUCK! botcount=%d", botcount);
+    DumpQuad("original quad", orig);
+    GCon->Logf(NAME_Debug, "plane: normal=(%g,%g,%g); dist=%g", pl.normal.x, pl.normal.y, pl.normal.z, pl.dist);
+    if (qtop) DumpQuad("FUCKED BOTTOM QUAD", qbottom);
+  }
   vassert(topcount == 0 || topcount == 3 || topcount == 4);
   vassert(botcount == 0 || botcount == 3 || botcount == 4);
+  */
+
+  // don't bother with 5-gons, we cannot process them
+  // this can happen with some idiotic/weird sloped 3d floor configurations
+
+  if (topcount == 5 && qtop) {
+    topcount = 0;
+    memset((void *)qtop, 0, 4*sizeof(qtop[0]));
+  }
+
+  if (botcount == 5 && qbottom) {
+    botcount = 0;
+    memset((void *)qbottom, 0, 4*sizeof(qbottom[0]));
+  }
 
   if (qtop) {
     if (topcount == 0) {
