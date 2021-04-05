@@ -1192,12 +1192,12 @@ bool VLevelChannel::ParsePolyObj (VMessageIn &Msg) {
   if (Msg.ReadBit()) Msg << Pos.y;
   if (Msg.ReadBit()) Msg << Pos.z;
   if (Msg.IsError()) return false;
-  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y, Pos.z-Po->startSpot.z, true);
+  if (Pos != Po->startSpot) Level->MovePolyobj(Po->tag, Pos.x-Po->startSpot.x, Pos.y-Po->startSpot.y, Pos.z-Po->startSpot.z, VLevel::POFLAG_FORCED|VLevel::POFLAG_NOLINK);
   if (Msg.ReadBit()) {
     float a = 0;
     Msg << a;
     if (Msg.IsError()) return false;
-    Level->RotatePolyobj(Po->tag, a-Po->angle, true);
+    Level->RotatePolyobj(Po->tag, a-Po->angle, VLevel::POFLAG_FORCED|VLevel::POFLAG_NOLINK);
   }
 
   return !Msg.IsError();

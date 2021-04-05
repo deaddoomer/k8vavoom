@@ -1247,10 +1247,11 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 //
 //  VLevel::MovePolyobj
 //
-//  `forced` is used on map loading, and we don't need to follow link chain
-//
 //==========================================================================
-bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
+bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
+  const bool forcedMove = (flags&POFLAG_FORCED);
+  const bool skipLink = (flags&POFLAG_NOLINK);
+
   polyobj_t *po = GetPolyobj(num);
   if (!po) { GCon->Logf(NAME_Error, "MovePolyobj: Invalid pobj #%d", num); return false; }
 
@@ -1265,7 +1266,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   // but do this only if we have to
   // only for 3d pobjs that either can carry objects, or moving vertically
   poAffectedEnitities.resetNoDtor();
-  if (!forced && pofirst->posector && (docarry || z != 0.0f)) {
+  if (!forcedMove && pofirst->posector && (docarry || z != 0.0f)) {
     flatsSaved = true;
     IncrementValidCount();
     const int visCount = validcount;
@@ -1283,8 +1284,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         edata.mobj = mobj;
         edata.Origin = mobj->Origin;
       }
+      if (skipLink) break;
     }
-  } else if (forced && pofirst->posector) {
+  } else if (forcedMove && pofirst->posector) {
     IncrementValidCount();
     const int visCount = validcount;
     for (po = pofirst; po; po = po->polink) {
@@ -1297,6 +1299,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         edata.mobj = mobj;
         edata.Origin = mobj->Origin;
       }
+      if (skipLink) break;
     }
   }
 
@@ -1304,7 +1307,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   // note that there is no need to relink pobj, because blockmap position will stay the same
   if (pofirst->posector && z != 0.0f) {
     // move mobjs standing on this pobj up/down with it
-    if (!forced) {
+    if (!forcedMove) {
       for (auto &&edata : poAffectedEnitities) {
         VEntity *mobj = edata.mobj;
         const float oldz = mobj->Origin.z;
@@ -1318,16 +1321,17 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
             mobj->Origin.z = pofz+z;
             //GCon->Logf(NAME_Debug, "pobj #%d: %s(%u):   MOVED! z=%g; FloorZ=%g; CeilingZ=%g; pofz=%g; newpofz=%g; zofs=%g", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, mobj->FloorZ, mobj->CeilingZ, pofz, pofz+z, z);
           }
+          if (skipLink) break;
         }
       }
     }
     // move platform vertically
     for (po = pofirst; po; po = po->polink) {
       OffsetPolyobjFlats(po, z);
-      if (forced) break;
+      if (skipLink) break;
     }
     // check if not blocked
-    if (!forced) {
+    if (!forcedMove) {
       // check movement
       //FIXME: push stacked mobjs (one atop of another) up
       bool canMove = true;
@@ -1360,6 +1364,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           po->pofloor = po->savedFloor;
           po->poceiling = po->savedCeiling;
           OffsetPolyobjFlats(po, 0.0f, true);
+          if (skipLink) break;
         }
         // restore `z` of force-modified entities, otherwise they may fall through the platform
         for (auto &&edata : poAffectedEnitities) {
@@ -1388,7 +1393,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   bool unlinked;
 
   // horizontal movement
-  if (forced || x || y) {
+  if (forcedMove || x || y) {
     unlinked = true;
 
     // unlink and move all linked polyobjects
@@ -1404,16 +1409,17 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         **vptr = (*origPts)+delta;
       }
       UpdatePolySegs(po);
-      if (forced) break;
+      if (skipLink) break;
     }
 
     // check for blocked movement
     bool blocked = false;
 
-    if (!forced) {
+    if (!forcedMove) {
       for (po = pofirst; po; po = po->polink) {
         blocked = PolyCheckMobjBlocked(po);
         if (blocked) break; // process all?
+        if (skipLink) break;
       }
     }
 
@@ -1444,6 +1450,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
         UpdatePolySegs(po);
         OffsetPolyobjFlats(po, 0.0f, true);
         LinkPolyobj(po);
+        if (skipLink) break;
       }
       // relink all mobjs (just in case)
       for (auto &&edata : poAffectedEnitities) {
@@ -1456,7 +1463,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     unlinked = false;
     for (po = pofirst; po; po = po->polink) {
       UpdatePolySegs(po);
-      if (forced) break;
+      if (skipLink) break;
     }
   }
 
@@ -1466,12 +1473,11 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
     po->startSpot.z += z;
     OffsetPolyobjFlats(po, 0.0f, true);
     if (unlinked) LinkPolyobj(po);
-    if (forced) break;
+    if (skipLink) break;
   }
 
   // carry things?
-  if (!forced && docarry && pofirst->posector && (x || y)) {
-    //for (po = pofirst; po; po = po->polink) poflags |= po->PolyFlags;
+  if (!forcedMove && docarry && pofirst->posector && (x || y)) {
     //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
     for (auto &&edata : poAffectedEnitities) {
       VEntity *e = edata.mobj;
@@ -1487,13 +1493,14 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
           poflags = po->PolyFlags;
           break;
         }
+        if (skipLink) break;
       }
       if (needmove) {
         //GCon->Logf(NAME_Debug, "      moving entity %s(%u) by (%g,%g)", e->GetClass()->GetName(), e->GetUniqueId(), x, y);
         e->Level->eventPolyMoveMobjBy(e, poflags, x, y);
       }
     }
-  } else if (forced) {
+  } else if (forcedMove) {
     // relink all mobjs (just in case)
     //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
     for (auto &&edata : poAffectedEnitities) {
@@ -1509,7 +1516,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
   if (Renderer) {
     for (po = pofirst; po; po = po->polink) {
       Renderer->PObjModified(po);
-      if (forced) break;
+      if (skipLink) break;
     }
   }
 
@@ -1521,10 +1528,11 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, bool forced) {
 //
 //  VLevel::RotatePolyobj
 //
-//  `forced` is used on map loading, and we don't need to follow link chain
-//
 //==========================================================================
-bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
+bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
+  const bool forcedMove = (flags&POFLAG_FORCED);
+  const bool skipLink = (flags&POFLAG_NOLINK);
+
   // get the polyobject
   polyobj_t *po = GetPolyobj(num);
   if (!po) { GCon->Logf(NAME_Error, "RotatePolyobj: Invalid pobj #%d", num); return false; }
@@ -1544,15 +1552,12 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   const bool flatsSaved = (pofirst->posector);
 
   // collect objects we need to move/rotate
-  if (!forced && pofirst->posector && (docarry || doangle)) {
+  if (!forcedMove && pofirst->posector && (docarry || doangle)) {
     IncrementValidCount();
     const int visCount = validcount;
     for (po = pofirst; po; po = po->polink) {
       const float pz1 = po->poceiling.maxz;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
-        if (n->Visited == visCount) continue;
-        // unprocessed thing found, mark thing as processed
-        n->Visited = visCount;
         VEntity *mobj = n->Thing;
         if (mobj->ValidCount == visCount) continue;
         mobj->ValidCount = visCount;
@@ -1565,6 +1570,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
         // need to save it, because entity relinking may change/reset it
         edata.po = mobj->Sector->ownpobj;
       }
+      if (skipLink) break;
     }
   }
 
@@ -1591,15 +1597,16 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
       (*vptr)->y = (tr_y*mcosAn+tr_x*msinAn)+ssy;
     }
     UpdatePolySegs(po);
-    if (forced) break;
+    if (skipLink) break;
   }
 
   bool blocked = false;
 
-  if (!forced) {
+  if (!forcedMove) {
     for (po = pofirst; po; po = po->polink) {
       blocked = PolyCheckMobjBlocked(po);
       if (blocked) break; // process all?
+      if (skipLink) break;
     }
   }
 
@@ -1616,6 +1623,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
       UpdatePolySegs(po);
       LinkPolyobj(po);
+      if (skipLink) break;
     }
     return false;
   }
@@ -1628,11 +1636,11 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
       OffsetPolyobjFlats(po, 0.0f, true);
     }
     LinkPolyobj(po);
-    if (forced) break;
+    if (skipLink) break;
   }
 
   // move and rotate things
-  if (!forced && flatsSaved && (docarry || doangle) && poAffectedEnitities.length()) {
+  if (!forcedMove && flatsSaved && (docarry || doangle) && poAffectedEnitities.length()) {
     msincos(AngleMod(angle), &msinAn, &mcosAn);
     for (auto &&edata : poAffectedEnitities) {
       VEntity *e = edata.mobj;
@@ -1658,7 +1666,7 @@ bool VLevel::RotatePolyobj (int num, float angle, bool forced) {
   if (Renderer) {
     for (po = pofirst; po; po = po->polink) {
       Renderer->PObjModified(po);
-      if (forced) break;
+      if (skipLink) break;
     }
   }
 
@@ -1783,20 +1791,21 @@ IMPLEMENT_FUNCTION(VLevel, GetPolyobjMirror) {
   RET_INT(Self->GetPolyobjMirror(tag));
 }
 
-//native final bool MovePolyobj (int num, float x, float y, optional float z, optional bool forced);
+//native final bool MovePolyobj (int num, float x, float y, optional float z, optional int flags);
 IMPLEMENT_FUNCTION(VLevel, MovePolyobj) {
   int tag;
   float x, y;
   VOptParamFloat z(0);
-  VOptParamBool forced(false);
-  vobjGetParamSelf(tag, x, y, z, forced);
-  RET_BOOL(Self->MovePolyobj(tag, x, y, z, forced));
+  VOptParamInt flags(0);
+  vobjGetParamSelf(tag, x, y, z, flags);
+  RET_BOOL(Self->MovePolyobj(tag, x, y, z, flags));
 }
 
-//native final bool RotatePolyobj (int num, float angle);
+//native final bool RotatePolyobj (int num, float angle, optional int flags);
 IMPLEMENT_FUNCTION(VLevel, RotatePolyobj) {
   int tag;
   float angle;
-  vobjGetParamSelf(tag, angle);
-  RET_BOOL(Self->RotatePolyobj(tag, angle));
+  VOptParamInt flags(0);
+  vobjGetParamSelf(tag, angle, flags);
+  RET_BOOL(Self->RotatePolyobj(tag, angle, flags));
 }

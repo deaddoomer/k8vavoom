@@ -805,8 +805,14 @@ public:
   void InitPolyobjs ();
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
-  bool MovePolyobj (int num, float x, float y, float z=0.0f, bool forced=false); // tag (GetPolyobj)
-  bool RotatePolyobj (int num, float angle, bool forced=false); // tag (GetPolyobj)
+
+  enum {
+    POFLAG_FORCED = 1u<<0, // do not check position, do not carry objects
+    POFLAG_NOLINK = 1u<<1, // ignore linked polyobjects
+  };
+
+  bool MovePolyobj (int num, float x, float y, float z=0.0f, unsigned flags=0u); // tag (GetPolyobj)
+  bool RotatePolyobj (int num, float angle, unsigned flags=0u); // tag (GetPolyobj)
 
   // this also fixes inner sector height (forces to pobj floor and ceiling)
   // does nothing for non-3d polyobjects
