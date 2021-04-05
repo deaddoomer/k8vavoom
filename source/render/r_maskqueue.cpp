@@ -159,7 +159,7 @@ void VRenderLevelShared::QueueTranslucentSurface (surface_t *surf, const RenderS
   }
 #endif
 
-  trans_sprite_t *spr = AllocTransSpr(ri);
+  trans_sprite_t *spr = AllocTransSurface(ri);
   spr->dist = dist;
   spr->surf = surf;
   spr->type = TSP_Wall;
@@ -194,11 +194,12 @@ void VRenderLevelShared::QueueSpritePoly (const TVec *sv, int lump, const Render
   //const float dist = LengthSquared(sprOrigin-Drawer->vieworg);
 
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
-  trans_sprite_t *spr = AllocTransSpr(ri);
+  trans_sprite_t *spr = AllocTransSprite(ri);
   memcpy((void *)spr->Verts, sv, sizeof(TVec)*4);
   spr->dist = dist;
   spr->lump = lump;
   spr->normal = normal;
+  spr->origin = sprOrigin;
   spr->pdist = pdist;
   spr->saxis = saxis;
   spr->taxis = taxis;
@@ -228,10 +229,11 @@ void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const Render
 
   //trans_sprite_t &spr = trans_sprites[traspUsed++];
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
-  trans_sprite_t *spr = AllocTransSpr(ri);
+  trans_sprite_t *spr = AllocTransSprite(ri);
   spr->Ent = mobj;
   spr->rstyle = ri;
   spr->dist = dist;
+  spr->origin = mobj->Origin;
   spr->type = TSP_Model;
   spr->TimeFrac = TimeFrac;
   spr->lump = -1; // has no sense
@@ -804,105 +806,103 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
 
 //==========================================================================
 //
-//  traspCmp
+//  traspSpriteCmp
 //
 //==========================================================================
-extern "C" {
-  static int traspCmp (const void *a, const void *b, void *) {
-    if (a == b) return 0;
-    const VRenderLevelShared::trans_sprite_t *ta = (const VRenderLevelShared::trans_sprite_t *)a;
-    const VRenderLevelShared::trans_sprite_t *tb = (const VRenderLevelShared::trans_sprite_t *)b;
+static int traspSpriteCmp (const void *a, const void *b, void *) {
+  if (a == b) return 0;
+  const VRenderLevelShared::trans_sprite_t *ta = (const VRenderLevelShared::trans_sprite_t *)a;
+  const VRenderLevelShared::trans_sprite_t *tb = (const VRenderLevelShared::trans_sprite_t *)b;
 
-    // sort by distance to view origin (nearest last)
-    const float d0 = ta->dist;
-    const float d1 = tb->dist;
-    if (d0 < d1) return 1; // a is nearer, so it is last (a is greater)
-    if (d0 > d1) return -1; // b is nearer, so it is last (a is lesser)
+  // sort by distance to view origin (nearest last)
+  const float d0 = ta->dist;
+  const float d1 = tb->dist;
+  if (d0 < d1) return +1; // a is nearer, so it is last (a is greater)
+  if (d0 > d1) return -1; // b is nearer, so it is last (a is lesser)
 
-    // non-translucent objects should come first
-    #if 0
-    // translucent/additive
-    const unsigned aTrans = (unsigned)(ta->rstyle.alpha < 1.0f || (ta->rstyle.isTranslucent() && !ta->rstyle.isStenciled()));
-    const unsigned bTrans = (unsigned)(tb->rstyle.alpha < 1.0f || (tb->rstyle.isTranslucent() && !tb->rstyle.isStenciled()));
+  // non-translucent objects should come first
+  #if 0
+  // translucent/additive
+  const unsigned aTrans = (unsigned)(ta->rstyle.alpha < 1.0f || (ta->rstyle.isTranslucent() && !ta->rstyle.isStenciled()));
+  const unsigned bTrans = (unsigned)(tb->rstyle.alpha < 1.0f || (tb->rstyle.isTranslucent() && !tb->rstyle.isStenciled()));
 
-    // if both has that bit set, the result of xoring will be 0
-    if (aTrans^bTrans) {
-      // only one is translucent
-      vassert(aTrans == 0 || bTrans == 0);
-      return (aTrans ? 1/*a is translucent, b is not; b first (a is greater)*/ : -1/*a is not translucent, b is translucent; a first (a is lesser)*/);
-    }
-    #endif
-
-    #if 0
-    // mirrors come first, then comes floor/ceiling surfaces
-    if ((ta->rstyle.flags^tb->rstyle.flags)&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor|RenderStyleInfo::FlagMirror)) {
-      if ((ta->rstyle.flags^tb->rstyle.flags)&RenderStyleInfo::FlagMirror) {
-        return (ta->rstyle.flags&RenderStyleInfo::FlagMirror ? -1 : 1);
-      }
-      return (ta->rstyle.flags&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor) ? -1 : 1);
-    }
-
-    // shadows come first
-    // oriented comes next
-    const unsigned taspec = ta->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
-    const unsigned tbspec = tb->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
-    // if both has the same bits set, the result of xoring will be 0
-    if (taspec^tbspec) {
-      // one is shadow?
-      if ((taspec^tbspec)&RenderStyleInfo::FlagShadow) {
-        return (taspec&RenderStyleInfo::FlagShadow ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
-      }
-      // one is oriented?
-      if ((taspec^tbspec)&RenderStyleInfo::FlagOriented) {
-        return (taspec&RenderStyleInfo::FlagOriented ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
-      }
-    }
-    #endif
-
-    #if 0
-    // sort by special type
-    const unsigned tahang = ta->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
-    const unsigned tbhang = tb->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
-
-    if (tahang|tbhang) {
-      if (tahang != tbhang) return (tahang > tbhang ? -1/*a first (a is lesser) */ : 1/*b first (a is greater)*/);
-    }
-    #endif
-
-    // priority check
-    // higher priority comes first
-    if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
-    if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
-
-    #if 0
-    // sort by object type
-    // first masked polys, then sprites, then alias models
-    // type 0: masked polys
-    // type 1: sprites
-    // type 2: alias models
-    const int typediff = (int)ta->type-(int)tb->type;
-    if (typediff) return typediff;
-
-    /*
-    // priority check
-    // higher priority comes first
-    if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
-    if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
-    */
-
-    if (ta->objid < tb->objid) return -1;
-    if (ta->objid > tb->objid) return 1;
-
-    // sort sprites by lump number, why not
-    if (ta->type == TSP_Sprite) {
-      if (ta->lump < tb->lump) return -1;
-      if (ta->lump > tb->lump) return 1;
-    }
-    #endif
-
-    // nothing to check anymore, consider equal
-    return 0;
+  // if both has that bit set, the result of xoring will be 0
+  if (aTrans^bTrans) {
+    // only one is translucent
+    vassert(aTrans == 0 || bTrans == 0);
+    return (aTrans ? 1/*a is translucent, b is not; b first (a is greater)*/ : -1/*a is not translucent, b is translucent; a first (a is lesser)*/);
   }
+  #endif
+
+  #if 0
+  // mirrors come first, then comes floor/ceiling surfaces
+  if ((ta->rstyle.flags^tb->rstyle.flags)&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor|RenderStyleInfo::FlagMirror)) {
+    if ((ta->rstyle.flags^tb->rstyle.flags)&RenderStyleInfo::FlagMirror) {
+      return (ta->rstyle.flags&RenderStyleInfo::FlagMirror ? -1 : 1);
+    }
+    return (ta->rstyle.flags&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor) ? -1 : 1);
+  }
+
+  // shadows come first
+  // oriented comes next
+  const unsigned taspec = ta->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
+  const unsigned tbspec = tb->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
+  // if both has the same bits set, the result of xoring will be 0
+  if (taspec^tbspec) {
+    // one is shadow?
+    if ((taspec^tbspec)&RenderStyleInfo::FlagShadow) {
+      return (taspec&RenderStyleInfo::FlagShadow ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
+    }
+    // one is oriented?
+    if ((taspec^tbspec)&RenderStyleInfo::FlagOriented) {
+      return (taspec&RenderStyleInfo::FlagOriented ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
+    }
+  }
+  #endif
+
+  #if 0
+  // sort by special type
+  const unsigned tahang = ta->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
+  const unsigned tbhang = tb->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
+
+  if (tahang|tbhang) {
+    if (tahang != tbhang) return (tahang > tbhang ? -1/*a first (a is lesser) */ : 1/*b first (a is greater)*/);
+  }
+  #endif
+
+  // priority check
+  // higher priority comes first
+  if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
+  if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
+
+  #if 0
+  // sort by object type
+  // first masked polys, then sprites, then alias models
+  // type 0: masked polys
+  // type 1: sprites
+  // type 2: alias models
+  const int typediff = (int)ta->type-(int)tb->type;
+  if (typediff) return typediff;
+
+  /*
+  // priority check
+  // higher priority comes first
+  if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
+  if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
+  */
+
+  if (ta->objid < tb->objid) return -1;
+  if (ta->objid > tb->objid) return 1;
+
+  // sort sprites by lump number, why not
+  if (ta->type == TSP_Sprite) {
+    if (ta->lump < tb->lump) return -1;
+    if (ta->lump > tb->lump) return 1;
+  }
+  #endif
+
+  // nothing to check anymore, consider equal
+  return 0;
 }
 
 
@@ -1000,19 +1000,90 @@ void VRenderLevelShared::DrawTranslucentPolys () {
   // render sprite shadpows first (there is no need to sort them)
   if (dls.DrawSpriteShadowsList.length() > 0) {
     // there is no need to sort solid sprites
-    //if (!dbg_disable_sprite_sorting) timsort_r(dls.DrawSpriteList.ptr(), dls.DrawSpriteList.length(), sizeof(dls.DrawSpriteList[0]), &transCmp, nullptr);
     for (auto &&spr : dls.DrawSpriteShadowsList) DrawTransSpr(spr);
   }
 
+  /*
+    rendering scene with translucent things should be done this way:
+    use translucent surfaces list as a list of space splitters
+    (because they are sorted front-to-back, due to BSP traversing)
+    loop over all sprites; for each sprite:
+      find the nearest (closest to the head of the list) wall that is before the sprite
+      scan back and forward for the flats from the same subsector our sprite is in, and sort with them
+    this should be done for sprites, because there are usually much less translucent surfaces than sprites
+    also, insert sprites according to camera distance
+
+    this step can be ignored for solid sprites, because z-buffer should do the trick for us
+
+    i.e. the whole wall-ws-sprite sorting step can be omited if we have no translucent sprites
+
+    BSP INVARIANT: subsector walls are rendered before subsector flats
+
+    THING TO CHECK: polyobjects can get in there, don't try to sort with polyobject flats
+   */
+
   if (dls.DrawSpriteList.length() > 0) {
-    // there is no need to sort solid sprites
-    //if (!dbg_disable_sprite_sorting) timsort_r(dls.DrawSpriteList.ptr(), dls.DrawSpriteList.length(), sizeof(dls.DrawSpriteList[0]), &transCmp, nullptr);
+    // there is no need to sort solid sprites (i hope)
     for (auto &&spr : dls.DrawSpriteList) DrawTransSpr(spr);
   }
 
-  if (dls.DrawSurfListAlpha.length()) {
-    if (!dbg_disable_sprite_sorting) timsort_r(dls.DrawSurfListAlpha.ptr(), dls.DrawSurfListAlpha.length(), sizeof(dls.DrawSurfListAlpha[0]), &traspCmp, nullptr);
-    for (auto &&spr : dls.DrawSurfListAlpha) DrawTransSpr(spr);
+  if (dls.DrawSpriListAlpha.length()) {
+    // we have some translucent sprites; sort them
+    if (!dbg_disable_sprite_sorting) timsort_r(dls.DrawSpriListAlpha.ptr(), dls.DrawSpriListAlpha.length(), sizeof(dls.DrawSpriListAlpha[0]), &traspSpriteCmp, nullptr);
+    if (!dls.DrawSurfListAlpha.length()) {
+      // but no translucent surfaces, so simply sort sprites by distance, and render
+      for (auto &&spr : dls.DrawSpriListAlpha) DrawTransSpr(spr);
+    } else {
+      // ok, we have a complex case here: both translucent surfaces, and translucent sprites
+      // insert sprites in surface list, and render the combined list
+      //GCon->Logf(NAME_Debug, "*** %d translucent sprites, %d translucent walls", dls.DrawSpriListAlpha.length(), dls.DrawSurfListAlpha.length());
+      for (auto &&spr : dls.DrawSpriListAlpha) {
+        vassert(spr.type != TSP_Wall);
+        const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
+        const int count = dls.DrawSurfListAlpha.length();
+        //GCon->Logf(NAME_Debug, "  checking sprite at (%g,%g,%g)", spr.origin.x, spr.origin.y, spr.origin.z);
+        int idx = 0; // insert before this
+        for (; idx < count; ++idx, ++sfc) {
+          if (sfc->type != TSP_Wall) continue;
+          const surface_t *surf = sfc->surf;
+          vassert(surf);
+          // is it a wall?
+          if (surf->plane.normal.z == 0.0f) {
+            // yes, check the distance
+            //GCon->Logf(NAME_Debug, "  distance to wall #%d is %g", idx, surf->plane.PointDistance(spr.origin));
+            if (surf->plane.PointDistance(spr.origin) >= 0.0f) break;
+          }
+        }
+        // check back, against non-wall surfaces
+        while (idx > 0) {
+          --idx;
+          --sfc;
+          if (sfc->type != TSP_Wall) continue;
+          const surface_t *surf = sfc->surf;
+          if (surf->plane.normal.z == 0.0f) {
+            // insert after this
+            ++sfc;
+            ++idx;
+            break;
+          }
+          // check distance
+          //GCon->Logf(NAME_Debug, "  distance to flat #%d is %g", idx, surf->plane.PointDistance(spr.origin));
+          if (surf->plane.PointDistance(spr.origin) >= 0.0f) break; // but *before* this
+        }
+        // move behind all sprites
+        while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;
+        vassert(idx >= 0 && idx <= count);
+        //GCon->Logf(NAME_Debug, "  final position: %d", idx);
+        // insert
+        dls.DrawSurfListAlpha.insert(idx, spr);
+      }
+      // render in reverse order
+      for (auto &&spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
+    }
+  } else if (dls.DrawSurfListAlpha.length()) {
+    vassert(dls.DrawSpriListAlpha.length() == 0);
+    // render them in reverse order
+    for (auto &&spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
   }
 
   if (transSprState.pofsEnabled) Drawer->GLDisableOffset();

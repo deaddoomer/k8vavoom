@@ -195,6 +195,7 @@ public:
     int prio; // for things
     int lump; // basically, has any sense only for sprites, has no sense for alias models
     TVec normal; // not set for alias models
+    TVec origin; // not set for walls
     union {
       float pdist; // masked polys and sprites
       float TimeFrac; // alias models
@@ -226,16 +227,18 @@ public:
     TArray<surface_t *> DrawSkyList;
     TArray<surface_t *> DrawHorizonList;
 
-    TArray<trans_sprite_t> DrawSurfListAlpha; // alpha-blended surfaces and sprites
-    TArray<trans_sprite_t> DrawSpriteShadowsList;
-    TArray<trans_sprite_t> DrawSpriteList;
+    TArray<trans_sprite_t> DrawSurfListAlpha; // alpha-blended surfaces
+    TArray<trans_sprite_t> DrawSpriListAlpha; // alpha-blended sprites
+    TArray<trans_sprite_t> DrawSpriteShadowsList; // sprite shadows
+    TArray<trans_sprite_t> DrawSpriteList; // non-translucent sprites
 
     inline void resetAll () {
       DrawSurfListSolid.reset();
       DrawSurfListMasked.reset();
-      DrawSurfListAlpha.reset();
       DrawSkyList.reset();
       DrawHorizonList.reset();
+      DrawSurfListAlpha.reset();
+      DrawSpriListAlpha.reset();
       DrawSpriteShadowsList.reset();
       DrawSpriteList.reset();
     }
@@ -251,11 +254,25 @@ public:
 public:
   inline DrawLists &GetCurrentDLS () noexcept { return DrawListStack[DrawListStack.length()-1]; }
 
-  inline trans_sprite_t *AllocTransSpr (const RenderStyleInfo &ri) noexcept {
+  // WARNING! call *ONLY* for surfaces
+  inline trans_sprite_t *AllocTransSurface (const RenderStyleInfo &ri) noexcept {
     if (ri.flags&RenderStyleInfo::FlagShadow) {
+      // just in case
       return &GetCurrentDLS().DrawSpriteShadowsList.alloc();
     } else if (ri.alpha < 1.0f || ri.isTranslucent()) {
       return &GetCurrentDLS().DrawSurfListAlpha.alloc();
+    } else {
+      // just in case
+      return &GetCurrentDLS().DrawSpriteList.alloc();
+    }
+  }
+
+  // WARNING! call *ONLY* for sprites (and models)
+  inline trans_sprite_t *AllocTransSprite (const RenderStyleInfo &ri) noexcept {
+    if (ri.flags&RenderStyleInfo::FlagShadow) {
+      return &GetCurrentDLS().DrawSpriteShadowsList.alloc();
+    } else if (ri.alpha < 1.0f || ri.isTranslucent()) {
+      return &GetCurrentDLS().DrawSpriListAlpha.alloc();
     } else {
       return &GetCurrentDLS().DrawSpriteList.alloc();
     }
