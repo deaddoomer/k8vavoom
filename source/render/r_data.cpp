@@ -1491,9 +1491,11 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
     if (!imgIsPath) {
       basetex = GTextureManager.GetExistingTextureByName(VStr(img), ttype);
     } else {
-      int tnum = GTextureManager.AddFileTexture(img, TEXTYPE_Skin);
+      // this may happen for brightmaps that is using UDMF map-local textures
+      // they should be loaded on-demand, but meh... let's do it this way now
+      int tnum = GTextureManager.AddFileTexture(img, /*TEXTYPE_Skin*/TEXTYPE_Wall); // wtf? why it is a skin?!
       if (tnum > 0) basetex = GTextureManager[tnum];
-      //if (basetex) GCon->Logf(NAME_Debug, "loaded skin texture '%s' (%s)", *img, *W_FullLumpName(basetex->SourceLump));
+      //if (basetex) GCon->Logf(NAME_Debug, "force-loaded texture '%s' (%s) for brightmap '%s'", *img, *W_FullLumpName(basetex->SourceLump), *bmap);
     }
 
     if (!basetex) {
