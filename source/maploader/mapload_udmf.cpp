@@ -51,15 +51,16 @@ public:
   // supported namespaces; use bits to have faster cheks
   enum {
     // standard namespaces
-    NS_Doom       = 0x01,
-    NS_Heretic    = 0x02,
-    NS_Hexen      = 0x04,
-    NS_Strife     = 0x08,
+    NS_Doom            = 1<<0,
+    NS_Heretic         = 1<<1,
+    NS_Hexen           = 1<<2,
+    NS_Strife          = 1<<3,
     // Vavoom's namespace
-    NS_Vavoom     = 0x10,
+    NS_Vavoom          = 1<<4,
     // ZDoom's namespaces
-    NS_ZDoom      = 0x20,
-    NS_ZDoomTranslated = 0x40,
+    NS_ZDoom           = 1<<5,
+    NS_ZDoomTranslated = 1<<6,
+    NS_K8Vavoom        = 1<<7,
   };
 
   enum {
@@ -140,6 +141,7 @@ public:
   int ValInt;
   float ValFloat;
   VStr Val;
+  TLocation KeyLoc;
   TArray<VParsedVertex> ParsedVertexes;
   TArray<VParsedSector> ParsedSectors;
   TArray<VParsedLine> ParsedLines;
@@ -174,6 +176,7 @@ public:
   bool CanSilentlyIgnoreKey () const;
   int CheckInt ();
   float CheckFloat ();
+  float CheckFloatPositive (const char *msg=nullptr); // > 0.0f
   bool CheckBool ();
   VStr CheckString ();
   void Flag (int &Field, int Mask);
@@ -237,7 +240,7 @@ void VUdmfParser::keyWarning (int wtype) {
   else if (wtype&WT_SIDE) wtmsg = "sidedef";
   else if (wtype&WT_THING) wtmsg = "thing";
   //sc.Message(va("UDMF: unknown %s property '%s'", wtmsg, *Key));
-  GCon->Logf(NAME_Warning, "%s: unknown UDMF %s property '%s'", *W_FullLumpName(srcLump), wtmsg, *Key);
+  GCon->Logf(NAME_Warning, "%s: unknown UDMF %s property '%s' around line %d", *W_FullLumpName(srcLump), wtmsg, *Key, KeyLoc.GetLine());
 }
 
 
@@ -248,51 +251,35 @@ void VUdmfParser::keyWarning (int wtype) {
 //==========================================================================
 void VUdmfParser::ParseKey () {
   // get key and value
+  KeyLoc = sc.GetLoc();
   sc.ExpectString();
   Key = sc.String;
   sc.Expect("=");
 
   ValType = TK_None;
+  ValInt = 0;
+  ValFloat = 0.0f;
+  Val.clear();
+
   if (sc.CheckQuotedString()) {
     ValType = TK_String;
     Val = sc.String;
-  } else if (sc.Check("+")) {
-    if (sc.CheckNumber()) {
-      ValType = TK_Int;
-      ValInt = sc.Number;
-      Val = VStr(ValInt);
-    } else if (sc.CheckFloat()) {
-      ValType = TK_Float;
-      ValFloat = sc.Float;
-      Val = VStr(ValFloat);
-    } else {
-      sc.HostError(va("Numeric constant expected (%s)", *Key));
-    }
-  } else if (sc.Check("-")) {
-    if (sc.CheckNumber()) {
-      ValType = TK_Int;
-      ValInt = -sc.Number;
-      Val = VStr(ValInt);
-    } else if (sc.CheckFloat()) {
-      ValType = TK_Float;
-      ValFloat = (sc.Float != 0 ? -sc.Float : 0);
-      Val = VStr(ValFloat);
-    } else {
-      sc.HostError(va("Numeric constant expected (%s)", *Key));
-    }
-  } else if (sc.CheckNumber()) {
+  } else if (sc.CheckNumberWithSign()) {
     ValType = TK_Int;
     ValInt = sc.Number;
     Val = VStr(ValInt);
-  } else if (sc.CheckFloat()) {
+  } else if (sc.CheckFloatWithSign()) {
     ValType = TK_Float;
     ValFloat = sc.Float;
     Val = VStr(ValFloat);
   } else {
+    //sc.HostError(va("Cannot parse value '%s' for key '%s'", *sc.String, *Key));
     sc.ExpectString();
     ValType = TK_Identifier;
     Val = sc.String;
+    if (Val == ";" || Val.isEmpty()) sc.HostError(va("Cannot parse value '%s' for key '%s'", *sc.String, *Key));
   }
+
   sc.Expect(";");
 }
 
@@ -303,7 +290,7 @@ void VUdmfParser::ParseKey () {
 //
 //==========================================================================
 int VUdmfParser::CheckInt () {
-  if (ValType != TK_Int) { sc.HostError(va("Integer value expected for key '%s'", *Key)); ValInt = 0; }
+  if (ValType != TK_Int) sc.HostError(va("Integer value expected for key '%s'", *Key));
   return ValInt;
 }
 
@@ -314,8 +301,38 @@ int VUdmfParser::CheckInt () {
 //
 //==========================================================================
 float VUdmfParser::CheckFloat () {
-  if (ValType != TK_Int && ValType != TK_Float) { sc.HostError(va("Float value expected for key '%s'", *Key)); ValInt = 0; ValFloat = 0; }
-  return (ValType == TK_Int ? ValInt : ValFloat);
+  if (ValType != TK_Int && ValType != TK_Float) sc.HostError(va("Float value expected for key '%s'", *Key));
+  const float res = (ValType == TK_Int ? ValInt : ValFloat);
+  if (!isFiniteF(res)) sc.HostError(va("Invalid float value for key '%s' (%s)", *Key, *Val));
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VUdmfParser::CheckFloatPositive
+//
+//  > 0.0f
+//
+//==========================================================================
+float VUdmfParser::CheckFloatPositive (const char *msg) {
+  if (ValType != TK_Int && ValType != TK_Float) sc.HostError(va("Float value expected for key '%s'", *Key));
+  float res = (ValType == TK_Int ? ValInt : ValFloat);
+  if (!isFiniteF(res)) sc.HostError(va("Invalid float value for key '%s' (%s)", *Key, *Val));
+  //GCon->Logf(NAME_Debug, "%s=%g", *Key, res);
+  if (NS != NS_K8Vavoom && res == 0.0f) {
+    if (!msg) msg = va("Positive float value expected for key '%s', but got zero", *Key);
+    sc.MessageErr(va("%s (%g)", msg, res));
+    res = 1.0f;
+  }
+  if (res <= 0.0f) {
+    if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
+    sc.HostError(va("%s (%g)", msg, res));
+    //if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res)); else sc.MessageErr(va("%s (%g)", msg, res));
+    res = -res;
+    if (res == 0.0f) res = 1.0f;
+  }
+  return res;
 }
 
 
@@ -326,8 +343,12 @@ float VUdmfParser::CheckFloat () {
 //==========================================================================
 bool VUdmfParser::CheckBool () {
   if (ValType == TK_Identifier) {
-    if (Val.strEquCI("true") || Val.strEquCI("on") || Val.strEquCI("tan")) return true;
-    if (Val.strEquCI("false") || Val.strEquCI("off") || Val.strEquCI("ona")) return false;
+    if (Val.strEquCI("true")) return true;
+    if (Val.strEquCI("false")) return false;
+    if (NS == NS_K8Vavoom) {
+      if (Val.strEquCI("on") || Val.strEquCI("tan")) return true;
+      if (Val.strEquCI("off") || Val.strEquCI("ona")) return false;
+    }
   }
   sc.HostError(va("Boolean value expected for key '%s'", *Key));
   return false;
@@ -454,7 +475,7 @@ void VUdmfParser::Parse (VLevel *Level, const VMapInfo &MInfo) {
 
   // Vavoom's namespace?
        if (Namespace.strEquCI("Vavoom")) { NS = NS_Vavoom; bExtended = true; bDoTranslation = false; }
-  else if (Namespace.strEquCI("k8vavoom")) { NS = NS_Vavoom; bExtended = true; bDoTranslation = false; }
+  else if (Namespace.strEquCI("k8vavoom")) { NS = NS_K8Vavoom; bExtended = true; bDoTranslation = false; }
   // standard namespaces?
   else if (Namespace.strEquCI("Doom")) NS = NS_Doom;
   else if (Namespace.strEquCI("Heretic")) NS = NS_Heretic;
@@ -598,20 +619,20 @@ void VUdmfParser::ParseSector (VLevel *Level) {
 
     if (Key.strEquCI("texturefloor")) { S.S.floor.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
     if (Key.strEquCI("textureceiling")) { S.S.ceiling.pic = Level->TexNumForName(*Val, TEXTYPE_Flat); continue; }
-    if (Key.strEquCI("lightlevel")) { S.S.params.lightlevel = CheckInt(); continue; }
+    if (Key.strEquCI("lightlevel")) { S.S.params.lightlevel = clampval(CheckInt(), 0, 255); continue; }
     if (Key.strEquCI("special")) { S.S.special = CheckInt(); continue; }
     if (Key.strEquCI("id")) { S.S.sectorTag = CheckInt(); continue; }
 
     // extensions
-    if (NS&(NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("xpanningfloor")) { S.S.floor.xoffs = CheckFloat(); continue; }
       if (Key.strEquCI("ypanningfloor")) { S.S.floor.yoffs = CheckFloat(); continue; }
       if (Key.strEquCI("xpanningceiling")) { S.S.ceiling.xoffs = CheckFloat(); continue; }
       if (Key.strEquCI("ypanningceiling")) { S.S.ceiling.yoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloat(); continue; }
-      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloat(); continue; }
-      if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloat(); continue; }
-      if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloat(); continue; }
+      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloatPositive(va("invalid floor x scale for sector #%d", ParsedSectors.length()-1)); continue; }
+      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatPositive(va("invalid floor y scale for sector #%d", ParsedSectors.length()-1)); continue; }
+      if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloatPositive(va("invalid ceiling x scale for sector #%d", ParsedSectors.length()-1)); continue; }
+      if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloatPositive(va("invalid ceiling y scale for sector #%d", ParsedSectors.length()-1)); continue; }
       if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = CheckFloat(); continue; }
       if (Key.strEquCI("rotationceiling")) { S.S.ceiling.Angle = CheckFloat(); continue; }
       if (Key.strEquCI("gravity")) { S.S.Gravity = CheckFloat(); continue; }
@@ -632,8 +653,8 @@ void VUdmfParser::ParseSector (VLevel *Level) {
 
       if (Key.strEquCI("moreids")) { ParseMoreIds(S.S.moreTags); continue; }
 
-      if (Key.strEquCI("lightfloor")) { S.S.params.lightFloor = CheckInt(); continue; }
-      if (Key.strEquCI("lightceiling")) { S.S.params.lightCeiling = CheckInt(); continue; }
+      if (Key.strEquCI("lightfloor")) { S.S.params.lightFloor = clampval(CheckInt(), 0, 255); continue; }
+      if (Key.strEquCI("lightceiling")) { S.S.params.lightCeiling = clampval(CheckInt(), 0, 255); continue; }
 
       if (Key.strEquCI("lightfloorabsolute")) { Flag(S.S.params.lightFCFlags, sec_params_t::LFC_FloorLight_Abs); continue; }
       if (Key.strEquCI("lightceilingabsolute")) { Flag(S.S.params.lightFCFlags, sec_params_t::LFC_CeilingLight_Abs); continue; }
@@ -731,6 +752,7 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   VStr arg0str;
   bool hasArg0Str = false;
   bool hasArgs = false;
+  bool hasTranslucent = false;
 
   sc.Expect("{");
   while (!sc.Check("}")) {
@@ -760,7 +782,7 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
     if (Key.strEquCI("sideback")) { L.L.sidenum[1] = CheckInt(); continue; }
 
     // doom specific flags
-    if (NS&(NS_Doom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_Doom|NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("passuse")) {
         if (bExtended) {
           /*HavePassUse =*/(void)CheckBool(); //k8: dunno
@@ -772,7 +794,7 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
     }
 
     // strife specific flags
-    if (NS&(NS_Strife|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_Strife|NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("arg0str")) {
         //FIXME: actually, this is valid only for ACS specials
         arg0str = CheckString();
@@ -781,13 +803,13 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
         continue;
       }
 
-      if (Key.strEquCI("translucent")) { L.L.alpha = (CheckBool() ? 0.666f : 1.0f); continue; }
+      if (Key.strEquCI("translucent")) { hasTranslucent = CheckBool(); continue; }
       if (Key.strEquCI("jumpover")) { Flag(L.L.flags, ML_RAILING); continue; }
       if (Key.strEquCI("blockfloaters")) { Flag(L.L.flags, ML_BLOCK_FLOATERS); continue; }
     }
 
     // hexen's extensions
-    if (NS&(NS_Hexen|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_Hexen|NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("playercross")) { Flag(L.L.SpacFlags, SPAC_Cross); continue; }
       if (Key.strEquCI("playeruse")) { Flag(L.L.SpacFlags, SPAC_Use); continue; }
       if (Key.strEquCI("playeruseback")) { Flag(L.L.SpacFlags, SPAC_UseBack); continue; }
@@ -801,10 +823,9 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
     }
 
     // extensions
-    if (NS&(NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("alpha")) {
-        L.L.alpha = CheckFloat();
-        L.L.alpha = midval(0.0f, L.L.alpha, 1.0f);
+        L.L.alpha = clampval(CheckFloat(), 0.0f, 1.0f);
         continue;
       }
 
@@ -833,12 +854,15 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
       if (Key.strEquCI("locknumber")) { L.L.locknumber = CheckInt(); continue; }
       if (Key.strEquCI("moreids")) { ParseMoreIds(L.L.moreTags); continue; }
 
-      //k8: it is impassable by default
+      //k8: not implemented
       if (Key.strEquCI("midtex3dimpassible")) { if (CheckBool()) continue; }
     }
 
     keyWarning(WT_LINE);
   }
+
+  // dunno, let "alpha" property has the priority here
+  if (hasTranslucent && L.L.alpha >= 1.0f) L.L.alpha = 0.666f;
 
   if (L.L.sidenum[0] < 0 && L.L.sidenum[1] < 0) GCon->Logf(NAME_Warning, "%s: UDMF: linedef #%d has no sidedefs", *L.loc.toStringNoCol(), L.index);
 
@@ -852,13 +876,17 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   }
 
   //FIXME: actually, this is valid only for special runacs range for now; write a proper thingy instead
-  if (hasArg0Str && ((L.L.special >= 80 && L.L.special <= 86) || L.L.special == 226)) {
-    VName sn = VName(*arg0str, VName::AddLower); // 'cause script names are lowercased
-    if (sn.GetIndex() != NAME_None) {
-      L.L.arg1 = -(int)sn.GetIndex();
-      //GCon->Logf("*** LINE #%d: ACS NAMED LINE SPECIAL %d: name is (%d) '%s'", ParsedLines.length()-1, L.L.special, sn.GetIndex(), *sn);
+  if ((L.L.special >= 80 && L.L.special <= 86) || L.L.special == 226) {
+    if (hasArg0Str) {
+      VName sn = VName(*arg0str, VName::AddLower); // 'cause script names are lowercased
+      if (sn.GetIndex() != NAME_None) {
+        L.L.arg1 = -(int)sn.GetIndex();
+        //GCon->Logf("*** LINE #%d: ACS NAMED LINE SPECIAL %d: name is (%d) '%s'", ParsedLines.length()-1, L.L.special, sn.GetIndex(), *sn);
+      } else {
+        L.L.arg1 = 0;
+      }
     } else {
-      L.L.arg1 = 0;
+      if (L.L.arg1 < 0) L.L.arg1 = 0;
     }
   }
 }
@@ -898,20 +926,20 @@ void VUdmfParser::ParseSideDef () {
     if (Key.strEquCI("sector")) { hasSector = true; S.SectorIndex = CheckInt(); continue; }
 
     // extensions
-    if (NS&(NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("offsetx_top")) { S.S.Top.TextureOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsety_top")) { S.S.Top.RowOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsetx_mid")) { S.S.Mid.TextureOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsety_mid")) { S.S.Mid.RowOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsetx_bottom")) { S.S.Bot.TextureOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsety_bottom")) { S.S.Bot.RowOffset = CheckFloat(); continue; }
-      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloat(); continue; }
-      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloat(); continue; }
-      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloat(); continue; }
-      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloat(); continue; }
-      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloat(); continue; }
-      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloat(); continue; }
-      if (Key.strEquCI("light")) { S.S.Light = CheckInt(); continue; }
+      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloatPositive(va("invalid x top scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloatPositive(va("invalid y top scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloatPositive(va("invalid x mid scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloatPositive(va("invalid y mid scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloatPositive(va("invalid x bottom scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloatPositive(va("invalid y bottom scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("light")) { S.S.Light = clampval(CheckInt(), 0, 255); continue; }
       if (Key.strEquCI("lightabsolute")) { Flag(S.S.Flags, SDF_ABSLIGHT); continue; }
       if (Key.strEquCI("wrapmidtex")) { Flag(S.S.Flags, SDF_WRAPMIDTEX); continue; }
       if (Key.strEquCI("clipmidtex")) { Flag(S.S.Flags, SDF_CLIPMIDTEX); continue; }
@@ -982,7 +1010,7 @@ void VUdmfParser::ParseThing () {
       }
     }
 
-    if (NS&(NS_Hexen|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_Hexen|NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       // MBF friendly flag
       if (Key.strEquCI("friend")) { Flag(T.T.options, MTF_FRIENDLY); continue; }
       // strife specific flags
@@ -993,7 +1021,7 @@ void VUdmfParser::ParseThing () {
     }
 
     // hexen's extensions
-    if (NS&(NS_Hexen|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
+    if (NS&(NS_Hexen|NS_K8Vavoom|NS_Vavoom|NS_ZDoom|NS_ZDoomTranslated)) {
       if (Key.strEquCI("arg0str")) {
         //FIXME: actually, this is valid only for ACS specials
         //       this can be color name for dynamic lights too
