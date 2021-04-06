@@ -25,7 +25,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "r_local.h"
-#include "r_surf_utils.cpp"
+#include "r_surf_utils_fakedist.cpp"
+#include "r_surf_utils_axes.cpp"
 
 
 //**************************************************************************
@@ -97,29 +98,40 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     MTex = GTextureManager[GTextureManager.DefaultTexture];
   }
 
-  SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
-  const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
-
-  sp->texinfo.Tex = MTex;
-  sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
-
-  if (linedef->flags&ML_DONTPEGBOTTOM) {
-    // bottom of texture at bottom
-    sp->texinfo.toffs = r_floor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
-  } else if (linedef->flags&ML_DONTPEGTOP) {
-    // top of texture at top of top region
-    sp->texinfo.toffs = seg->frontsub->sector->ceiling.TexZ;
-  } else {
-    // top of texture at top
-    sp->texinfo.toffs = r_ceiling.splane->TexZ;
-  }
-  sp->texinfo.toffs *= TextureTScale(MTex)*sidedef->Mid.ScaleY;
-  sp->texinfo.toffs += (tofssign*sidedef->Mid.RowOffset)*TextureOffsetTScale(MTex);
-
-  //if (sidedef->Mid.Flags&STP_FLIP_Y) sp->texinfo.toffs = -sp->texinfo.toffs;
-
   if (MTex->Type != TEXTYPE_Null) {
     TVec wv[4];
+
+    #if 0
+    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
+    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
+
+    if (linedef->flags&ML_DONTPEGBOTTOM) {
+      // bottom of texture at bottom
+      sp->texinfo.toffs = r_floor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
+    } else if (linedef->flags&ML_DONTPEGTOP) {
+      // top of texture at top of top region
+      sp->texinfo.toffs = seg->frontsub->sector->ceiling.TexZ;
+    } else {
+      // top of texture at top
+      sp->texinfo.toffs = r_ceiling.splane->TexZ;
+    }
+
+    sp->texinfo.toffs *= TextureTScale(MTex)*sidedef->Mid.ScaleY;
+    sp->texinfo.toffs += (tofssign*sidedef->Mid.RowOffset)*TextureOffsetTScale(MTex);
+    #else
+    float zOrg;
+    if (linedef->flags&ML_DONTPEGBOTTOM) {
+      // bottom of texture at bottom
+      zOrg = r_floor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
+    } else if (linedef->flags&ML_DONTPEGTOP) {
+      // top of texture at top of top region
+      zOrg = seg->frontsub->sector->ceiling.TexZ;
+    } else {
+      // top of texture at top
+      zOrg = r_ceiling.splane->TexZ;
+    }
+    SetupTextureAxesOffsetNew(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, true/*wrapped*/);
+    #endif
 
     wv[0].x = wv[1].x = seg->v1->x;
     wv[0].y = wv[1].y = seg->v1->y;
@@ -229,6 +241,8 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
     //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
     CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+  } else {
+    SetupTextureAxesOffsetDummy(&sp->texinfo, MTex);
   }
 
   sp->frontTopDist = r_ceiling.splane->dist;

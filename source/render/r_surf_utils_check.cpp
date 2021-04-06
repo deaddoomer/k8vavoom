@@ -34,7 +34,7 @@
 //  returns `true` if something was changed
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckFakeDistances (const seg_t *seg, const segpart_t *sp) {
+static inline bool CheckFakeDistances (const seg_t *seg, const segpart_t *sp) {
   if (seg->frontsector->heightsec) {
     if (FASI(sp->frontFakeFloorDist) != FASI(seg->frontsector->heightsec->floor.dist) ||
         FASI(sp->frontFakeCeilDist) != FASI(seg->frontsector->heightsec->ceiling.dist))
@@ -58,7 +58,7 @@ static inline VVA_OKUNUSED bool CheckFakeDistances (const seg_t *seg, const segp
 //  CheckFlatsChangedEx
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckFlatsChangedEx (const segpart_t *sp, const TPlane *floor, const TPlane *ceiling,
+static inline bool CheckFlatsChangedEx (const segpart_t *sp, const TPlane *floor, const TPlane *ceiling,
                                         const TPlane *backfloor, const TPlane *backceiling)
 {
   return
@@ -74,7 +74,7 @@ static inline VVA_OKUNUSED bool CheckFlatsChangedEx (const segpart_t *sp, const 
 //  CheckFlatsChanged
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckFlatsChanged (const seg_t *seg, const segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckFlatsChanged (const seg_t *seg, const segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   if (seg->backsector) {
     return CheckFlatsChangedEx(sp, floor, ceiling, &seg->backsector->floor, &seg->backsector->ceiling);
   } else {
@@ -88,7 +88,7 @@ static inline VVA_OKUNUSED bool CheckFlatsChanged (const seg_t *seg, const segpa
 //  CheckCommonRecreateEx
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling,
+static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling,
                                                        const TPlane *backfloor, const TPlane *backceiling)
 {
   if (!NTex) NTex = GTextureManager[GTextureManager.DefaultTexture];
@@ -114,7 +114,7 @@ static inline VVA_OKUNUSED bool CheckCommonRecreateEx (segpart_t *sp, VTexture *
 //  CheckCommonRecreate
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
   if (seg->backsector) {
     // check for fake floors
     return
@@ -131,7 +131,7 @@ static inline VVA_OKUNUSED bool CheckCommonRecreate (const seg_t *seg, segpart_t
 //  CheckMidRecreate1S
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckMidRecreate1S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckMidRecreate1S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
 }
 
@@ -141,7 +141,7 @@ static inline VVA_OKUNUSED bool CheckMidRecreate1S (const seg_t *seg, segpart_t 
 //  CheckMidRecreate2S
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckMidRecreate2S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckMidRecreate2S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
 }
 
@@ -151,7 +151,7 @@ static inline VVA_OKUNUSED bool CheckMidRecreate2S (const seg_t *seg, segpart_t 
 //  CheckTopRecreate2S
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckTopRecreate2S (const seg_t *seg, segpart_t *sp, const sec_plane_t *floor, const sec_plane_t *ceiling) {
+static inline bool CheckTopRecreate2S (const seg_t *seg, segpart_t *sp, const sec_plane_t *floor, const sec_plane_t *ceiling) {
   const sec_plane_t *back_ceiling = &seg->backsector->ceiling;
   //VTexture *TTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorTop ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->TopTexture));
 
@@ -174,7 +174,7 @@ static inline VVA_OKUNUSED bool CheckTopRecreate2S (const seg_t *seg, segpart_t 
 //  CheckBotRecreate2S
 //
 //==========================================================================
-static inline VVA_OKUNUSED bool CheckBotRecreate2S (seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckBotRecreate2S (seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
   //VTexture *BTex = (seg->frontsector->SectorFlags&sector_t::SF_IsTransDoorBot ? GTextureManager(seg->sidedef->MidTexture) : GTextureManager(seg->sidedef->BottomTexture));
 
   VTexture *BTex = GTextureManager(seg->sidedef->BottomTexture);

@@ -25,7 +25,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "r_local.h"
-#include "r_surf_utils.cpp"
+#include "r_surf_utils_fakedist.cpp"
+#include "r_surf_utils_extra.cpp"
 
 //#define VV_DEBUG_MIDEXTRA
 
