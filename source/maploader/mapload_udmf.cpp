@@ -176,7 +176,7 @@ public:
   bool CanSilentlyIgnoreKey () const;
   int CheckInt ();
   float CheckFloat ();
-  float CheckFloatPositive (const char *msg=nullptr); // > 0.0f
+  float CheckFloatPositive (const char *msg=nullptr, vuint32 *flagptr=nullptr, vuint32 flipflag=0u); // > 0.0f
   bool CheckBool ();
   VStr CheckString ();
   void Flag (int &Field, int Mask);
@@ -315,7 +315,7 @@ float VUdmfParser::CheckFloat () {
 //  > 0.0f
 //
 //==========================================================================
-float VUdmfParser::CheckFloatPositive (const char *msg) {
+float VUdmfParser::CheckFloatPositive (const char *msg, vuint32 *flagptr, vuint32 flipflag) {
   if (ValType != TK_Int && ValType != TK_Float) sc.HostError(va("Float value expected for key '%s'", *Key));
   float res = (ValType == TK_Int ? ValInt : ValFloat);
   if (!isFiniteF(res)) sc.HostError(va("Invalid float value for key '%s' (%s)", *Key, *Val));
@@ -327,10 +327,11 @@ float VUdmfParser::CheckFloatPositive (const char *msg) {
   }
   if (res <= 0.0f) {
     if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
-    sc.HostError(va("%s (%g)", msg, res));
-    //if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res)); else sc.MessageErr(va("%s (%g)", msg, res));
+    if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res));
+    sc.MessageErr(va("%s (%g)", msg, res));
     res = -res;
     if (res == 0.0f) res = 1.0f;
+    if (flagptr) *flagptr ^= flipflag;
   }
   return res;
 }
@@ -942,12 +943,12 @@ void VUdmfParser::ParseSideDef () {
       if (Key.strEquCI("offsety_mid")) { S.S.Mid.RowOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsetx_bottom")) { S.S.Bot.TextureOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsety_bottom")) { S.S.Bot.RowOffset = CheckFloat(); continue; }
-      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloatPositive(va("invalid x top scale for side #%d", ParsedSides.length()-1)); continue; }
-      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloatPositive(va("invalid y top scale for side #%d", ParsedSides.length()-1)); continue; }
-      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloatPositive(va("invalid x mid scale for side #%d", ParsedSides.length()-1)); continue; }
-      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloatPositive(va("invalid y mid scale for side #%d", ParsedSides.length()-1)); continue; }
-      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloatPositive(va("invalid x bottom scale for side #%d", ParsedSides.length()-1)); continue; }
-      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloatPositive(va("invalid y bottom scale for side #%d", ParsedSides.length()-1)); continue; }
+      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloatPositive(va("invalid x top scale for side #%d", ParsedSides.length()-1), &S.S.Top.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloatPositive(va("invalid y top scale for side #%d", ParsedSides.length()-1), &S.S.Top.Flags, STP_FLIP_Y); continue; }
+      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloatPositive(va("invalid x mid scale for side #%d", ParsedSides.length()-1), &S.S.Mid.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloatPositive(va("invalid y mid scale for side #%d", ParsedSides.length()-1), &S.S.Mid.Flags, STP_FLIP_Y); continue; }
+      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloatPositive(va("invalid x bottom scale for side #%d", ParsedSides.length()-1), &S.S.Bot.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloatPositive(va("invalid y bottom scale for side #%d", ParsedSides.length()-1), &S.S.Bot.Flags, STP_FLIP_Y); continue; }
       if (Key.strEquCI("light")) { S.S.Light = clampval(CheckInt(), 0, 255); continue; }
       if (Key.strEquCI("lightabsolute")) { Flag(S.S.Flags, SDF_ABSLIGHT); continue; }
       if (Key.strEquCI("wrapmidtex")) { Flag(S.S.Flags, SDF_WRAPMIDTEX); continue; }
