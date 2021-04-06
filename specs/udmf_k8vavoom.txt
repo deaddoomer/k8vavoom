@@ -1,0 +1,113 @@
+===============================================================================
+Universal Doom Map Format k8vavoom extensions v1.0 - 06-Apr-2021
+
+
+    Copyright (c) 2021 Ketmar Dark.
+    Permission is granted to copy, distribute and/or modify this document
+    under the terms of the GNU Free Documentation License, Version 1.2
+    or any later version published by the Free Software Foundation;
+    with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+
+===============================================================================
+
+This document discusses only the additions k8vavoom makes to the UDMF
+specification.
+
+=======================================
+I. Grammar / Syntax
+=======================================
+
+    No changes.
+
+=======================================
+II. Implementation Semantics
+=======================================
+
+------------------------------------
+II.A : Storage and Retrieval of Data
+------------------------------------
+
+Any TEXTMAP lump in the described namespaces must be encoded in ASCII which
+as of this writing is the only character encoding supported by k8vavoom.
+
+-----------------------------------
+II.B : Storage Within Archive Files
+-----------------------------------
+
+In addition to the base specification k8vavoom recognizes the following lumps
+between the TEXTMAP and ENDMAP lumps:
+
+    BEHAVIOR = contains compiled ACS code
+    DIALOGUE = contains compiled Strife or USDF conversation scripts.
+    REJECT = reject table. Recommended use is for special effects only.
+
+    Lumps starting with 'SCRIPT', 'ZNODES' and 'BLOCKMAP' are guaranteed to be
+    ignored by k8vavoom.
+
+--------------------------------
+II.C : Implementation Dependence
+--------------------------------
+
+k8vavoom supports all namespaces defined in the base specification and adds the
+new one:
+    "k8vavoom"
+
+'k8vavoom' uses Hexen type specials which are k8vavoom's native implementation.
+
+k8vavoom's namespace implements most fields from 'ZDoom' namespace too. You can
+see 'k8vavoom' namespace as 'ZDoom' namespace extension. Please, refer to ZDoom
+UDMF documentation to find out info about ZDoom properties.
+
+=======================================
+III. Standardized Fields
+=======================================
+
+k8vavoom's namespace implements all fields from the standard, and most fields
+from 'ZDoom' namespace.
+
+In addition to the standard fields, k8vavoom defines the following:
+Note: All <bool> fields default to false unless mentioned otherwise.
+
+   sidedef
+   {
+      flip_x_top = <bool>;         // Horizontal flipping of upper texture, Default = false.
+      flip_y_top = <bool>;         // Vertical flipping of upper texture, Default = false.
+      flip_x_mid = <bool>;         // Horizontal flipping of mid texture, Default = false.
+      flip_y_mid = <bool>;         // Vertical flipping of mid texture, Default = false.
+      flip_x_bottom = <bool>;      // Horizontal flipping of lower texture, Default = false.
+      flip_y_bottom = <bool>;      // Vertical flipping of lower texture, Default = false.
+
+      rotation_top = <float>;      // Rotation of upper texture in degrees, Default = 0.0. (not implemented yet)
+      rotation_mid = <float>;      // Rotation of middle texture in degrees, Default = 0.0. (not implemented yet)
+      rotation_bottom = <float>;   // Rotation of lower texture in degrees, Default = 0.0. (not implemented yet)
+   }
+
+   sector
+   {
+      flip_x_floor = <bool>;       // Horizontal flipping of floor texture, Default = false. (not implemented yet)
+      flip_y_floor = <bool>;       // Vertical flipping of floor texture, Default = false. (not implemented yet)
+      flip_x_ceiling = <bool>;     // Horizontal flipping of ceiling texture, Default = false. (not implemented yet)
+      flip_y_ceiling = <bool>;     // Vertical flipping of ceiling texture, Default = false. (not implemented yet)
+   }
+
+   thing
+   {
+      * Note about arg0str
+
+      For things with ACS specials (80-86 and 226), if arg0str is present and non-null, it
+      will be used as the name of the script to execute, and arg0 will be ignored.
+
+      arg0str for dynamic lights is not supported.
+   }
+
+
+=======================================
+Changelog
+=======================================
+
+1.0: 06-Apr-2021
+Initial version.
+
+===============================================================================
+EOF
+===============================================================================
