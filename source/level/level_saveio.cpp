@@ -499,6 +499,25 @@ void VLevel::SerialiseOther (VStream &Strm) {
         vio.io(VName("exFlags"), li->exFlags);
         vio.io(VName("special"), li->special);
         vio.io(VName("arg1"), li->arg1);
+        // UDMF arg0str hack
+        if (UDMFNamespace != NAME_None && ((li->special >= 80 && li->special <= 86) || li->special == 226)) {
+          if (Strm.IsLoading()) {
+            // loading
+            if (li->arg1 < 0) {
+              VName n = NAME_None;
+              vio.io(VName("arg1str"), n);
+              //GCon->Logf(NAME_Debug, "*** translated arg1str from %d to %d (%s)", li->arg1, -n.GetIndex(), *n);
+              li->arg1 = -n.GetIndex();
+            }
+          } else {
+            // saving
+            if (li->arg1 < 0) {
+              // negative means "string" (name)
+              VName n = VName::CreateWithIndex(-li->arg1);
+              if (n.isValid()) vio.io(VName("arg1str"), n);
+            }
+          }
+        }
         vio.io(VName("arg2"), li->arg2);
         vio.io(VName("arg3"), li->arg3);
         vio.io(VName("arg4"), li->arg4);
