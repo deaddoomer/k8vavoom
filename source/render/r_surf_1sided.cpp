@@ -98,6 +98,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   }
 
   SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
+  const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
 
   sp->texinfo.Tex = MTex;
   sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
@@ -113,7 +114,9 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     sp->texinfo.toffs = r_ceiling.splane->TexZ;
   }
   sp->texinfo.toffs *= TextureTScale(MTex)*sidedef->Mid.ScaleY;
-  sp->texinfo.toffs += sidedef->Mid.RowOffset*TextureOffsetTScale(MTex);
+  sp->texinfo.toffs += (tofssign*sidedef->Mid.RowOffset)*TextureOffsetTScale(MTex);
+
+  //if (sidedef->Mid.Flags&STP_FLIP_Y) sp->texinfo.toffs = -sp->texinfo.toffs;
 
   if (MTex->Type != TEXTYPE_Null) {
     TVec wv[4];

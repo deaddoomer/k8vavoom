@@ -152,6 +152,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       top_TexZ = back_ceiling->TexZ;
     }
 
+    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
     const float tscale = TextureTScale(TTex)*sidedef->Top.ScaleY;
     if ((linedef->flags&ML_DONTPEGTOP)^peghack) {
       // top of texture at top
@@ -161,7 +162,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       //GCon->Logf(NAME_Debug, "line #%d, side #%d: tz=%g; sch=%d; scy=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), back_ceiling->TexZ, TTex->GetScaledHeight(), sidedef->Top.ScaleY);
       sp->texinfo.toffs = back_ceiling->TexZ*tscale+TTex->Height;
     }
-    sp->texinfo.toffs += sidedef->Top.RowOffset*TextureOffsetTScale(TTex);
+    sp->texinfo.toffs += (tofssign*sidedef->Top.RowOffset)*TextureOffsetTScale(TTex);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {
@@ -314,6 +315,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       top_TexZ = back_ceiling->TexZ;
     }
 
+    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
     if ((linedef->flags&ML_DONTPEGBOTTOM)^peghack) {
       // bottom of texture at bottom
       // top of texture at top
@@ -323,7 +325,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       sp->texinfo.toffs = back_floor->TexZ;
     }
     sp->texinfo.toffs *= TextureTScale(BTex)*sidedef->Bot.ScaleY;
-    sp->texinfo.toffs += sidedef->Bot.RowOffset*TextureOffsetTScale(BTex);
+    sp->texinfo.toffs += (tofssign*sidedef->Bot.RowOffset)*TextureOffsetTScale(BTex);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {

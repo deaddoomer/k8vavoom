@@ -783,6 +783,10 @@ struct side_tex_params_t {
   float TextureOffset; // x, s axis, column
   float RowOffset; // y, t axis, top
   float ScaleX, ScaleY;
+  bool bFlipX;
+  bool bFlipY;
+  float BaseAngle;
+  float Angle;
 };
 
 

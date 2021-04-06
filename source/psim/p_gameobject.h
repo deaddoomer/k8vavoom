@@ -340,11 +340,21 @@ enum {
   SDF_AAS_MID    = 1u<<8,
 };
 
+// texture params flag
+enum {
+  // texture flipping
+  STP_FLIP_X = 1u<<0,
+  STP_FLIP_Y = 1u<<1,
+};
+
 
 struct side_tex_params_t {
   float TextureOffset; // x, s axis, column
   float RowOffset; // y, t axis, top
   float ScaleX, ScaleY;
+  vuint32 Flags; // STP_XXX
+  float BaseAngle;
+  float Angle;
 };
 
 

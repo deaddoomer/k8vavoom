@@ -601,6 +601,17 @@ void VLevel::SerialiseOther (VStream &Strm) {
           if (scales&0x08) vio.io(VName("BotScaleY"), si->Bot.ScaleY);
           if (scales&0x10) vio.io(VName("MidScaleX"), si->Mid.ScaleX);
           if (scales&0x20) vio.io(VName("MidScaleY"), si->Mid.ScaleY);
+          // flags
+          vio.io(VName("TopFlags"), si->Top.Flags);
+          vio.io(VName("MidFlags"), si->Mid.Flags);
+          vio.io(VName("BotFlags"), si->Bot.Flags);
+          // rotations
+          vio.io(VName("TopBaseAngle"), si->Top.BaseAngle);
+          vio.io(VName("TopAngle"), si->Top.Angle);
+          vio.io(VName("MidBaseAngle"), si->Mid.BaseAngle);
+          vio.io(VName("MidAngle"), si->Mid.Angle);
+          vio.io(VName("BotBaseAngle"), si->Bot.BaseAngle);
+          vio.io(VName("BotAngle"), si->Bot.Angle);
         }
       }
     }

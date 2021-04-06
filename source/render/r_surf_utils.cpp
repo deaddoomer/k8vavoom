@@ -45,6 +45,8 @@ static VVA_OKUNUSED inline void SetupTextureAxesOffset (seg_t *seg, texinfo_t *t
   texinfo->Additive = false;
   texinfo->ColorMap = 0;
 
+  const float sofssign = (tparam->Flags&STP_FLIP_X ? -1.0f : +1.0f);
+
   texinfo->saxisLM = seg->dir;
   texinfo->saxis = seg->dir*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX);
   texinfo->taxisLM = TVec(0, 0, -1);
@@ -52,9 +54,12 @@ static VVA_OKUNUSED inline void SetupTextureAxesOffset (seg_t *seg, texinfo_t *t
 
   texinfo->soffs = -DotProduct(*seg->v1, texinfo->saxis)+
                    seg->offset*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX)+
-                   tparam->TextureOffset*VRenderLevelShared::TextureOffsetSScale(tex);
+                   (sofssign*tparam->TextureOffset)*VRenderLevelShared::TextureOffsetSScale(tex);
   texinfo->toffs = 0.0f;
   // toffs is not calculated here, as its calculation depends of texture position and pegging
+
+  if (tparam->Flags&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;
+  if (tparam->Flags&STP_FLIP_Y) texinfo->taxis = -texinfo->taxis;
 }
 
 
@@ -82,6 +87,9 @@ static VVA_OKUNUSED inline void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t 
   const float scale2Y = 1.0f;
   #endif
 
+  const float sofssign = (tparam->Flags&STP_FLIP_X ? -1.0f : +1.0f);
+  const float sofssign2 = (tparam2->Flags&STP_FLIP_X ? -1.0f : +1.0f);
+
   texinfo->saxisLM = seg->dir;
   texinfo->saxis = seg->dir*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX*scale2X);
   texinfo->taxisLM = TVec(0, 0, -1);
@@ -89,10 +97,13 @@ static VVA_OKUNUSED inline void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t 
 
   texinfo->soffs = -DotProduct(*seg->v1, texinfo->saxis)+
                    seg->offset*(VRenderLevelShared::TextureSScale(tex)*tparam->ScaleX*scale2X)+
-                   (tparam->TextureOffset+tparam2->TextureOffset)*VRenderLevelShared::TextureOffsetSScale(tex);
+                   (sofssign*tparam->TextureOffset+sofssign2*tparam2->TextureOffset)*VRenderLevelShared::TextureOffsetSScale(tex);
 
   texinfo->toffs = 0.0f;
   // toffs is not calculated here, as its calculation depends of texture position and pegging
+
+  if (tparam->Flags&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;
+  if (tparam->Flags&STP_FLIP_Y) texinfo->taxis = -texinfo->taxis;
 }
 
 
@@ -210,12 +221,13 @@ static inline VVA_OKUNUSED void SetupFakeDistances (const seg_t *seg, segpart_t 
 //
 //==========================================================================
 static inline VVA_OKUNUSED void FixMidTextureOffsetAndOrigin (float &z_org, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam, bool forceWrapped=false) {
+  const float tofssign = (tparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
   if (forceWrapped || ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX))) {
     // it is wrapped, so just slide it
-    texinfo->toffs = tparam->RowOffset*VRenderLevelShared::TextureOffsetTScale(MTex);
+    texinfo->toffs = (tofssign*tparam->RowOffset)*VRenderLevelShared::TextureOffsetTScale(MTex);
   } else {
     // move origin up/down, as this texture is not wrapped
-    z_org += tparam->RowOffset*DivByScale(VRenderLevelShared::TextureOffsetTScale(MTex), tparam->ScaleY);
+    z_org += (tofssign*tparam->RowOffset)*DivByScale(VRenderLevelShared::TextureOffsetTScale(MTex), tparam->ScaleY);
     // offset is done by origin, so we don't need to offset texture
     texinfo->toffs = 0.0f;
   }
@@ -229,6 +241,8 @@ static inline VVA_OKUNUSED void FixMidTextureOffsetAndOrigin (float &z_org, cons
 //
 //==========================================================================
 static inline VVA_OKUNUSED void FixMidTextureOffsetAndOriginEx (float &z_org, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam, const side_tex_params_t *tparam2) {
+  const float tofssign = (tparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
+  const float tofssign2 = (tparam2->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
   #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
   const float scale2Y = tparam2->ScaleY;
   #else
@@ -236,6 +250,6 @@ static inline VVA_OKUNUSED void FixMidTextureOffsetAndOriginEx (float &z_org, co
   const float scale2Y = 1.0f;
   #endif
   // it is always wrapped, so just slide it
-  texinfo->toffs = (tparam->RowOffset+tparam2->RowOffset)*VRenderLevelShared::TextureOffsetTScale(MTex);
+  texinfo->toffs = (tofssign*tparam->RowOffset+tofssign2*tparam2->RowOffset)*VRenderLevelShared::TextureOffsetTScale(MTex);
   texinfo->toffs += z_org*(VRenderLevelShared::TextureTScale(MTex)*tparam->ScaleY*scale2Y);
 }

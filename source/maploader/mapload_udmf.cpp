@@ -633,8 +633,8 @@ void VUdmfParser::ParseSector (VLevel *Level) {
       if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatPositive(va("invalid floor y scale for sector #%d", ParsedSectors.length()-1)); continue; }
       if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloatPositive(va("invalid ceiling x scale for sector #%d", ParsedSectors.length()-1)); continue; }
       if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloatPositive(va("invalid ceiling y scale for sector #%d", ParsedSectors.length()-1)); continue; }
-      if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = CheckFloat(); continue; }
-      if (Key.strEquCI("rotationceiling")) { S.S.ceiling.Angle = CheckFloat(); continue; }
+      if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = AngleMod(CheckFloat()); continue; }
+      if (Key.strEquCI("rotationceiling")) { S.S.ceiling.Angle = AngleMod(CheckFloat()); continue; }
       if (Key.strEquCI("gravity")) { S.S.Gravity = CheckFloat(); continue; }
       if (Key.strEquCI("lightcolor")) { S.S.params.LightColor = CheckColor(0x00ffffffu); continue; }
       if (Key.strEquCI("fadecolor")) { S.S.params.Fade = CheckColor(0u); continue; }
@@ -694,6 +694,15 @@ void VUdmfParser::ParseSector (VLevel *Level) {
         if (S.S.DamageLeaky == 0) S.S.DamageLeaky = -1;
         continue;
       }
+    }
+
+    if (NS == NS_K8Vavoom) {
+      /*
+      if (Key.strEquCI("flip_x_floor")) { Flag(S.S.Flags, SDF_FLIP_X_TOP); continue; }
+      if (Key.strEquCI("flip_y_floor")) { Flag(S.S.Flags, SDF_FLIP_Y_TOP); continue; }
+      if (Key.strEquCI("flip_x_ceiling")) { Flag(S.S.Flags, SDF_FLIP_X_MID); continue; }
+      if (Key.strEquCI("flip_y_ceiling")) { Flag(S.S.Flags, SDF_FLIP_Y_MID); continue; }
+      */
     }
 
     keyWarning(WT_SECTOR);
@@ -946,6 +955,19 @@ void VUdmfParser::ParseSideDef () {
       if (Key.strEquCI("nofakecontrast")) { Flag(S.S.Flags, SDF_NOFAKECTX); continue; }
       if (Key.strEquCI("smoothlighting")) { Flag(S.S.Flags, SDF_SMOOTHLIT); continue; }
       if (Key.strEquCI("nodecals")) { Flag(S.S.Flags, SDF_NODECAL); continue; }
+    }
+
+    if (NS == NS_K8Vavoom) {
+      if (Key.strEquCI("flip_x_top")) { Flag(S.S.Top.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("flip_y_top")) { Flag(S.S.Top.Flags, STP_FLIP_Y); continue; }
+      if (Key.strEquCI("flip_x_mid")) { Flag(S.S.Mid.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("flip_y_mid")) { Flag(S.S.Mid.Flags, STP_FLIP_Y); continue; }
+      if (Key.strEquCI("flip_x_bottom")) { Flag(S.S.Bot.Flags, STP_FLIP_X); continue; }
+      if (Key.strEquCI("flip_y_bottom")) { Flag(S.S.Bot.Flags, STP_FLIP_Y); continue; }
+
+      if (Key.strEquCI("rotation_top")) { S.S.Top.BaseAngle = AngleMod(CheckFloat()); GCon->Logf(NAME_Warning, "%s: UDMF: side #%d is using unimplemented property '%s'", *KeyLoc.toStringNoCol(), S.index, *Key); continue; }
+      if (Key.strEquCI("rotation_mid")) { S.S.Mid.BaseAngle = AngleMod(CheckFloat()); GCon->Logf(NAME_Warning, "%s: UDMF: side #%d is using unimplemented property '%s'", *KeyLoc.toStringNoCol(), S.index, *Key); continue; }
+      if (Key.strEquCI("rotation_bottom")) { S.S.Bot.BaseAngle = AngleMod(CheckFloat()); GCon->Logf(NAME_Warning, "%s: UDMF: side #%d is using unimplemented property '%s'", *KeyLoc.toStringNoCol(), S.index, *Key); continue; }
     }
 
     keyWarning(WT_SIDE);
