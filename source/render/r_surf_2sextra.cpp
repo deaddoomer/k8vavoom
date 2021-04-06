@@ -65,14 +65,6 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   VTexture *MTex = GTextureManager(sidedef->MidTexture);
   if (!MTex) MTex = GTextureManager[GTextureManager.DefaultTexture];
 
-  // it seems that `segsidedef` offset is in effect, but scaling is not
-  #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-  const float scale2Y = segsidedef->Mid.ScaleY;
-  #else
-  // it seems that `segsidedef` offset is in effect, but scaling is not
-  const float scale2Y = 1.0f;
-  #endif
-
   /*
   if (sidedef->Mid.ScaleY != 1) GCon->Logf(NAME_Debug, "extra: line #%d (%d), side #%d: midscale=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), sidedef->Mid.ScaleY);
   if (segsidedef->Mid.ScaleY != 1) GCon->Logf(NAME_Debug, "seg: line #%d (%d), side #%d: midscale=%g", (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(segsidedef-&Level->Sides[0]), segsidedef->Mid.ScaleY);
@@ -121,34 +113,6 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   }
   #endif
 
-  // apply offsets from seg side
-  SetupTextureAxesOffsetEx(seg, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
-
-  //const float texh = DivByScale(MTex->GetScaledHeight(), texsideparm->Mid.ScaleY);
-  const float texh = DivByScale2(MTex->GetScaledHeight(), sidedef->Mid.ScaleY, scale2Y);
-  //const float texhsc = MTex->GetHeight();
-  float z_org; // texture top
-
-  // (reg->regflags&sec_region_t::RF_SaneRegion) // vavoom 3d floor
-  if (linedef->flags&ML_DONTPEGBOTTOM) {
-    // bottom of texture at bottom
-    z_org = reg->efloor.splane->TexZ+texh;
-  } else if (linedef->flags&ML_DONTPEGTOP) {
-    // top of texture at top of top region (???)
-    z_org = seg->frontsub->sector->ceiling.TexZ;
-    //z_org = reg->eceiling.splane->TexZ;
-  } else {
-    // top of texture at top
-    z_org = reg->eceiling.splane->TexZ;
-  }
-
-  // apply offsets from both sides
-  FixMidTextureOffsetAndOriginEx(z_org, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
-  //FixMidTextureOffsetAndOrigin(z_org, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid);
-
-  sp->texinfo.Tex = MTex;
-  sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
-
   sp->texinfo.Alpha = (reg->efloor.splane->Alpha < 1.0f ? reg->efloor.splane->Alpha : 1.1f);
   sp->texinfo.Additive = !!(reg->efloor.splane->flags&SPF_ADDITIVE);
 
@@ -156,6 +120,53 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   // "only visual" regions has no walls, they are used to render floors and ceilings when the camera is inside a region
   if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum && (reg->regflags&sec_region_t::RF_OnlyVisual) == 0) {
     TVec quad[4];
+
+    #if 0
+    // apply offsets from seg side
+    SetupTextureAxesOffsetEx(seg, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
+
+    // it seems that `segsidedef` offset is in effect, but scaling is not
+    #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
+    const float scale2Y = segsidedef->Mid.ScaleY;
+    #else
+    // it seems that `segsidedef` offset is in effect, but scaling is not
+    const float scale2Y = 1.0f;
+    #endif
+    //const float texh = DivByScale(MTex->GetScaledHeight(), texsideparm->Mid.ScaleY);
+    const float texh = DivByScale2(MTex->GetScaledHeight(), sidedef->Mid.ScaleY, scale2Y);
+    //const float texhsc = MTex->GetHeight();
+    float zOrg; // texture top
+
+    // (reg->regflags&sec_region_t::RF_SaneRegion) // vavoom 3d floor
+    if (linedef->flags&ML_DONTPEGBOTTOM) {
+      // bottom of texture at bottom
+      zOrg = reg->efloor.splane->TexZ+texh;
+    } else if (linedef->flags&ML_DONTPEGTOP) {
+      // top of texture at top of top region (???)
+      zOrg = seg->frontsub->sector->ceiling.TexZ;
+      //zOrg = reg->eceiling.splane->TexZ;
+    } else {
+      // top of texture at top
+      zOrg = reg->eceiling.splane->TexZ;
+    }
+    // apply offsets from both sides
+    FixMidTextureOffsetAndOriginEx(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
+    //FixMidTextureOffsetAndOrigin(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid);
+    #else
+    float zOrg; // texture top
+    if (linedef->flags&ML_DONTPEGBOTTOM) {
+      // bottom of texture at bottom
+      zOrg = reg->efloor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
+    } else if (linedef->flags&ML_DONTPEGTOP) {
+      // top of texture at top of top region (???)
+      zOrg = seg->frontsub->sector->ceiling.TexZ;
+      //zOrg = reg->eceiling.splane->TexZ;
+    } else {
+      // top of texture at top
+      zOrg = reg->eceiling.splane->TexZ;
+    }
+    SetupTextureAxesOffsetExNew(seg, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid, zOrg);
+    #endif
 
     const bool isSolid = !(reg->regflags&sec_region_t::RF_NonSolid);
 
@@ -183,8 +194,8 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       // 3d midtextures are always wrapped
       // check texture limits
       if (!wrapped) {
-        if (max2(topz1, topz2) <= z_org-texhsc) continue;
-        if (min2(botz1, botz2) >= z_org) continue;
+        if (max2(topz1, topz2) <= zOrg-texhsc) continue;
+        if (min2(botz1, botz2) >= zOrg) continue;
       }
       */
 
@@ -223,6 +234,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
     }
   } else {
     vassert(!sp->surfs);
+    SetupTextureAxesOffsetDummyEx(&sp->texinfo, MTex);
   }
 
   if (!sp->surfs) {

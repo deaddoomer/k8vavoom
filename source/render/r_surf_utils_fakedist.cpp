@@ -26,9 +26,6 @@
 // this is directly included where necessary
 //**************************************************************************
 
-// it seems that `segsidedef` offset is in effect, but scaling is not
-//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-
 
 //==========================================================================
 //

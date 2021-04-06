@@ -26,9 +26,6 @@
 // this is directly included where necessary
 //**************************************************************************
 
-// it seems that `segsidedef` offset is in effect, but scaling is not
-//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-
 
 //==========================================================================
 //
@@ -164,7 +161,7 @@ static inline void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VT
   const float angle = 0.0f; //AngleMod(tparam->BaseAngle-tparam->Angle);
   if (angle == 0.0f) {
     texinfo->saxisLM = seg->dir;
-    texinfo->taxisLM = TVec(0, 0, -1);
+    texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
   } else {
     float s, c;
     msincos(angle, &s, &c);
