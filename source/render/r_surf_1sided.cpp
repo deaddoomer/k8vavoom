@@ -239,8 +239,15 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     wv[2].z = topz2;
     wv[3].z = min2(topz2, botz2);
 
+    /*
+    if ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 20883 / *|| (ptrdiff_t)(sub->sector-&Level->Sectors[0]) == 3165* /) {
+      CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+    } else
+    */
+    {
     //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
     CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+    }
   } else {
     SetupTextureAxesOffsetDummy(&sp->texinfo, MTex);
   }

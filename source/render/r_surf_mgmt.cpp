@@ -350,7 +350,9 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
-  //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 157);
+  //if ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 20883) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+
+  //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 20883);
   enum { dump = false };
 
   if (dump) {
@@ -393,6 +395,78 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
 
 //==========================================================================
 //
+//  VRenderLevelShared::RecursiveQuadSplit
+//
+//==========================================================================
+void VRenderLevelShared::RecursiveQuadSplit (const QSplitInfo &nfo, sec_region_t *frontreg, sec_region_t *backreg, TVec quad[4]) {
+  if (!isValidQuad(quad)) return; // nothing to do anymore
+
+  do {
+    if (!frontreg && !backreg) return CreateWorldSurfFromWV(nfo.sub, nfo.seg, nfo.sp, quad, nfo.typeFlags); // we're done
+    if (!frontreg) { frontreg = backreg; backreg = nullptr; } // just in case
+    // skip regions we cannot process
+    for (; frontreg; frontreg = frontreg->next) {
+      if (frontreg == nfo.ignorereg) continue;
+      if (frontreg->regflags&nfo.mask) continue;
+      if (nfo.onlySolid && !frontreg->isBlockingExtraLine()) continue;
+      if (frontreg->efloor.GetRealDist() >= frontreg->eceiling.GetRealDist()) continue;
+      break;
+    }
+  } while (!frontreg);
+
+  TVec newquad[4];
+
+  // special case for forbidden configurations (two 3d floors are overlapping)
+  // this is triggered only for 3d floor sides (because only in this case we have `ignorereg`)
+  if (nfo.onlySolid && nfo.ignorereg) {
+    const float rfdist = frontreg->efloor.GetRealDist();
+    const float rcdist = frontreg->eceiling.GetRealDist();
+    const float ifdist = nfo.ignorereg->efloor.GetRealDist();
+    const float icdist = nfo.ignorereg->eceiling.GetRealDist();
+
+    if (rfdist >= ifdist && rcdist <= icdist) {
+      // current is fully inside ignore, do nothing
+      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+    }
+
+    #if 0
+    if (rcdist > ifdist && rfdist < ifdist) {
+      // current and ignore intersects, and current is lower
+      // process bottom part using current floor
+      if (SplitQuadWithPlane(quad, frontreg->efloor, newquad, nullptr)) {
+        RecursiveQuadSplit(nfo, frontreg->next, backreg, newquad);
+      }
+      // process top part using ignorereg ceiling
+      if (!SplitQuadWithPlane(quad, nfo.ignorereg->eceiling, nullptr, quad)) return;
+      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+    }
+
+    if (rfdist < icdist && rcdist > icdist) {
+      // current and ignore intersects, and current is higher
+      // process bottom part using ignorereg floor
+      if (SplitQuadWithPlane(quad, nfo.ignorereg->efloor, newquad, nullptr)) {
+        RecursiveQuadSplit(nfo, frontreg->next, backreg, newquad);
+      }
+      // process top part using current ceiling
+      if (!SplitQuadWithPlane(quad, frontreg->eceiling, nullptr, quad)) return;
+      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+    }
+    #endif
+  }
+
+  // process bottom part
+  if (SplitQuadWithPlane(quad, frontreg->efloor, newquad, nullptr)) {
+    RecursiveQuadSplit(nfo, frontreg->next, backreg, newquad);
+  }
+
+  // process top part
+  if (!SplitQuadWithPlane(quad, frontreg->eceiling, nullptr, quad)) return;
+  return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg
 //
 //==========================================================================
@@ -403,88 +477,20 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *frontr
   if (!isValidQuad(quad)) return;
 
   if (!frontreg && !backreg) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
+
   // just in case
   if (!seg || !seg->linedef || seg->pobj) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
 
-  if (!frontreg && backreg) { frontreg = backreg; backreg = nullptr; } // just in case
+  QSplitInfo nfo;
+  nfo.sub = sub;
+  nfo.seg = seg;
+  nfo.sp = sp;
+  nfo.typeFlags = typeFlags;
+  nfo.onlySolid = onlySolid;
+  nfo.ignorereg = ignorereg;
+  nfo.mask = ((onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion);
 
-  //if (onlySolid) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
-
-  //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 157);
-  enum { dump = false };
-
-  // this is absolutely fucked, it can be made much faster
-  // bit meh, i don't care for now
-  const vuint32 mask = (onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion;
-
-  if (dump) {
-    GCon->Logf(NAME_Debug, "::::::::: mask=0x%04x :::::::::", mask);
-    if (ignorereg) {
-      GCon->Log(NAME_Debug, "--- IGNORE REGION ---");
-      VLevel::DumpRegion(ignorereg, true);
-      GCon->Log(NAME_Debug, "---------------------");
-    }
-  }
-
-  for (sec_region_t *reg = frontreg; reg; reg = reg->next) {
-    if (dump) {
-      const int cc = ClassifyQuadVsRegion(quad, reg);
-      GCon->Logf(NAME_Debug, "+++ region: %s +++", GetQTypeStr(cc));
-      if (reg == ignorereg) GCon->Log(NAME_Debug, "  IGNOREREG");
-      if (reg->regflags&mask) GCon->Log(NAME_Debug, "  SKIP-BY-MASK");
-      if (onlySolid && !reg->isBlockingExtraLine()) GCon->Log(NAME_Debug, "  SKIP-BY-LINE");
-      VLevel::DumpRegion(reg, true);
-      GCon->Log(NAME_Debug, "++++++++++++++");
-    }
-
-    if (reg == ignorereg || (reg->regflags&mask) || (onlySolid && !reg->isBlockingExtraLine())) continue;
-
-    // do not clip with sloped regions... for now
-    //if (reg->efloor.isSlope() || reg->eceiling.isSlope()) continue;
-
-    if (dump) DumpQuad("### CHECKING QUAD", quad);
-
-    // we are interested only in intersecting regions here
-    const int cc = ClassifyQuadVsRegion(quad, reg);
-    if (cc == QInside) return; // completely inside, nothing to do anymore
-    if (cc != QIntersect) continue;
-
-    if (dump) DumpQuad("  splitting quad", quad);
-
-    // cut bottom part with all regions
-    TVec orig[4];
-    memcpy((void *)orig, (void *)quad, 4*sizeof(quad[0]));
-    SplitQuadWithRegions(quad, (onlySolid ? reg : frontreg), onlySolid, ignorereg, dump);
-
-    if (dump) DumpQuad("  front-splitted quad", quad);
-
-    if (isValidQuad(quad)) {
-      do { // so i could use `break`
-        if (backreg) {
-          SplitQuadWithRegions(quad, backreg, onlySolid, ignorereg, dump);
-          if (dump) DumpQuad("  back-splitted quad", quad);
-          if (!isValidQuad(quad)) break;
-        }
-        CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
-      } while (0);
-    }
-
-    // now split quad with the current region ceiling, and get the top part
-    if (!SplitQuadWithPlane(orig, reg->eceiling, nullptr, quad)) return; // we're done
-
-    if (dump) DumpQuad("### new (top) quad", quad);
-
-    // just in case
-    if (!isValidQuad(quad)) return;
-  }
-
-  // what is left here is the top part of the quad, append it too
-  if (isValidQuad(quad)) {
-    if (dump) DumpQuad("!!! last quad", quad);
-    CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
-  }
-
-  if (dump) GCon->Log(NAME_Debug, "::::::::::::::::::::::::::::::::::::::");
+  return RecursiveQuadSplit(nfo, frontreg, backreg, quad);
 }
 
 

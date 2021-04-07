@@ -217,13 +217,18 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
             const unsigned typeFlags = surface_t::TF_MIDDLE;
 
             sec_region_t *backregs = (sub == seg->frontsub ? (seg->backsector ? seg->backsector->eregions : nullptr) : (seg->frontsector ? seg->frontsector->eregions : nullptr));
+            if (backregs == sub->sector->eregions) backregs = nullptr; // just in case
+
+            CreateWorldSurfFromWVSplitFromReg(sub->sector->eregions, backregs, sub, seg, sp, quad, typeFlags, isSolid/*onlySolid*/, reg/*ignorereg*/);
+            #if 0
             if (isSolid) {
               // solid region; clip only with the following regions
-              CreateWorldSurfFromWVSplitFromReg(reg, backregs, sub, seg, sp, quad, typeFlags, true/*onlySolid*/, reg/*ignorereg*/);
+              CreateWorldSurfFromWVSplitFromReg(reg->next, backregs, sub, seg, sp, quad, typeFlags, true/*onlySolid*/, reg/*ignorereg*/);
             } else {
               // non-solid region: clip with all subsector regions
               CreateWorldSurfFromWVSplitFromReg(sub->sector->eregions, backregs, sub, seg, sp, quad, typeFlags, false/*onlySolid*/, reg/*ignorereg*/);
             }
+            #endif
           }
         }
       }

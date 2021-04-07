@@ -718,6 +718,20 @@ public:
                                           TVec quad[4], vuint32 typeFlags,
                                           bool onlySolid, const sec_region_t *ignorereg=nullptr) noexcept;
 
+protected:
+  // to pass only one pointer
+  struct QSplitInfo {
+    subsector_t *sub;
+    seg_t *seg;
+    segpart_t *sp;
+    vuint32 typeFlags;
+    bool onlySolid;
+    const sec_region_t *ignorereg;
+    vuint32 mask;
+  };
+
+  void RecursiveQuadSplit (const QSplitInfo &nfo, sec_region_t *frontreg, sec_region_t *backreg, TVec quad[4]);
+
 public:
   enum {
     QInvalid = -1, // invalid region
@@ -789,11 +803,6 @@ protected:
     TPlane pp(pl.GetNormal(), pl.GetDist());
     return SplitQuadWithPlane(quad, pp, qbottom, qtop);
   }
-
-  // starts with the given region
-  // modifies `quad`
-  static void SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg=nullptr, const bool debug=false) noexcept;
-  static inline void SplitQuadWithRegions (TVec quad[4], sector_t *sec, bool onlySolid, const sec_region_t *ignorereg=nullptr, const bool debug=false) noexcept { return SplitQuadWithRegions(quad, sec->eregions, onlySolid, ignorereg, debug); }
 
 public:
   int CountSegParts (const seg_t *);

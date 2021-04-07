@@ -166,14 +166,16 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   TPlane::ClipWorkData cd;
   int topcount = 0, botcount = 0;
 
-  TVec qtoptemp[8];
-  TVec qbottemp[8];
+  // 5 is enough, but let's play safe ;-)
+  TVec qtoptemp[6];
+  TVec qbottemp[6];
 
   pl.ClipPoly(cd, quad, 4, qtoptemp, &topcount, qbottemp, &botcount, TPlane::CoplanarNone, 0.0f);
 
   // check invariants (nope, we can get 5 vertices)
-  //vassert(topcount == 0 || topcount == 3 || topcount == 4);
-  //vassert(botcount == 0 || botcount == 3 || botcount == 4);
+  vassert(topcount == 0 || (topcount >= 3 && topcount <= 5));
+  vassert(botcount == 0 || (botcount >= 3 && botcount <= 5));
+  #if 0
   if (!(topcount == 0 || topcount == 3 || topcount == 4)) {
     GCon->Logf(NAME_Error, "FUCK! topcount=%d", topcount);
     DumpQuad("original quad", quad);
@@ -188,11 +190,26 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
     VStr s; for (int f = 0; f < botcount; ++f) { if (f) s += ", "; s += va("(%g,%g,%g)", qbottemp[f].x, qbottemp[f].y, qbottemp[f].z); }
     GCon->Logf(NAME_Debug, "  resulting bottom poly: %s", *s);
   }
+  #endif
 
   // don't bother with 5-gons, we cannot process them
   // this can happen with some idiotic/weird sloped 3d floor configurations
+  //
+  //  a---b
+  // +|   |
+  //  +   |
+  //  |+  |
+  //  c-+-d
+  //     +
+  //
+  // as you can see, we'll get 5 vertices here.
+  // as our other code can process only valid quads with strictly vertical edges,
+  // let's use the heiristic here: if `a` and `b` are both "above", send the original
+  // quad to the top, otherwise send it to the bottom.
+  // this way we may get some overdraw, but it is acceptable for now.
 
   if (topcount == 5) {
+    vassert(botcount != 5);
     // send the whole quad to the top
     memcpy((void *)qtoptemp, (void *)quad, 4*sizeof(qtoptemp[0]));
     topcount = 4;
@@ -200,6 +217,7 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
 
   if (botcount == 5) {
     // send the whole quad to the bottom
+    vassert(topcount != 5);
     memcpy((void *)qbottemp, (void *)quad, 4*sizeof(qbottemp[0]));
     botcount = 4;
   }
@@ -230,62 +248,4 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   if (qtop) return (topcount != 0);
   if (qbottom) return (botcount != 0);
   return ((botcount|topcount) != 0);
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::SplitQuadWithRegions
-//
-//  this is used to split the wall with 3d surfaces
-//  returns the lowest clipping region
-//
-//  note that *partially* overlapping 3d floors with slopes is UB
-//  the clipper will shit itself with such configuration
-//
-//  i.e. if you have one sloped 3d floor that penetrates another 3d floor,
-//  the clipper WILL glitch badly
-//
-//  non-sloped 3d floor penetration should be ok, tho (yet it is still UB)
-//
-//==========================================================================
-void VRenderLevelShared::SplitQuadWithRegions (TVec quad[4], sec_region_t *reg, bool onlySolid, const sec_region_t *ignorereg, const bool debug) noexcept {
-  if (debug) { GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: ENTER ***"); DumpQuad(" initial quad", quad); }
-  if (!isValidQuad(quad)) {
-    memset((void *)quad, 0, 4*sizeof(quad[0])); // this creates invalid quad
-    if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- badquad ***");
-    return;
-  }
-  const vuint32 mask = (onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion;
-  for (; reg; reg = reg->next) {
-    if (reg == ignorereg) continue;
-    if (reg->regflags&mask) continue;
-    if (onlySolid && !reg->isBlockingExtraLine()) continue;
-    if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) continue;
-    // do not clip with sloped regions... for now
-    //if (reg->efloor.isSlope() || reg->eceiling.isSlope()) continue;
-    const int rtype = ClassifyQuadVsRegion(quad, reg);
-    if (debug) { GCon->Logf(NAME_Debug, "*** TRYING SPLIT REGION (%s)", GetQTypeStr(rtype)); VLevel::DumpRegion(reg, true); }
-    // inside?
-    if (rtype == QInside) {
-      // nothing to do anymore
-      memset((void *)quad, 0, 4*sizeof(quad[0])); // this creates invalid quad
-      if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- inside ***");
-      return;
-    }
-    // intersects?
-    if (rtype == QIntersect) {
-      if (debug) DumpQuad("  before split quad", quad);
-      if (!SplitQuadWithPlane(quad, reg->efloor, quad, nullptr)) {
-        // completely splitted away
-        if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT -- eaten ***");
-        return;
-      }
-      if (debug) DumpQuad("  after split quad", quad);
-      continue;
-    }
-    // check it just in case
-    vassert(rtype == QBottom || rtype == QTop || rtype == QInvalid);
-  }
-  if (debug) GCon->Logf(NAME_Debug, "*** SplitQuadWithRegions: EXIT ***");
 }
