@@ -96,24 +96,28 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
     angle = AngleMod((ctime-prevtime)*rtt);
   }
 
-  if (angle == 0.0f) {
-    texinfo->saxisLM = seg->dir;
-    texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
-  } else {
-    float s, c;
-    msincos(angle, &s, &c);
-    // rotate seg direction
-    texinfo->taxisLM = TVec(s*seg->dir.x, s*seg->dir.y, -c);
-    texinfo->saxisLM = Normalise(CrossProduct(seg->normal, texinfo->taxisLM));
-  }
+  // there is no reason to turn lightmap texture
+  texinfo->saxisLM = seg->dir;
+  texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
 
+  // calculate texture axes (this also does scaling)
   // Doom "up" is positive `z`
   // texture origin is left bottom corner (don't even ask me why)
   // positive `toffs` moves texture origin up
 
-  // texture axes (this also does scaling)
-  texinfo->saxis = texinfo->saxisLM*(TextureSScale(tex)*tparam->ScaleX*scale2X);
-  texinfo->taxis = texinfo->taxisLM*(TextureTScale(tex)*tparam->ScaleY*scale2Y);
+  if (angle == 0.0f) {
+    // most common case
+    texinfo->saxis = seg->dir;
+    texinfo->taxis = TVec(0.0f, 0.0f, -1.0f);
+  } else {
+    float s, c;
+    msincos(angle, &s, &c);
+    // rotate seg direction
+    texinfo->taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+    texinfo->saxis = Normalise(CrossProduct(seg->normal, texinfo->taxis));
+  }
+  texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX*scale2X;
+  texinfo->taxis *= TextureTScale(tex)*tparam->ScaleY*scale2Y;
 
   if ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;
   if ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y) texinfo->taxis = -texinfo->taxis;
