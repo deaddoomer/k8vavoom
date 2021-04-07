@@ -32,7 +32,6 @@
 #include <stdarg.h>
 
 #include "gl_local.h"
-#include "../r_local.h" /* for VRenderLevelShared */
 
 
 VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit);
@@ -77,7 +76,7 @@ void VOpenGLDrawer::Setup2D () {
 //==========================================================================
 void VOpenGLDrawer::StartUpdate () {
   //glFinish();
-  VRenderLevelShared::ResetPortalPool();
+  //VRenderLevelShared::ResetPortalPool(); // moved to `VRenderLevelShared::RenderPlayerView()`
 
   ActivateMainFBO();
 
@@ -242,7 +241,7 @@ void VOpenGLDrawer::EndView (bool ignoreColorTint) {
     glEnable(GL_TEXTURE_2D);
   }
 
-#if 1
+#if 0
   if (r_shadowmaps.asBool() && CanRenderShadowMaps() && (dbg_shadowmaps.asInt()&0x01) != 0) {
     // right
     // left

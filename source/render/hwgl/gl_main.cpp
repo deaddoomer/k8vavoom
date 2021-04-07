@@ -35,7 +35,6 @@
 #include <stdarg.h>
 
 #include "gl_local.h"
-#include "../r_local.h" /* for VRenderLevelShared */
 
 #ifdef VV_SHADER_COMPILING_PROGRESS
 #include "splashfont.inc"
