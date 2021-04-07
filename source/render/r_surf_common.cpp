@@ -29,9 +29,8 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 VCvarB r_hack_transparent_doors("r_hack_transparent_doors", true, "Transparent doors hack.", CVAR_Archive);
-VCvarB r_hack_fake_floor_decorations("r_hack_fake_floor_decorations", true, "Fake floor/ceiling decoration fix.", /*CVAR_Archive|*/CVAR_PreInit);
-
 VCvarB r_fix_tjunctions("r_fix_tjunctions", true, "Fix t-junctions to avoid occasional white dots?", CVAR_Archive);
+
 VCvarB dbg_fix_tjunctions("dbg_fix_tjunctions", false, "Show debug messages from t-junctions fixer?", CVAR_PreInit);
 VCvarB warn_fix_tjunctions("warn_fix_tjunctions", false, "Show t-junction fixer warnings?", CVAR_Archive);
 
@@ -389,76 +388,92 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     int ridx = 0;
     for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++ridx) {
       if (sregLeft == 0) Sys_Error("out of subregions in surface creator");
-      if (ridx == 0) {
-        if (!(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
-      } else {
-        if (sub->isInnerPObj()) Sys_Error("internal bug in region creation (3d polyobject has more than one region)");
-        if (reg->regflags&sec_region_t::RF_BaseRegion) Sys_Error("internal bug in region creation (non-base region is marked as base)");
-      }
+
+      sreg->sub = sub;
+      sreg->secregion = reg;
 
       TSecPlaneRef r_floor, r_ceiling;
       r_floor = reg->efloor;
       r_ceiling = reg->eceiling;
 
-      bool skipFloor = !!(reg->regflags&sec_region_t::RF_SkipFloorSurf);
-      bool skipCeil = !!(reg->regflags&sec_region_t::RF_SkipCeilSurf);
-
-      if (ridx != 0 && reg->extraline && !sub->isInnerPObj()) {
-        // hack: 3d floor with sky texture seems to be transparent in renderer
-        const side_t *extraside = &Level->Sides[reg->extraline->sidenum[0]];
-        if (extraside->MidTexture == skyflatnum) {
-          skipFloor = skipCeil = true;
-        }
-      }
-
-      sreg->sub = sub;
-      sreg->secregion = reg;
       sreg->floorplane = r_floor;
       sreg->ceilplane = r_ceiling;
 
       // will be created later
       sreg->realfloor = sreg->realceil = sreg->fakefloor = sreg->fakeceil = nullptr;
 
-      // drawsegs for the main subregion
-      // only main region has any drawsegs
-      if (ridx == 0 && !sub->isInnerPObj()) {
-        // create segparts for subsector segs
-        if (sub->numlines > 0) {
-          //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
-          seg_t *seg = &Level->Segs[sub->firstline];
-          for (int j = sub->numlines; j--; ++seg) {
-            if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
-            if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-            --pdsLeft;
-            vassert(!(seg->flags&SF_FULLSEG));
-            CreateSegParts(sub, pds, seg, main_floor, main_ceiling, reg);
-            ++pds;
-          }
-        }
+      bool skipFloor = (reg->regflags&sec_region_t::RF_SkipFloorSurf);
+      bool skipCeil = (reg->regflags&sec_region_t::RF_SkipCeilSurf);
 
-        if (sub->HasPObjs()) {
-          //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) -- polyobjects ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
-          for (auto &&poit : sub->PObjFirst()) {
-            polyobj_t *pobj = poit.pobj();
-            if (pobj->rendercount != 1) {
-              pobj->rendercount = 1; // mark as rendered
-              // create floor and ceiling for it, so they can be used to render polyobj flats
-              /*
-              if (pobj->region) {
-                pobj->region->realfloor = CreateSecSurface(nullptr, sub, r_floor, sreg);
-                pobj->region->realceil = CreateSecSurface(nullptr, sub, r_ceiling, sreg);
-              }
-              */
-              for (auto &&sit : pobj->SegFirst()) {
-                seg_t *seg = sit.seg();
-                if (seg->flags&SF_FULLSEG) continue; // fullsegs will be created later
-                if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
-                if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-                --pdsLeft;
-                CreateSegParts(sub, pds, seg, main_floor, main_ceiling, nullptr);
-                ++pds;
+      if (ridx == 0) {
+        // main region
+        if (!(reg->regflags&sec_region_t::RF_BaseRegion)) Sys_Error("internal bug in region creation (base region is not marked as base)");
+        //TODO: process Boom height transfers
+        //TODO: https://soulsphere.org/projects/boomref/#sec11
+
+        // drawsegs for the main subregion
+        // only main region has any drawsegs
+        if (!sub->isInnerPObj()) {
+          // create segparts for subsector segs
+          if (sub->numlines > 0) {
+            //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+            seg_t *seg = &Level->Segs[sub->firstline];
+            for (int j = sub->numlines; j--; ++seg) {
+              if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
+              if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+              --pdsLeft;
+              vassert(!(seg->flags&SF_FULLSEG));
+              CreateSegParts(sub, pds, seg, main_floor, main_ceiling, reg);
+              ++pds;
+            }
+          }
+
+          // create drawsegs for non-3d polyobject
+          if (sub->HasPObjs()) {
+            //GCon->Logf(NAME_Debug, "*** subsector #%d (sector #%d) -- polyobjects ***", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+            for (auto &&poit : sub->PObjFirst()) {
+              polyobj_t *pobj = poit.pobj();
+              if (pobj->rendercount != 1) {
+                pobj->rendercount = 1; // mark as rendered
+                for (auto &&sit : pobj->SegFirst()) {
+                  seg_t *seg = sit.seg();
+                  if (seg->flags&SF_FULLSEG) continue; // fullsegs will be created later
+                  if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
+                  if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
+                  --pdsLeft;
+                  CreateSegParts(sub, pds, seg, main_floor, main_ceiling, nullptr);
+                  ++pds;
+                }
               }
             }
+          }
+
+          // create fake floor and ceiling
+          if (sub->sector->fakefloors) {
+            if (!skipFloor) {
+              TSecPlaneRef fakefloor;
+              fakefloor.set(&sub->sector->fakefloors->floorplane, false);
+              if (!fakefloor.isFloor()) fakefloor.Flip();
+              sreg->fakefloor = CreateSecSurface(nullptr, sub, fakefloor, sreg, true);
+            }
+            if (!skipCeil) {
+              TSecPlaneRef fakeceil;
+              fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
+              if (!fakeceil.isCeiling()) fakeceil.Flip();
+              sreg->fakeceil = CreateSecSurface(nullptr, sub, fakeceil, sreg, true);
+            }
+          }
+        } // (!sub->isInnerPObj())
+      } else {
+        // 3d floor regions
+        if (sub->isInnerPObj()) Sys_Error("internal bug in region creation (3d polyobject has more than one region)");
+        if (reg->regflags&sec_region_t::RF_BaseRegion) Sys_Error("internal bug in region creation (non-base region is marked as base)");
+
+        // hack: 3d floor with sky texture seems to be transparent in renderer
+        if (reg->extraline && !sub->isInnerPObj()) {
+          const side_t *extraside = &Level->Sides[reg->extraline->sidenum[0]];
+          if (extraside->MidTexture == skyflatnum) {
+            skipFloor = skipCeil = true;
           }
         }
       }
@@ -467,19 +482,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
       // do it after wall surface creation, so t-junction fixer can do its job
       sreg->realfloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, r_floor, sreg));
       sreg->realceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, r_ceiling, sreg));
-
-      // create fake floor and ceiling
-      if (ridx == 0 && sub->sector->fakefloors && !sub->isInnerPObj()) {
-        TSecPlaneRef fakefloor, fakeceil;
-        fakefloor.set(&sub->sector->fakefloors->floorplane, false);
-        fakeceil.set(&sub->sector->fakefloors->ceilplane, false);
-        if (!fakefloor.isFloor()) fakefloor.Flip();
-        if (!fakeceil.isCeiling()) fakeceil.Flip();
-        sreg->fakefloor = (skipFloor ? nullptr : CreateSecSurface(nullptr, sub, fakefloor, sreg, true));
-        sreg->fakeceil = (skipCeil ? nullptr : CreateSecSurface(nullptr, sub, fakeceil, sreg, true));
-      } else {
-        sreg->fakefloor = sreg->fakeceil = nullptr;
-      }
 
       // proper append
       sreg->next = nullptr;

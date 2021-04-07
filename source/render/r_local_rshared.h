@@ -26,9 +26,6 @@
 #ifndef VAVOOM_R_LOCAL_HEADER_RSHARED
 #define VAVOOM_R_LOCAL_HEADER_RSHARED
 
-// it seems that `segsidedef` offset is in effect, but scaling is not
-//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-
 
 // wall quad vertex indicies
 enum {
@@ -808,7 +805,8 @@ protected:
   }
 
 public:
-  static inline float DivByScale (float v, float scale) { return (scale > 0 ? v/scale : v); }
+  static inline float DivByScale (float v, float scale) { return (scale > 0.0f ? v/scale : v); }
+
   static inline float DivByScale2 (float v, float scale, float scale2) {
     if (scale2 <= 0.0f) return DivByScale(v, scale);
     if (scale <= 0.0f) return DivByScale(v, scale2);
@@ -862,11 +860,8 @@ public:
   static inline bool IsTransDoorHackBot (const seg_t *seg) noexcept { return IsTransDoorHack(seg, false); }
 
 public:
-  static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const line_t *line=nullptr);
-  void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped);
-
-  static void SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *tex);
-  static void SetupTextureAxesOffsetExNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam, const float TexZ);
+  static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const bool resetAlpha=true);
+  void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float TexZ, const side_tex_params_t *segparam=nullptr);
 
 public:
   int CountSegParts (const seg_t *);

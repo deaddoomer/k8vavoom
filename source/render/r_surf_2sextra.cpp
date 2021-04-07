@@ -119,38 +119,6 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum && (reg->regflags&sec_region_t::RF_OnlyVisual) == 0) {
     TVec quad[4];
 
-    #if 0
-    // apply offsets from seg side
-    SetupTextureAxesOffsetEx(seg, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
-
-    // it seems that `segsidedef` offset is in effect, but scaling is not
-    #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-    const float scale2Y = segsidedef->Mid.ScaleY;
-    #else
-    // it seems that `segsidedef` offset is in effect, but scaling is not
-    const float scale2Y = 1.0f;
-    #endif
-    //const float texh = DivByScale(MTex->GetScaledHeight(), texsideparm->Mid.ScaleY);
-    const float texh = DivByScale2(MTex->GetScaledHeight(), sidedef->Mid.ScaleY, scale2Y);
-    //const float texhsc = MTex->GetHeight();
-    float zOrg; // texture top
-
-    // (reg->regflags&sec_region_t::RF_SaneRegion) // vavoom 3d floor
-    if (linedef->flags&ML_DONTPEGBOTTOM) {
-      // bottom of texture at bottom
-      zOrg = reg->efloor.splane->TexZ+texh;
-    } else if (linedef->flags&ML_DONTPEGTOP) {
-      // top of texture at top of top region (???)
-      zOrg = seg->frontsub->sector->ceiling.TexZ;
-      //zOrg = reg->eceiling.splane->TexZ;
-    } else {
-      // top of texture at top
-      zOrg = reg->eceiling.splane->TexZ;
-    }
-    // apply offsets from both sides
-    FixMidTextureOffsetAndOriginEx(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid);
-    //FixMidTextureOffsetAndOrigin(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid);
-    #else
     float zOrg; // texture top
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
@@ -163,8 +131,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       // top of texture at top
       zOrg = reg->eceiling.splane->TexZ;
     }
-    SetupTextureAxesOffsetExNew(seg, &sp->texinfo, MTex, &sidedef->Mid, &segsidedef->Mid, zOrg);
-    #endif
+    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, &segsidedef->Mid);
 
     const bool isSolid = !(reg->regflags&sec_region_t::RF_NonSolid);
 
@@ -237,7 +204,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
     }
   } else {
     vassert(!sp->surfs);
-    SetupTextureAxesOffsetDummyEx(&sp->texinfo, MTex);
+    SetupTextureAxesOffsetDummy(&sp->texinfo, MTex, false);
   }
 
   if (!sp->surfs) {

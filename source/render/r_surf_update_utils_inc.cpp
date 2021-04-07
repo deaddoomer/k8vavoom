@@ -115,16 +115,6 @@ static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const T
 //
 //==========================================================================
 static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
-  return true;
-/*
-  static double sttime = 0.0;
-  const double ctime = Sys_Time();
-  if (ctime-sttime >= 1.0f) {
-  GCon->Logf(NAME_Debug, "! sttime=%g; ctime=%g; diff=%g", sttime, ctime, ctime-sttime);
-    sttime = ctime;
-    return true;
-  }
-*/
   if (seg->backsector) {
     // check for fake floors
     return

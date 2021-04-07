@@ -28,6 +28,10 @@
 #include "r_surf_update_utils_inc.cpp"
 
 
+VCvarB r_dbg_force_world_update("r_dbg_force_world_update", false, "Force world updates on each frame (for debugging).", CVAR_PreInit/*|CVAR_Archive*/);
+
+
+
 //==========================================================================
 //
 //  VRenderLevelShared::UpdateTextureOffsets
@@ -99,6 +103,8 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
   if (!ld) return; // miniseg
   ld->exFlags |= ML_EX_NON_TRANSLUCENT;
 
+  const bool forceUpdate = r_dbg_force_world_update.asBool();
+
   bool needTJ = false;
 
   // note that we need to check for "any flat height changed" in recreation code path
@@ -109,7 +115,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     // top sky
     segpart_t *sp = dseg->topsky;
     if (sp) {
-      if (FASI(sp->frontTopDist) != FASI(r_ceiling.splane->dist) && R_IsStrictlySkyFlatPlane(r_ceiling.splane)) {
+      if (forceUpdate || (FASI(sp->frontTopDist) != FASI(r_ceiling.splane->dist) && R_IsStrictlySkyFlatPlane(r_ceiling.splane))) {
         SetupOneSidedSkyWSurf(sub, seg, sp, r_floor, r_ceiling);
       }
       sp->texinfo.ColorMap = ColorMap;
@@ -119,7 +125,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     sp = dseg->mid;
     if (sp) {
       //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; UPDATING", seg->pobj->index);
-      if (CheckMidRecreate1S(seg, sp, r_floor.splane, r_ceiling.splane)) {
+      if (forceUpdate || CheckMidRecreate1S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; RECREATING; needTJ=%d", seg->pobj->index, (int)needTJ);
         sp->ResetFixTJunk();
@@ -140,8 +146,9 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     // sky above top
     segpart_t *sp = dseg->topsky;
     if (sp) {
-      if (FASI(sp->frontTopDist) != FASI(r_ceiling.splane->dist) &&
-          R_IsStrictlySkyFlatPlane(r_ceiling.splane) && !R_IsStrictlySkyFlatPlane(back_ceiling))
+      if (forceUpdate ||
+          (FASI(sp->frontTopDist) != FASI(r_ceiling.splane->dist) &&
+           R_IsStrictlySkyFlatPlane(r_ceiling.splane) && !R_IsStrictlySkyFlatPlane(back_ceiling)))
       {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
@@ -155,7 +162,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     // top wall
     sp = dseg->top;
     if (sp) {
-      if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
+      if (forceUpdate || CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedTopWSurf(sub, seg, sp, r_floor, r_ceiling);
@@ -169,7 +176,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     // bottom wall
     sp = dseg->bot;
     if (sp) {
-      if (CheckBotRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
+      if (forceUpdate || CheckBotRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedBotWSurf(sub, seg, sp, r_floor, r_ceiling);
@@ -182,7 +189,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
     // masked MidTexture
     sp = dseg->mid;
     if (sp) {
-      if (CheckMidRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
+      if (forceUpdate || CheckMidRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
@@ -216,7 +223,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg, TSecP
       VTexture *MTex = GTextureManager(extraside->MidTexture);
       if (!MTex) MTex = GTextureManager[GTextureManager.DefaultTexture];
 
-      if (CheckCommonRecreateEx(sp, MTex, r_floor.splane, r_ceiling.splane, reg->efloor.splane, reg->eceiling.splane)) {
+      if (forceUpdate || CheckCommonRecreateEx(sp, MTex, r_floor.splane, r_ceiling.splane, reg->efloor.splane, reg->eceiling.splane)) {
         if (CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         sp->ResetFixTJunk();
         SetupTwoSidedMidExtraWSurf(reg, sub, seg, sp, r_floor, r_ceiling);

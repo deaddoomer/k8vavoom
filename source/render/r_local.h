@@ -252,6 +252,7 @@ extern VCvarB r_dbg_lightbulbs_static;
 extern VCvarB r_dbg_lightbulbs_dynamic;
 extern VCvarF r_dbg_lightbulbs_zofs_static;
 extern VCvarF r_dbg_lightbulbs_zofs_dynamic;
+extern VCvarB r_dbg_force_world_update;
 
 extern VTextureTranslation **TranslationTables;
 extern int NumTranslationTables;

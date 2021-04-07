@@ -101,37 +101,21 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   if (MTex->Type != TEXTYPE_Null && !skipIt) {
     TVec wv[4];
 
-    #if 0
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
-    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
-
+    // Doom "up" is positive `z`
+    // texture origin is left bottom corner (don't even ask me why)
+    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
+    float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      sp->texinfo.toffs = r_floor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
+      zOrg = r_floor.splane->TexZ;
     } else if (linedef->flags&ML_DONTPEGTOP) {
       // top of texture at top of top region
-      sp->texinfo.toffs = seg->frontsub->sector->ceiling.TexZ;
+      zOrg = seg->frontsub->sector->ceiling.TexZ-texh;
     } else {
       // top of texture at top
-      sp->texinfo.toffs = r_ceiling.splane->TexZ;
+      zOrg = r_ceiling.splane->TexZ-texh;
     }
-
-    sp->texinfo.toffs *= TextureTScale(MTex)*sidedef->Mid.ScaleY;
-    sp->texinfo.toffs += (tofssign*sidedef->Mid.RowOffset)*TextureOffsetTScale(MTex);
-    #else
-    float zOrg;
-    if (linedef->flags&ML_DONTPEGBOTTOM) {
-      // bottom of texture at bottom
-      zOrg = r_floor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
-    } else if (linedef->flags&ML_DONTPEGTOP) {
-      // top of texture at top of top region
-      zOrg = seg->frontsub->sector->ceiling.TexZ;
-    } else {
-      // top of texture at top
-      zOrg = r_ceiling.splane->TexZ;
-    }
-    SetupTextureAxesOffsetNew(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, true/*wrapped*/);
-    #endif
+    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     wv[0].x = wv[1].x = seg->v1->x;
     wv[0].y = wv[1].y = seg->v1->y;

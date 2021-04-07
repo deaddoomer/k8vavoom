@@ -26,8 +26,6 @@
 #include "../gamedefs.h"
 #include "r_local.h"
 
-//#ifdef VV_DEBUG_MIDW
-
 
 //**************************************************************************
 //**
@@ -62,21 +60,21 @@ void VRenderLevelShared::SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->texinfo.ColorMap = 0;
 
   if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
-    TVec wv[4];
+    TVec quad[4];
 
     const float topz1 = r_ceiling.GetPointZ(*seg->v1);
     const float topz2 = r_ceiling.GetPointZ(*seg->v2);
 
-    wv[0].x = wv[1].x = seg->v1->x;
-    wv[0].y = wv[1].y = seg->v1->y;
-    wv[2].x = wv[3].x = seg->v2->x;
-    wv[2].y = wv[3].y = seg->v2->y;
+    quad[0].x = quad[1].x = seg->v1->x;
+    quad[0].y = quad[1].y = seg->v1->y;
+    quad[2].x = quad[3].x = seg->v2->x;
+    quad[2].y = quad[3].y = seg->v2->y;
 
-    wv[0].z = topz1;
-    wv[1].z = wv[2].z = skyheight;
-    wv[3].z = topz2;
+    quad[0].z = topz1;
+    quad[1].z = quad[2].z = skyheight;
+    quad[3].z = topz2;
 
-    CreateWorldSurfFromWV(sub, seg, sp, wv, 0); // sky texture, no type flags
+    CreateWorldSurfFromWV(sub, seg, sp, quad, 0); // sky texture, no type flags
   }
 
   sp->frontTopDist = r_ceiling.splane->dist;
@@ -116,7 +114,6 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 
   // HACK: sector with height of 1, and only middle masked texture is "transparent door"
   //       also, invert "upper unpegged" flag for this case
-  int peghack = 0;
   unsigned hackflag = 0;
 
   if (!seg->pobj &&
@@ -124,7 +121,6 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   {
     TTex = GTextureManager(sidedef->MidTexture);
     if (!TTex) TTex = GTextureManager[GTextureManager.DefaultTexture];
-    //peghack = ML_DONTPEGTOP;
     hackflag = surface_t::TF_TOPHACK;
     // this doesn't check height, so we cannot set any flags here
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorTop);
@@ -132,19 +128,27 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   }
 
   if (TTex->Type != TEXTYPE_Null) {
-    TVec wv[4];
+    TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "2S-TOP: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
 
     // see `SetupTwoSidedBotWSurf()` for explanation
-    const float topz1 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, ceiling, *seg->v1, seg->frontsector, r_ceiling) : r_ceiling.GetPointZ(*seg->v1));
-    const float topz2 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, ceiling, *seg->v2, seg->frontsector, r_ceiling) : r_ceiling.GetPointZ(*seg->v2));
+    const float topz1 = GetFixedZWithFake(max2, ceiling, *seg->v1, seg->frontsector, r_ceiling);
+    const float topz2 = GetFixedZWithFake(max2, ceiling, *seg->v2, seg->frontsector, r_ceiling);
     const float botz1 = r_floor.GetPointZ(*seg->v1);
     const float botz2 = r_floor.GetPointZ(*seg->v2);
 
-    // see `SetupTwoSidedBotWSurf()` for explanation
-    const float back_topz1 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(min2, ceiling, *seg->v1, seg->backsector, (*back_ceiling)) : back_ceiling->GetPointZ(*seg->v1));
-    const float back_topz2 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(min2, ceiling, *seg->v2, seg->backsector, (*back_ceiling)) : back_ceiling->GetPointZ(*seg->v2));
+    float back_topz1 = back_ceiling->GetPointZ(*seg->v1);
+    float back_topz2 = back_ceiling->GetPointZ(*seg->v2);
+
+    {
+      const sector_t *hsec = seg->backsector->heightsec;
+      if (hsec) {
+        //k8: why did i used `min2` here?
+        back_topz1 = min2(back_topz1, hsec->ceiling.GetPointZ(*seg->v1));
+        back_topz2 = min2(back_topz2, hsec->ceiling.GetPointZ(*seg->v2));
+      }
+    }
 
     // hack to allow height changes in outdoor areas
     float top_topz1 = topz1;
@@ -158,31 +162,27 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       top_TexZ = back_ceiling->TexZ;
     }
 
-    #if 0
-    SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top);
-    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
-    const float tscale = TextureTScale(TTex)*sidedef->Top.ScaleY;
-    if ((linedef->flags&ML_DONTPEGTOP)^peghack) {
-      // top of texture at top
-      sp->texinfo.toffs = top_TexZ*tscale;
+    /*
+      The upper texture is pegged to the lowest ceiling. That is, the bottom of
+      the upper texture will be at the lowest ceiling and drawn upwards.
+
+      If the "upper unpegged" flag is set on the linedef, the upper texture
+      will begin at the higher ceiling and be drawn downwards.
+     */
+    // Doom "up" is positive `z`
+    // texture origin is left bottom corner (don't even ask me why)
+    float zOrg; // texture bottom
+    if (linedef->flags&ML_DONTPEGTOP) {
+      // top of texture at the higher ceiling
+      // it is ok to use seg frontsector ceiling here, because if it is
+      // not higher than the back sector ceiling, the upper texture is invisible
+      const float texh = DivByScale(TTex->GetScaledHeight(), sidedef->Top.ScaleY);
+      zOrg = top_TexZ-texh;
     } else {
-      // bottom of texture
-      //GCon->Logf(NAME_Debug, "line #%d, side #%d: tz=%g; sch=%d; scy=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), back_ceiling->TexZ, TTex->GetScaledHeight(), sidedef->Top.ScaleY);
-      sp->texinfo.toffs = back_ceiling->TexZ*tscale+TTex->Height;
+      // bottom of texture at the lower ceiling
+      zOrg = back_ceiling->TexZ;
     }
-    sp->texinfo.toffs += (tofssign*sidedef->Top.RowOffset)*TextureOffsetTScale(TTex);
-    #else
-    float zOrg;
-    if ((linedef->flags&ML_DONTPEGTOP)^peghack) {
-      // top of texture at top
-      zOrg = top_TexZ;
-    } else {
-      // bottom of texture at bottom
-      //GCon->Logf(NAME_Debug, "line #%d, side #%d: tz=%g; sch=%d; scy=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), back_ceiling->TexZ, TTex->GetScaledHeight(), sidedef->Top.ScaleY);
-      zOrg = back_ceiling->TexZ+(TTex->GetScaledHeight()*sidedef->Top.ScaleY);
-    }
-    SetupTextureAxesOffsetNew(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg, true/*wrapped*/);
-    #endif
+    SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {
@@ -190,20 +190,20 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
     }
 
-    wv[0].x = wv[1].x = seg->v1->x;
-    wv[0].y = wv[1].y = seg->v1->y;
-    wv[2].x = wv[3].x = seg->v2->x;
-    wv[2].y = wv[3].y = seg->v2->y;
+    quad[0].x = quad[1].x = seg->v1->x;
+    quad[0].y = quad[1].y = seg->v1->y;
+    quad[2].x = quad[3].x = seg->v2->x;
+    quad[2].y = quad[3].y = seg->v2->y;
 
-    wv[0].z = min2(top_topz1, max2(back_topz1, botz1));  // was without outer min
-    wv[1].z = top_topz1;
-    wv[2].z = top_topz2;
-    wv[3].z = min2(top_topz2, max2(back_topz2, botz2));  // was without outer min
+    quad[0].z = min2(top_topz1, max2(back_topz1, botz1));  // was without outer min
+    quad[1].z = top_topz1;
+    quad[2].z = top_topz2;
+    quad[3].z = min2(top_topz2, max2(back_topz2, botz2));  // was without outer min
 
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && r_hack_fake_floor_decorations) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec) {
       // do not create outer top texture surface if our fake ceiling is higher than the surrounding ceiling
       // otherwise, make sure that it is not lower than the fake ceiling (simc)
       const sector_t *bsec = seg->backsector;
@@ -214,15 +214,15 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
         createSurf = false;
       } else if (hsec->ceiling.minz >= bsec->ceiling.minz) {
         //GCon->Logf(NAME_Debug, "BSH: %d (%d) -- FIX", (int)(ptrdiff_t)(bsec-&Level->Sectors[0]), (int)(ptrdiff_t)(hsec-&Level->Sectors[0]));
-        wv[0].z = max2(wv[0].z, hsec->ceiling.GetPointZ(*seg->v1));
-        wv[3].z = max2(wv[3].z, hsec->ceiling.GetPointZ(*seg->v2));
+        quad[0].z = max2(quad[0].z, hsec->ceiling.GetPointZ(*seg->v1));
+        quad[3].z = max2(quad[3].z, hsec->ceiling.GetPointZ(*seg->v2));
         //createSurf = false;
       }
     }
 
     if (createSurf) {
-      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
-      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_TOP|hackflag);
+      //CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_TOP|hackflag);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, quad, surface_t::TF_TOP|hackflag);
       if (sp->surfs) {
         sp->texinfo.Tex = TTex;
         sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
@@ -262,7 +262,6 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
 
   // HACK: sector with height of 1, and only middle masked texture is "transparent door"
   //       also, invert "lower unpegged" flag for this case
-  int peghack = 0;
   unsigned hackflag = 0;
   //if (r_hack_transparent_doors && BTex->Type == TEXTYPE_Null) GCon->Logf(NAME_Debug, "line #%d, side #%d: transdoor check=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), IsTransDoorHackTop(seg));
   if (!seg->pobj &&
@@ -270,14 +269,13 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
   {
     BTex = GTextureManager(sidedef->MidTexture);
     if (!BTex) BTex = GTextureManager[GTextureManager.DefaultTexture];
-    //peghack = ML_DONTPEGBOTTOM;
     hackflag = surface_t::TF_TOPHACK;
     // this doesn't check height, so we cannot set any flags here
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorBot);
   }
 
   if (BTex->Type != TEXTYPE_Null) {
-    TVec wv[4];
+    TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "2S-BOTTOM: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
 
@@ -287,19 +285,36 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     // some map authors are making floor decorations with height transfer
     // (that is so player won't wobble walking on such floors)
     // so we should use minimum front height here (sigh)
-    //FIXME: this is totally wrong, because we may have alot of different
-    //       configurations here, and we should check for them all
-    //FIXME: also, moving height sector should trigger surface recreation
-    float botz1 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(min2, floor, *seg->v1, seg->frontsector, r_floor) : r_floor.GetPointZ(*seg->v1));
-    float botz2 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(min2, floor, *seg->v2, seg->frontsector, r_floor) : r_floor.GetPointZ(*seg->v2));
+    //FIXME: moving height sector should trigger surface recreation
+    float botz1 = r_floor.GetPointZ(*seg->v1);
+    float botz2 = r_floor.GetPointZ(*seg->v2);
+    {
+      const sector_t *hsec = seg->frontsector->heightsec;
+      if (hsec) {
+        botz1 = min2(botz1, hsec->floor.GetPointZ(*seg->v1));
+        botz2 = min2(botz2, hsec->floor.GetPointZ(*seg->v2));
+      }
+    }
     float top_TexZ = r_ceiling.splane->TexZ;
 
+    float back_botz1 = back_floor->GetPointZ(*seg->v1);
+    float back_botz2 = back_floor->GetPointZ(*seg->v2);
+
     // same height fix as above
-    float back_botz1 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, floor, *seg->v1, seg->backsector, (*back_floor)) : back_floor->GetPointZ(*seg->v1));
-    float back_botz2 = (r_hack_fake_floor_decorations ? GetFixedZWithFake(max2, floor, *seg->v2, seg->backsector, (*back_floor)) : back_floor->GetPointZ(*seg->v2));
+    {
+      const sector_t *hsec = seg->backsector->heightsec;
+      if (hsec) {
+        //const sector_t *fsec = seg->frontsector;
+        //if (hsec->floor.minz > fsec->floor.minz) bfloor = &hsec->floor;
+        //if (hsec->ceiling.minz < fsec->ceiling.minz) bceiling = &hsec->ceiling;
+        //k8: why did i used `max2` here?
+        back_botz1 = max2(back_botz1, hsec->floor.GetPointZ(*seg->v1));
+        back_botz2 = max2(back_botz2, hsec->floor.GetPointZ(*seg->v2));
+      }
+    }
 
     /* k8: boomedit.wad -- i can't make heads or tails of this crap; when it should be rendered, and when it shouldn't? */
-    /*     this is total hack to make boomedit.wad underwater look acceptable; but why it is like this? */
+    /*     this is total hack to make boomedit.wad underwater look acceptable; but why it is done like this? */
     {
       const sector_t *fhsec = seg->frontsector->heightsec;
       const sector_t *bhsec = seg->backsector->heightsec;
@@ -330,29 +345,45 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       top_TexZ = back_ceiling->TexZ;
     }
 
-    #if 0
-    SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot);
-    const float tofssign = (sidedef->Mid.Flags&STP_FLIP_Y ? -1.0f : +1.0f);
-    if ((linedef->flags&ML_DONTPEGBOTTOM)^peghack) {
-      // top of texture at top
-      sp->texinfo.toffs = top_TexZ;
-    } else {
-      // bottom of texture at bottom
-      sp->texinfo.toffs = back_floor->TexZ;
-    }
-    sp->texinfo.toffs *= TextureTScale(BTex)*sidedef->Bot.ScaleY;
-    sp->texinfo.toffs += (tofssign*sidedef->Bot.RowOffset)*TextureOffsetTScale(BTex);
-    #else
-    float zOrg;
-    if ((linedef->flags&ML_DONTPEGBOTTOM)^peghack) {
-      // top of texture at top
+    /*
+      If a linedef is two sided, acting as a "bridge" between two sectors -
+      such as a window or a step - the upper texture is pegged to the lowest
+      ceiling, and the lower texture is pegged to the highest floor. That is,
+      the bottom of the upper texture will be at the lowest ceiling and drawn
+      upwards, and the top of the lower texture will be at the highest floor
+      and drawn downwards. This is appropriate for textures that "belong" to
+      the surface behind them, such as lifts or platforms.
+
+      If the "upper unpegged" flag is set on the linedef, the upper texture
+      will begin at the higher ceiling and be drawn downwards.
+
+      If the "lower unpegged" flag is set on the linedef, the lower texture
+      will be drawn as if it began at the higher ceiling and continued
+      downwards. So if the higher ceiling is at 96 and the higher floor is at
+      64, a lower unpegged texture will start 32 pixels from its top edge and
+      draw downwards from the higher floor.
+
+      Both forms of unpegging cause textures to be drawn the same way as if
+      they were on a one-sided wall -- relative to the ceiling -- but with the
+      middle section "cut out". Unpegging is thus appropriate for textures that
+      "belong" to the surface in front of them, such as windows or recessed
+      switches.
+     */
+    // Doom "up" is positive `z`
+    // texture origin is left bottom corner (don't even ask me why)
+    float zOrg; // texture bottom
+    if (linedef->flags&ML_DONTPEGBOTTOM) {
+      // the lower texture will be drawn as if it began at the higher ceiling and continued downwards
       zOrg = top_TexZ;
     } else {
-      // bottom of texture at bottom
+      // the top of the lower texture will be at the highest floor and drawn downwards
+      // it is ok to use seg backsector floor here, because if it is
+      // not lower than the front sector floor, the lower texture is invisible
       zOrg = back_floor->TexZ;
     }
-    SetupTextureAxesOffsetNew(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg, true/*wrapped*/);
-    #endif
+    const float texh = DivByScale(BTex->GetScaledHeight(), sidedef->Bot.ScaleY);
+    zOrg -= texh; // convert to texture bottom
+    SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {
@@ -360,41 +391,20 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
     }
 
-    wv[0].x = wv[1].x = seg->v1->x;
-    wv[0].y = wv[1].y = seg->v1->y;
-    wv[2].x = wv[3].x = seg->v2->x;
-    wv[2].y = wv[3].y = seg->v2->y;
+    quad[0].x = quad[1].x = seg->v1->x;
+    quad[0].y = quad[1].y = seg->v1->y;
+    quad[2].x = quad[3].x = seg->v2->x;
+    quad[2].y = quad[3].y = seg->v2->y;
 
-    wv[0].z = botz1;
-    wv[1].z = max2(botz1, min2(back_botz1, topz1)); // was without outer max
-    wv[2].z = max2(botz2, min2(back_botz2, topz2)); // was without outer max
-    wv[3].z = botz2;
-
-    /* k8: boomedit.wad -- debug crap */
-    /*
-    if (seg->frontsector->heightsec && r_hack_fake_floor_decorations) {
-      const sector_t *fhsec = seg->frontsector->heightsec;
-      const sector_t *bhsec = (seg->backsector ? seg->backsector->heightsec : nullptr);
-      int lidx = (int)(ptrdiff_t)(linedef-&Level->Lines[0]);
-      if (lidx == 589) {
-        GCon->Logf(NAME_Debug, "seg #%d: bsec=%d; fsec=%d; bhsec=%d; fhsec=%d", (int)(ptrdiff_t)(seg-&Level->Segs[0]), (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), (bhsec ? (int)(ptrdiff_t)(bhsec-&Level->Sectors[0]) : -1), (int)(ptrdiff_t)(fhsec-&Level->Sectors[0]));
-        GCon->Logf(NAME_Debug, "linedef #%d: botz=(%g : %g); topz=(%g : %g); back_botz=(%g : %g); fhsecbotz=(%g : %g); fhsectopz=(%g : %g); bhsecbotz=(%g : %g); bhsectopz=(%g : %g)",
-          lidx,
-          botz1, botz2, topz1, topz2,
-          back_botz1, back_botz2,
-          fhsec->floor.GetPointZ(*seg->v1), fhsec->floor.GetPointZ(*seg->v2),
-          fhsec->ceiling.GetPointZ(*seg->v1), fhsec->ceiling.GetPointZ(*seg->v2),
-          (bhsec ? bhsec->floor.GetPointZ(*seg->v1) : -666.999f), (bhsec ? bhsec->floor.GetPointZ(*seg->v2) : -666.999f),
-          (bhsec ? bhsec->ceiling.GetPointZ(*seg->v1) : -666.999f), (bhsec ? bhsec->ceiling.GetPointZ(*seg->v2) : -666.999f)
-          );
-      }
-    }
-    */
+    quad[0].z = botz1;
+    quad[1].z = max2(botz1, min2(back_botz1, topz1)); // was without outer max
+    quad[2].z = max2(botz2, min2(back_botz2, topz2)); // was without outer max
+    quad[3].z = botz2;
 
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && r_hack_fake_floor_decorations) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec) {
       // do not create outer bottom texture surface if our fake floor is lower than the surrounding floor
       // otherwise, make sure that it is not higher than the fake floor (simc)
       const sector_t *bsec = seg->backsector;
@@ -405,15 +415,15 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
         createSurf = false;
       } else if (hsec->floor.minz <= bsec->floor.minz) {
         //GCon->Logf(NAME_Debug, "BSH: %d (%d) -- FIX", (int)(ptrdiff_t)(bsec-&Level->Sectors[0]), (int)(ptrdiff_t)(hsec-&Level->Sectors[0]));
-        wv[1].z = min2(wv[1].z, hsec->floor.GetPointZ(*seg->v1));
-        wv[2].z = min2(wv[2].z, hsec->floor.GetPointZ(*seg->v2));
+        quad[1].z = min2(quad[1].z, hsec->floor.GetPointZ(*seg->v1));
+        quad[2].z = min2(quad[2].z, hsec->floor.GetPointZ(*seg->v2));
         //createSurf = false;
       }
     }
 
     if (createSurf) {
-      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
-      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_BOTTOM|hackflag);
+      //CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_BOTTOM|hackflag);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, quad, surface_t::TF_BOTTOM|hackflag);
       if (sp->surfs) {
         sp->texinfo.Tex = BTex;
         sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
@@ -456,14 +466,14 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   const sec_plane_t *back_ceiling = &seg->backsector->ceiling;
 
   if (MTex->Type != TEXTYPE_Null && !(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) {
-    TVec wv[4];
+    TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
 
     const sec_plane_t *bfloor = back_floor;
     const sec_plane_t *bceiling = back_ceiling;
 
-    if (seg->backsector->heightsec && r_hack_fake_floor_decorations) {
+    if (seg->backsector->heightsec) {
       const sector_t *bsec = seg->backsector;
       const sector_t *fsec = seg->frontsector;
       const sector_t *hsec = bsec->heightsec;
@@ -476,86 +486,52 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     const float back_botz1 = bfloor->GetPointZ(*seg->v1);
     const float back_botz2 = bfloor->GetPointZ(*seg->v2);
 
-    //const float exbotz = min2(back_botz1, back_botz2);
-    //const float extopz = max2(back_topz1, back_topz2);
-
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); back_botz=(%g : %g); back_topz=(%g : %g), exbotz=%g; extopz=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, back_botz1, back_botz2, back_topz1, back_topz2, exbotz, extopz);
 
     //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d: seg for line #%d (sector #%d); TexZ=%g:%g (notpeg=%d)", seg->pobj->tag, (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), seg->pobj->pofloor.TexZ, seg->pobj->poceiling.TexZ, !!(linedef->flags&ML_DONTPEGBOTTOM));
 
-    #if 0
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
+    /*
+      If a linedef is one sided (a solid wall), the texture is "pegged" to the
+      top of the wall. That is to say, the top of the texture is at the
+      ceiling. The texture continues downward to the floor.
+
+      If the "lower unpegged" flag is set on the linedef, the texture is
+      instead "pegged" to the bottom of the wall. That is, the bottom of the
+      texture is located at the floor. The texture is drawn upwards from here.
+      This is commonly used in the jambs in doors; because Doom's engine treats
+      each door as a "rising ceiling", a doorjamb pegged to the top of the wall
+      would "rise up" with the door.
+
+      The alignment of the texture can be adjusted using the sidedef X and Y
+      alignment controls. This is applied after the logic controlling pegging.
+     */
+
+    // Doom "up" is positive `z`
+    // texture origin is left bottom corner (don't even ask me why)
+
+    vassert(!seg->pobj || !seg->pobj->Is3D());
     const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
-    float zOrg; // texture top
+
+    float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->pofloor.TexZ+texh;
-      } else {
-        zOrg = max2(seg->frontsector->floor.TexZ, seg->backsector->floor.TexZ)+texh;
-      }
+      zOrg = max2(r_floor.splane->TexZ, seg->backsector->floor.TexZ);
     } else {
       // top of texture at top
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->poceiling.TexZ;
-      } else {
-        zOrg = min2(seg->frontsector->ceiling.TexZ, seg->backsector->ceiling.TexZ);
-      }
+      zOrg = min2(r_ceiling.splane->TexZ, seg->backsector->ceiling.TexZ)-texh;
     }
-    FixMidTextureOffsetAndOrigin(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid);
-    #else
-    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
-    float zOrg; // texture top
-    if (linedef->flags&ML_DONTPEGBOTTOM) {
-      // bottom of texture at bottom
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->pofloor.TexZ;
-      } else {
-        zOrg = max2(seg->frontsector->floor.TexZ, seg->backsector->floor.TexZ);
-      }
-      zOrg += MTex->GetScaledHeight()*sidedef->Mid.ScaleY;
-    } else {
-      // top of texture at top
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->poceiling.TexZ;
-      } else {
-        zOrg = min2(seg->frontsector->ceiling.TexZ, seg->backsector->ceiling.TexZ);
-      }
-    }
-    SetupTextureAxesOffsetNew(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX))/*wrapped*/);
-    #endif
+    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
 
-    #ifdef VV_DEBUG_MIDW
-    //bool doDump = ((ptrdiff_t)(linedef-Level->Lines) == 7956);
-    enum { doDump = 0 };
-    //const bool doDump = !!seg->pobj;
-    if (doDump) { GCon->Logf("=== MIDSURF FOR LINE #%d (fs=%d; bs=%d; side=%d) ===", (int)(ptrdiff_t)(linedef-Level->Lines), (int)(ptrdiff_t)(seg->frontsector-Level->Sectors), (int)(ptrdiff_t)(seg->backsector-Level->Sectors), (int)(ptrdiff_t)(sidedef-Level->Sides)); }
-    //if (linedef->alpha < 1.0f) GCon->Logf("=== MIDSURF FOR LINE #%d (fs=%d; bs=%d) ===", (int)(ptrdiff_t)(linedef-Level->Lines), (int)(ptrdiff_t)(seg->frontsector-Level->Sectors), (int)(ptrdiff_t)(seg->backsector-Level->Sectors));
-    if (doDump) { GCon->Logf("   LINEWRAP=%u; SIDEWRAP=%u; ADDITIVE=%u; Alpha=%g; botpeg=%u; zOrg=%g; texh=%g", (linedef->flags&ML_WRAP_MIDTEX), (sidedef->Flags&SDF_WRAPMIDTEX), (linedef->flags&ML_ADDITIVE), linedef->alpha, linedef->flags&ML_DONTPEGBOTTOM, zOrg, texh); }
-    if (doDump) { GCon->Logf("   tx is '%s'; size=(%d,%d); scale=(%g,%g)", *MTex->Name, MTex->GetWidth(), MTex->GetHeight(), MTex->SScale, MTex->TScale); }
-    #endif
-
-    // another hack (Doom II MAP31)
-    // if we have no 3d floors here, and the front sector can be covered with midtex, cover it
-    bool bottomCheck = false;
-    if (!seg->frontsector->Has3DFloors() && sidedef->BottomTexture < 1 &&
-        seg->frontsector->floor.normal.z == 1.0f && seg->backsector->floor.normal.z == 1.0f &&
-        seg->frontsector->floor.minz < seg->backsector->floor.minz)
-    {
-      //GCon->Logf(NAME_Debug, "BOO!");
-      bottomCheck = true;
-    }
-
     const sector_t *fsec = seg->frontsector;
 
     do {
-      wv[0].x = wv[1].x = seg->v1->x;
-      wv[0].y = wv[1].y = seg->v1->y;
-      wv[2].x = wv[3].x = seg->v2->x;
-      wv[2].y = wv[3].y = seg->v2->y;
+      quad[0].x = quad[1].x = seg->v1->x;
+      quad[0].y = quad[1].y = seg->v1->y;
+      quad[2].x = quad[3].x = seg->v2->x;
+      quad[2].y = quad[3].y = seg->v2->y;
 
       const float topz1 = min2(back_topz1, fsec->ceiling.GetPointZ(*seg->v1));
       const float topz2 = min2(back_topz2, fsec->ceiling.GetPointZ(*seg->v2));
@@ -568,25 +544,19 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       float midbotz1 = botz1;
       float midbotz2 = botz2;
 
-      #ifdef VV_DEBUG_MIDW
-      if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g)", zOrg-texh, zOrg, midbotz1, midbotz2, midtopz1, midtopz2); }
-      #endif
-
-      if (sidedef->TopTexture > 0) {
+      // cover top part if it has no texture
+      if (!GTextureManager.IsEmptyTexture(sidedef->TopTexture)) {
         midtopz1 = min2(midtopz1, fsec->ceiling.GetPointZ(*seg->v1));
         midtopz2 = min2(midtopz2, fsec->ceiling.GetPointZ(*seg->v2));
       }
 
-      if (sidedef->BottomTexture > 0) {
+      // cover bottom part if it has no texture
+      if (!GTextureManager.IsEmptyTexture(sidedef->BottomTexture)) {
         midbotz1 = max2(midbotz1, fsec->floor.GetPointZ(*seg->v1));
         midbotz2 = max2(midbotz2, fsec->floor.GetPointZ(*seg->v2));
       }
 
       if (midbotz1 >= midtopz1 || midbotz2 >= midtopz2) break;
-
-      #ifdef VV_DEBUG_MIDW
-      if (doDump) { GCon->Logf(" zorg=(%g,%g); botz=(%g,%g); topz=(%g,%g); backbotz=(%g,%g); backtopz=(%g,%g)", zOrg-texh, zOrg, midbotz1, midbotz2, midtopz1, midtopz2, back_botz1, back_botz2, back_topz1, back_topz2); }
-      #endif
 
       float hgts[4];
 
@@ -600,42 +570,24 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
         hgts[2] = midtopz2;
         hgts[3] = midbotz2;
       } else {
-        if (zOrg <= max2(midbotz1, midbotz2)) break;
-        if (zOrg-texh >= max2(midtopz1, midtopz2)) break;
-        /*
-        if (doDump) {
-          GCon->Log(" === front regions ===");
-          VLevel::dumpSectorRegions(seg->frontsector);
-          GCon->Log(" === back regions ===");
-          VLevel::dumpSectorRegions(seg->backsector);
-        }
-        */
-        hgts[0] = max2(midbotz1, zOrg-texh);
-        hgts[1] = min2(midtopz1, zOrg);
-        hgts[2] = min2(midtopz2, zOrg);
-        hgts[3] = max2(midbotz2, zOrg-texh);
-        // cover bottom texture with this too (because why not?)
-        if (bottomCheck && hgts[0] > zOrg-texh) {
-          //GCon->Logf(NAME_Debug, "BOO! hgts=%g, %g, %g, %g (fz=%g); texh=%g", hgts[0], hgts[1], hgts[2], hgts[3], seg->frontsector->floor.minz, texh);
-          hgts[0] = hgts[3] = min2(hgts[0], max2(seg->frontsector->floor.minz, zOrg-texh));
-        }
+        const float tz0 = zOrg;
+        const float tz1 = zOrg+texh;
+        if (tz0 >= max2(midtopz1, midtopz2)) break;
+        if (tz1 <= max2(midbotz1, midbotz2)) break;
+        hgts[0] = max2(midbotz1, tz0);
+        hgts[1] = min2(midtopz1, tz1);
+        hgts[2] = min2(midtopz2, tz1);
+        hgts[3] = max2(midbotz2, tz0);
       }
 
       // just in case
-      wv[QUAD_V1_BOTTOM].z = min2(hgts[1], hgts[0]);
-      wv[QUAD_V1_TOP].z = hgts[1];
-      wv[QUAD_V2_TOP].z = hgts[2];
-      wv[QUAD_V2_BOTTOM].z = min2(hgts[2], hgts[3]);
+      quad[QUAD_V1_BOTTOM].z = min2(hgts[1], hgts[0]);
+      quad[QUAD_V1_TOP].z = hgts[1];
+      quad[QUAD_V2_TOP].z = hgts[2];
+      quad[QUAD_V2_BOTTOM].z = min2(hgts[2], hgts[3]);
 
-      #ifdef VV_DEBUG_MIDW
-      if (doDump) {
-        GCon->Logf("  z:(%g,%g,%g,%g)", hgts[0], hgts[1], hgts[2], hgts[3]);
-        for (int wc = 0; wc < 4; ++wc) GCon->Logf("  wc #%d: (%g,%g,%g)", wc, wv[wc].x, wv[wc].y, wv[wc].z);
-      }
-      #endif
-
-      //CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
-      CreateWorldSurfFromWVSplit(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+      //CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_MIDDLE);
+      CreateWorldSurfFromWVSplit(sub, seg, sp, quad, surface_t::TF_MIDDLE);
     } while (0);
   } else {
     // empty midtexture
@@ -672,7 +624,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
   const polyobj_t *po = seg->pobj;
 
   if (MTex->Type != TEXTYPE_Null && !(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) {
-    TVec wv[4];
+    TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); back_botz=(%g : %g); back_topz=(%g : %g), exbotz=%g; extopz=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, back_botz1, back_botz2, back_topz1, back_topz2, exbotz, extopz);
@@ -680,36 +632,23 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
     //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d: seg for line #%d (sector #%d); TexZ=%g:%g (notpeg=%d)", seg->pobj->tag, (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), seg->pobj->pofloor.TexZ, seg->pobj->poceiling.TexZ, !!(linedef->flags&ML_DONTPEGBOTTOM));
 
     const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
-    float zOrg; // texture top
+    float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->pofloor.TexZ+texh;
-      } else {
-        zOrg = max2(seg->frontsector->floor.TexZ, seg->backsector->floor.TexZ)+texh;
-      }
+      zOrg = seg->pobj->pofloor.TexZ;
     } else {
       // top of texture at top
-      if (seg->pobj && seg->pobj->Is3D()) {
-        zOrg = seg->pobj->poceiling.TexZ;
-      } else {
-        zOrg = min2(seg->frontsector->ceiling.TexZ, seg->backsector->ceiling.TexZ);
-      }
+      zOrg = seg->pobj->poceiling.TexZ-texh;
     }
-    #if 0
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid);
-    FixMidTextureOffsetAndOrigin(zOrg, linedef, sidedef, &sp->texinfo, MTex, &sidedef->Mid);
-    #else
-    SetupTextureAxesOffsetNew(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX))/*wrapped*/);
-    #endif
+    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
 
-    wv[0].x = wv[1].x = seg->v1->x;
-    wv[0].y = wv[1].y = seg->v1->y;
-    wv[2].x = wv[3].x = seg->v2->x;
-    wv[2].y = wv[3].y = seg->v2->y;
+    quad[0].x = quad[1].x = seg->v1->x;
+    quad[0].y = quad[1].y = seg->v1->y;
+    quad[2].x = quad[3].x = seg->v2->x;
+    quad[2].y = quad[3].y = seg->v2->y;
 
     const float topz1 = po->poceiling.GetPointZ(*seg->v1);
     const float topz2 = po->poceiling.GetPointZ(*seg->v2);
@@ -717,6 +656,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
     const float botz2 = po->pofloor.GetPointZ(*seg->v2);
 
     if (botz1 >= topz1 || botz2 >= topz2) {
+      // nothing to do
     } else {
       bool doit = true;
       float hgts[4];
@@ -731,25 +671,25 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
         hgts[2] = topz2;
         hgts[3] = botz2;
       } else {
-        if (zOrg <= max2(botz1, botz2)) {
-          doit = false;
-        } else if (zOrg-texh >= max2(topz1, topz2)) {
+        const float tz0 = zOrg;
+        const float tz1 = zOrg+texh;
+        if (tz0 >= max2(topz1, topz2) || tz1 <= max2(botz1, botz2)) {
           doit = false;
         } else {
-          hgts[0] = max2(botz1, zOrg-texh);
-          hgts[1] = min2(topz1, zOrg);
-          hgts[2] = min2(topz2, zOrg);
-          hgts[3] = max2(botz2, zOrg-texh);
+          hgts[0] = max2(botz1, tz0);
+          hgts[1] = min2(topz1, tz1);
+          hgts[2] = min2(topz2, tz1);
+          hgts[3] = max2(botz2, tz0);
         }
       }
 
       if (doit) {
-        wv[0].z = hgts[0];
-        wv[1].z = hgts[1];
-        wv[2].z = hgts[2];
-        wv[3].z = hgts[3];
+        quad[0].z = hgts[0];
+        quad[1].z = hgts[1];
+        quad[2].z = hgts[2];
+        quad[3].z = hgts[3];
 
-        CreateWorldSurfFromWV(sub, seg, sp, wv, surface_t::TF_MIDDLE);
+        CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_MIDDLE);
       }
     }
   } else {

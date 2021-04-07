@@ -143,6 +143,8 @@ void VRenderLevelShared::PrepareWorldRender (const refdef_t *rd, const VViewClip
   // this is done in `VRenderLevelShared::RenderPlayerView()`
   //FIXME: but should be done here if `r_viewleaf` was changed
   //if (!MirrorLevel && !r_disable_world_update) UpdateFakeSectors();
+  // still do it
+  if (!MirrorLevel && !r_disable_world_update) UpdateFakeSectors();
 }
 
 

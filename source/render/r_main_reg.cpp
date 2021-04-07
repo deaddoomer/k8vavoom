@@ -328,7 +328,7 @@ void VRenderLevelLightmap::RenderScene (const refdef_t *RD, const VViewClipper *
 
   //ClearQueues(); // moved to `PrepareWorldRender()`
   //MarkLeaves(); // moved to `PrepareWorldRender()`
-  //if (!MirrorLevel && !r_disable_world_update) UpdateFakeSectors();
+  //if (!MirrorLevel && !r_disable_world_update) UpdateFakeSectors(); // moved to `PrepareWorldRender()`
 
   // we will collect rendered sectors, so we could collect things from them
   nextRenderedSectorsCounter();

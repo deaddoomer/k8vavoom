@@ -41,7 +41,7 @@ VCvarB dbg_vischeck_time("dbg_vischeck_time", false, "Show frame vischeck time?"
 
 static VCvarB r_clip_maxdist("r_clip_maxdist", true, "Clip with max view distance? This can speedup huge levels, trading details for speed.", CVAR_Archive);
 extern VCvarF gl_maxdist;
-extern VCvarB r_disable_world_update;
+//extern VCvarB r_disable_world_update;
 
 VCvarB dbg_show_lightmap_cache_messages("dbg_show_lightmap_cache_messages", false, "Show various lightmap debug messages?", CVAR_Archive);
 
@@ -1483,6 +1483,7 @@ void VRenderLevelShared::RenderPlayerView () {
   Drawer->MirrorClip = false;
 
   ResetDrawStack(); // prepare draw list stack
+  ResetPortalPool();
   IncUpdateWorldFrame();
   //Drawer->SetUpdateFrame(updateWorldFrame);
 
@@ -1494,7 +1495,7 @@ void VRenderLevelShared::RenderPlayerView () {
   const TVec lastorg = Drawer->vieworg;
   subsector_t *playerViewLeaf = r_viewleaf;
 
-  if (/*!MirrorLevel &&*/ !r_disable_world_update) UpdateFakeSectors(playerViewLeaf);
+  //if (!r_disable_world_update) UpdateFakeSectors(playerViewLeaf);
 
   GTextureManager.Time = Level->Time;
 
