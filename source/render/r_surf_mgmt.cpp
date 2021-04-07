@@ -350,8 +350,6 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
     return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
   }
 
-  //if ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 20883) return CreateWorldSurfFromWV(sub, seg, sp, quad, typeFlags);
-
   //const bool dump = ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 20883);
   enum { dump = false };
 
@@ -415,52 +413,6 @@ void VRenderLevelShared::RecursiveQuadSplit (const QSplitInfo &nfo, sec_region_t
   } while (!frontreg);
 
   TVec newquad[4];
-
-  #if 0
-  // this is idiocity; there is no way to decide which part should win
-  // so overlaping part will be simply destroyed. don't build such broken maps.
-
-  // special case for forbidden configurations (two 3d floors are overlapping)
-  // this is triggered only for 3d floor sides (because only in this case we have `ignorereg`)
-  if (nfo.onlySolid && nfo.ignorereg) {
-    do { // so i'll be able to use `break`
-      // current region distances
-      const float cregfdist = frontreg->efloor.GetRealDist();
-      const float cregcdist = frontreg->eceiling.GetRealDist();
-      // ignore region distances
-      const float ignfdist = nfo.ignorereg->efloor.GetRealDist();
-      const float igncdist = nfo.ignorereg->eceiling.GetRealDist();
-
-      if (cregcdist <= ignfdist || cregfdist >= igncdist) break;
-
-      if (cregfdist >= ignfdist && cregcdist <= igncdist) {
-        // current is fully inside, nothing to do
-        return;
-      }
-
-      if (ignfdist >= cregfdist && igncdist <= cregcdist) {
-        // current region is fully enclosing
-        // process as usual
-        break;
-      }
-
-      // intersection
-      if (cregfdist < ignfdist) {
-        // current ceiling must be inside
-        vassert(cregcdist > ignfdist);
-        vassert(cregcdist <= igncdist);
-        // process top part
-        if (!SplitQuadWithPlane(quad, frontreg->eceiling, nullptr, quad)) return;
-        return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
-      } else {
-        // current floor must be inside
-        vassert(cregfdist >= ignfdist);
-        vassert(cregfdist < igncdist);
-        return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
-      }
-    } while (0);
-  }
-  #endif
 
   // process bottom part
   if (SplitQuadWithPlane(quad, frontreg->efloor, newquad, nullptr)) {
