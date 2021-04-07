@@ -1,0 +1,130 @@
+================================================================
+Title                   : Boom Edit Example Wad
+Filename                : BOOMEDIT.WAD
+Author                  : Jim Flynn
+Email Address           : jflynn@pacbell.net
+Misc. Author Info       : Team TNT member
+Editors used            : Deth 4.14, Patcher
+Base                    : New level for Phase I BOOM engine
+                        : Requires DOOM2.wad
+Known Bugs              : None
+Thanks To               : Lee Killough, Joachim Otahal, Rich Brennan,
+                        : Stan Gula, Tom Neff
+
+Obtain BOOM.EXE at http://www.teamtnt.com.
+Reference info is in the EDITUTIL.ZIP package there
+
+Hints:
+
+1) If you are stuck in forest of pillars, shoot the room's wall.
+2) The yellow skull key is higher than the others. You need to
+   die to see it :).
+3) On very slow machines it may be helpful to note that TNTICE turns
+   off the ice effect and TNTPUSH turns off the wind effect.
+
+================================================================
+
+* General Information *
+
+The wad shows many of the effects possible with the BOOM engine,
+and uses text signs to label them, and where appropriate the linedef
+type number used to produce them. Reference information on specific
+linedefs can be found in BOOMREF.TXT in EDITUTIL.ZIP at
+http://www.teamtnt.com.
+
+The elevator switch graphics do not replace switches, but are added
+to BOOM's list of known switches thru the SWITCHES lump, generated
+using DEMOSWAN.DAT with SWANTBLS.EXE also in the EDITUTIL zip.
+
+The SFALL and NUKAGE1 animations have been sped up by a factor of 4
+thru the ANIMATED lump, also done with SWANTBLS.EXE and DEMOSWAN.DAT.
+Animations can be sped up by as much as a factor of 8 and slowed down
+as much as desired.
+
+The flat used on the ice lake is contained in the PWAD between
+F_START and F_END, and the replacement tree sprite is between S_START
+and S_END markers in the PWAD. BOOM will load flats and sprites from the
+PWAD, unlike DOOM.
+
+The stained glass column in the translucency demo uses a custom
+translucency lump at 40% translucency, made with BOOM and the
+utility MAKTRLMP included in EDITUTIL.
+
+Custom colormaps, made with CMAPTOOL.EXE, also in EDITUTIL.ZIP are
+used for underwater, under-ice, and under-lava lighting, as well as a
+special demo room demonstrating their use as a primitive colored
+lighting effect.
+
+The music is a directly embedded MIDI, not a MUS lump.
+
+================================================================
+
+* Play Information *
+
+Level #                 : Map 01
+Single Player           : Yes, sorta (no monsters)
+Cooperative 2-4 Player  : Yes, sorta (no monsters)
+Deathmatch 2-4 Player   : Yes, but untested
+Difficulty Settings     : None
+New Sounds              : No
+New Graphics            : Yes, Sky by Tom Neff
+New Music               : Yes, CANON.MID, directly embedded
+Demos Replaced          : None
+Monsters                : None
+DCC Compliant           : Not particularly
+Status                  : Complete
+
+* Copyright / Permissions *
+
+Authors may use this level as a base to build additional levels, but
+they'd be nuts to do so.  :)
+
+To be distributed with Official Boom release.
+
+================================================================
+
+* Revision History *
+
+11-May-98       Added COLORMAP demos, changed 4001 thing to 5001
+
+06-May-98 Put room-over-room teleporter midstep instead of on
+    an edge to avoid "bump". Added silent teleporter
+    demonstration in middle of main room for better
+    explication.
+
+04-May-98 Used custom translucency map for more transparent
+    textures in translucency demo. Changed music to
+    something that is quieter and public domain. Gave
+    up on lift style room over room and made a stairs
+    room over room. Added sign for "shoot me" escape
+    from pillars.
+
+01-May-98       Made Vp/2S HOM/Plat test more severe. Improved room
+    over room somewhat, still not perfect. Added signs
+    for MIDI, sprites, flats in PWAD. Improved deep water
+    sprite clipping demo.
+
+28-Apr-98       Fixed bug in fast animation, made the flat fast too.
+                Corrected sign for generalized sector type. Removed
+    candle marker for point source wind origin. Started
+    elevator on second floor.
+
+23-Apr-98       Fixed ability to jump over ice lake silent TP
+                when above ground. Added Ceiling texture changer.
+    Changed music.
+
+21-Apr-98       Fixed flash problem when directly underneath
+                sign posts under the ice lake.
+
+17-Apr-98       Added DM, Co-op starts, thing flag demo
+                fast animation, generalized sector type
+
+16-Apr-98       Added Medusa, Vp, 2sHOM, Plat limit demo
+                fixed lake entrance problem, switched to
+                reversed silent teleporters
+
+15-Apr-98       Release version
+                Added final few features
+
+12-Apr-98       Inital beta release
+                Basic structure
