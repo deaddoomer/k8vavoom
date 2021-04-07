@@ -153,19 +153,21 @@ set(RENDERBASE_SOURCES
   render/r_particle.cpp
   render/r_portal.cpp
   render/r_sky.cpp
-  render/r_surf_mgmt.cpp
-  render/r_surf_common.cpp
-  render/r_surf_opening.cpp
-  render/r_surf_update.cpp
-  render/r_surf_update_fake.cpp
-  render/r_surf_flat.cpp
   render/r_surf_1sided.cpp
-  render/r_surf_2sided.cpp
   render/r_surf_2sextra.cpp
-  render/r_surf_tjunk.cpp
+  render/r_surf_2sided.cpp
+  render/r_surf_axes_extra.cpp
+  render/r_surf_axes_normal.cpp
+  render/r_surf_common.cpp
+  render/r_surf_flat.cpp
+  render/r_surf_lmap_io.cpp
+  render/r_surf_mgmt.cpp
+  render/r_surf_opening.cpp
   render/r_surf_post_adv.cpp
   render/r_surf_post_reg.cpp
-  render/r_surf_lmap_io.cpp
+  render/r_surf_tjunk.cpp
+  render/r_surf_update.cpp
+  render/r_surf_update_fake.cpp
   render/r_utils_openings.cpp
   render/r_maskqueue.cpp
   render/r_psprites.cpp

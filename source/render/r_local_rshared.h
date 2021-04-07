@@ -26,6 +26,9 @@
 #ifndef VAVOOM_R_LOCAL_HEADER_RSHARED
 #define VAVOOM_R_LOCAL_HEADER_RSHARED
 
+// it seems that `segsidedef` offset is in effect, but scaling is not
+//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
+
 
 // wall quad vertex indicies
 enum {
@@ -803,6 +806,67 @@ protected:
     TPlane pp(pl.GetNormal(), pl.GetDist());
     return SplitQuadWithPlane(quad, pp, qbottom, qtop);
   }
+
+public:
+  static inline float DivByScale (float v, float scale) { return (scale > 0 ? v/scale : v); }
+  static inline float DivByScale2 (float v, float scale, float scale2) {
+    if (scale2 <= 0.0f) return DivByScale(v, scale);
+    if (scale <= 0.0f) return DivByScale(v, scale2);
+    return v/(scale*scale2);
+  }
+
+public:
+  static inline void SetupFakeDistances (const seg_t *seg, segpart_t *sp) noexcept {
+    if (seg->frontsector->heightsec) {
+      sp->frontFakeFloorDist = seg->frontsector->heightsec->floor.dist;
+      sp->frontFakeCeilDist = seg->frontsector->heightsec->ceiling.dist;
+    } else {
+      sp->frontFakeFloorDist = 0.0f;
+      sp->frontFakeCeilDist = 0.0f;
+    }
+
+    if (seg->backsector && seg->backsector->heightsec) {
+      sp->backFakeFloorDist = seg->backsector->heightsec->floor.dist;
+      sp->backFakeCeilDist = seg->backsector->heightsec->ceiling.dist;
+    } else {
+      sp->backFakeFloorDist = 0.0f;
+      sp->backFakeCeilDist = 0.0f;
+    }
+  }
+
+public:
+  // HACK: sector with height of 1, and only middle
+  // masked texture is "transparent door"
+  //
+  // actually, 2s "door" wall without top/bottom textures, and with masked
+  // midtex is "transparent door"
+  static bool IsTransDoorHack (const seg_t *seg, bool fortop) noexcept {
+    const sector_t *secs[2] = { seg->frontsector, seg->backsector };
+    if (!secs[0] || !secs[1]) return false;
+    const side_t *sidedef = seg->sidedef;
+    if (!GTextureManager.IsEmptyTexture(fortop ? sidedef->TopTexture : sidedef->BottomTexture)) return false;
+    // if we have don't have a midtex, it is not a door hack
+    //if (GTextureManager.IsEmptyTexture(sidedef->MidTexture)) return false;
+    VTexture *tex = GTextureManager[sidedef->MidTexture];
+    if (!tex || tex->Type == TEXTYPE_Null) return false;
+    // should be "see through", or line should have alpha
+    if (seg->linedef->alpha >= 1.0f && !tex->isSeeThrough()) return false;
+    // check for slopes
+    if (secs[0]->floor.normal.z != 1.0f || secs[0]->ceiling.normal.z != -1.0f) return false;
+    if (secs[1]->floor.normal.z != 1.0f || secs[1]->ceiling.normal.z != -1.0f) return false;
+    // ok, looks like it
+    return true;
+  }
+
+  static inline bool IsTransDoorHackTop (const seg_t *seg) noexcept { return IsTransDoorHack(seg, true); }
+  static inline bool IsTransDoorHackBot (const seg_t *seg) noexcept { return IsTransDoorHack(seg, false); }
+
+public:
+  static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const line_t *line=nullptr);
+  static void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped);
+
+  static void SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *tex);
+  static void SetupTextureAxesOffsetExNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam, const float TexZ);
 
 public:
   int CountSegParts (const seg_t *);

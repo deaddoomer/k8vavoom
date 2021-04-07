@@ -25,9 +25,6 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "r_local.h"
-#include "r_surf_utils_transdoor.cpp"
-#include "r_surf_utils_fakedist.cpp"
-#include "r_surf_utils_axes.cpp"
 
 //#ifdef VV_DEBUG_MIDW
 

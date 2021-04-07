@@ -25,39 +25,16 @@
 //**************************************************************************
 // this is directly included where necessary
 //**************************************************************************
-
-// it seems that `segsidedef` offset is in effect, but scaling is not
-//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-
-
-//==========================================================================
-//
-//  DivByScale
-//
-//==========================================================================
-static inline float DivByScale (float v, float scale) {
-  return (scale > 0 ? v/scale : v);
-}
+#include "../gamedefs.h"
+#include "r_local.h"
 
 
 //==========================================================================
 //
-//  DivByScale2
+//  VRenderLevelShared::SetupTextureAxesOffsetDummyEx
 //
 //==========================================================================
-static inline float DivByScale2 (float v, float scale, float scale2) {
-  if (scale2 <= 0.0f) return DivByScale(v, scale);
-  if (scale <= 0.0f) return DivByScale(v, scale2);
-  return v/(scale*scale2);
-}
-
-
-//==========================================================================
-//
-//  SetupTextureAxesOffsetDummyEx
-//
-//==========================================================================
-static inline void SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *tex) {
+void VRenderLevelShared::SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *tex) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   texinfo->ColorMap = 0;
@@ -70,12 +47,12 @@ static inline void SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *
 #if 0
 //==========================================================================
 //
-//  SetupTextureAxesOffsetEx
+//  VRenderLevelShared::SetupTextureAxesOffsetEx
 //
 //  used for 3d floor extra midtextures
 //
 //==========================================================================
-static inline void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam) {
+void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -114,10 +91,10 @@ static inline void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTe
 
 //==========================================================================
 //
-//  FixMidTextureOffsetAndOriginEx
+//  VRenderLevelShared::FixMidTextureOffsetAndOriginEx
 //
 //==========================================================================
-static inline void FixMidTextureOffsetAndOriginEx (float &zOrg, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam, const side_tex_params_t *segparam) {
+void VRenderLevelShared::FixMidTextureOffsetAndOriginEx (float &zOrg, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam, const side_tex_params_t *segparam) {
   const float tofssign = (tparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
   const float tofssign2 = (segparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
   #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
@@ -135,7 +112,7 @@ static inline void FixMidTextureOffsetAndOriginEx (float &zOrg, const line_t *li
 
 //==========================================================================
 //
-//  SetupTextureAxesOffsetEx
+//  VRenderLevelShared::SetupTextureAxesOffsetEx
 //
 //  used for 3d floor extra midtextures
 //
@@ -143,7 +120,7 @@ static inline void FixMidTextureOffsetAndOriginEx (float &zOrg, const line_t *li
 //  `segparam` is from seg
 //
 //==========================================================================
-static inline void SetupTextureAxesOffsetExNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam, const float TexZ) {
+void VRenderLevelShared::SetupTextureAxesOffsetExNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam, const float TexZ) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later

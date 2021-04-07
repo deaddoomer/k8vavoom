@@ -157,7 +157,8 @@ static inline bool CheckTopRecreate2S (const seg_t *seg, segpart_t *sp, const se
 
   VTexture *TTex = GTextureManager(seg->sidedef->TopTexture);
   if (!seg->pobj &&
-      ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorTop) || (r_hack_transparent_doors && (!TTex || TTex->Type == TEXTYPE_Null) && IsTransDoorHackTop(seg))))
+      ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorTop) ||
+       (r_hack_transparent_doors && (!TTex || TTex->Type == TEXTYPE_Null) && VRenderLevelShared::IsTransDoorHackTop(seg))))
   {
     TTex = GTextureManager(seg->sidedef->MidTexture);
   }
@@ -179,7 +180,8 @@ static inline bool CheckBotRecreate2S (seg_t *seg, segpart_t *sp, const TPlane *
 
   VTexture *BTex = GTextureManager(seg->sidedef->BottomTexture);
   if (!seg->pobj &&
-      ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorBot) || (r_hack_transparent_doors && (!BTex || BTex->Type == TEXTYPE_Null) && IsTransDoorHackBot(seg))))
+      ((seg->frontsub->sector->SectorFlags&sector_t::SF_IsTransDoorBot) ||
+       (r_hack_transparent_doors && (!BTex || BTex->Type == TEXTYPE_Null) && VRenderLevelShared::IsTransDoorHackBot(seg))))
   {
     BTex = GTextureManager(seg->sidedef->MidTexture);
   }

@@ -23,38 +23,16 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-// this is directly included where necessary
-//**************************************************************************
+#include "../gamedefs.h"
+#include "r_local.h"
 
 
 //==========================================================================
 //
-//  DivByScale
+//  VRenderLevelShared::SetupTextureAxesOffsetDummy
 //
 //==========================================================================
-static inline float DivByScale (float v, float scale) {
-  return (scale > 0 ? v/scale : v);
-}
-
-
-//==========================================================================
-//
-//  DivByScale2
-//
-//==========================================================================
-static inline float DivByScale2 (float v, float scale, float scale2) {
-  if (scale2 <= 0.0f) return DivByScale(v, scale);
-  if (scale <= 0.0f) return DivByScale(v, scale2);
-  return v/(scale*scale2);
-}
-
-
-//==========================================================================
-//
-//  SetupTextureAxesOffsetDummy
-//
-//==========================================================================
-static inline void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const line_t *line=nullptr) {
+void VRenderLevelShared::SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const line_t *line) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -75,12 +53,12 @@ static inline void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *te
 #if 0
 //==========================================================================
 //
-//  SetupTextureAxesOffset
+//  VRenderLevelShared::SetupTextureAxesOffset
 //
 //  used only for normal wall textures: top, mid, bottom
 //
 //==========================================================================
-static inline void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam) {
+void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -121,10 +99,10 @@ static inline void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VText
 
 //==========================================================================
 //
-//  FixMidTextureOffsetAndOrigin
+//  VRenderLevelShared::FixMidTextureOffsetAndOrigin
 //
 //==========================================================================
-static inline void FixMidTextureOffsetAndOrigin (float &zOrg, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam,bool forceWrapped=false) {
+void VRenderLevelShared::FixMidTextureOffsetAndOrigin (float &zOrg, const line_t *linedef, const side_t *sidedef, texinfo_t *texinfo, VTexture *MTex, const side_tex_params_t *tparam,bool forceWrapped=false) {
   const float tofssign = (tparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
   if (forceWrapped || ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX))) {
     // it is wrapped, so just slide it
@@ -142,12 +120,12 @@ static inline void FixMidTextureOffsetAndOrigin (float &zOrg, const line_t *line
 
 //==========================================================================
 //
-//  SetupTextureAxesOffsetNew
+//  VRenderLevelShared::SetupTextureAxesOffsetNew
 //
 //  used only for normal wall textures: top, mid, bottom
 //
 //==========================================================================
-static inline void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped) {
+void VRenderLevelShared::SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -192,9 +170,14 @@ static inline void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VT
                      VRenderLevelShared::TextureTScale(tex)*tparam->ScaleY+
                      zofs;
   } else {
-    texinfo->toffs = -DotProduct(TVec(0, 0, TexZ), texinfo->taxis)*
+    texinfo->toffs = -DotProduct(TVec(0.0f, 0.0f, TexZ), texinfo->taxis)*
                      VRenderLevelShared::TextureTScale(tex)*tparam->ScaleY+
                      zofs;
+
+    //texinfo->toffs -= DotProduct(texinfo->taxis, TVec(seg->offset, seg->offset, 0.0f));
+
+    texinfo->soffs += 12.0f;
+    texinfo->toffs += 12.0f;
   }
 
   if (tparam->Flags&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;

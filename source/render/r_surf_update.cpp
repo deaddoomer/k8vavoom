@@ -25,8 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "r_local.h"
-#include "r_surf_utils_transdoor.cpp"
-#include "r_surf_utils_check.cpp"
+#include "r_surf_update_utils_inc.cpp"
 
 
 //==========================================================================
