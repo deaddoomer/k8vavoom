@@ -416,43 +416,51 @@ void VRenderLevelShared::RecursiveQuadSplit (const QSplitInfo &nfo, sec_region_t
 
   TVec newquad[4];
 
+  #if 0
+  // this is idiocity; there is no way to decide which part should win
+  // so overlaping part will be simply destroyed. don't build such broken maps.
+
   // special case for forbidden configurations (two 3d floors are overlapping)
   // this is triggered only for 3d floor sides (because only in this case we have `ignorereg`)
   if (nfo.onlySolid && nfo.ignorereg) {
-    const float rfdist = frontreg->efloor.GetRealDist();
-    const float rcdist = frontreg->eceiling.GetRealDist();
-    const float ifdist = nfo.ignorereg->efloor.GetRealDist();
-    const float icdist = nfo.ignorereg->eceiling.GetRealDist();
+    do { // so i'll be able to use `break`
+      // current region distances
+      const float cregfdist = frontreg->efloor.GetRealDist();
+      const float cregcdist = frontreg->eceiling.GetRealDist();
+      // ignore region distances
+      const float ignfdist = nfo.ignorereg->efloor.GetRealDist();
+      const float igncdist = nfo.ignorereg->eceiling.GetRealDist();
 
-    if (rfdist >= ifdist && rcdist <= icdist) {
-      // current is fully inside ignore, do nothing
-      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
-    }
+      if (cregcdist <= ignfdist || cregfdist >= igncdist) break;
 
-    #if 0
-    if (rcdist > ifdist && rfdist < ifdist) {
-      // current and ignore intersects, and current is lower
-      // process bottom part using current floor
-      if (SplitQuadWithPlane(quad, frontreg->efloor, newquad, nullptr)) {
-        RecursiveQuadSplit(nfo, frontreg->next, backreg, newquad);
+      if (cregfdist >= ignfdist && cregcdist <= igncdist) {
+        // current is fully inside, nothing to do
+        return;
       }
-      // process top part using ignorereg ceiling
-      if (!SplitQuadWithPlane(quad, nfo.ignorereg->eceiling, nullptr, quad)) return;
-      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
-    }
 
-    if (rfdist < icdist && rcdist > icdist) {
-      // current and ignore intersects, and current is higher
-      // process bottom part using ignorereg floor
-      if (SplitQuadWithPlane(quad, nfo.ignorereg->efloor, newquad, nullptr)) {
-        RecursiveQuadSplit(nfo, frontreg->next, backreg, newquad);
+      if (ignfdist >= cregfdist && igncdist <= cregcdist) {
+        // current region is fully enclosing
+        // process as usual
+        break;
       }
-      // process top part using current ceiling
-      if (!SplitQuadWithPlane(quad, frontreg->eceiling, nullptr, quad)) return;
-      return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
-    }
-    #endif
+
+      // intersection
+      if (cregfdist < ignfdist) {
+        // current ceiling must be inside
+        vassert(cregcdist > ignfdist);
+        vassert(cregcdist <= igncdist);
+        // process top part
+        if (!SplitQuadWithPlane(quad, frontreg->eceiling, nullptr, quad)) return;
+        return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+      } else {
+        // current floor must be inside
+        vassert(cregfdist >= ignfdist);
+        vassert(cregfdist < igncdist);
+        return RecursiveQuadSplit(nfo, frontreg->next, backreg, quad);
+      }
+    } while (0);
   }
+  #endif
 
   // process bottom part
   if (SplitQuadWithPlane(quad, frontreg->efloor, newquad, nullptr)) {
