@@ -96,7 +96,9 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     MTex = GTextureManager[GTextureManager.DefaultTexture];
   }
 
-  if (MTex->Type != TEXTYPE_Null) {
+  const bool skipIt = false;//(seg->offset > 16.0f && (ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 7);
+
+  if (MTex->Type != TEXTYPE_Null && !skipIt) {
     TVec wv[4];
 
     #if 0

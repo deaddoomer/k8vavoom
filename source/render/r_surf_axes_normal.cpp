@@ -118,6 +118,33 @@ void VRenderLevelShared::FixMidTextureOffsetAndOrigin (float &zOrg, const line_t
 #endif
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+static float fucks = 0.0f;
+static float fuckt = 0.0f;
+static float fuckangle = 0.0f;
+
+COMMAND(zfucks) {
+  const float delta = (Args.length() > 1 ? +1.0f : -1.0f);
+  fucks += delta;
+  GCon->Logf(NAME_Debug, "fuckangle=%g; fucks=%g; fuckt=%g", fuckangle, fucks, fuckt);
+  GCmdBuf << "VidRendererRestart\n";
+}
+
+COMMAND(zfuckt) {
+  const float delta = (Args.length() > 1 ? +1.0f : -1.0f);
+  fuckt += delta;
+  GCon->Logf(NAME_Debug, "fucks=%g; fuckt=%g", fucks, fuckt);
+  GCmdBuf << "VidRendererRestart\n";
+}
+
+COMMAND(zfucka) {
+  const float delta = (Args.length() > 1 ? -1.0f : 1.0f);
+  fuckangle += delta;
+  GCon->Logf(NAME_Debug, "fuckangle=%g; fucks=%g; fuckt=%g", fuckangle, fucks, fuckt);
+  GCmdBuf << "VidRendererRestart\n";
+}
+
+
 //==========================================================================
 //
 //  VRenderLevelShared::SetupTextureAxesOffsetNew
@@ -136,7 +163,15 @@ void VRenderLevelShared::SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texin
   const float sofssign = (tparam->Flags&STP_FLIP_X ? -1.0f : +1.0f);
   const float tofssign = (tparam->Flags&STP_FLIP_Y ? -1.0f : +1.0f);
 
-  const float angle = 0.0f; //AngleMod(tparam->BaseAngle-tparam->Angle);
+  //const float angle = fuckangle; //AngleMod(tparam->BaseAngle-tparam->Angle);
+  float angle = 0.0f;
+  {
+    static double prevtime = -1.0f;
+    if (prevtime < 0) prevtime = Sys_Time();
+    const double ctime = Sys_Time();
+    angle = AngleMod((ctime-prevtime)*3);
+  }
+  //GCon->Logf(NAME_Debug, "RECREATE!");
   if (angle == 0.0f) {
     texinfo->saxisLM = seg->dir;
     texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
@@ -176,8 +211,20 @@ void VRenderLevelShared::SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texin
 
     //texinfo->toffs -= DotProduct(texinfo->taxis, TVec(seg->offset, seg->offset, 0.0f));
 
-    texinfo->soffs += 12.0f;
-    texinfo->toffs += 12.0f;
+    if (seg->offset != 0.0f) {
+      /*
+      if ((ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 7) {
+        float s, c;
+        msincos(angle, &s, &c);
+        GCon->Logf(NAME_Debug, "s=%g; c=%g; fuckangle=%g; fucks=%g; fuckt=%g; seg->offset=%g; seg->dir=(%g,%g); saxis=(%g,%g,%g); taxis=(%g,%g,%g)", s, c, fuckangle, fucks, fuckt, seg->offset, seg->dir.x, seg->dir.y, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z);
+      }
+      */
+      float s, c;
+      msincos(angle, &s, &c);
+      texinfo->soffs += c*seg->offset-seg->offset;
+      //texinfo->soffs += fucks;
+      //texinfo->toffs += fuckt;
+    }
   }
 
   if (tparam->Flags&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;

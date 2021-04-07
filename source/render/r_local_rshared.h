@@ -863,7 +863,7 @@ public:
 
 public:
   static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const line_t *line=nullptr);
-  static void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped);
+  void SetupTextureAxesOffsetNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, bool wrapped);
 
   static void SetupTextureAxesOffsetDummyEx (texinfo_t *texinfo, VTexture *tex);
   static void SetupTextureAxesOffsetExNew (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, const side_tex_params_t *segparam, const float TexZ);
