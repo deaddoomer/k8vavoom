@@ -114,7 +114,10 @@ static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const T
 //  CheckCommonRecreate
 //
 //==========================================================================
-static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling) {
+static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling, bool ismid=false) {
+  // for middle textures without wrapping, changing vertical offset means "recreate"
+  if (ismid && ((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0 &&
+      FASI(sp->RowOffset) != FASI(seg->sidedef->Mid.RowOffset)) return true;
   if (seg->backsector) {
     // check for fake floors
     return
@@ -132,7 +135,7 @@ static inline bool CheckCommonRecreate (const seg_t *seg, segpart_t *sp, VTextur
 //
 //==========================================================================
 static inline bool CheckMidRecreate1S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
-  return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
+  return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling, true);
 }
 
 
@@ -142,7 +145,7 @@ static inline bool CheckMidRecreate1S (const seg_t *seg, segpart_t *sp, const TP
 //
 //==========================================================================
 static inline bool CheckMidRecreate2S (const seg_t *seg, segpart_t *sp, const TPlane *floor, const TPlane *ceiling) {
-  return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling);
+  return CheckCommonRecreate(seg, sp, GTextureManager(seg->sidedef->MidTexture), floor, ceiling, true);
 }
 
 
