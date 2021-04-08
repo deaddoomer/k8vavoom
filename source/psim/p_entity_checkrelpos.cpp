@@ -362,8 +362,26 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   // check polyobject
   polyobj_t *po = ld->pobj();
   if (po) {
+    //if (IsPlayer()) GCon->Logf(NAME_Debug, "pobj #%d line #%d, blocking=%d", po->tag, (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), (int)IsBlockingLine(ld));
+    // non-3d polyobjects
+    if (!po->Is3D()) {
+      if (!IsBlockingLine(ld)) {
+        if (!(ld->flags&ML_3DMIDTEX)) return true;
+        // check 3d midtex
+        const int side = ld->PointOnSide(tmtrace.End);
+        float ptop = 0.0f, pbot = 0.0f;
+        if (!P_GetMidTexturePosition(ld, side, &ptop, &pbot)) return true;
+        // check height
+        if (hitPoint.z >= ptop || hitPoint.z+hgt <= pbot) return true; // no collision
+        // blocking 3d midtex
+      }
+      // blocking non-3d polyobject line
+      if (!skipSpecials) BlockedByLine(ld);
+      tmtrace.BlockingLine = ld;
+      return false;
+    }
     if (!IsBlockingLine(ld)) return true;
-    if (!po->Is3D() || po->validcount == validcount) return true;
+    if (po->validcount == validcount) return true;
     po->validcount = validcount; // do not check if we are inside of it, because we definitely are
     if (!Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, hitPoint.z+max2(0.0f, Height))) {
       // stuck inside, blocked
