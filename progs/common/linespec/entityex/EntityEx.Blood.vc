@@ -264,7 +264,10 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
         return false;
       }
 
-      if (!in.bIsABlockingLine) continue;
+      if (!in.bIsABlockingLine) {
+        // 2d polyobjects blocks splats
+        if (!li->pobject || li->pobject->posector) continue;
+      }
 
       // hit blocking line
       tr->hit = hitPoint;
