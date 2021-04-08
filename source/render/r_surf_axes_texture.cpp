@@ -83,12 +83,15 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
     #define scale2Y  1.0f
   #endif
 
-  //const float sofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X ? -1.0f : +1.0f);
-  //const float tofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y ? -1.0f : +1.0f);
-  #define sofssign  1.0f
-  #define tofssign  1.0f
+  // still need to adjust offset signs, so offsets will work the same way regardless of flipping
+  const float sofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X ? -1.0f : +1.0f);
+  const float tofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y ? -1.0f : +1.0f);
 
+  #if 0
   float angle = 0.0f; //AngleMod(tparam->BaseAngle-tparam->Angle)
+  #else
+  float angle = (segparam ? segparam->BaseAngle-segparam->Angle : tparam->BaseAngle-tparam->Angle);
+  #endif
   const float rtt = r_dbg_wtrotate_tmult.asFloat();
   if (rtt != 0.0f) {
     if (prevtime < 0) prevtime = Sys_Time();
@@ -96,7 +99,7 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
     angle = AngleMod((ctime-prevtime)*rtt);
   }
 
-  // there is no reason to turn lightmap texture
+  // there is no reason to rotate lightmap texture
   texinfo->saxisLM = seg->dir;
   texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
 
@@ -133,4 +136,15 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   // apply texture offsets from texture params
   texinfo->soffs += sofssign*(tparam->TextureOffset+(segparam ? segparam->TextureOffset : 0.0f))*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
   texinfo->toffs += tofssign*(tparam->RowOffset+(segparam ? segparam->RowOffset : 0.0f))*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
+
+  #if 0
+  // rotate around bottom left corner (doesn't work)
+  if (angle) {
+    const float cx = seg->linedef->v1->x; //+seg->dir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
+    const float cy = seg->linedef->v1->y; //+seg->dir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
+    TVec p(cx, cy);
+    texinfo->soffs -= DotProduct(texinfo->saxis, p);
+    texinfo->toffs -= DotProduct(texinfo->taxis, p);
+  }
+  #endif
 }

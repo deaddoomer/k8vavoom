@@ -195,15 +195,21 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   if (fabsf(spl.splane->normal.z) > 0.1f) {
     float s, c;
     msincos(spl.splane->BaseAngle-spl.splane->Angle, &s, &c);
-    ssurf->texinfo.saxisLM = TVec(c,  s, 0);
-    ssurf->texinfo.taxisLM = TVec(s, -c, 0);
-    ssurf->texinfo.saxis = TVec(c,  s, 0)*(TextureSScale(Tex)*spl.splane->XScale);
-    ssurf->texinfo.taxis = TVec(s, -c, 0)*(TextureTScale(Tex)*spl.splane->YScale);
+    //k8: do we really need to rotate lightmap axes? i don't think so
+    #if 0
+    ssurf->texinfo.saxisLM = TVec(c,  s);
+    ssurf->texinfo.taxisLM = TVec(s, -c);
+    #else
+    ssurf->texinfo.saxisLM = TVec(+1.0f,  0.0f);
+    ssurf->texinfo.taxisLM = TVec( 0.0f, -1.0f);
+    #endif
+    ssurf->texinfo.saxis = TVec(c,  s)*(TextureSScale(Tex)*spl.splane->XScale);
+    ssurf->texinfo.taxis = TVec(s, -c)*(TextureTScale(Tex)*spl.splane->YScale);
   } else {
-    ssurf->texinfo.taxisLM = TVec(0, 0, -1);
-    ssurf->texinfo.taxis = TVec(0, 0, -1)*(TextureTScale(Tex)*spl.splane->YScale);
+    ssurf->texinfo.taxisLM = TVec(0.0f, 0.0f, -1.0f);
     ssurf->texinfo.saxisLM = Normalise(CrossProduct(spl.GetNormal(), ssurf->texinfo.taxisLM));
-    ssurf->texinfo.saxis = Normalise(CrossProduct(spl.GetNormal(), ssurf->texinfo.taxis))*(TextureSScale(Tex)*spl.splane->XScale);
+    ssurf->texinfo.taxis = ssurf->texinfo.taxisLM*(TextureTScale(Tex)*spl.splane->YScale);
+    ssurf->texinfo.saxis = ssurf->texinfo.saxisLM*(TextureSScale(Tex)*spl.splane->XScale);
   }
 
   /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, spl, Tex);
