@@ -237,7 +237,7 @@ void VLevel::Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, co
   //   from floor to midtex bottom
   //   from midtex top to ceiling
   float cz, fz;
-  if (!P_GetMidTexturePosition(linedef, 0, &cz, &fz)) return;
+  if (!GetMidTexturePosition(linedef, 0, &cz, &fz)) return;
   if (fz > cz) return; // k8: is this right?
   opening_t op;
   op.efloor = sector->eregions->efloor;

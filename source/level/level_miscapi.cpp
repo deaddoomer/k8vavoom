@@ -91,75 +91,68 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
 
 //============================================================================
 //
-//  P_GetMidTexturePosition
+//  VLevel::GetMidTexturePosition
 //
-//  retrieves top and bottom of the current line's mid texture
+//  returns top and bottom of the current line's mid texture
+//  should be used ONLY for 3dmidtex non-wrapping lines
+//  returns `false` if there is no midtex (or it is empty)
 //
 //============================================================================
-bool P_GetMidTexturePosition (const line_t *linedef, int sideno, float *ptextop, float *ptexbot) {
+bool VLevel::GetMidTexturePosition (const line_t *linedef, int sideno, float *ptextop, float *ptexbot) {
   if (sideno < 0 || sideno > 1 || !linedef || linedef->sidenum[0] == -1 || linedef->sidenum[1] == -1) {
-    if (ptextop) *ptextop = 0;
-    if (ptexbot) *ptexbot = 0;
+    if (ptextop) *ptextop = 0.0f;
+    if (ptexbot) *ptexbot = 0.0f;
     return false;
   }
 
-  // have to do this, because this function can be called both in server and in client
-  VLevel *level = (GClLevel ? GClLevel : GLevel);
-
-  const side_t *sidedef = &level->Sides[linedef->sidenum[sideno]];
-  if (sidedef->MidTexture <= 0) {
-    if (ptextop) *ptextop = 0;
-    if (ptexbot) *ptexbot = 0;
+  const side_t *sidedef = &Sides[linedef->sidenum[sideno]];
+  if (!sidedef || GTextureManager.IsEmptyTexture(sidedef->MidTexture)) {
+    if (ptextop) *ptextop = 0.0f;
+    if (ptexbot) *ptexbot = 0.0f;
     return false;
   }
 
   VTexture *MTex = GTextureManager(sidedef->MidTexture);
-  if (!MTex) {
-    if (ptextop) *ptextop = 0;
-    if (ptexbot) *ptexbot = 0;
+  // just in case
+  if (!MTex || MTex->Type == TEXTYPE_Null) {
+    if (ptextop) *ptextop = 0.0f;
+    if (ptexbot) *ptexbot = 0.0f;
     return false;
   }
-  //FTexture * tex= TexMan(texnum);
-  //if (!tex) return false;
 
-  const sector_t *sec = (sideno ? linedef->backsector : linedef->frontsector);
+  const sector_t *fsec = (sideno ? linedef->backsector : linedef->frontsector);
+  // just in case
+  if (!fsec) {
+    if (ptextop) *ptextop = 0.0f;
+    if (ptexbot) *ptexbot = 0.0f;
+    return false;
+  }
 
-  //FIXME: use sector regions instead?
-  //       wtf are sector regions at all?!
+  const sector_t *bsec = (sideno ? linedef->frontsector : linedef->backsector);
 
-  const float mheight = MTex->GetScaledHeight();
+  const float scale = sidedef->Mid.ScaleY;
+  const float texh = MTex->GetScaledHeight()/(scale > 0.0f ? scale : 1.0f);
+  // just in case
+  if (texh < 1.0f) {
+    if (ptextop) *ptextop = 0.0f;
+    if (ptexbot) *ptexbot = 0.0f;
+    return false;
+  }
 
-  float toffs;
+  float zOrg; // texture bottom
   if (linedef->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
-    toffs = sec->floor.TexZ+mheight;
-  } else if (linedef->flags&ML_DONTPEGTOP) {
-    // top of texture at top of top region
-    toffs = sec->ceiling.TexZ;
+    zOrg = (bsec ? max2(fsec->floor.TexZ, bsec->floor.TexZ) : fsec->floor.TexZ);
   } else {
     // top of texture at top
-    toffs = sec->ceiling.TexZ;
+    zOrg = (bsec ? min2(fsec->ceiling.TexZ, bsec->ceiling.TexZ) : fsec->ceiling.TexZ)-texh;
   }
-  toffs *= MTex->TScale;
-  toffs += sidedef->Mid.RowOffset*(MTex->bWorldPanning ? MTex->TScale : 1.0f);
 
-  if (ptextop) *ptextop = toffs;
-  if (ptexbot) *ptexbot = toffs-mheight;
+  zOrg *= MTex->TScale;
+  zOrg += sidedef->Mid.RowOffset*(MTex->bWorldPanning ? MTex->TScale : 1.0f);
 
-  /*
-  float totalscale = fabsf(sidedef->GetTextureYScale(side_t::mid)) * tex->GetScaleY();
-  float y_offset = sidedef->GetTextureYOffset(side_t::mid);
-  float textureheight = tex->GetHeight() / totalscale;
-  if (totalscale != 1. && !tex->bWorldPanning) y_offset /= totalscale;
-
-  if (linedef->flags & ML_DONTPEGBOTTOM) {
-    *ptexbot = y_offset+max2(linedef->frontsector->GetPlaneTexZ(sector_t::floor), linedef->backsector->GetPlaneTexZ(sector_t::floor));
-    *ptextop = *ptexbot+textureheight;
-  } else {
-    *ptextop = y_offset+min2(linedef->frontsector->GetPlaneTexZ(sector_t::ceiling), linedef->backsector->GetPlaneTexZ(sector_t::ceiling));
-    *ptexbot = *ptextop-textureheight;
-  }
-  */
+  if (ptexbot) *ptexbot = zOrg;
+  if (ptextop) *ptextop = zOrg+texh;
 
   return true;
 }
@@ -200,4 +193,22 @@ bool VLevel::IsPointInSector2D (const sector_t *sec, TVec in) const noexcept {
   }
   // it is outside
   return false;
+}
+
+
+
+//**************************************************************************
+//
+//  VavoomC API
+//
+//**************************************************************************
+
+// native final bool GetMidTexturePosition (const line_t *line, int sideno, out float ptextop, out float ptexbot);
+IMPLEMENT_FUNCTION(VLevel, GetMidTexturePosition) {
+  line_t *ld;
+  int sideno;
+  float *ptextop;
+  float *ptexbot;
+  vobjGetParamSelf(ld, sideno, ptextop, ptexbot);
+  RET_BOOL(Self->GetMidTexturePosition(ld, sideno, ptextop, ptexbot));
 }

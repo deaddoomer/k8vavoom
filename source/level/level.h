@@ -935,9 +935,9 @@ public: // regions and openings internal functions
   static void DumpOpening (const opening_t *op) noexcept;
   static void DumpOpPlanes (const TArray<opening_t> &list) noexcept;
 
-  static void GetBaseSectorOpening (opening_t &op, sector_t *sector, const TVec point, bool usePoint);
-  static void InsertOpening (TArray<opening_t> &dest, const opening_t &op);
-  static void Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
+  void GetBaseSectorOpening (opening_t &op, sector_t *sector, const TVec point, bool usePoint);
+  void InsertOpening (TArray<opening_t> &dest, const opening_t &op);
+  void Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
 
   void BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, sector_t *sector, const TVec point,
                             unsigned NoBlockFlags, bool linkList, bool usePoint, bool skipNonSolid=false, bool forSurface=false);
@@ -955,6 +955,11 @@ public: // regions
 
   // it is used to find lowest sector point for silent teleporters
   float GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors=true);
+
+  // returns top and bottom of the current line's mid texture
+  // should be used ONLY for 3dmidtex non-wrapping lines
+  // returns `false` if there is no midtex (or it is empty)
+  bool GetMidTexturePosition (const line_t *linedef, int sideno, float *ptextop, float *ptexbot);
 
 public: // openings
   // build list of openings for the given line and point
@@ -1567,6 +1572,8 @@ private:
 
   DECLARE_FUNCTION(FindOpening)
   DECLARE_FUNCTION(LineOpenings)
+
+  DECLARE_FUNCTION(GetMidTexturePosition)
 };
 
 
@@ -1643,9 +1650,6 @@ public:
 
 // ////////////////////////////////////////////////////////////////////////// //
 TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline=nullptr);
-
-// used only in debug code
-bool P_GetMidTexturePosition (const line_t *line, int sideno, float *ptextop, float *ptexbot);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

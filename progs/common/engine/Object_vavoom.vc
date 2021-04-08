@@ -649,9 +649,6 @@ native static bool IsSectorTagEqual (const GameObject::sector_t *sector, int tag
 // ////////////////////////////////////////////////////////////////////////// //
 // map utilites
 
-// used for various 3dmidtex calculations
-native static final bool P_GetMidTexturePosition (const GameObject::line_t *line, int sideno, out float ptextop, out float ptexbot);
-
 // given a point (x,y), returns the point (ox,oy) on the sector's defining
 // lines that is nearest to (x,y).
 // ignores `z`.

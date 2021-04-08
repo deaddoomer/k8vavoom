@@ -350,6 +350,9 @@ native final bool RotatePolyobj (int num, float angle, optional int flags);
 native final float CheckPObjPlanesPoint (const TVec linestart, const TVec lineend,
                                          optional out TVec outHitPoint, optional out TVec outHitNormal);
 
+// used for various 3dmidtex calculations
+native final bool GetMidTexturePosition (const GameObject::line_t *line, int sideno, out float ptextop, out float ptexbot);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 native final void GetSectorGapCoords (const GameObject::sector_t *sector, const ref TVec point, out float floorz, out float ceilz);

@@ -64,17 +64,6 @@ IMPLEMENT_FREE_FUNCTION(VObject, SectorClosestLine) {
 }
 
 
-// native static final bool P_GetMidTexturePosition (const line_t *line, int sideno, out float ptextop, out float ptexbot);
-IMPLEMENT_FREE_FUNCTION(VObject, P_GetMidTexturePosition) {
-  line_t *ld;
-  int sideno;
-  float *ptextop;
-  float *ptexbot;
-  vobjGetParam(ld, sideno, ptextop, ptexbot);
-  RET_BOOL(P_GetMidTexturePosition(ld, sideno, ptextop, ptexbot));
-}
-
-
 //**************************************************************************
 //
 //  Sound functions
