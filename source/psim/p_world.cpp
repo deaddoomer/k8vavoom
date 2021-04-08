@@ -31,57 +31,64 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
-//static VCvarI dbg_thing_traverser("dbg_thing_traverser", "0", "Thing checking in interceptor: 0=best; 1=Vavoom, better; 2=Vavoom, original", CVAR_PreInit);
-
-// 0: best
-// 1: Vavoom, better
-// 2: Vavoom, original
-#define VV_THING_TRAVERSER  0
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-#define EQUAL_EPSILON (1.0f/65536.0f)
-
-// used in new thing coldet
-struct divline_t {
-  float x, y;
-  float dx, dy;
-};
+//#define VV_DEBUG_TRAVERSER
 
 
 //==========================================================================
 //
-//  pointOnDLineSide
+//  RayBoxIntersection
 //
-//  returns 0 (front/on) or 1 (back)
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
 //
 //==========================================================================
-static inline int pointOnDLineSide (const float x, const float y, const divline_t &line) {
-  return ((y-line.y)*line.dx+(line.x-x)*line.dy > EQUAL_EPSILON);
+static inline float RayBoxIntersection (const TVec &c, const float rad, const float hgt, const TVec &org, const TVec &dir) noexcept {
+  float tmin = -INFINITY, tmax = INFINITY;
+
+  const float xc = c.x-org.x;
+  const float yc = c.y-org.y;
+  const float zbot = c.z-org.z;
+
+  // x
+  if (dir.x != 0.0f) {
+    const float inv = 1.0f/dir.x;
+    const float t1 = (xc-rad)*inv;
+    const float t2 = (xc+rad)*inv;
+    tmin = max2(tmin, min2(t1, t2));
+    tmax = min2(tmax, max2(t1, t2));
+  } else {
+    if (fabs(xc) > rad) return -1.0f;
+  }
+
+  // y
+  if (dir.y != 0.0f) {
+    const float inv = 1.0f/dir.y;
+    const float t1 = (yc-rad)*inv;
+    const float t2 = (yc+rad)*inv;
+    tmin = max2(tmin, min2(t1, t2));
+    tmax = min2(tmax, max2(t1, t2));
+  } else {
+    if (fabs(yc) > rad) return -1.0f;
+  }
+
+  // z
+  if (dir.z != 0.0f) {
+    const float inv = 1.0f/dir.z;
+    const float t1 = zbot*inv;
+    const float t2 = (zbot+hgt)*inv;
+    tmin = max2(tmin, min2(t1, t2));
+    tmax = min2(tmax, max2(t1, t2));
+  } else {
+    if (org.z < c.z || org.z > c.z+hgt) return -1.0f;
+  }
+
+  // `tmin` is "enter time", `tmax` is "exit time"
+  // if `tmin` is negative, we're started inside the box
+
+  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
+  return max2(0.0f, tmin);
 }
 
-
-//==========================================================================
-//
-//  interceptVector
-//
-//  returns the fractional intercept point along the first divline
-//
-//==========================================================================
-static float interceptVector (const divline_t &v2, const divline_t &v1) {
-  const float v1x = v1.x;
-  const float v1y = v1.y;
-  const float v1dx = v1.dx;
-  const float v1dy = v1.dy;
-  const float v2x = v2.x;
-  const float v2y = v2.y;
-  const float v2dx = v2.dx;
-  const float v2dy = v2.dy;
-  const float den = v1dy*v2dx-v1dx*v2dy;
-  if (den == 0) return 0; // parallel
-  const float num = (v1x-v2x)*v1dy+(v2y-v1y)*v1dx;
-  return num/den;
-}
 
 
 //==========================================================================
@@ -247,7 +254,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     GCon->Logf(NAME_Warning, "%s: requested traverse without any checks", Self->GetClass()->GetName());
   }
 
-  //GCon->Logf(NAME_Debug, "AddLineIntercepts: started for %s(%u) (%g,%g,%g)-(%g,%g,%g)", Self->GetClass()->GetName(), Self->GetUniqueId(), p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+  #ifdef VV_DEBUG_TRAVERSER
+  GCon->Logf(NAME_Debug, "AddLineIntercepts: started for %s(%u) (%g,%g,%g)-(%g,%g,%g)", Self->GetClass()->GetName(), Self->GetUniqueId(), p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+  #endif
 
   subsector_t *ssub = nullptr;
 
@@ -256,7 +265,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
   // init interception pool
   poolStart = Level->StartPathInterception();
 
-  //GCon->Logf(NAME_Debug, "000: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, InX1, InY1, x2, y2);
+  #ifdef VV_DEBUG_TRAVERSER
+  GCon->Logf(NAME_Debug, "000: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, InX1, InY1, x2, y2);
+  #endif
   if (walker.start(Level, InX1, InY1, x2, y2)) {
     const float x1 = InX1, y1 = InY1;
 
@@ -265,8 +276,6 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
 
     // check if `Length()` and `SetPointDirXY()` are happy
     if (x1 == x2 && y1 == y2) { x2 += 0.002f; y2 += 0.002f; }
-
-    //GCon->Logf(NAME_Debug, "001: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g)", Self->GetClass()->GetName(), (unsigned)flags, x1, y1, x2, y2);
 
     trace_org = TVec(x1, y1, 0);
     trace_dest = TVec(x2, y2, 0);
@@ -279,6 +288,12 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     trace_org3d = p0;
     trace_dir3d = p1-p0;
     trace_len3d = trace_dir3d.length();
+
+    #ifdef VV_DEBUG_TRAVERSER
+    GCon->Logf(NAME_Debug, "001: %s: requested traverse (0x%04x); start=(%g,%g); end=(%g,%g); dir=(%g,%g); fulldir=(%g,%g); plane=(%g,%g,%g):%g", Self->GetClass()->GetName(), (unsigned)flags, x1, y1, x2, y2,
+      trace_dir.x, trace_dir.y, trace_delta.x, trace_delta.y,
+      trace_plane.normal.x, trace_plane.normal.y, trace_plane.normal.z, trace_plane.dist);
+    #endif
 
     max_frac = FLT_MAX;
 
@@ -418,7 +433,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     }
   }
 
-  //GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
+  #ifdef VV_DEBUG_TRAVERSER
+  GCon->Logf(NAME_Debug, "AddLineIntercepts: DONE! got %d intercept%s for %s(%u)", Count, (Count != 1 ? "s" : ""), Self->GetClass()->GetName(), Self->GetUniqueId());
+  #endif
 
   // just in case
   //#ifdef PARANOID
@@ -627,7 +644,9 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASky : 0u);
       In.line = ld;
       In.side = ld->PointOnSide(trace_org3d);
-      //GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g; start=(%g,%g,%g); hit=(%g,%g,%g)", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, trace_org3d.x, trace_org3d.y, trace_org3d.z, In.hitpoint.x, In.hitpoint.y, In.hitpoint.z);
+      #ifdef VV_DEBUG_TRAVERSER
+      GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g; start=(%g,%g,%g); hit=(%g,%g,%g)", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, trace_org3d.x, trace_org3d.y, trace_org3d.z, In.hitpoint.x, In.hitpoint.y, In.hitpoint.z);
+      #endif
       // set line sector
       if (po) {
         //FIXME: this code is a mess!
@@ -653,190 +672,73 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 
 //==========================================================================
 //
-//  CalcProperThingHit
-//
-//  returns new frac, or -1
-//
-//==========================================================================
-static float CalcProperThingHit (TVec &hitPoint, VEntity *th, const TVec &shootOrigin, const TVec &dir, const float frac) {
-  const float rad = th->Radius;
-  float dist;
-  if (hitPoint.z > th->Origin.z+th->Height) {
-    // trace enters above actor
-    if (dir.z >= 0.0f) return -1.0f; // going up: can't hit
-    // does it hit the top of the actor?
-    dist = (th->Origin.z+th->Height-shootOrigin.z)/dir.z;
-  } else if (hitPoint.z < th->Origin.z) {
-    // trace enters below actor
-    if (dir.z <= 0.0f) return -1.0f; // going down: can't hit
-    // does it hit the bottom of the actor?
-    dist = (th->Origin.z-shootOrigin.z)/dir.z;
-  } else {
-    // hitpoint is either inside, or on a side (this is checked by the caller)
-    return frac;
-  }
-  // top/bottom hitpoint
-  if (dist < 0.0f || dist > 1.0f) return -1.0f;
-  hitPoint = shootOrigin+dir*dist;
-  // calculated coordinate is outside the actor's bounding box
-  if (fabsf(hitPoint.x-th->Origin.x) > rad ||
-      fabsf(hitPoint.y-th->Origin.y) > rad)
-  {
-    return -1.0f;
-  }
-  return dist;
-}
-
-
-//==========================================================================
-//
-//  VPathTraverse::AddProperThingHit
-//
-//  calculates proper thing hit and so on
-//
-//==========================================================================
-void VPathTraverse::AddProperThingHit (VEntity *th, float frac) {
-  if (frac >= max_frac) return;
-  TVec hp = trace_org3d+trace_dir3d*frac;
-  if (!(scanflags&(PT_NOOPENS|PT_AIMTHINGS))) {
-    //GCon->Logf(NAME_Debug, "%s: hpz=%g; tz0=%g; tz1=%g", th->GetClass()->GetName(), hp.z, th->Origin.z, th->Origin.z+th->Height);
-    const float newfrac = CalcProperThingHit(hp, th, trace_org3d, trace_dir3d, frac);
-    if (newfrac < 0.0f) return;
-    if (th->Origin.z+th->Height < hp.z) return; // shot over the thing
-    if (th->Origin.z > hp.z) return; // shot under the thing
-    // recalc frac
-    //GCon->Logf(NAME_Debug, "%s: oldfrac=%g; calcfrac=%g; newfrac=%g; new2dfrac=%g", th->GetClass()->GetName(), frac, newfrac, (hp-trace_org3d).length()/trace_len3d, (TVec(hp.x, hp.y)-trace_org).length()/trace_len);
-    //frac = (hp-trace_org3d).length()/trace_len3d;
-    if (newfrac >= max_frac) return; // cannot hit
-    frac = newfrac;
-  }
-  intercept_t &In = NewIntercept(frac);
-  In.Flags = 0;
-  In.thing = th;
-  In.hitpoint = hp;
-}
-
-
-//==========================================================================
-//
 //  VPathTraverse::AddThingIntercepts
 //
 //==========================================================================
 void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
   if (!Self) return;
-  //const int tvt = dbg_thing_traverser.asInt();
-  #if VV_THING_TRAVERSER == 0
-    // best, gz
-    divline_t trace;
-    trace.x = trace_org.x;
-    trace.y = trace_org.y;
-    trace.dx = trace_delta.x;
-    trace.dy = trace_delta.y;
-    divline_t line;
-    /*static*/ const int deltas[3] = { 0, -1, 1 };
-    for (int dy = 0; dy < 3; ++dy) {
-      for (int dx = 0; dx < 3; ++dx) {
-        if (!NeedCheckBMCell(mapx+deltas[dx], mapy+deltas[dy])) continue;
-        for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
-          VEntity *ent = it.entity();
-          if (ent->ValidCount == validcount) continue;
-          ent->ValidCount = validcount;
-          if (ent->Height <= 0.0f) continue;
-          const float rad = ent->Radius;
-          if (rad <= 0.0f) continue;
-          //if (vptSeenThings.put(*It, true)) continue;
-          // [RH] don't check a corner to corner crossection for hit
-          // instead, check against the actual bounding box
+  // proper ray-vs-aabb
+  /*static*/ const int deltas[3] = { 0, -1, 1 };
+  for (unsigned dy = 0; dy < 3; ++dy) {
+    for (unsigned dx = 0; dx < 3; ++dx) {
+      #ifdef VV_DEBUG_TRAVERSER
+      GCon->Logf(NAME_Debug, "BMCELL: (%d,%d)", mapx+deltas[dx], mapy+deltas[dy]);
+      #endif
+      if (!NeedCheckBMCell(mapx+deltas[dx], mapy+deltas[dy])) continue;
+      #ifdef VV_DEBUG_TRAVERSER
+      GCon->Logf(NAME_Debug, "BMCELL: checking (%d,%d)", mapx+deltas[dx], mapy+deltas[dy]);
+      #endif
+      for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
+        VEntity *ent = it.entity();
+        #ifdef VV_DEBUG_TRAVERSER
+        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->Radius);
+        #endif
+        if (ent->ValidCount == validcount) continue;
+        ent->ValidCount = validcount;
+        if (ent->Height <= 0.0f) continue;
+        const float rad = ent->Radius;
+        if (rad <= 0.0f) continue;
+        //if (vptSeenThings.put(*It, true)) continue;
+        // [RH] don't check a corner to corner crossection for hit
+        // instead, check against the actual bounding box
+        #ifdef VV_DEBUG_TRAVERSER
+        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) start checking... traceorg=(%g,%g,%g); thingorg=(%g,%g,%g); tracedir=(%g,%g,%g)", ent->GetClass()->GetName(), ent->GetUniqueId(),
+          trace_org3d.x, trace_org3d.y, trace_org3d.z,
+          ent->Origin.x, ent->Origin.y, ent->Origin.z,
+          trace_dir3d.x, trace_dir3d.y, trace_dir3d.z);
+        #endif
 
+        // use standard ray-aabb intersection algorithm (instead of the crap ZDoom is using because RH cannot code)
+        const float rbfrac = RayBoxIntersection(ent->Origin, rad, ent->Height, trace_org3d, trace_dir3d);
+        #ifdef VV_DEBUG_TRAVERSER
+        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) rbfrac=%g; max_frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), rbfrac, max_frac);
+        #endif
+        if (rbfrac >= 0.0f && rbfrac <= max_frac) {
+          // either no openings, or just autoaiming?
           if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
-            // center hitpoint
-            const float dot = trace_plane.PointDistance(ent->Origin);
-            if (fabsf(dot) >= rad) continue; // thing is too far away
-            const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
-            if (dist < 0.0f) continue; // behind source
-            const float frac = (trace_len ? dist/trace_len : 0.0f);
-            if (frac < 0.0f || frac > 1.0f) continue;
-            intercept_t &In = NewIntercept(frac);
+            // yes, use entity center as hit point
+            const float dist = DotProduct((TVec(ent->Origin.x, ent->Origin.y)-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
+            #ifdef VV_DEBUG_TRAVERSER
+            GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) CENTER; dist=%g; distance=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), dist, trace_len);
+            #endif
+            const float cffrac = (trace_len ? dist/trace_len : 0.0f);
+            #ifdef VV_DEBUG_TRAVERSER
+            GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) CENTER; frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), cffrac);
+            #endif
+            if (cffrac < 0.0f || cffrac > max_frac) continue;
+            intercept_t &In = NewIntercept(cffrac);
             In.Flags = 0;
             In.thing = ent;
-            continue;
-          }
-
-          // there's probably a smarter way to determine which two sides
-          // of the thing face the trace than by trying all four sides...
-          int numfronts = 0;
-          for (int i = 0; i < 4; ++i) {
-            switch (i) {
-              case 0: // top edge
-                line.y = ent->Origin.y+rad;
-                if (trace_org.y < line.y) continue;
-                line.x = ent->Origin.x+rad;
-                line.dx = -rad*2.0f;
-                line.dy = 0.0f;
-                break;
-              case 1: // right edge
-                line.x = ent->Origin.x+rad;
-                if (trace_org.x < line.x) continue;
-                line.y = ent->Origin.y-rad;
-                line.dx = 0.0f;
-                line.dy = rad*2.0f;
-                break;
-              case 2: // bottom edge
-                line.y = ent->Origin.y-rad;
-                if (trace_org.y > line.y) continue;
-                line.x = ent->Origin.x-rad;
-                line.dx = rad*2.0f;
-                line.dy = 0.0f;
-                break;
-              case 3: // left edge
-                line.x = ent->Origin.x-rad;
-                if (trace_org.x > line.x) continue;
-                line.y = ent->Origin.y+rad;
-                line.dx = 0.0f;
-                line.dy = -rad*2.0f;
-                break;
-            }
-            ++numfronts;
-            // check if this side is facing the trace origin
-            // if it is, see if the trace crosses it
-            if (pointOnDLineSide(line.x, line.y, trace) != pointOnDLineSide(line.x+line.dx, line.y+line.dy, trace)) {
-              // it's a hit
-              const float frac = interceptVector(trace, line);
-              if (frac < 0.0f || frac > 1.0f) continue;
-              AddProperThingHit(ent, frac);
-              break;
-            }
-          }
-          // if none of the sides was facing the trace, then the trace
-          // must have started inside the box, so add it as an intercept
-          if (numfronts == 0) {
-            AddProperThingHit(ent, 0.0f);
+          } else {
+            intercept_t &In = NewIntercept(rbfrac);
+            In.Flags = 0;
+            In.thing = ent;
           }
         }
       }
     }
-  #elif VV_THING_TRAVERSER == 1
-    // better original
-    for (int dy = -1; dy < 2; ++dy) {
-      for (int dx = -1; dx < 2; ++dx) {
-        if (!NeedCheckBMCell(mapx+dx, mapy+dy)) continue;
-        for (auto &&it : Level->allBlockThings(mapx+dx, mapy+dy)) {
-          VEntity *ent = it.entity();
-          if (ent->ValidCount == validcount) continue;
-          ent->ValidCount = validcount;
-          if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
-          const float dot = trace_plane.PointDistance(ent->Origin);
-          if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
-          const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
-          if (dist < 0.0f) continue; // behind source
-          const float frac = (trace_len ? dist/trace_len : 0.0f);
-          if (frac < 0.0f || frac > 1.0f) continue;
-          //if (vptSeenThings.put(*It, true)) continue;
-          AddProperThingHit(ent, frac);
-        }
-      }
-    }
-  #elif VV_THING_TRAVERSER == 2
+  }
+  /*
     // original
     if (!NeedCheckBMCell(mapx, mapy)) return;
     for (auto &&it : Level->allBlockThings(mapx, mapy)) {
@@ -852,9 +754,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
       if (frac < 0.0f || frac > 1.0f) continue;
       AddProperThingHit(ent, frac);
     }
-  #else
-    #error "VV_THING_TRAVERSER is not properly set!"
-  #endif
+  */
 }
 
 

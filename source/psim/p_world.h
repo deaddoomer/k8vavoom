@@ -119,9 +119,6 @@ private:
   void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
   intercept_t &NewIntercept (const float frac);
 
-  // calculates proper thing hit and so on
-  void AddProperThingHit (VEntity *th, float frac);
-
   inline int InterceptCount () const noexcept { return Level->CurrentPathInterceptionIndex()-poolStart; }
   inline intercept_t *GetIntercept (int idx) noexcept { return Level->GetPathIntercept(poolStart+idx); }
 
