@@ -1100,6 +1100,8 @@ static void ParseCameraTexture (VScriptParser *sc) {
   Tex->bWorldPanning = worldPan;
   Tex->SScale = (float)Width/(float)FitWidth;
   Tex->TScale = (float)Height/(float)FitHeight;
+  if (!isFiniteF(Tex->SScale) || Tex->SScale <= 0.0f) Tex->SScale = 1.0f; // just in case
+  if (!isFiniteF(Tex->TScale) || Tex->TScale <= 0.0f) Tex->TScale = 1.0f; // just in case
 }
 
 

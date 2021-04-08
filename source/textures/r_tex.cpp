@@ -1859,6 +1859,8 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     NewTex->bWorldPanning = true;
     NewTex->SScale = NewTex->GetWidth()/max2(1, oldWidth);
     NewTex->TScale = NewTex->GetHeight()/max2(1, oldHeight);
+    if (!isFiniteF(NewTex->SScale) || NewTex->SScale <= 0.0f) NewTex->SScale = 1.0f; // just in case
+    if (!isFiniteF(NewTex->TScale) || NewTex->TScale <= 0.0f) NewTex->TScale = 1.0f; // just in case
     if (doSOffset) NewTex->SOffset = (int)floorf(OldTex->GetScaledSOffset()*NewTex->SScale);
     if (doTOffset) NewTex->TOffset = (int)floorf(OldTex->GetScaledTOffset()*NewTex->TScale);
     //if (OldTex->SScale != 1.0f || OldTex->TScale != 1.0f) GCon->Logf(NAME_Debug, "NEW: %s: oldsize=(%d,%d); oldscale=(%g,%g); newsize=(%d,%d); newscale=(%g,%g)", *OldTex->Name, OldTex->GetWidth(), OldTex->GetHeight(), OldTex->SScale, OldTex->TScale, NewTex->GetWidth(), NewTex->GetHeight(), NewTex->SScale, NewTex->TScale);

@@ -77,6 +77,8 @@ VMultiPatchTexture::VMultiPatchTexture (VStream &Strm, int DirectoryIndex,
   vuint8 TmpTScale = Streamer<vuint8>(Strm);
   SScale = (TmpSScale ? TmpSScale/8.0f : 1.0f);
   TScale = (TmpTScale ? TmpTScale/8.0f : 1.0f);
+  if (SScale <= 0.0f) SScale = 1.0f;
+  if (TScale <= 0.0f) TScale = 1.0f;
 
   // read dimensions
   Width = Streamer<vint16>(Strm);
@@ -482,10 +484,16 @@ VMultiPatchTexture::VMultiPatchTexture (VScriptParser *sc, int AType)
         TOffset = sc->Number;
       } else if (sc->Check("xscale")) {
         sc->ExpectFloatWithSign();
-        SScale = sc->Float;
+             if (sc->Float == 0.0f) { sc->Float = 1.0f; GCon->Logf(NAME_Warning, "%s: don't use zero texture scale!", *sc->GetLoc().toStringNoCol()); }
+        else if (sc->Float < 0.0f) GCon->Logf(NAME_Warning, "%s: don't use negative texture scale, it doesn't work!", *sc->GetLoc().toStringNoCol());
+        else if (!isFiniteF(sc->Float)) { sc->Float = 1.0f; GCon->Logf(NAME_Warning, "%s: invalid texture scale!", *sc->GetLoc().toStringNoCol()); }
+        SScale = fabsf(sc->Float);
       } else if (sc->Check("yscale")) {
         sc->ExpectFloatWithSign();
-        TScale = sc->Float;
+             if (sc->Float == 0.0f) { sc->Float = 1.0f; GCon->Logf(NAME_Warning, "%s: don't use zero texture scale!", *sc->GetLoc().toStringNoCol()); }
+        else if (sc->Float < 0.0f) GCon->Logf(NAME_Warning, "%s: don't use negative texture scale, it doesn't work!", *sc->GetLoc().toStringNoCol());
+        else if (!isFiniteF(sc->Float)) { sc->Float = 1.0f; GCon->Logf(NAME_Warning, "%s: invalid texture scale!", *sc->GetLoc().toStringNoCol()); }
+        TScale = fabsf(sc->Float);
       } else if (sc->Check("worldpanning")) {
         bWorldPanning = true;
       } else if (sc->Check("nulltexture")) {

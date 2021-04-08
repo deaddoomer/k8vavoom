@@ -1467,8 +1467,10 @@ VFontChar::VFontChar (VTexture *ATex, rgba_t *APalette)
   Height = BaseTex->GetHeight();
   SOffset = BaseTex->SOffset;
   TOffset = BaseTex->TOffset;
-  SScale = BaseTex->SScale;
-  TScale = BaseTex->TScale;
+  SScale = fabsf(BaseTex->SScale);
+  TScale = fabsf(BaseTex->TScale);
+  if (!isFiniteF(SScale) || SScale <= 0.0f) SScale = 1.0f;
+  if (!isFiniteF(TScale) || TScale <= 0.0f) TScale = 1.0f;
   //GCon->Logf("created font char with basetex %p (%s)", BaseTex, *BaseTex->Name);
 }
 
