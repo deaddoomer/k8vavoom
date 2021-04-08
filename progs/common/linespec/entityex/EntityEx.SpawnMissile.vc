@@ -163,28 +163,35 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
     TVec org = Origin;
     org.z += Height*0.5;
     float rad = fmax(1.0, Radius);
-    //printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:(%f,%f,%f)", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity.x, savedVelocity.y, savedVelocity.z);
-    //printdebug("%C: MISSILE DECAL %s: vel:(%f,%f,%f)", self, DecalName, savedVelocity.x, savedVelocity.y, savedVelocity.z);
+    #if 0
+    if (line) {
+      printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:%s; dir=%s; line=%s; rad=%s", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity, dir, line-&XLevel.Lines[0], rad);
+    } else {
+      printdebug("%C: MISSILE DECAL %s: vel:%s; dir=%s; rad=%s", self, DecalName, savedVelocity, dir);
+    }
+    #endif
     if (!TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
       bool doNextTrace = true;
-      if (line && Velocity.xy) {
+      if (line && savedVelocity.xy) {
         //printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:(%f,%f,%f)", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity.x, savedVelocity.y, savedVelocity.z);
-        TVec ndir = vector(fsign(Velocity.x), fsign(Velocity.y)).normalise;
+        TVec ndir = vector(fsign(savedVelocity.x), fsign(savedVelocity.y)).normalise;
+        //printdebug("%C:  trace decal splat; ndir=%s", self, ndir);
         if (TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
+          //printdebug("%C:    decal splat tracing complete!", self);
           doNextTrace = false;
         }
       }
       if (doNextTrace && !line && dir.z) {
-        //printdebug("%C: secondary trace", self);
         dir.z = 0;
         dir = dir.normalise;
+        //printdebug("%C: secondary trace: dir=%s", self, dir);
         if (TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
           doNextTrace = false;
         }
       }
       if (line && doNextTrace) {
-        //printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:(%f,%f,%f)", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity.x, savedVelocity.y, savedVelocity.z);
         TVec ndir = -line->normal;
+        //printdebug("%C: trinary trace: ndir=%s", self, ndir);
         TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0));
       }
     }
