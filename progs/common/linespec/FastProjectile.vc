@@ -25,6 +25,8 @@
 //**************************************************************************
 class FastProjectile : Actor;
 
+//#define USE_OLD_FASTPROJECTILE_CODE
+
 
 //==========================================================================
 //
@@ -40,6 +42,7 @@ override void Tick (float DeltaTime) {
     return;
   }
 
+  #ifdef USE_OLD_FASTPROJECTILE_CODE
   int Count = 8;
 
   //print("%C: velocity=%s", self, Velocity);
@@ -113,12 +116,13 @@ override void Tick (float DeltaTime) {
     float xfrac = velxDT/float(Count);
     float yfrac = velyDT/float(Count);
     float zfrac = Velocity.z*DeltaTime/float(Count);
+    //printdebug("FAST(%C): xfrac=%s; yfrac=%s; zfrac=%s; org=%s; radius=%s; height=%s", self, xfrac, yfrac, zfrac, Origin, Radius, Height);
     bool changexy = xfrac || yfrac;
     foreach (auto i; 0..Count) {
       if (changexy) {
         //printdebug("FAST(%C): i=%s/%s; xfrac=%s; yfrac=%s; org=%s", self, i, Count-1, xfrac, yfrac, Origin);
         if (!TryMoveEx(out tmtrace, vector(Origin.x+xfrac, Origin.y+yfrac, Origin.z), AllowDropOff:true)) {
-          //printdebug("FAST(%C):   failed! mobj=%s; line=%s; Box=%s/%s; fc=%s/%s", self, tmtrace.BlockingMobj, tmtrace.BlockingLine, Origin.z, Origin.z+Height, FloorZ, CeilingZ);
+          //printdebug("FAST(%C):   failed! mobj=%s; line=%s; Box=%s/%s; fc=%s/%s", self, tmtrace.BlockingMobj, (tmtrace.BlockingLine ? tmtrace.BlockingLine-&XLevel.Lines[0] : -1), Origin.z, Origin.z+Height, FloorZ, CeilingZ);
           // blocked move
           if (tmtrace.BlockingMobj) {
             BlasterHitMobj(tmtrace.BlockingMobj);
@@ -148,6 +152,66 @@ override void Tick (float DeltaTime) {
       if (changexy) SpawnBlasterEffects();
     }
   }
+
+  #else
+  // split move in multiple steps if moving too fast
+  // this is slower than the old code, but much more precise
+  float xmove = Velocity.x*DeltaTime;
+  float ymove = Velocity.y*DeltaTime;
+
+  int Steps = 1;
+  float MyMaxStep = fmax(fabs(xmove), fabs(ymove));
+  float MaxStep = Radius-0.1;
+  if (MaxStep <= 0.0) MaxStep = MAXMOVESTEP;
+
+  if (MyMaxStep > MaxStep) Steps = int(MyMaxStep/MaxStep)+1;
+
+  float xfrac = xmove/float(Steps);
+  float yfrac = ymove/float(Steps);
+  float zfrac = Velocity.z*DeltaTime/float(Steps);
+
+  if (Velocity || Origin.z != FloorZ) {
+    tmtrace_t tmtrace;
+    TVec oldOrigin = Origin;
+    //printdebug("FAST(%C): xfrac=%s; yfrac=%s; zfrac=%s; org=%s; radius=%s; height=%s; xmove=%s; ymove=%s; steps=%s; dest=%s", self, xfrac, yfrac, zfrac, Origin, Radius, Height, xmove, ymove, Steps, Origin+vector(xmove, ymove, Velocity.z*DeltaTime));
+    //printdebug("FAST(%C): END:: xfrac=%s; yfrac=%s; zfrac=%s; org=%s", self, xfrac, yfrac, zfrac, Origin+vector(xmove, ymove, Velocity.z*DeltaTime));
+    bool changexy = (xfrac || yfrac);
+    foreach (auto i; 0..Steps) {
+      if (changexy) {
+        //printdebug("FAST(%C): i=%s/%s; xfrac=%s; yfrac=%s; org=%s", self, i, Steps-1, xfrac, yfrac, Origin);
+        if (!TryMoveEx(out tmtrace, vector(Origin.x+xfrac, Origin.y+yfrac, Origin.z), AllowDropOff:true)) {
+          //printdebug("FAST(%C):   failed! mobj=%s; line=%s; Box=%s/%s; fc=%s/%s", self, tmtrace.BlockingMobj, (tmtrace.BlockingLine ? tmtrace.BlockingLine-&XLevel.Lines[0] : -1), Origin.z, Origin.z+Height, FloorZ, CeilingZ);
+          // blocked move
+          if (tmtrace.BlockingMobj) {
+            BlasterHitMobj(tmtrace.BlockingMobj);
+          } else {
+            // hit the wall
+            ExplodeMissile(Victim:none, line:tmtrace.BlockingLine);
+          }
+          return;
+        }
+      }
+      Origin.z += zfrac;
+      if (Origin.z <= FloorZ) {
+        // hit the floor
+        Origin.z = FloorZ;
+        HitFloorType();
+        //printdebug("FAST(%C): FLOOR HIT!", self);
+        ExplodeMissile(Victim:none);
+        return;
+      }
+      if (Origin.z+Height > CeilingZ) {
+        // hit the ceiling
+        Origin.z = CeilingZ-Height;
+        //printdebug("FAST(%C): CEILING HIT!", self);
+        ExplodeMissile(Victim:none);
+        return;
+      }
+      if (changexy) SpawnBlasterEffects();
+    }
+    //printdebug("FAST(%C): DONE! xfrac=%s; yfrac=%s; zfrac=%s; org=%s", self, xfrac, yfrac, zfrac, Origin);
+  }
+  #endif
 
   // cycle through states, calling action functions at transitions
   AdvanceState(DeltaTime);
