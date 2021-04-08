@@ -103,7 +103,7 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
     // Doom "up" is positive `z`
     // texture origin is left bottom corner (don't even ask me why)
-    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
+    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
     float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom

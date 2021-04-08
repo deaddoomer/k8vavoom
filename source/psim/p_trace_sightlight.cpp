@@ -62,7 +62,6 @@ static inline __attribute__((const)) float TextureSScale (const VTexture *pic) {
 static inline __attribute__((const)) float TextureTScale (const VTexture *pic) { return pic->TScale; }
 static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) { return (pic->bWorldPanning ? pic->SScale : 1.0f); }
 static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) { return (pic->bWorldPanning ? pic->TScale : 1.0f); }
-static inline __attribute__((const)) float DivByScale (float v, float scale) { return (scale > 0 ? v/scale : v); }
 
 
 static InterceptionList intercepts;
@@ -357,7 +356,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   float z_org; // texture top
   if (line->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
-    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
+    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
     z_org = max2(line->frontsector->floor.TexZ, line->backsector->floor.TexZ)+texh;
   } else {
     // top of texture at top
@@ -369,7 +368,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     toffs = sidedef->Mid.RowOffset*TextureOffsetTScale(MTex);
   } else {
     // move origin up/down, as this texture is not wrapped
-    z_org += sidedef->Mid.RowOffset*DivByScale(TextureOffsetTScale(MTex), sidedef->Mid.ScaleY);
+    z_org += sidedef->Mid.RowOffset*(TextureOffsetTScale(MTex)/sidedef->Mid.ScaleY);
     // offset is done by origin, so we don't need to offset texture
     toffs = 0.0f;
   }

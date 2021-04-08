@@ -805,15 +805,6 @@ protected:
   }
 
 public:
-  static inline float DivByScale (float v, float scale) { return (scale > 0.0f ? v/scale : v); }
-
-  static inline float DivByScale2 (float v, float scale, float scale2) {
-    if (scale2 <= 0.0f) return DivByScale(v, scale);
-    if (scale <= 0.0f) return DivByScale(v, scale2);
-    return v/(scale*scale2);
-  }
-
-public:
   static inline void SetupFakeDistances (const seg_t *seg, segpart_t *sp) noexcept {
     if (seg->frontsector->heightsec) {
       sp->frontFakeFloorDist = seg->frontsector->heightsec->floor.dist;

@@ -144,7 +144,7 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   // non-wrapping?
   if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
     // yeah, move TexZ
-    TexZ += yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y);
+    TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
     yofs = 0.0f;
   }
 
@@ -158,19 +158,19 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
   } else {
-    const float texh = DivByScale(tex->GetScaledHeight(), tparam->ScaleY);
+    const float texh = tex->GetScaledHeight()/tparam->ScaleY;
     texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
   }
 
   /*
   if (xofs && (ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 29678) {
-    GCon->Logf(NAME_Debug, "*** xofs=%g; xscale=%g; sscaleofs=%g; realscale=%g; realofs=%g", xofs, tparam->ScaleX, TextureOffsetSScale(tex), DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X), xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X));
+    GCon->Logf(NAME_Debug, "*** xofs=%g; xscale=%g; sscaleofs=%g; realscale=%g; realofs=%g", xofs, tparam->ScaleX, TextureOffsetSScale(tex), DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X), xofs*(TextureOffsetSScale(tex)/tparam->ScaleX));
   }
   */
 
   // apply texture offsets from texture params
-  //texinfo->soffs += sofssign*xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
-  //texinfo->toffs += tofssign*yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
+  //texinfo->soffs += sofssign*xofs*(TextureOffsetSScale(tex)/tparam->ScaleX); // horizontal
+  //texinfo->toffs += tofssign*yofs*(TextureOffsetTScale(tex)/tparam->ScaleY); // vertical
   texinfo->soffs += xofs*TextureOffsetSScale(tex); // horizontal
   texinfo->toffs += yofs*TextureOffsetTScale(tex); // vertical
 

@@ -176,7 +176,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       // top of texture at the higher ceiling
       // it is ok to use seg frontsector ceiling here, because if it is
       // not higher than the back sector ceiling, the upper texture is invisible
-      const float texh = DivByScale(TTex->GetScaledHeight(), sidedef->Top.ScaleY);
+      const float texh = TTex->GetScaledHeight()/sidedef->Top.ScaleY;
       zOrg = top_TexZ-texh;
     } else {
       // bottom of texture at the lower ceiling
@@ -381,7 +381,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       // not lower than the front sector floor, the lower texture is invisible
       zOrg = back_floor->TexZ;
     }
-    const float texh = DivByScale(BTex->GetScaledHeight(), sidedef->Bot.ScaleY);
+    const float texh = BTex->GetScaledHeight()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
     SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
@@ -510,7 +510,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     // texture origin is left bottom corner (don't even ask me why)
 
     vassert(!seg->pobj || !seg->pobj->Is3D());
-    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
+    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
 
     float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
@@ -631,7 +631,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
 
     //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d: seg for line #%d (sector #%d); TexZ=%g:%g (notpeg=%d)", seg->pobj->tag, (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), seg->pobj->pofloor.TexZ, seg->pobj->poceiling.TexZ, !!(linedef->flags&ML_DONTPEGBOTTOM));
 
-    const float texh = DivByScale(MTex->GetScaledHeight(), sidedef->Mid.ScaleY);
+    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
     float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
