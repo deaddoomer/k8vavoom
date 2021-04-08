@@ -36,6 +36,50 @@
 
 //==========================================================================
 //
+//  RayBoxIntersection2D
+//
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
+//
+//==========================================================================
+static inline float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept {
+  float tmin = -INFINITY, tmax = INFINITY;
+
+  const float xc = c.x-org.x;
+  const float yc = c.y-org.y;
+
+  // x
+  if (dir.x != 0.0f) {
+    const float inv = 1.0f/dir.x;
+    const float t1 = (xc-rad)*inv;
+    const float t2 = (xc+rad)*inv;
+    tmin = max2(tmin, min2(t1, t2));
+    tmax = min2(tmax, max2(t1, t2));
+  } else {
+    if (fabs(xc) > rad) return -1.0f;
+  }
+
+  // y
+  if (dir.y != 0.0f) {
+    const float inv = 1.0f/dir.y;
+    const float t1 = (yc-rad)*inv;
+    const float t2 = (yc+rad)*inv;
+    tmin = max2(tmin, min2(t1, t2));
+    tmax = min2(tmax, max2(t1, t2));
+  } else {
+    if (fabs(yc) > rad) return -1.0f;
+  }
+
+  // `tmin` is "enter time", `tmax` is "exit time"
+  // if `tmin` is negative, we're started inside the box
+
+  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
+  return max2(0.0f, tmin);
+}
+
+
+//==========================================================================
+//
 //  RayBoxIntersection
 //
 //  this is slow, but we won't test billions of things anyway
@@ -681,16 +725,16 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
   /*static*/ const int deltas[3] = { 0, -1, 1 };
   for (unsigned dy = 0; dy < 3; ++dy) {
     for (unsigned dx = 0; dx < 3; ++dx) {
-      #ifdef VV_DEBUG_TRAVERSER
+      #ifdef VV_DEBUG_TRAVERSER_BMCELL
       GCon->Logf(NAME_Debug, "BMCELL: (%d,%d)", mapx+deltas[dx], mapy+deltas[dy]);
       #endif
       if (!NeedCheckBMCell(mapx+deltas[dx], mapy+deltas[dy])) continue;
-      #ifdef VV_DEBUG_TRAVERSER
+      #ifdef VV_DEBUG_TRAVERSER_BMCELL
       GCon->Logf(NAME_Debug, "BMCELL: checking (%d,%d)", mapx+deltas[dx], mapy+deltas[dy]);
       #endif
       for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
         VEntity *ent = it.entity();
-        #ifdef VV_DEBUG_TRAVERSER
+        #ifdef VV_DEBUG_TRAVERSER_BMCELL
         GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->Radius);
         #endif
         if (ent->ValidCount == validcount) continue;
@@ -709,13 +753,13 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         #endif
 
         // use standard ray-aabb intersection algorithm (instead of the crap ZDoom is using because RH cannot code)
-        const float rbfrac = RayBoxIntersection(ent->Origin, rad, ent->Height, trace_org3d, trace_dir3d);
-        #ifdef VV_DEBUG_TRAVERSER
-        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) rbfrac=%g; max_frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), rbfrac, max_frac);
-        #endif
-        if (rbfrac >= 0.0f && rbfrac <= max_frac) {
-          // either no openings, or just autoaiming?
-          if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
+        // if we're doing 2D checks, use 2d checks, and thing center as hitpoint
+        if (scanflags&(PT_NOOPENS|PT_AIMTHINGS)) {
+          const float rbfrac = RayBoxIntersection2D(ent->Origin, rad, trace_org, trace_delta);
+          #ifdef VV_DEBUG_TRAVERSER
+          GCon->Logf(NAME_Debug, "BMCELL: CENTER entity %s(%u) rbfrac=%g; max_frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), rbfrac, max_frac);
+          #endif
+          if (rbfrac >= 0.0f && rbfrac <= max_frac) {
             // yes, use entity center as hit point
             const float dist = DotProduct((TVec(ent->Origin.x, ent->Origin.y)-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
             #ifdef VV_DEBUG_TRAVERSER
@@ -729,7 +773,13 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
             intercept_t &In = NewIntercept(cffrac);
             In.Flags = 0;
             In.thing = ent;
-          } else {
+          }
+        } else {
+          const float rbfrac = RayBoxIntersection(ent->Origin, rad, ent->Height, trace_org3d, trace_dir3d);
+          #ifdef VV_DEBUG_TRAVERSER
+          GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) rbfrac=%g; max_frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), rbfrac, max_frac);
+          #endif
+          if (rbfrac >= 0.0f && rbfrac <= max_frac) {
             intercept_t &In = NewIntercept(rbfrac);
             In.Flags = 0;
             In.thing = ent;
