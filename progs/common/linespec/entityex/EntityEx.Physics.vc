@@ -524,19 +524,11 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
 
   // split move in multiple steps if moving too fast
   int Steps = 1;
-  float XStep = fabs(xmove);
-  float YStep = fabs(ymove);
-  float MaxStep = Radius-1.0;
-
+  float MyMaxStep = fmax(fabs(xmove), fabs(ymove));
+  float MaxStep = Radius-0.2; // was 1.0
   if (MaxStep <= 0.0) MaxStep = MAXMOVESTEP;
 
-  if (XStep > MaxStep || YStep > MaxStep) {
-    if (XStep > YStep) {
-      Steps = int(XStep/MaxStep)+1;
-    } else {
-      Steps = int(YStep/MaxStep)+1;
-    }
-  }
+  if (MyMaxStep > MaxStep) Steps = int(MyMaxStep/MaxStep)+1;
 
   float StepXMove = xmove/float(Steps);
   float StepYMove = ymove/float(Steps);

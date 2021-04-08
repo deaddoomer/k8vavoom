@@ -161,7 +161,7 @@ override void Tick (float DeltaTime) {
 
   int Steps = 1;
   float MyMaxStep = fmax(fabs(xmove), fabs(ymove));
-  float MaxStep = Radius-0.1;
+  float MaxStep = Radius-0.2;
   if (MaxStep <= 0.0) MaxStep = MAXMOVESTEP;
 
   if (MyMaxStep > MaxStep) Steps = int(MyMaxStep/MaxStep)+1;
