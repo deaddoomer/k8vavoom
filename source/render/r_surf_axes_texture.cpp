@@ -83,9 +83,12 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
     #define scale2Y  1.0f
   #endif
 
+  const bool xflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X);
+  const bool yflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y);
+
   // still need to adjust offset signs, so offsets will work the same way regardless of flipping
-  const float sofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X ? -1.0f : +1.0f);
-  const float tofssign = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y ? -1.0f : +1.0f);
+  //const float sofssign = (xflip ? -1.0f : +1.0f);
+  //const float tofssign = (yflip ? -1.0f : +1.0f);
 
   #if 0
   float angle = 0.0f; //AngleMod(tparam->BaseAngle-tparam->Angle)
@@ -122,8 +125,8 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX*scale2X;
   texinfo->taxis *= TextureTScale(tex)*tparam->ScaleY*scale2Y;
 
-  if ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X) texinfo->saxis = -texinfo->saxis;
-  if ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y) texinfo->taxis = -texinfo->taxis;
+  if (xflip) texinfo->saxis = -texinfo->saxis;
+  if (yflip) texinfo->taxis = -texinfo->taxis;
 
   // basic texture offset, so it will start at `v1`
   //texinfo->soffs = -DotProduct(*seg->linedef->v1, texinfo->saxis); // horizontal
@@ -131,23 +134,45 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   //for long memories... texinfo->soffs += c*seg->offset-seg->offset;
 
   // x offset need not to be modified (i hope)
-  const float xofs = tparam->TextureOffset+(segparam ? segparam->TextureOffset : 0.0f);
+  float xofs = tparam->TextureOffset+(segparam ? segparam->TextureOffset : 0.0f);
+  if (xflip) xofs = -xofs;
 
   // y offset should be modified, because non-wrapping textures physically moves
   float yofs = tparam->RowOffset+(segparam ? segparam->RowOffset : 0.0f);
+  if (yflip) yofs = -yofs;
+
   // non-wrapping?
   if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
     // yeah, move TexZ
     TexZ += yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y);
-    yofs = 0;
+    yofs = 0.0f;
   }
 
-  texinfo->soffs = -DotProduct(*seg->linedef->v1, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
-  texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
+  if (!xflip) {
+    texinfo->soffs = -DotProduct(*seg->linedef->v1, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+  } else {
+    // flipped
+    texinfo->soffs = -DotProduct(*seg->linedef->v2, -seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+  }
+
+  if (!yflip) {
+    texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
+  } else {
+    const float texh = DivByScale(tex->GetScaledHeight(), tparam->ScaleY);
+    texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
+  }
+
+  /*
+  if (xofs && (ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 29678) {
+    GCon->Logf(NAME_Debug, "*** xofs=%g; xscale=%g; sscaleofs=%g; realscale=%g; realofs=%g", xofs, tparam->ScaleX, TextureOffsetSScale(tex), DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X), xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X));
+  }
+  */
 
   // apply texture offsets from texture params
-  texinfo->soffs += sofssign*xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
-  texinfo->toffs += tofssign*yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
+  //texinfo->soffs += sofssign*xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
+  //texinfo->toffs += tofssign*yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
+  texinfo->soffs += xofs*TextureOffsetSScale(tex); // horizontal
+  texinfo->toffs += yofs*TextureOffsetTScale(tex); // vertical
 
   #if 0
   // rotate around bottom left corner (doesn't work)
