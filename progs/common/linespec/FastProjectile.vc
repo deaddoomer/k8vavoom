@@ -172,7 +172,6 @@ override void Tick (float DeltaTime) {
 
   if (Velocity || Origin.z != FloorZ) {
     tmtrace_t tmtrace;
-    TVec oldOrigin = Origin;
     //printdebug("FAST(%C): xfrac=%s; yfrac=%s; zfrac=%s; org=%s; radius=%s; height=%s; xmove=%s; ymove=%s; steps=%s; dest=%s", self, xfrac, yfrac, zfrac, Origin, Radius, Height, xmove, ymove, Steps, Origin+vector(xmove, ymove, Velocity.z*DeltaTime));
     //printdebug("FAST(%C): END:: xfrac=%s; yfrac=%s; zfrac=%s; org=%s", self, xfrac, yfrac, zfrac, Origin+vector(xmove, ymove, Velocity.z*DeltaTime));
     bool changexy = (xfrac || yfrac);
