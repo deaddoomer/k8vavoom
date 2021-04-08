@@ -282,7 +282,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   // flip it towards plane normal
   float distscale = DotProduct(texnormal, surf->GetNormal());
   if (!distscale) Host_Error("Texture axis perpendicular to face");
-  if (distscale < 0) {
+  if (distscale < 0.0f) {
     distscale = -distscale;
     texnormal = -texnormal;
   }
@@ -292,7 +292,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   distscale = 1.0f/distscale;
   if (!isFiniteF(distscale)) return false;
 
-  for (int i = 0; i < 2; ++i) {
+  for (unsigned i = 0; i < 2; ++i) {
     const float len = 1.0f/lmi.worldtotex[i].length();
     if (!isFiniteF(len)) return false; // just in case
     const float dist = DotProduct(lmi.worldtotex[i], surf->GetNormal())*distscale;
@@ -313,6 +313,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   */
 
   // project back to the face plane
+  // one "unit" in front of surface
   const float dist = (-surf->GetDist()-1.0f)*distscale;
   lmi.texorg = lmi.texorg-texnormal*dist;
 
@@ -406,7 +407,6 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
         float ut = startt+t*step;
 
         // if a line can be traced from surf to facemid, the point is good
-        //bool found = false;
         for (int i = 0; i < 6; ++i) {
           // calculate texture point
           *spt = lmi.calcTexPoint(us, ut);
@@ -416,6 +416,9 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           //!if (Level->TraceLine(Trace, facemid, *spt, SPF_NOBLOCKSIGHT)) break; // got it
           if (CastStaticRay(nullptr, facesubsec, facemid, *spt, 999999.0f)) {
             //found = true;
+            // move the point 1 unit above the surface
+            //const TVec pp = surf->plane.Project(*spt)+surf->plane.normal;
+            //*spt = pp;
             break;
           }
 

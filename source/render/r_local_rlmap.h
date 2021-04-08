@@ -125,9 +125,9 @@ public:
     VV_DISABLE_COPY(LMapTraceInfo)
     inline LMapTraceInfo () noexcept { memset((void *)this, 0, sizeof(LMapTraceInfo)); }
 
-    inline TVec calcTexPoint (const float us, const float ut) const { return texorg+textoworld[0]*us+textoworld[1]*ut; }
+    inline TVec calcTexPoint (const float us, const float ut) const noexcept { return texorg+textoworld[0]*us+textoworld[1]*ut; }
 
-    inline void setupSpotlight (const TVec &aconeDir, const float aconeAngle) {
+    inline void setupSpotlight (const TVec &aconeDir, const float aconeAngle) noexcept {
       spotLight = false;
       coneAngle = (aconeAngle <= 0.0f || aconeAngle >= 360.0f ? 0.0f : aconeAngle);
       coneDir = aconeDir;
