@@ -1703,12 +1703,26 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 
         // check mobj height (pobj floor and ceiling shouldn't be sloped here)
         //FIXME: check height for 3dmitex pobj
+        bool ldblock = false;
+
         if (po->posector) {
           if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        } else {
+          // check for non-3d pobj with midtex
+          if ((ld->flags&(ML_TWOSIDED|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) {
+            if (!mobj->LineIntersects(ld)) continue;
+            const int side = ld->PointOnSide(mobj->Origin);
+            float ptop = 0.0f, pbot = 0.0f;
+            if (!GetMidTexturePosition(ld, side, &ptop, &pbot)) continue;
+            if (mobj->Origin.z >= ptop || mobj->Origin.z+max2(0.0f, mobj->Height) <= pbot) continue;
+            ldblock = true;
+          }
         }
 
-        if (!mobj->IsBlockingLine(ld)) continue;
-        if (!mobj->LineIntersects(ld)) continue;
+        if (!ldblock) {
+          if (!mobj->IsBlockingLine(ld)) continue;
+          if (!mobj->LineIntersects(ld)) continue;
+        }
 
         //TODO: crush corpses!
 

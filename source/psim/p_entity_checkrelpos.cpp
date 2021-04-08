@@ -365,15 +365,15 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     //if (IsPlayer()) GCon->Logf(NAME_Debug, "pobj #%d line #%d, blocking=%d", po->tag, (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), (int)IsBlockingLine(ld));
     // non-3d polyobjects
     if (!po->Is3D()) {
-      if (!IsBlockingLine(ld)) {
-        if (!(ld->flags&ML_3DMIDTEX)) return true;
-        // check 3d midtex
+      // check for non-3d pobj with midtex
+      if (ld->flags&ML_3DMIDTEX) {
         const int side = ld->PointOnSide(tmtrace.End);
         float ptop = 0.0f, pbot = 0.0f;
         if (!XLevel->GetMidTexturePosition(ld, side, &ptop, &pbot)) return true;
         // check height
         if (hitPoint.z >= ptop || hitPoint.z+hgt <= pbot) return true; // no collision
-        // blocking 3d midtex
+      } else {
+        if (!IsBlockingLine(ld)) return true;
       }
       // blocking non-3d polyobject line
       if (!skipSpecials) BlockedByLine(ld);
