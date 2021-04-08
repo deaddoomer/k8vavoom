@@ -63,7 +63,7 @@ static double prevtime = -1.0f;
 //  used only for normal wall textures: top, mid, bottom
 //
 //==========================================================================
-void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float TexZ, const side_tex_params_t *segparam) {
+void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -130,12 +130,24 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   //texinfo->toffs = -DotProduct(TVec(seg->linedef->v1->x, seg->linedef->v1->y, TexZ), texinfo->taxis); // vertical
   //for long memories... texinfo->soffs += c*seg->offset-seg->offset;
 
+  // x offset need not to be modified (i hope)
+  const float xofs = tparam->TextureOffset+(segparam ? segparam->TextureOffset : 0.0f);
+
+  // y offset should be modified, because non-wrapping textures physically moves
+  float yofs = tparam->RowOffset+(segparam ? segparam->RowOffset : 0.0f);
+  // non-wrapping?
+  if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
+    // yeah, move TexZ
+    TexZ += yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y);
+    yofs = 0;
+  }
+
   texinfo->soffs = -DotProduct(*seg->linedef->v1, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
   texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
 
   // apply texture offsets from texture params
-  texinfo->soffs += sofssign*(tparam->TextureOffset+(segparam ? segparam->TextureOffset : 0.0f))*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
-  texinfo->toffs += tofssign*(tparam->RowOffset+(segparam ? segparam->RowOffset : 0.0f))*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
+  texinfo->soffs += sofssign*xofs*DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X); // horizontal
+  texinfo->toffs += tofssign*yofs*DivByScale(TextureOffsetTScale(tex), tparam->ScaleY*scale2Y); // vertical
 
   #if 0
   // rotate around bottom left corner (doesn't work)

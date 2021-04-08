@@ -861,7 +861,7 @@ public:
 
 public:
   static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const bool resetAlpha=true);
-  void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float TexZ, const side_tex_params_t *segparam=nullptr);
+  void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr);
 
 public:
   int CountSegParts (const seg_t *);
