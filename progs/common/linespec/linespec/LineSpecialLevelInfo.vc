@@ -70,6 +70,13 @@ bitenum {
   BLOCKF_SOUND, // (1024): Blocks sound
 }
 
+// for 3d pobj `moveflags`
+const int POBJ_MOVE_NORMAL = 0;
+bitenum {
+  POBJ_MOVE_OVERRIDE,
+  POBJ_MOVE_NOLINK,
+}
+
 
 static final int ConvertLineBlockingFlags (int Arg2) {
   int setFlags = 0;
@@ -1935,10 +1942,12 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //==========================================================================
 override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
-                            int vspeed, int vdist, int forced, Entity Activator)
+                            int vspeed, int vdist, int moveflags, Entity Activator)
 {
   //printdebug("AcsPolyMoveEx: po=%s; hspeed=%s; yawangle=%s; dist=%s; vspeed=%s; vdist=%s; forced=%s", po, hspeed, yawangle, dist, vspeed, vdist, forced);
-  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist);
+  bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
+  bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
+  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist, nolink:nolink);
 }
 
 
@@ -1947,7 +1956,7 @@ override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
 //  AcsPolyMoveToEx
 //
 //==========================================================================
-override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced, Entity Activator) {
+override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int moveflags, Entity Activator) {
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
@@ -1961,10 +1970,13 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced
 
   int vspeed = (vdist < 0 ? -speed : speed);
 
+  bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
+  bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
+
   rel = normalize(rel);
   TAVec angles;
   VectorAngles(rel, out angles);
-  return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced, floatAngle:angles.yaw, floatDist:dist, vspeed:vspeed, vdist:cast(int)fabs(vdist));
+  return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced, floatAngle:angles.yaw, floatDist:dist, vspeed:vspeed, vdist:cast(int)fabs(vdist), nolink:nolink);
 }
 
 
@@ -1975,7 +1987,7 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced
 //  this uses target height too
 //
 //==========================================================================
-override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, Entity Activator) {
+override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflags, Entity Activator) {
   if (!speed || !targettid) return false;
   Entity ent = Level.FindMobjFromTID(targettid, none);
   if (!ent) return 0;
@@ -1983,7 +1995,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
-  return AcsPolyMoveToEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, forced, Activator);
+  return AcsPolyMoveToEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, moveflags, Activator);
 }
 
 
@@ -1993,7 +2005,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 //
 //==========================================================================
 /*final*/ bool EV_StopPoly (line_t *line, int Arg1, int Arg2, int Arg3,
-                            int Arg4, int Arg5, int direction, bool overRide)
+                            int Arg4, int Arg5, int direction, bool overRide,
+                            optional bool nolink)
 {
   int polyNum = Arg1;
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
@@ -2001,12 +2014,21 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   PolyobjThinker.ClearPolyobjThinkers(poly);
   PolyobjStopSequence(poly);
 
+  int seen = polyNum;
+  bool doStep = false;
   for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(/*polyNum*/mirror)) {
     poly = XLevel.GetPolyobj(mirror);
     if (!poly) { printerror("EV_RotatePoly: invalid polyobj mirror num %s for pobj %s", mirror, polyNum); continue; }
+    if (mirror == seen) {
+      printdebug("EV_StopPoly: found mirror loop for pobj %s (this is harmless)", polyNum);
+      break;
+    }
+    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
+    doStep = !doStep;
     PolyobjThinker.ClearPolyobjThinkers(poly);
     PolyobjStopSequence(poly);
   }
+
   return true;
 }
 
@@ -2017,7 +2039,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 //
 //==========================================================================
 /*final*/ bool EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
-                              int Arg4, int Arg5, int direction, bool overRide)
+                              int Arg4, int Arg5, int direction, bool overRide,
+                              optional bool nolink)
 {
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
   if (!poly) { printerror("EV_RotatePoly: invalid polyobj num %d", polyNum); return false; }
@@ -2034,6 +2057,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   pe.dist = (byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
   pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
   pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
+  pe.nolink = nolink;
   //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
@@ -2066,6 +2090,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
     direction = -direction;
     pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
     pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
+    pe.nolink = nolink;
     //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
@@ -2086,7 +2111,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 //
 //==========================================================================
 /*final*/ bool EV_MovePolyToSpot (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
-                                  int Arg5, bool timesEight, bool overRide)
+                                  int Arg5, bool timesEight, bool overRide,
+                                  optional bool nolink)
 {
   int pnum = Arg1;
   int speed = Arg2;
@@ -2126,7 +2152,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
                             int Arg5, bool timesEight, bool overRide,
                             optional float floatAngle, optional float floatDist,
                             //optional bool ignoreThings,
-                            optional int vspeed, optional int vdist)
+                            optional int vspeed, optional int vdist,
+                            optional bool nolink)
 {
   int polyNum = Arg1;
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
@@ -2159,6 +2186,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   float an = (specified_floatAngle ? floatAngle : float(Arg3)*(90.0/64.0));
   if (!Arg2) an = 0;
   pe.angle = an;
+  pe.nolink = nolink;
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
   pe.AppendTo(poly);
@@ -2191,6 +2219,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
     if (specified_vspeed) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
     if (Arg2) an = AngleMod360(an+180.0); // reverse the angle
     pe.angle = an;
+    pe.nolink = nolink;
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
     pe.AppendTo(poly);
@@ -2203,7 +2232,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
 
 //==========================================================================
 //
-// EV_OpenPolyDoor
+//  EV_OpenPolyDoor
 //
 //==========================================================================
 /*final*/ bool EV_OpenPolyDoor (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, int type) {

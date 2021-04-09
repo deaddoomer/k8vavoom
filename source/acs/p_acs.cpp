@@ -3909,21 +3909,21 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
       }
       return 0x7FFFFFFF; // doesn't exist
 
-    // Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override)
+    // Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags)
     case ACSF_Polyobj_MoveEx:
       if (argCount >= 7) {
         return Level->eventAcsPolyMoveEx(args[0], args[1], args[2], args[3], args[4], args[5], args[6], Activator);
       }
       return 0;
 
-    // Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int override)
+    // Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags)
     case ACSF_Polyobj_MoveToEx:
       if (argCount >= 6) {
         return Level->eventAcsPolyMoveToEx(args[0], args[1], args[2], args[3], args[4], args[5], Activator);
       }
       return 0;
 
-    // Polyobj_MoveToSpotEx (int po, int speed, int targettid, int override) -- this uses target height too
+    // Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags) -- this uses target height too
     case ACSF_Polyobj_MoveToSpotEx:
       if (argCount >= 4) {
         return Level->eventAcsPolyMoveToSpotEx(args[0], args[1], args[2], args[3], Activator);

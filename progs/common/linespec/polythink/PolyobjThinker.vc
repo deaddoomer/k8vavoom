@@ -28,6 +28,7 @@ class PolyobjThinker : Thinker abstract;
 int polyobj;
 float thrust_force;
 PolyobjThinker NextAction;
+bool nolink;
 
 
 //==========================================================================

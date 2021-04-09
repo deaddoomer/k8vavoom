@@ -74,7 +74,7 @@ override void Tick (float deltaTime) {
   move = speed*deltaTime;
   absMove = fabs(move);
   if (dist >= 0.0 && dist < absMove) move = dist*(speed < 0.0 ? -1.0 : 1.0);
-  if (XLevel.RotatePolyobj(polyobj, move)) {
+  if (XLevel.RotatePolyobj(polyobj, move, (nolink ? VLevel::POFLAG_NOLINK : 0))) {
     if (dist < 0.0) return; // perpetual polyobj
     dist -= absMove;
     if (dist <= 0.0) {
