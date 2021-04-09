@@ -1169,6 +1169,9 @@ public:
   void RemoveAllSubsectors ();
   void AddSubsector (subsector_t *sub);
 
+  // this is done by `RemoveAllSubsectors()`, you don't need to call it manually
+  void ResetClipSegs ();
+
   VVA_CHECKRESULT inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
   VVA_CHECKRESULT inline PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
   VVA_CHECKRESULT inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
@@ -1284,6 +1287,9 @@ public:
   polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
 
   vuint32 miscFlags; // SSMF_xxx
+
+  // reset polyobject clipsegs for this subsector
+  void ResetClipSegs ();
 
   inline bool HasPObjs () const noexcept { return !!polyparts; }
   inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }

@@ -134,6 +134,14 @@ void VRenderLevelShared::SectorModified (sector_t *sec) {
   for (int f = sec->linecount; f--; ++lptr) {
     MarkAdjacentTJunctions(sec, *lptr);
   }
+
+  // reset sector polyobject clipsegs
+  //FIXME: make this faster by adding "has polyobjects" flag to sector
+  if (Level->NumPolyObjs) {
+    for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
+      if (!sub->isAnyPObj() && sub->HasPObjs()) sub->ResetClipSegs();
+    }
+  }
 }
 
 

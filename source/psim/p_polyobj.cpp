@@ -279,6 +279,30 @@ void polyobj_t::RemoveAllSubsectors () {
 
 //==========================================================================
 //
+//  polyobj_t::ResetClipSegs
+//
+//==========================================================================
+void polyobj_t::ResetClipSegs () {
+  for (polyobjpart_t *part = parts; part; part = part->nextpobj) {
+    part->reset();
+  }
+}
+
+
+//==========================================================================
+//
+//  subsector_t::ResetClipSegs
+//
+//==========================================================================
+void subsector_t::ResetClipSegs () {
+  for (polyobjpart_t *part = polyparts; part; part = part->nextsub) {
+    part->reset();
+  }
+}
+
+
+//==========================================================================
+//
 //  polyobj_t::AddSubsector
 //
 //  no need to check for duplicates here, there won't be any (yet)
