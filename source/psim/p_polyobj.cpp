@@ -31,6 +31,7 @@
 
 
 static VCvarB dbg_pobj_disable("dbg_pobj_disable", false, "Disable most polyobject operations?", CVAR_PreInit);
+static VCvarB dbg_pobj_verbose("dbg_pobj_verbose", false, "Verbose polyobject spawner?", CVAR_PreInit);
 
 
 enum {
@@ -405,6 +406,126 @@ static int explinesCompare (const void *aa, const void *bb, void *) {
 
 //==========================================================================
 //
+//  VLevel::ValidateNormalPolyobj
+//
+//  note that polyobject segs are not collected yet, only lines
+//
+//==========================================================================
+void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
+  if (po->numlines < 3) {
+    GCon->Logf(NAME_Error, "pobj #%d has less than 3 lines (%d)", po->tag, po->numlines);
+  }
+  vassert(po->numlines);
+  sector_t *sfront = po->lines[0]->frontsector;
+  sector_t *sback = po->lines[0]->backsector;
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (ld->frontsector != sfront || ld->backsector != sback) {
+      Host_Error("invalid pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::Validate3DPolyobj
+//
+//  note that polyobject segs are not collected yet, only lines
+//
+//==========================================================================
+void VLevel::Validate3DPolyobj (polyobj_t *po) {
+  vassert(po->numlines >= 3);
+
+  sector_t *sfront = po->lines[0]->frontsector;
+  sector_t *sback = po->lines[0]->backsector;
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (ld->frontsector != sfront || ld->backsector != sback) {
+      Host_Error("invalid pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    }
+    if (!(ld->flags&ML_BLOCKING)) {
+      GCon->Logf(NAME_Error, "pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      ld->flags |= ML_BLOCKING;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::IsGood3DPolyobj
+//
+//  valid 3d pobj should have properly closed contours without "orphan" lines
+//  all lines should be two-sided, with the same frontsector and same
+//  backsector (and those sectors must be different)
+//
+//  note that polyobject segs are not collected yet, only lines
+//
+//==========================================================================
+bool VLevel::IsGood3DPolyobj (polyobj_t *po) {
+  if (po->numlines < 3) return false; // no wai
+  //po->lines = new line_t*[explines.length()];
+  //po->numlines = 0;
+
+  // check if all lines are two-sided, with valid sectors
+  sector_t *sfront = nullptr;
+  sector_t *sback = nullptr;
+
+  // but don't bother if we don't want to spawn 3d pobj
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (!(ld->flags&ML_TWOSIDED)) return false; // found one-sided line
+    if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) return false; // invalid sectors
+    if (!sfront) { sfront = ld->frontsector; sback = ld->backsector; }
+    if (ld->frontsector != sfront || ld->backsector != sback) return false; // invalid sectors
+    // this seems to be a valid line
+  }
+  // should have both sectors
+  if (!sback || sfront == sback) return false;
+
+  // all lines seems to be valid, check for properly closed contours
+  IncrementValidCount();
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (ld->validcount == validcount) continue; // already processed
+    // walk the contour, marking all lines
+    line_t *curr = ld;
+    // first line should be marked as used last
+    int count = 0;
+    do {
+      // find v2 line
+      line_t *next = nullptr;
+      for (auto &&it2 : po->LineFirst()) {
+        line_t *l2 = it2.line();
+        if (l2 == curr) continue; // just in case
+        if (l2->validcount == validcount) continue; // already used
+        if (l2->v1 == curr->v2) {
+          if (next) return false; // two connected lines
+          next = l2;
+          break;
+        }
+      }
+      if (!next) return false; // no contour continuation found, invalid pobj
+      ++count;
+      curr = next;
+      curr->validcount = validcount;
+    } while (curr != ld);
+    if (count < 3) return false;
+  }
+
+  // now check if we have any unmarked lines
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (ld->validcount != validcount) return false; // oops
+  }
+
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VLevel::SpawnPolyobj
 //
 //==========================================================================
@@ -415,7 +536,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
 
   const int index = NumPolyObjs++;
 
-  GCon->Logf(NAME_Debug, "SpawnPolyobj: tag=%d; idx=%d; thing=%d", tag, index, (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1));
+  if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "SpawnPolyobj: tag=%d; idx=%d; thing=%d", tag, index, (thing ? (int)(ptrdiff_t)(thing-&Things[0]) : -1));
 
   polyobj_t *po = new polyobj_t;
   memset((void *)po, 0, sizeof(polyobj_t));
@@ -513,70 +634,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     if (sec && sec->linecount) { sec->prevlinecount = sec->linecount; sec->linecount = 0; }
   }
 
-  // now check if this is a valid 3d pobj
-  // valid 3d pobj should have properly closed contours without "orphan" lines
-  // all lines should be two-sided, with the same frontsector and same backsector (and those sectors must be different)
-
-  // check if all lines are two-sided, with valid sectors
-  bool valid3d = true;
-  sector_t *sfront = nullptr;
-  sector_t *sback = nullptr;
-
-  // but don't bother if we don't want to spawn 3d pobj
-  if (want3DPobj) {
-    for (auto &&ld : explines) {
-      if (!(ld->flags&ML_TWOSIDED)) { valid3d = false; break; } // found one-sided line
-      if (!ld->frontsector || !ld->backsector || ld->backsector == ld->frontsector) { valid3d = false; break; } // invalid sectors
-      if (!sfront) { sfront = ld->frontsector; sback = ld->backsector; }
-      if (ld->frontsector != sfront || ld->backsector != sback) { valid3d = false; break; } // invalid sectors
-      // this seems to be a valid line
-    }
-    if (!sback) valid3d = false;
-
-    if (valid3d) {
-      // all lines seems to be valid, check for properly closed contours
-      IncrementValidCount();
-      for (auto &&ld : explines) {
-        if (ld->validcount == validcount) continue; // already processed
-        // walk the contour, marking all lines
-        line_t *curr = ld;
-        do {
-          curr->validcount = validcount;
-          // find v2 line
-          int idx = -1;
-          for (int f = 0; f < explines.length(); ++f) {
-            line_t *l = explines[f];
-            if (l == ld) { idx = f; break; }
-            if (l->validcount == validcount) continue; // already used
-            if (l->v1 == curr->v2) { idx = f; break; }
-          }
-          if (idx < 0) {
-            // no contour continuation found, invalid pobj
-            valid3d = false;
-            break;
-          }
-          curr = explines[idx];
-        } while (curr != ld);
-        if (!valid3d) break;
-      }
-      // now check if we have any unmarked lines
-      if (valid3d) {
-        for (auto &&ld : explines) {
-          if (ld->validcount != validcount) {
-            // oops
-            valid3d = false;
-            break;
-          }
-        }
-      }
-    }
-  } else {
-    // not a 3d pobj spawn
-    valid3d = false;
-  }
-
-  if (want3DPobj && !valid3d) Host_Error("trying to spawn 3d pobj #%d, which is not a valid 3d pobj", po->tag);
-
   // we know all pobj lines, so store 'em
   // also, set args
   vassert(explines.length());
@@ -612,7 +669,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       ld->arg5 = 0;
     }
     // set line id
-    if (linetag) GCon->Logf(NAME_Debug, "pobj #%d line #%d, setting tag %d (%d)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]), linetag, (int)ld->IsTagEqual(linetag));
+    if (linetag && dbg_pobj_verbose.asBool()) {
+      GCon->Logf(NAME_Debug, "pobj #%d line #%d, setting tag %d (%d)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]), linetag, (int)ld->IsTagEqual(linetag));
+    }
     if (linetag && !ld->IsTagEqual(linetag)) {
       if (ld->lineTag == 0) ld->lineTag = linetag; else ld->moreTags.append(linetag);
     }
@@ -620,6 +679,12 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->lines[po->numlines++] = ld;
   }
   vassert(po->numlines == explines.length());
+
+  // now check if this is a valid 3d pobj
+  bool valid3d = (want3DPobj ? IsGood3DPolyobj(po) : false);
+  if (want3DPobj && !valid3d) Host_Error("trying to spawn 3d pobj #%d, which is not a valid 3d pobj", po->tag);
+
+  if (valid3d) Validate3DPolyobj(po); else ValidateNormalPolyobj(po);
 
   // now we can collect pobj segs
   // for 3d pobjs we will collect minisegs too
@@ -633,11 +698,14 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       }
     }
   }
+
+  sector_t *secinner = (valid3d ? po->lines[0]->backsector : nullptr);
+
   // collect minisegs for 3d pobjs
   if (valid3d) {
-    // back sector is "inner" one
-    vassert(sback);
-    for (subsector_t *sub = sback->subsectors; sub; sub = sub->seclink) {
+    // back sector must be the "inner" one
+    vassert(secinner);
+    for (subsector_t *sub = secinner->subsectors; sub; sub = sub->seclink) {
       for (int f = 0; f < sub->numlines; ++f) {
         seg_t *ss = &Segs[sub->firstline+f];
         if (!ss->pobj && !ss->linedef) {
@@ -660,8 +728,8 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   // is this a 3d pobj?
   if (valid3d) {
     // back sector is "inner" one
-    vassert(sback);
-    po->posector = sback;
+    vassert(secinner);
+    po->posector = secinner;
     po->posector->linecount = po->posector->prevlinecount; // turn it back to normal sector (it should be normal)
     po->posector->ownpobj = po;
     // set ownpobj for all subsectors
@@ -676,14 +744,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       if (seg->backsector) seg->backsector = po->posector;
     }
     // make all lines reference the inner sector
-    // also, fix line flags
     for (auto &&it : po->LineFirst()) {
       line_t *ld = it.line();
       ld->frontsector = ld->backsector = po->posector;
-      if (!(ld->flags&ML_BLOCKING)) {
-        GCon->Logf(NAME_Error, "pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
-        ld->flags |= ML_BLOCKING;
-      }
     }
     //po->startSpot.z = po->pofloor.minz;
     po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
@@ -793,11 +856,13 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->startSpot.z += refsec->floor.GetPointZ(TVec(x, y, 0.0f))-po->pofloor.minz;
   }
 
-  GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g; refsec=%d", (valid3d ? "3D" : "2D"), po->tag,
-    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
-    po->numlines, po->numsegs, po->poceiling.maxz-po->pofloor.minz,
-    (refsec ? (int)(ptrdiff_t)(refsec-&Sectors[0]) : -1));
+  if (dbg_pobj_verbose.asBool()) {
+    GCon->Logf(NAME_Debug, "SPAWNED %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g; lines=%d; segs=%d; height=%g; refsec=%d", (valid3d ? "3D" : "2D"), po->tag,
+      po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
+      po->numlines, po->numsegs, po->poceiling.maxz-po->pofloor.minz,
+      (refsec ? (int)(ptrdiff_t)(refsec-&Sectors[0]) : -1));
+  }
 }
 
 
@@ -1047,7 +1112,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   vassert(segptnum > 0);
   po->originalPtsCount = segptnum;
   po->segPtsCount = segptnum;
-  GCon->Logf(NAME_Debug, "pobj #%d has %d vertices", po->tag, segptnum);
+  if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d has %d vertices", po->tag, segptnum);
 
   // save and translate points
   for (int f = 0; f < segptnum; ++f) {
@@ -1073,16 +1138,18 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   if (po->posector) {
     // 3d polyobject
 
-    GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g  deltaZ=%g", po->tag,
-      po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
-      startHeight);
+    if (dbg_pobj_verbose.asBool()) {
+      GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g  deltaZ=%g", po->tag,
+        po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+        po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz,
+        startHeight);
+    }
 
     // clamp height
     if (thing && thing->height > 0.0f) {
       const float hgt = po->poceiling.maxz-po->pofloor.minz;
       if (hgt > thing->height) {
-        GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g", po->tag, hgt, thing->height);
+        if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g", po->tag, hgt, thing->height);
         // fix ceiling, move texture z
         const float dz = height-hgt;
         po->poceiling.minz += dz;
@@ -1096,11 +1163,13 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     deltaZ = startHeight;
   }
 
-  GCon->Logf(NAME_Debug, "pobj #%d: height=%g; spot=(%g,%g,%g); dz=%g", po->tag, po->poceiling.maxz-po->pofloor.minz, po->startSpot.x, po->startSpot.y, po->startSpot.z, deltaZ);
+  if (dbg_pobj_verbose.asBool()) {
+    GCon->Logf(NAME_Debug, "pobj #%d: height=%g; spot=(%g,%g,%g); dz=%g", po->tag, po->poceiling.maxz-po->pofloor.minz, po->startSpot.x, po->startSpot.y, po->startSpot.z, deltaZ);
 
-  GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
-    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+    GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", po->tag,
+      po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+  }
 
   // offset flat textures
   if (po->posector && (deltaX || deltaY)) {
@@ -1130,9 +1199,11 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
 
   UpdatePolySegs(po);
 
-  GCon->Logf(NAME_Debug, "translated %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", (po->posector ? "3d" : "2d"), po->tag,
-    po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
-    po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+  if (dbg_pobj_verbose.asBool()) {
+    GCon->Logf(NAME_Debug, "translated %s pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g", (po->posector ? "3d" : "2d"), po->tag,
+      po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.minz, po->pofloor.maxz,
+      po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.minz, po->poceiling.maxz);
+  }
 
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us

@@ -798,11 +798,14 @@ public:
   void TickDecals (float DeltaTime); // this should be called in `CL_UpdateMobjs()`
   void TickWorld (float DeltaTime);
 
-  // poly-objects
+  // polyobjects
   void SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt);
   void AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height, int tag);
   void Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid);
   void InitPolyobjs ();
+
+  void ResetPObjRenderCounts () noexcept; // called from renderer
+
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
 
@@ -813,13 +816,6 @@ public:
 
   bool MovePolyobj (int num, float x, float y, float z=0.0f, unsigned flags=0u); // tag (GetPolyobj)
   bool RotatePolyobj (int num, float angle, unsigned flags=0u); // tag (GetPolyobj)
-
-  // this also fixes inner sector height (forces to pobj floor and ceiling)
-  // does nothing for non-3d polyobjects
-  void OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation=false);
-
-  void ResetPObjRenderCounts () noexcept; // called from renderer
-  void PutPObjInSubsectors (polyobj_t *po) noexcept;
 
   // do not call directly!
   bool CheckBSPB2DBoxNode (int bspnum, const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept;
@@ -1263,12 +1259,24 @@ private:
   // loader of the Strife conversations
   void LoadRogueConScript (VName, int, FRogueConSpeech *&, int &) const;
 
-  // internal poly-object methods
+  // internal polyobject methods
   void TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor);
   void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();
   void LinkPolyobj (polyobj_t *po);
   void UnlinkPolyobj (polyobj_t *po);
+
+  // used in spawner
+  bool IsGood3DPolyobj (polyobj_t *po);
+
+  void ValidateNormalPolyobj (polyobj_t *po);
+  void Validate3DPolyobj (polyobj_t *po);
+
+  // this also fixes inner sector height (forces to pobj floor and ceiling)
+  // does nothing for non-3d polyobjects
+  void OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation=false);
+
+  void PutPObjInSubsectors (polyobj_t *po) noexcept;
 
   bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po);
   // we don't need the exact blocking line here
