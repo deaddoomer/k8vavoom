@@ -1,0 +1,201 @@
+<html>
+<head>
+<title>3D Polyobject specification for k8vavoom engine, v0.99</title>
+<style>
+.content {
+  /*width: 42em;*/
+}
+.toc {
+  background: #aaa; /* sorry for this */
+  padding: 6px;
+  border: solid 1px black;
+  width: 50%;
+}
+hr {
+  margin: 12px;
+  padding: 0px;
+}
+h1 {
+  font-size: 160%;
+  text-align: center;
+  margin: 12px;
+  padding: 0px;
+}
+pre {
+  background: #aaa; /* sorry for this */
+}
+</style>
+<body>
+<div class="content">
+<p>
+This is description of k8vavoom 3d polyobject: how to create them, how to
+use them, and, most important, how to NOT use them.
+</p>
+
+<p>
+Think of 3D polyobject as if it is a moving solid sector. Normal Doom
+sectors are empty inside, i.e. they have empty space between their floors
+and ceilings. 3D polyobject is the inverse of that: it has solid space
+between its floor and ceiling, and you can stand on its ceiling (which
+will look like platform floor for the player).
+</p>
+
+<b>TOC</b><br>
+<div class="toc">
+<a href="#drawit">How to draw 3d polyobject</a><br>
+<a href="#spawnit">How to spawn 3d polyobject</a><br>
+<a href="#linkit">Linked 3d polyobjects</a><br>
+<a href="#movenote">Notes about movement</a><br>
+<a href="#acsapi">New ACS API</a><br>
+</div>
+
+
+<hr>
+<a id="drawit"></a><h1>How to draw 3d polyobject</h1>
+<p>
+Drawing 3d polyobjects is very easy, it is not much different from
+drawing a standard polyobject. Please, refer to any polyobject
+documentation. I will only describe the differences here.
+</p>
+
+<p>
+Each 3d polyobject should consist of one sector, created with closed contours.
+The shape and the number of the contours can be arbitrary, as long as all contours
+are closed, and there are no self-intersections. All lines should point <b>outside</b>
+of that "inner" sector, and should be marked as "impassable". Of course, those lines
+should be two-sided. ;-)
+</p>
+
+<p>
+Please, note that breaking any requirement may lead to undefined result. I.e. your
+invalid 3d polyobject may work, and you may even get some fancy effects, but there are
+no guarantees that it will keep working in any following engine build.
+<div style="font-size:140%;color:#c00;">
+<b>PLEASE, DON'T DO ANYTHING THAT IS NOT EXPLICITLY DESCRIBED AS ALLOWED IN THIS DOCUMENT!</b>
+</div>
+</p>
+
+<p>
+Here is the picture for you.
+</p>
+<img src="fig1.png" />
+
+<p>
+There are two sectors on the picture. "Inner sector" is 3d polyobject sector. As you can see,
+its shape is not convex, but it is closed, and all lines points outside of it. The outer sector
+is just a "container" for polyobject. It will not be visible in-game.
+</p>
+<p>
+You can place normal polyobject anchor thing to mark the anchor point of your 3d polyobject.
+If you will not do it, the engine will select some point on its own. It will try to select a
+point close to polyobject center, but it is not guaranteed. The algorithm to calculate center
+point may change in the future, so you should <b>ALWAYS</b> use anchor things.
+</p>
+<p>
+Inner sector height will be used as 3d polyobject height. But please, note that maximum height is
+limited by middle texture height, if you won't set your middle texture as wrapping. Inner sector
+floor texture will be the bottom 3d polyobject texture, and ceiling texture will become the top one.
+</p>
+<p>
+To align floor and ceiling textures, just align your inner sector as you want to. The inner sector
+will be "cutted out" as it is, and will retain its flat align no matter how you'll move it.
+</p>
+
+
+<hr>
+<a id="spawnit"><h1>How to spawn 3d polyobject</h1>
+<p>
+To spawn your 3d polyobject, you should use new thing with editor number <b>9369</b>.
+It's height will specify initial z offset <b>from the inner sector</b>. NOT from the destination one!
+The angle is the polyobject tag, as in other polyobject spawners.<br>
+<b>WARNING! Other things args must be zero! They may be used later, and if you will not set them
+to zeroes, your map may break in the future!</b>
+</p>
+
+
+<hr>
+<a id="linkit"><h1>Linked 3d polyobjects</h1>
+<p>
+There is a new feature you can use to create complex structures out of simple polyobjects: polyobject links.
+It is somewhat similar to linked sectors you could use to create complex lifts.
+</p>
+<p>
+Linked polyobjects will behave as one object, and all operations on the first polyojbect in the link will
+affect all "child" objects. All operations on the link chain are atomic. I.e. if moving/rotating is failed,
+no objects in chain will be modified. Just think about the link chain as one big object.
+</p>
+<p>
+To link polyobjects, use things with editor id <b>9368</b>. Its first argument is a master polyobject id,
+its second argument is a secondary polyobject id. It will link the secondary polyobject to the master.
+Note that you cannot link two or more polyobject to one master, so to create complex structures you have
+to link all polyobjects one to another, creating a "link chain". Linking all polyobjects to a single master
+<b>will not work</b>.
+</p>
+
+
+<hr>
+<a id="movenote"><h1>Notes about movement</h1>
+<p>
+You can move your 3d polyobject by all three axes, and it will carry all things that stands on it. Currently
+it works like a platform in arcade games: it carries things, but doesn't modify their velocities. This means
+that if the player will jump while riding some 3d polyobject, the jump will be strictly vertical (and the
+platform will move away). I may add flags to make "non-arcade" platforms later, but for now there is the
+only platform type available.
+</p>
+<p>
+Rotating 3d polyobjects is allowed too. As you may expect, all things standing on such 3d polyobject will be
+properly rotated. Floor and ceiling textures will be rotated too (around polyobject anchor point)
+</p>
+<p>
+3D movement is splitted to two phases. First, the 3d polyobject is moved vertically, and then it is moved
+horizontally.
+</p>
+
+
+<hr>
+<a id="acsapi"></a><h1>New ACS API</h1>
+Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zspecial.acs".
+</div>
+<pre>
+  // k8vavoom polyobjects
+  // note that angles are in degrees
+  // speed is in units per second
+  // bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags)
+  -800:Polyobj_MoveEx(7),
+  // bool Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags)
+  -801:Polyobj_MoveToEx(6),
+  // bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags) -- this uses target height too
+  -802:Polyobj_MoveToSpotEx(4),
+  // float GetPolyobjZ (int po)
+  -803:GetPolyobjZ(1),
+  // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
+  -804:Polyobj_GetFlagsEx(1),
+  // int Polyobj_SetFlagsEx (int po, int flags, int oper) -- oper: 0 means "clear", 1 means "set", -1 means "replace"
+  -805:Polyobj_SetFlagsEx(3),
+  // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
+  -806:Polyobj_IsBusy(1),
+</pre>
+<div class="content">
+Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".
+</div>
+<pre>
+// for Polyobj_GetFlagsEx and Polyobj_SetFlagsEx
+#define POBJ_FLAG_CRUSH            (1 << 0)
+#define POBJ_FLAG_HURT_ON_TOUCH    (1 << 1)
+#define POBJ_FLAG_NO_CARRY_THINGS  (1 << 2)
+#define POBJ_FLAG_NO_ANGLE_CHANGE  (1 << 3)
+
+// for Polyobj_SetFlagsEx
+#define POBJ_FLAGS_CLEAR    0
+#define POBJ_FLAGS_SET      1
+#define POBJ_FLAGS_REPLACE  -1
+
+// for `moveflags`
+#define POBJ_MOVE_NORMAL    0
+#define POBJ_MOVE_OVERRIDE  (1 << 0)
+#define POBJ_MOVE_NOLINK    (1 << 1)
+</pre>
+<div class="content">
+</div>
+</body>
+<html>
