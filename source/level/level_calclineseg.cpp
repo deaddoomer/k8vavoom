@@ -139,10 +139,30 @@ void VLevel::CalcSegPlaneDir (seg_t *seg) {
 //  WARNING! this WILL MODIFY `seg->v1` and `seg->v2`!
 //  will not modify `drawsegs`, etc.
 //
+//  if polyobject seg cannot obscure the sector, it won't be created
+//  also, no need to create segs with see-through textures
+//
 //==========================================================================
 bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
-  if (!sub || !seg) return false;
+  if (!sub || !seg || !seg->sidedef) return false;
   if (sub->numlines < 3) return false; // oops, cannot clip
+
+  const sector_t *fsec = sub->sector;
+  if (!fsec) return false;
+
+  const float minz = fsec->floor.minz;
+  const float maxz = fsec->ceiling.maxz;
+  if (minz >= maxz) return false; // closed something, don't bother
+
+  // check texture
+  if (GTextureManager.GetTextureType(seg->sidedef->MidTexture) != VTextureManager::TCT_SOLID) return false;
+
+  polyobj_t *po = seg->pobj;
+  vassert(po);
+
+  const float pominz = po->pofloor.minz;
+  const float pomaxz = po->poceiling.maxz;
+  if (pominz > minz || pomaxz < maxz) return false;
 
   TVec *v1 = seg->v1;
   TVec *v2 = seg->v2;
@@ -156,7 +176,6 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
   if (max2(v1->y, v2->y) < sub->bbox2d[BOX2D_MINY]) return false;
 
   float lensq = seg->length*seg->length;
-  bool updateLen = false;
 
   seg_t *curseg = &Segs[sub->firstline];
   for (int f = sub->numlines; f--; ++curseg) {
@@ -189,13 +208,10 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
     const float dy = v2->y-v1->y;
     lensq = dx*dx+dy*dy;
     if (lensq <= 0.001f*0.001f) return false; // too short
-    updateLen = true;
   }
 
-  if (updateLen) {
-    //seg->length = sqrtf(lensq);
-    CalcSegLenOfs(seg);
-  }
+  CalcSegLenOfs(seg);
+  CalcSegPlaneDir(seg);
   return true;
 }
 

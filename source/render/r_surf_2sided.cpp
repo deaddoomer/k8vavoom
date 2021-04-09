@@ -59,7 +59,7 @@ void VRenderLevelShared::SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->texinfo.Additive = false;
   sp->texinfo.ColorMap = 0;
 
-  if (sp->texinfo.Tex->Type != TEXTYPE_Null) {
+  if (sp->texinfo.Tex->Type != TEXTYPE_Null && !seg->pobj) {
     TVec quad[4];
 
     const float topz1 = r_ceiling.GetPointZ(*seg->v1);
@@ -127,7 +127,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     //GCon->Logf(NAME_Debug, "line #%d, side #%d (%d): tdtex='%s'", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), seg->side, *TTex->Name);
   }
 
-  if (TTex->Type != TEXTYPE_Null) {
+  if (TTex->Type != TEXTYPE_Null && !seg->pobj) {
     TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "2S-TOP: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
@@ -274,7 +274,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     //sub->sector->SectorFlags |= (sector_t::SF_IsTransDoor|sector_t::SF_IsTransDoorBot);
   }
 
-  if (BTex->Type != TEXTYPE_Null) {
+  if (BTex->Type != TEXTYPE_Null && !seg->pobj) {
     TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "2S-BOTTOM: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));

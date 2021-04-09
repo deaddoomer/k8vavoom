@@ -162,20 +162,60 @@ seg_t *polyobjpart_t::allocSeg (const seg_t *oldseg) noexcept {
 //  polyobjpart_t::allocInitedSeg
 //
 //==========================================================================
-void polyobjpart_t::CreateClipSegs (VLevel *level) {
+void polyobjpart_t::CreateClipSegs (VLevel *Level) {
   reset();
   flags |= CLIPSEGS_CREATED;
+  const bool is3d = pobj->Is3D();
   // create clip segs for each polyobject part
-  for (auto &&it : pobj->SegFirst()) {
+  // we can use full lines here, because they will be clipped to destination subsector
+  for (auto &&it : pobj->LineFirst()) {
     // clip pobj seg to subsector
-    const seg_t *seg = it.seg();
-    if (!seg->linedef) continue;
-    seg_t newseg = *seg;
-    TVec sv1 = *seg->v1;
-    TVec sv2 = *seg->v2;
-    newseg.v1 = &sv1;
-    newseg.v2 = &sv2;
-    if (!level->ClipPObjSegToSub(sub, &newseg)) continue; // out of this subsector
+    line_t *ld = it.line();
+    side_t *sd = nullptr;
+
+    //GCon->Logf(NAME_Debug, "trying pobj #%d, line #%d to subsector of sector #%d", pobj->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+
+    seg_t newseg;
+    memset((void *)&newseg, 0, sizeof(newseg));
+
+    TVec sv1 = *ld->v1;
+    TVec sv2 = *ld->v2;
+
+    // check for valid line, and setup vertices
+    if (is3d) {
+      if (ld->sidenum[0] >= 0 && ld->frontsector == pobj->posector) {
+        newseg.side = 0;
+        sd = &Level->Sides[ld->sidenum[0]];
+        newseg.v1 = &sv1;
+        newseg.v2 = &sv2;
+      } else if (ld->sidenum[1] >= 0 && ld->backsector == pobj->posector) {
+        newseg.side = 1;
+        sd = &Level->Sides[ld->sidenum[1]];
+        newseg.v1 = &sv2;
+        newseg.v2 = &sv1;
+      }
+    } else {
+      // normal pobj
+      if ((ld->flags&ML_TWOSIDED) != 0) continue; // never clip with 2-sided pobj walls (for now)
+      if (ld->sidenum[0] < 0) continue;
+      newseg.side = 0;
+      sd = &Level->Sides[ld->sidenum[0]];
+      newseg.v1 = &sv1;
+      newseg.v2 = &sv2;
+    }
+    if (!sd) continue; // just in case
+
+    newseg.sidedef = sd;
+    newseg.linedef = ld;
+    newseg.frontsector = sub->sector; // just in case
+    newseg.frontsub = sub;
+    newseg.pobj = pobj;
+
+    //GCon->Logf(NAME_Debug, "...clipping pobj #%d, line #%d to subsector of sector #%d", pobj->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+
+    if (!Level->ClipPObjSegToSub(sub, &newseg)) continue; // out of this subsector
+
+    //GCon->Logf(NAME_Debug, "...ADDING clipped line of pobj #%d, line #%d to subsector of sector #%d", pobj->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
     (void)allocSeg(&newseg);
   }
 }
@@ -228,7 +268,7 @@ void polyobj_t::RemoveAllSubsectors () {
       if (prev) prev->nextsub = part->nextsub; else sub->polyparts = part->nextsub;
     }
     // put to free parts pool
-    part->reset();
+    part->reset(); // remove clipsegs
     part->sub = nullptr;
     part->nextsub = nullptr;
     part->nextpobj = freeparts;
