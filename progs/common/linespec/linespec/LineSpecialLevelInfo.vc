@@ -2043,24 +2043,22 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   int seen = polyNum;
   bool doStep = false;
   for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
-    if (mirror == seen) {
-      printerror("EV_RotatePoly: found mirror loop for pobj %s", polyNum);
-      break;
-    }
-    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
-    doStep = !doStep;
-
     poly = XLevel.GetPolyobj(mirror);
     if (!poly) {
       printerror("EV_RotatePoly: invalid mirror polyobj num %s for pobj %s", mirror, polyNum);
       break;
     }
-    //printdebug(" rotate mirror polyobj %s for pobj %s", mirror, polyNum);
-    if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) {
-      // mirroring poly is already in motion
-      //printdebug("  already in motion.");
+    // is mirroring poly is already in motion?
+    if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) break;
+
+    // using override actions will never work this way, so force-stop it
+    // but let's not scare people ;-)
+    if (mirror == seen) {
+      printdebug("EV_RotatePoly: found mirror loop for pobj %s (this is harmless)", polyNum);
       break;
     }
+    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
+    doStep = !doStep;
 
     pe = SpawnThinker(PolyobjRotator);
     //pe.polyobj = mirror;
@@ -2169,19 +2167,21 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   int seen = polyNum;
   bool doStep = false;
   for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
-    if (mirror == seen) {
-      printerror("EV_MovePoly: found mirror loop for pobj %s", polyNum);
-      break;
-    }
-    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
-    doStep = !doStep;
-
     poly = XLevel.GetPolyobj(mirror);
     if (!poly) {
       printerror("EV_MovePoly: invalid mirror polyobj num %s for pobj %s", mirror, polyNum);
       break;
     }
     if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) break; // mirroring poly is already in motion
+
+    // using override actions will never work this way, so force-stop it
+    // but let's not scare people ;-)
+    if (mirror == seen) {
+      printdebug("EV_MovePoly: found mirror loop for pobj %s (this is harmless)", polyNum);
+      break;
+    }
+    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
+    doStep = !doStep;
 
     pe = SpawnThinker(PolyobjMover);
     //pe.polyobj = mirror;
@@ -2251,19 +2251,21 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, 
   int seen = polyNum;
   bool doStep = false;
   for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
-    if (mirror == seen) {
-      printerror("EV_OpenPolyDoor: found mirror loop for pobj %s", polyNum);
-      break;
-    }
-    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
-    doStep = !doStep;
-
     poly = XLevel.GetPolyobj(mirror);
     if (!poly) {
       printerror("EV_OpenPolyDoor: invalid mirror polyobj num %s for pobj %s", mirror, polyNum);
       break;
     }
     if (PolyobjThinker.IsPolyobjBusy(poly)) break; // mirroring poly is already in motion
+
+    // using override actions will never work this way, so force-stop it
+    // but let's not scare people ;-)
+    if (mirror == seen) {
+      printdebug("EV_OpenPolyDoor: found mirror loop for pobj %s (this is harmless)", polyNum);
+      break;
+    }
+    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
+    doStep = !doStep;
 
     pd = SpawnThinker(PolyobjDoor);
     //pd.polyobj = mirror;
