@@ -30,6 +30,7 @@
 #endif
 #include "gamedefs.h"
 #include "drawer.h"
+#include "touch.h"
 #include "widgets/ui.h"
 
 #ifndef MAX_JOYSTICK_BUTTONS
@@ -564,6 +565,15 @@ void VSdlInputDevice::ReadInput () {
           default: break;
         }
         break;
+      case SDL_FINGERMOTION:
+        Touch_Event(TouchMotion, ev.tfinger.fingerId, ev.tfinger.x, ev.tfinger.y, ev.tfinger.dx, ev.tfinger.dy, ev.tfinger.pressure);
+        break;
+      case SDL_FINGERDOWN:
+        Touch_Event(TouchDown, ev.tfinger.fingerId, ev.tfinger.x, ev.tfinger.y, ev.tfinger.dx, ev.tfinger.dy, ev.tfinger.pressure);
+        break;
+      case SDL_FINGERUP:
+        Touch_Event(TouchUp, ev.tfinger.fingerId, ev.tfinger.x, ev.tfinger.y, ev.tfinger.dx, ev.tfinger.dy, ev.tfinger.pressure);
+        break;
       // window/other
       case SDL_WINDOWEVENT:
         switch (ev.window.event) {
@@ -710,6 +720,8 @@ void VSdlInputDevice::ReadInput () {
   }
 
   PostJoystick();
+
+  Touch_Update();
 }
 
 #ifdef __SWITCH__

@@ -503,6 +503,8 @@ set(COMBINED_SOURCES
   sbar.cpp
   screen.h
   screen.cpp
+  touch.cpp
+  touch.h
   video.h
 )
 

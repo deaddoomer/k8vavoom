@@ -213,6 +213,9 @@ static void mainloop (int argc, char **argv) {
 
     if (SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(): %s\n", SDL_GetError());
 
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+    SDL_SetHint(SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH, "1");
+
     // install signal handlers
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);

@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "drawer.h"
+#include "touch.h"
 #include "widgets/ui.h"
 
 
@@ -786,6 +787,9 @@ void SCR_Update (bool fullUpdate) {
       default: T_DrawText(4, y, "getting network data (something)", CR_TAN); break;
     }
   }
+
+  // draw touchscreen controls
+  Touch_Draw();
 
   // page flip or blit buffer
   Drawer->Update();
