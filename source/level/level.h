@@ -65,6 +65,8 @@ enum {
   MTF_FRIENDLY    = 0x2000,
   MTF_STANDSTILL  = 0x4000,
 
+  MTF2_CLASS_BASE = 0x000010000,
+  MTF2_CLASS_MASK = 0x0ffff0000,
   MTF2_FIGHTER    = 0x000010000, // thing appearing in player classes
   MTF2_CLERIC     = 0x000020000,
   MTF2_MAGE       = 0x000040000,

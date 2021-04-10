@@ -89,6 +89,14 @@ void VLevel::LoadThings2 (int Lump) {
     if (options&1) th->SkillClassFilter |= 0x03; // skill 1 and 2 ("baby", "easy")
     if (options&2) th->SkillClassFilter |= 0x04; // skill 3 ("normal")
     if (options&4) th->SkillClassFilter |= 0x18; // skill 4 and 5 ("hard", "nightmare")
+    // hack for morons doing "hexen mods" without realising that hexen map format cannot have more than 3 class flags
+    // no, it won't be done in any other way
+    //if ((th->SkillClassFilter&MTF2_CLASS_MASK) == 0) GCon->Logf(NAME_Debug, "*** thing with id %d has no class mask (%d,%d)", th->type, x, y);
+    if ((th->SkillClassFilter&MTF2_CLASS_MASK) == (MTF2_FIGHTER|MTF2_CLERIC|MTF2_MAGE)) {
+      // the thing without class mask will appear for any class, but let's play safe
+      th->SkillClassFilter |= MTF2_CLASS_MASK;
+      //if ((th->SkillClassFilter&MTF2_CLASS_MASK) == 0) GCon->Logf(NAME_Debug, "*** thing with id %d is for all classes", th->type);
+    }
     th->special = special;
     th->args[0] = arg1;
     th->args[1] = arg2;
