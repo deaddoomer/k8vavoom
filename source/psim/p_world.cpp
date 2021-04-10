@@ -328,6 +328,8 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     trace_len = (trace_delta.x || trace_delta.y ? trace_delta.length() : 0.0f);
     trace_plane.SetPointDirXY(trace_org, trace_delta);
 
+    const bool hvtrace = (trace_len != 0.0f);
+
     // for hitpoint calculations
     trace_org3d = p0;
     trace_dir3d = p1-p0;
@@ -362,8 +364,49 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     // walk blockmap
     int mapx, mapy;
     while (walker.next(mapx, mapy)) {
+      // if we have a really long blocking line, it may be hit way before
+      // other things and lines will be hit (because it can be in a starting blockmap cell, for example)
+      // we still have to keep scanning, otherwise we may miss some hits
+      // so we'll keep scanning until there will be nothing that is nearer than `max_frac`
+      // check if current blockmap cell still can produce anything interesting
+      // this can overscan, but it is better to overscan than to lost some hit
+      bool interestingCell = false;
+      if (max_frac < 1.0f && hvtrace) {
+        //FIXME: do it faster, we don't need to check all four cell corners
+        float idist = max_frac*trace_len;
+        idist *= idist;
+        TVec xp(mapx*MAPBLOCKUNITS, mapy*MAPBLOCKUNITS);
+        xp -= trace_org;
+        const float deltasX[4] = { 0.0f, float(MAPBLOCKUNITS),                 0.0f, float(MAPBLOCKUNITS) };
+        const float deltasY[4] = { 0.0f,                 0.0f, float(MAPBLOCKUNITS), float(MAPBLOCKUNITS) };
+        for (unsigned f = 0; f < 4; ++f) {
+          const TVec np(xp.x+deltasX[f], xp.y+deltasY[f]);
+          if (np.length2DSquared() <= idist) {
+            interestingCell = true;
+            break;
+          }
+        }
+      } else {
+        interestingCell = true;
+      }
+      #ifdef VV_DEBUG_TRAVERSER
+      GCon->Logf(NAME_Debug, "*** traverse: mapx=%d; mapy=%d; maxtile=(%d,%d); endtile=(%d,%d); currtile=(%d,%d); interesting=%d", mapx, mapy,
+        walker.maxTileX, walker.maxTileY,
+        walker.dda.endTileX, walker.dda.endTileY,
+        walker.dda.currTileX, walker.dda.currTileY,
+        (int)interestingCell
+        );
+      #endif
       if (flags&PT_ADDTHINGS) AddThingIntercepts(Self, mapx, mapy);
-      if (AddLineIntercepts(Self, mapx, mapy, planeflags, lineflags)) break;
+      // have to check lines anyway, to fix `max_frac`
+      AddLineIntercepts(Self, mapx, mapy, planeflags, lineflags);
+      // if the current cell was "not interesting" (i.e. further than `max_frac`), we can early exit
+      if (!interestingCell) {
+        #ifdef VV_DEBUG_TRAVERSER
+        GCon->Logf(NAME_Debug, "*** traverse: EARLY EXIT at mapx=%d; mapy=%d", mapx, mapy);
+        #endif
+        break; // no need to scan further
+      }
     }
 
     // now we have to add sector flats
@@ -542,7 +585,6 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 //  looks for lines in the given block that intercept the given trace to add
 //  to the intercepts list.
 //  a line is crossed if its endpoints are on opposite sides of the trace.
-//  returns `true` if some blocking line was hit (so we can stop scanning).
 //
 //  note that we cannot check planes here, because we need list of lines
 //  sorted by frac.
@@ -550,8 +592,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 //  register a hit.
 //
 //==========================================================================
-bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
-  bool wasBlocking = false;
+void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
   const bool doopening = !(scanflags&PT_NOOPENS);
   const bool doadd = (scanflags&PT_ADDLINES);
   for (auto &&it : Level->allBlockLines(mapx, mapy)) {
@@ -575,11 +616,12 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     const float frac = num/den;
     if (frac < 0.0f || frac > 1.0f) continue; // behind source or beyond end point
 
-    //GCon->Logf(NAME_Debug, "000: pathtrace: line #%d; frac=%g; max=%g", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac);
+    #ifdef VV_DEBUG_TRAVERSER
+    GCon->Logf(NAME_Debug, "000: pathtrace: line #%d; frac=%g; max=%g; flags=0x%08x", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, ld->flags);
+    #endif
 
     if (frac > max_frac) {
-      //if (!(ld->flags&ML_TWOSIDED)) wasBlocking = true;
-      wasBlocking = true; // this line is too far away, no need to scan other blockmap cells
+      // this line is too far away
       continue;
     }
 
@@ -679,7 +721,6 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 
     if (blockFlag) {
       max_frac = frac; // we cannot travel further anyway
-      wasBlocking = true;
     }
 
     if (doadd) {
@@ -689,7 +730,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       In.line = ld;
       In.side = ld->PointOnSide(trace_org3d);
       #ifdef VV_DEBUG_TRAVERSER
-      GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g; start=(%g,%g,%g); hit=(%g,%g,%g)", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, trace_org3d.x, trace_org3d.y, trace_org3d.z, In.hitpoint.x, In.hitpoint.y, In.hitpoint.z);
+      GCon->Logf(NAME_Debug, "001: pathtrace: line #%d; frac=%g; max=%g; start=(%g,%g,%g); hit=(%g,%g,%g); blockFlag=%d", (int)(ptrdiff_t)(ld-&Level->Lines[0]), frac, max_frac, trace_org3d.x, trace_org3d.y, trace_org3d.z, In.hitpoint.x, In.hitpoint.y, In.hitpoint.z, (int)blockFlag);
       #endif
       // set line sector
       if (po) {
@@ -704,13 +745,11 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
   }
 
-  if (wasBlocking && !(scanflags&PT_ADDLINES)) {
+  if (max_frac < 1.0f && !(scanflags&PT_ADDLINES)) {
     // remove things we may hit beyound the blocking line
     // there is no need to do this if we're collecting lines, because it will be done in `Init()`
     while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac >= max_frac) Level->PopLastIntercept();
   }
-
-  return wasBlocking;
 }
 
 
@@ -720,7 +759,7 @@ bool VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 //
 //==========================================================================
 void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
-  if (!Self) return;
+  //if (!Self) return false;
   // proper ray-vs-aabb
   /*static*/ const int deltas[3] = { 0, -1, 1 };
   for (unsigned dy = 0; dy < 3; ++dy) {
@@ -735,7 +774,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
       for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
         VEntity *ent = it.entity();
         #ifdef VV_DEBUG_TRAVERSER_BMCELL
-        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->Radius);
+        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g; cell=(%d,%d)", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->Radius, mapx+deltas[dx], mapy+deltas[dy]);
         #endif
         if (ent->ValidCount == validcount) continue;
         ent->ValidCount = validcount;

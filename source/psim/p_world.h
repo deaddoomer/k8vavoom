@@ -114,8 +114,7 @@ public:
 
 private:
   void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags);
-  // returns `true` if some blocking line was hit
-  bool AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
+  void AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
   void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
   intercept_t &NewIntercept (const float frac);
 
