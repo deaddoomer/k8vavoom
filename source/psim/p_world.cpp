@@ -761,6 +761,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
   //if (!Self) return false;
   // proper ray-vs-aabb
+  float bbox[4];
   /*static*/ const int deltas[3] = { 0, -1, 1 };
   for (unsigned dy = 0; dy < 3; ++dy) {
     for (unsigned dx = 0; dx < 3; ++dx) {
@@ -781,9 +782,13 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
         if (ent->Height <= 0.0f) continue;
         const float rad = ent->Radius;
         if (rad <= 0.0f) continue;
-        //if (vptSeenThings.put(*It, true)) continue;
-        // [RH] don't check a corner to corner crossection for hit
-        // instead, check against the actual bounding box
+
+        // fast reject using trace plane
+        if (trace_len != 0.0f) {
+          Create2DBBox(bbox, ent->Origin, ent->Radius);
+          if (trace_plane.checkBox2DEx(bbox) != TPlane::PARTIALLY) continue;
+        }
+
         #ifdef VV_DEBUG_TRAVERSER
         GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) start checking... traceorg=(%g,%g,%g); thingorg=(%g,%g,%g); tracedir=(%g,%g,%g)", ent->GetClass()->GetName(), ent->GetUniqueId(),
           trace_org3d.x, trace_org3d.y, trace_org3d.z,
