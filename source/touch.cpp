@@ -50,6 +50,8 @@ static struct vbutton {
   { 0.0, 1.0, 0.1, "SetMenu Main", "", K_ESCAPE, ID_UNDEF },
 };
 
+static VCvarB touch_enable ("touch_enable", true, "show and handle touch screen controls (when available)", CVAR_Archive);
+
 static void draw_pad (int f, float x_threshold, float y_threshold) {
   if (fingers[f].id != ID_UNDEF) {
     int scr_w = Drawer->getWidth();
@@ -69,6 +71,10 @@ static void draw_pad (int f, float x_threshold, float y_threshold) {
 }
 
 void Touch_Draw (void) {
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+    return;
+  }
+
   int scr_w = Drawer->getWidth();
   int scr_h = Drawer->getHeight();
   for (int i = 0; i < MAX_BUTTONS; i++) {
@@ -126,8 +132,10 @@ static void PostMouseEvent (float dx, float dy) {
 }
 
 void Touch_Update (void) {
-//  int scr_w = Drawer->getWidth();
-//  int scr_h = Drawer->getHeight();
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+    return;
+  }
+
   if (fingers[ROT_FINGER].id != ID_UNDEF) {
     float dx = fingers[ROT_FINGER].x - fingers[ROT_FINGER].start_x;
     float dy = fingers[ROT_FINGER].y - fingers[ROT_FINGER].start_y;
@@ -220,6 +228,10 @@ static void press_button (int finger, float x, float y, bool down) {
 // dx, dy IN [-1.0..1.0]
 // pressure IN [0.0..1.0]
 void Touch_Event (int type, int id, float x, float y, float dx, float dy, float pressure) {
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+    return;
+  }
+
   int f;
   switch (type) {
     case TouchDown:
