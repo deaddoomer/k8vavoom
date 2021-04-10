@@ -23,6 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifdef VAVOOM_CUSTOM_SPECIAL_SDL
+# include <SDL.h>
+#else
+# include <SDL2/SDL.h>
+#endif
 #include "gamedefs.h"
 #include "client/cl_local.h"
 #include "drawer.h"
@@ -286,6 +291,7 @@ void C_Start (bool immediate) {
   }
   consolestate = (immediate ? cons_opening_imm : cons_opening);
   c_history_current = -1;
+  SDL_StartTextInput();
 }
 
 
@@ -303,6 +309,7 @@ void C_StartFull () {
   c_history_current = -1;
   //cons_h = 480.0f;
   cons_h = fmax(con_height.asFloat(), 128.0f);
+  SDL_StartTextInput();
 }
 
 
@@ -314,6 +321,7 @@ void C_StartFull () {
 //
 //==========================================================================
 void C_Stop (bool immediate) {
+  SDL_StopTextInput();
   consolestate = (immediate ? cons_closing_imm : cons_closing);
 }
 

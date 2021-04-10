@@ -32,7 +32,7 @@ static struct vfinger {
   { ID_UNDEF, 0, 0 },
 };
 
-#define MAX_BUTTONS 7
+#define MAX_BUTTONS 9
 
 static struct vbutton {
   float x, y, r;
@@ -47,7 +47,9 @@ static struct vbutton {
   { 0.6, 1.0, 0.1, "+Jump", "-Jump", 0, ID_UNDEF },
   { 0.6, 0.0, 0.1, "impulse 17", "", 0, ID_UNDEF }, // prev weapon
   { 0.8, 0.0, 0.1, "impulse 18", "", 0, ID_UNDEF }, // next weapon
+  { 1.0, 0.0, 0.1, "ToggleAlwaysRun", "", 0, ID_UNDEF },
   { 0.0, 1.0, 0.1, "SetMenu Main", "", K_ESCAPE, ID_UNDEF },
+  { 0.0, 0.0, 0.1, "ToggleConsole", "", 0, ID_UNDEF },
 };
 
 static VCvarB touch_enable ("touch_enable", true, "show and handle touch screen controls (when available)", CVAR_Archive);
@@ -71,7 +73,7 @@ static void draw_pad (int f, float x_threshold, float y_threshold) {
 }
 
 void Touch_Draw (void) {
-  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0 || SDL_IsTextInputActive()) {
     return;
   }
 
@@ -132,7 +134,7 @@ static void PostMouseEvent (float dx, float dy) {
 }
 
 void Touch_Update (void) {
-  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0 || SDL_IsTextInputActive()) {
     return;
   }
 
@@ -228,7 +230,7 @@ static void press_button (int finger, float x, float y, bool down) {
 // dx, dy IN [-1.0..1.0]
 // pressure IN [0.0..1.0]
 void Touch_Event (int type, int id, float x, float y, float dx, float dy, float pressure) {
-  if (!touch_enable || SDL_GetNumTouchDevices() <= 0) {
+  if (!touch_enable || SDL_GetNumTouchDevices() <= 0 || SDL_IsTextInputActive()) {
     return;
   }
 
