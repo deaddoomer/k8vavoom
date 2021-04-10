@@ -38,7 +38,7 @@ bool VCommand::Initialised = false;
 VStr VCommand::Original;
 
 bool VCommand::rebuildCache = true;
-TMap<VStr, VCommand *> VCommand::locaseCache;
+TMap<VStrCI, VCommand *> VCommand::locaseCache;
 
 TArray<VStr> VCommand::Args;
 VCommand::ECmdSource VCommand::Source;
@@ -50,7 +50,7 @@ static TMap<VStr, bool> AutoCompleteTableBSet; // quicksearch
 VCommand *VCommand::Cmds = nullptr;
 //VCommand::VAlias *VCommand::Alias = nullptr;
 TArray<VCommand::VAlias> VCommand::AliasList;
-TMap<VStr, int> VCommand::AliasMap;
+TMap<VStrCI, int> VCommand::AliasMap;
 
 bool VCommand::cliInserted = false;
 VStr VCommand::cliPreCmds;
@@ -289,6 +289,7 @@ void VCommand::Shutdown () {
   AutoCompleteTableBSet.clear();
   Args.Clear();
   Original.Clean();
+  locaseCache.clear();
 }
 
 
@@ -577,8 +578,8 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
 
   // check for command
   if (rebuildCache) rebuildCommandCache();
-  VStr loname = args[0].toLowerCase();
-  auto cptr = locaseCache.find(loname);
+  //VStr loname = args[0].toLowerCase();
+  auto cptr = locaseCache.find(/*loname*/args[0]);
   if (cptr) {
     VCommand *cmd = *cptr;
     VStr ac = cmd->AutoCompleteArg(args, aidx);
@@ -688,8 +689,8 @@ void VCommand::TokeniseString (VStr str) {
 void VCommand::rebuildCommandCache () {
   locaseCache.clear();
   for (VCommand *cmd = Cmds; cmd; cmd = cmd->Next) {
-    VStr loname = VStr(cmd->Name).toLowerCase();
-    locaseCache.put(loname, cmd);
+    //VStr loname = VStr(cmd->Name).toLowerCase();
+    locaseCache.put(/*loname*/cmd->Name, cmd);
   }
 }
 
@@ -705,17 +706,17 @@ int VCommand::GetCommandType (VStr cmd) {
   if (rebuildCache) rebuildCommandCache();
 
   //FIXME: make it better (do not alloc new locased string)
-  VStr loname = cmd.toLowerCase();
+  //VStr loname = cmd.toLowerCase();
 
-  auto cptr = locaseCache.find(loname);
+  auto cptr = locaseCache.find(/*loname*/cmd);
   if (cptr) return CT_COMMAND;
 
   VBasePlayer *plr = findPlayer();
-  if (plr && plr->IsConCommand(loname)) return CT_COMMAND;
+  if (plr && plr->IsConCommand(/*loname*/cmd)) return CT_COMMAND;
 
-  if (VCvar::HasVar(*loname)) return CT_CVAR;
+  if (VCvar::HasVar(*cmd/* *loname*/)) return CT_CVAR;
 
-  auto idp = AliasMap.find(loname);
+  auto idp = AliasMap.find(/*loname*/cmd);
   if (idp) return CT_ALIAS;
 
   return CT_UNKNOWN;
@@ -728,13 +729,14 @@ int VCommand::GetCommandType (VStr cmd) {
 //
 //==========================================================================
 void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
-  //fprintf(stderr, "+++ command BEFORE tokenizing: <%s>\n", *Acmd);
+  //GCon->Logf(NAME_Debug, "+++ command BEFORE tokenizing: <%s>; plr=%s\n", *Acmd, (APlayer ? APlayer->GetClass()->GetName() : "<none>"));
+
   TokeniseString(Acmd);
   Source = src;
   Player = APlayer;
 
-  //fprintf(stderr, "+++ command argc=%d (<%s>)\n", Args.length(), *Acmd);
-  //for (int f = 0; f < Args.length(); ++f) fprintf(stderr, "  #%d: <%s>\n", f, *Args[f]);
+  //GCon->Logf(NAME_Debug, "+++ command argc=%d (<%s>)\n", Args.length(), *Acmd);
+  //for (int f = 0; f < Args.length(); ++f) GCon->Logf(NAME_Debug, "  #%d: <%s>\n", f, *Args[f]);
 
   if (!Args.Num()) return;
 
@@ -772,9 +774,10 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
 
   // check for command
   if (rebuildCache) rebuildCommandCache();
-  VStr loname = Args[0].toLowerCase();
-  auto cptr = locaseCache.find(loname);
+  //VStr loname = Args[0].toLowerCase();
+  auto cptr = locaseCache.find(/*loname*/Args[0]);
   if (cptr) {
+    if (cptr && !Player) Player = findPlayer(); // for local commands
     (*cptr)->Run();
     return;
   }
@@ -818,19 +821,10 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   }
 
   // command defined with ALIAS
-  /*
-  for (VAlias *a = Alias; a; a = a->Next) {
-    if (!Args[0].ICmp(a->Name)) {
-      GCmdBuf.Insert("\n");
-      GCmdBuf.Insert(a->CmdLine);
-      return;
-    }
-  }
-  */
   //FIXME: make it better (do not alloc new locased string)
   if (Args[0].length()) {
-    VStr lcn = Args[0].toLowerCase();
-    auto idp = AliasMap.find(lcn);
+    //VStr lcn = Args[0].toLowerCase();
+    auto idp = AliasMap.find(/*lcn*/Args[0]);
     if (idp) {
       VAlias &al = AliasList[*idp];
       GCmdBuf.Insert("\n");
@@ -1048,7 +1042,7 @@ void VCommand::rebuildAliasMap () {
   AliasMap.reset();
   for (auto &&it : AliasList.itemsIdx()) {
     VAlias &al = it.value();
-    VStr aliasName = al.Name.toLowerCase();
+    VStr aliasName = al.Name/*.toLowerCase()*/;
     if (aliasName.length() == 0) continue; // just in case
     AliasMap.put(aliasName, it.index());
   }
@@ -1069,8 +1063,8 @@ COMMAND(Alias) {
     return;
   }
 
-  VStr aliasName = Args[1].toLowerCase();
-  auto idxp = AliasMap.find(aliasName);
+  //VStr aliasName = Args[1].toLowerCase();
+  auto idxp = AliasMap.find(/*aliasName*/Args[1]);
 
   if (Args.length() == 2) {
     if (!idxp) {

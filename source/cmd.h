@@ -56,7 +56,7 @@ private:
 
   static VCommand *Cmds;
   static TArray<VAlias> AliasList;
-  static TMap<VStr, int> AliasMap;
+  static TMap<VStrCI, int> AliasMap;
 
   static bool cliInserted;
 
@@ -76,7 +76,7 @@ protected:
   static VBasePlayer *Player; // for SRC_Client
 
   static bool rebuildCache;
-  static TMap<VStr, VCommand *> locaseCache;
+  static TMap<VStrCI, VCommand *> locaseCache;
 
 public:
   static bool ParsingKeyConf;
@@ -88,7 +88,7 @@ public:
   static VStr cliPreCmds;
 
 public:
-  VCommand (const char *);
+  VCommand (const char *name);
   virtual ~VCommand ();
 
   virtual void Run () = 0;
