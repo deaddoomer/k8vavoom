@@ -16,6 +16,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
     graphics/fonta63.lmp
     palette.pcx
     basepak.ls.in
+    ${hexen_pak_SRC}
   )
 add_custom_target(hexen_basepak ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3)
 
