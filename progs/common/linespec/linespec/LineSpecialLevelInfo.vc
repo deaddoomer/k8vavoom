@@ -52,6 +52,7 @@ const int
   MTF_STANDSTILL  = 0x4000,
 
   MTF2_CLASS_BASE = 0x000010000,
+  MTF2_CLASS_MASK = 0x0ffff0000,
   MTF2_FIGHTER    = 0x000010000, // thing appearing in player classes
   MTF2_CLERIC     = 0x000020000,
   MTF2_MAGE       = 0x000040000;
@@ -5539,8 +5540,16 @@ override void SpawnMapThing (mthing_t *mthing) {
     if (!(mthing.SkillClassFilter&World.GetSpawnFilter())) return;
 
     // check current character classes with spawn flags
-    spawnMask = GetPClassSpawnFlags();
-    if (spawnMask && !(mthing.SkillClassFilter&spawnMask)) return; // not for current class
+    // but if class mask is empty, spawn anyway
+    if (mthing.SkillClassFilter&MTF2_CLASS_MASK) {
+      spawnMask = GetPClassSpawnFlags();
+      if (spawnMask && !(mthing.SkillClassFilter&spawnMask)) {
+        // not for current class
+        //moClass = class!EntityEx(FindClassFromEditorId(mthing.type, LineSpecialGameInfo(Game).GameFilterFlag));
+        //printdebug("%C: thing %s skipped due to class mask: 0x%08x : 0x%08x", moClass, mthing.type, mthing.SkillClassFilter&MTF2_CLASS_MASK, spawnMask);
+        return;
+      }
+    }
   }
 
   if (IsPlayerStart) {
@@ -6278,6 +6287,29 @@ name GetDefaultDoorSound (sector_t *Sector) {
 //
 //==========================================================================
 int GetPClassSpawnFlags () {
+  if (!Game.netgame) {
+    // single player
+    //return MainGameInfo(Game).classFlags[GetCvar('class')];
+    int pcl = GetCvar('class');
+    //printdebug("GetPClassSpawnFlags: class=%s", pcl);
+    if (pcl < 0 || pcl > 15) return 0;
+    return (MTF2_CLASS_BASE<<pcl);
+  }
+#ifdef FIXME  //  Because of client/server and in-game joining we can't do this
+  else if (!deathmatch)
+  {
+    // Cooperative
+    int spawnMask = 0;
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+      if (GPlayers[i])
+      {
+        spawnMask |= classFlags[PlayerClass[i]];
+      }
+    }
+    return spawnMask;
+  }
+#endif
   return 0;
 }
 
