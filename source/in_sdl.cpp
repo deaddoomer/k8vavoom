@@ -565,6 +565,7 @@ void VSdlInputDevice::ReadInput () {
           default: break;
         }
         break;
+#ifdef ANDROID
       case SDL_FINGERMOTION:
         Touch_Event(TouchMotion, ev.tfinger.fingerId, ev.tfinger.x, ev.tfinger.y, ev.tfinger.dx, ev.tfinger.dy, ev.tfinger.pressure);
         break;
@@ -574,6 +575,7 @@ void VSdlInputDevice::ReadInput () {
       case SDL_FINGERUP:
         Touch_Event(TouchUp, ev.tfinger.fingerId, ev.tfinger.x, ev.tfinger.y, ev.tfinger.dx, ev.tfinger.dy, ev.tfinger.pressure);
         break;
+#endif
       // window/other
       case SDL_WINDOWEVENT:
         switch (ev.window.event) {
@@ -721,7 +723,9 @@ void VSdlInputDevice::ReadInput () {
 
   PostJoystick();
 
+#ifdef ANDROID
   Touch_Update();
+#endif
 }
 
 #ifdef __SWITCH__

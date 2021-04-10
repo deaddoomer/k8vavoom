@@ -788,8 +788,10 @@ void SCR_Update (bool fullUpdate) {
     }
   }
 
+#ifdef ANDROID
   // draw touchscreen controls
   Touch_Draw();
+#endif
 
   // page flip or blit buffer
   Drawer->Update();

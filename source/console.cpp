@@ -291,7 +291,9 @@ void C_Start (bool immediate) {
   }
   consolestate = (immediate ? cons_opening_imm : cons_opening);
   c_history_current = -1;
+#ifdef ANDROID
   SDL_StartTextInput();
+#endif
 }
 
 
@@ -309,7 +311,9 @@ void C_StartFull () {
   c_history_current = -1;
   //cons_h = 480.0f;
   cons_h = fmax(con_height.asFloat(), 128.0f);
+#ifdef ANDROID
   SDL_StartTextInput();
+#endif
 }
 
 

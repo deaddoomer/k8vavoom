@@ -1,3 +1,29 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#ifdef ANDROID
 #ifdef VAVOOM_CUSTOM_SPECIAL_SDL
 # include <SDL.h>
 #else
@@ -116,7 +142,7 @@ static void press_pad (/*int pad,*/ int key, bool down) {
 //        case K_DOWNARROW: GCmdBuf << c << "LookDown\n"; break;
 //        case K_LEFTARROW: GCmdBuf << c << "LookLeft\n"; break;
 //        case K_RIGHTARROW: GCmdBuf << c << "LookRight\n"; break;
-//      }      
+//      }
 //    }
   }
 }
@@ -269,12 +295,12 @@ void Touch_Event (int type, int id, float x, float y, float dx, float dy, float 
             press_pad(K_LEFTARROW, false);
           } else if (fingers[STEP_FINGER].vx > 0) {
             press_pad(K_RIGHTARROW, false);
-          }          
+          }
           if (fingers[STEP_FINGER].vy < 0) {
             press_pad(K_UPARROW, false);
           } else if (fingers[STEP_FINGER].vy > 0) {
             press_pad(K_DOWNARROW, false);
-          }          
+          }
         } else if (f == ROT_FINGER) {
           // nothing
         }
@@ -282,4 +308,4 @@ void Touch_Event (int type, int id, float x, float y, float dx, float dy, float 
       break;
   }
 }
-
+#endif
