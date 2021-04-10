@@ -25,18 +25,20 @@
 //**************************************************************************
 class HexenLevelInfo : LineSpecialLevelInfo;
 
+
 //==========================================================================
 //
 //  GetClassSpawnFlags
 //
 //==========================================================================
-
-override int GetPClassSpawnFlags()
-{
-  if (!Game.netgame)
-  {
-    // Single player
-    return MainGameInfo(Game).classFlags[GetCvar('class')];
+override int GetPClassSpawnFlags () {
+  if (!Game.netgame) {
+    // single player
+    //return MainGameInfo(Game).classFlags[GetCvar('class')];
+    int pcl = GetCvar('class');
+    //printdebug("GetPClassSpawnFlags: class=%s", pcl);
+    if (pcl < 0 || pcl > 15) return 0;
+    return (MTF2_CLASS_BASE<<pcl);
   }
 #ifdef FIXME  //  Because of client/server and in-game joining we can't do this
   else if (!deathmatch)

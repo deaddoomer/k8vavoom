@@ -33,7 +33,8 @@ const float DEFAULT_TELEFOGHEIGHT = 32.0;
 BotPlayer::botinfo_t botinfo[NUMTOTALBOTS];
 int botskill;
 
-int classFlags[3];
+// use bitmask
+//int classFlags[3];
 
 //==========================================================================
 //
@@ -359,9 +360,11 @@ defaultproperties
   DefaultKickBack = 150.0;
   NonMonsterAngleIncrements = 1;
 
+  /*
   classFlags[0] = HexenLevelInfo::MTF2_FIGHTER;
   classFlags[1] = HexenLevelInfo::MTF2_CLERIC;
   classFlags[2] = HexenLevelInfo::MTF2_MAGE;
+  */
 
   botskill = 2;
 
