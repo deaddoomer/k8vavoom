@@ -188,7 +188,9 @@ COMMAND(Script) {
 //
 //==========================================================================
 COMMAND(MyPos) {
-  CMD_FORWARD_TO_SERVER();
+  if (!Player) { GCon->Log("NO PLAYER!"); return; }
+  if (!Player->MO) { GCon->Log("NO PLAYER MOBJ!"); return; }
+  //CMD_FORWARD_TO_SERVER();
   if (/*CheatAllowed(Player)*/true) {
     const VLevel *lvl = Player->Level->XLevel;
     const subsector_t *ss = lvl->PointInSubsector_Buggy(Player->MO->Origin);
@@ -232,7 +234,7 @@ static VStr GetTexLumpName (int tid) {
 //
 //==========================================================================
 COMMAND(my_sector_info) {
-  CMD_FORWARD_TO_SERVER();
+  //CMD_FORWARD_TO_SERVER();
   if (!Player) { GCon->Log("NO PLAYER!"); return; }
   if (!Player->MO) { GCon->Log("NO PLAYER MOBJ!"); return; }
   if (!Player->MO->Sector) { GCon->Log("PLAYER MOBJ SECTOR IS UNKNOWN!"); return; }
@@ -323,6 +325,32 @@ COMMAND(my_clear_automap) {
   if (!Player->MO) { GCon->Log("NO PLAYER MOBJ!"); return; }
   AM_ClearAutomap();
   GCon->Logf("automap cleared");
+}
+#endif
+
+
+//==========================================================================
+//
+//  my_blockmap_dump_cell
+//
+//==========================================================================
+#ifdef CLIENT
+COMMAND(my_blockmap_dump_cell) {
+  //CMD_FORWARD_TO_SERVER();
+  if (!Player) { GCon->Log("NO PLAYER!"); return; }
+  if (!Player->MO) { GCon->Log("NO PLAYER MOBJ!"); return; }
+  const int blockx = MapBlock(Player->MO->Origin.x-Player->MO->XLevel->BlockMapOrgX);
+  const int blocky = MapBlock(Player->MO->Origin.y-Player->MO->XLevel->BlockMapOrgY);
+  GCon->Logf(NAME_Debug, "=== lines in blockmap cell at (%d,%d) ===", blockx, blocky);
+  for (auto &&it : Player->MO->XLevel->allBlockLines(blockx, blocky)) {
+    line_t *ld = it.line();
+    GCon->Logf(NAME_Debug, "  line #%d", (int)(ptrdiff_t)(ld-&Player->MO->XLevel->Lines[0]));
+  }
+  GCon->Logf(NAME_Debug, "=== things in blockmap cell at (%d,%d) ===", blockx, blocky);
+  for (auto &&it : Player->MO->XLevel->allBlockThings(blockx, blocky)) {
+    VEntity *ent = it.entity();
+    GCon->Logf(NAME_Debug, "  %s(%u): Origin=(%g,%g,%g); Radius=%g; Height=%g; Health=%d", ent->GetClass()->GetName(), ent->GetUniqueId(), ent->Origin.x, ent->Origin.y, ent->Origin.z, ent->Radius, ent->Height, ent->Health);
+  }
 }
 #endif
 
