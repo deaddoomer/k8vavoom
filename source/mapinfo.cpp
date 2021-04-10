@@ -2142,11 +2142,11 @@ static void ParseSkillDefOld (VScriptParser *sc, VSkillDef *sdef) {
       if (sc->CheckNumber()) {
         if (sc->Number > 0 && sc->Number < 31) sdef->SpawnFilter = 1<<(sc->Number-1);
       } else {
-             if (sc->Check("Baby")) sdef->SpawnFilter = 1;
-        else if (sc->Check("Easy")) sdef->SpawnFilter = 2;
-        else if (sc->Check("Normal")) sdef->SpawnFilter = 4;
-        else if (sc->Check("Hard")) sdef->SpawnFilter = 8;
-        else if (sc->Check("Nightmare")) sdef->SpawnFilter = 16;
+             if (sc->Check("Baby")) sdef->SpawnFilter = 0x01;
+        else if (sc->Check("Easy")) sdef->SpawnFilter = 0x02;
+        else if (sc->Check("Normal")) sdef->SpawnFilter = 0x04;
+        else if (sc->Check("Hard")) sdef->SpawnFilter = 0x08;
+        else if (sc->Check("Nightmare")) sdef->SpawnFilter = 0x10;
         else sc->ExpectString();
       }
     } else if (sc->Check("ACSReturn")) {

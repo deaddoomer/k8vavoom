@@ -51,9 +51,9 @@ void VLevel::LoadThings1 (int Lump) {
     th->options = options&~7;
 
     th->SkillClassFilter = 0xffff0000;
-    if (options&1) th->SkillClassFilter |= 0x03; // skill 1 and 2
-    if (options&2) th->SkillClassFilter |= 0x04; // skill 3
-    if (options&4) th->SkillClassFilter |= 0x18; // skill 4 and 5
+    if (options&1) th->SkillClassFilter |= 0x03; // skill 1 and 2 ("baby", "easy")
+    if (options&2) th->SkillClassFilter |= 0x04; // skill 3 ("normal")
+    if (options&4) th->SkillClassFilter |= 0x18; // skill 4 and 5 ("hard", "nightmare")
   }
 }
 
@@ -84,11 +84,11 @@ void VLevel::LoadThings2 (int Lump) {
     th->height = height;
     th->angle = angle;
     th->type = type;
-    th->options = options&~0xe7;
+    th->options = options&~0xe7; //k8: remove ambush flag; why?
     th->SkillClassFilter = (options&0xe0)<<11;
-    if (options&1) th->SkillClassFilter |= 0x03;
-    if (options&2) th->SkillClassFilter |= 0x04;
-    if (options&4) th->SkillClassFilter |= 0x18;
+    if (options&1) th->SkillClassFilter |= 0x03; // skill 1 and 2 ("baby", "easy")
+    if (options&2) th->SkillClassFilter |= 0x04; // skill 3 ("normal")
+    if (options&4) th->SkillClassFilter |= 0x18; // skill 4 and 5 ("hard", "nightmare")
     th->special = special;
     th->args[0] = arg1;
     th->args[1] = arg2;
@@ -122,9 +122,9 @@ void VLevel::SetupThingsFromMapinfo () {
       // allskills
       if (nfo->flags&mobjinfo_t::FlagNoSkill) {
         //GCon->Logf("*** THING %d got ALLSKILLS", th->type);
-        th->SkillClassFilter |= 0x03;
-        th->SkillClassFilter |= 0x04;
-        th->SkillClassFilter |= 0x18;
+        th->SkillClassFilter |= 0x03; // skill 1 and 2 ("baby", "easy")
+        th->SkillClassFilter |= 0x04; // skill 3 ("normal")
+        th->SkillClassFilter |= 0x18; // skill 4 and 5 ("hard", "nightmare")
       }
       // special
       if (nfo->flags&mobjinfo_t::FlagSpecial) {
