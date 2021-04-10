@@ -403,7 +403,7 @@ public:
   // WARNING! make sure that the following constants are in sync with `TFrustum` ones!
   enum { OUTSIDE = 0, INSIDE = 1, PARTIALLY = -1 };
 
-  // returns one of OUTSIDE, INSIDE, PARIALLY
+  // returns one of OUTSIDE, INSIDE, PARTIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
   inline VVA_CHECKRESULT int checkBoxEx (const float bbox[6]) const noexcept {
     // check reject point
@@ -413,7 +413,7 @@ public:
     return (DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist < 0.0f ? PARTIALLY : INSIDE);
   }
 
-  // returns one of OUTSIDE, INSIDE, PARIALLY
+  // returns one of OUTSIDE, INSIDE, PARTIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
   // returns PARTIALLY for non-vertical planes (because our box is 2d)
   inline VVA_CHECKRESULT int checkBox2DEx (const float bbox2d[4]) const noexcept {
@@ -436,7 +436,7 @@ public:
     return checkBox(bbox);
   }
 
-  // returns one of OUTSIDE, INSIDE, PARIALLY
+  // returns one of OUTSIDE, INSIDE, PARTIALLY
   inline VVA_CHECKRESULT int checkRectEx (const TVec &v0, const TVec &v1) const noexcept {
     //FIXME: this can be faster
     float bbox[6];
