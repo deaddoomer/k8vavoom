@@ -341,6 +341,7 @@ COMMAND(my_blockmap_dump_cell) {
   if (!Player->MO) { GCon->Log("NO PLAYER MOBJ!"); return; }
   const int blockx = MapBlock(Player->MO->Origin.x-Player->MO->XLevel->BlockMapOrgX);
   const int blocky = MapBlock(Player->MO->Origin.y-Player->MO->XLevel->BlockMapOrgY);
+  Player->MO->XLevel->IncrementValidCount();
   GCon->Logf(NAME_Debug, "=== lines in blockmap cell at (%d,%d) ===", blockx, blocky);
   for (auto &&it : Player->MO->XLevel->allBlockLines(blockx, blocky)) {
     line_t *ld = it.line();
