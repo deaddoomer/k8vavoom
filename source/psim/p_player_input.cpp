@@ -207,6 +207,7 @@ static VCvarB mouse_look("mouse_look", true, "Allow mouselook?", CVAR_Archive);
 static VCvarB mouse_look_horisontal("mouse_look_horisontal", true, "Allow horisontal mouselook?", CVAR_Archive);
 static VCvarB mouse_look_vertical("mouse_look_vertical", true, "Allow vertical mouselook?", CVAR_Archive);
 static VCvarB invert_mouse("invert_mouse", false, "Invert mouse?", CVAR_Archive);
+static VCvarB invert_joystick("invert_joystick", false, "Invert joystick?", CVAR_Archive);
 static VCvarB lookstrafe("lookstrafe", false, "Allow lookstrafe?", CVAR_Archive);
 static VCvarB lookspring_mouse("lookspring_mouse", false, "Allow lookspring for mouselook key?", CVAR_Archive);
 static VCvarB lookspring_keyboard("lookspring_keyboard", false, "Allow lookspring for keyboard view keys?", CVAR_Archive);
@@ -556,8 +557,8 @@ void VBasePlayer::AdjustAngles () {
     // old code
     //if (joyxmove > 0) ViewAngles.yaw -= joy_yaw*speed;
     //if (joyxmove < 0) ViewAngles.yaw += joy_yaw*speed;
-    if (mouse_look_horisontal) {
-      if (joyxmove[0]) ViewAngles.yaw -= joyxmove[0]/64.0*joy_yaw*speed;
+    if (mouse_look_horisontal && joyxmove[0]) {
+      ViewAngles.yaw -= joyxmove[0]/64.0*joy_yaw*speed;
     }
   }
   if (mouse_look_horisontal && !KeyStrafe.IsDown() && (!lookstrafe || (!mouse_look && !KeyMouseLook.IsDown()))) ViewAngles.yaw -= mousex*m_yaw;
@@ -572,7 +573,11 @@ void VBasePlayer::AdjustAngles () {
   if (mouse_look_vertical) {
     if ((mouse_look || KeyMouseLook.IsDown()) && !KeyStrafe.IsDown()) ViewAngles.pitch -= mousey*m_pitch;
     // added code
-    if (joyymove[0]) ViewAngles.pitch += joyymove[0]*m_pitch;
+    if (joyymove[0]) {
+      float val = joyymove[0]*m_pitch;
+      if (invert_joystick) val = -val;
+      ViewAngles.pitch += val;
+    }
   }
 
   // reset pitch if mouse look is disabled

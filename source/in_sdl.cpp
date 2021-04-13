@@ -40,8 +40,8 @@
 
 
 static int cli_NoMouse = 0;
-static int cli_NoJoy = 1;
-static int cli_NoCotl = 1;
+static int cli_NoJoy = 0;
+static int cli_NoCotl = 0;
 
 /*static*/ bool cliRegister_input_args =
   VParsedArgs::RegisterFlagSet("-nomouse", "Disable mouse controls", &cli_NoMouse) &&
@@ -93,10 +93,11 @@ private:
   int joy_num_buttons;
   int joy_x[2];
   int joy_y[2];
-  uint32_t joy_newb;
+  uint32_t joy_newb; // bitmask
   int joy_oldx[2];
   int joy_oldy[2];
-  uint32_t joy_oldb;
+  uint32_t joy_oldb; // bitmask
+  uint32_t ctl_trigger; // bitmask
 
   // deletes stream; it is ok to pass `nullptr`
   void LoadControllerMappings (VStream *st);
@@ -108,6 +109,8 @@ private:
   void HideRealMouse ();
   void ShowRealMouse ();
 
+  void DoUnpress ();
+  void CtlTriggerButton (int idx, bool down);
 
 public:
   bool bGotCloseRequest; // used in `CheckForEscape()`
@@ -278,7 +281,8 @@ VSdlInputDevice::VSdlInputDevice ()
   memset(&joy_oldx[0], 0, 2*sizeof(joy_oldx[0]));
   memset(&joy_oldy[0], 0, 2*sizeof(joy_oldy[0]));
   joy_newb = joy_oldb = 0;
-   // mouse and keyboard are setup using SDL's video interface
+  ctl_trigger = 0;
+  // mouse and keyboard are setup using SDL's video interface
   mouse = true;
   if (cli_NoMouse) {
     SDL_EventState(SDL_MOUSEMOTION,     SDL_IGNORE);
@@ -314,6 +318,47 @@ VSdlInputDevice::~VSdlInputDevice () {
   CL_SetNetAbortCallback(nullptr, nullptr);
   SDL_ShowCursor(1); // on
   ShutdownJoystick();
+}
+
+
+//==========================================================================
+//
+//  VSdlInputDevice::DoUnpress
+//
+//==========================================================================
+void VSdlInputDevice::DoUnpress () {
+  memset(&joy_x[0], 0, 2*sizeof(joy_x[0]));
+  memset(&joy_y[0], 0, 2*sizeof(joy_y[0]));
+  memset(&joy_oldx[0], 0, 2*sizeof(joy_oldx[0]));
+  memset(&joy_oldy[0], 0, 2*sizeof(joy_oldy[0]));
+  joy_newb = joy_oldb = 0;
+  ctl_trigger = 0;
+  VInputPublic::UnpressAll();
+  curmodflags = 0; // just in case
+}
+
+
+//==========================================================================
+//
+//  VSdlInputDevice::CtlTriggerButton
+//
+//==========================================================================
+void VSdlInputDevice::CtlTriggerButton (int idx, bool down) {
+  if (idx < 0 || idx > 1) return;
+  const uint32_t mask = 1u<<idx;
+  if (down) {
+    // pressed
+    if ((ctl_trigger&mask) == 0) {
+      ctl_trigger |= mask;
+      GInput->PostKeyEvent(K_BUTTON_TRIGGER_LEFT+idx, true, curmodflags);
+    }
+  } else {
+    // released
+    if ((ctl_trigger&mask) != 0) {
+      ctl_trigger &= ~mask;
+      GInput->PostKeyEvent(K_BUTTON_TRIGGER_LEFT+idx, false, curmodflags);
+    }
+  }
 }
 
 
@@ -551,6 +596,8 @@ void VSdlInputDevice::ReadInput () {
       // controllers
       case SDL_CONTROLLERAXISMOTION:
         if (controller) {
+          normal_value = clampval(ev.caxis.value*127/32767, -127, 127);
+          #if 0
           const char *axisName = "<unknown>";
           switch (ev.caxis.axis) {
             case SDL_CONTROLLER_AXIS_LEFTX: axisName = "LEFTX"; break;
@@ -561,21 +608,23 @@ void VSdlInputDevice::ReadInput () {
             case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: axisName = "TRIGRIGHT"; break;
             default: break;
           }
-          GCon->Logf(NAME_Debug, "CTL AXIS '%s' (%d): motion=%d", axisName, ev.caxis.axis, ev.caxis.value);
-          normal_value = clampval(ev.caxis.value*127/32767, -127, 127);
+          GCon->Logf(NAME_Debug, "CTL AXIS '%s' (%d): motion=%d; nval=%d", axisName, ev.caxis.axis, ev.caxis.value, normal_value);
+          #endif
           switch (ev.caxis.axis) {
             case SDL_CONTROLLER_AXIS_LEFTX: joy_x[0] = normal_value; break;
             case SDL_CONTROLLER_AXIS_LEFTY: joy_y[0] = normal_value; break;
             case SDL_CONTROLLER_AXIS_RIGHTX: joy_x[1] = normal_value; break;
             case SDL_CONTROLLER_AXIS_RIGHTY: joy_y[1] = normal_value; break;
-            //case SDL_CONTROLLER_AXIS_TRIGGERLEFT: joy_x = normal_value; break;
-            //case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: joy_x = normal_value; break;
+            //HACK: consider both triggers as buttons for now
+            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: CtlTriggerButton(0, (normal_value >= 110)); break;
+            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: CtlTriggerButton(1, (normal_value >= 110)); break;
           }
         }
         break;
       case SDL_CONTROLLERBUTTONDOWN:
       case SDL_CONTROLLERBUTTONUP:
         if (controller) {
+          #if 0
           const char *buttName = "<unknown>";
           switch (ev.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_A: buttName = "K_BUTTON_A"; break;
@@ -596,6 +645,7 @@ void VSdlInputDevice::ReadInput () {
             default: break;
           }
           GCon->Logf(NAME_Debug, "CTL BUTTON %s: '%s' (%d)", (ev.cbutton.state == SDL_PRESSED ? "DOWN" : "UP"), buttName, ev.cbutton.button);
+          #endif
           switch (ev.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_A: GInput->PostKeyEvent(K_BUTTON_A, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
             case SDL_CONTROLLER_BUTTON_B: GInput->PostKeyEvent(K_BUTTON_B, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
@@ -632,8 +682,7 @@ void VSdlInputDevice::ReadInput () {
         switch (ev.window.event) {
           case SDL_WINDOWEVENT_FOCUS_GAINED:
             //GCon->Logf(NAME_Debug, "***FOCUS GAIN; wa=%d; first=%d", (int)winactive, (int)firsttime);
-            VInputPublic::UnpressAll();
-            curmodflags = 0; // just in case
+            DoUnpress();
             vev.modflags = 0;
             if (!winactive && mouse) {
               if (Drawer) {
@@ -658,8 +707,7 @@ void VSdlInputDevice::ReadInput () {
             break;
           case SDL_WINDOWEVENT_FOCUS_LOST:
             //fprintf(stderr, "***FOCUS LOST; first=%d; drawer=%p\n", (int)firsttime, Drawer);
-            VInputPublic::UnpressAll();
-            curmodflags = 0; // just in case
+            DoUnpress();
             vev.modflags = 0;
             winactive = false;
             firsttime = true;
