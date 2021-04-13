@@ -87,6 +87,7 @@ private:
   SDL_Joystick *joystick;
   SDL_GameController *controller;
   SDL_Haptic *haptic;
+  SDL_JoystickID jid;
   bool joystick_started;
   bool joystick_controller;
   bool has_haptic;
@@ -275,6 +276,7 @@ VSdlInputDevice::VSdlInputDevice ()
   , joystick(nullptr)
   , controller(nullptr)
   , haptic(nullptr)
+  , jid(0)
   , joystick_started(false)
   , joystick_controller(false)
   , has_haptic(false)
@@ -601,7 +603,7 @@ void VSdlInputDevice::ReadInput () {
         break;
       // controllers
       case SDL_CONTROLLERAXISMOTION:
-        if (controller) {
+        if (controller && ev.caxis.which == jid) {
           normal_value = clampval(ev.caxis.value*127/32767, -127, 127);
           #if 0
           const char *axisName = "<unknown>";
@@ -629,7 +631,7 @@ void VSdlInputDevice::ReadInput () {
         break;
       case SDL_CONTROLLERBUTTONDOWN:
       case SDL_CONTROLLERBUTTONUP:
-        if (controller) {
+        if (controller && ev.cbutton.which == jid) {
           #if 0
           const char *buttName = "<unknown>";
           switch (ev.cbutton.button) {
@@ -674,17 +676,14 @@ void VSdlInputDevice::ReadInput () {
         break;
       case SDL_CONTROLLERDEVICEADDED:
         //GCon->Logf(NAME_Debug, "CTL %d added", ev.cdevice.which);
-        {
-          int joycount = SDL_NumJoysticks();
-          if (joycount == 1 || !(joystick && !controller)) {
-            GCon->Logf(NAME_Debug, "controller attached");
-            OpenJoystick(0);
-          }
+        if (SDL_NumJoysticks() == 1 || !(joystick && !controller)) {
+          GCon->Logf(NAME_Debug, "controller attached");
+          OpenJoystick(0);
         }
         break;
       case SDL_CONTROLLERDEVICEREMOVED:
         //GCon->Logf(NAME_Debug, "CTL %d removed", ev.cdevice.which);
-        if (joystick_controller && ev.cdevice.which == joynum) {
+        if (joystick_controller && ev.cdevice.which == jid) {
           ShutdownJoystick(false);
           GCon->Logf(NAME_Debug, "controller detached");
         }
@@ -692,7 +691,7 @@ void VSdlInputDevice::ReadInput () {
       /*k8: i don't know what to do here
       case SDL_CONTROLLERDEVICEREMAPPED:
         GCon->Logf(NAME_Debug, "CTL %d remapped", ev.cdevice.which);
-        if (joystick_controller && ev.cdevice.which == joynum) {
+        if (joystick_controller && ev.cdevice.which == jid) {
         }
         break;
       */
@@ -913,6 +912,7 @@ void VSdlInputDevice::ShutdownJoystick (bool closesubsys) {
   joy_num_buttons = 0;
   joystick_controller = false;
   joynum = -1;
+  jid = 0;
   memset(&joy_x[0], 0, 2*sizeof(joy_x[0]));
   memset(&joy_y[0], 0, 2*sizeof(joy_y[0]));
   memset(&joy_oldx[0], 0, 2*sizeof(joy_oldx[0]));
@@ -1008,15 +1008,19 @@ void VSdlInputDevice::OpenJoystick (int jnum) {
       return;
     }
     GCon->Logf(NAME_Init, "SDL: joystick is a controller (%s)", SDL_GameControllerNameForIndex(joynum));
+    SDL_Joystick *cj = SDL_GameControllerGetJoystick(controller);
+    if (!cj) {
+      GCon->Log(NAME_Init, "SDL: controller initialisation failed (cannot get joystick info)");
+      ShutdownJoystick(true);
+      return;
+    }
+    jid = SDL_JoystickInstanceID(cj);
     if (has_haptic) {
-      SDL_Joystick *cj = SDL_GameControllerGetJoystick(controller);
-      if (cj) {
-        haptic = SDL_HapticOpenFromJoystick(cj);
-        if (haptic) {
-          GCon->Logf(NAME_Init, "SDL: found haptic support for controller");
-        } else {
-          GCon->Logf(NAME_Init, "SDL: cannot open haptic interface");
-        }
+      haptic = SDL_HapticOpenFromJoystick(cj);
+      if (haptic) {
+        GCon->Logf(NAME_Init, "SDL: found haptic support for controller");
+      } else {
+        GCon->Logf(NAME_Init, "SDL: cannot open haptic interface");
       }
     }
   } else {
@@ -1031,6 +1035,7 @@ void VSdlInputDevice::OpenJoystick (int jnum) {
       ShutdownJoystick(false);
       return;
     }
+    jid = SDL_JoystickInstanceID(joystick);
     joy_num_buttons = SDL_JoystickNumButtons(joystick);
     GCon->Logf(NAME_Init, "SDL: found joystick with %d buttons", joy_num_buttons);
   }
