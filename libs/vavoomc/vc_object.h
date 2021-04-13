@@ -275,6 +275,8 @@ struct event_t {
     vint32 clickcnt; // 1 for click, 2 for doubleclick
     // for ev_mouse
     vint32 msy;
+    // for ev_joystick
+    vint32 joyidx; // 0 or 1
   };
   vuint32 flags; // EFlag_XXX
   VObject *obj;

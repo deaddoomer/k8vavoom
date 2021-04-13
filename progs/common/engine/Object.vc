@@ -247,7 +247,7 @@ struct event_t {
   int data1; // keys / mouse / joystick buttons
   int data2; // mouse / joystick x move
   int data3; // mouse / joystick y move
-  int data4;
+  int data4; // joystick index (modern controllers usually have two analog sticks)
   //int flags; // EFlag.XXX bitset
   bool eaten;
   bool cancelled;
@@ -261,6 +261,8 @@ struct event_t {
   // for ev_mouse/ev_joystick
   alias dx = data2;
   alias dy = data3;
+  // for ev_joystick
+  alias joyidx = data3; // 0 or 1
   // for ev_mouse
   alias msx = data1;
   alias msy = data4;

@@ -171,13 +171,14 @@ enum {
 
 
 // mouse values are used once
-static float mousex; // relative, scaled by sensitivity
-static float mousey; // relative, scaled by sensitivity
-// joystick values are repeated
-static int joyxmove;
-static int joyymove;
+static float mousex = 0.0f; // relative, scaled by sensitivity
+static float mousey = 0.0f; // relative, scaled by sensitivity
+// joystick values are in [-127..127] range
+// modern controllers usually have two analog sticks
+static int joyxmove[2] = {0, 0};
+static int joyymove[2] = {0, 0};
 
-static int currImpulse;
+static int currImpulse = 0;
 
 
 static VCvarB always_run("always_run", false, "Always run?", CVAR_Archive);
@@ -552,8 +553,12 @@ void VBasePlayer::AdjustAngles () {
   if (!KeyStrafe.IsDown()) {
     ViewAngles.yaw -= KeyRight.KeyState()*cl_yawspeed*speed;
     ViewAngles.yaw += KeyLeft.KeyState()*cl_yawspeed*speed;
-    if (joyxmove > 0) ViewAngles.yaw -= joy_yaw*speed;
-    if (joyxmove < 0) ViewAngles.yaw += joy_yaw*speed;
+    // old code
+    //if (joyxmove > 0) ViewAngles.yaw -= joy_yaw*speed;
+    //if (joyxmove < 0) ViewAngles.yaw += joy_yaw*speed;
+    if (mouse_look_horisontal) {
+      if (joyxmove[0]) ViewAngles.yaw -= joyxmove[0]/64.0*joy_yaw*speed;
+    }
   }
   if (mouse_look_horisontal && !KeyStrafe.IsDown() && (!lookstrafe || (!mouse_look && !KeyMouseLook.IsDown()))) ViewAngles.yaw -= mousex*m_yaw;
   ViewAngles.yaw = AngleMod(ViewAngles.yaw);
@@ -564,7 +569,11 @@ void VBasePlayer::AdjustAngles () {
   ViewAngles.pitch -= cl_pitchspeed*up*speed;
   ViewAngles.pitch += cl_pitchspeed*down*speed;
   if (up || down || KeyMouseLook.IsDown()) StopPitchDrift();
-  if (mouse_look_vertical && (mouse_look || KeyMouseLook.IsDown()) && !KeyStrafe.IsDown()) ViewAngles.pitch -= mousey*m_pitch;
+  if (mouse_look_vertical) {
+    if ((mouse_look || KeyMouseLook.IsDown()) && !KeyStrafe.IsDown()) ViewAngles.pitch -= mousey*m_pitch;
+    // added code
+    if (joyymove[0]) ViewAngles.pitch += joyymove[0]*m_pitch;
+  }
 
   // reset pitch if mouse look is disabled
   if (!IsMLookEnabled()) ViewAngles.pitch = 0;
@@ -623,9 +632,9 @@ void VBasePlayer::AdjustAngles () {
 void VBasePlayer::HandleInput () {
   const bool runEnabled = IsRunEnabled();
 
-  float forward = 0;
-  float side = 0;
-  float flyheight = 0;
+  float forward = 0.0f;
+  float side = 0.0f;
+  float flyheight = 0.0f;
 
   AdjustAngles();
 
@@ -633,9 +642,12 @@ void VBasePlayer::HandleInput () {
   if (KeyStrafe.IsDown()) {
     side += KeyRight.KeyState()*cl_sidespeed;
     side -= KeyLeft.KeyState()*cl_sidespeed;
-    if (joyxmove > 0) side += cl_sidespeed;
-    if (joyxmove < 0) side -= cl_sidespeed;
+    // old code
+    //if (joyxmove > 0) side += cl_sidespeed;
+    //if (joyxmove < 0) side -= cl_sidespeed;
   }
+
+  if (joyxmove[1]) side += joyxmove[1]/127.0*cl_sidespeed;
 
   forward += KeyForward.KeyState()*cl_forwardspeed;
   forward -= KeyBackward.KeyState()*cl_backspeed;
@@ -643,8 +655,11 @@ void VBasePlayer::HandleInput () {
   side += KeyMoveRight.KeyState()*cl_sidespeed;
   side -= KeyMoveLeft.KeyState()*cl_sidespeed;
 
-  if (joyymove < 0) forward += cl_forwardspeed;
-  if (joyymove > 0) forward -= cl_backspeed;
+  // old code
+  //if (joyymove < 0) forward += cl_forwardspeed;
+  //if (joyymove > 0) forward -= cl_backspeed;
+       if (joyymove[1] > 0) forward -= joyymove[1]/127.0*cl_backspeed;
+  else if (joyymove[1] < 0) forward -= joyymove[1]/127.0*cl_forwardspeed;
 
   // fly up/down/drop keys
   flyheight += KeyFlyUp.KeyState()*cl_flyspeed; // note that the actual flyheight will be twice this
@@ -736,8 +751,10 @@ bool VBasePlayer::Responder (event_t *ev) {
       if (invert_mouse) mousey = -mousey;
       return true; // eat events
     case ev_joystick:
-      joyxmove = ev->dx;
-      joyymove = ev->dy;
+      if (ev->joyidx >= 0 && ev->joyidx <= 1) {
+        joyxmove[ev->joyidx] = ev->dx;
+        joyymove[ev->joyidx] = ev->dy;
+      }
       return true; // eat events
     default:
       break;
@@ -753,7 +770,8 @@ bool VBasePlayer::Responder (event_t *ev) {
 //==========================================================================
 void VBasePlayer::ClearInput () {
   // clear cmd building stuff
-  joyxmove = joyymove = 0;
+  joyxmove[0] = joyymove[0] = 0;
+  joyxmove[1] = joyymove[1] = 0;
   mousex = mousey = 0;
   currImpulse = 0;
 }
