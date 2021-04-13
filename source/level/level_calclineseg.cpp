@@ -144,7 +144,7 @@ void VLevel::CalcSegPlaneDir (seg_t *seg) {
 //
 //==========================================================================
 bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
-  if (!sub || !seg || !seg->sidedef) return false;
+  if (!sub || !seg || !seg->sidedef || !seg->linedef) return false; // do not clip with minisegs too
   if (sub->numlines < 3) return false; // oops, cannot clip
 
   const sector_t *fsec = sub->sector;
@@ -156,6 +156,9 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
 
   // check texture
   if (GTextureManager.GetTextureType(seg->sidedef->MidTexture) != VTextureManager::TCT_SOLID) return false;
+
+  // do not clip with translucent lines
+  if (seg->linedef->alpha < 1.0f || (seg->linedef->flags&ML_ADDITIVE)) return false;
 
   polyobj_t *po = seg->pobj;
   vassert(po);
@@ -169,7 +172,7 @@ bool VLevel::ClipPObjSegToSub (const subsector_t *sub, seg_t *seg) noexcept {
 
   if (v1->x == v2->x && v1->y == v2->y) return false; // too short, ignore it
 
-  // check is seg is outside of subsector bounding box
+  // check if the seg is outside of subsector bounding box
   if (min2(v1->x, v2->x) > sub->bbox2d[BOX2D_MAXX]) return false;
   if (min2(v1->y, v2->y) > sub->bbox2d[BOX2D_MAXY]) return false;
   if (max2(v1->x, v2->x) < sub->bbox2d[BOX2D_MINX]) return false;
