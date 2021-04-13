@@ -336,6 +336,9 @@ static void ProcessArgs (int ArgCount, char **ArgVector) {
   int count = 0; // number of file arguments
   bool nomore = false;
 
+  VObject::cliCaseSensitiveLocals = 1;
+  VObject::cliCaseSensitiveFields = 1;
+
   TArray<VStr> paklist;
 
   for (int i = 1; i < ArgCount; ++i) {
