@@ -1288,14 +1288,16 @@ VStr VObject::NameFromVKey (int vkey) {
     case K_BUTTON_BACK: return "BUTTON_BACK";
     case K_BUTTON_GUIDE: return "BUTTON_GUIDE";
     case K_BUTTON_START: return "BUTTON_START";
-    case K_BUTTON_LEFTSTICK: return "BUTTON_LEFTSTICK";
-    case K_BUTTON_RIGHTSTICK: return "BUTTON_RIGHTSTICK";
-    case K_BUTTON_LEFTSHOULDER: return "BUTTON_LEFTSHOULDER";
-    case K_BUTTON_RIGHTSHOULDER: return "BUTTON_RIGHTSHOULDER";
-    case K_BUTTON_DPAD_UP: return "BUTTON_DPAD_UP";
-    case K_BUTTON_DPAD_DOWN: return "BUTTON_DPAD_DOWN";
-    case K_BUTTON_DPAD_LEFT: return "BUTTON_DPAD_LEFT";
-    case K_BUTTON_DPAD_RIGHT: return "BUTTON_DPAD_RIGHT";
+    case K_BUTTON_LEFTSTICK: return "BUTTON_LSTICK";
+    case K_BUTTON_RIGHTSTICK: return "BUTTON_RSTICK";
+    case K_BUTTON_LEFTSHOULDER: return "LSHOULDER";
+    case K_BUTTON_RIGHTSHOULDER: return "RSHOULDER";
+    case K_BUTTON_DPAD_UP: return "DPAD_UP";
+    case K_BUTTON_DPAD_DOWN: return "DPAD_DOWN";
+    case K_BUTTON_DPAD_LEFT: return "DPAD_LEFT";
+    case K_BUTTON_DPAD_RIGHT: return "DPAD_RIGHT";
+    case K_BUTTON_TRIGGER_LEFT: return "LTRIGGER";
+    case K_BUTTON_TRIGGER_RIGHT: return "RTRIGGER";
   }
   if (vkey > 32 && vkey < 127) return VStr(char(vkey));
   return VStr();
@@ -1465,10 +1467,21 @@ int VObject::VKeyFromName (VStr kn) {
     if (kn.strEquCI("BUTTON_RIGHTSTICK")) return K_BUTTON_RIGHTSTICK;
     if (kn.strEquCI("BUTTON_LEFTSHOULDER")) return K_BUTTON_LEFTSHOULDER;
     if (kn.strEquCI("BUTTON_RIGHTSHOULDER")) return K_BUTTON_RIGHTSHOULDER;
-    if (kn.strEquCI("BUTTON_DPAD_UP")) return K_BUTTON_DPAD_UP;
-    if (kn.strEquCI("BUTTON_DPAD_DOWN")) return K_BUTTON_DPAD_DOWN;
-    if (kn.strEquCI("BUTTON_DPAD_LEFT")) return K_BUTTON_DPAD_LEFT;
-    if (kn.strEquCI("BUTTON_DPAD_RIGHT")) return K_BUTTON_DPAD_RIGHT;
+    if (kn.strEquCI("BUTTON_LSTICK")) return K_BUTTON_LEFTSTICK;
+    if (kn.strEquCI("BUTTON_RSTICK")) return K_BUTTON_RIGHTSTICK;
+  }
+
+  if (kn.strEquCI("LEFTSHOULDER") || kn.strEquCI("LSHOULDER")) return K_BUTTON_LEFTSHOULDER;
+  if (kn.strEquCI("RIGHTSHOULDER") || kn.strEquCI("RSHOULDER")) return K_BUTTON_RIGHTSHOULDER;
+
+  if (kn.strEquCI("TRIGGERLEFT") || kn.strEquCI("LTRIGGER")) return K_BUTTON_TRIGGER_LEFT;
+  if (kn.strEquCI("TRIGGERRIGHT") || kn.strEquCI("RTRIGGER")) return K_BUTTON_TRIGGER_RIGHT;
+
+  if (kn.startsWithCI("DPAD_")) {
+    if (kn.strEquCI("DPAD_UP")) return K_BUTTON_DPAD_UP;
+    if (kn.strEquCI("DPAD_DOWN")) return K_BUTTON_DPAD_DOWN;
+    if (kn.strEquCI("DPAD_LEFT")) return K_BUTTON_DPAD_LEFT;
+    if (kn.strEquCI("DPAD_RIGHT")) return K_BUTTON_DPAD_RIGHT;
   }
 
   return 0;

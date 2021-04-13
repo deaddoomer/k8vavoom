@@ -874,8 +874,8 @@ static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
     case K_PAD9: case K_PAGEUP: return K_PAGEUP;
     case K_PADENTER: case K_SPACE: case K_BUTTON_START: case K_ENTER: return K_ENTER;
     case K_BUTTON_BACK: case K_ESCAPE: return K_ESCAPE;
-    case K_BUTTON_A: K_BUTTON_X: return K_ENTER;
-    case K_BUTTON_B: K_BUTTON_Y: return K_ESCAPE;
+    case K_BUTTON_A: case K_BUTTON_X: case K_BUTTON_LEFTSHOULDER: return K_ENTER;
+    case K_BUTTON_B: case K_BUTTON_Y: case K_BUTTON_RIGHTSHOULDER: return K_ESCAPE;
     case K_PAD0: case K_INSERT: return K_INSERT;
     case K_PADDOT: case K_DELETE: return K_DELETE;
   }
