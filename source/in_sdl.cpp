@@ -35,8 +35,7 @@
 
 // k8: joysticks have 16 buttons; no, really, you don't need more
 
-//#define VSDL_JINIT  ((SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER)&~SDL_INIT_HAPTIC)
-#define VSDL_JINIT  ((cli_NoJoy ? 0 : SDL_INIT_JOYSTICK)|(cli_NoCotl ? 0 : SDL_INIT_GAMECONTROLLER))
+#define VSDL_JINIT  (SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER)
 
 
 static int cli_NoMouse = 0;
@@ -87,6 +86,7 @@ private:
 
   SDL_Joystick *joystick;
   SDL_GameController *controller;
+  SDL_Haptic *haptic;
   bool joystick_started;
   bool joystick_controller;
   bool has_haptic;
@@ -274,6 +274,7 @@ VSdlInputDevice::VSdlInputDevice ()
   , hyperDown(false)
   , joystick(nullptr)
   , controller(nullptr)
+  , haptic(nullptr)
   , joystick_started(false)
   , joystick_controller(false)
   , has_haptic(false)
@@ -902,6 +903,7 @@ static inline int SwitchJoyToKey (int b) {
 //
 //==========================================================================
 void VSdlInputDevice::ShutdownJoystick (bool closesubsys) {
+  if (haptic) { SDL_HapticClose(haptic); haptic = nullptr; }
   if (joystick) { SDL_JoystickClose(joystick); joystick = nullptr; }
   if (controller) { SDL_GameControllerClose(controller); controller = nullptr; }
   if (closesubsys) {
@@ -1006,6 +1008,17 @@ void VSdlInputDevice::OpenJoystick (int jnum) {
       return;
     }
     GCon->Logf(NAME_Init, "SDL: joystick is a controller (%s)", SDL_GameControllerNameForIndex(joynum));
+    if (has_haptic) {
+      SDL_Joystick *cj = SDL_GameControllerGetJoystick(controller);
+      if (cj) {
+        haptic = SDL_HapticOpenFromJoystick(cj);
+        if (haptic) {
+          GCon->Logf(NAME_Init, "SDL: found haptic support for controller");
+        } else {
+          GCon->Logf(NAME_Init, "SDL: cannot open haptic interface");
+        }
+      }
+    }
   } else {
     if (cli_NoJoy) {
       GCon->Log(NAME_Init, "SDL: skipping joystick initialisation due to user request");
