@@ -75,7 +75,7 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   texinfo->ColorMap = 0;
 
   #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-  const float scale2X = (segparam ? segparam->ScaleY : 1.0f);
+  const float scale2X = (segparam ? segparam->ScaleX : 1.0f);
   const float scale2Y = (segparam ? segparam->ScaleY : 1.0f);
   #else
     // it seems that `segsidedef` offset is in effect, but scaling is not
@@ -148,12 +148,18 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
     yofs = 0.0f;
   }
 
+  const TVec *v;
+  TVec dir;
   if (!xflip) {
-    texinfo->soffs = -DotProduct(*seg->linedef->v1, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+    v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
+    dir = seg->dir;
+    texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
   } else {
     // flipped
-    texinfo->soffs = -DotProduct(*seg->linedef->v2, -seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+    v = (seg->side == 0 ? seg->linedef->v2 : seg->linedef->v1);
+    dir = -seg->dir;
   }
+  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
@@ -177,8 +183,8 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   #if 0
   // rotate around bottom left corner (doesn't work)
   if (angle) {
-    const float cx = seg->linedef->v1->x; //+seg->dir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
-    const float cy = seg->linedef->v1->y; //+seg->dir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
+    const float cx = v->x; //+seg->dir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
+    const float cy = v->y; //+seg->dir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
     TVec p(cx, cy);
     texinfo->soffs -= DotProduct(texinfo->saxis, p);
     texinfo->toffs -= DotProduct(texinfo->taxis, p);
