@@ -1254,8 +1254,8 @@ VStr VObject::NameFromVKey (int vkey) {
     case K_MOUSE1: return "MOUSE1";
     case K_MOUSE2: return "MOUSE2";
     case K_MOUSE3: return "MOUSE3";
-    case K_MWHEELUP: return "MWHEELUP";
-    case K_MWHEELDOWN: return "MWHEELDOWN";
+    case K_MWHEELUP: return "WHEEL_UP";
+    case K_MWHEELDOWN: return "WHEEL_DOWN";
 
     case K_JOY1: return "JOY1";
     case K_JOY2: return "JOY2";
@@ -1364,6 +1364,63 @@ int VObject::VKeyFromName (VStr kn) {
     if (ch > 32 && ch < 127) return (int)ch;
   }
 
+  int num = isPrefixedDigit(*kn, "PAD", 1, 1);
+  if (num >= 0) {
+    vassert(num < 10); // just in case
+    return K_PAD0+num;
+  }
+  num = isPrefixedDigit(*kn, "kp", 1, 1);
+  if (num >= 0) {
+    vassert(num < 10); // just in case
+    return K_PAD0+num;
+  }
+
+  num = isPrefixedDigit(*kn, "f", 1, 2);
+  if (num >= 1 && num <= 12) {
+    return K_F1+num-1;
+  }
+
+  if (kn.strEquCI("kp.") || kn.strEquCI("kp-.") || kn.strEquCI("kp_.")) return K_PADDOT;
+  if (kn.strEquCI("kp+") || kn.strEquCI("kp-+") || kn.strEquCI("kp_+")) return K_PADPLUS;
+  if (kn.strEquCI("kp-") || kn.strEquCI("kp--") || kn.strEquCI("kp_-")) return K_PADMINUS;
+  if (kn.strEquCI("kp*") || kn.strEquCI("kp-*") || kn.strEquCI("kp_*")) return K_PADMULTIPLE;
+  if (kn.strEquCI("kp/") || kn.strEquCI("kp-/") || kn.strEquCI("kp_/")) return K_PADDIVIDE;
+
+  if (kn.strEquCI("PAD/") || kn.strEquCI("PAD-/") || kn.strEquCI("PAD_/")) return K_PADDIVIDE;
+  if (kn.strEquCI("PAD*") || kn.strEquCI("PAD-*") || kn.strEquCI("PAD_*")) return K_PADMULTIPLE;
+  if (kn.strEquCI("PAD-") || kn.strEquCI("PAD--") || kn.strEquCI("PAD_-")) return K_PADMINUS;
+  if (kn.strEquCI("PAD+") || kn.strEquCI("PAD-+") || kn.strEquCI("PAD_+")) return K_PADPLUS;
+  if (kn.strEquCI("PAD.") || kn.strEquCI("PAD-.") || kn.strEquCI("PAD_.")) return K_PADDOT;
+
+  num = isPrefixedDigit(*kn, "mouse", 1, 1);
+  if (num >= 1) {
+    vassert(num < 10); // just in case
+    return K_MOUSE1+num-1;
+  }
+
+  num = isPrefixedDigit(*kn, "joy", 1, 2);
+  if (num >= 1 && num <= 16) {
+    vassert(num < 10); // just in case
+    return K_JOY1+num-1;
+  }
+
+  // remove all '-' and '_'
+  for (;;) {
+    int mp = kn.indexOf('-');
+    if (mp >= 0) {
+      kn = kn.left(mp)+kn.mid(mp+1, kn.length());
+      continue;
+    }
+    mp = kn.indexOf('_');
+    if (mp >= 0) {
+      kn = kn.left(mp)+kn.mid(mp+1, kn.length());
+      continue;
+    }
+    break;
+  }
+
+  if (kn.strEquCI("kpenter")) return K_PADENTER;
+
   if (kn.strEquCI("ESCAPE")) return K_ESCAPE;
   if (kn.strEquCI("ENTER")) return K_ENTER;
   if (kn.strEquCI("RETURN")) return K_ENTER;
@@ -1383,39 +1440,16 @@ int VObject::VKeyFromName (VStr kn) {
   if (kn.strEquCI("PAGEUP") || kn.strEquCI("PGUP")) return K_PAGEUP;
   if (kn.strEquCI("PAGEDOWN") || kn.strEquCI("PGDOWN") || kn.strEquCI("PGDN")) return K_PAGEDOWN;
 
-  int num = isPrefixedDigit(*kn, "PAD", 1, 1);
-  if (num >= 0) {
-    vassert(num < 10); // just in case
-    return K_PAD0+num;
-  }
-  num = isPrefixedDigit(*kn, "kp", 1, 1);
-  if (num >= 0) {
-    vassert(num < 10); // just in case
-    return K_PAD0+num;
-  }
-
   if (kn.strEquCI("NUMLOCK") || kn.strEquCI("NUM")) return K_NUMLOCK;
-  if (kn.strEquCI("PADDIVIDE") || kn.strEquCI("PAD_DIVIDE") || kn.strEquCI("PAD/")) return K_PADDIVIDE;
-  if (kn.strEquCI("PADMULTIPLE") || kn.strEquCI("PAD_MULTIPLE") || kn.strEquCI("PAD*")) return K_PADMULTIPLE;
-  if (kn.strEquCI("PADMINUS") || kn.strEquCI("PAD_MINUS") || kn.strEquCI("PAD-")) return K_PADMINUS;
-  if (kn.strEquCI("PADPLUS") || kn.strEquCI("PAD_PLUS") || kn.strEquCI("PAD+")) return K_PADPLUS;
-  if (kn.strEquCI("PADENTER") || kn.strEquCI("PAD_ENTER")) return K_PADENTER;
-  if (kn.strEquCI("PADDOT") || kn.strEquCI("PAD_DOT") || kn.strEquCI("PAD.")) return K_PADDOT;
-
-  if (kn.strEquCI("kp-enter") || kn.strEquCI("kp_enter") || kn.strEquCI("kpenter")) return K_PADENTER;
-  if (kn.strEquCI("kp.") || kn.strEquCI("kp-.")) return K_PADDOT;
-  if (kn.strEquCI("kp+") || kn.strEquCI("kp-+")) return K_PADPLUS;
-  if (kn.strEquCI("kp-") || kn.strEquCI("kp--")) return K_PADMINUS;
-  if (kn.strEquCI("kp*") || kn.strEquCI("kp-*")) return K_PADMULTIPLE;
-  if (kn.strEquCI("kp/") || kn.strEquCI("kp-/")) return K_PADDIVIDE;
+  if (kn.strEquCI("PADDIVIDE") || kn.strEquCI("PADDIV")) return K_PADDIVIDE;
+  if (kn.strEquCI("PADMULTIPLE") || kn.strEquCI("PADMULT") || kn.strEquCI("PADMUL")) return K_PADMULTIPLE;
+  if (kn.strEquCI("PADMINUS")) return K_PADMINUS;
+  if (kn.strEquCI("PADPLUS")) return K_PADPLUS;
+  if (kn.strEquCI("PADENTER")) return K_PADENTER;
+  if (kn.strEquCI("PADDOT")) return K_PADDOT;
 
   if (kn.strEquCI("CAPSLOCK") || kn.strEquCI("CAPS")) return K_CAPSLOCK;
   if (kn.strEquCI("BACKQUOTE")) return K_BACKQUOTE;
-
-  num = isPrefixedDigit(*kn, "f", 1, 2);
-  if (num >= 1 && num <= 12) {
-    return K_F1+num-1;
-  }
 
   if (kn.strEquCI("LSHIFT")) return K_LSHIFT;
   if (kn.strEquCI("RSHIFT")) return K_RSHIFT;
@@ -1432,43 +1466,32 @@ int VObject::VKeyFromName (VStr kn) {
   if (kn.strEquCI("SCROLLLOCK") || kn.strEquCI("SCROLL")) return K_SCROLLLOCK;
   if (kn.strEquCI("PAUSE")) return K_PAUSE;
 
-  num = isPrefixedDigit(*kn, "mouse", 1, 1);
-  if (num >= 1) {
-    vassert(num < 10); // just in case
-    return K_MOUSE1+num-1;
-  }
-  if (kn.strEquCI("MWHEELUP")) return K_MWHEELUP;
-  if (kn.strEquCI("MWHEELDOWN")) return K_MWHEELDOWN;
+  if (kn.strEquCI("MWHEELUP") || kn.strEquCI("WHEELUP")) return K_MWHEELUP;
+  if (kn.strEquCI("MWHEELDOWN") || kn.strEquCI("WHEELDOWN")) return K_MWHEELDOWN;
 
-  num = isPrefixedDigit(*kn, "joy", 1, 2);
-  if (num >= 1 && num <= 16) {
-    vassert(num < 10); // just in case
-    return K_JOY1+num-1;
+  if (kn.startsWithCI("AXIS")) {
+    if (kn.strEquCI("AXISLEFTX")) return K_AXIS_LEFTX;
+    if (kn.strEquCI("AXISLEFTY")) return K_AXIS_LEFTY;
+    if (kn.strEquCI("AXISRIGHTX")) return K_AXIS_RIGHTX;
+    if (kn.strEquCI("AXISRIGHTY")) return K_AXIS_RIGHTY;
+    if (kn.strEquCI("AXISTRIGGERLEFT")) return K_AXIS_TRIGGERLEFT;
+    if (kn.strEquCI("AXISTRIGGERRIGHT")) return K_AXIS_TRIGGERRIGHT;
   }
 
-  if (kn.startsWithCI("AXIS_")) {
-    if (kn.strEquCI("AXIS_LEFTX")) return K_AXIS_LEFTX;
-    if (kn.strEquCI("AXIS_LEFTY")) return K_AXIS_LEFTY;
-    if (kn.strEquCI("AXIS_RIGHTX")) return K_AXIS_RIGHTX;
-    if (kn.strEquCI("AXIS_RIGHTY")) return K_AXIS_RIGHTY;
-    if (kn.strEquCI("AXIS_TRIGGERLEFT")) return K_AXIS_TRIGGERLEFT;
-    if (kn.strEquCI("AXIS_TRIGGERRIGHT")) return K_AXIS_TRIGGERRIGHT;
-  }
-
-  if (kn.startsWithCI("BUTTON_")) {
-    if (kn.strEquCI("BUTTON_A")) return K_BUTTON_A;
-    if (kn.strEquCI("BUTTON_B")) return K_BUTTON_B;
-    if (kn.strEquCI("BUTTON_X")) return K_BUTTON_X;
-    if (kn.strEquCI("BUTTON_Y")) return K_BUTTON_Y;
-    if (kn.strEquCI("BUTTON_BACK")) return K_BUTTON_BACK;
-    if (kn.strEquCI("BUTTON_GUIDE")) return K_BUTTON_GUIDE;
-    if (kn.strEquCI("BUTTON_START")) return K_BUTTON_START;
-    if (kn.strEquCI("BUTTON_LEFTSTICK")) return K_BUTTON_LEFTSTICK;
-    if (kn.strEquCI("BUTTON_RIGHTSTICK")) return K_BUTTON_RIGHTSTICK;
-    if (kn.strEquCI("BUTTON_LEFTSHOULDER")) return K_BUTTON_LEFTSHOULDER;
-    if (kn.strEquCI("BUTTON_RIGHTSHOULDER")) return K_BUTTON_RIGHTSHOULDER;
-    if (kn.strEquCI("BUTTON_LSTICK")) return K_BUTTON_LEFTSTICK;
-    if (kn.strEquCI("BUTTON_RSTICK")) return K_BUTTON_RIGHTSTICK;
+  if (kn.startsWithCI("BUTTON")) {
+    if (kn.strEquCI("BUTTONA")) return K_BUTTON_A;
+    if (kn.strEquCI("BUTTONB")) return K_BUTTON_B;
+    if (kn.strEquCI("BUTTONX")) return K_BUTTON_X;
+    if (kn.strEquCI("BUTTONY")) return K_BUTTON_Y;
+    if (kn.strEquCI("BUTTONBACK")) return K_BUTTON_BACK;
+    if (kn.strEquCI("BUTTONGUIDE")) return K_BUTTON_GUIDE;
+    if (kn.strEquCI("BUTTONSTART")) return K_BUTTON_START;
+    if (kn.strEquCI("BUTTONLEFTSTICK")) return K_BUTTON_LEFTSTICK;
+    if (kn.strEquCI("BUTTONRIGHTSTICK")) return K_BUTTON_RIGHTSTICK;
+    if (kn.strEquCI("BUTTONLEFTSHOULDER")) return K_BUTTON_LEFTSHOULDER;
+    if (kn.strEquCI("BUTTONRIGHTSHOULDER")) return K_BUTTON_RIGHTSHOULDER;
+    if (kn.strEquCI("BUTTONLSTICK")) return K_BUTTON_LEFTSTICK;
+    if (kn.strEquCI("BUTTONRSTICK")) return K_BUTTON_RIGHTSTICK;
   }
 
   if (kn.strEquCI("LEFTSHOULDER") || kn.strEquCI("LSHOULDER")) return K_BUTTON_LEFTSHOULDER;
@@ -1477,11 +1500,11 @@ int VObject::VKeyFromName (VStr kn) {
   if (kn.strEquCI("TRIGGERLEFT") || kn.strEquCI("LTRIGGER")) return K_BUTTON_TRIGGER_LEFT;
   if (kn.strEquCI("TRIGGERRIGHT") || kn.strEquCI("RTRIGGER")) return K_BUTTON_TRIGGER_RIGHT;
 
-  if (kn.startsWithCI("DPAD_")) {
-    if (kn.strEquCI("DPAD_UP")) return K_BUTTON_DPAD_UP;
-    if (kn.strEquCI("DPAD_DOWN")) return K_BUTTON_DPAD_DOWN;
-    if (kn.strEquCI("DPAD_LEFT")) return K_BUTTON_DPAD_LEFT;
-    if (kn.strEquCI("DPAD_RIGHT")) return K_BUTTON_DPAD_RIGHT;
+  if (kn.startsWithCI("DPAD")) {
+    if (kn.strEquCI("DPADUP")) return K_BUTTON_DPAD_UP;
+    if (kn.strEquCI("DPADDOWN")) return K_BUTTON_DPAD_DOWN;
+    if (kn.strEquCI("DPADLEFT")) return K_BUTTON_DPAD_LEFT;
+    if (kn.strEquCI("DPADRIGHT")) return K_BUTTON_DPAD_RIGHT;
   }
 
   return 0;

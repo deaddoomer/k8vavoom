@@ -57,7 +57,8 @@ public:
   // handling of key bindings
   virtual void ClearBindings () override;
   virtual void GetBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection, int strifemode, int *isActive) override;
-  virtual void GetDefaultModBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection) override;
+  virtual void GetBindingKeysEx (VStr Binding, TArray<int> &keylist, VStr modSection, int strifemode) override;
+  virtual void GetDefaultModBindingKeys (VStr Binding, TArray<int> &keylist, VStr modSection) override;
   virtual void GetBinding (int KeyNum, VStr &Down, VStr &Up) override;
   virtual void SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int strifemode, bool allowOverride=true) override;
   virtual void WriteBindings (VStream *st) override;
@@ -713,18 +714,18 @@ void VInput::GetBinding (int KeyNum, VStr &Down, VStr &Up) {
 //  VInput::GetDefaultModBindingKeys
 //
 //==========================================================================
-void VInput::GetDefaultModBindingKeys (VStr bindStr, int &Key1, int &Key2, VStr modSection) {
-  Key1 = -1;
-  Key2 = -1;
+void VInput::GetDefaultModBindingKeys (VStr bindStr, TArray<int> &keylist, VStr modSection) {
+  keylist.reset();
   if (bindStr.isEmpty() || modSection.isEmpty()) return;
   for (auto &&bind : DefaultModBindings) {
     if (bind.keyNum < 1 || bind.keyNum > 255) continue; // just in case
     if (!bind.modName.strEquCI(modSection)) continue;
-    int kf = -1;
+    int kf = 0;
     if (!bind.IsEmpty() && bind.cmdDown.strEquCI(bindStr)) kf = bind.keyNum;
-    if (kf > 0) {
-      if (Key1 != -1) { Key2 = kf; return; }
-      Key1 = kf;
+    if (kf > 0 && kf < 255) {
+      bool found = false;
+      for (int v : keylist) if (abs(v) == abs(kf)) { found = true; break; }
+      if (!found) keylist.append(kf);
     }
   }
 }
@@ -777,6 +778,53 @@ void VInput::GetBindingKeys (VStr bindStr, int &Key1, int &Key2, VStr modSection
         if (Key1 != -1) { Key2 = kf; return; }
         Key1 = kf;
       }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VInput::GetBindingKeysEx
+//
+//==========================================================================
+void VInput::GetBindingKeysEx (VStr bindStr, TArray<int> &keylist, VStr modSection, int strifemode) {
+  keylist.reset();
+  if (bindStr.isEmpty()) return;
+  // mod?
+  if (!modSection.isEmpty()) {
+    for (auto &&bind : ModBindings) {
+      if (bind.keyNum < 1 || bind.keyNum > 255) continue; // just in case
+      if (!bind.modName.strEquCI(modSection)) continue;
+      int kf = 0;
+      if (!bind.IsEmpty() && bind.cmdDown.strEquCI(bindStr)) {
+        kf = bind.keyNum;
+        if (kf < 1 || kf > 255) kf = 0;
+      }
+      if (kf > 0) {
+        // check if it is active
+        if (!ModKeyBindingsActive[kf].IsEmpty() && ModKeyBindingsActive[kf].modName.strEquCI(modSection)) {
+          // ok
+        } else {
+          kf = -kf;
+        }
+        bool found = false;
+        for (int v : keylist) if (abs(v) == abs(kf)) { found = true; break; }
+        if (!found) keylist.append(kf);
+      }
+    }
+  } else {
+    // normal
+    for (int i = 1; i < 256; ++i) {
+      int kf = 0;
+      if (strifemode < 0) {
+        if (!KeyBindingsNonStrife[i].IsEmpty() && KeyBindingsNonStrife[i].cmdDown.strEquCI(bindStr)) kf = i;
+      } else if (strifemode > 0) {
+        if (!KeyBindingsStrife[i].IsEmpty() && KeyBindingsStrife[i].cmdDown.strEquCI(bindStr)) kf = i;
+      } else {
+        if (!KeyBindingsAll[i].IsEmpty() && KeyBindingsAll[i].cmdDown.strEquCI(bindStr)) kf = i;
+      }
+      if (kf > 0) keylist.append(kf);
     }
   }
 }

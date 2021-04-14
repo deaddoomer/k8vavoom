@@ -12,6 +12,7 @@ menus {
   "menus/video.txt",
 
   "menus/controls_main.txt",
+  "menus/controls_joy.txt",
 
   "menus/video/advrender.txt",
   "menus/video/advvideo.txt",

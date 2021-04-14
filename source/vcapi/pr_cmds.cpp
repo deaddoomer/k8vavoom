@@ -704,11 +704,8 @@ IMPLEMENT_FREE_FUNCTION(VObject, MUS_IncMusicLoopCounter) {
 }
 
 
-//==========================================================================
-//
-//  TranslateKey
-//
-//==========================================================================
+// ////////////////////////////////////////////////////////////////////////// //
+//native static final string TranslateKey (int c);
 IMPLEMENT_FREE_FUNCTION(VObject, TranslateKey) {
   int ch;
   vobjGetParam(ch);
@@ -724,7 +721,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, TranslateKey) {
   #endif
 }
 
-
+//native static final string KeyNameForNum (int KeyNr);
 IMPLEMENT_FREE_FUNCTION(VObject, KeyNameForNum) {
   int keynum;
   vobjGetParam(keynum);
@@ -735,7 +732,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, KeyNameForNum) {
   #endif
 }
 
-
+//native static final void IN_GetBindingKeys (string cmd, int *key1, int *key2, int strifemode, string modSection, out int isActive);
 IMPLEMENT_FREE_FUNCTION(VObject, IN_GetBindingKeys) {
   VStr name;
   int *key1;
@@ -753,23 +750,38 @@ IMPLEMENT_FREE_FUNCTION(VObject, IN_GetBindingKeys) {
   #endif
 }
 
-
-//native static final void IN_GetDefaultModBindingKeys (string cmd, int *key1, int *key2, string modSection);
-IMPLEMENT_FREE_FUNCTION(VObject, IN_GetDefaultModBindingKeys) {
+//native static final void IN_GetBindingKeysEx (string cmd, ref array!int keylist, int strifemode, string modSection);
+IMPLEMENT_FREE_FUNCTION(VObject, IN_GetBindingKeysEx) {
   VStr name;
-  int *key1;
-  int *key2;
+  TArray<int> *keylist;
+  int strifemode;
   VStr modsection;
-  vobjGetParam(name, key1, key2, modsection);
+  vobjGetParam(name, keylist, strifemode, modsection);
   #ifdef CLIENT
-  GInput->GetDefaultModBindingKeys(name, *key1, *key2, modsection);
+  if (keylist) {
+    GInput->GetBindingKeysEx(name, *keylist, modsection, strifemode);
+  }
   #else
-  if (key1) *key1 = 0;
-  if (key2) *key2 = 0;
+  if (keylist) keylist->reset();
   #endif
 }
 
+//native static final void IN_GetDefaultModBindingKeysEx (string cmd, ref array!int keylist, string modSection);
+IMPLEMENT_FREE_FUNCTION(VObject, IN_GetDefaultModBindingKeysEx) {
+  VStr name;
+  TArray<int> *keylist;
+  VStr modsection;
+  vobjGetParam(name, keylist, modsection);
+  #ifdef CLIENT
+  if (keylist) {
+    GInput->GetDefaultModBindingKeys(name, *keylist, modsection);
+  }
+  #else
+  if (keylist) keylist->reset();
+  #endif
+}
 
+//native static final void IN_SetBinding (int key, string ondown, string onup, int strifemode, string modSection);
 IMPLEMENT_FREE_FUNCTION(VObject, IN_SetBinding) {
   int keynum;
   VStr ondown;
@@ -783,10 +795,10 @@ IMPLEMENT_FREE_FUNCTION(VObject, IN_SetBinding) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 IMPLEMENT_FREE_FUNCTION(VObject, GetSlist) {
   RET_PTR(GNet->GetSlist());
 }
-
 
 IMPLEMENT_FREE_FUNCTION(VObject, StartSearch) {
   bool Master;
@@ -795,6 +807,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, StartSearch) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 //native static bool IsLineTagEqual (const line_t *line, int tag);
 IMPLEMENT_FREE_FUNCTION(VObject, IsLineTagEqual) {
   line_t *line;
@@ -803,7 +816,6 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsLineTagEqual) {
   if (!line) { RET_BOOL(false); return; }
   RET_BOOL(line->IsTagEqual(tag));
 }
-
 
 //native static bool IsSectorTagEqual (const sector_t *sector, int tag);
 IMPLEMENT_FREE_FUNCTION(VObject, IsSectorTagEqual) {

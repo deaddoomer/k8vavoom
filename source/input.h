@@ -72,7 +72,8 @@ public:
   virtual void ClearBindings () = 0;
   // `isActive`: bit 0 for key1, bit 1 for key2
   virtual void GetBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection, int strifemode, int *isActive) = 0;
-  virtual void GetDefaultModBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection) = 0;
+  virtual void GetBindingKeysEx (VStr Binding, TArray<int> &keylist, VStr modSection, int strifemode) = 0;
+  virtual void GetDefaultModBindingKeys (VStr Binding, TArray<int> &keylist, VStr modSection) = 0;
   virtual void GetBinding (int KeyNum, VStr &Down, VStr &Up) = 0; // for current game mode
   virtual void SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int strifemode, bool allowOverride=true) = 0;
   virtual void WriteBindings (VStream *st) = 0;

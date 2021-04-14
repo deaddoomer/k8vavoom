@@ -320,6 +320,12 @@ menudef ControlsMain {
     command = "SetMenu Quit";
   }
 
+  option bind {
+    title = "Main Menu";
+    button = ona;
+    command = "SetMenu Main";
+  }
+
 
   header "Weapon Slots";
 

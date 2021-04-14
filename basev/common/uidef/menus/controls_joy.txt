@@ -1,0 +1,50 @@
+// module player options menu
+menudef ControlsJoy {
+  Title = "GAMEPAD/JOYSTICK OPTIONS";
+
+  option enum {
+    title = "Rotate Camera";
+    cvar = joy_axis_rotate;
+    list {
+      "Left Stick",
+      "Right Stick",
+    }
+    help = "Which stick should rotate camera left and right?";
+  }
+
+  option enum {
+    title = "Look Up/Down";
+    cvar = joy_axis_lookupdown;
+    list {
+      "Left Stick",
+      "Right Stick",
+    }
+    help = "Which stick should be used to look up/down?";
+  }
+
+  option enum {
+    title = "Move Forward/Backward";
+    cvar = joy_axis_walk;
+    list {
+      "Left Stick",
+      "Right Stick",
+    }
+    help = "Which stick should be used to move forward/backward?";
+  }
+
+  option enum {
+    title = "Strafe Left/Right";
+    cvar = joy_axis_strafe;
+    list {
+      "Left Stick",
+      "Right Stick",
+    }
+    help = "Which stick should be used for strafing?";
+  }
+
+  option bool {
+    title = "Invert Up/Down";
+    cvar = invert_joystick;
+    help = "Inverse up/down look stick directions?";
+  }
+}

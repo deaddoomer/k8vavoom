@@ -67,9 +67,6 @@ override void OnDraw () {
 
   SetFont('smallfont');
 
-  int key1 = -1;
-  int key2 = -1;
-
   int Col = (Disabled ? CR_BLACK : IsFocused ? CR_YELLOW : CR_WHITE);
   SetTextAlign(hright, vtop);
   //int ctpos = 160;
@@ -78,9 +75,12 @@ override void OnDraw () {
 
   DrawText(ctpos, ty, Text, Col);
 
-  int isActive = 3;
-  IN_GetBindingKeys(CommandOn, &key1, &key2, strifeMode, ModSection, out isActive);
+  //int isActive = 3;
+  //IN_GetBindingKeys(CommandOn, &key1, &key2, strifeMode, ModSection, out isActive);
   //if (ModSection) printdebug("%s (%s): %s %s", CommandOn, ModSection, key1, key2);
+
+  array!int keylist;
+  IN_GetBindingKeysEx(CommandOn, ref keylist, strifeMode, ModSection);
 
   SetTextAlign(hleft, vtop);
   //Col = IsFocused ? CR_YELLOW : CR_OLIVE;
@@ -88,15 +88,16 @@ override void OnDraw () {
   // this binding can be inactive, if it is a mod default binding
   //if (!Disabled && !isActive) Col = CR_RED;
 
-  if (key1 >= 0) {
-    DrawText(ctpos+10, ty, KeyNameForNum(key1), (Disabled || (isActive&1) != 0 ? Col : CR_RED));
-  } else {
-    DrawText(ctpos+10, ty, "---", /*Col*/CR_BLACK);
-  }
-  if (key2 >= 0) {
-    DrawText(ctpos+100, ty, KeyNameForNum(key2), (Disabled || (isActive&2) != 0 ? Col : CR_RED));
-  } else {
-    DrawText(ctpos+100, ty, "---", /*Col*/CR_BLACK);
+  ctpos += 10;
+  foreach (int f; 0..4) {
+    int key = (f < keylist.length ? keylist[f] : 0);
+    if (key != 0) {
+      string s = KeyNameForNum(abs(key)).replace("_", "-");
+      DrawText(ctpos, ty, s, (Disabled || key > 0 ? Col : CR_RED));
+    } else {
+      DrawText(ctpos, ty, "---", /*Col*/CR_BLACK);
+    }
+    ctpos += 100; // don't forget to fix width in `MenuScreen.CursorMoved()` too
   }
 }
 
@@ -124,15 +125,15 @@ override bool OnEvent (ref event_t evt) {
 
     switch (ConvertBoundKey(evt.keycode)) {
       case K_LEFTARROW:
-        if (GetClGame().ControlColumn != 0) {
-          GetClGame().ControlColumn = 0;
+        if (GetClGame().ControlColumn > 0) {
+          --GetClGame().ControlColumn;
           FindParentWithClass(MenuScreen).CursorMoved(forced:true);
           LocalSound('menu/cursor');
         }
         return true;
       case K_RIGHTARROW:
-        if (GetClGame().ControlColumn != 1) {
-          GetClGame().ControlColumn = 1;
+        if (GetClGame().ControlColumn < 3) {
+          ++GetClGame().ControlColumn;
           FindParentWithClass(MenuScreen).CursorMoved(forced:true);
           LocalSound('menu/cursor');
         }
@@ -146,24 +147,24 @@ override bool OnEvent (ref event_t evt) {
       //case K_MOUSE2:
       case K_DELETE:
         if (!Disabled) {
-          int isActive;
-          IN_GetBindingKeys(CommandOn, &key1, &key2, strifeMode, ModSection, out isActive);
-          if (GetClGame().ControlColumn == 0) IN_SetBinding(key1, "", "", strifeMode, ModSection);
-          if (GetClGame().ControlColumn == 1) IN_SetBinding(key2, "", "", strifeMode, ModSection);
-          // restore default mod key?
-          if (evt.keycode == K_BACKSPACE && ModSection) {
-            int mkey1, mkey2;
-            IN_GetDefaultModBindingKeys(CommandOn, &mkey1, &mkey2, ModSection);
-            //printdebug("mod=%s; command=%s; key=(%s,%s); mkey=(%s,%s)", ModSection, CommandOn, key1, key2, mkey1, mkey2);
-            // first, remove any mod bindings for the old key
-            // second, setup default mod bindings for the default mod key
-            if (mkey1 > 0 && GetClGame().ControlColumn == 0) {
-              IN_SetBinding(key1, "<modclear>", "", strifeMode, ModSection);
-              IN_SetBinding(mkey1, "<default>", "", strifeMode, ModSection);
-            }
-            if (mkey2 > 0 && GetClGame().ControlColumn == 1) {
-              IN_SetBinding(key2, "<modclear>", "", strifeMode, ModSection);
-              IN_SetBinding(mkey2, "<default>", "", strifeMode, ModSection);
+          array!int keylist;
+          //int isActive;
+          IN_GetBindingKeysEx(CommandOn, ref keylist, strifeMode, ModSection);
+          int kidx = GetClGame().ControlColumn;
+          // remove binding
+          if (kidx >= 0 && kidx < keylist.length) {
+            int kcode = abs(keylist[kidx]);
+            IN_SetBinding(kcode, "", "", strifeMode, ModSection);
+            // restore default mod key?
+            if (evt.keycode == K_BACKSPACE && ModSection) {
+              IN_GetDefaultModBindingKeysEx(CommandOn, ref keylist, ModSection);
+              //printdebug("mod=%s; command=%s; key=(%s,%s); mkey=(%s,%s)", ModSection, CommandOn, key1, key2, mkey1, mkey2);
+              // first, remove any mod bindings for the old key
+              // second, setup default mod bindings for the default mod key
+              if (kidx < keylist.length) {
+                IN_SetBinding(kcode, "<modclear>", "", strifeMode, ModSection);
+                IN_SetBinding(keylist[kidx], "<default>", "", strifeMode, ModSection);
+              }
             }
           }
         }

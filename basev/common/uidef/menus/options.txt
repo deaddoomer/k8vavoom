@@ -8,6 +8,11 @@ menudef OptionsMenu {
     submenu = ControlsMain;
   }
 
+  option submenu {
+    title = "Gamepad/Joystick Config";
+    submenu = ControlsJoy;
+  }
+
   option mod_controls {
     title = "Special Controls";
   }

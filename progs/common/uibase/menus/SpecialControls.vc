@@ -62,6 +62,7 @@ array!menukey menukeys_list;
 array!SectionInfo sections;
 
 
+
 //==========================================================================
 //
 //  FindOrAddKeySection
@@ -213,9 +214,11 @@ void AddControl (string Text, string CommandOn, string CommandOff, string modNam
   MenuControlKey newCtl = GetItemContainer().NewChild(MenuControlKey);
   //SetChoiceInitialSizeSimple(newCtl);
   newCtl.Width = Width;
-  newCtl.CursorXOffs = Width/2;
-  newCtl.CursorXOffsHR = Width/2;
-  newCtl.SetOrigin(/*ChoicesStartX*/Width/2, GetCurrentY());
+  //newCtl.CursorXOffs = Width/2;
+  //newCtl.CursorXOffsHR = Width/2;
+  newCtl.CursorXOffs = Width/4;
+  newCtl.CursorXOffsHR = Width/4;
+  newCtl.SetOrigin(/*ChoicesStartX*/newCtl.CursorXOffsHR, GetCurrentY());
   newCtl.Height = 10;
   newCtl.SetText(Text);
   newCtl.CommandOn = CommandOn;
@@ -315,4 +318,5 @@ defaultproperties {
   MenuName = 'Mod_Controls_Menu';
   Title = "MOD CONTROLS";
   strifeMode = -1; // mods are usually for non-strife
+  isControls = true;
 }

@@ -317,8 +317,11 @@ void CreateMenuItemsFromList (ref array!MenuDefOptionBase options, optional int 
       if (opt isa MenuDefOptionSubHeader) {
         mc.SetOrigin(0, GetCurrentY());
       } else {
-        mc.CursorXOffsHR = Width/2;
-        mc.SetOrigin(Width/2, GetCurrentY());
+        //mc.CursorXOffsHR = Width/2;
+        //mc.SetOrigin(Width/2, GetCurrentY());
+        mc.CursorXOffsHR = (isControls ? Width/4 : Width/2);
+        mc.CursorXOffs = mc.CursorXOffsHR;
+        mc.SetOrigin(mc.CursorXOffsHR, GetCurrentY());
       }
       if (styofs) { mc.Y = mc.Y+styofs; styofs = 0; }
       //currentY += mc.Height;
@@ -337,6 +340,7 @@ void CreateMenuFromDef (MenuDefinition mdef) {
   Height = 260;
   ChoicesStartX = 200;
   SelectorType = MenuSelector_SmallRight;
+  isControls = false;
 
   MenuName = name(mdef.menuName.toLowerCase());
   Title = mdef.title;
@@ -346,6 +350,7 @@ void CreateMenuFromDef (MenuDefinition mdef) {
     class!MenuSelectorBase cc = class!MenuSelectorBase(MenuSelector_SmallRight);
     if (cc) SelectorType = cc;
     ChoicesStartX = Width/2; //190;
+    //printdebug("CursorXOffs=%s", CursorXOffs);
     //ChoicesStartX = 0;
   } else if (mdef.seltype) {
     class!MenuSelectorBase cc = class!MenuSelectorBase(FindClass(mdef.seltype));
@@ -949,7 +954,7 @@ void CursorMoved (optional bool forced) {
   auto it = Items[CursorPos];
   if (!it.IsFocused()) it.SetFocus();
   if (Selector) {
-    int xofs = (isControls && ClGame ? ClGame.ControlColumn*90 : 0);
+    int xofs = (isControls && ClGame ? ClGame.ControlColumn*100 : 0);
     Selector.SetOriginCentered(it.X+it.CursorXOffs+xofs, it.Y, it.Height);
   }
   CursorPrev = CursorPos;
