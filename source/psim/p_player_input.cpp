@@ -223,9 +223,14 @@ static VCvarF joy_pitch("joy_pitch", "0.022", "Joystick pitch speed.", CVAR_Arch
 //static VCvarF joy_yaw("joy_yaw", "140", "Joystick yaw speed.", CVAR_Archive);
 
 static VCvarI joy_axis_rotate("joy_axis_rotate", "0", "Gamepad stick for camera rotation.", CVAR_Archive);
-static VCvarI joy_axis_lookupdown("joy_axis_lookupdown", "0", "Gamepad stick for looking up/down.", CVAR_Archive);
+static VCvarI joy_axis_pitch("joy_axis_pitch", "0", "Gamepad stick for looking up/down.", CVAR_Archive);
 static VCvarI joy_axis_walk("joy_axis_walk", "1", "Gamepad stick for forward/backward movement.", CVAR_Archive);
 static VCvarI joy_axis_strafe("joy_axis_strafe", "1", "Gamepad stick for strafing.", CVAR_Archive);
+
+static VCvarF joy_rotate_sensitivity("joy_rotate_sensitivity", "5", "Joystick rotation sensitivity.", CVAR_Archive);
+static VCvarF joy_pitch_sensitivity("joy_pitch_sensitivity", "5", "Joystick look up/down sensitivity.", CVAR_Archive);
+static VCvarF joy_walk_sensitivity("joy_walk_sensitivity", "5", "Joystick movement sensitivity.", CVAR_Archive);
+static VCvarF joy_strafe_sensitivity("joy_strafe_sensitivity", "5", "Joystick strafing sensitivity.", CVAR_Archive);
 
 
 static TKButton *knownButtons = nullptr;
@@ -578,7 +583,7 @@ void VBasePlayer::AdjustAngles () {
     int stick = joy_axis_rotate.asInt();
     if (isValidStickIndex(stick) && mouse_look_horisontal && joyxmove[stick]) {
       //ViewAngles.yaw -= joyxmove[stick]/127.0*joy_yaw*speed;
-      ViewAngles.yaw -= joyxmove[stick]*joy_yaw;
+      ViewAngles.yaw -= joyxmove[stick]*joy_yaw*(joy_rotate_sensitivity.asFloat()/5.0f);
     }
   }
   if (mouse_look_horisontal && !KeyStrafe.IsDown() && (!lookstrafe || (!mouse_look && !KeyMouseLook.IsDown()))) ViewAngles.yaw -= mousex*m_yaw;
@@ -593,9 +598,9 @@ void VBasePlayer::AdjustAngles () {
   if (mouse_look_vertical) {
     if ((mouse_look || KeyMouseLook.IsDown()) && !KeyStrafe.IsDown()) ViewAngles.pitch -= mousey*m_pitch;
     // added code
-    int stick = joy_axis_lookupdown.asInt();
+    int stick = joy_axis_pitch.asInt();
     if (isValidStickIndex(stick) && joyymove[stick]) {
-      float val = joyymove[stick]*joy_pitch;
+      float val = joyymove[stick]*joy_pitch*(joy_pitch_sensitivity.asFloat()/5.0f);
       if (invert_joystick) val = -val;
       ViewAngles.pitch += val;
     }
@@ -675,7 +680,9 @@ void VBasePlayer::HandleInput () {
 
   {
     int stick = joy_axis_strafe.asInt();
-    if (isValidStickIndex(stick) && joyxmove[stick]) side += joyxmove[stick]/127.0*cl_sidespeed;
+    if (isValidStickIndex(stick) && joyxmove[stick]) {
+      side += joyxmove[stick]/127.0*cl_sidespeed*(joy_strafe_sensitivity.asFloat()/5.0f);
+    }
   }
 
   forward += KeyForward.KeyState()*cl_forwardspeed;
@@ -690,8 +697,8 @@ void VBasePlayer::HandleInput () {
     //if (joyymove > 0) forward -= cl_backspeed;
     int stick = joy_axis_walk.asInt();
     if (isValidStickIndex(stick)) {
-           if (joyymove[stick] > 0) forward -= joyymove[stick]/127.0*cl_backspeed;
-      else if (joyymove[stick] < 0) forward -= joyymove[stick]/127.0*cl_forwardspeed;
+           if (joyymove[stick] > 0) forward -= joyymove[stick]/127.0*cl_backspeed*(joy_walk_sensitivity.asFloat()/5.0f);
+      else if (joyymove[stick] < 0) forward -= joyymove[stick]/127.0*cl_forwardspeed*(joy_walk_sensitivity.asFloat()/5.0f);
     }
   }
 
