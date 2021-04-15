@@ -133,6 +133,8 @@ public:
   virtual float GetFloatConst () const;
   virtual const VStr &GetStrConst (VPackage *) const; //WARNING! returns by reference!
   virtual VName GetNameConst () const;
+  virtual bool IsSelfLiteral () const;
+  virtual bool IsSelfClassLiteral () const;
   virtual bool IsNoneLiteral () const;
   virtual bool IsNoneDelegateLiteral () const;
   virtual bool IsNullLiteral () const;

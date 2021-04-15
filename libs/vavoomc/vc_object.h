@@ -87,15 +87,21 @@ public: \
   static void exec##func();
 
 // use this to implement VavoomC native function in some object
-#define IMPLEMENT_FUNCTION(TClass, Func) \
+#define IMPLEMENT_FUNCTION(TClass,Func) \
   FBuiltinInfo TClass::funcinfo##Func(#Func, TClass::StaticClass(), TClass::exec##Func); \
   void TClass::exec##Func()
 
 // use this to implement VavoomC native function as free function (it will still belong to the given VC object)
-#define IMPLEMENT_FREE_FUNCTION(TClass, Func) \
-  static void vc_free_exec##Func(); \
-  /*static*/ FBuiltinInfo vc_free_funcinfo##Func(#Func, TClass::StaticClass(), &vc_free_exec##Func); \
-  static void vc_free_exec##Func()
+#define IMPLEMENT_FREE_FUNCTION(TClass,Func) \
+  static void vc_free_exec_##TClass_##Func(); \
+  /*static*/ FBuiltinInfo vc_free_funcinfo_##TClass_##Func(#Func, TClass::StaticClass(), &vc_free_exec_##TClass_##Func); \
+  static void vc_free_exec_##TClass_##Func()
+
+// use this to implement VavoomC native function as free function (it will still belong to the given VC struct)
+#define IMPLEMENT_FREE_STRUCT_FUNCTION(ClassName,StructName,Func) \
+  static void vc_free_struct_exec_##ClassName_##StructName_##Func(); \
+  /*static*/ FBuiltinInfo vc_free_funcinfo_##ClassName_##StructName_##Func(#Func, #ClassName, #StructName, &vc_free_struct_exec_##ClassName_##StructName_##Func); \
+  static void vc_free_struct_exec_##ClassName_##StructName_##Func()
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -939,7 +945,7 @@ inline vuint32 GetTypeHash (const VObject *Obj) { return (Obj ? hashU32(Obj->Get
 
 // macros for calling VavoomC methods with different return types
 // this is for `VMethodProxy`
-#define VMT_RET_VOID(v)    (void)(v).Execute(this)
+#define VMT_RET_VOID(v)    return (void)(v).Execute(this)
 #define VMT_RET_INT(v)     return (v).Execute(this).getInt()
 #define VMT_RET_BYTE(v)    return (v).Execute(this).getInt()
 #define VMT_RET_FLOAT(v)   return (v).Execute(this).getFloat()
@@ -951,7 +957,7 @@ inline vuint32 GetTypeHash (const VObject *Obj) { return (Obj ? hashU32(Obj->Get
 #define VMT_RET_REF(t,v)   return (t *)(v).Execute(this).getObject()
 #define VMT_RET_PTR(t,v)   return (t *)(v).Execute(this).getClass()
 
-#define VSTATIC_RET_VOID(v)    (void)(v).ExecuteStatic(StaticClass())
+#define VSTATIC_RET_VOID(v)    return (void)(v).ExecuteStatic(StaticClass())
 #define VSTATIC_RET_INT(v)     return (v).ExecuteStatic(StaticClass()).getInt()
 #define VSTATIC_RET_BYTE(v)    return (v).ExecuteStatic(StaticClass()).getInt()
 #define VSTATIC_RET_FLOAT(v)   return (v).ExecuteStatic(StaticClass()).getFloat()
@@ -992,6 +998,7 @@ inline vuint32 GetTypeHash (const VObject *Obj) { return (Obj ? hashU32(Obj->Get
 #define P_GET_OUT_OPT_NOSP(t,v)  VObject::PR_Pop(); t *v = (t *)VObject::PR_PopPtr()
 
 // method return macros
+#define RET_VOID(v)   (void)(v)
 #define RET_INT(v)    VObject::PR_Push(v)
 #define RET_BYTE(v)   VObject::PR_Push((v)&0xff)
 #define RET_FLOAT(v)  VObject::PR_Pushf(v)

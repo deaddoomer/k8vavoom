@@ -153,6 +153,8 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool IsSelfLiteral () const override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -172,6 +174,8 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool IsSelfClassLiteral () const override;
 
   virtual VStr toString () const override;
 

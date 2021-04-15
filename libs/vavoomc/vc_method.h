@@ -47,6 +47,9 @@ enum {
   // this is struct method; it should be final
   FUNC_StructMethod = 0x0400,
 
+  // `self` is `const`?
+  FUNC_ConstSelf    = 0x0800,
+
   FUNC_Override     = 0x1000, // used to check overrides
   FUNC_Private      = 0x2000,
   FUNC_Protected    = 0x4000,
@@ -88,7 +91,11 @@ typedef void (*builtin_t) ();
 //==========================================================================
 class FBuiltinInfo {
   const char *Name;
+  // only one of "outer" can be set!
   VClass *OuterClass;
+  // for structs, we need both names
+  const char *OuterClassName;
+  const char *OuterStructName;
   builtin_t Func;
   FBuiltinInfo *Next;
 
@@ -98,6 +105,7 @@ class FBuiltinInfo {
 
 public:
   FBuiltinInfo (const char *InName, VClass *InClass, builtin_t InFunc);
+  FBuiltinInfo (const char *InName, const char *InClassName, const char *InStructName, builtin_t InFunc);
 };
 
 

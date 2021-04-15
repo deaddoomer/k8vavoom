@@ -1935,6 +1935,15 @@ void VParser::ParseMethodDef (VExpression *RetType, VName MName, const TLocation
   } while (Lex.Check(TK_Comma));
   Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
 
+  // struct methods can be `const`
+  if (Lex.Check(TK_Const)) {
+    if (InStruct) {
+      Func->Flags |= FUNC_ConstSelf;
+    } else {
+      ParseError(Lex.Location, "Class methods cannot be `const` yet");
+    }
+  }
+
   // parse attributes
   while (Lex.Check(TK_LBracket)) {
     if (Lex.Token != TK_Identifier) {

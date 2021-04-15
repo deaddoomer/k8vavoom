@@ -376,6 +376,11 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
     if (ec.SelfClass && ec.SelfClass->IsKnownEnum(ename)) {
       VConstant *Const = ec.SelfClass->FindConstant(FieldName, ename);
       if (Const) {
+        if (assType == AssType::AssTarget) {
+          ParseError(Loc, "Cannot assign member `%s` of enum `%s`", *FieldName, *ename);
+          delete this;
+          return nullptr;
+        }
         VExpression *e = new VConstantValue(Const, Loc);
         delete this;
         return e->Resolve(ec);
@@ -391,6 +396,11 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       //fprintf(stderr, "  <%s %s>\n", *ename, *FieldName);
       VConstant *Const = ec.Package->FindConstant(FieldName, ename);
       if (Const) {
+        if (assType == AssType::AssTarget) {
+          ParseError(Loc, "Cannot assign member `%s` of enum `%s`", *FieldName, *ename);
+          delete this;
+          return nullptr;
+        }
         VExpression *e = new VConstantValue(Const, Loc);
         delete this;
         return e->Resolve(ec);
@@ -403,6 +413,11 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
     // in any package (this does package imports)
     VConstant *Const = (VConstant *)VMemberBase::StaticFindMember(FieldName, ANY_PACKAGE, MEMBER_Const, ename);
     if (Const) {
+      if (assType == AssType::AssTarget) {
+        ParseError(Loc, "Cannot assign member `%s` of enum `%s`", *FieldName, *ename);
+        delete this;
+        return nullptr;
+      }
       VExpression *e = new VConstantValue(Const, Loc);
       delete this;
       return e->Resolve(ec);
@@ -418,6 +433,11 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
     if (Class && Class->IsKnownEnum(dn->Name2)) {
       VConstant *Const = Class->FindConstant(FieldName, dn->Name2);
       if (Const) {
+        if (assType == AssType::AssTarget) {
+          ParseError(Loc, "Cannot assign member `%s` of enum `%s:%s`", *FieldName, *dn->Name1, *dn->Name2);
+          delete this;
+          return nullptr;
+        }
         VExpression *e = new VConstantValue(Const, Loc);
         delete this;
         return e->Resolve(ec);
@@ -436,6 +456,19 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
   if (!op) {
     delete this;
     return nullptr;
+  }
+
+  if (assType == AssType::AssTarget) {
+    if (op->IsSelfLiteral() && ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_ConstSelf)) {
+      ParseError(Loc, "`self` is read-only (const method `%s`)", *ec.CurrentFunc->GetFullName());
+      delete this;
+      return nullptr;
+    }
+    if (op->IsSelfClassLiteral()) {
+      ParseError(Loc, "`default` is read-only");
+      delete this;
+      return nullptr;
+    }
   }
 
   // allow dotted access for dynamic arrays

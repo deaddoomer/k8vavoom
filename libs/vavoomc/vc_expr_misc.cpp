@@ -270,7 +270,13 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
     // field
     VField *field = ec.SelfStruct->FindField(Name);
     if (field) {
-      VExpression *e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, 0);
+      const bool isRO = (ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_ConstSelf));
+      if (assType == AssType::AssTarget && isRO) {
+        ParseError(Loc, "`self` is read-only (const method `%s`)", *ec.CurrentFunc->GetFullName());
+        delete this;
+        return nullptr;
+      }
+      VExpression *e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, (isRO ? FIELD_ReadOnly : 0));
       delete this;
       return e->Resolve(ec);
     }
@@ -288,6 +294,11 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
         e = new VInvocation(nullptr, M, nullptr, false, false, Loc, 0, nullptr);
       } else {
         //e = new VInvocation(new VSelf(Loc), M, nullptr, true, false, Loc, 0, nullptr);
+        if (ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_ConstSelf) != (M->Flags&FUNC_ConstSelf)) {
+          ParseError(Loc, "`self` is read-only (const method `%s`), but invocation method is not", *ec.CurrentFunc->GetFullName());
+          delete this;
+          return nullptr;
+        }
         e = new VDotInvocation(new VSelf(Loc), Name, Loc, 0, nullptr);
       }
       delete this;
@@ -308,12 +319,13 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
     VField *field = ec.SelfClass->FindField(Name, Loc, ec.SelfClass);
     if (field) {
       //if (VStr(*Name).startsWith("user_")) fprintf(stderr, "***ROUTED TO FIELD: '%s' (class:%s)\n", *Name, ec.SelfClass->GetName());
+      const bool isRO = (ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_ConstSelf));
       VExpression *e;
       // "normal" access: call delegate (if it is operand-less)
       /*if (assType == AssType::Normal && field->Type.Type == TYPE_Delegate && field->Func && field->Func->NumParams == 0) {
         e = new VInvocation(nullptr, field->Func, field, false, false, Loc, 0, nullptr);
       } else*/ {
-        e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, 0);
+        e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, (isRO ? FIELD_ReadOnly : 0));
       }
       delete this;
       return e->Resolve(ec);

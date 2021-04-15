@@ -39,12 +39,31 @@ FBuiltinInfo *FBuiltinInfo::Builtins;
 FBuiltinInfo::FBuiltinInfo (const char *InName, VClass *InClass, builtin_t InFunc)
   : Name(InName)
   , OuterClass(InClass)
+  , OuterClassName(nullptr)
+  , OuterStructName(nullptr)
   , Func(InFunc)
 {
   Next = Builtins;
   Builtins = this;
-  //fprintf(stderr, "!!! <%s::%s>\n", *InClass->Name, InName);
 }
+
+
+//==========================================================================
+//
+//  FBuiltinInfo::FBuiltinInfo
+//
+//==========================================================================
+FBuiltinInfo::FBuiltinInfo (const char *InName, const char *InClassName, const char *InStructName, builtin_t InFunc)
+  : Name(InName)
+  , OuterClass(nullptr)
+  , OuterClassName(InClassName)
+  , OuterStructName(InStructName)
+  , Func(InFunc)
+{
+  Next = Builtins;
+  Builtins = this;
+}
+
 
 
 //==========================================================================
@@ -56,6 +75,7 @@ static void PF_Fixme () {
   VObject::VMDumpCallStack();
   VCFatalError("unimplemented bulitin");
 }
+
 
 
 //==========================================================================
@@ -636,7 +656,7 @@ void VMethod::PostLoad () {
     if (Name != NAME_None && !IsStructMethod()) {
       VMemberBase *origClass = Outer;
       while (origClass) {
-        if (origClass->MemberType == MEMBER_Struct) {
+        if (origClass->isStructMember()) {
           // this is struct method
         }
         if (origClass->isClassMember()) {
@@ -663,16 +683,53 @@ void VMethod::PostLoad () {
   //GLog.Logf(NAME_Debug, "*** %s: %s", *Loc.toString(), *GetFullName());
   // set up builtins
   if (NumParams > VMethod::MAX_PARAMS) VCFatalError("Function has more than %i params", VMethod::MAX_PARAMS);
+
   for (FBuiltinInfo *B = FBuiltinInfo::Builtins; B; B = B->Next) {
-    if (Outer == B->OuterClass && !VStr::Cmp(*Name, B->Name)) {
-      if ((Flags&FUNC_Native) != 0 && builtinOpc < 0) {
-        NativeFunc = B->Func;
-        break;
-      } else {
-        VCFatalError("Builtin %s redefined", B->Name);
+    if (!VStr::strEqu(*Name, B->Name)) continue;
+
+    bool okClass = false;
+    bool okStruct = false;
+    if (B->OuterClass) {
+      vassert(!B->OuterStructName);
+      vassert(!B->OuterClassName);
+      okClass = (Outer == B->OuterClass);
+      if (IsStructMethod()) VCFatalError("Builtin `%s` should be struct method", *GetFullName());
+    } else {
+      //GLog.Logf(NAME_Debug, "trying builtin '%s' (struct:`%s`; class:`%s`)", B->Name, B->OuterStructName, B->OuterClassName);
+      vassert(B->OuterStructName && B->OuterStructName[0]);
+      vassert(B->OuterClassName && B->OuterClassName[0]);
+      VMemberBase *outerS = Outer;
+      while (outerS) {
+        if (outerS->isStructMember()) break;
+        if (outerS->isClassMember() || outerS->isStateMember()) { outerS = nullptr; break; }
+        outerS = outerS->Outer;
       }
+      //if (outerS) GLog.Logf(NAME_Debug, "...found struct `%s`", outerS->GetName());
+      // check struct name
+      if (!outerS || !VStr::strEqu(outerS->GetName(), B->OuterStructName)) continue;
+      outerS = outerS->Outer;
+      // check outer class name
+      while (outerS) {
+        if (outerS->isClassMember()) break;
+        if (outerS->isStructMember() || outerS->isStateMember()) { outerS = nullptr; break; }
+        outerS = outerS->Outer;
+      }
+      //if (outerS) GLog.Logf(NAME_Debug, "...found class `%s`", outerS->GetName());
+      if (!outerS || !VStr::strEqu(outerS->GetName(), B->OuterClassName)) continue;
+      if (!IsStructMethod()) VCFatalError("Builtin `%s` should be class method", *GetFullName());
+      okStruct = true;
     }
+    if (!okClass && !okStruct) continue;
+
+    // check flags
+    if ((Flags&FUNC_Native) == 0) VCFatalError("Trying to define `%s` as builtin, but it is not native", *GetFullName());
+    if (builtinOpc >= 0) VCFatalError("Trying to redefine `%s` builtin", *GetFullName());
+
+    // ok
+    NativeFunc = B->Func;
+    break;
   }
+
   if (builtinOpc < 0 && !NativeFunc && (Flags&FUNC_Native) != 0) {
     if (VObject::engineAllowNotImplementedBuiltins) {
       // default builtin
@@ -684,11 +741,6 @@ void VMethod::PostLoad () {
       // k8: actually, abort. define all builtins.
       VCFatalError("Builtin `%s` not implemented!", *GetFullName());
     }
-    /*
-    for (FBuiltinInfo *B = FBuiltinInfo::Builtins; B; B = B->Next) {
-      GLog.Logf(NAME_Debug, "BUILTIN: `%s::%s`", *B->OuterClass->Name, B->Name);
-    }
-    */
   }
 
   GenerateCode();
