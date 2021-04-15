@@ -2412,6 +2412,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepSphere) {
   VOptParamPtr<TVec> hitpos;
   VOptParamPtr<float> u;
   vobjGetParam(Self, origin, radius, amove, hitpos, u);
+  radius = fabsf(radius);
   RET_BOOL(Self->SweepSphere(origin, radius, amove, hitpos.value, u.value));
 }
 
@@ -2422,7 +2423,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepBox3D) {
   TVec bmin, bmax;
   VOptParamPtr<float> time;
   vobjGetParam(Self, vstart, vend, bmin, bmax, time);
-  const float bbox[6] = { bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z };
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
   RET_BOOL(Self->SweepBox3D(vstart, vend, bbox, time.value));
 }
 
@@ -2435,8 +2436,8 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepDoomBox3D) {
   VOptParamPtr<float> time;
   vobjGetParam(Self, vstart, vend, origin, radius, height, time);
   if (height < 0.0f) { origin.z -= height; height = -height; }
-  float bbox[6];
-  Create3DBBox(bbox, origin, fabsf(radius), height);
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
   RET_BOOL(Self->SweepBox3D(vstart, vend, bbox, time.value));
 }
 
@@ -2462,6 +2463,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereOnSide) {
   TVec center;
   float radius;
   vobjGetParam(Self, center, radius);
+  radius = fabsf(radius);
   RET_INT(Self->SphereOnSide(center, radius));
 }
 
@@ -2471,6 +2473,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereTouches) {
   TVec center;
   float radius;
   vobjGetParam(Self, center, radius);
+  radius = fabsf(radius);
   RET_BOOL(Self->SphereTouches(center, radius));
 }
 
@@ -2480,6 +2483,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereOnSide2) {
   TVec center;
   float radius;
   vobjGetParam(Self, center, radius);
+  radius = fabsf(radius);
   RET_INT(Self->SphereOnSide2(center, radius));
 }
 
@@ -2488,8 +2492,8 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkBox3D) {
   TPlane *Self;
   TVec bmin, bmax;
   vobjGetParam(Self, bmin, bmax);
-  const float bbox[6] = { bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z };
-  RET_BOOL(Self->checkBox(bbox));
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_BOOL(Self->checkBox3D(bbox));
 }
 
 //native bool checkBox2D (const TVec bmin, const TVec bmax) const;
@@ -2497,7 +2501,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkBox2D) {
   TPlane *Self;
   TVec bmin, bmax;
   vobjGetParam(Self, bmin, bmax);
-  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  Create2DBBoxFromVectors(bbox, bmin, bmax);
   RET_BOOL(Self->checkBox2D(bbox));
 }
 
@@ -2508,9 +2512,9 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkDoomBox3D) {
   float radius, height;
   vobjGetParam(Self, origin, radius, height);
   if (height < 0.0f) { origin.z -= height; height = -height; }
-  float bbox[6];
-  Create3DBBox(bbox, origin, fabsf(radius), height);
-  RET_BOOL(Self->checkBox(bbox));
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_BOOL(Self->checkBox3D(bbox));
 }
 
 //native bool checkDoomBox2D (const TVec origin, const float radius) const;
@@ -2519,8 +2523,8 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkDoomBox2D) {
   TVec origin;
   float radius;
   vobjGetParam(Self, origin, radius);
-  float bbox[4];
-  Create2DBBox(bbox, origin, fabsf(radius));
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
   RET_BOOL(Self->checkBox2D(bbox));
 }
 
@@ -2529,7 +2533,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Box3DOnSide2) {
   TPlane *Self;
   TVec bmin, bmax;
   vobjGetParam(Self, bmin, bmax);
-  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
   RET_INT(Self->Box3DOnSide2(bbox));
 }
 
@@ -2540,8 +2544,8 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, DoomBox3DOnSide2) {
   float radius, height;
   vobjGetParam(Self, origin, radius, height);
   if (height < 0.0f) { origin.z -= height; height = -height; }
-  float bbox[6];
-  Create3DBBox(bbox, origin, fabsf(radius), height);
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
   RET_INT(Self->Box3DOnSide2(bbox));
 }
 
@@ -2550,7 +2554,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Box2DOnSide2) {
   TPlane *Self;
   TVec bmin, bmax;
   vobjGetParam(Self, bmin, bmax);
-  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  Create2DBBoxFromVectors(bbox, bmin, bmax);
   RET_INT(Self->Box2DOnSide2(bbox));
 }
 
@@ -2560,7 +2564,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, DoomBox2DOnSide2) {
   TVec origin;
   float radius;
   vobjGetParam(Self, origin, radius);
-  float bbox[4];
-  Create2DBBox(bbox, origin, fabsf(radius));
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
   RET_INT(Self->Box2DOnSide2(bbox));
 }
