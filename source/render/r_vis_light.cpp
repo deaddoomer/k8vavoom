@@ -179,7 +179,7 @@ void VRenderLevelShared::CalcLightVisCheckNode (int bspnum, const float *bbox, c
   if (!LightClip.ClipLightIsBBoxVisible(bbox)) return;
 
   // mirror clip
-  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
+  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox3D(bbox)) return;
 
   // found a subsector?
   if (BSPIDX_IS_NON_LEAF(bspnum)) {

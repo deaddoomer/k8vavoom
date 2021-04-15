@@ -141,7 +141,7 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     Create3DBBox(bbox3d, Origin, rad+0.1f, Height);
     float bbox2d[4];
     Create2DBBox(bbox2d, Origin, rad+0.1f);
-    GCon->Logf(NAME_Debug, "%s:%u:BOXSIDE: %d : %d", GetClass()->GetName(), GetUniqueId(), BestSlideLine->checkBoxEx(bbox3d), BoxOnLineSide2D(bbox2d, *BestSlideLine->v1, *BestSlideLine->v2));
+    GCon->Logf(NAME_Debug, "%s:%u:BOXSIDE: %d : %d", GetClass()->GetName(), GetUniqueId(), BestSlideLine->checkBox3DEx(bbox3d), BoxOnLineSide2D(bbox2d, *BestSlideLine->v1, *BestSlideLine->v2));
     #endif
 
     //TODO: unstuck from the wall?

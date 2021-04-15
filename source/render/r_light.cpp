@@ -696,7 +696,7 @@ float VRenderLevelShared::CheckLightPointCone (VEntity *lowner, const TVec &p, c
   bbox[3+0] = p.x+radius*0.4f;
   bbox[3+1] = p.y+radius*0.4f;
   bbox[3+2] = p.z+(height > 0.0f ? height : 0.0f);
-  if (!pl.checkBox(bbox)) return 0.0f;
+  if (!pl.checkBox3D(bbox)) return 0.0f;
   float res = calcLightPoint(p, height).CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
   if (res == 1.0f) return res;
   CONST_BBoxVertexIndex;

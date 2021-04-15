@@ -1208,7 +1208,7 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
   if (Drawer->MirrorClip) {
     float sbb[6];
     Level->GetSubsectorBBox(sub, sbb);
-    if (!Drawer->MirrorPlane.checkBox(sbb)) return;
+    if (!Drawer->MirrorPlane.checkBox3D(sbb)) return;
   }
   */
 
@@ -1296,7 +1296,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
   if (!ViewClip.ClipIsBBoxVisible(bbox)) return;
 
   // mirror clip
-  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox(bbox)) return;
+  if (Drawer->MirrorClip && !Drawer->MirrorPlane.checkBox3D(bbox)) return;
 
   if (!onlyClip) {
     // cull the clipping planes if not trivial accept
@@ -1306,7 +1306,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
         if (!(clipflags&cp->clipflag)) continue; // don't need to clip against it
         //k8: this check is always true, because view origin is outside of frustum (oops)
         //if (cp->PointOnSide(Drawer->vieworg)) continue; // viewer is in back side or on plane (k8: why check this?)
-        auto crs = cp->checkBoxEx(bbox);
+        auto crs = cp->checkBox3DEx(bbox);
         if (crs == 1) clipflags ^= cp->clipflag; // if it is on a front side of this plane, don't bother checking with it anymore
         else if (crs == 0) {
           // it is enough to hit at least one "outside" to be completely outside
