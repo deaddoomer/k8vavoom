@@ -84,10 +84,6 @@ vector TAVec {
 };
 
 
-// WARNING! make sure that the following constants are in sync with `TFrustum` ones!
-enum { OUTSIDE = 0, INSIDE = 1, PARTIALLY = -1 };
-
-
 struct TPlane {
   TVec normal;
   float dist;
