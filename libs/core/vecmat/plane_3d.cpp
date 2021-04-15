@@ -27,7 +27,7 @@
 
 //==========================================================================
 //
-//  TPlane::checkBox
+//  TPlane::checkBox3D
 //
 //  returns `false` is box is on the back of the plane
 //  bbox:
@@ -40,7 +40,7 @@
 //
 //==========================================================================
 /*
-bool TPlane::checkBox (const float bbox[6]) const noexcept {
+bool TPlane::checkBox3D (const float bbox[6]) const noexcept {
 #ifdef FRUSTUM_BBOX_CHECKS
   vassert(bbox[0] <= bbox[3+0]);
   vassert(bbox[1] <= bbox[3+1]);
@@ -64,11 +64,11 @@ bool TPlane::checkBox (const float bbox[6]) const noexcept {
 
 //==========================================================================
 //
-//  TPlane::checkBoxEx
+//  TPlane::checkBox3DEx
 //
 //==========================================================================
 /*
-int TPlane::checkBoxEx (const float bbox[6]) const noexcept {
+int TPlane::checkBox3DEx (const float bbox[6]) const noexcept {
 #ifdef FRUSTUM_BBOX_CHECKS
   vassert(bbox[0] <= bbox[3+0]);
   vassert(bbox[1] <= bbox[3+1]);

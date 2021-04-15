@@ -215,7 +215,7 @@ public:
   // "land" point onto the plane
   // plane must be normalized
   inline VVA_CHECKRESULT TVec landAlongNormal (const TVec &point) const noexcept {
-    const float pdist = DotProduct(point, normal)-dist;
+    const float pdist = PointDistance(point);
     return (fabsf(pdist) > 0.0001f ? point-normal*pdist : point);
   }
 
@@ -355,24 +355,16 @@ public:
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
   inline VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept {
-    return (DotProduct(center, normal)-dist <= -radius);
+    return (PointDistance(center) <= -radius);
   }
-
-  /*
-  // returns side 0 (front), 1 (back)
-  // if at least some part of the sphere is on a front side, it means "front"
-  inline int SphereOnBackTh (const TVec &center, float radius) const {
-    return (DotProduct(center, normal)-dist < -(radius+0.1f));
-  }
-  */
 
   inline VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept {
-    return (fabsf(DotProduct(center, normal)-dist) < radius);
+    return (fabsf(PointDistance(center)) < radius);
   }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
   inline VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
-    const float d = DotProduct(center, normal)-dist;
+    const float d = PointDistance(center);
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
 
@@ -380,38 +372,38 @@ public:
   // i.e. box point that is furthest from the plane
   inline VVA_CHECKRESULT TVec get3DBBoxRejectPoint (const float bbox[6]) const noexcept {
     return TVec(
-      bbox[BOX3D_X+(normal.x < 0 ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Y+(normal.y < 0 ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Z+(normal.z < 0 ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
+      bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Z+(normal.z < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
   }
 
   // returns "AABB accept point"
   // i.e. box point that is closest to the plane
   inline VVA_CHECKRESULT TVec get3DBBoxAcceptPoint (const float bbox[6]) const noexcept {
     return TVec(
-      bbox[BOX3D_X+(normal.x < 0 ? BOX3D_MAXIDX : BOX3D_MINIDX)],
-      bbox[BOX3D_Y+(normal.y < 0 ? BOX3D_MAXIDX : BOX3D_MINIDX)],
-      bbox[BOX3D_Z+(normal.z < 0 ? BOX3D_MAXIDX : BOX3D_MINIDX)]);
+      bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
+      bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
+      bbox[BOX3D_Z+(normal.z < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)]);
   }
 
   inline VVA_CHECKRESULT TVec get2DBBoxRejectPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
-      bbox2d[normal.x < 0 ? BOX2D_LEFT : BOX2D_RIGHT],
-      bbox2d[normal.y < 0 ? BOX2D_BOTTOM : BOX2D_TOP],
-      (normal.z < 0 ? minz : maxz));
+      bbox2d[normal.x < 0.0f ? BOX2D_LEFT : BOX2D_RIGHT],
+      bbox2d[normal.y < 0.0f ? BOX2D_BOTTOM : BOX2D_TOP],
+      (normal.z < 0.0f ? minz : maxz));
   }
 
   inline VVA_CHECKRESULT TVec get2DBBoxAcceptPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
-      bbox2d[normal.x < 0 ? BOX2D_RIGHT : BOX2D_LEFT],
-      bbox2d[normal.y < 0 ? BOX2D_TOP : BOX2D_BOTTOM],
-      (normal.z < 0 ? maxz : minz));
+      bbox2d[normal.x < 0.0f ? BOX2D_RIGHT : BOX2D_LEFT],
+      bbox2d[normal.y < 0.0f ? BOX2D_TOP : BOX2D_BOTTOM],
+      (normal.z < 0.0f ? maxz : minz));
   }
 
   // returns `false` if the box fully is on the back side of the plane
-  inline VVA_CHECKRESULT bool checkBox (const float bbox[6]) const noexcept {
+  inline VVA_CHECKRESULT bool checkBox3D (const float bbox[6]) const noexcept {
     // check reject point
-    return (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist > 0.0f); // at least partially on a front side?
+    return (PointDistance(get3DBBoxRejectPoint(bbox)) > 0.0f); // at least partially on a front side?
   }
 
   // returns `false` if the box fully is on the back side of the plane
@@ -420,7 +412,7 @@ public:
     if (normal.z == 0.0f) {
       // vertical plane
       // check reject point
-      return (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist > 0.0f); // at least partially on a front side?
+      return (PointDistance(get2DBBoxRejectPoint(bbox2d)) > 0.0f); // at least partially on a front side?
     } else {
       return true;
     }
@@ -431,12 +423,12 @@ public:
 
   // returns one of OUTSIDE, INSIDE, PARTIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
-  inline VVA_CHECKRESULT int checkBoxEx (const float bbox[6]) const noexcept {
+  inline VVA_CHECKRESULT int checkBox3DEx (const float bbox[6]) const noexcept {
     // check reject point
-    if (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist <= 0.0f) return OUTSIDE; // entire box on a back side
+    if (PointDistance(get3DBBoxRejectPoint(bbox)) <= 0.0f) return OUTSIDE; // entire box on a back side
     // check accept point
     // if accept point on another side (or on plane), assume intersection
-    return (DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist < 0.0f ? PARTIALLY : INSIDE);
+    return (PointDistance(get3DBBoxAcceptPoint(bbox)) < 0.0f ? PARTIALLY : INSIDE);
   }
 
   // returns one of OUTSIDE, INSIDE, PARTIALLY
@@ -445,10 +437,10 @@ public:
   inline VVA_CHECKRESULT int checkBox2DEx (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // check reject point
-      if (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist <= 0.0f) return OUTSIDE; // entire box on a back side
+      if (PointDistance(get2DBBoxRejectPoint(bbox2d)) <= 0.0f) return OUTSIDE; // entire box on a back side
       // check accept point
       // if accept point on another side (or on plane), assume intersection
-      return (DotProduct(normal, get2DBBoxAcceptPoint(bbox2d))-dist < 0.0f ? PARTIALLY : INSIDE);
+      return (PointDistance(get2DBBoxAcceptPoint(bbox2d)) < 0.0f ? PARTIALLY : INSIDE);
     } else {
       return PARTIALLY;
     }
@@ -458,10 +450,10 @@ public:
   // if the box is touching the plane from the front, it is still assumed to be in front
   inline VVA_CHECKRESULT int Box3DOnSide2 (const float bbox[6]) const noexcept {
     // check reject point
-    if (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist <= 0.0f) return 1; // entire box is on a back side
+    if (PointDistance(get3DBBoxRejectPoint(bbox)) <= 0.0f) return 1; // entire box is on a back side
     // check accept point
     // if accept point on another side (or on plane), assume intersection
-    return (DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist < 0.0f ? 2 : 0);
+    return (PointDistance(get3DBBoxAcceptPoint(bbox)) < 0.0f ? 2 : 0);
   }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
@@ -470,34 +462,15 @@ public:
   inline VVA_CHECKRESULT int Box2DOnSide2 (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // check reject point
-      if (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist <= 0.0f) return 1; // entire box is on a back side
+      if (PointDistance(get2DBBoxRejectPoint(bbox2d)) <= 0.0f) return 1; // entire box is on a back side
       // check accept point
       // if accept point on another side (or on plane), assume intersection
-      return (DotProduct(normal, get2DBBoxAcceptPoint(bbox2d))-dist < 0.0f ? 2 : 0);
+      return (PointDistance(get2DBBoxAcceptPoint(bbox2d)) < 0.0f ? 2 : 0);
     } else {
       return 2;
     }
   }
 
-  /*
-  // returns `false` if the rect is on the back side of the plane
-  inline VVA_CHECKRESULT bool checkRect (const TVec &v0, const TVec &v1) const noexcept {
-    //FIXME: this can be faster
-    float bbox[6];
-    CreateBBox(bbox, v0, v1);
-    return checkBox(bbox);
-  }
-
-  // returns one of OUTSIDE, INSIDE, PARTIALLY
-  inline VVA_CHECKRESULT int checkRectEx (const TVec &v0, const TVec &v1) const noexcept {
-    //FIXME: this can be faster
-    float bbox[6];
-    CreateBBox(bbox, v0, v1);
-    return checkBoxEx(bbox);
-  }
-  */
-
-  // this is the slow, general version
   // it does the same accept/reject check, but returns this:
   //   0: Quake source says that this can't happen
   //   1: in front

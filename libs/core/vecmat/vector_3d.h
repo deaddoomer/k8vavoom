@@ -372,6 +372,18 @@ static inline VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float
 #define Create3DBBoxFrom2DBBox(destb_,srcb_,zmin_,zmax_)  \
   const float destb_[6] = { (srcb_)[BOX2D_MINX], (srcb_)[BOX2D_MINY], (zmin_), (srcb_)[BOX2D_MAXX], (srcb_)[BOX2D_MAXY], (zmax_) }
 
+#define Create2DBBoxFromVectors(destb_,minb_,maxb_)  \
+  const float destb_[4] = { (maxb_).y, (minb_).y, (minb_).x, (maxb_).x }
+
+#define Create3DBBoxFromVectors(destb_,minb_,maxb_)  \
+  const float destb_[6] = { (minb_).x, (minb_).y, (minb_).z, (maxb_).x, (maxb_).y, (maxb_).z }
+
+#define CreateDoom2DBBox(destb_,org_,rad_)  \
+  const float destb_[4] = { (org_).y+(rad_), (org_).y-(rad_), (org_).x-(rad_), (org_).x+(rad_) }
+
+#define CreateDoom3DBBox(destb_,org_,rad_,hgt_)  \
+  const float destb_[6] = { (org_).x-(rad_), (org_).y-(rad_), (org_).z, (org_).x+(rad_), (org_).y+(rad_), (org_).z+(hgt_) }
+
 
 static inline VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec &corg, const float radiusSq, const TVec &v0, const TVec &v1) noexcept {
   const TVec s0qp = corg-v0;
