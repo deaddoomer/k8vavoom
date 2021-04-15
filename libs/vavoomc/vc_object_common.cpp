@@ -2263,3 +2263,304 @@ IMPLEMENT_FUNCTION(VObject, sRGBIntensity) {
   UnpackRGB(clr, r, g, b);
   RET_BYTE(colorIntensity(r, g, b));
 }
+
+
+
+//**************************************************************************
+//
+//  TPlane
+//
+//**************************************************************************
+//native float PointDistance (const TVec p) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, PointDistance) {
+  TPlane *Self;
+  TVec p;
+  vobjGetParam(Self, p);
+  RET_FLOAT(Self->PointDistance(p));
+}
+
+//native void SetPointDirXY (const TVec point, const TVec dir);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SetPointDirXY) {
+  TPlane *Self;
+  TVec p, d;
+  vobjGetParam(Self, p, d);
+  RET_VOID(Self->SetPointDirXY(p, d));
+}
+
+//native void Set2Points (const TVec v1, const TVec v2);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Set2Points) {
+  TPlane *Self;
+  TVec v1, v2;
+  vobjGetParam(Self, v1, v2);
+  RET_VOID(Self->Set2Points(v1, v2));
+}
+
+//native void SetPointNormal3D (const TVec point, const TVec norm);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SetPointNormal3D) {
+  TPlane *Self;
+  TVec p, n;
+  vobjGetParam(Self, p, n);
+  RET_VOID(Self->SetPointNormal3D(p, n));
+}
+
+//native void SetPointNormal3DSafe (const TVec point, const TVec dir);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SetPointNormal3DSafe) {
+  TPlane *Self;
+  TVec p, d;
+  vobjGetParam(Self, p, d);
+  RET_VOID(Self->SetPointNormal3DSafe(p, d));
+}
+
+//native void SetFromTriangle (const TVec a, const TVec b, const TVec c);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SetFromTriangle) {
+  TPlane *Self;
+  TVec a, b, c;
+  vobjGetParam(Self, a, b, c);
+  RET_VOID(Self->SetFromTriangle(a, b, c));
+}
+
+//native bool isFloor () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, isFloor) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_BOOL(Self->isFloor());
+}
+
+//native bool isCeiling () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, isCeiling) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_BOOL(Self->isCeiling());
+}
+
+//native bool isSlope () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, isSlope) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_BOOL(Self->isSlope());
+}
+
+//native float GetRealDist () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetRealDist) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_FLOAT(Self->GetRealDist());
+}
+
+//native void NormaliseInPlace ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, NormaliseInPlace) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_VOID(Self->NormaliseInPlace());
+}
+
+//native void FlipInPlace ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, FlipInPlace) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_VOID(Self->FlipInPlace());
+}
+
+//native float IntersectionTime (const TVec linestart, const TVec lineend, optional out TVec currhit) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, IntersectionTime) {
+  TPlane *Self;
+  TVec lstart, lend;
+  VOptParamPtr<TVec> hitpoint;
+  vobjGetParam(Self, lstart, lend, hitpoint);
+  RET_FLOAT(Self->IntersectionTime(lstart, lend, hitpoint.value));
+}
+
+//native float GetPointZ (const TVec v) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetPointZ) {
+  TPlane *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_FLOAT(Self->GetPointZ(v));
+}
+
+//native float GetPointZRev (const TVec v) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetPointZRev) {
+  TPlane *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_FLOAT(Self->GetPointZRev(v));
+}
+
+//native TVec Project (const TVec v) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Project) {
+  TPlane *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->Project(v));
+}
+
+//native TVec IntersectionPoint (const ref TPlane plane2, const ref TPlane plane3) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, IntersectionPoint) {
+  TPlane *Self;
+  TPlane *p2;
+  TPlane *p3;
+  vobjGetParam(Self, p2, p3);
+  RET_VEC(Self->IntersectionPoint(*p2, *p3));
+}
+
+//native bool SweepSphere (const TVec origin, const float radius, const TVec amove, optional out TVec hitpos, optional out float u) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepSphere) {
+  TPlane *Self;
+  TVec origin;
+  float radius;
+  TVec amove;
+  VOptParamPtr<TVec> hitpos;
+  VOptParamPtr<float> u;
+  vobjGetParam(Self, origin, radius, amove, hitpos, u);
+  RET_BOOL(Self->SweepSphere(origin, radius, amove, hitpos.value, u.value));
+}
+
+//native bool SweepBox3D (const TVec vstart, const TVec vend, const TVec bmin, const TVec bmax, optional out float time) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepBox3D) {
+  TPlane *Self;
+  TVec vstart, vend;
+  TVec bmin, bmax;
+  VOptParamPtr<float> time;
+  vobjGetParam(Self, vstart, vend, bmin, bmax, time);
+  const float bbox[6] = { bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z };
+  RET_BOOL(Self->SweepBox3D(vstart, vend, bbox, time.value));
+}
+
+//native bool SweepDoomBox3D (const TVec vstart, const TVec vend, const TVec origin, const float radius, const float height, optional out float time) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SweepDoomBox3D) {
+  TPlane *Self;
+  TVec vstart, vend;
+  TVec origin;
+  float radius, height;
+  VOptParamPtr<float> time;
+  vobjGetParam(Self, vstart, vend, origin, radius, height, time);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  float bbox[6];
+  Create3DBBox(bbox, origin, fabsf(radius), height);
+  RET_BOOL(Self->SweepBox3D(vstart, vend, bbox, time.value));
+}
+
+//native int PointOnSide (const TVec point) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, PointOnSide) {
+  TPlane *Self;
+  TVec p;
+  vobjGetParam(Self, p);
+  RET_INT(Self->PointOnSide(p));
+}
+
+//native int PointOnSide2 (const TVec point) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, PointOnSide2) {
+  TPlane *Self;
+  TVec p;
+  vobjGetParam(Self, p);
+  RET_INT(Self->PointOnSide2(p));
+}
+
+//native int SphereOnSide (const TVec center, float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereOnSide) {
+  TPlane *Self;
+  TVec center;
+  float radius;
+  vobjGetParam(Self, center, radius);
+  RET_INT(Self->SphereOnSide(center, radius));
+}
+
+//native bool SphereTouches (const TVec center, float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereTouches) {
+  TPlane *Self;
+  TVec center;
+  float radius;
+  vobjGetParam(Self, center, radius);
+  RET_BOOL(Self->SphereTouches(center, radius));
+}
+
+//native int SphereOnSide2 (const TVec center, float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, SphereOnSide2) {
+  TPlane *Self;
+  TVec center;
+  float radius;
+  vobjGetParam(Self, center, radius);
+  RET_INT(Self->SphereOnSide2(center, radius));
+}
+
+//native bool checkBox3D (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkBox3D) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  const float bbox[6] = { bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z };
+  RET_BOOL(Self->checkBox(bbox));
+}
+
+//native bool checkBox2D (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkBox2D) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  RET_BOOL(Self->checkBox2D(bbox));
+}
+
+//native bool checkDoomBox3D (const TVec origin, const float radius, const float height) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkDoomBox3D) {
+  TPlane *Self;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(Self, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  float bbox[6];
+  Create3DBBox(bbox, origin, fabsf(radius), height);
+  RET_BOOL(Self->checkBox(bbox));
+}
+
+//native bool checkDoomBox2D (const TVec origin, const float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, checkDoomBox2D) {
+  TPlane *Self;
+  TVec origin;
+  float radius;
+  vobjGetParam(Self, origin, radius);
+  float bbox[4];
+  Create2DBBox(bbox, origin, fabsf(radius));
+  RET_BOOL(Self->checkBox2D(bbox));
+}
+
+//native int Box3DOnSide2 (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Box3DOnSide2) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  RET_INT(Self->Box3DOnSide2(bbox));
+}
+
+//native int DoomBox3DOnSide2 (const TVec origin, const float radius, const float height) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, DoomBox3DOnSide2) {
+  TPlane *Self;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(Self, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  float bbox[6];
+  Create3DBBox(bbox, origin, fabsf(radius), height);
+  RET_INT(Self->Box3DOnSide2(bbox));
+}
+
+//native int Box2DOnSide2 (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Box2DOnSide2) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  const float bbox[4] = { bmax.y, bmin.y, bmin.x, bmax.x };
+  RET_INT(Self->Box2DOnSide2(bbox));
+}
+
+//native int DoomBox2DOnSide2 (const TVec origin, const float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, DoomBox2DOnSide2) {
+  TPlane *Self;
+  TVec origin;
+  float radius;
+  vobjGetParam(Self, origin, radius);
+  float bbox[4];
+  Create2DBBox(bbox, origin, fabsf(radius));
+  RET_INT(Self->Box2DOnSide2(bbox));
+}
