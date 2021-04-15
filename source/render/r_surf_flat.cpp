@@ -224,7 +224,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   ssurf->Angle = spl.splane->BaseAngle-spl.splane->Angle;
 
   TPlane plane = *(TPlane *)spl.splane;
-  if (spl.flipped) plane.flipInPlace();
+  if (spl.flipped) plane.FlipInPlace();
 
   if (recreateSurface) {
     surf->plane = plane;
@@ -362,7 +362,7 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
   // update z coords?
   if (FASI(ssurf->edist) != FASI(splane.splane->dist)) {
     TPlane plane = *(TPlane *)splane.splane;
-    if (splane.flipped) plane.flipInPlace();
+    if (splane.flipped) plane.FlipInPlace();
     bool changed = false;
     ssurf->edist = splane.splane->dist;
     for (surface_t *surf = ssurf->surfs; surf; surf = surf->next) {
@@ -383,7 +383,7 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
   else if (offsChanged && splane.splane->pic != skyflatnum) {
     // still have to force it, because texture is scrolled, and lightmap s/t are invalid
     TPlane plane = *(TPlane *)splane.splane;
-    if (splane.flipped) plane.flipInPlace();
+    if (splane.flipped) plane.FlipInPlace();
     InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub);
   }
   */

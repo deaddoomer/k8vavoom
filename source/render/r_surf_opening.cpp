@@ -160,7 +160,7 @@ bool VRenderLevelShared::SplitQuadWithPlane (const TVec quad[4], TPlane pl, TVec
   vassert(!pl.isVertical());
 
   // make the plane points up, so negative distance will mean "below"
-  if (pl.normal.z < 0.0f) pl.flipInPlace();
+  if (pl.normal.z < 0.0f) pl.FlipInPlace();
 
   // `front` is "above", `back` is "below"
   TPlane::ClipWorkData cd;

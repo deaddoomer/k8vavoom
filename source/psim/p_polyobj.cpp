@@ -792,7 +792,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     // build ceiling
     po->poceiling = refsec->ceiling;
     //po->poceiling.pic = 0;
-    //if (po->poceiling.isCeiling()) po->poceiling.flipInPlace();
+    //if (po->poceiling.isCeiling()) po->poceiling.FlipInPlace();
     const float cdist = po->poceiling.GetPointZClamped(*po->lines[0]->v1);
     //GCon->Logf(NAME_Debug, "000: pobj #%d: ceiling=(%g,%g,%g:%g):%g (%g:%g)", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, cdist, po->poceiling.minz, po->poceiling.maxz);
     // ceiling normal points up

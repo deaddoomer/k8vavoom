@@ -720,7 +720,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
     pl.normal = TVec(fval[0], fval[1], fval[2]).normalised();
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -fval[3];
-      if (pl.normal.z < 0) pl.flipInPlace();
+      if (pl.normal.z < 0) pl.FlipInPlace();
       *((TPlane *)&S.S.floor) = pl;
     }
   }
@@ -731,7 +731,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
     pl.normal = TVec(cval[0], cval[1], cval[2]).normalised();
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -cval[3];
-      if (pl.normal.z > 0) pl.flipInPlace();
+      if (pl.normal.z > 0) pl.FlipInPlace();
       *((TPlane *)&S.S.ceiling) = pl;
     }
   }
@@ -1453,7 +1453,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
           // sanity check
           if (isFiniteF(pl.normal.z) && fabsf(pl.normal.z) > 0.0001f) {
             // flip, if necessary
-            if (pl.normal.z < 0.0f) pl.flipInPlace();
+            if (pl.normal.z < 0.0f) pl.FlipInPlace();
             *((TPlane *)&sector->floor) = pl;
             ++slopedFloors;
           } else {
@@ -1474,7 +1474,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
           // sanity check
           if (isFiniteF(pl.normal.z) && fabsf(pl.normal.z) > 0.0001f) {
             // flip, if necessary
-            if (pl.normal.z > 0.0f) pl.flipInPlace();
+            if (pl.normal.z > 0.0f) pl.FlipInPlace();
             *((TPlane *)&sector->ceiling) = pl;
             ++slopedCeilings;
           } else {

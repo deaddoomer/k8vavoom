@@ -76,7 +76,7 @@ public:
   inline void SetAndNormalise (const TVec &Anormal, float Adist) noexcept {
     normal = Anormal;
     dist = Adist;
-    Normalise();
+    NormaliseInPlace();
     if (!normal.isValid() || normal.isZero()) {
       //k8: what to do here?!
       normal = TVec(1.0f, 0.0f, 0.0f);
@@ -115,10 +115,10 @@ public:
     dist = DotProduct(point, normal);
   }
 
-  // initialises "full" plane from point and direction
-  inline void SetPointNormal3DSafe (const TVec &point, const TVec &norm) noexcept {
-    if (norm.isValid() && point.isValid() && !norm.isZero()) {
-      normal = norm.normalised();
+  // initialises "full" plane from point and direction (direction will be normalised)
+  inline void SetPointNormal3DSafe (const TVec &point, const TVec &dir) noexcept {
+    if (dir.isValid() && point.isValid() && !dir.isZero()) {
+      normal = dir.normalised();
       if (normal.isValid() && !normal.isZero()) {
         dist = DotProduct(point, normal);
       } else {
@@ -153,7 +153,7 @@ public:
 
   // WARNING! do not call this repeatedly, or on normalized plane!
   //          due to floating math inexactness, you will accumulate errors.
-  inline void Normalise () noexcept {
+  inline void NormaliseInPlace () noexcept {
     const float mag = normal.invlength();
     normal *= mag;
     // multiply by mag too, because we're doing "dot-dist", so
@@ -161,7 +161,7 @@ public:
     dist *= mag;
   }
 
-  inline void flipInPlace () noexcept {
+  inline void FlipInPlace () noexcept {
     normal = -normal;
     dist = -dist;
   }
@@ -274,7 +274,7 @@ public:
 
   // sphere sweep test; if `true` (hit), `hitpos` will be sphere position when it hits this plane, and `u` will be normalized collision time
   // not sure if it should be `dist` or `-dist` here for vavoom planes
-  bool sweepSphere (const TVec &origin, const float radius, const TVec &amove, TVec *hitpos=nullptr, float *u=nullptr) const noexcept {
+  bool SweepSphere (const TVec &origin, const float radius, const TVec &amove, TVec *hitpos=nullptr, float *u=nullptr) const noexcept {
     const TVec c1 = origin+amove;
     const float d0 = normal.dot(origin)-dist;
     // check if the sphere is touching the plane
@@ -295,6 +295,32 @@ public:
     }
     // no collision
     return false;
+  }
+
+  // box must be valid
+  // `time` will be set only if our box hits/penetrates the plane
+  // negative time means "stuck" (and it will be exit time)
+  bool SweepBox3D (const TVec &vstart, const TVec &vend, const float bbox[6], float *time=nullptr) const noexcept {
+    //const TVec offset = TVec((normal.x < 0.0f ? bmax.x : bmin.x), (normal.y < 0.0f ? bmax.y : bmin.y), (normal.z < 0.0f ? bmax.z : bmin.z));
+    const TVec offset = get3DBBoxAcceptPoint(bbox);
+    // adjust the plane distance apropriately
+    const float cdist = dist-DotProduct(offset, normal);
+    const float idist = DotProduct(vstart, normal)-cdist;
+    const float odist = DotProduct(vend, normal)-cdist;
+    if (idist <= 0.0f && odist <= 0.0f) return false; // doesn't cross this plane, don't bother
+    if (idist >= 0.0f && odist >= 0.0f) return false; // touches, and leaving
+    // check for stuck
+    if (time) {
+      if (idist >= 0.0f) {
+        // entering plane
+        *time = fmax(0.0f, idist/(idist-odist));
+      } else {
+        // enter distance is negative, which means "stuck"
+        *time = fmin(1.0f, idist/(idist-odist));
+      }
+    }
+    // done
+    return true;
   }
 
 
@@ -428,6 +454,32 @@ public:
     }
   }
 
+  // returns side 0 (front), 1 (back), or 2 (collides)
+  // if the box is touching the plane from the front, it is still assumed to be in front
+  inline VVA_CHECKRESULT int Box3DOnSide2 (const float bbox[6]) const noexcept {
+    // check reject point
+    if (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist <= 0.0f) return 1; // entire box is on a back side
+    // check accept point
+    // if accept point on another side (or on plane), assume intersection
+    return (DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist < 0.0f ? 2 : 0);
+  }
+
+  // returns side 0 (front), 1 (back), or 2 (collides)
+  // if the box is touching the plane from the front, it is still assumed to be in front
+  // returns 2 for non-vertical planes (because our box is 2d)
+  inline VVA_CHECKRESULT int Box2DOnSide2 (const float bbox2d[4]) const noexcept {
+    if (normal.z == 0.0f) {
+      // check reject point
+      if (DotProduct(normal, get2DBBoxRejectPoint(bbox2d))-dist <= 0.0f) return 1; // entire box is on a back side
+      // check accept point
+      // if accept point on another side (or on plane), assume intersection
+      return (DotProduct(normal, get2DBBoxAcceptPoint(bbox2d))-dist < 0.0f ? 2 : 0);
+    } else {
+      return 2;
+    }
+  }
+
+  /*
   // returns `false` if the rect is on the back side of the plane
   inline VVA_CHECKRESULT bool checkRect (const TVec &v0, const TVec &v1) const noexcept {
     //FIXME: this can be faster
@@ -443,6 +495,7 @@ public:
     CreateBBox(bbox, v0, v1);
     return checkBoxEx(bbox);
   }
+  */
 
   // this is the slow, general version
   // it does the same accept/reject check, but returns this:

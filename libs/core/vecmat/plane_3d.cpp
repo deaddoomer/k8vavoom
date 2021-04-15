@@ -124,9 +124,9 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 
   const float dist1 = DotProduct(normal, corners[0])-dist;
   const float dist2 = DotProduct(normal, corners[1])-dist;
-  unsigned sides = (unsigned)(dist1 >= 0);
-  //if (dist1 >= 0) sides = 1;
-  if (dist2 < 0) sides |= 2u;
+  unsigned sides = (unsigned)(dist1 >= 0.0f);
+  //if (dist1 >= 0.0f) sides = 1;
+  if (dist2 < 0.0f) sides |= 2u;
 
   return sides;
 }

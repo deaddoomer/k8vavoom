@@ -136,7 +136,7 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
           //ff->floorplane = (viewhs ? viewhs->floor : sector->floor);
         }
         ff->ceilplane = hs->floor;
-        ff->ceilplane.flipInPlace();
+        ff->ceilplane.FlipInPlace();
         //ff->ceilplane.normal = -hs->floor.normal;
         //ff->ceilplane.dist = -hs->floor.dist;
         //ff->ceilplane.pic = GTextureManager.DefaultTexture;
@@ -259,11 +259,11 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
       ff->ceilplane = hs->floor;
       if (Drawer->vieworg.z < hs->floor.GetPointZClamped(Drawer->vieworg)) {
         // fake floor is actually a ceiling now
-        ff->floorplane.flipInPlace();
+        ff->floorplane.FlipInPlace();
       }
       if (Drawer->vieworg.z > hs->ceiling.GetPointZClamped(Drawer->vieworg)) {
         // fake ceiling is actually a floor now
-        ff->ceilplane.flipInPlace();
+        ff->ceilplane.FlipInPlace();
       }
     }
   }
@@ -310,7 +310,7 @@ void VRenderLevelShared::UpdateFloodBug (sector_t *sector) {
     ff->floorplane = sursec->floor;
     // ceiling must be current sector's floor, flipped
     ff->ceilplane = sector->floor;
-    ff->ceilplane.flipInPlace();
+    ff->ceilplane.FlipInPlace();
     ff->params = sursec->params;
     //GCon->Logf("  floor: (%g,%g,%g : %g)", ff->floorplane.normal.x, ff->floorplane.normal.y, ff->floorplane.normal.z, ff->floorplane.dist);
     return;

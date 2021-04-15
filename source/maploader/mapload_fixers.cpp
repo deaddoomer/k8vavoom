@@ -1061,7 +1061,7 @@ void VLevel::FixDeepWaters () {
       ff->floorplane = sursec->floor;
       // ceiling must be current sector's floor, flipped
       ff->ceilplane = sec->floor;
-      ff->ceilplane.flipInPlace();
+      ff->ceilplane.FlipInPlace();
       ff->params = sursec->params;
       sec->SectorFlags |= sector_t::SF_HangingBridge/*|sector_t::SF_ClipFakePlanes*/;
     }
