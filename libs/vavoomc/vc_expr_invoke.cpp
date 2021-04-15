@@ -1149,12 +1149,31 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
       if (SelfExpr->Type.Type != TYPE_Pointer) {
         if (SelfExpr->IsTypeExpr()) {
           if (!M->IsStatic()) ParseError(Loc, "cannot call non-static method `%s::%s` as static", *SelfExpr->Type.Struct->Name, *MethodName);
+          // do not re-resolve
+          delete selfCopy;
+          selfCopy = nullptr;
         } else {
-          SelfExpr = new VUnary(VUnary::TakeAddress, SelfExpr, SelfExpr->Loc);
+          // re-resolve with `&`
+          delete SelfExpr;
+          SelfExpr = nullptr;
+          selfCopy = new VUnary(VUnary::TakeAddress, selfCopy, selfCopy->Loc);
         }
+      } else {
+        // do not re-resolve
+        delete selfCopy;
+        selfCopy = nullptr;
       }
-      SelfExpr = SelfExpr->Resolve(ec);
-      if (!SelfExpr) { delete this; return nullptr; }
+      // need to re-resolve from the copy?
+      if (!SelfExpr) {
+        // yes
+        vassert(selfCopy);
+        SelfExpr = selfCopy->Resolve(ec);
+        selfCopy = nullptr; // just in case
+        if (!SelfExpr) { delete this; return nullptr; }
+      } else {
+        // no
+        vassert(!selfCopy);
+      }
       if (M->Flags&FUNC_Iterator) {
         ParseError(Loc, "Iterator methods can only be used in foreach statements");
         delete this;
