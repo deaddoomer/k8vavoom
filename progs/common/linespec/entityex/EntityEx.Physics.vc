@@ -739,12 +739,14 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
   }
 
   // clip movement
-  if (!bNoInteraction) {
+  // don't do this for "no interaction, no blockmap, no gravity"
+  if (!(bNoInteraction || bNoGravity || bNoBlockmap)) {
     //if (bMissile) printdebug("%C: HitFloor: z=%s; floorz=%s; hit=%B", self, Origin.z, FloorZ, (Origin.z <= FloorZ+0.1));
     if (origz < FloorZ+0.1) {
       // hit the floor
       //if (bIsPlayer && oldz < FloorZ) printdebug("%C: HitFloor: oldz=%s; z=%s; floorz=%s; vz=%s; sector=%d", self, oldz, Origin.z, FloorZ, Velocity.z, (Sector ? Sector-&XLevel.Sectors[0] : -1));
       //FIXME: hack for bullet puffs (not working yet)
+      /*
       if (!bIsPlayer && !bMonster && !bMissile) {
         if (Sector && Sector->ownpobj && origz != FloorZ && Velocity.z >= 0.0) {
           //printdebug("333: %C: oldz=%s; FloorZ=%s; z=%s", self, oldz, FloorZ, Origin.z);
@@ -754,6 +756,7 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
           return;
         }
       }
+      */
       if (!HitFloor(oldz, OldSector)) return;
       origz = Origin.z;
     }
