@@ -1434,7 +1434,8 @@ static bool CheckAffectedMObjPositions () noexcept {
     if (zdiff <= 0.0f) continue;
     if (zdiff <= mobj->MaxStepHeight) {
       // ok, we can step up
-      mobj->Origin.z = tmtrace.FloorZ;
+      // let physics engine fix it
+      //mobj->Origin.z = tmtrace.FloorZ;
       continue;
     }
     // cannot step up, rollback horizontal movement
