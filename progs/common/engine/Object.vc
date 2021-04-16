@@ -114,6 +114,17 @@ struct TPlane {
   // yeah, we have too many of those
   // this one is used in various plane checks in the engine (it happened so historically)
   native float IntersectionTime (const TVec linestart, const TVec lineend, optional out TVec currhit) const;
+  // some other intersection methods, for infinite lines
+  // intersection time; [0..1] is for the actual line segment
+  // returns +INF for coplanar lines (check with res.isfinite)
+  // time is from `p0`
+  native float LineIntersectTime (const TVec p0, const TVec p1, optional const float eps/*=0*/) const;
+  // returns intersection point; that point must be out of line segment
+  // returns invalid vector (infinite) for coplanar lines (res.x.isfinite)
+  // time is from `p0`
+  native TVec LineIntersect (const TVec p0, const TVec p1, optional const float eps/*=0*/) const;
+  // this adds `shift` to plane distance
+  native float LineIntersectTimeWithShift (const TVec p0, const TVec p1, const float shift, optional const float eps/*=0*/) const;
   native float GetPointZ (const TVec v) const;
   native float GetPointZRev (const TVec v) const;
   native TVec Project (const TVec v) const;

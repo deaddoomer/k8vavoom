@@ -2370,6 +2370,34 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, IntersectionTime) {
   RET_FLOAT(Self->IntersectionTime(lstart, lend, hitpoint.value));
 }
 
+//native float LineIntersectTime (const TVec p0, const TVec p1, optional const float eps/*=0*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, LineIntersectTime) {
+  TPlane *Self;
+  TVec p0, p1;
+  VOptParamFloat eps(0.0f);
+  vobjGetParam(Self, p0, p1, eps);
+  RET_FLOAT(Self->LineIntersectTime(p0, p1, eps));
+}
+
+//native TVec LineIntersect (const TVec p0, const TVec p1, optional const float eps/*=0*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, LineIntersect) {
+  TPlane *Self;
+  TVec p0, p1;
+  VOptParamFloat eps(0.0f);
+  vobjGetParam(Self, p0, p1, eps);
+  RET_VEC(Self->LineIntersect(p0, p1, eps));
+}
+
+//native float LineIntersectTimeWithShift (const TVec p0, const TVec p1, const float shift, optional const float eps/*=0*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, LineIntersectTimeWithShift) {
+  TPlane *Self;
+  TVec p0, p1;
+  float shift;
+  VOptParamFloat eps(0.0f);
+  vobjGetParam(Self, p0, p1, shift, eps);
+  RET_FLOAT(Self->LineIntersectTimeWithShift(p0, p1, shift, eps));
+}
+
 //native float GetPointZ (const TVec v) const;
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetPointZ) {
   TPlane *Self;
