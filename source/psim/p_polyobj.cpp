@@ -1503,7 +1503,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         if (mobj->IsGoingToDie()) continue;
         // check flags
         if ((mobj->EntityFlags&VEntity::EF_ColideWithWorld) == 0) continue;
-        if (mobj->FlagsEx&VEntity::EFEX_NoInteraction) continue;
+        if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) continue;
         //FIXME: ignore everything that cannot possibly be affected?
         //GCon->Logf(NAME_Debug, "  %s(%u): z=%g (poz1=%g); sector=%p; basesector=%p", mobj->GetClass()->GetName(), mobj->GetUniqueId(), mobj->Origin.z, pofirst->poceiling.maxz, mobj->Sector, mobj->BaseSector);
         SavedEntityData &edata = poAffectedEnitities.alloc();
@@ -1602,7 +1602,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         if (mobj->IsGoingToDie()) continue;
         // check flags
         if ((mobj->EntityFlags&(VEntity::EF_ColideWithWorld|VEntity::EF_Solid|VEntity::EF_Corpse)) != (VEntity::EF_ColideWithWorld|VEntity::EF_Solid)) continue;
-        if (mobj->FlagsEx&VEntity::EFEX_NoInteraction) continue;
+        if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) continue;
         if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue;
         const float mz0 = mobj->Origin.z;
         const float mz1 = mz0+mobj->Height;
@@ -1722,7 +1722,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         if (mobj->IsGoingToDie()) continue;
         // check flags
         if ((mobj->EntityFlags&VEntity::EF_ColideWithWorld) == 0) continue;
-        if (mobj->FlagsEx&VEntity::EFEX_NoInteraction) continue;
+        if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) continue;
         if (mobj->Origin.z != pz1) continue; // just in case
         SavedEntityData &edata = poAffectedEnitities.alloc();
         edata.mobj = mobj;
