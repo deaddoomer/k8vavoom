@@ -508,17 +508,7 @@ void AfterUnarchiveThinkers () {}
 //  PolyRotateMobj
 //
 //==========================================================================
-void PolyRotateMobj (Entity A, int poflags, float dangle) {
-}
-
-
-//==========================================================================
-//
-//  PolyMoveMobjBy
-//
-//==========================================================================
-bool PolyMoveMobjBy (Entity A, int poflags, float dx, float dy) {
-  return false;
+void PolyRotateMobj (Entity A, float dangle) {
 }
 
 

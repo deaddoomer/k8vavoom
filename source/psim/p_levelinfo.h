@@ -235,8 +235,8 @@ public:
   void eventPolyThrustMobj (VEntity *A, TVec thrustDir, polyobj_t *po) { static VMethodProxy method("PolyThrustMobj"); vobjPutParamSelf(A, thrustDir, po); VMT_RET_VOID(method); }
   void eventPolyCrushMobj (VEntity *A, polyobj_t *po) { static VMethodProxy method("PolyCrushMobj"); vobjPutParamSelf(A, po); VMT_RET_VOID(method); }
 
-  void eventPolyRotateMobj (VEntity *A, vuint32 poflags, float dangle) { static VMethodProxy method("PolyRotateMobj"); vobjPutParamSelf(A, poflags, dangle); VMT_RET_VOID(method); }
-  bool eventPolyMoveMobjBy (VEntity *A, vuint32 poflags, float dx, float dy) { static VMethodProxy method("PolyMoveMobjBy"); vobjPutParamSelf(A, poflags, dx, dy); VMT_RET_BOOL(method); }
+  void eventPolyRotateMobj (VEntity *A, float dangle) { static VMethodProxy method("PolyRotateMobj"); vobjPutParamSelf(A, dangle); VMT_RET_VOID(method); }
+  //bool eventPolyMoveMobjBy (VEntity *A, vuint32 poflags, float dx, float dy) { static VMethodProxy method("PolyMoveMobjBy"); vobjPutParamSelf(A, poflags, dx, dy); VMT_RET_BOOL(method); }
 
   bool eventTagBusy (int tag) { static VMethodProxy method("TagBusy"); vobjPutParamSelf(tag); VMT_RET_BOOL(method); }
   bool eventPolyBusy (int polyobj) { static VMethodProxy method("PolyBusy"); vobjPutParamSelf(polyobj); VMT_RET_BOOL(method); }
