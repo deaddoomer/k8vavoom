@@ -1431,11 +1431,12 @@ static bool CheckAffectedMObjPositions () noexcept {
     }
     // fix z if we can step up
     const float zdiff = tmtrace.FloorZ-mobj->Origin.z;
+    //GCon->Logf(NAME_Debug, "%s(%u): zdiff=%g; z=%g; FloorZ=%g; tr.FloorZ=%g", mobj->GetClass()->GetName(), mobj->GetUniqueId(), zdiff, mobj->Origin.z, mobj->FloorZ, tmtrace.FloorZ);
     if (zdiff <= 0.0f) continue;
     if (zdiff <= mobj->MaxStepHeight) {
       // ok, we can step up
       // let physics engine fix it
-      //mobj->Origin.z = tmtrace.FloorZ;
+      if (!mobj->IsPlayer()) mobj->Origin.z = tmtrace.FloorZ;
       continue;
     }
     // cannot step up, rollback horizontal movement
