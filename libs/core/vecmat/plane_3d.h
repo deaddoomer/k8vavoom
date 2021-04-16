@@ -229,7 +229,7 @@ public:
   // `p0` and `p1` must not be the same
   inline VVA_CHECKRESULT float LineIntersectTime (const TVec &p0, const TVec &p1, const float eps=0.0001f) const noexcept {
     const float dv = normal.dot(p1-p0);
-    return (fabsf(dv) > eps ? (dist-normal.dot(p0))/dv : -666.0f);
+    return (fabsf(dv) > eps ? (dist-normal.dot(p0))/dv : INFINITY);
   }
 
   // returns the point where the line p0-p1 intersects this plane
@@ -256,6 +256,13 @@ public:
       res = p0;
       return false;
     }
+  }
+
+  // returns the point where the line p0-p1 intersects this plane
+  // `p0` and `p1` must not be the same
+  inline VVA_CHECKRESULT float LineIntersectTimeWithShift (const TVec &p0, const TVec &p1, const float shift, const float eps=0.0001f) const noexcept {
+    const float dv = normal.dot(p1-p0);
+    return (fabsf(dv) > eps ? (dist+shift-normal.dot(p0))/dv : INFINITY);
   }
 
 
