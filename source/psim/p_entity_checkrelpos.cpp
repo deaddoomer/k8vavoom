@@ -426,7 +426,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         replaceIt = (tmtrace.CeilingZ > open->top || (open->top == tmtrace.CeilingZ && tmtrace.ECeiling.isSlope()));
       }
       if (replaceIt) {
-        if (!skipSpecials || open->top >= Origin.z+hgt) {
+        /*if (!skipSpecials || open->top >= Origin.z+hgt)*/ {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy ceiling; hgt=%g; z+hgt=%g; top=%g; curcz-top=%g", hgt, Origin.z+hgt, open->top, tmtrace.CeilingZ-open->top);
           #endif
@@ -443,16 +443,21 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         replaceIt = (open->bottom-tmtrace.FloorZ > 0.1f);
       } else {
         replaceIt = (open->bottom > tmtrace.FloorZ || (open->bottom == tmtrace.FloorZ && tmtrace.EFloor.isSlope()));
+        #ifdef VV_DBG_VERBOSE_REL_LINE_FC
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "    !floorcheck; open->bottom=%g; tmtrace.FloorZ=%g; >=%d (%d)", open->bottom, tmtrace.FloorZ, (int)(open->bottom > tmtrace.FloorZ), (int)replaceIt);
+        #endif
       }
       if (replaceIt) {
-        if (!skipSpecials || open->bottom <= Origin.z) {
+        /*if (!skipSpecials || open->bottom <= Origin.z)*/ {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-          if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy floor");
+          if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy floor; z=%g; bot=%g; curfz-bot=%g", Origin.z, open->bottom, tmtrace.FloorZ-open->bottom);
           #endif
           tmtrace.CopyOpenFloor(open);
           tmtrace.FloorLine = ld;
         }
       }
+    } else {
+      GCon->Logf(NAME_Debug, "...skip floor");
     }
 
     if (open->lowfloor < tmtrace.DropOffZ) tmtrace.DropOffZ = open->lowfloor;
