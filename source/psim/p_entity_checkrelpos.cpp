@@ -417,17 +417,16 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
 
   if (open) {
     // adjust floor / ceiling heights
-    // use epsilon to avoid getting stuck on some slope configurations
-    if (!(open->eceiling.splane->flags&SPF_NOBLOCKING)) {
+    if ((open->eceiling.splane->flags&SPF_NOBLOCKING) == 0) {
       bool replaceIt;
       if (open->eceiling.GetNormalZ() != -1.0f) {
-        // slope
+        // slope; use epsilon
         replaceIt = (tmtrace.CeilingZ-open->top > 0.1f);
       } else {
         replaceIt = (tmtrace.CeilingZ > open->top || (open->top == tmtrace.CeilingZ && tmtrace.ECeiling.isSlope()));
       }
-      if (/*open->top < tmtrace.CeilingZ*/replaceIt) {
-        if (!skipSpecials || open->top /*+hgt*/ >= Origin.z+hgt) {
+      if (replaceIt) {
+        if (!skipSpecials || open->top >= Origin.z+hgt) {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy ceiling; hgt=%g; z+hgt=%g; top=%g; curcz-top=%g", hgt, Origin.z+hgt, open->top, tmtrace.CeilingZ-open->top);
           #endif
@@ -437,17 +436,15 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       }
     }
 
-    if (!(open->efloor.splane->flags&SPF_NOBLOCKING)) {
+    if ((open->efloor.splane->flags&SPF_NOBLOCKING) == 0) {
       bool replaceIt;
       if (open->efloor.GetNormalZ() != 1.0f) {
-        // slope
+        // slope; use epsilon
         replaceIt = (open->bottom-tmtrace.FloorZ > 0.1f);
       } else {
         replaceIt = (open->bottom > tmtrace.FloorZ || (open->bottom == tmtrace.FloorZ && tmtrace.EFloor.isSlope()));
       }
-      //const bool slope = (open->efloor.GetNormalZ() != 1.0f);
-      //const float diffz = open->bottom-tmtrace.FloorZ;
-      if (/*open->bottom > tmtrace.FloorZ*/replaceIt) {
+      if (replaceIt) {
         if (!skipSpecials || open->bottom <= Origin.z) {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy floor");
@@ -460,8 +457,9 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
 
     if (open->lowfloor < tmtrace.DropOffZ) tmtrace.DropOffZ = open->lowfloor;
 
-    if (ld->flags&ML_RAILING) tmtrace.FloorZ += 32;
+    if (ld->flags&ML_RAILING) tmtrace.FloorZ += 32.0f;
   } else {
+    // no opening
     tmtrace.CeilingZ = tmtrace.FloorZ;
     //k8: oops; it seems that we have to return `false` here
     //    but only if this is not a special line, otherwise monsters cannot open doors
