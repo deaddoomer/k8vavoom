@@ -740,7 +740,8 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
 
   // clip movement
   // don't do this for "no interaction, no blockmap, no gravity"
-  if (!(bNoInteraction || bNoGravity || bNoBlockmap)) {
+  // but do for things that should move with sector
+  if (bMoveWithSector || bIsPlayer || bMonster || bMissile || !(bNoInteraction || bNoGravity || bNoBlockmap)) {
     //if (bMissile) printdebug("%C: HitFloor: z=%s; floorz=%s; hit=%B", self, Origin.z, FloorZ, (Origin.z <= FloorZ+0.1));
     if (origz < FloorZ+0.1) {
       // hit the floor
