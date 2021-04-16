@@ -29,6 +29,15 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
+/*
+  3d polyobjects, will sector-link to themselves all things that are touching
+  even a little. this is used in 3d pobj movement code.
+
+  also, if mobj origin is inside a 3d pobj, mobj Sector will be 3d pobj inner
+  sector. in all cases, mobj BaseSector will be the "real" sector.
+
+  of course, floor and ceiling z will (at least should) be correctly set.
+ */
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit);
