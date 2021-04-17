@@ -51,7 +51,7 @@ will look like platform floor for the player).
 
 
 <hr>
-<a id="drawit"></a><h1>How to draw 3d polyobject</h1>
+<a id="drawit"></a><h1>How to create 3d polyobject</h1>
 <p>
 Drawing 3d polyobjects is very easy, it is not much different from
 drawing a standard polyobject. Please, refer to any polyobject
@@ -108,6 +108,11 @@ will be "cutted out" as it is, and will retain its flat align no matter how you'
 To spawn your 3d polyobject, you should use new thing with editor number <b>9369</b>.
 It's height will specify initial z offset <b>from the inner sector</b>. NOT from the destination one!
 The angle is the polyobject tag, as in other polyobject spawners.<br>
+<b>arg1</b> is the sum of 3d pobj flags (see `<code>POBJ_FLAG_xxx</code>` below).<br>
+<i>Note: if `<code>POBJ_FLAG_SIDE_CRUSH</code>` is set, entity will be destroyed if it was touched
+by a moving 3d pobj side. This is useful to create vertical crushers, because otherwise crushing
+3d pobj can try to push an entity away if it is close to the edge. Also, this flag does nothing if
+`<code>POBJ_FLAG_CRUSH</code>` is not set.</i><br>
 <b>WARNING! Other things args must be zero! They may be used later, and if you will not set them
 to zeroes, your map may break in the future!</b>
 </p>
@@ -136,19 +141,22 @@ to link all polyobjects one to another, creating a "link chain". Linking all pol
 <hr>
 <a id="movenote"><h1>Notes about movement</h1>
 <p>
-You can move your 3d polyobject by all three axes, and it will carry all things that stands on it. Currently
+You can move your 3d polyobject by all three axes, and it will carry all things standing on it. Currently
 it works like a platform in arcade games: it carries things, but doesn't modify their velocities. This means
 that if the player will jump while riding some 3d polyobject, the jump will be strictly vertical (and the
-platform will move away). I may add flags to make "non-arcade" platforms later, but for now there is the
-only platform type available.
+platform will move away). I may add flags to make "non-arcade" platforms later, but for now there is only
+one platform type available.
 </p>
 <p>
-Rotating 3d polyobjects is allowed too. As you may expect, all things standing on such 3d polyobject will be
-properly rotated. Floor and ceiling textures will be rotated too (around polyobject anchor point)
+Rotating 3d polyobject is allowed too. As you may expect, all things standing on such 3d polyobject will be
+properly rotated. Floor and ceiling textures will be rotated too (around polyobject anchor point).
+You can rotate 3d pobj only around Z axis (i.e. the same way non-3d pobjs are rotated). This limitation
+won't be removed.
 </p>
 <p>
-3D movement is splitted to two phases. First, the 3d polyobject is moved vertically, and then it is moved
-horizontally.
+Currently, you cannot stack several entities on top of each other and make them move with the 3d polyobject.
+I.e. some solid entity that is standing on some other solid entity will block the whole movement, and may
+be crushed (because it is considered as "blocking" one).
 </p>
 
 
@@ -180,10 +188,11 @@ Assuming that you are using ZDoom ACC compiler fork, paste the following into yo
 </div>
 <pre>
 // for Polyobj_GetFlagsEx and Polyobj_SetFlagsEx
-#define POBJ_FLAG_CRUSH            (1 << 0)
-#define POBJ_FLAG_HURT_ON_TOUCH    (1 << 1)
-#define POBJ_FLAG_NO_CARRY_THINGS  (1 << 2)
-#define POBJ_FLAG_NO_ANGLE_CHANGE  (1 << 3)
+#define POBJ_FLAG_CRUSH            (1 << 0) /* 1 */
+#define POBJ_FLAG_HURT_ON_TOUCH    (1 << 1) /* 2 */
+#define POBJ_FLAG_NO_CARRY_THINGS  (1 << 2) /* 4 */
+#define POBJ_FLAG_NO_ANGLE_CHANGE  (1 << 3) /* 8 */
+#define POBJ_FLAG_SIDE_CRUSH       (1 << 4) /* 16 */
 
 // for Polyobj_SetFlagsEx
 #define POBJ_FLAGS_CLEAR    0
