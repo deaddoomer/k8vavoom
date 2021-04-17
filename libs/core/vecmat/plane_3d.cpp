@@ -25,6 +25,150 @@
 //**************************************************************************
 #include "../core.h"
 
+
+//==========================================================================
+//
+//  TPlane::SweepSphere
+//
+//  sphere sweep test
+//  `hitpos` will be sphere position when it hits this plane
+//  `time` will be normalized collision time (negative if initially stuck)
+//  returns `true` if stuck/hit
+//
+//==========================================================================
+bool TPlane::SweepSphere (const TVec &origin, const float radius, const TVec &vdelta, TVec *hitpos, float *time) const noexcept {
+  const float rad = fabsf(radius);
+  const float d0 = PointDistance(origin);
+  // check if the sphere is already touching the plane
+  if (fabsf(d0) <= rad) {
+    if (hitpos) *hitpos = origin;
+    if (time) *time = 0.0f;
+    return true;
+  }
+  const float denom = normal.dot(vdelta);
+  // check if the sphere penetrated during movement
+  if (denom*dist >= 0.0f) {
+    // parallel or too far away
+    if (hitpos) *hitpos = origin+vdelta;
+    if (time) *time = 1.0f;
+    return false;
+  }
+  // possibly penetrated
+  const float r = (dist > 0.0f ? rad : -rad);
+  const float t = (r-dist)/denom;
+  if (t < 0.0f || t >= 1.0f) {
+    if (hitpos) *hitpos = origin+vdelta;
+    if (time) *time = 1.0f;
+    return false;
+  }
+  if (time) *time = t; // time
+  if (hitpos) *hitpos = origin+t*vdelta-r*normal;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  TPlane::SweepBox3DEx
+//
+//  box must be valid
+//  `time` will be set only if our box hits/penetrates the plane
+//  negative time means "stuck" (and it will be exit time)
+//  `bbox` are bounding box *half-sizes*, min are negative, max are positive
+//  `vstart` and `vend` are for bounding box center point
+//  returns `true` on hit/stuck
+//
+//==========================================================================
+bool TPlane::SweepBox3DEx (const float radius, const float height, const TVec &vstart, const TVec &vend, float *time, TVec *hitpoint) const noexcept {
+  const float rad = fabsf(radius);
+  const float halfheight = fabsf(height)*0.5f;
+  const float bboxext[6] = { -rad, -rad, -halfheight, rad, rad, halfheight };
+  const TVec offset = get3DBBoxAcceptPoint(bboxext);
+  // adjust the plane distance apropriately
+  const float cdist = dist-DotProduct(offset, normal);
+  const float idist = DotProduct(vstart, normal)-cdist;
+  const float odist = DotProduct(vend, normal)-cdist;
+  //GLog.Logf(NAME_Debug, "000: idist=%f; odist=%f", idist, odist);
+  if ((idist <= 0.0f && odist <= 0.0f) || // doesn't cross this plane, don't bother
+      (idist >= 0.0f && odist >= 0.0f)) // touches, and leaving
+  {
+    if (time) *time = 1.0f;
+    if (hitpoint) *hitpoint = vend;
+    return false;
+  }
+  // negative `idist` means "stuck"
+  if (idist < 0.0f) {
+    if (time) *time = -1.0f;
+    if (hitpoint) *hitpoint = vstart;
+    return true;
+  }
+  // hit time
+  const float tt = idist/(idist-odist);
+  //GLog.Logf(NAME_Debug, "001: idist=%f; odist=%f; tt=%f", idist, odist, tt);
+  // `tt` must not be negative here, but...
+  if (tt < 0.0f || tt >= 1.0f) {
+    if (time) *time = 1.0f;
+    if (hitpoint) *hitpoint = vend;
+    return false;
+  }
+  if (time) *time = tt;
+  if (hitpoint) *hitpoint = vstart+(vend-vstart)*tt; //+offset;//k8: offset is not necessary, i believe
+  return true;
+}
+
+
+//==========================================================================
+//
+//  TPlane::SweepBox3D
+//
+//  box must be valid
+//  `time` will be set only if our box hits/penetrates the plane
+//  if the box is initially stuck, time will be negative
+//  `bbox` are bounding box *coordinates*
+//  returns `true` on hit/stuck
+//
+//==========================================================================
+bool TPlane::SweepBox3D (const float bbox[6], const TVec &vdelta, float *time, TVec *hitpoint) const noexcept {
+  // calculate center point
+  const TVec origin(
+    (bbox[BOX3D_MAXX]+bbox[BOX3D_MINX])*0.5f,
+    (bbox[BOX3D_MAXY]+bbox[BOX3D_MINY])*0.5f,
+    (bbox[BOX3D_MAXZ]+bbox[BOX3D_MINZ])*0.5f);
+  // calculate extents
+  const TVec ext(
+    (bbox[BOX3D_MAXX]-bbox[BOX3D_MINX])*0.5f,
+    (bbox[BOX3D_MAXY]-bbox[BOX3D_MINY])*0.5f,
+    (bbox[BOX3D_MAXZ]-bbox[BOX3D_MINZ])*0.5f);
+  // calculate projection radius
+  const float r = fabsf(ext.x*normal.x)+fabsf(ext.y*normal.y)+fabsf(ext.z*normal.z);
+  // we're basically doing swept-shere-vs-plane here
+  const float odot = normal.dot(origin);
+  // check if the sphere is already touching the plane
+  if (fabsf(odot-dist) <= r) {
+    if (hitpoint) *hitpoint = origin; // arbitrary
+    if (time) *time = -1.0f;
+    return true;
+  }
+  const float denom = normal.dot(vdelta);
+  if (denom >= 0.0f) {
+    // parallel, or moving away
+    if (hitpoint) *hitpoint = get3DBBoxAcceptPoint(bbox)+vdelta; // arbitrary
+    if (time) *time = 1.0f;
+    return false;
+  }
+  // possibly penetrated
+  const float t = (r+dist-odot)/denom;
+  if (t < 0.0f || t >= 1.0f) {
+    if (hitpoint) *hitpoint = get3DBBoxAcceptPoint(bbox)+vdelta; // arbitrary
+    if (time) *time = 1.0f;
+    return false;
+  }
+  if (time) *time = t; // time
+  if (hitpoint) *hitpoint = origin+t*vdelta;
+  return true;
+}
+
+
 //==========================================================================
 //
 //  TPlane::checkBox3D

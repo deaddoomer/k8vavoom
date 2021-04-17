@@ -279,56 +279,25 @@ public:
   }
 
 
-  // sphere sweep test; if `true` (hit), `hitpos` will be sphere position when it hits this plane, and `u` will be normalized collision time
-  // not sure if it should be `dist` or `-dist` here for vavoom planes
-  bool SweepSphere (const TVec &origin, const float radius, const TVec &amove, TVec *hitpos=nullptr, float *u=nullptr) const noexcept {
-    const TVec c1 = origin+amove;
-    const float d0 = normal.dot(origin)-dist;
-    // check if the sphere is touching the plane
-    if (fabsf(d0) <= radius) {
-      if (hitpos) *hitpos = origin;
-      if (u) *u = 0.0f;
-      return true;
-    }
-    const float d1 = normal.dot(c1)-dist;
-    // check if the sphere penetrated during movement
-    if (d0 > radius && d1 < radius) {
-      if (u || hitpos) {
-        const float uu = (d0-radius)/(d0-d1); // normalized time
-        if (u) *u = uu;
-        if (hitpos) *hitpos = (1.0f-uu)*origin+uu*c1; // point of first contact
-      }
-      return true;
-    }
-    // no collision
-    return false;
-  }
+  // sphere sweep test
+  // `hitpos` will be sphere position when it hits this plane
+  // `time` will be normalized collision time (negative if initially stuck)
+  // returns `true` if stuck/hit
+  bool SweepSphere (const TVec &origin, const float radius, const TVec &vdelta, TVec *hitpos=nullptr, float *time=nullptr) const noexcept;
 
   // box must be valid
   // `time` will be set only if our box hits/penetrates the plane
   // negative time means "stuck" (and it will be exit time)
-  bool SweepBox3D (const TVec &vstart, const TVec &vend, const float bbox[6], float *time=nullptr) const noexcept {
-    //const TVec offset = TVec((normal.x < 0.0f ? bmax.x : bmin.x), (normal.y < 0.0f ? bmax.y : bmin.y), (normal.z < 0.0f ? bmax.z : bmin.z));
-    const TVec offset = get3DBBoxAcceptPoint(bbox);
-    // adjust the plane distance apropriately
-    const float cdist = dist-DotProduct(offset, normal);
-    const float idist = DotProduct(vstart, normal)-cdist;
-    const float odist = DotProduct(vend, normal)-cdist;
-    if (idist <= 0.0f && odist <= 0.0f) return false; // doesn't cross this plane, don't bother
-    if (idist >= 0.0f && odist >= 0.0f) return false; // touches, and leaving
-    // check for stuck
-    if (time) {
-      if (idist >= 0.0f) {
-        // entering plane
-        *time = fmax(0.0f, idist/(idist-odist));
-      } else {
-        // enter distance is negative, which means "stuck"
-        *time = fmin(1.0f, idist/(idist-odist));
-      }
-    }
-    // done
-    return true;
-  }
+  // `vstart` and `vend` are for bounding box center point
+  // returns `true` on hit/stuck
+  bool SweepBox3DEx (const float radius, const float height, const TVec &vstart, const TVec &vend, float *time=nullptr, TVec *hitpoint=nullptr) const noexcept;
+
+  // box must be valid
+  // `time` will be set only if our box hits/penetrates the plane
+  // if the box is initially stuck, time will be negative
+  // `bbox` are bounding box *coordinates*
+  // returns `true` on hit/stuck
+  bool SweepBox3D (const float bbox[6], const TVec &vdelta, float *time=nullptr, TVec *hitpoint=nullptr) const noexcept;
 
 
   // returns side 0 (front) or 1 (back, or on plane)
