@@ -74,6 +74,15 @@ vector TVec {
   float x;
   float y;
   float z;
+
+  native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
+  native TVec ClosestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
+  native TVec ClosestPointOnBox2D (const TVec bmin, const TVec bmax) const;
+  native TVec ClosestPointOnDoomBox2D (const TVec origin, const float radius) const;
+  native float Box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float DoomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
+  native float Box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float DoomBox2DDistanceSquared (const TVec origin, const float radius) const;
 };
 
 
@@ -190,9 +199,6 @@ struct TPlane {
   native TVec GetBox3DRejectPoint (const TVec bmin, const TVec bmax);
   native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius, const float height);
   native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius);
-
-  native void CreateDoomBox2D (out TVec bmin, out TVec bmax, const TVec origin, const float radius); // z will be 0
-  native void CreateDoomBox3D (out TVec bmin, out TVec bmax, const TVec origin, const float radius, const float height);
 };
 
 
@@ -662,6 +668,8 @@ enum {
   BOX3D_Y,
   BOX3D_Z,
 };
+native static final void CreateDoomBox2D (out TVec bmin, out TVec bmax, const TVec origin, const float radius); // z will be 0
+native static final void CreateDoomBox3D (out TVec bmin, out TVec bmax, const TVec origin, const float radius, const float height);
 // considers the line to be infinite
 // returns 0 - front, 1 - back, -1 - box crosses the line
 native static final int BoxOnLineSide2DV (const TVec bmin, const TVec bmax, const TVec v1, const TVec v2);

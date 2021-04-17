@@ -2265,6 +2265,124 @@ IMPLEMENT_FUNCTION(VObject, sRGBIntensity) {
 }
 
 
+//**************************************************************************
+//
+//  bounding box creation
+//
+//**************************************************************************
+//native static final void CreateDoomBox2D (out TVec bmin, out TVec bmax, const TVec origin, const float radius);
+IMPLEMENT_FREE_FUNCTION(VObject, CreateDoomBox2D) {
+  TVec *bmin;
+  TVec *bmax;
+  TVec origin;
+  float radius;
+  vobjGetParam(bmin, bmax, origin, radius);
+  radius = fabsf(radius);
+  *bmin = TVec(origin.x-radius, origin.y-radius);
+  *bmax = TVec(origin.x+radius, origin.y+radius);
+}
+
+//native static final void CreateDoomBox3D (out TVec bmin, out TVec bmax, const TVec origin, const float radius, const float height);
+IMPLEMENT_FREE_FUNCTION(VObject, CreateDoomBox3D) {
+  TVec *bmin;
+  TVec *bmax;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(bmin, bmax, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  *bmin = TVec(origin.x-radius, origin.y-radius, origin.z);
+  *bmax = TVec(origin.x+radius, origin.y+radius, origin.z+height);
+}
+
+
+//**************************************************************************
+//
+//  TVec
+//
+//**************************************************************************
+//native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, ClosestPointOnBox3D) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->ClosestPointOnBBox3D(bbox));
+}
+
+//native TVec ClosestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, ClosestPointOnDoomBox3D) {
+  TVec *Self;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(Self, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_VEC(Self->ClosestPointOnBBox3D(bbox));
+}
+
+//native TVec ClosestPointOnBox2D (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, ClosestPointOnBox2D) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create2DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->ClosestPointOnBBox2D(bbox));
+}
+
+//native TVec ClosestPointOnDoomBox2D (const TVec origin, const float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, ClosestPointOnDoomBox2D) {
+  TVec *Self;
+  TVec origin;
+  float radius;
+  vobjGetParam(Self, origin, radius);
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
+  RET_VEC(Self->ClosestPointOnBBox2D(bbox));
+}
+
+//native float Box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, Box3DDistanceSquared) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_FLOAT(Self->BBox3DDistanceSquared(bbox));
+}
+
+//native float DoomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, DoomBox3DDistanceSquared) {
+  TVec *Self;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(Self, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_FLOAT(Self->BBox3DDistanceSquared(bbox));
+}
+
+//native float Box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, Box2DDistanceSquared) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create2DBBoxFromVectors(bbox, bmin, bmax);
+  RET_FLOAT(Self->BBox2DDistanceSquared(bbox));
+}
+
+//native float DoomBox2DDistanceSquared (const TVec origin, const float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, DoomBox2DDistanceSquared) {
+  TVec *Self;
+  TVec origin;
+  float radius;
+  vobjGetParam(Self, origin, radius);
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
+  RET_FLOAT(Self->BBox2DDistanceSquared(bbox));
+}
+
 
 //**************************************************************************
 //
@@ -2689,31 +2807,4 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DRejectPoint) {
   radius = fabsf(radius);
   CreateDoom3DBBox(bbox, origin, radius, height);
   RET_VEC(Self->get3DBBoxRejectPoint(bbox));
-}
-
-//native void CreateDoomBox2D (out TVec bmin, out TVec bmax, const TVec origin, const float radius);
-IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, CreateDoomBox2D) {
-  TPlane *Self;
-  TVec *bmin;
-  TVec *bmax;
-  TVec origin;
-  float radius;
-  vobjGetParam(Self, bmin, bmax, origin, radius);
-  radius = fabsf(radius);
-  *bmin = TVec(origin.x-radius, origin.y-radius);
-  *bmax = TVec(origin.x+radius, origin.y+radius);
-}
-
-//native void CreateDoomBox3D (out TVec bmin, out TVec bmax, const TVec origin, const float radius, const float height);
-IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, CreateDoomBox3D) {
-  TPlane *Self;
-  TVec *bmin;
-  TVec *bmax;
-  TVec origin;
-  float radius, height;
-  vobjGetParam(Self, bmin, bmax, origin, radius, height);
-  if (height < 0.0f) { origin.z -= height; height = -height; }
-  radius = fabsf(radius);
-  *bmin = TVec(origin.x-radius, origin.y-radius, origin.z);
-  *bmax = TVec(origin.x+radius, origin.y+radius, origin.z+height);
 }
