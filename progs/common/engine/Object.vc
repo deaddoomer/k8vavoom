@@ -70,20 +70,21 @@ const int MAXINT = 0x7fffffff;
 //  3D math - vectors and planes
 //
 //==========================================================================
+// sadly, `TVec` currently cannot have any methods, because it is a special struct
 vector TVec {
   float x;
   float y;
   float z;
-
-  native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
-  native TVec ClosestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
-  native TVec ClosestPointOnBox2D (const TVec bmin, const TVec bmax) const;
-  native TVec ClosestPointOnDoomBox2D (const TVec origin, const float radius) const;
-  native float Box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
-  native float DoomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
-  native float Box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
-  native float DoomBox2DDistanceSquared (const TVec origin, const float radius) const;
 };
+
+native static final TVec ClosestPointOnBox3D (const TVec p, const TVec bmin, const TVec bmax);
+native static final TVec ClosestPointOnDoomBox3D (const TVec p, const TVec origin, const float radius, const float height);
+native static final TVec ClosestPointOnBox2D (const TVec p, const TVec bmin, const TVec bmax);
+native static final TVec ClosestPointOnDoomBox2D (const TVec p, const TVec origin, const float radius);
+native static final float Box3DDistanceSquared (const TVec p, const TVec bmin, const TVec bmax);
+native static final float DoomBox3DDistanceSquared (const TVec p, const TVec origin, const float radius, const float height);
+native static final float Box2DDistanceSquared (const TVec p, const TVec bmin, const TVec bmax);
+native static final float DoomBox2DDistanceSquared (const TVec p, const TVec origin, const float radius);
 
 
 vector TAVec {
