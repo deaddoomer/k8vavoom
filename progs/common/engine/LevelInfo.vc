@@ -517,6 +517,8 @@ void PolyRotateMobj (Entity A, float dangle) {
 //  PolyThrustMobj
 //
 //  returns `true` if po is blocked, `false` if mobj is killed
+//  `thrustDir` is zero if it is impossible to thrust away
+//  `vertical` is redunant this way, but... meh.
 //
 //==========================================================================
 bool PolyThrustMobj (Entity A, TVec thrustDir, polyobj_t *po, bool vertical) {

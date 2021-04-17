@@ -1155,6 +1155,7 @@ public:
     PF_HurtOnTouch   = 1u<<1,
     PF_NoCarry       = 1u<<2, // 3d pobj should not carry things (only for horizontal; for vertical -- only up, down by gravity)
     PF_NoAngleChange = 1u<<3, // 3d pobj should not change thing angle on rotation
+    PF_SideCrush     = 1u<<4, // 3d pobj side should not try to thrust away (only if `PF_Crush` is set)
   };
   vuint32 PolyFlags;
   vint32 seqType;

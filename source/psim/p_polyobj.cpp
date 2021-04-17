@@ -564,6 +564,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     if (thing->args[0]&polyobj_t::PF_HurtOnTouch) po->PolyFlags |= polyobj_t::PF_HurtOnTouch; else po->PolyFlags &= ~polyobj_t::PF_HurtOnTouch;
     if (thing->args[0]&polyobj_t::PF_NoCarry) po->PolyFlags |= polyobj_t::PF_NoCarry; else po->PolyFlags &= ~polyobj_t::PF_NoCarry;
     if (thing->args[0]&polyobj_t::PF_NoAngleChange) po->PolyFlags |= polyobj_t::PF_NoAngleChange; else po->PolyFlags &= ~polyobj_t::PF_NoAngleChange;
+    if (thing->args[0]&polyobj_t::PF_SideCrush) po->PolyFlags |= polyobj_t::PF_SideCrush; else po->PolyFlags &= ~polyobj_t::PF_SideCrush;
   }
 
   // realloc polyobj array
@@ -1939,14 +1940,8 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool ro
         //TODO: crush objects with platforms
 
         if (mobj->EntityFlags&VEntity::EF_Solid) {
-          // check for vertical crushing
-          const bool vertical = false;
-          if (po->posector && (po->PolyFlags&polyobj_t::PF_Crush)) {
-            //vertical = true;
-            if (rotation) continue;
-          }
           //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
-          if (mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po, vertical)) blocked = true;
+          if (mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po, false/*non-vertical*/)) blocked = true;
         } else {
           mobj->Level->eventPolyCrushMobj(mobj, po);
         }
