@@ -88,6 +88,7 @@ static TCmdKeyUp  name ## Up_f("-" #name, Key ## name);
 #define ACS_BT_USER2      0x00400000
 #define ACS_BT_USER3      0x00800000
 #define ACS_BT_USER4      0x01000000
+#define ACS_BT_RUN        0x02000000 /* GZDoom specific key, dunno what it is */
 
 
 class TKButton {
@@ -855,6 +856,10 @@ int VBasePlayer::AcsGetInput (int InputType) {
       if (Btn&BT_SPEED) Ret |= ACS_BT_SPEED;
       if (Btn&BT_RELOAD) Ret |= ACS_BT_RELOAD;
       if (Btn&BT_ZOOM) Ret |= ACS_BT_ZOOM;
+      if (Btn&BT_BUTTON_5) Ret |= ACS_BT_USER1;
+      if (Btn&BT_BUTTON_6) Ret |= ACS_BT_USER2;
+      if (Btn&BT_BUTTON_7) Ret |= ACS_BT_USER3;
+      if (Btn&BT_BUTTON_8) Ret |= ACS_BT_USER4;
       return Ret;
 
     case INPUT_YAW: case MODINPUT_YAW:
