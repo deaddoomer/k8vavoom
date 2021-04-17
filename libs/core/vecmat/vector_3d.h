@@ -237,6 +237,65 @@ public:
       x = y = z = 0.0f;
     }
   }
+
+  // return the point on or in AABB b that is closest to p
+  inline TVec ClosestPointOnBBox3D (const float bbox3d[6]) const noexcept {
+    // for each coordinate axis, if the point coordinate value is
+    // outside box, clamp it to the box, else keep it as is
+    return TVec(
+      min2(max2(x, bbox3d[BOX3D_MINX]), bbox3d[BOX3D_MAXX]),
+      min2(max2(y, bbox3d[BOX3D_MINY]), bbox3d[BOX3D_MAXY]),
+      min2(max2(z, bbox3d[BOX3D_MINZ]), bbox3d[BOX3D_MAXZ]));
+  }
+
+  // return the point on or in AABB b that is closest to p
+  inline TVec ClosestPointOnBBox2D (const float bbox2d[4]) const noexcept {
+    // for each coordinate axis, if the point coordinate value is
+    // outside box, clamp it to the box, else keep it as is
+    return TVec(
+      min2(max2(x, bbox2d[BOX2D_MINX]), bbox2d[BOX2D_MAXX]),
+      min2(max2(y, bbox2d[BOX2D_MINY]), bbox2d[BOX2D_MAXY]),
+      z);
+  }
+
+  // computes the square distance between this point and an AABB
+  inline float BBox3DDistanceSquared (const float bbox3d[6]) const noexcept {
+    float sqDist = 0.0f;
+    // for each axis count any excess distance outside box extents
+    { // x
+      float v = x;
+      if (v < bbox3d[BOX3D_MINX]) sqDist += (bbox3d[BOX3D_MINX]-v)*(bbox3d[BOX3D_MINX]-v);
+      if (v > bbox3d[BOX3D_MAXX]) sqDist += (v-bbox3d[BOX3D_MAXX])*(v-bbox3d[BOX3D_MAXX]);
+    }
+    { // y
+      float v = y;
+      if (v < bbox3d[BOX3D_MINY]) sqDist += (bbox3d[BOX3D_MINY]-v)*(bbox3d[BOX3D_MINY]-v);
+      if (v > bbox3d[BOX3D_MAXY]) sqDist += (v-bbox3d[BOX3D_MAXY])*(v-bbox3d[BOX3D_MAXY]);
+    }
+    { // z
+      float v = z;
+      if (v < bbox3d[BOX3D_MINZ]) sqDist += (bbox3d[BOX3D_MINZ]-v)*(bbox3d[BOX3D_MINZ]-v);
+      if (v > bbox3d[BOX3D_MAXZ]) sqDist += (v-bbox3d[BOX3D_MAXZ])*(v-bbox3d[BOX3D_MAXZ]);
+    }
+    return sqDist;
+  }
+
+  // computes the square distance between this point and an AABB
+  inline float BBox2DDistanceSquared (const float bbox2d[4]) const noexcept {
+    float sqDist = 0.0f;
+    // for each axis count any excess distance outside box extents
+    { // x
+      float v = x;
+      if (v < bbox2d[BOX2D_MINX]) sqDist += (bbox2d[BOX2D_MINX]-v)*(bbox2d[BOX2D_MINX]-v);
+      if (v > bbox2d[BOX2D_MAXX]) sqDist += (v-bbox2d[BOX2D_MAXX])*(v-bbox2d[BOX2D_MAXX]);
+    }
+    { // y
+      float v = y;
+      if (v < bbox2d[BOX2D_MINY]) sqDist += (bbox2d[BOX2D_MINY]-v)*(bbox2d[BOX2D_MINY]-v);
+      if (v > bbox2d[BOX2D_MAXY]) sqDist += (v-bbox2d[BOX2D_MAXY])*(v-bbox2d[BOX2D_MAXY]);
+    }
+    return sqDist;
+  }
 };
 
 static_assert(__builtin_offsetof(TVec, y) == __builtin_offsetof(TVec, x)+sizeof(float), "TVec layout fail (0)");
