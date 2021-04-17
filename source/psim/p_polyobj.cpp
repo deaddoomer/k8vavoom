@@ -565,6 +565,12 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     if (thing->args[0]&polyobj_t::PF_NoCarry) po->PolyFlags |= polyobj_t::PF_NoCarry; else po->PolyFlags &= ~polyobj_t::PF_NoCarry;
     if (thing->args[0]&polyobj_t::PF_NoAngleChange) po->PolyFlags |= polyobj_t::PF_NoAngleChange; else po->PolyFlags &= ~polyobj_t::PF_NoAngleChange;
     if (thing->args[0]&polyobj_t::PF_SideCrush) po->PolyFlags |= polyobj_t::PF_SideCrush; else po->PolyFlags &= ~polyobj_t::PF_SideCrush;
+    // zero tolerance to errors!
+    for (int f = 1; f < 5; ++f) {
+      if (thing->args[f] != 0) {
+        Host_Error("SpawnPolyobj: spawner for 3d polyobject #%d has non-zero argument #%d", tag, f+1);
+      }
+    }
   }
 
   // realloc polyobj array
