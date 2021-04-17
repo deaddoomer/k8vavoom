@@ -329,7 +329,7 @@ final void DoTakeInventory (class!Inventory ItemType, int Amount, EntityEx Recei
     SetState(MissileState);
 
     bool noAAim = false;
-    if (!GetCvarB('k8HitscanAutoAim')) noAAim = true;
+    if (!GetCvar('k8HitscanAutoAim')) noAAim = true;
 
     Aim(dir, 16.0*64.0, noAutoaim:noAAim);
 

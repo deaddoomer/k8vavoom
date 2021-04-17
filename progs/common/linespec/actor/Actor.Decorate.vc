@@ -125,8 +125,11 @@ protected final EntityEx doFireMissileProjectile (class!Actor aMissileType, opti
   float SavedPitch = Angles.pitch;
   if (Flags&FPF_NOAUTOAIM) Angles.pitch += Pitch; // `A_FireCustomMissile()` does this another way
 
+  bool noAAim = !!(Flags&FPF_NOAUTOAIM);
+  if (noAAim && bIsPlayer && PlayerEx(Player).bAutoAim && GetCvar('k8ProjectileAutoAim') == 2) noAAim = false;
+
   EntityEx AimTarget;
-  EntityEx A = SpawnPlayerMissileEx(aMissileType, false, AimTarget, ShootAngle, ShootOrg, decal, noAutoAim:!!(Flags&FPF_NOAUTOAIM));
+  EntityEx A = SpawnPlayerMissileEx(aMissileType, false, AimTarget, ShootAngle, ShootOrg, decal, noAutoAim:noAAim);
   Angles.pitch = SavedPitch;
 
   if (A && !A.IsDestroyed) {

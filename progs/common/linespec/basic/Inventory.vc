@@ -199,10 +199,15 @@ override void Tick (float DeltaTime) {
 //  IsAutoaimDisabled
 //
 //==========================================================================
-final bool IsAutoaimDisabled () {
+final bool IsAutoaimDisabled (optional int forceType) {
+  name cvname;
+       if (forceType > 0) cvname = 'k8HitscanAutoAim';
+  else if (forceType < 0) cvname = 'k8ProjectileAutoAim';
+  else cvname = (bIsHitscanWeapon ? 'k8HitscanAutoAim' : 'k8ProjectileAutoAim');
+  int aatype = GetCvar(cvname);
+  if (aatype == 2) return false;
   if (bNoAutoaim) return true;
-  if (bIsHitscanWeapon && !GetCvarB('k8HitscanAutoAim')) return true;
-  return false;
+  return !aatype;
 }
 
 

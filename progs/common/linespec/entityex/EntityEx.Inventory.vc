@@ -24,6 +24,34 @@
 //**
 //**************************************************************************
 
+enum {
+  AA_WPN_TYPE_PROJECTILE = -1,
+  AA_WPN_TYPE_DEFAULT = 0,
+  AA_WPN_TYPE_HITSCAN = 1,
+}
+
+
+//==========================================================================
+//
+//  IsWeaponAutoaimDisabled
+//
+//  forceType:
+//    -1: projectile
+//     0: no forced type
+//     1: hitscan
+//
+//==========================================================================
+final bool IsWeaponAutoaimDisabled (Weapon Wpn, optional int forceType) {
+  if (Wpn) return Wpn.IsAutoaimDisabled(forceType!optional);
+  name cvname;
+       if (forceType > 0) cvname = 'k8HitscanAutoAim';
+  else if (forceType < 0) cvname = 'k8ProjectileAutoAim';
+  else cvname = 'k8HitscanAutoAim';
+  int aatype = GetCvar(cvname);
+  return !aatype;
+}
+
+
 //==========================================================================
 //
 //  IsInventoryCheckpointPossible

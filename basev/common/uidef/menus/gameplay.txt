@@ -220,6 +220,41 @@ menudef GameplayOptions {
   //if (GameName == "hexen") CreateOnOffCvar("Alt. Monster Behaviour", 'alternate_monster_attacks');
 
 
+  header "Autoaim Options";
+
+  option bool {
+    title = "Global Autoaim";
+    cvar = autoaim;
+    help =
+      "Controls global autoaim. Note that if autoaim is turned on,"
+      "headshots will not work properly.";
+  }
+
+  option enum {
+    title = "Autoaim for hitscans";
+    cvar = k8HitscanAutoAim;
+    list { "No", "Yes", "Forced" };
+    help =
+      "Controls autoaim for standard pistol, shotgun, and minigun.",
+      "If you will turn Global Autoaim off, this will not have any effect.",
+      "You can turn this off to perform headshots, but still use autoaiming",
+      "for rockets and plasma.",
+      "",
+      "'FORCED' option will ignore 'no autoaim' weapon flag.";
+  }
+
+  option enum {
+    title = "Autoaim for projectiles";
+    cvar = k8ProjectileAutoAim;
+    list { "No", "Yes", "Forced" };
+    help =
+      "Controls autoaim for weapons firing projectiles (rocket, plasma, etc.).",
+      "If you will turn Global Autoaim off, this will not have any effect.",
+      "",
+      "'FORCED' option will ignore 'no autoaim' weapon flag.";
+  }
+
+
   header "Misc. Options";
 
   option bool {
@@ -230,24 +265,6 @@ menudef GameplayOptions {
   }
 
   option bool {
-    title = "Global Autoaim";
-    cvar = autoaim;
-    help =
-      "Controls global autoaim. Note that if autoaim is turned on,"
-      "headshots will not work properly.";
-  }
-
-  option bool {
-    title = "Autoaim for hitscan weapon";
-    cvar = k8HitscanAutoAim;
-    help =
-      "Controls autoaim for standard pistol, shotgun, and minigun."
-      "If you will turn Global Autoaim off, this will not have any effect."
-      "You can turn this off to perform headshots, but still use autoaiming"
-      "for rockets and plasma.";
-  }
-
-  option bool {
     title = "Weapon autoswitch";
     cvar = wpn_autoswitch;
   }
@@ -255,6 +272,10 @@ menudef GameplayOptions {
   option bool {
     title = "Use Slot 11 in Weapon Cycling";
     cvar = wp_cycle_special_slot;
+    help =
+      "Weapons without a defined slot usually put in slot 11.",
+      "This slot is excluded from weapon cycling, but you can",
+      "change it here.";
   }
 
   option bool {

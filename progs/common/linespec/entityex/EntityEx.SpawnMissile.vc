@@ -559,9 +559,9 @@ final EntityEx SpawnSubMissile (class!EntityEx type, EntityEx AInstigator) {
 //  SpawnPlayerMissile
 //
 //==========================================================================
-final EntityEx SpawnPlayerMissile (class!EntityEx type, optional name decalType) {
+final EntityEx SpawnPlayerMissile (class!EntityEx type, optional name decalType, optional bool noAutoAim) {
   EntityEx AimTarget;
-  return SpawnPlayerMissileEx(type, false, AimTarget, default, default, decalType);
+  return SpawnPlayerMissileEx(type, false, AimTarget, default, default, decalType, noAutoAim:noAutoAim!optional);
 }
 
 

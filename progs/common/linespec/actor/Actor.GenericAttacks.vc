@@ -201,7 +201,7 @@ final void FireSuperBullet () {
   TVec aimDir;
   if (bIsPlayer) {
     bool noAAim = false;
-    if (!GetCvarB('k8HitscanAutoAim')) noAAim = true;
+    if (!GetCvar('k8HitscanAutoAim')) noAAim = true;
     AimLineAttack(aimDir, Angles, MISSILERANGE, noAAim);
   } else {
     AimLineAttack(aimDir, Angles, MISSILERANGE);
@@ -280,7 +280,7 @@ final void FireSuperBullet () {
   TVec Dir;
   if (bIsPlayer) {
     bool noAAim = false;
-    if (!GetCvarB('k8HitscanAutoAim')) noAAim = true;
+    if (!GetCvar('k8HitscanAutoAim')) noAAim = true;
     AimLineAttack(Dir, Angles, 8192, noAAim);
   } else {
     AimLineAttack(Dir, Angles, MISSILERANGE);

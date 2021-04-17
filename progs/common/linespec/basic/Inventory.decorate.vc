@@ -442,14 +442,12 @@
 
   if (MeleeState) SetState(MeleeState);
 
-  bool noAAim = false;
   name decal = ''; // default
   if (Wpn) {
     PlaySound(Wpn.AttackSound, CHAN_WEAPON);
-    noAAim = Wpn.IsAutoaimDisabled(); //bNoAutoaim;
-    if (!noAAim && !GetCvarB('k8HitscanAutoAim')) noAAim = true;
     decal = Wpn.DecalName;
   }
+  bool noAAim = IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_HITSCAN);
 
   Aim(aimDir, 16.0*64.0, default, noAAim, noAimPitch);
 
@@ -632,9 +630,8 @@
       Wpn = PlayerEx(Player).ReadyWeapon;
       if (!Wpn) return;
       decal = Wpn.DecalName;
-      noAAim = Wpn.IsAutoaimDisabled(); //bNoAutoaim;
-      if (!noAAim && !GetCvarB('k8HitscanAutoAim')) noAAim = true;
     }
+    noAAim = IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_HITSCAN);
     if (MeleeState) SetState(MeleeState);
     Accurate = !PlayerEx(Player).Refire;
     //writeln("PISTOL: Accurate=", Accurate, "; refire=", PlayerEx(Player).Refire);
@@ -661,7 +658,6 @@
   PlaySound('weapons/shotgf', CHAN_WEAPON);
   if (MeleeState) SetState(MeleeState);
 
-  bool noAAim = false;
   name decal = ''; // default
   if (Wpn) {
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 1)) return;
@@ -670,9 +666,8 @@
     Wpn = PlayerEx(Player).ReadyWeapon;
     if (!Wpn) return;
     decal = Wpn.DecalName;
-    noAAim = Wpn.IsAutoaimDisabled(); //bNoAutoaim;
-    if (!noAAim && !GetCvarB('k8HitscanAutoAim')) noAAim = true;
   }
+  bool noAAim = IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_HITSCAN);
 
   TVec dir;
   auto tgt = Aim(dir, 16.0*64.0, default, noAAim);
@@ -697,7 +692,6 @@
   PlaySound('weapons/sshotf', CHAN_WEAPON);
   if (MeleeState) SetState(MeleeState);
 
-  bool noAAim = false;
   name decal = ''; // default
   if (Wpn) {
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 2)) return;
@@ -706,9 +700,8 @@
     Wpn = PlayerEx(Player).ReadyWeapon;
     if (!Wpn) return;
     decal = Wpn.DecalName;
-    noAAim = Wpn.IsAutoaimDisabled; //bNoAutoaim;
-    if (!noAAim && !GetCvarB('k8HitscanAutoAim')) noAAim = true;
   }
+  bool noAAim = IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_HITSCAN);
 
   TAVec rot;
   TVec aimDir;
@@ -766,7 +759,6 @@
 
   PlaySound('weapons/chngun', CHAN_WEAPON);
 
-  bool noAAim = false;
   name decal = ''; // default
   if (Wpn) {
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 1)) return;
@@ -779,9 +771,8 @@
     Wpn = PlayerEx(Player).ReadyWeapon;
     if (!Wpn) return;
     decal = Wpn.DecalName;
-    noAAim = Wpn.IsAutoaimDisabled; //bNoAutoaim;
-    if (!noAAim && !GetCvarB('k8HitscanAutoAim')) noAAim = true;
   }
+  bool noAAim = IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_HITSCAN);
 
   if (MeleeState) SetState(MeleeState);
 
@@ -804,7 +795,8 @@
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 1)) return;
     decal = Wpn.DecalName;
   }
-  SpawnPlayerMissile(Rocket, decal);
+  bool noAAim = (PlayerEx(Player).bAutoAim ? IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_PROJECTILE) : true);
+  SpawnPlayerMissile(Rocket, decal, noAutoAim:noAAim);
 }
 
 
@@ -829,7 +821,8 @@
     if (!Wpn) return;
     decal = Wpn.DecalName;
   }
-  SpawnPlayerMissile(PlasmaBall, decal);
+  bool noAAim = (PlayerEx(Player).bAutoAim ? IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_PROJECTILE) : true);
+  SpawnPlayerMissile(PlasmaBall, decal, noAutoAim:noAAim);
 }
 
 
@@ -895,7 +888,8 @@
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, BFG9000.default.AmmoUse1)) return;
     decal = Wpn.DecalName;
   }
-  SpawnPlayerMissile(BFGBall, decal);
+  bool noAAim = (PlayerEx(Player).bAutoAim ? IsWeaponAutoaimDisabled(Wpn, forceType:AA_WPN_TYPE_PROJECTILE) : true);
+  SpawnPlayerMissile(BFGBall, decal, noAutoAim:noAAim);
 }
 
 
