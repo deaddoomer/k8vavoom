@@ -1,0 +1,21 @@
+class Main : Object;
+
+
+struct A {
+  int c;
+  int n;
+
+  void boo () {
+    print("A::boo: n=%s", n);
+    ++c;
+  }
+}
+
+A[2] starr;
+
+void main () {
+  starr[0].n = 42;
+
+  starr[0].boo();
+  print("after: n=%s", starr[0].n);
+}
