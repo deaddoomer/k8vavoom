@@ -135,9 +135,17 @@ struct TPlane {
   native bool SweepSphere (const TVec origin, const float radius, const TVec amove, optional out TVec hitpos, optional out float u) const;
   // box must be valid
   // `time` will be set only if our box hits/penetrates the plane
+  // if the box is initially stuck, time will be negative
+  // `bbox` are bounding box *coordinates*
+  // returns `true` on hit/stuck
+  native bool SweepBox3D (const TVec bmin, const TVec bmax, const TVec vdelta, optional out float time, optional out TVec hitpoint) const;
+  native bool SweepDoomBox3D (const TVec origin, const float radius, const float height, const TVec vdelta, optional out float time, optional out TVec hitpoint) const;
+  // box must be valid
+  // `time` will be set only if our box hits/penetrates the plane
   // negative time means "stuck" (and it will be exit time)
-  native bool SweepBox3D (const TVec vstart, const TVec vend, const TVec bmin, const TVec bmax, optional out float time) const;
-  native bool SweepDoomBox3D (const TVec vstart, const TVec vend, const TVec origin, const float radius, const float height, optional out float time) const;
+  // `vstart` and `vend` are for bounding box center point
+  // returns `true` on hit/stuck
+  native bool SweepBox3DEx (const float radius, const float height, const TVec vstart, const TVec vend, optional out float time, optional out TVec hitpoint) const;
   // returns side 0 (front) or 1 (back, or on plane)
   native int PointOnSide (const TVec point) const;
   // returns side 0 (front), 1 (back), or 2 (on)
@@ -172,6 +180,19 @@ struct TPlane {
   // if the box is touching the plane from the front, it is still assumed to be in front
   // returns 2 for non-vertical planes (because our box is 2d)
   native int DoomBox2DOnSide2 (const TVec origin, const float radius) const;
+
+  native TVec GetBox2DAcceptPoint (const TVec bmin, const TVec bmax);
+  native TVec GetBox3DAcceptPoint (const TVec bmin, const TVec bmax);
+  native TVec GetDoomBox2DAcceptPoint (const TVec origin, const float radius, const float height);
+  native TVec GetDoomBox3DAcceptPoint (const TVec origin, const float radius);
+
+  native TVec GetBox2DRejectPoint (const TVec bmin, const TVec bmax);
+  native TVec GetBox3DRejectPoint (const TVec bmin, const TVec bmax);
+  native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius, const float height);
+  native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius);
+
+  native void CreateDoomBox2D (out TVec bmin, out TVec bmax, const TVec origin, const float radius); // z will be 0
+  native void CreateDoomBox3D (out TVec bmin, out TVec bmax, const TVec origin, const float radius, const float height);
 };
 
 
@@ -612,6 +633,34 @@ enum {
   BOX2D_BOTTOM,
   BOX2D_LEFT,
   BOX2D_RIGHT,
+};
+// or this
+enum {
+  BOX2D_MAXY,
+  BOX2D_MINY,
+  BOX2D_MINX,
+  BOX2D_MAXX,
+};
+// this is for 3d bboxes
+// bounding box
+enum {
+  BOX3D_MINX,
+  BOX3D_MINY,
+  BOX3D_MINZ,
+  BOX3D_MAXX,
+  BOX3D_MAXY,
+  BOX3D_MAXZ,
+};
+// various constants
+enum {
+  BOX3D_MINIDX = 0,
+  BOX3D_MAXIDX = 3,
+};
+// add those to MINIDX/MAXIDX to get the corresponding element
+enum {
+  BOX3D_X,
+  BOX3D_Y,
+  BOX3D_Z,
 };
 // considers the line to be infinite
 // returns 0 - front, 1 - back, -1 - box crosses the line
