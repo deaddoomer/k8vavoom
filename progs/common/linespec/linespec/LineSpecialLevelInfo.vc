@@ -5276,12 +5276,21 @@ override void PolyRotateMobj (Entity A, float dangle) {
 //
 //  PolyThrustMobj
 //
+//  returns `true` if po is blocked, `false` if mobj is killed
+//
 //==========================================================================
-override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
+override bool PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po, bool vertical) {
   EntityEx ex = EntityEx(Other);
-  if (!ex) return;
+  if (!ex) return false;
 
-  if (!ex.bShootable && !Other.bIsPlayer) return;
+  if (!ex.bShootable && !Other.bIsPlayer) return true;
+
+  // check platform crushing
+  if (po->posector && vertical && !ex.bInvulnerable && po->bCrush) {
+    //ex.bInvulnerable = false;
+    ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
+    return false;
+  }
 
   bool wasForce = false;
   float force = 0;
@@ -5316,11 +5325,18 @@ override void PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po) {
   Other.Velocity += (force*thrustDir)*2.0;
   if (po->bCrush) {
     TVec testPos = Other.Origin+force*thrustDir*Game.frametime;
+    // platforms are always deadly
+    if (po->posector && !ex.bInvulnerable && !Other.CheckPosition(testPos)) {
+      ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
+      return false;
+    }
     if (po->bHurtOnTouch || !Other.CheckPosition(testPos)) {
       // damage other type of actors
       ex.Damage(none, none, 3, 'Crush', spawnBlood:true);
     }
   }
+
+  return true;
 }
 
 

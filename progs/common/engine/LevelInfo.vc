@@ -516,8 +516,11 @@ void PolyRotateMobj (Entity A, float dangle) {
 //
 //  PolyThrustMobj
 //
+//  returns `true` if po is blocked, `false` if mobj is killed
+//
 //==========================================================================
-void PolyThrustMobj (Entity A, TVec thrustDir, polyobj_t *po) {
+bool PolyThrustMobj (Entity A, TVec thrustDir, polyobj_t *po, bool vertical) {
+  return true;
 }
 
 

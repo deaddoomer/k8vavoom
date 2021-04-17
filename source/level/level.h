@@ -1280,9 +1280,9 @@ private:
 
   void PutPObjInSubsectors (polyobj_t *po) noexcept;
 
-  bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po);
+  bool PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool rotation);
   // we don't need the exact blocking line here
-  bool PolyCheckMobjBlocked (polyobj_t *po);
+  bool PolyCheckMobjBlocked (polyobj_t *po, bool rotation);
 
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;

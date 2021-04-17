@@ -232,7 +232,7 @@ public:
   void eventUpdateSpecials () { static VMethodProxy method("UpdateSpecials"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventAfterUnarchiveThinkers () { static VMethodProxy method("AfterUnarchiveThinkers"); vobjPutParamSelf(); VMT_RET_VOID(method); }
 
-  void eventPolyThrustMobj (VEntity *A, TVec thrustDir, polyobj_t *po) { static VMethodProxy method("PolyThrustMobj"); vobjPutParamSelf(A, thrustDir, po); VMT_RET_VOID(method); }
+  bool eventPolyThrustMobj (VEntity *A, TVec thrustDir, polyobj_t *po, bool vertical) { static VMethodProxy method("PolyThrustMobj"); vobjPutParamSelf(A, thrustDir, po, vertical); VMT_RET_BOOL(method); }
   void eventPolyCrushMobj (VEntity *A, polyobj_t *po) { static VMethodProxy method("PolyCrushMobj"); vobjPutParamSelf(A, po); VMT_RET_VOID(method); }
 
   void eventPolyRotateMobj (VEntity *A, float dangle) { static VMethodProxy method("PolyRotateMobj"); vobjPutParamSelf(A, dangle); VMT_RET_VOID(method); }

@@ -558,6 +558,14 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   if (crush) po->PolyFlags |= polyobj_t::PF_Crush; else po->PolyFlags &= ~polyobj_t::PF_Crush;
   if (hurt) po->PolyFlags |= polyobj_t::PF_HurtOnTouch; else po->PolyFlags &= ~polyobj_t::PF_HurtOnTouch;
 
+  // arg1 is flags
+  if (want3DPobj) {
+    if (thing->args[0]&polyobj_t::PF_Crush) po->PolyFlags |= polyobj_t::PF_Crush; else po->PolyFlags &= ~polyobj_t::PF_Crush;
+    if (thing->args[0]&polyobj_t::PF_HurtOnTouch) po->PolyFlags |= polyobj_t::PF_HurtOnTouch; else po->PolyFlags &= ~polyobj_t::PF_HurtOnTouch;
+    if (thing->args[0]&polyobj_t::PF_NoCarry) po->PolyFlags |= polyobj_t::PF_NoCarry; else po->PolyFlags &= ~polyobj_t::PF_NoCarry;
+    if (thing->args[0]&polyobj_t::PF_NoAngleChange) po->PolyFlags |= polyobj_t::PF_NoAngleChange; else po->PolyFlags &= ~polyobj_t::PF_NoAngleChange;
+  }
+
   // realloc polyobj array
   //FIXME: do this better; but don't use `TArray`, because `ClearReferences()` will walk it
   {
@@ -1580,7 +1588,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
 
   if (!forcedMove && !blocked) {
     for (po = pofirst; po; po = po->polink) {
-      blocked = PolyCheckMobjBlocked(po);
+      blocked = PolyCheckMobjBlocked(po, false);
       if (blocked) break; // process all?
       if (skipLink) break;
     }
@@ -1611,8 +1619,13 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         if (mz1 <= pz0) continue;
         if (mz0 >= pz1) continue;
         // vertical intersection, blocked movement
-        blocked = true;
-        break;
+        if (mobj->EntityFlags&VEntity::EF_Solid) {
+          //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
+          if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) blocked = true;
+        } else {
+          mobj->Level->eventPolyCrushMobj(mobj, po);
+        }
+        if (blocked) break;
       }
       if (skipLink || blocked) break;
     }
@@ -1803,7 +1816,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     }
     if (!blocked) {
       for (po = pofirst; po; po = po->polink) {
-        blocked = PolyCheckMobjBlocked(po);
+        blocked = PolyCheckMobjBlocked(po, true);
         if (blocked) break; // process all?
         if (skipLink) break;
       }
@@ -1877,7 +1890,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
 //  VLevel::PolyCheckMobjLineBlocking
 //
 //==========================================================================
-bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
+bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool rotation) {
   int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY/*+MAXRADIUS*/)+1;
   int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY/*-MAXRADIUS*/)-1;
   int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX/*-MAXRADIUS*/)-1;
@@ -1926,9 +1939,14 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
         //TODO: crush objects with platforms
 
         if (mobj->EntityFlags&VEntity::EF_Solid) {
+          // check for vertical crushing
+          const bool vertical = false;
+          if (po->posector && (po->PolyFlags&polyobj_t::PF_Crush)) {
+            //vertical = true;
+            if (rotation) continue;
+          }
           //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
-          mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po);
-          blocked = true;
+          if (mobj->Level->eventPolyThrustMobj(mobj, ld->normal, po, vertical)) blocked = true;
         } else {
           mobj->Level->eventPolyCrushMobj(mobj, po);
         }
@@ -1945,12 +1963,12 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po) {
 //  VLevel::PolyCheckMobjBlocked
 //
 //==========================================================================
-bool VLevel::PolyCheckMobjBlocked (polyobj_t *po) {
+bool VLevel::PolyCheckMobjBlocked (polyobj_t *po, bool rotation) {
   if (!po || po->numlines == 0) return false;
   bool blocked = false;
   line_t **lineList = po->lines;
   for (int count = po->numlines; count; --count, ++lineList) {
-    if (PolyCheckMobjLineBlocking(*lineList, po)) blocked = true; //k8: break here?
+    if (PolyCheckMobjLineBlocking(*lineList, po, rotation)) blocked = true; //k8: break here?
   }
   return blocked;
 }
