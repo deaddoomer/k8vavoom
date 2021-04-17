@@ -69,7 +69,8 @@ public:
   virtual int ReadKey () = 0;
 
   // handling of key bindings
-  virtual void ClearBindings () = 0;
+  virtual void ClearBindings () = 0; // but not automap
+  virtual void ClearAutomapBindings () = 0;
   // `isActive`: bit 0 for key1, bit 1 for key2
   virtual void GetBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection, int strifemode, int *isActive) = 0;
   virtual void GetBindingKeysEx (VStr Binding, TArray<int> &keylist, VStr modSection, int strifemode) = 0;
@@ -78,6 +79,7 @@ public:
   virtual void SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int strifemode, bool allowOverride=true) = 0;
   virtual void WriteBindings (VStream *st) = 0;
   virtual void AddActiveMod (VStr modSection) = 0;
+  virtual void SetAutomapActive (bool active) = 0;
 
   // returns translated ASCII char, or unchanged keycode
   // it is safe to call this with any keycode

@@ -56,6 +56,7 @@ public:
 
   // handling of key bindings
   virtual void ClearBindings () override;
+  virtual void ClearAutomapBindings () override;
   virtual void GetBindingKeys (VStr Binding, int &Key1, int &Key2, VStr modSection, int strifemode, int *isActive) override;
   virtual void GetBindingKeysEx (VStr Binding, TArray<int> &keylist, VStr modSection, int strifemode) override;
   virtual void GetDefaultModBindingKeys (VStr Binding, TArray<int> &keylist, VStr modSection) override;
@@ -63,6 +64,7 @@ public:
   virtual void SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int strifemode, bool allowOverride=true) override;
   virtual void WriteBindings (VStream *st) override;
   virtual void AddActiveMod (VStr modSection) override;
+  virtual void SetAutomapActive (bool active) override;
 
   virtual int TranslateKey (int ch) override;
 
@@ -113,13 +115,15 @@ private:
   Binding KeyBindingsAll[256];
   Binding KeyBindingsStrife[256];
   Binding KeyBindingsNonStrife[256];
+  Binding KeyBindingsAutomap[256];
   TArray<Binding> ModBindings;
   TArray<Binding> DefaultModBindings;
   // this is to map key to console command in input handler
   Binding ModKeyBindingsActive[256];
   TArray<VStr> ActiveModList;
+  bool AutomapActive = false;
 
-  VStr getBinding (bool down, int idx);
+  VStr getBinding (bool down, int idx, bool skipAutomap=false);
 
   void sortModKeys ();
   // call after adding new active mod
@@ -181,16 +185,19 @@ TArray<VInputPublic::CheatCode> VInputPublic::kbcheats;
 char VInputPublic::currkbcheat[VInputPublic::MAX_KBCHEAT_LENGTH+1];
 
 
-extern "C" {
-  static int cmpKeyBinding (const void *aa, const void *bb, void *) {
-    if (aa == bb) return 0;
-    const VInput::Binding *a = (const VInput::Binding *)aa;
-    const VInput::Binding *b = (const VInput::Binding *)bb;
-    int sdiff = a->modName.ICmp(b->modName);
-    if (sdiff) return sdiff;
-    // same mod, sort by key index
-    return a->keyNum-b->keyNum;
-  }
+//==========================================================================
+//
+//  cmpKeyBinding
+//
+//==========================================================================
+static int cmpKeyBinding (const void *aa, const void *bb, void *) {
+  if (aa == bb) return 0;
+  const VInput::Binding *a = (const VInput::Binding *)aa;
+  const VInput::Binding *b = (const VInput::Binding *)bb;
+  int sdiff = a->modName.ICmp(b->modName);
+  if (sdiff) return sdiff;
+  // same mod, sort by key index
+  return a->keyNum-b->keyNum;
 }
 
 
@@ -336,6 +343,7 @@ VInput::VInput () : Device(0) {
   memset((void *)&KeyBindingsAll[0], 0, sizeof(KeyBindingsAll));
   memset((void *)&KeyBindingsStrife[0], 0, sizeof(KeyBindingsStrife));
   memset((void *)&KeyBindingsNonStrife[0], 0, sizeof(KeyBindingsNonStrife));
+  memset((void *)&KeyBindingsAutomap[0], 0, sizeof(KeyBindingsAutomap));
   memset((void *)&ModKeyBindingsActive[0], 0, sizeof(ModKeyBindingsActive));
   memset(keysPressed, 0, sizeof(keysPressed));
 }
@@ -360,7 +368,7 @@ void VInput::UnpressAllInternal () {
   for (int f = 1; f < 256; ++f) {
     if (keysPressed[f]) {
       keysPressed[f] = 0;
-      VStr kb = getBinding(false, f);
+      VStr kb = getBinding(false, f, true/*skip automap*/);
       //GCon->Logf(NAME_Debug, "UNPRESS KEY %s is %s; action is '%s'", *GInput->KeyNameForNum(f), "up", *kb);
       if (kb.IsNotEmpty()) {
         if (kb[0] == '+' || kb[0] == '-') {
@@ -390,6 +398,18 @@ void VInput::ClearBindings () {
   // restore default mod bindings
   ModBindings.clear();
   for (auto &&bind : DefaultModBindings) ModBindings.append(bind);
+}
+
+
+//==========================================================================
+//
+//  VInput::ClearAutomapBindings
+//
+//==========================================================================
+void VInput::ClearAutomapBindings () {
+  for (int f = 0; f < 256; ++f) {
+    KeyBindingsAutomap[f].Clear();
+  }
 }
 
 
@@ -433,7 +453,7 @@ void VInput::rebuildModBindings () {
       vassert(bind.keyNum > 0 && bind.keyNum < 256);
       // default bindings cannot override game bindings
       if (bind.defbind) {
-        if (!getBinding(true, bind.keyNum).isEmpty() || !getBinding(false, bind.keyNum).isEmpty()) continue;
+        if (!getBinding(true, bind.keyNum, true/*skip automap*/).isEmpty() || !getBinding(false, bind.keyNum, true/*skip automap*/).isEmpty()) continue;
       }
       ModKeyBindingsActive[bind.keyNum].cmdDown = bind.cmdDown;
       ModKeyBindingsActive[bind.keyNum].cmdUp = bind.cmdUp;
@@ -515,11 +535,26 @@ void VInput::AddActiveMod (VStr modSection) {
 
 //==========================================================================
 //
+//  VInput::SetAutomapActive
+//
+//==========================================================================
+void VInput::SetAutomapActive (bool active) {
+  AutomapActive = active;
+}
+
+
+//==========================================================================
+//
 //  VInput::getBinding
 //
 //==========================================================================
-VStr VInput::getBinding (bool down, int idx) {
+VStr VInput::getBinding (bool down, int idx, bool skipAutomap) {
   if (idx < 1 || idx > 255) return VStr::EmptyString;
+  // automap
+  if (!skipAutomap && AutomapActive && !KeyBindingsAutomap[idx].IsEmpty()) {
+    return (down ? KeyBindingsAutomap[idx].cmdDown : KeyBindingsAutomap[idx].cmdUp);
+  }
+  // mod
   if (!ModKeyBindingsActive[idx].IsEmpty()) {
     return (down ? ModKeyBindingsActive[idx].cmdDown : ModKeyBindingsActive[idx].cmdUp);
   }
@@ -650,7 +685,7 @@ void VInput::ProcessEvents () {
       if ((ev.type == ev_keydown || ev.type == ev_keyup) && (ev.keycode > 0 && ev.keycode < 256)) {
         //VStr kb;
         //if (isAllowed(ev.keycode&0xff)) kb = (ev.type == ev_keydown ? KeyBindingsDown[ev.keycode&0xff] : KeyBindingsUp[ev.keycode&0xff]);
-        VStr kb = getBinding((ev.type == ev_keydown), ev.keycode&0xff);
+        VStr kb = getBinding((ev.type == ev_keydown), ev.keycode&0xff, true/*skip automap*/);
         //GCon->Logf(NAME_Debug, "KEY %s is %s; action is '%s'", *GInput->KeyNameForNum(ev.keycode&0xff), (ev.type == ev_keydown ? "down" : "up"), *kb);
         if (kb.IsNotEmpty()) {
           if (kb[0] == '+' || kb[0] == '-') {
@@ -742,7 +777,17 @@ void VInput::GetBindingKeys (VStr bindStr, int &Key1, int &Key2, VStr modSection
   if (isActive) *isActive = 3;
   if (bindStr.isEmpty()) return;
   // mod?
-  if (!modSection.isEmpty()) {
+  if (modSection.strEquCI("<automap>")) {
+    // normal
+    for (int i = 1; i < 256; ++i) {
+      int kf = -1;
+      if (!KeyBindingsAutomap[i].IsEmpty() && KeyBindingsAutomap[i].cmdDown.strEquCI(bindStr)) kf = i;
+      if (kf > 0) {
+        if (Key1 != -1) { Key2 = kf; return; }
+        Key1 = kf;
+      }
+    }
+  } else if (!modSection.isEmpty()) {
     //GCon->Logf(NAME_Debug, "*** bstr=\"%s\"; mod=\"%s\" (%d)", *bindStr.quote(), *modSection.quote(), ModBindings.length());
     if (isActive) *isActive = 0;
     for (auto &&bind : ModBindings) {
@@ -792,7 +837,14 @@ void VInput::GetBindingKeysEx (VStr bindStr, TArray<int> &keylist, VStr modSecti
   keylist.reset();
   if (bindStr.isEmpty()) return;
   // mod?
-  if (!modSection.isEmpty()) {
+  if (modSection.strEquCI("<automap>")) {
+    // normal
+    for (int i = 1; i < 256; ++i) {
+      int kf = -1;
+      if (!KeyBindingsAutomap[i].IsEmpty() && KeyBindingsAutomap[i].cmdDown.strEquCI(bindStr)) kf = i;
+      if (kf > 0) keylist.append(kf);
+    }
+  } else if (!modSection.isEmpty()) {
     for (auto &&bind : ModBindings) {
       if (bind.keyNum < 1 || bind.keyNum > 255) continue; // just in case
       if (!bind.modName.strEquCI(modSection)) continue;
@@ -893,6 +945,13 @@ void VInput::SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int st
       }
     }
     rebuildModBindings();
+    return;
+  }
+
+  // automap?
+  if (modSection.strEquCI("<automap>")) {
+    KeyBindingsAutomap[KeyNum].cmdDown = Down;
+    KeyBindingsAutomap[KeyNum].cmdUp = Up;
     return;
   }
 
@@ -997,10 +1056,29 @@ void VInput::SetBinding (int KeyNum, VStr Down, VStr Up, VStr modSection, int st
 //==========================================================================
 void VInput::WriteBindings (VStream *st) {
   st->writef("UnbindAll\n");
+  st->writef("// common bindings\n");
   for (int i = 1; i < 256; ++i) {
     if (!KeyBindingsAll[i].IsEmpty()) st->writef("bind \"%s\" \"%s\" \"%s\"\n", *KeyNameForNum(i).quote(), *KeyBindingsAll[i].cmdDown.quote(), *KeyBindingsAll[i].cmdUp.quote());
+  }
+  st->writef("// strife bindings\n");
+  for (int i = 1; i < 256; ++i) {
     if (!KeyBindingsStrife[i].IsEmpty()) st->writef("bind strife \"%s\" \"%s\" \"%s\"\n", *KeyNameForNum(i).quote(), *KeyBindingsStrife[i].cmdDown.quote(), *KeyBindingsStrife[i].cmdUp.quote());
+  }
+  st->writef("// non-strife bindings\n");
+  for (int i = 1; i < 256; ++i) {
     if (!KeyBindingsNonStrife[i].IsEmpty()) st->writef("bind notstrife \"%s\" \"%s\" \"%s\"\n", *KeyNameForNum(i).quote(), *KeyBindingsNonStrife[i].cmdDown.quote(), *KeyBindingsNonStrife[i].cmdUp.quote());
+  }
+  // automap
+  bool ambCleared = false;
+  for (int i = 1; i < 256; ++i) {
+    if (!KeyBindingsAutomap[i].IsEmpty()) {
+      if (!ambCleared) {
+        ambCleared = true;
+        st->writef("// automap bindings\n");
+        st->writef("UnbindAllAutomap\n");
+      }
+      st->writef("bind automap \"%s\" \"%s\" \"%s\"\n", *KeyNameForNum(i).quote(), *KeyBindingsAutomap[i].cmdDown.quote(), *KeyBindingsAutomap[i].cmdUp.quote());
+    }
   }
   // write mod bindings
   sortModKeys();
@@ -1125,6 +1203,7 @@ COMMAND(Unbind) {
          if (Args[1].strEquCI("strife")) { strifeFlag = 1; ++stidx; }
     else if (Args[1].strEquCI("notstrife")) { strifeFlag = -1; ++stidx; }
     else if (Args[1].strEquCI("all")) { strifeFlag = 0; ++stidx; }
+    else if (Args[1].strEquCI("automap")) { modSection = "<automap>"; ++stidx; }
     else if (Args[stidx].strEquCI("module")) {
       ++stidx;
       if (stidx >= Args.length()) return; //FIXME: show error
@@ -1160,6 +1239,17 @@ COMMAND(UnbindAll) {
 
 //==========================================================================
 //
+//  COMMAND UnbindAllAutomap
+//
+//==========================================================================
+COMMAND(UnbindAllAutomap) {
+  if (ParsingKeyConf) return; // in keyconf
+  GInput->ClearAutomapBindings();
+}
+
+
+//==========================================================================
+//
 //  COMMAND Bind
 //
 //==========================================================================
@@ -1186,6 +1276,7 @@ static void bindCommon (const TArray<VStr> &Args, bool allowOverride=true) {
        if (Args[stidx].strEquCI("strife")) { strifeFlag = 1; ++stidx; }
   else if (Args[stidx].strEquCI("notstrife")) { strifeFlag = -1; ++stidx; }
   else if (Args[stidx].strEquCI("all")) { strifeFlag = 0; ++stidx; }
+  else if (Args[stidx].strEquCI("automap")) { modSection = "<automap>"; ++stidx; }
   else if (Args[stidx].strEquCI("module")) {
     ++stidx;
     if (stidx >= Args.length()) return; //FIXME: show error

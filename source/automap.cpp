@@ -59,6 +59,65 @@
 #define AMSTR_MARKSCLEARED   "All Marks Cleared"
 #define AMSTR_MARKEDSPOTDEL  "Removed Mark Spot"
 
+
+// automap bindings
+// TODO: use normal console commands for this?
+enum {
+  AM_BIND_NOTHING,
+  AM_BIND_PANLEFT,
+  AM_BIND_PANRIGHT,
+  AM_BIND_PANUP,
+  AM_BIND_PANDOWN,
+  AM_BIND_ZOOMIN,
+  AM_BIND_ZOOMOUT,
+  AM_BIND_GOBIG,
+  AM_BIND_FOLLOW,
+  AM_BIND_GRID,
+  AM_BIND_TEXTURE,
+  AM_BIND_ADDMARK,
+  AM_BIND_NEXTMARK,
+  AM_BIND_PREVMARK,
+  AM_BIND_DELMARK,
+  AM_BIND_CLEARMARKS,
+
+  AM_BIND_MAX,
+};
+
+struct AmBindInfo {
+  const char *bindname;
+  int bindtype;
+};
+
+static const AmBindInfo ambinds[] = {
+  {"amkey_panleft",    AM_BIND_PANLEFT},
+  {"amkey_panright",   AM_BIND_PANRIGHT},
+  {"amkey_panup",      AM_BIND_PANUP},
+  {"amkey_pandown",    AM_BIND_PANDOWN},
+  {"amkey_zoomin",     AM_BIND_ZOOMIN},
+  {"amkey_zoomout",    AM_BIND_ZOOMOUT},
+  {"amkey_gobig",      AM_BIND_GOBIG},
+  {"amkey_follow",     AM_BIND_FOLLOW},
+  {"amkey_grid",       AM_BIND_GRID},
+  {"amkey_texture",    AM_BIND_TEXTURE},
+  {"amkey_addmark",    AM_BIND_ADDMARK},
+  {"amkey_nextmark",   AM_BIND_NEXTMARK},
+  {"amkey_prevmark",   AM_BIND_PREVMARK},
+  {"amkey_delmark",    AM_BIND_DELMARK},
+  {"amkey_clearmarks", AM_BIND_CLEARMARKS},
+  {nullptr, AM_BIND_NOTHING},
+};
+
+enum {
+  AM_PTYPE_NOTMINE,
+  AM_PTYPE_REPEAT,
+  AM_PTYPE_PRESS,
+  AM_PTYPE_RELEASE,
+};
+
+static int amkstate[AM_BIND_MAX];
+
+
+/*
 //#define AM_STARTKEY      K_TAB
 #define AM_PANUPKEY      K_UPARROW
 #define AM_PANDOWNKEY    K_DOWNARROW
@@ -74,6 +133,7 @@
 #define AM_NEXTMARKKEY   'n'
 #define AM_CLEARMARKKEY  'c'
 #define AM_TOGGLETEXKEY  't'
+*/
 
 // how much the automap moves window per tic in frame-buffer coordinates
 // moves 140 pixels in 1 second
@@ -558,6 +618,7 @@ void AM_SetMarkXY (int index, float x, float y) {
 //==========================================================================
 void AM_Init () {
   automapUpdateSeen = true;
+  memset((void *)&amkstate[0], 0, sizeof(amkstate));
 }
 
 
@@ -854,6 +915,8 @@ void AM_Stop () {
   automapactive = 0;
   stopped = true;
   am_active = false;
+  memset((void *)&amkstate[0], 0, sizeof(amkstate));
+  GInput->SetAutomapActive(false);
 }
 
 
@@ -879,6 +942,8 @@ static void AM_Start () {
   mtof_zoommul = 1.0f;
   ftom_zoommul = 1.0f;
   am_active = true;
+  memset((void *)&amkstate[0], 0, sizeof(amkstate));
+  GInput->SetAutomapActive(true);
 }
 
 
@@ -2166,6 +2231,7 @@ void AM_Drawer () {
 //  Handle events (user inputs) in automap mode
 //
 //==========================================================================
+/*
 bool AM_Responder (event_t *ev) {
   AM_Check();
   if (!automapactive) {
@@ -2215,11 +2281,11 @@ bool AM_Responder (event_t *ev) {
           ftom_zoommul = M_ZOOMOUT;
         }
         break;
-      /*
+      / *
       case AM_ENDKEY:
         AM_Stop();
         break;
-      */
+      * /
       case AM_GOBIGKEY:
         mtof_zoommul = 1.0f;
         ftom_zoommul = 1.0f;
@@ -2299,6 +2365,235 @@ bool AM_Responder (event_t *ev) {
         break;
     }
   }
+  return rc;
+}
+*/
+
+
+//==========================================================================
+//
+//  AM_TranslateKeyEvent
+//
+//  Handle events (user inputs) in automap mode
+//
+//==========================================================================
+static int AM_TranslateKeyEvent (event_t *ev, int *cmdtype) {
+  *cmdtype = AM_BIND_NOTHING;
+
+  bool kdown;
+       if (ev->type == ev_keydown) kdown = true;
+  else if (ev->type == ev_keyup) kdown = false;
+  else return AM_PTYPE_NOTMINE;
+
+  VStr cdown, cup;
+  GInput->GetBinding(ev->keycode, cdown, cup);
+  cdown = cdown.xstrip();
+  cup = cup.xstrip();
+  // do not intercept automap toggle key
+  //FIXME: this should be made more flexible
+  if (cdown.strEquCI("toggle_automap")) return AM_PTYPE_NOTMINE;
+
+  if (kdown) {
+    if (cdown.isEmpty()) return AM_PTYPE_NOTMINE;
+  } else {
+    if (cup.isEmpty()) return AM_PTYPE_NOTMINE;
+    cdown = cup;
+  }
+  // just in case
+  if (cdown.isEmpty()) return AM_PTYPE_NOTMINE;
+
+  const char *cmd = *cdown;
+  while (cmd[0] == '+' || cmd[0] == '-') ++cmd;
+  if (!cmd[0]) return AM_PTYPE_NOTMINE;
+
+  for (const AmBindInfo *nfo = ambinds; nfo->bindname; ++nfo) {
+    if (VStr::strEquCI(nfo->bindname, cmd)) {
+      *cmdtype = nfo->bindtype;
+      if (kdown) {
+        if (amkstate[nfo->bindtype]) return AM_PTYPE_REPEAT;
+        amkstate[nfo->bindtype] = 1;
+        return AM_PTYPE_PRESS;
+      } else {
+        amkstate[nfo->bindtype] = 0;
+        return AM_PTYPE_RELEASE;
+      }
+    }
+  }
+
+  return AM_PTYPE_NOTMINE;
+}
+
+
+//==========================================================================
+//
+//  AM_Responder
+//
+//  Handle events (user inputs) in automap mode
+//
+//==========================================================================
+bool AM_Responder (event_t *ev) {
+  AM_Check();
+  if (!automapactive) {
+    ui_freemouse = false;
+    return false;
+  }
+
+  if (am_cheating == 3) {
+    ui_freemouse = true;
+    if (ev->type == ev_keydown && ev->keycode == K_MOUSE1) {
+      //float x = FTOM(MTOF(morg.x));
+      //float y = FTOM(MTOF(morg.y));
+      float x = FTOM(ev->x-f_x)+m_x;
+      float y = FTOM(f_h-ev->y-f_y)+m_y;
+      GCon->Logf(NAME_Debug, "ms=(%d,%d); map=(%g,%g) (%g,%g)", ev->x, ev->y, x, y, cl->ViewOrg.x, cl->ViewOrg.y);
+      return true;
+    }
+  } else {
+    ui_freemouse = false;
+  }
+
+  bool rc = false;
+  int cmdtype = AM_BIND_NOTHING;
+  const int kp = AM_TranslateKeyEvent(ev, &cmdtype);
+  if (kp != AM_PTYPE_NOTMINE) {
+    rc = true;
+    switch (cmdtype) {
+      case AM_BIND_PANRIGHT:
+        if (!am_follow_player) {
+          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC/2.0f));
+        } else {
+          rc = false;
+        }
+        break;
+      case AM_BIND_PANLEFT:
+        if (!am_follow_player) {
+          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC/2.0f));
+        } else {
+          rc = false;
+        }
+        break;
+      case AM_BIND_PANUP:
+        if (!am_follow_player) {
+          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC/2.0f));
+        } else {
+          rc = false;
+        }
+        break;
+      case AM_BIND_PANDOWN:
+        if (!am_follow_player) {
+          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC/2.0f));
+        } else {
+          rc = false;
+        }
+        break;
+      case AM_BIND_ZOOMOUT:
+        if (!amWholeScale && kp != AM_PTYPE_RELEASE) {
+          mtof_zoommul = M_ZOOMOUT;
+          ftom_zoommul = M_ZOOMIN;
+        } else {
+          mtof_zoommul = 1.0f;
+          ftom_zoommul = 1.0f;
+        }
+        break;
+      case AM_BIND_ZOOMIN:
+        if (!amWholeScale && kp != AM_PTYPE_RELEASE) {
+          mtof_zoommul = M_ZOOMIN;
+          ftom_zoommul = M_ZOOMOUT;
+        } else {
+          mtof_zoommul = 1.0f;
+          ftom_zoommul = 1.0f;
+        }
+        break;
+      case AM_BIND_GOBIG:
+        if (kp == AM_PTYPE_PRESS) {
+          mtof_zoommul = 1.0f;
+          ftom_zoommul = 1.0f;
+          amWholeScale = (amWholeScale ? 0 : 1);
+          if (amWholeScale) {
+            AM_saveScaleAndLoc();
+            AM_minOutWindowScale();
+          } else {
+            AM_restoreScaleAndLoc();
+          }
+        }
+        break;
+      case AM_BIND_FOLLOW:
+        if (kp == AM_PTYPE_PRESS) {
+          am_follow_player = !am_follow_player;
+          f_oldloc.x = 99999.0f;
+          cl->Printf(am_follow_player ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF);
+        }
+        break;
+      case AM_BIND_GRID:
+        if (kp == AM_PTYPE_PRESS) {
+          am_draw_grid = !am_draw_grid;
+          cl->Printf(am_draw_grid ? AMSTR_GRIDON : AMSTR_GRIDOFF);
+        }
+        break;
+      case AM_BIND_ADDMARK:
+        if (kp == AM_PTYPE_PRESS) {
+          if (mapMarksAllowed) {
+            int mnum = AM_addMark();
+            if (mnum >= 0) cl->Printf("%s %d", AMSTR_MARKEDSPOT, mnum);
+          }
+        }
+        break;
+      case AM_BIND_NEXTMARK:
+        if (kp == AM_PTYPE_PRESS) {
+          if (mapMarksAllowed) {
+            int oldmark = markActive;
+            ++markActive;
+            if (markActive < 0) markActive = 0;
+            // find next active mark
+            while (markActive < AM_NUMMARKPOINTS) {
+              if (markpoints[markActive].isActive()) break;
+              ++markActive;
+            }
+            if (markActive >= AM_NUMMARKPOINTS) markActive = oldmark;
+          }
+        }
+        break;
+      case AM_BIND_PREVMARK:
+        if (kp == AM_PTYPE_PRESS) {
+          if (mapMarksAllowed) {
+            int oldmark = markActive;
+            --markActive;
+            if (markActive < 0) markActive = 0;
+            // find next active mark
+            while (markActive >= 0) {
+              if (markpoints[markActive].isActive()) break;
+              --markActive;
+            }
+            if (markActive < 0) markActive = oldmark;
+          }
+        }
+        break;
+      case AM_BIND_DELMARK:
+        if (kp == AM_PTYPE_PRESS) {
+          if (mapMarksAllowed) {
+            if (markActive >= 0 && markActive < AM_NUMMARKPOINTS && markpoints[markActive].isActive()) {
+              markpoints[markActive].deactivate();
+              cl->Printf("%s %d", AMSTR_MARKEDSPOTDEL, markActive);
+            }
+          }
+        }
+        break;
+      case AM_BIND_CLEARMARKS:
+        if (kp == AM_PTYPE_PRESS) {
+          if (mapMarksAllowed) {
+            if (AM_clearMarks()) cl->Printf(AMSTR_MARKSCLEARED);
+          }
+        }
+        break;
+      case AM_BIND_TEXTURE:
+        if (kp == AM_PTYPE_PRESS) {
+          am_draw_type = (am_draw_type+1)%3;
+        }
+        break;
+      default: break;
+    }
+  }
+
   return rc;
 }
 

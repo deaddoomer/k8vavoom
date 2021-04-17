@@ -1,0 +1,114 @@
+// automap bindings options menu
+menudef ControlsAutomap {
+  Title = "AUTOMAP CONTROLS";
+  selector = Controls;
+
+  option bind {
+    title = "Pan Left";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_panleft";
+    automap = true;
+  }
+
+  option bind {
+    title = "Pan Right";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_panright";
+    automap = true;
+  }
+
+  option bind {
+    title = "Pan Up";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_panup";
+    automap = true;
+  }
+
+  option bind {
+    title = "Pan Down";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_pandown";
+    automap = true;
+  }
+
+  option bind {
+    title = "Zoom In";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_zoomin";
+    automap = true;
+  }
+
+  option bind {
+    title = "Zoom Out";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_zoomout";
+    automap = true;
+  }
+
+
+  option bind {
+    title = "Toggle Scale";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_gobig";
+    automap = true;
+  }
+
+  option bind {
+    title = "Toggle Follow";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_follow";
+    automap = true;
+  }
+
+  option bind {
+    title = "Toggle Grid";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_grid";
+    automap = true;
+  }
+
+  option bind {
+    title = "Toggle Texturing";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_texture";
+    automap = true;
+  }
+
+
+  header "Marks";
+
+  option bind {
+    title = "Add Mark";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_addmark";
+    automap = true;
+  }
+
+  option bind {
+    title = "Next Mark";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_nextmark";
+    automap = true;
+  }
+
+  option bind {
+    title = "Previous Mark";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_prevmark";
+    automap = true;
+  }
+
+  option bind {
+    title = "Delete Mark";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_delmark";
+    automap = true;
+  }
+
+  option bind {
+    title = "Clear All Marks";
+    button = tan; // adds "+ctl" and "-ctl"
+    command = "amkey_clearmarks";
+    automap = true;
+  }
+}

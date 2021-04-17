@@ -29,7 +29,7 @@ string Text;
 string CommandOn;
 string CommandOff;
 string ModSection;
-int strifeMode; // <0: non-strife; >1: strife; 0: don't care
+int strifeMode; // <0: non-strife; >1: strife; 0: don't care; -669: automap
 bool Disabled;
 
 
@@ -79,8 +79,10 @@ override void OnDraw () {
   //IN_GetBindingKeys(CommandOn, &key1, &key2, strifeMode, ModSection, out isActive);
   //if (ModSection) printdebug("%s (%s): %s %s", CommandOn, ModSection, key1, key2);
 
+  string modname = ModSection;
+  if (strifeMode == -669) modname = "<automap>";
   array!int keylist;
-  IN_GetBindingKeysEx(CommandOn, ref keylist, strifeMode, ModSection);
+  IN_GetBindingKeysEx(CommandOn, ref keylist, strifeMode, modname);
 
   SetTextAlign(hleft, vtop);
   //Col = IsFocused ? CR_YELLOW : CR_OLIVE;
@@ -153,10 +155,12 @@ override bool OnEvent (ref event_t evt) {
           int kidx = GetClGame().ControlColumn;
           // remove binding
           if (kidx >= 0 && kidx < keylist.length) {
+            string modname = ModSection;
+            if (strifeMode == -669) modname = "<automap>";
             int kcode = abs(keylist[kidx]);
-            IN_SetBinding(kcode, "", "", strifeMode, ModSection);
+            IN_SetBinding(kcode, "", "", strifeMode, modname);
             // restore default mod key?
-            if (evt.keycode == K_BACKSPACE && ModSection) {
+            if (evt.keycode == K_BACKSPACE && ModSection && strifeMode != -669) {
               IN_GetDefaultModBindingKeysEx(CommandOn, ref keylist, ModSection);
               //printdebug("mod=%s; command=%s; key=(%s,%s); mkey=(%s,%s)", ModSection, CommandOn, key1, key2, mkey1, mkey2);
               // first, remove any mod bindings for the old key

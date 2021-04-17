@@ -50,6 +50,7 @@ enum MessageBoxType {
   ControlAll,
   ControlStrife,
   ControlNonStrife,
+  ControlAutomap,
   Shareware,
   Nightmare,
   EndGame,
@@ -289,7 +290,7 @@ void MessageBoxStartMessage (string text, MessageBoxType type, bool input) {
 void MessageBoxStartBindQuery (MenuControlKey currctl, int strifeMode) {
   printdebug("MessageBoxStartBindQuery");
   CurrentCtl = currctl;
-  auto mt = (strifeMode < 0 ? MessageBoxType.ControlNonStrife : strifeMode > 0 ? MessageBoxType.ControlStrife : MessageBoxType.ControlAll);
+  auto mt = (strifeMode == -669 ? MessageBoxType.ControlAutomap : strifeMode < 0 ? MessageBoxType.ControlNonStrife : strifeMode > 0 ? MessageBoxType.ControlStrife : MessageBoxType.ControlAll);
   MessageBoxStartMessage("Press new key\n\nESC to cancel", mt, input:false);
 }
 
@@ -510,6 +511,7 @@ override bool MessageBoxResponder (event_t *event) {
       case MessageBoxType.ControlAll:
       case MessageBoxType.ControlStrife:
       case MessageBoxType.ControlNonStrife:
+      case MessageBoxType.ControlAutomap:
         SetCvar('__ui_control_waiting', 0);
         ControlResponse(event->data1, msgboxState.type);
         break;
@@ -565,6 +567,7 @@ void ControlResponse (int key, int msgtype) {
     case MessageBoxType.ControlAll: strifeMode = 0; break;
     case MessageBoxType.ControlStrife: strifeMode = 1; break;
     case MessageBoxType.ControlNonStrife: strifeMode = -1; break;
+    case MessageBoxType.ControlAutomap: strifeMode = -669; break;
     default: return;
   }
 
@@ -575,16 +578,19 @@ void ControlResponse (int key, int msgtype) {
     // there is prolly '-d_reload' too, so force it here
     if (kb_down && !kb_up && kb_down[0] == "+" && kb_down.strIndexOf(";") < 0) kb_up = "-"~kb_down[1..$];
     if (kb_up == " " || kb_up == ";") kb_up = "";
-    int isActive;
-    IN_GetBindingKeys(kb_down, &key1, &key2, strifeMode, CurrentCtl.ModSection, out isActive);
-    if (ControlColumn == 0) {
-      IN_SetBinding(key1, "", "", strifeMode, CurrentCtl.ModSection);
-      IN_SetBinding(key, kb_down, kb_up, strifeMode, CurrentCtl.ModSection);
+    string modname = CurrentCtl.ModSection;
+    if (strifeMode == -669) {
+      strifeMode = 0;
+      modname = "<automap>";
     }
-    if (ControlColumn == 1) {
-      IN_SetBinding(key2, "", "", strifeMode, CurrentCtl.ModSection);
-      IN_SetBinding(key, kb_down, kb_up, strifeMode, CurrentCtl.ModSection);
+    //int isActive;
+    //IN_GetBindingKeys(kb_down, &key1, &key2, strifeMode, CurrentCtl.ModSection, out isActive);
+    array!int keylist;
+    IN_GetBindingKeysEx(kb_down, ref keylist, strifeMode, modname);
+    if (ControlColumn >= 0 && ControlColumn < keylist.length) {
+      IN_SetBinding(abs(keylist[ControlColumn]), "", "", strifeMode, modname);
     }
+    IN_SetBinding(key, kb_down, kb_up, strifeMode, modname);
   }
 }
 

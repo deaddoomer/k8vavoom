@@ -9,6 +9,11 @@ menudef OptionsMenu {
   }
 
   option submenu {
+    title = "Automap Controls";
+    submenu = ControlsAutomap;
+  }
+
+  option submenu {
     title = "Gamepad/Joystick Config";
     submenu = ControlsJoy;
   }
