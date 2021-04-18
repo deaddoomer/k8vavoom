@@ -1,0 +1,20 @@
+class Main : Object;
+
+struct Seg : TPlane {
+  TVec v1, v2;
+
+  void ctor (const TVec av1, const TVec av2) {
+    v1 = av1;
+    v2 = av2;
+    Set2Points(av1, av2);
+  }
+};
+
+
+void main () {
+  Seg seg(vector(10, 20), vector(30, 40));
+  TPlane pl;
+  pl = seg;
+  print("normal=%s; dist=%s", seg.normal, seg.dist);
+  print("normal=%s; dist=%s", pl.normal, pl.dist);
+}
