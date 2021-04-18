@@ -233,8 +233,13 @@ void VAssignment::Emit (VEmitContext &ec) {
         ec.AddStatement(OPC_AssignDelegate, Loc);
       } else if (op1->RealType.Type == TYPE_Struct) {
         vassert(op2->RealType.Type == TYPE_Struct);
-        vassert(op1->RealType.Struct->IsA(op2->RealType.Struct));
-        ec.AddStatement(OPC_TypeDeepCopy, op2->RealType, Loc);
+        if (op1->RealType.Struct->IsA(op2->RealType.Struct)) {
+          ec.AddStatement(OPC_TypeDeepCopy, op2->RealType, Loc);
+        } else if (op2->RealType.Struct->IsA(op1->RealType.Struct)) {
+          ec.AddStatement(OPC_TypeDeepCopy, op1->RealType, Loc);
+        } else {
+          ParseError(Loc, "internal compiler error in VAssignment::Emit: op1:`%s`; op2:`%s`", *op1->RealType.GetName(), *op2->RealType.GetName());
+        }
       } else {
         ParseError(Loc, "Expression type mismatch (`%s` and `%s`)", *op1->Type.GetName(), *op2->Type.GetName());
       }
