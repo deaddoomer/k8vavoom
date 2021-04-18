@@ -371,7 +371,6 @@ void VEntity::Tick (float deltaTime) {
         tmtrace_t tmtrace;
         CheckRelPositionPoint(tmtrace, Origin);
         if (eflagsex&EFEX_StickToFloor) {
-          //Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
           Origin.z = tmtrace.FloorZ;
         } else {
           #ifdef CLIENT
@@ -390,7 +389,6 @@ void VEntity::Tick (float deltaTime) {
         #ifdef CLIENT
         //const float oldz = Origin.z;
         #endif
-        //Origin.z = SV_GetLowestSolidPointZ(SubSector->sector, Origin, false); // don't ignore 3d floors
         Origin.z = tmtrace.FloorZ;
         #ifdef CLIENT
         //GCon->Logf(NAME_Debug, "*** %s ***: down to earth; oldz=%g; newz=%g", GetClass()->GetName(), oldz, Origin.z);

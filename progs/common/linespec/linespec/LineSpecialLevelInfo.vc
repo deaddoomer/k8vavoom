@@ -4602,6 +4602,8 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
     DstXAxis = Normalise2D(DstXAxis);
     newPos += pos*DstXAxis;
 
+    //FIXME: use proper floor/ceiling tracing here, not point checks
+
     // height of thing above ground
     float tfh = thing.Origin.z-thing.FloorZ;
     // adjust z position to be same height above ground as before

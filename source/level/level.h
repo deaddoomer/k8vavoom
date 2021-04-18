@@ -952,7 +952,9 @@ public: // regions
   void GetSectorGapCoords (sector_t *sector, const TVec point, float &floorz, float &ceilz);
 
   // it is used to find lowest sector point for silent teleporters
-  float GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors=true);
+  // as silent teleport isn't passing a valid z coord here, there is no need
+  // to check 3d floors yet
+  float GetSectorFloorPointZ (sector_t *sector, const TVec &point);
 
   // returns top and bottom of the current line's mid texture
   // should be used ONLY for 3dmidtex non-wrapping lines

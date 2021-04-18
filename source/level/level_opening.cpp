@@ -525,6 +525,9 @@ int VLevel::PointContents (sector_t *sector, const TVec &p, bool dbgDump) {
 //
 //  this ignores 3d pobjs yet
 //
+//  used in simplified `VEntity::LinkToWorld()`, and
+//  in `VEntity::CheckPosition()` (along with `VEntity::CheckDropOff()`)
+//
 //==========================================================================
 void VLevel::FindGapFloorCeiling (sector_t *sector, const TVec point, float height, TSecPlaneRef &floor, TSecPlaneRef &ceiling, bool debugDump) {
   /*
@@ -632,6 +635,8 @@ void VLevel::FindGapFloorCeiling (sector_t *sector, const TVec point, float heig
 //
 //  VLevel::GetSectorGapCoords
 //
+//  this is only used in VavoomC code, for `BloodAddZClamped()`
+//
 //==========================================================================
 void VLevel::GetSectorGapCoords (sector_t *sector, const TVec point, float &floorz, float &ceilz) {
   if (!sector) { floorz = 0.0f; ceilz = 0.0f; return; }
@@ -649,14 +654,20 @@ void VLevel::GetSectorGapCoords (sector_t *sector, const TVec point, float &floo
 
 //==========================================================================
 //
-//  VLevel::GetLowestSolidPointZ
+//  VLevel::GetSectorFloorPointZ
 //
-//  FIXME: this ignores 3d pobjs!
+//  FIXME: this ignores 3d pobjs and 3d floors!
+//
+//  this is only used in VavoomC code, for `EV_SilentLineTeleport()`
+//  as silent teleport isn't passing a valid z coord here, there is no need
+//  to check 3d floors yet
 //
 //==========================================================================
-float VLevel::GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ignore3dFloors) {
+float VLevel::GetSectorFloorPointZ (sector_t *sector, const TVec &point) {
   if (!sector) return 0.0f; // idc
-  if (ignore3dFloors || !sector->Has3DFloors()) return sector->floor.GetPointZClamped(point); // cannot be lower than this
+  return sector->floor.GetPointZClamped(point); // cannot be lower than this
+  #if 0
+  if (!sector->Has3DFloors()) return sector->floor.GetPointZClamped(point); // cannot be lower than this
   // find best solid 3d ceiling
   vassert(sector->eregions);
   float bestz = sector->floor.GetPointZClamped(point);
@@ -672,6 +683,7 @@ float VLevel::GetLowestSolidPointZ (sector_t *sector, const TVec &point, bool ig
     }
   }
   return bestz;
+  #endif
 }
 
 
@@ -897,13 +909,13 @@ opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsign
 }
 
 
-
-
 //==========================================================================
 //
 //  VLevel::FindRelOpening
 //
 //  used in sector movement, so it tries hard to not leave current opening
+//
+//  used in `VEntity::CheckRelPosition()`, and in `FindGapFloorCeiling()`
 //
 //==========================================================================
 opening_t *VLevel::FindRelOpening (opening_t *InGaps, float z1, float z2) noexcept {
@@ -1073,7 +1085,7 @@ IMPLEMENT_FUNCTION(VLevel, GetSectorFloorPointZ) {
   sector_t *sector;
   TVec *point;
   vobjGetParamSelf(sector, point);
-  RET_FLOAT(Self->GetLowestSolidPointZ(sector, *point));
+  RET_FLOAT(Self->GetSectorFloorPointZ(sector, *point));
 }
 
 //native static final GameObject::opening_t *FindOpening (const GameObject::opening_t *gaps, float z1, float z2);
