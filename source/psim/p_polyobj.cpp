@@ -449,11 +449,30 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
   for (auto &&it : po->LineFirst()) {
     line_t *ld = it.line();
     if (ld->frontsector != sfront || ld->backsector != sback) {
-      Host_Error("invalid pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     }
     if (!(ld->flags&ML_BLOCKING)) {
-      GCon->Logf(NAME_Error, "pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      GCon->Logf(NAME_Error, "3d pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
       ld->flags |= ML_BLOCKING;
+    }
+    // check sides
+    const side_t *s0 = (ld->sidenum[0] < 0 ? nullptr : &Sides[ld->sidenum[0]]);
+    const side_t *s1 = (ld->sidenum[1] < 0 ? nullptr : &Sides[ld->sidenum[1]]);
+    if (!s0) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (no front side)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    if (GTextureManager.IsEmptyTexture(s0->MidTexture)) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (empty midtex)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    // top textures must be the same if they are impassable
+    if (ld->flags&ML_CLIP_MIDTEX) {
+      // top texture is blocking
+      if (GTextureManager.IsEmptyTexture(s0->TopTexture)) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (toptex is blocking and missing)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      if (!s1 || GTextureManager.IsEmptyTexture(s1->TopTexture)) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (inner toptex is blocking and missing)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      // check texture heights
+      VTexture *TTex0 = GTextureManager(s0->TopTexture);
+      if (!TTex0) TTex0 = GTextureManager[GTextureManager.DefaultTexture];
+      VTexture *TTex1 = GTextureManager(s1->TopTexture);
+      if (!TTex1) TTex1 = GTextureManager[GTextureManager.DefaultTexture];
+      const float texh0 = TTex0->GetScaledHeight()/s0->Top.ScaleY;
+      const float texh1 = TTex1->GetScaledHeight()/s1->Top.ScaleY;
+      if (texh0 != texh1) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (blocking toptex has different sizes)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     }
   }
 }

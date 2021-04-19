@@ -95,6 +95,8 @@ void VRenderLevelShared::SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
 //
 //==========================================================================
 void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+  if (seg->pobj && seg->pobj->Is3D()) return SetupTwoSidedTopWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
+
   FreeWSurfs(sp->surfs);
   vassert(sub->sector);
 
@@ -249,6 +251,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 //
 //==========================================================================
 void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+  if (seg->pobj && seg->pobj->Is3D()) return SetupTwoSidedBotWSurf3DPObj(sub, seg, sp, r_floor, r_ceiling);
   FreeWSurfs(sp->surfs);
 
   const line_t *linedef = seg->linedef;
@@ -598,109 +601,6 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   sp->frontBotDist = r_floor.splane->dist;
   sp->backTopDist = back_ceiling->dist;
   sp->backBotDist = back_floor->dist;
-  sp->TextureOffset = sidedef->Mid.TextureOffset;
-  sp->RowOffset = sidedef->Mid.RowOffset;
-  sp->ResetFixTJunk();
-  SetupFakeDistances(seg, sp);
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj
-//
-//  create normal midtexture surface for 3d polyobject
-//
-//==========================================================================
-void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
-  FreeWSurfs(sp->surfs);
-
-  const line_t *linedef = seg->linedef;
-  const side_t *sidedef = seg->sidedef;
-
-  VTexture *MTex = GTextureManager(sidedef->MidTexture);
-  if (!MTex) MTex = GTextureManager[GTextureManager.DefaultTexture];
-
-  const polyobj_t *po = seg->pobj;
-
-  if (MTex->Type != TEXTYPE_Null && !(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) {
-    TVec quad[4];
-
-    //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
-    //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); back_botz=(%g : %g); back_topz=(%g : %g), exbotz=%g; extopz=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, back_botz1, back_botz2, back_topz1, back_topz2, exbotz, extopz);
-
-    //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d: seg for line #%d (sector #%d); TexZ=%g:%g (notpeg=%d)", seg->pobj->tag, (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), seg->pobj->pofloor.TexZ, seg->pobj->poceiling.TexZ, !!(linedef->flags&ML_DONTPEGBOTTOM));
-
-    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
-    float zOrg; // texture bottom
-    if (linedef->flags&ML_DONTPEGBOTTOM) {
-      // bottom of texture at bottom
-      zOrg = seg->pobj->pofloor.TexZ;
-    } else {
-      // top of texture at top
-      zOrg = seg->pobj->poceiling.TexZ-texh;
-    }
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
-
-    sp->texinfo.Alpha = linedef->alpha;
-    sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
-
-    quad[0].x = quad[1].x = seg->v1->x;
-    quad[0].y = quad[1].y = seg->v1->y;
-    quad[2].x = quad[3].x = seg->v2->x;
-    quad[2].y = quad[3].y = seg->v2->y;
-
-    const float topz1 = po->poceiling.GetPointZ(*seg->v1);
-    const float topz2 = po->poceiling.GetPointZ(*seg->v2);
-    const float botz1 = po->pofloor.GetPointZ(*seg->v1);
-    const float botz2 = po->pofloor.GetPointZ(*seg->v2);
-
-    if (botz1 >= topz1 || botz2 >= topz2) {
-      // nothing to do
-    } else {
-      bool doit = true;
-      float hgts[4];
-
-      // linedef->flags&ML_CLIP_MIDTEX, sidedef->Flags&SDF_CLIPMIDTEX
-      // this clips texture to a floor, otherwise it goes beyound it
-      // it seems that all modern OpenGL renderers just ignores clip flag, and
-      // renders all midtextures as always clipped.
-      if ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX)) {
-        hgts[0] = botz1;
-        hgts[1] = topz1;
-        hgts[2] = topz2;
-        hgts[3] = botz2;
-      } else {
-        const float tz0 = zOrg;
-        const float tz1 = zOrg+texh;
-        if (tz0 >= max2(topz1, topz2) || tz1 <= max2(botz1, botz2)) {
-          doit = false;
-        } else {
-          hgts[0] = max2(botz1, tz0);
-          hgts[1] = min2(topz1, tz1);
-          hgts[2] = min2(topz2, tz1);
-          hgts[3] = max2(botz2, tz0);
-        }
-      }
-
-      if (doit) {
-        quad[0].z = hgts[0];
-        quad[1].z = hgts[1];
-        quad[2].z = hgts[2];
-        quad[3].z = hgts[3];
-
-        CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_MIDDLE);
-      }
-    }
-  } else {
-    // empty midtexture
-    SetupTextureAxesOffsetDummy(&sp->texinfo, MTex);
-  }
-
-  sp->frontTopDist = po->poceiling.dist;
-  sp->frontBotDist = po->pofloor.dist;
-  sp->backTopDist = po->poceiling.dist;
-  sp->backBotDist = po->pofloor.dist;
   sp->TextureOffset = sidedef->Mid.TextureOffset;
   sp->RowOffset = sidedef->Mid.RowOffset;
   sp->ResetFixTJunk();

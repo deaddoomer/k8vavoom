@@ -219,12 +219,40 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   // check polyobject
   polyobj_t *po = ld->pobj();
   if (po) {
+    if (po->validcount == validcount) return true; // already checked and stuck, ignore it
     if (!IsBlockingLine(ld)) return true;
-    if (!po->Is3D() || po->validcount == validcount) return true;
-    po->validcount = validcount; // do not check if we are inside of it, because we definitely are
+    //TODO: normal polyobjects?
+    if (!po->Is3D()) return true;
     if (po->pofloor.minz < po->poceiling.maxz) return true; // paper-thin or invalid polyobject
     const float z1 = cptrace.End.z+max2(0.0f, Height);
-    return Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1);
+    if (!Copy3DPObjFloorCeiling(cptrace, po, cptrace.End.z, z1)) {
+      po->validcount = validcount; // do not check if we are inside of it, because we definitely are
+      return false; // stuck inside
+    }
+    // check top texture, if it blocking
+    if (ld->flags&ML_CLIP_MIDTEX) {
+      const TVec hitPoint = cptrace.End;
+      const float hgt = max2(0.0f, Height);
+      // check if we are above the pobj (at least partially)
+      const float ptopz = po->poceiling.minz;
+      if (hitPoint.z >= ptopz || hitPoint.z+hgt > ptopz) {
+        // side doesn't matter, as it is guaranteed that both sides has the texture with the same height
+        const side_t *tside = &XLevel->Sides[ld->sidenum[0]];
+        VTexture *ttex = GTextureManager(tside->TopTexture);
+        if (!ttex) ttex = GTextureManager[GTextureManager.DefaultTexture];
+        const float texh = ttex->GetScaledHeight()/tside->Top.ScaleY;
+        if (texh > 0.0f) {
+          if ((hitPoint.z >= ptopz && hitPoint.z < ptopz+texh) ||
+              (hitPoint.z+hgt >= ptopz && hitPoint.z+hgt < ptopz+texh))
+          {
+            // blocked by top texture
+            po->validcount = validcount; // do not check if we are inside of it, because we definitely are
+            return false;
+          }
+        }
+      }
+    }
+
   }
 
   if (!IsBlockingLine(ld)) return true;

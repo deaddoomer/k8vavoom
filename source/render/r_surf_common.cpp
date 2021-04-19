@@ -82,6 +82,11 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
   //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; sectors=%d:%d", seg->pobj->index, (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1), (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));
   //seg->drawsegs->mid->frontTopDist += 0.346f;
   seg->drawsegs->mid->frontTopDist = -99999.9f;
+  // for 3dpobj: others too
+  if (seg->pobj && seg->pobj->Is3D()) {
+    if (seg->drawsegs->top && seg->drawsegs->top->surfs) seg->drawsegs->top->frontTopDist = -99999.9f;
+    if (seg->drawsegs->bot && seg->drawsegs->bot->surfs) seg->drawsegs->bot->frontTopDist = -99999.9f;
+  }
   //InvalidateSegPart(seg->drawsegs->mid);
 }
 

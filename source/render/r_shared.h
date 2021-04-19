@@ -174,6 +174,7 @@ struct surface_t {
     TF_CEILING = 1u<<4,
     TF_TOPHACK = 1u<<5,
     TF_3DFLOOR = 1u<<6, // this surface comes from gzdoom-style non-solid 3d floor (and it is guaranteed to be floor/ceiling)
+    TF_3DPOBJ  = 1u<<7, // this surface comes from 3d polyobject
   };
 
   // internal allocator flags

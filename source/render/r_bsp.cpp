@@ -292,19 +292,35 @@ bool VRenderLevelShared::SurfPrepareForRender (surface_t *surf) {
   surf->queueframe = currQueueFrame;
   surf->SetPlVisible(surf->IsVisibleFor(Drawer->vieworg));
 
-  // alpha: 1.0 is masked wall, 1.1 is solid wall
-  if (surf->texinfo->Alpha < 1.0f || surf->texinfo->Additive ||
-      ((surf->typeFlags&(surface_t::TF_MIDDLE|surface_t::TF_TOPHACK)) != 0 && tex->isTransparent()) ||
-      tex->isTranslucent())
-  {
-    surf->drawflags |= surface_t::DF_MASKED;
+  // 3d polyobjects
+  if (surf->typeFlags&surface_t::TF_3DPOBJ) {
+    if (surf->typeFlags&(surface_t::TF_TOP|surface_t::TF_BOTTOM)) {
+      if (tex->isSeeThrough()) {
+        surf->drawflags |= surface_t::DF_MASKED;
+      } else {
+        surf->drawflags &= ~surface_t::DF_MASKED;
+      }
+    } else {
+      // just in case, it is always solid
+      surf->texinfo->Alpha = 1.0f;
+      surf->texinfo->Additive = false;
+      surf->drawflags &= ~surface_t::DF_MASKED;
+    }
   } else {
-    surf->drawflags &= ~surface_t::DF_MASKED;
-    // this is for transparent floors
-    if (tex->isTransparent() && (surf->typeFlags&(surface_t::TF_FLOOR|surface_t::TF_CEILING)) &&
-        surf->subsector && surf->subsector->sector->HasAnyExtraFloors())
+    // alpha: 1.0 is masked wall, 1.1 is solid wall
+    if (surf->texinfo->Alpha < 1.0f || surf->texinfo->Additive ||
+        ((surf->typeFlags&(surface_t::TF_MIDDLE|surface_t::TF_TOPHACK)) != 0 && tex->isTransparent()) ||
+        tex->isTranslucent())
     {
       surf->drawflags |= surface_t::DF_MASKED;
+    } else {
+      surf->drawflags &= ~surface_t::DF_MASKED;
+      // this is for transparent floors
+      if (tex->isTransparent() && (surf->typeFlags&(surface_t::TF_FLOOR|surface_t::TF_CEILING)) &&
+          surf->subsector && surf->subsector->sector->HasAnyExtraFloors())
+      {
+        surf->drawflags |= surface_t::DF_MASKED;
+      }
     }
   }
 
