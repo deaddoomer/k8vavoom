@@ -595,6 +595,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
   const bool doopening = !(scanflags&PT_NOOPENS);
   const bool doadd = (scanflags&PT_ADDLINES);
+  bool wasBlockLine = false; // used to optimise object-only queries
   for (auto &&it : Level->allBlockLines(mapx, mapy)) {
     line_t *ld = it.line();
     const float dot1 = trace_plane.PointDistance(*ld->v1);
@@ -721,6 +722,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 
     if (blockFlag) {
       max_frac = frac; // we cannot travel further anyway
+      wasBlockLine = true;
     }
 
     if (doadd) {
@@ -745,7 +747,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     }
   }
 
-  if (max_frac < 1.0f && !(scanflags&PT_ADDLINES)) {
+  if (wasBlockLine && !(scanflags&PT_ADDLINES) && max_frac < 1.0f) {
     // remove things we may hit beyound the blocking line
     // there is no need to do this if we're collecting lines, because it will be done in `Init()`
     while (InterceptCount() > 0 && GetIntercept(InterceptCount()-1)->frac >= max_frac) Level->PopLastIntercept();
