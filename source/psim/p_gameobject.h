@@ -1479,10 +1479,6 @@ public:
   TVec HitPlaneNormal;
   TPlane HitPlane;
   line_t *HitLine; // can be `nullptr` if we hit a floor/ceiling
-  enum {
-    SightEarlyOut = 1u<<0, // set if hit line is not two-sided
-  };
-  vuint32 Flags;
 //private:
   TPlane LinePlane; // vertical plane for (Start,End), used only for line checks; may be undefined
 };

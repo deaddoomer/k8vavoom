@@ -140,6 +140,10 @@ bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
   const float den = DotProduct(trace.Delta, line->normal);
   const float num = line->dist-DotProduct(trace.Start, line->normal);
   const float frac = num/den;
+
+  // just in case
+  if (frac <= 0.0f || frac >= 1.0f) return false;
+
   TVec hitpoint = trace.Start+frac*trace.Delta;
   trace.LineEnd = hitpoint;
 
@@ -164,13 +168,13 @@ bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
     // check polyobject planes
     TVec phit, pnorm;
     TPlane pplane;
-    const float ptime = VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.End, &phit, &pnorm, &pplane);
+    const float ptime = VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.LineEnd, &phit, &pnorm, &pplane);
     if (ptime < 0.0f) return true; // no hit
 
     // ok, we have a hit, check if it is further than hitpoint
     //GCon->Logf(NAME_Debug, "pobj #%d: pdist=%g; hdist=%g", po->tag, (phit-trace.Start).lengthSquared(), (hitpoint-trace.Start).lengthSquared());
 
-    if ((phit-trace.Start).lengthSquared() > (hitpoint-trace.Start).lengthSquared()) return true; // further, no hit
+    //if ((phit-trace.Start).lengthSquared() > (hitpoint-trace.Start).lengthSquared()) return true; // further, no hit
 
     // we have a winner!
     trace.LineEnd = phit;
@@ -188,7 +192,7 @@ bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
   trace.LineStart = trace.LineEnd;
 
   if (!(line->flags&ML_TWOSIDED) || (line->flags&trace.LineBlockFlags)) {
-    trace.Flags |= linetrace_t::SightEarlyOut;
+    //trace.Flags |= linetrace_t::SightEarlyOut;
   } else {
     if (!po && (line->flags&ML_TWOSIDED)) {
       // crossed a two sided line
@@ -265,22 +269,22 @@ bool VLevel::BSPCrossSubsector (linetrace_t &trace, int num) {
 //==========================================================================
 bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) {
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
-    const node_t *bsp = &Nodes[bspnum];
+    const node_t *node = &Nodes[bspnum];
     // decide which side the start point is on
     // if bit 1 is set (i.e. `(side&2) != 0`), the point lies on the plane
-    const int side = bsp->PointOnSide2(trace.Start);
+    const int side = node->PointOnSide2(trace.Start);
     // cross the starting side
-    if (!CrossBSPNode(trace, bsp->children[side&1])) {
+    if (!CrossBSPNode(trace, node->children[side&1])) {
       // if on the plane, check other side
-      if (side&2) return CrossBSPNode(trace, bsp->children[(side&1)^1]);
+      if (side&2) (void)CrossBSPNode(trace, node->children[(side&1)^1]);
       // definitely blocked
       return false;
     }
     // the partition plane is crossed here
     // if not on the plane, and endpoint is on the same side, there's nothing more to do
-    if (!(side&2) && side == bsp->PointOnSide2(trace.End)) return true; // the line doesn't touch the other side
+    if (!(side&2) && side == node->PointOnSide2(trace.End)) return true; // the line doesn't touch the other side
     // cross the ending side
-    return CrossBSPNode(trace, bsp->children[(side&1)^1]);
+    return CrossBSPNode(trace, node->children[(side&1)^1]);
   } else {
     return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
   }
@@ -323,7 +327,7 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
   trace.LineStart = Start;
   trace.PlaneNoBlockFlags = PlaneNoBlockFlags;
   trace.HitLine = nullptr;
-  trace.Flags = 0;
+  //trace.Flags = 0;
 
   if (PlaneNoBlockFlags&SPF_NOBLOCKING) {
     moreLineBlockFlags |= ML_BLOCKING|ML_BLOCKEVERYTHING;
