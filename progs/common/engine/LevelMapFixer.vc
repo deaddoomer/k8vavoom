@@ -580,4 +580,11 @@ void KnownMapBugFixer () {
       }
     }
   }
+
+  //k8: Zen Dynamics MAP01
+  if (MapHashMD5 == "c1e1d7b32905049ff6eedd971124c844") {
+    printwarn("MAPFIX: Zen Dynamics, MAP01");
+    // move player 1 start, it is stuck in a wall
+    Things[0].x -= 1;
+  }
 }
