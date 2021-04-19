@@ -252,12 +252,6 @@ void VEntity::UnlinkFromWorld () {
 void VEntity::LinkToWorld (int properFloorCheck) {
   if (SubSector) UnlinkFromWorld();
 
-  /*
-  if (IsGoreBloodSpot(GetClass())) {
-    GCon->Logf(NAME_Debug, "*** %s:%u: LinkToWorld (%d); nosector=%u", GetClass()->GetName(), GetUniqueId(), (int)IsGoreBloodSpot(GetClass()), (unsigned)(!!(EntityFlags&EF_NoSector)));
-  }
-  */
-
   const float rad = GetMoveRadius();
 
   // link into subsector
@@ -327,7 +321,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   const bool needSectorList = !(EntityFlags&EF_NoSector);
 
   // just in case, always clear it
-  /*if (needSectorList)*/ linkAdditionalSectors.resetNoDtor();
+  linkAdditionalSectors.resetNoDtor();
 
   // check polyobjects, and remember their sectors (to be added to sector list later)
   // we have to do it here, because we need a right `Sector`
@@ -346,48 +340,6 @@ void VEntity::LinkToWorld (int properFloorCheck) {
           if (!XLevel->IsBBox2DTouchingSector(po->GetSector(), tmbbox)) continue;
           if (needSectorList) linkAdditionalSectors.append(po->GetSector());
           (void)Copy3DPObjFloorCeiling(po, EFloor, FloorZ, DropOffZ, ECeiling, CeilingZ, spo, Origin.z, Origin.z+max2(0.0f, Height));
-          /*
-          const float pz0 = po->pofloor.maxz;
-          const float pz1 = po->poceiling.maxz;
-          const float z0 = Origin.z;
-          const float z1 = z0+max2(0.0f, Height);
-          bool fixFloor = false, fixCeiling = false;
-          const float dz = z0-pz1;
-          //FIXME: hack for loader -- allow slightly stuck objects (it should be removed later)
-          if (dz >= -0.1f && dz <= 0.0f) {
-            Origin.z = pz1;
-            fixFloor = true;
-            if (!spo || spo->tag > po->tag) spo = po;
-          } else if (z1 > pz1) {
-            // our head is above, check and fix floor
-            fixFloor = true;
-            if (!spo || (spo->tag > po->tag && spo->poceiling.maxz != z0)) spo = po;
-          } else if (z0 <= pz0) {
-            // our feet are below, check and fix ceiling
-            fixCeiling = true;
-          } else {
-            // we are fully inside, still check and fix ceiling
-            fixCeiling = true;
-            if (!spo || spo->tag > po->tag) spo = po;
-          }
-          //GCon->Logf(NAME_Debug, "***LinkToWorld:%s(%u): pobj #%d: pz0=%f; pz1=%f; z0=%f; z1=%f; dz=%f; fixFloor=%d; fixCeiling=%d; FloorZ=%f (DropOffZ=%f); CeilingZ=%f", GetClass()->GetName(), GetUniqueId(), po->tag, pz0, pz1, z0, z1, dz, (int)fixFloor, (int)fixCeiling, FloorZ, DropOffZ, CeilingZ);
-          if (fixFloor && FloorZ <= pz1) {
-            if (FloorZ < pz1) DropOffZ = FloorZ; // fix dropoff
-            FloorZ = pz1;
-            EFloor.set(&po->poceiling, false);
-          }
-          if (fixCeiling && CeilingZ >= pz0) {
-            CeilingZ = pz0;
-            ECeiling.set(&po->pofloor, false);
-          }
-          */
-          /*
-          if (Copy3DPObjFloorCeiling(po, EFloor, FloorZ, ECeiling, CeilingZ, spo, Origin.z, z1)) {
-            if (Origin.z == po->poceiling.maxz && (!standpo || standpo->tag > po->tag)) standpo = po;
-          } else {
-            if (!insidepo || insidepo->tag > spo->tag) insidepo = spo;
-          }
-          */
         }
       }
     }
@@ -408,7 +360,6 @@ void VEntity::LinkToWorld (int properFloorCheck) {
     SNext = *Link;
     if (*Link) (*Link)->SPrev = this;
     *Link = this;
-
     // phares 3/16/98
     //
     // If sector_list isn't nullptr, it has a collection of sector

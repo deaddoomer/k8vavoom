@@ -426,13 +426,6 @@ int VLevel::PointContents (sector_t *sector, const TVec &p, bool dbgDump) {
 //
 //==========================================================================
 void VLevel::FindGapFloorCeiling (sector_t *sector, const TVec point, float height, TSecPlaneRef &floor, TSecPlaneRef &ceiling, bool debugDump) {
-  /*
-  if (debugDump) {
-    GCon->Logf("=== ALL OPENINGS: sector %p ===", sector);
-    for (const sec_region_t *reg = sector->eregions; reg; reg = reg->next) VLevel::DumpRegion(reg);
-  }
-  */
-
   if (!sector->Has3DFloors()) {
     // only one region, yay
     //FIXME: this is wrong, because we may have 3dmidtex
@@ -459,7 +452,6 @@ void VLevel::FindGapFloorCeiling (sector_t *sector, const TVec point, float heig
 
   if (debugDump) { GCon->Logf(NAME_Debug, "=== ALL OPENINGS (z=%g; height=%g) ===", point.z, height); DumpOpPlanes(oplist_gfc); }
 
-#if 1
   { // link it
     const unsigned olen = (unsigned)oplist_gfc.length();
     opening_t *xop = oplist_gfc.ptr();
@@ -480,60 +472,6 @@ void VLevel::FindGapFloorCeiling (sector_t *sector, const TVec point, float heig
     floor = sector->eregions->efloor;
     ceiling = sector->eregions->eceiling;
   }
-#else
-  // now find best-fit region:
-  //
-  //  1. if the thing fits in one of the gaps without moving vertically,
-  //     then choose that gap (one with less distance to the floor).
-  //
-  //  2. if there is only *one* gap which the thing could fit in, then
-  //     choose that gap.
-  //
-  //  3. if there is multiple gaps which the thing could fit in, choose
-  //     the gap whose floor is closest to the thing's current Z.
-  //
-  //  4. if there is no gaps which the thing could fit in, do the same.
-
-  // one the thing can possibly fit
-  const opening_t *bestGap = nullptr;
-  float bestGapDist = 999999.0f;
-
-  const opening_t *op = oplist_gfc.ptr();
-  for (int opleft = oplist_gfc.length(); opleft--; ++op) {
-    const float fz = op->bottom;
-    const float cz = op->top;
-    if (point.z >= fz && point.z <= cz) {
-      // no need to move vertically
-      if (debugDump) { GCon->Logf(NAME_Debug, " best fit"); DumpOpening(op); }
-      return op;
-    } else {
-      const float fdist = fabsf(point.z-fz); // we don't care about sign here
-      if (!bestGap || fdist < bestGapDist) {
-        if (debugDump) { GCon->Logf(NAME_Debug, " gap fit"); DumpOpening(op); }
-        bestGap = op;
-        bestGapDist = fdist;
-        //if (fdist == 0.0f) break; // there is no reason to look further
-      } else {
-        if (debugDump) { GCon->Logf(NAME_Debug, " REJECTED gap fit"); DumpOpening(op); }
-      }
-    }
-  }
-
-  if (bestFit) {
-    if (debugDump) { GCon->Logf(NAME_Debug, " best result"); DumpOpening(bestFit); }
-    floor = bestFit->efloor;
-    ceiling = bestFit->eceiling;
-  } else if (bestGap) {
-    if (debugDump) { GCon->Logf(NAME_Debug, " gap result"); DumpOpening(bestGap); }
-    floor = bestGap->efloor;
-    ceiling = bestGap->eceiling;
-  } else {
-    // just fit into sector
-    if (debugDump) { GCon->Logf(NAME_Debug, " no result"); }
-    floor = sector->eregions->efloor;
-    ceiling = sector->eregions->eceiling;
-  }
-#endif
 }
 
 
