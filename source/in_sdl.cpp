@@ -39,7 +39,7 @@
 
 
 static int cli_NoMouse = 0;
-static int cli_NoJoy = 1;
+static int cli_NoJoy = 0;
 static int cli_NoCotl = 0;
 
 /*static*/ bool cliRegister_input_args =
