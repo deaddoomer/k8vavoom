@@ -936,6 +936,54 @@ void VLevel::AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height
 
 //==========================================================================
 //
+//  VLevel::CalcPolyobjCenter2D
+//
+//  ssectors can contain split points on the same line
+//  if i'll simply sum all vertices, our center could be not right
+//  so i will use only "turning points" (as it should be)
+//
+//==========================================================================
+TVec VLevel::CalcPolyobjCenter2D (polyobj_t *po) noexcept {
+  int count = 0;
+  TVec center = TVec(0.0f, 0.0f);
+  TVec pdir(0.0f, 0.0f);
+  TVec lastv1(0.0f, 0.0f);
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (!count) {
+      // first one
+      lastv1 = *ld->v1;
+      pdir = ((*ld->v2)-lastv1);
+      if (pdir.length2DSquared() >= 1.0f) {
+        pdir = pdir.normalised();
+        center += lastv1;
+        count = 1;
+      }
+    } else {
+      // are we making a turn here?
+      const TVec xdir = ((*ld->v2)-lastv1).normalised();
+      if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
+        // looks like we did made a turn
+        // we have a new point
+        // remember it
+        lastv1 = *ld->v1;
+        // add it to the sum
+        center += lastv1;
+        ++count;
+        // and remember new direction
+        pdir = ((*ld->v2)-lastv1).normalised();
+      }
+    }
+  }
+  // if we have less than three points, something's gone wrong...
+  if (count < 3) return TVec::ZeroVector;
+  center = center/(float)count;
+  return center;
+}
+
+
+//==========================================================================
+//
 //  VLevel::InitPolyobjs
 //
 //  called from `LoadMap()` after spawning the world
@@ -950,20 +998,24 @@ void VLevel::InitPolyobjs () {
   for (auto &&po : allPolyobjects()) {
     if (!po->originalPts) {
       GCon->Logf(NAME_Warning, "pobj #%d has no anchor point, using centroid", po->tag);
-      vassert(po->numlines && po->numsegs);
-      float x = 0.0f;
-      float y = 0.0f;
-      for (auto &&it : po->LineFirst()) {
-        x += it.line()->v1->x;
-        y += it.line()->v1->y;
+      TVec cp;
+      if (po->posector) {
+        cp = CalcPolyobjCenter2D(po);
+        if (cp.isZero2D()) Host_Error("cannot calculate centroid for pobj #%d", po->tag);
+      } else {
+        vassert(po->numlines && po->numsegs);
+        cp = TVec(0.0f, 0.0f);
+        for (auto &&it : po->LineFirst()) {
+          cp.x += it.line()->v1->x;
+          cp.y += it.line()->v1->y;
+        }
+        cp /= (float)po->numlines;
       }
-      x /= (float)po->numlines;
-      y /= (float)po->numlines;
 
       PolyAnchorPoint_t anchor;
       memset((void *)&anchor, 0, sizeof(anchor));
-      anchor.x = x;
-      anchor.y = y;
+      anchor.x = cp.x;
+      anchor.y = cp.y;
       anchor.height = 0.0f;
       anchor.tag = po->tag;
       anchor.thingidx = -1; // no thing

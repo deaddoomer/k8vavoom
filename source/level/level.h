@@ -1275,6 +1275,7 @@ private:
   void LoadRogueConScript (VName, int, FRogueConSpeech *&, int &) const;
 
   // internal polyobject methods
+  static TVec CalcPolyobjCenter2D (polyobj_t *po) noexcept; // returns zero vector on error
   void TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor);
   void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();
