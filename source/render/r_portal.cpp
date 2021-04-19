@@ -293,7 +293,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
     //return;
   }
   for (auto &&surf : Surfs) {
-    if (surf->GetNormalZ() == 0) {
+    if (surf->GetNormalZ() == 0.0f) {
       // wall
       //seg_t *Seg = (seg_t *)surf->eplane;
       seg_t *Seg = surf->seg;
@@ -309,7 +309,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
       // floor/ceiling
       for (int j = 0; j < surf->count; ++j) {
         TVec v1, v2;
-        if ((surf->GetNormalZ() < 0) != Revert) {
+        if ((surf->GetNormalZ() < 0.0f) != Revert) {
           v1 = surf->verts[j < surf->count-1 ? j+1 : 0].vec();
           v2 = surf->verts[j].vec();
         } else {
