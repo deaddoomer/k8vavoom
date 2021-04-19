@@ -1264,10 +1264,21 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
           continue;
         }
         Type *ftx = parseVCType(par);
-        if (!ftx) { vassert(!par->isEOF()); continue; }
+        if (!ftx) {
+          vassert(!par->isEOF());
+          continue;
+        }
+        bool semiEaten = false;
         // new field
         for (;;) {
           VStr fldname = par->expectId();
+          // method?
+          if (par->eat("(")) {
+            //GLog.Logf(NAME_Debug, "%s: METHOD `%s`", *stp->loc.toStringNoCol(), *fldname);
+            skipUntilSemi(par);
+            semiEaten = true;
+            break;
+          }
           Field *fld = new Field();
           fld->name = VName(*fldname, VName::Add);
           fld->type = ftx->clone();
@@ -1276,7 +1287,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
           if (!par->eat(",")) break;
         }
         delete ftx;
-        par->expect(";");
+        if (!semiEaten) par->expect(";");
       }
       compressBools(stp);
       auto oldtp = vcTypes.find(stp->name);
