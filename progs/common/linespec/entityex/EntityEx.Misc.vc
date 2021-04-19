@@ -3752,15 +3752,6 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
     // just in case
     if (in.bIsALine) {
-      /*
-      if (!(in.line->flags&ML_TWOSIDED)) break; // stop
-
-      TVec hitPoint = Origin+(UseThingRange*in.frac)*useDir;
-      //open = XLevel.LineOpenings(in.line, hitPoint);
-      //open = XLevel.FindOpening(open, hitPoint.z, hitPoint.z+Height);
-      open = XLevel.FindLineOpening(in.line, hitPoint, Height);
-      if (!open || open->range < 1.0) break; // can't use through a wall
-      */
       if (in.bIsABlockingLine) break; // blocking line hit, no actor found
       continue;
     }
@@ -3827,8 +3818,6 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
         // gozzo does this
         open = nullptr;
       } else {
-        //open = XLevel.LineOpenings(ld, hitPoint);
-        //open = XLevel.FindOpening(open, hitPoint.z, hitPoint.z+Height);
         if (ld->pobject && ld->pobject->posector) {
           open = nullptr;
         } else {

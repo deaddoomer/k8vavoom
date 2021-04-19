@@ -748,70 +748,70 @@ opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsign
 //
 //  used in `VEntity::CheckRelPosition()`, and in `FindGapFloorCeiling()`
 //
+//  can return `nullptr`, or zero-height gap
+//
 //==========================================================================
-opening_t *VLevel::FindRelOpening (opening_t *InGaps, float z1, float z2) noexcept {
+opening_t *VLevel::FindRelOpening (opening_t *InGaps, float zbot, float ztop) noexcept {
   // check for trivial gaps
   if (!InGaps) return nullptr;
   if (!InGaps->next) return InGaps;
 
+  if (ztop < zbot) ztop = zbot; // just in case
+
   // there are 2 or more gaps; now it gets interesting :-)
-  if (z2 < z1) z2 = z1;
 
   // as we cannot be lower or higher than the base sector, clamp values
-  float gapminz = FLT_MAX;
+  float gapminz = +FLT_MAX;
   float gapmaxz = -FLT_MAX;
   for (opening_t *gap = InGaps; gap; gap = gap->next) {
     if (gapminz > gap->bottom) gapminz = gap->bottom;
     if (gapmaxz < gap->top) gapmaxz = gap->top;
   }
 
-  if (z1 > gapmaxz) {
-    const float hgt = z2-z1;
-    z2 = gapmaxz;
-    z1 = z2-hgt;
+  if (zbot > gapmaxz) {
+    const float hgt = ztop-zbot;
+    ztop = gapmaxz;
+    zbot = ztop-hgt;
   }
 
-  if (z1 < gapminz) {
-    const float hgt = z2-z1;
-    z1 = gapminz;
-    z2 = z1+hgt;
+  if (zbot < gapminz) {
+    const float hgt = ztop-zbot;
+    zbot = gapminz;
+    ztop = zbot+hgt;
   }
+
+  const float zheight = ztop-zbot;
 
   opening_t *fit_closest = nullptr;
-  float fit_mindist = FLT_MAX; //99999.0f;
+  float fit_mindist = FLT_MAX;
 
   opening_t *nofit_closest = nullptr;
-  float nofit_mindist = FLT_MAX; //99999.0f;
+  float nofit_mindist = FLT_MAX;
 
-  const float zmid = z1+(z2-z1)*0.5f;
-
-  opening_t *zerogap = nullptr;
+  const float zmid = zbot+zheight*0.5f;
 
   for (opening_t *gap = InGaps; gap; gap = gap->next) {
-    if (gap->range <= 0.0f) {
-      if (!zerogap) zerogap = gap;
-      continue;
-    }
+    if (gap->range <= 0.0f) continue;
 
-    const float f = gap->bottom;
-    const float c = gap->top;
+    const float gapbot = gap->bottom;
+    const float gaptop = gap->top;
 
-    if (z1 >= f && z2 <= c) return gap; // completely fits
+    if (zbot >= gapbot && ztop <= gaptop) return gap; // completely fits
 
     // can this gap contain us?
-    if (z2-z1 <= c-f) {
+    if (zheight <= gaptop-gapbot) {
       // this gap is big enough to contain us
-      // if this gap's floor is higher than our feet, it is not interesting
-      if (f > zmid) continue;
-      // choose minimal distance to floor or ceiling
-      const float dist = fabsf(z1-f);
+      // if this gap's bottom is higher than our "chest", it is not interesting
+      if (gapbot > zmid) continue;
+      // choose minimal distance to gap bottom
+      const float dist = fabsf(zbot-gapbot);
       if (dist < fit_mindist) {
         fit_mindist = dist;
         fit_closest = gap;
       }
     } else {
-      // not big enough
-      const float dist = fabsf(z1-f);
+      // not big enough, choose minimal distance to gap bottom
+      const float dist = fabsf(zbot-gapbot);
       if (dist < nofit_mindist) {
         nofit_mindist = dist;
         nofit_closest = gap;
@@ -819,7 +819,7 @@ opening_t *VLevel::FindRelOpening (opening_t *InGaps, float z1, float z2) noexce
     }
   }
 
-  return (fit_closest ? fit_closest : nofit_closest ? nofit_closest : zerogap ? zerogap : InGaps);
+  return (fit_closest ? fit_closest : nofit_closest ? nofit_closest : InGaps);
 }
 
 
@@ -827,9 +827,9 @@ opening_t *VLevel::FindRelOpening (opening_t *InGaps, float z1, float z2) noexce
 //
 //  VLevel::FindOpening
 //
-//  Find the best gap that the thing could fit in, given a certain Z
-//  position (z1 is foot, z2 is head).  Assuming at least two gaps exist,
-//  the best gap is chosen as follows:
+//  find the best gap that the thing could fit in, given a certain Z
+//  position (zbot is foot, ztop is head).
+//  assuming at least two gaps exist, the best gap is chosen as follows:
 //
 //  1. if the thing fits in one of the gaps without moving vertically,
 //     then choose that gap.
@@ -837,39 +837,42 @@ opening_t *VLevel::FindRelOpening (opening_t *InGaps, float z1, float z2) noexce
 //  2. if there is only *one* gap which the thing could fit in, then
 //     choose that gap.
 //
-//  3. if there is multiple gaps which the thing could fit in, choose
+//  3. if there are multiple gaps which the thing could fit in, choose
 //     the gap whose floor is closest to the thing's current Z.
 //
-//  4. if there is no gaps which the thing could fit in, do the same.
+//  4. if there are no gaps which the thing could fit in, do the same.
 //
-//  Can return `nullptr`
+//  can return `nullptr`
 //
 //==========================================================================
-opening_t *VLevel::FindOpening (opening_t *InGaps, float z1, float z2) {
+opening_t *VLevel::FindOpening (opening_t *InGaps, const float zbot, float ztop) {
   // check for trivial gaps
   if (!InGaps) return nullptr;
   if (!InGaps->next) return (InGaps->range > 0.0f ? InGaps : nullptr);
+
+  if (ztop < zbot) ztop = zbot; // just in case
+  const float zheight = ztop-zbot;
 
   int fit_num = 0;
   opening_t *fit_last = nullptr;
 
   opening_t *fit_closest = nullptr;
-  float fit_mindist = 99999.0f;
+  float fit_mindist = FLT_MAX;
 
   opening_t *nofit_closest = nullptr;
-  float nofit_mindist = 99999.0f;
+  float nofit_mindist = FLT_MAX;
 
   // there are 2 or more gaps; now it gets interesting :-)
   for (opening_t *gap = InGaps; gap; gap = gap->next) {
     if (gap->range <= 0.0f) continue;
-    const float f = gap->bottom;
-    const float c = gap->top;
+    const float gapbot = gap->bottom;
+    const float gaptop = gap->top;
 
-    if (z1 >= f && z2 <= c) return gap; // [1]
+    if (zbot >= gapbot && ztop <= gaptop) return gap; // [1]
 
-    const float dist = fabsf(z1-f);
+    const float dist = fabsf(zbot-gapbot);
 
-    if (z2-z1 <= c-f) {
+    if (zheight <= gaptop-gapbot) {
       // [2]
       ++fit_num;
       fit_last = gap;
@@ -934,5 +937,5 @@ IMPLEMENT_FUNCTION(VLevel, LineOpenings) {
   VOptParamInt blockmask(SPF_NOBLOCKING);
   VOptParamBool do3dmidtex(false);
   vobjGetParamSelf(linedef, point, blockmask, do3dmidtex);
-  RET_PTR(Self->LineOpenings(linedef, *point, blockmask, do3dmidtex));
+  RET_PTR(Self->LineOpenings(linedef, *point, blockmask, do3dmidtex, true/*usePoint*/));
 }

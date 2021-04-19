@@ -979,12 +979,12 @@ public: // openings
 
   // find "best fit" opening for the given coordz
   // `z1` is feet, `z2` is head
-  static opening_t *FindOpening (opening_t *gaps, float z1, float z2);
+  static opening_t *FindOpening (opening_t *gaps, const float zbot, float ztop);
 
   // find "rel best fit" opening for the given coordz
   // `z1` is feet, `z2` is head
   // used in sector movement, so it tries hard to not leave current opening
-  static opening_t *FindRelOpening (opening_t *gaps, float z1, float z2) noexcept;
+  static opening_t *FindRelOpening (opening_t *gaps, float zbot, float ztop) noexcept;
 
 public:
   #define VL_ITERATOR(arrname_,itername_,itertype_) \
