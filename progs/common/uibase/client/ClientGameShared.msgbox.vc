@@ -559,8 +559,6 @@ override bool MessageBoxActive () {
 void ControlResponse (int key, int msgtype) {
   string kb_down;
   string kb_up;
-  int key1;
-  int key2;
   int strifeMode = 0;
 
   switch (msgtype) {

@@ -122,9 +122,6 @@ override bool OnEvent (ref event_t evt) {
   }
 
   if (evt.bubbling && evt.type == ev_keydown) {
-    int key1;
-    int key2;
-
     switch (ConvertBoundKey(evt.keycode)) {
       case K_LEFTARROW:
         if (GetClGame().ControlColumn > 0) {
