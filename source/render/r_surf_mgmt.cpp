@@ -280,7 +280,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   surf = SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg);
   // and fix t-junctions from subdivision
   surf = FixSegSurfaceTJunctions(surf, seg);
-  InitSurfs(true, surf, texinfo, seg, sub); // recalc static lightmaps
+  InitSurfs(true, surf, texinfo, seg, sub, seg); // recalc static lightmaps
   return surf;
 }
 

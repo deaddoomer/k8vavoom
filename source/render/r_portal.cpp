@@ -295,7 +295,6 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
   for (auto &&surf : Surfs) {
     if (surf->GetNormalZ() == 0.0f) {
       // wall
-      //seg_t *Seg = (seg_t *)surf->eplane;
       seg_t *Seg = surf->seg;
       vassert(Seg);
       vassert(Seg >= RLev->Level->Segs);

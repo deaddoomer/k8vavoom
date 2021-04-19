@@ -258,7 +258,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
       //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
       ssurf->surfs = SubdivideFace(surf, sreg, ssurf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane);
       surf = ssurf->surfs; // if may be changed
-      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
+      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr); // recalc static lightmaps
     }
   } else if (updateZ) {
     // update z coords
@@ -270,13 +270,13 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
         svert->z = spl.GetPointZ(svert->x, svert->y);
         if (!changed && FASI(oldZ) != FASI(svert->z)) changed = true;
       }
-      if (changed) InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
+      if (changed) InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr); // recalc static lightmaps
     }
   }
   /*k8: no, lightmap doesn't depend of texture axes anymore
   else if (offsChanged) {
     // still have to force it, because texture is scrolled, and lightmap s/t are invalid
-    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub);
+    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr);
   }
   */
 
@@ -376,7 +376,7 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
     }
     // force lightmap recalculation
     if (changed || splane.splane->pic != skyflatnum) {
-      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub); // recalc static lightmaps
+      InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr); // recalc static lightmaps
     }
   }
   /*k8: no, lightmap doesn't depend of texture axes anymore
@@ -384,7 +384,7 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
     // still have to force it, because texture is scrolled, and lightmap s/t are invalid
     TPlane plane = *(TPlane *)splane.splane;
     if (splane.flipped) plane.FlipInPlace();
-    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub);
+    InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr);
   }
   */
 }

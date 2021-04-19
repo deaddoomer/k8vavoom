@@ -568,7 +568,6 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       if (!Portal) {
         // no, no such portal yet, create a new one
         if (IsStack) {
-          // advrender cannot into stacked sectors yet
           if (r_allow_stacked_sectors) Portal = new VSectorStackPortal(this, SkyBox);
         } else {
           if (r_enable_sky_portals) Portal = new VSkyBoxPortal(this, SkyBox);
@@ -737,6 +736,8 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
 
       surface_t *Surf = dseg->HorizonTop;
       Surf->plane = *(TPlane *)(dseg->seg);
+      Surf->subsector = sub;
+      Surf->seg = seg;
       Surf->texinfo = &Ceil->texinfo;
       Surf->HorizonPlane = Ceil->esecplane.splane; //FIXME: 3dfloor
       Surf->Light = (lLev<<24)|LightParams->LightColor;
@@ -771,6 +772,8 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
 
       surface_t *Surf = dseg->HorizonBot;
       Surf->plane = *(TPlane *)(dseg->seg);
+      Surf->subsector = sub;
+      Surf->seg = seg;
       Surf->texinfo = &Floor->texinfo;
       Surf->HorizonPlane = Floor->esecplane.splane; //FIXME: 3dfloor
       Surf->Light = (lLev<<24)|LightParams->LightColor;

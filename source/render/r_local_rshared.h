@@ -563,7 +563,7 @@ protected:
   // surface fixer for lightmaps
   virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) = 0;
 
-  virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) = 0;
+  virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg) = 0;
   virtual surface_t *SubdivideFace (surface_t *InF, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
 

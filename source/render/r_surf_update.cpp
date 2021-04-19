@@ -55,7 +55,7 @@ void VRenderLevelShared::UpdateTextureOffsets (subsector_t *sub, seg_t *seg, seg
   if (reinitSurfs) {
     // do not recalculate static lightmaps
     //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; OFFSETING", seg->pobj->index);
-    InitSurfs(false, sp->surfs, &sp->texinfo, (plane ? plane : seg), sub);
+    InitSurfs(false, sp->surfs, &sp->texinfo, (plane ? plane : seg), sub, seg);
   }
 }
 
@@ -84,7 +84,7 @@ void VRenderLevelShared::UpdateTextureOffsetsEx (subsector_t *sub, seg_t *seg, s
 
   if (reinitSurfs) {
     // do not recalculate static lightmaps
-    InitSurfs(false, sp->surfs, &sp->texinfo, seg, sub);
+    InitSurfs(false, sp->surfs, &sp->texinfo, seg, sub, seg);
   }
 }
 

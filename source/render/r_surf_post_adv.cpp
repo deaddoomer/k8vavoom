@@ -32,11 +32,13 @@
 //  VRenderLevelShadowVolume::InitSurfs
 //
 //==========================================================================
-void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t *surfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub) {
+void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t *surfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg) {
   if (!texinfo && !plane) return;
   for (; surfs; surfs = surfs->next) {
     if (texinfo) surfs->texinfo = texinfo;
     if (plane) surfs->plane = *plane;
+    surfs->subsector = sub;
+    surfs->seg = seg;
   }
 }
 
