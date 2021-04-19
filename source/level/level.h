@@ -933,12 +933,23 @@ public: // regions and openings internal functions
   static void DumpOpening (const opening_t *op) noexcept;
   static void DumpOpPlanes (const TArray<opening_t> &list) noexcept;
 
+  // cut the solid region from the list of openings in `dest`
+  // the list of openings will mainain its sorted order (from the lowest to the highest)
+  // also, no openings will intersect each other
+  void CutSolidRegion (TArray<opening_t> &dest, const float bottom, const float top,
+                       const TSecPlaneRef &efloor, const TSecPlaneRef &eceiling);
+
+  void Cut3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
+
   void GetBaseSectorOpening (opening_t &op, sector_t *sector, const TVec point, bool usePoint);
-  void InsertOpening (TArray<opening_t> &dest, const opening_t &op);
-  void Insert3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const line_t *linedef);
+
+  enum {
+    BSO_UsePoint = 1u<<0,
+    BSO_Do3DMid  = 1u<<1,
+  };
 
   void BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, sector_t *sector, const TVec point,
-                            unsigned NoBlockFlags, bool linkList, bool usePoint, bool skipNonSolid=false, bool forSurface=false);
+                            unsigned NoBlockFlags, unsigned bsoFlags);
 
 public: // regions
   // returns `CONTENTS_xxx` or sector content value

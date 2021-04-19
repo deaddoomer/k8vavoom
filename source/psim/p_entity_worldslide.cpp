@@ -98,7 +98,7 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
           if (!IsBlocked) {
             const TVec hpoint = contactPoint; //SlideOrg+fdist*SlideDir;
             // set openrange, opentop, openbottom
-            opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+            opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true/*do3dmidtex*/); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
             open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
             if (open && open->range >= Height && // fits
                 open->top-Origin.z >= Height && // mobj is not too high
@@ -188,7 +188,7 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
       if (!IsBlocked) {
         // set openrange, opentop, openbottom
         TVec hpoint = SlideOrg+in.frac*SlideDir;
-        opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+        opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true/*do3dmidtex*/); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
         open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
 
         if (open && open->range >= Height && // fits

@@ -242,7 +242,7 @@ bool VEntity::CheckLine (tmtrace_t &cptrace, line_t *ld) {
   // set openrange, opentop, openbottom
   //TVec hit_point = cptrace.End-(DotProduct(cptrace.End, ld->normal)-ld->dist)*ld->normal;
   TVec hit_point = cptrace.End-(ld->PointDistance(cptrace.End)*ld->normal);
-  opening_t *open = XLevel->LineOpenings(ld, hit_point, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+  opening_t *open = XLevel->LineOpenings(ld, hit_point, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
   open = VLevel::FindOpening(open, cptrace.End.z, cptrace.End.z+Height);
 
   if (open) {

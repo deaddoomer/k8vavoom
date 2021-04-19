@@ -399,13 +399,13 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   }
 
   // set openrange, opentop, openbottom
-  opening_t *open = XLevel->LineOpenings(ld, hitPoint, SPF_NOBLOCKING, true); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+  opening_t *open = XLevel->LineOpenings(ld, hitPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
 
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
   if (IsPlayer()) {
     GCon->Logf(NAME_Debug, "  checking line: %d; sz=%g; ez=%g; hgt=%g; traceFZ=%g; traceCZ=%g", (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.End.z, tmtrace.End.z+hgt, hgt, tmtrace.FloorZ, tmtrace.CeilingZ);
     for (opening_t *op = open; op; op = op->next) {
-      GCon->Logf(NAME_Debug, "   %p: bot=%g; top=%g; range=%g; lowfloor=%g; highceil=%g; fnormz=%g", op, op->bottom, op->top, op->range, op->lowfloor, op->highceiling, op->efloor.GetNormalZSafe());
+      GCon->Logf(NAME_Debug, "   %p: bot=%g; top=%g; range=%g; lowfloor=%g; fnormz=%g", op, op->bottom, op->top, op->range, op->lowfloor, op->efloor.GetNormalZSafe());
     }
   }
   #endif
