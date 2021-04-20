@@ -230,7 +230,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
   // k8vavoom-specific flag
   if (Flags&SXF_MUZZLE_TRACE) {
     TVec hitPoint;
-    if (!XLevel.BSPTraceLine(Origin, Origin+Org, HitPoint:hitPoint, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
+    if (!XLevel.BSPTraceLine(Origin, Origin+Org, HitPoint:hitPoint, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER|SPF_HITINFO)) {
       //printdebug("%C: trying to spawn muzzle with trace; dest=%s; hit=%s; diff=%s", self, Origin+Org, hitPoint, Origin+Org-hitPoint);
       TVec dir = Org.normalize;
       Org = hitPoint;

@@ -212,6 +212,8 @@ enum {
   // for BSP tracer (can be used for additional blocking flags)
   SPF_PLAYER = 256,
   SPF_MONSTER = 512,
+  // set if you want detailed hit info, not just boolean
+  SPF_HITINFO = 1024,
 };
 
 

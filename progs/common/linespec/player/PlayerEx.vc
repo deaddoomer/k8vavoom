@@ -1001,7 +1001,7 @@ void CheckWaterJump (optional bool asStep) {
   TVec end = start+vforward*24.0;
 
   VLevel::linetrace_t tm;
-  if (!Level.XLevel.BSPTraceLineEx(start, end, out trace:tm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
+  if (!Level.XLevel.BSPTraceLineEx(start, end, out trace:tm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER|SPF_HITINFO)) {
     // solid at waist
     start.z = MO.Origin.z+MO.Height;
     end = start+vforward*24.0;

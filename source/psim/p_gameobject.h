@@ -109,6 +109,7 @@ enum {
   // for BSP tracer (can be used for additional blocking flags)
   SPF_PLAYER = 1u<<8, //256u
   SPF_MONSTER = 1u<<9, //512u
+  SPF_HITINFO = 1u<<10, //1024u
 };
 
 
@@ -1466,21 +1467,13 @@ struct linetrace_t {
 public:
   TVec Start;
   TVec End;
-  TVec Delta;
-  TVec LineStart;
-  TVec LineEnd;
-  vuint32 PlaneNoBlockFlags;
-  // the following will be calculated from `PlaneNoBlockFlags`
-  vuint32 LineBlockFlags;
   // subsector we ended in (can be arbitrary if trace doesn't end in map boundaries)
   // valid only for `TraceLine()` call (i.e. BSP trace)
   subsector_t *EndSubsector;
-  // the following fields are valid only if trace was failed
-  TVec HitPlaneNormal;
-  TPlane HitPlane;
+  // the following fields are valid only if trace was failed (i.e. we hit something)
+  TPlane HitPlane; // set both for a line and for a flat
   line_t *HitLine; // can be `nullptr` if we hit a floor/ceiling
-//private:
-  TPlane LinePlane; // vertical plane for (Start,End), used only for line checks; may be undefined
+  float HitTime; // will be 1.0f if nothing was hit
 };
 
 

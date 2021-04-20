@@ -2373,7 +2373,7 @@ void Attack (bool newTick) {
 
     TVec hp, norm;
     // `BSPTraceLine()` returns `false` on hit
-    if (!doFire || !botmo.XLevel.BSPTraceLine(org, eorig, out hp, out norm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
+    if (!doFire || !botmo.XLevel.BSPTraceLine(org, eorig, out hp, out norm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER|SPF_HITINFO)) {
       // try sidemove
       EntityEx::PathInfo piLeft;
       if (botmo.TracePath(GetAngle()-90, SIDEWALK, out piLeft, allowJump:true)) {

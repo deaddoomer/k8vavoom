@@ -385,22 +385,25 @@ TVec VEntity::SlideMoveCamera (TVec org, TVec end, float radius) {
   if (radius < 2) {
     // just trace
     linetrace_t ltr;
-    if (XLevel->TraceLine(ltr, org, end, 0/*SPF_NOBLOCKSIGHT*/)) return end; // no hit
+    if (XLevel->TraceLine(ltr, org, end, 0/*|SPF_NOBLOCKSIGHT*/|SPF_HITINFO)) return end; // no hit
+    TVec hp = org+(end-org)*ltr.HitTime;
+    //TVec norm = ltr.HitPlane.normal;
+    //if (ltr.HitLine && ltr.HitLine->PointOnSide(org)) norm = -ltr.HitPlane.normal;
     // hit something, move slightly forward
-    TVec mdelta = ltr.LineEnd-org;
+    TVec mdelta = hp-org;
     //const float wantdist = velo.length();
     const float movedist = mdelta.length();
     if (movedist > 2.0f) {
       //GCon->Logf("*** hit! (%g,%g,%g)", ltr.HitPlaneNormal.x, ltr.HitPlaneNormal.y, ltr.HitPlaneNormal.z);
-      if (ltr.HitPlaneNormal.z) {
+      if (ltr.HitPlane.normal.z != 0.0f) {
         // floor
         //GCon->Logf("floor hit! (%g,%g,%g)", ltr.HitPlaneNormal.x, ltr.HitPlaneNormal.y, ltr.HitPlaneNormal.z);
-        ltr.LineEnd += ltr.HitPlaneNormal*2;
+        hp += ltr.HitPlane.normal*2.0f;
       } else {
-        ltr.LineEnd -= mdelta.normalised()*2;
+        hp -= mdelta.normalised()*2.0f;
       }
     }
-    return ltr.LineEnd;
+    return hp;
   }
 
   // split move in multiple steps if moving too fast

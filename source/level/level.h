@@ -1301,9 +1301,11 @@ private:
   // internal TraceLine methods
   //bool CheckPlane (linetrace_t &, const TSecPlaneRef &Plane) const;
   //bool CheckPlanes (linetrace_t &, sector_t *) const;
+  /*
   bool BSPCheckLine (linetrace_t &trace, line_t *line);
   bool BSPCrossSubsector (linetrace_t &trace, int num);
   bool CrossBSPNode (linetrace_t &trace, int BspNum);
+  */
 
   int SetBodyQueueTrans (int, int);
 

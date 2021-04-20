@@ -53,150 +53,150 @@ static inline VVA_CHECKRESULT VVA_OKUNUSED unsigned PlaneFlagsToLineFlags (unsig
 */
 
 
+struct TBSPTrace {
+public:
+  VLevel *Level;
+  TVec Start;
+  TVec End;
+  TVec Delta;
+  unsigned PlaneNoBlockFlags;
+  // the following will be calculated from `PlaneNoBlockFlags`
+  unsigned LineBlockFlags;
+  // subsector we ended in (can be arbitrary if trace doesn't end in map boundaries)
+  // valid only for `TraceLine()` call (i.e. BSP trace)
+  subsector_t *EndSubsector;
+  // the following fields are valid only if trace was failed (i.e. we hit something)
+  TPlane HitPlane; // set both for a line and for a flat
+  line_t *HitLine; // can be `nullptr` if we hit a floor/ceiling
+  float HitTime; // will be 1.0f if nothing was hit
+  TPlane LinePlane; // vertical plane for (Start,End), used only for line checks; may be undefined
+  bool wantHitInfo;
+};
+
+
 //==========================================================================
 //
 //  CheckPlanes
 //
 //==========================================================================
-static bool CheckPlanes (linetrace_t &trace, sector_t *sec) {
-  TVec outHit(0.0f, 0.0f, 0.0f), outNorm(0.0f, 0.0f, 0.0f);
-
-  if (!VLevel::CheckPassPlanes(sec, trace.LineStart, trace.LineEnd, trace.PlaneNoBlockFlags, &outHit, &outNorm, nullptr, &trace.HitPlane)) {
+static bool CheckPlanes (TBSPTrace &trace, sector_t *sec, float tmin, float tmax) {
+  TPlane hpl;
+  float otime;
+  if (!VLevel::CheckPassPlanes(sec, trace.Start, trace.End, trace.PlaneNoBlockFlags, nullptr, nullptr, nullptr, &hpl, &otime)) {
+    if (otime <= tmin || otime >= tmax) return true;
     // hit floor or ceiling
-    trace.LineEnd = outHit;
-    trace.HitPlaneNormal = outNorm;
+    trace.HitPlane = hpl;
+    trace.HitTime = otime;
     return false;
   }
-
   return true;
 }
 
 
 //==========================================================================
 //
-//  VLevel::BSPCheckLine
+//  BSPCheckLine
 //
 //  returns `true` if the line isn't crossed
 //  returns `false` if the line blocked the ray
 //
 //==========================================================================
-bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
+static bool BSPCheckLine (TBSPTrace &trace, line_t *line, float tmin, float tmax) {
   if (!line) return true; // ignore minisegs, they cannot block anything
 
   // allready checked other side?
   if (line->validcount == validcount) return true;
   line->validcount = validcount;
 
-  #if 0
-    int s1 = trace.LinePlane.PointOnSide2(*line->v1);
-    int s2 = trace.LinePlane.PointOnSide2(*line->v2);
+  // signed distances from the line points to the trace line plane
+  float dot1 = trace.LinePlane.PointDistance(*line->v1);
+  float dot2 = trace.LinePlane.PointDistance(*line->v2);
 
-    // line isn't crossed?
-    if (s1 == s2) return true;
+  // do not use multiplication to check: zero speedup, lost accuracy
+  //if (dot1*dot2 >= 0) return true; // line isn't crossed
+  if (dot1 < 0.0f && dot2 < 0.0f) return true; // didn't reached back side
+  // if the line is parallel to the trace plane, ignore it
+  if (dot1 >= 0.0f && dot2 >= 0.0f) return true; // didn't reached front side
 
-    s1 = line->PointOnSide2(trace.Start);
-    s2 = line->PointOnSide2(trace.End);
+  // signed distances from the trace points to the line plane
+  dot1 = line->PointDistance(trace.Start);
+  dot2 = line->PointDistance(trace.End);
 
-    // line isn't crossed?
-    if (s1 == s2 || (s1 == 2 && s2 == 0)) return true;
+  // do not use multiplication to check: zero speedup, lost accuracy
+  //if (dot1*dot2 >= 0) return true; // line isn't crossed
+  if (dot1 < 0.0f && dot2 < 0.0f) return true; // didn't reached back side
+  // if the trace is parallel to the line plane, ignore it
+  if (dot1 >= 0.0f && dot2 >= 0.0f) return true; // didn't reached front side
 
-    const bool backside = (s1 == 1);
-  #else
-    // k8: dunno, this doesn't make any difference
-
-    // signed distances from the line points to the trace line plane
-    float dot1 = trace.LinePlane.PointDistance(*line->v1);
-    float dot2 = trace.LinePlane.PointDistance(*line->v2);
-
-    // do not use multiplication to check: zero speedup, lost accuracy
-    //if (dot1*dot2 >= 0) return true; // line isn't crossed
-    if (dot1 < 0.0f && dot2 < 0.0f) return true; // didn't reached back side
-    // if the line is parallel to the trace plane, ignore it
-    if (dot1 >= 0.0f && dot2 >= 0.0f) return true; // didn't reached front side
-
-    // signed distances from the trace points to the line plane
-    dot1 = line->PointDistance(trace.Start);
-    dot2 = line->PointDistance(trace.End);
-
-    // do not use multiplication to check: zero speedup, lost accuracy
-    //if (dot1*dot2 >= 0) return true; // line isn't crossed
-    if (dot1 < 0.0f && dot2 < 0.0f) return true; // didn't reached back side
-    // if the trace is parallel to the line plane, ignore it
-    if (dot1 >= 0.0f && dot2 >= 0.0f) return true; // didn't reached front side
-
-    const bool backside = (dot1 < 0.0f);
-  #endif
+  const bool backside = (dot1 < 0.0f);
 
   polyobj_t *po = line->pobj();
   if (po && !po->Is3D()) po = nullptr;
 
   // crosses a two sided line
-  //sector_t *front = (s1 == 0 || s1 == 2 ? line->frontsector : line->backsector);
   sector_t *front = (backside ? line->backsector : line->frontsector);
+  if (!front) return true; // just in case
 
   // intercept vector
   // no need to check if den == 0, because then planes are parallel
   // (they will never cross) or it's the same plane (also rejected)
   const float den = DotProduct(trace.Delta, line->normal);
+  if (den == 0.0f) return true; // ...but just in case
   const float num = line->dist-DotProduct(trace.Start, line->normal);
   const float frac = num/den;
 
-  // just in case
-  if (frac <= 0.0f || frac >= 1.0f) return false;
+  if (frac <= 0.0f || frac >= 1.0f) return true;
 
-  TVec hitpoint = trace.Start+frac*trace.Delta;
-  trace.LineEnd = hitpoint;
+  // if collision is not inside our time, unmark the line
+  if (frac <= tmin || frac >= tmax) {
+    line->validcount = 0;
+    return true;
+  }
+
+  // if the hit is further than current hit time, do nothing
+  if (frac >= trace.HitTime) return true;
 
   if (po) {
-    const float pz0 = po->pofloor.minz;
-    const float pz1 = po->poceiling.maxz;
+    const float pzbot = po->pofloor.minz;
+    const float pztop = po->poceiling.maxz;
 
-    // fully under?
-    if (trace.Start.z <= pz0 && trace.End.z <= pz0) return true;
-    // fully over?
-    if (trace.Start.z >= pz1 && trace.End.z >= pz1) return true;
+    if (trace.Start.z <= pzbot && trace.End.z <= pzbot) return true; // fully under
+    if (trace.Start.z >= pztop && trace.End.z >= pztop) return true; // fully over
+
+    const float hpz = trace.Start.z+frac*trace.Delta.z;
 
     // easy case: hit pobj?
-    if (hitpoint.z >= pz0 && hitpoint.z <= pz1) {
-      trace.LineStart = trace.LineEnd;
-      trace.HitPlaneNormal = line->normal;
+    if (hpz >= pzbot && hpz <= pztop) {
       trace.HitPlane = *line;
       trace.HitLine = line;
+      trace.HitTime = frac;
       return false;
     }
 
+    // if we are entering the pobj, no need to check planes
+    if (dot1 >= 0.0f) return true; // no hit
+
     // check polyobject planes
-    TVec phit, pnorm;
     TPlane pplane;
-    const float ptime = VLevel::CheckPObjPassPlanes(po, trace.LineStart, trace.LineEnd, &phit, &pnorm, &pplane);
-    if (ptime < 0.0f) return true; // no hit
-
-    // ok, we have a hit, check if it is further than hitpoint
-    //GCon->Logf(NAME_Debug, "pobj #%d: pdist=%g; hdist=%g", po->tag, (phit-trace.Start).lengthSquared(), (hitpoint-trace.Start).lengthSquared());
-
-    //if ((phit-trace.Start).lengthSquared() > (hitpoint-trace.Start).lengthSquared()) return true; // further, no hit
+    const float ptime = VLevel::CheckPObjPassPlanes(po, trace.Start, trace.End, nullptr, nullptr, &pplane);
+    if (ptime <= tmin || ptime >= frac) return true; // no hit
 
     // we have a winner!
-    trace.LineEnd = phit;
-    trace.LineStart = trace.LineEnd;
-    trace.HitPlaneNormal = pnorm;
     trace.HitPlane = pplane;
     trace.HitLine = nullptr;
+    trace.HitTime = ptime;
     return false;
   }
 
-  if (front) {
-    if (!CheckPlanes(trace, front)) return false;
-  }
-
-  trace.LineStart = trace.LineEnd;
+  if (!CheckPlanes(trace, front, tmin, frac)) return false;
 
   if (!(line->flags&ML_TWOSIDED) || (line->flags&trace.LineBlockFlags)) {
-    //trace.Flags |= linetrace_t::SightEarlyOut;
+    //trace.Flags |= TBSPTrace::SightEarlyOut;
   } else {
     if (!po && (line->flags&ML_TWOSIDED)) {
       // crossed a two sided line
-      opening_t *open = LineOpenings(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK);
+      const TVec hitpoint = trace.Start+frac*trace.Delta;
+      opening_t *open = trace.Level->LineOpenings(line, hitpoint, trace.PlaneNoBlockFlags&SPF_FLAG_MASK);
       if (dbg_bsp_trace_strict_flats) {
         while (open) {
           if (open->range > 0.0f && open->bottom < hitpoint.z && open->top > hitpoint.z) return true;
@@ -212,24 +212,23 @@ bool VLevel::BSPCheckLine (linetrace_t &trace, line_t *line) {
   }
 
   // hit line
-  //trace.HitPlaneNormal = (s1 == 0 || s1 == 2 ? line->normal : -line->normal);
-  trace.HitPlaneNormal = (backside ? -line->normal : line->normal);
   trace.HitPlane = *line;
   trace.HitLine = line;
-
+  trace.HitTime = frac;
   return false;
 }
 
 
 //==========================================================================
 //
-//  VLevel::BSPCrossSubsector
+//  BSPCrossSubsector
 //
 //  Returns true if trace crosses the given subsector successfully.
 //
 //==========================================================================
-bool VLevel::BSPCrossSubsector (linetrace_t &trace, int num) {
-  subsector_t *sub = &Subsectors[num];
+static bool BSPCrossSubsector (TBSPTrace &trace, int num, float tmin, float tmax) {
+  subsector_t *sub = &trace.Level->Subsectors[num];
+  bool res = true;
 
   if (sub->HasPObjs()) {
     // check the polyobjects in the subsector first
@@ -237,40 +236,62 @@ bool VLevel::BSPCrossSubsector (linetrace_t &trace, int num) {
       polyobj_t *pobj = it.pobj();
       line_t **polyLines = pobj->lines;
       for (int polyCount = pobj->numlines; polyCount--; ++polyLines) {
-        //FIXME: this is wrong, we should perform check on properly clipped segs!
-        if (!BSPCheckLine(trace, *polyLines)) {
+        if (!BSPCheckLine(trace, *polyLines, tmin, tmax)) {
+          res = false;
           trace.EndSubsector = sub;
-          return false;
+          if (!trace.wantHitInfo) return false;
         }
       }
     }
   }
 
   // check lines
-  const seg_t *seg = &Segs[sub->firstline];
+  const seg_t *seg = &trace.Level->Segs[sub->firstline];
   for (int count = sub->numlines; count--; ++seg) {
-    if (seg->linedef && !BSPCheckLine(trace, seg->linedef)) {
+    if (seg->linedef && !BSPCheckLine(trace, seg->linedef, tmin, tmax)) {
+      res = false;
       trace.EndSubsector = sub;
-      return false;
+      if (!trace.wantHitInfo) return false;
     }
   }
 
-  // passed the subsector ok
-  return true;
+  return res;
 }
 
 
 //==========================================================================
 //
-//  VLevel::CrossBSPNode
+//  CrossBSPNode
 //
 //  Returns true if trace crosses the given node successfully.
 //
 //==========================================================================
-bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) {
+static bool CrossBSPNode (TBSPTrace &trace, int bspnum, float tmin, float tmax) {
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
-    const node_t *node = &Nodes[bspnum];
+    const node_t *node = &trace.Level->Nodes[bspnum];
     // decide which side the start point is on
+    const float denom = node->normal.dot(trace.Delta);
+    const float dist = node->dist-node->normal.dot(trace.Start);
+    unsigned nearIndex = (unsigned)(dist > 0.0f);
+    // if denom is zero, ray runs parallel to the plane
+    // in this case, just fall through to visit the near side (the one p lies on)
+    if (denom != 0.0f) {
+      const float t = dist/denom;
+      if (t > 0.0f && t <= tmax) {
+        if (t >= tmin) {
+          // visit near side first
+          if (!CrossBSPNode(trace, node->children[nearIndex], tmin, t)) return false;
+          // then visit the far side
+          return CrossBSPNode(trace, node->children[1u^nearIndex], t, tmax);
+        } else {
+          // 0 <= t < tmin, visit far side
+          //nearIndex ^= 1u;
+          return CrossBSPNode(trace, node->children[1u^nearIndex], t, tmax);
+        }
+      }
+    }
+    return CrossBSPNode(trace, node->children[nearIndex], tmin, tmax);
+    /*
     // if bit 1 is set (i.e. `(side&2) != 0`), the point lies on the plane
     const int side = node->PointOnSide2(trace.Start);
     // cross the starting side
@@ -285,8 +306,9 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) {
     if (!(side&2) && side == node->PointOnSide2(trace.End)) return true; // the line doesn't touch the other side
     // cross the ending side
     return CrossBSPNode(trace, node->children[(side&1)^1]);
+    */
   } else {
-    return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum));
+    return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum), tmin, tmax);
   }
 }
 
@@ -302,13 +324,30 @@ bool VLevel::CrossBSPNode (linetrace_t &trace, int bspnum) {
 //  sets `trace.LineEnd` if something was hit (and returns `false`)
 //
 //==========================================================================
-static bool CheckStartingPObj (VLevel *Level, linetrace_t &trace) {
+static bool CheckStartingPObj (TBSPTrace &trace) {
   TVec hp;
-  const float frc = Level->CheckPObjPlanesPoint(trace.Start, trace.End, nullptr, &hp, nullptr, nullptr);
-  if (frc < 0.0f) return true;
-  trace.EndSubsector = Level->PointInSubsector(trace.Start);
-  trace.LineEnd = hp;
+  TPlane hpl;
+  const float frc = trace.Level->CheckPObjPlanesPoint(trace.Start, trace.End, nullptr, &hp, nullptr, &hpl);
+  if (frc < 0.0f || frc >= 1.0f) return true;
+  trace.EndSubsector = trace.Level->PointInSubsector(trace.Start);
+  trace.HitPlane = hpl;
+  trace.HitTime = frc;
   return false;
+}
+
+
+//==========================================================================
+//
+//  FillLineTrace
+//
+//==========================================================================
+static void FillLineTrace (linetrace_t &trace, const TBSPTrace &btr) noexcept {
+  trace.Start = btr.Start;
+  trace.End = btr.End;
+  trace.EndSubsector = btr.EndSubsector;
+  trace.HitPlane = btr.HitPlane;
+  trace.HitLine = btr.HitLine;
+  trace.HitTime = btr.HitTime;
 }
 
 
@@ -321,13 +360,16 @@ static bool CheckStartingPObj (VLevel *Level, linetrace_t &trace) {
 //
 //==========================================================================
 bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, unsigned PlaneNoBlockFlags, unsigned moreLineBlockFlags) {
-  trace.Start = Start;
-  trace.End = End;
-  trace.Delta = End-Start;
-  trace.LineStart = Start;
-  trace.PlaneNoBlockFlags = PlaneNoBlockFlags;
-  trace.HitLine = nullptr;
-  //trace.Flags = 0;
+  TBSPTrace btr;
+  btr.Level = this;
+  btr.Start = Start;
+  btr.End = End;
+  btr.Delta = End-Start;
+  btr.PlaneNoBlockFlags = PlaneNoBlockFlags;
+  btr.HitLine = nullptr;
+  btr.HitTime = 1.0f;
+  btr.wantHitInfo = !!(PlaneNoBlockFlags&SPF_HITINFO);
+  PlaneNoBlockFlags &= ~SPF_HITINFO;
 
   if (PlaneNoBlockFlags&SPF_NOBLOCKING) {
     moreLineBlockFlags |= ML_BLOCKING|ML_BLOCKEVERYTHING;
@@ -339,44 +381,42 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
   if (PlaneNoBlockFlags&SPF_NOBLOCKSIGHT) moreLineBlockFlags |= ML_BLOCKSIGHT;
   if (PlaneNoBlockFlags&SPF_NOBLOCKSHOOT) moreLineBlockFlags |= ML_BLOCKHITSCAN;
 
-  trace.LineBlockFlags = moreLineBlockFlags;
+  btr.LineBlockFlags = moreLineBlockFlags;
 
   //k8: HACK!
-  if (trace.Delta.x == 0.0f && trace.Delta.y == 0.0f) {
+  if (btr.Delta.x == 0.0f && btr.Delta.y == 0.0f) {
     // this is vertical trace; end subsector is known
-    trace.EndSubsector = PointInSubsector(End);
-    //trace.Plane.SetPointNormal3D(Start, TVec(0.0f, 0.0f, (trace.Delta.z >= 0.0f ? 1.0f : -1.0f))); // arbitrary orientation
+    btr.EndSubsector = PointInSubsector(End);
+    //btr.Plane.SetPointNormal3D(Start, TVec(0.0f, 0.0f, (btr.Delta.z >= 0.0f ? 1.0f : -1.0f))); // arbitrary orientation
     // point cannot hit anything!
-    if (fabsf(trace.Delta.z) <= 0.0001f) {
+    if (fabsf(btr.Delta.z) <= 0.0001f) {
       // always succeed
-      trace.LineEnd = End;
+      FillLineTrace(trace, btr);
       return true;
     }
-    if (!CheckStartingPObj(this, trace)) return false;
-    return CheckPlanes(trace, trace.EndSubsector->sector);
+    const bool pores = CheckStartingPObj(btr);
+    const bool plres = CheckPlanes(btr, btr.EndSubsector->sector, 0.0f, btr.HitTime);
+    FillLineTrace(trace, btr);
+    return (pores && plres);
   } else {
     IncrementValidCount();
-    trace.LinePlane.SetPointDirXY(Start, trace.Delta);
+    btr.LinePlane.SetPointDirXY(Start, btr.Delta);
     // the head node is the last node output
     if (NumSubsectors > 1) {
-      if (!CheckStartingPObj(this, trace)) return false;
-      if (CrossBSPNode(trace, NumNodes-1)) {
-        trace.LineEnd = End;
-        // end subsector is known
-        trace.EndSubsector = PointInSubsector(End);
-        return CheckPlanes(trace, trace.EndSubsector->sector);
-      }
+      const bool pores = CheckStartingPObj(btr);
+      const bool plres = CrossBSPNode(btr, NumNodes-1, 0.0f, btr.HitTime);
+      FillLineTrace(trace, btr);
+      return (pores && plres);
     } else if (NumSubsectors == 1) {
-      if (!CheckStartingPObj(this, trace)) return false;
-      if (BSPCrossSubsector(trace, 0)) {
-        trace.LineEnd = End;
-        // end subsector is known
-        trace.EndSubsector = &Subsectors[0];
-        return CheckPlanes(trace, trace.EndSubsector->sector);
-      }
+      btr.EndSubsector = &Subsectors[0];
+      const bool pores = CheckStartingPObj(btr);
+      const bool plres = BSPCrossSubsector(btr, 0, 0.0f, btr.HitTime);
+      FillLineTrace(trace, btr);
+      return (pores && plres);
     }
   }
-  return false;
+  // we should never arrive here
+  abort();
 }
 
 
@@ -393,12 +433,15 @@ IMPLEMENT_FUNCTION(VLevel, BSPTraceLine) {
   vobjGetParamSelf(Start, End, HitPoint, HitNormal, noBlockFlags);
   linetrace_t trace;
   bool res = Self->TraceLine(trace, Start, End, noBlockFlags);
-  if (!res) {
-    if (HitPoint) *HitPoint = trace.LineEnd;
-    if (HitNormal) *HitNormal = trace.HitPlaneNormal;
+  if (!res && (noBlockFlags.value&SPF_HITINFO)) {
+    if (HitPoint) *HitPoint = Start+(End-Start)*trace.HitTime;
+    if (HitNormal) {
+      *HitNormal = trace.HitPlane.normal;
+      if (trace.HitLine && trace.HitLine->PointOnSide(Start)) *HitNormal = -trace.HitPlane.normal;
+    }
   } else {
     if (HitPoint) *HitPoint = End;
-    if (HitNormal) *HitNormal = TVec(0, 0, 1); // arbitrary
+    if (HitNormal) *HitNormal = TVec(0.0f, 0.0f, 1.0f); // arbitrary
   }
   RET_BOOL(res);
 }

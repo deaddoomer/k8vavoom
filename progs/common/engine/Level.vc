@@ -266,20 +266,13 @@ native final bool GetUDMFSideFloat (int sidenum, int id, name keyname, out float
 struct linetrace_t {
   TVec Start;
   TVec End;
-  TVec Delta;
-  TVec LineStart;
-  TVec LineEnd;
-  int PlaneNoBlockFlags; // SPF_XXX
-  // the following will be calculated from `PlaneNoBlockFlags`
-  int LineBlockFlags;
   // subsector we ended in (can be arbitrary if trace doesn't end in map boundaries)
   // valid only for `BSPTraceLine()` call (i.e. BSP trace)
   subsector_t *EndSubsector;
   // the following fields are valid only if trace was failed
-  TVec HitPlaneNormal;
-  TPlane HitPlane;
+  TPlane HitPlane; // set both for a line and for a flat
   line_t *HitLine; // can be `nullptr` if we hit a floor/ceiling
-  private readonly TPlane LinePlane; // vertical plane for (Start,End), used only for line checks; may be undefined
+  float HitTime; // will be 1.0f if nothing was hit
 };
 
 // use BSP to find sector where the given point lies
