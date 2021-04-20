@@ -452,8 +452,8 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
       Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     }
     if (!(ld->flags&ML_BLOCKING)) {
-      GCon->Logf(NAME_Error, "3d pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
-      ld->flags |= ML_BLOCKING;
+      Host_Error("3d pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      //ld->flags |= ML_BLOCKING;
     }
     // check sides
     const side_t *s0 = (ld->sidenum[0] < 0 ? nullptr : &Sides[ld->sidenum[0]]);
