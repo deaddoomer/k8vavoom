@@ -25,31 +25,23 @@
 //**************************************************************************
 class UpgradeStamina : DummyStrifeItem;
 
+
 //==========================================================================
 //
 //  TryPickup
 //
 //==========================================================================
-
-override bool TryPickup(EntityEx Toucher)
-{
-  if (!Toucher.Player)
-  {
-    return false;
-  }
-
+override bool TryPickup (EntityEx Toucher) {
+  if (!Toucher.Player) return false;
   Toucher.Stamina += Amount;
-  if (Toucher.Stamina >= MaxAmount)
-  {
-    Toucher.Stamina = MaxAmount;
-  }
+  if (Toucher.Stamina >= MaxAmount) Toucher.Stamina = MaxAmount;
   Toucher.GiveBody(-100);
   GoAwayAndDie();
   return true;
 }
 
-defaultproperties
-{
+
+defaultproperties {
   ConversationID = 306;
   Amount = 10;
   MaxAmount = 100;
