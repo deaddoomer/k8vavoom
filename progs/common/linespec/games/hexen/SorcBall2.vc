@@ -25,6 +25,7 @@
 //**************************************************************************
 class SorcBall2 : SorcBall;
 
+
 //============================================================================
 //
 //  A_CastSorcererSpell
@@ -32,16 +33,14 @@ class SorcBall2 : SorcBall;
 //  Defensive
 //
 //============================================================================
-
-override void A_CastSorcererSpell()
-{
-  // Put sorcerer into throw spell animation
+override void A_CastSorcererSpell () {
+  // put sorcerer into throw spell animation
   if (Target.Health > 0) {
     auto st = Target.FindState('Attack2');
     if (st) Target.SetState(st);
   }
 
-  float z = Target.Origin.z - Target.FloorClip + SORC_DEFENSE_HEIGHT;
+  float z = Target.Origin.z-Target.FloorClip+SORC_DEFENSE_HEIGHT;
   EntityEx mo = Spawn(SorcFX2, vector(Origin.x, Origin.y, z));
 
   Actor(Target).bInvulnerable = true;
@@ -52,8 +51,8 @@ override void A_CastSorcererSpell()
   Target.Args[3] = SORC_STOPPED;
 }
 
-states
-{
+
+states {
 Spawn:
   SBMB ABCDEFGHIJKLMNOP 2 A_SorcBallOrbit
   Loop
@@ -68,7 +67,7 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   BallAngleOffset = 120.0;
 }

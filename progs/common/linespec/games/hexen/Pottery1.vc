@@ -23,56 +23,51 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Pottery1 : Actor
-  game(GAME_Hexen)
-  __mobjinfo__(104);
+class Pottery1 : Actor game(GAME_Hexen) __mobjinfo__(104);
+
 
 //==========================================================================
 //
 //  OnHitFloor
 //
 //==========================================================================
-
-override void OnHitFloor()
-{
+override void OnHitFloor () {
   ::OnHitFloor();
   Damage(none, none, 25);
 }
+
 
 //==========================================================================
 //
 //  A_PotteryExplode
 //
 //==========================================================================
-
-[decorate] final void A_PotteryExplode()
-{
-  EntityEx A;
-  int i;
-
-  for (i = (P_Random()&3)+3; i; i--) {
-    A = Spawn(PotteryBit, Origin);
+[decorate] final void A_PotteryExplode () {
+  EntityEx lastA;
+  for (int i = (P_Random()&3)+3; i; --i) {
+    EntityEx A = Spawn(PotteryBit, Origin);
     if (A) {
-      A.Velocity.x = (Random() - Random()) * 4.0 * 35.0;
-      A.Velocity.y = (Random() - Random()) * 4.0 * 35.0;
-      A.Velocity.z = (Random() * 8.0 + 5.0) * (3.0 / 4.0) * 35.0;
+      lastA = A;
+      A.Velocity.x = (Random()-Random())*4.0*35.0;
+      A.Velocity.y = (Random()-Random())*4.0*35.0;
+      A.Velocity.z = (Random()*8.0+5.0)*(3.0/4.0)*35.0;
+      A.SetState(GetStatePlus(A.IdleState, P_Random()%5, IgnoreJump:true));
     }
-    A.SetState(GetStatePlus(A.IdleState, P_Random() % 5, IgnoreJump:true));
   }
-  A.PlaySound('PotteryExplode', CHAN_VOICE);
+
+  if (lastA) lastA.PlaySound('PotteryExplode', CHAN_VOICE);
+
   if (Args[0]) {
     // Spawn an item. Don't spawn monsters it they are disabled.
-    class!EntityEx Cls = class!EntityEx(FindClassFromScriptId(Args[0],
-      LineSpecialGameInfo(Level.Game).GameFilterFlag));
-    if (Cls && (!Level.Game.nomonsters || !Cls.default.bMonster))
-    {
+    class!EntityEx Cls = class!EntityEx(FindClassFromScriptId(Args[0], LineSpecialGameInfo(Level.Game).GameFilterFlag));
+    if (Cls && (!Level.Game.nomonsters || !Cls.default.bMonster)) {
       Spawn(Cls, Origin, vector(0.0, 0.0, 0.0));
     }
   }
 }
 
-states
-{
+
+states {
 Spawn:
   POT1 A -1
   Stop
@@ -81,8 +76,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 15;
   Radius = 10.0;
   Height = 32.0;

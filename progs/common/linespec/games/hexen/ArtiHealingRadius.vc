@@ -25,7 +25,7 @@
 //**************************************************************************
 class ArtiHealingRadius : Inventory game(GAME_Hexen) __mobjinfo__(10120);
 
-const float HEAL_RADIUS_DIST  = 255.0;
+const float HEAL_RADIUS_DIST = 255.0;
 
 
 //==========================================================================

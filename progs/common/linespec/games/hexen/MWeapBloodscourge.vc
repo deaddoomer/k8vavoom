@@ -25,70 +25,57 @@
 //**************************************************************************
 class MWeapBloodscourge : MageWeapon;
 
-int       CShift;
+int CShift;
+
 
 //==========================================================================
 //
 //  GetBlend
 //
 //==========================================================================
-
-override int GetBlend()
-{
+override int GetBlend () {
   return CShift;
 }
+
 
 //==========================================================================
 //
 //  A_MStaffPalette1
 //
 //==========================================================================
-
-[decorate] final void A_MStaffPalette1() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_MStaffPalette1 () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn) MWeapBloodscourge(Wpn).CShift = RGBA(255, 187, 4, 63);
 }
+
 
 //==========================================================================
 //
 //  A_MStaffPalette2
 //
 //==========================================================================
-
-[decorate] final void A_MStaffPalette2() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_MStaffPalette2 () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn) MWeapBloodscourge(Wpn).CShift = RGBA(255, 187, 4, 51);
 }
+
 
 //==========================================================================
 //
 //  A_MStaffPalette3
 //
 //==========================================================================
-
-[decorate] final void A_MStaffPalette3() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_MStaffPalette3 () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   // reset back to original playpal
   if (Wpn) MWeapBloodscourge(Wpn).CShift = 0;
 }
 
-states
-{
+
+states {
 Ready:
   MSTF AAAAAABBBBBBCCCCCCDDDDDDEEEEEEFFFFF 1 A_WeaponReady
   Loop
@@ -109,8 +96,8 @@ Fire:
   Goto Ready
 }
 
-defaultproperties
-{
+
+defaultproperties {
   SelectionOrder = 3100;
   AmmoType1 = Mana1;
   AmmoType2 = Mana2;

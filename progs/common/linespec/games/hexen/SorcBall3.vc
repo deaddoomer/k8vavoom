@@ -25,6 +25,7 @@
 //**************************************************************************
 class SorcBall3 : SorcBall;
 
+
 //============================================================================
 //
 //  A_CastSorcererSpell
@@ -32,30 +33,24 @@ class SorcBall3 : SorcBall;
 //  Reinforcements
 //
 //============================================================================
-
-override void A_CastSorcererSpell()
-{
+override void A_CastSorcererSpell () {
   EntityEx mo;
-  float ang1, ang2;
 
-  // Put sorcerer into throw spell animation
+  // put sorcerer into throw spell animation
   if (Target.Health > 0) {
     auto st = Target.FindState('Attack2');
     if (st) Target.SetState(st);
   }
 
-  ang1 = AngleMod360(Angles.yaw - 45.0);
-  ang2 = AngleMod360(Angles.yaw + 45.0);
-  if (Health < (InitialHealth / 3))
-  {
-    // Spawn 2 at a time
+  float ang1 = AngleMod360(Angles.yaw-45.0);
+  float ang2 = AngleMod360(Angles.yaw+45.0);
+  if (Health < InitialHealth/3) {
+    // spawn 2 at a time
     mo = Actor(Target).SpawnMissileAngle(SorcFX3, ang1, 4.0);
     if (mo) mo.Target = Target;
     mo = Actor(Target).SpawnMissileAngle(SorcFX3, ang2, 4.0);
     if (mo) mo.Target = Target;
-  }
-  else
-  {
+  } else {
     if (P_Random() < 128) ang1 = ang2;
     mo = Actor(Target).SpawnMissileAngle(SorcFX3, ang1, 4.0);
     if (mo) mo.Target = Target;
@@ -64,8 +59,8 @@ override void A_CastSorcererSpell()
   Target.Args[3] = SORC_STOPPED;
 }
 
-states
-{
+
+states {
 Spawn:
   SBMG ABCDEFGHIJKLMNOP 2 A_SorcBallOrbit
   Loop
@@ -80,8 +75,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Mass = 100.0;
   BallAngleOffset = 240.0;
 }

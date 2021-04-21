@@ -25,209 +25,172 @@
 //**************************************************************************
 class TelOtherFX1 : Actor;
 
+
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-   if ((victim.bMonster || victim.bIsPlayer) && !victim.bBoss && !victim.bNoTeleOther)
-  {
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if ((victim.bMonster || victim.bIsPlayer) && !victim.bBoss && !victim.bNoTeleOther) {
     TeleportOther(Actor(victim));
   }
   return -1;
 }
+
 
 //==========================================================================
 //
 //  TeleportOther
 //
 //==========================================================================
-
-final void TeleportOther(Actor victim)
-{
-  if (victim.bIsPlayer)
-  {
-    if (Level.Game.deathmatch)
-    {
+final void TeleportOther (Actor victim) {
+  if (victim.bIsPlayer) {
+    if (Level.Game.deathmatch) {
       TeleportToDeathmatchStarts(victim);
-    }
-    else
-    {
+    } else {
       TeleportToPlayerStarts(victim);
     }
-  }
-  else
-  {
-    // If death action, run it upon teleport
-    if (victim.bMonster && victim.Special)
-    {
+  } else {
+    // if death action, run it upon teleport
+    if (victim.bMonster && victim.Special) {
       victim.SetTID(0);
       Level.ExecuteActionSpecial(victim.Special, victim.Args[0],
         victim.Args[1], victim.Args[2], victim.Args[3],
-        victim.Args[4], nullptr, 0, Level.bActivateOwnSpecial ? victim :
-        Target);
+        victim.Args[4], nullptr, 0, (Level.bActivateOwnSpecial ? victim : Target));
       victim.Special = 0;
     }
-
-    // Send all monsters to deathmatch spots
+    // send all monsters to deathmatch spots
     TeleportToDeathmatchStarts(victim);
   }
 }
+
 
 //==========================================================================
 //
 //  TeleportToDeathmatchStarts
 //
 //==========================================================================
-
-final void TeleportToDeathmatchStarts(Actor victim)
-{
-  int i;
-  float destX;
-  float destY;
-  float destAngle;
-
-  if (Level.DeathmatchStarts.length)
-  {
-    i = P_Random() % Level.DeathmatchStarts.length;
-    destX = Level.DeathmatchStarts[i].x;
-    destY = Level.DeathmatchStarts[i].y;
-    destAngle = float(45 * (Level.DeathmatchStarts[i].angle / 45));
-    victim.Teleport(vector(destX, destY, ONFLOORZ), destAngle, true,
-      true, false);
-  }
-  else
-  {
+final void TeleportToDeathmatchStarts (Actor victim) {
+  if (Level.DeathmatchStarts.length) {
+    int i = P_Random()%Level.DeathmatchStarts.length;
+    float destX = Level.DeathmatchStarts[i].x;
+    float destY = Level.DeathmatchStarts[i].y;
+    float destAngle = float(45*(Level.DeathmatchStarts[i].angle/45));
+    victim.Teleport(vector(destX, destY, ONFLOORZ), destAngle, true, true, false);
+  } else {
     TeleportToPlayerStarts(victim);
   }
 }
+
 
 //==========================================================================
 //
 //  TeleportToPlayerStarts
 //
 //==========================================================================
-
-final void TeleportToPlayerStarts(Actor victim)
-{
-  int i;
+final void TeleportToPlayerStarts (Actor victim) {
   int selections = 0;
-  float destX;
-  float destY;
-  float destAngle;
-
-  for (i = 0; i < MAXPLAYERS; i++) {
-    if (!Level.Game.Players[i]) continue;
+  foreach (int pn; 0..MAXPLAYERS) {
+    if (!Level.Game.Players[pn]) continue;
     ++selections;
   }
+
   if (selections == 0) Error("no players in game; wtf?!");
+
   //FIXME: this logic is flawed!
-  i = P_Random()%selections;
+  int i = P_Random()%selections;
   while (selections--) {
     auto sp = Level.GetPlayerStart(i, 0, failIfNotFound:false);
     if (sp) {
-      destX = sp->x;
-      destY = sp->y;
-      destAngle = 45.0*sp->angle/45.0;
+      float destX = sp->x;
+      float destY = sp->y;
+      float destAngle = 45.0*sp->angle/45.0;
       victim.Teleport(vector(destX, destY, ONFLOORZ), destAngle, true, true, false);
       return;
     }
     i = (i+1)%MAXPLAYERS;
   }
+
   Error("no player spawn spots in game; wtf?!");
 }
+
 
 //==========================================================================
 //
 //  A_TeloSpawnA
 //
 //==========================================================================
-
-[decorate] final void A_TeloSpawnA()
-{
+[decorate] final void A_TeloSpawnA () {
   EntityEx A = Spawn(TelOtherFX2, Origin);
-  if (A)
-  {
+  if (A) {
     A.Angles.yaw = Angles.yaw;
     A.Target = Target;
-    A.Velocity = Velocity / 2.0;
-    A.Special1 = 1; // Lifetime countdown
+    A.Velocity = Velocity/2.0;
+    A.Special1 = 1; // lifetime countdown
   }
 }
+
 
 //==========================================================================
 //
 //  A_TeloSpawnB
 //
 //==========================================================================
-
-[decorate] final void A_TeloSpawnB()
-{
+[decorate] final void A_TeloSpawnB () {
   EntityEx A = Spawn(TelOtherFX3, Origin);
-  if (A)
-  {
+  if (A) {
     A.Angles.yaw = Angles.yaw;
     A.Target = Target;
-    A.Velocity = Velocity / 2.0;
-    A.Special1 = 1; // Lifetime countdown
+    A.Velocity = Velocity/2.0;
+    A.Special1 = 1; // lifetime countdown
   }
 }
+
 
 //==========================================================================
 //
 //  A_TeloSpawnC
 //
 //==========================================================================
-
-[decorate] final void A_TeloSpawnC()
-{
+[decorate] final void A_TeloSpawnC () {
   EntityEx A = Spawn(TelOtherFX4, Origin);
-  if (A)
-  {
+  if (A) {
     A.Angles.yaw = Angles.yaw;
     A.Target = Target;
-    A.Velocity = Velocity / 2.0;
-    A.Special1 = 1; // Lifetime countdown
+    A.Velocity = Velocity/2.0;
+    A.Special1 = 1; // lifetime countdown
   }
 }
+
 
 //==========================================================================
 //
 //  A_TeloSpawnD
 //
 //==========================================================================
-
-[decorate] final void A_TeloSpawnD()
-{
+[decorate] final void A_TeloSpawnD () {
   EntityEx A = Spawn(TelOtherFX5, Origin);
-  if (A)
-  {
+  if (A) {
     A.Angles.yaw = Angles.yaw;
     A.Target = Target;
-    A.Velocity = Velocity / 2.0;
-    A.Special1 = 1; // Lifetime countdown
+    A.Velocity = Velocity/2.0;
+    A.Special1 = 1; // lifetime countdown
   }
 }
+
 
 //==========================================================================
 //
 //  A_CheckTeleRing
 //
 //==========================================================================
-
-[decorate] final void A_CheckTeleRing()
-{
-  if (Special1-- <= 0)
-  {
-    SetState(FindState('Death'));
-  }
+[decorate] final void A_CheckTeleRing () {
+  if (Special1-- <= 0) SetState(FindState('Death'));
 }
 
-states
-{
+
+states {
 Spawn:
   TRNG E 5 Bright
   TRNG D 4 Bright
@@ -243,8 +206,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 16.0;
   Speed = 700.0;
   MissileDamage = 10001;

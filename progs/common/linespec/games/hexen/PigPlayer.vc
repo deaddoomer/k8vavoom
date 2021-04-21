@@ -25,22 +25,18 @@
 //**************************************************************************
 class PigPlayer : PlayerPawn;
 
+
 //==========================================================================
 //
 //  MorphPlayerThink
 //
 //==========================================================================
-
-override void MorphPlayerThink()
-{
+override void MorphPlayerThink () {
   //FIXME this sucks
-  if (int(32.0 * PlayerEx(Player).MorphTime) & 15)
-  {
-    return;
-  }
-  if (!(Velocity.x + Velocity.y) && P_Random() < 64)
-  {
-    // Snout sniff
+  if (int(32.0*PlayerEx(Player).MorphTime)&15) return;
+
+  if (!(Velocity.x+Velocity.y) && P_Random() < 64) {
+    // snout sniff
     Weapon wpn = PlayerEx(Player).ReadyWeapon;
     state flashState = none;
     if (wpn) flashState = wpn.FindState('Flash');
@@ -51,14 +47,12 @@ override void MorphPlayerThink()
     PlaySound('PigActive1', CHAN_VOICE);  // snort
     return;
   }
-  if (P_Random() < 48)
-  {
-    PlaySound('PigActive', CHAN_VOICE);
-  }
+
+  if (P_Random() < 48) PlaySound('PigActive', CHAN_VOICE);
 }
 
-states
-{
+
+states {
 Spawn:
   PIGY A -1
   Stop
@@ -86,8 +80,8 @@ Ice:
   Wait
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 30;
   Radius = 16.0;
   Height = 24.0;
@@ -98,7 +92,7 @@ defaultproperties
   SideMove1 = 0.97;
   SideMove2 = 0.97;
   GruntSpeed = 12.0;
-  JumpVelZ = 6.5 * 35.0;
+  JumpVelZ = 6.5*35.0;
   RDFactor = 0.25;
   PainSound = 'PigPain';
   DeathSound = 'PigDeath';
@@ -107,5 +101,6 @@ defaultproperties
   bPickUp = false;
 
   DropItemList.length = 1;
-  DropItemList[0].Type = Snout; DropItemList[0].Amount = 1;
+  DropItemList[0].Type = Snout;
+  DropItemList[0].Amount = 1;
 }

@@ -23,162 +23,126 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class FWeapAxe : FighterWeapon
-  game(GAME_Hexen)
-  __mobjinfo__(8010)
-  __scriptid__(27);
+class FWeapAxe : FighterWeapon game(GAME_Hexen) __mobjinfo__(8010) __scriptid__(27);
+
 
 //==========================================================================
 //
 //  GetUpState
 //
 //==========================================================================
-
-override state GetUpState()
-{
-  return Ammo1.Amount > 0 ? FindState('GlowSelect') : ::GetUpState();
+override state GetUpState () {
+  return (Ammo1.Amount > 0 ? FindState('GlowSelect') : ::GetUpState());
 }
+
 
 //==========================================================================
 //
 //  GetDownState
 //
 //==========================================================================
-
-override state GetDownState()
-{
-  return Ammo1.Amount > 0 ? FindState('GlowDeselect') : ::GetDownState();
+override state GetDownState () {
+  return (Ammo1.Amount > 0 ? FindState('GlowDeselect') : ::GetDownState());
 }
+
 
 //==========================================================================
 //
 //  GetReadyState
 //
 //==========================================================================
-
-override state GetReadyState()
-{
-  return Ammo1.Amount > 0 ? FindState('GlowReady') : ::GetReadyState();
+override state GetReadyState () {
+  return (Ammo1.Amount > 0 ? FindState('GlowReady') : ::GetReadyState());
 }
+
 
 //==========================================================================
 //
 //  GetAttackState
 //
 //==========================================================================
-
-override state GetAttackState(bool Hold)
-{
-  return Ammo1.Amount > 0 ? FindState('GlowFire') : // Glowing axe
-    ::GetAttackState(Hold);
+override state GetAttackState (bool Hold) {
+  return (Ammo1.Amount > 0 ? FindState('GlowFire') /* glowing axe */ : ::GetAttackState(Hold));
 }
+
 
 //==========================================================================
 //
 //  A_FAxeCheckReady
 //
 //==========================================================================
-
-[decorate] final void A_FAxeCheckReady() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_FAxeCheckReady () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if (Wpn.Ammo1.Amount > 0)
-  {
+  if (Wpn.Ammo1.Amount > 0) {
     Player.SetViewObject(Wpn);
     Player.SetViewState(PS_WEAPON, Wpn.FindState('GlowReady'));
-  }
-  else
-  {
+  } else {
     A_WeaponReady();
   }
 }
+
 
 //==========================================================================
 //
 //  A_FAxeCheckReadyG
 //
 //==========================================================================
-
-[decorate] final void A_FAxeCheckReadyG() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_FAxeCheckReadyG () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if (Wpn.Ammo1.Amount <= 0)
-  {
+  if (Wpn.Ammo1.Amount <= 0) {
     Player.SetViewObject(Wpn);
     Player.SetViewState(PS_WEAPON, Wpn.FindState('Ready'));
-  }
-  else
-  {
+  } else {
     A_WeaponReady();
   }
 }
+
 
 //==========================================================================
 //
 //  A_FAxeCheckUp
 //
 //==========================================================================
-
-[decorate] final void A_FAxeCheckUp() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_FAxeCheckUp () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if (Wpn.Ammo1.Amount > 0)
-  {
+  if (Wpn.Ammo1.Amount > 0) {
     Player.SetViewObject(Wpn);
     Player.SetViewState(PS_WEAPON, Wpn.FindState('GlowSelect'));
-  }
-  else
-  {
+  } else {
     do_A_Raise();
   }
 }
+
 
 //==========================================================================
 //
 //  A_FAxeCheckUpG
 //
 //==========================================================================
-
-[decorate] final void A_FAxeCheckUpG() self(Actor)
-{
-  if (!bIsPlayer)
-  {
-    return;
-  }
+[decorate] final void A_FAxeCheckUpG () self(Actor) {
+  if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if (Wpn.Ammo1.Amount <= 0)
-  {
+  if (Wpn.Ammo1.Amount <= 0) {
     Player.SetViewObject(Wpn);
     Player.SetViewState(PS_WEAPON, Wpn.FindState('Select'));
-  }
-  else
-  {
+  } else {
     do_A_Raise();
   }
 }
 
-states
-{
+
+states {
 Ready:
   FAXE A 1 A_FAxeCheckReady
   Loop
@@ -234,8 +198,8 @@ Spawn:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   SelectionOrder = 1500;
   AmmoType1 = Mana1;
   AmmoUse1 = 2;

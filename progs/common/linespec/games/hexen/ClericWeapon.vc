@@ -23,10 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ClericWeapon : HexenWeapon
-  abstract;
+class ClericWeapon : HexenWeapon abstract;
 
-defaultproperties
-{
+
+defaultproperties {
   WeaponClass = ClericPlayer;
 }

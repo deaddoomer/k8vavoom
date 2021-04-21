@@ -30,51 +30,39 @@ bool bShardSpawnRight;
 bool bShardSpawnUp;
 bool bShardSpawnDown;
 
+
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  switch (Special2)
-  {
-  case 3:
-    damage <<= 3;
-    break;
-  case 2:
-    damage <<= 2;
-    break;
-  case 1:
-    damage <<= 1;
-    break;
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  switch (Special2) {
+    case 3: damage <<= 3; break;
+    case 2: damage <<= 2; break;
+    case 1: damage <<= 1; break;
   }
   return damage;
 }
+
 
 //==========================================================================
 //
 //  A_ShedShard
 //
 //==========================================================================
-
-[decorate] final void A_ShedShard()
-{
+[decorate] final void A_ShedShard () {
   FrostMissile mo;
   int spermcount = Special2;
 
-  if (spermcount <= 0) return; // No sperm left
+  if (spermcount <= 0) return; // no sperm left
   Special2 = 0;
-  spermcount--;
+  --spermcount;
 
   // every so many calls, spawn a new missile in it's set directions
-  if (bShardSpawnLeft)
-  {
-    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile,
-      Angles.yaw + (45.0 / 9.0), 0.0, float(20 + 2 * spermcount) * 35.0));
-    if (mo)
-    {
+  if (bShardSpawnLeft) {
+    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw+(45.0/9.0), 0.0, float(20+2*spermcount)*35.0));
+    if (mo) {
       mo.bShardSpawnLeft = true;
       mo.Special2 = spermcount;
       mo.Velocity.z = Velocity.z;
@@ -82,12 +70,10 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
       mo.Args[0] = (spermcount == 3) ? 2 : 0;
     }
   }
-  if (bShardSpawnRight)
-  {
-    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile,
-      Angles.yaw - (45.0 / 9.0), 0.0, float(20 + 2 * spermcount) * 35.0));
-    if (mo)
-    {
+
+  if (bShardSpawnRight) {
+    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw-(45.0/9.0), 0.0, float(20+2*spermcount)*35.0));
+    if (mo) {
       mo.bShardSpawnRight = true;
       mo.Special2 = spermcount;
       mo.Velocity.z = Velocity.z;
@@ -95,16 +81,14 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
       mo.Args[0] = (spermcount == 3) ? 2 : 0;
     }
   }
-  if (bShardSpawnUp)
-  {
-    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw,
-      0.0, float(15 + 2 * spermcount) * 35.0));
-    if (mo)
-    {
+
+  if (bShardSpawnUp) {
+    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw, 0.0, float(15+2*spermcount)*35.0));
+    if (mo) {
       mo.Velocity.z = Velocity.z;
       mo.Origin.z += 8.0;
-      if (spermcount & 1) // Every other reproduction
-      {
+      if (spermcount&1) {
+        // every other reproduction
         mo.bShardSpawnLeft = true;
         mo.bShardSpawnRight = true;
       }
@@ -114,16 +98,14 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
       mo.Args[0] = (spermcount == 3) ? 2 : 0;
     }
   }
-  if (bShardSpawnDown)
-  {
-    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw,
-      0.0, float(15 + 2 * spermcount) * 35.0));
-    if (mo)
-    {
+
+  if (bShardSpawnDown) {
+    mo = FrostMissile(SpawnMissileAngleSpeed(FrostMissile, Angles.yaw, 0.0, float(15+2*spermcount)*35.0));
+    if (mo) {
       mo.Velocity.z = Velocity.z;
       mo.Origin.z -= 4.0;
-      if (spermcount & 1) // Every other reproduction
-      {
+      if (spermcount&1) {
+        // every other reproduction
         mo.bShardSpawnLeft = true;
         mo.bShardSpawnRight = true;
       }
@@ -135,8 +117,8 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
   }
 }
 
-states
-{
+
+states {
 Spawn:
   SHRD A 2 Bright
   SHRD A 3 Bright A_ShedShard
@@ -147,8 +129,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 13.0;
   Height = 8.0;
   Speed = 875.0;

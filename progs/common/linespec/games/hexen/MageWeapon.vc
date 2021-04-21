@@ -23,10 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class MageWeapon : HexenWeapon
-  abstract;
+class MageWeapon : HexenWeapon abstract;
 
-defaultproperties
-{
+
+defaultproperties {
   WeaponClass = MagePlayer;
 }

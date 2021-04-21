@@ -25,56 +25,36 @@
 //**************************************************************************
 class MageStaffFX2 : Actor;
 
+
 //==========================================================================
 //
 //  GetExplodeParms
 //
 //==========================================================================
-
-override void GetExplodeParms(ref int damage, ref float distance, ref bool damageSelf)
-{
+override void GetExplodeParms (ref int damage, ref float distance, ref bool damageSelf) {
   damage = 80;
   distance = 192.0;
   damageSelf = false;
 }
+
 
 //===========================================================================
 //
 //  FindEnemy
 //
 //===========================================================================
-
-final void FindEnemy()
-{
-  Entity    Other;
-
-  foreach RoughBlockSearch(Other, 10)
-  {
+final void FindEnemy () {
+  Entity Other;
+  foreach RoughBlockSearch(Other, 10) {
     EntityEx link = EntityEx(Other);
-
-    if (!(link.bMonster || link.bIsPlayer) || link == Target ||
-      link.bDormant)
-    {
-      continue;
-    }
-    if (!link.bShootable)
-    {
-      continue;
-    }
-    if (IsTeammate(link))
-    {
-      continue;
-    }
-    if (!CanSeek(link))
-    {
-      continue;
-    }
-    if (CanSee(link))
-    {
-      float angle = AngleMod360(atan2(link.Origin.y - Target.Origin.y,
-        link.Origin.x - Target.Origin.x) - Target.Angles.yaw);
-      if (angle > 226.0 * 360.0 / 256.0 || angle < 30.0 * 360.0 / 256.0)
-      {
+    if (!link) continue;
+    if (!(link.bMonster || link.bIsPlayer) || link == Target || link.bDormant) continue;
+    if (!link.bShootable) continue;
+    if (IsTeammate(link)) continue;
+    if (!CanSeek(link)) continue;
+    if (CanSee(link)) {
+      float angle = AngleMod360(atan2(link.Origin.y-Target.Origin.y, link.Origin.x-Target.Origin.x)-Target.Angles.yaw);
+      if (angle > 226.0*360.0/256.0 || angle < 30.0*360.0/256.0) {
         Tracer = link;
         return;
       }
@@ -90,7 +70,7 @@ final void FindEnemy()
 //==========================================================================
 override int SpecialMissileHit (EntityEx Other, bool disableEffects) {
   if (Other != Target) {
-    // Class bosses not flagged boss so they can be blasted
+    // class bosses not flagged boss so they can be blasted
     if (!Other.bIsPlayer && !Other.bBoss && Other.Class != FighterBoss &&
         Other.Class != ClericBoss && Other.Class != MageBoss)
     {
@@ -107,18 +87,13 @@ override int SpecialMissileHit (EntityEx Other, bool disableEffects) {
 //  A_MStaffTrack
 //
 //==========================================================================
-
-[decorate] final void A_MStaffTrack()
-{
-  if (!Tracer && (P_Random() < 50))
-  {
-    FindEnemy();
-  }
+[decorate] final void A_MStaffTrack () {
+  if (!Tracer && P_Random() < 50) FindEnemy();
   SeekerMissile(2.0, 10.0);
 }
 
-states
-{
+
+states {
 Spawn:
   MSP2 ABCD 2 Bright A_MStaffTrack
   Loop
@@ -130,8 +105,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Height = 8.0;
   Speed = 595.0;
   MissileDamage = 4;

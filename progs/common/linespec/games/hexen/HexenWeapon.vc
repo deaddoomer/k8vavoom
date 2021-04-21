@@ -23,37 +23,24 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class HexenWeapon : Weapon
-  abstract;
+class HexenWeapon : Weapon abstract;
 
 class!Actor WeaponClass;
+
 
 //==========================================================================
 //
 //  TryPickup
 //
 //==========================================================================
-
-override bool TryPickup(EntityEx Toucher)
-{
-  if (!ClassIsChildOf(Toucher.Class, GetClassReplacement(WeaponClass)))
-  {
-    // Wrong class, but try to pick up for mana
-    if (ShouldStay() && !bDropped)
-    {
-      return false;
-    }
+override bool TryPickup (EntityEx Toucher) {
+  if (!ClassIsChildOf(Toucher.Class, GetClassReplacement(WeaponClass))) {
+    // wrong class, but try to pick up for mana
+    if (ShouldStay() && !bDropped) return false;
     bool gaveMana = false;
-    if (PlayerEx(Toucher.Player).GiveAmmo(AmmoType1, AmmoGive1))
-    {
-      gaveMana = true;
-    }
-    if (PlayerEx(Toucher.Player).GiveAmmo(AmmoType2, AmmoGive2))
-    {
-      gaveMana = true;
-    }
-    if (gaveMana)
-    {
+    if (PlayerEx(Toucher.Player).GiveAmmo(AmmoType1, AmmoGive1)) gaveMana = true;
+    if (PlayerEx(Toucher.Player).GiveAmmo(AmmoType2, AmmoGive2)) gaveMana = true;
+    if (gaveMana) {
       if (bTransferInventory) TransferInventoryTo(Toucher);
       GiveQuest(Toucher);
       GoAwayAndDie();
@@ -65,7 +52,7 @@ override bool TryPickup(EntityEx Toucher)
   return ::TryPickup(Toucher);
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Kickback = 150.0;
 }

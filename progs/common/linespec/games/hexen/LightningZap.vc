@@ -25,7 +25,7 @@
 //**************************************************************************
 class LightningZap : Actor;
 
-Lightning LightningOwner; //  Lightning missile that spawned zap.
+Lightning LightningOwner; // lightning missile that spawned zap
 
 
 //==========================================================================
@@ -92,26 +92,19 @@ override bool Touch (Entity InOther, bool disableEffects) {
 //  A_ZapMimic
 //
 //==========================================================================
-
-[decorate] final void A_ZapMimic()
-{
-  if (LightningOwner)
-  {
-    if (!LightningOwner.bMissile ||
-      LightningOwner.State == FindState('FreeTargMobj'))
-    {
+[decorate] final void A_ZapMimic () {
+  if (LightningOwner) {
+    if (!LightningOwner.bMissile || LightningOwner.State == FindState('FreeTargMobj')) {
       ExplodeMissile(none);
-    }
-    else
-    {
+    } else {
       Velocity.x = LightningOwner.Velocity.x;
       Velocity.y = LightningOwner.Velocity.y;
     }
   }
 }
 
-states
-{
+
+states {
 Spawn:
   MLFX IJKLM 2 Bright A_ZapMimic
   Loop
@@ -123,8 +116,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 15.0;
   Height = 35.0;
   MissileDamage = 2;

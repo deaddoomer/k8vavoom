@@ -23,49 +23,42 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ZCorpseLynchedNoHeart : Actor
-  game(GAME_Hexen)
-  __mobjinfo__(109);
+class ZCorpseLynchedNoHeart : Actor game(GAME_Hexen) __mobjinfo__(109);
+
 
 //==========================================================================
 //
 //  BeginPlay
 //
 //==========================================================================
-
-override void BeginPlay()
-{
+override void BeginPlay () {
   ::BeginPlay();
-  // Special stuff
+  // special stuff
   auto A = Spawn(BloodPool, vector(Origin.x, Origin.y, ONFLOORZ));
   if (A) A.CarryBloodTranslations(self);
 }
+
 
 //==========================================================================
 //
 //  A_CorpseBloodDrip
 //
 //==========================================================================
-
-[decorate] final void A_CorpseBloodDrip()
-{
-  if (Random() > 0.5)
-  {
-    return;
-  }
-  auto A = Spawn(CorpseBloodDrip, Origin + vector(0.0, 0.0, Height / 2.0));
+[decorate] final void A_CorpseBloodDrip () {
+  if (Random() > 0.5) return;
+  auto A = Spawn(CorpseBloodDrip, Origin+vector(0.0, 0.0, Height/2.0));
   if (A) A.CarryBloodTranslations(self);
 }
 
-states
-{
+
+states {
 Spawn:
   CPS5 A 140 A_CorpseBloodDrip
   Wait
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 10.0;
   Height = 100.0;
   bSolid = true;

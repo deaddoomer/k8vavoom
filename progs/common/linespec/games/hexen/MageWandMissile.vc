@@ -25,29 +25,21 @@
 //**************************************************************************
 class MageWandMissile : FastProjectile;
 
+
 //===========================================================================
 //
 //  SpawnBlasterEffects
 //
 //===========================================================================
-
-override void SpawnBlasterEffects()
-{
-  float z;
-
-  if (P_Random() < 128)
-  {
-    z = Origin.z - 8.0;
-    if (z < FloorZ)
-    {
-      z = FloorZ;
-    }
+override void SpawnBlasterEffects () {
+  if (P_Random() < 128) {
+    float z = fmax(FloorZ, Origin.z-8.0);
     Spawn(MageWandSmoke, vector(Origin.x, Origin.y, z));
   }
 }
 
-states
-{
+
+states {
 Spawn:
   MWND CD 4 Bright
   Loop
@@ -60,8 +52,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 12.0;
   Height = 8.0;
   Speed = 6440.0;

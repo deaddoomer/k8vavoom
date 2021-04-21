@@ -232,8 +232,7 @@ void CHolyWeave () {
 }
 
 
-states
-{
+states {
 Spawn:
   SPIR AAB 2 A_CHolySeek
   SPIR B 2 A_CHolyCheckScream

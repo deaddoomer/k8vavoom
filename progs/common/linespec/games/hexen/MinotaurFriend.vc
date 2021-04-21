@@ -25,27 +25,22 @@
 //**************************************************************************
 class MinotaurFriend : Minotaur;
 
+
 //==========================================================================
 //
 //  Died
 //
 //==========================================================================
-
-override void Died(EntityEx source, EntityEx inflictor)
-{
+override void Died (EntityEx source, EntityEx inflictor) {
   ::Died(source, inflictor);
-  if (Tracer && Tracer.Health > 0)
-  {
+  if (Tracer && Tracer.Health > 0) {
     Inventory Power = Tracer.FindInventory(PowerMinotaur);
-    if (!ActiveMinotaur() && Power)
-    {
-      Power.Destroy();
-    }
+    if (!ActiveMinotaur() && Power) Power.Destroy();
   }
 }
 
-states
-{
+
+states {
 Spawn:
   MNTR A 15
   MNTR A 15 A_MinotaurFade1
@@ -86,8 +81,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 2500;
   RenderStyle = STYLE_Translucent;
   Alpha = 0.333;

@@ -25,53 +25,43 @@
 //**************************************************************************
 class FSwordMissile : Actor;
 
+
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (victim.bIsPlayer)
-  {
-    damage -= damage >> 2;
-  }
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if (victim.bIsPlayer) damage -= damage>>2;
   return damage;
 }
+
 
 //==========================================================================
 //
 //  GetExplodeParms
 //
 //==========================================================================
-
-override void GetExplodeParms(ref int damage, ref float distance, ref bool damageSelf)
-{
-  // Fighter Runesword
+override void GetExplodeParms (ref int damage, ref float distance, ref bool damageSelf) {
+  // fighter runesword
   damage = 64;
   damageSelf = false;
 }
+
 
 //==========================================================================
 //
 //  A_FSwordFlames
 //
 //==========================================================================
-
-[decorate] final void A_FSwordFlames()
-{
-  int i;
-
-  for (i = 1 + (P_Random() & 3); i; i--)
-  {
-    Spawn(FSwordFlame, Origin + vector((Random() - 0.5) * 16.0,
-      (Random() - 0.5) * 16.0, (Random() - 0.5) * 8.0));
+[decorate] final void A_FSwordFlames () {
+  for (int i = 1+(P_Random()&3); i; --i) {
+    Spawn(FSwordFlame, Origin+vector((Random()-0.5)*16.0, (Random()-0.5)*16.0, (Random()-0.5)*8.0));
   }
 }
 
-states
-{
+
+states {
 Spawn:
   FSFX ABC 3 Bright
   Loop
@@ -87,8 +77,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 16.0;
   Height = 8.0;
   Speed = 1050.0;

@@ -23,38 +23,29 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiTeleportOther : Inventory
-  game(GAME_Hexen)
-  __mobjinfo__(10040)
-  __scriptid__(17);
+class ArtiTeleportOther : Inventory game(GAME_Hexen) __mobjinfo__(10040) __scriptid__(17);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
-  EntityEx mo;
-
-  mo = EntityEx(Owner).SpawnPlayerMissile(TelOtherFX1);
-  if (mo)
-  {
-    mo.Target = EntityEx(Owner);
-  }
+override bool Use (bool Pickup) {
+  EntityEx mo = EntityEx(Owner).SpawnPlayerMissile(TelOtherFX1);
+  if (mo) mo.Target = EntityEx(Owner);
   return true;
 }
 
-states
-{
+
+states {
 Spawn:
   TELO ABCD 5
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   MaxAmount = DefMaxAmount;
   PickupSound = 'PickupArtifact';
   PickupMessage = "$txt_artiteleportother";

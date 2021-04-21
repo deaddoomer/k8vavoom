@@ -23,10 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class FighterWeaponPiece : FourthWeaponPiece
-  abstract;
+class FighterWeaponPiece : FourthWeaponPiece abstract;
 
-defaultproperties
-{
+
+defaultproperties {
   PieceClass = FighterPlayer;
 }

@@ -23,19 +23,15 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiBoostArmor : Inventory
-  game(GAME_Hexen)
-  __mobjinfo__(8041)
-  __scriptid__(22);
+class ArtiBoostArmor : Inventory game(GAME_Hexen) __mobjinfo__(8041) __scriptid__(22);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
+override bool Use (bool Pickup) {
   bool good = false;
   foreach (int i; 0..4) {
     // 1 point per armor type
@@ -53,15 +49,15 @@ override bool Use(bool Pickup)
   return good;
 }
 
-states
-{
+
+states {
 Spawn:
   BRAC ABCDEFGH 4 Bright
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   MaxAmount = DefMaxAmount;
   PickupSound = 'PickupArtifact';
   PickupMessage = "$txt_artiboostarmor";

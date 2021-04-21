@@ -30,7 +30,6 @@ class Heresiarch : Actor
 //
 // Sorcerer Variables
 //
-
 //      Special1f       Angle of ball 1 (all others relative to that)
 //      SpecialCID      which ball to stop at in stop mode (MT_???)
 //      Args[0]         Defense time
@@ -39,28 +38,24 @@ class Heresiarch : Actor
 //      Args[3]         Movement mode (see SORC_ macros)
 //      Args[4]         Current ball orbit speed
 
+
 //==========================================================================
 //
 //  Died
 //
 //==========================================================================
-
-override void Died(EntityEx source, EntityEx inflictor)
-{
-  //  For Heresiarch special is actually the script to be executed.
+override void Died (EntityEx source, EntityEx inflictor) {
+  // for Heresiarch special is actually the script to be executed
   int Script = Special;
   Special = 0;
 
   ::Died(source, inflictor);
 
-  if (Script)
-  {
-    XLevel.StartACS(Script, 0, 0, 0, 0, self, nullptr, 0, false, false);
-  }
+  if (Script) XLevel.StartACS(Script, 0, 0, 0, 0, self, nullptr, 0, false, false);
 }
 
-states
-{
+
+states {
 Spawn:
   SORC A 3
   SORC A 2 A_SorcSpinBalls
@@ -99,13 +94,13 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 5000;
   Radius = 40.0;
   Height = 110.0;
   Mass = 500.0;
-  Speed = 16.0 * 35.0;
+  Speed = 16.0*35.0;
   PainChance = 0.0390625;
   MissileDamage = 9;
   bSolid = true;

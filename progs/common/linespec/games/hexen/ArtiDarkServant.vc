@@ -23,44 +23,37 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiDarkServant : Inventory
-  game(GAME_Hexen)
-  __mobjinfo__(86)
-  __scriptid__(16);
+class ArtiDarkServant : Inventory game(GAME_Hexen) __mobjinfo__(86) __scriptid__(16);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
-  EntityEx mo;
-
-  mo = EntityEx(Owner).SpawnPlayerMissile(SummoningDoll);
-  if (mo)
-  {
+override bool Use (bool Pickup) {
+  EntityEx mo = EntityEx(Owner).SpawnPlayerMissile(SummoningDoll);
+  if (mo) {
     mo.Target = EntityEx(Owner);
     mo.Tracer = EntityEx(Owner);
-    mo.Velocity.z = 5.0 * 35.0;
+    mo.Velocity.z = 5.0*35.0;
   }
   return true;
 }
 
-states
-{
+
+states {
 Spawn:
   SUMN A 350
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   MaxAmount = DefMaxAmount;
   PickupSound = 'misc/p_pkup';
   PickupMessage = "$txt_artisummon";
-  RespawnTime = 120.0 + 30.0 / 35.0;
+  RespawnTime = 120.0+30.0/35.0;
   IconName = 'artisumn';
   bFloatBob = true;
   PickupFlashType = PickupFlash;

@@ -23,45 +23,37 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ZBell : Actor
-  game(GAME_Hexen)
-  __mobjinfo__(8065);
+class ZBell : Actor game(GAME_Hexen) __mobjinfo__(8065);
 
-//==========================================================================
-//
-//  A_BellReset1
-//
-//==========================================================================
-
-[decorate] final void A_BellReset1()
-{
-  bNoGravity = true;
-  Height *= 4.0;
-}
 
 //==========================================================================
 //
 //  Activate
 //
 //==========================================================================
-
-override bool Activate(EntityEx Activator)
-{
-  if (Health > 0)
-  {
-    Damage(none, none, 10); // 'ring' the bell
-  }
+override bool Activate (EntityEx Activator) {
+  if (Health > 0) Damage(none, none, 10); // 'ring' the bell
   return true;
 }
+
+
+//==========================================================================
+//
+//  A_BellReset1
+//
+//==========================================================================
+[decorate] final void A_BellReset1 () {
+  bNoGravity = true;
+  Height *= 4.0;
+}
+
 
 //==========================================================================
 //
 //  A_BellReset2
 //
 //==========================================================================
-
-[decorate] final void A_BellReset2()
-{
+[decorate] final void A_BellReset2 () {
   bShootable = true;
   if (bCorpse) {
     // relink, because corpses could have a smaller radius
@@ -72,8 +64,8 @@ override bool Activate(EntityEx Activator)
   Health = 5;
 }
 
-states
-{
+
+states {
 Spawn:
   BBLL F -1
   Stop
@@ -112,8 +104,8 @@ Death:
   Goto Spawn
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 5;
   Radius = 56.0;
   Height = 120.0;

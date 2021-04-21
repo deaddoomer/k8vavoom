@@ -28,52 +28,40 @@ class PoisonCloud : Actor;
 int LifeCount;
 int BobIndex;
 
+
 //==========================================================================
 //
 //  GetExplodeParms
 //
 //==========================================================================
-
-override void GetExplodeParms(ref int damage, ref float distance, ref bool damageSelf)
-{
+override void GetExplodeParms (ref int damage, ref float distance, ref bool damageSelf) {
   damage = 4;
   distance = 40.0;
 }
+
 
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (victim.bIsPlayer)
-  {
-    if ((PlayerEx(victim.Player).Cheats & PlayerEx::CF_GODMODE) ||
-      victim.bInvulnerable)
-    {
-      return -1;
-    }
-    if (PlayerEx(victim.Player).PoisonCount < 4)
-    {
-      Actor(victim).PoisonDamage(Actor(source), Actor(source),
-        15 + (P_Random() & 15), false); // Don't play painsound
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if (victim.bIsPlayer) {
+    if ((PlayerEx(victim.Player).Cheats&PlayerEx::CF_GODMODE) || victim.bInvulnerable) return -1;
+    if (PlayerEx(victim.Player).PoisonCount < 4) {
+      Actor(victim).PoisonDamage(Actor(source), Actor(source), 15+(P_Random()&15), false); // don't play painsound
       Actor(victim).PoisonPlayer(Actor(source), 50);
-      if (!PlayerEx(victim.Player).MorphTime)
-      {
-        victim.PlaySound('*poison', CHAN_VOICE);
-      }
+      if (!PlayerEx(victim.Player).MorphTime) victim.PlaySound('*poison', CHAN_VOICE);
     }
     return -1;
   }
-  else if (!victim.bMonster)
-  {
+  else if (!victim.bMonster) {
     // only damage monsters/players with the poison cloud
     return -1;
   }
   return damage;
 }
+
 
 //==========================================================================
 //
@@ -82,11 +70,9 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
 //  FIXME this sucks!
 //
 //==========================================================================
-
-void InitCloud(Actor InstigatedBy)
-{
+void InitCloud (Actor InstigatedBy) {
   Velocity.x = 0.00001; // missile objects must move to impact other objects
-  LifeCount = 24 + (P_Random() & 7);
+  LifeCount = 24+(P_Random()&7);
   BobIndex = 0;
   Target = InstigatedBy;
   Radius = 20.0;
@@ -95,36 +81,30 @@ void InitCloud(Actor InstigatedBy)
   bColideWithWorld = true;
 }
 
+
 //===========================================================================
 //
 //  A_PoisonBagDamage
 //
 //===========================================================================
-
-[decorate] final void A_PoisonBagDamage()
-{
+[decorate] final void A_PoisonBagDamage () {
   A_Explode();
-
-  Origin.z += Level.Game.FloatBobOffsets[BobIndex&63] / 16.0;
-  BobIndex = (BobIndex + 1) & 63;
+  Origin.z += Level.Game.FloatBobOffsets[BobIndex&63]/16.0;
+  BobIndex = (BobIndex+1)&63;
 }
+
 
 //===========================================================================
 //
 //  A_PoisonBagCheck
 //
 //===========================================================================
-
-[decorate] final void A_PoisonBagCheck()
-{
-  if (!--LifeCount)
-  {
-    SetState(FindState('Death'));
-  }
+[decorate] final void A_PoisonBagCheck () {
+  if (!--LifeCount) SetState(FindState('Death'));
 }
 
-states
-{
+
+states {
 Spawn:
   PSBG D 1
   PSBG D 1 A_Scream
@@ -138,8 +118,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 1.0;
   Height = 1.0;
   Mass = 99999.0;

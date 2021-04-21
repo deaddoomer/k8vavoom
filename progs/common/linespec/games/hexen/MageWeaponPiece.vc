@@ -23,10 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class MageWeaponPiece : FourthWeaponPiece
-  abstract;
+class MageWeaponPiece : FourthWeaponPiece abstract;
 
-defaultproperties
-{
+
+defaultproperties {
   PieceClass = MagePlayer;
 }
