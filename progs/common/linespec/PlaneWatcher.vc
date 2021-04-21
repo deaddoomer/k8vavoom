@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+//** used for ACS opcodes `PCD_SetFloorTrigger` and `PCD_SetCeilingTrigger`
+//** see `LevelInfo::StartPlaneWatcher()`
+//**************************************************************************
 class PlaneWatcher : Thinker;
 
 sector_t *Sector;
