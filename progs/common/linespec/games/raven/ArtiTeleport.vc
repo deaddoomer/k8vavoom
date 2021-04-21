@@ -23,68 +23,59 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiTeleport : Inventory
-  game(GAME_Raven)
-  __mobjinfo__(36)
-  __scriptid__(18);
+class ArtiTeleport : Inventory game(GAME_Raven) __mobjinfo__(36) __scriptid__(18);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
-  int i;
+override bool Use (bool Pickup) {
   float destX;
   float destY;
   float destAngle;
 
-  if (Level.Game.deathmatch)
-  {
-    i = P_Random() % Level.DeathmatchStarts.length;
+  if (Level.Game.deathmatch) {
+    int i = P_Random()%Level.DeathmatchStarts.length;
     destX = Level.DeathmatchStarts[i].x;
     destY = Level.DeathmatchStarts[i].y;
-    destAngle = float(45 * (Level.DeathmatchStarts[i].angle / 45));
-  }
-  else
-  {
+    destAngle = float(45*(Level.DeathmatchStarts[i].angle/45));
+  } else {
     destX = Level.GetPlayerStart(0, 0)->x;
     destY = Level.GetPlayerStart(0, 0)->y;
-    destAngle = float(45 * (Level.GetPlayerStart(0, 0)->angle / 45));
+    destAngle = float(45*(Level.GetPlayerStart(0, 0)->angle/45));
   }
-  EntityEx(Owner).Teleport(vector(destX, destY, EntityEx::ONFLOORZ),
-    destAngle, true, true, false);
+
+  EntityEx(Owner).Teleport(vector(destX, destY, EntityEx::ONFLOORZ), destAngle, true, true, false);
+
   bool CanLaugh = true;
   if (PlayerEx(Owner.Player).MorphTime &&
-    (PlayerEx(Owner.Player).MorphStyle & MORPH_UNDOBYCHAOSDEVICE))
+      (PlayerEx(Owner.Player).MorphStyle&MORPH_UNDOBYCHAOSDEVICE))
   {
-    // Teleporting away will undo any morph effects
-    if (!PlayerEx(Owner.Player).UndoPlayerMorph(false,
-      PlayerEx(Owner.Player)) &&
-      (PlayerEx(Owner.Player).MorphStyle & MORPH_FAILNOLAUGH))
+    // teleporting away will undo any morph effects
+    if (!PlayerEx(Owner.Player).UndoPlayerMorph(false, PlayerEx(Owner.Player)) &&
+        (PlayerEx(Owner.Player).MorphStyle&MORPH_FAILNOLAUGH))
     {
       CanLaugh = false;
     }
   }
-  if (CanLaugh)
-  {
-    // Full volume laugh
+  if (CanLaugh) {
+    // full volume laugh
     Owner.PlaySound('*evillaugh', CHAN_VOICE, 1.0, ATTN_NONE);
   }
   return true;
 }
 
-states
-{
+
+states {
 Spawn:
   ATLP ABCB 4
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   MaxAmount = DefMaxAmount;
   PickupSound = 'misc/p_pkup';
   PickupMessage = "$txt_artiteleport";
