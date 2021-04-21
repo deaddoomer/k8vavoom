@@ -25,71 +25,58 @@
 //**************************************************************************
 class BlasterFX1 : FastProjectile;
 
+
 //===========================================================================
 //
 //  SpawnBlasterEffects
 //
 //===========================================================================
-
-override void SpawnBlasterEffects()
-{
-  TVec org;
-
-  if (P_Random() < 64)
-  {
-    org = Origin;
-    org.z = Origin.z - 8.0;
-    if (org.z < FloorZ)
-    {
-      org.z = FloorZ;
-    }
+override void SpawnBlasterEffects () {
+  if (P_Random() < 64) {
+    TVec org = Origin;
+    org.z = Origin.z-8.0;
+    if (org.z < FloorZ) org.z = FloorZ;
     Spawn(BlasterSmoke, org);
   }
 }
+
 
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (victim.Class == Ironlich)
-  {
-    // Less damage to Ironlich bosses
-    damage = P_Random() & 1;
-    if (!damage)
-    {
-      return -1;
-    }
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if (victim.Class /*==*/isa Ironlich) { //k8: was '=='
+    // less damage to Ironlich bosses
+    damage = P_Random()&1;
+    if (!damage) return -1;
   }
   return ::DoSpecialDamage(victim, source, damage);
 }
+
 
 //===========================================================================
 //
 //  A_SpawnRippers
 //
 //===========================================================================
-
-[decorate] final void A_SpawnRippers()
-{
+[decorate] final void A_SpawnRippers () {
   foreach (int i; 0..8) {
     EntityEx ripper = Spawn(Ripper, Origin);
     if (ripper) {
-      float angle = float(i) * 45.0;
+      float angle = float(i)*45.0;
       ripper.Target = Target;
       ripper.Angles.yaw = angle;
-      ripper.Velocity.x = ripper.Speed * cos(angle);
-      ripper.Velocity.y = ripper.Speed * sin(angle);
+      ripper.Velocity.x = ripper.Speed*cos(angle);
+      ripper.Velocity.y = ripper.Speed*sin(angle);
       ripper.CheckMissileSpawn();
     }
   }
 }
 
-states
-{
+
+states {
 Spawn:
   ACLO E 200
   Loop
@@ -100,8 +87,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 12.0;
   Height = 8.0;
   Speed = 6440.0;

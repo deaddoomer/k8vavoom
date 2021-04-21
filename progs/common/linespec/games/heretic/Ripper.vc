@@ -23,32 +23,25 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Ripper : Actor
-  game(GAME_Heretic)
-  __scriptid__(157);
+class Ripper : Actor game(GAME_Heretic) __scriptid__(157);
+
 
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (victim.Class == Ironlich)
-  {
-    // Less damage to Ironlich bosses
-    damage = P_Random() & 1;
-    if (!damage)
-    {
-      return -1;
-    }
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if (victim.Class isa Ironlich) { //k8: was '=='
+    // less damage to Ironlich bosses
+    damage = P_Random()&1;
+    if (!damage) return -1;
   }
   return ::DoSpecialDamage(victim, source, damage);
 }
 
-states
-{
+
+states {
 Spawn:
   FX18 M 4
   FX18 N 5
@@ -58,8 +51,8 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 8.0;
   Height = 6.0;
   Speed = 490.0;

@@ -23,36 +23,30 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiTimeBomb : Inventory
-  game(GAME_Heretic)
-  __mobjinfo__(34)
-  __scriptid__(72);
+class ArtiTimeBomb : Inventory game(GAME_Heretic) __mobjinfo__(34) __scriptid__(72);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
+override bool Use (bool Pickup) {
   float angle = Owner.Angles.yaw;
-  EntityEx A = Spawn(ActivatedTimeBomb,
-    Owner.Origin + vector(24.0 * cos(angle), 24.0 * sin(angle),
-    -Owner.FloorClip));
+  EntityEx A = Spawn(ActivatedTimeBomb, Owner.Origin+vector(24.0*cos(angle), 24.0*sin(angle), -Owner.FloorClip));
   if (A) A.Target = EntityEx(Owner);
   return true;
 }
 
-states
-{
+
+states {
 Spawn:
   FBMB E 350
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   MaxAmount = DefMaxAmount;
   PickupSound = 'misc/p_pkup';
   PickupMessage = "$txt_artifirebomb";

@@ -25,18 +25,18 @@
 //**************************************************************************
 class PhoenixRodPowered : PhoenixRod;
 
+
 //===========================================================================
 //
 //  A_InitPhoenixPL2
 //
 //===========================================================================
-
-[decorate] final void A_InitPhoenixPL2() self(Actor)
-{
+[decorate] final void A_InitPhoenixPL2 () self(Actor) {
   if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
-  if (Wpn) PhoenixRod(Wpn).FlameCount = 10 * 35;
+  if (Wpn) PhoenixRod(Wpn).FlameCount = 10*35;
 }
+
 
 //===========================================================================
 //
@@ -45,9 +45,7 @@ class PhoenixRodPowered : PhoenixRod;
 //  Flame thrower effect.
 //
 //===========================================================================
-
-[decorate] final void A_FirePhoenixPL2() self(Actor)
-{
+[decorate] final void A_FirePhoenixPL2 () self(Actor) {
   TVec dir;
   TVec org;
 
@@ -55,17 +53,17 @@ class PhoenixRodPowered : PhoenixRod;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if (--PhoenixRod(Wpn).FlameCount == 0)
-  {
-    // Out of flame
+  if (--PhoenixRod(Wpn).FlameCount == 0) {
+    // out of flame
     Player.SetViewObject(Wpn);
     Player.SetViewState(PS_WEAPON, Wpn.FindState('Shutdown'));
     PlayerEx(Player).Refire = 0;
     return;
   }
-  org.x = Origin.x + (Random() - Random()) * 2.0;
-  org.y = Origin.y + (Random() - Random()) * 2.0;
-  org.z = Origin.z + 26.0 - sin(Angles.pitch);
+
+  org.x = Origin.x+(Random()-Random())*2.0;
+  org.y = Origin.y+(Random()-Random())*2.0;
+  org.z = Origin.z+26.0-sin(Angles.pitch);
   org.z -= FloorClip;
 
   EntityEx A = Spawn(PhoenixFX2, org);
@@ -74,27 +72,26 @@ class PhoenixRodPowered : PhoenixRod;
     A.Angles.yaw = Angles.yaw;
     A.Angles.pitch = Angles.pitch;
     AngleVector(A.Angles, out dir);
-    A.Velocity = Velocity + A.Speed * dir;
+    A.Velocity = Velocity+A.Speed*dir;
   }
-  if (!PlayerEx(Player).Refire || !(XLevel.TicTime % 38)) PlaySound('weapons/phoenixpowshoot', CHAN_WEAPON);
+  if (!PlayerEx(Player).Refire || !(XLevel.TicTime%38)) PlaySound('weapons/phoenixpowshoot', CHAN_WEAPON);
   if (A) A.CheckMissileSpawn();
 }
+
 
 //===========================================================================
 //
 //  A_ShutdownPhoenixPL2
 //
 //===========================================================================
-
-[decorate] final void A_ShutdownPhoenixPL2() self(Actor)
-{
+[decorate] final void A_ShutdownPhoenixPL2 () self(Actor) {
   if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn) Wpn.DepleteAmmo(Wpn.FireMode);
 }
 
-states
-{
+
+states {
 Fire:
   PHNX B 3 A_InitPhoenixPL2
 Hold:
@@ -105,8 +102,8 @@ Shutdown:
   Goto Super::Ready
 }
 
-defaultproperties
-{
+
+defaultproperties {
   AmmoUse1 = 1;
   AmmoGive1 = 0;
   SisterWeaponType = PhoenixRod;

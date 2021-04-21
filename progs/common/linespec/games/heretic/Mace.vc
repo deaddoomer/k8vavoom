@@ -23,12 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Mace : HereticWeapon
-  game(GAME_Heretic)
-  __scriptid__(31);
+class Mace : HereticWeapon game(GAME_Heretic) __scriptid__(31);
 
-EntityEx    FirstSpot;
-int       SpotCount;
+EntityEx FirstSpot;
+int SpotCount;
+
 
 //==========================================================================
 //
@@ -37,28 +36,19 @@ int       SpotCount;
 //  Chooses the next spot to place the mace.
 //
 //==========================================================================
-
-override bool DoRespawn()
-{
-  int       SpotIdx;
-  EntityEx    Spot;
-
-  // Do random mace placement
-  if (SpotCount)
-  {
-    SpotIdx = P_Random() % SpotCount;
-    for (Spot = FirstSpot; SpotIdx > 0; SpotIdx--)
-    {
-      Spot = Spot.Target;
-    }
-
-    SetOrigin(Spot.Origin, properFloorCheck:true);
+override bool DoRespawn () {
+  // do random mace placement
+  if (SpotCount) {
+    EntityEx Spot;
+    int SpotIdx = P_Random()%SpotCount;
+    for (Spot = FirstSpot; Spot && SpotIdx > 0; --SpotIdx) Spot = Spot.Target;
+    if (Spot) SetOrigin(Spot.Origin, properFloorCheck:true);
   }
   return true;
 }
 
-states
-{
+
+states {
 Ready:
   MACE A 1 A_WeaponReady
   Loop
@@ -80,8 +70,8 @@ Spawn:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   SelectionOrder = 1400;
   AmmoType1 = MaceAmmo;
   AmmoUse1 = 1;

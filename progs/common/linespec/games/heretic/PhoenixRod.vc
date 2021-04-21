@@ -23,21 +23,17 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class PhoenixRod : HereticWeapon
-  game(GAME_Heretic)
-  __mobjinfo__(2003)
-  __scriptid__(29);
+class PhoenixRod : HereticWeapon game(GAME_Heretic) __mobjinfo__(2003) __scriptid__(29);
 
 int FlameCount; // for flame thrower duration
+
 
 //===========================================================================
 //
 //  A_FirePhoenixPL1
 //
 //===========================================================================
-
-[decorate] final void A_FirePhoenixPL1() self(Actor)
-{
+[decorate] final void A_FirePhoenixPL1 () self(Actor) {
   if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn) {
@@ -45,12 +41,12 @@ int FlameCount; // for flame thrower duration
     SpawnPlayerMissile(PhoenixFX1);
     TVec vforward;
     AngleVector(Angles, out vforward);
-    Velocity -= vforward * 140.0;
+    Velocity -= vforward*140.0;
   }
 }
 
-states
-{
+
+states {
 Ready:
   PHNX A 1 A_WeaponReady
   Loop
@@ -71,8 +67,8 @@ Spawn:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   SelectionOrder = 2600;
   AmmoType1 = PhoenixRodAmmo;
   AmmoUse1 = 1;

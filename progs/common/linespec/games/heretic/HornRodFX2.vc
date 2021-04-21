@@ -27,16 +27,14 @@ class HornRodFX2 : Actor;
 
 int RainColor;
 
+
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (victim.Class == Sorcerer2 && P_Random() < 96)
-  {
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if ((victim.Class isa Sorcerer2) && P_Random() < 96) { //k8: was '=='
     // D'Sparil teleports away
     Sorcerer2(victim).DSparilTeleport();
     return -1;
@@ -44,76 +42,48 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
   return ::DoSpecialDamage(victim, source, damage);
 }
 
+
 //===========================================================================
 //
 //  A_SkullRodPL2Seek
 //
 //===========================================================================
-
-[decorate] final void A_SkullRodPL2Seek()
-{
+[decorate] final void A_SkullRodPL2Seek () {
   SeekerMissile(10.0, 30.0);
 }
+
 
 //===========================================================================
 //
 //  A_AddPlayerRain
 //
 //===========================================================================
-
-[decorate] final void A_AddPlayerRain()
-{
+[decorate] final void A_AddPlayerRain () {
   PlayerEx plr = PlayerEx(Target.Player);
-  if (!plr || !plr.bActive)
-  {
-    // Player left the game
-    return;
-  }
-  if (plr.Health <= 0)
-  {
-    // Player is dead
-    return;
-  }
-  if (plr.Rain1 && plr.Rain2)
-  {
-    // Terminate an active rain
-    if (plr.Rain1.Health < plr.Rain2.Health)
-    {
-      if (plr.Rain1.Health > 16)
-      {
-        plr.Rain1.Health = 16;
-      }
+  if (!plr || !plr.bActive) return; // player left the game
+  if (plr.Health <= 0) return; // player is dead
+  if (plr.Rain1 && plr.Rain2) {
+    // terminate an active rain
+    if (plr.Rain1.Health < plr.Rain2.Health) {
+      if (plr.Rain1.Health > 16) plr.Rain1.Health = 16;
       plr.Rain1 = none;
-    }
-    else
-    {
-      if (plr.Rain2.Health > 16)
-      {
-        plr.Rain2.Health = 16;
-      }
+    } else {
+      if (plr.Rain2.Health > 16) plr.Rain2.Health = 16;
       plr.Rain2 = none;
     }
   }
-  // Add rain mobj to list
-  if (plr.Rain1)
-  {
-    plr.Rain2 = self;
-  }
-  else
-  {
-    plr.Rain1 = self;
-  }
+  // add rain mobj to list
+  if (plr.Rain1) plr.Rain2 = self; else plr.Rain1 = self;
 }
+
 
 //===========================================================================
 //
 //  A_HideInCeiling
 //
 //===========================================================================
-
-[decorate] final void A_HideInCeiling()
-{
-  Origin.z = CeilingZ + 4.0;
+[decorate] final void A_HideInCeiling () {
+  Origin.z = CeilingZ+4.0;
 }
 
 
@@ -126,7 +96,7 @@ override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
   PlayerEx plr;
   class!Actor rain_type;
 
-  if (Health-- == 0) {
+  if ((Health--) == 0) {
     SetState(none);
     plr = PlayerEx(Target.Player);
     if (!plr || !plr.bActive) return; // player left the game
@@ -176,8 +146,8 @@ Death:
   Wait
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 140;
   Radius = 12.0;
   Height = 8.0;

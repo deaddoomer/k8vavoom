@@ -23,55 +23,44 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class ArtiTomeOfPower : PowerupGiver
-  game(GAME_Heretic)
-  __mobjinfo__(86)
-  __scriptid__(134);
+class ArtiTomeOfPower : PowerupGiver game(GAME_Heretic) __mobjinfo__(86) __scriptid__(134);
+
 
 //==========================================================================
 //
 //  Use
 //
 //==========================================================================
-
-override bool Use(bool Pickup)
-{
+override bool Use (bool Pickup) {
   if (PlayerEx(Owner.Player).MorphTime &&
-    (PlayerEx(Owner.Player).MorphStyle & MORPH_UNDOBYTOMEOFPOWER))
+      (PlayerEx(Owner.Player).MorphStyle&MORPH_UNDOBYTOMEOFPOWER))
   {
-    // Attempt to undo chicken
-    if (PlayerEx(Owner.Player).UndoPlayerMorph(false,
-      PlayerEx(Owner.Player)) == false)
-    {
-      // Failed
-      if (!(PlayerEx(Owner.Player).MorphStyle & MORPH_FAILNOTELEFRAG))
-      {
+    // attempt to undo chicken
+    if (!(PlayerEx(Owner.Player).UndoPlayerMorph(false, PlayerEx(Owner.Player)))) {
+      // failed
+      if (!(PlayerEx(Owner.Player).MorphStyle&MORPH_FAILNOTELEFRAG)) {
         EntityEx(Owner).Damage(none, none, 10000, spawnBlood:true);
       }
-    }
-    else
-    {
-      // Succeeded
+    } else {
+      // succeeded
       PlayerEx(Owner.Player).MorphTime = 0.0;
       Owner.PlaySound('*evillaugh', /*CHAN_BODY*/CHAN_AUTO);
     }
     return true;
-  }
-  else
-  {
+  } else {
     return ::Use(Pickup);
   }
 }
 
-states
-{
+
+states {
 Spawn:
   PWBK A 350
   Loop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   PowerupType = PowerWeaponLevel2;
   PickupMessage = "$txt_artitomeofpower";
   IconName = 'artipwbk';

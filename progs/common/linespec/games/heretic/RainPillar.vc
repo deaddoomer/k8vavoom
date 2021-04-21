@@ -25,42 +25,36 @@
 //**************************************************************************
 class RainPillar : Actor;
 
+
 //==========================================================================
 //
 //  DoSpecialDamage
 //
 //==========================================================================
-
-override int DoSpecialDamage(EntityEx victim, EntityEx source, int damage)
-{
-  if (Actor(victim).bBoss)
-  {
-    // Decrease damage for bosses
-    damage = (P_Random() & 7) + 1;
+override int DoSpecialDamage (EntityEx victim, EntityEx source, int damage) {
+  if (Actor(victim).bBoss) {
+    // decrease damage for bosses
+    damage = (P_Random()&7)+1;
   }
   return ::DoSpecialDamage(victim, source, damage);
 }
+
 
 //===========================================================================
 //
 //  A_RainImpact
 //
 //===========================================================================
-
-[decorate] final void A_RainImpact()
-{
-  if (Origin.z > FloorZ)
-  {
+[decorate] final void A_RainImpact () {
+  if (Origin.z > FloorZ) {
     SetState(FindState('AirDeath'));
-  }
-  else if (P_Random() < 40)
-  {
+  } else if (P_Random() < 40) {
     HitFloorType();
   }
 }
 
-states
-{
+
+states {
 Spawn:
   FX20 A -1 Bright
   Stop
@@ -73,8 +67,8 @@ AirDeath:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Radius = 5.0;
   Height = 12.0;
   Speed = 420.0;
@@ -87,4 +81,70 @@ defaultproperties
   bNoTeleport = true;
   bActivatePCross = true;
   bBloodSplatter = true;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class RainPlayer2 : RainPillar;
+
+
+states {
+Spawn:
+  FX21 A -1 Bright
+  Stop
+Death:
+  FX21 B 4 Bright A_RainImpact
+  FX21 CDEF 4 Bright
+  Stop
+AirDeath:
+  FX21 GHI 4 Bright
+  Stop
+}
+
+
+defaultproperties {
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class RainPlayer3 : RainPillar;
+
+
+states {
+Spawn:
+  FX22 A -1 Bright
+  Stop
+Death:
+  FX22 B 4 Bright A_RainImpact
+  FX22 CDEF 4 Bright
+  Stop
+AirDeath:
+  FX22 GHI 4 Bright
+  Stop
+}
+
+
+defaultproperties {
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class RainPlayer4 : RainPillar;
+
+
+states {
+Spawn:
+  FX23 A -1 Bright
+  Stop
+Death:
+  FX23 B 4 Bright A_RainImpact
+  FX23 CDEF 4 Bright
+  Stop
+AirDeath:
+  FX23 GHI 4 Bright
+  Stop
+}
+
+
+defaultproperties {
 }

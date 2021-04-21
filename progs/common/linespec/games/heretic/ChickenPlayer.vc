@@ -25,46 +25,41 @@
 //**************************************************************************
 class ChickenPlayer : PlayerPawn;
 
+
 //==========================================================================
 //
 //  MorphPlayerThink
 //
 //==========================================================================
-
-override void MorphPlayerThink()
-{
-  if (Health > 0)
-  {
-    // Handle beak movement
+override void MorphPlayerThink () {
+  if (Health > 0) {
+    // handle beak movement
     Player.SetViewStateOffsets(0, Weapon::WEAPONTOP+float(PlayerEx(Player).ChickenPeck)/2.0);
   }
-  if (int(32.0 * PlayerEx(Player).MorphTime) & 15)
-  {
-    return;
-  }
-  if (!(Velocity.x + Velocity.y) && P_Random() < 160)
-  {
-    // Twitch view angle
-    Angles.yaw = AngleMod360(Angles.yaw +
-      (Random() - Random()) * 45.0 / 4.0);
+
+  if (int(32.0*PlayerEx(Player).MorphTime)&15) return;
+
+  if (!(Velocity.x+Velocity.y) && P_Random() < 160) {
+    // twitch view angle
+    Angles.yaw = AngleMod360(Angles.yaw+(Random()-Random())*45.0/4.0);
     Player.bFixAngle = true;
   }
-  if ((Origin.z <= FloorZ) && (P_Random() < 32))
-  {
-    // Jump and noise
-    Velocity.z += 1.0 * 35.0;
+
+  if (Origin.z <= FloorZ && P_Random() < 32) {
+    // jump and noise
+    Velocity.z += 1.0*35.0;
     SetPainState();
     return;
   }
-  if (P_Random() < 48)
-  {
-    // Just noise
+
+  if (P_Random() < 48) {
+    // just noise
     PlaySound('chicken/attack', CHAN_VOICE);
   }
 }
 
-states
-{
+
+states {
 Spawn:
   CHKN A -1
   Stop
@@ -91,21 +86,21 @@ Death:
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   Health = 30;
   Radius = 16.0;
   Height = 24.0;
   Gravity = 0.125;
   PainChance = 1.0;
   ViewHeight = 21.0;
-  // Chicken speed
+  // chicken speed
   ForwardMove1 = 1.2;
   ForwardMove2 = 1.2;
   SideMove1 = 1.2;
   SideMove2 = 1.2;
   GruntSpeed = 12.0;
-  JumpVelZ = 1.0 * 35.0;
+  JumpVelZ = 1.0*35.0;
   MorphWeapon = Beak;
   bPickUp = false;
   bOnmobjCopyVel = true;
