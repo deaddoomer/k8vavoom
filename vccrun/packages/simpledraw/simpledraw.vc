@@ -50,10 +50,10 @@ final void drawLine (float x0, float y0, float x1, float y1) {
 }
 
 // draw 2d line using TVec, with optional normal
-final void drawLineV (TVec v0, TVec v1, optional bool drawNormal, optional float normalSize/*=8.0f*/) {
+final void drawLineV (TVec v0, TVec v1, optional bool drawNormal, optional float normalSize/*=6.0f*/) {
   drawLine(v0.x, v0.y, v1.x, v1.y);
-  if (drawNormal) {
-    if (!specified_normalSize) normalSize = 8.0f;
+  if (drawNormal && (v0.x != v1.x || v0.y != v1.y)) {
+    if (!specified_normalSize) normalSize = 6.0f;
     TVec lineDir = v1-v0;
     TVec lineNorm = lineDir.normalise2D;
     lineNorm = vector(lineNorm.y, -lineNorm.x);
