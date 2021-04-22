@@ -935,8 +935,10 @@ static final float CD_SweepLineAABB (TVec lineA, TVec lineB, TVec vstart, TVec v
 // `hitplanenum` indicates which line side we hit: front (0), back(1), or caps; can be -1
 static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec vstart, TVec vend, TVec bmin, TVec bmax,
                                         optional out TPlane hitPlane, optional out TVec contactPoint,
-                                        optional out CD_HitType hitType, optional out int hitplanenum)
+                                        optional out CD_HitType hitType, optional out int hitplanenum,
+                                        optional float eps/*=CD_CLIP_EPSILON*/)
 {
+  if (!specified_eps) eps = CD_CLIP_EPSILON;
   hitType = CD_HitType.CD_HT_None;
   hitplanenum = -1;
 
@@ -962,21 +964,21 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
     if (idist > 0.0f) {
       startsOut = true;
       // if completely in front of face, no intersection with the entire brush
-      if (odist >= CD_CLIP_EPSILON || odist >= idist) return 1.0f;
+      if (odist >= eps || odist >= idist) return 1.0f;
     }
     //if (odist > 0.0f) endsOut = true;
 
     // crosses plane
     if (idist > odist) {
       // line is entering into the brush
-      float fr = fmax(0.0f, (idist-CD_CLIP_EPSILON)/(idist-odist));
+      float fr = fmax(0.0f, (idist-eps)/(idist-odist));
       if (fr > ifrac) {
         ifrac = fr;
         phit = pidx;
       }
     } else {
       // line is leaving the brush
-      float fr = fmin(1.0f, (idist+CD_CLIP_EPSILON)/(idist-odist));
+      float fr = fmin(1.0f, (idist+eps)/(idist-odist));
       if (fr < ofrac) ofrac = fr;
     }
   }
@@ -1002,7 +1004,7 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
         linePlanes.lineA.x < linePlanes.lineB.x ?
           (hitType == CD_HitType.CD_HT_Right ? linePlanes.lineA : linePlanes.lineB) :
           (hitType == CD_HitType.CD_HT_Right ? linePlanes.lineB : linePlanes.lineA);
-      contactPoint -= (vend-vstart).normalise*CD_CLIP_EPSILON;
+      contactPoint -= (vend-vstart).normalise*eps;
     } else if (phit > 1 && !hitPlane.normal.x) {
       // top or down side of the box
       hitType = (hitPlane.normal.y < 0.0f ? CD_HitType.CD_HT_Bottom : CD_HitType.CD_HT_Top);
@@ -1010,13 +1012,13 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
         linePlanes.lineA.y < linePlanes.lineB.y ?
           (hitType == CD_HitType.CD_HT_Bottom ? linePlanes.lineA : linePlanes.lineB) :
           (hitType == CD_HitType.CD_HT_Bottom ? linePlanes.lineB : linePlanes.lineA);
-      contactPoint -= (vend-vstart).normalise*CD_CLIP_EPSILON;
+      contactPoint -= (vend-vstart).normalise*eps;
     } else {
       // point hit
       hitType = CD_HitType.CD_HT_Point;
       if (linePlanes.count == 4 && linePlanes.lineA.xy == linePlanes.lineB.xy) {
         // point
-        contactPoint = linePlanes.lineA-(vend-vstart).normalise*CD_CLIP_EPSILON;
+        contactPoint = linePlanes.lineA-(vend-vstart).normalise*eps;
       } else {
         bool fixX = false, fixY = false;
         if (!hitPlane.normal.x) {
