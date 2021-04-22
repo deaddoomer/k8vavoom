@@ -17,3 +17,21 @@ actor ChexRedCard : RedCard 13
 	Game Chex
 	inventory.pickupmessage "$GOTCREDKEY"
 }
+
+actor BlueFlemKey : BlueCard 40
+{
+	Game Chex
+	inventory.pickupmessage "$GOTBLUESKUL"
+}
+
+actor YellowFlemKey : YellowCard 39
+{
+	Game Chex
+	inventory.pickupmessage "$GOTYELWSKUL"
+}
+
+actor RedFlemKey : RedCard 38
+{
+	Game Chex
+	inventory.pickupmessage "$GOTREDSSKULL"
+}

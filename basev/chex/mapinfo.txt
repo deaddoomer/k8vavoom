@@ -88,6 +88,9 @@ DoomEdNums
     34 = ChexChemicalFlask
     35 = ChexGasTank
     37 = ChexFlagOnPole
+    38 = RedFlemkey
+    39 = YellowFlemkey
+    40 = BlueFlemkey
     41 = ChexChemicalBurner
     43 = ChexOrangeTree
     44 = ChexSlimeFountain
