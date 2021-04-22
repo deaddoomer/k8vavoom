@@ -1,0 +1,92 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+class SimpleDraw : Object;
+
+//use `GLVideo.color = 0xaa_rr_gg_bb;` to set color
+
+// if `true`, y0 will be at the bottom
+bool useGLCoords = true;
+// pre-scale offset
+float preOffsetX = 0;
+float preOffsetY = 0;
+// scale
+float scaleX = 1;
+float scaleY = 1;
+// post-scale offset
+float offsetX = 0;
+float offsetY = 0;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// draw 2d line
+final void drawLine (float x0, float y0, float x1, float y1) {
+  int iy0 = int((y0-preOffsetY)*scaleY-offsetY);
+  int iy1 = int((y1-preOffsetY)*scaleY-offsetY);
+  GLVideo.drawLine(
+    int((x0-preOffsetX)*scaleX-offsetX), (useGLCoords ? GLVideo.screenHeight-1-iy0 : iy0),
+    int((x1-preOffsetX)*scaleX-offsetX), (useGLCoords ? GLVideo.screenHeight-1-iy1 : iy1));
+}
+
+// draw 2d line using TVec, with optional normal
+final void drawLineV (TVec v0, TVec v1, optional bool drawNormal, optional float normalSize/*=8.0f*/) {
+  drawLine(v0.x, v0.y, v1.x, v1.y);
+  if (drawNormal) {
+    if (!specified_normalSize) normalSize = 8.0f;
+    TVec lineDir = v1-v0;
+    TVec lineNorm = lineDir.normalise2D;
+    lineNorm = vector(lineNorm.y, -lineNorm.x);
+    TVec lc = v0+lineDir*0.5f;
+    TVec lup = lc+lineNorm*normalSize;
+    drawLine(lc.x, lc.y, lup.x, lup.y);
+  }
+}
+
+// draw 2d box with the given extents
+final void drawBox (TVec center, TVec extent) {
+  TVec vmin = center-extent*0.5f;
+  TVec vmax = vmin+extent;
+  drawLine(vmin.x, vmin.y, vmax.x, vmin.y); // top
+  drawLine(vmax.x, vmin.y, vmax.x, vmax.y); // right
+  drawLine(vmax.x, vmax.y, vmin.x, vmax.y); // bottom
+  drawLine(vmin.x, vmax.y, vmin.x, vmin.y); // left
+}
+
+// draw 2d box with the given radius
+final void drawDoomBox (TVec center, float radius) {
+  TVec vmin = center-vector(radius, radius);
+  TVec vmax = center+vector(radius, radius);
+  drawLine(vmin.x, vmin.y, vmax.x, vmin.y); // top
+  drawLine(vmax.x, vmin.y, vmax.x, vmax.y); // right
+  drawLine(vmax.x, vmax.y, vmin.x, vmax.y); // bottom
+  drawLine(vmin.x, vmax.y, vmin.x, vmin.y); // left
+}
+
+// draw 2d box with the given min/max coords
+final void drawBoxMinMax (TVec vmin, TVec vmax) {
+  drawLine(vmin.x, vmin.y, vmax.x, vmin.y); // top
+  drawLine(vmax.x, vmin.y, vmax.x, vmax.y); // right
+  drawLine(vmax.x, vmax.y, vmin.x, vmax.y); // bottom
+  drawLine(vmin.x, vmax.y, vmin.x, vmin.y); // left
+}
