@@ -131,7 +131,7 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
       // top of texture at top
       zOrg = reg->eceiling.splane->TexZ;
     }
-    SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, &segsidedef->Mid);
+    SetupTextureAxesOffsetMidES(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, &segsidedef->Mid);
 
     const bool isSolid = !(reg->regflags&sec_region_t::RF_NonSolid);
 

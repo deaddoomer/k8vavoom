@@ -26,9 +26,6 @@
 #include "../gamedefs.h"
 #include "r_local.h"
 
-// it seems that `segsidedef` offset is in effect, but scaling is not
-//#define VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-
 
 static VCvarF r_dbg_wtrotate_tmult("r_dbg_wtrotate_tmult", "0.0", "Wall texture rotation time multiplier (for debug)", CVAR_PreInit/*|CVAR_Archive*/);
 
@@ -62,15 +59,10 @@ static double prevtime = -1.0f;
 //
 //  used only for normal wall textures: top, mid, bottom
 //
-//  type:
-//    <0: top
-//     0: middle
-//    >0: bottom
-//
-//  FIXME: 1s middle texture will use "top" type for now
+//  it seems that `segsidedef` offset is in effect, but scaling is not
 //
 //==========================================================================
-void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, int type) {
+void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, TAxType type) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -80,15 +72,6 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     texinfo->Additive = false;
   }
   texinfo->ColorMap = 0;
-
-  #ifdef VV_SURFCTOR_3D_USE_SEGSIDEDEF_SCALE
-  const float scale2X = (segparam ? segparam->ScaleX : 1.0f);
-  const float scale2Y = (segparam ? segparam->ScaleY : 1.0f);
-  #else
-    // it seems that `segsidedef` offset is in effect, but scaling is not
-    #define scale2X  1.0f
-    #define scale2Y  1.0f
-  #endif
 
   const bool xflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X);
   const bool yflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y);
@@ -129,8 +112,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     texinfo->taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
     texinfo->saxis = Normalise(CrossProduct(seg->normal, texinfo->taxis));
   }
-  texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX*scale2X;
-  texinfo->taxis *= TextureTScale(tex)*tparam->ScaleY*scale2Y;
+  texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX;
+  texinfo->taxis *= TextureTScale(tex)*tparam->ScaleY;
 
   if (xflip) texinfo->saxis = -texinfo->saxis;
   if (yflip) texinfo->taxis = -texinfo->taxis;
@@ -149,7 +132,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (yflip) yofs = -yofs;
 
   // non-wrapping middle texture?
-  if (type == 0) {
+  if (type == TAX_MID2S) {
     if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
       // yeah, move TexZ
       TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
@@ -162,24 +145,24 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (!xflip) {
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
     dir = seg->dir;
-    texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+    texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
   } else {
     // flipped
     v = (seg->side == 0 ? seg->linedef->v2 : seg->linedef->v1);
     dir = -seg->dir;
   }
-  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX*scale2X; // horizontal
+  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
 
   if (!yflip) {
-    texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
+    texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
   } else {
     const float texh = tex->GetScaledHeight()/tparam->ScaleY;
-    texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY*scale2Y; // vertical
+    texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY; // vertical
   }
 
   /*
   if (xofs && (ptrdiff_t)(seg->linedef-&Level->Lines[0]) == 29678) {
-    GCon->Logf(NAME_Debug, "*** xofs=%g; xscale=%g; sscaleofs=%g; realscale=%g; realofs=%g", xofs, tparam->ScaleX, TextureOffsetSScale(tex), DivByScale(TextureOffsetSScale(tex), tparam->ScaleX*scale2X), xofs*(TextureOffsetSScale(tex)/tparam->ScaleX));
+    GCon->Logf(NAME_Debug, "*** xofs=%g; xscale=%g; sscaleofs=%g; realscale=%g; realofs=%g", xofs, tparam->ScaleX, TextureOffsetSScale(tex), DivByScale(TextureOffsetSScale(tex), tparam->ScaleX), xofs*(TextureOffsetSScale(tex)/tparam->ScaleX));
   }
   */
 

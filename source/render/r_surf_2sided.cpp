@@ -101,7 +101,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   vassert(sub->sector);
 
   const line_t *linedef = seg->linedef;
-  /*const*/ side_t *sidedef = seg->sidedef;
+  const side_t *sidedef = seg->sidedef;
 
   sec_plane_t *back_floor = &seg->backsector->floor;
   sec_plane_t *back_ceiling = &seg->backsector->ceiling;
@@ -471,6 +471,15 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
 
+    #if 0
+    if ((int)(ptrdiff_t)(linedef-&Level->Lines[0]) == 4834) {
+      GCon->Logf(NAME_Debug, "2S-TOP: line #%d, side #%d; RowOffset=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), sidedef->Mid.RowOffset);
+      //sidedef->Mid.RowOffset = 0.0f;
+      //sidedef->Mid.ScaleX = 1.0f;
+      //sidedef->Mid.ScaleY = 1.0f;
+    }
+    #endif
+
     const sec_plane_t *bfloor = back_floor;
     const sec_plane_t *bceiling = back_ceiling;
 
@@ -521,7 +530,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       // top of texture at top
       zOrg = min2(r_ceiling.splane->TexZ, seg->backsector->ceiling.TexZ)-texh;
     }
-    SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
+    SetupTextureAxesOffsetMid2S(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);

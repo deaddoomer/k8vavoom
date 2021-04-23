@@ -857,17 +857,32 @@ public:
 public:
   static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const bool resetAlpha=true);
 
-  void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr, int type=0);
+  enum TAxType {
+    TAX_TOP,
+    TAX_BOTTOM,
+    // middle texture for two-sided walls
+    TAX_MID2S,
+    // middle texture for one-sided walls
+    TAX_MID1S,
+    // middle texture for "extra floor" (aka 3d floor)
+    TAX_MIDES,
+    // for 3d polyobjects
+    TAX_TOPPO,
+    TAX_BOTTOMPO,
+    TAX_MIDPO,
+  };
 
-  inline void SetupTextureAxesOffsetTop (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
-    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, -1);
-  }
-  inline void SetupTextureAxesOffsetMid (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
-    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, 0);
-  }
-  inline void SetupTextureAxesOffsetBot (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
-    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, 1);
-  }
+  void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, TAxType type);
+
+  inline void SetupTextureAxesOffsetTop (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_TOP); }
+  inline void SetupTextureAxesOffsetBot (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_BOTTOM); }
+  inline void SetupTextureAxesOffsetMid2S (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_MID2S); }
+  inline void SetupTextureAxesOffsetMid1S (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_MID1S); }
+  inline void SetupTextureAxesOffsetMidES (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_MIDES); }
+
+  inline void SetupTextureAxesOffsetTopPO (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_TOPPO); }
+  inline void SetupTextureAxesOffsetBotPO (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_BOTTOMPO); }
+  inline void SetupTextureAxesOffsetMidPO (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_MIDPO); }
 
 public:
   int CountSegParts (const seg_t *);
