@@ -636,6 +636,7 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
     }
   }
 
+  //FIXME: this should return some "fake entity", because some callers rely on in
   if (XLevel->Has3DPolyObjects() && (EntityFlags&EF_ColideWithWorld)) {
     float bbox2d[4];
     bbox2d[BOX2D_TOP] = TryOrg.y+rad;
@@ -662,7 +663,8 @@ bool VEntity::TestMobjZ (const TVec &TryOrg, VEntity **hitent) {
           //GCon->Logf(NAME_Debug, "x02: %s(%u): checking pobj #%d...", GetClass()->GetName(), GetUniqueId(), po->tag);
           //GCon->Logf(NAME_Debug, "x02: %s(%u): HIT pobj #%d... (%g:%g) (%g:%g)", GetClass()->GetName(), GetUniqueId(), po->tag, po->pofloor.minz, po->poceiling.maxz, TryOrg.z, z1);
           // hit pobj
-          return false;
+          if (hitent) *hitent = nullptr;
+          return true;
         }
       }
     }
