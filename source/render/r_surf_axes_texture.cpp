@@ -67,6 +67,8 @@ static double prevtime = -1.0f;
 //     0: middle
 //    >0: bottom
 //
+//  FIXME: 1s middle texture will use "top" type for now
+//
 //==========================================================================
 void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, int type) {
   texinfo->Tex = tex;

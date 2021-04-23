@@ -115,7 +115,10 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       // top of texture at top
       zOrg = r_ceiling.splane->TexZ-texh;
     }
-    SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
+    // do not use "Mid" here, because we should ignore midtexture wrapping (anyway)
+    //FIXME: using "Top" here is a hack, but it works for now
+    //SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
+    SetupTextureAxesOffsetTop(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     wv[0].x = wv[1].x = seg->v1->x;
     wv[0].y = wv[1].y = seg->v1->y;
