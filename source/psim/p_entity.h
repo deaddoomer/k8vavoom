@@ -863,6 +863,10 @@ public:
   bool TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool checkOnly=false, bool noPickups=false);
   bool TestMobjZ (const TVec &TryOrg, VEntity **hitent=nullptr);
   void SlideMove (float StepVelScale, bool noPickups=false);
+  // this should be called in physics, when `TryMove()` failed
+  // returns new origin near the wall
+  // do not use big `vdelta` here, the tracer is VERY ineffective!
+  TVec TraceToWallSmall2D (TVec org, TVec vdelta);
   void BounceWall (float DeltaTime, const line_t *blockline, float overbounce, float bouncefactor);
   void UpdateVelocity (float DeltaTime, bool allowSlopeFriction);
   TVec FakeZMovement ();
@@ -1051,6 +1055,7 @@ public:
   DECLARE_FUNCTION(TryMoveEx)
   DECLARE_FUNCTION(TestMobjZ)
   DECLARE_FUNCTION(SlideMove)
+  DECLARE_FUNCTION(TraceToWallSmall2D)
   DECLARE_FUNCTION(BounceWall)
   DECLARE_FUNCTION(CheckOnmobj)
   DECLARE_FUNCTION(IsInPolyObj)

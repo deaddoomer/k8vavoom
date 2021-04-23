@@ -47,6 +47,84 @@ static VCvarB gm_use_new_slide_code("gm_use_new_slide_code", true, "Use new slid
 
 //==========================================================================
 //
+//  VEntity::TraceToWallSmall2D
+//
+//  this should be called in physics, when `TryMove()` failed
+//  returns new origin near the wall
+//  do not use big `vdelta` here, the tracer is VERY ineffective!
+//
+//==========================================================================
+TVec VEntity::TraceToWallSmall2D (TVec org, TVec vdelta) {
+  vdelta.z = 0.0f;
+  const float rad = GetMoveRadius();
+  const float hgt = max2(0.0f, Height);
+  const float bbox2d[4] = {
+    max2(org.y, org.y+vdelta.y)+rad, // BOX2D_MAXY
+    min2(org.y, org.y+vdelta.y)-rad, // BOX2D_MINY
+    min2(org.x, org.x+vdelta.x)-rad, // BOX2D_MINX
+    max2(org.x, org.x+vdelta.x)+rad, // BOX2D_MAXX
+  };
+  float bestHitTime = FLT_MAX;
+  bool bestHitBevel = false;
+  DeclareMakeBlockMapCoordsBBox2D(bbox2d, xl, yl, xh, yh);
+  XLevel->IncrementValidCount();
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *li = it.line();
+        const bool oneSided = (!(li->flags&ML_TWOSIDED) || !li->backsector);
+        bool isBlocking = (oneSided || IsBlockingLine(li));
+        if (!isBlocking) continue;
+
+        VLevel::CD_HitType hitType;
+        int hitplanenum = -1;
+        TVec contactPoint;
+        float htime = VLevel::SweepLinedefAABB(li, org, org+vdelta, TVec(-rad, -rad, 0), TVec(rad, rad, Height), nullptr, &contactPoint, &hitType, &hitplanenum);
+        if (htime >= 1.0f) continue; // didn't hit
+        if (htime < 0.0f) htime = 0.0f;
+        if (htime > bestHitTime) continue; // don't care, too far
+        if (htime == bestHitTime && (hitplanenum > 1 || !bestHitBevel)) continue;
+
+        // check opening on two-sided line
+        if (!oneSided) {
+          opening_t *open = XLevel->LineOpenings(li, contactPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+          open = VLevel::FindOpening(open, org.z, org.z+hgt);
+
+          float stepHeight = MaxStepHeight;
+          if (EntityFlags&EF_IgnoreFloorStep) {
+            stepHeight = 0.0f;
+          } else {
+                 if ((EntityFlags&EF_CanJump) && Health > 0) stepHeight = 48.0f;
+            else if ((EntityFlags&(EF_Missile|EF_StepMissile)) == EF_Missile) stepHeight = 0.0f;
+          }
+
+          if (open && open->range >= hgt && // fits
+              open->top-org.z >= hgt && // mobj is not too high
+              open->bottom-org.z <= stepHeight) // not too big a step up
+          {
+            // doesn't block
+            if (org.z >= open->bottom) continue;
+            // check to make sure there's nothing in the way for the step up
+            TVec norg = org;
+            norg.z = open->bottom;
+            if (!TestMobjZ(norg)) continue;
+          }
+        }
+
+        // yes, this is new blocker
+        bestHitTime = htime;
+        bestHitBevel = (hitplanenum > 1);
+      }
+    }
+  }
+
+  if (bestHitTime >= 1.0f) return org+vdelta;
+  return org+bestHitTime*vdelta;
+}
+
+
+//==========================================================================
+//
 //  VEntity::ClipVelocity
 //
 //  Slide off of the impacting object
@@ -470,4 +548,15 @@ IMPLEMENT_FUNCTION(VEntity, SlideMove) {
   VOptParamBool noPickups(false);
   vobjGetParamSelf(StepVelScale, noPickups);
   Self->SlideMove(StepVelScale, noPickups);
+}
+
+// native final TVec TraceToWallSmall2D (const TVec org, const TVec vdelta);
+IMPLEMENT_FUNCTION(VEntity, TraceToWallSmall2D) {
+  TVec org, vdelta;
+  vobjGetParamSelf(org, vdelta);
+  if (vdelta.isZero2D()) {
+    RET_VEC(org);
+  } else {
+    RET_VEC(Self->TraceToWallSmall2D(org, vdelta));
+  }
 }

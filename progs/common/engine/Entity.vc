@@ -551,6 +551,11 @@ native final bool TestMobjZ ();
 native final void SlideMove (float StepVelScale, optional bool noPickups/*=false*/);
 native final void BounceWall (float DeltaTime, const line_t *blockline, float overbounce, float bouncefactor);
 
+// this should be called in physics, when `TryMove()` failed
+// returns new origin near the wall
+// do not use big `vdelta` here, the tracer is VERY ineffective!
+native final TVec TraceToWallSmall2D (const TVec org, const TVec vdelta);
+
 // this sets `WaterLevel` and `WaterType`
 native final void CheckWater ();
 
