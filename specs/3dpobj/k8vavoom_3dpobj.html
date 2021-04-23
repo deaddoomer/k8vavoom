@@ -47,6 +47,7 @@ will look like platform floor for the player).
 <a href="#linkit">Linked 3d polyobjects</a><br>
 <a href="#movenote">Notes about movement</a><br>
 <a href="#acsapi">New ACS API</a><br>
+<a href="#limitations">Current Limitations</a><br>
 </div>
 
 
@@ -99,6 +100,12 @@ floor texture will be the bottom 3d polyobject texture, and ceiling texture will
 <p>
 To align floor and ceiling textures, just align your inner sector as you want to. The inner sector
 will be "cutted out" as it is, and will retain its flat align no matter how you'll move it.
+</p>
+<p>
+You can set top and bottom textures for 3d polyobject lines. Top texture can be made impassable by
+setting "clip midtexture" line flag. Impassable top textures should be assigned to the both line
+sides, and should be of the same height, or the engine will refuse loading a map. Bottom texture
+is just a decoration and will not block movement.
 </p>
 
 
@@ -162,7 +169,7 @@ be crushed (because it is considered as "blocking" one).
 
 <hr>
 <a id="acsapi"></a><h1>New ACS API</h1>
-Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zspecial.acs".
+<p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zspecial.acs".</p>
 </div>
 <pre>
   // k8vavoom polyobjects
@@ -184,7 +191,7 @@ Assuming that you are using ZDoom ACC compiler fork, paste the following into yo
   -806:Polyobj_IsBusy(1),
 </pre>
 <div class="content">
-Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".
+<p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".</p>
 </div>
 <pre>
 // for Polyobj_GetFlagsEx and Polyobj_SetFlagsEx
@@ -205,6 +212,36 @@ Assuming that you are using ZDoom ACC compiler fork, paste the following into yo
 #define POBJ_MOVE_NOLINK    (1 << 1)
 </pre>
 <div class="content">
+
+<hr>
+<a id="limitations"></a><h1>Current Limitations</h1>
+<p>
+Riding on the moving 3d polyobject is done by teleporting. It means that entities are not moved
+by velocities or proper box tracing, they simply teleported to their destination. If the destination
+is occupied, and it is impossible to make a valid step up (not a stair, or stairs are too high), the
+entity will be returned to its original place. If returned entity blocks the polyobject, either the
+polyobject will stop, or the entity will be squashed.
+</p>
+<p>
+Due to the tepelorting, vertical entity "stacking" is not supported. I.e. you cannot put one entity on top
+of another and make them both ride on a 3d polyobject: if an entity is moved to the place which is already
+occupied by another entity, it will be processed as a normal blocking (see above).
+</p>
+<p>
+Impassable top texture currently doesn't block hitscan attacks or projectile movement. Do not try to use
+"blocks projectile" or other linedef flags yet, please -- they <b>may</b> work, but it is not guaranteed, and
+may be changed in the future.
+</p>
+<p>
+Also, please, set <b>only</b> "impassable" flag on 3d polyobject linedefs. Other flags may or may not work
+properly, and nothing is guaranteed. Even if it seems to work now (or do nothing), the engine may refuse
+to load such maps in the future, or flag meaning may change.
+</p>
+<p>
+Lightmapped lighting may glitch on 3d polyobjects. This will be fixed in the future.
+</p>
+
 </div>
+<!-- TODO: document moving and checking order, so other sourceports will be able to implement it in compatible way -->
 </body>
 <html>
