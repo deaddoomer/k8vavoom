@@ -101,7 +101,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   vassert(sub->sector);
 
   const line_t *linedef = seg->linedef;
-  const side_t *sidedef = seg->sidedef;
+  /*const*/ side_t *sidedef = seg->sidedef;
 
   sec_plane_t *back_floor = &seg->backsector->floor;
   sec_plane_t *back_ceiling = &seg->backsector->ceiling;
@@ -131,8 +131,6 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 
   if (TTex->Type != TEXTYPE_Null && !seg->pobj) {
     TVec quad[4];
-
-    //GCon->Logf(NAME_Debug, "2S-TOP: line #%d, side #%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]));
 
     // see `SetupTwoSidedBotWSurf()` for explanation
     const float topz1 = GetFixedZWithFake(max2, ceiling, *seg->v1, seg->frontsector, r_ceiling);
@@ -184,7 +182,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       // bottom of texture at the lower ceiling
       zOrg = back_ceiling->TexZ;
     }
-    SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
+    SetupTextureAxesOffsetTop(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {
@@ -386,7 +384,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     }
     const float texh = BTex->GetScaledHeight()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
-    SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
+    SetupTextureAxesOffsetBot(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
     // transparent/translucent door
     if (hackflag == surface_t::TF_TOPHACK) {
@@ -523,7 +521,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       // top of texture at top
       zOrg = min2(r_ceiling.splane->TexZ, seg->backsector->ceiling.TexZ)-texh;
     }
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
+    SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);

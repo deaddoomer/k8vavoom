@@ -62,8 +62,13 @@ static double prevtime = -1.0f;
 //
 //  used only for normal wall textures: top, mid, bottom
 //
+//  type:
+//    <0: top
+//     0: middle
+//    >0: bottom
+//
 //==========================================================================
-void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam) {
+void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, int type) {
   texinfo->Tex = tex;
   texinfo->noDecals = tex->noDecals;
   // can be fixed later
@@ -141,11 +146,13 @@ void VRenderLevelShared::SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo,
   float yofs = tparam->RowOffset+(segparam ? segparam->RowOffset : 0.0f);
   if (yflip) yofs = -yofs;
 
-  // non-wrapping?
-  if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
-    // yeah, move TexZ
-    TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
-    yofs = 0.0f;
+  // non-wrapping middle texture?
+  if (type == 0) {
+    if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
+      // yeah, move TexZ
+      TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
+      yofs = 0.0f;
+    }
   }
 
   const TVec *v;

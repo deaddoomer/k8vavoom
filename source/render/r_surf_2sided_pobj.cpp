@@ -52,7 +52,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
     TVec quad[4];
 
     float zOrg = po->poceiling.TexZ; // texture bottom
-    SetupTextureAxesOffset(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
+    SetupTextureAxesOffsetTop(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
 
     const float texh = TTex->GetScaledHeight()/sidedef->Top.ScaleY;
 
@@ -106,7 +106,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *s
     float zOrg = po->pofloor.TexZ; // texture bottom
     const float texh = BTex->GetScaledHeight()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
-    SetupTextureAxesOffset(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
+    SetupTextureAxesOffsetBot(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
     quad[0].x = quad[1].x = seg->v1->x;
     quad[0].y = quad[1].y = seg->v1->y;
@@ -175,7 +175,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
       // top of texture at top
       zOrg = seg->pobj->poceiling.TexZ-texh;
     }
-    SetupTextureAxesOffset(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
+    SetupTextureAxesOffsetMid(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
     sp->texinfo.Alpha = linedef->alpha;
     sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);

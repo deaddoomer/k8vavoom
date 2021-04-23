@@ -856,7 +856,18 @@ public:
 
 public:
   static void SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTexture *tex, const bool resetAlpha=true);
-  void SetupTextureAxesOffset (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr);
+
+  void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr, int type=0);
+
+  inline void SetupTextureAxesOffsetTop (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
+    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, -1);
+  }
+  inline void SetupTextureAxesOffsetMid (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
+    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, 0);
+  }
+  inline void SetupTextureAxesOffsetBot (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) {
+    SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, 1);
+  }
 
 public:
   int CountSegParts (const seg_t *);
