@@ -651,7 +651,7 @@ load_again:
   // we need this for client
   for (int i = 0; i < NumSectors; ++i) {
     //GCon->Logf("MINMAX: %d/%d %3d%%", i, NumSectors, 100*i/NumSectors);
-    CalcSecMinMaxs(&Sectors[i]);
+    CalcSecMinMaxs(&Sectors[i]/*, true*/);
   }
   MinMaxTime += Sys_Time();
 
