@@ -173,7 +173,7 @@ void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
 //  VLevel::CalcSecMinMaxs
 //
 //==========================================================================
-void VLevel::CalcSecMinMaxs (sector_t *sector) {
+void VLevel::CalcSecMinMaxs (sector_t *sector, bool fixTexZ) {
   if (!sector || sector->isAnyPObj()) return; // k8: just in case
 
   enum {
@@ -186,6 +186,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
   if (sector->floor.normal.z == 1.0f) {
     // horizontal floor
     sector->floor.minz = sector->floor.maxz = sector->floor.dist;
+    if (fixTexZ) sector->floor.TexZ = sector->floor.minz;
   } else {
     // sloped floor
     slopedFC |= SlopedFloor;
@@ -194,6 +195,7 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
   if (sector->ceiling.normal.z == -1.0f) {
     // horizontal ceiling
     sector->ceiling.minz = sector->ceiling.maxz = -sector->ceiling.dist;
+    if (fixTexZ) sector->ceiling.TexZ = sector->ceiling.minz;
   } else {
     // sloped ceiling
     slopedFC |= SlopedCeiling;
@@ -229,11 +231,13 @@ void VLevel::CalcSecMinMaxs (sector_t *sector) {
       if (minzf > maxzf) { const float tmp = minzf; minzf = maxzf; maxzf = tmp; } // just in case
       sector->floor.minz = minzf;
       sector->floor.maxz = maxzf;
+      if (fixTexZ) sector->floor.TexZ = sector->floor.minz;
     }
     if (slopedFC&SlopedCeiling) {
       if (minzc > maxzc) { const float tmp = minzc; minzc = maxzc; maxzc = tmp; } // just in case
       sector->ceiling.minz = minzc;
       sector->ceiling.maxz = maxzc;
+      if (fixTexZ) sector->ceiling.TexZ = sector->ceiling.minz;
     }
   }
 

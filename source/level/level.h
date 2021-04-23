@@ -741,7 +741,7 @@ public:
 
   void UpdateSectorHeightCache (sector_t *sector);
   void GetSubsectorBBox (subsector_t *sub, float bbox[6]);
-  void CalcSecMinMaxs (sector_t *sector); // also, update BSP bounding boxes
+  void CalcSecMinMaxs (sector_t *sector, bool fixTexZ=false); // also, update BSP bounding boxes
 
   inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
 
