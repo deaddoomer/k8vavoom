@@ -65,11 +65,19 @@ TVec VEntity::ClipVelocity (const TVec &in, const TVec &normal, float overbounce
 void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale) {
   TVec SlideOrg(x, y, Origin.z);
   TVec SlideDir = Velocity*StepVelScale;
+  const float hgt = max2(0.0f, Height);
   if (gm_use_new_slide_code.asBool()) {
+    // new slide code
     const float rad = GetMoveRadius();
+    float stepHeight = MaxStepHeight;
+    if (EntityFlags&EF_IgnoreFloorStep) {
+      stepHeight = 0.0f;
+    } else {
+           if ((EntityFlags&EF_CanJump) && Health > 0) stepHeight = 48.0f;
+      else if ((EntityFlags&(EF_Missile|EF_StepMissile)) == EF_Missile) stepHeight = 0.0f;
+    }
     const bool slideDiag = (SlideDir.x && SlideDir.y);
     bool prevClipToZero = false;
-    // new slide code
     DeclareMakeBlockMapCoords(Origin.x, Origin.y, rad, xl, yl, xh, yh);
     XLevel->IncrementValidCount();
     for (int bx = xl; bx <= xh; ++bx) {
@@ -86,78 +94,61 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
             IsBlocked = true;
           } else if ((EntityFlags&EF_CheckLineBlockMonsters) && (li->flags&ML_BLOCKMONSTERS)) {
             IsBlocked = true;
+          } else {
+            IsBlocked = IsBlockingLine(li);
           }
 
           VLevel::CD_HitType hitType;
           int hitplanenum = -1;
           TVec contactPoint;
-          const float fdist = VLevel::SweepLinedefAABB(li, SlideOrg, SlideOrg+SlideDir, TVec(-rad, -rad, 0), TVec(rad, rad, Height), nullptr, &contactPoint, &hitType, &hitplanenum);
-          // ignore cap planes
-          if (hitplanenum < 0 || hitplanenum > 1 || fdist < 0.0f || fdist >= 1.0f) continue;
+          const float htime = VLevel::SweepLinedefAABB(li, SlideOrg, SlideOrg+SlideDir, TVec(-rad, -rad, 0), TVec(rad, rad, hgt), nullptr, &contactPoint, &hitType, &hitplanenum);
+          #if 0
+            if (IsPlayer()) {
+              GCon->Logf(NAME_Debug, "line=%d; org=(%f,%f); dir=(%f,%f); bestfrac=%f; htime=%f; pnum=%d",
+                (int)(ptrdiff_t)(li-&XLevel->Lines[0]), SlideOrg.x, SlideOrg.y, SlideDir.x, SlideDir.y,
+                BestSlideFrac, htime, hitplanenum);
+            }
+          #endif
+          if (htime < 0.0f || htime >= 1.0f) continue; // didn't hit
+          if (htime > BestSlideFrac) continue; // don't care, too far away
+          #if 0
+          if (htime <= 0.001f && hitplanenum > 1) continue; // ignore beveling planes for "stuck hits"
+          #else
+          // totally ignore beveling planes
+          if (hitplanenum > 1) continue;
+          #endif
+
+          // prefer walls with non-zero clipped velocity
+          if (prevClipToZero && slideDiag && htime == BestSlideFrac) {
+            const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
+            if (cvel.isZero2D()) continue;
+            // try this hitpoint, maybe it will not clip the velocity to zero
+          }
 
           if (!IsBlocked) {
-            const TVec hpoint = contactPoint; //SlideOrg+fdist*SlideDir;
             // set openrange, opentop, openbottom
-            opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true/*do3dmidtex*/); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-            open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
-            if (open && open->range >= Height && // fits
-                open->top-Origin.z >= Height && // mobj is not too high
-                open->bottom-Origin.z <= MaxStepHeight) // not too big a step up
+            opening_t *open = XLevel->LineOpenings(li, contactPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
+            open = VLevel::FindOpening(open, Origin.z, Origin.z+hgt);
+
+            if (open && open->range >= hgt && // fits
+                open->top-Origin.z >= hgt && // mobj is not too high
+                open->bottom-Origin.z <= stepHeight) // not too big a step up
             {
               // this line doesn't block movement
               if (Origin.z < open->bottom) {
                 // check to make sure there's nothing in the way for the step up
                 TVec CheckOrg = Origin;
                 CheckOrg.z = open->bottom;
-                if (!TestMobjZ(CheckOrg)) continue;
+                if (!TestMobjZ(CheckOrg)) continue; // not blocked
               } else {
-                continue;
+                continue; // not blocked
               }
             }
           }
 
-          if (fdist < BestSlideFrac) {
-            #ifdef VV_DBG_VERBOSE_SLIDE
-            if (IsPlayer()) {
-              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
-              GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: NEW line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
-            }
-            #endif
-            BestSlideFrac = fdist;
-            BestSlideLine = li;
-            if (slideDiag) {
-              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
-              prevClipToZero = !(cvel.x && cvel.y);
-            }
-          } else if (prevClipToZero && slideDiag && fdist == BestSlideFrac) {
-            // choose line that doesn't clip one of the sliding dirs to zero
-            const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
-            if (cvel.x && cvel.y) {
-              #ifdef VV_DBG_VERBOSE_SLIDE
-              if (IsPlayer()) {
-                GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: NEW NON-ZERO line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
-              }
-              #endif
-              BestSlideFrac = fdist;
-              BestSlideLine = li;
-              prevClipToZero = false;
-            }
-            #ifdef VV_DBG_VERBOSE_SLIDE
-            else {
-              if (IsPlayer()) {
-                GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: SKIP ZERO line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
-              }
-            }
-            #endif
-          }
-          #ifdef VV_DBG_VERBOSE_SLIDE
-          else {
-            if (IsPlayer()) {
-              const TVec cvel = ClipVelocity(SlideDir, li->normal, 1.0f);
-              GCon->Logf(NAME_Debug, "%s: SlidePathTraverse: SKIP line #%d; oldfrac=%g; newfrac=%g; norm=(%g,%g); sldir=(%g,%g); cvel=(%g,%g); ht=%d", GetClass()->GetName(), (int)(ptrdiff_t)(li-&XLevel->Lines[0]), BestSlideFrac, fdist, li->normal.x, li->normal.y, SlideDir.x, SlideDir.y, cvel.x, cvel.y, (int)hitType);
-            }
-          }
-          #endif
+          BestSlideFrac = htime;
+          BestSlideLine = li;
+          if (slideDiag) prevClipToZero = !ClipVelocity(SlideDir, li->normal, 1.0f).isZero2D();
         }
       }
     }
@@ -189,10 +180,10 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
         // set openrange, opentop, openbottom
         TVec hpoint = SlideOrg+in.frac*SlideDir;
         opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true/*do3dmidtex*/); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-        open = VLevel::FindOpening(open, Origin.z, Origin.z+Height);
+        open = VLevel::FindOpening(open, Origin.z, Origin.z+hgt);
 
-        if (open && open->range >= Height && // fits
-            open->top-Origin.z >= Height && // mobj is not too high
+        if (open && open->range >= hgt && // fits
+            open->top-Origin.z >= hgt && // mobj is not too high
             open->bottom-Origin.z <= MaxStepHeight) // not too big a step up
         {
           // this line doesn't block movement
