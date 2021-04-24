@@ -521,6 +521,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
 
     vassert(!seg->pobj || !seg->pobj->Is3D());
     const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
+    //GCon->Logf(NAME_Debug, "line #%d: side=%d; %s: texh=%g; backh=%g; fronth=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), seg->side, *MTex->Name, texh, back_topz1-back_botz1, seg->frontsector->ceiling.GetPointZ(*seg->v1)-seg->frontsector->floor.GetPointZ(*seg->v1));
 
     float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
@@ -574,12 +575,17 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       // this clips texture to a floor, otherwise it goes beyound it
       // it seems that all modern OpenGL renderers just ignores clip flag, and
       // renders all midtextures as always clipped.
+
+      // calculate z coordinates of the quad
       if ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX)) {
+        // if the texture is wrapped, the quad occupied the whole empty space
         hgts[0] = midbotz1;
         hgts[1] = midtopz1;
         hgts[2] = midtopz2;
         hgts[3] = midbotz2;
       } else {
+        // the texture is not wrapped, so top of the texture should start at the top
+        //GCon->Logf(NAME_Debug, "line #%d: side=%d; %s: texh=%g; backh=%g; fronth=%g; midzh=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), seg->side, *MTex->Name, texh, back_topz1-back_botz1, topz1-botz1, midtopz1-midbotz1);
         const float tz0 = zOrg;
         const float tz1 = zOrg+texh;
         if (tz0 >= max2(midtopz1, midtopz2)) break;

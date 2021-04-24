@@ -132,7 +132,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (yflip) yofs = -yofs;
 
   // non-wrapping middle texture?
-  if (type == TAX_MID2S) {
+  if (IsTAxWrapFlagActive(type)) {
     if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
       // yeah, move TexZ
       TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);

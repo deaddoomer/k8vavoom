@@ -872,6 +872,8 @@ public:
     TAX_MIDPO,
   };
 
+  static inline bool IsTAxWrapFlagActive (const TAxType type) noexcept { return (type == TAX_MID2S); }
+
   void SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam, TAxType type);
 
   inline void SetupTextureAxesOffsetTop (seg_t *seg, texinfo_t *texinfo, VTexture *tex, const side_tex_params_t *tparam, float &TexZ, const side_tex_params_t *segparam=nullptr) { SetupTextureAxesOffsetEx(seg, texinfo, tex, tparam, TexZ, segparam, TAX_TOP); }
