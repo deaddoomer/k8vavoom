@@ -119,17 +119,18 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   if (MTex->Type != TEXTYPE_Null && sidedef->MidTexture.id != skyflatnum && (reg->regflags&sec_region_t::RF_OnlyVisual) == 0) {
     TVec quad[4];
 
-    float zOrg; // texture top
+    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
+    float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom
-      zOrg = reg->efloor.splane->TexZ+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
+      zOrg = reg->efloor.splane->TexZ; //+(MTex->GetScaledHeight()*sidedef->Mid.ScaleY);
     } else if (linedef->flags&ML_DONTPEGTOP) {
       // top of texture at top of top region (???)
-      zOrg = seg->frontsub->sector->ceiling.TexZ;
+      zOrg = seg->frontsub->sector->ceiling.TexZ-texh;
       //zOrg = reg->eceiling.splane->TexZ;
     } else {
       // top of texture at top
-      zOrg = reg->eceiling.splane->TexZ;
+      zOrg = reg->eceiling.splane->TexZ-texh;
     }
     SetupTextureAxesOffsetMidES(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg, &segsidedef->Mid);
 
