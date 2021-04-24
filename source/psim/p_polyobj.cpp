@@ -1473,6 +1473,25 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 
 //==========================================================================
 //
+//  NeedPositionCheck
+//
+//==========================================================================
+static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
+  if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) return false;
+  return
+    (mobj->EntityFlags&(
+      VEntity::EF_Solid|
+      VEntity::EF_NoSector|
+      VEntity::EF_NoBlockmap|
+      VEntity::EF_ColideWithWorld|
+      VEntity::EF_Blasted|
+      VEntity::EF_Corpse|
+      VEntity::EF_Invisible)) == (VEntity::EF_Solid|VEntity::EF_ColideWithWorld);
+}
+
+
+//==========================================================================
+//
 //  CheckAffectedMObjPositions
 //
 //  returns `true` if movement was blocked
@@ -1484,6 +1503,7 @@ static bool CheckAffectedMObjPositions () noexcept {
   for (auto &&edata : poAffectedEnitities) {
     if (!edata.aflags) continue;
     VEntity *mobj = edata.mobj;
+    if (!NeedPositionCheck(mobj)) continue;
     // temporarily disable collision with things
     //FIXME: reenable it when i'll write stacking code
     //!mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
@@ -1689,8 +1709,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         VEntity *mobj = n->Thing;
         if (mobj->IsGoingToDie()) continue;
         // check flags
-        if ((mobj->EntityFlags&(VEntity::EF_ColideWithWorld|VEntity::EF_Solid|VEntity::EF_Corpse)) != (VEntity::EF_ColideWithWorld|VEntity::EF_Solid)) continue;
-        if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) continue;
+        if (!NeedPositionCheck(mobj)) continue;
         if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue;
         const float mz0 = mobj->Origin.z;
         const float mz1 = mz0+mobj->Height;
@@ -1987,8 +2006,9 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool ro
     for (int bx = left; bx <= right; ++bx) {
       for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
-        if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
-        if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
+        //if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
+        //if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
+        if (!NeedPositionCheck(mobj)) continue;
 
         // check mobj height (pobj floor and ceiling shouldn't be sloped here)
         //FIXME: check height for 3dmitex pobj
