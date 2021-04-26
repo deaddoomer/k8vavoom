@@ -388,18 +388,20 @@ bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translati
     }
   }
 
-  tex_w = max2(1, Tex->GetWidth());
-  tex_h = max2(1, Tex->GetHeight());
-  tex_iw = 1.0f/tex_w;
-  tex_ih = 1.0f/tex_h;
+  const int tex_w = max2(1, Tex->GetWidth());
+  const int tex_h = max2(1, Tex->GetHeight());
+  tex_iw = 1.0f/(float)tex_w;
+  tex_ih = 1.0f/(float)tex_h;
 
-  tex_w_sc = max2(1, Tex->GetScaledWidth());
-  tex_h_sc = max2(1, Tex->GetScaledHeight());
+  float tex_w_sc = Tex->GetScaledWidthF();
+  float tex_h_sc = Tex->GetScaledHeightF();
+  if (!isFiniteF(tex_w_sc) || tex_w_sc <= 0.0f) tex_w_sc = 1.0f;
+  if (!isFiniteF(tex_h_sc) || tex_h_sc <= 0.0f) tex_h_sc = 1.0f;
   tex_iw_sc = 1.0f/tex_w_sc;
   tex_ih_sc = 1.0f/tex_h_sc;
 
-  tex_scale_x = (Tex->SScale ? Tex->SScale : 1.0f);
-  tex_scale_y = (Tex->TScale ? Tex->TScale : 1.0f);
+  tex_scale_x = (Tex->SScale > 0.0f ? Tex->SScale : 1.0f);
+  tex_scale_y = (Tex->TScale > 0.0f ? Tex->TScale : 1.0f);
 
   return res;
 }

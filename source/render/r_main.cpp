@@ -1664,9 +1664,9 @@ void R_DrawPic (int x, int y, int handle, float Alpha) {
   if (Alpha > 1.0f) Alpha = 1.0f;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
-  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidth()), fScaleY*(y+Tex->GetScaledHeight()), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
+  x -= Tex->GetScaledSOffsetI();
+  y -= Tex->GetScaledTOffsetI();
+  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidthI()), fScaleY*(y+Tex->GetScaledHeightI()), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
 }
 
 
@@ -1680,9 +1680,9 @@ void R_DrawPicScaled (int x, int y, int handle, float scale, float Alpha) {
   if (Alpha > 1.0f) Alpha = 1.0f;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset()*scale;
-  y -= Tex->GetScaledTOffset()*scale;
-  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidth()*scale), fScaleY*(y+Tex->GetScaledHeight()*scale), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
+  x -= (int)((float)Tex->GetScaledSOffsetI()*scale);
+  y -= (int)((float)Tex->GetScaledTOffsetI()*scale);
+  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidthI()*scale), fScaleY*(y+Tex->GetScaledHeightI()*scale), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
 }
 
 
@@ -1695,9 +1695,9 @@ void R_DrawPicFloat (float x, float y, int handle, float Alpha) {
   if (handle < 0) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
-  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidth()), fScaleY*(y+Tex->GetScaledHeight()), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
+  x -= Tex->GetScaledSOffsetF();
+  y -= Tex->GetScaledTOffsetF();
+  Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidthF()), fScaleY*(y+Tex->GetScaledHeightF()), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
 }
 
 
@@ -1720,13 +1720,13 @@ void R_DrawPicFloatPart (float x, float y, float pwdt, float phgt, int handle, f
   if (handle < 0 || pwdt <= 0.0f || phgt <= 0.0f || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
-  //Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidth()*pwdt), fScaleY*(y+Tex->GetScaledHeight()*phgt), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
+  x -= Tex->GetScaledSOffsetF();
+  y -= Tex->GetScaledTOffsetF();
+  //Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidthI()*pwdt), fScaleY*(y+Tex->GetScaledHeightI()*phgt), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
   Drawer->DrawPic(
     fScaleX*x, fScaleY*y,
-    fScaleX*(x+Tex->GetScaledWidth()*pwdt),
-    fScaleY*(y+Tex->GetScaledHeight()*phgt),
+    fScaleX*(x+Tex->GetScaledWidthF()*pwdt),
+    fScaleY*(y+Tex->GetScaledHeightF()*phgt),
     0, 0, Tex->GetWidth()*pwdt, Tex->GetHeight()*phgt,
     Tex, nullptr, Alpha);
 }
@@ -1753,14 +1753,14 @@ void R_DrawPicFloatPartEx (float x, float y, float tx0, float ty0, float tx1, fl
   if (handle < 0 || pwdt <= 0.0f || phgt <= 0.0f) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
-  //Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidth()*pwdt), fScaleY*(y+Tex->GetScaledHeight()*phgt), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
+  x -= Tex->GetScaledSOffsetF();
+  y -= Tex->GetScaledTOffsetF();
+  //Drawer->DrawPic(fScaleX*x, fScaleY*y, fScaleX*(x+Tex->GetScaledWidthI()*pwdt), fScaleY*(y+Tex->GetScaledHeightI()*phgt), 0, 0, Tex->GetWidth(), Tex->GetHeight(), Tex, nullptr, Alpha);
   Drawer->DrawPic(
-    fScaleX*(x+Tex->GetScaledWidth()*tx0),
-    fScaleY*(y+Tex->GetScaledHeight()*ty0),
-    fScaleX*(x+Tex->GetScaledWidth()*tx1),
-    fScaleY*(y+Tex->GetScaledHeight()*ty1),
+    fScaleX*(x+Tex->GetScaledWidthF()*tx0),
+    fScaleY*(y+Tex->GetScaledHeightF()*ty0),
+    fScaleX*(x+Tex->GetScaledWidthF()*tx1),
+    fScaleY*(y+Tex->GetScaledHeightF()*ty1),
     Tex->GetWidth()*tx0, Tex->GetHeight()*ty0, Tex->GetWidth()*tx1, Tex->GetHeight()*ty1,
     Tex, nullptr, Alpha);
 }

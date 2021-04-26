@@ -1086,8 +1086,8 @@ static void ParseCameraTexture (VScriptParser *sc) {
     // by default camera texture will fit in old texture
     VTexture *OldTex = GTextureManager[TexNum];
     //GCon->Logf(NAME_Debug, "*** replacing camera texture '%s'", *OldTex->Name);
-    FitWidth = clampval(OldTex->GetScaledWidth(), 1, 2048);
-    FitHeight = clampval(OldTex->GetScaledHeight(), 1, 2048);
+    FitWidth = clampval(OldTex->GetScaledWidthI(), 1, 2048);
+    FitHeight = clampval(OldTex->GetScaledHeightI(), 1, 2048);
     GTextureManager.ReplaceTexture(TexNum, Tex);
     //k8: just in case
     //delete OldTex;

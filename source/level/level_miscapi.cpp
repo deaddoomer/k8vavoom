@@ -130,8 +130,7 @@ bool VLevel::GetMidTexturePosition (const line_t *linedef, int sideno, float *pt
 
   const sector_t *bsec = (sideno ? linedef->frontsector : linedef->backsector);
 
-  const float scale = sidedef->Mid.ScaleY;
-  const float texh = MTex->GetScaledHeight()/(scale > 0.0f ? scale : 1.0f);
+  const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
   // just in case
   if (texh < 1.0f) {
     if (ptextop) *ptextop = 0.0f;

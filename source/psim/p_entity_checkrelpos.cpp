@@ -399,7 +399,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         const side_t *tside = &XLevel->Sides[ld->sidenum[0]];
         VTexture *ttex = GTextureManager(tside->TopTexture);
         if (!ttex) ttex = GTextureManager[GTextureManager.DefaultTexture];
-        const float texh = ttex->GetScaledHeight()/tside->Top.ScaleY;
+        const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
         if (texh > 0.0f) {
           if ((hitPoint.z >= ptopz && hitPoint.z < ptopz+texh) ||
               (hitPoint.z+hgt >= ptopz && hitPoint.z+hgt < ptopz+texh))

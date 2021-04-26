@@ -54,7 +54,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
     float zOrg = po->poceiling.TexZ; // texture bottom
     SetupTextureAxesOffsetTopPO(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
 
-    const float texh = TTex->GetScaledHeight()/sidedef->Top.ScaleY;
+    const float texh = TTex->GetScaledHeightF()/sidedef->Top.ScaleY;
 
     quad[0].x = quad[1].x = seg->v1->x;
     quad[0].y = quad[1].y = seg->v1->y;
@@ -104,7 +104,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *s
     TVec quad[4];
 
     float zOrg = po->pofloor.TexZ; // texture bottom
-    const float texh = BTex->GetScaledHeight()/sidedef->Bot.ScaleY;
+    const float texh = BTex->GetScaledHeightF()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
     SetupTextureAxesOffsetBotPO(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
@@ -164,7 +164,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
 
     //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d: seg for line #%d (sector #%d); TexZ=%g:%g (notpeg=%d)", seg->pobj->tag, (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]), (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]), seg->pobj->pofloor.TexZ, seg->pobj->poceiling.TexZ, !!(linedef->flags&ML_DONTPEGBOTTOM));
 
-    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
+    const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
     float zOrg; // texture bottom
     if (linedef->flags&ML_DONTPEGBOTTOM) {
       // bottom of texture at bottom

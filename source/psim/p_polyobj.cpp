@@ -470,8 +470,8 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
       if (!TTex0) TTex0 = GTextureManager[GTextureManager.DefaultTexture];
       VTexture *TTex1 = GTextureManager(s1->TopTexture);
       if (!TTex1) TTex1 = GTextureManager[GTextureManager.DefaultTexture];
-      const float texh0 = TTex0->GetScaledHeight()/s0->Top.ScaleY;
-      const float texh1 = TTex1->GetScaledHeight()/s1->Top.ScaleY;
+      const float texh0 = TTex0->GetScaledHeightF()/s0->Top.ScaleY;
+      const float texh1 = TTex1->GetScaledHeightF()/s1->Top.ScaleY;
       if (texh0 != texh1) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (blocking toptex has different sizes)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     }
   }
@@ -848,7 +848,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     VTexture *MTex = (xseg ? GTextureManager(xseg->sidedef->MidTexture) : nullptr);
     if (MTex && MTex->Type != TEXTYPE_Null) {
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-      const float texh = MTex->GetScaledHeight();
+      const float texh = MTex->GetScaledHeightF();
       float z0, z1;
       if (valid3d || (po->segs[0]->linedef->flags&ML_3DMIDTEX)) {
         if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
@@ -1261,8 +1261,8 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     if (po->posector->floor.pic != skyflatnum) {
       VTexture *FTex = GTextureManager(po->posector->floor.pic);
       if (FTex && FTex->Type != TEXTYPE_Null) {
-        const float w = FTex->GetScaledWidth();
-        const float h = FTex->GetScaledHeight();
+        const float w = FTex->GetScaledWidthF();
+        const float h = FTex->GetScaledHeightF();
         if (w > 0.0f) po->pofloor.xoffs += fmodf(po->startSpot.x+deltaX, w);
         if (h > 0.0f) po->pofloor.yoffs -= fmodf(po->startSpot.y+deltaY, h);
       }
@@ -1271,8 +1271,8 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     if (po->posector->floor.pic != skyflatnum) {
       VTexture *CTex = GTextureManager(po->posector->ceiling.pic);
       if (CTex && CTex->Type != TEXTYPE_Null) {
-        const float w = CTex->GetScaledWidth();
-        const float h = CTex->GetScaledHeight();
+        const float w = CTex->GetScaledWidthF();
+        const float h = CTex->GetScaledHeightF();
         //GCon->Logf(NAME_Debug, "*** pobj #%d: x=%g; y=%g; xmod=%g; ymod=%g; spot=(%g, %g) (%g, %g)", po->tag, x, y, fmodf(x, CTex->Width), fmodf(y, CTex->Height), po->startSpot.x, po->startSpot.y, fmodf(po->startSpot.x, CTex->Width), fmodf(po->startSpot.y, CTex->Height));
         if (w > 0.0f) po->poceiling.xoffs += fmodf(po->startSpot.x+deltaX, w);
         if (h > 0.0f) po->poceiling.yoffs -= fmodf(po->startSpot.y+deltaY, h);

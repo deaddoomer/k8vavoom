@@ -882,10 +882,10 @@ void VTextureManager::SetFrontSkyLayer (int tex) {
 void VTextureManager::GetTextureInfo (int TexNum, picinfo_t *info) {
   VTexture *Tex = getTxByIndex(TexNum);
   if (Tex) {
-    info->width = Tex->GetScaledWidth();
-    info->height = Tex->GetScaledHeight();
-    info->xoffset = Tex->GetScaledSOffset();
-    info->yoffset = Tex->GetScaledTOffset();
+    info->width = Tex->GetScaledWidthI();
+    info->height = Tex->GetScaledHeightI();
+    info->xoffset = Tex->GetScaledSOffsetI();
+    info->yoffset = Tex->GetScaledTOffsetI();
     info->xscale = Tex->SScale;
     info->yscale = Tex->TScale;
     info->widthNonScaled = Tex->GetWidth();
@@ -1844,8 +1844,8 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     // replace existing texture by adjusting scale and offsets
     VTexture *OldTex = Textures[OldIndex];
     bool doSOffset = false, doTOffset = false;
-    if (oldWidth < 0) { oldWidth = OldTex->GetScaledWidth(); doSOffset = true; }
-    if (oldHeight < 0) { oldHeight = OldTex->GetScaledHeight(); doTOffset = true; }
+    if (oldWidth < 0) { oldWidth = OldTex->GetScaledWidthI(); doSOffset = true; }
+    if (oldHeight < 0) { oldHeight = OldTex->GetScaledHeightI(); doTOffset = true; }
     //NewTex->Type = OldTex->Type;
     //k8: it is overriden by the original texture type
     //    i don't even know what `overload` meant to do, and it seems to work this way
@@ -1861,8 +1861,8 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     NewTex->TScale = NewTex->GetHeight()/max2(1, oldHeight);
     if (!isFiniteF(NewTex->SScale) || NewTex->SScale <= 0.0f) NewTex->SScale = 1.0f; // just in case
     if (!isFiniteF(NewTex->TScale) || NewTex->TScale <= 0.0f) NewTex->TScale = 1.0f; // just in case
-    if (doSOffset) NewTex->SOffset = (int)floorf(OldTex->GetScaledSOffset()*NewTex->SScale);
-    if (doTOffset) NewTex->TOffset = (int)floorf(OldTex->GetScaledTOffset()*NewTex->TScale);
+    if (doSOffset) NewTex->SOffset = (int)floorf(OldTex->GetScaledSOffsetF()*NewTex->SScale);
+    if (doTOffset) NewTex->TOffset = (int)floorf(OldTex->GetScaledTOffsetF()*NewTex->TScale);
     //if (OldTex->SScale != 1.0f || OldTex->TScale != 1.0f) GCon->Logf(NAME_Debug, "NEW: %s: oldsize=(%d,%d); oldscale=(%g,%g); newsize=(%d,%d); newscale=(%g,%g)", *OldTex->Name, OldTex->GetWidth(), OldTex->GetHeight(), OldTex->SScale, OldTex->TScale, NewTex->GetWidth(), NewTex->GetHeight(), NewTex->SScale, NewTex->TScale);
     NewTex->Type = OldTex->Type; // oops, type is forced here
     NewTex->TextureTranslation = OldTex->TextureTranslation;

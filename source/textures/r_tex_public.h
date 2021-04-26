@@ -438,18 +438,25 @@ public:
   inline __attribute__((const)) int GetWidth () const noexcept { return Width; }
   inline __attribute__((const)) int GetHeight () const noexcept { return Height; }
 
-  inline __attribute__((const)) int GetScaledWidth () const noexcept { return max2(1, (int)(Width/SScale)); }
-  inline __attribute__((const)) int GetScaledHeight () const noexcept { return max2(1, (int)(Height/TScale)); }
+  inline __attribute__((const)) int GetScaledWidthI () const noexcept { return max2(1, (int)((float)Width/SScale)); }
+  inline __attribute__((const)) int GetScaledHeightI () const noexcept { return max2(1, (int)((float)Height/TScale)); }
 
-  inline __attribute__((const)) int GetScaledSOffset () const noexcept { return (int)(SOffset/SScale); }
-  inline __attribute__((const)) int GetScaledTOffset () const noexcept { return (int)(TOffset/TScale); }
+  inline __attribute__((const)) float GetScaledWidthF () const noexcept { return max2(0.001f, (float)Width/SScale); }
+  inline __attribute__((const)) float GetScaledHeightF () const noexcept { return max2(0.001f, (float)Height/TScale); }
+
+  // the two following methods are used in 2D renderer, and for decals
+  inline __attribute__((const)) int GetScaledSOffsetI () const noexcept { return (int)(SOffset/SScale); }
+  inline __attribute__((const)) int GetScaledTOffsetI () const noexcept { return (int)(TOffset/TScale); }
+
+  inline __attribute__((const)) float GetScaledSOffsetF () const noexcept { return SOffset/SScale; }
+  inline __attribute__((const)) float GetScaledTOffsetF () const noexcept { return TOffset/TScale; }
 
   inline __attribute__((const)) float TextureSScale () const noexcept { return SScale; }
   inline __attribute__((const)) float TextureTScale () const noexcept { return TScale; }
-  //inline __attribute__((const)) float TextureOffsetSScale () const noexcept { return (bWorldPanning ? SScale : 1.0f); } // this seems to be wrong
-  //inline __attribute__((const)) float TextureOffsetTScale () const noexcept { return (bWorldPanning ? TScale : 1.0f); } // this seems to be wrong
-  inline __attribute__((const)) float TextureOffsetSScale () const noexcept { return (!bWorldPanning ? 1.0f : SScale); }
-  inline __attribute__((const)) float TextureOffsetTScale () const noexcept { return (!bWorldPanning ? 1.0f : TScale); }
+  // texture offsets are applied after performing dot product on texture axes, so they are in texels
+  // with "world panning" they should be scaled accordingly to texture scale to be in "world coordinates"
+  inline __attribute__((const)) float TextureOffsetSScale () const noexcept { return (bWorldPanning ? SScale : 1.0f); }
+  inline __attribute__((const)) float TextureOffsetTScale () const noexcept { return (bWorldPanning ? TScale : 1.0f); }
 
   // get texture pixel; will call `GetPixels()`
   rgba_t getPixel (int x, int y);

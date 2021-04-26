@@ -425,8 +425,6 @@ void VMultiPatchTexture::ParseGfxPart (VScriptParser *sc, EWadNamespace prioNS, 
   }
 
   if (bUseOffsets && P.Tex && P.Tex->Type != TEXTYPE_Null) {
-    //P.XOrigin -= P.Tex->GetScaledSOffset();
-    //P.YOrigin -= P.Tex->GetScaledTOffset();
     P.XOrigin -= P.Tex->SOffset;
     P.YOrigin -= P.Tex->TOffset;
   }

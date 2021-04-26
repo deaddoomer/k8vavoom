@@ -176,7 +176,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
       // top of texture at the higher ceiling
       // it is ok to use seg frontsector ceiling here, because if it is
       // not higher than the back sector ceiling, the upper texture is invisible
-      const float texh = TTex->GetScaledHeight()/sidedef->Top.ScaleY;
+      const float texh = TTex->GetScaledHeightF()/sidedef->Top.ScaleY;
       zOrg = top_TexZ-texh;
     } else {
       // bottom of texture at the lower ceiling
@@ -382,7 +382,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
       // not lower than the front sector floor, the lower texture is invisible
       zOrg = back_floor->TexZ;
     }
-    const float texh = BTex->GetScaledHeight()/sidedef->Bot.ScaleY;
+    const float texh = BTex->GetScaledHeightF()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
     SetupTextureAxesOffsetBot(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
 
@@ -520,7 +520,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     // texture origin is left bottom corner (don't even ask me why)
 
     vassert(!seg->pobj || !seg->pobj->Is3D());
-    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
+    const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
     //GCon->Logf(NAME_Debug, "line #%d: side=%d; %s: texh=%g; backh=%g; fronth=%g", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), seg->side, *MTex->Name, texh, back_topz1-back_botz1, seg->frontsector->ceiling.GetPointZ(*seg->v1)-seg->frontsector->floor.GetPointZ(*seg->v1));
 
     float zOrg; // texture bottom

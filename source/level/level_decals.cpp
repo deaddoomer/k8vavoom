@@ -73,11 +73,11 @@ static VVA_OKUNUSED const char *lif2str (int flags) {
 //==========================================================================
 /*
 static bool isDecalsOverlap (VDecalDef *dec, float dcx0, float dcy0, decal_t *cur, VTexture *DTex) {
-  const float twdt = DTex->GetScaledWidth()*dec->scaleX.value;
-  const float thgt = DTex->GetScaledHeight()*dec->scaleY.value;
+  const float twdt = DTex->GetScaledWidthF()*dec->scaleX.value;
+  const float thgt = DTex->GetScaledHeightF()*dec->scaleY.value;
 
-  const float txofs = DTex->GetScaledSOffset()*dec->scaleX.value;
-  const float tyofs = DTex->GetScaledTOffset()*dec->scaleY.value;
+  const float txofs = DTex->GetScaledSOffsetF()*dec->scaleX.value;
+  const float tyofs = DTex->GetScaledTOffsetF()*dec->scaleY.value;
 
   const float myx0 = dcx0;
   const float myx1 = myx0+twdt;
@@ -221,8 +221,8 @@ void VLevel::CleanupDecals (seg_t *seg) {
       continue;
     }
 
-    const int twdt = (int)(dtex->GetScaledWidth()*cdc->scaleX);
-    const int thgt = (int)(dtex->GetScaledHeight()*cdc->scaleY);
+    const int twdt = (int)(dtex->GetScaledWidthF()*cdc->scaleX);
+    const int thgt = (int)(dtex->GetScaledHeightF()*cdc->scaleY);
 
     if (!cdc->animator && (twdt < 1 || thgt < 1)) {
       // remove this decal (just in case)
@@ -267,8 +267,8 @@ void VLevel::CleanupDecals (seg_t *seg) {
       continue;
     }
 
-    const int twdt = (int)(dtex->GetScaledWidth()*cdc->scaleX);
-    const int thgt = (int)(dtex->GetScaledHeight()*cdc->scaleY);
+    const int twdt = (int)(dtex->GetScaledWidthF()*cdc->scaleX);
+    const int thgt = (int)(dtex->GetScaledHeightF()*cdc->scaleY);
 
     if (!cdc->animator && (twdt < 1 || thgt < 1)) {
       // remove this decal (just in case)
@@ -309,10 +309,10 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
 
   //GCon->Logf(NAME_Debug, "decal '%s' at linedef %d", *GTextureManager[tex]->Name, (int)(ptrdiff_t)(li-Lines));
 
-  float twdt = DTex->GetScaledWidth()*dec->scaleX.value;
-  float thgt = DTex->GetScaledHeight()*dec->scaleY.value;
+  float twdt = DTex->GetScaledWidthF()*dec->scaleX.value;
+  float thgt = DTex->GetScaledHeightF()*dec->scaleY.value;
 
-  if (twdt < 1 || thgt < 1) return;
+  if (twdt < 1.0f || thgt < 1.0f) return;
 
   sector_t *fsec, *bsec;
   if (side == 0) {
@@ -334,7 +334,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
   const TVec &v2 = *li->v2;
   const float linelen = (v2-v1).length2D();
 
-  float txofs = DTex->GetScaledSOffset()*dec->scaleX.value;
+  float txofs = DTex->GetScaledSOffsetF()*dec->scaleX.value;
   // this is not quite right, but i need it this way
   if (flips&decal_t::FlipX) txofs = twdt-txofs;
 
@@ -347,7 +347,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
     VDC_DLOG(NAME_Debug, "*** OOB: Decal '%s' at line #%d (side %d; fs=%d; bs=%d): linelen=%g; dcx0=%g; dcx1=%g", *dec->name, (int)(ptrdiff_t)(li-Lines), side, (int)(ptrdiff_t)(fsec-Sectors), (bsec ? (int)(ptrdiff_t)(bsec-Sectors) : -1), linelen, dcx0, dcx1);
   }
 
-  const float tyofs = DTex->GetScaledTOffset()*dec->scaleY.value;
+  const float tyofs = DTex->GetScaledTOffsetF()*dec->scaleY.value;
   const float dcy1 = orgz+dec->scaleY.value+tyofs;
   const float dcy0 = dcy1-thgt;
 

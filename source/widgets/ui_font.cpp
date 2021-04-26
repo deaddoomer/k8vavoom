@@ -695,8 +695,8 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
         if (Char < 128) AsciiChars[Char] = Chars.Num()-1;
 
         // calculate height of font character and adjust font height as needed
-        int Height = Tex->GetScaledHeight();
-        int TOffs = Tex->GetScaledTOffset();
+        int Height = Tex->GetScaledHeightI();
+        int TOffs = Tex->GetScaledTOffsetI();
         Height += abs(TOffs);
         if (FontHeight < Height) FontHeight = Height;
 
@@ -729,7 +729,7 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
   if (ASpaceWidth < 0) {
     int NIdx = FindChar('N');
     if (NIdx >= 0) {
-      SpaceWidth = (Chars[NIdx].BaseTex->GetScaledWidth()+1)/2;
+      SpaceWidth = (Chars[NIdx].BaseTex->GetScaledWidthI()+1)/2;
       if (SpaceWidth < 1) SpaceWidth = 1; //k8: just in case
     } else {
       SpaceWidth = 4;
@@ -884,7 +884,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
   VTexture *Tex = Chars[Idx].Textures ? Chars[Idx].Textures[Color] :
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
-  *pWidth = Tex->GetScaledWidth();
+  *pWidth = Tex->GetScaledWidthI();
   return Tex;
 }
 
@@ -902,7 +902,7 @@ int VFont::GetCharWidth (int Chr) {
     Idx = FindChar(Chr);
     if (Idx < 0) return SpaceWidth;
   }
-  return Chars[Idx].BaseTex->GetScaledWidth();
+  return Chars[Idx].BaseTex->GetScaledWidthI();
 }
 
 
@@ -1176,8 +1176,8 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
       //GCon->Logf(NAME_Debug, "font '%s': char #%d (%c): patch '%s', texture size:%dx%d; ofs:%d,%d; scale:%g,%g", *AName, Char, (Char > 32 && Char < 127 ? (char)Char : '?'), *LumpName, Tex->GetWidth(), Tex->GetHeight(), Tex->SOffset, Tex->TOffset, Tex->SScale, Tex->TScale);
 
       // calculate height of font character and adjust font height as needed
-      int Height = Tex->GetScaledHeight();
-      int TOffs = Tex->GetScaledTOffset();
+      int Height = Tex->GetScaledHeightI();
+      int TOffs = Tex->GetScaledTOffsetI();
       Height += abs(TOffs);
       if (FontHeight < Height) FontHeight = Height;
 
@@ -1198,7 +1198,7 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
   if (ASpaceWidth < 0) {
     int NIdx = FindChar('N');
     if (NIdx >= 0) {
-      SpaceWidth = (Chars[NIdx].BaseTex->GetScaledWidth()+1)/2;
+      SpaceWidth = (Chars[NIdx].BaseTex->GetScaledWidthI()+1)/2;
       if (SpaceWidth < 1) SpaceWidth = 1; //k8: just in case
     } else {
       SpaceWidth = 4;
@@ -1428,8 +1428,8 @@ VSingleTextureFont::VSingleTextureFont (VName AName, int TexNum) {
   AsciiChars[(int)'A'] = 0;
   FirstChar = 'A';
   LastChar = 'A';
-  SpaceWidth = Tex->GetScaledWidth();
-  FontHeight = Tex->GetScaledHeight();
+  SpaceWidth = Tex->GetScaledWidthI();
+  FontHeight = Tex->GetScaledHeightI();
   Kerning = 0;
   Translation = nullptr;
 

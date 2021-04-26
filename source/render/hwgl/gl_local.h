@@ -933,13 +933,11 @@ protected:
 
   // set by `SetTexture()` and company
   // non-scaled
-  float tex_iw, tex_ih;
-  int tex_w, tex_h;
+  float tex_iw, tex_ih; // used in shaders, and in 2D drawer
   // scaled
-  float tex_iw_sc, tex_ih_sc;
-  int tex_w_sc, tex_h_sc;
+  float tex_iw_sc, tex_ih_sc; // this is used in 2D drawer
   // scale
-  float tex_scale_x, tex_scale_y;
+  float tex_scale_x, tex_scale_y; // used in sky rendering
 
   int lastgamma;
   int CurrentFade;

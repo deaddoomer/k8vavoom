@@ -930,12 +930,12 @@ void VWidget::DrawPicScaled (int X, int Y, int Handle, float scaleX, float scale
 void VWidget::DrawPicScaled (int X, int Y, VTexture *Tex, float scaleX, float scaleY, float Alpha, int Trans) {
   if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
 
-  X -= (int)(Tex->GetScaledSOffset()*scaleX);
-  Y -= (int)(Tex->GetScaledTOffset()*scaleY);
+  X -= (int)((float)Tex->GetScaledSOffsetI()*scaleX);
+  Y -= (int)((float)Tex->GetScaledTOffsetI()*scaleY);
   float X1 = X;
   float Y1 = Y;
-  float X2 = (int)(X+Tex->GetScaledWidth()*scaleX);
-  float Y2 = (int)(Y+Tex->GetScaledHeight()*scaleY);
+  float X2 = (int)(X+Tex->GetScaledWidthI()*scaleX);
+  float Y2 = (int)(Y+Tex->GetScaledHeightI()*scaleY);
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
@@ -958,8 +958,8 @@ void VWidget::DrawPicScaledIgnoreOffset (int X, int Y, int Handle, float scaleX,
 
   float X1 = X;
   float Y1 = Y;
-  float X2 = (int)(X+Tex->GetScaledWidth()*scaleX);
-  float Y2 = (int)(Y+Tex->GetScaledHeight()*scaleY);
+  float X2 = (int)(X+Tex->GetScaledWidthI()*scaleX);
+  float Y2 = (int)(Y+Tex->GetScaledHeightI()*scaleY);
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
@@ -978,12 +978,12 @@ void VWidget::DrawPicScaledIgnoreOffset (int X, int Y, int Handle, float scaleX,
 void VWidget::DrawPic (int X, int Y, VTexture *Tex, float Alpha, int Trans) {
   if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
 
-  X -= Tex->GetScaledSOffset();
-  Y -= Tex->GetScaledTOffset();
+  X -= Tex->GetScaledSOffsetI();
+  Y -= Tex->GetScaledTOffsetI();
   float X1 = X;
   float Y1 = Y;
-  float X2 = X+Tex->GetScaledWidth();
-  float Y2 = Y+Tex->GetScaledHeight();
+  float X2 = X+Tex->GetScaledWidthI();
+  float Y2 = Y+Tex->GetScaledHeightI();
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
@@ -1003,12 +1003,12 @@ void VWidget::DrawPicPart (float x, float y, float pwdt, float phgt, int handle,
   if (handle < 0 || alpha <= 0 || pwdt <= 0 || phgt <= 0 || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
+  x -= Tex->GetScaledSOffsetF();
+  y -= Tex->GetScaledTOffsetF();
   float X1 = x;
   float Y1 = y;
-  float X2 = x+Tex->GetScaledWidth()*pwdt;
-  float Y2 = y+Tex->GetScaledHeight()*phgt;
+  float X2 = x+Tex->GetScaledWidthF()*pwdt;
+  float Y2 = y+Tex->GetScaledHeightF()*phgt;
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth()*pwdt;
@@ -1028,12 +1028,12 @@ void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, 
   if (handle < 0 || alpha <= 0 || tx1 <= tx0 || ty1 <= ty0) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  x -= Tex->GetScaledSOffset();
-  y -= Tex->GetScaledTOffset();
-  float X1 = x+Tex->GetScaledWidth()*tx0;
-  float Y1 = y+Tex->GetScaledHeight()*ty0;
-  float X2 = x+Tex->GetScaledWidth()*tx1;
-  float Y2 = y+Tex->GetScaledHeight()*ty1;
+  x -= Tex->GetScaledSOffsetF();
+  y -= Tex->GetScaledTOffsetF();
+  float X1 = x+Tex->GetScaledWidthF()*tx0;
+  float Y1 = y+Tex->GetScaledHeightF()*ty0;
+  float X2 = x+Tex->GetScaledWidthF()*tx1;
+  float Y2 = y+Tex->GetScaledHeightF()*ty1;
   float S1 = Tex->GetWidth()*tx0;
   float T1 = Tex->GetHeight()*ty0;
   float S2 = Tex->GetWidth()*tx1;
@@ -1052,14 +1052,12 @@ void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, 
 void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, float Alpha, bool shadowed) {
   if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
 
-  //GCon->Logf(NAME_Debug, "%s: pos=(%d,%d); size=(%d,%d); scale=(%g,%g); ssize=(%d,%d); ofs=(%d,%d)", *Tex->Name, X, Y, Tex->GetWidth(), Tex->GetHeight(), Tex->SScale, Tex->TScale, Tex->GetScaledWidth(), Tex->GetScaledHeight(), Tex->GetScaledSOffset(), Tex->GetScaledTOffset());
-
-  X -= Tex->GetScaledSOffset();
-  Y -= Tex->GetScaledTOffset();
+  X -= Tex->GetScaledSOffsetI();
+  Y -= Tex->GetScaledTOffsetI();
   float X1 = X;
   float Y1 = Y;
-  float X2 = X+Tex->GetScaledWidth();
-  float Y2 = Y+Tex->GetScaledHeight();
+  float X2 = X+Tex->GetScaledWidthI();
+  float Y2 = Y+Tex->GetScaledHeightI();
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
@@ -1095,10 +1093,10 @@ void VWidget::DrawShadowedPic (int X, int Y, int Handle, float scaleX, float sca
 void VWidget::DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX, float scaleY, bool ignoreOffset) {
   if (!Tex || Tex->Type == TEXTYPE_Null || scaleX <= 0.0f || scaleY <= 0.0f || !isFiniteF(scaleX) || !isFiniteF(scaleY)) return;
 
-  float X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffset()*scaleX)+2;
-  float Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffset()*scaleY)+2;
-  float X2 = X1+Tex->GetScaledWidth()*scaleX;
-  float Y2 = Y1+Tex->GetScaledHeight()*scaleY;
+  float X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffsetI()*scaleX)+2;
+  float Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffsetI()*scaleY)+2;
+  float X2 = X1+Tex->GetScaledWidthI()*scaleX;
+  float Y2 = Y1+Tex->GetScaledHeightI()*scaleY;
   float S1 = 0;
   float T1 = 0;
   float S2 = Tex->GetWidth();
@@ -1109,10 +1107,10 @@ void VWidget::DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX, float 
   }
 
   //DrawPic(X, Y, Tex);
-  X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffset()*scaleX);
-  Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffset()*scaleY);
-  X2 = X1+Tex->GetScaledWidth()*scaleX;
-  Y2 = Y1+Tex->GetScaledHeight()*scaleY;
+  X1 = X-(ignoreOffset ? 0.0f : Tex->GetScaledSOffsetI()*scaleX);
+  Y1 = Y-(ignoreOffset ? 0.0f : Tex->GetScaledTOffsetI()*scaleY);
+  X2 = X1+Tex->GetScaledWidthI()*scaleX;
+  Y2 = Y1+Tex->GetScaledHeightI()*scaleY;
   S1 = 0;
   T1 = 0;
   S2 = Tex->GetWidth();

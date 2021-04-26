@@ -350,7 +350,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   float z_org; // texture top
   if (line->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
-    const float texh = MTex->GetScaledHeight()/sidedef->Mid.ScaleY;
+    const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
     z_org = max2(line->frontsector->floor.TexZ, line->backsector->floor.TexZ)+texh;
   } else {
     // top of texture at top

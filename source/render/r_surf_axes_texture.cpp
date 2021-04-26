@@ -158,7 +158,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
   } else {
-    const float texh = tex->GetScaledHeight()/tparam->ScaleY;
+    const float texh = tex->GetScaledHeightF()/tparam->ScaleY;
     texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY; // vertical
   }
 

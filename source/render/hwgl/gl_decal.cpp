@@ -186,11 +186,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     }
 
     // use origScale to get the original starting point
-    float txofs = dtex->GetScaledSOffset()*dc->scaleX;
-    float tyofs = dtex->GetScaledTOffset()*dc->origScaleY;
+    float txofs = dtex->GetScaledSOffsetF()*dc->scaleX;
+    float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
 
-    const float twdt = dtex->GetScaledWidth()*dc->scaleX;
-    const float thgt = dtex->GetScaledHeight()*dc->scaleY;
+    const float twdt = dtex->GetScaledWidthF()*dc->scaleX;
+    const float thgt = dtex->GetScaledHeightF()*dc->scaleY;
 
     //if (dc->flags&decal_t::FlipX) txofs = twdt-txofs;
     //if (dc->flags&decal_t::FlipY) tyofs = thgt-tyofs;

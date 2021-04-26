@@ -284,7 +284,7 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
   VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
   // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-  const float texh = MTex->GetScaledHeight();
+  const float texh = MTex->GetScaledHeightF();
   float z_org;
   if (ldef->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
@@ -590,7 +590,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
       //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
       VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-      const float texh = MTex->GetScaledHeight();
+      const float texh = MTex->GetScaledHeightF();
       float z_org;
       if (ldef->flags&ML_DONTPEGBOTTOM) {
         // bottom of texture at bottom
