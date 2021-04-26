@@ -1839,7 +1839,7 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     //NewTex->Type = TEXTYPE_Overload; //k8: nope, it is new
     AddTexture(NewTex);
     ++hitexNewCount;
-    //GCon->Logf(NAME_Debug, "*** new hires texture '%s' (%s)", *Name, *W_FullLumpName(Lump));
+    //GCon->Logf(NAME_Debug, "*** new hires texture '%s' (%s)", *NewTex->Name, *W_FullLumpName(NewTex->SourceLump));
   } else {
     // replace existing texture by adjusting scale and offsets
     VTexture *OldTex = Textures[OldIndex];
@@ -1853,10 +1853,10 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     //if (OldTex->SScale != 1.0f || OldTex->TScale != 1.0f) GCon->Logf(NAME_Debug, "OLD: %s: oldsize=(%d,%d); oldscale=(%g,%g); newsize=(%d,%d); newscale=(%g,%g)", *OldTex->Name, OldTex->GetWidth(), OldTex->GetHeight(), OldTex->SScale, OldTex->TScale, NewTex->GetWidth(), NewTex->GetHeight(), NewTex->SScale, NewTex->TScale);
     NewTex->hiresRepTex = true;
     NewTex->Type = TEXTYPE_Overload;
-    //GCon->Logf("REPLACE0 <%s> (%d)", *OldTex->Name, OldIndex);
+    //GCon->Logf(NAME_Debug, "*** REPLACE0 <%s> (%d)", *OldTex->Name, OldIndex);
     NewTex->Name = OldTex->Name;
     NewTex->TextureTranslation = OldTex->TextureTranslation; //k8: do we need this at all?
-    NewTex->bWorldPanning = true;
+    NewTex->bWorldPanning = true; //FIXME: this assumes that the original texture scaling is 1
     NewTex->SScale = NewTex->GetWidth()/max2(1, oldWidth);
     NewTex->TScale = NewTex->GetHeight()/max2(1, oldHeight);
     if (!isFiniteF(NewTex->SScale) || NewTex->SScale <= 0.0f) NewTex->SScale = 1.0f; // just in case

@@ -487,10 +487,10 @@ public:
   // fuckery to avoid having friends, because i am asocial
   inline void CallTransformFrustum () { TransformFrustum(); }
 
-  static inline __attribute__((const)) float TextureSScale (const VTexture *pic) noexcept { return pic->SScale; }
-  static inline __attribute__((const)) float TextureTScale (const VTexture *pic) noexcept { return pic->TScale; }
-  static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->SScale : 1.0f); }
-  static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) noexcept { return (pic->bWorldPanning ? pic->TScale : 1.0f); }
+  static inline __attribute__((const)) float TextureSScale (const VTexture *pic) noexcept { return (pic ? pic->TextureSScale() : 1.0f); }
+  static inline __attribute__((const)) float TextureTScale (const VTexture *pic) noexcept { return (pic ? pic->TextureTScale() : 1.0f); }
+  static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) noexcept { return (pic ? pic->TextureOffsetSScale() : 1.0f); }
+  static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) noexcept { return (pic ? pic->TextureOffsetTScale() : 1.0f); }
 
   inline void IncrementBspVis () {
     if (++BspVisFrame == 0) {

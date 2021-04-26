@@ -530,6 +530,11 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     } else {
       // top of texture at top
       zOrg = min2(r_ceiling.splane->TexZ, seg->backsector->ceiling.TexZ)-texh;
+      /*
+      GCon->Logf(NAME_Debug, "line #%d: side=%d; %s: texh=%g; backh=%g; fronth=%g; zOrg=%g (%g); backcz=%g (%g:%g), frontcz=%g (%g:%g) (%g:%g)", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), seg->side, *MTex->Name, texh, back_topz1-back_botz1, seg->frontsector->ceiling.GetPointZ(*seg->v1)-seg->frontsector->floor.GetPointZ(*seg->v1), zOrg, zOrg+texh,
+        seg->backsector->ceiling.TexZ, back_topz1, back_topz2, r_ceiling.splane->TexZ, seg->frontsector->ceiling.GetPointZ(*seg->v1), seg->frontsector->ceiling.GetPointZ(*seg->v2),
+        r_ceiling.splane->GetPointZ(*seg->v1), r_ceiling.splane->GetPointZ(*seg->v2));
+      */
     }
     SetupTextureAxesOffsetMid2S(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
@@ -568,6 +573,8 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
       }
 
       if (midbotz1 >= midtopz1 || midbotz2 >= midtopz2) break;
+
+      //GCon->Logf(NAME_Debug, "line #%d: hgts: (%g,%g) (%g,%g) (%g,%g) texh=%g (ts=%g; ots=%g; ys=%g)", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), midbotz1, midtopz1, midtopz2, midbotz2, zOrg, zOrg+texh, texh, TextureTScale(MTex), TextureOffsetTScale(MTex), sidedef->Mid.ScaleY);
 
       float hgts[4];
 

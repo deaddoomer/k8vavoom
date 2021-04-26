@@ -76,7 +76,7 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
   seg->drawsegs->mid->texinfo.saxis = seg->dir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
   seg->drawsegs->mid->texinfo.soffs = -DotProduct(*seg->v1, seg->drawsegs->mid->texinfo.saxis)+
                                       seg->offset*(TextureSScale(MTex)*sidedef->Mid.ScaleX)+
-                                      sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex);
+                                      sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex)/sidedef->Mid.ScaleX;
 
   // force update
   //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; sectors=%d:%d", seg->pobj->index, (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1), (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));

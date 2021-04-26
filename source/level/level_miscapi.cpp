@@ -149,7 +149,7 @@ bool VLevel::GetMidTexturePosition (const line_t *linedef, int sideno, float *pt
   }
 
   zOrg *= MTex->TScale;
-  zOrg += sidedef->Mid.RowOffset*(MTex->bWorldPanning ? MTex->TScale : 1.0f);
+  zOrg += sidedef->Mid.RowOffset*MTex->TextureOffsetTScale()/sidedef->Mid.ScaleX;
 
   if (ptexbot) *ptexbot = zOrg;
   if (ptextop) *ptextop = zOrg+texh;

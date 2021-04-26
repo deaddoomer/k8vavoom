@@ -872,14 +872,6 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
           po->poceiling.TexZ -= ofs;
         }
       }
-      //k8: dunno why
-      /*
-      if (xseg->sidedef->Mid.RowOffset < 0) {
-        z1 += (xseg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-      } else {
-        z1 += xseg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
-      }
-      */
       z0 = max2(z0, refsec->floor.minz);
       z1 = min2(z1, refsec->ceiling.maxz);
       if (z1 < z0) z1 = z0;

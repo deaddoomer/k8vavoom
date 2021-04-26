@@ -42,13 +42,13 @@ void VRenderLevelShared::UpdateTextureOffsets (subsector_t *sub, seg_t *seg, seg
 
   if (FASI(sp->TextureOffset) != FASI(tparam->TextureOffset)) {
     reinitSurfs = true;
-    sp->texinfo.soffs += (tparam->TextureOffset-sp->TextureOffset)*TextureOffsetSScale(sp->texinfo.Tex);
+    sp->texinfo.soffs += (tparam->TextureOffset-sp->TextureOffset)*TextureOffsetSScale(sp->texinfo.Tex)/tparam->ScaleX;
     sp->TextureOffset = tparam->TextureOffset;
   }
 
   if (FASI(sp->RowOffset) != FASI(tparam->RowOffset)) {
     reinitSurfs = true;
-    sp->texinfo.toffs += (tparam->RowOffset-sp->RowOffset)*TextureOffsetTScale(sp->texinfo.Tex);
+    sp->texinfo.toffs += (tparam->RowOffset-sp->RowOffset)*TextureOffsetTScale(sp->texinfo.Tex)/tparam->ScaleY;
     sp->RowOffset = tparam->RowOffset;
   }
 
@@ -71,14 +71,14 @@ void VRenderLevelShared::UpdateTextureOffsetsEx (subsector_t *sub, seg_t *seg, s
   const float ctofs = tparam->TextureOffset+tparam2->TextureOffset;
   if (FASI(sp->TextureOffset) != FASI(ctofs)) {
     reinitSurfs = true;
-    sp->texinfo.soffs += (ctofs-sp->TextureOffset)*TextureOffsetSScale(sp->texinfo.Tex);
+    sp->texinfo.soffs += (ctofs-sp->TextureOffset)*TextureOffsetSScale(sp->texinfo.Tex)/tparam->ScaleX;
     sp->TextureOffset = ctofs;
   }
 
   const float rwofs = tparam->RowOffset+tparam2->RowOffset;
   if (FASI(sp->RowOffset) != FASI(rwofs)) {
     reinitSurfs = true;
-    sp->texinfo.toffs += (rwofs-sp->RowOffset)*TextureOffsetTScale(sp->texinfo.Tex);
+    sp->texinfo.toffs += (rwofs-sp->RowOffset)*TextureOffsetTScale(sp->texinfo.Tex)/tparam->ScaleY;
     sp->RowOffset = rwofs;
   }
 

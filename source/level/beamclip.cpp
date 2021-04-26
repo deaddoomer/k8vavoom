@@ -288,7 +288,6 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   float z_org;
   if (ldef->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
-    // top of texture at top
     z_org = pobj->pofloor.TexZ+texh;
   } else {
     // top of texture at top
@@ -296,9 +295,9 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   }
   //k8: dunno why
   if (seg->sidedef->Mid.RowOffset < 0) {
-    z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+    z_org += (seg->sidedef->Mid.RowOffset+texh)/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
   } else {
-    z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+    z_org += seg->sidedef->Mid.RowOffset/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
   }
   //TODO: use proper checks for slopes here
   if ((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
@@ -595,7 +594,6 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
       float z_org;
       if (ldef->flags&ML_DONTPEGBOTTOM) {
         // bottom of texture at bottom
-        // top of texture at top
         z_org = max2(fsec->floor.TexZ, bsec->floor.TexZ)+texh;
       } else {
         // top of texture at top
@@ -603,9 +601,9 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
       }
       //k8: dunno why
       if (seg->sidedef->Mid.RowOffset < 0) {
-        z_org += (seg->sidedef->Mid.RowOffset+texh)*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+        z_org += (seg->sidedef->Mid.RowOffset+texh)/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
       } else {
-        z_org += seg->sidedef->Mid.RowOffset*(!MTex->bWorldPanning ? 1.0f : 1.0f/MTex->TScale);
+        z_org += seg->sidedef->Mid.RowOffset/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
       }
       //TODO: use proper checks for slopes here
       float floorz, ceilz;

@@ -135,7 +135,9 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (IsTAxWrapFlagActive(type)) {
     if (((seg->linedef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
       // yeah, move TexZ
-      TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
+      //TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
+      // this seems to be what GZDoom does
+      TexZ += yofs/(TextureTScale(tex)/TextureOffsetTScale(tex)*tparam->ScaleY);
       yofs = 0.0f;
     }
   }
@@ -145,7 +147,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (!xflip) {
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
     dir = seg->dir;
-    texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
+    //texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
   } else {
     // flipped
     v = (seg->side == 0 ? seg->linedef->v2 : seg->linedef->v1);
@@ -169,8 +171,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   // apply texture offsets from texture params
   //texinfo->soffs += sofssign*xofs*(TextureOffsetSScale(tex)/tparam->ScaleX); // horizontal
   //texinfo->toffs += tofssign*yofs*(TextureOffsetTScale(tex)/tparam->ScaleY); // vertical
-  texinfo->soffs += xofs*TextureOffsetSScale(tex); // horizontal
-  texinfo->toffs += yofs*TextureOffsetTScale(tex); // vertical
+  texinfo->soffs += xofs*TextureOffsetSScale(tex)/tparam->ScaleX; // horizontal
+  texinfo->toffs += yofs*TextureOffsetTScale(tex)/tparam->ScaleY; // vertical
 
   #if 0
   // rotate around bottom left corner (doesn't work)

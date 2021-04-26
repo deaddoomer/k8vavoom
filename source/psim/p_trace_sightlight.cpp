@@ -58,12 +58,6 @@
 //  i am simply doing the full check.
 //
 //**************************************************************************
-static inline __attribute__((const)) float TextureSScale (const VTexture *pic) { return pic->SScale; }
-static inline __attribute__((const)) float TextureTScale (const VTexture *pic) { return pic->TScale; }
-static inline __attribute__((const)) float TextureOffsetSScale (const VTexture *pic) { return (pic->bWorldPanning ? pic->SScale : 1.0f); }
-static inline __attribute__((const)) float TextureOffsetTScale (const VTexture *pic) { return (pic->bWorldPanning ? pic->TScale : 1.0f); }
-
-
 static InterceptionList intercepts;
 
 
@@ -350,7 +344,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   const bool wrapped = ((line->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
   if (wrapped && !MTex->isSeeThrough()) return true;
 
-  const TVec taxis = TVec(0, 0, -1)*(TextureTScale(MTex)*sidedef->Mid.ScaleY);
+  const TVec taxis = TVec(0, 0, -1)*(MTex->TextureTScale()*sidedef->Mid.ScaleY);
   float toffs;
 
   float z_org; // texture top
@@ -365,22 +359,22 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
 
   if (wrapped) {
     // it is wrapped, so just slide it
-    toffs = sidedef->Mid.RowOffset*TextureOffsetTScale(MTex);
+    toffs = sidedef->Mid.RowOffset*MTex->TextureOffsetTScale()/sidedef->Mid.ScaleY;
   } else {
     // move origin up/down, as this texture is not wrapped
-    z_org += sidedef->Mid.RowOffset*(TextureOffsetTScale(MTex)/sidedef->Mid.ScaleY);
+    z_org += sidedef->Mid.RowOffset/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
     // offset is done by origin, so we don't need to offset texture
     toffs = 0.0f;
   }
-  toffs += z_org*(TextureTScale(MTex)*sidedef->Mid.ScaleY);
+  toffs += z_org*(MTex->TextureTScale()*sidedef->Mid.ScaleY);
 
   const int texelT = (int)(DotProduct(trace.LineEnd, taxis)+toffs); // /MTex->GetHeight();
   // check for wrapping
   if (!wrapped && (texelT < 0 || texelT >= MTex->GetHeight())) return true;
   if (!MTex->isSeeThrough()) return true;
 
-  const TVec saxis = line->ndir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
-  const float soffs = -DotProduct(*line->v1, saxis)+sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex);
+  const TVec saxis = line->ndir*(MTex->TextureSScale()*sidedef->Mid.ScaleX);
+  const float soffs = -DotProduct(*line->v1, saxis)+sidedef->Mid.TextureOffset*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
 
   const float texelS = (int)(DotProduct(trace.LineEnd, saxis)+soffs)%MTex->GetWidth();
 

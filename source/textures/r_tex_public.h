@@ -435,14 +435,21 @@ public:
   // DO NOT USE! DEBUG ONLY!
   void WriteToPNG (VStream *strm);
 
-  int GetWidth () const noexcept { return Width; }
-  int GetHeight () const noexcept { return Height; }
+  inline __attribute__((const)) int GetWidth () const noexcept { return Width; }
+  inline __attribute__((const)) int GetHeight () const noexcept { return Height; }
 
-  int GetScaledWidth () const noexcept { return max2(1, (int)(Width/SScale)); }
-  int GetScaledHeight () const noexcept { return max2(1, (int)(Height/TScale)); }
+  inline __attribute__((const)) int GetScaledWidth () const noexcept { return max2(1, (int)(Width/SScale)); }
+  inline __attribute__((const)) int GetScaledHeight () const noexcept { return max2(1, (int)(Height/TScale)); }
 
-  int GetScaledSOffset () const noexcept { return (int)(SOffset/SScale); }
-  int GetScaledTOffset () const noexcept { return (int)(TOffset/TScale); }
+  inline __attribute__((const)) int GetScaledSOffset () const noexcept { return (int)(SOffset/SScale); }
+  inline __attribute__((const)) int GetScaledTOffset () const noexcept { return (int)(TOffset/TScale); }
+
+  inline __attribute__((const)) float TextureSScale () const noexcept { return SScale; }
+  inline __attribute__((const)) float TextureTScale () const noexcept { return TScale; }
+  //inline __attribute__((const)) float TextureOffsetSScale () const noexcept { return (bWorldPanning ? SScale : 1.0f); } // this seems to be wrong
+  //inline __attribute__((const)) float TextureOffsetTScale () const noexcept { return (bWorldPanning ? TScale : 1.0f); } // this seems to be wrong
+  inline __attribute__((const)) float TextureOffsetSScale () const noexcept { return (!bWorldPanning ? 1.0f : SScale); }
+  inline __attribute__((const)) float TextureOffsetTScale () const noexcept { return (!bWorldPanning ? 1.0f : TScale); }
 
   // get texture pixel; will call `GetPixels()`
   rgba_t getPixel (int x, int y);
