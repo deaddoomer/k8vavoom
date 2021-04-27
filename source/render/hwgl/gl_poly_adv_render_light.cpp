@@ -225,13 +225,6 @@ void VOpenGLDrawer::EndLightPass () {
 //
 //  this blends surfaces from light sources to ambient map.
 //
-//  `LightCanCross` means that light can span over this surface
-//  light can span over two-sided midtex, for example, but not over
-//  one-sided wall
-//    <0: horizon
-//    >0: two-sided wall
-//    =0: one-sided wall
-//
 //  most checks are done in caller
 //
 //==========================================================================
@@ -247,7 +240,7 @@ void VOpenGLDrawer::DrawSurfaceLight (const surface_t *surf) {
 
   const texinfo_t *currTexinfo = surf->texinfo;
 
-  if (currTexinfo->Tex->isTransparent()) {
+  if (currTexinfo->Tex->isTransparent() || currTexinfo->Tex->isSemiTranslucent()) {
     const bool textureChanged = smapLastTexinfo.needChange(*currTexinfo, updateFrame);
     if (textureChanged) {
       smapLastTexinfo.updateLastUsed(*currTexinfo);

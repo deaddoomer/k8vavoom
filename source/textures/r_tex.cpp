@@ -2479,7 +2479,7 @@ COMMAND_WITH_AC(ExportTexture) {
 
   GCon->Logf("Exported texture '%s' of type '%s' to '%s'", *tx->Name, VTexture::TexTypeToStr(tx->Type), *fname);
   GCon->Logf("Texture info: %dx%d; scale:(%g,%g); offset:(%d,%d)", tx->Width, tx->Height, tx->SScale, tx->TScale, tx->SOffset, tx->TOffset);
-  GCon->Logf("Texture transparency: transparent=%s; translucent=%s; seethrough=%s", (tx->isTransparent() ? "tan" : "ona"), (tx->isTranslucent() ? "tan" : "ona"), (tx->isSeeThrough() ? "tan" : "ona"));
+  GCon->Logf("Texture transparency: transparent=%s; translucent=%s; seethrough=%s; semitranslucent=%s", (tx->isTransparent() ? "tan" : "ona"), (tx->isTranslucent() ? "tan" : "ona"), (tx->isSeeThrough() ? "tan" : "ona"), (tx->isSemiTranslucent() ? "tan" : "ona"));
 }
 
 

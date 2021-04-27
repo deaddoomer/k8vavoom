@@ -316,7 +316,8 @@ bool VRenderLevelShared::SurfPrepareForRender (surface_t *surf) {
     } else {
       surf->drawflags &= ~surface_t::DF_MASKED;
       // this is for transparent floors
-      if (tex->isTransparent() && (surf->typeFlags&(surface_t::TF_FLOOR|surface_t::TF_CEILING)) &&
+      if ((tex->isTransparent() || tex->isSemiTranslucent()) &&
+          (surf->typeFlags&(surface_t::TF_FLOOR|surface_t::TF_CEILING)) &&
           surf->subsector && surf->subsector->sector->HasAnyExtraFloors())
       {
         surf->drawflags |= surface_t::DF_MASKED;
@@ -695,7 +696,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       if (surf->typeFlags&surface_t::TF_3DFLOOR) {
         if (texinfo->Alpha < 1.0f) surf->Light |= 255<<24;
       }
-      // queue semi-transparent texture for normal rendering too
+      // queue semi-translucent texture for normal rendering too
       if (r_lit_semi_translucent.asBool() && texinfo->Tex->isSemiTranslucent() && !texinfo->Additive && texinfo->Alpha >= 1.0f) {
         // render texture in two passes:
         // normal rendering will reject all translucent pixels, and

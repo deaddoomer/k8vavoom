@@ -374,7 +374,10 @@ void VOpenGLDrawer::DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TV
   if (!Tex || Tex->Type == TEXTYPE_Null) return; // just in case
   //if (spotLight && !isSpriteInSpotlight(cv)) return;
 
-  if (Tex->isTransparent()) {
+  // just in case
+  if (Tex->isTranslucent() && !Tex->isSemiTranslucent()) return;
+
+  if (Tex->isTransparent() || Tex->isSemiTranslucent()) {
     // create fake texinfo
     texinfo_t currTexinfo;
     currTexinfo.saxis = saxis;
@@ -391,6 +394,7 @@ void VOpenGLDrawer::DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TV
     SurfShadowMapSpr.Activate();
     // activate shader, check for texture change
     const bool textureChanged = smapLastSprTexinfo.needChange(currTexinfo, updateFrame);
+    //k8: why i turned this off?!
     if (true || textureChanged) {
       smapLastSprTexinfo.updateLastUsed(currTexinfo);
       // required for proper wall shadow rendering
