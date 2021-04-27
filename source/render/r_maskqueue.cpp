@@ -946,7 +946,7 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
       if (transSprState.allowTransPolys) {
         //if (spr.surf->drawflags&surface_t::DF_MIRROR)
         {
-          Drawer->DrawMaskedPolygon(spr.surf, spr.rstyle.alpha, spr.rstyle.isAdditive(), !(spr.rstyle.flags&RenderStyleInfo::FlagNoDepthWrite));
+          Drawer->DrawMaskedPolygon(spr.surf, spr.rstyle.alpha, spr.rstyle.isAdditive(), !(spr.rstyle.flags&RenderStyleInfo::FlagNoDepthWrite), (spr.rstyle.flags&RenderStyleInfo::FlagOnlyTranslucent));
         }
       }
       break;

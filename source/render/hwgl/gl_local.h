@@ -566,7 +566,7 @@ public:
   virtual void StartSkyPolygons () override;
   virtual void EndSkyPolygons () override;
   virtual void DrawSkyPolygon (surface_t *, bool, VTexture *, float, VTexture *, float, int) override;
-  virtual void DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite=true) override;
+  virtual void DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite, bool onlyTranslucent) override;
 
   virtual void BeginTranslucentPolygonDecals () override;
   virtual void DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, bool Additive) override;

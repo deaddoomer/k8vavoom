@@ -134,7 +134,8 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
 
   if (!texinfo || !texinfo->Tex || texinfo->Tex->Type == TEXTYPE_Null) return;
   if (texinfo->Alpha < 1.0f || texinfo->Additive) return;
-  if (texinfo->Tex->isTranslucent()) return;
+  // allow "semi-translucent" textures
+  if (texinfo->Tex->isTranslucent() && (!r_lit_semi_translucent.asBool() || !texinfo->Tex->isSemiTranslucent())) return;
 
   if (SkyBox && SkyBox->IsPortalDirty()) SkyBox = nullptr;
 
@@ -164,7 +165,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   const bool paperFloor = (SurfaceType == SurfTypePaperFlatEx && InSurfs->plane.normal.z >= 0.0f);
   const bool dropPaperThinFloor = (paperFloor && InSurfs->plane.PointDistance(Drawer->vieworg) <= 0.0f && InSurfs->plane.PointDistance(Drawer->vieworg) < -0.1f);
 
-  const bool transTex = texinfo->Tex->isTransparent();
+  const bool transTex = texinfo->Tex->/*isTransparent*/isSeeThrough();
   const bool seeTroughTex = (!smaps && texinfo->Tex->isSeeThrough());
 
   for (surface_t *surf = InSurfs; surf; surf = surf->next) {

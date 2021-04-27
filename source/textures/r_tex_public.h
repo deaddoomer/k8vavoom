@@ -483,6 +483,7 @@ public:
     return !!(transFlags&(FlagTransparent|FlagTranslucent));
   }
 
+  /*
   inline void ResetTransparentFlag () noexcept { if (transFlags != TransValueUnknown) transFlags &= ~FlagTransparent; }
   inline void ResetTranslucentFlag () noexcept { if (transFlags != TransValueUnknown) transFlags &= ~FlagTranslucent; }
   inline void ResetHasSolidPixelFlag () noexcept { if (transFlags != TransValueUnknown) transFlags &= ~FlagHasSolidPixel; }
@@ -491,6 +492,7 @@ public:
   inline void SetTransparentFlag () noexcept { transFlags |= FlagTransparent; }
   inline void SetTranslucentFlag () noexcept { transFlags |= FlagTranslucent; }
   inline void SetHasSolidPixelFlag () noexcept { transFlags |= FlagHasSolidPixel; }
+  */
 
   virtual void SetFrontSkyLayer ();
   virtual bool CheckModified ();

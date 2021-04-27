@@ -21,6 +21,7 @@ $include "common/glow_vars.fs"
 
 void main () {
   vec4 TexColor = GetStdTexel(Texture, TextureCoordinate);
+  // normal sprite rendering
   if (TexColor.a < AlphaRef) discard;
   //TexColor *= Light;
 

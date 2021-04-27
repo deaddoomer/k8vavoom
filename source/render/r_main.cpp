@@ -111,6 +111,8 @@ VCvarF r_lights_radius("r_lights_radius", "6192", "Lights out of this radius (fr
 
 VCvarB r_shadows("r_shadows", true, "Allow shadows from lights?", CVAR_Archive);
 
+VCvarB r_lit_semi_translucent("r_lit_semi_translucent", true, "Lit semi-translucent textures?", CVAR_Archive);
+
 static VCvarF r_hud_fullscreen_alpha("r_hud_fullscreen_alpha", "0.44", "Alpha for fullscreen HUD", CVAR_Archive);
 
 extern VCvarB r_light_opt_shadow;

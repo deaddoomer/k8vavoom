@@ -2,4 +2,5 @@
 #pragma optionNV(unroll all)
 
 #define ALPHA_MIN     (0.012)
-#define ALPHA_MASKED  (0.666)
+// shaders can get "semi-translucent" textures; reject all translucent pixels
+#define ALPHA_MASKED  (1.0)

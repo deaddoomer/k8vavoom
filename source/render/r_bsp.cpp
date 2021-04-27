@@ -695,7 +695,18 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       if (surf->typeFlags&surface_t::TF_3DFLOOR) {
         if (texinfo->Alpha < 1.0f) surf->Light |= 255<<24;
       }
-      QueueTranslucentSurface(surf, ri);
+      // queue semi-transparent texture for normal rendering too
+      if (r_lit_semi_translucent.asBool() && texinfo->Tex->isSemiTranslucent() && !texinfo->Additive && texinfo->Alpha >= 1.0f) {
+        // render texture in two passes:
+        // normal rendering will reject all translucent pixels, and
+        // translucent rendering will reject all non-translucent pixels
+        ri.setOnlyTranslucent();
+        QueueTranslucentSurface(surf, ri);
+        surf->queueframe = 0; //HACK!
+        CommonQueueSurface(surf, SFCType::SFCT_World);
+      } else {
+        QueueTranslucentSurface(surf, ri);
+      }
     }
   }
 }

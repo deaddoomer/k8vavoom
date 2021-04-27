@@ -21,7 +21,8 @@ $include "common/glow_vars.fs"
 
 void main () {
   vec4 TexColor = GetStdTexel(Texture, TextureCoordinate);
-  if (TexColor.a < AlphaRef) discard;
+  // AlphaRef == -1: special mode: only alpha pixels
+  if (TexColor.a < AlphaRef || TexColor.a*AlphaRef <= -1.0f) discard;
   //TexColor *= Light;
 
 #ifdef VV_MASKED_GLOW

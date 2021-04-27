@@ -136,9 +136,10 @@ struct RenderStyleInfo {
   };
 
   enum {
-    FlagNoDepthWrite = 1u<<0, // no z-buffer write
-    FlagOffset       = 1u<<1, // do offsetting (used for flat-aligned sprites)
-    FlagNoCull       = 1u<<2, // don't cull faces
+    FlagNoDepthWrite    = 1u<<0, // no z-buffer write
+    FlagOffset          = 1u<<1, // do offsetting (used for flat-aligned sprites)
+    FlagNoCull          = 1u<<2, // don't cull faces
+    FlagOnlyTranslucent = 1u<<3, // draw only non-solid pixels? (used for translucent textures)
 
     FlagOptionsMask  = 0xffu,
 
@@ -162,6 +163,8 @@ struct RenderStyleInfo {
   unsigned flags;
 
   inline RenderStyleInfo () noexcept : seclight(0u), light(0u), fade(0u), stencilColor(0u), translucency(0), alpha(1.0f), flags(0u) {}
+
+  inline void setOnlyTranslucent () noexcept { flags |= FlagOnlyTranslucent; }
 
   inline bool isAdditive () const noexcept { return (translucency == Additive || translucency == AddShaded || translucency == Subtractive); }
   inline bool isTranslucent () const noexcept { return (translucency || alpha < 1.0f); }
@@ -619,7 +622,7 @@ public:
   virtual void DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *Texture1,
                                float offs1, VTexture *Texture2, float offs2, int CMap) = 0;
 
-  virtual void DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite=true) = 0;
+  virtual void DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite, bool onlyTranslucent) = 0;
 
   virtual void BeginTranslucentPolygonDecals () = 0;
   virtual void DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, bool Additive) = 0;

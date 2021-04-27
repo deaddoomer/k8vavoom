@@ -31,13 +31,15 @@
 //  VOpenGLDrawer::DrawMaskedPolygon
 //
 //==========================================================================
-void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite) {
+void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite, bool onlyTranslucent) {
   if (!surf->IsPlVisible()) return; // viewer is in back side or on plane
   if (surf->count < 3 || Alpha < 0.004f) return;
 
   texinfo_t *tex = surf->texinfo;
   if (!tex->Tex || tex->Tex->Type == TEXTYPE_Null) return;
   if (Alpha > 1.0f) Alpha = 1.0f; // just in case
+
+  if (onlyTranslucent && (Additive || Alpha < 1.0f)) onlyTranslucent = false; // just in case
 
   GlowParams gp;
   CalcGlow(gp, surf);
@@ -74,7 +76,9 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     } else {
       VV_GLDRAWER_DEACTIVATE_GLOW(SurfMaskedPolyBrightmapGlow);
     }
-    SurfMaskedPolyBrightmapGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
+    //SurfMaskedPolyBrightmapGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
+    // this should be a different shader, but meh
+    SurfMaskedPolyBrightmapGlow.SetAlphaRef(onlyTranslucent ? -1.0f : (Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f));
     SurfMaskedPolyBrightmapGlow.SetLight(
       ((surf->Light>>16)&255)*lightLevel/255.0f,
       ((surf->Light>>8)&255)*lightLevel/255.0f,
@@ -91,7 +95,9 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     } else {
       VV_GLDRAWER_DEACTIVATE_GLOW(SurfMaskedPolyGlow);
     }
-    SurfMaskedPolyGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
+    //SurfMaskedPolyGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
+    // this should be a different shader, but meh
+    SurfMaskedPolyGlow.SetAlphaRef(onlyTranslucent ? -1.0f : (Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f));
     SurfMaskedPolyGlow.SetLight(
       ((surf->Light>>16)&255)*lightLevel/255.0f,
       ((surf->Light>>8)&255)*lightLevel/255.0f,
