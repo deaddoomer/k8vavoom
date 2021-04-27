@@ -319,19 +319,24 @@ float VUdmfParser::CheckFloatScalePositive (const char *msg, vuint32 *flagptr, v
   if (ValType != TK_Int && ValType != TK_Float) sc.HostError(va("Float value expected for key '%s'", *Key));
   float res = (ValType == TK_Int ? ValInt : ValFloat);
   if (!isFiniteF(res)) sc.HostError(va("Invalid float value for key '%s' (%s)", *Key, *Val));
-  //GCon->Logf(NAME_Debug, "%s=%g", *Key, res);
-  if (NS != NS_K8Vavoom && res == 0.0f) {
-    if (!msg) msg = va("Positive float value expected for key '%s', but got zero", *Key);
-    sc.MessageErr(va("%s (%g)", msg, res));
+  // let zero scale be 1.0
+  if (res == 0.0f) {
+    //if (!msg) msg = va("Positive float value expected for key '%s', but got zero", *Key);
+    //sc.MessageErr(va("%s (%g)", msg, res));
     res = 1.0f;
   }
   if (res <= 0.0f) {
-    if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
-    if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res));
-    sc.MessageErr(va("%s (%g)", msg, res));
+    if (!flagptr) {
+      if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
+      if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res));
+      sc.MessageErr(va("%s (%g)", msg, res));
+    }
     res = -res;
     if (res == 0.0f) res = 1.0f;
-    if (flagptr) *flagptr ^= flipflag;
+    if (flagptr && flipflag) {
+      //TODO: check for conflicting flags
+      *flagptr ^= flipflag;
+    }
   }
   return res;
 }
