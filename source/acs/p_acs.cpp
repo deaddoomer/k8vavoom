@@ -86,8 +86,9 @@ static VCvarB acs_warning_console_commands("acs_warning_console_commands", true,
 static VCvarB acs_dump_uservar_access("acs_dump_uservar_access", false, "Dump ACS uservar access?", CVAR_Archive);
 static VCvarB acs_use_doomtic_granularity("acs_use_doomtic_granularity", false, "Should ACS use DooM tic granularity for delays?", CVAR_Archive);
 static VCvarB acs_enabled("acs_enabled", true, "DEBUG: are ACS scripts enabled?", CVAR_PreInit);
-static VCvarB acs_show_started_scripts("acs_show_started_scripts", false, "DEBUG: are ACS scripts enabled?", CVAR_PreInit);
-static VCvarB acs_show_stopped_scripts("acs_show_stopped_scripts", false, "DEBUG: are ACS scripts enabled?", CVAR_PreInit);
+static VCvarB acs_show_started_scripts("acs_show_started_scripts", false, "DEBUG", CVAR_PreInit);
+static VCvarB acs_show_stopped_scripts("acs_show_stopped_scripts", false, "DEBUG", CVAR_PreInit);
+static VCvarB acs_show_typed_scripts("acs_show_typed_scripts", false, "DEBUG", CVAR_PreInit);
 static VCvarB acs_abort_on_unknown_acsf("acs_abort_on_unknown_acsf", true, "Abort on unknown ACSF function? (WARNING: setting this 'off' may break some maps)", CVAR_Archive);
 static VCvarB acs_emulate_zandronum_acsf("acs_emulate_zandronum_acsf", false, "Emulate some Zandronum ACSF functions? (WARNING: setting this 'off' may break some maps)", CVAR_Archive);
 
@@ -256,9 +257,31 @@ struct VAcsInfo {
   VName Name; // NAME_None for unnamed scripts; lowercased
   VAcs *RunningScript;
 
+  static const char *GetTypeName (int type) noexcept {
+    switch (type) {
+      case SCRIPT_Closed: return "Closed";
+      case SCRIPT_Open: return "Open";
+      case SCRIPT_Respawn: return "Respawn";
+      case SCRIPT_Death: return "Death";
+      case SCRIPT_Enter: return "Enter";
+      case SCRIPT_Pickup: return "Pickup";
+      case SCRIPT_BlueReturn: return "BlueReturn";
+      case SCRIPT_RedReturn: return "RedReturn";
+      case SCRIPT_WhiteReturn: return "WhiteReturn";
+      case SCRIPT_Lightning: return "Lightning";
+      case SCRIPT_Unloading: return "Unloading";
+      case SCRIPT_Disconnect: return "Disconnect";
+      case SCRIPT_Return: return "Return";
+      case SCRIPT_Event: return "Event";
+      case SCRIPT_Kill: return "Kill";
+      case SCRIPT_Reopen: return "Reopen";
+    }
+    return "<unknown>";
+  }
+
   VStr toString () const {
-    return VStr(va("name:<%s>; number:%u; type:%u; argc:%u; flags:%u; varcount:%u; locarrays:%d",
-      *Name, Number, Type, ArgCount, Flags, VarCount, LocalArrays.Count));
+    return VStr(va("name:<%s>; number:%u; type:%u(%s); argc:%u; flags:%u; varcount:%u; locarrays:%d",
+      *Name, Number, Type, GetTypeName(Type), ArgCount, Flags, VarCount, LocalArrays.Count));
   }
 };
 
@@ -1667,14 +1690,19 @@ void VAcsObject::SetArrayVal (int ArrayIdx, int Index, int Value) {
 void VAcsObject::StartTypedACScripts (int Type, int Arg1, int Arg2, int Arg3, /*int Arg4,*/
                                       VEntity *Activator, bool Always, bool RunNow)
 {
+  if (acs_show_typed_scripts) GCon->Logf(NAME_Debug, "StartTypedACScripts: type=%d(%s); count=%d; always=%d; runnow=%d", Type, VAcsInfo::GetTypeName(Type), NumScripts, (int)Always, (int)RunNow);
   for (int i = 0; i < NumScripts; ++i) {
+    if (acs_show_typed_scripts) GCon->Logf(NAME_Debug, "  #%d: %s", i, *Scripts[i].toString());
     if (Scripts[i].Type == Type) {
       // auto-activate
+      if (acs_show_typed_scripts) GCon->Logf(NAME_Debug, "    !!!EXECUTING #%d!", i);
       VAcs *Script = Level->SpawnScript(&Scripts[i], this, Activator, nullptr, 0, Arg1, Arg2, Arg3, 0, Always, !RunNow, false); // always register thinker
       if (RunNow && Script) {
         VLevel *lvl = Script->XLevel;
+        if (acs_show_typed_scripts) GCon->Logf(NAME_Debug, "    !!!RUNNING #%d!", i);
         Script->RunScript(0/*host_frametime:doesn't matter*/, true);
         if (Script->destroyed) {
+          if (acs_show_typed_scripts) GCon->Logf(NAME_Debug, "    !!!COMPLETE #%d!", i);
           lvl->RemoveScriptThinker(Script);
           delete Script;
         }

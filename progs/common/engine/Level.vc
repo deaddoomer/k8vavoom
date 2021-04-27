@@ -35,10 +35,10 @@ const int
   SCRIPT_Respawn     = 2,
   SCRIPT_Death       = 3,
   SCRIPT_Enter       = 4,
-  SCRIPT_Pickup      = 5,
-  SCRIPT_BlueReturn  = 6,
-  SCRIPT_RedReturn   = 7,
-  SCRIPT_WhiteReturn = 8,
+  SCRIPT_Pickup      = 5, // not implemented
+  SCRIPT_BlueReturn  = 6, // not implemented
+  SCRIPT_RedReturn   = 7, // not implemented
+  SCRIPT_WhiteReturn = 8, // not implemented
   SCRIPT_Lightning   = 12,
   SCRIPT_Unloading   = 13,
   SCRIPT_Disconnect  = 14,
@@ -373,8 +373,7 @@ native final int StartACS (int number, int map, int arg1, int arg2, int arg3,
                            Entity activator, line_t *line, int side, bool Always, bool WantResult);
 native final bool SuspendACS (int number, int map);
 native final bool TerminateACS (int number, int map);
-native final void StartTypedACScripts (int Type, int Arg1, int Arg2, int Arg3,
-                                       Entity Activator, bool Always, bool RunNow);
+native final void StartTypedACScripts (int Type, int Arg1, int Arg2, int Arg3, Entity Activator, bool Always, bool RunNow);
 
 native final bool RunACS (Entity activator, int script, int map, int s_arg1, int s_arg2, int s_arg3, int s_arg4);
 native final bool RunACSAlways (Entity activator, int script, int map, int s_arg1, int s_arg2, int s_arg3, int s_arg4);

@@ -139,7 +139,7 @@ void DoLightningFlash (float DeltaTime) {
   if (foundSec) {
     Level.Sky1Texture = Sky2Texture; // set alternate sky
     PlaySound('world/thunder', CHAN_VOICE, 1.0, ATTN_NONE);
-    XLevel.StartTypedACScripts(VLevel::SCRIPT_Lightning, 0, 0, 0, none, false, false);
+    XLevel.StartTypedACScripts(VLevel::SCRIPT_Lightning, 0, 0, 0, Activator:none, Always:false, RunNow:false);
   }
 
   // calculate the next lighting flash

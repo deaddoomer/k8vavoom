@@ -66,10 +66,10 @@ enum {
   SCRIPT_Respawn     = 2,
   SCRIPT_Death       = 3,
   SCRIPT_Enter       = 4,
-  SCRIPT_Pickup      = 5,
-  SCRIPT_BlueReturn  = 6,
-  SCRIPT_RedReturn   = 7,
-  SCRIPT_WhiteReturn = 8,
+  SCRIPT_Pickup      = 5, // not implemented
+  SCRIPT_BlueReturn  = 6, // not implemented
+  SCRIPT_RedReturn   = 7, // not implemented
+  SCRIPT_WhiteReturn = 8, // not implemented
   SCRIPT_Lightning   = 12,
   SCRIPT_Unloading   = 13,
   SCRIPT_Disconnect  = 14,

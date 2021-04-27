@@ -1761,7 +1761,7 @@ COMMAND(Client_Spawn) {
 void SV_DropClient (VBasePlayer *Player, bool crash) {
   if (!crash) {
     if (GLevel && GLevel->Acs) {
-      GLevel->Acs->StartTypedACScripts(SCRIPT_Disconnect, SV_GetPlayerNum(Player), 0, 0, nullptr, true, false);
+      GLevel->Acs->StartTypedACScripts(SCRIPT_Disconnect, SV_GetPlayerNum(Player), 0, 0, nullptr, true, true); // "runnow" was false
     }
     if (Player->PlayerFlags&VBasePlayer::PF_Spawned) Player->eventDisconnectClient();
   } else {

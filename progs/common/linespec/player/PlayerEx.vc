@@ -3896,7 +3896,7 @@ void SpawnPlayer (mthing_t *mthing, bool Voodoo) {
   UpdateRevealedMap();
 
   if (ResetInventory) {
-    if (reborned) Level.XLevel.StartTypedACScripts(VLevel::SCRIPT_Respawn, 0, 0, 0, MO, true, false);
+    if (reborned) Level.XLevel.StartTypedACScripts(VLevel::SCRIPT_Respawn, 0, 0, 0, Activator:MO, Always:true, RunNow:false);
     k8ElvenGifted = false;
   }
 

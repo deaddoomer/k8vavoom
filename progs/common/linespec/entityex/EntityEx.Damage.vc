@@ -665,7 +665,7 @@ void Died (EntityEx source, EntityEx inflictor) {
     // display obituary
     PlayerEx(Player).DisplayObituary(inflictor, source, DamageType);
 
-    XLevel.StartTypedACScripts(VLevel::SCRIPT_Death, 0, 0, 0, self, true, false);
+    XLevel.StartTypedACScripts(VLevel::SCRIPT_Death, 0, 0, 0, Activator:self, Always:true, RunNow:false);
 
     ++PlayerEx(Player).Deaths;
 
