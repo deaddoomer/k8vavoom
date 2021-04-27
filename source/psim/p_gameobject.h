@@ -346,6 +346,9 @@ enum {
   // texture flipping
   STP_FLIP_X = 1u<<0,
   STP_FLIP_Y = 1u<<1,
+  // modifies flips, so they should work as broken GZDoom version
+  STP_BROKEN_FLIP_X = 1u<<2,
+  STP_BROKEN_FLIP_Y = 1u<<3,
 };
 
 

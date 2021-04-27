@@ -787,6 +787,8 @@ struct side_tex_params_t {
   float ScaleX, ScaleY;
   bool bFlipX;
   bool bFlipY;
+  bool bBrokenFlipX; // modifies flips, so they should work as broken GZDoom version
+  bool bBrokenFlipY; // modifies flips, so they should work as broken GZDoom version
   float BaseAngle;
   float Angle;
 };

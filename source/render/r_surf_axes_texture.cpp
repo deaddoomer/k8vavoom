@@ -76,6 +76,9 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   const bool xflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X);
   const bool yflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y);
 
+  const bool xbroken = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_BROKEN_FLIP_X);
+  const bool ybroken = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_BROKEN_FLIP_Y);
+
   // still need to adjust offset signs, so offsets will work the same way regardless of flipping
   //const float sofssign = (xflip ? -1.0f : +1.0f);
   //const float tofssign = (yflip ? -1.0f : +1.0f);
@@ -92,7 +95,10 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     angle = AngleMod((ctime-prevtime)*rtt);
   }
 
-  // there is no reason to rotate lightmap texture
+  // textures with broken flipping cannot be rotated
+  if ((xflip || yflip) && (xbroken || ybroken)) angle = 0.0f;
+
+  // there is no reason to rotate or flip lightmap texture
   texinfo->saxisLM = seg->dir;
   texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
 
@@ -100,7 +106,6 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   // Doom "up" is positive `z`
   // texture origin is left bottom corner (don't even ask me why)
   // positive `toffs` moves texture origin up
-
   if (angle == 0.0f) {
     // most common case
     texinfo->saxis = seg->dir;
@@ -142,18 +147,23 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     }
   }
 
+  texinfo->soffs = 0.0f;
   const TVec *v;
   TVec dir;
   if (!xflip) {
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
     dir = seg->dir;
-    //texinfo->soffs = -DotProduct(*v, seg->dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
-  } else {
+  } else if (xflip && !xbroken) {
     // flipped
     v = (seg->side == 0 ? seg->linedef->v2 : seg->linedef->v1);
     dir = -seg->dir;
+  } else {
+    // flipped, broken gzdoom version
+    // this starts texture mapping from the same vertex as normal version, but mirrors the texture (stupid bug promoted to feature, in typical ZDoom style)
+    v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
+    dir = -seg->dir;
   }
-  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
+  texinfo->soffs += -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
