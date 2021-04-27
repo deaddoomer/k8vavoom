@@ -280,7 +280,7 @@ vuint8 *VTexture::GetPixels8 () {
     vuint8 *pDst = Pixels8Bit;
     for (int i = 0; i < NumPixels; ++i, ++pSrc, ++pDst) {
       const vuint8 pv = *pSrc;
-      if (!pv) transFlags |= FlagTransparent;
+      if (!pv) transFlags |= FlagTransparent; else transFlags |= FlagHasSolidPixel;
       *pDst = Remap[pv];
     }
     Pixels8BitValid = true;
@@ -298,6 +298,7 @@ vuint8 *VTexture::GetPixels8 () {
         //if (pSrc->a) transFlags |= FlagTranslucent;
       } else {
         *pDst = R_LookupRGB(pSrc->r, pSrc->g, pSrc->b);
+        transFlags |= FlagHasSolidPixel;
       }
     }
     Pixels8BitValid = true;
@@ -350,7 +351,7 @@ pala_t *VTexture::GetPixels8A () {
     const vuint8 *pSrc = (const vuint8 *)pixdata;
     for (int i = 0; i < NumPixels; ++i, ++pSrc, ++pDst) {
       const vuint8 pv = *pSrc;
-      if (!pv) transFlags |= FlagTransparent;
+      if (!pv) transFlags |= FlagTransparent; else transFlags |= FlagHasSolidPixel;
       pDst->idx = remap[pv];
       pDst->a = (pv ? 255 : 0);
     }
@@ -362,6 +363,7 @@ pala_t *VTexture::GetPixels8A () {
       pDst->idx = R_LookupRGB(pSrc->r, pSrc->g, pSrc->b);
       pDst->a = pSrc->a;
       if (pSrc->a != 255) transFlags |= (pSrc->a ? FlagTranslucent : FlagTransparent);
+      else transFlags |= FlagHasSolidPixel;
     }
   } else {
     Sys_Error("invalid texture format in `VTexture::GetPixels8A()`");

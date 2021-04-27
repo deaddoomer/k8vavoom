@@ -332,16 +332,20 @@ vuint8 *VPcxTexture::GetPixels () {
     if (Width > 0 && Height > 0) {
       const vuint8 *s = Pixels;
       for (int count = Width*Height; count--; ++s) {
-        if (s[0] == 0) { transFlags |= FlagTransparent; break; }
+        if ((transFlags |= (s[0] == 0 ? FlagTransparent : FlagHasSolidPixel)) == (FlagTransparent|FlagHasSolidPixel)) break;
       }
     }
   } else if (hasAlpha) {
     const vuint8 *s = Pixels;
     for (int count = Width*Height; count--; s += 4) {
       if (s[3] != 255) {
-        if ((transFlags |= (s[3] ? FlagTranslucent : FlagTransparent)) == (FlagTranslucent|FlagTransparent)) break;
+        if ((transFlags |= (s[3] ? FlagTranslucent : FlagTransparent)) == (FlagTranslucent|FlagTransparent|FlagHasSolidPixel)) break;
+      } else {
+        if ((transFlags |= FlagHasSolidPixel) == (FlagTranslucent|FlagTransparent|FlagHasSolidPixel)) break;
       }
     }
+  } else {
+    if (Width > 0 && Height > 0) transFlags |= FlagHasSolidPixel;
   }
 
   ConvertPixelsToShaded();

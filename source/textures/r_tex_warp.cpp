@@ -154,6 +154,7 @@ vuint8 *VWarpTexture::GetPixels () {
     for (int y = 0; y < Height; ++y) {
       for (int x = 0; x < Width; ++x) {
         if (!(*Dst++ = SrcPixels[(((int)YSin1[y]+x)%Width)+(((int)XSin1[x]+y)%Height)*Width])) transFlags |= FlagTransparent;
+        else transFlags |= FlagHasSolidPixel;
       }
     }
   } else {
@@ -164,6 +165,7 @@ vuint8 *VWarpTexture::GetPixels () {
         *Dst = ((vuint32 *)SrcPixels)[(((int)YSin1[y]+x)%Width)+(((int)XSin1[x]+y)%Height)*Width];
         const vuint8 a8 = (((*Dst)>>24)&0xffu);
         if (a8 != 0xffu) transFlags |= (a8 ? FlagTranslucent : FlagTransparent);
+        else transFlags |= FlagHasSolidPixel;
       }
     }
   }

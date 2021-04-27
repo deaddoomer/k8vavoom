@@ -265,7 +265,7 @@ vuint8 *VPatchTexture::GetPixels () {
   if (Width > 0 && Height > 0) {
     const vuint8 *s = Pixels;
     for (int count = Width*Height; count--; ++s) {
-      if (s[0] != 0) { transFlags |= FlagTransparent; break; }
+      if ((transFlags |= (s[0] == 0 ? FlagTransparent : FlagHasSolidPixel)) == (FlagTransparent|FlagHasSolidPixel)) break;
     }
   }
 

@@ -170,6 +170,8 @@ vuint8 *VPngTexture::GetPixels () {
       if (clr.a != 255) {
         transFlags |= (clr.a ? FlagTranslucent : FlagTransparent);
         //if (clr.a != 0 && VStr::startsWith(*Name, "csta")) GCon->Logf(NAME_Debug, "%s: x=%d; y=%d; clr=(%u,%u,%u,%u)", *Name, x, y, clr.r, clr.g, clr.b, clr.a);
+      } else {
+        transFlags |= FlagHasSolidPixel;
       }
     }
   }

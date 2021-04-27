@@ -783,13 +783,15 @@ vuint8 *VMultiPatchTexture::GetPixels () {
     if (Format == TEXFMT_8) {
       const vuint8 *s = Pixels;
       for (int count = Width*Height; count--; ++s) {
-        if (s[0] == 0) { transFlags |= FlagTransparent; break; }
+        if ((transFlags |= (s[0] == 0 ? FlagTransparent : FlagHasSolidPixel)) == (FlagTransparent|FlagHasSolidPixel)) break;
       }
     } else {
       const rgba_t *s = (const rgba_t *)Pixels;
       for (int count = Width*Height; count--; ++s) {
         if (s->a != 255) {
-          if ((transFlags |= (s->a ? FlagTranslucent : FlagTransparent)) == (FlagTranslucent|FlagTransparent)) break;
+          if ((transFlags |= (s->a ? FlagTranslucent : FlagTransparent)) == (FlagTranslucent|FlagTransparent|FlagHasSolidPixel)) break;
+        } else {
+          if ((transFlags |= FlagHasSolidPixel) == (FlagTranslucent|FlagTransparent|FlagHasSolidPixel)) break;
         }
       }
     }
