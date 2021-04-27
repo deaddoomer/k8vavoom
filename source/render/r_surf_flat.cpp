@@ -90,6 +90,10 @@ static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef
   float newsoffs = spl.splane->xoffs*(VRenderLevelShared::TextureSScale(Tex)*spl.splane->XScale);
   float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(VRenderLevelShared::TextureTScale(Tex)*spl.splane->YScale);
 
+  //k8: i think that this is not completely right
+  if (spl.splane->flipFlags&SPF_FLIP_X) newsoffs = -newsoffs;
+  if (spl.splane->flipFlags&SPF_FLIP_Y) newtoffs = -newtoffs;
+
   const float cx = spl.splane->PObjCX;
   const float cy = spl.splane->PObjCY;
   if (cx || cy) {
@@ -211,6 +215,10 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
     ssurf->texinfo.taxis = ssurf->texinfo.taxisLM*(TextureTScale(Tex)*spl.splane->YScale);
     ssurf->texinfo.saxis = ssurf->texinfo.saxisLM*(TextureSScale(Tex)*spl.splane->XScale);
   }
+
+  //k8: i think that this is not completely right
+  if (spl.splane->flipFlags&SPF_FLIP_X) ssurf->texinfo.saxis = -ssurf->texinfo.saxis;
+  if (spl.splane->flipFlags&SPF_FLIP_Y) ssurf->texinfo.taxis = -ssurf->texinfo.taxis;
 
   /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, spl, Tex);
 

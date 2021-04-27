@@ -113,6 +113,14 @@ enum {
 };
 
 
+enum {
+  SPF_FLIP_X = 1u<<0,
+  SPF_FLIP_Y = 1u<<1,
+  SPF_BROKEN_FLIP_X = 1u<<2,
+  SPF_BROKEN_FLIP_Y = 1u<<3,
+};
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // WARNING! keep in sync with script code!
 enum {
@@ -570,7 +578,7 @@ struct sec_plane_t : public TPlane {
   float minz;
   float maxz;
 
-  // use for wall texture mapping
+  // used for wall texture mapping
   float TexZ;
 
   VTextureID pic;
@@ -591,6 +599,7 @@ struct sec_plane_t : public TPlane {
   float PObjCY;
 
   vuint32 flags; // SPF_xxx
+  vuint32 flipFlags; // SPF_FLIP_xxx
   float Alpha;
   float MirrorAlpha;
 

@@ -635,8 +635,8 @@ void VUdmfParser::ParseSector (VLevel *Level) {
       if (Key.strEquCI("ypanningfloor")) { S.S.floor.yoffs = CheckFloat(); continue; }
       if (Key.strEquCI("xpanningceiling")) { S.S.ceiling.xoffs = CheckFloat(); continue; }
       if (Key.strEquCI("ypanningceiling")) { S.S.ceiling.yoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloatScalePositive(va("invalid floor x scale for sector #%d", ParsedSectors.length()-1)); continue; }
-      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatScalePositive(va("invalid floor y scale for sector #%d", ParsedSectors.length()-1)); continue; }
+      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloatScalePositive(va("invalid floor x scale for sector #%d", ParsedSectors.length()-1), &S.S.floor.flipFlags, SPF_FLIP_X|SPF_FLIP_X); continue; }
+      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatScalePositive(va("invalid floor y scale for sector #%d", ParsedSectors.length()-1), &S.S.floor.flipFlags, SPF_FLIP_Y|SPF_FLIP_Y); continue; }
       if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloatScalePositive(va("invalid ceiling x scale for sector #%d", ParsedSectors.length()-1)); continue; }
       if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloatScalePositive(va("invalid ceiling y scale for sector #%d", ParsedSectors.length()-1)); continue; }
       if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = AngleMod(CheckFloat()); continue; }

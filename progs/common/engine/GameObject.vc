@@ -855,7 +855,11 @@ struct sec_plane_t : TPlane {
   float PObjCX;
   float PObjCY;
 
-  int flags;
+  int flags; // SPF_xxx
+  bool bFlipX;
+  bool bFlipY;
+  bool bBrokenFlipX;
+  bool bBrokenFlipY;
   float Alpha;
   float MirrorAlpha;
 

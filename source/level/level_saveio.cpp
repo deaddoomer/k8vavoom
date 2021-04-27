@@ -292,6 +292,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.iodef(VName("floor.PObjCX"), sec->floor.PObjCX, 0.0f);
       vio.iodef(VName("floor.PObjCY"), sec->floor.PObjCY, 0.0f);
       vio.io(VName("floor.flags"), sec->floor.flags);
+      vio.iodef(VName("floor.flipFlags"), sec->floor.flipFlags, 0u);
       vio.io(VName("floor.Alpha"), sec->floor.Alpha);
       vio.io(VName("floor.MirrorAlpha"), sec->floor.MirrorAlpha);
       vio.io(VName("floor.LightSourceSector"), sec->floor.LightSourceSector);
@@ -309,6 +310,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.iodef(VName("ceiling.PObjCX"), sec->ceiling.PObjCX, 0.0f);
       vio.iodef(VName("ceiling.PObjCY"), sec->ceiling.PObjCY, 0.0f);
       vio.io(VName("ceiling.flags"), sec->ceiling.flags);
+      vio.iodef(VName("ceiling.flipFlags"), sec->ceiling.flipFlags, 0u);
       vio.io(VName("ceiling.Alpha"), sec->ceiling.Alpha);
       vio.io(VName("ceiling.MirrorAlpha"), sec->ceiling.MirrorAlpha);
       vio.io(VName("ceiling.LightSourceSector"), sec->ceiling.LightSourceSector);
