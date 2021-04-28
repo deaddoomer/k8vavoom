@@ -2657,9 +2657,9 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
     //k8:TODO: this should be strictly client-side
     if (!specified_realOrg) realOrg = Org;
     if (specified_decalType && decalType) {
-      SpawnDecal(realOrg, decalType, (sec == li->backsector ? 1 : 0), li);
+      SpawnDecal(realOrg, decalType, (sec == li->frontsector ? 0 : 1), li);
     } else {
-      SpawnDecal(realOrg, PuffType.default.DecalName, (sec == li->backsector ? 1 : 0), li);
+      SpawnDecal(realOrg, PuffType.default.DecalName, (sec == li->frontsector ? 0 : 1), li);
     }
   }
 
