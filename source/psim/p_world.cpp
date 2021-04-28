@@ -412,82 +412,60 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     // now we have to add sector flats
     if (ssub && !(flags&PT_NOOPENS)) {
       //GCon->Logf(NAME_Debug, "AddLineIntercepts: adding planes for %s(%u)", Self->GetClass()->GetName(), Self->GetUniqueId());
-
-      // find first line
-      int iidx = 0;
-      intercept_t *it = nullptr;
-      while (iidx < InterceptCount()) {
-        it = GetIntercept(iidx);
-        if (it->line) {
-          if (!it->line->pobj()) break; // it must not be polyobj line
-        }
-        ++iidx;
-      }
-
       Level->ResetTempPathIntercepts();
+      if (max_frac > 1.0f) max_frac = 1.0f;
 
-      // check starting sector planes
-      {
-        float pfrac;
-        bool isSky;
-        TVec ohp;
-        TPlane oplane;
-        TVec end = p0+trace_dir3d*min2(1.0f, max_frac);
-        //GCon->Logf(NAME_Debug, "AddLineIntercepts: base planes for %s(%u); max_frac=%g", Self->GetClass()->GetName(), Self->GetUniqueId(), min2(1.0f, max_frac));
-        if (!Level->CheckPassPlanes(ssub->sector, p0, end, planeflags, &ohp, nullptr, &isSky, &oplane, &pfrac)) {
+      // working variables
+      float hfrac;
+      bool isSky;
+      TVec ohp;
+      TPlane oplane;
+
+      float prfrac = 0.0f; // previous hit time
+      sector_t *checksec = ssub->sector; // sector to check
+      int iidx = 0;
+      for (;;) {
+        // find next line (if there is any)
+        float flfrac = max_frac;
+        while (iidx < InterceptCount()) {
+          const intercept_t *it = GetIntercept(iidx);
+          // it must not be polyobj line
+          if (it->line && !it->line->pobj()) {
+            flfrac = it->frac;
+            break;
+          }
+          ++iidx;
+        }
+        // `iidx` points *at* the line
+        // `prfrac` is previous line hit time
+        // `flfrac` is current line hit time
+
+        // check starting sector planes
+        if (checksec && prfrac < flfrac && !Level->CheckPassPlanes(checksec, p0, p1, planeflags, &ohp, nullptr, &isSky, &oplane, &hfrac)) {
           // found hit plane, it should be less than first line frac
-          pfrac = oplane.IntersectionTime(p0, p1, &ohp);
-          if (pfrac >= 0.0f && (iidx >= InterceptCount() || pfrac < GetIntercept(iidx)->frac)) {
+          //hfrac = oplane.IntersectionTime(p0, p1, &ohp);
+          if (hfrac > prfrac && hfrac < flfrac) {
             intercept_t *itp = Level->AllocTempPathIntercept();
             memset((void *)itp, 0, sizeof(*itp));
-            itp->frac = pfrac;
+            itp->frac = hfrac;
             itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
             itp->sector = ssub->sector;
             itp->plane = oplane;
             itp->hitpoint = ohp;
           }
         }
-      }
 
-      TVec lineStart = p0;
-      while (iidx < InterceptCount()) {
-        it = GetIntercept(iidx);
-        line_t *ld = it->line;
-        vassert(ld);
-        const TVec hitPoint = it->hitpoint;
-        // check line planes
-        sector_t *sec = (ld->PointOnSide(lineStart) ? ld->backsector : ld->frontsector);
-        if (sec && sec != ssub->sector) {
-          // check sector planes
-          float pfrac;
-          bool isSky;
-          TVec ohp;
-          TPlane oplane;
-          if (!Level->CheckPassPlanes(sec, lineStart, hitPoint, planeflags, nullptr, nullptr, &isSky, &oplane, &pfrac)) {
-            // found hit plane, recalc frac
-            pfrac = oplane.IntersectionTime(p0, p1, &ohp);
-            if (pfrac >= 0.0f && pfrac < max_frac) {
-              intercept_t *itp = Level->AllocTempPathIntercept();
-              memset((void *)itp, 0, sizeof(*itp));
-              itp->frac = pfrac;
-              itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
-              itp->sector = sec;
-              itp->plane = oplane;
-              itp->hitpoint = ohp;
-            }
-          }
-        }
-        // next line
+        // check next sector?
+        if (iidx >= InterceptCount()) break; // nope, no more lines, last sector was already checked
+        const intercept_t *it = GetIntercept(iidx);
+        // check invariants
+        vassert(it->line);
+        vassert(!it->line->pobj());
+        // if this line is blocking, there is no need to scan further
         if (it->Flags&intercept_t::IF_IsABlockingLine) break;
-        ++iidx;
-        lineStart = hitPoint;
-        while (iidx < InterceptCount()) {
-          it = GetIntercept(iidx);
-          if (it->line) {
-            if (!it->line->pobj()) break; // it must not be polyobj line
-          }
-          ++iidx;
-        }
+        checksec = (it->side ? it->line->frontsector : it->line->backsector); // not a bug!
+        ++iidx; // skip this line
+        prfrac = flfrac; // remember current line hit time
       }
 
       // add plane hits
@@ -525,7 +503,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
   #endif
 
   // just in case
-  //#ifdef PARANOID
+  #ifdef PARANOID
   for (int f = 1; f < Count; ++f) {
     if (GetIntercept(f)->frac < GetIntercept(f-1)->frac) {
       for (int c = 0; c < Count; ++c) {
@@ -542,7 +520,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
       Sys_Error("VPathTraverse: internal sorting error at %d", f);
     }
   }
-  //#endif
+  #endif
 }
 
 
