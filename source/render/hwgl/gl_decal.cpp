@@ -131,9 +131,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   if (gl_decal_debug_nostencil) glDisable(GL_STENCIL_TEST);
   if (gl_decal_debug_noalpha) GLDisableBlend();
 
-  // also, clear dead decals here, 'cause why not?
-  decal_t *dc = surf->seg->decalhead;
-
   int rdcount = 0;
   if (gl_decal_reset_max) { maxrdcount = 0; gl_decal_reset_max = false; }
 
@@ -141,44 +138,44 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   int currTexId = -1; // don't call `SetTexture()` repeatedly
   VTextureTranslation *currTrans = nullptr;
   int lastTexTrans = 0;
-  //int dbg_noblend = 0;
 
   int bigDecalCount = 0;
   int smallDecalCount = 0;
 
-  while (dc) {
+  // also, clear dead decals here, 'cause why not?
+  decal_t *dcl = surf->seg->decalhead;
+  while (dcl) {
+    decal_t *dc = dcl;
+    dcl = dcl->next;
+
     // "0" means "no texture found", so remove it too
-    if (dc->texture <= 0 || dc->alpha <= 0 || dc->scaleX <= 0 || dc->scaleY <= 0) {
+    if (dc->texture <= 0 || dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f) {
       // remove it, if it is not animated
-      decal_t *n = dc->next;
       if (!dc->animator) {
         surf->seg->removeDecal(dc);
         delete dc;
       }
-      dc = n;
       continue;
     }
 
-    int dcTexId = dc->texture;
-    auto dtex = GTextureManager[dcTexId];
+    const int dcTexId = dc->texture;
+    VTexture *dtex = GTextureManager[dcTexId];
     if (!dtex || dtex->Width < 1 || dtex->Height < 1) {
       // remove it, if it is not animated
-      decal_t *n = dc->next;
       if (!dc->animator) {
         surf->seg->removeDecal(dc);
         delete dc;
       }
-      dc = n;
       continue;
     }
 
     // check decal flags
-    if ((dc->flags&decal_t::NoMidTex) && (surf->typeFlags&surface_t::TF_MIDDLE)) { dc = dc->next; continue; }
-    if ((dc->flags&decal_t::NoTopTex) && (surf->typeFlags&surface_t::TF_TOP)) { dc = dc->next; continue; }
-    if ((dc->flags&decal_t::NoBotTex) && (surf->typeFlags&surface_t::TF_BOTTOM)) { dc = dc->next; continue; }
+    if ((dc->flags&decal_t::NoMidTex) && (surf->typeFlags&surface_t::TF_MIDDLE)) continue;
+    if ((dc->flags&decal_t::NoTopTex) && (surf->typeFlags&surface_t::TF_TOP)) continue;
+    if ((dc->flags&decal_t::NoBotTex) && (surf->typeFlags&surface_t::TF_BOTTOM)) continue;
 
     if (currTexId != dcTexId || lastTexTrans != dc->translation) {
-      auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME!
+      auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME! -- k8: what i wanted to fix here?
       if (currTrans != trans) {
         currTexId = -1;
         currTrans = trans;
@@ -186,27 +183,21 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     }
 
     // use origScale to get the original starting point
-    float txofs = dtex->GetScaledSOffsetF()*dc->scaleX;
-    float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
+    const float txofs = dtex->GetScaledSOffsetF()*dc->scaleX;
+    const float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
 
     const float twdt = dtex->GetScaledWidthF()*dc->scaleX;
     const float thgt = dtex->GetScaledHeightF()*dc->scaleY;
 
-    //if (dc->flags&decal_t::FlipX) txofs = twdt-txofs;
-    //if (dc->flags&decal_t::FlipY) tyofs = thgt-tyofs;
-
     if (twdt < 1.0f || thgt < 1.0f) {
       // remove it, if it is not animated
-      decal_t *n = dc->next;
       if (!dc->animator) {
         surf->seg->removeDecal(dc);
         delete dc;
       }
-      dc = n;
       continue;
     }
 
-    //GCon->Logf(NAME_Debug, "twdt=%g; thgt=%g", twdt, thgt);
     if (twdt >= VLevel::BigDecalWidth || thgt >= VLevel::BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
 
     // setup shader
@@ -220,8 +211,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         break;
       case DT_LIGHTMAP:
         {
-          //!const float lev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
-          //!p_glUniform4fARB(SurfDecalLMap_LightLoc, ((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
           if (gl_regular_disable_overbright) {
             SurfDecalLMapNoOverbright.SetSplatAlpha(dc->alpha);
           } else {
@@ -251,12 +240,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     }
 
     const float xstofs = dc->xdist-txofs+dc->ofsX;
-    TVec v0 = (*dc->seg->linedef->v1)+dc->seg->linedef->ndir*xstofs;
-    TVec v1 = v0+dc->seg->linedef->ndir*twdt;
+    const TVec v0 = (*dc->seg->linedef->v1)+dc->seg->linedef->ndir*xstofs;
+    const TVec v1 = v0+dc->seg->linedef->ndir*twdt;
 
-    //float dcz = dc->curz+txh2-dc->ofsY;
-    //float dcz = dc->curz+dc->ofsY-tyofs;
-    //float dcz = dc->curz-tyofs+dc->ofsY;
     float dcz = dc->curz+dc->scaleY+tyofs-dc->ofsY;
     // fix Z, if necessary
     if (dc->slidesec) {
@@ -269,21 +255,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
     }
 
-    //GCon->Logf(NAME_Debug, "rendering decal at seg #%d (ofs=%g; len=%g); ofs=%g; zofs=(%g,%g); v0=(%g,%g); v1=(%g,%g); line=(%g,%g)-(%g,%g)", (int)(ptrdiff_t)(dc->seg-GClLevel->Segs), dc->seg->offset, dc->seg->length, xstofs, dcz-thgt, dcz, v0.x, v0.y, v1.x, v1.y, dc->seg->linedef->v1->x, dc->seg->linedef->v1->y, dc->seg->linedef->v2->x, dc->seg->linedef->v2->y);
-
-    float texx0 = (dc->flags&decal_t::FlipX ? 1.0f : 0.0f);
-    float texx1 = (dc->flags&decal_t::FlipX ? 0.0f : 1.0f);
-    float texy0 = (dc->flags&decal_t::FlipY ? 0.0f : 1.0f);
-    float texy1 = (dc->flags&decal_t::FlipY ? 1.0f : 0.0f);
-
-    /*
-    if (dtex->isTranslucent() || dc->alpha <= 0.9) {
-      GLEnableBlend();
-    } else {
-      GLDisableBlend();
-      ++dbg_noblend;
-    }
-    */
+    const float texx0 = (dc->flags&decal_t::FlipX ? 1.0f : 0.0f);
+    const float texx1 = (dc->flags&decal_t::FlipX ? 0.0f : 1.0f);
+    const float texy0 = (dc->flags&decal_t::FlipY ? 0.0f : 1.0f);
+    const float texy1 = (dc->flags&decal_t::FlipY ? 1.0f : 0.0f);
 
     currentActiveShader->UploadChangedUniforms();
     glBegin(GL_QUADS);
@@ -292,8 +267,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       glTexCoord2f(texx1, texy1); glVertex3f(v1.x, v1.y, dcz);
       glTexCoord2f(texx1, texy0); glVertex3f(v1.x, v1.y, dcz-thgt);
     glEnd();
-
-    dc = dc->next;
 
     ++rdcount;
   }
@@ -311,8 +284,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     SelectTexture(0);
   }
 
-  //if (dtype != DT_ADVANCED) GLDisableBlend();
-  //if (oldBlendEnabled) GLEnableBlend(); else GLDisableBlend();
   if (gl_decal_debug_noalpha) GLEnableBlend();
   glDisable(GL_STENCIL_TEST);
   //glDepthMask(oldDepthMask);
