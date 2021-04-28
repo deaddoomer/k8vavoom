@@ -655,14 +655,36 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     explines.append(lstart);
     line_t *ld = lstart;
     ld->validcount = validcount;
+    bool goodOrientation = true;
+    int vxidx = 1;
+    if (!want3DPobj && ld->vxCount(1)) {
+      line_t *tl = ld->vxLine(1, 0);
+      if (tl->vxCount(1) && tl->vxLine(1, 0) == ld) {
+        GCon->Logf(NAME_Error, "fucked up polyobject with tag #%d (line #%d has wrong orientation)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+        vxidx = 0;
+        goodOrientation = false;
+        //HACK, wrong, but meh
+        if (ld->backsector) {
+          sector_t *tsec = ld->frontsector;
+          ld->frontsector = ld->backsector;
+          ld->backsector = tsec;
+        }
+      }
+    }
     for (;;) {
+      //GCon->Logf(NAME_Debug, "pobj #%d line #%d; vxidx=%d", tag, (int)(ptrdiff_t)(ld-&Lines[0]), vxidx);
       // take first line and go
-      if (ld->vxCount(1) == 0) Host_Error("missing line for implicit polyobject with tag #%d (at line #%d)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
-      ld = ld->vxLine(1, 0);
+      if (ld->vxCount(vxidx) == 0) Host_Error("missing line for implicit polyobject with tag #%d (at line #%d)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      ld = ld->vxLine(vxidx, 0);
       if (ld->validcount == validcount) Host_Error("found loop in implicit polyobject with tag #%d (at line #%d)", tag, (int)(ptrdiff_t)(ld-&Lines[0]));
       ld->validcount = validcount;
       explines.append(ld);
-      if (ld->v2 == lstart->v1) break;
+      if (goodOrientation) {
+        if (ld->v2 == lstart->v1) break;
+      } else {
+        if (ld->v2 == lstart->v2) break;
+      }
+      vxidx = 1;
     }
   }
 
