@@ -48,16 +48,55 @@ class FSys_Internal_Init_Readers {
 public:
   FSys_Internal_Init_Readers (bool) {
     // check for 7z and other faulty archive formats first
+    // 7z
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_7z("7z",
       [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
         Sys_Error("7z archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "7z\xbc\xaf\x27\x1c", -666);
+    // rar
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_rar("rar",
       [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
-        Sys_Error("7z archives aren't supported, so '%s' cannot be opened!", *filename);
+        Sys_Error("Rar archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "Rar!", -666);
+    // ar
+    static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_ar("ar",
+      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+        Sys_Error("ar archives aren't supported, so '%s' cannot be opened!", *filename);
+        return nullptr;
+      }, "!<arch>\x0a", -666);
+    // tar
+    static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_tar("tar",
+      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+        if (strm->TotalSize() < 257+16) return nullptr;
+        char sign[5];
+        strm->Seek(257);
+        if (strm->IsError()) return nullptr;
+        strm->Serialize(sign, 5);
+        if (strm->IsError()) return nullptr;
+        if (memcmp(sign, "ustar", 5) != 0) return nullptr;
+        Sys_Error("tar archives aren't supported, so '%s' cannot be opened!", *filename);
+        return nullptr;
+      }, nullptr, -666);
+    // gzip
+    static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_gzip("gzip",
+      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+        if (strm->TotalSize() < 10) return nullptr;
+        strm->Seek(3);
+        if (strm->IsError()) return nullptr;
+        vuint8 flags;
+        *strm << flags;
+        if (flags&0xe0) return nullptr; // reserved flags must be zero
+        Sys_Error("gzip archives aren't supported, so '%s' cannot be opened!", *filename);
+        return nullptr;
+      }, "\x1f\x8b\x08", -666);
+    // dfwad
+    static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_dfwad("dfwad",
+      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+        Sys_Error("DFWAD archives aren't supported, so '%s' cannot be opened!", *filename);
+        return nullptr;
+      }, "DFWAD\x01", -666);
 
     // WAD
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_iwad("iwad", &openArchiveWAD, "IWAD");
