@@ -127,8 +127,10 @@ void VLevel::GroupLines () {
   // count number of lines, and number of lines in each sector
   int total = 0;
   for (auto &&line : allLines()) {
-    ++total;
-    ++line.frontsector->linecount;
+    if (line.frontsector) {
+      ++total;
+      ++line.frontsector->linecount;
+    }
     if (line.backsector && line.backsector != line.frontsector) {
       ++total;
       ++line.backsector->linecount;
