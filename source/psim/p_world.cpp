@@ -610,7 +610,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     // also, if such line was hit, it is blocking, for sure
     polyobj_t *po = ld->pobj();
     if (doopening && po && po->Is3D()) {
-      //if (!doopening && po->Is3D()) continue;
+      // 3d polyobject
       const float hpz = trace_org3d.z+trace_dir3d.z*frac;
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
@@ -622,7 +622,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         // because if pobj plane hit time is bigger than the time of the next line, there's no hit
         // yet this is complicated by 2-sided non-blocking lines, so maybe we should check hit time
         // against two lines of the same polyobject (there *MUST* be two of them for enter/exit)
-        if (po->Is3D() && po->validcount != validcount) {
+        if (po->validcount != validcount) {
           // check if we can hit pobj vertically
           const float tz0 = trace_org3d.z;
           const float tz1 = trace_org3d.z+trace_dir3d.z;
@@ -633,11 +633,11 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
           TVec php;
           TPlane pplane;
           const float pfrc = Level->CheckPObjPassPlanes(po, trace_org3d, trace_org3d+trace_dir3d, &php, nullptr, &pplane);
-          if (pfrc < 0.0f || pfrc >= max_frac) continue; // cannot hit
+          if (pfrc <= 0.0f || pfrc >= max_frac) continue; // cannot hit
           // check if hitpoint is still inside pobj
           if (!IsPointInside2DBBox(php.x, php.y, po->bbox2d)) continue;
           if (!Level->IsPointInsideSector2D(po->GetSector(), php.x, php.y)) continue;
-          // yep, it can; add polyobject plane to intercept list
+          // yep; add polyobject plane to intercept list
           intercept_t &itp = NewIntercept(pfrc);
           itp.Flags = intercept_t::IF_IsAPlane;
           itp.po = po;
@@ -648,10 +648,10 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         continue;
       }
       blockFlag = true;
-      if (!doopening && po && po->Is3D()) blockFlag = false;
+      //if (!doopening && po && po->Is3D()) blockFlag = false;
     } else {
       // in "compat" mode, lines of self-referenced sectors are ignored
-      if (ld->frontsector == ld->backsector && (scanflags&PT_COMPAT)) continue;
+      if (!po && ld->frontsector == ld->backsector && (scanflags&PT_COMPAT)) continue;
 
       if (ld->flags&ML_TWOSIDED) {
         if (doopening) {
@@ -665,28 +665,33 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
               const TVec hitPoint = trace_org3d+trace_dir3d*frac;
               const float hpz = hitPoint.z;
               opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, false/*do3dmidtex*/);
-              if (open && hpz > open->top) isSky = true;
+              //if (open && hpz > open->top) isSky = true;
+              while (open) {
+                if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
+                open = open->next;
+              }
+              if (!open) isSky = true;
             }
-          } else {
+          } else if (!po) {
             // crosses a two sided line, check openings
             const TVec hitPoint = trace_org3d+trace_dir3d*frac;
             const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
             opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, false/*do3dmidtex*/);
-            if (open &&
-                ld->frontsector->ceiling.pic == skyflatnum &&
-                ld->backsector->ceiling.pic == skyflatnum &&
-                hpz > open->top)
-            {
-              // it's a sky hack wall
-              isSky = true;
-            }
             while (open) {
-              if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) {
-                /*if (!(ld->flags&lineflags))*/ break; // shot continues
-              }
+              if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
               open = open->next;
             }
             blockFlag = !open;
+            // sky hack?
+            if (!open &&
+                ld->frontsector->ceiling.pic == skyflatnum &&
+                ld->backsector->ceiling.pic == skyflatnum)
+            {
+              isSky = true;
+            }
+          } else {
+            // non-3d polyobject line (3d polyobjects already checked above)
+            blockFlag = false;
           }
         } else {
           // no opening scan
