@@ -500,11 +500,11 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
   node_t *Node = &Nodes[NodeIndex];
   ++NodeIndex;
 
-  TVec org = TVec(SrcNode->xs, SrcNode->ys, 0);
-  TVec dir = TVec(SrcNode->xe-SrcNode->xs, SrcNode->ye-SrcNode->ys, 0);
+  const TVec org = TVec(SrcNode->xs, SrcNode->ys);
+  TVec dir = TVec(SrcNode->xe-SrcNode->xs, SrcNode->ye-SrcNode->ys);
   //k8: this seems to be unnecessary
   // check if `Length()` and `SetPointDirXY()` are happy
-  if (dir.x == 0 && dir.y == 0) {
+  if (dir.isZero2D()) {
     //Host_Error("AJBSP: invalid BSP node (zero direction)");
     GCon->Logf("AJBSP: invalid BSP node (zero direction%s)", (SrcNode->too_long ? "; overlong node" : ""));
     dir.x = 0.001f;
@@ -512,7 +512,8 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
   Node->SetPointDirXY(org, dir);
 
   // those things are used to emulate buggy vanilla "point in subsector" code
-  // it is not used for anything else, so precision loss doesn't really matter
+  // they aren't used for anything else, so precision loss doesn't really matter
+  // they are in 16.16 fixed point format
   Node->sx = ajRoundoffVertexI32(SrcNode->xs);
   Node->sy = ajRoundoffVertexI32(SrcNode->ys);
   if (!SrcNode->too_long) {
@@ -538,20 +539,22 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
   Node->bbox[1][4] = SrcNode->l.bounds.maxy;
   Node->bbox[1][5] = 32768.0f;
 
+  #if 0
   if (SrcNode->ldefidx >= 0 && SrcNode->ldefidx < Level->NumLines) {
     Node->splitldef = &Level->Lines[SrcNode->ldefidx];
   } else {
     if (SrcNode->ldefidx >= 0) Host_Error("AJBSP: invalid splitting linedef index in BSP");
     Node->splitldef = nullptr;
   }
+  #endif
 
        if (SrcNode->r.node) Node->children[0] = SrcNode->r.node->index;
   else if (SrcNode->r.subsec) Node->children[0] = SrcNode->r.subsec->index|NF_SUBSECTOR;
-  else Host_Error("AJBSP: bad left children in BSP");
+  else Host_Error("AJBSP: bad left child in BSP");
 
        if (SrcNode->l.node) Node->children[1] = SrcNode->l.node->index;
   else if (SrcNode->l.subsec) Node->children[1] = SrcNode->l.subsec->index|NF_SUBSECTOR;
-  else Host_Error("AJBSP: bad right children in BSP");
+  else Host_Error("AJBSP: bad right child in BSP");
 }
 
 

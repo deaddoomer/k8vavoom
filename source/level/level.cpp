@@ -277,64 +277,36 @@ subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
   do {
     const node_t *node = Nodes+nodenum;
     const float dist = node->PointDistance(point);
-    //k8: hack for back subsector
+    // hack for back subsector
+    // try to emulate original Doom buggy code
+    // if we are exactly on a two-sided linedef, choose node that leads to back sector
+    // this is what vanilla does, and some map authors rely on that fact
+    // this usually matters mostly for horizontal, vertical, or strictly diagonal lines, so checking for zero should be ok here
     if (dist == 0.0f) {
-      #if 0
-      if (false && node->splitldef && (node->splitldef->flags&ML_TWOSIDED) &&
-          node->splitldef->frontsector != node->splitldef->backsector)
-      {
-        // if we are exactly on a two-sided linedef, choose node that leads to back sector
-        // this is what vanilla does, and some map authors rely on that fact
-        /*
-        GCon->Logf("ldef=(%g,%g,%g:%g); node=(%g,%g,%g:%g)",
-          node->splitldef->normal.x, node->splitldef->normal.y, node->splitldef->normal.z, node->splitldef->dist,
-          node->normal.x, node->normal.y, node->normal.z, node->dist);
-        */
-        const line_t *ldef = node->splitldef;
-        // compare plane distance signs to find out the right node
-        bool sameSign;
-        if (node->dist == ldef->dist) {
-          // special case: zero distance
-          if (ldef->dist == 0.0f) {
-            // don't bother with z, it is always zero
-            sameSign = ((node->normal.x < 0.0f) == (ldef->normal.x < 0.0f) && (node->normal.y < 0.0f) == (ldef->normal.y < 0.0f));
+      //nodenum = node->children[0];
+      //normal = TVec(dir.y, -dir.x, 0.0f);
+      // dy:  node.normal.x
+      // dx: -node.normal.y
+      const float fdx = -node->normal.y;
+      const float fdy = +node->normal.x;
+           if (fdx == 0) nodenum = node->children[(unsigned)(fdy > 0)];
+      else if (fdy == 0) nodenum = node->children[(unsigned)(fdx < 0)];
+      else {
+        //nodenum = node->children[1/*(unsigned)(dist <= 0.0f)*/]; // is this right?
+        vint32 dx = (vint32)(point.x*65536.0)-node->sx;
+        vint32 dy = (vint32)(point.y*65536.0)-node->sy;
+        // try to quickly decide by looking at sign bits
+        if ((node->dy^node->dx^dx^dy)&0x80000000) {
+          if ((node->dy^dx)&0x80000000) {
+            // (left is negative)
+            nodenum = node->children[1];
           } else {
-            sameSign = true;
+            nodenum = node->children[0];
           }
         } else {
-          sameSign = ((node->dist < 0.0f) == (ldef->dist < 0.0f));
-        }
-        // if the sign is same, back sector is child #1, otherwise it is child #0
-        nodenum = node->children[(sameSign ? 1 : 0)];
-      } else
-      #endif
-      // try to emulate original Doom buggy code
-      {
-        //nodenum = node->children[0];
-        //normal = TVec(dir.y, -dir.x, 0.0f);
-        // dy:  node.normal.x
-        // dx: -node.normal.y
-        const float fdx = -node->normal.y;
-        const float fdy = +node->normal.x;
-             if (fdx == 0) nodenum = node->children[(unsigned)(fdy > 0)];
-        else if (fdy == 0) nodenum = node->children[(unsigned)(fdx < 0)];
-        else {
-          //nodenum = node->children[1/*(unsigned)(dist <= 0.0f)*/]; // is this right?
-          vint32 dx = (vint32)(point.x*65536.0)-node->sx;
-          vint32 dy = (vint32)(point.y*65536.0)-node->sy;
-          // try to quickly decide by looking at sign bits
-          if ((node->dy^node->dx^dx^dy)&0x80000000) {
-            if ((node->dy^dx)&0x80000000) {
-              // (left is negative)
-              nodenum = node->children[1];
-            } else {
-              nodenum = node->children[0];
-            }
-          } else {
-            const double left = (double)node->dy*(double)dx;
-            const double right = (double)dy*(double)node->dx;
-            nodenum = node->children[(unsigned)(right >= left)];
-          }
+          const double left = (double)node->dy*(double)dx;
+          const double right = (double)dy*(double)node->dx;
+          nodenum = node->children[(unsigned)(right >= left)];
         }
       }
     } else {

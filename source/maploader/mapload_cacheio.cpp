@@ -27,7 +27,7 @@
 
 
 static int constexpr cestlen (const char *s, int pos=0) noexcept { return (s && s[pos] ? 1+cestlen(s, pos+1) : 0); }
-static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 011.\n";
+static constexpr const char *CACHE_DATA_SIGNATURE = "VAVOOM CACHED DATA VERSION 012.\n";
 enum { CDSLEN = cestlen(CACHE_DATA_SIGNATURE) };
 static_assert(CDSLEN == 32, "oops!");
 
@@ -136,8 +136,10 @@ void VLevel::SaveCachedData (VStream *strm) {
       }
     }
     for (int cci = 0; cci < 2; ++cci) *arrstrm << n->children[cci];
+    #if 0
     vint32 sldidx = (n->splitldef ? (int)(ptrdiff_t)(n->splitldef-Lines) : -1);
     *arrstrm << sldidx;
+    #endif
     *arrstrm << n->sx << n->sy << n->dx << n->dy;
     if (f%512 == 0) NET_SendNetworkHeartbeat();
   }
@@ -295,9 +297,11 @@ bool VLevel::LoadCachedData (VStream *strm) {
       }
     }
     for (int cci = 0; cci < 2; ++cci) *arrstrm << n->children[cci];
+    #if 0
     vint32 sldidx = -1;
     *arrstrm << sldidx;
     n->splitldef = (sldidx >= 0 && sldidx < NumLines ? &Lines[sldidx] : nullptr);
+    #endif
     *arrstrm << n->sx << n->sy << n->dx << n->dy;
   }
 

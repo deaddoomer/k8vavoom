@@ -168,16 +168,18 @@ static void UploadThingsZD (VLevel *Level, ZDBSP::FLevel &zlvl) {
 //
 //==========================================================================
 static void CopyNodeZD (int NodeIndex, const ZDBSP::MapNodeEx &SrcNode, node_t *Node) {
-  TVec org = TVec(fromFix(SrcNode.x), fromFix(SrcNode.y), 0);
-  TVec dir = TVec(fromFix(SrcNode.dx), fromFix(SrcNode.dy), 0);
+  TVec org = TVec(fromFix(SrcNode.x), fromFix(SrcNode.y));
+  TVec dir = TVec(fromFix(SrcNode.dx), fromFix(SrcNode.dy));
   // check if `Length()` and `SetPointDirXY()` are happy
-  if (dir.x == 0 && dir.y == 0) {
-    //Host_Error("AJBSP: invalid BSP node (zero direction)");
+  if (dir.isZero2D()) {
     GCon->Logf("ZDBSP: invalid BSP node #%d (zero direction)", NodeIndex);
     dir.x = 0.001f;
   }
   Node->SetPointDirXY(org, dir);
 
+  // those things are used to emulate buggy vanilla "point in subsector" code
+  // they aren't used for anything else, so precision loss doesn't really matter
+  // they are in 16.16 fixed point format
   Node->sx = SrcNode.x;
   Node->sy = SrcNode.y;
   Node->dx = SrcNode.dx;
