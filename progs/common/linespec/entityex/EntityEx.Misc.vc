@@ -24,6 +24,9 @@
 //**
 //**************************************************************************
 
+//#define VV_DEBUG_USE_LINE
+
+
 //==========================================================================
 //
 //  Destroyed
@@ -3932,7 +3935,10 @@ final bool CheckSwitchRange (line_t *ld, int side, TVec hitpoint, ref bool failS
   side_t *sd = &XLevel.Sides[ld.sidenum[side]];
 
   float ehgt = fmax(0.0, Height);
-  float ez0 = Origin.z;
+  //float ez0 = Origin.z;
+  //float ez1 = ez0+ehgt;
+  // tracing started at the center of the entity
+  float ez0 = hitpoint.z-ehgt*0.5;
   float ez1 = ez0+ehgt;
 
   // polyobjects?
@@ -4046,6 +4052,77 @@ final bool CheckSwitchRange (line_t *ld, int side, TVec hitpoint, ref bool failS
 
 //==========================================================================
 //
+//  IsSwitchUseBlockedByLine
+//
+//  check if we should stop at this line
+//  this is used only when "check switch range" option is on
+//
+//==========================================================================
+final bool IsSwitchUseBlockedByLine (line_t *ld, int side, TVec hitpoint) {
+  if (ld.special && Level.CompatUseBlocking) return true;
+
+  // check if this line should block using
+  // we have to do it, because opening check is not done in interceptor
+
+  if (ld.sidenum[side] < 0) return false; // wtf?!
+
+  float ehgt = fmax(0.0, Height);
+  //float ez0 = Origin.z;
+  //float ez1 = ez0+ehgt;
+  // tracing started at the center of the entity
+  float ez0 = hitpoint.z-ehgt*0.5;
+  float ez1 = ez0+ehgt;
+
+  float pz0 = ez0+ehgt*0.3;
+  float pz1 = ez1-ehgt*0.3;
+  if (pz1 < pz0) { pz0 = ez0; pz1 = ez1; }
+
+  // polyobjects?
+  if (ld.pobject) {
+    polyobj_t *po = ld.pobject;
+    // 3d polyobject?
+    if (po.posector) {
+      // 3d pobj, check height
+      if (pz0 >= po.pofloor.minz && pz1 <= po.poceiling.maxz) return true;
+      return false;
+    }
+    // 2d polyobject is always takes the whole sector
+    return true;
+  }
+
+  // not a polyobject
+
+  // always block with one-sided wall
+  if (!(ld.flags&ML_TWOSIDED)) return true;
+
+  sector_t *fsec = (side ? ld.backsector : ld.frontsector);
+  sector_t *bsec = (side ? ld.frontsector : ld.backsector);
+
+  // always block with two-sided wall without any sector (just in case)
+  if (!fsec || !bsec) return true;
+
+  // check openings
+  opening_t *open = XLevel.LineOpenings(ld, hitpoint, blockmask:default, do3dmidtex:true);
+  #ifdef VV_DEBUG_USE_LINE
+  printdebug("====================");
+  for (opening_t *op = open; op; op = op.next) {
+    printdebug("  opening: range=%s; bot=%s; top=%s; ez0=%s; ez1=%s; pz0=%s; pz1=%s; orgz=(%s:%s) outside=%B", op.range, op.bottom, op.top, ez0, ez1, pz0, pz1, Origin.z, Origin.z+ehgt, (ez1 <= open.bottom || ez0 >= open.top));
+  }
+  printdebug("====================");
+  #endif
+  // should have at least one range that intersects with an entity
+  while (open) {
+    if (open.range > 0.0 && !(pz1 <= open.bottom || pz0 >= open.top)) return false;
+    open = open.next;
+  }
+
+  // blocking
+  return true;
+}
+
+
+//==========================================================================
+//
 //  UseLines
 //
 //  Looks for special lines in front of the actor to activate
@@ -4112,11 +4189,15 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   int forceCheckRange = clamp(GetCvarI('g_switch_range_check_override'), 0, 2);
   if (forceCheckRange == 0) forceCheckRange = (Level.bNoCheckSwitchRange ? 1 : Level.bCheckSwitchRange ? 2 : 0);
 
-  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
+  // do not check openings in interceptor
+  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_ADDTHINGS|PT_NOOPENS, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
     if (in.bIsAPlane) break; // plane hit, nothing to use
 
     if (in.bIsALine) {
       // line hit
+      #ifdef VV_DEBUG_USE_LINE
+      printdebug("UseLines: line #%s; frac=%s (limit=%s); special=%s; blocking=%B", in.line-&XLevel.Lines[0], in.frac, maxLineFrac, in.line.special, in.bIsABlockingLine);
+      #endif
       if (in.frac > maxLineFrac) continue; // cannot reach
       ld = in.line;
 
@@ -4154,6 +4235,9 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       }
 
       if (useSide < 0) {
+        #ifdef VV_DEBUG_USE_LINE
+        printdebug("UseLines:   line #%s: cannot use", in.line-&XLevel.Lines[0]);
+        #endif
         if (!needFailSound) {
           if (!(ld.flags&ML_TWOSIDED)) {
             needFailSound = true;
@@ -4176,8 +4260,22 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
         }
         // if `Level.CompatUseBlocking` is set, any special blocks further use
         if (in.bIsABlockingLine || (ld.special && Level.CompatUseBlocking)) break;
+        if ((ld.flags&ML_3DMIDTEX) || // always check 3d midtex
+            forceCheckRange > 1 || // always check if forced
+            (forceCheckRange == 0 && (ld.flags&ML_CHECKSWITCHRANGE))) // check if default and line flag is set
+        {
+          if (IsSwitchUseBlockedByLine(ld, in.side, in.hitpoint)) {
+            #ifdef VV_DEBUG_USE_LINE
+            printdebug("UseLines:   line #%s: blocked tracing", in.line-&XLevel.Lines[0]);
+            #endif
+            break;
+          }
+        }
         continue;
       }
+      #ifdef VV_DEBUG_USE_LINE
+      printdebug("UseLines:   line #%s: use side %s", in.line-&XLevel.Lines[0], useSide);
+      #endif
 
       // check switch range
       // do we need to check z range?
@@ -4188,14 +4286,26 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       {
         if (in.bIsABlockingLine) needFailSound = true;
         if (!CheckSwitchRange(ld, useSide, in.hitpoint, ref needFailSound)) {
-          if (in.bIsABlockingLine || (ld.special && Level.CompatUseBlocking)) break;
+          #ifdef VV_DEBUG_USE_LINE
+          printdebug("UseLines:   line #%s: failed switch range check", in.line-&XLevel.Lines[0]);
+          #endif
+          if (in.bIsABlockingLine || IsSwitchUseBlockedByLine(ld, useSide, in.hitpoint)) {
+            #ifdef VV_DEBUG_USE_LINE
+            printdebug("UseLines:   line #%s: blocked tracing", in.line-&XLevel.Lines[0]);
+            #endif
+            break;
+          }
           continue;
         }
+        #ifdef VV_DEBUG_USE_LINE
+        printdebug("UseLines:   line #%s: passed switch range check", in.line-&XLevel.Lines[0]);
+        #endif
       }
 
-      //printdebug("%C: trying to use line #%s (special %s)", self, ld-&XLevel.Lines[0], ld.special);
-
       if (LineSpecialLevelInfo(Level).ActivateLine(ld, self, useSide, useType, out buttonSuccess)) {
+        #ifdef VV_DEBUG_USE_LINE
+        printdebug("UseLines:   line #%s: used (buttonSuccess=%s)", in.line-&XLevel.Lines[0], buttonSuccess);
+        #endif
         if (onLineUsedDg) onLineUsedDg(ld);
         retvalue = true;
         if (buttonSuccess) usedAnything = true;
@@ -4210,6 +4320,10 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       } else if (ld.SpacFlags&SPAC_Use) {
         break;
       }
+
+      #ifdef VV_DEBUG_USE_LINE
+      printdebug("UseLines:   line #%s doesn't block using", in.line-&XLevel.Lines[0]);
+      #endif
     } else {
       // thing hit
       if (in.frac > maxThingFrac) continue; // cannot reach
