@@ -246,8 +246,8 @@ void VLevel::Cut3DMidtex (TArray<opening_t> &dest, const sector_t *sector, const
   // for 3dmidtex, create solid from midtex bottom to midtex top
   //   from floor to midtex bottom
   //   from midtex top to ceiling
-  float cz, fz;
-  if (!GetMidTexturePosition(linedef, 0, &cz, &fz)) return;
+  float fz, cz;
+  if (!GetMidTexturePosition(linedef, 0, &fz, &cz)) return;
   if (fz >= cz) return; // k8: is this right?
   // cut it
   CutSolidRegion(dest, fz, cz, sector->eregions->efloor, sector->eregions->eceiling);

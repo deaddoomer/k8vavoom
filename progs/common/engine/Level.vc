@@ -343,7 +343,7 @@ native final float CheckPObjPlanesPoint (const TVec linestart, const TVec lineen
                                          optional out TVec outHitPoint, optional out TVec outHitNormal);
 
 // used for various 3dmidtex calculations
-native final bool GetMidTexturePosition (const GameObject::line_t *line, int sideno, out float ptextop, out float ptexbot);
+native final bool GetMidTexturePosition (const GameObject::line_t *line, int sideno, out float ptexbot, out float ptextop);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

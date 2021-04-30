@@ -131,7 +131,7 @@ override void Destroyed () {
   bool OK = false;
   Org.x = SpawnPoint.x;
   Org.y = SpawnPoint.y;
-  Org.z = GetPointZClamped(ref XLevel.PointInSector(Org)->floor, Org);
+  Org.z = XLevel.PointInSector(Org)->floor.GetPointZClamped(Org);
   SetOrigin(Org, properFloorCheck:true);
   bSolid = true;
   Height = default.Height;

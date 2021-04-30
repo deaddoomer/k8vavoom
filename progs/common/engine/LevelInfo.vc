@@ -96,6 +96,8 @@ enum {
   LIF2_ResetHealth           = 0x00100000,
   LIF2_ResetInventory        = 0x00200000,
   LIF2_ResetItems            = 0x00400000,
+  LIF2_CheckSwitchRange      = 0x00800000, // force "check switch range" flag
+  LIF2_NoCheckSwitchRange    = 0x01000000, // ignore "check switch range" flag
 };
 
 
@@ -181,6 +183,8 @@ bool bNoCrouch;
 bool bResetHealth;
 bool bResetInventory;
 bool bResetItems;
+bool bCheckSwitchRange; // force "check switch range" flag
+bool bNoCheckSwitchRange; // ignore "check switch range" flag
 
 int TotalKills;
 int TotalItems;
@@ -274,6 +278,7 @@ native final void Completed (int Map, int Position, int SaveAngle);
 
 // ////////////////////////////////////////////////////////////////////////// //
 // special thinker utilites
+native static final bool IsSwitchTexture (int textureid);
 native final bool ChangeSwitchTexture (int SideNum, int useAgain, name DefaultSound, out ubyte Quest);
 native final Entity FindMobjFromTID (int tid, Entity Prev);
 // checkpoint saves are lightweight, but they aren't saving map state, only player inventory

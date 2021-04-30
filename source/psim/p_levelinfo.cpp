@@ -474,6 +474,11 @@ IMPLEMENT_FUNCTION(VLevelInfo, Completed) {
   Self->Completed(map, pos, SaveAngle);
 }
 
+IMPLEMENT_FUNCTION(VLevelInfo, IsSwitchTexture) {
+  P_GET_INT(texid);
+  RET_BOOL(VLevelInfo::IsSwitchTexture(texid));
+}
+
 IMPLEMENT_FUNCTION(VLevelInfo, ChangeSwitchTexture) {
   P_GET_PTR(vuint8, pQuest);
   P_GET_NAME(DefaultSound);

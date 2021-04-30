@@ -1279,7 +1279,7 @@ void PlayerProcessScrollSectors (float deltaTime) {
   for (msecnode_t *mnode = EntityEx(MO).TouchingSectorList; mnode; mnode = mnode.TNext) {
     sector_t *sec = mnode.Sector;
     if (sec->special&SECSPEC_BASE_MASK) {
-      if (MO.Origin.z == GetPointZClamped(ref sec->floor, MO.Origin)) {
+      if (MO.Origin.z == sec.floor.GetPointZClamped(MO.Origin)) {
         ProcessSectorScroll(deltaTime, EntityEx(MO), sec);
       }
     }
@@ -1539,7 +1539,7 @@ void PlayerInSpecialSector (float deltaTime) {
     if (swimmable) ApplySectorDamage(deltaTime, EntityEx(MO), swimmable);
 
     /*
-    if (MO.Origin.z != GetPointZClamped(ref MO.Sector->floor, MO.Origin) && !MO.WaterLevel) {
+    if (MO.Origin.z != MO.Sector->floor.GetPointZClamped(MO.Origin) && !MO.WaterLevel) {
       // player is (possibly) not touching the floor
       tsec = EntityEx(MO).GetTouchedFloorSector();
       if (!tsec) return;

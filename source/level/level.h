@@ -970,7 +970,7 @@ public: // regions
   // returns top and bottom of the current line's mid texture
   // should be used ONLY for 3dmidtex non-wrapping lines
   // returns `false` if there is no midtex (or it is empty)
-  bool GetMidTexturePosition (const line_t *linedef, int sideno, float *ptextop, float *ptexbot);
+  bool GetMidTexturePosition (const line_t *linedef, int sideno, float *ptexbot, float *ptextop);
 
 public: // openings
   // build list of openings for the given line and point

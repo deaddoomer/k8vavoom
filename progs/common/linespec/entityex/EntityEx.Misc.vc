@@ -481,8 +481,8 @@ final bool Teleport (TVec Dst, float angle, bool DstFog, bool SrcFog, bool KeepD
   float aboveFloor = Origin.z-FloorZ;
   if (Dst.z == ONFLOORZ) {
     sector_t *DstSec = XLevel.PointInSector(Dst);
-    float DstFloorZ = GetPointZClamped(ref DstSec->floor, Dst);
-    float DstCeilZ = GetPointZClamped(ref DstSec->floor, Dst);
+    float DstFloorZ = DstSec->floor.GetPointZClamped(Dst);
+    float DstCeilZ = DstSec->floor.GetPointZClamped(Dst);
     if (bIsPlayer) {
       if (FindInventory(PowerFlight) && aboveFloor) {
         Dst.z = DstFloorZ+aboveFloor;
@@ -3632,7 +3632,7 @@ override void CheckForSectorActions (sector_t *OldSec, bool OldAboveFakeFloor, b
   // check for crossing fake floor or ceiling
   if (OldSec->heightsec && Sector->heightsec && Sector->ActionList) {
     float EyeZ = (bIsPlayer ? Player.ViewOrg.z : Origin.z+Height*0.5);
-    float FakeZ = GetPointZClamped(ref Sector->heightsec->floor, Origin);
+    float FakeZ = Sector->heightsec->floor.GetPointZClamped(Origin);
 
     if (!OldAboveFakeFloor && EyeZ > FakeZ) {
       SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_EyesSurface);
@@ -3641,7 +3641,7 @@ override void CheckForSectorActions (sector_t *OldSec, bool OldAboveFakeFloor, b
     }
 
     if (!Sector->heightsec->bFakeFloorOnly) {
-      FakeZ = GetPointZClamped(ref Sector->heightsec->ceiling, Origin);
+      FakeZ = Sector->heightsec->ceiling.GetPointZClamped(Origin);
       if (!OldAboveFakeCeiling && EyeZ > FakeZ) {
         SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_EyesSurface);
       } else if (OldAboveFakeCeiling && EyeZ <= FakeZ) {
@@ -3657,9 +3657,9 @@ override void CheckForSectorActions (sector_t *OldSec, bool OldAboveFakeFloor, b
     }
     if (Sector->ActionList) {
       int Spac = SectorAction::SECSPAC_Enter;
-      if (Origin.z <= GetPointZClamped(ref Sector->floor, Origin)) Spac |= SectorAction::SECSPAC_HitFloor;
-      if (Origin.z+Height >= GetPointZClamped(ref Sector->ceiling, Origin)) Spac |= SectorAction::SECSPAC_HitCeiling;
-      if (Sector->heightsec && Origin.z == GetPointZClamped(ref Sector->heightsec->floor, Origin)) Spac |= SectorAction::SECSPAC_HitFakeFloor;
+      if (Origin.z <= Sector->floor.GetPointZClamped(Origin)) Spac |= SectorAction::SECSPAC_HitFloor;
+      if (Origin.z+Height >= Sector->ceiling.GetPointZClamped(Origin)) Spac |= SectorAction::SECSPAC_HitCeiling;
+      if (Sector->heightsec && Origin.z == Sector->heightsec->floor.GetPointZClamped(Origin)) Spac |= SectorAction::SECSPAC_HitFakeFloor;
       SectorAction(Sector->ActionList).TriggerAction(self, Spac);
     }
   }
@@ -3675,7 +3675,7 @@ final void CheckFakeFloorTriggers (float OldZ, optional bool OldHasViewH) {
   if (!Level.Game.IsAuthority) return;
   if (Sector && Sector->heightsec && Sector->ActionList) {
     float ViewH = (bIsPlayer ? PlayerEx(Player).ViewHeight : Height*0.5);
-    float FakeZ = GetPointZClamped(ref Sector->heightsec->floor, Origin);
+    float FakeZ = Sector->heightsec->floor.GetPointZClamped(Origin);
 
     if (OldZ > FakeZ && Origin.z <= FakeZ) {
       SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_HitFakeFloor);
@@ -3693,7 +3693,7 @@ final void CheckFakeFloorTriggers (float OldZ, optional bool OldHasViewH) {
     if (!Sector || !Sector->heightsec || !Sector->ActionList) return;
 
     if (!Sector->heightsec->bFakeFloorOnly) {
-      FakeZ = GetPointZClamped(ref Sector->heightsec->ceiling, Origin);
+      FakeZ = Sector->heightsec->ceiling.GetPointZClamped(Origin);
       if (OldZ <= FakeZ && EyeZ > FakeZ) {
         SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_EyesAboveC);
       } else if (OldZ > FakeZ && EyeZ <= FakeZ) {
@@ -3706,12 +3706,13 @@ final void CheckFakeFloorTriggers (float OldZ, optional bool OldHasViewH) {
 
 //==========================================================================
 //
-//  UseLines
+//  UseLinesOld
 //
 //  Looks for special lines in front of the actor to activate
 //
 //==========================================================================
-final bool UseLines (float UseRange, float UseThingRange, name FailSound,
+#if 0
+final bool UseLinesOld (float UseRange, float UseThingRange, name FailSound,
                      optional bool delegate (line_t *ld) checkLineUseDg,
                      optional void delegate (line_t *ld) onLineUsedDg,
                      optional bool delegate (EntityEx th) checkThingUseDg,
@@ -3729,23 +3730,16 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   TVec useDir;
   AngleVector(Angles, out useDir);
 
-  intercept_t in;
-
   // check things
-  /*
-  float x1 = Origin.x;
-  float y1 = Origin.y;
-
-  float x2 = x1+UseThingRange*useDir.x;
-  float y2 = y1+UseThingRange*useDir.y;
-  */
   TVec start = Origin;
   TVec end = start+UseThingRange*useDir.xy;
 
+  float ehgt = fmax(0.0, Height);
   float sz0 = start.z;
-  float sz1 = sz0+fmax(0.0, Height);
+  float sz1 = sz0+ehgt;
 
   EntityEx ee;
+  intercept_t in;
 
   foreach PathTraverse(out in, start, end, /*PT_ADDLINES|*/PT_ADDTHINGS|PT_AIMTHINGS/*|PT_NOOPENS*/, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
     if (in.bIsAPlane) break; // plane hit, no actor found
@@ -3782,14 +3776,9 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
   }
 
   // check lines
-  /*
-  x2 = x1+UseRange*useDir.x;
-  y2 = y1+UseRange*useDir.y;
-  */
   end = start+UseRange*useDir.xy;
-  float pheight = Origin.z+Height/2.0;
+  float pheight = Origin.z+ehgt/2.0;
 
-  //TVec hitPoint;
   bool DoSecAct = true;
   bool FoundLine = false;
   bool buttonSuccess;
@@ -3810,7 +3799,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
     if (ld->pobject && ld->pobject->posector) {
       polyobj_t *po = ld->pobject;
       // 3d pobj, check height
-      if (Origin.z+fmax(0.0, Height) <= po->pofloor.minz || Origin.z >= po->poceiling.maxz) continue;
+      if (Origin.z+ehgt <= po->pofloor.minz || Origin.z >= po->poceiling.maxz) continue;
     }
 
     if (!ld->special || !(ld->SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack))) {
@@ -3822,7 +3811,7 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
           open = nullptr;
         } else {
           //hitPoint = in.hitpoint; //Origin+(UseRange*in.frac)*useDir;
-          open = XLevel.FindLineOpening(ld, in.hitpoint, Height);
+          open = XLevel.FindLineOpening(ld, in.hitpoint, ehgt);
         }
       }
 
@@ -3857,7 +3846,6 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
       }
 
       // not a special line, but keep checking
-      //float pheight = Origin.z+Height/2.0;
       if (FailSound && (open->top < pheight || open->bottom > pheight)) {
         //PlaySound(FailSound, CHAN_VOICE);
         hitLineOrThing = true;
@@ -3928,11 +3916,357 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
   return action;
 }
+#endif
+
+
+//==========================================================================
+//
+//  CheckSwitchRange
+//
+//  check if given line switch is reachable
+//  this also processes door and other non-switch activating lines too
+//
+//==========================================================================
+final bool CheckSwitchRange (line_t *ld, int side, TVec hitpoint, ref bool failSound) {
+  if (ld.sidenum[side] < 0) return false; // wtf?!
+  side_t *sd = &XLevel.Sides[ld.sidenum[side]];
+
+  float ehgt = fmax(0.0, Height);
+  float ez0 = Origin.z;
+  float ez1 = ez0+ehgt;
+
+  // polyobjects?
+  if (ld.pobject) {
+    polyobj_t *po = ld.pobject;
+    // 3d polyobject?
+    if (po.posector) {
+      // 3d pobj, check height
+      if (ez1 <= po.pofloor.minz || ez0 >= po.poceiling.maxz) return false;
+      return true;
+    }
+    // 2d polyobject is always takes the whole sector, allow it
+    return true;
+  }
+
+  // not a polyobject
+
+  // always activate one-sided wall
+  if (!(ld.flags&ML_TWOSIDED)) return true;
+
+  sector_t *fsec = (side ? ld.backsector : ld.frontsector);
+  sector_t *bsec = (side ? ld.frontsector : ld.backsector);
+
+  // always activate two-sided wall without any sector (just in case)
+  if (!fsec || !bsec) return true;
+
+  float fz0 = fsec.floor.GetPointZClamped(hitpoint);
+  float fz1 = fsec.ceiling.GetPointZClamped(hitpoint);
+  float bz0 = bsec.floor.GetPointZClamped(hitpoint);
+  float bz1 = bsec.ceiling.GetPointZClamped(hitpoint);
+
+  // set "can activate" flags (only possibility, not an actual reachability)
+  bool canActivateTop = (sd->TopTexture > 0 && bz1 < fz1); // top texture can be activated if other sector ceiling is lower
+  bool canActivateBot = (sd->BottomTexture > 0 && bz0 > fz0); // bottom texture can be activated if other sector floor is higher
+  bool canActivateMid = (sd->MidTexture > 0 && bz0 < bz1); // middle texture can be activated if other sector is not closed
+
+  bool switchMid = Level.IsSwitchTexture(sd->MidTexture);
+  bool switchTop = Level.IsSwitchTexture(sd->TopTexture);
+  bool switchBot = Level.IsSwitchTexture(sd->BottomTexture);
+
+  bool doMoreChecks = true;
+
+  // check middle switch texture
+  if (switchMid) {
+    // it is reachable if entity intersects with middle texture
+    float mtz0, mtz1;
+    if (canActivateMid && XLevel.GetMidTexturePosition(ld, side, out mtz0, out mtz1)) {
+      if (ez1 >= mtz0 && ez0 <= mtz1) {
+        // if other sector has 3d floors, do some more checks
+        if (!bsec || bsec == fsec || !bsec.SectorHas3DFloors()) return true;
+        // yes, other sector has 3d floors, perform opening check
+        opening_t *open = XLevel.LineOpenings(ld, hitpoint, blockmask:default, do3dmidtex:true);
+        // if we have a range that intersects with the entity, assume "reachable"
+        while (open) {
+          if (open.range > 0.0 && ez1 >= open.bottom && ez0 <= open.top) return true;
+          open = open.next;
+        }
+        // 3d floor not reachable, do no more checks
+        doMoreChecks = false;
+      }
+    }
+    // middle texture is unreachable or not existent, check top and bottom switches
+  } else {
+    // middle texture is not a switch
+    // if we have no switches at all, assume that both top and bottom textures are switches
+    // this is for doors and lifts
+    if (!switchTop && !switchBot) {
+      switchTop = true;
+      switchBot = true;
+    }
+  }
+
+  if (doMoreChecks) {
+    // check top/bottom switch textures
+    if (canActivateTop && switchTop) {
+      // check top texture reachability
+      // it is reachable if entity intersects with other sector ceiling
+      if (ez1 >= bz1) return true;
+    }
+    if (canActivateBot && switchBot) {
+      // check bottom texture reachability
+      // it is reachable if entity intersects with other sector floor
+      if (ez0 <= bz0) return true;
+    }
+  }
+
+  // can't activate
+  // check if we need to produce a fail sound
+  if (!failSound) {
+         if (canActivateTop && ez1 >= bz1) failSound = true;
+    else if (canActivateBot && ez0 <= bz0) failSound = true;
+    else if (canActivateMid) {
+      // check openings
+      float pz0 = ez0+ehgt*0.3;
+      float pz1 = ez1-ehgt*0.3;
+      if (pz1 < pz0) { pz0 = ez0; pz1 = ez1; }
+      // check openings to determine if we need "fail" sound
+      opening_t *open = XLevel.LineOpenings(ld, hitpoint, blockmask:default, do3dmidtex:true);
+      // if we have a range big enough to fit the entity, assume that the switch is unreachable
+      while (open) {
+        if (open.range > 0.0 && pz0 >= open.bottom && pz1 <= open.top) break;
+        open = open.next;
+      }
+      if (!open) failSound = true;
+    }
+  }
+
+  return false;
+}
+
+
+//==========================================================================
+//
+//  UseLines
+//
+//  Looks for special lines in front of the actor to activate
+//
+//==========================================================================
+final bool UseLines (float UseRange, float UseThingRange, name FailSound,
+                     optional bool delegate (line_t *ld) checkLineUseDg,
+                     optional void delegate (line_t *ld) onLineUsedDg,
+                     optional bool delegate (EntityEx th) checkThingUseDg,
+                     optional void delegate (EntityEx th) onThingUsedDg)
+{
+
+  if (!Level.Game.IsAuthority) return false;
+
+  //printdebug("%C: UseLines! thing range:%s; line range:%s", self, UseThingRange, UseRange);
+
+  TVec useDir;
+  AngleVector(Angles, out useDir);
+
+  UseRange = fmax(1.0, UseRange);
+  UseThingRange = fmax(1.0, UseThingRange);
+
+  // calculate max use distances for things and lines
+  float maxUseRange = fmax(UseRange, UseThingRange);
+  float maxThingFrac = 0.0;
+  float maxLineFrac = 0.0;
+  if (UseRange == UseThingRange) {
+    maxThingFrac = 1.0;
+    maxLineFrac = 1.0;
+  } else {
+    maxThingFrac = UseThingRange/maxUseRange;
+    maxLineFrac = UseRange/maxUseRange;
+  }
+
+  float ehgt = fmax(0.0, Height);
+
+  TVec start = Origin+vector(0.0, 0.0, ehgt*0.5);
+  TVec end = start+maxUseRange*useDir;
+
+  //float sz0 = start.z;
+  //float sz1 = sz0+ehgt;
+
+  float ez0 = Origin.z;
+  float ez1 = ez0+ehgt;
+  //float pheight = ez0+ehgt/2.0;
+
+  //bool hitAnything = false; // set if anything useable was reached
+  bool usedAnything = false; // set if anything was used (either a thing or a line)
+  bool retvalue = false; // return value
+  bool triedLine = false; // set if any line with special was withing a reach (used to check if we need to call sector use interception)
+  bool needFailSound = false;
+
+  bool buttonSuccess;
+  int useType, useSide;
+  line_t *ld;
+  opening_t *open;
+
+  EntityEx ee;
+  intercept_t in;
+
+  // 0: default
+  // 1: never
+  // 2: always
+  int forceCheckRange = clamp(GetCvarI('g_switch_range_check_override'), 0, 2);
+  if (forceCheckRange == 0) forceCheckRange = (Level.bNoCheckSwitchRange ? 1 : Level.bCheckSwitchRange ? 2 : 0);
+
+  foreach PathTraverse(out in, start, end, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING, ML_BLOCKEVERYTHING|ML_BLOCKUSE) {
+    if (in.bIsAPlane) break; // plane hit, nothing to use
+
+    if (in.bIsALine) {
+      // line hit
+      if (in.frac > maxLineFrac) continue; // cannot reach
+      ld = in.line;
+
+      if (ld.special) triedLine = true;
+
+      // check 3d pobj line
+      if (ld.pobject && ld.pobject.posector) {
+        polyobj_t *po = ld.pobject;
+        // 3d pobj, check height
+        if (ez1 <= po.pofloor.minz || ez0 >= po.poceiling.maxz) continue;
+      }
+
+      // check delegate callback
+      if (checkLineUseDg && !checkLineUseDg(ld)) continue;
+
+      //hitAnything = true; // something was hit
+
+      // can use this line?
+      useSide = -1; // special flag
+      if (ld.special && (ld.SpacFlags&(SPAC_Use|SPAC_UseThrough|SPAC_UseBack))) {
+        if (in.side == 1) {
+          // back side
+          if ((ld.SpacFlags&SPAC_UseBack) && ld.backsector) {
+            useType = SPAC_UseBack;
+            useSide = 1;
+          }
+        } else {
+          // front side
+          if ((ld.SpacFlags&(SPAC_UseBack|SPAC_Use|SPAC_UseThrough)) != SPAC_UseBack) {
+            // can be used from front
+            useType = SPAC_Use;
+            useSide = 0;
+          }
+        }
+      }
+
+      if (useSide < 0) {
+        if (!needFailSound) {
+          if (!(ld.flags&ML_TWOSIDED)) {
+            needFailSound = true;
+          } else {
+            float pz0 = ez0+ehgt*0.3;
+            float pz1 = ez1-ehgt*0.3;
+            if (pz1 < pz0) {
+              pz0 = ez0;
+              pz1 = ez1;
+            }
+            // check openings to determine if we need "fail" sound
+            open = XLevel.LineOpenings(ld, in.hitpoint, blockmask:default, do3dmidtex:true);
+            // if we have a range big enough to fit the entity, assume that the switch is unreachable
+            while (open) {
+              if (open.range > 0.0 && pz0 >= open.bottom && pz1 <= open.top) break;
+              open = open.next;
+            }
+            if (!open) needFailSound = true;
+          }
+        }
+        // if `Level.CompatUseBlocking` is set, any special blocks further use
+        if (in.bIsABlockingLine || (ld.special && Level.CompatUseBlocking)) break;
+        continue;
+      }
+
+      // check switch range
+      // do we need to check z range?
+      // GZDoom forces this check for 3d midtex
+      if ((ld.flags&ML_3DMIDTEX) || // always check 3d midtex
+          forceCheckRange > 1 || // always check if forced
+          (forceCheckRange == 0 && (ld.flags&ML_CHECKSWITCHRANGE))) // check if default and line flag is set
+      {
+        if (in.bIsABlockingLine) needFailSound = true;
+        if (!CheckSwitchRange(ld, useSide, in.hitpoint, ref needFailSound)) {
+          if (in.bIsABlockingLine || (ld.special && Level.CompatUseBlocking)) break;
+          continue;
+        }
+      }
+
+      //printdebug("%C: trying to use line #%s (special %s)", self, ld-&XLevel.Lines[0], ld.special);
+
+      if (LineSpecialLevelInfo(Level).ActivateLine(ld, self, useSide, useType, out buttonSuccess)) {
+        if (onLineUsedDg) onLineUsedDg(ld);
+        retvalue = true;
+        if (buttonSuccess) usedAnything = true;
+      }
+
+      if (in.bIsABlockingLine) break;
+
+      //WAS can't use more than one special line in a row
+      //jff 3/21/98 NOW multiple use allowed with enabling line flag
+      if (Level.CompatUseBlocking) {
+        if (!(ld.SpacFlags&SPAC_UseThrough)) break;
+      } else if (ld.SpacFlags&SPAC_Use) {
+        break;
+      }
+    } else {
+      // thing hit
+      if (in.frac > maxThingFrac) continue; // cannot reach
+
+      // don't use self
+      if (in.Thing == self) continue;
+
+      // no need to check height, because we're doing 3d trace
+      // check height
+      //if (sz0 >= in.Thing.Origin.z+in.Thing.Height || sz1 <= in.Thing.Origin.z) continue;
+
+      ee = EntityEx(in.Thing);
+      if (!ee) continue;
+      if (checkThingUseDg && !checkThingUseDg(ee)) continue;
+
+      //printdebug("%C: trying to use thing %C(%s)", self, ee, ee.UniqueId);
+      if (!UseThing(ee)) {
+        //printdebug("%C:   used thing %C(%s)", self, ee, ee.UniqueId);
+        if (!needFailSound) {
+          if (ee.bSolid && !ee.bCorpse && !ee.bMissile && !ee.bMonster && !ee.bInvisible) needFailSound = true;
+        }
+        continue;
+      }
+
+      // it is used, no need to scan further
+      //hitAnything = true;
+      if (onThingUsedDg) onThingUsedDg(ee);
+      retvalue = true;
+      usedAnything = true;
+      break;
+    }
+  }
+
+  // let sector intercept the use
+  if (!usedAnything && Sector && Sector->ActionList) {
+    if (!triedLine && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
+      usedAnything = true;
+      retvalue = true;
+    }
+    if (triedLine && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_UseWall)) {
+      usedAnything = true;
+      retvalue = true;
+    }
+  }
+
+  //if (!usedAnything && FailSound && hitAnything) PlaySound(FailSound, CHAN_VOICE);
+  if (!usedAnything && FailSound && needFailSound) PlaySound(FailSound, CHAN_VOICE);
+
+  return retvalue;
+}
 
 
 //==========================================================================
 //
 //  UseThing
+//
+//  returns `true` if the thing was succesfully used
 //
 //==========================================================================
 bool UseThing (EntityEx Other) {
@@ -3946,10 +4280,7 @@ bool UseThing (EntityEx Other) {
     if (swd && swd.ActivationType) {
       printwarn("activation types for thing specials aren't implemented yet! %C:ActivationType=0x%08x", Other, swd.ActivationType);
     }
-    if (Level.ExecuteActionSpecial(
-      Other.Special, Other.Args[0], Other.Args[1], Other.Args[2],
-      Other.Args[3], Other.Args[4], nullptr, 0, self))
-    {
+    if (Level.ExecuteActionSpecial(Other.Special, Other.Args[0], Other.Args[1], Other.Args[2], Other.Args[3], Other.Args[4], nullptr, 0, self)) {
       if (swd && (swd.ActivationType&SwitchableDecoration::AF_ClearSpecial)) { Other.Special = 0; foreach (ref auto v; Other.Args) v = 0; }
       return true;
     }
@@ -4232,7 +4563,7 @@ override void CalcFakeZMovement (out TVec Ret, float DeltaTime) {
     // float down towards enemy if too close
     if (!bSkullFly && !bInFloat) {
       float dist = DistTo2(Target);
-      float delta = Target.Origin.z+Height/2.0-Ret.z;
+      float delta = Target.Origin.z+fmax(0.0, Height)/2.0-Ret.z;
       if (delta < 0.0 && dist < -(delta*3.0)) {
         Ret.z -= FloatSpeed*DeltaTime;
       } else if (delta > 0.0 && dist < delta*3.0) {

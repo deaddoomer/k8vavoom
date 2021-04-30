@@ -105,11 +105,11 @@ override bool PhysicsCheckScroller () {
       if (!einited) {
         einited = true;
         eorg = Origin;
-        hgt = GetPointZClamped(ref sec->floor, eorg);
+        hgt = sec->floor.GetPointZClamped(eorg);
       }
       if (eorg.z > hgt) {
         if (!sec->heightsec || sec->heightsec->bIgnoreHeightSec) continue;
-        float waterheight = GetPointZClamped(ref sec->heightsec->floor, eorg);
+        float waterheight = sec->heightsec->floor.GetPointZClamped(eorg);
         if (waterheight > hgt && eorg.z >= waterheight) continue;
       }
       return true;
@@ -215,7 +215,7 @@ bool Physics (float DeltaTime) {
         sector_t *sec = mnode.Sector;
         //if (self isa 'ExplosiveBarrel') printdebug("%C(%s):   SCROLLER CHECK at sector %s (%s)", self, UniqueId, sec-&XLevel.Sectors[0], sec->AffectorData);
         if (!sec->AffectorData) continue;
-        hgt = GetPointZClamped(ref sec->floor, eorg);
+        hgt = sec->floor.GetPointZClamped(eorg);
         eorgz = eorg.z;
         // move objects only if on floor or underwater, non-floating, and clipped
         for (SectorThinker SecThink = SectorThinker(sec->AffectorData); SecThink; SecThink = SecThink.NextAffector) {
@@ -230,11 +230,11 @@ bool Physics (float DeltaTime) {
             einited = true;
             eorg = Origin;
             eorgz = eorg.z;
-            hgt = GetPointZClamped(ref sec->floor, eorg);
+            hgt = sec->floor.GetPointZClamped(eorg);
           }
           if (eorgz > hgt) {
             if (!sec->heightsec || sec->heightsec->bIgnoreHeightSec) continue;
-            float waterheight = GetPointZClamped(ref sec->heightsec->floor, eorg);
+            float waterheight = sec->heightsec->floor.GetPointZClamped(eorg);
             if (waterheight > hgt && eorgz >= waterheight) continue;
           }
           // don't process sectors twice (eh, it is guaranteed by the list builder)
@@ -295,7 +295,7 @@ bool Physics (float DeltaTime) {
         if (fabs(oldFloatZ-Origin.z) >= 10) oldFloatZ = Origin.z;
       }
       FloatBobPhase += DeltaTime;
-      if (Sector) Origin.z = GetPointZClamped(ref Sector->floor, Origin)+Special1f+Level.Game.FloatBobOffsets[int(FloatBobPhase*35.0)&63];
+      if (Sector) Origin.z = Sector->floor.GetPointZClamped(Origin)+Special1f+Level.Game.FloatBobOffsets[int(FloatBobPhase*35.0)&63];
     } else {
       // floating bobbing motion for monsters
       float savedz = Origin.z;
@@ -1015,7 +1015,7 @@ final void HitMobj (Entity Other, float ptryx, float ptryy) {
 final bool HitFloor (float prevz, sector_t *OldSector) {
   // trigger hit floor sector actions
   // k8: trigger always, or only when just landed? it was always
-  if (Sector && OldSector != Sector && Sector->ActionList && GetPointZClamped(ref Sector->floor, Origin) == FloorZ) {
+  if (Sector && OldSector != Sector && Sector->ActionList && Sector->floor.GetPointZClamped(Origin) == FloorZ) {
     SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_HitFloor);
   }
 
@@ -1119,7 +1119,7 @@ final bool HitFloor (float prevz, sector_t *OldSector) {
 //==========================================================================
 final bool HitCeiling (float prevz, sector_t *OldSector) {
   // trigger hit ceiling sector actions
-  if (Sector && OldSector != Sector && Sector->ActionList && GetPointZClamped(ref Sector->ceiling, Origin+vector(0, 0, Height)) == CeilingZ) {
+  if (Sector && OldSector != Sector && Sector->ActionList && Sector->ceiling.GetPointZClamped(Origin+vector(0, 0, Height)) == CeilingZ) {
     SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_HitCeiling);
   }
 
@@ -1496,10 +1496,10 @@ bool HitFloorType (optional bool justLanded) {
   }
   //if (bIsPlayer && tsec != Sector) printdebug("%C: orgz=%s; fz=%s", self, Origin.z, FloorZ);
   // don't splash if landing on the edge above water/lava/etc....
-  //if (FloorZ != GetPointZClamped(ref tsec->floor, Origin)) return false;
+  //if (FloorZ != tsec->floor.GetPointZClamped(Origin)) return false;
 
   /*
-  if (!Sector || FloorZ != GetPointZClamped(ref Sector->floor, Origin)) {
+  if (!Sector || FloorZ != Sector->floor.GetPointZClamped(Origin)) {
     // don't splash if landing on the edge above water/lava/etc....
     //if (bIsPlayer) printdebug("%C: orgz=%s; fz=%s", self, Origin.z, FloorZ);
     return false;
@@ -1654,7 +1654,7 @@ override void ApplyFriction (float DeltaTime) {
     if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
         vy > 0.25*35.0 || vy < -0.25*35.0)
     {
-      if (DropOffZ != FloorZ || FloorZ > GetPointZClamped(ref Sector->floor, Origin)) {
+      if (DropOffZ != FloorZ || FloorZ > Sector->floor.GetPointZClamped(Origin)) {
         return;
       }
     }

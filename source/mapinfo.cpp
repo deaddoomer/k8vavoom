@@ -1035,6 +1035,9 @@ MAPINFOCMD(noinfiniteflightpowerup) { info->Flags &= ~VLevelInfo::LIF_InfiniteFl
 MAPINFOCMD(clipmidtextures) { info->Flags |= VLevelInfo::LIF_ClipMidTex; }
 MAPINFOCMD(wrapmidtextures) { info->Flags |= VLevelInfo::LIF_WrapMidTex; }
 MAPINFOCMD(keepfullinventory) { info->Flags |= VLevelInfo::LIF_KeepFullInventory; }
+MAPINFOCMD(additive_scrollers) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
+MAPINFOCMD(checkswitchrange) { info->Flags2 |= VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 &= ~VLevelInfo::LIF2_NoCheckSwitchRange; }
+MAPINFOCMD(nocheckswitchrange) { info->Flags2 &= ~VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 |= VLevelInfo::LIF2_NoCheckSwitchRange; }
 MAPINFOCMD(compat_shorttex) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatShortTex, newFormat); }
 MAPINFOCMD(compat_stairs) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatStairs, newFormat); }
 MAPINFOCMD(compat_limitpain) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatLimitPain, newFormat); }
@@ -1048,7 +1051,6 @@ MAPINFOCMD(compat_dehhealth) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDeh
 MAPINFOCMD(compat_trace) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatTrace, newFormat); }
 MAPINFOCMD(compat_dropoff) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDropOff, newFormat); }
 MAPINFOCMD(compat_boomscroll) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
-MAPINFOCMD(additive_scrollers) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
 MAPINFOCMD(compat_invisibility) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatInvisibility, newFormat); }
 MAPINFOCMD(compat_sectorsounds) { DoCompatFlag(sc, info, 0, newFormat); }
 MAPINFOCMD(compat_crossdropoff) { DoCompatFlag(sc, info, 0, newFormat); }

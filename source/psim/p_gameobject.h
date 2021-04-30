@@ -261,8 +261,8 @@ enum {
   ML_BLOCK_FLOATERS      = 0x00040000u,
   ML_CLIP_MIDTEX         = 0x00080000u, // automatic for every Strife line
   ML_WRAP_MIDTEX         = 0x00100000u,
-  ML_3DMIDTEX            = 0x00200000u, // not implemented
-  ML_CHECKSWITCHRANGE    = 0x00400000u, // not implemented
+  ML_3DMIDTEX            = 0x00200000u,
+  ML_CHECKSWITCHRANGE    = 0x00400000u,
   ML_FIRSTSIDEONLY       = 0x00800000u, // actiavte only when crossed from front side
   ML_BLOCKPROJECTILE     = 0x01000000u,
   ML_BLOCKUSE            = 0x02000000u, // blocks all use actions through this line

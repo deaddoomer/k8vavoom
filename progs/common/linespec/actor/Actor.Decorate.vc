@@ -750,14 +750,14 @@ private final float clampPitch (float newpitch) {
   if (flags&GZF_NO3DFLOOR) {
     sector_t *sec = XLevel.PointInSector(org);
     if (flags&GZF_CEILING) {
-      return GetPointZClamped(ref sec->ceiling, org);
+      return sec->ceiling.GetPointZClamped(org);
     } else {
-      return GetPointZClamped(ref sec->floor, org);
+      return sec->floor.GetPointZClamped(org);
     }
   } else if ((flags&(GZF_CEILING|GZF_3DRESTRICT)) == (GZF_CEILING|GZF_3DRESTRICT)) {
     //k8: this is prolly not right
     sector_t *sec = XLevel.PointInSector(org);
-    return GetPointZClamped(ref sec->ceiling, org);
+    return sec->ceiling.GetPointZClamped(org);
   } else {
     tmtrace_t tmtrace;
     tgt.GetFloorAndCeilingEx(out tmtrace, org, collideWorld:true);
@@ -1633,7 +1633,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
   tomove.LinkToWorld();
 
   if (flags&WARPF_TOFLOOR) {
-    float newz = (tomove.Sector ? GetPointZClamped(ref tomove.Sector->floor, tomove.Origin) : tomove.FloorZ)+zofs;
+    float newz = (tomove.Sector ? tomove.Sector->floor.GetPointZClamped(tomove.Origin) : tomove.FloorZ)+zofs;
     tomove.Origin.z = newz+zofs;
   }
 

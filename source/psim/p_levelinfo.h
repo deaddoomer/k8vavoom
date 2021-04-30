@@ -117,6 +117,8 @@ class VLevelInfo : public VThinker {
     LIF2_ResetHealth           = 0x00100000u,
     LIF2_ResetInventory        = 0x00200000u,
     LIF2_ResetItems            = 0x00400000u,
+    LIF2_CheckSwitchRange      = 0x00800000u, // force "check switch range" flag
+    LIF2_NoCheckSwitchRange    = 0x01000000u, // ignore "check switch range" flag
   };
   vuint32 LevelInfoFlags2;
 
@@ -159,6 +161,7 @@ public:
   void SecretExitLevel (int Position);
   void Completed (int Map, int Position, int SaveAngle);
 
+  static bool IsSwitchTexture (int texid);
   bool ChangeSwitchTexture (int, bool, VName, bool &);
   bool StartButton (int, vuint8, int, VName, bool);
 
@@ -192,6 +195,7 @@ public:
   DECLARE_FUNCTION(Completed)
 
   // special thinker utilites
+  DECLARE_FUNCTION(IsSwitchTexture)
   DECLARE_FUNCTION(ChangeSwitchTexture)
   DECLARE_FUNCTION(FindMobjFromTID)
   DECLARE_FUNCTION(AutoSave)

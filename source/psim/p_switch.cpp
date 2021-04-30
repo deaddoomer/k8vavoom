@@ -70,6 +70,20 @@ IMPLEMENT_CLASS(V, ThinkButton)
 
 //==========================================================================
 //
+//  VLevelInfo::IsSwitchTexture
+//
+//==========================================================================
+bool VLevelInfo::IsSwitchTexture (int texid) {
+  if (texid <= 0) return false;
+  for (TSwitch *sw : Switches) {
+    if (sw->Tex > 0 && sw->Tex == texid) return true;
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VLevelInfo::ChangeSwitchTexture
 //
 //  Function that changes wall texture.
@@ -77,15 +91,15 @@ IMPLEMENT_CLASS(V, ThinkButton)
 //
 //==========================================================================
 bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultSound, bool &Quest) {
-  if (sidenum < 0) return false;
-  int texTop = XLevel->Sides[sidenum].TopTexture;
-  int texMid = XLevel->Sides[sidenum].MidTexture;
-  int texBot = XLevel->Sides[sidenum].BottomTexture;
+  if (sidenum < 0) { Quest = false; return false; }
+  const int texTop = XLevel->Sides[sidenum].TopTexture;
+  const int texMid = XLevel->Sides[sidenum].MidTexture;
+  const int texBot = XLevel->Sides[sidenum].BottomTexture;
 
-  for (int idx = Switches.length()-1; idx >= 0; --idx) {
+  for (auto &&it : Switches.itemsIdx()) {
+    TSwitch *sw = it.value();
+
     EBWhere where;
-    TSwitch *sw = Switches[idx];
-
     if (texTop && sw->Tex == texTop) {
       where = SWITCH_Top;
       XLevel->Sides[sidenum].TopTexture = sw->Frames[0].Texture;
@@ -99,19 +113,19 @@ bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultS
       continue;
     }
 
-    bool PlaySound;
+    bool PlaySound = true;
     if (useAgain || sw->NumFrames > 1) {
-      PlaySound = StartButton(sidenum, where, idx, DefaultSound, useAgain);
-    } else {
-      PlaySound = true;
+      PlaySound = StartButton(sidenum, where, it.index(), DefaultSound, useAgain);
     }
 
     if (PlaySound) {
       SectorStartSound(XLevel->Sides[sidenum].Sector, (sw->Sound ? sw->Sound : GSoundManager->GetSoundID(DefaultSound)), 0, 1, 1);
     }
+
     Quest = sw->Quest;
     return true;
   }
+
   Quest = false;
   return false;
 }

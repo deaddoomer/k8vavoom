@@ -2036,7 +2036,7 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool ro
             if (!mobj->LineIntersects(ld)) continue;
             const int side = ld->PointOnSide(mobj->Origin);
             float ptop = 0.0f, pbot = 0.0f;
-            if (!GetMidTexturePosition(ld, side, &ptop, &pbot)) continue;
+            if (!GetMidTexturePosition(ld, side, &pbot, &ptop)) continue;
             if (mobj->Origin.z >= ptop || mobj->Origin.z+max2(0.0f, mobj->Height) <= pbot) continue;
             ldblock = true;
           }

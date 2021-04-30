@@ -144,6 +144,7 @@ static VCvarI g_spawn_limit_override("g_skill_respawn_limit_override", "0", "Ove
 static VCvarF g_ammo_factor_override("g_skill_ammo_factor_override", "0", "Override ammo multiplier.", CVAR_PreInit|CVAR_Archive);
 static VCvarF g_damage_factor_override("g_skill_damage_factor_override", "0", "Override damage multiplier.", CVAR_PreInit|CVAR_Archive);
 static VCvarF g_aggressiveness_override("g_skill_aggressiveness_override", "0", "Override monster aggresiveness.", CVAR_PreInit|CVAR_Archive);
+static VCvarI g_switch_range_check_override("g_switch_range_check_override", "0", "Override switch range checking (0: default; 1: never; 2: always).", CVAR_PreInit|CVAR_Archive);
 
 
 static VCvarB show_time("dbg_show_times", false, "Show some debug times?", CVAR_PreInit);
