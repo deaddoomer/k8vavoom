@@ -314,6 +314,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
   // this is not quite right, but i need it this way
   if (flips&decal_t::FlipX) txofs = twdt-txofs;
 
+  // calculate left and right texture bounds
   const float dcx0 = lineofs-txofs;
   const float dcx1 = dcx0+twdt;
 
@@ -323,6 +324,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
     VDC_DLOG(NAME_Debug, "*** OOB: Decal '%s' at line #%d (side %d; fs=%d; bs=%d): linelen=%g; dcx0=%g; dcx1=%g", *dec->name, (int)(ptrdiff_t)(li-Lines), side, (int)(ptrdiff_t)(fsec-Sectors), (bsec ? (int)(ptrdiff_t)(bsec-Sectors) : -1), linelen, dcx0, dcx1);
   }
 
+  // calculate top and bottom texture bounds
   const float tyofs = DTex->GetScaledTOffsetF()*dec->scaleY.value;
   const float dcy1 = orgz+dec->scaleY.value+tyofs;
   const float dcy0 = dcy1-thgt;
