@@ -6,7 +6,6 @@ $include "common/texlmap_vars.fs"
 #else
 $include "common/texture_vars.fs"
 #endif
-//$include "common/texshade.inc"
 #ifdef REG_LIGHTMAP
 uniform sampler2D LightMap;
 #ifdef VV_USE_OVERBRIGHT
@@ -19,13 +18,6 @@ uniform vec4 Light;
 uniform float SplatAlpha; // image alpha will be multiplied by this
 $include "common/fog_vars.fs"
 
-/*
-varying vec2 TextureCoordinate;
-#ifdef REG_LIGHTMAP
-varying vec2 LightmapCoordinate;
-#endif
-*/
-
 
 void main () {
   vec4 FinalColor;
@@ -34,10 +26,10 @@ void main () {
   if (SplatAlpha <= ALPHA_MIN) discard;
 
   TexColor = GetStdTexel(Texture, TextureCoordinate);
-  if (TexColor.a < ALPHA_MIN) discard;
+  //if (TexColor.a < ALPHA_MIN) discard;
 
   FinalColor.a = clamp(TexColor.a*SplatAlpha, 0.0, 1.0);
-  //if (FinalColor.a < ALPHA_MIN) discard;
+  if (FinalColor.a < ALPHA_MIN) discard;
   FinalColor.rgb = TexColor.rgb;
 
 #ifdef REG_LIGHTMAP

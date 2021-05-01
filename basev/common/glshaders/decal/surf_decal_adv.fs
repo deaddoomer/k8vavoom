@@ -7,8 +7,6 @@ uniform float SplatAlpha; // image alpha will be multiplied by this
 uniform float FullBright;
 uniform vec2 ScreenSize;
 
-//varying vec2 TextureCoordinate;
-//$include "common/texshade.inc"
 $include "common/texture_vars.fs"
 
 
@@ -19,7 +17,7 @@ void main () {
   if (SplatAlpha <= ALPHA_MIN) discard;
 
   TexColor = GetStdTexel(Texture, TextureCoordinate);
-  if (TexColor.a < ALPHA_MIN) discard;
+  //if (TexColor.a < ALPHA_MIN) discard;
 
   FinalColor.a = clamp(TexColor.a*SplatAlpha, 0.0, 1.0);
   if (FinalColor.a < ALPHA_MIN) discard;
