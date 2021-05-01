@@ -621,6 +621,15 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       const float hpz = trace_org3d.z+trace_dir3d.z*frac;
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
+        // check hitscan blocking flags (only front side matters for now)
+        if (doopening && (ld->flags&lineflags) == ML_BLOCKHITSCAN && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
+          const side_t *fsd = &Level->Sides[ld->sidenum[0]];
+          VTexture *TTex = GTextureManager(fsd->TopTexture);
+          if (TTex && TTex->Type != TEXTYPE_Null) {
+            const float texh = TTex->GetScaledHeightF()/fsd->Top.ScaleY;
+            if (hpz < po->poceiling.maxz+texh) goto xxdone; // sorry
+          }
+        }
         // non-blocking pobj line: check polyobject planes
         // if this polyobject plane was already added to list, it is not interesting anymore
         //
@@ -654,6 +663,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
         }
         continue;
       }
+     xxdone:
       blockFlag = doopening;
     } else {
       // in "compat" mode, lines of self-referenced sectors are ignored
