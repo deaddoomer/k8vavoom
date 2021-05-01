@@ -232,6 +232,17 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     // calculate texture axes
     TVec saxis(seg->dir);
     TVec taxis(0.0f, 0.0f, -1.0f);
+    #if 0
+    // this does one part of decal rotation
+    // decal placement code is not ready for this yet, so it is disabled
+    float s = 1.0f, c = 1.0f;
+    const float angle = 0.0f;
+    if (angle != 0.0f) {
+      msincos(angle, &s, &c);
+      taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+      saxis = Normalise(CrossProduct(seg->normal, taxis));
+    }
+    #endif
 
     saxis *= dtex->TextureSScale()*dscaleXInv;
     taxis *= dtex->TextureTScale()*dscaleYInv;
@@ -239,6 +250,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     if (dc->flags&decal_t::FlipX) saxis = -saxis;
     if (dc->flags&decal_t::FlipY) taxis = -taxis;
 
+    // texture offset already taken into account, so we need only offsets for bottom left corner
+    //TODO: this is prolly not fully right for flipped decals
     float soffs = -DotProduct(v1, saxis); // horizontal
     float toffs = -DotProduct(TVec(v1.x, v1.y, dcz), taxis); // vertical
 
