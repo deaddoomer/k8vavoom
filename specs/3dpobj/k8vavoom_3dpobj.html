@@ -21,14 +21,21 @@ h1 {
   margin: 12px;
   padding: 0px;
 }
+h2 {
+  font-size: 180%;
+  text-align: center;
+  margin: 12px;
+  padding: 0px;
+}
 pre {
   background: #aaa; /* sorry for this */
 }
 </style>
 <body>
 <div class="content">
+<h2>3D Polyobject specification for k8vavoom engine, v0.99</h2>
 <p>
-This is description of k8vavoom 3d polyobject: how to create them, how to
+This is description of k8vavoom 3d polyobjects: how to create them, how to
 use them, and, most important, how to NOT use them.
 </p>
 
@@ -44,6 +51,7 @@ will look like platform floor for the player).
 <div class="toc">
 <a href="#drawit">How to draw 3d polyobject</a><br>
 <a href="#spawnit">How to spawn 3d polyobject</a><br>
+<a href="#setheight">How to set 3d polyobject height (and texture parameters meaning)</a><br>
 <a href="#linkit">Linked 3d polyobjects</a><br>
 <a href="#movenote">Notes about movement</a><br>
 <a href="#acsapi">New ACS API</a><br>
@@ -99,13 +107,35 @@ floor texture will be the bottom 3d polyobject texture, and ceiling texture will
 </p>
 <p>
 To align floor and ceiling textures, just align your inner sector as you want to. The inner sector
-will be "cutted out" as it is, and will retain its flat align no matter how you'll move it.
+will be "cut out" as it is, and will retain its flat align no matter how you'll move it.
 </p>
 <p>
 You can set top and bottom textures for 3d polyobject lines. Top texture can be made impassable by
 setting "clip midtexture" line flag. Impassable top textures should be assigned to the both line
 sides, and should be of the same height, or the engine will refuse loading a map. Bottom texture
 is just a decoration and will not block movement.
+</p>
+<p>
+Note that top texture is always mapped from 3d polyobject ceiling up, and bottom texture is always
+mapped from 3d polyobject floor down.
+</p>
+<p>
+You can use "midtexture is wrapped" flag to tell the engine that middle texture should be wrapped.
+Note that all middle textures should be high enough (or wrapped) to fill the whole side.
+If this rule is violated, the engine will refuse loading a map.
+</p>
+<p>
+Line alpha and additivenes can be used to control top/bottom texture rendering. Middle texture is
+always non-alphablended. Do not assign translucent textures to midtex, or the engine will refuse
+loading a map.
+</p>
+<p>
+Currently you cannot assign "masked" middle texture (i.e. things like grates and such).
+This limitation may be removed in the future.
+</p>
+<p>
+3D polyobject light level is determined by the light level of its inner sector. Currently this is
+the only thing that controls 3d polyobject ambient lighting.
 </p>
 
 
@@ -123,6 +153,39 @@ by a moving 3d pobj side. This is useful to create vertical crushers, because ot
 <b>WARNING! Other things args must be zero! They may be used later, and if you will not set them
 to zeroes, your map may break in the future!</b>
 </p>
+<!--
+<p>
+Also, if anchor thing height is not zero, then 3d polyobject will be offset <b>from the destination sector</b>.
+Positive anchor height will move 3d polyobject floor to the destination sector floor, and then will offset up.
+Negative anchor height will move 3d polyobject ceiling to the destination sector ceiling, and then will offset down.
+</p>
+<p>
+Note that anchor height will ignore any polyobject links. I.e. it is mostly usable for simple one-sector platforms,
+not for complex multi-polyobject structures.
+</p>
+-->
+
+
+<hr>
+<a id="setheight"><h1>How to set 3d polyobject height</h1>
+<p>
+3D polyobject height is determined by two parameters: its inner sector, and middle texture of its
+first line (at the front side).
+</p>
+<p>
+First, 3d polyobject inner sector sets hard limits: 3d pobj cannot be higher than its inner sector.
+</p>
+<p>
+Second, if the middle texture of the 3d polyobject first line is not wrapped, then the height is clamped
+by that texture scaled height (i.e. UDMF Y scale value is in effect). if ML_DONTPEGBOTTOM flag is set,
+then the texture goes from inner sector floor up, otherwise it goes from inner sector ceiling down (i.e.
+that flag has the same meaning as for other two-sided lines).
+</p>
+<!--
+Third, if anchor thing height is not zero, then 3d polyobject height will never be greater than its absolute value.
+If the height is positive, then 3d polyobject floor will be raised, if necessary. And if the height is negative,
+then 3d polyobject ceiling will be lowered, if necessary.
+-->
 
 
 <hr>
@@ -133,7 +196,7 @@ It is somewhat similar to linked sectors you could use to create complex lifts.
 </p>
 <p>
 Linked polyobjects will behave as one object, and all operations on the first polyojbect in the link will
-affect all "child" objects. All operations on the link chain are atomic. I.e. if moving/rotating is failed,
+affect all linked "children". All operations on the link chain are atomic. I.e. if moving/rotating is failed,
 no objects in chain will be modified. Just think about the link chain as one big object.
 </p>
 <p>
@@ -238,7 +301,22 @@ properly, and nothing is guaranteed. Even if it seems to work now (or do nothing
 to load such maps in the future, or flag meaning may change.
 </p>
 <p>
+Currently you cannot assign "masked" or translucent middle texture (i.e. things like grates and such). This limitation
+may be removed in the future.
+</p>
+<p>
+Also, currently you cannot use "masked" or translucent floor/ceiling textures. This limitation may be removed in the future.
+</p>
+<p>
+All middle textures should cover the full side (i.e. be either wrapped, or high enough).
+</p>
+<p>
 Lightmapped lighting may glitch on 3d polyobjects. This will be fixed in the future.
+</p>
+<p>
+Ambient lighting of 3d polyobject is controlled only by its inner sector light level. Moving 3d polyobject will not
+"inherit" light level of the sector (or sectors) it is currently in. Dynamic light level change can be implemented
+in the future, but it will be opt-in (i.e. there will be a special flag to turn it on).
 </p>
 
 </div>
