@@ -434,6 +434,33 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
 }
 
 
+#define PO3DALLOWEDLFAGS  ( \
+  ML_BLOCKING| \
+  ML_BLOCKMONSTERS| \
+  ML_TWOSIDED| \
+  ML_DONTPEGTOP| \
+  ML_DONTPEGBOTTOM| \
+  ML_SOUNDBLOCK| \
+  ML_DONTDRAW| \
+  ML_MAPPED| \
+  ML_REPEAT_SPECIAL| \
+  ML_ADDITIVE| \
+  ML_MONSTERSCANACTIVATE| \
+  ML_BLOCKPLAYERS| \
+  ML_BLOCKEVERYTHING| \
+  ML_BLOCK_FLOATERS| \
+  ML_CLIP_MIDTEX| \
+  ML_WRAP_MIDTEX| \
+  ML_CHECKSWITCHRANGE| \
+  ML_FIRSTSIDEONLY| \
+  ML_BLOCKPROJECTILE| \
+  ML_BLOCKUSE| \
+  ML_BLOCKSIGHT| \
+  ML_BLOCKHITSCAN| \
+  ML_NODECAL| \
+  0u)
+
+
 //==========================================================================
 //
 //  VLevel::Validate3DPolyobj
@@ -451,15 +478,34 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
     if (ld->frontsector != sfront || ld->backsector != sback) {
       Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     }
+    // allow some other flags
+    /*
+         if (ld->flags&ML_BLOCKEVERYTHING) ld->flags |= ML_BLOCKING;
+    else if (ld->flags&(ML_BLOCKMONSTERS|ML_BLOCKPLAYERS)) ld->flags |= ML_BLOCKING;
+    */
+    // check flags
     if (!(ld->flags&ML_BLOCKING)) {
       Host_Error("3d pobj #%d line #%d should have \"impassable\" flag!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
       //ld->flags |= ML_BLOCKING;
     }
+    // remove flags we are not interested in
+    //ld->flags &= ~(ML_BLOCKEVERYTHING|ML_BLOCKMONSTERS|ML_BLOCKPLAYERS);
+    // check for some extra flags
+    if (ld->flags&~PO3DALLOWEDLFAGS) Host_Error("3d pobj #%d line #%d have some forbidden flags set!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    //if (linedef->alpha != 1.0f) Host_Error("3d pobj #%d line #%d cannot be alpha-blended!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0])); //nope, it is used for top/bottom textures
+    // validate midtex (only the front side)
+    if (ld->sidenum[0] < 0) Host_Error("3d pobj #%d line #%d has no front side!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    //if (ld->sidenum[1] < 0) Host_Error("3d pobj #%d line #%d has no back side!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    const side_t *sidedef = &Sides[ld->sidenum[0]];
+    VTexture *MTex = GTextureManager(sidedef->MidTexture);
+    if (!MTex || MTex->Type == TEXTYPE_Null) Host_Error("3d pobj #%d line #%d has invalid front midtex!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    if (MTex->GetScaledWidthF()/sidedef->Mid.ScaleY < 1.0f) Host_Error("3d pobj #%d line #%d has invalid front midtex width!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    if (MTex->GetScaledHeightF()/sidedef->Mid.ScaleY < 1.0f) Host_Error("3d pobj #%d line #%d has invalid front midtex height!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     // check sides
     const side_t *s0 = (ld->sidenum[0] < 0 ? nullptr : &Sides[ld->sidenum[0]]);
     const side_t *s1 = (ld->sidenum[1] < 0 ? nullptr : &Sides[ld->sidenum[1]]);
-    if (!s0) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (no front side)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
-    if (GTextureManager.IsEmptyTexture(s0->MidTexture)) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (empty midtex)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    //if (!s0) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (no front side)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    //if (GTextureManager.IsEmptyTexture(s0->MidTexture)) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (empty midtex)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     // top textures must be the same if they are impassable
     if (ld->flags&ML_CLIP_MIDTEX) {
       // top texture is blocking
@@ -556,7 +602,9 @@ bool VLevel::IsGood3DPolyobj (polyobj_t *po) {
 //
 //==========================================================================
 void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt) {
+  // some idiots are using tag 0 for polyobject
   if (/*tag == 0 ||*/ tag == 0x7fffffff) Host_Error("the map tried to spawn polyobject with invalid tag: %d", tag);
+  if (tag == 0) GCon->Log(NAME_Error, "using tag 0 for polyobject is THE VIOLATION OF THE SPECS. please, don't release broken maps.");
 
   const bool want3DPobj = (thing && thing->type == PO_SPAWN_3D_TYPE);
 
@@ -816,8 +864,9 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   }
 
   // find first seg with texture
-  const seg_t *xseg = nullptr;
   const sector_t *refsec = nullptr;
+  /*
+  const seg_t *xseg = nullptr;
   for (int f = 0; f < po->numsegs; ++f) {
     // only front sides
     if (po->segs[f]->linedef && po->segs[f]->side == 0) {
@@ -829,6 +878,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     }
   }
   if (!xseg) GCon->Logf(NAME_Warning, "trying to spawn pobj #%d without any midtextures", po->tag);
+  */
 
   if (valid3d) {
     refsec = po->posector;
@@ -850,7 +900,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->pofloor.normal = TVec(0.0f, 0.0f, -1.0f);
     po->pofloor.dist = -fdist;
     //GCon->Logf(NAME_Debug, "001: pobj #%d: floor=(%g,%g,%g:%g):%g", po->tag, po->pofloor.normal.x, po->pofloor.normal.y, po->pofloor.normal.z, po->pofloor.dist, po->pofloor.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-    po->pofloor.minz = po->pofloor.maxz = fdist;
+    po->pofloor.minz = po->pofloor.maxz = po->pofloor.TexZ = fdist;
 
     // build ceiling
     po->poceiling = refsec->ceiling;
@@ -862,46 +912,42 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     po->poceiling.normal = TVec(0.0f, 0.0f, 1.0f);
     po->poceiling.dist = cdist;
     //GCon->Logf(NAME_Debug, "001: pobj #%d: ceiling=(%g,%g,%g:%g):%g", po->tag, po->poceiling.normal.x, po->poceiling.normal.y, po->poceiling.normal.z, po->poceiling.dist, po->poceiling.GetPointZ(TVec(avg.x, avg.y, 0.0f)));
-    po->poceiling.minz = po->poceiling.maxz = cdist;
+    po->poceiling.minz = po->poceiling.maxz = po->poceiling.TexZ = cdist;
 
-    // fix polyobject height
-
-    // determine real height using midtex
-    VTexture *MTex = (xseg ? GTextureManager(xseg->sidedef->MidTexture) : nullptr);
-    if (MTex && MTex->Type != TEXTYPE_Null) {
-      // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-      const float texh = MTex->GetScaledHeightF();
-      float z0, z1;
-      if (valid3d || (po->segs[0]->linedef->flags&ML_3DMIDTEX)) {
-        if (po->segs[0]->linedef->flags&ML_DONTPEGBOTTOM) {
+    // fix 3d polyobject height
+    if (valid3d) {
+      // determine real height using midtex
+      // use first polyobject line texture
+      const line_t *ld = po->lines[0];
+      vassert(ld->sidenum[0] >= 0);
+      const side_t *sidedef = &Sides[ld->sidenum[0]];
+      // clamp with texture height if it is not wrapped
+      if (((ld->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
+        VTexture *MTex = GTextureManager(sidedef->MidTexture);
+        vassert(MTex && MTex->Type != TEXTYPE_Null);
+        const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
+        vassert(isFiniteF(texh) && texh >= 1.0f);
+        float z0, z1;
+        if (ld->flags&ML_DONTPEGBOTTOM) {
           // bottom of texture at bottom
-          // top of texture at top
           z1 = po->pofloor.TexZ+texh;
         } else {
           // top of texture at top
           z1 = po->poceiling.TexZ;
         }
         z0 = z1-texh;
-      } else {
-        // for normal polyobjects, texture is simply warped
-        z0 = z1 = po->pofloor.TexZ;
-        //FIXME!
-        while (z1 < po->poceiling.TexZ) z1 += texh;
-        const float ofs = z1-po->poceiling.TexZ;
-        //k8: i don't know what i am doing here
-        if (ofs > 0.0f) {
-          po->pofloor.TexZ -= ofs;
-          po->poceiling.TexZ -= ofs;
-        }
+        // clamp
+        z0 = clampval(z0, po->pofloor.TexZ, po->poceiling.TexZ);
+        z1 = clampval(z1, po->pofloor.TexZ, po->poceiling.TexZ);
+        if (z0 > z1) Host_Error("invalid 3d pobj #%d height (by midtex)", po->tag);
+        // fix floor and ceiling planes
+        po->pofloor.minz = po->pofloor.maxz = po->pofloor.TexZ = z0;
+        po->pofloor.dist = -po->pofloor.maxz;
+        po->poceiling.minz = po->poceiling.maxz = po->poceiling.TexZ = z1;
+        po->poceiling.dist = po->poceiling.maxz;
       }
-      z0 = max2(z0, refsec->floor.minz);
-      z1 = min2(z1, refsec->ceiling.maxz);
-      if (z1 < z0) z1 = z0;
-      // fix floor and ceiling planes
-      po->pofloor.minz = po->pofloor.maxz = z0;
-      po->pofloor.dist = -po->pofloor.maxz;
-      po->poceiling.minz = po->poceiling.maxz = z1;
-      po->poceiling.dist = po->poceiling.maxz;
+    } else {
+      // for normal polyobjects, texture is simply wrapped
     }
   }
 
@@ -1256,13 +1302,27 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
     if (thing && thing->height > 0.0f) {
       const float hgt = po->poceiling.maxz-po->pofloor.minz;
       if (hgt > thing->height) {
-        if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g", po->tag, hgt, thing->height);
-        // fix ceiling, move texture z
-        const float dz = height-hgt;
-        po->poceiling.minz += dz;
-        po->poceiling.maxz += dz;
-        po->poceiling.dist += dz;
-        po->poceiling.TexZ += dz;
+        const line_t *ld = po->lines[0];
+        // "don't peg top" flag is abused to limit the height from the ceiling
+        if (ld->flags&ML_DONTPEGTOP) {
+          // height is from the ceiling
+          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the ceiling)", po->tag, hgt, thing->height);
+          // fix floor (move it up), move texture z
+          const float dz = hgt-height;
+          po->pofloor.minz += dz;
+          po->pofloor.maxz += dz;
+          po->pofloor.dist += dz;
+          po->pofloor.TexZ += dz;
+        } else {
+          // height is from the floor
+          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the floor)", po->tag, hgt, thing->height);
+          // fix ceiling (move it down), move texture z
+          const float dz = height-hgt;
+          po->poceiling.minz += dz;
+          po->poceiling.maxz += dz;
+          po->poceiling.dist += dz;
+          po->poceiling.TexZ += dz;
+        }
       }
     }
 

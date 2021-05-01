@@ -43,6 +43,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
   vassert(sub->sector);
 
   polyobj_t *po = seg->pobj;
+  const line_t *linedef = seg->linedef;
   const side_t *sidedef = seg->sidedef;
 
   VTexture *TTex = GTextureManager(sidedef->TopTexture);
@@ -53,6 +54,9 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
 
     float zOrg = po->poceiling.TexZ; // texture bottom
     SetupTextureAxesOffsetTopPO(seg, &sp->texinfo, TTex, &sidedef->Top, zOrg);
+
+    sp->texinfo.Alpha = linedef->alpha;
+    sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
 
     const float texh = TTex->GetScaledHeightF()/sidedef->Top.ScaleY;
 
@@ -94,6 +98,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
 void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
   FreeWSurfs(sp->surfs);
 
+  const line_t *linedef = seg->linedef;
   const side_t *sidedef = seg->sidedef;
   polyobj_t *po = seg->pobj;
 
@@ -107,6 +112,9 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *s
     const float texh = BTex->GetScaledHeightF()/sidedef->Bot.ScaleY;
     zOrg -= texh; // convert to texture bottom
     SetupTextureAxesOffsetBotPO(seg, &sp->texinfo, BTex, &sidedef->Bot, zOrg);
+
+    sp->texinfo.Alpha = linedef->alpha;
+    sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
 
     quad[0].x = quad[1].x = seg->v1->x;
     quad[0].y = quad[1].y = seg->v1->y;
@@ -156,7 +164,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
 
   const polyobj_t *po = seg->pobj;
 
-  if (MTex->Type != TEXTYPE_Null && !(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) {
+  if (MTex->Type != TEXTYPE_Null) {
     TVec quad[4];
 
     //GCon->Logf(NAME_Debug, "line #%d, sidenum #%d: midtex=%s (side: %d); transparent=%d; translucent=%d; seethrough=%d", (int)(ptrdiff_t)(linedef-&Level->Lines[0]), (int)(ptrdiff_t)(sidedef-&Level->Sides[0]), *MTex->Name, seg->side, (int)MTex->isTransparent(), (int)MTex->isTranslucent(), (int)MTex->isSeeThrough());
@@ -175,8 +183,10 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
     }
     SetupTextureAxesOffsetMidPO(seg, &sp->texinfo, MTex, &sidedef->Mid, zOrg);
 
-    sp->texinfo.Alpha = linedef->alpha;
-    sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
+    //sp->texinfo.Alpha = linedef->alpha;
+    //sp->texinfo.Additive = !!(linedef->flags&ML_ADDITIVE);
+    sp->texinfo.Alpha = 1.0f;
+    sp->texinfo.Additive = false;
 
     quad[0].x = quad[1].x = seg->v1->x;
     quad[0].y = quad[1].y = seg->v1->y;
@@ -191,39 +201,13 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
     if (botz1 >= topz1 || botz2 >= topz2) {
       // nothing to do
     } else {
-      bool doit = true;
-      float hgts[4];
+      // 3d pobj midtex is always wrapped
+      quad[0].z = botz1;
+      quad[1].z = topz1;
+      quad[2].z = topz2;
+      quad[3].z = botz2;
 
-      // linedef->flags&ML_CLIP_MIDTEX, sidedef->Flags&SDF_CLIPMIDTEX
-      // this clips texture to a floor, otherwise it goes beyound it
-      // it seems that all modern OpenGL renderers just ignores clip flag, and
-      // renders all midtextures as always clipped.
-      if ((linedef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX)) {
-        hgts[0] = botz1;
-        hgts[1] = topz1;
-        hgts[2] = topz2;
-        hgts[3] = botz2;
-      } else {
-        const float tz0 = zOrg;
-        const float tz1 = zOrg+texh;
-        if (tz0 >= max2(topz1, topz2) || tz1 <= max2(botz1, botz2)) {
-          doit = false;
-        } else {
-          hgts[0] = max2(botz1, tz0);
-          hgts[1] = min2(topz1, tz1);
-          hgts[2] = min2(topz2, tz1);
-          hgts[3] = max2(botz2, tz0);
-        }
-      }
-
-      if (doit) {
-        quad[0].z = hgts[0];
-        quad[1].z = hgts[1];
-        quad[2].z = hgts[2];
-        quad[3].z = hgts[3];
-
-        CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_3DPOBJ|surface_t::TF_MIDDLE);
-      }
+      CreateWorldSurfFromWV(sub, seg, sp, quad, surface_t::TF_3DPOBJ|surface_t::TF_MIDDLE);
     }
   } else {
     // empty midtexture
