@@ -466,6 +466,35 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
   // just in case
   if (!isFiniteF(frac) || frac <= 0.0f || frac > 1.0f) return true;
 
+  // polyobject; check blocking
+  if (po) {
+    const float pz0 = po->pofloor.minz;
+    const float pz1 = po->poceiling.minz;
+    const float hpz = trace.Start.z+trace.Delta.z*frac;
+    if (hpz >= pz0 && hpz <= pz1) {
+      trace.Hit1S = true; // this blocks "better sight" too
+      return false; // blocked
+    }
+    // check blocksight
+    if (((trace.LineBlockMask&ML_BLOCKSIGHT)&(ld->flags&ML_BLOCKSIGHT)) && hpz > pz1) {
+      //GCon->Logf(NAME_Debug, "LBS:000: #%d", (int)(ptrdiff_t)(ld-&trace.Level->Lines[0]));
+      const side_t *fsd = &trace.Level->Sides[ld->sidenum[0]];
+      if (fsd->TopTexture > 0) {
+        VTexture *TTex = GTextureManager(fsd->TopTexture);
+        if (TTex && TTex->Type != TEXTYPE_Null) {
+          const float texh = TTex->GetScaledHeightF()/fsd->Top.ScaleY;
+          //GCon->Logf(NAME_Debug, "LBS:001: #%d -- hpz=%g; pz1=%g; pz1+th=%g; inside=%d", (int)(ptrdiff_t)(ld-&trace.Level->Lines[0]), hpz, pz1, pz1+texh, (int)(hpz < pz1+texh));
+          if (hpz < pz1+texh) {
+            trace.Hit1S = true; // this blocks "better sight" too
+            return false; // blocked
+          }
+        }
+      }
+    } else {
+      //GCon->Logf(NAME_Debug, "NON-LBS:000: #%d", (int)(ptrdiff_t)(ld-&trace.Level->Lines[0]));
+    }
+  }
+
   // store the line for later intersection testing
   intercept_t *icept = intercepts.insert(frac);
   icept->Flags = intercept_t::IF_IsALine; // just in case
