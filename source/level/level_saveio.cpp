@@ -32,7 +32,7 @@
 //  DecalIO
 //
 //==========================================================================
-static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level) {
+static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatDecal=false) {
   if (!dc) return;
   {
     VNTValueIOEx vio(&Strm);
@@ -47,23 +47,10 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level) {
       dc->texture = 0;
     }
     vio.io(VName("flags"), dc->flags);
+    vio.iodef(VName("worldx"), dc->worldx, 0.0f);
+    vio.iodef(VName("worldy"), dc->worldy, 0.0f);
     vio.io(VName("orgz"), dc->orgz);
     vio.io(VName("curz"), dc->curz);
-    /* //debug
-    if (!Strm.IsLoading()) {
-      VStr s = "fuck0";
-      vio.io("FFFuck0", s);
-    }
-    */
-    /* //debug
-    if (!Strm.IsLoading()) {
-      vio.io(VName("linelen"), dc->linelen);
-      vio.io(VName("xdist"), dc->xdist);
-    } else {
-      vio.io(VName("xdist"), dc->xdist);
-      vio.io(VName("linelen"), dc->linelen);
-    }
-    */
     vio.io(VName("xdist"), dc->xdist);
     vio.io(VName("ofsX"), dc->ofsX);
     vio.io(VName("ofsY"), dc->ofsY);
@@ -74,29 +61,45 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level) {
     vio.io(VName("origAlpha"), dc->origAlpha);
     vio.io(VName("alpha"), dc->alpha);
     vio.io(VName("addAlpha"), dc->addAlpha);
-    /* //debug
-    if (!Strm.IsLoading()) {
-      VStr s = "fuck1";
-      vio.io("FFFuck1", s);
-    }
-    */
-    vint32 slsec = (Strm.IsLoading() ? -666 : (dc->slidesec ? (int)(ptrdiff_t)(dc->slidesec-&level->Sectors[0]) : -1));
-    vio.iodef(VName("slidesec"), slsec, -666);
-    if (Strm.IsLoading()) {
-      if (slsec == -666) {
-        // fix backsector
-        if ((dc->flags&(decal_t::SlideFloor|decal_t::SlideCeil)) && !dc->slidesec) {
-          line_t *lin = dc->seg->linedef;
-          if (!lin) Sys_Error("Save loader: invalid seg linedef (0)!");
-          int bsidenum = (dc->flags&decal_t::SideDefOne ? 1 : 0);
-          dc->slidesec = (bsidenum ? dc->seg->backsector : dc->seg->frontsector);
-          GCon->Logf("Save loader: fixed backsector for decal");
+    vio.iodef(VName("dcsurface"), dc->dcsurf, 0u);
+    // different code for wall/flat decals
+    if (dc->dcsurf == 0) {
+      if (mustBeFlatDecal) Host_Error("error in decal i/o");
+      // wall decal
+      vint32 slsec = (Strm.IsLoading() ? -666 : (dc->slidesec ? (int)(ptrdiff_t)(dc->slidesec-&level->Sectors[0]) : -1));
+      vio.iodef(VName("slidesec"), slsec, -666);
+      if (Strm.IsLoading()) {
+        if (slsec == -666) {
+          // fix backsector
+          if ((dc->flags&(decal_t::SlideFloor|decal_t::SlideCeil)) && !dc->slidesec) {
+            line_t *lin = dc->seg->linedef;
+            if (!lin) Sys_Error("Save loader: invalid seg linedef (0)!");
+            int bsidenum = (dc->flags&decal_t::SideDefOne ? 1 : 0);
+            dc->slidesec = (bsidenum ? dc->seg->backsector : dc->seg->frontsector);
+            GCon->Logf("Save loader: fixed backsector for decal");
+          }
+        } else {
+          dc->slidesec = (slsec < 0 || slsec >= level->NumSectors ? nullptr : &level->Sectors[slsec]);
         }
-      } else {
-        dc->slidesec = (slsec < 0 || slsec >= level->NumSectors ? nullptr : &level->Sectors[slsec]);
+      }
+      if (vio.IsError()) Host_Error("error in decal i/o");
+    } else {
+      // floor/ceiling decal
+      if (!mustBeFlatDecal) Host_Error("error in decal i/o");
+      if (!Strm.IsLoading() && !dc->slidesec) Host_Error("error in decal i/o");
+      vint32 slsec = (Strm.IsLoading() ? -666 : (int)(ptrdiff_t)(dc->slidesec-&level->Sectors[0]));
+      vio.iodef(VName("ownersec"), slsec, -666);
+      if (Strm.IsLoading()) {
+        if (slsec < 0 || slsec >= level->NumSectors) Host_Error("error in decal i/o");
+        dc->slidesec = &level->Sectors[slsec];
+      }
+      vint32 eridx = (Strm.IsLoading() ? -666 : dc->eregindex);
+      vio.iodef(VName("secregindex"), eridx, -666);
+      if (eridx < 0) Host_Error("error in decal i/o");
+      if (Strm.IsLoading()) {
+        dc->eregindex = eridx;
       }
     }
-    if (vio.IsError()) Host_Error("error in decal i/o");
   }
   VDecalAnim::Serialise(Strm, dc->animator);
 }
@@ -122,7 +125,8 @@ static bool writeOrCheckUInt (VStream &Strm, vuint32 value, const char *errmsg=n
 }
 
 
-#define EXTSAVE_NUMSEC_MAGIC  (-0x7fefefea)
+#define EXTSAVE_NUMSEC_MAGIC0 (-0x7fefefea)
+#define EXTSAVE_NUMSEC_MAGIC1 (-0x7fefefeb)
 
 
 //==========================================================================
@@ -142,14 +146,24 @@ void VLevel::SerialiseOther (VStream &Strm) {
   #endif
 
   if (Strm.IsLoading()) {
-    for (unsigned f = 0; f < (unsigned)NumSubsectors; ++f) {
+    for (auto &&sub : allSubsectors()) {
       // reset subsector update frame
-      Subsectors[f].updateWorldFrame = 0;
+      sub.updateWorldFrame = 0;
       // clear seen subsectors
-      Subsectors[f].miscFlags &= ~subsector_t::SSMF_Rendered;
+      sub.miscFlags &= ~subsector_t::SSMF_Rendered;
+      // remove subsector decals (just in case, because renderer may still be alive here)
+      for (subregion_t *r = sub.regions; r != nullptr; r = r->next) r->killAllDecals();
     }
-    // clear seen segs on loading
-    for (i = 0; i < NumSegs; ++i) Segs[i].flags &= ~SF_MAPPED;
+    for (auto &&seg : allSegs()) {
+      // clear seen segs on loading
+      seg.flags &= ~SF_MAPPED;
+      // remove seg decals
+      seg.killAllDecals();
+    }
+    // remove all sector decals
+    KillAllSectorDecals();
+    // decal animation list should be empty too
+    decanimlist = nullptr;
   }
 
   // write/check various numbers, so we won't load invalid save accidentally
@@ -158,9 +172,6 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   writeOrCheckUInt(Strm, LSSHash, "geometry hash");
   bool segsHashOK = writeOrCheckUInt(Strm, SegHash);
-
-  // decals
-  if (Strm.IsLoading()) decanimlist = nullptr;
 
   // decals
   if (segsHashOK) {
@@ -173,14 +184,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
       // load decals
       for (int f = 0; f < (int)NumSegs; ++f) {
         vuint32 dcount = 0;
-        // remove old decals
-        while (Segs[f].decalhead) {
-          decal_t *c = Segs[f].decalhead;
-          Segs[f].removeDecal(c);
-          delete c->animator;
-          delete c;
-        }
-        Segs[f].decalhead = Segs[f].decaltail = nullptr;
+        //Segs[f].killAllDecals(); // no need to
+        vassert(!Segs[f].decalhead);
         // load decal count for this seg
         Strm << dcount;
         // hack to not break old saves
@@ -192,7 +197,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
             memset((void *)dc, 0, sizeof(decal_t));
             dc->seg = &Segs[f];
             DecalIO(Strm, dc, this);
-            if (dc->alpha <= 0 || dc->scaleX <= 0 || dc->scaleY <= 0 || dc->texture <= 0) {
+            if (dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f || dc->texture <= 0) {
               delete dc->animator;
               delete dc;
             } else {
@@ -211,7 +216,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
           }
         } else {
           // oops, non-zero count, old decal data, skip it
-          GCon->Logf("skipping old decal data, cannot load it (it is harmless)");
+          GCon->Logf("skipping old decal data, cannot load it (this is harmless)");
           Strm.Seek(stpos+dcSize);
         }
       }
@@ -257,10 +262,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   // hack, to keep compatibility
   bool extSaveVer = !Strm.IsLoading();
+  bool hasSectorDecals = !Strm.IsLoading();
 
   // write "extended save" flag
   if (!Strm.IsLoading()) {
-    vint32 scflag = EXTSAVE_NUMSEC_MAGIC;
+    vint32 scflag = EXTSAVE_NUMSEC_MAGIC1;
     Strm << STRM_INDEX(scflag);
   }
 
@@ -270,7 +276,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
     // check "extended save" magic
     Strm << STRM_INDEX(cnt);
     if (Strm.IsLoading()) {
-      if (cnt == EXTSAVE_NUMSEC_MAGIC) {
+      if (cnt == EXTSAVE_NUMSEC_MAGIC0 || cnt == EXTSAVE_NUMSEC_MAGIC1) {
+        hasSectorDecals = (cnt == EXTSAVE_NUMSEC_MAGIC1);
         extSaveVer = true;
         Strm << STRM_INDEX(cnt);
       }
@@ -481,6 +488,66 @@ void VLevel::SerialiseOther (VStream &Strm) {
       #else
       vassert(number == 0);
       #endif
+    }
+  }
+
+  // bsector decals
+  if (hasSectorDecals) {
+    vint32 sscount = (Strm.IsLoading() ? 0 : NumSectors);
+    Strm << STRM_INDEX(sscount);
+    vint32 sdctotal = 0;
+    if (Strm.IsLoading()) {
+      vint32 ssdatasize = 0;
+      Strm << ssdatasize;
+      auto stpos = Strm.Tell();
+      if (sscount != NumSectors) {
+        // skip it
+        GCon->Log("skipping old sector decal data, cannot load it (this is harmless)");
+      } else {
+        // load number of decals
+        Strm << STRM_INDEX(sdctotal);
+        // load sector decals
+        for (int f = sdctotal; f > 0; f--) {
+          decal_t *dc = new decal_t;
+          memset((void *)dc, 0, sizeof(decal_t));
+          DecalIO(Strm, dc, this, true);
+          if (dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f || dc->texture <= 0) {
+            delete dc->animator;
+            delete dc;
+          } else {
+            // add to decal list
+            AppendDecalToSectorList(dc);
+            // append it to animation list
+            if (dc->animator) {
+              if (decanimlist) decanimlist->prevanimated = dc;
+              dc->nextanimated = decanimlist;
+              decanimlist = dc;
+            }
+          }
+        }
+        GCon->Logf("%d subsector decals loaded", sdctotal);
+      }
+      // just in case
+      Strm.Seek(stpos+ssdatasize);
+    } else {
+      // save decals
+      vint32 ssdatasize = 0;
+      int ssdpos = Strm.Tell();
+      Strm << ssdatasize; // will be fixed later
+      // count number of decals
+      for (const decal_t *dc = secdecalhead; dc; dc = dc->next) ++sdctotal;
+      // save number of decals
+      Strm << STRM_INDEX(sdctotal);
+      // save sector decals
+      for (decal_t *dc = secdecalhead; dc; dc = dc->next) {
+        DecalIO(Strm, dc, this, true);
+      }
+      auto currPos = Strm.Tell();
+      Strm.Seek(ssdpos);
+      ssdatasize = currPos-(ssdpos+4);
+      Strm << ssdatasize;
+      Strm.Seek(currPos);
+      GCon->Logf("%d subsector decals saved", sdctotal);
     }
   }
 

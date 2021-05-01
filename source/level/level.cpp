@@ -379,6 +379,22 @@ void VLevel::ClearReferences () {
 
 //==========================================================================
 //
+//  VLevel::KillAllSectorDecals
+//
+//==========================================================================
+void VLevel::KillAllSectorDecals () {
+  while (secdecalhead) {
+    decal_t *c = secdecalhead;
+    secdecalhead = c->next;
+    delete c->animator;
+    delete c;
+  }
+  secdecalhead = secdecaltail = nullptr;
+}
+
+
+//==========================================================================
+//
 //  VLevel::ClearCachedData
 //
 //  this is also used in dtor
@@ -418,17 +434,6 @@ void VLevel::ClearAllMapData () {
     Sectors[0].nbsecs = nullptr;
   }
 
-  if (Segs) {
-    for (auto &&seg : allSegs()) {
-      while (seg.decalhead) {
-        decal_t *c = seg.decalhead;
-        seg.removeDecal(c);
-        delete c->animator;
-        delete c;
-      }
-    }
-  }
-
   if (Lines) {
     for (auto &&line : allLines()) {
       delete[] line.v1lines;
@@ -436,6 +441,12 @@ void VLevel::ClearAllMapData () {
       line.moreTags.clear();
     }
   }
+
+  if (Segs) {
+    for (auto &&seg : allSegs()) seg.killAllDecals();
+  }
+
+  KillAllSectorDecals();
 
   delete[] Vertexes;
   Vertexes = nullptr;

@@ -75,17 +75,30 @@ struct decal_t {
     NoTopTex = 0x2000U, // don't render on top texture
     NoBotTex = 0x4000U, // don't render on bottom texture
   };
+  // dcsurf values
+  enum {
+    Wall = 0u,
+    Floor = 1u,
+    FakeFloor = 2u,
+    // yeah, 3 is not used
+    Ceiling = 4u,
+    FakeCeiling = 5u,
+  };
   decal_t *prev; // in this seg
   decal_t *next; // in this seg
-  seg_t *seg;
-  sector_t *slidesec; // backsector for SlideXXX
+  seg_t *seg; // this is non-null for wall decals
+  subregion_t *sreg; // this is non-null for floor/ceiling decals
+  vuint32 dcsurf; // decal type
+  sector_t *slidesec; // backsector for SlideXXX, or owning sector for floor/ceiling decal (only in VLevel list)
+  int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
   VName dectype;
   //VName picname;
   VTextureID texture;
   int translation;
   vuint32 flags;
   // z and x positions has no image offset added
-  float orgz; // original z position
+  float worldx, worldy; // world coordinates for floor/ceiling decals
+  float orgz; // original z position for wall decals
   float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
   float xdist; // offset from linedef start, in map units
   float ofsX, ofsY; // for animators

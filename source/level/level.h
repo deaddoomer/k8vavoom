@@ -1098,10 +1098,23 @@ public:
   static constexpr float BigDecalWidth = 34.0f;
   static constexpr float BigDecalHeight = 34.0f;
 
+public:
+  // list of all sector floor/ceiling decals
+  // `dc->slidesec` is used to store decal sector
+  // this list will be passed to renderer, so it will be able to populate decal lists for subsectors
+  // this list is kept up-to-date by renderer (via `dc->mainDecal` link)
+  // note that animators will animate this list separately from renderer list (i.e. both lists will be animated)
+  decal_t *secdecalhead;
+  decal_t *secdecaltail;
+
   // this will remove dead and over-the-limit decals (including animated)
   // called from `AddDecal()`
   void CleanupDecals (seg_t *seg);
 
+  void KillAllSectorDecals ();
+
+  void AppendDecalToSectorList (decal_t *dc);
+  void RemoveDecalFromSectorList (decal_t *dc);
 
 public:
   enum {
@@ -1310,6 +1323,7 @@ private:
   int SetBodyQueueTrans (int, int);
 
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
+  decal_t *AllocSRegDecal (subregion_t *sreg, VDecalDef *dec);
   void AddAnimatedDecal (decal_t *dc);
   void RemoveDecalAnimator (decal_t *dc); // this will also delete animator; safe to call on decals without an animator
 

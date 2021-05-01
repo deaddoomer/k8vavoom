@@ -313,6 +313,7 @@ void seg_t::appendDecal (decal_t *dc) noexcept {
   vassert(!dc->prev);
   vassert(!dc->next);
   vassert(!dc->seg);
+  vassert(!dc->sreg);
   dc->seg = this;
   dc->prev = decaltail;
   if (decaltail) decaltail->next = dc; else decalhead = dc;
@@ -330,10 +331,78 @@ void seg_t::appendDecal (decal_t *dc) noexcept {
 void seg_t::removeDecal (decal_t *dc) noexcept {
   if (!dc) return;
   vassert(dc->seg == this);
+  vassert(!dc->sreg);
   if (dc->prev) dc->prev->next = dc->next; else decalhead = dc->next;
   if (dc->next) dc->next->prev = dc->prev; else decaltail = dc->prev;
   dc->prev = dc->next = nullptr;
   dc->seg = nullptr;
+}
+
+
+//==========================================================================
+//
+//  seg_t::killAllDecals
+//
+//==========================================================================
+void seg_t::killAllDecals () noexcept {
+  while (decalhead) {
+    decal_t *c = decalhead;
+    removeDecal(c);
+    delete c->animator;
+    delete c;
+  }
+}
+
+
+
+//==========================================================================
+//
+//  subregion_t::appendDecal
+//
+//==========================================================================
+void subregion_t::appendDecal (decal_t *dc) noexcept {
+  if (!dc) return;
+  vassert(!dc->prev);
+  vassert(!dc->next);
+  vassert(!dc->seg);
+  vassert(!dc->sreg);
+  dc->sreg = this;
+  dc->prev = decaltail;
+  if (decaltail) decaltail->next = dc; else decalhead = dc;
+  decaltail = dc;
+}
+
+
+//==========================================================================
+//
+//  subregion_t::removeDecal
+//
+//  will not delete it
+//
+//==========================================================================
+void subregion_t::removeDecal (decal_t *dc) noexcept {
+  if (!dc) return;
+  vassert(!dc->seg);
+  vassert(dc->sreg == this);
+  if (dc->prev) dc->prev->next = dc->next; else decalhead = dc->next;
+  if (dc->next) dc->next->prev = dc->prev; else decaltail = dc->prev;
+  dc->prev = dc->next = nullptr;
+  dc->sreg = nullptr;
+}
+
+
+//==========================================================================
+//
+//  subregion_t::killAllDecals
+//
+//==========================================================================
+void subregion_t::killAllDecals () noexcept {
+  while (decalhead) {
+    decal_t *c = decalhead;
+    removeDecal(c);
+    delete c->animator;
+    delete c;
+  }
 }
 
 

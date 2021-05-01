@@ -135,6 +135,39 @@ void VLevel::RemoveDecalAnimator (decal_t *dc) {
 
 //==========================================================================
 //
+//  VLevel::AppendDecalToSectorList
+//
+//==========================================================================
+void VLevel::AppendDecalToSectorList (decal_t *dc) {
+  if (!dc) return;
+  vassert(!dc->prev);
+  vassert(!dc->next);
+  vassert(!dc->seg);
+  vassert(!dc->sreg);
+  //vassert(dc->dcsurf);
+  //vassert(dc->slidesec);
+  //vassert(dc->eregindex >= 0);
+  dc->prev = secdecaltail;
+  if (secdecaltail) secdecaltail->next = dc; else secdecalhead = dc;
+  secdecaltail = dc;
+}
+
+
+//==========================================================================
+//
+//  VLevel::RemoveDecalFromSectorList
+//
+//==========================================================================
+void VLevel::RemoveDecalFromSectorList (decal_t *dc) {
+  if (!dc) return;
+  if (dc->prev) dc->prev->next = dc->next; else secdecalhead = dc->next;
+  if (dc->next) dc->next->prev = dc->prev; else secdecaltail = dc->prev;
+  dc->prev = dc->next = nullptr;
+}
+
+
+//==========================================================================
+//
 //  VLevel::AllocSegDecal
 //
 //==========================================================================
@@ -144,6 +177,33 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec) {
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
   seg->appendDecal(decal);
+  decal->dectype = dec->name;
+  //decal->texture = tex;
+  //decal->translation = translation;
+  //decal->orgz = decal->curz = orgz;
+  //decal->xdist = lineofs;
+  decal->ofsX = decal->ofsY = 0;
+  decal->scaleX = decal->origScaleX = dec->scaleX.value;
+  decal->scaleY = decal->origScaleY = dec->scaleY.value;
+  decal->alpha = decal->origAlpha = dec->alpha.value;
+  decal->addAlpha = dec->addAlpha.value;
+  decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
+  if (decal->animator) AddAnimatedDecal(decal);
+  return decal;
+}
+
+
+//==========================================================================
+//
+//  VLevel::AllocSRegDecal
+//
+//==========================================================================
+decal_t *VLevel::AllocSRegDecal (subregion_t *sreg, VDecalDef *dec) {
+  vassert(sreg);
+  vassert(dec);
+  decal_t *decal = new decal_t;
+  memset((void *)decal, 0, sizeof(decal_t));
+  sreg->appendDecal(decal);
   decal->dectype = dec->name;
   //decal->texture = tex;
   //decal->translation = translation;

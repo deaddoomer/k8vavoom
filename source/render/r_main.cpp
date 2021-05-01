@@ -775,6 +775,7 @@ VRenderLevelShared::~VRenderLevelShared () {
 
   for (auto &&sub : Level->allSubsectors()) {
     for (subregion_t *r = sub.regions; r != nullptr; r = r->next) {
+      r->killAllDecals();
       if (r->realfloor != nullptr) {
         FreeSurfaces(r->realfloor->surfs);
         delete r->realfloor;

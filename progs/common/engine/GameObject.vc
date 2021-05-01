@@ -1239,6 +1239,9 @@ struct subregion_t {
   //native readonly int count;
   //native transient readonly drawseg_t *lines;
   native transient readonly subsector_t *sub; // subsector for this region
+  // decal list
+  native transient readonly /*decal_t*/void *decalhead;
+  native transient readonly /*decal_t*/void *decaltail;
 };
 
 

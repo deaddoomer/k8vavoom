@@ -446,6 +446,7 @@ struct seg_t : public TPlane {
 
   void appendDecal (decal_t *dc) noexcept;
   void removeDecal (decal_t *dc) noexcept; // will not delete it
+  void killAllDecals () noexcept;
 };
 
 
@@ -1267,6 +1268,14 @@ struct subregion_t {
   //drawseg_t *lines;
   subsector_t *sub; // subsector for this region
 
+  // decal list
+  decal_t *decalhead;
+  decal_t *decaltail;
+
+  void appendDecal (decal_t *dc) noexcept;
+  void removeDecal (decal_t *dc) noexcept; // will not delete it
+  void killAllDecals () noexcept;
+
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
   inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
   inline bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
@@ -1277,10 +1286,11 @@ struct subregion_t {
 //
 //  Subsector
 //
+//  a subsector; references a sector
+//  basically, this is a list of LineSegs, indicating
+//  the visible walls that define (all or some) sides of a convex BSP leaf
+//
 //==========================================================================
-// a subsector; references a sector
-// basically, this is a list of LineSegs, indicating
-// the visible walls that define (all or some) sides of a convex BSP leaf
 struct subsector_t {
 public:
   enum {
@@ -1347,6 +1357,11 @@ public:
   inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
   inline bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
   inline bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }
+
+  inline bool hasDecals () const noexcept {
+    for (const subregion_t *reg = regions; reg; reg = reg->next) if (reg->decalhead) return true;
+    return false;
+  }
 };
 
 

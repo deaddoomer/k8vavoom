@@ -248,6 +248,10 @@ private native transient int tempPathInterceptsAlloted;
 private native transient int tempPathInterceptsUsed;
 
 
+private native transient /*decal_t*/void *secdecalhead;
+private native transient /*decal_t*/void *secdecaltail;
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // natives
 native final int GetLineIndex (line_t *line);
