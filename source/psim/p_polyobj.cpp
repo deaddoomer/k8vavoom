@@ -1331,6 +1331,9 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
       }
     }
     #else
+    // still do nothing (and reject non-zero height, to allow future expansion)
+    if (anchorthing && anchorthing->height != 0.0f) Host_Error("3d pobj #%d anchor thing has non-zero height", po->tag);
+    /*
     // anchor thing height offsets from the *destination* sector
     if (anchorthing && anchorthing->height != 0.0f) {
       const bool fromCeiling = (anchorthing->height < 0.0f);
@@ -1348,6 +1351,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
         GCon->Logf(NAME_Error, "anchor height offset is ignored due to invalid destination sector");
       }
     }
+    */
     #endif
 
     // check if all middle textures either wrapped, or high enough
