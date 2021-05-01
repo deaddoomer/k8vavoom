@@ -919,6 +919,7 @@ public:
 
   // check if the given line should block this entity
   bool IsBlockingLine (const line_t *ld) const noexcept;
+  bool IsBlocking3DPobjLineTop (const line_t *ld) const noexcept;
 
 private:
   // world iterator callbacks

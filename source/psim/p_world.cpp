@@ -622,7 +622,8 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
         // check hitscan blocking flags (only front side matters for now)
-        if (doopening && (ld->flags&lineflags) == (ML_BLOCKHITSCAN|ML_BLOCKPROJECTILE) && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
+        const unsigned lbflag = ld->flags|(ld->flags&ML_BLOCKEVERYTHING ? ML_BLOCKPROJECTILE : 0u);
+        if (doopening && ((lbflag&lineflags)&(ML_BLOCKHITSCAN|ML_BLOCKPROJECTILE)) && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
           const side_t *fsd = &Level->Sides[ld->sidenum[0]];
           if (fsd->TopTexture > 0) {
             VTexture *TTex = GTextureManager(fsd->TopTexture);

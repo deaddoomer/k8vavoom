@@ -385,8 +385,9 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
     vassert(po->Is3D()); // invariant
     // check top texture, if it blocking
     if (ld->flags&ML_CLIP_MIDTEX) {
-      bool doBlock = (IsPlayer() || IsMonster());
-      if (!doBlock && IsMissile() && (ld->flags&ML_BLOCKPROJECTILE)) doBlock = true;
+      //bool doBlock = (IsPlayer() || IsMonster());
+      //if (!doBlock && IsMissile() && (ld->flags&ML_BLOCKPROJECTILE)) doBlock = true;
+      const bool doBlock = IsBlocking3DPobjLineTop(ld);
       if (doBlock) {
         // check if we are above the pobj (at least partially)
         const float ptopz = po->poceiling.minz;

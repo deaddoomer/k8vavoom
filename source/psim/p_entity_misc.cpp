@@ -472,6 +472,27 @@ bool VEntity::IsBlockingLine (const line_t *ld) const noexcept {
 
 //==========================================================================
 //
+//  VEntity::IsBlocking3DPobjLineTop
+//
+//==========================================================================
+bool VEntity::IsBlocking3DPobjLineTop (const line_t *ld) const noexcept {
+  if (ld) {
+    const unsigned lflags = ld->flags;
+    // one-sided line is always blocking
+    if (lflags&ML_TWOSIDED) {
+      if (lflags&ML_BLOCKEVERYTHING) return true; // explicitly blocking everything
+      if (IsPlayer() && (lflags&ML_BLOCKPLAYERS)) return true;
+      if (IsMonster() && (lflags&ML_BLOCKMONSTERS)) return true;
+      if (IsMissile() && (ld->flags&ML_BLOCKPROJECTILE)) return true;
+      if ((EntityFlags&EF_Float) && (lflags&ML_BLOCK_FLOATERS)) return true; // block floaters only
+    }
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VEntity::BlockedByLine
 //
 //==========================================================================
