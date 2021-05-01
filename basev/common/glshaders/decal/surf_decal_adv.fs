@@ -7,9 +7,9 @@ uniform float SplatAlpha; // image alpha will be multiplied by this
 uniform float FullBright;
 uniform vec2 ScreenSize;
 
-varying vec2 TextureCoordinate;
-
-$include "common/texshade.inc"
+//varying vec2 TextureCoordinate;
+//$include "common/texshade.inc"
+$include "common/texture_vars.fs"
 
 
 void main () {

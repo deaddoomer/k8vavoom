@@ -1,7 +1,12 @@
 // decal renderer for regular case (normal and lightmapped surfaces)
 
 uniform sampler2D Texture;
-$include "common/texshade.inc"
+#ifdef REG_LIGHTMAP
+$include "common/texlmap_vars.fs"
+#else
+$include "common/texture_vars.fs"
+#endif
+//$include "common/texshade.inc"
 #ifdef REG_LIGHTMAP
 uniform sampler2D LightMap;
 #ifdef VV_USE_OVERBRIGHT
@@ -14,10 +19,12 @@ uniform vec4 Light;
 uniform float SplatAlpha; // image alpha will be multiplied by this
 $include "common/fog_vars.fs"
 
+/*
 varying vec2 TextureCoordinate;
 #ifdef REG_LIGHTMAP
 varying vec2 LightmapCoordinate;
 #endif
+*/
 
 
 void main () {

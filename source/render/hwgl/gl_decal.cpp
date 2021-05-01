@@ -90,7 +90,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalLMapNoOverbright.SetTexture(0);
         SurfDecalLMapNoOverbright.SetFogFade(surf->Fade, 1.0f);
         SurfDecalLMapNoOverbright.SetLightMap(1);
-        SurfDecalLMapNoOverbright.SetLMapOnly(tex, surf, cache);
+        //SurfDecalLMapNoOverbright.SetLMapOnly(tex, surf, cache);
+        SurfDecalLMapNoOverbright.SetLMap(surf, tex, cache);
       } else {
         SurfDecalLMapOverbright.Activate();
         SurfDecalLMapOverbright.SetTexture(0);
@@ -98,7 +99,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalLMapOverbright.SetFogFade(surf->Fade, 1.0f);
         SurfDecalLMapOverbright.SetLightMap(1);
         SurfDecalLMapOverbright.SetSpecularMap(2);
-        SurfDecalLMapOverbright.SetLMapOnly(tex, surf, cache);
+        //SurfDecalLMapOverbright.SetLMapOnly(tex, surf, cache);
+        SurfDecalLMapOverbright.SetLMap(surf, tex, cache);
       }
       break;
     case DT_ADVANCED:
@@ -182,12 +184,17 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
     }
 
+    const float dscaleX = dc->scaleX;
+    const float dscaleY = dc->scaleY;
+    const float dscaleXInv = 1.0f/dscaleX;
+    const float dscaleYInv = 1.0f/dscaleY;
+
     // use origScale to get the original starting point
-    const float txofs = dtex->GetScaledSOffsetF()*dc->scaleX;
+    const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
     const float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
 
-    const float twdt = dtex->GetScaledWidthF()*dc->scaleX;
-    const float thgt = dtex->GetScaledHeightF()*dc->scaleY;
+    const float twdt = dtex->GetScaledWidthF()*dscaleX;
+    const float thgt = dtex->GetScaledHeightF()*dscaleY;
 
     if (twdt < 1.0f || thgt < 1.0f) {
       // remove it, if it is not animated
@@ -200,40 +207,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     if (twdt >= VLevel::BigDecalWidth || thgt >= VLevel::BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
 
-    // setup shader
-    switch (dtype) {
-      case DT_SIMPLE:
-        {
-          const float lev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
-          SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-          SurfDecalNoLMap.SetSplatAlpha(dc->alpha);
-        }
-        break;
-      case DT_LIGHTMAP:
-        {
-          if (gl_regular_disable_overbright) {
-            SurfDecalLMapNoOverbright.SetSplatAlpha(dc->alpha);
-          } else {
-            SurfDecalLMapOverbright.SetSplatAlpha(dc->alpha);
-          }
-        }
-        break;
-      case DT_ADVANCED:
-        {
-          SurfAdvDecal.SetSplatAlpha(dc->alpha);
-          if (!tex1set) {
-            tex1set = true;
-            SelectTexture(1);
-            glBindTexture(GL_TEXTURE_2D, ambLightFBO.getColorTid());
-            SelectTexture(0);
-          }
-          SurfAdvDecal.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-          SurfAdvDecal.SetAmbLightTexture(1);
-          SurfAdvDecal.SetScreenSize((float)getWidth(), (float)getHeight());
-        }
-        break;
-    }
-
     if (currTexId != dcTexId) {
       currTexId = dcTexId;
       SetDecalTexture(dtex, currTrans, /*tex->ColorMap*/cmap); // this sets `tex_iw` and `tex_ih`
@@ -243,7 +216,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const TVec v0 = (*dc->seg->linedef->v1)+dc->seg->linedef->ndir*xstofs;
     const TVec v1 = v0+dc->seg->linedef->ndir*twdt;
 
-    float dcz = dc->curz+dc->scaleY+tyofs-dc->ofsY;
+    float dcz = dc->curz+dscaleY+tyofs-dc->ofsY;
     // fix Z, if necessary
     if (dc->slidesec) {
       if (dc->flags&decal_t::SlideFloor) {
@@ -255,17 +228,71 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
     }
 
+    /*
     const float texx0 = (dc->flags&decal_t::FlipX ? 1.0f : 0.0f);
     const float texx1 = (dc->flags&decal_t::FlipX ? 0.0f : 1.0f);
     const float texy0 = (dc->flags&decal_t::FlipY ? 0.0f : 1.0f);
     const float texy1 = (dc->flags&decal_t::FlipY ? 1.0f : 0.0f);
+    */
+
+    // calculate texture axes
+    TVec saxis(surf->seg->dir);
+    TVec taxis(0.0f, 0.0f, -1.0f);
+
+    saxis *= dtex->TextureSScale()*dscaleXInv;
+    taxis *= dtex->TextureTScale()*dscaleYInv;
+
+    float soffs = -DotProduct(v0, dc->seg->dir)*dtex->TextureSScale()*dscaleXInv; // horizontal
+    float toffs = (dcz-thgt)*dtex->TextureTScale()*dscaleYInv; // vertical
+
+    //soffs += (dc->xdist+dc->ofsX)*dscaleX; // horizontal offset
+
+    // setup shader
+    switch (dtype) {
+      case DT_SIMPLE:
+        {
+          const float lev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
+          SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+          SurfDecalNoLMap.SetSplatAlpha(dc->alpha);
+          SurfDecalNoLMap.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        }
+        break;
+      case DT_LIGHTMAP:
+        if (gl_regular_disable_overbright) {
+          SurfDecalLMapNoOverbright.SetSplatAlpha(dc->alpha);
+          SurfDecalLMapNoOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        } else {
+          SurfDecalLMapOverbright.SetSplatAlpha(dc->alpha);
+          SurfDecalLMapOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        }
+        break;
+      case DT_ADVANCED:
+        SurfAdvDecal.SetSplatAlpha(dc->alpha);
+        if (!tex1set) {
+          tex1set = true;
+          SelectTexture(1);
+          glBindTexture(GL_TEXTURE_2D, ambLightFBO.getColorTid());
+          SelectTexture(0);
+        }
+        SurfAdvDecal.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
+        SurfAdvDecal.SetAmbLightTexture(1);
+        SurfAdvDecal.SetScreenSize((float)getWidth(), (float)getHeight());
+        SurfAdvDecal.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        break;
+    }
 
     currentActiveShader->UploadChangedUniforms();
     glBegin(GL_QUADS);
+      /*
       glTexCoord2f(texx0, texy0); glVertex3f(v0.x, v0.y, dcz-thgt);
       glTexCoord2f(texx0, texy1); glVertex3f(v0.x, v0.y, dcz);
       glTexCoord2f(texx1, texy1); glVertex3f(v1.x, v1.y, dcz);
       glTexCoord2f(texx1, texy0); glVertex3f(v1.x, v1.y, dcz-thgt);
+      */
+      glVertex3f(v0.x, v0.y, dcz-thgt);
+      glVertex3f(v0.x, v0.y, dcz);
+      glVertex3f(v1.x, v1.y, dcz);
+      glVertex3f(v1.x, v1.y, dcz-thgt);
     glEnd();
 
     ++rdcount;

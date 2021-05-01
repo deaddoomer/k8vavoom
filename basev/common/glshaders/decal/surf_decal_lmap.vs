@@ -1,6 +1,7 @@
 #version 120
 $include "common/common.inc"
 
+#if 0
 //uniform vec3 SAxis;
 //uniform vec3 TAxis;
 uniform vec3 SAxisLM;
@@ -18,12 +19,15 @@ uniform float CacheT;
 
 varying vec2 TextureCoordinate;
 varying vec2 LightmapCoordinate;
+#endif
+$include "common/texlmap_vars.vs"
 
 
 void main () {
   // transforming the vertex
   gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;
 
+#if 0
   TextureCoordinate = gl_MultiTexCoord0.xy;
 
   //float s = dot(gl_Vertex.xyz, SAxis)+SOffs;
@@ -39,4 +43,6 @@ void main () {
   );
 
   LightmapCoordinate = lightst;
+#endif
+  $include "common/texlmap_calc.vs"
 }

@@ -271,6 +271,9 @@ bool VOpenGLDrawer::SetTexture (VTexture *Tex, int CMap, vuint32 ShadeColor) {
 bool VOpenGLDrawer::SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor) {
   if (!Tex) Sys_Error("cannot set null texture");
   const bool res = SetSpriteLump(Tex, Translation, CMap, false, ShadeColor);
+  //FIXME: why i need to manually fix it?
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   SetOrForceTextureFiltering(res, Tex, texture_filter);
   return res;
 }
