@@ -12,6 +12,7 @@ uniform sampler2D LightMap;
 uniform sampler2D SpecularMap;
 #endif
 #endif
+uniform float FullBright; // for fullbright; either 0.0 or 1.0
 #ifndef REG_LIGHTMAP
 uniform vec4 Light;
 #endif
@@ -35,6 +36,9 @@ void main () {
 #ifdef REG_LIGHTMAP
   // lightmapped
   vec3 lmc = texture2D(LightMap, LightmapCoordinate).rgb;
+  lmc.r = max(lmc.r, FullBright);
+  lmc.g = max(lmc.g, FullBright);
+  lmc.b = max(lmc.b, FullBright);
 #ifdef VV_USE_OVERBRIGHT
   vec3 spc = texture2D(SpecularMap, LightmapCoordinate).rgb;
 #endif
@@ -45,7 +49,7 @@ void main () {
 #else
   // normal
   FinalColor.rgb *= Light.rgb;
-  FinalColor.rgb *= Light.a;
+  FinalColor.rgb *= max(Light.a, FullBright);
 #endif
   FinalColor.rgb = clamp(FinalColor.rgb, 0.0, 1.0);
 

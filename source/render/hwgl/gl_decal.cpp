@@ -83,6 +83,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       SurfDecalNoLMap.SetTexture(0);
       //SurfDecalNoLMap_Locs.storeFogType();
       SurfDecalNoLMap.SetFogFade(surf->Fade, 1.0f);
+      {
+        //const float llev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
+        const float llev = getSurfLightLevel(surf);
+        SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
+      }
       break;
     case DT_LIGHTMAP:
       if (gl_regular_disable_overbright) {
@@ -106,6 +111,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     case DT_ADVANCED:
       SurfAdvDecal.Activate();
       SurfAdvDecal.SetTexture(0);
+      SurfAdvDecal.SetAmbLightTexture(1);
+      SurfAdvDecal.SetScreenSize((float)getWidth(), (float)getHeight());
       break;
     default:
       abort();
@@ -227,13 +234,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         dcz += dc->slidesec->ceiling.TexZ;
       }
     }
-
-    /*
-    const float texx0 = (dc->flags&decal_t::FlipX ? 1.0f : 0.0f);
-    const float texx1 = (dc->flags&decal_t::FlipX ? 0.0f : 1.0f);
-    const float texy0 = (dc->flags&decal_t::FlipY ? 0.0f : 1.0f);
-    const float texy1 = (dc->flags&decal_t::FlipY ? 1.0f : 0.0f);
-    */
+    dcz -= thgt;
 
     // calculate texture axes
     TVec saxis(surf->seg->dir);
@@ -242,26 +243,28 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     saxis *= dtex->TextureSScale()*dscaleXInv;
     taxis *= dtex->TextureTScale()*dscaleYInv;
 
-    float soffs = -DotProduct(v0, dc->seg->dir)*dtex->TextureSScale()*dscaleXInv; // horizontal
-    float toffs = (dcz-thgt)*dtex->TextureTScale()*dscaleYInv; // vertical
+    if (dc->flags&decal_t::FlipX) saxis = -saxis;
+    if (dc->flags&decal_t::FlipY) taxis = -taxis;
 
-    //soffs += (dc->xdist+dc->ofsX)*dscaleX; // horizontal offset
+    //float soffs = -DotProduct(v0, dc->seg->dir)*dtex->TextureSScale()*dscaleXInv; // horizontal
+    //float toffs = (dcz-thgt)*dtex->TextureTScale()*dscaleYInv; // vertical
+    float soffs = -DotProduct(v0, saxis); // horizontal
+    float toffs = -dcz*taxis.z; // vertical
 
-    // setup shader
+    // setup texture
     switch (dtype) {
       case DT_SIMPLE:
-        {
-          const float lev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
-          SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-          SurfDecalNoLMap.SetSplatAlpha(dc->alpha);
-          SurfDecalNoLMap.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
-        }
+        SurfDecalNoLMap.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
+        SurfDecalNoLMap.SetSplatAlpha(dc->alpha);
+        SurfDecalNoLMap.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
         break;
       case DT_LIGHTMAP:
         if (gl_regular_disable_overbright) {
+          SurfDecalLMapNoOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
           SurfDecalLMapNoOverbright.SetSplatAlpha(dc->alpha);
           SurfDecalLMapNoOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
         } else {
+          SurfDecalLMapOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
           SurfDecalLMapOverbright.SetSplatAlpha(dc->alpha);
           SurfDecalLMapOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
         }
@@ -275,24 +278,16 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           SelectTexture(0);
         }
         SurfAdvDecal.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-        SurfAdvDecal.SetAmbLightTexture(1);
-        SurfAdvDecal.SetScreenSize((float)getWidth(), (float)getHeight());
         SurfAdvDecal.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
         break;
     }
 
     currentActiveShader->UploadChangedUniforms();
     glBegin(GL_QUADS);
-      /*
-      glTexCoord2f(texx0, texy0); glVertex3f(v0.x, v0.y, dcz-thgt);
-      glTexCoord2f(texx0, texy1); glVertex3f(v0.x, v0.y, dcz);
-      glTexCoord2f(texx1, texy1); glVertex3f(v1.x, v1.y, dcz);
-      glTexCoord2f(texx1, texy0); glVertex3f(v1.x, v1.y, dcz-thgt);
-      */
-      glVertex3f(v0.x, v0.y, dcz-thgt);
       glVertex3f(v0.x, v0.y, dcz);
+      glVertex3f(v0.x, v0.y, dcz+thgt);
+      glVertex3f(v1.x, v1.y, dcz+thgt);
       glVertex3f(v1.x, v1.y, dcz);
-      glVertex3f(v1.x, v1.y, dcz-thgt);
     glEnd();
 
     ++rdcount;
