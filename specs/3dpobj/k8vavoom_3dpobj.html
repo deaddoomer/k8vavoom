@@ -53,6 +53,7 @@ will look like platform floor for the player).
 <a href="#spawnit">How to spawn 3d polyobject</a><br>
 <a href="#setheight">How to set 3d polyobject height (and texture parameters meaning)</a><br>
 <a href="#linkit">Linked 3d polyobjects</a><br>
+<a href="#blockflags">Line blocking flags</a><br>
 <a href="#movenote">Notes about movement</a><br>
 <a href="#acsapi">New ACS API</a><br>
 <a href="#limitations">Current Limitations</a><br>
@@ -205,6 +206,31 @@ its second argument is a secondary polyobject id. It will link the secondary pol
 Note that you cannot link two or more polyobject to one master, so to create complex structures you have
 to link all polyobjects one to another, creating a "link chain". Linking all polyobjects to a single master
 <b>will not work</b>.
+</p>
+
+
+<hr>
+<a id="blockflags"><h1>Line blocking flags</h1>
+<p>
+Each 3d polyobject line should have ML_BLOCKING flag set. This controls midtexture blocking, and cannot be
+changed (i.e. midtexture is always blocking).
+</p>
+<p>
+Other blocking flags controls entity blocking with top texture.<br>
+<b>ML_BLOCKEVERYTHING</b> will block... well, every entity.<br>
+<b>ML_BLOCKPLAYERS</b> will block players.<br>
+<b>ML_BLOCKMONSTERS</b> will block monsters.<br>
+<b>ML_BLOCKPROJECTILE</b> will block projectiles.<br>
+<b>ML_BLOCK_FLOATERS</b> will block floaters.<br>
+</p>
+<p>
+You can also block hitscan attacks with <b>ML_BLOCKHITSCAN</b>.<br>
+Note that ML_BLOCKEVERYTHING will not block hitscans.
+</p>
+<p>
+Blocking monster sight with <b>ML_BLOCKSIGHT</b> currently doesn't work, but this <b>WILL</b> be fixed.<br>
+<b>WARNING! Setting ML_BLOCKSIGHT flag currently may not work, but don't rely on that! This is a known bug, and it will be fixed!</b><br>
+Note that ML_BLOCKEVERYTHING will not block sight.
 </p>
 
 
