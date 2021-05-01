@@ -147,7 +147,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     }
   }
 
-  texinfo->soffs = 0.0f;
+  //texinfo->soffs = 0.0f;
   const TVec *v;
   TVec dir;
   if (!xflip) {
@@ -163,7 +163,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
     dir = -seg->dir;
   }
-  texinfo->soffs += -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
+  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
