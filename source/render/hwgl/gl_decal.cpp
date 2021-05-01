@@ -58,7 +58,7 @@ void VOpenGLDrawer::RenderPrepareShaderDecals (surface_t *surf) {
 }
 
 
-static int maxrdcount = 0;
+static int maxrdcount = 0; // sorry for this global, it is for debugging
 
 //==========================================================================
 //
@@ -73,6 +73,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   if (RendLev->/*PortalDepth*/PortalUsingStencil) return false; //FIXME: not yet
 
   if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
+
+  seg_t *seg = surf->seg;
+  if (!seg) return false; // just in case
+  const line_t *line = seg->linedef;
+  if (!line) return false; // just in case
 
   texinfo_t *tex = surf->texinfo;
 
@@ -152,27 +157,22 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   int smallDecalCount = 0;
 
   // also, clear dead decals here, 'cause why not?
-  decal_t *dcl = surf->seg->decalhead;
+  decal_t *dcl = seg->decalhead;
   while (dcl) {
     decal_t *dc = dcl;
     dcl = dcl->next;
 
-    // "0" means "no texture found", so remove it too
-    if (dc->texture <= 0 || dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f) {
-      // remove it, if it is not animated
-      if (!dc->animator) {
-        surf->seg->removeDecal(dc);
-        delete dc;
-      }
-      continue;
-    }
+    const int dcTexId = dc->texture; // "0" means "no texture found"
+    VTexture *dtex = (dcTexId > 0 ? GTextureManager[dcTexId] : nullptr);
 
-    const int dcTexId = dc->texture;
-    VTexture *dtex = GTextureManager[dcTexId];
-    if (!dtex || dtex->Width < 1 || dtex->Height < 1) {
+    // decal scale is not inverted
+    const float dscaleX = dc->scaleX;
+    const float dscaleY = dc->scaleY;
+
+    if (!dtex || dtex->Width < 1 || dtex->Height < 1 || dc->alpha <= 0.0f || dscaleX <= 0.0f || dscaleY <= 0.0f) {
       // remove it, if it is not animated
       if (!dc->animator) {
-        surf->seg->removeDecal(dc);
+        seg->removeDecal(dc);
         delete dc;
       }
       continue;
@@ -191,11 +191,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
     }
 
-    const float dscaleX = dc->scaleX;
-    const float dscaleY = dc->scaleY;
-    const float dscaleXInv = 1.0f/dscaleX;
-    const float dscaleYInv = 1.0f/dscaleY;
-
     // use origScale to get the original starting point
     const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
     const float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
@@ -203,25 +198,18 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const float twdt = dtex->GetScaledWidthF()*dscaleX;
     const float thgt = dtex->GetScaledHeightF()*dscaleY;
 
-    if (twdt < 1.0f || thgt < 1.0f) {
-      // remove it, if it is not animated
-      if (!dc->animator) {
-        surf->seg->removeDecal(dc);
-        delete dc;
-      }
-      continue;
-    }
+    if (twdt < 1.0f || thgt < 1.0f) continue;
 
     if (twdt >= VLevel::BigDecalWidth || thgt >= VLevel::BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
 
     if (currTexId != dcTexId) {
       currTexId = dcTexId;
-      SetDecalTexture(dtex, currTrans, /*tex->ColorMap*/cmap); // this sets `tex_iw` and `tex_ih`
+      SetDecalTexture(dtex, currTrans, cmap); // this sets `tex_iw` and `tex_ih`
     }
 
     const float xstofs = dc->xdist-txofs+dc->ofsX;
-    const TVec v0 = (*dc->seg->linedef->v1)+dc->seg->linedef->ndir*xstofs;
-    const TVec v1 = v0+dc->seg->linedef->ndir*twdt;
+    const TVec v1 = (*line->v1)+line->ndir*xstofs;
+    const TVec v2 = v1+line->ndir*twdt;
 
     float dcz = dc->curz+dscaleY+tyofs-dc->ofsY;
     // fix Z, if necessary
@@ -234,10 +222,15 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         dcz += dc->slidesec->ceiling.TexZ;
       }
     }
+    // move to bottom
     dcz -= thgt;
 
+    // decal scale is not inverted, but we need inverted scale for some calculations
+    const float dscaleXInv = 1.0f/dscaleX;
+    const float dscaleYInv = 1.0f/dscaleY;
+
     // calculate texture axes
-    TVec saxis(surf->seg->dir);
+    TVec saxis(seg->dir);
     TVec taxis(0.0f, 0.0f, -1.0f);
 
     saxis *= dtex->TextureSScale()*dscaleXInv;
@@ -246,10 +239,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     if (dc->flags&decal_t::FlipX) saxis = -saxis;
     if (dc->flags&decal_t::FlipY) taxis = -taxis;
 
-    //float soffs = -DotProduct(v0, dc->seg->dir)*dtex->TextureSScale()*dscaleXInv; // horizontal
-    //float toffs = (dcz-thgt)*dtex->TextureTScale()*dscaleYInv; // vertical
-    float soffs = -DotProduct(v0, saxis); // horizontal
-    float toffs = -dcz*taxis.z; // vertical
+    float soffs = -DotProduct(v1, saxis); // horizontal
+    float toffs = -DotProduct(TVec(v1.x, v1.y, dcz), taxis); // vertical
 
     // setup texture
     switch (dtype) {
@@ -284,10 +275,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     currentActiveShader->UploadChangedUniforms();
     glBegin(GL_QUADS);
-      glVertex3f(v0.x, v0.y, dcz);
-      glVertex3f(v0.x, v0.y, dcz+thgt);
-      glVertex3f(v1.x, v1.y, dcz+thgt);
       glVertex3f(v1.x, v1.y, dcz);
+      glVertex3f(v1.x, v1.y, dcz+thgt);
+      glVertex3f(v2.x, v2.y, dcz+thgt);
+      glVertex3f(v2.x, v2.y, dcz);
     glEnd();
 
     ++rdcount;
@@ -321,7 +312,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const int smallLimit = gl_smalldecal_limit.asInt();
     int toKillBig = (bigLimit > 0 ? bigDecalCount-bigLimit : 0);
     int toKillSmall = (smallLimit > 0 ? smallDecalCount-smallLimit : 0);
-    if (toKillBig > 0 || toKillSmall > 0) GClLevel->CleanupDecals(surf->seg);
+    if (toKillBig > 0 || toKillSmall > 0) GClLevel->CleanupDecals(seg);
   }
 
   return true;
