@@ -288,6 +288,12 @@ public:
     lastTextureFiltering = (level&0x7f)|(((aniso-1)&0xff)<<8)|(asModel ? 0x80 : 0);
   }
 
+  // max filtering mode is never used
+  inline void invalidadeFiltering () noexcept { if (lastTextureFiltering >= 0) lastTextureFiltering |= 0x7f; }
+
+  // used in `GenerateTexture()`, everything except repeat mode is invalid
+  inline void initFilteringAsModelOnly (bool asModel) noexcept { lastTextureFiltering = (asModel ? 0x80 : 0)|0xff7f; }
+
   inline bool isWrapRepeat () const noexcept {
     return (Type == TEXTYPE_Wall || Type == TEXTYPE_Flat || Type == TEXTYPE_Overload || Type == TEXTYPE_WallPatch);
   }

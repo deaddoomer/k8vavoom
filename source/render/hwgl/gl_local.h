@@ -1279,18 +1279,18 @@ protected:
   bool SetPic (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor=0);
   bool SetPicModel (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor=0);
 
-  inline void SetSpriteTexture (int level, VTexture *Tex, VTextureTranslation *Translation, int CMap, bool asPicture, vuint32 ShadeColor=0) {
-    SetOrForceTextureFiltering(SetSpriteLump(Tex, Translation, CMap, asPicture, ShadeColor), Tex, level, TexWrapClamp);
+  inline void SetSpriteTexture (int level, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0) {
+    SetOrForceTextureFiltering(SetSpriteLump(Tex, Translation, CMap, ShadeColor), Tex, level, TexWrapClamp);
   }
 
   inline void SetShadowTexture (VTexture *Tex) {
-    SetSpriteLump(Tex, nullptr, 0/*CMap*/, false, 0/*ShadeColor*/);
+    SetSpriteLump(Tex, nullptr, 0/*CMap*/, 0/*ShadeColor*/);
     SetupShadowTextureFiltering(Tex);
   }
 
-  bool SetSpriteLump (VTexture *Tex, VTextureTranslation *Translation, int CMap, bool asPicture, vuint32 ShadeColor=0);
+  bool SetSpriteLump (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
 
-  void GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool asPicture, bool needUpdate, vuint32 ShadeColor);
+  void GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor);
 
   enum { UpTexNoCompress = 0, UpTexNormal = 1, UpTexHiRes = 2 };
   void UploadTexture8 (int Width, int Height, const vuint8 *Data, const rgba_t *Pal, int SourceLump, int hitype);
