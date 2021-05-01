@@ -438,7 +438,7 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
   ML_BLOCKING| \
   ML_BLOCKMONSTERS| \
   ML_TWOSIDED| \
-  ML_DONTPEGTOP| \
+  /*ML_DONTPEGTOP|*/ \
   ML_DONTPEGBOTTOM| \
   ML_SOUNDBLOCK| \
   ML_DONTDRAW| \
@@ -501,6 +501,8 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
     if (!MTex || MTex->Type == TEXTYPE_Null) Host_Error("3d pobj #%d line #%d has invalid front midtex!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     if (MTex->GetScaledWidthF()/sidedef->Mid.ScaleY < 1.0f) Host_Error("3d pobj #%d line #%d has invalid front midtex width!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     if (MTex->GetScaledHeightF()/sidedef->Mid.ScaleY < 1.0f) Host_Error("3d pobj #%d line #%d has invalid front midtex height!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+    // it should not be translucent or masked
+    if (MTex->isSeeThrough()) Host_Error("3d pobj #%d line #%d has transparent/translucent midtex!", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
     // check sides
     const side_t *s0 = (ld->sidenum[0] < 0 ? nullptr : &Sides[ld->sidenum[0]]);
     const side_t *s1 = (ld->sidenum[1] < 0 ? nullptr : &Sides[ld->sidenum[1]]);
@@ -859,8 +861,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
       line_t *ld = it.line();
       ld->frontsector = ld->backsector = po->posector;
     }
-    //po->startSpot.z = po->pofloor.minz;
-    po->startSpot.z = height; // z offset from destination sector ceiling (used in `TranslatePolyobjToStartSpot()`)
+    po->startSpot.z = height; // z offset from the inner sector floor (used in `TranslatePolyobjToStartSpot()`)
   }
 
   // find first seg with texture
@@ -946,15 +947,14 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
         po->poceiling.minz = po->poceiling.maxz = po->poceiling.TexZ = z1;
         po->poceiling.dist = po->poceiling.maxz;
       }
+      // and check floor/ceiling textures too (i should find a better place for this!)
+      VTexture *FTex = GTextureManager(refsec->floor.pic);
+      if (!FTex || FTex->Type == TEXTYPE_Null || FTex->isSeeThrough()) Host_Error("3d pobj #%d has invalid floor texture", po->tag);
+      VTexture *CTex = GTextureManager(refsec->ceiling.pic);
+      if (!CTex || CTex->Type == TEXTYPE_Null || CTex->isSeeThrough()) Host_Error("3d pobj #%d has invalid ceiling texture", po->tag);
     } else {
-      // for normal polyobjects, texture is simply wrapped
+      // for normal polyobjects, the texture is simply wrapped
     }
-  }
-
-  if (po->posector) {
-    // raise it to destination sector height
-    refsec = PointInSubsector(TVec(x, y, 0.0f))->sector;
-    po->startSpot.z += refsec->floor.GetPointZ(TVec(x, y, 0.0f))-po->pofloor.minz;
   }
 
   if (dbg_pobj_verbose.asBool()) {
@@ -1212,7 +1212,7 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
 void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   vassert(anchor);
 
-  float originX = anchor->x, originY = anchor->y, height = anchor->height;
+  float originX = anchor->x, originY = anchor->y;
   int tag = anchor->tag;
 
   polyobj_t *po = GetPolyobj(tag);
@@ -1279,11 +1279,10 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   po->prevPts = new TVec[segptnum];
   po->prevPtsCount = segptnum;
 
-  const float startHeight = po->startSpot.z;
-  //const sector_t *destsec = PointInSubsector(TVec(originX, originY, 0.0f))->sector;
-  po->startSpot.z = 0.0f; // this is actually offset from "default z point" destsec->floor.GetPointZClamped(TVec(originX, originY, 0.0f));
+  const float startHeight = po->startSpot.z; // this is set to anchor height in spawner
+  po->startSpot.z = 0.0f; // this is actually offset from "default z point"
 
-  const mthing_t *thing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
+  const mthing_t *anchorthing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
 
   float deltaZ = 0.0f;
 
@@ -1298,26 +1297,32 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
         startHeight);
     }
 
+    // move vertically
+    deltaZ = startHeight;
+
+    #if 0
     // clamp height
-    if (thing && thing->height > 0.0f) {
+    // nope, not this
+    if (anchorthing && anchorthing->height != 0.0f) {
       const float hgt = po->poceiling.maxz-po->pofloor.minz;
-      if (hgt > thing->height) {
-        const line_t *ld = po->lines[0];
+      const bool fromCeiling = (anchorthing->height < 0.0f);
+      const float newhgt = fabsf(anchorthing->height);
+      if (hgt > newhgt) {
         // "don't peg top" flag is abused to limit the height from the ceiling
-        if (ld->flags&ML_DONTPEGTOP) {
+        if (fromCeiling) {
           // height is from the ceiling
-          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the ceiling)", po->tag, hgt, thing->height);
+          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the ceiling)", po->tag, hgt, newhgt);
           // fix floor (move it up), move texture z
-          const float dz = hgt-height;
+          const float dz = hgt-newhgt;
           po->pofloor.minz += dz;
           po->pofloor.maxz += dz;
           po->pofloor.dist += dz;
           po->pofloor.TexZ += dz;
         } else {
           // height is from the floor
-          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the floor)", po->tag, hgt, thing->height);
+          if (dbg_pobj_verbose.asBool()) GCon->Logf(NAME_Debug, "pobj #%d: height=%g; newheight=%g (from the floor)", po->tag, hgt, newhgt);
           // fix ceiling (move it down), move texture z
-          const float dz = height-hgt;
+          const float dz = newhgt-hgt;
           po->poceiling.minz += dz;
           po->poceiling.maxz += dz;
           po->poceiling.dist += dz;
@@ -1325,9 +1330,52 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
         }
       }
     }
+    #else
+    // anchor thing height offsets from the *destination* sector
+    if (anchorthing && anchorthing->height != 0.0f) {
+      const bool fromCeiling = (anchorthing->height < 0.0f);
+      const float newhgt = fabsf(anchorthing->height);
+      sector_t *dsec = PointInSubsector(sspot2d)->sector;
+      if (dsec != po->posector) {
+        if (fromCeiling) {
+          deltaZ += dsec->ceiling.TexZ-po->poceiling.TexZ; // move up to the ceiling
+          deltaZ -= newhgt; // and down
+        } else {
+          deltaZ += dsec->floor.TexZ-po->pofloor.TexZ; // move down to the floor
+          deltaZ += newhgt; // and up
+        }
+      } else {
+        GCon->Logf(NAME_Error, "anchor height offset is ignored due to invalid destination sector");
+      }
+    }
+    #endif
 
-    // move vertically
-    deltaZ = startHeight;
+    // check if all middle textures either wrapped, or high enough
+    if (po->pofloor.minz > po->poceiling.minz) Host_Error("invalid 3d pobj #%d height", po->tag);
+    if (po->pofloor.minz < po->poceiling.minz) {
+      for (auto &&it : po->LineFirst()) {
+        line_t *ld = it.line();
+        vassert(ld->sidenum[0] >= 0);
+        const side_t *sidedef = &Sides[ld->sidenum[0]];
+        // clamp with texture height if it is not wrapped
+        if (((ld->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
+          VTexture *MTex = GTextureManager(sidedef->MidTexture);
+          vassert(MTex && MTex->Type != TEXTYPE_Null);
+          const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
+          if (!isFiniteF(texh) || texh < 1.0f) Host_Error("3d pobj #%d has empty midtex at line #%d", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+          float z0, z1;
+          if (ld->flags&ML_DONTPEGBOTTOM) {
+            // bottom of texture at bottom
+            z1 = po->pofloor.TexZ+texh;
+          } else {
+            // top of texture at top
+            z1 = po->poceiling.TexZ;
+          }
+          z0 = z1-texh;
+          if (z0 > po->pofloor.TexZ || z1 < po->poceiling.TexZ) Host_Error("3d pobj #%d has too smal midtex at line #%d", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+        }
+      }
+    }
   }
 
   if (dbg_pobj_verbose.asBool()) {
