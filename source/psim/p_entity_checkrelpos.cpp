@@ -382,36 +382,44 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       tmtrace.BlockingLine = ld;
       return false;
     }
-    if (!IsBlockingLine(ld)) return true;
+    vassert(po->Is3D()); // invariant
+    // check top texture, if it blocking
+    if (ld->flags&ML_CLIP_MIDTEX) {
+      bool doBlock = (IsPlayer() || IsMonster());
+      if (!doBlock && IsMissile() && (ld->flags&ML_BLOCKPROJECTILE)) doBlock = true;
+      if (doBlock) {
+        // check if we are above the pobj (at least partially)
+        const float ptopz = po->poceiling.minz;
+        if (/*hitPoint.z >= ptopz ||*/ hitPoint.z+hgt > ptopz) {
+          // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
+          const side_t *tside = &XLevel->Sides[ld->sidenum[0]];
+          if (tside->TopTexture > 0) {
+            VTexture *ttex = GTextureManager(tside->TopTexture);
+            if (ttex && ttex->Type != TEXTYPE_Null) {
+              const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
+              if (hitPoint.z < ptopz+texh && hitPoint.z+hgt > ptopz) {
+                // blocked by top texture
+                po->validcount = validcount; // do not check if we are inside of it, we definitely are
+                if (!skipSpecials) BlockedByLine(ld);
+                tmtrace.BlockingLine = ld;
+                //TODO: set proper FloorZ, CeilingZ, and DropOffZ!
+                if (FloorZ < ptopz) DropOffZ = FloorZ; // fix dropoff
+                FloorZ = ptopz;
+                EFloor.set(&po->poceiling, false);
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+    //if (!IsBlockingLine(ld)) return true; // always blocking
     if (!Copy3DPObjFloorCeiling(tmtrace, po, hitPoint.z, hitPoint.z+max2(0.0f, Height))) {
       // stuck inside, blocked
       po->validcount = validcount; // do not check if we are inside of it, we definitely are
       if (!skipSpecials) BlockedByLine(ld);
       tmtrace.BlockingLine = ld;
       return false;
-    }
-    // check top texture, if it blocking
-    if (ld->flags&ML_CLIP_MIDTEX) {
-      // check if we are above the pobj (at least partially)
-      const float ptopz = po->poceiling.minz;
-      if (hitPoint.z >= ptopz || hitPoint.z+hgt > ptopz) {
-        // side doesn't matter, as it is guaranteed that both sides has the texture with the same height
-        const side_t *tside = &XLevel->Sides[ld->sidenum[0]];
-        VTexture *ttex = GTextureManager(tside->TopTexture);
-        if (!ttex) ttex = GTextureManager[GTextureManager.DefaultTexture];
-        const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
-        if (texh > 0.0f) {
-          if ((hitPoint.z >= ptopz && hitPoint.z < ptopz+texh) ||
-              (hitPoint.z+hgt >= ptopz && hitPoint.z+hgt < ptopz+texh))
-          {
-            // blocked by top texture
-            po->validcount = validcount; // do not check if we are inside of it, we definitely are
-            if (!skipSpecials) BlockedByLine(ld);
-            tmtrace.BlockingLine = ld;
-            return false;
-          }
-        }
-      }
     }
     return true;
   }

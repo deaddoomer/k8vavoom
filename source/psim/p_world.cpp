@@ -622,12 +622,14 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
         // check hitscan blocking flags (only front side matters for now)
-        if (doopening && (ld->flags&lineflags) == ML_BLOCKHITSCAN && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
+        if (doopening && (ld->flags&lineflags) == (ML_BLOCKHITSCAN|ML_BLOCKPROJECTILE) && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
           const side_t *fsd = &Level->Sides[ld->sidenum[0]];
-          VTexture *TTex = GTextureManager(fsd->TopTexture);
-          if (TTex && TTex->Type != TEXTYPE_Null) {
-            const float texh = TTex->GetScaledHeightF()/fsd->Top.ScaleY;
-            if (hpz < po->poceiling.maxz+texh) goto xxdone; // sorry
+          if (fsd->TopTexture > 0) {
+            VTexture *TTex = GTextureManager(fsd->TopTexture);
+            if (TTex && TTex->Type != TEXTYPE_Null) {
+              const float texh = TTex->GetScaledHeightF()/fsd->Top.ScaleY;
+              if (hpz < po->poceiling.maxz+texh) goto xxdone; // sorry
+            }
           }
         }
         // non-blocking pobj line: check polyobject planes
