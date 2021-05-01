@@ -311,7 +311,7 @@ static inline surface_t *RecreateWallCentroids (VRenderLevelShared *RLev, surfac
 //  VRenderLevelLightmap::InitSurfs
 //
 //==========================================================================
-void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg) {
+void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) {
   bool doPrecalc = (r_precalc_static_lights_override >= 0 ? !!r_precalc_static_lights_override : r_precalc_static_lights);
 
   for (surface_t *surf = ASurfs; surf; surf = surf->next) {
@@ -319,6 +319,7 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
     if (plane) surf->plane = *plane;
     surf->subsector = sub;
     surf->seg = seg;
+    surf->sreg = sreg;
 
     if (surf->count == 0) {
       GCon->Logf(NAME_Warning, "empty surface at subsector #%d", (int)(ptrdiff_t)(sub-Level->Subsectors));

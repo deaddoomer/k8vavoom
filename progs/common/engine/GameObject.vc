@@ -683,6 +683,7 @@ struct surface_t {
   int glowCeilingColor;
   subsector_t *subsector; // owning subsector
   seg_t *seg; // owning seg (can be `nullptr` for floor/ceiling)
+  subregion_t *sreg; // owning subsector region (can be `nullptr` for walls)
   // type flags
   bool bTopTexture;
   bool bBottomTexture;

@@ -250,6 +250,7 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) noe
 //
 //==========================================================================
 surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept {
+  vassert(seg);
   if (wvcount < 3) return nullptr;
   if (wvcount == 4 && (wv[1].z <= wv[0].z && wv[2].z <= wv[3].z)) return nullptr;
   if (wvcount > surface_t::MAXWVERTS) Sys_Error("cannot create huge world surface (the thing that should not be)");
@@ -259,6 +260,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   surface_t *surf = NewWSurf(wvcount);
   surf->subsector = sub;
   surf->seg = seg;
+  surf->sreg = nullptr;
   surf->next = nullptr;
   surf->count = wvcount;
   surf->typeFlags = typeFlags;
@@ -280,7 +282,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   surf = SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg);
   // and fix t-junctions from subdivision
   surf = FixSegSurfaceTJunctions(surf, seg);
-  InitSurfs(true, surf, texinfo, seg, sub, seg); // recalc static lightmaps
+  InitSurfs(true, surf, texinfo, seg, sub, seg, nullptr); // recalc static lightmaps
   return surf;
 }
 

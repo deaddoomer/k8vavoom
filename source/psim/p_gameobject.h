@@ -763,6 +763,11 @@ struct TSecPlaneRef {
 };
 
 
+//==========================================================================
+//
+//  sector lighting info
+//
+//==========================================================================
 struct sec_params_t {
   enum {
     LFC_FloorLight_Abs    = 1u<<0,
@@ -789,8 +794,14 @@ struct sec_params_t {
 };
 
 
-// "regions" keeps 3d floors for sector
-// region inside may be non-solid, if the corresponding flag is set
+//==========================================================================
+//
+//  sector regions
+//
+//  "regions" keeps 3d floors for sector
+//  region inside may be non-solid, if the corresponding flag is set
+//
+//==========================================================================
 struct sec_region_t {
   sec_region_t *next;
   // planes
@@ -855,8 +866,11 @@ struct msecnode_t {
 };
 
 
-// the SECTORS record, at runtime
-// stores things/mobjs
+//==========================================================================
+//
+//  map sector
+//
+//==========================================================================
 struct sector_t {
   sec_plane_t floor;
   sec_plane_t ceiling;
@@ -1019,14 +1033,14 @@ struct sector_t {
 
 //==========================================================================
 //
-//  Polyobject
+//  PolyobjectPart
+//
+//  visible part of the polyobject
+//  this is what resides in subsectors
+//  segs are clipped to the correspoinding subsector
+//  one subsector can contain alot of parts; they're all linked by `nextsub`
 //
 //==========================================================================
-
-// visible part of the polyobject
-// this is what resides in subsectors
-// segs are clipped to the correspoinding subsector
-// one subsector can contain alot of parts; they're all linked by `nextsub`
 struct polyobjpart_t {
 public:
   polyobj_t *pobj; // owning polyobject
@@ -1078,7 +1092,11 @@ public:
 };
 
 
-// polyobj data
+//==========================================================================
+//
+//  Polyobject
+//
+//==========================================================================
 struct polyobj_t {
 public:
   class PolySubIter {
@@ -1196,7 +1214,13 @@ public:
 };
 
 
-// for polyobj blockmap
+//==========================================================================
+//
+//  PolyobjectBlock
+//
+//  for polyobj blockmap
+//
+//==========================================================================
 struct polyblock_t {
   polyobj_t *polyobj;
   polyblock_t *prev;
@@ -1204,6 +1228,11 @@ struct polyblock_t {
 };
 
 
+//==========================================================================
+//
+//  PolyobjectAnchor
+//
+//==========================================================================
 struct PolyAnchorPoint_t {
   float x;
   float y;
@@ -1215,9 +1244,9 @@ struct PolyAnchorPoint_t {
 
 //==========================================================================
 //
-//  SubRegion
+//  subsector region
 //
-//  TODO: document this!
+//  this is created for each `sec_region_t`
 //
 //==========================================================================
 struct subregion_t {
@@ -1359,9 +1388,9 @@ struct node_t : public TPlane {
 //
 //  Thing
 //
+//  map thing definition with initialised fields for global use
+//
 //==========================================================================
-
-// map thing definition with initialised fields for global use
 struct mthing_t {
   vint32 tid;
   float x;

@@ -200,6 +200,7 @@ struct surface_t {
   vuint32 glowCeilingColor;
   subsector_t *subsector; // owning subsector
   seg_t *seg; // owning seg (can be `nullptr` for floor/ceiling)
+  subregion_t *sreg; // owning subsector region (can be `nullptr` for walls)
   vuint32 typeFlags; // TF_xxx
   // not exposed to VC
   int lmsize, lmrgbsize; // to track static lightmap memory
@@ -237,6 +238,7 @@ struct surface_t {
       HorizonPlane = other.HorizonPlane;
       subsector = other.subsector;
       seg = other.seg;
+      sreg = other.sreg;
       typeFlags = other.typeFlags;
       drawflags = other.drawflags;
     }

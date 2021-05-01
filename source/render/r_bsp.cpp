@@ -750,6 +750,7 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
       Surf->plane = *(TPlane *)(dseg->seg);
       Surf->subsector = sub;
       Surf->seg = seg;
+      Surf->sreg = subregion; // either this, or seg should not be set
       Surf->texinfo = &Ceil->texinfo;
       Surf->HorizonPlane = Ceil->esecplane.splane; //FIXME: 3dfloor
       Surf->Light = (lLev<<24)|LightParams->LightColor;
@@ -786,6 +787,7 @@ void VRenderLevelShared::RenderHorizon (subsector_t *sub, sec_region_t *secregio
       Surf->plane = *(TPlane *)(dseg->seg);
       Surf->subsector = sub;
       Surf->seg = seg;
+      Surf->sreg = subregion; // either this, or seg should not be set
       Surf->texinfo = &Floor->texinfo;
       Surf->HorizonPlane = Floor->esecplane.splane; //FIXME: 3dfloor
       Surf->Light = (lLev<<24)|LightParams->LightColor;
