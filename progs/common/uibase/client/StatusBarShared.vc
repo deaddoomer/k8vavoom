@@ -340,7 +340,7 @@ void DrawChat () {
   foreach (ref NotifyMessage msg; chatMessages) {
     if (msg.time > 0.0) {
       DrawText(4, y, msg.nick, ncol);
-      DrawText(4+TextWidth(msg.nick)+2, y, (msg.dupcount > 1 ? va("%s  \c[darkgreen][x%s]", msg.text, msg.dupcount) : msg.text), tcol);
+      DrawText(4+TextWidth(msg.nick)+2, y, (msg.dupcount > 1 ? va("%s  \c[darkgreen]x%s", msg.text, msg.dupcount) : msg.text), tcol);
       y += FontHeight();
     }
   }
