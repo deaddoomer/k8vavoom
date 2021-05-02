@@ -371,10 +371,9 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       if (ld->flags&ML_3DMIDTEX) {
         // use front side
         const int side = 0; //ld->PointOnSide(tmtrace.End);
-        float ptop = 0.0f, pbot = 0.0f;
-        if (!XLevel->GetMidTexturePosition(ld, side, &pbot, &ptop)) return true;
-        // check height
-        if (hitPoint.z >= ptop || hitPoint.z+hgt <= pbot) return true; // no collision
+        float pz0 = 0.0f, pz1 = 0.0f;
+        if (!XLevel->GetMidTexturePosition(ld, side, &pz0, &pz1)) return true; // no middle texture, so no collision
+        if (hitPoint.z >= pz1 || hitPoint.z+hgt <= pz0) return true; // no collision
       } else {
         if (!IsBlockingLine(ld)) return true;
       }

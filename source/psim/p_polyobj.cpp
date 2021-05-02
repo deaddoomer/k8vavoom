@@ -1604,6 +1604,7 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 //==========================================================================
 static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
   if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) return false;
+  if (mobj->Height < 1.0f || mobj->Radius < 1.0f) return false;
   return
     (mobj->EntityFlags&(
       VEntity::EF_Solid|
@@ -1836,7 +1837,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         if (mobj->IsGoingToDie()) continue;
         // check flags
         if (!NeedPositionCheck(mobj)) continue;
-        if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue;
+        //if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue; // done in `NeedPositionCheck()`
         const float mz0 = mobj->Origin.z;
         const float mz1 = mz0+mobj->Height;
         if (mz1 <= pz0) continue;
@@ -2146,10 +2147,11 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool ro
           // check for non-3d pobj with midtex
           if ((ld->flags&(ML_TWOSIDED|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) {
             if (!mobj->LineIntersects(ld)) continue;
-            const int side = ld->PointOnSide(mobj->Origin);
-            float ptop = 0.0f, pbot = 0.0f;
-            if (!GetMidTexturePosition(ld, side, &pbot, &ptop)) continue;
-            if (mobj->Origin.z >= ptop || mobj->Origin.z+max2(0.0f, mobj->Height) <= pbot) continue;
+            // use front side
+            const int side = 0; //ld->PointOnSide(mobj->Origin);
+            float pz0 = 0.0f, pz1 = 0.0f;
+            if (!GetMidTexturePosition(ld, side, &pz0, &pz1)) continue; // no middle texture
+            if (mobj->Origin.z >= pz1 || mobj->Origin.z+max2(0.0f, mobj->Height) <= pz0) continue; // no collision
             ldblock = true;
           }
         }
