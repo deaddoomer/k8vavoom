@@ -440,7 +440,7 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
   ML_TWOSIDED| \
   /*ML_DONTPEGTOP|*/ \
   ML_DONTPEGBOTTOM| \
-  ML_SOUNDBLOCK| \
+  /*ML_SOUNDBLOCK|*/ \
   ML_DONTDRAW| \
   ML_MAPPED| \
   ML_REPEAT_SPECIAL| \
