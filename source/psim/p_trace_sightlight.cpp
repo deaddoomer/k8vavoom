@@ -342,44 +342,73 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   if (!MTex || MTex->Type == TEXTYPE_Null) return true;
 
   const bool wrapped = ((line->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
-  if (wrapped && !MTex->isSeeThrough()) return true;
+  if (wrapped && !MTex->isSeeThrough()) return true; // the texture is solid, so there are no holes possible
 
-  const TVec taxis = TVec(0, 0, -1)*(MTex->TextureTScale()*sidedef->Mid.ScaleY);
-  float toffs;
+  // just in case
+  if (!line->frontsector || !line->backsector) return true; // looks like invalid line, so we'd better block
 
-  float z_org; // texture top
+  //TODO: flipped and rotated textures
+
+  // we may need it (or not, but meh)
+  const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
+
+  // t axis
+  const bool yflip = (sidedef->Mid.Flags&STP_FLIP_Y);
+  const TVec taxis = TVec(0.0f, 0.0f, (yflip ? +1.0f : -1.0f))*MTex->TextureTScale()*sidedef->Mid.ScaleY;
+
+  float zOrg; // texture bottom
   if (line->flags&ML_DONTPEGBOTTOM) {
     // bottom of texture at bottom
-    const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
-    z_org = max2(line->frontsector->floor.TexZ, line->backsector->floor.TexZ)+texh;
+    zOrg = max2(line->frontsector->floor.TexZ, line->backsector->floor.TexZ);
   } else {
     // top of texture at top
-    z_org = min2(line->frontsector->ceiling.TexZ, line->backsector->ceiling.TexZ);
+    zOrg = min2(line->frontsector->ceiling.TexZ, line->backsector->ceiling.TexZ)-texh;
   }
 
-  if (wrapped) {
-    // it is wrapped, so just slide it
-    toffs = sidedef->Mid.RowOffset*MTex->TextureOffsetTScale()/sidedef->Mid.ScaleY;
+  float toffs;
+  float yofs = sidedef->Mid.RowOffset;
+  if (yofs != 0.0f) {
+    if (yflip) yofs = -yofs;
+    if (wrapped) {
+      // it is wrapped, so just slide it
+      toffs = yofs*MTex->TextureOffsetTScale()/sidedef->Mid.ScaleY;
+    } else {
+      // move origin up/down, as this texture is not wrapped
+      zOrg += yofs/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
+      // offset is done by origin, so we don't need to offset texture
+      toffs = 0.0f;
+    }
   } else {
-    // move origin up/down, as this texture is not wrapped
-    z_org += sidedef->Mid.RowOffset/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
-    // offset is done by origin, so we don't need to offset texture
     toffs = 0.0f;
   }
-  toffs += z_org*(MTex->TextureTScale()*sidedef->Mid.ScaleY);
+  if (!yflip) {
+    toffs += zOrg*MTex->TextureTScale()*sidedef->Mid.ScaleY;
+  } else {
+    toffs += (zOrg+texh)*MTex->TextureTScale()*sidedef->Mid.ScaleY;
+  }
 
-  const int texelT = (int)(DotProduct(trace.LineEnd, taxis)+toffs); // /MTex->GetHeight();
+  const int texelT = (int)(DotProduct(trace.LineEnd, taxis)+toffs);
   // check for wrapping
   if (!wrapped && (texelT < 0 || texelT >= MTex->GetHeight())) return true;
-  if (!MTex->isSeeThrough()) return true;
+  if (!MTex->isSeeThrough()) return true; // this can happen for non-wrapped midtex
 
-  const TVec saxis = line->ndir*(MTex->TextureSScale()*sidedef->Mid.ScaleX);
-  const float soffs = -DotProduct(*line->v1, saxis)+sidedef->Mid.TextureOffset*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
+  // s axis
+  const bool xflip = (sidedef->Mid.Flags&STP_FLIP_X);
+  const bool xbroken = (sidedef->Mid.Flags&STP_BROKEN_FLIP_X);
+
+  const TVec saxis = (!xflip ? line->ndir : -line->ndir)*MTex->TextureSScale()*sidedef->Mid.ScaleX;
+  const TVec *v = (sidenum == (int)(!xflip || xbroken) ? line->v2 : line->v1);
+  float soffs = -DotProduct(*v, saxis);
+  float xoffs = sidedef->Mid.TextureOffset;
+  if (xoffs != 0.0f) {
+    if (xflip) xoffs = -xoffs;
+    soffs += xoffs*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
+  }
 
   const float texelS = (int)(DotProduct(trace.LineEnd, saxis)+soffs)%MTex->GetWidth();
 
   auto pix = MTex->getPixel(texelS, texelT);
-  return (pix.a < 128);
+  return (pix.a < 169);
 }
 
 
