@@ -311,7 +311,7 @@ void DrawNotify () {
 
   foreach (ref NotifyMessage msg; notifyMessages) {
     if (msg.time > 0.0) {
-      DrawText(4, y, (msg.dupcount > 1 ? va("%s  \c[darkgreen][x%s]", msg.text, msg.dupcount) : msg.text), col);
+      DrawText(4, y, (msg.dupcount > 1 ? va("%s  \c[darkgreen]x%s", msg.text, msg.dupcount) : msg.text), col);
       y += FontHeight();
     }
   }
