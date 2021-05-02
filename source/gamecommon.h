@@ -23,19 +23,35 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-//**
-//**  Main game header file.
-//**
+//**  common header file
 //**************************************************************************
-#ifndef GAMEDEFS_HEADER
-#define GAMEDEFS_HEADER
+#ifndef GAMECOMMON_HEADER
+#define GAMECOMMON_HEADER
 
-#include "gamecommon.h"
+#ifdef CLIENT
+# ifdef USE_GLAD
+#  include "glad.h"
+# else
+#  include <GL/gl.h>
+# endif
+#else
+# define GLuint  vuint32
+#endif
 
+#include "../libs/core/core.h"
+
+#include "build.h"
+#include "common.h"
+#include "misc.h"
+#include "system.h"
+#include "../libs/vavoomc/vc_public.h"
+
+/*
 #include "scripts.h"
 #include "language.h"
 #include "infostr.h"
 #include "filesys/files.h"
+#include "dehacked/vc_dehacked.h"
 #include "input.h"
 #include "video.h"
 #include "screen.h"
@@ -71,7 +87,7 @@
 #include "psim/p_gameinfo.h"
 #include "psim/p_world.h"
 #include "decorate/vc_decorate.h"
-#include "dehacked/vc_dehacked.h"
 #include "client/client.h"
+*/
 
 #endif
