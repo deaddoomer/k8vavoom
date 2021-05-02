@@ -369,7 +369,8 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       po->validcount = validcount; // do not check if we are inside of it, we definitely are
       // check for non-3d pobj with midtex
       if (ld->flags&ML_3DMIDTEX) {
-        const int side = ld->PointOnSide(tmtrace.End);
+        // use front side
+        const int side = 0; //ld->PointOnSide(tmtrace.End);
         float ptop = 0.0f, pbot = 0.0f;
         if (!XLevel->GetMidTexturePosition(ld, side, &pbot, &ptop)) return true;
         // check height
