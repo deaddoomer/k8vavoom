@@ -264,13 +264,13 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     if (hpz >= pz0 && hpz <= pz1) {
       // this line cannot be considered 1s, tho (otherwise it will block additional checks)
       //trace.Hit1S = true;
-      return false;
+      return false; // blocked
     }
 
     // fully below?
-    if (trace.Start.z <= pz0 && hpz <= pz0) return true; // cannot hit
+    if (trace.Start.z <= pz0 && hpz <= pz0) return true; // cannot hit, not blocked
     // fully above?
-    if (trace.Start.z >= pz1 && hpz >= pz1) return true; // cannot hit
+    if (trace.Start.z >= pz1 && hpz >= pz1) return true; // cannot hit, not blocked
 
     // if we're entering a 3d pobj, no need to do more checks
     // but if we have no 3d pobj exiting point, perform a check
@@ -281,7 +281,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
         if (prevld && prevld->pobj() == po) {
           //GCon->Logf(NAME_Debug, "pobj #%d line #%d will be checked on exit", po->tag, (int)(ptrdiff_t)(line-&trace.Level->Lines[0]));
           // will be checked on exit
-          return true;
+          return true; // not blocked
         }
       }
       // no exit point, perform planes check
@@ -323,29 +323,29 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
 
   //GCon->Logf(NAME_Debug, "linehit: line #%d; frac=%g; ls=(%g,%g,%g); hp=(%g,%g,%g)", (int)(ptrdiff_t)(line-&trace.Level->Lines[0]), frac, trace.LineStart.x, trace.LineStart.y, trace.LineStart.z, hitpoint.x, hitpoint.y, hitpoint.z);
 
-  if (!SightCanPassOpening(line, trace.LineEnd, side, trace.PlaneNoBlockFlags&SPF_FLAG_MASK)) return false;
+  if (!SightCanPassOpening(line, trace.LineEnd, side, trace.PlaneNoBlockFlags&SPF_FLAG_MASK)) return false; // blocked
 
-  // if not light, we're done here
-  if (!trace.lightCheck) return true;
+  // if not light, we're done here (no need to check texture)
+  if (!trace.lightCheck) return true; // not blocked
 
   // light checks
 
-  if (line->alpha < 1.0f || (line->flags&ML_ADDITIVE)) return true;
-  if (!trace.wallTextureCheck) return true;
+  if (line->alpha < 1.0f || (line->flags&ML_ADDITIVE)) return true; // not blocked
+  if (!trace.wallTextureCheck) return true; // not blocked
 
   // check texture
   int sidenum = line->PointOnSide2(trace.Start);
-  if (sidenum == 2 || line->sidenum[sidenum] == -1) return true; // on a line
+  if (sidenum == 2 || line->sidenum[sidenum] == -1) return true; // on a line, not blocked
 
   const side_t *sidedef = &trace.Level->Sides[line->sidenum[sidenum]];
   VTexture *MTex = GTextureManager(sidedef->MidTexture);
-  if (!MTex || MTex->Type == TEXTYPE_Null) return true;
+  if (!MTex || MTex->Type == TEXTYPE_Null) return true; // not blocked
 
   const bool wrapped = ((line->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
-  if (wrapped && !MTex->isSeeThrough()) return true; // the texture is solid, so there are no holes possible
+  if (wrapped && !MTex->isSeeThrough()) return false; // the texture is solid, so there are no holes possible
 
   // just in case
-  if (!line->frontsector || !line->backsector) return true; // looks like invalid line, so we'd better block
+  if (!line->frontsector || !line->backsector) return false; // looks like invalid line, so we'd better block
 
   //TODO: flipped and rotated textures
 
@@ -365,7 +365,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     zOrg = min2(line->frontsector->ceiling.TexZ, line->backsector->ceiling.TexZ)-texh;
   }
 
-  float toffs;
+  float toffs = 0.0f;
   float yofs = sidedef->Mid.RowOffset;
   if (yofs != 0.0f) {
     if (yflip) yofs = -yofs;
@@ -376,10 +376,8 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
       // move origin up/down, as this texture is not wrapped
       zOrg += yofs/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
       // offset is done by origin, so we don't need to offset texture
-      toffs = 0.0f;
+      //toffs = 0.0f;
     }
-  } else {
-    toffs = 0.0f;
   }
   if (!yflip) {
     toffs += zOrg*MTex->TextureTScale()*sidedef->Mid.ScaleY;
@@ -387,16 +385,25 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     toffs += (zOrg+texh)*MTex->TextureTScale()*sidedef->Mid.ScaleY;
   }
 
-  const int texelT = (int)(DotProduct(trace.LineEnd, taxis)+toffs);
+  const int thgt = MTex->GetHeight();
+  if (thgt < 1) return true; // just in case, not blocked
+  int texelT = (int)(DotProduct(trace.LineEnd, taxis)+toffs);
   // check for wrapping
-  if (!wrapped && (texelT < 0 || texelT >= MTex->GetHeight())) return true;
-  if (!MTex->isSeeThrough()) return true; // this can happen for non-wrapped midtex
+  if (texelT < 0 || texelT >= thgt) {
+    // out of texture
+    if (!wrapped) return true; // not blocked
+    texelT %= thgt;
+    if (texelT < 0) texelT += thgt;
+  }
+  // in texture
+  if (!MTex->isSeeThrough()) return false; // this can happen for non-wrapped midtex; blocked
 
   // s axis
   const bool xflip = (sidedef->Mid.Flags&STP_FLIP_X);
   const bool xbroken = (sidedef->Mid.Flags&STP_BROKEN_FLIP_X);
 
   const TVec saxis = (!xflip ? line->ndir : -line->ndir)*MTex->TextureSScale()*sidedef->Mid.ScaleX;
+
   const TVec *v = (sidenum == (int)(!xflip || xbroken) ? line->v2 : line->v1);
   float soffs = -DotProduct(*v, saxis);
   float xoffs = sidedef->Mid.TextureOffset;
@@ -405,10 +412,14 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     soffs += xoffs*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
   }
 
-  const float texelS = (int)(DotProduct(trace.LineEnd, saxis)+soffs)%MTex->GetWidth();
+  const int twdt = MTex->GetWidth();
+  if (twdt < 1) return true; // just in case, not blocked
+  int texelS = (int)(DotProduct(trace.LineEnd, saxis)+soffs)%twdt;
+  if (texelS < 0) texelS += twdt;
 
-  auto pix = MTex->getPixel(texelS, texelT);
-  return (pix.a < 169);
+  // reverse y, because in OpenGL texture origin is at bottom left corner
+  auto pix = MTex->getPixel(texelS, thgt-texelT-1);
+  return (pix.a < 169); // not blocked if the pixel is transparent enough
 }
 
 
