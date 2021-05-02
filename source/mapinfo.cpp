@@ -2740,7 +2740,7 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
       break;
     }
     if (scsp == 0) break;
-    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSource());
+    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSourceFile());
     delete sc;
     sc = scstack[--scsp];
   }

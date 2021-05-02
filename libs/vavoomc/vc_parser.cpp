@@ -2237,7 +2237,7 @@ void VParser::ParseStruct (VClass *InClass, bool IsVector) {
         Lex.NextToken();
         auto ainfo = Struct->AliasList.get(aliasName);
         if (ainfo) {
-          ParseError(Lex.Location, "alias '%s' redeclaration; previous declaration at %s:%d", *aliasName, *ainfo->loc.GetSource(), ainfo->loc.GetLine());
+          ParseError(Lex.Location, "alias '%s' redeclaration; previous declaration at %s:%d", *aliasName, *ainfo->loc.GetSourceFile(), ainfo->loc.GetLine());
         } else if (aliasName == origName) {
           ParseError(Lex.Location, "alias '%s' refers to itself", *aliasName);
         } else {
@@ -4366,7 +4366,7 @@ void VParser::ParseClass () {
         Lex.NextToken();
         auto ainfo = Class->AliasList.get(aliasName);
         if (ainfo) {
-          ParseError(Lex.Location, "alias '%s' redeclaration; previous declaration at %s:%d", *aliasName, *ainfo->loc.GetSource(), ainfo->loc.GetLine());
+          ParseError(Lex.Location, "alias '%s' redeclaration; previous declaration at %s:%d", *aliasName, *ainfo->loc.GetSourceFile(), ainfo->loc.GetLine());
         } else if (aliasName == origName) {
           ParseError(Lex.Location, "alias '%s' refers to itseld", *aliasName);
         } else {

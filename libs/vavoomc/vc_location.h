@@ -28,32 +28,33 @@
 // describes location in a source file
 class TLocation {
 private:
-  vuint32 Loc;
-  vuint32 Col;
-  static TArray<VStr> SourceFiles;
-  static TMap<VStr, vint32> SourceFilesMap; // to avoid Schlemiel's curse
+  int Line;
+  int Col;
+  int SrcIdx;
 
 public:
-  TLocation () : Loc(0), Col(0) {}
-  TLocation (int SrcIdx, int Line, int ACol) : Loc(((SrcIdx&0xffff)<<16)|(Line&0xffff)), Col(ACol&0x7fffffff) {}
-  inline int GetLine () const { return (Loc&0xffff); }
-  inline void SetLine (int Line) { Loc = (Loc&0xffff0000)|(Line&0xffff); }
-  inline int GetCol () const { return Col&0x7fffffff; }
-  VStr GetSource () const;
-  inline bool isInternal () const { return (Loc == 0); }
+  static int AddSourceFile (VStr SName) noexcept;
+  static void ClearSourceFiles () noexcept;
 
-  static int AddSourceFile (VStr);
-  static void ClearSourceFiles ();
+public:
+  inline TLocation () noexcept : Line(0), Col(0), SrcIdx(0) {}
+  inline TLocation (int ASrcIdx, int ALine, int ACol) noexcept : Line(ALine > 0 ? ALine : 0), Col(ACol > 0 ? ACol : 0), SrcIdx(ASrcIdx > 0 ? ASrcIdx : 0) {}
 
-  VStr toString () const;
-  VStr toStringNoCol () const;
-  VStr toStringLineCol () const;
-  // only file name and line number
-  VStr toStringShort () const;
+  inline bool isInternal () const noexcept { return (SrcIdx == 0); }
 
-  inline void ConsumeChar (bool doNewline) {
-    if (doNewline) { ++Loc; Col = 1; } else ++Col;
+  inline int GetLine () const noexcept { return Line; }
+  inline void SetLine (int ALine) noexcept { Line = ALine; }
+
+  inline int GetCol () const noexcept { return Col; }
+
+  VStr GetSourceFile () const noexcept;
+
+  VStr toString () const noexcept; // source file, line, column
+  VStr toStringNoCol () const noexcept; // source file, line
+  VStr toStringLineCol () const noexcept; // line, column
+  VStr toStringShort () const noexcept; // source file w/o path, line
+
+  inline void ConsumeChar (bool doNewline) noexcept {
+    if (doNewline) { ++Line; Col = 1; } else ++Col;
   }
-
-  //friend VStream &operator << (VStream &, TLocation &);
 };

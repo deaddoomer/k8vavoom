@@ -27,8 +27,8 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-TArray<VStr> TLocation::SourceFiles;
-TMap<VStr, vint32> TLocation::SourceFilesMap;
+static TArray<VStr> SourceFiles;
+static TMap<VStr, vint32> SourceFilesMap;
 
 
 //==========================================================================
@@ -36,7 +36,8 @@ TMap<VStr, vint32> TLocation::SourceFilesMap;
 //  TLocation::AddSourceFile
 //
 //==========================================================================
-int TLocation::AddSourceFile (VStr SName) {
+int TLocation::AddSourceFile (VStr SName) noexcept {
+  if (SName.isEmpty()) SName = "<unknown>";
   if (SourceFiles.length() == 0) {
     // add dummy source file
     SourceFiles.Append("<err>");
@@ -55,25 +56,24 @@ int TLocation::AddSourceFile (VStr SName) {
 
 //==========================================================================
 //
-//  TLocation::GetSource
+//  TLocation::ClearSourceFiles
 //
 //==========================================================================
-VStr TLocation::GetSource () const {
-  if (!Loc) return "(external)";
-  int sidx = (Loc>>16)&0xffff;
-  if (sidx >= SourceFiles.length()) return "<wutafuck>";
-  return SourceFiles[sidx];
+void TLocation::ClearSourceFiles () noexcept {
+  SourceFiles.Clear();
+  SourceFilesMap.clear();
 }
 
 
 //==========================================================================
 //
-//  TLocation::ClearSourceFiles
+//  TLocation::GetSourceFile
 //
 //==========================================================================
-void TLocation::ClearSourceFiles () {
-  SourceFiles.Clear();
-  SourceFilesMap.clear();
+VStr TLocation::GetSourceFile () const noexcept {
+  if (isInternal()) return "(external)"; // confusing, yeah?
+  if (SrcIdx < 0 || SrcIdx >= SourceFiles.length()) return "<wutafuck>";
+  return SourceFiles[SrcIdx];
 }
 
 
@@ -82,12 +82,12 @@ void TLocation::ClearSourceFiles () {
 //  TLocation::toString
 //
 //==========================================================================
-VStr TLocation::toString () const {
+VStr TLocation::toString () const noexcept {
   if (GetLine()) {
     if (GetCol() > 0) {
-      return GetSource()+":"+VStr(GetLine())+":"+VStr(GetCol());
+      return GetSourceFile()+":"+VStr(GetLine())+":"+VStr(GetCol());
     } else {
-      return GetSource()+":"+VStr(GetLine())+":1";
+      return GetSourceFile()+":"+VStr(GetLine())+":1";
     }
   } else {
     return VStr("(nowhere)");
@@ -100,9 +100,9 @@ VStr TLocation::toString () const {
 //  TLocation::toStringNoCol
 //
 //==========================================================================
-VStr TLocation::toStringNoCol () const {
+VStr TLocation::toStringNoCol () const noexcept {
   if (GetLine()) {
-    return GetSource()+":"+VStr(GetLine());
+    return GetSourceFile()+":"+VStr(GetLine());
   } else {
     return VStr("(nowhere)");
   }
@@ -114,7 +114,7 @@ VStr TLocation::toStringNoCol () const {
 //  TLocation::toStringLineCol
 //
 //==========================================================================
-VStr TLocation::toStringLineCol () const {
+VStr TLocation::toStringLineCol () const noexcept {
   if (GetLine()) {
     if (GetCol() > 0) {
       return VStr(GetLine())+":"+VStr(GetCol());
@@ -134,37 +134,10 @@ VStr TLocation::toStringLineCol () const {
 // only file name and line number
 //
 //==========================================================================
-VStr TLocation::toStringShort () const {
-  VStr s = GetSource();
+VStr TLocation::toStringShort () const noexcept {
+  VStr s = GetSourceFile();
   int pos = s.length();
   while (pos > 0 && s[pos-1] != ':' && s[pos-1] != '/' && s[pos-1] != '\\') --pos;
   s = s.mid(pos, s.length());
   return s+":"+VStr(GetLine());
 }
-
-
-//==========================================================================
-//
-//  operator << (TLocation)
-//
-//==========================================================================
-/*
-VStream &operator << (VStream &Strm, TLocation &loc) {
-  //FIXME: kill Schlemiel
-  vint8 ll = (loc.Loc ? 1 : 0);
-  Strm << ll;
-  if (!ll) return Strm;
-  vuint16 line = loc.Loc&0xffff;
-  Strm << line;
-  VStr sfn;
-  if (Strm.IsLoading()) {
-    Strm << sfn;
-    int sidx = loc.AddSourceFile(sfn);
-    loc.Loc = (sidx<<16)|line;
-  } else {
-    sfn = loc.GetSource();
-    Strm << sfn;
-  }
-  return Strm;
-}
-*/

@@ -119,7 +119,7 @@ void VExpression::ReportLeaks () {
   for (MemInfo *mi = allocInfoHead; mi; mi = mi->next) {
     GLog.WriteLine("address: %p", mi->ptr);
     auto e = (VExpression *)mi->ptr;
-    GLog.WriteLine("  type: %s (loc: %s:%d)", *shitppTypeNameObj(*e), *e->Loc.GetSource(), e->Loc.GetLine());
+    GLog.WriteLine("  type: %s (loc: %s:%d)", *shitppTypeNameObj(*e), *e->Loc.GetSourceFile(), e->Loc.GetLine());
   }
   GLog.WriteLine("---");
 }

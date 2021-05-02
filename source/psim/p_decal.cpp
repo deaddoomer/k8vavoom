@@ -1054,14 +1054,14 @@ void ParseDecalDef (VScriptParser *sc) {
       error = true;
       break;
     }
-    //GCon->Logf(NAME_Init, "DONE WITH '%s'", *sc->GetLoc().GetSource());
+    //GCon->Logf(NAME_Init, "DONE WITH '%s'", *sc->GetLoc().GetSourceFile());
 
     if (error) {
       while (scsp > 0) { delete sc; sc = scstack[--scsp]; }
       break;
     }
     if (scsp == 0) break;
-    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSource());
+    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSourceFile());
     delete sc;
     sc = scstack[--scsp];
   }

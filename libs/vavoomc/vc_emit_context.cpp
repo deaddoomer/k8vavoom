@@ -1223,7 +1223,7 @@ void VEmitContext::EmitGotoLabel (VName lblname, const TLocation &aloc) {
   for (int f = GotoLabels.length()-1; f >= 0; --f) {
     if (GotoLabels[f].name == lblname) {
       if (GotoLabels[f].defined) {
-        ParseError(aloc, "Duplicate label `%s` (previous is at %s:%d)", *lblname, *GotoLabels[f].loc.GetSource(), GotoLabels[f].loc.GetLine());
+        ParseError(aloc, "Duplicate label `%s` (previous is at %s:%d)", *lblname, *GotoLabels[f].loc.GetSourceFile(), GotoLabels[f].loc.GetLine());
       } else {
         MarkLabel(GotoLabels[f].jlbl);
       }

@@ -171,7 +171,7 @@ static void cstDump (const vuint8 *ip, bool toStdErr=false) {
       VMethod *func = callStack[sp-1].func;
       TLocation loc = func->FindPCLocation(sp == cstUsed ? ip : callStack[sp-1].ip);
       if (!loc.isInternal()) {
-        outs = va("  %03u: %s (%s:%d)", cstUsed-sp, *func->GetFullName(), *loc.GetSource(), loc.GetLine());
+        outs = va("  %03u: %s (%s:%d)", cstUsed-sp, *func->GetFullName(), *loc.GetSourceFile(), loc.GetLine());
       } else {
         outs = va("  %03u: %s", cstUsed-sp, *func->GetFullName());
       }
