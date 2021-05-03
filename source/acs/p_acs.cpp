@@ -4198,6 +4198,29 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
         return Level->eventAcsDamageActor(args[0], args[1], args[2], args[3], args[4], GetName(args[5]), Activator);
       }
       return -1;
+
+    // int CalcActorLight (int tid, int tidptr, int flags)
+    case ACSF_CalcActorLight:
+      if (argCount >= 3) {
+        VEntity *act = EntityFromTID(args[0], Activator);
+        if (act) act = act->eventDoAAPtr(args[1]);
+        if (act) return act->XLevel->CalcEntityLight(act, args[2]);
+      }
+      return 0;
+
+    // int CalcPlayerLight (int flags)
+    case ACSF_CalcPlayerLight:
+      #ifdef CLIENT
+      if (argCount >= 1) {
+        if (GGameInfo->NetMode == NM_Standalone ||
+            GGameInfo->NetMode == NM_Client ||
+            GGameInfo->NetMode == NM_ListenServer)
+        {
+          if (cl && cls.signon && cl->MO) return cl->MO->XLevel->CalcEntityLight(cl->MO, args[0]);
+        }
+      }
+      #endif
+      return 0;
   }
 
   for (const ACSF_Info *nfo = ACSF_List; nfo->name; ++nfo) {

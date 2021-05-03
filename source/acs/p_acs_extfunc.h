@@ -197,6 +197,11 @@
   // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
   ACS_EXTFUNC(Polyobj_IsBusy)
 
+  // int CalcActorLight (int tid, int tidptr, int flags)
+  ACS_EXTFUNC_NUM(CalcActorLight, 860) // implemented
+  // int CalcPlayerLight (int flags) -- for current player; doesn't work in MP
+  ACS_EXTFUNC(CalcPlayerLight) // implemented
+
   // ZDaemon (not implemented, and will never be)
   ACS_EXTFUNC_NUM(GetTeamScore, 19620) // (int team)
   ACS_EXTFUNC(SetTeamScore) // (int team, int value)
