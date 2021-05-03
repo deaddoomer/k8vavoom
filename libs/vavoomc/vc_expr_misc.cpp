@@ -128,7 +128,8 @@ VExpression *VVectorExpr::DoResolve (VEmitContext &ec) {
   }
 
   Type = TYPE_Vector;
-  Type.Struct = VMemberBase::StaticFindTVec();
+  // no, this will break things like: `TAVec a = vector();`
+  //Type.Struct = VMemberBase::StaticFindTVec();
   return this;
 }
 

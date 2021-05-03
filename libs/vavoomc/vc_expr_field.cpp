@@ -553,6 +553,8 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       const char *s = *FieldName;
       if (!s[1] && (s[0] == 'x' || s[0] == 'y' || s[0] == 'z')) {
         // field access
+        // turned off, because of things like `ref vec.x`
+        #if 0
         if (assType != AssType::AssTarget) {
           int idx = (s[0] == 'x' ? 0 : s[0] == 'y' ? 1 : 2);
           VExpression *e = new VVectorDirectFieldAccess(op, idx, Loc);
@@ -565,6 +567,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
           //delete this;
           //return nullptr;
         }
+        #endif
       } else {
         int swidx = VVectorSwizzleExpr::ParseSwizzles(s);
         if (swidx >= 0) {
