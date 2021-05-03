@@ -226,6 +226,9 @@ public:
 
   static void StaticSplitStateLabel (VStr LabelName, TArray<VName> &Parts, bool appendToParts=false);
 
+  // find `TVec` struct (by name)
+  static VStruct *StaticFindTVec ();
+
   static void StaticAddIncludePath (const char *);
   static void StaticAddDefine (const char *);
 
@@ -249,6 +252,7 @@ public:
 private:
   static TArray<VStr> incpathlist;
   static TArray<VStr> definelist;
+  static VStruct *cachedTVec; // cached `TVec` struct
 };
 
 inline vuint32 GetTypeHash (const VMemberBase *M) { return (M ? hashU32(M->GetMemberId()) : 0); }

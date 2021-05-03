@@ -2301,6 +2301,15 @@ IMPLEMENT_FREE_FUNCTION(VObject, CreateDoomBox3D) {
 //  TVec
 //
 //**************************************************************************
+//native bool isZero () const;
+/*
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, isZero) {
+  TVec *Self;
+  vobjGetParam(Self);
+  RET_BOOL(Self->isZero());
+}
+*/
+
 //native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
 IMPLEMENT_FREE_FUNCTION(VObject, ClosestPointOnBox3D) {
   TVec Self;

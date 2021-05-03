@@ -75,6 +75,9 @@ vector TVec {
   float x;
   float y;
   float z;
+
+  //native bool isZero () const;
+  //bool isZero () const { return (x == 0.0 && y == 0.0 && z == 0.0); }
 };
 
 native static final TVec ClosestPointOnBox3D (const TVec p, const TVec bmin, const TVec bmax);

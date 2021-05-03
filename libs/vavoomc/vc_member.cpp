@@ -53,6 +53,8 @@ VClass *VMemberBase::GClasses;
 TArray<VStr> VMemberBase::incpathlist;
 TArray<VStr> VMemberBase::definelist;
 
+VStruct *VMemberBase::cachedTVec = nullptr; // cached `TVec` struct
+
 bool VMemberBase::WarningUnusedLocals = true;
 bool VMemberBase::doAsmDump = false;
 
@@ -591,6 +593,25 @@ VClass *VMemberBase::StaticFindClassByGameObjName (VName aname, VName pkgname) {
     }
   }
   return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VMemberBase::StaticFindTVec
+//
+//==========================================================================
+VStruct *VMemberBase::StaticFindTVec () {
+  if (!cachedTVec) {
+    // vcc cannot do this, so let's play safe
+    //VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", /*ANY_PACKAGE*/VObject::StaticClass(), MEMBER_Struct);
+    VClass *ocls = (VClass *)VMemberBase::StaticFindMember("Object", ANY_PACKAGE, MEMBER_Class);
+    vassert(ocls);
+    VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", ocls, MEMBER_Struct);
+    if (!tvs) VCFatalError("VC: internal compiler error: no `TVec` vector type");
+    cachedTVec = tvs;
+  }
+  return cachedTVec;
 }
 
 

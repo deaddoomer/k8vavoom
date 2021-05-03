@@ -171,19 +171,7 @@ VExpression *VPointerField::DoResolve (VEmitContext &ec) {
     }
   } else if (type.Type == TYPE_Vector) {
     // vectors are such structs
-    if (!type.Struct) {
-      // vcc cannot do this, so let's play safe
-      //VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", /*ANY_PACKAGE*/VObject::StaticClass(), MEMBER_Struct);
-      VClass *ocls = (VClass *)VMemberBase::StaticFindMember("Object", ANY_PACKAGE, MEMBER_Class);
-      vassert(ocls);
-      VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", ocls, MEMBER_Struct);
-      if (!tvs) {
-        ParseError(Loc, "Cannot find `TVec` struct for vector type");
-        delete this;
-        return nullptr;
-      }
-      type.Struct = tvs;
-    }
+    if (!type.Struct) type.Struct = VMemberBase::StaticFindTVec();
   } else if (type.Type == TYPE_Reference) {
     // this can came from dictionary
     if (!type.Class) {
@@ -560,7 +548,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
   if (op->Type.Type == TYPE_Struct || op->Type.Type == TYPE_Vector) {
     VFieldType type = op->Type;
     // `auto v = vector(a, b, c)` is vector without struct, for example, hence the check
-    if (!type.Struct) {
+    if (!type.Struct || type.Struct == VMemberBase::StaticFindTVec()) {
       // try to parse swizzle
       const char *s = *FieldName;
       if (!s[1] && (s[0] == 'x' || s[0] == 'y' || s[0] == 'z')) {
@@ -572,9 +560,10 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
           delete this;
           return e->Resolve(ec);
         } else {
-          ParseError(Loc, "Cannot assign to local vector field `%s`", *FieldName);
-          delete this;
-          return nullptr;
+          // process as normal, we can assign to local field
+          //ParseError(Loc, "Cannot assign to local vector field `%s`", *FieldName);
+          //delete this;
+          //return nullptr;
         }
       } else {
         int swidx = VVectorSwizzleExpr::ParseSwizzles(s);
@@ -595,8 +584,14 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       // bad swizzle or field access, process with normal resolution
     }
     // struct method
-    if (op->Type.Type == TYPE_Struct) {
-      VMethod *M = type.Struct->FindAccessibleMethod(FieldName, /*type.Struct*/ec.SelfStruct, &Loc);
+    /*if (op->Type.Type == TYPE_Struct || op->Type.Type == TYPE_Vector)*/
+    {
+      VStruct *parentStruct = type.Struct;
+      if (!parentStruct) {
+        vassert(op->Type.Type == TYPE_Vector);
+        parentStruct = VMemberBase::StaticFindTVec();
+      }
+      VMethod *M = parentStruct->FindAccessibleMethod(FieldName, /*type.Struct*/ec.SelfStruct, &Loc);
       if (M) {
         if (M->IsIterator()) {
           ParseError(Loc, "Iterator methods can only be used in foreach statements");
@@ -615,7 +610,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       }
     }
     // field
-    VField *field = (type.Struct ? type.Struct->FindField(FieldName) : nullptr);
+    VField *field = (type.Struct ? type.Struct->FindField(FieldName) : (op->Type.Type == TYPE_Vector ? VMemberBase::StaticFindTVec()->FindField(FieldName) : nullptr));
     if (!field) {
       // try to parse swizzle
       const char *s = *FieldName;

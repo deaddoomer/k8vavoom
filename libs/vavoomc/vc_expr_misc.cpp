@@ -128,6 +128,7 @@ VExpression *VVectorExpr::DoResolve (VEmitContext &ec) {
   }
 
   Type = TYPE_Vector;
+  Type.Struct = VMemberBase::StaticFindTVec();
   return this;
 }
 

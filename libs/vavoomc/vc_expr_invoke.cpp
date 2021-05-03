@@ -1142,13 +1142,16 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
   }
 
   // struct methods
-  if (SelfExpr->Type.IsNormalOrPointerType(TYPE_Struct)) {
-    VMethod *M = SelfExpr->Type.Struct->FindAccessibleMethod(MethodName, /*SelfExpr->Type.Struct*/ec.SelfStruct, &Loc);
+  if (SelfExpr->Type.IsNormalOrPointerType(TYPE_Struct) || SelfExpr->Type.IsNormalOrPointerType(TYPE_Vector)) {
+    VStruct *selfStruct = SelfExpr->Type.Struct;
+    if (!selfStruct && SelfExpr->Type.IsNormalOrPointerType(TYPE_Vector)) selfStruct = VMemberBase::StaticFindTVec();
+    if (!selfStruct) VCFatalError("VC: internal compiler error: no struct in `VDotInvocation::DoResolve()`");
+    VMethod *M = selfStruct->FindAccessibleMethod(MethodName, /*SelfExpr->Type.Struct*/ec.SelfStruct, &Loc);
     // do not fail here, this could be a delegate invocation
     if (M) {
       if (SelfExpr->Type.Type != TYPE_Pointer) {
         if (SelfExpr->IsTypeExpr()) {
-          if (!M->IsStatic()) ParseError(Loc, "cannot call non-static method `%s::%s` as static", *SelfExpr->Type.Struct->Name, *MethodName);
+          if (!M->IsStatic()) ParseError(Loc, "cannot call non-static method `%s::%s` as static", *selfStruct->Name, *MethodName);
           // do not re-resolve
           delete selfCopy;
           selfCopy = nullptr;
@@ -1179,7 +1182,7 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
         delete this;
         return nullptr;
       }
-      //GLog.Logf(NAME_Debug, "compiling call to struct method `%s::%s`", *SelfExpr->Type.Struct->Name, *MethodName);
+      //GLog.Logf(NAME_Debug, "compiling call to struct method `%s::%s`", *selfStruct->Name, *MethodName);
       VExpression *e = new VInvocation(SelfExpr, M, nullptr, true, false, Loc, NumArgs, Args);
       SelfExpr = nullptr;
       NumArgs = 0;

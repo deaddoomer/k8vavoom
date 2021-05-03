@@ -107,15 +107,7 @@ VTypeExpr *VTypeExpr::NewTypeExprFromAuto (VFieldType atype, const TLocation &al
   // convert vector to `TVec` struct
   if (atype.Type == TYPE_Vector || (atype.Type == TYPE_Pointer && atype.InnerType == TYPE_Vector)) {
     if (!atype.Struct) {
-      // vcc cannot do this, so let's play safe
-      //VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", /*ANY_PACKAGE*/VObject::StaticClass(), MEMBER_Struct);
-      VClass *ocls = (VClass *)VMemberBase::StaticFindMember("Object", ANY_PACKAGE, MEMBER_Class);
-      vassert(ocls);
-      VStruct *tvs = (VStruct *)VMemberBase::StaticFindMember("TVec", ocls, MEMBER_Struct);
-      if (!tvs) {
-        ParseError(aloc, "Cannot find `TVec` struct for vector type");
-        return NewTypeExpr(atype, aloc);
-      }
+      VStruct *tvs = VMemberBase::StaticFindTVec();
       VFieldType stt = VFieldType(tvs);
       return new VTypeExprSimple(stt, aloc);
     }
