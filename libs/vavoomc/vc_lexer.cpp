@@ -46,7 +46,7 @@ bool VLexer::tablesInited = false;
 //  VLexer::VLexer
 //
 //==========================================================================
-VLexer::VLexer ()
+VLexer::VLexer () noexcept
   : sourceOpen(false)
   , currCh(0)
   , src(nullptr)
@@ -132,7 +132,7 @@ void VLexer::RemoveDefine (VStr CondName, bool showWarning) {
 //  VLexer::HasDefine
 //
 //==========================================================================
-bool VLexer::HasDefine (VStr CondName) {
+bool VLexer::HasDefine (VStr CondName) noexcept {
   if (CondName.length() == 0) return false;
   for (auto &&ds : defines) if (ds == CondName) return true;
   return false;
@@ -232,7 +232,7 @@ void VLexer::PushSource (VStream *Strm, VStr FileName) {
   if (Strm->IsError() || FileSize < 0) { delete Strm; VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
   delete Strm;
 
-  NewSrc->FileStart[FileSize] = 0;
+  NewSrc->FileStart[FileSize] = 0; // this is not really required, but let's make the whole buffer initialized
   NewSrc->FileEnd = NewSrc->FileStart+FileSize;
   NewSrc->FilePtr = NewSrc->FileStart;
 
@@ -314,6 +314,8 @@ void VLexer::NextToken () {
 //
 //  VLexer::NextChr
 //
+//  read next character into `currCh`
+//
 //==========================================================================
 void VLexer::NextChr () {
   if (src->FilePtr >= src->FileEnd) {
@@ -337,8 +339,10 @@ void VLexer::NextChr () {
 //
 //  VLexer::Peek
 //
+//  0 is "currCh"
+//
 //==========================================================================
-char VLexer::Peek (int dist) const {
+char VLexer::Peek (int dist) const noexcept {
   if (dist < 0) ParseError(Location, "VC INTERNAL COMPILER ERROR: peek dist is negative!");
   if (dist == 0) {
     return (src->FilePtr > src->FileStart ? src->FilePtr[-1] : src->FilePtr[0]);
@@ -442,7 +446,7 @@ void VLexer::SkipWhitespaceAndComments () {
 //  VLexer::peekNextNonBlankChar
 //
 //==========================================================================
-char VLexer::peekNextNonBlankChar () const {
+char VLexer::peekNextNonBlankChar () const noexcept {
   const char *fpos = src->FilePtr;
   if (fpos > src->FileStart) --fpos; // unget last char
   while (fpos < src->FileEnd) {
@@ -1058,78 +1062,14 @@ void VLexer::AddIncludePath (VStr DirName) {
 //==========================================================================
 void VLexer::ProcessNumberToken () {
   Token = TK_IntLiteral;
-
-  char c = currCh;
-  NextChr();
-
-#if 0
-  Number = c-'0';
-  // hex/octal/decimal/binary constant?
-  if (c == '0') {
-    int base = 0;
-    switch (currCh) {
-      case 'x': case 'X': base = 16; break;
-      case 'd': case 'D': base = 10; break;
-      case 'o': case 'O': base = 8; break;
-      case 'b': case 'B': base = 2; break;
-    }
-    if (base != 0) {
-      NextChr();
-      for (;;) {
-        if (currCh != '_') {
-          if (base == 16) {
-            if (ASCIIToHexDigit[(vuint8)currCh] == NON_HEX_DIGIT) break;
-            Number = (Number<<4)+ASCIIToHexDigit[(vuint8)currCh];
-          } else {
-            if (currCh < '0' || currCh >= '0'+base) break;
-            Number = Number*base+(currCh-'0');
-          }
-        }
-        NextChr();
-      }
-      if (isAlpha(currCh)) ParseError(Location, "Invalid number");
-      return;
-    }
-  }
-
-  for (;;) {
-    if (currCh != '_') {
-      if (ASCIIToChrCode[(vuint8)currCh] != CHR_Number) break;
-      Number = 10*Number+(currCh-'0');
-    }
-    NextChr();
-  }
-
-  if (currCh == '.') {
-    char nch = Peek(1);
-    if (isAlpha(nch) || nch == '_' || nch == '.') {
-      // num dot smth
-      return; // so 10.seconds is allowed
-    } else {
-      Token = TK_FloatLiteral;
-      NextChr(); // skip dot
-      Float = Number;
-      float fmul = 0.1f;
-      for (;;) {
-        if (currCh != '_') {
-          if (ASCIIToChrCode[(vuint8)currCh] != CHR_Number) break;
-          Float += (currCh-'0')*fmul;
-          fmul /= 10.0f;
-        }
-        NextChr();
-      }
-      if (currCh == 'f') NextChr();
-    }
-  }
-
-  if (isAlpha(currCh)) ParseError(Location, "Invalid number");
-#else
-  // collect number
-  char numbuf[256];
-  numbuf[0] = c;
-  unsigned int nbpos = 1;
+  // collect number into buffer, because we have to call a proper parser for floats
   bool isHex = false;
+  char numbuf[256];
+  unsigned nbpos = 1; // [0] will be `currCh`
   Number = 0;
+  char c = currCh;
+  numbuf[0] = c;
+  NextChr();
   if (c == '0') {
     int base = 0;
     switch (currCh) {
@@ -1139,8 +1079,8 @@ void VLexer::ProcessNumberToken () {
       case 'b': case 'B': base = 2; break;
     }
     if (base != 0) {
-      // other radixes, only integers
-      NextChr();
+      // non-hex radix, only integers
+      NextChr(); // skip radix char
       for (;;) {
         if (currCh != '_') {
           int d = VStr::digitInBase(currCh, base);
@@ -1149,14 +1089,17 @@ void VLexer::ProcessNumberToken () {
         }
         NextChr();
       }
-#ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
-      fprintf(stderr, "*** CONVERTED INT(base=%d): %d\n", base, Number);
-#endif
+      #ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
+      GLog.Logf(NAME_Debug, "*** CONVERTED INT(base=%d): %d", base, Number);
+      #endif
       if (isAlpha(currCh)) ParseError(Location, "Invalid number");
       return;
     }
     if (isHex) NextChr(); // skip 'x'
   }
+
+  // this may be integer or float, possibly in hex form
+
   // collect integral part
   int xbase = (isHex ? 16 : 10);
   for (;;) {
@@ -1168,23 +1111,30 @@ void VLexer::ProcessNumberToken () {
     }
     NextChr();
   }
+
+  // floating dot and then non-numeric char?
+  // it is so things like `10.seconds` are allowed
   if (currCh == '.') {
-    char nch = Peek(1);
-    //if (isAlpha(nch) || nch == '_' || nch == '.')
-    if (VStr::digitInBase(nch, xbase) < 0)
-    {
+    const char nch = Peek(1);
+    if (VStr::digitInBase(nch, xbase) < 0) {
       // num dot smth
-      numbuf[nbpos++] = 0;
-#ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
-      fprintf(stderr, "*** COLLECTED INT(0): <%s>\n", numbuf);
-#endif
+      numbuf[nbpos++] = 0; // we always have the room for trailing zero
+      #ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
+      GLog.Logf(NAME_Debug, "*** COLLECTED INT(0): <%s>", numbuf);
+      #endif
       if (!VStr::convertInt(numbuf, &Number)) ParseError(Location, "Invalid floating number");
-      return; // so 10.seconds is allowed
+      return;
     }
   }
-  if (currCh == 'f' || currCh == '.' || (isHex && (currCh == 'p' || currCh == 'P')) || (!isHex && (currCh == 'e' || currCh == 'E'))) {
-    // floating number
+
+  // float number?
+  if (currCh == 'f' || currCh == '.' ||
+      (isHex && (currCh == 'p' || currCh == 'P')) ||
+      (!isHex && (currCh == 'e' || currCh == 'E')))
+  {
+    // float number
     Token = TK_FloatLiteral;
+
     // dotted part
     if (currCh == '.') {
       if (nbpos >= sizeof(numbuf)-1) ParseError(Location, "Invalid number");
@@ -1200,8 +1150,11 @@ void VLexer::ProcessNumberToken () {
         NextChr();
       }
     }
+
     // exponent
-    if ((isHex && (currCh == 'p' || currCh == 'P')) || (!isHex && (currCh == 'e' || currCh == 'E'))) {
+    if ((isHex && (currCh == 'p' || currCh == 'P')) ||
+        (!isHex && (currCh == 'e' || currCh == 'E')))
+    {
       if (nbpos >= sizeof(numbuf)-1) ParseError(Location, "Invalid floating number exponent");
       numbuf[nbpos++] = (isHex ? 'p' : 'e');
       NextChr(); // skip e/p
@@ -1220,26 +1173,28 @@ void VLexer::ProcessNumberToken () {
         NextChr();
       }
     }
+
     // skip optional 'f'
     if (currCh == 'f') NextChr();
+
     if (isAlpha(currCh) || (currCh >= '0' && currCh <= '9')) ParseError(Location, "Invalid floating number");
     if (nbpos >= sizeof(numbuf)-1) { ParseError(Location, "Invalid floating number"); nbpos = (unsigned)(sizeof(numbuf)-1); }
-    numbuf[nbpos++] = 0;
-#ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
-    fprintf(stderr, "*** COLLECTED FLOAT: <%s>\n", numbuf);
-#endif
+    numbuf[nbpos++] = 0; // we always have the room for trailing zero
+    #ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
+    GLog.Logf(NAME_Debug, "*** COLLECTED FLOAT: <%s>\n", numbuf);
+    #endif
     if (!VStr::convertFloat(numbuf, &Float)) ParseError(Location, "Invalid floating number");
     Number = (int)Float;
   } else {
+    // not a float
     if (isAlpha(currCh) || (currCh >= '0' && currCh <= '9')) ParseError(Location, "Invalid integer number");
     if (nbpos >= sizeof(numbuf)-1) { ParseError(Location, "Invalid integer number"); nbpos = (unsigned)(sizeof(numbuf)-1); }
-    numbuf[nbpos++] = 0;
-#ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
-    fprintf(stderr, "*** COLLECTED INT(1): <%s>\n", numbuf);
-#endif
+    numbuf[nbpos++] = 0; // we always have the room for trailing zero
+    #ifdef VC_LEXER_DUMP_COLLECTED_NUMBERS
+    GLog.Logf(NAME_Debug, "*** COLLECTED INT(1): <%s>\n", numbuf);
+    #endif
     if (!VStr::convertInt(numbuf, &Number)) ParseError(Location, "Invalid integer number");
   }
-#endif
 }
 
 
@@ -1290,20 +1245,21 @@ void VLexer::ProcessChar () {
 
 //==========================================================================
 //
-//  VLexer::ProcessQuoteToken
+//  VLexer::ProcessQuoted
 //
 //==========================================================================
-void VLexer::ProcessQuoteToken () {
-  Token = TK_StringLiteral;
-  int len = 0;
+void VLexer::ProcessQuoted (const char ech) {
+  const unsigned maxlen = (ech == '"' ? MAX_QUOTED_LENGTH : (NAME_SIZE+1 < MAX_QUOTED_LENGTH ? NAME_SIZE+1 : MAX_QUOTED_LENGTH))-1;
+  unsigned len = 0;
+  bool collecting = true;
   NextChr();
-  while (currCh != '\"') {
-    if (len >= MAX_QUOTED_LENGTH-1) {
-      ParseError(Location, ERR_STRING_TOO_LONG);
+  while (currCh != ech) {
+    if (len >= maxlen) {
+      if (collecting) { ParseError(Location, ERR_STRING_TOO_LONG); collecting = false; len = maxlen; }
       NextChr();
       continue;
     }
-    ProcessChar();
+    ProcessChar(); // this also checks for newline
     tokenStringBuffer[len] = currCh;
     NextChr();
     ++len;
@@ -1315,26 +1271,23 @@ void VLexer::ProcessQuoteToken () {
 
 //==========================================================================
 //
+//  VLexer::ProcessQuoteToken
+//
+//==========================================================================
+void VLexer::ProcessQuoteToken () {
+  Token = TK_StringLiteral;
+  ProcessQuoted('"');
+}
+
+
+//==========================================================================
+//
 //  VLexer::ProcessSingleQuoteToken
 //
 //==========================================================================
 void VLexer::ProcessSingleQuoteToken () {
   Token = TK_NameLiteral;
-  int len = 0;
-  NextChr();
-  while (currCh != '\'') {
-    if (len >= MAX_IDENTIFIER_LENGTH-1) {
-      ParseError(Location, ERR_STRING_TOO_LONG);
-      NextChr();
-      continue;
-    }
-    ProcessChar();
-    tokenStringBuffer[len] = currCh;
-    NextChr();
-    ++len;
-  }
-  tokenStringBuffer[len] = 0;
-  NextChr();
+  ProcessQuoted('\'');
   Name = tokenStringBuffer;
 }
 
@@ -1346,10 +1299,11 @@ void VLexer::ProcessSingleQuoteToken () {
 //==========================================================================
 void VLexer::ProcessLetterToken (bool CheckKeywords) {
   Token = TK_Identifier;
-  int len = 0;
+  unsigned len = 0;
+  bool collecting = true;
   while (ASCIIToChrCode[(vuint8)currCh] == CHR_Letter || ASCIIToChrCode[(vuint8)currCh] == CHR_Number) {
-    if (len == MAX_IDENTIFIER_LENGTH-1) {
-      ParseError(Location, ERR_IDENTIFIER_TOO_LONG);
+    if (len >= MAX_IDENTIFIER_LENGTH-1) {
+      if (collecting) { ParseError(Location, ERR_IDENTIFIER_TOO_LONG); collecting = false; len = MAX_IDENTIFIER_LENGTH-1; }
       NextChr();
       continue;
     }
@@ -1361,7 +1315,7 @@ void VLexer::ProcessLetterToken (bool CheckKeywords) {
 
   if (!CheckKeywords) return;
 
-  //k8: it was a giant `switch`, but meh... it is 2018 now!
+  //k8: it was a giant `switch`, but meh... it is 2018^w 2019^w 2020^w 2021 now!
   const char *s = tokenStringBuffer;
   for (unsigned tidx = TK_Abstract; tidx < TK_URShiftAssign; ++tidx) {
     if (s[0] == TokenNames[tidx][0] && strcmp(s, TokenNames[tidx]) == 0) {
@@ -1386,7 +1340,7 @@ void VLexer::ProcessLetterToken (bool CheckKeywords) {
 //==========================================================================
 void VLexer::ProcessSpecialToken () {
   Token = TK_NoToken;
-  char tkbuf[9]; // way too much
+  char tkbuf[16]; // way too much
   size_t tkbpos = 0;
   for (;;) {
     tkbuf[tkbpos] = currCh;
@@ -1544,10 +1498,10 @@ void VLexer::Expect (const char *id, bool caseSensitive) {
 
 //==========================================================================
 //
-// VLexer::isNStrEqu
+//  VLexer::isNStrEqu
 //
 //==========================================================================
-bool VLexer::isNStrEqu (int spos, int epos, const char *s) const {
+bool VLexer::isNStrEqu (int spos, int epos, const char *s) const noexcept {
   if (!s) s = "";
   if (spos >= epos) return (s[0] == 0);
   if (spos < 0 || epos > src->FileEnd-src->FileStart) return false;
@@ -1559,7 +1513,7 @@ bool VLexer::isNStrEqu (int spos, int epos, const char *s) const {
 
 //==========================================================================
 //
-// VLexer::posAtEOS
+//  VLexer::posAtEOS
 //
 //==========================================================================
 bool VLexer::posAtEOS (int cpos) const {
@@ -1570,9 +1524,9 @@ bool VLexer::posAtEOS (int cpos) const {
 
 //==========================================================================
 //
-// VLexer::peekChar
+//  VLexer::peekChar
 //
-// returns 0 on EOS
+//  returns 0 on EOS
 //
 //==========================================================================
 vuint8 VLexer::peekChar (int cpos) const {
@@ -1586,9 +1540,9 @@ vuint8 VLexer::peekChar (int cpos) const {
 
 //==========================================================================
 //
-// VLexer::skipBlanksFrom
+//  VLexer::skipBlanksFrom
 //
-// returns `false` on EOS
+//  returns `false` on EOS
 //
 //==========================================================================
 bool VLexer::skipBlanksFrom (int &cpos) const {
@@ -1647,9 +1601,9 @@ bool VLexer::skipBlanksFrom (int &cpos) const {
 
 //==========================================================================
 //
-// VLexer::skipTokenFrom
+//  VLexer::skipTokenFrom
 //
-// calls skipBlanksFrom, returns token type or TK_NoToken
+//  calls skipBlanksFrom, returns token type or TK_NoToken
 //
 //==========================================================================
 EToken VLexer::skipTokenFrom (int &cpos, VStr *str=nullptr) const {
@@ -1774,12 +1728,12 @@ EToken VLexer::skipTokenFrom (int &cpos, VStr *str=nullptr) const {
 
 //==========================================================================
 //
-// VLexer::peekTokenType
+//  VLexer::peekTokenType
 //
-// this is freakin' slow, and won't cross "include" boundaries
-// offset==0 means "current token"
-// this doesn't process conditional directives,
-// so it is useful only for limited lookups
+//  this is freakin' slow, and won't cross "include" boundaries
+//  offset==0 means "current token"
+//  this doesn't process conditional directives,
+//  so it is useful only for limited lookups
 //
 //==========================================================================
 EToken VLexer::peekTokenType (int offset, VStr *tkstr) const {

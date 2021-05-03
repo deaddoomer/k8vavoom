@@ -48,10 +48,13 @@ enum EToken {
 //==========================================================================
 class VLexer {
 private:
-  enum { MAX_QUOTED_LENGTH = 256 };
-  enum { MAX_IDENTIFIER_LENGTH = 64 };
+  enum { MAX_QUOTED_LENGTH = 512 }; // with trailing zero
+  enum { MAX_IDENTIFIER_LENGTH = 64 }; // with trailing zero; must be less or equal to `MAX_QUOTED_LENGTH`
   enum { EOF_CHARACTER = 127 };
   enum { NON_HEX_DIGIT = 255 };
+
+  static_assert((unsigned)MAX_IDENTIFIER_LENGTH <= (unsigned)MAX_QUOTED_LENGTH, "invalid VLexer configuration");
+  static_assert((unsigned)MAX_IDENTIFIER_LENGTH <= (unsigned)NAME_SIZE+1, "invalid VLexer configuration");
 
   enum {
     CHR_EOF,
@@ -102,9 +105,10 @@ private:
 
   inline bool checkStrTk (const char *tokname) const { return (strcmp(tokenStringBuffer, tokname) == 0); }
 
+  // read next character into `currCh`
   void NextChr ();
   // 0 is "currCh"
-  char Peek (int dist=0) const;
+  char Peek (int dist=0) const noexcept; 
 
   // this skips comment, `currCh` is the first non-comment char
   // at enter, `currCh` must be the first comment char
@@ -133,6 +137,7 @@ private:
   void PopSource ();
   void ProcessNumberToken ();
   void ProcessChar ();
+  void ProcessQuoted (const char ech);
   void ProcessQuoteToken ();
   void ProcessSingleQuoteToken ();
   void ProcessLetterToken (bool);
@@ -148,7 +153,8 @@ private:
 
 private:
   // lookahead support
-  bool isNStrEqu (int spos, int epos, const char *s) const;
+  // is string at [spos..epos) equal to `s`?
+  bool isNStrEqu (int spos, int epos, const char *s) const noexcept;
   bool posAtEOS (int cpos) const;
   vuint8 peekChar (int cpos) const; // returns 0 on EOS
   bool skipBlanksFrom (int &cpos) const; // returns `false` on EOS
@@ -166,8 +172,8 @@ public:
 
   static const char *TokenNames[];
 
-  static inline bool isAlpha (char ch) { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
-  static inline bool isDigit (char ch) { return (ch >= '0' && ch <= '9'); }
+  static inline bool isAlpha (const char ch) noexcept { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
+  static inline bool isDigit (const char ch) noexcept { return (ch >= '0' && ch <= '9'); }
 
 public:
   // virtual file system callback (can be empty, and is empty by default)
@@ -177,23 +183,27 @@ public:
   VStream *(*dgOpenFile) (VLexer *self, VStr filename);
 
 public:
-  VLexer ();
+  VLexer () noexcept;
   ~VLexer ();
 
-  // returns `null` if file not found
+  // returns `nullptr` if file not found
   // by default it tries to call `dgOpenFile()`, if it is specified,
-  // otherwise falls back to standard vfs
+  // otherwise falls back to standard vfs (`VPackage::OpenFileStreamRO()`)
   // should NOT fail if file not found
   virtual VStream *doOpenFile (VStr filename);
 
   void AddDefine (VStr CondName, bool showWarning=true);
   void RemoveDefine (VStr CondName, bool showWarning=true);
-  bool HasDefine (VStr CondName);
-  void AddIncludePath (VStr DirName);
-  void OpenSource (VStr FileName);
-  void OpenSource (VStream *astream, VStr FileName); // takes ownership
+  bool HasDefine (VStr CondName) noexcept;
 
-  char peekNextNonBlankChar () const;
+  void AddIncludePath (VStr DirName);
+
+  void OpenSource (VStr FileName);
+  void OpenSource (VStream *astream, VStr FileName); // takes stream ownership
+
+  // return next non-blank non-comment char
+  // most of the time this will be `currCh`, but not always
+  char peekNextNonBlankChar () const noexcept;
 
   // this is freakin' slow, and won't cross "include" boundaries
   // offset==0 means "current token"
