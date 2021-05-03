@@ -867,6 +867,10 @@ public:
   void CalcSegLenOfs (seg_t *seg); // only length and offset
   void CalcSegPlaneDir (seg_t *seg); // plane, direction, but length and offset should be already set
 
+  // returns 0 for "unknown"
+  // `flags` is `VDrawer::ELFlag_XXX` set
+  vuint32 CalcEntityLight (VEntity *lowner, unsigned flags);
+
 private:
   void AddExtraFloorSane (line_t *line, sector_t *dst); // k8vavoom
   void AddExtraFloorShitty (line_t *line, sector_t *dst); // gozzo
@@ -1165,7 +1169,6 @@ public:
   // The validcount flags are used to avoid checking lines that are marked in
   // multiple mapblocks, so increment validcount before creating this object.
   inline VAllBlockLines allBlockLines (int x, int y, unsigned pobjMode=BLINES_ALL) const noexcept { return VAllBlockLines(this, x, y, pobjMode); }
-
 
 private:
   // need to have this due to `VEntity` being defined after `VLevel`

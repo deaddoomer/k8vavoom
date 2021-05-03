@@ -458,6 +458,18 @@ void VDrawer::DrawCrosshair () {
   if (!needCrosshair) return;
   needCrosshair = false;
   if (RendLev) RendLev->RenderCrosshair();
+  vuint32 CalcEntityLight (VEntity *lowner, unsigned flags);
+}
+
+
+//==========================================================================
+//
+//  VDrawer::CalcEntityLight
+//
+//==========================================================================
+vuint32 VDrawer::CalcEntityLight (VEntity *lowner, unsigned flags) {
+  if (!lowner || !RendLev) return 0;
+  return RendLev->CalcEntityLight(lowner, flags);
 }
 
 

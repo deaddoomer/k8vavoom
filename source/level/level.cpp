@@ -27,6 +27,7 @@
 #include "../server/sv_local.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
+# include "../drawer.h"
 #endif
 
 
@@ -1082,6 +1083,20 @@ void VLevel::dumpSectorRegions (const sector_t *dst) {
   GCon->Logf(" === bot -> top (sector: %p) ===", dst);
   for (const sec_region_t *reg = dst->eregions; reg; reg = reg->next) dumpRegion(reg);
   GCon->Log("--------");
+}
+
+
+//==========================================================================
+//
+//  VLevel::CalcEntityLight
+//
+//==========================================================================
+vuint32 VLevel::CalcEntityLight (VEntity *lowner, unsigned flags) {
+  if (!lowner) return 0u;
+#ifdef CLIENT
+  if (Drawer) return Drawer->CalcEntityLight(lowner, flags);
+#endif
+  return 0u;
 }
 
 

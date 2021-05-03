@@ -440,14 +440,28 @@ public:
   virtual bool IsNodeRendered (const node_t *node) const noexcept override;
   virtual bool IsSubsectorRendered (const subsector_t *sub) const noexcept override;
 
-  void CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb);
-  void CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb);
+  void CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags);
+  void CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags);
+
+  enum {
+    LP_IgnoreSelfLights = 1u<<0,
+    LP_IgnoreFixedLight = 1u<<1,
+    LP_IgnoreExtraLight = 1u<<2,
+    LP_IgnoreDynLights  = 1u<<3,
+    LP_IgnoreStatLights = 1u<<4,
+    LP_IgnoreGlowLights = 1u<<5,
+    LP_IgnoreAmbLight   = 1u<<6,
+  };
 
   // defined only after `PushDlights()`
   // `radius` is used for visibility raycasts
-  vuint32 LightPoint (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub=nullptr);
+  vuint32 LightPoint (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub=nullptr, unsigned flags=0u);
   // `radius` is used for... nothing yet
-  vuint32 LightPointAmbient (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub=nullptr);
+  vuint32 LightPointAmbient (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub=nullptr, unsigned flags=0u);
+
+  // `dflags` is `VDrawer::ELFlag_XXX` set
+  // returns 0 for unknown
+  virtual vuint32 CalcEntityLight (VEntity *lowner, unsigned dflags) override;
 
   virtual void UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dofloors, bool doceils, bool forced=false) override;
 
@@ -978,13 +992,13 @@ protected:
 
   // this is common code for light point calculation
   // pass light values from ambient pass
-  void CalculateDynLightSub (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height);
+  void CalculateDynLightSub (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags);
 
   // calculate subsector's ambient light (light variables must be initialized)
-  void CalculateSubAmbient (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height);
+  void CalculateSubAmbient (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags);
 
   // calculate subsector's light from static light sources (light variables must be initialized)
-  void CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height);
+  void CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags);
 
   void CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox);
   void CalcStaticLightTouchingSubs (int slindex, light_t &sl);

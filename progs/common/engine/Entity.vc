@@ -588,6 +588,19 @@ native final void SetDecorateFlag (string Name, bool Value);
 native final bool GetDecorateFlag (string Name);
 
 
+bitenum {
+  ELFlag_IgnoreDynLights,
+  ELFlag_IgnoreStaticLights,
+  ELFlag_IgnoreAmbLights,
+  ELFlag_IgnoreGlowLights,
+  ELFlag_AllowSelfLights,
+}
+// get entity lighting
+// returns `0` if cannot calculate
+// currently, dedicated server cannot do it, and will always return 0
+native final int CalcLight (optional int flags/*=0*/);
+
+
 //==========================================================================
 //
 //  KeepChainResult

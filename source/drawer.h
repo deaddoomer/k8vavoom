@@ -843,6 +843,18 @@ public:
   // call this if you modified scissor by direct calls
   // this resets scissor state to disabled and (0,0)-(0,0), but won't call any graphics API
   virtual void ForceClearScissorState () = 0;
+
+public: // lighting
+  enum {
+    ELFlag_IgnoreDynLights    = 1u<<0,
+    ELFlag_IgnoreStaticLights = 1u<<1,
+    ELFlag_IgnoreAmbLights    = 1u<<2,
+    ELFlag_IgnoreGlowLights   = 1u<<3,
+    ELFlag_AllowSelfLights    = 1u<<4,
+  };
+
+  // returns 0 for "unknown"
+  vuint32 CalcEntityLight (VEntity *lowner, unsigned flags);
 };
 
 

@@ -12,6 +12,7 @@ ACTOR BDW_PlayerMuzzle {
   +ThruGhost
   -MoveWithSector
   +k8AllowSimpleTick
+  //+k8MuzzleFlash // ignore light from this actor in `CalcLight()`
   //+Ghost
   States {
     Spawn:

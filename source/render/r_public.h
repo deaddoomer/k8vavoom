@@ -175,6 +175,10 @@ public:
   virtual bool isNeedLightmapCache () const noexcept = 0;
   virtual void saveLightmaps (VStream *strm) = 0;
   virtual bool loadLightmaps (VStream *strm) = 0;
+
+  // `dflags` is `VDrawer::ELFlag_XXX` set
+  // returns 0 for unknown
+  virtual vuint32 CalcEntityLight (VEntity *lowner, unsigned dflags) = 0;
 };
 
 

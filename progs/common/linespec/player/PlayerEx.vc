@@ -25,6 +25,7 @@
 //**************************************************************************
 //#define SPOTLIGHT_DISCO_TEST
 //#define SPOTLIGHT_DISCO_CROWN_TEST
+//#define CALCLIGHT_TEST
 
 class PlayerEx : BasePlayer abstract;
 
@@ -204,6 +205,11 @@ struct SectorDamageInfo {
 
 
 #include "PlayerEx.cheats.vc"
+
+#ifdef CALCLIGHT_TEST
+transient int lastCalcLight = 0;
+#endif
+
 
 
 //==========================================================================
@@ -5232,6 +5238,21 @@ override void ClientTick (float deltaTime) {
     DebugPutRotatingSpotlightHead(MO.Origin+vector(0, 0, MO.Height+32), 100, 512, 0xff_ff_00_00, 0);
     DebugPutRotatingSpotlightHead(MO.Origin+vector(0, 0, MO.Height+32), 100, 512, 0xff_00_ff_00, 1);
     DebugPutRotatingSpotlightHead(MO.Origin+vector(0, 0, MO.Height+32), 100, 512, 0xff_ff_00_00, 2);
+  }
+#endif
+#ifdef CALCLIGHT_TEST
+  if (MO) {
+    int ll = MO.CalcLight();
+    if (ll != lastCalcLight) {
+      lastCalcLight = ll;
+      printdebug("PLAYER LIGHT: intensity=%3d; color=%02x_%02x_%02x", (ll>>>24), RGBGetR(ll), RGBGetG(ll), RGBGetB(ll));
+      ll = MO.CalcLight(Entity::ELFlag_IgnoreDynLights|Entity::ELFlag_IgnoreStaticLights);
+      printdebug("PLAYER AMB LIGHT: intensity=%3d; color=%02x_%02x_%02x", (ll>>>24), RGBGetR(ll), RGBGetG(ll), RGBGetB(ll));
+      ll = MO.CalcLight(Entity::ELFlag_IgnoreAmbLights|Entity::ELFlag_IgnoreDynLights);
+      printdebug("PLAYER STT LIGHT: intensity=%3d; color=%02x_%02x_%02x", (ll>>>24), RGBGetR(ll), RGBGetG(ll), RGBGetB(ll));
+      ll = MO.CalcLight(Entity::ELFlag_IgnoreAmbLights|Entity::ELFlag_IgnoreStaticLights);
+      printdebug("PLAYER DYN LIGHT: intensity=%3d; color=%02x_%02x_%02x", (ll>>>24), RGBGetR(ll), RGBGetG(ll), RGBGetB(ll));
+    }
   }
 #endif
   ::ClientTick(deltaTime);

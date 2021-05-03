@@ -1236,6 +1236,12 @@ IMPLEMENT_FUNCTION(VEntity, GetDecorateFlag) {
   RET_BOOL(Self->GetDecorateFlag(Name));
 }
 
+// native final int CalcLight (optional int flags/*=0*/);
+IMPLEMENT_FUNCTION(VEntity, CalcLight) {
+  VOptParamInt flags(0);
+  vobjGetParamSelf(flags);
+  RET_INT(Self->XLevel->CalcEntityLight(Self, (unsigned)flags.value));
+}
 
 
 // native final void QS_PutInt (name fieldname, int value);

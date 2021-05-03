@@ -68,20 +68,60 @@ static TFrustumParam fpDLight;
 } while (0)
 
 
+static VClass *eexCls = nullptr;
+static VClass *invCls = nullptr;
+static VField *invFld = nullptr;
+//static VField *mflFld = nullptr;
+
+
+//==========================================================================
+//
+//  IsSelfLight
+//
+//==========================================================================
+static bool IsSelfLight (VEntity *owner, vuint32 invUId) {
+  if (!owner || !invUId) return false;
+  if (owner->ServerUId == invUId) return true;
+
+  if (!eexCls) {
+    eexCls = VThinker::FindClassChecked("EntityEx");
+    invCls = VThinker::FindClassChecked("Inventory");
+    invFld = VThinker::FindTypedField(eexCls, "Inventory", TYPE_Reference, invCls);
+    //mflFld = FindTypedField(eexCls, "bMeIsMuzzleFlash", TYPE_Bool);
+  }
+
+  #if 0
+  {
+    const int ocnt = VObject::GetObjectsCount();
+    for (int f = 0; f < ocnt; ++f) {
+      VObject *o = VObject::GetIndexObject(f);
+      if (o && o->GetUniqueId() == invUId) {
+        GCon->Logf(NAME_Debug, "invUId:%u -- %s(%u)", invUId, o->GetClass()->GetName(), o->GetUniqueId());
+        break;
+      }
+    }
+  }
+  #endif
+
+  // loop over inventory
+  for (VEntity *inv = (VEntity *)invFld->GetObjectValue(owner); inv; inv = (VEntity *)invFld->GetObjectValue(inv)) {
+    //GCon->Logf(NAME_Debug, "owner:%s(%u); invUId=%u; inv=%s(%u) with uid=%u", owner->GetClass()->GetName(), owner->GetUniqueId(), invUId, inv->GetClass()->GetName(), inv->GetUniqueId(), inv->ServerUId);
+    if (inv->ServerUId == invUId && inv->Owner == owner) return true;
+  }
+
+  return false;
+}
+
+
 //==========================================================================
 //
 //  calcLightPoint
 //
+//  raise a point to 1/2 of the height
+//
 //==========================================================================
-static inline TVec calcLightPoint (const TVec &pt, float height) {
-  TVec p = pt;
-  if (height > 0.0f) {
-    // raise a point to 1/3 of the height
-    //p.z += height*(1.0f/3.0f);
-    // raise a point to 1/2 of the height
-    p.z += height*0.5f;
-  }
-  return p;
+static inline TVec calcLightPoint (const TVec &pt, float height) noexcept {
+  return TVec(pt.x, pt.y, pt.z+max2(0.0f, height)*0.5f);
 }
 
 
@@ -843,9 +883,9 @@ for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
 //  VRenderLevelShared::CalcEntityStaticLightingFromOwned
 //
 //==========================================================================
-void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb) {
+void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags) {
   // fullight by owned lights
-  if (!lowner) return;
+  if (!lowner || (flags&LP_IgnoreSelfLights)) return;
 
   auto stpp = StOwners.find(lowner->ServerUId);
   if (!stpp) return;
@@ -875,9 +915,9 @@ void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, con
 //  VRenderLevelShared::CalcEntityDynamicLightingFromOwned
 //
 //==========================================================================
-void VRenderLevelShared::CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb) {
+void VRenderLevelShared::CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags) {
   // fullight by owned lights
-  if (!lowner) return;
+  if (!lowner || (flags&LP_IgnoreSelfLights)) return;
 
   auto dlpp = dlowners.find(lowner->ServerUId);
   if (!dlpp) return;
@@ -909,7 +949,7 @@ void VRenderLevelShared::CalcEntityDynamicLightingFromOwned (VEntity *lowner, co
 //  pass light values from ambient pass
 //
 //==========================================================================
-void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height) {
+void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height, unsigned flags) {
   //WARNING! if `MAX_DLIGHTS` is not 32, remove the last check
   if (r_dynamic_lights && sub->dlightframe == currDLightFrame && sub->dlightbits) {
     const TVec p = calcLightPoint(pt, height);
@@ -926,6 +966,8 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
       // reject owned light, because they are processed by another method
       const dlight_t &dl = DLights[i];
       if (lowner && lowner->ServerUId == dl.ownerUId) continue;
+      // special processing for API light queries
+      if ((flags&LP_IgnoreSelfLights) && lowner && IsSelfLight(lowner, dl.ownerUId)) continue;
       if (dl.type&DLTYPE_Subtractive) continue;
       //if (!dl.radius || dl.die < Level->Time) continue; // this is not needed here
       const float distSq = (p-dl.origin).lengthSquared();
@@ -964,7 +1006,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
 //  (light variables must be initialized)
 //
 //==========================================================================
-void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height) {
+void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height, unsigned flags) {
   if (r_static_lights && sub) {
     if (!staticLightsFiltered) RefilterStaticLights();
     const TVec p = calcLightPoint(pt, height);
@@ -1041,13 +1083,13 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
 //  (light variables must be initialized)
 //
 //==========================================================================
-void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height) {
+void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags) {
   unsigned glowFlags = 3u; // bit 0: floor glow allowed; bit 1: ceiling glow allowed
   if (height < 0.0f) height = 0.0f;
 
   //const TVec p = calcLightPoint(pt, height);
   //FIXME: this is slightly wrong (and slow)
-  if (/*!skipAmbient &&*/ sub->regions) {
+  if (/*!skipAmbient &&*/ sub->regions && !(flags&LP_IgnoreAmbLight)) {
     //sec_region_t *regbase;
     sec_region_t *reglight = Level->PointRegionLight(sub, p, &glowFlags);
 
@@ -1056,7 +1098,7 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
     //glowAllowed = !!(regbase->regflags&sec_region_t::RF_BaseRegion);
 
     // region's base light
-    l = R_GetLightLevel(0, reglight->params->lightlevel+ExtraLight);
+    l = R_GetLightLevel(0, reglight->params->lightlevel+(flags&LP_IgnoreExtraLight ? 0 : ExtraLight));
 
     int SecLightColor = reglight->params->LightColor;
     lr = ((SecLightColor>>16)&255)*l/255.0f;
@@ -1132,7 +1174,7 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
 
 
   // glowing flats
-  if (glowFlags && r_glow_flat && sub->sector) {
+  if (glowFlags && r_glow_flat && sub->sector && !(flags&LP_IgnoreGlowLights)) {
     //const float hadd = height*(1.0f/8.0f);
     const float hadd = 6.0f;
     const sector_t *sec = sub->sector;
@@ -1170,27 +1212,31 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
 //  VRenderLevelShared::LightPoint
 //
 //==========================================================================
-vuint32 VRenderLevelShared::LightPoint (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub) {
-  if (FixedLight) return FixedLight|(FixedLight<<8)|(FixedLight<<16)|(FixedLight<<24);
+vuint32 VRenderLevelShared::LightPoint (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub, unsigned flags) {
+  if (FixedLight && !(flags&LP_IgnoreFixedLight)) return FixedLight|(FixedLight<<8)|(FixedLight<<16)|(FixedLight<<24);
 
   const subsector_t *sub = (psub ? psub : Level->PointInSubsector(p));
 
   float l = 0.0f, lr = 0.0f, lg = 0.0f, lb = 0.0f;
 
   // calculate ambient light level
-  CalculateSubAmbient(lowner, l, lr, lg, lb, sub, p, radius, height);
+  CalculateSubAmbient(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
 
   // fullight by owned lights
-  if (lowner) {
-    CalcEntityStaticLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb);
-    CalcEntityDynamicLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb);
+  if (lowner && !(flags&LP_IgnoreSelfLights)) {
+    CalcEntityStaticLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb, flags);
+    CalcEntityDynamicLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb, flags);
   }
 
   // add static lights
-  /*if (IsShadowVolumeRenderer())*/ CalculateSubStatic(lowner, l, lr, lg, lb, sub, p, radius, height);
+  if (!(flags&LP_IgnoreStatLights)) {
+    /*if (IsShadowVolumeRenderer())*/ CalculateSubStatic(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
+  }
 
   // add dynamic lights
-  CalculateDynLightSub(lowner, l, lr, lg, lb, sub, p, radius, height);
+  if (!(flags&LP_IgnoreDynLights)) {
+    CalculateDynLightSub(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
+  }
 
   return
     (((vuint32)clampToByte((int)l))<<24)|
@@ -1207,18 +1253,18 @@ vuint32 VRenderLevelShared::LightPoint (VEntity *lowner, const TVec p, float rad
 //  used in advrender to calculate model lighting
 //
 //==========================================================================
-vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub) {
-  if (FixedLight) return FixedLight|(FixedLight<<8)|(FixedLight<<16)|(FixedLight<<24);
+vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub, unsigned flags) {
+  if (FixedLight && !(flags&LP_IgnoreFixedLight)) return FixedLight|(FixedLight<<8)|(FixedLight<<16)|(FixedLight<<24);
 
   const subsector_t *sub = (psub ? psub : Level->PointInSubsector(p));
   float l = 0.0f, lr = 0.0f, lg = 0.0f, lb = 0.0f;
 
-  CalculateSubAmbient(lowner, l, lr, lg, lb, sub, p, radius, height);
+  CalculateSubAmbient(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
 
   // fullight by owned lights
-  if (lowner) {
-    CalcEntityStaticLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb);
-    CalcEntityDynamicLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb);
+  if (lowner && !(flags&LP_IgnoreSelfLights)) {
+    CalcEntityStaticLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb, flags);
+    CalcEntityDynamicLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb, flags);
   }
 
   return
@@ -1335,4 +1381,29 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
 //
 //==========================================================================
 void VRenderLevelShared::InvalidateStaticLightmapsSubs (subsector_t *sub) {
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::CalcEntityLight
+//
+//  `flags` is `VDrawer::ELFlag_XXX` set
+//  returns 0 for unknown
+//
+//==========================================================================
+vuint32 VRenderLevelShared::CalcEntityLight (VEntity *lowner, unsigned dflags) {
+  if (!lowner) return 0;
+  const unsigned lflags =
+    LP_IgnoreFixedLight|
+    LP_IgnoreExtraLight|
+    (dflags&VDrawer::ELFlag_AllowSelfLights ? 0u : LP_IgnoreSelfLights)|
+    (dflags&VDrawer::ELFlag_IgnoreDynLights ? LP_IgnoreDynLights : 0u)|
+    (dflags&VDrawer::ELFlag_IgnoreStaticLights ? LP_IgnoreStatLights : 0u)|
+    (dflags&VDrawer::ELFlag_IgnoreAmbLights ? LP_IgnoreAmbLight : 0u)|
+    (dflags&VDrawer::ELFlag_IgnoreGlowLights ? LP_IgnoreGlowLights : 0u)|
+    0u;
+  vuint32 res = LightPoint(lowner, lowner->Origin, max2(1.0f, lowner->Radius), max2(0.0f, lowner->Height), lowner->SubSector, lflags);
+  if (res == 0u) res = 0x01000000u;
+  return res;
 }
