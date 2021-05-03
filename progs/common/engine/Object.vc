@@ -76,18 +76,18 @@ vector TVec {
   float y;
   float z;
 
-  //native bool isZero () const;
-  //bool isZero () const { return (x == 0.0 && y == 0.0 && z == 0.0); }
-};
+  native bool isZero () const;
+  native bool isZero2D () const;
 
-native static final TVec ClosestPointOnBox3D (const TVec p, const TVec bmin, const TVec bmax);
-native static final TVec ClosestPointOnDoomBox3D (const TVec p, const TVec origin, const float radius, const float height);
-native static final TVec ClosestPointOnBox2D (const TVec p, const TVec bmin, const TVec bmax);
-native static final TVec ClosestPointOnDoomBox2D (const TVec p, const TVec origin, const float radius);
-native static final float Box3DDistanceSquared (const TVec p, const TVec bmin, const TVec bmax);
-native static final float DoomBox3DDistanceSquared (const TVec p, const TVec origin, const float radius, const float height);
-native static final float Box2DDistanceSquared (const TVec p, const TVec bmin, const TVec bmax);
-native static final float DoomBox2DDistanceSquared (const TVec p, const TVec origin, const float radius);
+  native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
+  native TVec ClosestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
+  native TVec ClosestPointOnBox2D (const TVec bmin, const TVec bmax) const;
+  native TVec ClosestPointOnDoomBox2D (const TVec origin, const float radius) const;
+  native float Box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float DoomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
+  native float Box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float DoomBox2DDistanceSquared (const TVec origin, const float radius) const;
+};
 
 
 vector TAVec {
@@ -407,12 +407,22 @@ struct event_t {
   bool bCtrlRight;
   bool bAltRight;
   bool bShiftRight;
+
+  native void clear ();
+  alias Clear = clear;
+
+  native bool isAnyMouse () const;
+  alias IsAnyMouse = isAnyMouse;
+
+  // default is both press and release
+  native bool isMouseButton (optional bool down/*=undefined*/) const;
+  alias IsMouseButton = isMouseButton;
 };
 
-native static final void EventClear (ref event_t evt);
-native static final bool EventIsAnyMouse (ref event_t evt);
+static final void EventClear (ref event_t evt) { evt.clear(); }
+static final bool EventIsAnyMouse (ref event_t evt) { return evt.isAnyMouse(); }
 // default is both press and release
-native static final bool EventIsMouseButton (ref event_t evt, optional bool down/*=undefined*/);
+static final bool EventIsMouseButton (ref event_t evt, optional bool down/*=undefined*/) { return evt.isMouseButton(down!optional); }
 
 
 bitenum ModMask {
@@ -601,6 +611,8 @@ alias normalize = normalise;
 native static final TVec normalise2D (const TVec vec) [builtin VecNormalize2D];
 alias Normalise2D = normalise2D;
 alias normalise2d = normalise2D;
+alias Normalize2D = normalise2D;
+alias normalize2d = normalise2D;
 // dot product
 native static final float dot (const TVec v1, const TVec v2) [builtin VecDot];
 alias DotProduct = dot;
