@@ -440,7 +440,7 @@ void VOpenGLDrawer::DrawSurfaceShadowMap (const surface_t *surf) {
     const bool textureChanged = smapLastTexinfo.needChange(*currTexinfo, updateFrame);
     if (textureChanged) {
       smapLastTexinfo.updateLastUsed(*currTexinfo);
-      //SetTexture(currTexinfo->Tex, currTexinfo->ColorMap);
+      //SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap);
       SetShadowTexture(currTexinfo->Tex);
       SurfShadowMapTex.SetTex(currTexinfo);
     }
@@ -605,7 +605,7 @@ void VOpenGLDrawer::RenderShadowMaps (TArray<surface_t *> &solid, TArray<surface
         if (textureChanged) {
           prevSIdx = currSIdx;
           smapLastTexinfo.updateLastUsed(*currTexinfo);
-          //SetTexture(currTexinfo->Tex, currTexinfo->ColorMap);
+          //SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap);
           SetShadowTexture(currTexinfo->Tex);
           SurfShadowMapTexNoBuf.SetTex(currTexinfo);
           currentActiveShader->UploadChangedUniforms();

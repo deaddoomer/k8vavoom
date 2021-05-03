@@ -95,7 +95,7 @@ void VOpenGLDrawer::FillRectWithFlat (float x1, float y1, float x2, float y2,
   float s1, float t1, float s2, float t2, VTexture *Tex)
 {
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  SetTexture(Tex, CM_Default);
+  SetCommonTexture(Tex, CM_Default);
   DrawSimple.Activate();
   DrawSimple.SetTexture(0);
   DrawSimple.SetAlpha(1.0f);
@@ -123,7 +123,7 @@ void VOpenGLDrawer::FillRectWithFlatRepeat (float x1, float y1, float x2, float 
   float s1, float t1, float s2, float t2, VTexture *Tex)
 {
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  SetTexture(Tex, CM_Default);
+  SetCommonTexture(Tex, CM_Default);
   DrawSimple.Activate();
   DrawSimple.SetTexture(0);
   DrawSimple.SetAlpha(1.0f);
@@ -361,7 +361,7 @@ void VOpenGLDrawer::DrawSpriteLump (float x1, float y1, float x2, float y2,
   VTexture *Tex, VTextureTranslation *Translation, bool flip)
 {
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
-  SetSpriteTexture(sprite_filter, Tex, Translation, CM_Default);
+  SetSpriteTexture(SpriteType::SP_Normal, sprite_filter, Tex, Translation, CM_Default);
 
   float s1, s2;
   if (flip) {
@@ -475,7 +475,7 @@ void VOpenGLDrawer::DrawTexturedPoly (const texinfo_t *tinfo, TVec light, float 
   if (!tinfo || !tinfo->Tex || vcount < 3 || alpha < 0.0f || tinfo->Tex->Type == TEXTYPE_Null) return;
   if (tinfo->Tex != texturedPolyLastTex) {
     texturedPolyLastTex = tinfo->Tex;
-    SetTexture(texturedPolyLastTex, CM_Default);
+    SetCommonTexture(texturedPolyLastTex, CM_Default);
   }
   if (alpha != texturedPolyLastAlpha) {
     texturedPolyLastAlpha = alpha;

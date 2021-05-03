@@ -41,7 +41,6 @@ extern VCvarF cl_fov;
 extern VCvarB gl_pic_filtering;
 extern VCvarB r_draw_psprites;
 extern VCvarB r_chasecam;
-extern VCvarI gl_release_ram_textures_mode;
 extern VCvarB gl_crop_psprites;
 
 static VCvarI crosshair("crosshair", "2", "Crosshair type (0-2).", CVAR_Archive);
@@ -122,13 +121,8 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
     return;
   }
 
-  // do not release psprite textures
-  const int oldRelease = gl_release_ram_textures_mode.asInt();
-  const bool cropIt = gl_crop_psprites.asBool();
-  if (cropIt) {
-    gl_release_ram_textures_mode = 0;
-    Tex->CropTexture();
-  }
+  // need to call cropper here, because if the texture is not cached yet, its dimensions are wrong
+  if (gl_crop_psprites.asBool()) Tex->CropTexture();
 
   const int TexWidth = Tex->GetWidth();
   const int TexHeight = Tex->GetHeight();
@@ -212,11 +206,9 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   Drawer->GLDisableDepthTestSlow();
   Drawer->DrawSpritePolygon((Level ? Level->Time : 0.0f), dv, GTextureManager[lump], ri,
     nullptr, ColorMap, -Drawer->viewforward,
-    DotProduct(dv[0], -Drawer->viewforward), saxis, taxis, texorg);
+    DotProduct(dv[0], -Drawer->viewforward), saxis, taxis, texorg, VDrawer::SpriteType::SP_PSprite);
   Drawer->PopDepthMaskSlow();
   Drawer->GLEnableDepthTestSlow();
-
-  if (cropIt) gl_release_ram_textures_mode = oldRelease;
 }
 
 

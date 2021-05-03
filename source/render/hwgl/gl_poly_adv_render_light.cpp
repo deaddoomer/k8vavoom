@@ -244,14 +244,14 @@ void VOpenGLDrawer::DrawSurfaceLight (const surface_t *surf) {
     const bool textureChanged = smapLastTexinfo.needChange(*currTexinfo, updateFrame);
     if (textureChanged) {
       smapLastTexinfo.updateLastUsed(*currTexinfo);
-      SetTexture(currTexinfo->Tex, currTexinfo->ColorMap);
+      SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap);
     }
     SETUP_SHADER_UNIS_TX(ShadowsLight);
   } else {
     SETUP_SHADER_UNIS(ShadowsLight);
   }
 
-  //SetTexture(currTexinfo->Tex, currTexinfo->ColorMap);
+  //SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap);
 
   if (surf->drawflags&surface_t::DF_NO_FACE_CULL) glDisable(GL_CULL_FACE);
   //glBegin(GL_POLYGON);

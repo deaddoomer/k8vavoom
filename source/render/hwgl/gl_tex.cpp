@@ -205,23 +205,33 @@ void VOpenGLDrawer::DeleteTexture (VTexture *Tex) {
 //  VOpenGLDrawer::PrecacheTexture
 //
 //==========================================================================
-void VOpenGLDrawer::PrecacheTexture (VTexture *Tex, bool doCrop) {
+void VOpenGLDrawer::PrecacheTexture (VTexture *Tex) {
   if (!Tex) return;
   if (Tex->bIsCameraTexture) return;
   ResetTextureUpdateFrames();
-  if (doCrop) {
-    //GCon->Logf(NAME_Debug, "precache with cropping: %s", *Tex->Name);
-    const int oldRelease = gl_release_ram_textures_mode.asInt();
-    const bool cropIt = (oldRelease < 2 && gl_crop_sprites.asBool());
-    if (cropIt) gl_release_ram_textures_mode = 0;
-    if (doCrop) Tex->CropTexture();
-    //SetSpriteTexture(sprite_filter, Tex, nullptr, 0);
-    SetTexture(Tex, 0);
-    if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
-    if (cropIt) gl_release_ram_textures_mode = oldRelease;
-  } else {
-    SetTexture(Tex, 0);
-    if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
+  SetCommonTexture(Tex, 0);
+  //if (Tex->Brightmap) SetBrightmapTexture(Tex->Brightmap);
+  if (Tex->Brightmap && Tex->Brightmap->Width > 1 && Tex->Brightmap->Height > 1) {
+    (void)SetTextureLump(SetTexType::TT_Brightmap, Tex->Brightmap, nullptr, 0, 0u);
+  }
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PrecacheSpriteTexture
+//
+//==========================================================================
+void VOpenGLDrawer::PrecacheSpriteTexture (VTexture *Tex, SpriteType sptype) {
+  if (!Tex) return;
+  if (Tex->bIsCameraTexture) return;
+  ResetTextureUpdateFrames();
+  switch (sptype) {
+    case SpriteType::SP_Normal: (void)SetTextureLump(SetTexType::TT_Sprite, Tex, nullptr, 0); break;
+    case SpriteType::SP_PSprite: (void)SetTextureLump(SetTexType::TT_PSprite, Tex, nullptr, 0); break;
+  }
+  if (Tex->Brightmap && Tex->Brightmap->Width > 1 && Tex->Brightmap->Height > 1) {
+    (void)SetTextureLump((sptype == SpriteType::SP_PSprite ? SetTexType::TT_PSpriteBrightmap: SetTexType::TT_SpriteBrightmap), Tex->Brightmap, nullptr, 0, 0u);
   }
 }
 
@@ -234,12 +244,8 @@ void VOpenGLDrawer::PrecacheTexture (VTexture *Tex, bool doCrop) {
 void VOpenGLDrawer::SetBrightmapTexture (VTexture *Tex) {
   if (!Tex || /*Tex->Type == TEXTYPE_Null ||*/ Tex->Width < 1 || Tex->Height < 1) return;
   if (Tex->bIsCameraTexture) return;
-  //SetTexture(Tex, 0); // default colormap
-  (void)SetSpriteLump(Tex, nullptr, 0, 0u);
-  /*
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  */
+  //SetCommonTexture(Tex, 0); // default colormap
+  (void)SetTextureLump(SetTexType::TT_Brightmap, Tex, nullptr, 0, 0u);
   // `asModel` sets GL_REPEAT
   SetupTextureFiltering(Tex, (r_brightmaps_filter ? 4 : 0), TexWrapRepeat); // trilinear or none
 }
@@ -247,15 +253,30 @@ void VOpenGLDrawer::SetBrightmapTexture (VTexture *Tex) {
 
 //==========================================================================
 //
-//  VOpenGLDrawer::SetTexture
+//  VOpenGLDrawer::SetSpriteBrightmapTexture
+//
+//==========================================================================
+void VOpenGLDrawer::SetSpriteBrightmapTexture (SpriteType sptype, VTexture *Tex) {
+  if (!Tex || Tex->Width < 1 || Tex->Height < 1) return;
+  if (Tex->bIsCameraTexture) return;
+  //SetCommonTexture(Tex, 0); // default colormap
+  (void)SetTextureLump((sptype == SpriteType::SP_PSprite ? SetTexType::TT_PSpriteBrightmap: SetTexType::TT_SpriteBrightmap), Tex, nullptr, 0, 0u);
+  // `asModel` sets GL_REPEAT
+  SetupTextureFiltering(Tex, (r_brightmaps_filter ? 4 : 0), TexWrapRepeat); // trilinear or none
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::SetCommonTexture
 //
 //  returns `false` if non-main texture was bound
 //
 //==========================================================================
-bool VOpenGLDrawer::SetTexture (VTexture *Tex, int CMap, vuint32 ShadeColor) {
+bool VOpenGLDrawer::SetCommonTexture (VTexture *Tex, int CMap, vuint32 ShadeColor) {
   if (!Tex) Sys_Error("cannot set null texture");
   // camera textures are special
-  const bool res = SetSpriteLump(Tex, nullptr, CMap, ShadeColor);
+  const bool res = SetTextureLump(SetTexType::TT_Common, Tex, nullptr, CMap, ShadeColor);
   SetOrForceTextureFiltering(res, Tex, texture_filter);
   return res;
 }
@@ -271,7 +292,7 @@ bool VOpenGLDrawer::SetTexture (VTexture *Tex, int CMap, vuint32 ShadeColor) {
 bool VOpenGLDrawer::SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor) {
   if (!Tex) Sys_Error("cannot set null texture");
   //GCon->Logf(NAME_Debug, "DECAL TEXTURE '%s'", *Tex->Name);
-  const bool res = SetSpriteLump(Tex, Translation, CMap, ShadeColor);
+  const bool res = SetTextureLump(SetTexType::TT_Decal, Tex, Translation, CMap, ShadeColor);
   SetOrForceTextureFiltering(res, Tex, texture_filter, TexWrapRepeat);
   return res;
 }
@@ -285,7 +306,7 @@ bool VOpenGLDrawer::SetDecalTexture (VTexture *Tex, VTextureTranslation *Transla
 //
 //==========================================================================
 bool VOpenGLDrawer::SetPic (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor) {
-  const bool res = SetSpriteLump(Tex, Trans, CMap, ShadeColor);
+  const bool res = SetTextureLump(SetTexType::TT_Pic, Tex, Trans, CMap, ShadeColor);
   const int oldAniso = gl_texture_filter_anisotropic.asInt();
   gl_texture_filter_anisotropic.Set(1);
   SetOrForceTextureFiltering(res, Tex, (gl_pic_filtering ? 3 : 0), TexWrapClamp);
@@ -302,7 +323,7 @@ bool VOpenGLDrawer::SetPic (VTexture *Tex, VTextureTranslation *Trans, int CMap,
 //
 //==========================================================================
 bool VOpenGLDrawer::SetPicModel (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor) {
-  const bool res = SetSpriteLump(Tex, Trans, CMap, ShadeColor);
+  const bool res = SetTextureLump(SetTexType::TT_Model, Tex, Trans, CMap, ShadeColor);
   SetOrForceTextureFiltering(res, Tex, model_filter, TexWrapRepeat);
   return res;
 }
@@ -310,12 +331,12 @@ bool VOpenGLDrawer::SetPicModel (VTexture *Tex, VTextureTranslation *Trans, int 
 
 //==========================================================================
 //
-//  VOpenGLDrawer::SetSpriteLump
+//  VOpenGLDrawer::SetTextureLump
 //
 //  returns `false` if non-main texture was bound
 //
 //==========================================================================
-bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor) {
+bool VOpenGLDrawer::SetTextureLump (SetTexType ttype, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor) {
   vassert(Tex);
   bool res = true;
   if (mInitialized) {
@@ -338,7 +359,7 @@ bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translati
       VTexture::VTransData *TData = (ShadeColor ? Tex->FindDriverShaded(ShadeColor, CMap, true) : Tex->FindDriverTrans(Translation, CMap, true));
       if (TData) {
         if (needUp || !TData->Handle || Tex->bIsCameraTexture) {
-          GenerateTexture(Tex, &TData->Handle, Translation, CMap, needUp, ShadeColor);
+          GenerateTexture(ttype, Tex, &TData->Handle, Translation, CMap, needUp, ShadeColor);
         } else {
           glBindTexture(GL_TEXTURE_2D, TData->Handle);
         }
@@ -349,8 +370,8 @@ bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translati
           for (int f = 0; f < Tex->DriverTranslated.length(); ++f) {
             TData = &Tex->DriverTranslated[f];
             const vint32 ttime = TData->lastUseTime;
-            // keep it for six seconds, and then drop it
-            if (ttime >= ctime || ctime-ttime < 35*6) continue;
+            // keep it for 100 seconds, and then drop it
+            if (ttime >= ctime || ctime-ttime < 35*100) continue;
             // drop it
             if (TData->Handle) glDeleteTextures(1, (GLuint *)&TData->Handle);
             Tex->ClearTranslationAt(f);
@@ -368,11 +389,11 @@ bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translati
         if (ctime >= 0) newtrans.lastUseTime = ctime;
         Tex->DriverTranslated.insert(0, newtrans);
         TData = &Tex->DriverTranslated[0];
-        GenerateTexture(Tex, &TData->Handle, Translation, CMap, needUp, ShadeColor);
+        GenerateTexture(ttype, Tex, &TData->Handle, Translation, CMap, needUp, ShadeColor);
       }
     } else if (!Tex->DriverHandle || needUp || Tex->bIsCameraTexture) {
       // generate and bind new texture
-      GenerateTexture(Tex, &Tex->DriverHandle, nullptr, 0, needUp, ShadeColor);
+      GenerateTexture(ttype, Tex, &Tex->DriverHandle, nullptr, 0, needUp, ShadeColor);
     } else {
       // existing normal texture
       glBindTexture(GL_TEXTURE_2D, Tex->DriverHandle);
@@ -405,7 +426,7 @@ bool VOpenGLDrawer::SetSpriteLump (VTexture *Tex, VTextureTranslation *Translati
 //  TODO: remove some old translations if they weren't used for a long time
 //
 //==========================================================================
-void VOpenGLDrawer::GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor) {
+void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor) {
   // special handling for camera textures
   bool isCamTexture = Tex->bIsCameraTexture;
 
@@ -474,8 +495,18 @@ void VOpenGLDrawer::GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTra
       hitype = UpTexNoCompress;
     }
 
+    // force texture update if we need to crop it
+    // note that brightmap textures will be cropped by main texture crop call
+    const bool isSpriteBM = (/*ttype == TT_Brightmap ||*/ ttype == TT_SpriteBrightmap || ttype == TT_PSpriteBrightmap);
+    bool doCrop = false;
+    switch (ttype) {
+      case TT_Sprite: case TT_Shadow: doCrop = gl_crop_sprites.asBool(); break;
+      case TT_PSprite: doCrop = gl_crop_psprites.asBool(); break;
+      default: break;
+    }
+
     if (SrcTex->Type == TEXTYPE_Null) {
-      // fuckin' idiots
+      // morons
       GCon->Logf(NAME_Warning, "something is VERY wrong with textures in this mod (trying to upload null texture '%s')", *SrcTex->Name);
       if (SrcTex->SourceLump >= 0) GCon->Logf(NAME_Warning, "...source lump: %s", *W_FullLumpName(SrcTex->SourceLump));
       rgba_t dummy[4];
@@ -488,27 +519,32 @@ void VOpenGLDrawer::GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTra
       const vuint8 *TrTab = Translation->GetTable();
       const rgba_t *CMPal = ColorMaps[CMap].GetPalette();
       for (int i = 0; i < 256; ++i) tmppal[i] = CMPal[TrTab[i]];
+      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), tmppal, SrcTex->SourceLump, hitype);
     } else if (Translation) {
       // only translation
       //GCon->Logf("uploading translated texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       //for (int f = 0; f < 256; ++f) GCon->Logf("  %3d: r:g:b=%02x:%02x:%02x", f, Translation->GetPalette()[f].r, Translation->GetPalette()[f].g, Translation->GetPalette()[f].b);
+      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), Translation->GetPalette(), SrcTex->SourceLump, hitype);
     } else if (CMap) {
       // only colormap
       //GCon->Logf(NAME_Dev, "uploading colormapped texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
+      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), ColorMaps[CMap].GetPalette(), SrcTex->SourceLump, hitype);
     } else if (ShadeColor) {
       // shade (and possible colormap)
       //GLog.Logf(NAME_Debug, "*** SHADE: tex='%s'; color=0x%08x", *SrcTex->Name, ShadeColor);
+      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       rgba_t *shadedPixels = SrcTex->CreateShadedPixels(ShadeColor, (CMap ? ColorMaps[CMap].GetPalette() : nullptr));
       UploadTexture(SrcTex->GetWidth(), SrcTex->GetHeight(), shadedPixels, false/*remove fringe*/, -1, hitype);
       SrcTex->FreeShadedPixels(shadedPixels);
     } else {
       // normal uploading
+      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       vuint8 *block = SrcTex->GetPixels();
       //if (SrcTex->SourceLump >= 0) GCon->Logf(NAME_Debug, "uploading normal texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       if (SrcTex->Format == TEXFMT_8 || SrcTex->Format == TEXFMT_8Pal) {
@@ -518,9 +554,13 @@ void VOpenGLDrawer::GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTra
       }
     }
 
-    if (SrcTex && !SrcTex->IsDynamicTexture() && (SrcTex->IsHugeTexture() || gl_release_ram_textures_mode.asInt() >= 2)) {
-      //if (SrcTex->IsHugeTexture()) GCon->Logf(NAME_Debug, "freeing \"huge\" texture '%s' (%s) (%dx%d)", *SrcTex->Name, *W_FullLumpName(SrcTex->SourceLump), SrcTex->Width, SrcTex->Height);
-      SrcTex->ReleasePixels();
+    // do not release cropped textures, we may need their pixels in the future
+    //FIXME: make them "releaseable"
+    if (!doCrop) {
+      if (SrcTex && !SrcTex->IsDynamicTexture() && (SrcTex->IsHugeTexture() || gl_release_ram_textures_mode.asInt() >= 2)) {
+        //if (SrcTex->IsHugeTexture()) GCon->Logf(NAME_Debug, "freeing \"huge\" texture '%s' (%s) (%dx%d)", *SrcTex->Name, *W_FullLumpName(SrcTex->SourceLump), SrcTex->Width, SrcTex->Height);
+        SrcTex->ReleasePixels();
+      }
     }
   }
 

@@ -130,9 +130,9 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
   const texinfo_t *tex = surf->texinfo;
 
   if (Texture2 && Texture2->Type != TEXTYPE_Null) {
-    SetTexture(Texture1, CMap);
+    SetCommonTexture(Texture1, CMap);
     SelectTexture(1);
-    SetTexture(Texture2, CMap);
+    SetCommonTexture(Texture2, CMap);
     SelectTexture(0);
 
     SurfDSky.Activate();
@@ -162,7 +162,7 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
     }
     glEnd();
   } else if (Texture1) {
-    SetTexture(Texture1, CMap);
+    SetCommonTexture(Texture1, CMap);
 
     SurfSky.Activate();
     SurfSky.SetTexture(0);
@@ -240,7 +240,7 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
   }
 
   texinfo_t *Tex = surf->texinfo;
-  SetTexture(Tex->Tex, Tex->ColorMap);
+  SetCommonTexture(Tex->Tex, Tex->ColorMap);
 
   SurfSimple.Activate();
   SurfSimple.SetTexture(0);
@@ -323,10 +323,10 @@ bool VOpenGLDrawer::RenderSimpleSurface (bool textureChanged, surface_t *surf) {
       SelectTexture(1);
       SetBrightmapTexture(tex->Tex->Brightmap);
       SelectTexture(0);
-      SetTexture(tex->Tex, tex->ColorMap);
+      SetCommonTexture(tex->Tex, tex->ColorMap);
       SurfSimpleBrightmap.SetTex(tex);
     } else {
-      SetTexture(tex->Tex, tex->ColorMap);
+      SetCommonTexture(tex->Tex, tex->ColorMap);
       if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
         SurfSimple.Activate();
         SurfSimple.SetTex(tex);
@@ -425,7 +425,7 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
         SelectTexture(2);
         SetBrightmapTexture(tex->Tex->Brightmap);
         SelectTexture(0);
-        SetTexture(tex->Tex, tex->ColorMap);
+        SetCommonTexture(tex->Tex, tex->ColorMap);
         SurfLightmapBrightmapNoOverbright.SetTex(tex);
       } else {
         SurfLightmapBrightmapOverbright.Activate();
@@ -437,11 +437,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
         SelectTexture(3);
         SetBrightmapTexture(tex->Tex->Brightmap);
         SelectTexture(0);
-        SetTexture(tex->Tex, tex->ColorMap);
+        SetCommonTexture(tex->Tex, tex->ColorMap);
         SurfLightmapBrightmapOverbright.SetTex(tex);
       }
     } else {
-      SetTexture(tex->Tex, tex->ColorMap);
+      SetCommonTexture(tex->Tex, tex->ColorMap);
       if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
         if (gl_regular_disable_overbright) {
           SurfLightmapNoOverbright.Activate();
@@ -788,7 +788,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
         const bool textureChanded = lastTexinfo.needChange(*currTexinfo, updateFrame);
         if (textureChanded) {
           //glBindTexture(GL_TEXTURE_2D, 0);
-          SetTexture(currTexinfo->Tex, currTexinfo->ColorMap);
+          SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap);
           SurfZBufMasked.SetTex(currTexinfo);
           currentActiveShader->UploadChangedUniforms();
           lastTexinfo.updateLastUsed(*currTexinfo);

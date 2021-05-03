@@ -51,6 +51,8 @@ extern VCvarI r_sprite_fix_delta;
 extern VCvarB r_use_real_sprite_offset;
 extern VCvarB r_use_sprofs_lump;
 
+extern VCvarB gl_crop_sprites;
+
 static VCvarB r_dbg_advthing_dump_actlist("r_dbg_advthing_dump_actlist", false, "Dump built list of active/affected things in advrender?", 0);
 static VCvarB r_dbg_advthing_dump_ambient("r_dbg_advthing_dump_ambient", false, "Dump rendered ambient things?", 0);
 static VCvarB r_dbg_advthing_dump_textures("r_dbg_advthing_dump_textures", false, "Dump rendered textured things?", 0);
@@ -498,6 +500,9 @@ void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const un
 
   VTexture *Tex = GTextureManager[lump];
   if (!Tex || Tex->Type == TEXTYPE_Null) return; // just in case
+
+  // need to call cropper here, because if the texture is not cached yet, its dimensions are wrong
+  if (gl_crop_sprites.asBool()) Tex->CropTexture();
 
   // always look at the light source
   TVec viewforward = ent->Origin-CurrLightPos;

@@ -34,7 +34,6 @@
 extern VCvarB r_advlight_opt_optimise_scissor;
 extern VCvarB dbg_clip_dump_added_ranges;
 extern VCvarI gl_release_ram_textures_mode;
-extern VCvarB gl_crop_sprites;
 
 static VCvarB dbg_autoclear_automap("dbg_autoclear_automap", false, "Clear automap before rendering?", 0/*CVAR_Archive*/);
 VCvarB dbg_vischeck_time("dbg_vischeck_time", false, "Show frame vischeck time?", 0/*CVAR_Archive*/);
@@ -142,6 +141,7 @@ VTextureTranslation *PlayerTranslations[MAXPLAYERS+1];
 //static TArray<VTextureTranslation *> CachedTranslations;
 //static TMapNC<vuint32, int> CachedTranslationsMap; // key:crc; value: translation index
 
+static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false, "Disable all texture precaching?", CVAR_PreInit);
 static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive);
 static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive);
 static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive);
@@ -680,12 +680,11 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   screenblocks = 0;
 
   // preload graphics
-  if (r_precache_textures_override != 0) {
-    if (r_precache_textures || r_precache_textures_override > 0 ||
-        r_precache_model_textures || r_precache_sprite_textures || r_precache_all_sprite_textures)
-    {
-      PrecacheLevel();
-    }
+  // r_precache_textures_override<0: not set; otherwise it is zero
+  if (r_precache_textures_override > 0 || (r_precache_textures && r_precache_textures_override != 0) ||
+      r_precache_model_textures || r_precache_sprite_textures || r_precache_all_sprite_textures)
+  {
+    PrecacheLevel();
   }
 
   ResetVisFrameCount();
@@ -1806,21 +1805,29 @@ void R_DrawSpritePatch (float x, float y, int sprite, int frame, int rot,
 }
 
 
+enum {
+  TType_Normal,
+  TType_Sprite,
+  TType_PSprite,
+  TType_Model,
+  TType_Other, // just in case
+};
+
 struct SpriteScanInfo {
 public:
-  TArray<bool> *texturepresent;
-  TArray<bool> *texturecrop;
+  TMapNC<vint32, vint32> *texturetype;
   TMapNC<VClass *, bool> classSeen;
   TMapNC<VState *, bool> stateSeen;
   TMapNC<vuint32, bool> spidxSeen;
   TMapNC<vint32, bool> textureIgnore;
   int sprtexcount;
   bool putToIgnore;
-  bool doCrop;
+  int limit; // <0: no limit
+  int ttype;
 
 public:
   VV_DISABLE_COPY(SpriteScanInfo)
-  inline SpriteScanInfo (TArray<bool> &txps, TArray<bool> &txcrop) noexcept : texturepresent(&txps), texturecrop(&txcrop), stateSeen(), spidxSeen(), textureIgnore(), sprtexcount(0), putToIgnore(false), doCrop(false) {}
+  inline SpriteScanInfo (TMapNC<vint32, vint32> &txtype, int alimit) noexcept : texturetype(&txtype), stateSeen(), spidxSeen(), textureIgnore(), sprtexcount(0), putToIgnore(false), limit(alimit), ttype(TType_Normal) {}
 
   inline void clearStates () { stateSeen.reset(); }
 };
@@ -1850,13 +1857,13 @@ static void ProcessSpriteState (VState *st, SpriteScanInfo &ssi) {
               for (int lidx = 0; lidx < 16; ++lidx) {
                 int stid = spf->lump[lidx];
                 if (stid < 1) continue;
-                vassert(stid < ssi.texturepresent->length());
                 if (ssi.putToIgnore) { ssi.textureIgnore.put(stid, true); continue; }
                 if (ssi.textureIgnore.has(stid)) continue;
-                if (!(*ssi.texturepresent)[stid]) {
-                  (*ssi.texturepresent)[stid] = true;
-                  if (ssi.doCrop) (*ssi.texturecrop)[stid] = true;
+                if (ssi.texturetype->has(stid)) continue;
+                if (ssi.limit != 0) {
+                  ssi.texturetype->put(stid, ssi.ttype);
                   ++ssi.sprtexcount;
+                  if (ssi.limit > 0) --ssi.limit;
                 }
               }
             }
@@ -1894,28 +1901,15 @@ static void ProcessSpriteClass (VClass *cls, SpriteScanInfo &ssi) {
 //  do not precache player pawn textures
 //
 //==========================================================================
-int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent, TArray<bool> &texturecrop) {
+int VRenderLevelShared::CollectSpriteTextures (TMapNC<vint32, vint32> &texturetype, int limit, int cstmode) {
   // scan all thinkers, and add sprites from all states, because why not?
   VClass *eexCls = VClass::FindClass("EntityEx");
   if (!eexCls) return 0;
-  SpriteScanInfo ssi(texturepresent, texturecrop);
-  ssi.doCrop = true;
-  // player
-  ssi.putToIgnore = !r_precache_player_sprite_textures.asBool();
-  VClass *pawnCls = VClass::FindClass("PlayerPawn");
-  for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
-    if (th->IsGoingToDie()) continue;
-    if (!th->IsA(eexCls)) continue;
-    if (pawnCls && th->IsA(pawnCls)) continue;
-    ProcessSpriteClass(th->GetClass(), ssi);
-  }
-  // wapons
-  ssi.putToIgnore = !r_precache_weapon_sprite_textures.asBool();
-  VClass::ForEachChildOf("Weapon", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
-  ssi.putToIgnore = !r_precache_ammo_sprite_textures.asBool();
-  VClass::ForEachChildOf("Ammo", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
-  // other
-  ssi.doCrop = false;
+
+  SpriteScanInfo ssi(texturetype, limit);
+
+  // blood textures
+  ssi.ttype = TType_Sprite;
   ssi.putToIgnore = false;
   // precache gore mod sprites
   VClass::ForEachChildOf("K8Gore_BloodBase", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
@@ -1928,6 +1922,43 @@ int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent, TAr
     ProcessSpriteClass(bloodRepl, ssi);
     bloodRepl = bloodRepl->GetSuperClass();
   }
+
+  if (cstmode == CST_OnlyBlood) return ssi.sprtexcount;
+
+  // psprites
+  ssi.putToIgnore = (cstmode == CST_Normal ? !r_precache_weapon_sprite_textures.asBool() : false);
+  ssi.ttype = TType_PSprite;
+  VClass::ForEachChildOf("Weapon", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
+
+  if (cstmode != CST_Normal) return ssi.sprtexcount;
+
+  // ammo
+  ssi.ttype = TType_Sprite;
+  ssi.putToIgnore = !r_precache_ammo_sprite_textures.asBool();
+  VClass::ForEachChildOf("Ammo", [&ssi](VClass *cls) { ProcessSpriteClass(cls, ssi); return FERes::FOREACH_NEXT; });
+
+  // player
+  ssi.putToIgnore = !r_precache_player_sprite_textures.asBool();
+  VClass *pawnCls = VClass::FindClass("PlayerPawn");
+  if (pawnCls) {
+    for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
+      if (th->IsGoingToDie()) continue;
+      if (!th->IsA(eexCls)) continue;
+      if (!th->IsA(pawnCls)) continue;
+      ProcessSpriteClass(th->GetClass(), ssi);
+    }
+  }
+
+  // other
+  ssi.ttype = TType_Sprite;
+  ssi.putToIgnore = false;
+  for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
+    if (th->IsGoingToDie()) continue;
+    if (!th->IsA(eexCls)) continue;
+    if (pawnCls && th->IsA(pawnCls)) continue;
+    ProcessSpriteClass(th->GetClass(), ssi);
+  }
+
   return ssi.sprtexcount;
 }
 
@@ -1936,7 +1967,7 @@ int VRenderLevelShared::CollectSpriteTextures (TArray<bool> &texturepresent, TAr
 //
 //  VRenderLevelShared::PrecacheLevel
 //
-//  Preloads all relevant graphics for the level.
+//  preloads all relevant graphics for the level
 //
 //==========================================================================
 void VRenderLevelShared::PrecacheLevel () {
@@ -1945,46 +1976,36 @@ void VRenderLevelShared::PrecacheLevel () {
 
   NukeLightmapCache();
 
-  //TODO: cache map textures too
-  const int maxtex = GTextureManager.GetNumTextures();
+  if (r_dbg_disable_all_precaching) return;
 
-  TArray<bool> texturepresent;
-  TArray<bool> texturecrop;
-  texturepresent.setLength(maxtex);
-  texturecrop.setLength(maxtex);
-  texturecrop.setLength(maxtex);
-  for (auto &&b : texturepresent) b = false;
-  for (auto &&b : texturecrop) b = false;
+  TMapNC<vint32, vint32> texturetype; // key: textureid, value: texturetype
 
   if (r_precache_textures || r_precache_textures_override > 0) {
-    for (int f = 0; f < Level->NumSectors; ++f) {
-      if (Level->Sectors[f].floor.pic > 0 && Level->Sectors[f].floor.pic < maxtex) texturepresent[Level->Sectors[f].floor.pic] = true;
-      if (Level->Sectors[f].ceiling.pic > 0 && Level->Sectors[f].ceiling.pic < maxtex) texturepresent[Level->Sectors[f].ceiling.pic] = true;
+    // floors and ceilings
+    for (auto &&sec : Level->allSectors()) {
+      if (sec.floor.pic > 0) texturetype.put(sec.floor.pic, TType_Normal);
+      if (sec.ceiling.pic > 0) texturetype.put(sec.ceiling.pic, TType_Normal);
     }
-
-    for (int f = 0; f < Level->NumSides; ++f) {
-      if (Level->Sides[f].TopTexture > 0 && Level->Sides[f].TopTexture < maxtex) texturepresent[Level->Sides[f].TopTexture] = true;
-      if (Level->Sides[f].MidTexture > 0 && Level->Sides[f].MidTexture < maxtex) texturepresent[Level->Sides[f].MidTexture] = true;
-      if (Level->Sides[f].BottomTexture > 0 && Level->Sides[f].BottomTexture < maxtex) texturepresent[Level->Sides[f].BottomTexture] = true;
+    // walls
+    for (auto &&side : Level->allSides()) {
+      if (side.TopTexture > 0) texturetype.put(side.TopTexture, TType_Normal);
+      if (side.MidTexture > 0) texturetype.put(side.MidTexture, TType_Normal);
+      if (side.BottomTexture > 0) texturetype.put(side.BottomTexture, TType_Normal);
     }
-
-    int lvltexcount = 0;
-    texturepresent[0] = false;
-    for (auto &&b : texturepresent) { if (b) ++lvltexcount; }
+    // informational message
+    const int lvltexcount = texturetype.count();
     if (lvltexcount) GCon->Logf("found %d level textures", lvltexcount);
   }
 
   // models
   if (r_precache_model_textures && AllModelTextures.length() > 0) {
-    int mdltexcount = 0;
+    const int oldcount = texturetype.count();
     for (auto &&mtid : AllModelTextures) {
       if (mtid < 1) continue;
-      vassert(mtid < texturepresent.length());
-      if (!texturepresent[mtid]) {
-        texturepresent[mtid] = true;
-        ++mdltexcount;
-      }
+      if (!texturetype.has(mtid)) texturetype.put(mtid, TType_Model);
     }
+    // informational message
+    const int mdltexcount = texturetype.count()-oldcount;
     if (mdltexcount) GCon->Logf("found %d alias model textures", mdltexcount);
   }
 
@@ -1992,13 +2013,10 @@ void VRenderLevelShared::PrecacheLevel () {
   if ((r_precache_sprite_textures || r_precache_all_sprite_textures) && sprites.length() > 0) {
     int sprtexcount = 0;
     int sprlimit = r_precache_max_sprites.asInt();
-    if (sprlimit < 0) sprlimit = 0;
-    TArray<bool> txsaved;
-    if (sprlimit) {
-      txsaved.setLength(texturepresent.length());
-      for (int f = 0; f < texturepresent.length(); ++f) txsaved[f] = texturepresent[f];
-    }
+    if (sprlimit <= 0) sprlimit = -1;
     if (r_precache_all_sprite_textures) {
+      sprtexcount = CollectSpriteTextures(texturetype, sprlimit, CST_OnlyBloodAndPSprites);
+      if (sprlimit > 0) sprlimit = max2(0, sprlimit-sprtexcount);
       for (auto &&sfi : sprites) {
         if (sfi.numframes == 0) continue;
         const spriteframe_t *spf = sfi.spriteframes;
@@ -2006,32 +2024,25 @@ void VRenderLevelShared::PrecacheLevel () {
           for (int lidx = 0; lidx < 16; ++lidx) {
             int stid = spf->lump[lidx];
             if (stid < 1) continue;
-            vassert(stid < texturepresent.length());
-            if (!texturepresent[stid]) {
-              texturepresent[stid] = true;
-              ++sprtexcount;
-              if (gl_crop_sprites.asBool() && gl_release_ram_textures_mode.asInt() < 2) {
-                VTexture *tex = GTextureManager[stid];
-                if (tex) tex->CropTexture();
-              }
-            }
+            if (texturetype.has(stid)) continue;
+            if (sprlimit == 0) break;
+            texturetype.put(stid, TType_Sprite);
+            ++sprtexcount;
+            if (sprlimit > 0) --sprlimit;
           }
         }
+        if (sprlimit == 0) break;
       }
     } else {
-      sprtexcount = CollectSpriteTextures(texturepresent, texturecrop);
-    }
-    if (sprlimit && sprtexcount > sprlimit) {
-      GCon->Logf(NAME_Warning, "too many sprite textures (%d), aborted at %d!", sprtexcount, sprlimit);
-      vassert(txsaved.length() == texturepresent.length());
-      for (int f = 0; f < texturepresent.length(); ++f) texturepresent[f] = txsaved[f];
-      sprtexcount = 0;
+      sprtexcount = CollectSpriteTextures(texturetype, sprlimit, CST_Normal);
     }
     if (sprtexcount) GCon->Logf("found %d sprite textures", sprtexcount);
+  } else {
+    int sprtexcount = CollectSpriteTextures(texturetype, -1, CST_OnlyBlood);
+    if (sprtexcount) GCon->Logf("found %d blood sprite textures", sprtexcount);
   }
 
-  int maxpbar = 0, currpbar = 0;
-  for (auto &&b : texturepresent) { if (b) ++maxpbar; }
+  int maxpbar = texturetype.count(), currpbar = 0;
 
   R_OSDMsgShowSecondary("PRECACHING TEXTURES");
   R_PBarReset();
@@ -2039,12 +2050,15 @@ void VRenderLevelShared::PrecacheLevel () {
   if (maxpbar > 0) {
     GTextureCropMessages = false;
     GCon->Logf("precaching %d textures", maxpbar);
-    for (int f = 1; f < maxtex; ++f) {
-      if (texturepresent[f]) {
-        ++currpbar;
-        R_PBarUpdate("Textures", currpbar, maxpbar);
-        Drawer->PrecacheTexture(GTextureManager[f], texturecrop[f]);
-      }
+    for (auto &&it : texturetype.first()) {
+      const vint32 tid = it.key();
+      const vint32 ttype = it.value();
+      vassert(tid > 0);
+      ++currpbar;
+      R_PBarUpdate("Textures", currpbar, maxpbar);
+           if (ttype == TType_Sprite) Drawer->PrecacheSpriteTexture(GTextureManager[tid], VDrawer::SpriteType::SP_Normal);
+      else if (ttype == TType_PSprite) Drawer->PrecacheSpriteTexture(GTextureManager[tid], VDrawer::SpriteType::SP_PSprite);
+      else Drawer->PrecacheTexture(GTextureManager[tid]);
     }
     GTextureCropMessages = true;
   }
@@ -2060,26 +2074,22 @@ void VRenderLevelShared::PrecacheLevel () {
 //==========================================================================
 void VRenderLevelShared::UncacheLevel () {
   if (r_reupload_level_textures || gl_release_ram_textures_mode.asInt() >= 1) {
-    const int maxtex = GTextureManager.GetNumTextures();
+    TMapNC<vint32, bool> texturepresent;
 
-    TArray<bool> texturepresent;
-    texturepresent.setLength(maxtex);
-    for (auto &&b : texturepresent) b = false;
-
-    for (int f = 0; f < Level->NumSectors; ++f) {
-      if (Level->Sectors[f].floor.pic > 0 && Level->Sectors[f].floor.pic < maxtex) texturepresent[Level->Sectors[f].floor.pic] = true;
-      if (Level->Sectors[f].ceiling.pic > 0 && Level->Sectors[f].ceiling.pic < maxtex) texturepresent[Level->Sectors[f].ceiling.pic] = true;
+    // floors and ceilings
+    for (auto &&sec : Level->allSectors()) {
+      if (sec.floor.pic > 0) texturepresent.put(sec.floor.pic, true);
+      if (sec.ceiling.pic > 0) texturepresent.put(sec.ceiling.pic, true);
     }
 
-    for (int f = 0; f < Level->NumSides; ++f) {
-      if (Level->Sides[f].TopTexture > 0 && Level->Sides[f].TopTexture < maxtex) texturepresent[Level->Sides[f].TopTexture] = true;
-      if (Level->Sides[f].MidTexture > 0 && Level->Sides[f].MidTexture < maxtex) texturepresent[Level->Sides[f].MidTexture] = true;
-      if (Level->Sides[f].BottomTexture > 0 && Level->Sides[f].BottomTexture < maxtex) texturepresent[Level->Sides[f].BottomTexture] = true;
+    // walls
+    for (auto &&side : Level->allSides()) {
+      if (side.TopTexture > 0) texturepresent.put(side.TopTexture, true);
+      if (side.MidTexture > 0) texturepresent.put(side.MidTexture, true);
+      if (side.BottomTexture > 0) texturepresent.put(side.BottomTexture, true);
     }
 
-    int lvltexcount = 0;
-    texturepresent[0] = false;
-    for (auto &&b : texturepresent) { if (b) ++lvltexcount; }
+    int lvltexcount = texturepresent.count();
     if (!lvltexcount) return;
 
     if (r_reupload_level_textures) {
@@ -2087,9 +2097,10 @@ void VRenderLevelShared::UncacheLevel () {
     } else {
       GCon->Logf("releasing %d level textures", lvltexcount);
     }
-    for (int f = 1; f < texturepresent.length(); ++f) {
-      if (!texturepresent[f]) continue;
-      VTexture *tex = GTextureManager[f];
+    for (auto &&it : texturepresent.first()) {
+      const vint32 tid = it.key();
+      vassert(tid > 0);
+      VTexture *tex = GTextureManager[tid];
       if (!tex) continue;
       if (r_reupload_level_textures) Drawer->FlushOneTexture(tex);
       if (gl_release_ram_textures_mode.asInt() >= 1) tex->ReleasePixels();

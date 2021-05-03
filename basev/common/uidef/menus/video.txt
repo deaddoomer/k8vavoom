@@ -43,6 +43,15 @@ menudef VideoOptions {
 
   header "Precaching Options";
 
+  option bool /*[__k8vavoom_developer_version > 0]*/ {
+    title = "Disable all texture precaching";
+    textColor = BRICK;
+    cvar = r_dbg_disable_all_precaching;
+    help =
+      "Debug option to speed up map testing, and avoid messing with other precache options.",
+      "NON-PERSISTENT!";
+  }
+
   option bool {
     title = "Precache Level Textures";
     cvar = r_precache_textures;
@@ -65,31 +74,32 @@ menudef VideoOptions {
     title = "Precache Sprite Textures";
     cvar = r_precache_sprite_textures;
     help =
-      "Precache most used sprite textures (upload them to GPU) on level loading?"
-      "This scans spawned level things, and precaches most of their sprites."
-      "Usually this has a medium impact on GPU and loading times."
-      "Turn this 'ON' if you have a box with 3+GB of RAM and non-integrated GPU.";
+      "Precache most used sprite textures (upload them to GPU) on level loading?",
+      "This scans spawned level things, and precaches most of their sprites.",
+      "Usually this has a medium impact on GPU and loading times.",
+      "Turning this 'ON' may help if the game is 'stuttering' upon seeing new monster.",
+      "\cJWARNING: DO NOT turn this on for huge gameplay mod with alot of new monsters/weapons!.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
-    title = "Precache Player Textures";
-    cvar = r_precache_player_sprite_textures;
-    help =
-      "Precache player sprite textures (upload them to GPU) on level loading?",
-      "Won't do anything if sprite precaching is turned off.";
-  }
-
-  option bool [__k8vavoom_developer_version > 0] {
-    title = "Precache Weapon Textures";
+  option bool /*[__k8vavoom_developer_version > 0]*/ {
+    title = "Precache PSprite Weapon Textures";
     cvar = r_precache_weapon_sprite_textures;
     help =
-      "Precache player sprite textures (upload them to GPU) on level loading?",
+      "Precache weapon psprite textures (upload them to GPU) on level loading?",
       "Won't do anything if sprite precaching is turned off.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool /*[__k8vavoom_developer_version > 0]*/ {
     title = "Precache Ammo Textures";
     cvar = r_precache_ammo_sprite_textures;
+    help =
+      "Precache ammo sprite textures (upload them to GPU) on level loading?",
+      "Won't do anything if sprite precaching is turned off.";
+  }
+
+  option bool /*[__k8vavoom_developer_version > 0]*/ {
+    title = "Precache Player Textures";
+    cvar = r_precache_player_sprite_textures;
     help =
       "Precache player sprite textures (upload them to GPU) on level loading?",
       "Won't do anything if sprite precaching is turned off.";
@@ -100,7 +110,7 @@ menudef VideoOptions {
     cvar = r_precache_all_sprite_textures;
     help =
       "Precache *ALL* sprite textures (upload them to GPU) on level loading?"
-      "This has *HUGE* impact on loading times, and require *ALOT* of GPU memory."
+      "This has *HUGE* impact on loading times, and requires *ALOT* of GPU memory."
       "Better leave this 'OFF'.";
   }
 
@@ -111,8 +121,8 @@ menudef VideoOptions {
     min = 0;
     max = 32768;
     help =
-      "Some mods has enormous number of sprites. You can limit number of"
-      "sprite textures the engine will try to precache here."
+      "Some mods have enormous number of sprites. You can limit number of"
+      "sprite textures the engine will try to precache."
       "Zero means 'no limits'.";
   }
 
@@ -120,7 +130,7 @@ menudef VideoOptions {
     title = "Reset Level Texture Cache";
     cvar = r_reupload_level_textures;
     help =
-      "If this option is turned on, the engine will reset level"
+      "If this option is turned on, the engine will reset map"
       "texture cache each time new map is loaded.";
   }
 

@@ -611,8 +611,14 @@ public:
     if (CanUseRevZ()) GLPolygonOffset(afactor, aunits); else GLPolygonOffset(-afactor, -aunits);
   }
 
+  enum SpriteType {
+    SP_Normal,
+    SP_PSprite,
+  };
+
   // texture stuff
-  virtual void PrecacheTexture (VTexture *Tex, bool doCrop=false) = 0;
+  virtual void PrecacheTexture (VTexture *Tex) = 0;
+  virtual void PrecacheSpriteTexture (VTexture *Tex, SpriteType sptype) = 0;
   virtual void FlushOneTexture (VTexture *tex, bool forced=false) = 0; // unload one texture
   virtual void FlushTextures (bool forced=false) = 0; // unload all textures
 
@@ -631,7 +637,8 @@ public:
                                   const RenderStyleInfo &ri,
                                   VTextureTranslation *Translation, int CMap,
                                   const TVec &sprnormal, float sprpdist,
-                                  const TVec &saxis, const TVec &taxis, const TVec &texorg) = 0;
+                                  const TVec &saxis, const TVec &taxis, const TVec &texorg,
+                                  SpriteType sptype=SP_Normal) = 0;
 
   virtual void DrawAliasModel (const TVec &origin, const TAVec &angles, const AliasModelTrans &Transform,
                                VMeshModel *Mdl, int frame, int nextframe, VTexture *Skin, VTextureTranslation *Trans,

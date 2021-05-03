@@ -44,7 +44,7 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
   GlowParams gp;
   CalcGlow(gp, surf);
 
-  SetTexture(tex->Tex, tex->ColorMap);
+  SetCommonTexture(tex->Tex, tex->ColorMap);
 
   const bool doBrightmap = (r_brightmaps && tex->Tex->Brightmap);
   const bool isAlphaTrans = (Alpha < 1.0f || tex->Tex->isTranslucent());
@@ -160,7 +160,8 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
                                        const RenderStyleInfo &ri,
                                        VTextureTranslation *Translation, int CMap,
                                        const TVec &sprnormal, float sprpdist,
-                                       const TVec &saxis, const TVec &taxis, const TVec &texorg)
+                                       const TVec &saxis, const TVec &taxis, const TVec &texorg,
+                                       SpriteType sptype)
 {
   if (!Tex || Tex->Type == TEXTYPE_Null) return; // just in case
 
@@ -185,14 +186,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
   }
 
   const bool trans = (ri.translucency || ri.alpha < 1.0f || Tex->isTranslucent());
-
-  const int oldRelease = gl_release_ram_textures_mode.asInt();
-  const bool cropIt = (oldRelease < 2 && gl_crop_sprites.asBool());
-  if (cropIt) gl_release_ram_textures_mode = 0;
-
-  SetSpriteTexture(sprite_filter, Tex, Translation, CMap, (ri.isShaded() ? ri.stencilColor : 0u));
-
-  if (cropIt) gl_release_ram_textures_mode = oldRelease;
+  SetSpriteTexture(sptype, sprite_filter, Tex, Translation, CMap, (ri.isShaded() ? ri.stencilColor : 0u));
 
   GLuint attribPosition;
   switch (shadtype) {
@@ -214,7 +208,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       SurfMaskedBrightmap.SetTexture(0);
       SurfMaskedBrightmap.SetTextureBM(1);
       SelectTexture(1);
-      SetBrightmapTexture(Tex->Brightmap);
+      SetSpriteBrightmapTexture(sptype, Tex->Brightmap);
       SelectTexture(0);
       SurfMaskedBrightmap.SetLight(
         ((ri.light>>16)&255)/255.0f,
@@ -374,7 +368,7 @@ void VOpenGLDrawer::DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, 
   GLDisableBlend();
   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-  SetTexture(tex->Tex, tex->ColorMap);
+  SetCommonTexture(tex->Tex, tex->ColorMap);
 
   currentActiveShader->UploadChangedUniforms();
   if (surf->drawflags&surface_t::DF_NO_FACE_CULL) glDisable(GL_CULL_FACE);

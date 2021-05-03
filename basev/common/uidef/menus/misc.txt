@@ -172,8 +172,6 @@ menudef MiscOptions {
   }
 
 
-
-
   header "Internal Node Builder";
 
   option enum {

@@ -525,7 +525,8 @@ public:
   virtual void EndView (bool ignoreColorTint=false) override;
 
   // texture stuff
-  virtual void PrecacheTexture (VTexture *Tex, bool doCrop=false) override;
+  virtual void PrecacheTexture (VTexture *Tex) override;
+  virtual void PrecacheSpriteTexture (VTexture *Tex, SpriteType sptype) override;
 
   virtual void BeforeDrawWorldLMap () override;
   virtual void BeforeDrawWorldSV () override;
@@ -575,7 +576,8 @@ public:
                                   const RenderStyleInfo &ri,
                                   VTextureTranslation *Translation, int CMap,
                                   const TVec &sprnormal, float sprpdist,
-                                  const TVec &saxis, const TVec &taxis, const TVec &texorg) override;
+                                  const TVec &saxis, const TVec &taxis, const TVec &texorg,
+                                  SpriteType sptype=SP_Normal) override;
 
   virtual void DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TVec &sprnormal,
                                     const TVec &saxis, const TVec &taxis, const TVec &texorg) override;
@@ -1249,10 +1251,37 @@ protected:
 
   virtual void FlushOneTexture (VTexture *tex, bool forced=false) override; // unload one texture
   virtual void FlushTextures (bool forced=false) override; // unload all textures
+
   void DeleteTextures ();
   void FlushTexture (VTexture *);
   void DeleteTexture (VTexture *);
 
+protected:
+  enum SetTexType {
+    TT_Common, // wall, flat, sometimes pic, etc.
+    TT_Brightmap,
+    TT_Sprite,
+    TT_SpriteBrightmap,
+    TT_PSprite,
+    TT_PSpriteBrightmap,
+    TT_Decal,
+    TT_Pic,
+    TT_Model, // textures for alias models
+    TT_Shadow, // sprite texture for sprite shadow
+  };
+
+  // returns `false` if non-main texture was bound
+  // `ttype` is used to override releasing and cropping modes
+  bool SetTextureLump (SetTexType ttype, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
+
+  void GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor);
+
+  enum { UpTexNoCompress = 0, UpTexNormal = 1, UpTexHiRes = 2 };
+  void UploadTexture8 (int Width, int Height, const vuint8 *Data, const rgba_t *Pal, int SourceLump, int hitype);
+  void UploadTexture8A (int Width, int Height, const pala_t *Data, const rgba_t *Pal, int SourceLump, int hitype);
+  void UploadTexture (int width, int height, const rgba_t *data, bool doFringeRemove, int SourceLump, int hitype);
+
+public:
   // texture must be bound as GL_TEXTURE_2D
   // wrap: <0: clamp; 0: default; 1: repeat
   enum {
@@ -1273,29 +1302,21 @@ protected:
   // if `ShadeColor` is not zero, ignore translation, and use "shaded" mode
   // high byte of `ShadeColor` means nothing
   // returns `false` if non-main texture was bound
-  bool SetTexture (VTexture *Tex, int CMap, vuint32 ShadeColor=0);
+  bool SetCommonTexture (VTexture *Tex, int CMap, vuint32 ShadeColor=0);
   bool SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
   void SetBrightmapTexture (VTexture *Tex);
+  void SetSpriteBrightmapTexture (SpriteType sptype, VTexture *Tex);
   bool SetPic (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor=0);
   bool SetPicModel (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor=0);
 
-  inline void SetSpriteTexture (int level, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0) {
-    SetOrForceTextureFiltering(SetSpriteLump(Tex, Translation, CMap, ShadeColor), Tex, level, TexWrapClamp);
+  inline void SetSpriteTexture (SpriteType sptype, int level, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0) {
+    SetOrForceTextureFiltering(SetTextureLump((sptype == SpriteType::SP_PSprite ? SetTexType::TT_PSprite : SetTexType::TT_Sprite), Tex, Translation, CMap, ShadeColor), Tex, level, TexWrapClamp);
   }
 
   inline void SetShadowTexture (VTexture *Tex) {
-    SetSpriteLump(Tex, nullptr, 0/*CMap*/, 0/*ShadeColor*/);
+    SetTextureLump(SetTexType::TT_Shadow, Tex, nullptr, 0/*CMap*/, 0/*ShadeColor*/);
     SetupShadowTextureFiltering(Tex);
   }
-
-  bool SetSpriteLump (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
-
-  void GenerateTexture (VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor);
-
-  enum { UpTexNoCompress = 0, UpTexNormal = 1, UpTexHiRes = 2 };
-  void UploadTexture8 (int Width, int Height, const vuint8 *Data, const rgba_t *Pal, int SourceLump, int hitype);
-  void UploadTexture8A (int Width, int Height, const pala_t *Data, const rgba_t *Pal, int SourceLump, int hitype);
-  void UploadTexture (int width, int height, const rgba_t *data, bool doFringeRemove, int SourceLump, int hitype);
 
   void DoHorizonPolygon (surface_t *surf);
   void DrawPortalArea (VPortal *Portal);

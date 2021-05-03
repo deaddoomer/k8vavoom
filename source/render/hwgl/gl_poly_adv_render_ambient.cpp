@@ -144,7 +144,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         SetBrightmapTexture(currTexinfo->Tex->Brightmap); \
         /* set normal texture */ \
         SelectTexture(0); \
-        SetTexture(currTexinfo->Tex, currTexinfo->ColorMap); \
+        SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap); \
         (shader_).SetTex(currTexinfo); \
       } \
     } while (0)

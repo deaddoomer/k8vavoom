@@ -137,7 +137,7 @@ static void CheckListSortValidity (TArray<surface_t *> &list, const char *listna
     if (textureChanged) { \
       SADV_FLUSH_VBO(); \
       lastTexinfo.updateLastUsed(*currTexinfo); \
-      SetTexture(currTexinfo->Tex, currTexinfo->ColorMap); \
+      SetCommonTexture(currTexinfo->Tex, currTexinfo->ColorMap); \
       (shader_).SetTex(currTexinfo); \
     } \
   } while (0)
