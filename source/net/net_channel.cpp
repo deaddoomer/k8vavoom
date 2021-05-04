@@ -603,7 +603,7 @@ void VChannel::SendRpc (VMethod *Func, VObject *Owner) {
         }
         break;
       default:
-        Host_Error(va("%s: Bad method argument type %d", *GetDebugName(), Func->ParamTypes[i].Type));
+        Host_Error("%s: Bad method argument type %d", *GetDebugName(), Func->ParamTypes[i].Type);
     }
     if (Func->ParamFlags[i]&FPARM_Optional) {
       Msg.WriteBit(!!Param->i);
@@ -695,7 +695,7 @@ bool VChannel::ReadRpc (VMessageIn &Msg, int FldIdx, VObject *Owner) {
         }
         break;
       default:
-        Host_Error(va("%s: Bad method argument type `%s` for RPC method call `%s`", *GetDebugName(), *Func->ParamTypes[i].GetName(), *Func->GetFullName()));
+        Host_Error("%s: Bad method argument type `%s` for RPC method call `%s`", *GetDebugName(), *Func->ParamTypes[i].GetName(), *Func->GetFullName());
     }
     if (Func->ParamFlags[i]&FPARM_Optional) {
       VObject::VMGetStackPtr()->i = Msg.ReadBit();

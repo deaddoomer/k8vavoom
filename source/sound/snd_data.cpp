@@ -1133,7 +1133,7 @@ void VSoundManager::Process () {
 void VSoundManager::ProcessLoadedSounds () {
   while (readySounds.length()) {
     int sound_id = readySounds[0];
-    if (S_sfx[sound_id].loadedState != sfxinfo_t::ST_Loaded && S_sfx[sound_id].loadedState != sfxinfo_t::ST_Invalid) Sys_Error(va("STRD: invalid loaded state (%d) for sound #%d (uc=%d) (%s : %s)\n", S_sfx[sound_id].loadedState, sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum)));
+    if (S_sfx[sound_id].loadedState != sfxinfo_t::ST_Loaded && S_sfx[sound_id].loadedState != sfxinfo_t::ST_Invalid) Sys_Error("STRD: invalid loaded state (%d) for sound #%d (uc=%d) (%s : %s)\n", S_sfx[sound_id].loadedState, sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
     readySounds.removeAt(0);
     if (sndThreadDebug) fprintf(stderr, "STRD: notifying about sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
     // `UseCount` already incremented
@@ -1340,7 +1340,7 @@ void VSoundManager::DoneWithLump (int sound_id) {
     if (sfx.loadedState == sfxinfo_t::ST_Invalid) return; // oops
     if (sfx.loadedState == sfxinfo_t::ST_NotLoaded) return; // oops
     if (sndThreadDebug) fprintf(stderr, "STRD: releasing sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
-    if (sfx.UseCount <= 0) Sys_Error(va("invalid UseCount for sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum)));
+    if (sfx.UseCount <= 0) Sys_Error("invalid UseCount for sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].UseCount, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
     --sfx.UseCount;
     //GCon->Logf("SND: done with sound '%s' (rc=%d)", *S_sfx[sound_id].TagName, S_sfx[sound_id].UseCount);
     if (sfx.UseCount == 0 && sfx.loadedState == sfxinfo_t::ST_Loaded) {

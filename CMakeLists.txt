@@ -253,6 +253,7 @@ if(K8_UNFUCK_AS_SHITLANG)
 endif(K8_UNFUCK_AS_SHITLANG)
 
 if(K8_UNFUCK_AS_GCC)
+  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Werror=format-security")
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-aggressive-loop-optimizations")
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fcommon") # fuck you, shitcc10
   if(WITH_GCC_ANAL)

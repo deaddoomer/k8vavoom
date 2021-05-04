@@ -2654,7 +2654,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             // special k8vavoom style
             else if (sc->Check("Dark")) RenderStyle = STYLE_Dark;
             else {
-              GCon->Logf(NAME_Error, va("%s: invalid render style '%s' in '%s'", *prloc.toStringNoCol(), *sc->String, Class->GetName()));
+              GCon->Logf(NAME_Error, "%s: invalid render style '%s' in '%s'", *prloc.toStringNoCol(), *sc->String, Class->GetName());
               //sc->Error("Bad render style");
             }
             pdef->Field->SetByte(DefObj, RenderStyle);

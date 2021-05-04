@@ -694,7 +694,7 @@ static void InitNamedTranslations () {
     auto sc = new VScriptParser(it.getFullName(), W_CreateLumpReaderNum(it.lump));
     while (sc->GetString()) {
       VStr name = sc->String;
-      if (name.isEmpty()) Sys_Error(va("%s: empty translation name", *sc->GetLoc().toStringNoCol()));
+      if (name.isEmpty()) Sys_Error("%s: empty translation name", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
       R_ParseDecorateTranslation(sc, /*(GameFilter&GAME_Strife ? 7 : 3)*/3, name);
     }

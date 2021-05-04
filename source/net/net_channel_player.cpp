@@ -318,7 +318,7 @@ void VPlayerChannel::ParseMessage (VMessageIn &Msg) {
 
     if (ReadRpc(Msg, FldIdx, Plr)) continue;
 
-    Host_Error(va("%s: Bad net field %d", *GetDebugName(), FldIdx));
+    Host_Error("%s: Bad net field %d", *GetDebugName(), FldIdx);
   }
 
   CheckPlayerMO();

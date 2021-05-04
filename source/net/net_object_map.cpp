@@ -118,7 +118,7 @@ void VNetObjectsMap::SetNumberOfKnownNames (int newlen) {
 //==========================================================================
 void VNetObjectsMap::ReceivedName (int index, VName Name) {
   if (index < 1) return;
-  if (index > 1024*1024) Host_Error(va("invalid received name index %d", index)); // arbitrary limit
+  if (index > 1024*1024) Host_Error("invalid received name index %d", index); // arbitrary limit
   if (index >= NameLookup.length()) {
     vassert(index == NameLookup.length());
     NameLookup.setLength(index+1);
@@ -168,7 +168,7 @@ bool VNetObjectsMap::SerialiseNameNoIntern (VStream &Strm, VName &Name) {
     // new name
     const char *EName = *Name;
     vuint32 Len = VStr::Length(EName);
-    if (Len == 0 || Len > NAME_SIZE) Sys_Error(va("name '%s' too long!", EName));
+    if (Len == 0 || Len > NAME_SIZE) Sys_Error("name '%s' too long!", EName);
     Strm << STRM_INDEX_U(Len);
     Strm.Serialise((void *)EName, Len);
     if (net_debug_name_io) GCon->Logf(NAME_Debug, "sent new name '%s'", EName);

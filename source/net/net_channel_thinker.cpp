@@ -705,7 +705,7 @@ void VThinkerChannel::ParseMessage (VMessageIn &Msg) {
     // not a field: this must be RPC
     if (ReadRpc(Msg, FldIdx, Thinker)) continue;
 
-    Host_Error(va("%s: Bad net field %d", *GetDebugName(), FldIdx));
+    Host_Error("%s: Bad net field %d", *GetDebugName(), FldIdx);
   }
 
   if (Ent) {
