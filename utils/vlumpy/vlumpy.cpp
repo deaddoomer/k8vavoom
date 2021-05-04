@@ -265,7 +265,7 @@ static void AddToZip (const char *Name, const void *Data, size_t Size) {
   if (verbose) fflush(stderr);
   unsigned pksize = (unsigned)Size;
   if (zipWriteWholeFileToZip(Zip, &zi, Name, Data, (unsigned)Size, &pksize) != ZIP_OK) {
-    Error(va("Failed to write file '%s' to ZIP", Name));
+    Error("Failed to write file '%s' to ZIP", Name);
   }
 
   if (verbose) fprintf(stderr, " %s -> %s\n", comatoze((unsigned)Size), comatoze(pksize));
