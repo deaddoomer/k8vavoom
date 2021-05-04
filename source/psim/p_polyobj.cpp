@@ -35,8 +35,7 @@ static VCvarB dbg_pobj_verbose("dbg_pobj_verbose", false, "Verbose polyobject sp
 
 
 enum {
-  // thing height is z offset from destination sector floor
-  // polyobject anchor thing z is maximum 3d pobj height (if not zero)
+  // this thing's height is z offset from the *inner* sector floor
   PO_SPAWN_3D_TYPE = 9369,
 };
 
