@@ -785,7 +785,7 @@ static VStr TimeVal2Str (const TTimeVal *tvin, bool forAutosave=false) {
       // full
       return VStr(va("%04d/%02d/%02d %02d:%02d:%02d",
         (int)(ctm.tm_year+1900),
-        (int)ctm.tm_mon,
+        (int)ctm.tm_mon+1,
         (int)ctm.tm_mday,
         (int)ctm.tm_hour,
         (int)ctm.tm_min,
