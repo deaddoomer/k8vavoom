@@ -179,6 +179,7 @@ void VLevel::PostCtor () {
   lineTags = tagHashAlloc();
   sectorTags = tagHashAlloc();
   PolyTagMap = new TMapNC<int, int>();
+  suid2ent = new TMapNC<vuint32, VEntity *>();
   Super::PostCtor();
 }
 
@@ -577,6 +578,12 @@ void VLevel::Destroy () {
     PolyTagMap->clear();
     delete PolyTagMap;
     PolyTagMap = nullptr;
+  }
+
+  if (suid2ent) {
+    suid2ent->clear();
+    delete suid2ent;
+    suid2ent = nullptr;
   }
 
   ClearAllMapData();

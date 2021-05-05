@@ -247,9 +247,9 @@ private native transient intercept_t *tempPathIntercepts;
 private native transient int tempPathInterceptsAlloted;
 private native transient int tempPathInterceptsUsed;
 
-
 private native transient /*decal_t*/void *secdecalhead;
 private native transient /*decal_t*/void *secdecaltail;
+private native transient void *suid2ent;
 
 
 // ////////////////////////////////////////////////////////////////////////// //

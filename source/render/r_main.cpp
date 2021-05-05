@@ -335,7 +335,7 @@ VRenderLevelPublic::VRenderLevelPublic () noexcept
 //
 //==========================================================================
 void VRenderLevelShared::RegisterAllThinkers () {
-  suid2ent.reset();
+  //suid2ent.reset();
   for (TThinkerIterator<VThinker> th(Level); th; ++th) ThinkerAdded(*th);
 }
 

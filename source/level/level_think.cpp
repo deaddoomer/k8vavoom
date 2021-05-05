@@ -159,6 +159,8 @@ void VLevel::AddThinker (VThinker *Th) {
   Th->Next = nullptr;
   if (ThinkerTail) ThinkerTail->Next = Th; else ThinkerHead = Th;
   ThinkerTail = Th;
+  // register suid
+  if (Th->ServerUId && Th->IsA(VEntity::StaticClass())) suid2ent->put(Th->ServerUId, (VEntity *)Th);
   // notify thinker that is was just added to a level
   Th->AddedToLevel();
 }
@@ -173,6 +175,9 @@ void VLevel::RemoveThinker (VThinker *Th) {
   if (Th) {
     // notify that thinker is being removed from level
     Th->RemovedFromLevel();
+    // unregister suid
+    if (Th->ServerUId) suid2ent->del(Th->ServerUId);
+    // remove from thinker list
     if (Th == ThinkerHead) ThinkerHead = Th->Next; else Th->Prev->Next = Th->Next;
     if (Th == ThinkerTail) ThinkerTail = Th->Prev; else Th->Next->Prev = Th->Prev;
   }
@@ -189,6 +194,9 @@ void VLevel::DestroyAllThinkers () {
   for (int scidx = scriptThinkers.length()-1; scidx >= 0; --scidx) if (scriptThinkers[scidx]) scriptThinkers[scidx]->Destroy();
   for (int scidx = scriptThinkers.length()-1; scidx >= 0; --scidx) delete scriptThinkers[scidx];
   scriptThinkers.clear();
+
+  // clear suid map
+  suid2ent->clear();
 
   // destroy VC thinkers
   VThinker *Th = ThinkerHead;

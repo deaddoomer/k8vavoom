@@ -68,27 +68,31 @@ static TFrustumParam fpDLight;
 } while (0)
 
 
+#if 0
 static VClass *eexCls = nullptr;
 static VClass *invCls = nullptr;
 static VField *invFld = nullptr;
 //static VField *mflFld = nullptr;
+#endif
 
 
 //==========================================================================
 //
-//  IsSelfLight
+//  VRenderLevelShared::IsInInventory
 //
 //==========================================================================
-static bool IsSelfLight (VEntity *owner, vuint32 invUId) {
+bool VRenderLevelShared::IsInInventory (VEntity *owner, vuint32 invUId) const {
   if (!owner || !invUId) return false;
   if (owner->ServerUId == invUId) return true;
 
+  #if 0
   if (!eexCls) {
     eexCls = VThinker::FindClassChecked("EntityEx");
     invCls = VThinker::FindClassChecked("Inventory");
     invFld = VThinker::FindTypedField(eexCls, "Inventory", TYPE_Reference, invCls);
     //mflFld = FindTypedField(eexCls, "bMeIsMuzzleFlash", TYPE_Bool);
   }
+  #endif
 
   #if 0
   {
@@ -103,6 +107,11 @@ static bool IsSelfLight (VEntity *owner, vuint32 invUId) {
   }
   #endif
 
+  VEntity *ee = Level->GetEntityBySUId(invUId);
+  //if (!ee->IsA(invCls)) return false;
+  return (ee && ee->Owner == owner);
+
+  #if 0
   // loop over inventory
   for (VEntity *inv = (VEntity *)invFld->GetObjectValue(owner); inv; inv = (VEntity *)invFld->GetObjectValue(inv)) {
     //GCon->Logf(NAME_Debug, "owner:%s(%u); invUId=%u; inv=%s(%u) with uid=%u", owner->GetClass()->GetName(), owner->GetUniqueId(), invUId, inv->GetClass()->GetName(), inv->GetUniqueId(), inv->ServerUId);
@@ -110,6 +119,7 @@ static bool IsSelfLight (VEntity *owner, vuint32 invUId) {
   }
 
   return false;
+  #endif
 }
 
 
@@ -408,8 +418,12 @@ void VRenderLevelShared::PushDlights () {
     l->origin = l->origOrigin;
     //if (l->Owner && l->Owner->IsA(VEntity::StaticClass())) l->origin += ((VEntity *)l->Owner)->GetDrawDelta();
     if (l->ownerUId) {
+      /*
       auto ownpp = suid2ent.find(l->ownerUId);
       if (ownpp) l->origin += (*ownpp)->GetDrawDelta();
+      */
+      VEntity *own = Level->GetEntityBySUId(l->ownerUId);
+      if (own) l->origin += own->GetDrawDelta();
     }
     if (dlinfo[i].leafnum < 0) dlinfo[i].leafnum = (int)(ptrdiff_t)(Level->PointInSubsector(l->origin)-Level->Subsectors);
     //dlinfo[i].needTrace = (r_dynamic_clip && Level->NeedProperLightTraceAt(l->origin, l->radius) ? 1 : -1);
@@ -651,9 +665,9 @@ void VRenderLevelShared::DecayLights (float timeDelta) {
 //
 //==========================================================================
 void VRenderLevelShared::ThinkerAdded (VThinker *Owner) {
-  if (!Owner) return;
-  if (!Owner->IsA(VEntity::StaticClass())) return;
-  suid2ent.put(Owner->ServerUId, (VEntity *)Owner);
+  //if (!Owner) return;
+  //if (!Owner->IsA(VEntity::StaticClass())) return;
+  //suid2ent.put(Owner->ServerUId, (VEntity *)Owner);
 }
 
 
@@ -677,7 +691,7 @@ void VRenderLevelShared::ThinkerDestroyed (VThinker *Owner) {
   // remove static light
   auto stxp = StOwners.find(Owner->ServerUId);
   if (stxp) RemoveStaticLightByIndex(*stxp);
-  suid2ent.remove(Owner->ServerUId);
+  //suid2ent.remove(Owner->ServerUId);
 }
 
 
@@ -967,7 +981,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
       const dlight_t &dl = DLights[i];
       if (lowner && lowner->ServerUId == dl.ownerUId) continue;
       // special processing for API light queries
-      if ((flags&LP_IgnoreSelfLights) && lowner && IsSelfLight(lowner, dl.ownerUId)) continue;
+      if ((flags&LP_IgnoreSelfLights) && lowner && IsInInventory(lowner, dl.ownerUId)) continue;
       if (dl.type&DLTYPE_Subtractive) continue;
       //if (!dl.radius || dl.die < Level->Time) continue; // this is not needed here
       const float distSq = (p-dl.origin).lengthSquared();

@@ -161,7 +161,8 @@ protected:
   TMapNC<vuint32, vuint32> dlowners; // key: object id; value: index in `DLights`
 
   // server uid -> object
-  TMapNC<vuint32, VEntity *> suid2ent;
+  // no need, VLevel now has it
+  //TMapNC<vuint32, VEntity *> suid2ent;
 
   // moved here so that model rendering methods can be merged
   TVec CurrLightPos;
@@ -439,6 +440,9 @@ public:
 public:
   virtual bool IsNodeRendered (const node_t *node) const noexcept override;
   virtual bool IsSubsectorRendered (const subsector_t *sub) const noexcept override;
+
+  // check if `invUId` is in inventory of `owner`
+  bool IsInInventory (VEntity *owner, vuint32 invUId) const;
 
   void CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags);
   void CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &p, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags);

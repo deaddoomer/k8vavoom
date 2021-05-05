@@ -523,6 +523,19 @@ class VLevel : public VGameObject {
   vint32 tempPathInterceptsAlloted;
   vint32 tempPathInterceptsUsed;
 
+  // list of all sector floor/ceiling decals
+  // `dc->slidesec` is used to store decal sector
+  // this list will be passed to renderer, so it will be able to populate decal lists for subsectors
+  // this list is kept up-to-date by renderer (via `dc->mainDecal` link)
+  // note that animators will animate this list separately from renderer list (i.e. both lists will be animated)
+  decal_t *secdecalhead;
+  decal_t *secdecaltail;
+
+  // server uid -> object
+  // dynamically allocated, so it won't be scanned by GC
+  // bookkeeping is done in `AddThinker()` and `RemoveThinker()`
+  TMapNC<vuint32, VEntity *> *suid2ent;
+
 public:
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
 
@@ -793,6 +806,11 @@ public:
   void AddThinker (VThinker *Th);
   void RemoveThinker (VThinker *Th);
   void DestroyAllThinkers ();
+
+  inline VEntity *GetEntityBySUId (vuint32 suid) const {
+    VEntity **ee = (suid ? suid2ent->find(suid) : nullptr);
+    return (ee ? *ee : nullptr);
+  }
 
   // called from netcode for client connection, after `LevelInfo` was received
   void UpdateThinkersLevelInfo ();
@@ -1103,14 +1121,6 @@ public:
   static constexpr float BigDecalHeight = 34.0f;
 
 public:
-  // list of all sector floor/ceiling decals
-  // `dc->slidesec` is used to store decal sector
-  // this list will be passed to renderer, so it will be able to populate decal lists for subsectors
-  // this list is kept up-to-date by renderer (via `dc->mainDecal` link)
-  // note that animators will animate this list separately from renderer list (i.e. both lists will be animated)
-  decal_t *secdecalhead;
-  decal_t *secdecaltail;
-
   // this will remove dead and over-the-limit decals (including animated)
   // called from `AddDecal()`
   void CleanupDecals (seg_t *seg);

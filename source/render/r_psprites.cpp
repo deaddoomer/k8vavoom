@@ -300,7 +300,9 @@ void VRenderLevelShared::DrawPlayerSprites () {
       if (dl->die < Level->Time || dl->radius < 1.0f) continue;
       //if (!dl->Owner || dl->Owner->IsGoingToDie() || !dl->Owner->IsA(eclass)) continue;
       //VEntity *e = (VEntity *)dl->Owner;
-      VEntity *e;
+      VEntity *e = Level->GetEntityBySUId(dl->ownerUId);
+      if (!e) continue;
+      /*
       if (dl->ownerUId) {
         auto ownpp = suid2ent.find(dl->ownerUId);
         if (!ownpp) continue;
@@ -308,6 +310,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
       } else {
         continue;
       }
+      */
       if (!e->IsPlayer()) continue;
       if (e != cl->MO) continue;
       if ((e->Origin-dl->origin).length() > dl->radius*0.75f) continue;
