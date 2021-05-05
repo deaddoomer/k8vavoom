@@ -1,0 +1,78 @@
+import 'GLVideo';
+import 'SimpleDraw';
+
+class Main : Object;
+
+SimpleDraw drawer;
+
+TVec boxPoint;
+bool leftPressed, rightPressed;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called when vccrun need to refresh/redraw the screen
+void onDraw () {
+  GLVideo.depthTest = false;
+  GLVideo.glSetup2D();
+  GLVideo.glSetColor(1, 1, 1);
+
+  GLVideo.clearScreen();
+
+  GLVideo.color = 0xff_ff_ff;
+  drawer.drawDoomBox(boxPoint, 16);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called on each event
+void onEvent (ref event_t evt) {
+  if (evt.type == ev_closequery) { GLVideo.requestQuit(); writeln("exiting (", evt.data1, ")"); return; }
+  if (evt.type == ev_keyup && ((evt.keycode == K_q && evt.bCtrl) || evt.keycode == K_ESCAPE)) {
+    // call this to stop event loop
+    GLVideo.requestQuit();
+    return;
+  }
+
+  if (evt.type == ev_keydown) {
+    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4) leftPressed = true;
+    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6) rightPressed = true;
+  } else if (evt.type == ev_keyup) {
+    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4) leftPressed = false;
+    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6) rightPressed = false;
+  }
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called on each new frame (kind of timer)
+void onNewFrame () {
+  // do frame logic
+  if (leftPressed && boxPoint.x > 0) boxPoint.x -= 1;
+  if (rightPressed && boxPoint.x < 800) boxPoint.x += 1;
+  // request screen refresh
+  // do not call `onDraw()` manuslly, use this API instead!
+  GLVideo.requestRefresh();
+}
+
+
+void main () {
+  drawer = SpawnObject(SimpleDraw);
+  scope(exit) delete drawer;
+
+  drawer.scaleX = 1;
+  drawer.scaleY = 1;
+  drawer.offsetX = 0;
+  drawer.offsetY = 0;
+
+  boxPoint = vector(400, 300);
+
+  // milliseconds in one frame
+  // `onNewFrame()` will be called with roughly this interval
+  GLVideo.frameTime = int(1000/30); // 30 FPS
+
+  GLVideo.openScreen("Simple Gfx Demo", 800, 600);
+  scope(exit) GLVideo.closeScreen();
+  //GLVideo.swapInterval = 0; // turn off VSync
+  GLVideo.swapInterval = 1; // turn on VSync
+  GLVideo.runEventLoop();
+}
