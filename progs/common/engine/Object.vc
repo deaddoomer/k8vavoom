@@ -373,7 +373,7 @@ struct event_t {
   alias dx = data2;
   alias dy = data3;
   // for ev_joystick
-  alias joyidx = data3; // 0 or 1
+  alias joyidx = data4; // 0 or 1
   // for ev_mouse
   alias msx = data1;
   alias msy = data4;
