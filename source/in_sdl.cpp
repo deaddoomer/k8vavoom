@@ -993,6 +993,8 @@ void VSdlInputDevice::OpenJoystick (int jnum) {
   if (jnum < 0) jnum = 0;
   joynum = jnum;
 
+  if (joycount == 0) return;
+
   if (SDL_IsGameController(joynum)) {
     if (cli_NoCotl) {
       GCon->Log(NAME_Init, "SDL: skipping controller initialisation due to user request");
@@ -1039,6 +1041,9 @@ void VSdlInputDevice::OpenJoystick (int jnum) {
     joy_num_buttons = SDL_JoystickNumButtons(joystick);
     GCon->Logf(NAME_Init, "SDL: found joystick with %d buttons", joy_num_buttons);
   }
+
+  SDL_JoystickEventState(SDL_ENABLE);
+  SDL_GameControllerEventState(SDL_ENABLE);
 }
 
 
