@@ -366,8 +366,7 @@ bool bDecals2SPass;
 bool bDecalsOnly2S;
 
 bool bMissileHeadshotsAllowed; // allow headshots with this missile?
-
-//bool bMeIsMuzzleFlash; // ignore light from this actor in `CalcLight()`
+bool bMeIsMuzzleFlash; // ignore light from this actor in `CalcLight()`
 
 float NextBumpTime; // next allowed bump time
 

@@ -68,11 +68,11 @@ static TFrustumParam fpDLight;
 } while (0)
 
 
-#if 0
 static VClass *eexCls = nullptr;
+static VField *mflFld = nullptr;
+#if 0
 static VClass *invCls = nullptr;
 static VField *invFld = nullptr;
-//static VField *mflFld = nullptr;
 #endif
 
 
@@ -85,31 +85,18 @@ bool VRenderLevelShared::IsInInventory (VEntity *owner, vuint32 invUId) const {
   if (!owner || !invUId) return false;
   if (owner->ServerUId == invUId) return true;
 
-  #if 0
   if (!eexCls) {
     eexCls = VThinker::FindClassChecked("EntityEx");
+    mflFld = VThinker::FindTypedField(eexCls, "bMeIsMuzzleFlash", TYPE_Bool);
+    #if 0
     invCls = VThinker::FindClassChecked("Inventory");
     invFld = VThinker::FindTypedField(eexCls, "Inventory", TYPE_Reference, invCls);
-    //mflFld = FindTypedField(eexCls, "bMeIsMuzzleFlash", TYPE_Bool);
+    #endif
   }
-  #endif
-
-  #if 0
-  {
-    const int ocnt = VObject::GetObjectsCount();
-    for (int f = 0; f < ocnt; ++f) {
-      VObject *o = VObject::GetIndexObject(f);
-      if (o && o->GetUniqueId() == invUId) {
-        GCon->Logf(NAME_Debug, "invUId:%u -- %s(%u)", invUId, o->GetClass()->GetName(), o->GetUniqueId());
-        break;
-      }
-    }
-  }
-  #endif
 
   VEntity *ee = Level->GetEntityBySUId(invUId);
   //if (!ee->IsA(invCls)) return false;
-  return (ee && ee->Owner == owner);
+  return (ee && (ee->Owner == owner || mflFld->GetBool(ee)));
 
   #if 0
   // loop over inventory
