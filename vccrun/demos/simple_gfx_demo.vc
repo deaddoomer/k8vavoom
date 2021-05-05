@@ -34,11 +34,15 @@ void onEvent (ref event_t evt) {
   }
 
   if (evt.type == ev_keydown) {
-    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4) leftPressed = true;
-    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6) rightPressed = true;
+    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4 || evt.keycode == K_BUTTON_DPAD_LEFT) leftPressed = true;
+    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6 || evt.keycode == K_BUTTON_DPAD_RIGHT) rightPressed = true;
   } else if (evt.type == ev_keyup) {
-    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4) leftPressed = false;
-    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6) rightPressed = false;
+    if (evt.keycode == K_LEFTARROW || evt.keycode == K_PAD4 || evt.keycode == K_BUTTON_DPAD_LEFT) leftPressed = false;
+    if (evt.keycode == K_RIGHTARROW || evt.keycode == K_PAD6 || evt.keycode == K_BUTTON_DPAD_RIGHT) rightPressed = false;
+  }
+
+  if (evt.type == ev_joystick) {
+    print("jidx=%d; dx=%d; dy=%d", evt.joyidx, evt.dx, evt.dy);
   }
 }
 
