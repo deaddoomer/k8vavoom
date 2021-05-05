@@ -57,6 +57,21 @@ extern VObject *mainObject;
 static const float zNear = 1.0f;
 static const float zFar = 42.0f;
 
+static SDL_Joystick *joystick = nullptr;
+static SDL_GameController *controller = nullptr;
+//static SDL_Haptic *haptic;
+static SDL_JoystickID jid = 0;
+static int joynum = -1;
+//static bool joystick_started = false;
+static bool joystick_controller = false;
+//static bool has_haptic;
+static int joy_x[2] = {0,0}, joy_y[2] = {0,0};
+static unsigned ctl_trigger = 0;
+
+static bool sdlTimerInited = false;
+static bool sdlVideoInited = false;
+static bool sdlJoystickInited = false;
+
 
 //static PFNGLBLENDEQUATIONPROC glBlendEquation;
 typedef void (APIENTRY *glBlendEquationFn) (GLenum mode);
@@ -1795,6 +1810,12 @@ int VGLVideo::CreateTimerWithId (int id, int intervalms, bool oneShot) {
   } else {
     if (timerMap.has(id)) return 0;
   }
+
+  if (!sdlTimerInited) {
+    sdlTimerInited = true;
+    if (SDL_InitSubSystem(SDL_INIT_TIMER|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(TIMER): %s\n", SDL_GetError());
+  }
+
   //fprintf(stderr, "id=%d; interval=%d; one=%d\n", id, intervalms, (int)oneShot);
   TimerInfo ti;
   ti.sdlid = SDL_AddTimer(intervalms, &sdlTimerCallback, (void *)(intptr_t)id);
@@ -1846,6 +1867,155 @@ bool VGLVideo::SetTimerInterval (int id, int intervalms) {
     return true;
   }
   return false;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static void ShutdownJoystick (bool closesubsys) {
+  if (!sdlJoystickInited) return;
+  //if (haptic) { SDL_HapticClose(haptic); haptic = nullptr; }
+  if (joystick) { SDL_JoystickClose(joystick); joystick = nullptr; }
+  if (controller) { SDL_GameControllerClose(controller); controller = nullptr; }
+  if (closesubsys) {
+    //if (has_haptic) { SDL_QuitSubSystem(SDL_INIT_HAPTIC); has_haptic = false; }
+    SDL_QuitSubSystem(SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER);
+    sdlJoystickInited = false;
+  }
+  joystick_controller = false;
+  joynum = -1;
+  jid = 0;
+  ctl_trigger = 0;
+  memset(&joy_x[0], 0, 2*sizeof(joy_x[0]));
+  memset(&joy_y[0], 0, 2*sizeof(joy_y[0]));
+  /*
+  memset(&joy_oldx[0], 0, 2*sizeof(joy_oldx[0]));
+  memset(&joy_oldy[0], 0, 2*sizeof(joy_oldy[0]));
+  */
+  if (closesubsys) {
+    SDL_JoystickEventState(SDL_IGNORE);
+    SDL_GameControllerEventState(SDL_IGNORE);
+  }
+}
+
+
+static void OpenJoystick (int jnum) {
+  if (!sdlJoystickInited) return;
+
+  ShutdownJoystick(false);
+
+  int joycount = SDL_NumJoysticks();
+  if (joycount < 0) {
+    GLog.Log(NAME_Error, "SDL: joystick/controller initialisation failed (cannot get number of joysticks)");
+    ShutdownJoystick(true);
+    return;
+  }
+
+  if (joycount == 0) return;
+
+  if (jnum >= joycount) jnum = joycount-1;
+  if (jnum < 0) jnum = 0;
+  joynum = jnum;
+
+  if (SDL_IsGameController(joynum)) {
+    joystick_controller = true;
+    //joy_num_buttons = 0;
+    controller = SDL_GameControllerOpen(joynum);
+    if (!controller) {
+      GLog.Logf(NAME_Error, "SDL: cannot initialise controller #%d", joynum);
+      ShutdownJoystick(false);
+      return;
+    }
+    //GLog.Logf(NAME_Init, "SDL: joystick is a controller (%s)", SDL_GameControllerNameForIndex(joynum));
+    SDL_Joystick *cj = SDL_GameControllerGetJoystick(controller);
+    if (!cj) {
+      GLog.Log(NAME_Error, "SDL: controller initialisation failed (cannot get joystick info)");
+      ShutdownJoystick(true);
+      return;
+    }
+    jid = SDL_JoystickInstanceID(cj);
+    /*
+    if (has_haptic) {
+      haptic = SDL_HapticOpenFromJoystick(cj);
+      if (haptic) {
+        GLog.Logf(NAME_Init, "SDL: found haptic support for controller");
+      } else {
+        GLog.Logf(NAME_Init, "SDL: cannot open haptic interface");
+      }
+    }
+    */
+  } else {
+    joystick = SDL_JoystickOpen(joynum);
+    if (!joystick) {
+      GLog.Logf(NAME_Error, "SDL: cannot initialise joystick #%d", joynum);
+      ShutdownJoystick(false);
+      return;
+    }
+    jid = SDL_JoystickInstanceID(joystick);
+    //joy_num_buttons = SDL_JoystickNumButtons(joystick);
+    //GLog.Logf(NAME_Init, "SDL: found joystick with %d buttons", joy_num_buttons);
+  }
+
+  SDL_JoystickEventState(SDL_ENABLE);
+  SDL_GameControllerEventState(SDL_ENABLE);
+}
+
+
+#include "ctldb.c"
+
+static void StartupJoystick () {
+  ShutdownJoystick(true);
+
+  // load user controller mappings
+  size_t dblen = strlen(ControllerDB);
+  SDL_RWops *rwo = SDL_RWFromConstMem(ControllerDB, (int)dblen);
+  if (rwo) {
+    const int count = SDL_GameControllerAddMappingsFromRW(rwo, 1); // free rwo
+    if (count < 0) {
+      GLog.Log(NAME_Error, "cannot read controller mappings");
+    } else if (count > 0) {
+      //GLog.Logf(NAME_Init, "read %d controller mapping%s from '%s'", count, (count != 1 ? "s" : ""), *stname);
+    }
+  }
+
+  int jnum = 0;
+
+  sdlJoystickInited = true;
+  if (SDL_InitSubSystem(SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) < 0) {
+    GLog.Logf(NAME_Error, "SDL_InitSubSystem(JOYSTICK): %s\n", SDL_GetError());
+    return;
+  }
+
+  /*
+  if (cli_NoCotl) {
+    has_haptic = false;
+  } else if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0) {
+    has_haptic = false;
+    GLog.Log(NAME_Init, "SDL: cannot init haptic subsystem, force feedback disabled");
+  } else {
+    has_haptic = true;
+    GLog.Log(NAME_Init, "SDL: force feedback enabled");
+  }
+  */
+
+  int joycount = SDL_NumJoysticks();
+  if (joycount < 0) {
+    GLog.Log("SDL: joystick/controller initialisation failed (cannot get number of joysticks)");
+    ShutdownJoystick(true);
+    return;
+  }
+
+  SDL_JoystickEventState(SDL_ENABLE);
+  SDL_GameControllerEventState(SDL_ENABLE);
+
+  if (joycount == 0) {
+    //GLog.Log("SDL: no joysticks found");
+    return;
+  }
+
+  //GLog.Logf("SDL: %d joystick%s found", joycount, (joycount == 1 ? "" : "s"));
+
+  //if (joycount == 1 || (jnum >= 0 && jnum < joycount)) OpenJoystick(jnum);
+  OpenJoystick(jnum);
 }
 
 
@@ -2022,6 +2192,12 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   if (width < 1 || height < 1) {
     width = 800;
     height = 600;
+  }
+
+  if (!sdlVideoInited) {
+    sdlVideoInited = true;
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(VIDEO): %s\n", SDL_GetError());
+    if (!sdlJoystickInited) StartupJoystick(); // why not?
   }
 
   close();
@@ -2383,6 +2559,50 @@ void VGLVideo::dispatchEvents () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+static bool PostKeyEvent (int key, int press, vuint32 modflags) {
+  if (!key) return true; // always succeed
+  event_t ev;
+  ev.clear();
+  ev.type = (press ? ev_keydown : ev_keyup);
+  ev.keycode = key;
+  ev.modflags = modflags;
+  return VObject::PostEvent(ev);
+}
+
+
+static void PostJoyMotionEvent (int axisidx) {
+  if (axisidx >= 0 && axisidx <= 1) {
+    event_t event;
+    event.clear();
+    event.type = ev_joystick;
+    event.dx = joy_x[axisidx];
+    event.dy = joy_y[axisidx];
+    event.joyidx = axisidx;
+    event.modflags = curmodflags;
+    VObject::PostEvent(event);
+  }
+}
+
+
+static void CtlTriggerButton (int idx, bool down) {
+  if (idx < 0 || idx > 1) return;
+  const unsigned mask = 1u<<idx;
+  if (down) {
+    // pressed
+    if ((ctl_trigger&mask) == 0) {
+      ctl_trigger |= mask;
+      PostKeyEvent(K_BUTTON_TRIGGER_LEFT+idx, true, curmodflags);
+    }
+  } else {
+    // released
+    if ((ctl_trigger&mask) != 0) {
+      ctl_trigger &= ~mask;
+      PostKeyEvent(K_BUTTON_TRIGGER_LEFT+idx, false, curmodflags);
+    }
+  }
+}
+
+
 void VGLVideo::runEventLoop () {
   int mx, my;
 
@@ -2486,6 +2706,140 @@ void VGLVideo::runEventLoop () {
           //onEvent(evt);
           VObject::PostEvent(evt);
           break;
+        // joysticks
+        case SDL_JOYAXISMOTION:
+          if (joystick) {
+            //GLog.Logf(NAME_Debug, "JOY AXIS %d: motion=%d", ev.jaxis.axis, ev.jaxis.value);
+            int normal_value = clampval(ev.jaxis.value*127/32767, -127, 127);
+                 if (ev.jaxis.axis == 0) joy_x[0] = normal_value;
+            else if (ev.jaxis.axis == 1) joy_y[0] = normal_value;
+            else break;
+            PostJoyMotionEvent(0);
+            //joy_oldx[jn] = joy_x[jn];
+            //joy_oldy[jn] = joy_y[jn];
+          }
+          break;
+        case SDL_JOYBALLMOTION:
+          if (joystick) {
+            //GLog.Logf(NAME_Debug, "JOY BALL");
+          }
+          break;
+        case SDL_JOYHATMOTION:
+          if (joystick) {
+            //GLog.Logf(NAME_Debug, "JOY HAT");
+          }
+          break;
+        case SDL_JOYBUTTONDOWN:
+          if (joystick) {
+            //GLog.Logf(NAME_Debug, "JOY BUTTON %d", ev.jbutton.button);
+            if (ev.jbutton.button >= 0 && ev.jbutton.button <= 15) {
+              //joy_newb |= 1u<<ev.jbutton.button;
+              PostKeyEvent(K_JOY1+ev.jbutton.button, true, curmodflags);
+            }
+          }
+          break;
+        case SDL_JOYBUTTONUP:
+          if (joystick) {
+            if (ev.jbutton.button >= 0 && ev.jbutton.button <= 15) {
+              //joy_newb &= ~(1u<<ev.jbutton.button);
+              PostKeyEvent(K_JOY1+ev.jbutton.button, false, curmodflags);
+            }
+          }
+          break;
+        // controllers
+        case SDL_CONTROLLERAXISMOTION:
+          if (controller && ev.caxis.which == jid) {
+            int normal_value = clampval(ev.caxis.value*127/32767, -127, 127);
+            #if 0
+            const char *axisName = "<unknown>";
+            switch (ev.caxis.axis) {
+              case SDL_CONTROLLER_AXIS_LEFTX: axisName = "LEFTX"; break;
+              case SDL_CONTROLLER_AXIS_LEFTY: axisName = "LEFTY"; break;
+              case SDL_CONTROLLER_AXIS_RIGHTX: axisName = "RIGHTX"; break;
+              case SDL_CONTROLLER_AXIS_RIGHTY: axisName = "RIGHTY"; break;
+              case SDL_CONTROLLER_AXIS_TRIGGERLEFT: axisName = "TRIGLEFT"; break;
+              case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: axisName = "TRIGRIGHT"; break;
+              default: break;
+            }
+            GLog.Logf(NAME_Debug, "CTL AXIS '%s' (%d): motion=%d; nval=%d", axisName, ev.caxis.axis, ev.caxis.value, normal_value);
+            #endif
+            switch (ev.caxis.axis) {
+              case SDL_CONTROLLER_AXIS_LEFTX: joy_x[0] = normal_value; PostJoyMotionEvent(0); break;
+              case SDL_CONTROLLER_AXIS_LEFTY: joy_y[0] = normal_value; PostJoyMotionEvent(0); break;
+              case SDL_CONTROLLER_AXIS_RIGHTX: joy_x[1] = normal_value; PostJoyMotionEvent(1); break;
+              case SDL_CONTROLLER_AXIS_RIGHTY: joy_y[1] = normal_value; PostJoyMotionEvent(1); break;
+              //HACK: consider both triggers as buttons for now
+              case SDL_CONTROLLER_AXIS_TRIGGERLEFT: CtlTriggerButton(0, (normal_value >= 110)); break;
+              case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: CtlTriggerButton(1, (normal_value >= 110)); break;
+            }
+          }
+          break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+          if (controller && ev.cbutton.which == jid) {
+            #if 0
+            const char *buttName = "<unknown>";
+            switch (ev.cbutton.button) {
+              case SDL_CONTROLLER_BUTTON_A: buttName = "K_BUTTON_A"; break;
+              case SDL_CONTROLLER_BUTTON_B: buttName = "K_BUTTON_B"; break;
+              case SDL_CONTROLLER_BUTTON_X: buttName = "K_BUTTON_X"; break;
+              case SDL_CONTROLLER_BUTTON_Y: buttName = "K_BUTTON_Y"; break;
+              case SDL_CONTROLLER_BUTTON_BACK: buttName = "K_BUTTON_BACK"; break;
+              case SDL_CONTROLLER_BUTTON_GUIDE: buttName = "K_BUTTON_GUIDE"; break;
+              case SDL_CONTROLLER_BUTTON_START: buttName = "K_BUTTON_START"; break;
+              case SDL_CONTROLLER_BUTTON_LEFTSTICK: buttName = "K_BUTTON_LEFTSTICK"; break;
+              case SDL_CONTROLLER_BUTTON_RIGHTSTICK: buttName = "K_BUTTON_RIGHTSTICK"; break;
+              case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: buttName = "K_BUTTON_LEFTSHOULDER"; break;
+              case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: buttName = "K_BUTTON_RIGHTSHOULDER"; break;
+              case SDL_CONTROLLER_BUTTON_DPAD_UP: buttName = "K_BUTTON_DPAD_UP"; break;
+              case SDL_CONTROLLER_BUTTON_DPAD_DOWN: buttName = "K_BUTTON_DPAD_DOWN"; break;
+              case SDL_CONTROLLER_BUTTON_DPAD_LEFT: buttName = "K_BUTTON_DPAD_LEFT"; break;
+              case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: buttName = "K_BUTTON_DPAD_RIGHT"; break;
+              default: break;
+            }
+            GLog.Logf(NAME_Debug, "CTL %d BUTTON %s: '%s' (%d)", ev.cbutton.which, (ev.cbutton.state == SDL_PRESSED ? "DOWN" : "UP"), buttName, ev.cbutton.button);
+            #endif
+            switch (ev.cbutton.button) {
+              case SDL_CONTROLLER_BUTTON_A: PostKeyEvent(K_BUTTON_A, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_B: PostKeyEvent(K_BUTTON_B, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_X: PostKeyEvent(K_BUTTON_X, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_Y: PostKeyEvent(K_BUTTON_Y, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_BACK: PostKeyEvent(K_BUTTON_BACK, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_GUIDE: PostKeyEvent(K_BUTTON_GUIDE, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_START: PostKeyEvent(K_BUTTON_START, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_LEFTSTICK: PostKeyEvent(K_BUTTON_LEFTSTICK, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_RIGHTSTICK: PostKeyEvent(K_BUTTON_RIGHTSTICK, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: PostKeyEvent(K_BUTTON_LEFTSHOULDER, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: PostKeyEvent(K_BUTTON_RIGHTSHOULDER, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_DPAD_UP: PostKeyEvent(K_BUTTON_DPAD_UP, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_DPAD_DOWN: PostKeyEvent(K_BUTTON_DPAD_DOWN, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_DPAD_LEFT: PostKeyEvent(K_BUTTON_DPAD_LEFT, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: PostKeyEvent(K_BUTTON_DPAD_RIGHT, (ev.cbutton.state == SDL_PRESSED ? 1 : 0), curmodflags); break;
+              default: break;
+            }
+          }
+          break;
+        case SDL_CONTROLLERDEVICEADDED:
+          //GLog.Logf(NAME_Debug, "CTL %d added", ev.cdevice.which);
+          if (SDL_NumJoysticks() == 1 || !(joystick && !controller)) {
+            GLog.Logf(NAME_Debug, "controller attached");
+            OpenJoystick(0);
+          }
+          break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+          //GLog.Logf(NAME_Debug, "CTL %d removed", ev.cdevice.which);
+          if (joystick_controller && ev.cdevice.which == jid) {
+            ShutdownJoystick(false);
+            GLog.Logf(NAME_Debug, "controller detached");
+          }
+          break;
+        /*k8: i don't know what to do here
+        case SDL_CONTROLLERDEVICEREMAPPED:
+          GLog.Logf(NAME_Debug, "CTL %d remapped", ev.cdevice.which);
+          if (joystick_controller && ev.cdevice.which == jid) {
+          }
+          break;
+        */
         case SDL_WINDOWEVENT:
           switch (ev.window.event) {
             case SDL_WINDOWEVENT_FOCUS_GAINED:
@@ -2546,7 +2900,7 @@ void VGLVideo::runEventLoop () {
       //if (currFrameTime <= 0 && SDL_PollEvent(&ev)) goto morevents;
       //HACK: after switching on new event processor, it should be done this way (to not break old code)
       dispatchEvents();
-      if (currFrameTime <= 0 && !quitSignal && SDL_PollEvent(&ev)) goto morevents;
+      if (currFrameTime <= 0 && !quitSignal && SDL_PollEvent(&ev)) { gotEvent = true; goto morevents; }
     }
 
     if (doRefresh) onDraw();
