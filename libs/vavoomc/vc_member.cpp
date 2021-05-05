@@ -33,8 +33,8 @@ vuint32 VMemberBase::lastUsedMemberId = 0; // monotonically increasing
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-bool VMemberBase::GObjInitialised = false;
-bool VMemberBase::GObjShuttingDown = false;
+bool VMemberBase::GSystemInitialised = false;
+bool VMemberBase::GSystemShuttingDown = false;
 TArray<VMemberBase *> VMemberBase::GMembers;
 //static VMemberBase *GMembersHash[4096];
 TMapNC<VName, VMemberBase *> VMemberBase::gMembersMap;
@@ -86,7 +86,7 @@ VMemberBase::VMemberBase (vuint8 AMemberType, VName AName, VMemberBase *AOuter, 
   if (lastUsedMemberId == 0xffffffffu) VPackage::InternalFatalError("too many VC members");
   mMemberId = ++lastUsedMemberId;
   vassert(mMemberId != 0);
-  if (GObjInitialised) {
+  if (GSystemInitialised) {
     MemberIndex = GMembers.Append(this);
     PutToNameHash(this);
   } else {
@@ -106,7 +106,7 @@ VMemberBase::~VMemberBase () {
   // but they can be deleted on shutdown, and at that time
   // there is no reason to do this anyway
   //k8: no member should be removed ever (except on shutdown), so skip this
-  //if (!GObjShuttingDown) RemoveFromNameHash(this);
+  //if (!GSystemShuttingDown) RemoveFromNameHash(this);
 }
 
 
@@ -303,8 +303,8 @@ void VMemberBase::Shutdown () {
 //
 //==========================================================================
 void VMemberBase::StaticInit () {
-  vassert(!GObjInitialised);
-  vassert(!GObjShuttingDown);
+  vassert(!GSystemInitialised);
+  vassert(!GSystemShuttingDown);
   // add native classes to the list
   for (VClass *C = GClasses; C; C = C->LinkNext) {
     vassert(C->MemberIndex == -666);
@@ -312,7 +312,7 @@ void VMemberBase::StaticInit () {
     PutToNameHash(C);
   }
   VClass::InitSpriteList();
-  GObjInitialised = true;
+  GSystemInitialised = true;
 }
 
 
@@ -324,7 +324,7 @@ void VMemberBase::StaticInit () {
 //
 //==========================================================================
 void VMemberBase::StaticExit () {
-  vassert(!GObjShuttingDown);
+  vassert(!GSystemShuttingDown);
   /*
   for (int i = 0; i < GMembers.Num(); ++i) {
     if (!GMembers[i]) continue;
@@ -345,8 +345,8 @@ void VMemberBase::StaticExit () {
   gMembersMap.clear();
   gMembersMapLC.clear();
   */
-  GObjInitialised = false;
-  GObjShuttingDown = true;
+  GSystemInitialised = false;
+  GSystemShuttingDown = true;
 }
 
 

@@ -231,7 +231,7 @@ VClass::~VClass () {
     Defaults = nullptr;
   }
 
-  if (!GObjInitialised || GObjShuttingDown) return;
+  if (!GSystemInitialised || GSystemShuttingDown) return;
 
   // unlink from classes list
   if (GClasses == this) {

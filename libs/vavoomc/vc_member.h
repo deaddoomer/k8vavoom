@@ -107,19 +107,22 @@ private:
 
   static void DumpNameMap (TMapNC<VName, VMemberBase *> &map, bool caseSensitive);
 
-public:
-  static bool GObjInitialised;
-  static bool GObjShuttingDown;
-  static TArray<VMemberBase *> GMembers;
+protected:
+  static bool GSystemInitialised;
+  static bool GSystemShuttingDown;
 
   static TArray<VStr> GPackagePath;
   static TArray<VPackage *> GLoadedPackages;
-  static TArray<VClass *> GDecorateClassImports;
-
-  static VClass *GClasses; // linked list of all classes
 
 public:
-  static inline const char *GetMemberTypeStringName (vuint8 mtype) {
+  // the following are is used in various parts of the code
+  // WARNING! *NEVER* add or remove elements manually!
+  static TArray<VMemberBase *> GMembers;
+  static TArray<VClass *> GDecorateClassImports;
+  static VClass *GClasses; // linked list of all classes (linked by `LinkNext`)
+
+public:
+  static inline const char *GetMemberTypeStringName (vuint8 mtype) noexcept {
     switch (mtype) {
       case MEMBER_Package: return "package";
       case MEMBER_Field: return "field";
@@ -134,18 +137,18 @@ public:
     return "<unknown>";
   }
 
-  inline const char *GetMemberTypeString () const { return GetMemberTypeStringName(MemberType); }
+  inline const char *GetMemberTypeString () const noexcept { return GetMemberTypeStringName(MemberType); }
 
 public:
-  inline bool isPackageMember () const { return (MemberType == MEMBER_Package); }
-  inline bool isFieldMember () const { return (MemberType == MEMBER_Field); }
-  inline bool isPropertyMember () const { return (MemberType == MEMBER_Property); }
-  inline bool isMethodMember () const { return (MemberType == MEMBER_Method); }
-  inline bool isStateMember () const { return (MemberType == MEMBER_State); }
-  inline bool isConstantMember () const { return (MemberType == MEMBER_Const); }
-  inline bool isStructMember () const { return (MemberType == MEMBER_Struct); }
-  inline bool isClassMember () const { return (MemberType == MEMBER_Class); }
-  inline bool isDecoClassMember () const { return (MemberType == MEMBER_DecorateClass); }
+  inline bool isPackageMember () const noexcept { return (MemberType == MEMBER_Package); }
+  inline bool isFieldMember () const noexcept { return (MemberType == MEMBER_Field); }
+  inline bool isPropertyMember () const noexcept { return (MemberType == MEMBER_Property); }
+  inline bool isMethodMember () const noexcept { return (MemberType == MEMBER_Method); }
+  inline bool isStateMember () const noexcept { return (MemberType == MEMBER_State); }
+  inline bool isConstantMember () const noexcept { return (MemberType == MEMBER_Const); }
+  inline bool isStructMember () const noexcept { return (MemberType == MEMBER_Struct); }
+  inline bool isClassMember () const noexcept { return (MemberType == MEMBER_Class); }
+  inline bool isDecoClassMember () const noexcept { return (MemberType == MEMBER_DecorateClass); }
 
 public:
   VMemberBase (vuint8, VName, VMemberBase *, const TLocation &);

@@ -78,7 +78,6 @@ VClass *autoclassVObject = VObject::StaticClass();
 
 // ////////////////////////////////////////////////////////////////////////// //
 static vuint32 gLastUsedUniqueId = 0;
-//!TMapNC<vuint32, VObject *> VObject::GObjectsUIdMap; // key is uid, value is object
 TArray<VObject *> VObject::GObjObjects;
 // this is LIFO queue of free slots in `GObjObjects`
 // it is not required in compacting collector
@@ -317,7 +316,7 @@ VFuncRes VMethodProxy::ExecuteStatic (VClass *aClass) {
 //  VObject::VObject
 //
 //==========================================================================
-VObject::VObject () : Index(-1), UniqueId(0) {
+VObject::VObject () noexcept : Index(-1), UniqueId(0) {
 }
 
 
@@ -341,7 +340,6 @@ VObject::~VObject () {
 
   ConditionalDestroy();
   GObjObjects[Index] = nullptr;
-  //!if (UniqueId) GObjectsUIdMap.remove(UniqueId);
 
   if (!GInGarbageCollection) {
     vassert(GNumDeleted > 0);
@@ -417,7 +415,6 @@ void VObject::operator delete (void *Object, const char *, int) {
 //==========================================================================
 void VObject::StaticInit () {
   VMemberBase::StaticInit();
-  //GObjInitialised = true;
   memset(&gcLastStats, 0, sizeof(gcLastStats)); // easy way
 }
 
@@ -558,7 +555,6 @@ VObject *VObject::StaticSpawnObject (VClass *AClass, bool skipReplacement) {
 void VObject::Register () {
   UniqueId = ++gLastUsedUniqueId;
   if (gLastUsedUniqueId == 0) gLastUsedUniqueId = 1;
-  //!GObjectsUIdMap.put(UniqueId, this);
   if (gObjFirstFree < GObjObjects.length()) {
     Index = gObjFirstFree;
     GObjObjects[gObjFirstFree++] = this;
@@ -587,7 +583,7 @@ void VObject::Register () {
 //  VObject::SetFlags
 //
 //==========================================================================
-void VObject::SetFlags (vuint32 NewFlags) {
+void VObject::SetFlags (vuint32 NewFlags) noexcept {
   if ((NewFlags&VObjFlag_Destroyed) && !(ObjectFlags&VObjFlag_Destroyed)) {
     // new dead object
     // no need to remove from delayed deletion list, GC cycle will take care of that
@@ -596,7 +592,6 @@ void VObject::SetFlags (vuint32 NewFlags) {
     ++GNumDeleted;
     ++gcLastStats.markedDead;
     vdgclogf("marked object(%u) #%d: %p (%s)", UniqueId, Index, this, GetClass()->GetName());
-    //(not needed)if (UniqueId) GObjectsUIdMap.remove(UniqueId);
   } else if (VObject::standaloneExecutor) {
     if ((NewFlags&VObjFlag_DelayedDestroy) && !(ObjectFlags&VObjFlag_DelayedDestroy)) {
       // "delayed destroy" flag is set, put it into delayed list
@@ -613,7 +608,7 @@ void VObject::SetFlags (vuint32 NewFlags) {
 //  VObject::ConditionalDestroy
 //
 //==========================================================================
-void VObject::ConditionalDestroy () {
+void VObject::ConditionalDestroy () noexcept {
   if (!(ObjectFlags&VObjFlag_Destroyed)) {
     SetFlags(VObjFlag_Destroyed);
     DecrementInstanceCounters();
@@ -654,7 +649,6 @@ void VObject::ClearReferences () {
 //==========================================================================
 void VObject::CollectGarbage (bool destroyDelayed) {
   if (GInGarbageCollection) return; // recursive calls are not allowed
-  //vassert(GObjInitialised);
 
   if (!VObject::standaloneExecutor) destroyDelayed = false; // k8vavoom engine requires this
 
@@ -847,22 +841,22 @@ void VObject::CollectGarbage (bool destroyDelayed) {
 
 //==========================================================================
 //
-//  VObject::GetIndexObject
+//  VObject::GetObjectsCount
 //
 //==========================================================================
-VObject *VObject::GetIndexObject (int Index) {
-  vassert(Index >= 0 && Index < GObjObjects.length());
-  return GObjObjects[Index];
+int VObject::GetObjectsCount () noexcept {
+  return GObjObjects.Num();
 }
 
 
 //==========================================================================
 //
-//  VObject::GetObjectsCount
+//  VObject::GetIndexObject
 //
 //==========================================================================
-int VObject::GetObjectsCount () {
-  return GObjObjects.Num();
+VObject *VObject::GetIndexObject (int Index) noexcept {
+  //vassert(Index >= 0 && Index < GObjObjects.length());
+  return (Index >= 0 && Index < GObjObjects.length() ? GObjObjects.ptr()[Index] : nullptr);
 }
 
 
@@ -1100,7 +1094,12 @@ bool VObject::ExecuteNetMethod (VMethod *func) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//==========================================================================
+//
+//  VClassesIterator
+//
+//==========================================================================
 class VClassesIterator : public VScriptIterator {
 private:
   VClass *BaseClass;
@@ -1124,7 +1123,13 @@ public:
   }
 };
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+
+//==========================================================================
+//
+//  VClassStatesIterator
+//
+//==========================================================================
 class VClassStatesIterator : public VScriptIterator {
 private:
   VState *curr;
@@ -1145,9 +1150,11 @@ public:
   }
 };
 
+
+
 //==========================================================================
 //
-//  Iterators
+//  VObjectsIterator
 //
 //==========================================================================
 class VObjectsIterator : public VScriptIterator {
@@ -1174,12 +1181,13 @@ public:
 };
 
 
+
 //==========================================================================
 //
 //  VObject::NameFromVKey
 //
 //==========================================================================
-VStr VObject::NameFromVKey (int vkey) {
+VStr VObject::NameFromVKey (int vkey) noexcept {
   if (vkey >= K_N0 && vkey <= K_N9) return VStr(char(vkey));
   if (vkey >= K_a && vkey <= K_z) return VStr(char(vkey-32));
   switch (vkey) {
@@ -1312,7 +1320,7 @@ VStr VObject::NameFromVKey (int vkey) {
 //  allow '_' after the prefix
 //
 //==========================================================================
-static int isPrefixedDigit (const char *s, const char *pfx, int minpfxlen, int maxpfxlen) {
+static int isPrefixedDigit (const char *s, const char *pfx, int minpfxlen, int maxpfxlen) noexcept {
   if (!s || !s[0]) return -1;
   // check prefix
   if (pfx && pfx[0]) {
@@ -1343,7 +1351,7 @@ static int isPrefixedDigit (const char *s, const char *pfx, int minpfxlen, int m
 //  VObject::VKeyFromName
 //
 //==========================================================================
-int VObject::VKeyFromName (VStr kn) {
+int VObject::VKeyFromName (VStr kn) noexcept {
   const int oldlen = kn.length();
   kn = kn.xstrip();
   if (oldlen > 0 && kn.isEmpty()) kn = " "; // alot of spaces are equal to one space

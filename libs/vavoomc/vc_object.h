@@ -523,8 +523,6 @@ private:
   VClass *Class; // class the object belongs to
 
   // private systemwide variables
-  //static bool GObjInitialised;
-  //static TMapNC<vuint32, VObject *> GObjectsUIdMap; // key is uid, value is object
   static TArray<VObject *> GObjObjects; // list of all objects
   static int GNumDeleted;
   static bool GInGarbageCollection;
@@ -569,7 +567,7 @@ public:
 
 public:
   // constructors
-  VObject ();
+  VObject () noexcept;
   static void InternalConstructor () { new VObject(); }
 
   // this is called after defaults were blit
@@ -589,9 +587,7 @@ public:
   inline bool IsGoingToDie () const noexcept { return !!(ObjectFlags&(VObjFlag_DelayedDestroy|VObjFlag_Destroyed)); }
   inline bool IsDestroyed () const noexcept { return !!(ObjectFlags&VObjFlag_Destroyed); }
 
-  inline void SetDelayedDestroy () { SetFlags(VObjFlag_DelayedDestroy); }
-
-  //static inline VObject *FindByUniqueId (vuint32 uid) noexcept { auto pp = GObjectsUIdMap.find(uid); return (pp ? *pp : nullptr); }
+  inline void SetDelayedDestroy () noexcept { SetFlags(VObjFlag_DelayedDestroy); }
 
   // VObject interface
   virtual void Register ();
@@ -622,9 +618,9 @@ public:
   // by itself, and will do it only once
   // WARNING! DO NOT PASS `true` FROM K8VAVOOM, OR EVERYTHING *WILL* BREAK!
   static void CollectGarbage (bool destroyDelayed=false);
-  static VObject *GetIndexObject (int);
 
-  static int GetObjectsCount ();
+  static int GetObjectsCount () noexcept;
+  static VObject *GetIndexObject (int) noexcept;
 
   static VFuncRes ExecuteFunction (VMethod *func); // all arguments should be on the stack
   static VFuncRes ExecuteFunctionNoArgs (VObject *Self, VMethod *func, bool allowVMTLookups=true);
@@ -643,7 +639,7 @@ public:
   // this should be called instead of `Destroy()`
   // it will call `Destroy()` if necessary, and will do it only once
   // i.e. you can call `ConditionalDestroy()` as many times as you want to
-  void ConditionalDestroy ();
+  void ConditionalDestroy () noexcept;
 
   inline bool IsA (VClass *SomeBaseClass) const noexcept {
     for (const VClass *c = Class; c; c = c->GetSuperClass()) if (SomeBaseClass == c) return true;
@@ -653,17 +649,14 @@ public:
   // accessors
   inline VClass *GetClass () const noexcept { return Class; }
   inline vuint32 GetFlags () const noexcept { return ObjectFlags; }
-  //inline void SetFlags (vuint32 NewFlags) { ObjectFlags |= NewFlags; }
-  void SetFlags (vuint32 NewFlags);
-  inline void ClearFlags (vuint32 NewFlags) noexcept { ObjectFlags &= ~NewFlags; }
-  //inline vuint32 GetObjectIndex () const noexcept { return Index; }
+  void SetFlags (vuint32 NewFlags) noexcept;
   inline vuint32 GetUniqueId () const noexcept { return UniqueId; } // never 0
 
   inline VMethod *GetVFunctionIdx (int InIndex) const noexcept { return vtable[InIndex]; }
   inline VMethod *GetVFunction (VName FuncName) const noexcept { return vtable[Class->GetMethodIndex(FuncName)]; }
 
-  static VStr NameFromVKey (int vkey);
-  static int VKeyFromName (VStr kn);
+  static VStr NameFromVKey (int vkey) noexcept;
+  static int VKeyFromName (VStr kn) noexcept;
 
   inline static const GCStats &GetGCStats () noexcept { return gcLastStats; }
   inline static void ResetGCStatsLastCollected () noexcept { gcLastStats.lastCollected = 0; }
