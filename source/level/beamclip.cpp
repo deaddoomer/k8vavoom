@@ -511,6 +511,8 @@ bool VViewClipper::IsSegAClosedSomethingServer (VLevel *level, rep_sector_t *rep
 //
 //  prerequisite: has front and back sectors, has linedef
 //
+//  returns `true` if blocking
+//
 //==========================================================================
 bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum, const seg_t *seg, const TVec *lorg, const float *lrad) noexcept {
   if (!clip_platforms) return false;
@@ -520,7 +522,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
 
   const line_t *ldef = seg->linedef;
 
-  if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) return false; // skip translucent walls
+  if ((ldef->flags&ML_ADDITIVE) || ldef->alpha < 1.0f) return false; // skip translucent walls
   if (!(ldef->flags&ML_TWOSIDED)) return true; // one-sided wall always blocks everything
   if (ldef->flags&ML_3DMIDTEX) return false; // 3dmidtex never blocks anything
   if (ldef->pobj()) return false; // just in case
@@ -550,6 +552,14 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
   auto botTexType = GTextureManager.GetTextureType(sidedef->BottomTexture);
   auto midTexType = GTextureManager.GetTextureType(sidedef->MidTexture);
 
+  // just in case (transparent doors)
+  if (topTexType != VTextureManager::TCT_SOLID &&
+      botTexType != VTextureManager::TCT_SOLID &&
+      midTexType != VTextureManager::TCT_SOLID)
+  {
+    return false;
+  }
+
   int fcpic, ffpic;
   int bcpic, bfpic;
 
@@ -565,6 +575,14 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
 
   const bool topvisible = (backcz1 < frontcz1 || backcz2 < frontcz2); // is some part of the top texture visible?
   const bool botvisible = (backfz1 > frontfz1 || backfz2 > frontfz2); // is some part of the bottom texture visible?
+
+  // just in case (transparent doors)
+  if ((!topvisible || topTexType != VTextureManager::TCT_SOLID) &&
+      (!botvisible || botTexType != VTextureManager::TCT_SOLID) &&
+      midTexType != VTextureManager::TCT_SOLID)
+  {
+    return false;
+  }
 
   // turn invisible textures into solid ones (because they essentially are)
   if (!topvisible) topTexType = VTextureManager::TCT_SOLID;
@@ -651,7 +669,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
         if (!Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
           //return true;
           // midtex is invisible; yet we still have to check if top or bottom is transparent, and can be visible
-          bool checkPassed = true;
+          //bool checkPassed = true;
 
           if (botvisible && botTexType != VTextureManager::TCT_SOLID) {
             // create bottom pseudo-quad (back floor is higher)
@@ -662,11 +680,12 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
             if (Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
               // bottom is visible
               //GCon->Logf(NAME_Debug, "line #%d: BOTTOM IS VISIBLE (type=%d); backfz=(%g : %g); topfz=(%g : %g)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), botTexType, backfz1, backfz2, frontfz1, frontfz2);
-              checkPassed = false;
+              //checkPassed = false;
+              return false;
             }
           }
 
-          if (checkPassed && topvisible && topTexType != VTextureManager::TCT_SOLID) {
+          if (/*checkPassed &&*/ topvisible && topTexType != VTextureManager::TCT_SOLID) {
             // create top pseudo-quad (front ceiling is higher)
             verts[0] = TVec(vv1.x, vv1.y, frontcz1);
             verts[1] = TVec(vv1.x, vv1.y, backcz1);
@@ -675,11 +694,13 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
             if (Frustum->checkQuad(verts[0], verts[1], verts[2], verts[3])) {
               // top is visible
               //GCon->Logf(NAME_Debug, "line #%d: TOP IS VISIBLE (type=%d); backcz=(%g : %g); frontcz=(%g : %g); dz1=%a (%s); dz2=%a (%s)", (int)(ptrdiff_t)(ldef-&level->Lines[0]), topTexType, backcz1, backcz2, frontcz1, frontcz2, backcz1-frontcz1, *VStr(backcz1-frontcz1), backcz2-frontcz2, *VStr(backcz2-frontcz2));
-              checkPassed = false;
+              //checkPassed = false;
+              return false;
             }
           }
 
-          if (checkPassed) return true;
+          //if (checkPassed) return true;
+          return true;
         }
       }
 
