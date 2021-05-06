@@ -280,35 +280,34 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
 
   if (pofz1 >= pocz1 || pofz2 >= pocz2) return false; // something strange
 
-  // determine real height using midtex
-  //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
-  VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
-  // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-  const float texh = MTex->GetScaledHeightF();
-  float z_org;
-  if (ldef->flags&ML_DONTPEGBOTTOM) {
-    // bottom of texture at bottom
-    z_org = pobj->pofloor.TexZ+texh;
-  } else {
-    // top of texture at top
-    z_org = pobj->poceiling.TexZ;
-  }
-  //k8: dunno why
-  if (seg->sidedef->Mid.RowOffset < 0) {
-    z_org += (seg->sidedef->Mid.RowOffset+texh)/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
-  } else {
-    z_org += seg->sidedef->Mid.RowOffset/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
-  }
-  //TODO: use proper checks for slopes here
-  if ((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
-    pofz1 = max2(pofz1, z_org-texh);
-    pofz2 = max2(pofz2, z_org-texh);
-  } else {
-    // non-wrapped
-    pofz1 = max2(pofz1, z_org-texh);
-    pofz2 = max2(pofz2, z_org-texh);
-    pocz1 = min2(pocz1, z_org);
-    pocz2 = min2(pocz2, z_org);
+  if (ldef->pobj()->Is3D()) {
+    // for wrapped, the whole wall is covered
+    if (((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) == 0) {
+      // non-wrapped
+      const side_t *sidedef = seg->sidedef;
+      // determine real height using midtex
+      //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
+      VTexture *MTex = GTextureManager(sidedef->MidTexture);
+      // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
+      const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
+      // do more calculations only if the texture doesn't cover the whole wall
+      if (texh < max2(pocz1-pofz1, pocz2-pofz2)) {
+        float zOrg; // texture bottom
+        if (ldef->flags&ML_DONTPEGBOTTOM) {
+          // bottom of texture at bottom
+          zOrg = pobj->pofloor.TexZ;
+        } else {
+          // top of texture at top
+          zOrg = pobj->poceiling.TexZ-texh;
+        }
+        const float yofs = sidedef->Mid.RowOffset;
+        if (yofs != 0.0f) zOrg += yofs/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
+        pofz1 = max2(pofz1, zOrg);
+        pofz2 = max2(pofz2, zOrg);
+        pocz1 = min2(pocz1, zOrg+texh);
+        pocz2 = min2(pocz2, zOrg+texh);
+      }
+    }
   }
 
   // base sector height
@@ -331,30 +330,6 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
   {
     return true;
   }
-
-  // check if light can touch midtex
-  //TODO: check top/bottom visibility and transparency?
-  //TODO: use proper checks for slopes here
-  /*
-  if (lorg) {
-    // checking light
-    if (!seg->SphereTouches(*lorg, *lrad)) return true;
-    // min
-    float bbox[6];
-    bbox[BOX3D_MINX] = min2(vv1.x, vv2.x);
-    bbox[BOX3D_MINY] = min2(vv1.y, vv2.y);
-    bbox[BOX3D_MINZ] = min2(min2(min2(frontfz1, backfz1), frontfz2), backfz2);
-    // max
-    bbox[BOX3D_MAXX] = max2(vv1.x, vv2.x);
-    bbox[BOX3D_MAXY] = max2(vv1.y, vv2.y);
-    bbox[BOX3D_MAXZ] = max2(max2(max2(frontcz1, backcz1), frontcz2), backcz2);
-    FixBBoxZ(bbox);
-
-    if (bbox[BOX3D_MINZ] >= bbox[BOX3D_MAXZ]) return true; // definitely closed
-
-    if (!CheckSphereVsAABB(bbox, *lorg, *lrad)) return true; // cannot see midtex, can block
-  }
-  */
 
   return false;
 }
@@ -481,9 +456,11 @@ bool VViewClipper::IsSegAClosedSomethingServer (VLevel *level, rep_sector_t *rep
 
   if (fsec == bsec) return false; // self-referenced sector
 
-  auto topTexType = GTextureManager.GetTextureType(seg->sidedef->TopTexture);
-  auto botTexType = GTextureManager.GetTextureType(seg->sidedef->BottomTexture);
-  auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
+  const side_t *sidedef = seg->sidedef;
+
+  auto topTexType = GTextureManager.GetTextureType(sidedef->TopTexture);
+  auto botTexType = GTextureManager.GetTextureType(sidedef->BottomTexture);
+  auto midTexType = GTextureManager.GetTextureType(sidedef->MidTexture);
 
   // transparent door hack
   if (topTexType == VTextureManager::TCT_EMPTY && botTexType == VTextureManager::TCT_EMPTY) return false;
@@ -528,6 +505,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
   if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) return false; // skip translucent walls
   if (!(ldef->flags&ML_TWOSIDED)) return true; // one-sided wall always blocks everything
   if (ldef->flags&ML_3DMIDTEX) return false; // 3dmidtex never blocks anything
+  if (ldef->pobj()) return false; // just in case
 
   // mirrors and horizons always block the view
   switch (ldef->special) {
@@ -548,9 +526,11 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
   // we should mark transparent door tracks -- they should be used for clipping
   if ((fsec->SectorFlags|bsec->SectorFlags)&sector_t::SF_IsTransDoor) return false;
 
-  auto topTexType = GTextureManager.GetTextureType(seg->sidedef->TopTexture);
-  auto botTexType = GTextureManager.GetTextureType(seg->sidedef->BottomTexture);
-  auto midTexType = GTextureManager.GetTextureType(seg->sidedef->MidTexture);
+  const side_t *sidedef = seg->sidedef;
+
+  auto topTexType = GTextureManager.GetTextureType(sidedef->TopTexture);
+  auto botTexType = GTextureManager.GetTextureType(sidedef->BottomTexture);
+  auto midTexType = GTextureManager.GetTextureType(sidedef->MidTexture);
 
   int fcpic, ffpic;
   int bcpic, bfpic;
@@ -588,38 +568,35 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
         clip_midsolid.asBool())
     {
       //const sector_t *sec = seg->backsector; //(!seg->side ? ldef->backsector : ldef->frontsector);
-      VTexture *MTex = GTextureManager(seg->sidedef->MidTexture);
+      VTexture *MTex = GTextureManager(sidedef->MidTexture);
       // here we should check if midtex covers the whole height, as it is not tiled vertically (if not wrapped)
-      const float texh = MTex->GetScaledHeightF();
-      float z_org;
+      const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
+      // do more calculations only if the texture doesn't cover the whole wall
+      float zOrg; // texture bottom
       if (ldef->flags&ML_DONTPEGBOTTOM) {
         // bottom of texture at bottom
-        z_org = max2(fsec->floor.TexZ, bsec->floor.TexZ)+texh;
+        zOrg = max2(fsec->floor.TexZ, bsec->floor.TexZ);
       } else {
         // top of texture at top
-        z_org = min2(fsec->ceiling.TexZ, bsec->ceiling.TexZ);
+        zOrg = min2(fsec->ceiling.TexZ, bsec->ceiling.TexZ)-texh;
       }
-      //k8: dunno why
-      if (seg->sidedef->Mid.RowOffset < 0) {
-        z_org += (seg->sidedef->Mid.RowOffset+texh)/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
-      } else {
-        z_org += seg->sidedef->Mid.RowOffset/(MTex->TextureOffsetTScale()*seg->sidedef->Mid.ScaleY);
+      const bool midWrapped = ((ldef->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
+      if (!midWrapped) {
+        const float yofs = sidedef->Mid.RowOffset;
+        if (yofs != 0.0f) {
+          zOrg += yofs/(MTex->TextureTScale()/MTex->TextureOffsetTScale()*sidedef->Mid.ScaleY);
+        }
       }
-      //TODO: use proper checks for slopes here
+      // use proper checks for slopes here?
       float floorz, ceilz;
-      if (/*sec == fsec*/bsec == ldef->frontsector) {
+      if (bsec == ldef->frontsector) {
         floorz = min2(frontfz1, frontfz2);
         ceilz = max2(frontcz1, frontcz2);
       } else {
         floorz = min2(backfz1, backfz2);
         ceilz = max2(backcz1, backcz2);
       }
-      if ((ldef->flags&ML_WRAP_MIDTEX)|(seg->sidedef->Flags&SDF_WRAPMIDTEX)) {
-        if (z_org-texh <= floorz) return true; // fully covered, as it is wrapped
-      } else {
-        // non-wrapped
-        if (z_org >= ceilz && z_org-texh <= floorz) return true; // fully covered
-      }
+      if (zOrg <= floorz && (midWrapped || zOrg+texh >= ceilz)) return true; // fully covered
     }
 
     if (clip_height &&
@@ -630,7 +607,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
         (lorg || (Frustum && Frustum->isValid())) &&
         seg->partner && seg->partner != seg &&
         seg->partner->frontsub && seg->partner->frontsub != seg->frontsub /*&&*/
-        /*(!midTexType || !GTextureManager.IsSeeThrough(seg->sidedef->MidTexture))*/
+        /*(!midTexType || !GTextureManager.IsSeeThrough(sidedef->MidTexture))*/
         /*(midTexType == VTextureManager::TCT_EMPTY || midTexType == VTextureManager::TCT_SOLID)*/ //k8: why?
         )
     {
