@@ -111,7 +111,7 @@ void VLevelInfo::SetMapInfo (const VMapInfo &Info) {
 
   // no auto sequences flag sets all sectors to use sequence 0 by default
   if (Info.Flags&VLevelInfo::LIF_NoAutoSndSeq) {
-    for (int i = 0; i < XLevel->NumSectors; ++i) XLevel->Sectors[i].seqType = 0;
+    for (auto &&sec : XLevel->allSectors()) sec.seqType = 0;
   }
 
   GGameInfo->eventTranslateSpecialActions(this);
@@ -130,7 +130,7 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
 {
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
-    StartSound(Sector->soundorg, (Sector-XLevel->Sectors)+(SNDORG_Sector<<24), SoundId, Channel, Volume, Attenuation, false);
+    StartSound(Sector->soundorg, (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(SNDORG_Sector<<24), SoundId, Channel, Volume, Attenuation, false);
   } else {
     StartSound(TVec(0, 0, 0), 0, SoundId, Channel, Volume, Attenuation, false);
   }
@@ -143,7 +143,7 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
 //
 //==========================================================================
 void VLevelInfo::SectorStopSound (const sector_t *sector, int channel) {
-  if (sector) StopSound((sector-XLevel->Sectors)+(SNDORG_Sector<<24), channel);
+  if (sector) StopSound((int)(ptrdiff_t)(sector-XLevel->Sectors)+(SNDORG_Sector<<24), channel);
 }
 
 
@@ -155,7 +155,7 @@ void VLevelInfo::SectorStopSound (const sector_t *sector, int channel) {
 void VLevelInfo::SectorStartSequence (const sector_t *Sector, VName Name, int ModeNum) {
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
-    StartSoundSequence(Sector->soundorg, (Sector-XLevel->Sectors)+(SNDORG_Sector<<24), Name, ModeNum);
+    StartSoundSequence(Sector->soundorg, (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(SNDORG_Sector<<24), Name, ModeNum);
   } else {
     StartSoundSequence(TVec(0, 0, 0), 0, Name, ModeNum);
   }

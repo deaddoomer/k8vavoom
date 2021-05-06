@@ -150,12 +150,12 @@ public:
 
   void SetMapInfo (const VMapInfo &);
 
-  void SectorStartSound (const sector_t *, int, int, float, float);
-  void SectorStopSound (const sector_t *, int);
-  void SectorStartSequence (const sector_t *, VName, int);
-  void SectorStopSequence (const sector_t *);
-  void PolyobjStartSequence (const polyobj_t *, VName, int);
-  void PolyobjStopSequence (const polyobj_t *);
+  void SectorStartSound (const sector_t *Sector, int SoundId, int Channel, float Volume, float Attenuation);
+  void SectorStopSound (const sector_t *sector, int channel);
+  void SectorStartSequence (const sector_t *Sector, VName Name, int ModeNum);
+  void SectorStopSequence (const sector_t *sector);
+  void PolyobjStartSequence (const polyobj_t *Poly, VName Name, int ModeNum);
+  void PolyobjStopSequence (const polyobj_t *poly);
 
   void ExitLevel (int Position);
   void SecretExitLevel (int Position);

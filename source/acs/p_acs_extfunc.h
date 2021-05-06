@@ -52,9 +52,9 @@
   ACS_EXTFUNC(CheckActorClass) // implemented
   ACS_EXTFUNC(SetUserArray) // implemented
   ACS_EXTFUNC(GetUserArray) // implemented
-  ACS_EXTFUNC(SoundSequenceOnActor) // ignored
-  ACS_EXTFUNC(SoundSequenceOnSector) // ignored
-  ACS_EXTFUNC(SoundSequenceOnPolyobj) // ignored
+  ACS_EXTFUNC(SoundSequenceOnActor) // implemented
+  ACS_EXTFUNC(SoundSequenceOnSector) // partially (no location flags)
+  ACS_EXTFUNC(SoundSequenceOnPolyobj) // implemented
   ACS_EXTFUNC(GetPolyobjX) // implemented
   ACS_EXTFUNC(GetPolyobjY) // implemented
   ACS_EXTFUNC(CheckSight) // implemented

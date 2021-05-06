@@ -3992,13 +3992,30 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
       return 0;
 
     case ACSF_SoundSequenceOnActor:
-      GCon->Logf(NAME_Warning, "ignored ACSF `SoundSequenceOnActor`");
+      if (argCount >= 2) {
+        VEntity *ent = EntityFromTID(args[0], Activator);
+        if (ent) ent->StartSoundSequence(GetName(args[1]), 0); // this will abort previous sequence
+      }
       return 0;
     case ACSF_SoundSequenceOnSector:
-      GCon->Logf(NAME_Warning, "ignored ACSF `SoundSequenceOnSector`");
+      //TODO: args[2] is `location`, see https://zdoom.org/wiki/SoundSequenceOnSector
+      if (argCount >= 2) {
+        VName seqName = GetName(args[1]);
+        sector_t *sector;
+        for (int sidx = FindSectorFromTag(sector, args[0]); sidx >= 0; sidx = FindSectorFromTag(sector, args[0], sidx)) {
+          Level->SectorStopSequence(sector);
+          Level->SectorStartSequence(sector, seqName, 0);
+        }
+      }
       return 0;
     case ACSF_SoundSequenceOnPolyobj:
-      GCon->Logf(NAME_Warning, "ignored ACSF `SoundSequenceOnPolyobj`");
+      if (argCount >= 2) {
+        polyobj_t *po = ActiveObject->Level->XLevel->GetPolyobj(args[0]);
+        if (po) {
+          Level->PolyobjStopSequence(po); // abort current sequence
+          Level->PolyobjStartSequence(po, GetName(args[1]), 0); // start new sequence
+        }
+      }
       return 0;
 
     // void SetSectorGlow (int tag, bool plane, int red, int green, int blue, int height)
