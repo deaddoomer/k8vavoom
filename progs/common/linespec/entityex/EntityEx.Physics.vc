@@ -1651,11 +1651,18 @@ override void ApplyFriction (float DeltaTime) {
 
   if (bCorpse) {
     // don't stop sliding if halfway off a step with some momentum
-    if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
-        vy > 0.25*35.0 || vy < -0.25*35.0)
-    {
-      if (DropOffZ != FloorZ || FloorZ > Sector->floor.GetPointZClamped(Origin)) {
-        return;
+    // but do this only for sectors without 3d floors, and not 3d pobjs
+    // (otherwise the body will slide off from any 3d floor/pobj)
+    if (Sector == BaseSector && !SectorHas3DFloors(Sector)) {
+      /*
+      if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
+          vy > 0.25*35.0 || vy < -0.25*35.0)
+      */
+      if (fabs(vx) > 0.25*35.0 || fabs(vy) > 0.25*35.0)
+      {
+        if (DropOffZ != FloorZ || FloorZ > Sector->floor.GetPointZClamped(Origin)) {
+          return;
+        }
       }
     }
   }
