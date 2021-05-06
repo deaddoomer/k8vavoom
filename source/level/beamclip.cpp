@@ -306,6 +306,24 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
         pofz2 = max2(pofz2, zOrg);
         pocz1 = min2(pocz1, zOrg+texh);
         pocz2 = min2(pocz2, zOrg+texh);
+      } else {
+        // fully covered
+        // check top texture
+        VTexture *TTex = GTextureManager(sidedef->TopTexture);
+        if (TTex && TTex->Type != TEXTYPE_Null && !TTex->isSeeThrough()) {
+          //TODO: sloped 3d polyobjects!
+          const float ttexh = TTex->GetScaledHeightF()/sidedef->Top.ScaleY;
+          pocz1 += ttexh;
+          pocz2 += ttexh;
+        }
+        // check bottom texture
+        VTexture *BTex = GTextureManager(sidedef->BottomTexture);
+        if (BTex && BTex->Type != TEXTYPE_Null && !BTex->isSeeThrough()) {
+          //TODO: sloped 3d polyobjects!
+          const float ttexh = BTex->GetScaledHeightF()/sidedef->Bot.ScaleY;
+          pofz1 -= ttexh;
+          pofz2 -= ttexh;
+        }
       }
     }
   }
