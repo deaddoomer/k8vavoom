@@ -125,9 +125,9 @@ enum {
 //  VRenderLevelShadowVolume::CollectAdvLightSurfaces
 //
 //==========================================================================
-void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texinfo_t *texinfo,
+void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, surface_t *InSurfs, texinfo_t *texinfo,
                                                         VEntity *SkyBox, bool CheckSkyBoxAlways, int SurfaceType,
-                                                        unsigned int ssflag, const bool distInFront)
+                                                        unsigned int ssflag, const bool distInFront, bool flipAllowed)
 {
   if (!InSurfs) return;
   if (!(ssflag&FlagAsBoth)) return;
@@ -146,7 +146,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   }
 
   const bool smaps = collectorForShadowMaps;
-  const bool doflip =
+  const bool doflip = flipAllowed &&
     (ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() &&
     SurfaceType >= SurfTypeMiddle && distInFront != (InSurfs->PointDistance(Drawer->vieworg) > 0.0f);
 
@@ -155,6 +155,12 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (surface_t *InSurfs, texi
   //const bool distInFront = (dist > 0.0f);
   if (ssflag&FlagAsShadow) {
     if (!doflip && !distInFront) return;
+    if (origseg && doflip && !distInFront) {
+      // check if other side... something
+      const seg_t *pseg = origseg->partner;
+      if (pseg && pseg->drawsegs && pseg->drawsegs->mid && pseg->drawsegs->mid->surfs) return;
+      return;
+    }
   } else {
     if (!distInFront) return;
   }
@@ -313,15 +319,15 @@ void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region
   */
 
   VEntity *skybox = secregion->eceiling.splane->SkyBox;
-  if (dseg->mid) CollectAdvLightSurfaces(dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront);
+  if (dseg->mid) CollectAdvLightSurfaces(seg, dseg->mid->surfs, &dseg->mid->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront, true);
   if (seg->backsector) {
     // two sided line
-    if (dseg->top) CollectAdvLightSurfaces(dseg->top->surfs, &dseg->top->texinfo, skybox, false, (goodTwoSided ? SurfTypeTop : SurfTypeOneSided), ssflag, distInFront);
+    if (dseg->top) CollectAdvLightSurfaces(seg, dseg->top->surfs, &dseg->top->texinfo, skybox, false, (goodTwoSided ? SurfTypeTop : SurfTypeOneSided), ssflag, distInFront, false);
     //k8: horizon/sky cannot block light, and cannot receive light
-    //if (dseg->topsky) CollectAdvLightSurfaces(dseg->topsky->surfs, &dseg->topsky->texinfo, skybox, false, SurfTypeOneSided, ssflag, distInFront);
-    if (dseg->bot) CollectAdvLightSurfaces(dseg->bot->surfs, &dseg->bot->texinfo, skybox, false, (goodTwoSided ? SurfTypeBottom : SurfTypeOneSided), ssflag, distInFront);
+    //if (dseg->topsky) CollectAdvLightSurfaces(seg, dseg->topsky->surfs, &dseg->topsky->texinfo, skybox, false, SurfTypeOneSided, ssflag, distInFront, false);
+    if (dseg->bot) CollectAdvLightSurfaces(seg, dseg->bot->surfs, &dseg->bot->texinfo, skybox, false, (goodTwoSided ? SurfTypeBottom : SurfTypeOneSided), ssflag, distInFront, false);
     for (segpart_t *sp = dseg->extra; sp; sp = sp->next) {
-      CollectAdvLightSurfaces(sp->surfs, &sp->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront);
+      CollectAdvLightSurfaces(seg, sp->surfs, &sp->texinfo, skybox, false, (goodTwoSided ? SurfTypeMiddle : SurfTypeOneSided), ssflag, distInFront, false); //FIXME: allow fliping
     }
   }
 }
@@ -352,7 +358,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSecSurface (sec_region_t *secregio
     stype = (paperThin ? SurfTypePaperFlatEx : SurfTypeFlatEx);
   }
 
-  CollectAdvLightSurfaces(ssurf->surfs, &ssurf->texinfo, SkyBox, true, stype, ssflag, distInFront);
+  CollectAdvLightSurfaces(nullptr, ssurf->surfs, &ssurf->texinfo, SkyBox, true, stype, ssflag, distInFront, true);
 }
 
 
