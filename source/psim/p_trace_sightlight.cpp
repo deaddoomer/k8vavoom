@@ -87,6 +87,8 @@ struct SightTraceInfo {
     , lightCheck(false)
     , flatTextureCheck(false)
     , wallTextureCheck(false)
+    , collectIntercepts(false)
+    , wasBlocked(false)
     , Hit1S(false)
   {
   }
@@ -362,12 +364,17 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
 
   // light checks
 
-  if (line->alpha < 1.0f || (line->flags&ML_ADDITIVE)) return true; // not blocked
+  // just in case
+  if (!line->frontsector || !line->backsector) return false; // looks like invalid line, so we'd better block
+
   if (!trace.wallTextureCheck) return true; // not blocked
+  if (line->alpha < 1.0f || (line->flags&ML_ADDITIVE)) return true; // not blocked
 
   // check texture
-  const int sidenum = line->PointOnSide2(trace.Start);
-  if (sidenum == 2 || line->sidenum[sidenum] == -1) return true; // on a line, not blocked
+  //const int sidenum = line->PointOnSide2(trace.Start);
+  //if (sidenum == 2 || line->sidenum[sidenum] == -1) return true; // on a line, not blocked
+  const int sidenum = side;
+  if (line->sidenum[sidenum] == -1) return true; // on a line, not blocked
 
   const side_t *sidedef = &trace.Level->Sides[line->sidenum[sidenum]];
   VTexture *MTex = GTextureManager(sidedef->MidTexture);
@@ -376,8 +383,10 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   const bool wrapped = ((line->flags&ML_WRAP_MIDTEX)|(sidedef->Flags&SDF_WRAPMIDTEX));
   if (wrapped && !MTex->isSeeThrough()) return false; // the texture is solid, so there are no holes possible
 
-  // just in case
-  if (!line->frontsector || !line->backsector) return false; // looks like invalid line, so we'd better block
+  const int thgt = MTex->GetHeight();
+  if (thgt < 1) return true; // just in case, not blocked
+  const int twdt = MTex->GetWidth();
+  if (twdt < 1) return true; // just in case, not blocked
 
   //TODO: rotated textures
 
@@ -411,30 +420,25 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
       //toffs = 0.0f;
     }
   }
+  if (!wrapped) {
+    // check if the texture is hit
+    if (lend.z < zOrg || lend.z >= zOrg+texh) return true; // not blocked (because texture wasn't hit)
+    if (!MTex->isSeeThrough()) return false; // this can happen for non-wrapped midtex; blocked
+  }
   if (!yflip) {
     toffs += zOrg*MTex->TextureTScale()*sidedef->Mid.ScaleY;
   } else {
     toffs += (zOrg+texh)*MTex->TextureTScale()*sidedef->Mid.ScaleY;
   }
 
-  const int thgt = MTex->GetHeight();
-  if (thgt < 1) return true; // just in case, not blocked
-  int texelT = (int)(DotProduct(lend, taxis)+toffs);
-  // check for wrapping
-  if (texelT < 0 || texelT >= thgt) {
-    // out of texture
-    if (!wrapped) return true; // not blocked
-    texelT %= thgt;
-    if (texelT < 0) texelT += thgt;
-  }
-  // in texture
-  if (!MTex->isSeeThrough()) return false; // this can happen for non-wrapped midtex; blocked
+  int texelT = (int)(DotProduct(lend, taxis)+toffs)%thgt;
+  if (texelT < 0) texelT += thgt;
 
   // s axis
   const bool xflip = (sidedef->Mid.Flags&STP_FLIP_X);
   const bool xbroken = (sidedef->Mid.Flags&STP_BROKEN_FLIP_X);
 
-  const TVec saxis = (!xflip ? line->ndir : -line->ndir)*MTex->TextureSScale()*sidedef->Mid.ScaleX;
+  const TVec saxis = (sidenum == (int)!xflip ? -line->ndir : line->ndir)*MTex->TextureSScale()*sidedef->Mid.ScaleX;
 
   const TVec *v = (sidenum == (int)(!xflip || xbroken) ? line->v2 : line->v1);
   float soffs = -DotProduct(*v, saxis);
@@ -444,13 +448,12 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
     soffs += xoffs*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
   }
 
-  const int twdt = MTex->GetWidth();
-  if (twdt < 1) return true; // just in case, not blocked
   int texelS = (int)(DotProduct(lend, saxis)+soffs)%twdt;
   if (texelS < 0) texelS += twdt;
 
-  // reverse y, because in OpenGL texture origin is at bottom left corner
-  auto pix = MTex->getPixel(texelS, thgt-texelT-1);
+  // i don't know why i shouldn't reverse Y here
+  auto pix = MTex->getPixel(texelS, texelT);
+  //GCon->Logf(NAME_Debug, "TEX %s: z=%g; ts=(%d,%d); a=%u", *MTex->Name, lend.z, texelS, texelT, pix.a);
   return (pix.a < 169); // not blocked if the pixel is transparent enough
 }
 
@@ -913,7 +916,6 @@ bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector,
   trace.lightCheck = true;
   trace.flatTextureCheck = true;
   trace.wallTextureCheck = true;
-  trace.collectIntercepts = false;
 
   if (trace.StartSubSector == trace.EndSubSector) return true; // same subsector, definitely visible
 
