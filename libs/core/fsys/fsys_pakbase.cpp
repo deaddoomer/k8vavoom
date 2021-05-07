@@ -402,13 +402,19 @@ void VFileDirectory::clear () {
 }
 
 
-struct FilterItem {
-  int fileno; // file index
-  int filter; // filter number
-
-  inline FilterItem () noexcept {}
-  inline FilterItem (int afno, int afidx) noexcept : fileno(afno), filter(afidx) {}
-};
+//==========================================================================
+//
+//  IsHideRemoveFilterFileName
+//
+//==========================================================================
+static bool IsHideRemoveFilterFileName (VStr &fn) {
+  VStr fext = fn.ExtractFileExtension();
+  if (fext.strEqu(".hide") || fext.strEqu(".remove")) {
+    fn = fn.StripExtension();
+    return true;
+  }
+  return false;
+}
 
 
 //==========================================================================
@@ -416,6 +422,7 @@ struct FilterItem {
 //  VFileDirectory::buildLumpNames
 //
 //  won't touch entries with `lumpName != NAME_None`
+//  backslashes should be already converted to normal slashes
 //
 //  this also performs filtering
 //
@@ -423,9 +430,20 @@ struct FilterItem {
 void VFileDirectory::buildLumpNames () {
   if (files.length() > 65520) Sys_Error("Archive \"%s\" contains too many files", *getArchiveName());
 
-  TMapNC<VName, FilterItem> flumpmap; // lump name -> filter info
-  TMap<VStr, FilterItem> fnamemap; // file name -> filter info
+  TMap<VStr, bool> fnamedelmap; // files to delete, from filters
 
+  // build "files to remove" list from filters
+  for (auto &&fi : files) {
+    VStr fn = fi.fileName;
+    if (!fn.startsWith("filter/")) continue;
+    if (!FL_CheckFilterName(fn)) continue;
+    // special extensions ".hide" and ".remove" will hide the file
+    if (IsHideRemoveFilterFileName(fn)) {
+      if (!fn.isEmpty() && !fn.endsWith("/")) fnamedelmap.put(fn, true);
+    }
+  }
+
+  // we need index too, so let's do it without iterator
   for (int i = 0; i < files.length(); ++i) {
     VPakFileInfo &fi = files[i];
     fi.fileName = fi.fileName.toLowerCase(); // just in case
@@ -435,14 +453,7 @@ void VFileDirectory::buildLumpNames () {
         GLog.Logf(NAME_Warning, "Archive \"%s\" contains non-lowercase lump name '%s'", *getArchiveName(), *fi.lumpName);
       }
     } else {
-      if (fi.fileName.length() == 0) continue;
-
-      //!!!HACK!!!
-      //if (fi.fileName.Cmp("default.cfg") == 0) continue;
-      //if (fi.fileName.Cmp("startup.vs") == 0) continue;
-
-      VStr origName = fi.fileName;
-      int fidx = -1;
+      if (fi.fileName.isEmpty() || fi.fileName.endsWith("/")) continue;
 
       // filtering
       if (fi.fileName.startsWith("filter/")) {
@@ -452,10 +463,24 @@ void VFileDirectory::buildLumpNames () {
           // hide this file
           fi.fileName.clear(); // hide this file
           continue;
-        } else {
-          //GLog.Logf(NAME_Init, "FILTER CHECK: '%s' -> '%s'", *fi.fileName, *fn);
+        }
+        #if 0
+        else {
+          GLog.Logf(NAME_Init, "FILTER CHECK: '%s' -> '%s'", *fi.fileName, *fn);
+        }
+        #endif
+        // special extensions ".hide" and ".remove" will hide the file
+        if (IsHideRemoveFilterFileName(fn)) {
+          fi.fileName.clear(); // hide this file
+          continue;
         }
         fi.fileName = fn;
+      } else {
+        // check "deletion map"
+        if (fnamedelmap.has(fi.fileName)) {
+          fi.fileName.clear(); // hide this file
+          continue;
+        }
       }
 
       // set up lump name for WAD-like access
@@ -489,7 +514,7 @@ void VFileDirectory::buildLumpNames () {
       }
 
       // hide "sprofs" lumps?
-      if (fsys_hide_sprofs && fi.lumpNamespace == WADNS_Global && lumpName.strEquCI("sprofs")) {
+      if (fsys_hide_sprofs && fi.lumpNamespace == WADNS_Global && lumpName.strEqu("sprofs")) {
         fi.lumpNamespace = -1;
         lumpName = VStr();
       }
@@ -501,54 +526,21 @@ void VFileDirectory::buildLumpNames () {
         lumpName = VStr();
       }
 
-      if (fsys_skipDehacked && lumpName.length() && lumpName.ICmp("dehacked") == 0) {
+      if (fsys_skipDehacked && lumpName.strEqu("dehacked")) {
         fi.lumpNamespace = -1;
         lumpName = VStr();
       }
 
       // for sprites \ is a valid frame character, but is not allowed to
       // be in a file name, so we do a little mapping here
-      if (fi.lumpNamespace == WADNS_Sprites) {
+      if (fi.lumpNamespace == WADNS_Sprites && !lumpName.isEmpty()) {
         lumpName = lumpName.Replace("^", "\\");
       }
 
       //GLog.Logf(NAME_Debug, "ZIP <%s> mapped to <%s> (%d)", *fi.fileName, *lumpName, (int)fi.lumpNamespace);
 
-      // do filtering
-      if (fidx >= 0) {
-        // filter hit: check file name
-        VStr fn = fi.fileName;
-        auto np = fnamemap.find(fn);
-        if (np) {
-          // found previous file: hide it if it has lower filter index
-          if (np->filter > fidx) {
-            // hide this file
-            //GLog.Logf("removed '%s'", *origName);
-            fi.fileName.clear();
-            continue;
-          }
-        }
-        // put this file to name map
-        fnamemap.put(fn, FilterItem(i, fidx));
-        // check lump name
-        VName ln = (lumpName.length() ? VName(*lumpName, VName::AddLower8) : NAME_None);
-        if (ln != NAME_None) {
-          auto lp = flumpmap.find(ln);
-          if (lp) {
-            // found previous lump: hide it if it has lower filter index
-            if (lp->filter > fidx) {
-              // don't register this file as a lump
-              continue;
-            }
-          }
-          // put this lump to lump map
-          flumpmap.put(ln, FilterItem(i, fidx));
-        }
-        //GLog.Logf("replaced '%s' -> '%s' (%s)", *origName, *fn, *lumpName);
-      }
-
       // final lump name
-      if (lumpName.length() != 0) {
+      if (!lumpName.isEmpty()) {
         fi.lumpName = VName(*lumpName, VName::AddLower8);
       }
     }
@@ -579,17 +571,26 @@ static bool IsDupLumpAllowed (VName name) {
     name == NAME_dialogue ||
     name == NAME_znodes ||
     name == NAME_gl_level ||
-    name == "gl_vert" ||
-    name == "gl_segs" ||
-    name == "gl_ssect" ||
-    name == "gl_nodes" ||
-    name == "gl_pvs" ||
-    name == "script" ||
-    name == "scripts" ||
-    name == "decorate" ||
-    name == "sndinfo" ||
-    name == "gldefs" ||
-    name == "dehacked" ||
+    name == NAME_gl_pvs ||
+    //name == NAME_vfxdefs || // nope, let's not tolerate bad practices
+    name == NAME_sndinfo ||
+    name == NAME_sndseq ||
+    name == NAME_reverbs ||
+    name == NAME_gldefs ||
+    //sigh
+    name == NAME_terrain || // nope, let's not tolerate bad practices
+    name == NAME_lockdefs || // nope, let's not tolerate bad practices
+    name == NAME_language || // nope, let's not tolerate bad practices
+    name == NAME_decorate ||
+    name == NAME_decaldef ||
+    // more crap
+    name == NAME_gl_vert ||
+    name == NAME_gl_segs ||
+    name == NAME_gl_ssect ||
+    name == NAME_gl_nodes ||
+    name == NAME_script ||
+    name == NAME_scripts ||
+    name == NAME_dehacked ||
     false;
 }
 
@@ -604,19 +605,38 @@ static bool IsDupLumpAllowed (VName name) {
 void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
   bool doReports = (rebuilding ? false : !fsys_no_dup_reports);
   if (doReports) {
+    const char *specialWadNames[] = {
+      "doom",
+      "doom1",
+      "doomu",
+      "doom2",
+      "doom2f",
+      "tnt",
+      "plutonia",
+      "nerve",
+      "heretic",
+      "heretic1",
+      "hexen",
+      "hexdd",
+      "strife0",
+      "strife1",
+      "chex",
+      "chex1",
+      "chex2",
+      "chex3",
+      "hackx",
+      "voices",
+      nullptr,
+    };
     VStr fn = getArchiveName().ExtractFileBaseName().toLowerCase();
-    doReports =
-      fn != "doom.wad" &&
-      fn != "doomu.wad" &&
-      fn != "doom2.wad" &&
-      fn != "tnt.wad" &&
-      fn != "plutonia.wad" &&
-      fn != "nerve.wad" &&
-      fn != "heretic.wad" &&
-      fn != "hexen.wad" &&
-      fn != "strife1.wad" &&
-      fn != "voices.wad" &&
-      true;
+    VStr ext = fn.ExtractFileExtension();
+    if (ext.strEqu(".wad") || ext.strEqu(".iwad") || ext.strEqu(".pk3") || ext.strEqu(".ipk3")) {
+      fn = fn.StripExtension();
+      for (const char **swnp = specialWadNames; *swnp; ++swnp) {
+        const char *wn = *swnp;
+        if (fn.strEquCI(wn)) { doReports = false; break; }
+      }
+    }
   }
   lumpmap.clear();
   filemap.clear();
@@ -635,13 +655,25 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
     fi.prevFile = -1; // just in case
 
     // check for zscript
-    if (seenZScriptLump < 0 && fi.lumpNamespace == WADNS_Global && VStr::strEquCI(*lmp, "zscript")) {
+    if (seenZScriptLump < 0 && fi.lumpNamespace == WADNS_Global && lmp == NAME_zscript) {
       seenZScriptLump = f;
       // ignore it for now (yeah, inverted condition)
       if (!fsys_IgnoreZScript) {
         fi.lumpName = NAME_None;
         continue;
       }
+    }
+
+    // process various hide flags
+    const bool doHide =
+      (fsys_hide_sprofs && fi.lumpNamespace == WADNS_Global && lmp == NAME_sprofs) ||
+      (fsys_skipSounds && fi.lumpNamespace == WADNS_Sounds) ||
+      (fsys_skipSprites && fi.lumpNamespace == WADNS_Sprites) ||
+      (fsys_skipDehacked && lmp == NAME_dehacked);
+
+    if (doHide) {
+      lmp = NAME_None;
+      fi.lumpName = NAME_None;
     }
 
     // register lump

@@ -282,6 +282,8 @@ bool VFS_ShouldIgnoreExt (VStr fname);
 
 // returns `false` if file was filtered out (and clears name)
 // returns `true` if file should be kept (and modifies name if necessary)
+// file name *MUST* be lowercased, and path components *MUST* be separated by a single slash
+// modified file name is stripped of all filter directories, and ready to include as a normal one
 bool FL_CheckFilterName (VStr &fname);
 
 VStream *FL_OpenFileRead_NoLock (VStr Name, int *lump);

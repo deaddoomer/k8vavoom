@@ -132,15 +132,23 @@ void FL_ClearGameFilters () {
 }
 
 
-extern "C" {
-  int cmpGameFilter (const void *aa, const void *bb, void *) {
-    if (aa == bb) return 0;
-    const VStr *a = (const VStr *)aa;
-    const VStr *b = (const VStr *)bb;
-    if (a->length() < b->length()) return -1;
-    if (a->length() > b->length()) return 1;
-    return a->ICmp(*b);
-  }
+//==========================================================================
+//
+//  cmpGameFilter
+//
+//  the best filter (the longest one) is always at the top
+//
+//==========================================================================
+static int cmpGameFilter (const void *aa, const void *bb, void *) {
+  if (aa == bb) return 0;
+  const VStr *a = (const VStr *)aa;
+  const VStr *b = (const VStr *)bb;
+  const auto alen = a->length();
+  const auto blen = b->length();
+  if (alen < blen) return +1; // a.length is less then b.length, b should come first
+  if (alen > blen) return -1; // a.length is greater then b.length, a should come first
+  // we don't need alphabetical ordering, nobody cares
+  return 0;
 }
 
 
@@ -154,14 +162,15 @@ extern "C" {
 //
 //==========================================================================
 int FL_AddGameFilter (VStr path) {
-  path = path.fixSlashes();
+  if (path.isEmpty()) return FL_ADDFILTER_INVALID;
+  path = path.toLowerCase().fixSlashes();
   while (path.length() && path[0] == '/') path.chopLeft(1);
   while (path.length() && path.endsWith("/")) path.chopRight(1);
   if (path.isEmpty()) return FL_ADDFILTER_INVALID;
-  if (!path.startsWithCI("filter/")) return FL_ADDFILTER_INVALID;
+  if (!path.startsWith("filter/")) return FL_ADDFILTER_INVALID;
   if (path.length() < 8) return FL_ADDFILTER_INVALID; // just in case
   // look for duplicates
-  for (auto &&flt : fsys_game_filters) if (flt.strEquCI(path)) return FL_ADDFILTER_DUPLICATE;
+  for (auto &&flt : fsys_game_filters) if (flt.strEqu(path)) return FL_ADDFILTER_DUPLICATE;
   fsys_game_filters.append(path);
   // sort them, because why not?
   //GLog.Log(NAME_Debug, ":::: B: ===="); for (auto &&s : fsys_game_filters) GLog.Logf(NAME_Debug, "  <%s>", *s);
@@ -177,17 +186,34 @@ int FL_AddGameFilter (VStr path) {
 //
 //  returns `false` if file was filtered out (and clears name)
 //  returns `true` if file should be kept (and modifies name if necessary)
+//  file name *MUST* be lowercased, and path components *MUST* be
+//  separated by a single slash
 //
 //==========================================================================
 bool FL_CheckFilterName (VStr &fname) {
   if (fname.isEmpty()) return false; // empty names should not be kept ;-)
-  if (fsys_game_filters.length() == 0) return true; // keep it
-  if (!fname.startsWithNoCase("filter/")) return true; // keep it
-  if (fname.endsWith("/")) { fname.clear(); return false; } // drop it (it is a directory)
-  // latest filter is always the best one
-  for (int f = fsys_game_filters.length()-1; f >= 0; --f) {
-    VStr fs = fsys_game_filters[f];
-    if (fname.length() > fs.length()+1 && fname[fs.length()] == '/' && fname.startsWithNoCase(fs)) {
+  if (!fname.startsWith("filter/")) return true; // keep it
+  // this prevents reading archives without filtering, but meh
+  // special filter for our engine
+  if (fname.startsWith("filter/engine_k8vavoom/")) fname = "filter/"+fname.mid(23, fname.length());
+  // allow "any" and "anything" for all games
+  // "any"
+  if (fname.startsWith("filter/any/")) {
+    fname.chopLeft(11);
+    if (fname.isEmpty() || fname.endsWith("/")) { fname.clear(); return false; } // drop it
+    return true;
+  }
+  // "anything"
+  if (fname.startsWith("filter/anything/")) {
+    fname.chopLeft(16);
+    if (fname.isEmpty() || fname.endsWith("/")) { fname.clear(); return false; } // drop it
+    return true; // keep it
+  }
+  if (fsys_game_filters.length() == 0 || fname.endsWith("/")) { fname.clear(); return false; } // drop it (it is a directory, or we have no filters set)
+  // filters are sorted from the longest one to the shortest one
+  // also, a filter doesn't contain trailing slash
+  for (VStr fs : fsys_game_filters) {
+    if (fname.length() > fs.length()+1 && fname[fs.length()] == '/' && fname.startsWith(fs)) {
       fname.chopLeft(fs.length()+1);
       while (fname.length() && fname[0] == '/') fname.chopLeft(1);
       return !fname.isEmpty(); // just in case
