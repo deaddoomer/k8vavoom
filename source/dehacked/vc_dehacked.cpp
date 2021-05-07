@@ -1873,7 +1873,7 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
   // scan all files, put "dehacked" lumps, and "wadname.deh" lumps
   for (auto &&it : WadNSIterator(WADNS_Global)) {
     // normal dehacked lump?
-    if (it.getName() == "dehacked") {
+    if (it.getName() == NAME_dehacked) {
       //GCon->Logf(NAME_Debug, "dehacked lump: <%s>", *it.getFullName());
       if (cli_NoExternalDeh <= 0) {
         // remove this wad from the list for "wadname.deh" candidates
