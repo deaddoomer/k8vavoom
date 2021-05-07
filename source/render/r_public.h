@@ -146,6 +146,8 @@ public:
   virtual void RemoveStaticLightByOwner (vuint32 OwnerUId) = 0;
   virtual int GetNumberOfStaticLights () = 0;
 
+  virtual void InvalidateLMapsInSubsector (subsector_t *sub) = 0;
+
   virtual void ClearReferences () = 0;
 
   virtual dlight_t *AllocDlight (VThinker *, const TVec &lorg, float radius, int lightid=-1) = 0;

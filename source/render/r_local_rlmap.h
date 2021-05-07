@@ -146,6 +146,12 @@ protected:
   void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox);
   void InvalidateLightLMaps (const TVec &org, float radius);
 
+  void InvalidateAllSurfacesLMaps (surface_t *surf);
+  void InvalidateAllDrawsegLMaps (drawseg_t *dseg);
+
+public:
+  virtual void InvalidateLMapsInSubsector (subsector_t *sub) override;
+
 protected:
   void initLightChain ();
   void chainLightmap (surfcache_t *cache);

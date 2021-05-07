@@ -1118,6 +1118,51 @@ void VRenderLevelLightmap::InvalidateSurfacesLMaps (const TVec &org, float radiu
 
 //==========================================================================
 //
+//  VRenderLevelLightmap::InvalidateAllSurfacesLMaps
+//
+//==========================================================================
+void VRenderLevelLightmap::InvalidateAllSurfacesLMaps (surface_t *surf) {
+  for (; surf; surf = surf->next) {
+    if (surf->count < 3) continue; // just in case
+    if (!invalidateRelight) {
+      if (surf->lightmap || surf->lightmap_rgb) {
+        surf->drawflags |= surface_t::DF_CALC_LMAP;
+      }
+    } else {
+      surf->drawflags |= surface_t::DF_CALC_LMAP;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelLightmap::InvalidateAllDrawsegLMaps
+//
+//==========================================================================
+void VRenderLevelLightmap::InvalidateAllDrawsegLMaps (drawseg_t *dseg) {
+  if (!dseg) return; // just in case
+  const seg_t *seg = dseg->seg;
+  if (!seg) return; // just in case
+
+  if (!seg->linedef) return; // miniseg
+
+  if (dseg->mid) InvalidateAllSurfacesLMaps(dseg->mid->surfs);
+  if (seg->backsector) {
+    // two sided line
+    if (dseg->top) InvalidateAllSurfacesLMaps(dseg->top->surfs);
+    // no lightmaps on sky anyway
+    //if (dseg->topsky) InvalidateSurfacesLMaps(org, radius, dseg->topsky->surfs);
+    if (dseg->bot) InvalidateAllSurfacesLMaps(dseg->bot->surfs);
+    for (segpart_t *sp = dseg->extra; sp; sp = sp->next) {
+      InvalidateAllSurfacesLMaps(sp->surfs);
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelLightmap::InvalidateLineLMaps
 //
 //==========================================================================
@@ -1145,6 +1190,55 @@ void VRenderLevelLightmap::InvalidateLineLMaps (const TVec &org, float radius, d
 
 //==========================================================================
 //
+//  VRenderLevelLightmap::InvalidateLMapsInSubsector
+//
+//==========================================================================
+void VRenderLevelLightmap::InvalidateLMapsInSubsector (subsector_t *sub) {
+  if (!sub) return;
+  if (sub->isAnyPObj()) return;
+
+  // polyobj
+  if (sub->HasPObjs()) {
+    // this is excessive invalidation for polyobj, but meh...
+    //FIXME:POBJ: invalidate flats lightmaps too
+    for (auto &&it : sub->PObjFirst()) {
+      for (auto &&sit : it.pobj()->SegFirst()) {
+        const seg_t *seg = sit.seg();
+        if (seg->linedef && seg->drawsegs) InvalidateAllDrawsegLMaps(seg->drawsegs);
+      }
+      //FIXME: make this faster!
+      if (it.pobj()->Is3D()) {
+        for (subsector_t *ss = it.pobj()->posector->subsectors; ss; ss = ss->seclink) {
+          for (subregion_t *subregion = ss->regions; subregion; subregion = subregion->next) {
+            if (subregion->realfloor) InvalidateAllSurfacesLMaps(subregion->realfloor->surfs);
+            if (subregion->realceil) InvalidateAllSurfacesLMaps(subregion->realceil->surfs);
+            if (subregion->fakefloor) InvalidateAllSurfacesLMaps(subregion->fakefloor->surfs);
+            if (subregion->fakeceil) InvalidateAllSurfacesLMaps(subregion->fakeceil->surfs);
+          }
+        }
+      }
+    }
+  }
+
+  if (sub->numlines > 0) {
+    const seg_t *seg = &Level->Segs[sub->firstline];
+    for (int j = sub->numlines; j--; ++seg) {
+      if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
+      InvalidateAllDrawsegLMaps(seg->drawsegs);
+    }
+  }
+
+  for (subregion_t *subregion = sub->regions; subregion; subregion = subregion->next) {
+    if (subregion->realfloor) InvalidateAllSurfacesLMaps(subregion->realfloor->surfs);
+    if (subregion->realceil) InvalidateAllSurfacesLMaps(subregion->realceil->surfs);
+    if (subregion->fakefloor) InvalidateAllSurfacesLMaps(subregion->fakefloor->surfs);
+    if (subregion->fakeceil) InvalidateAllSurfacesLMaps(subregion->fakeceil->surfs);
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelLightmap::InvalidateSubsectorLMaps
 //
 //==========================================================================
@@ -1160,6 +1254,17 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
       for (auto &&sit : it.pobj()->SegFirst()) {
         const seg_t *seg = sit.seg();
         if (seg->linedef && seg->drawsegs) InvalidateLineLMaps(org, radius, seg->drawsegs);
+      }
+      //FIXME: make this faster!
+      if (it.pobj()->Is3D()) {
+        for (subsector_t *ss = it.pobj()->posector->subsectors; ss; ss = ss->seclink) {
+          for (subregion_t *subregion = ss->regions; subregion; subregion = subregion->next) {
+            if (subregion->realfloor) InvalidateSurfacesLMaps(org, radius, subregion->realfloor->surfs);
+            if (subregion->realceil) InvalidateSurfacesLMaps(org, radius, subregion->realceil->surfs);
+            if (subregion->fakefloor) InvalidateSurfacesLMaps(org, radius, subregion->fakefloor->surfs);
+            if (subregion->fakeceil) InvalidateSurfacesLMaps(org, radius, subregion->fakeceil->surfs);
+          }
+        }
       }
     }
   }

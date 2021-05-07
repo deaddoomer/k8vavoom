@@ -878,6 +878,8 @@ VRenderLevelShared::~VRenderLevelShared () {
   tjLineMarkFix = nullptr;
 
   KillPortalPool();
+
+  if (Level && Level->Renderer == this) Level->Renderer = nullptr;
 }
 
 
@@ -2358,6 +2360,15 @@ void VRenderLevelShared::setupCurrentLight (const TVec &LightPos, const float Ra
       CurrLightConeFrustum.setupSimpleDir(CurrLightPos-CurrLightConeDir*0.5f, CurrLightConeDir, clampval(CurrLightConeAngle*2.0f, 1.0f, 179.0f), CurrLightRadius);
     }
   }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::InvalidateLMapsInSubsector
+//
+//==========================================================================
+void VRenderLevelShared::InvalidateLMapsInSubsector (subsector_t *sub) {
 }
 
 

@@ -101,6 +101,7 @@ static void CollectPObjTouchingThingsRough (polyobj_t *po) {
 static bool pobjAddSubsector (VLevel *level, subsector_t *sub, void *udata) {
   polyobj_t *po = (polyobj_t *)udata;
   po->AddSubsector(sub);
+  if (level->Renderer) level->Renderer->InvalidateLMapsInSubsector(sub);
   //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g) to subsector #%d", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY], (int)(ptrdiff_t)(sub-&level->Subsectors[0]));
   return true; // continue checking
 }
@@ -280,6 +281,7 @@ void polyobj_t::RemoveAllSubsectors () {
     part->nextsub = nullptr;
     part->nextpobj = freeparts;
     freeparts = part;
+    if (GClLevel && GClLevel->Renderer) GClLevel->Renderer->InvalidateLMapsInSubsector(sub);
   }
 }
 

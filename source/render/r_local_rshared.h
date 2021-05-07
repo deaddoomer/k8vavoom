@@ -438,6 +438,8 @@ public:
   inline bool IsShadowsEnabled () const noexcept { return (forceDisableShadows ? false : r_shadows.asBool()); }
 
 public:
+  virtual void InvalidateLMapsInSubsector (subsector_t *sub) override;
+
   virtual bool IsNodeRendered (const node_t *node) const noexcept override;
   virtual bool IsSubsectorRendered (const subsector_t *sub) const noexcept override;
 
