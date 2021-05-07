@@ -28,9 +28,14 @@ void AM_Init ();
 bool AM_Responder (event_t *ev);
 void AM_Ticker ();
 void AM_Drawer ();
-void AM_DrawWorldTimer ();
 // called to force the automap to quit if the level is completed while it is up
 void AM_Stop ();
+
+void AM_Dirty (); // trigger line visibility update (autoresets)
+
+bool AM_IsActive ();
+bool AM_IsOverlay (); // returns `false` if automap is not active
+bool AM_IsFullscreen (); // returns `false` if automap is not active
 
 // automap marks API
 int AM_GetMaxMarks ();
@@ -48,6 +53,4 @@ void AM_ClearAutomap ();
 class VLevel;
 void AM_ClearMarksIfMapChanged (VLevel *currmap);
 
-extern int automapactive; // In AutoMap mode? 0: no; 1: normal; -1: overlay
 extern VCvarB am_always_update;
-extern bool automapUpdateSeen;

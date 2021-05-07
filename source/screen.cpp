@@ -154,7 +154,6 @@ static VCvarB dbg_disable_world_render("dbg_disable_world_render", false, "Disab
 
 static VCvarF menu_darkening("menu_darkening", "0.7", "Screen darkening for active menus.", CVAR_Archive);
 static VCvarB draw_pause("draw_pause", true, "Draw \"paused\" text?", CVAR_Archive);
-static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
 
 static VCvarB crosshair_topmost("crosshair_topmost", false, "Render crosshair on the top of everything?", CVAR_Archive);
 
@@ -700,7 +699,7 @@ void SCR_Update (bool fullUpdate) {
       Drawer->StartUpdate();
       if (!CL_GotNetOrigin()) {
         Drawer->ClearScreen(VDrawer::CLEAR_ALL);
-      } else if (automapactive <= 0 || am_always_update || clWipeTimer >= 0.0f) {
+      } else if (am_always_update || clWipeTimer >= 0.0f || AM_IsOverlay()) {
         if (dbg_disable_world_render) {
           Drawer->ClearScreen(VDrawer::CLEAR_ALL);
         } else {
@@ -716,9 +715,8 @@ void SCR_Update (bool fullUpdate) {
         Drawer->ClearScreen(VDrawer::CLEAR_ALL);
       }
       Drawer->Setup2D(); // restore 2D projection
-      if (automapactive) AM_Drawer();
       if (GGameInfo->NetMode != NM_TitleMap) {
-        if (!automapactive && draw_world_timer) AM_DrawWorldTimer();
+        AM_Drawer();
         CT_Drawer();
         SB_Drawer();
       }

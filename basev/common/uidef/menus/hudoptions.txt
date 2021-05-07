@@ -100,6 +100,47 @@ menudef HUDOptions {
   }
 
 
+  header "Map Statistics";
+
+  option bool {
+    title = "Draw Map Statistics";
+    cvar = draw_map_stats;
+    help = "Draw map statistics when not on automap?";
+  }
+
+  option bool {
+    title = "Map Name";
+    cvar = draw_map_stats_name;
+    help =
+      "Draw kill statistics when not on automap?",
+      "(When enabled with the global toggle above.)";
+  }
+
+  option bool {
+    title = "Kill Stats";
+    cvar = draw_map_stats_kills;
+    help =
+      "Draw kill statistics when not on automap?",
+      "(When enabled with the global toggle above.)";
+  }
+
+  option bool {
+    title = "Item Stats";
+    cvar = draw_map_stats_items;
+    help =
+      "Draw item statistics when not on automap?",
+      "(When enabled with the global toggle above.)";
+  }
+
+  option bool {
+    title = "Secret Stats";
+    cvar = draw_map_stats_secrets;
+    help =
+      "Draw secret statistics when not on automap?",
+      "(When enabled with the global toggle above.)";
+  }
+
+
   header "Service Messages";
 
   option bool {

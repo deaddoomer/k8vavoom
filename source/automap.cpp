@@ -202,8 +202,8 @@ struct mline_t {
 };
 
 
-int automapactive = 0;
-bool automapUpdateSeen = true;
+static int automapactive = 0; // In AutoMap mode? 0: no; 1: normal; -1: overlay
+static bool automapUpdateSeen = true; // set to `true` to trigger line visibility update (autoresets)
 
 static VCvarB am_active("am_active", false, "Is automap active?", 0);
 extern VCvarI screen_size;
@@ -212,6 +212,13 @@ extern VCvarB ui_freemouse;
 extern VCvarB r_dbg_use_fullsegs;
 
 VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive);
+
+
+void AM_Dirty () { automapUpdateSeen = true; }
+
+bool AM_IsActive () { return !!automapactive; }
+bool AM_IsOverlay () { return (automapactive < 0); } // returns `false` if automap is not active
+bool AM_IsFullscreen () { return (automapactive > 0); } // returns `false` if automap is not active
 
 
 /*
@@ -229,6 +236,14 @@ static inline int getAMHeight () {
   if (screen_size < 11) res -= sb_height;
   return res;
 }
+
+
+static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
+static VCvarB draw_map_stats("draw_map_stats", false, "Draw map stats when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_name("draw_map_stats_name", false, "Draw map name when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill stats when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_items("draw_map_stats_items", false, "Draw map item stats when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map secret stats when not on automap?", CVAR_Archive);
 
 
 static VCvarB am_overlay("am_overlay", true, "Show automap in overlay mode?", CVAR_Archive);
@@ -2043,7 +2058,7 @@ static void AM_drawMarks () {
 //  AM_DrawWorldTimer
 //
 //===========================================================================
-void AM_DrawWorldTimer () {
+static void AM_DrawWorldTimer () {
   int days;
   int hours;
   int minutes;
@@ -2052,7 +2067,8 @@ void AM_DrawWorldTimer () {
   char timeBuffer[64];
   char dayBuffer[20];
 
-  if (!cl) return;
+  if (!cl || !GClLevel) return;
+  if (!draw_world_timer) return;
 
   worldTimer = (int)cl->WorldTimer;
   if (worldTimer < 0) worldTimer = 0;
@@ -2097,7 +2113,7 @@ void AM_DrawWorldTimer () {
 //  AM_DrawLevelStats
 //
 //===========================================================================
-static void AM_DrawLevelStats () {
+static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats) {
   int kills;
   int totalkills;
   int items;
@@ -2109,13 +2125,17 @@ static void AM_DrawLevelStats () {
   char item[80];
   char lnamebuf[128];
 
+  if (!cl || !GClLevel) return;
+
   T_SetFont(SmallFont);
   T_SetAlign(hleft, vbottom);
 
   int currY = VirtualHeight-sb_height-7;
+  if (!asAutomap) currY -= 2;
 
+  bool nameRendered = false;
   VStr lname = GClLevel->LevelInfo->GetLevelName().xstrip();
-  if (lname.length()) {
+  if (lname.length() && (asAutomap || draw_map_stats_name)) {
     size_t lbpos = 0;
     for (int f = 0; f < lname.length(); ++f) {
       char ch = lname[f];
@@ -2127,18 +2147,25 @@ static void AM_DrawLevelStats () {
     lnamebuf[lbpos] = 0;
     T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED);
     currY -= T_FontHeight();
+    nameRendered = true;
   }
 
-  if (am_show_map_name) {
+  if (drawMapName || (!asAutomap && !nameRendered && draw_map_stats_name)) {
     lname = VStr(GClLevel->MapName);
     lname = lname.xstrip();
     T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), CR_UNTRANSLATED);
     currY -= T_FontHeight();
   }
 
-  if (am_show_stats) {
+  if (drawStats) {
     currY -= 4;
-    currY -= 3*T_FontHeight();
+    if (asAutomap) {
+      currY -= 3*T_FontHeight();
+    } else {
+      if (draw_map_stats_kills) currY -= T_FontHeight();
+      if (draw_map_stats_items) currY -= T_FontHeight();
+      if (draw_map_stats_secrets) currY -= T_FontHeight();
+    }
     kills = cl->KillCount;
     items = cl->ItemCount;
     secrets = cl->SecretCount;
@@ -2148,12 +2175,21 @@ static void AM_DrawLevelStats () {
 
     T_SetFont(SmallFont);
     T_SetAlign(hleft, vtop);
-    snprintf(kill, sizeof(kill), "Kills: %.2d / %.2d", kills, totalkills);
-    T_DrawText(8, currY, kill, CR_RED);
-    snprintf(item, sizeof(item), "Items: %.2d / %.2d", items, totalitems);
-    T_DrawText(8, currY+T_FontHeight(), item, CR_GREEN);
-    snprintf(secret, sizeof(secret), "Secrets: %.2d / %.2d", secrets, totalsecrets);
-    T_DrawText(8, currY+2*T_FontHeight(), secret, CR_GOLD);
+
+    if (asAutomap || draw_map_stats_kills) {
+      snprintf(kill, sizeof(kill), "Kills: %.2d / %.2d", kills, totalkills);
+      T_DrawText(8, currY, kill, CR_RED);
+      currY += T_FontHeight();
+    }
+    if (asAutomap || draw_map_stats_items) {
+      snprintf(item, sizeof(item), "Items: %.2d / %.2d", items, totalitems);
+      T_DrawText(8, currY, item, CR_GREEN);
+      currY += T_FontHeight();
+    }
+    if (asAutomap || draw_map_stats_secrets) {
+      snprintf(secret, sizeof(secret), "Secrets: %.2d / %.2d", secrets, totalsecrets);
+      T_DrawText(8, currY, secret, CR_GOLD);
+    }
   }
 }
 
@@ -2197,7 +2233,12 @@ static void AM_CheckVariables () {
 //==========================================================================
 void AM_Drawer () {
   AM_Check();
-  if (!automapactive) return;
+
+  if (!automapactive) {
+    AM_DrawWorldTimer();
+    if (draw_map_stats) AM_DrawLevelStats(false, false, true);
+    return;
+  }
 
   //if (am_overlay) glColor4f(1, 1, 1, (am_overlay_alpha < 0.1f ? 0.1f : am_overlay_alpha > 1.0f ? 1.0f : am_overlay_alpha));
 
@@ -2228,7 +2269,7 @@ void AM_Drawer () {
   if (am_cheating && am_show_rendered_subs) AM_DrawRenderedSubs();
   Drawer->EndAutomap();
   AM_DrawWorldTimer();
-  if (am_show_stats || am_show_map_name) AM_DrawLevelStats();
+  if (am_show_stats || am_show_map_name) AM_DrawLevelStats(true, am_show_map_name, am_show_stats);
   if (mapMarksAllowed) AM_drawMarks();
 
   //if (am_overlay) glColor4f(1, 1, 1, 1);

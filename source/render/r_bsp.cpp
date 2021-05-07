@@ -878,7 +878,6 @@ void VRenderLevelShared::RenderSegMarkMapped (subsector_t *sub, seg_t *seg) {
     }
     // this line is at least partially mapped; let automap drawer do the rest
     linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-    automapUpdateSeen = true;
   } else {
     // miniseg
     seg->flags |= SF_MAPPED;
@@ -894,9 +893,9 @@ void VRenderLevelShared::RenderSegMarkMapped (subsector_t *sub, seg_t *seg) {
     // no non-minisegs, mark this subsector as visible
     seg_t *lseg = &Level->Segs[sub->firstline];
     for (int f = sub->numlines; f--; ++lseg) lseg->flags |= SF_MAPPED;
-    automapUpdateSeen = true;
     sub->miscFlags |= subsector_t::SSMF_Rendered;
   }
+  AM_Dirty();
 }
 
 
