@@ -438,9 +438,9 @@ void VFileDirectory::buildLumpNames () {
     if (!fn.startsWith("filter/")) continue;
     if (!FL_CheckFilterName(fn)) continue;
     // special extensions ".hide" and ".remove" will hide the file
-    if (IsHideRemoveFilterFileName(fn)) {
-      if (!fn.isEmpty() && !fn.endsWith("/")) fnamedelmap.put(fn, true);
-    }
+    (void)IsHideRemoveFilterFileName(fn);
+    // put everything in "hide map", becase the corresponding files will be hard-replaced
+    if (!fn.isEmpty() && !fn.endsWith("/")) fnamedelmap.put(fn, true);
   }
 
   // we need index too, so let's do it without iterator
