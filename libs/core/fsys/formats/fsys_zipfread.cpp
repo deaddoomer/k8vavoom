@@ -388,40 +388,25 @@ bool VZipFileReader::CheckCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint3
     err = FileStream->IsError();
   }
 
-  if (err) {
-    GLog.Logf(NAME_Error, "Error reading archive for file '%s'", *fname);
-    return false;
+  if (err) { GLog.Logf(NAME_Error, "Error reading archive for file '%s'", *fname); return false; }
+
+  if (Magic != 0x04034b50) { GLog.Logf(NAME_Error, "Bad local file magic for file '%s'", *fname); return false; }
+
+  // just in case, check for encrypted files
+  // they should be rejected by the main reader, but let's play safe
+  if ((Flags&((1u<<0)|(1u<<6))) != 0) { GLog.Logf(NAME_Error, "Encrypted file '%s'", *fname); return false; }
+
+  if (ComprMethod != Info.compression) { GLog.Logf(NAME_Error, "Compression method doesn't match for file '%s'", *fname); return false; }
+
+  // bit 3 of general flags is set when the actual sizes and CRC are not in the header
+  // if it is set, we'll completely trust the central directory
+  if ((Flags&(1u<<3)) == 0) {
+    if (Crc != Info.crc32) { GLog.Logf(NAME_Error, "CRC doesn't match for file '%s'", *fname); return false; }
+    if (ComprSize != Info.packedsize) { GLog.Logf(NAME_Error, "Compressed size doesn't match for file '%s'", *fname); return false; }
+    if (UncomprSize != (vuint32)Info.filesize) { GLog.Logf(NAME_Error, "Uncompressed size doesn't match for file '%s'", *fname); return false; }
   }
 
-  if (Magic != 0x04034b50) {
-    GLog.Logf(NAME_Error, "Bad file magic for file '%s'", *fname);
-    return false;
-  }
-
-  if (ComprMethod != Info.compression) {
-    GLog.Logf(NAME_Error, "Compression method doesn't match for file '%s'", *fname);
-    return false;
-  }
-
-  if (Crc != Info.crc32 && (Flags&8) == 0) {
-    GLog.Logf(NAME_Error, "CRC doesn't match for file '%s'", *fname);
-    return false;
-  }
-
-  if (ComprSize != Info.packedsize && (Flags&8) == 0) {
-    GLog.Logf(NAME_Error, "Compressed size doesn't match for file '%s'", *fname);
-    return false;
-  }
-
-  if (UncomprSize != (vuint32)Info.filesize && (Flags&8) == 0) {
-    GLog.Logf(NAME_Error, "Uncompressed size doesn't match for file '%s'", *fname);
-    return false;
-  }
-
-  if (FileNameSize != Info.filenamesize) {
-    GLog.Logf(NAME_Error, "File name length doesn't match for file '%s'", *fname);
-    return false;
-  }
+  if (FileNameSize != Info.filenamesize) { GLog.Logf(NAME_Error, "File name length doesn't match for file '%s'", *fname); return false; }
 
   *piSizeVar += FileNameSize+ExtraFieldSize;
 

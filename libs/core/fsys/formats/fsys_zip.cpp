@@ -204,31 +204,42 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     delete[] filename_inzip;
     filename_inzip = nullptr;
 
-    // fix some idiocity introduced by some shitdoze doom tools
-    for (;;) {
-           if (zfname.startsWith("./")) zfname.chopLeft(2);
-      else if (zfname.startsWith("../")) zfname.chopLeft(3);
-      else if (zfname.startsWith("/")) zfname.chopLeft(1);
-      else break;
+    bool addIt = (!zfname.isEmpty() && !zfname.endsWith("/"));
+
+    // ignore encrypted files
+    if (addIt && (file_info.flag&((1u<<0)|(1u<<6))) != 0) addIt = false;
+
+    if (addIt) {
+      // fix some idiocity introduced by some shitdoze doom tools
+      for (;;) {
+             if (zfname.startsWith("./")) zfname.chopLeft(2);
+        else if (zfname.startsWith("../")) zfname.chopLeft(3);
+        else if (zfname.startsWith("/")) zfname.chopLeft(1);
+        else break;
+      }
+      addIt = (!zfname.isEmpty() && !zfname.endsWith("/"));
     }
-    file_info.fileName = zfname;
 
-    if (canHasPrefix && file_info.fileName.IndexOf('/') == -1) canHasPrefix = false;
+    if (addIt) {
+      file_info.fileName = zfname;
 
-    // ignore "dehacked.txt" included in some idarchive zips with "dehacked.exe"
-    if (isPK3 || !zfname.strEquCI("dehacked.txt")) {
-      if (canHasPrefix) {
-        for (const VPK3ResDirInfo *di = PK3ResourceDirs; di->pfx; ++di) {
-          if (file_info.fileName.StartsWith(di->pfx)) { canHasPrefix = false; break; }
-        }
+      if (canHasPrefix && file_info.fileName.IndexOf('/') == -1) canHasPrefix = false;
+
+      // ignore "dehacked.txt" included in some idarchive zips with "dehacked.exe"
+      if (isPK3 || !zfname.strEquCI("dehacked.txt")) {
         if (canHasPrefix) {
-          for (const char **dn = moreresdirs; *dn; ++dn) {
-            if (file_info.fileName.StartsWith(*dn)) { canHasPrefix = false; break; }
+          for (const VPK3ResDirInfo *di = PK3ResourceDirs; di->pfx; ++di) {
+            if (file_info.fileName.StartsWith(di->pfx)) { canHasPrefix = false; break; }
+          }
+          if (canHasPrefix) {
+            for (const char **dn = moreresdirs; *dn; ++dn) {
+              if (file_info.fileName.StartsWith(*dn)) { canHasPrefix = false; break; }
+            }
           }
         }
-      }
 
-      pakdir.append(file_info);
+        pakdir.append(file_info);
+      }
     }
 
     // set the current file of the zipfile to the next file
