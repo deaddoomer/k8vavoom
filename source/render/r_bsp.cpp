@@ -848,43 +848,92 @@ void VRenderLevelShared::RenderMirror (subsector_t *sub, sec_region_t *secregion
 
 //==========================================================================
 //
-//  VRenderLevelShared::RenderLine
+//  VRenderLevelShared::RenderSegMarkMapped
 //
-//  Clips the given segment and adds any visible pieces to the line list.
+//  perform automap marking of segs, lines and subsectors
 //
 //==========================================================================
-void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg) {
-  if (!dseg) return; // just in case
-  seg_t *seg = dseg->seg;
+void VRenderLevelShared::RenderSegMarkMapped (subsector_t *sub, seg_t *seg) {
+  if (seg->flags&SF_MAPPED) return;
+
+  line_t *linedef = seg->linedef;
+
+  // mark only autolines that allowed to be seen on the automap
+  if (linedef && (linedef->flags&ML_DONTDRAW)) linedef = nullptr;
+
+  if (linedef) {
+    // fullseg: mark all line segs for that side
+    if ((seg->flags&(SF_FULLSEG|SF_MAPPED)) == SF_FULLSEG) {
+      for (seg_t *lseg = linedef->firstseg; lseg; lseg = lseg->lsnext) {
+        if (lseg->side != seg->side) continue;
+        lseg->flags |= SF_MAPPED;
+      }
+    }
+    seg->flags |= SF_MAPPED; // just in case
+    // if the whole line is mapped, do nothing
+    if (linedef->flags&ML_MAPPED) {
+      // mark subsector as rendered (just in case)
+      if ((sub->sector->SectorFlags&sector_t::SF_Hidden) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
+      return;
+    }
+    // this line is at least partially mapped; let automap drawer do the rest
+    linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
+    automapUpdateSeen = true;
+  } else {
+    // miniseg
+    seg->flags |= SF_MAPPED;
+    if (sub->miscFlags&subsector_t::SSMF_Rendered) return;
+    if (sub->numlines < 1) return;
+    if (sub->sector->SectorFlags&sector_t::SF_Hidden) return;
+    // check if there are any non-miniseg segs
+    const seg_t *sseg = &Level->Segs[sub->firstline];
+    for (int f = sub->numlines; f--; ++sseg) {
+      linedef = sseg->linedef;
+      if (linedef && (linedef->flags&ML_DONTDRAW) == 0) return; // no need to mark it, normal line rendering should do it
+    }
+    // no non-minisegs, mark this subsector as visible
+    seg_t *lseg = &Level->Segs[sub->firstline];
+    for (int f = sub->numlines; f--; ++lseg) lseg->flags |= SF_MAPPED;
+    automapUpdateSeen = true;
+    sub->miscFlags |= subsector_t::SSMF_Rendered;
+  }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::RenderLine
+//
+//  clips the given segment and adds any visible pieces to the line list
+//
+//==========================================================================
+void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, seg_t *seg) {
   if (!seg) return; // just in case
   if (seg->flags&SF_FULLSEG) Sys_Error("RenderLine: fullsegs should not end up here!"); // it should not came here
+
   line_t *linedef = seg->linedef;
+
+  if (!linedef) {
+    // miniseg, perform automap duties
+    if (seg->flags&SF_MAPPED) return;
+    if (sub->miscFlags&subsector_t::SSMF_Rendered) return;
+    if (sub->numlines < 1) return;
+    if (sub->sector->SectorFlags&sector_t::SF_Hidden) return;
+    // mirror clip
+    if (Drawer->MirrorClip && (Drawer->MirrorPlane.PointOnSide2(*seg->v1) || Drawer->MirrorPlane.PointOnSide2(*seg->v2))) return;
+    // check with clipper
+    if (!ViewClip.IsRangeVisible(*seg->v2, *seg->v1)) return;
+    RenderSegMarkMapped(sub, seg);
+    // just in case, to avoid further checks
+    seg->flags |= SF_MAPPED;
+    return;
+  }
+
+  drawseg_t *dseg = seg->drawsegs;
+  if (!dseg) return; // just in case
 
   // mirror clip
   if (Drawer->MirrorClip && (Drawer->MirrorPlane.PointOnSide2(*seg->v1) || Drawer->MirrorPlane.PointOnSide2(*seg->v2))) return;
-
-  if (!linedef) {
-    // miniseg
-    // check with clipper?
-    #if 0
-    if (!(sub->miscFlags&subsector_t::SSMF_Rendered) && sub->numlines) {
-      // check if have any non-miniseg segs
-      const *sseg = &Level->Segs[sub->firstline];
-      for (int f = sub->numlines; f--; ++sseg) {
-        linedef = sseg->linedef;
-        if (linedef && (linedef->flags&ML_DONTDRAW) == 0) return; // no need to mark it, normal line rendering should do it
-      }
-      // no non-minisegs, mark this subsector as visible
-      //FIXME: this can be wrong for hidden sectors, and some other obscure cases
-      sub->miscFlags |= subsector_t::SSMF_Rendered;
-      seg->flags |= SF_MAPPED;
-    }
-    #else
-    sub->miscFlags |= subsector_t::SSMF_Rendered;
-    seg->flags |= SF_MAPPED;
-    #endif
-    return;
-  }
 
   #if 1
   // render (queue) translucent lines by segs (for sorter)
@@ -959,31 +1008,9 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   */
 
   // automap
-  // mark only autolines that allowed to be seen on the automap
-  if ((linedef->flags&ML_DONTDRAW) == 0) {
-    // fullseg: mark all line segs for that side
-    if ((seg->flags&(SF_FULLSEG|SF_MAPPED)) == SF_FULLSEG) {
-      for (seg_t *lseg = linedef->firstseg; lseg; lseg = lseg->lsnext) {
-        if (lseg->side != seg->side) continue;
-        lseg->flags |= SF_MAPPED;
-      }
-    }
-    // any seg
-    if ((linedef->flags&ML_MAPPED) == 0) {
-      // this line is at least partially mapped; let automap drawer do the rest
-      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-      automapUpdateSeen = true;
-    }
-    if ((seg->flags&SF_MAPPED) == 0) {
-      linedef->exFlags |= ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED;
-      seg->flags |= SF_MAPPED;
-      automapUpdateSeen = true;
-      // mark subsector as rendered (but only if linedef is allowed to be seen on the automap)
-      if ((linedef->flags&ML_DONTDRAW) == 0) sub->miscFlags |= subsector_t::SSMF_Rendered;
-    }
-  }
+  RenderSegMarkMapped(sub, seg);
 
-  side_t *sidedef = seg->sidedef;
+  const side_t *sidedef = seg->sidedef;
 
   VEntity *SkyBox = secregion->eceiling.splane->SkyBox;
   if (!seg->backsector) {
@@ -1113,8 +1140,9 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
           UpdatePObj(pobj);
         }
         for (auto &&sit : pobj->SegFirst()) {
-          const seg_t *seg = sit.seg();
-          if (seg->drawsegs && !(seg->flags&SF_FULLSEG)) RenderLine(sub, secregion, region, seg->drawsegs);
+          seg_t *seg = sit.seg();
+          if (seg->flags&SF_FULLSEG) continue;
+          RenderLine(sub, secregion, region, seg);
         }
         // render flats for 3d pobjs
         if (pobj->Is3D()) {
@@ -1294,10 +1322,10 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
         subregion_t *region = sub->regions;
         sec_region_t *secregion = region->secregion;
         vassert(secregion->regflags&sec_region_t::RF_BaseRegion);
-        const seg_t *seg = &Level->Segs[sub->firstline];
+        seg_t *seg = &Level->Segs[sub->firstline];
         for (int j = sub->numlines; j--; ++seg) {
-          if (!seg->linedef || !seg->drawsegs) continue; // miniseg has no drawsegs/segparts
-          RenderLine(sub, secregion, region, seg->drawsegs);
+          if (seg->flags&SF_FULLSEG) continue;
+          RenderLine(sub, secregion, region, seg);
         }
       }
     }

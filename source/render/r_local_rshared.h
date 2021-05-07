@@ -663,9 +663,12 @@ public:
   void GetFlatSetToRender (subsector_t *sub, subregion_t *region, sec_surface_t *surfs[4]);
   void ChooseFlatSurfaces (sec_surface_t *&f0, sec_surface_t *&f1, sec_surface_t *flat0, sec_surface_t *flat1);
 
+  // called by `RenderLine()`, to mark segs/lines/subsectors on the automap
+  void RenderSegMarkMapped (subsector_t *sub, seg_t *seg);
+
   void RenderHorizon (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg);
   void RenderMirror (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg);
-  void RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, drawseg_t *dseg);
+  void RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, seg_t *seg);
   void RenderSecFlatSurfaces (subsector_t *sub, sec_region_t *secregion, sec_surface_t *flat0, sec_surface_t *flat1, VEntity *SkyBox);
   void RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox);
   void AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub);

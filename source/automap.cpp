@@ -1376,51 +1376,63 @@ static vuint32 AM_getLineColor (const line_t *line, bool *cheatOnly) {
 //
 //  AM_UpdateSeen
 //
+//  update "fully mapped" line flags
+//
 //==========================================================================
 static void AM_UpdateSeen () {
   if (!automapUpdateSeen) return;
   automapUpdateSeen = false;
 
-  line_t *line = &GClLevel->Lines[0];
-  for (unsigned i = GClLevel->NumLines; i--; ++line) {
-    if (line->flags&ML_DONTDRAW) {
-      line->exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
+  for (auto &&line : GClLevel->allLines()) {
+    if (line.flags&ML_DONTDRAW) {
+      line.exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
       continue;
     }
 
     // check if we need to re-evaluate line visibility, and do it
-    if (line->exFlags&ML_EX_CHECK_MAPPED) {
-      // mark subsector as renered only if we've seen at least one non-hidden single-sided line from it
-      line->exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
-      if (!(line->flags&ML_MAPPED)) {
-        int unseenSides[2] = {0, 0};
-        int seenSides[2] = {0, 0};
-        do {
-          int defSide;
-               if (line->sidenum[0] >= 0) defSide = (line->sidenum[1] >= 0 ? -1 : 0);
-          else if (line->sidenum[1] >= 0) defSide = 1;
-          else break;
-          for (const seg_t *seg = line->firstseg; seg; seg = seg->lsnext) {
-            if (!seg->drawsegs || (seg->flags&SF_FULLSEG)) continue; // renderer will process fullsegs properly, so ignore them
-            int side = defSide;
-            if (side < 0) side = (int)(seg->sidedef == &GClLevel->Sides[line->sidenum[1]]);
-            if (seg->flags&SF_MAPPED) ++seenSides[side]; else ++unseenSides[side];
+    if (line.exFlags&ML_EX_CHECK_MAPPED) {
+      line.exFlags &= ~(ML_MAPPED|ML_EX_PARTIALLY_MAPPED);
+      if (line.firstseg && (line.sidenum[0] >= 0 || line.sidenum[1] >= 0)) {
+        // mark subsector as renered only if we've seen at least one non-hidden single-sided line from it
+        if (line.pobj()) {
+          // for polyobjects, do it once and forever
+          line.flags |= ML_MAPPED;
+          for (seg_t *seg = line.firstseg; seg; seg = seg->lsnext) seg->flags |= SF_MAPPED;
+        } else {
+          // not a polyobject
+          int unseenSides[2] = {0, 0};
+          int seenSides[2] = {0, 0};
+          for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
+            if (/*!seg->drawsegs ||*/ (seg->flags&SF_FULLSEG)) continue; // renderer will process fullsegs properly, so ignore them
+            if (seg->flags&SF_MAPPED) {
+              seenSides[seg->side] = 1;
+              // mark front subsector as rendered
+              if (!seg->frontsub) continue;
+              if (seg->frontsub->miscFlags&subsector_t::SSMF_Rendered) continue;
+              if (seg->frontsub->sector->SectorFlags&sector_t::SF_Hidden) continue;
+              seg->frontsub->miscFlags |= subsector_t::SSMF_Rendered;
+            } else {
+              unseenSides[seg->side] = 1;
+            }
           }
-        } while (0);
-        // if any line side is fully seen, this line is fully mapped
-        // that is, we should have some seen segs, and no unseen segs for a side to consider it "fully seen"
-        if ((unseenSides[0] == 0 && seenSides[0] != 0) || (unseenSides[1] == 0 && seenSides[1] != 0)) {
-          // fully mapped
-          line->flags |= ML_MAPPED;
-        } else if (seenSides[0]|seenSides[1]) { // not a typo!
-          // partially mapped, because some segs were seen
-          line->exFlags |= ML_EX_PARTIALLY_MAPPED;
+          // if any line side is fully seen, this line is fully mapped
+          // that is, we should have some seen segs, and no unseen segs for a side to consider it "fully seen"
+          if ((unseenSides[0] == 0 && seenSides[0] != 0) || (unseenSides[1] == 0 && seenSides[1] != 0)) {
+            // fully mapped
+            line.flags |= ML_MAPPED;
+          } else if (seenSides[0]|seenSides[1]) { // not a typo!
+            // partially mapped, because some segs were seen
+            line.exFlags |= ML_EX_PARTIALLY_MAPPED;
+          }
         }
       }
     }
 
+    // resech "check me" flag
+    line.exFlags &= ~ML_EX_CHECK_MAPPED;
+
     // just in case
-    if (line->flags&ML_MAPPED) line->exFlags &= ~(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED);
+    if (line.flags&ML_MAPPED) line.exFlags &= ~ML_EX_PARTIALLY_MAPPED;
   }
 }
 
@@ -1436,39 +1448,38 @@ static void AM_drawWalls () {
   const bool debugPObj = (am_pobj_debug.asInt()&0x01);
   TArray<polyobj_t *> pobjs;
 
-  line_t *line = &GClLevel->Lines[0];
-  for (unsigned i = GClLevel->NumLines; i--; ++line) {
-    if (!line->firstseg) continue; // just in case
+  for (auto &&line : GClLevel->allLines()) {
+    if (!line.firstseg) continue; // just in case
     // do not send the line to GPU if it is not visible
     // simplified check with line bounding box
-    if (!AM_isBBox2DVisible(line->bbox2d)) continue;
+    if (!AM_isBBox2DVisible(line.bbox2d)) continue;
 
     if (!am_cheating) {
-      if (line->flags&ML_DONTDRAW) continue;
-      if (!(line->flags&ML_MAPPED) && !(line->exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+      if (line.flags&ML_DONTDRAW) continue;
+      if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
         if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
       }
     }
 
     bool cheatOnly = false;
-    vuint32 clr = AM_getLineColor(line, &cheatOnly);
+    vuint32 clr = AM_getLineColor(&line, &cheatOnly);
     if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
 
     // special rendering for polyobject
-    if (debugPObj && line->pobj()) {
+    if (debugPObj && line.pobj()) {
       bool found = false;
-      for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line->pobj()) { found = true; break; }
-      if (!found) pobjs.append(line->pobj());
+      for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line.pobj()) { found = true; break; }
+      if (!found) pobjs.append(line.pobj());
       continue;
     }
 
     // fully mapped or automap revealed?
-    if (am_full_lines || am_cheating || (line->flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
+    if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
       mline_t l;
-      l.a.x = line->v1->x;
-      l.a.y = line->v1->y;
-      l.b.x = line->v2->x;
-      l.b.y = line->v2->y;
+      l.a.x = line.v1->x;
+      l.a.y = line.v1->y;
+      l.b.x = line.v2->x;
+      l.b.y = line.v2->y;
 
       if (am_rotate) {
         AM_rotatePoint(&l.a.x, &l.a.y);
@@ -1478,7 +1489,7 @@ static void AM_drawWalls () {
       AM_drawMline(&l, clr);
     } else {
       // render segments
-      for (const seg_t *seg = line->firstseg; seg; seg = seg->lsnext) {
+      for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
         if (!seg->drawsegs || (seg->flags&(SF_MAPPED|SF_FULLSEG)) != SF_MAPPED) continue;
 
         mline_t l;
