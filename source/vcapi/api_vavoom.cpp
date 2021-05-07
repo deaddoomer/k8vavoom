@@ -65,6 +65,19 @@ void VPackage::LoadObject (TLocation l) {
 }
 
 
+//native static final bool IsIWadClass (class C) [property(class) IWad];
+IMPLEMENT_FREE_FUNCTION(VObject, IsIWadClass) {
+  VClass *Class;
+  vobjGetParam(Class);
+  if (Class) {
+    // heuristic; let's assume that IWAD is "basepak" for now
+    RET_BOOL(Class->Loc.GetSourceFile().toLowerCase().indexOf("/basepak.pk3") >= 0);
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+
 IMPLEMENT_FREE_FUNCTION(VObject, CvarUnlatchAll) {
   if (GGameInfo && GGameInfo->NetMode < NM_DedicatedServer) {
     VCvar::Unlatch();

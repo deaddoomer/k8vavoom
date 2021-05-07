@@ -585,10 +585,10 @@ void InitializeWeaponSlots () {
           } else {
             // skip known  weapons
             //name cname = GetClassName(wcls);
-            bool doreport = GetCvarB('dbg_report_orphan_weapons');
-            /*
+            bool doreport = (!wcls.IWad && GetCvarB('dbg_report_orphan_weapons'));
+            #if 0
             if (doreport) {
-              switch (cname) {
+              switch (wcls.Name) {
                 case 'Chainsaw':
                 case 'Shotgun':
                 case 'SuperShotgun':
@@ -604,7 +604,7 @@ void InitializeWeaponSlots () {
                   break;
               }
             }
-            */
+            #endif
             if (doreport) {
               printwarn("weapon `%C` has no defined slot (put into slot 11): %s", wcls, GetClassLocationStr(wcls));
             }

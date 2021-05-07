@@ -27,6 +27,9 @@
 //  VaVoom-specific things
 //
 //==========================================================================
+native static final bool IsIWadClass (class C) [property(class) IWad];
+
+
 const int MAXPLAYERS = 8;
 
 // some defines for ACS (and other) flags
