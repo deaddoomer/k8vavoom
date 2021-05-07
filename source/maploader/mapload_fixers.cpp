@@ -538,6 +538,8 @@ static TArray<int> lineSectorPart; // line indicies
 //==========================================================================
 static void RecurseMarkLines (VLevel *level, const sector_t *sec, const line_t *line) {
   if (!line) return;
+  // ignore one-sided lines
+  if ((line->flags&ML_TWOSIDED) == 0) return;
   if (line->vxCount(0) == 0 || line->vxCount(1) == 0) return;
   if (line->frontsector != sec && line->backsector != sec) return;
   const int lidx = (int)(ptrdiff_t)(line-&level->Lines[0]);
