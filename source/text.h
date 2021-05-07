@@ -87,7 +87,7 @@ void T_SetFont (VFont *);
 void T_SetAlign (halign_e, valign_e);
 bool T_IsFontExists (VName fontname);
 
-void T_DrawText (int x, int y, VStr String, int col);
+void T_DrawText (int x, int y, VStr String, int col, float alpha=1.0f);
 int T_TextWidth (VStr);
 int T_TextHeight (VStr);
 int T_StringWidth (VStr);

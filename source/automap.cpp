@@ -239,6 +239,7 @@ static inline int getAMHeight () {
 
 
 static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
+static VCvarF draw_map_stats_alpha("draw_map_stats_alpha", "0.6", "Non-automap map stats opacity.", CVAR_Archive);
 static VCvarB draw_map_stats("draw_map_stats", false, "Draw map stats when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_name("draw_map_stats_name", false, "Draw map name when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill stats when not on automap?", CVAR_Archive);
@@ -2127,6 +2128,9 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
 
   if (!cl || !GClLevel) return;
 
+  const float alpha = (asAutomap ? 1.0 : clampval(draw_map_stats_alpha.asFloat(), 0.0f, 1.0f));
+  if (alpha <= 0.0f) return;
+
   T_SetFont(SmallFont);
   T_SetAlign(hleft, vbottom);
 
@@ -2145,7 +2149,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
       lnamebuf[lbpos++] = ch;
     }
     lnamebuf[lbpos] = 0;
-    T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED);
+    T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
     currY -= T_FontHeight();
     nameRendered = true;
   }
@@ -2153,7 +2157,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
   if (drawMapName || (!asAutomap && !nameRendered && draw_map_stats_name)) {
     lname = VStr(GClLevel->MapName);
     lname = lname.xstrip();
-    T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), CR_UNTRANSLATED);
+    T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), CR_UNTRANSLATED, alpha);
     currY -= T_FontHeight();
   }
 
@@ -2178,17 +2182,17 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
 
     if (asAutomap || draw_map_stats_kills) {
       snprintf(kill, sizeof(kill), "Kills: %.2d / %.2d", kills, totalkills);
-      T_DrawText(8, currY, kill, CR_RED);
+      T_DrawText(8, currY, kill, CR_RED, alpha);
       currY += T_FontHeight();
     }
     if (asAutomap || draw_map_stats_items) {
       snprintf(item, sizeof(item), "Items: %.2d / %.2d", items, totalitems);
-      T_DrawText(8, currY, item, CR_GREEN);
+      T_DrawText(8, currY, item, CR_GREEN, alpha);
       currY += T_FontHeight();
     }
     if (asAutomap || draw_map_stats_secrets) {
       snprintf(secret, sizeof(secret), "Secrets: %.2d / %.2d", secrets, totalsecrets);
-      T_DrawText(8, currY, secret, CR_GOLD);
+      T_DrawText(8, currY, secret, CR_GOLD, alpha);
     }
   }
 }

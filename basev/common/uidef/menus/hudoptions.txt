@@ -108,6 +108,15 @@ menudef HUDOptions {
     help = "Draw map statistics when not on automap?";
   }
 
+  option slider {
+    title = "Map Statistics Opacity";
+    cvar = draw_map_stats_alpha;
+    min = 0;
+    max = 1;
+    step = 0.1;
+    help = "Opacity for non-automap stats.";
+  }
+
   option bool {
     title = "Map Name";
     cvar = draw_map_stats_name;

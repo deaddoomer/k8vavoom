@@ -136,8 +136,8 @@ bool T_IsFontExists (VName fontname) {
 //  T_DrawText
 //
 //==========================================================================
-void T_DrawText (int x, int y, VStr String, int col) {
-  GRoot->DrawText(x, y, String, col, CR_YELLOW, 1.0f);
+void T_DrawText (int x, int y, VStr String, int col, float alpha) {
+  GRoot->DrawText(x, y, String, col, CR_YELLOW, alpha);
 }
 
 
