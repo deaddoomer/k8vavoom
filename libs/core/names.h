@@ -352,6 +352,17 @@ REGISTER_NAME(strfdefs)
 REGISTER_NAME(keyconf)
 REGISTER_NAME(textures)
 
+// more useless lump names
+REGISTER_NAME(gl_vert)
+REGISTER_NAME(gl_segs)
+REGISTER_NAME(gl_ssect)
+REGISTER_NAME(gl_nodes)
+REGISTER_NAME(script)
+REGISTER_NAME(scripts)
+REGISTER_NAME(zscript)
+REGISTER_NAME(dehacked)
+REGISTER_NAME(sprofs)
+
 // standard font names
 REGISTER_NAME(smallfont)
 REGISTER_NAME(smallfont2)
