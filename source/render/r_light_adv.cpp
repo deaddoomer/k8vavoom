@@ -42,6 +42,19 @@ static VCvarF r_shadowvol_pslope("r_shadowvol_pslope", "-0.2", "DEBUG");
 VCvarB r_shadowmap_fix_light_dist("r_shadowmap_fix_light_dist", false, "Move lights slightly away from surfaces?", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI r_shadowmap_sprshadows("r_shadowmap_sprshadows", "2", "Render shadows from sprites (0:none;1:non-rotational;2:all)?", /*CVAR_PreInit|*/CVAR_Archive);
 
+static VCvarF r_shadowmap_quality_distance("r_shadowmap_quality_distance", "512", "If the camera is further than this (from the light sphere), no shadowmap bluring will be done.", CVAR_Archive);
+
+
+extern VCvarI gl_shadowmap_blur;
+
+struct IntVarSaver {
+  VCvarI *cvar;
+  int origValue;
+  inline IntVarSaver (VCvarI &acvar) noexcept : cvar(&acvar), origValue(acvar.asInt()) {}
+  inline ~IntVarSaver () noexcept { if (cvar) { cvar->Set(origValue); cvar = nullptr; } }
+  VV_DISABLE_COPY(IntVarSaver)
+};
+
 
 //==========================================================================
 //
@@ -93,13 +106,18 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
 
   if (!IsShadowsEnabled()) allowShadows = false;
 
+  // set if the projected light rectangle is less than width/20 pixels
+  bool smallLight = false;
+
   // check distance
   if (allowShadows) {
+    const int smallDim = Drawer->getWidth()/20;
     int prjdim = r_light_shadow_min_proj_dimension.asInt()*Drawer->getWidth()/1024;
     if (prjdim >= 9) {
       //const float ldist = (Drawer->vieworg-Pos).lengthSquared();
       int lw, lh;
       if (!CalcScreenLightDimensions(Pos, Radius, &lw, &lh)) return; // this light is invisible
+      smallLight = (smallDim > 0 && lw <= smallDim && lh < smallDim);
       if (lw < 16 || lh < 10) {
         allowShadows = false;
       } else {
@@ -114,6 +132,10 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
         }
       }
       //GCon->Logf(NAME_Debug, "light at (%g,%g,%g); radius=%g; size=(%dx%d); shadows=%s; dist=%g", Pos.x, Pos.y, Pos.z, Radius, lw, lh, (allowShadows ? "tan" : "ona"), Drawer->vieworg.distanceTo(Pos));
+    } else if (smallDim > 0) {
+      int lw, lh;
+      if (!CalcScreenLightDimensions(Pos, Radius, &lw, &lh)) return; // this light is invisible
+      smallLight = (smallDim > 0 && lw <= smallDim && lh < smallDim);
     }
   }
 
@@ -328,6 +350,22 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
   // k8: answering to the silly younger ketmar: because we cannot
   //     read depth info, and we need normals to calculate light
   //     intensity, and so on.
+
+  IntVarSaver blursv(gl_shadowmap_blur);
+  if (allowShadows && useShadowMaps) {
+    if (smallLight) {
+      // don't do any blur for visually small lights
+      gl_shadowmap_blur = 0;
+    } else {
+      float ldd = r_shadowmap_quality_distance.asFloat();
+      if (ldd > 0.0f) {
+        ldd += CurrLightRadius; // so distance will be to the light sphere edge
+        if ((CurrLightPos-Drawer->vieworg).lengthSquared() >= ldd*ldd) {
+          gl_shadowmap_blur = 0;
+        }
+      }
+    }
+  }
 
   // draw light
   Drawer->BeginLightPass(CurrLightPos, CurrLightRadius, LightMin, Color, CurrLightSpot, CurrLightConeDir, CurrLightConeAngle, allowShadows);
