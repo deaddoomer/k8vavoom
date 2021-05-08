@@ -145,21 +145,37 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, su
     return;
   }
 
-  const bool smaps = collectorForShadowMaps;
-  const bool doflip = flipAllowed &&
-    (ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() &&
-    SurfaceType >= SurfTypeMiddle && distInFront != (InSurfs->PointDistance(Drawer->vieworg) > 0.0f);
+  const float surfPointDistView = InSurfs->PointDistance(Drawer->vieworg);
+  const bool surfInFrontView = (surfPointDistView > 0.0f);
 
-  // all surfaces must lie on the same plane, so this is invariant
-  //const float dist = InSurfs->PointDistance(CurrLightPos);
-  //const bool distInFront = (dist > 0.0f);
+  const bool smaps = collectorForShadowMaps;
+
+  const bool transTex = texinfo->Tex->/*isTransparent*/isSeeThrough();
+  const bool seeTroughTex = (!smaps && /*texinfo->Tex->isSeeThrough()*/transTex);
+
+  const seg_t *pseg = (origseg ? origseg->partner : nullptr);
+
+  const bool canFlipSeg = flipAllowed && origseg && transTex &&
+    (ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() &&
+    SurfaceType == SurfTypeMiddle &&
+    (pseg && pseg->drawsegs && pseg->drawsegs->mid && pseg->drawsegs->mid->surfs);
+
+  /*const*/ bool doflip = flipAllowed &&
+    (ssflag&FlagAsShadow) && smaps && r_shadowmap_flip_surfaces.asBool() &&
+    SurfaceType >= SurfTypeMiddle && distInFront != surfInFrontView;
+
   if (ssflag&FlagAsShadow) {
-    if (!doflip && !distInFront) return;
-    if (origseg && doflip && !distInFront) {
-      // check if other side... something
-      const seg_t *pseg = origseg->partner;
-      if (pseg && pseg->drawsegs && pseg->drawsegs->mid && pseg->drawsegs->mid->surfs) return;
-      return;
+    if (canFlipSeg) {
+      // if we can flip the seg, assume that it is a see-through midtex
+      // in this case we will render both front and back sides of the line
+      // `distInFront` is for the light
+      // `surfPointDistView` is for the camera origin
+      // we are rendering from the light origin
+      // as we can flip, render only the seg that the camera (not the light!) can see
+      if (!surfInFrontView) return;
+      doflip = true; // force queue (the code below will decide if it need to be flipped)
+    } else {
+      if (!doflip && !distInFront) return; // no flipping, and the surface is not facing the light
     }
   } else {
     if (!distInFront) return;
@@ -169,10 +185,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, su
 
   const bool isLightVisible = ((ssflag&FlagAsLight) && distInFront && InSurfs->IsVisibleFor(Drawer->vieworg));
   const bool paperFloor = (SurfaceType == SurfTypePaperFlatEx && InSurfs->plane.normal.z >= 0.0f);
-  const bool dropPaperThinFloor = (paperFloor && InSurfs->plane.PointDistance(Drawer->vieworg) <= 0.0f && InSurfs->plane.PointDistance(Drawer->vieworg) < -0.1f);
-
-  const bool transTex = texinfo->Tex->/*isTransparent*/isSeeThrough();
-  const bool seeTroughTex = (!smaps && texinfo->Tex->isSeeThrough());
+  const bool dropPaperThinFloor = (paperFloor && /*surfPointDistView <= 0.0f &&*/ surfPointDistView < -0.1f);
 
   for (surface_t *surf = InSurfs; surf; surf = surf->next) {
     if (surf->count < 3) continue; // just in case
@@ -207,13 +220,14 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, su
           if (paperFloor) {
             if (dropPaperThinFloor) continue;
             /*
-            const float sdist = surf->plane.PointDistance(Drawer->vieworg);
+            const float sdist = surfPointDistView;
             if (sdist <= 0.0f) {
               // paper-thin surface, ceiling: leave it if it is almost invisible
               if (sdist < -0.1f) continue;
             }
             */
           }
+          // as we're rendering from the light origin, use `distInFront` to decide if we need to flip
           if (!distInFront) {
             //if (!isGood2Flip(surf, SurfaceType)) continue;
             if (SurfaceType == SurfTypeMiddle) {
