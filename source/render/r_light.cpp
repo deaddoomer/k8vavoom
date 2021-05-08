@@ -986,6 +986,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
         // trace light that needs shadows
         const int leafnum = dlinfo[i].leafnum;
         if (dynclip && !(dl.flags&dlight_t::NoShadow) && leafnum != snum && dlinfo[i].isNeedTrace()) {
+          // trace *to* light, because this is slightly faster for closets and such
           if (!RadiusCastRay((texCheck && dl.radius > texCheckRadus), sub, p, (leafnum >= 0 ? &Level->Subsectors[leafnum] : nullptr), dl.origin, radius)) continue;
         }
         //!if (dl.type&DLTYPE_Subtractive) add = -add;
@@ -1034,6 +1035,7 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
           if (add <= 1.0f) continue;
         }
         if (dynclip && stl->leafnum != snum) {
+          // trace *to* light, because this is slightly faster for closets and such
           if (!RadiusCastRay(texCheck, sub, p, (stl->leafnum >= 0 ? &Level->Subsectors[stl->leafnum] : nullptr), stl->origin, radius)) continue;
         }
         l += add;
@@ -1042,36 +1044,6 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
         lb += add*(stl->color&255)/255.0f;
       }
     }
-
-    /*
-    const light_t *stl = Lights.Ptr();
-    //const int snum = (int)(ptrdiff_t)(sub-&Level->SubSectors[0]);
-    //SubStaticLigtInfo *subslinfo = &SubStaticLights[snum];
-    for (int i = Lights.length(); i--; ++stl) {
-      //if (!stl->radius) continue;
-      if (!stl->active) continue;
-      // owned lights always shine
-      const bool isowned = (lowner && lowner->ServerUId == stl->ownerUId);
-      // check potential visibility
-      const float distSq = (p-stl->origin).lengthSquared();
-      if (distSq >= stl->radius*stl->radius) continue; // too far away
-      float add = stl->radius-sqrtf(distSq);
-      if (add > 1.0f) {
-        if (stl->coneAngle > 0.0f && stl->coneAngle < 360.0f) {
-          const float attn = CheckLightPointCone(lowner, pt, radius, height, stl->origin, stl->coneDirection, stl->coneAngle);
-          add *= attn;
-          if (add <= 1.0f) continue;
-        }
-        if (!isowned && r_dynamic_clip) {
-          if (!RadiusCastRay(sub, p, stl->origin, radius)) continue;
-        }
-        l += add;
-        lr += add*((stl->color>>16)&255)/255.0f;
-        lg += add*((stl->color>>8)&255)/255.0f;
-        lb += add*(stl->color&255)/255.0f;
-      }
-    }
-    */
   }
 }
 

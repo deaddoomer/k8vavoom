@@ -195,8 +195,10 @@ bool VRenderLevelLightmap::IsStaticLightmapTimeLimitExpired () {
 //
 //  Returns the distance between the points, or 0 if blocked
 //
+//  `p1` is light origin
+//
 //==========================================================================
-bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector, const TVec &p1, const TVec &p2, float squaredist) {
+bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector, const TVec &p1, subsector_t *destsubsector, const TVec &p2, float squaredist, bool allowTextureCheck) {
   const TVec delta = p2-p1;
   const float t = DotProduct(delta, delta);
   if (t >= squaredist) {
@@ -211,7 +213,7 @@ bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector
   }
 
   if (!r_lmap_bsp_trace_static) {
-    if (!Level->CastLightRay(r_lmap_texture_check_static, srcsubsector, p1, p2)) {
+    if (!Level->CastLightRay((allowTextureCheck && r_lmap_texture_check_static.asBool()), destsubsector, p2, p1, srcsubsector)) {
       // ray was blocked
       if (dist) *dist = 0.0f;
       return false;
@@ -414,7 +416,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           //const TVec fmss = facemid-(*spt);
           //if (length2DSquared(fmss) < 0.1f) break; // same point, got it
           //!if (Level->TraceLine(Trace, facemid, *spt, SPF_NOBLOCKSIGHT)) break; // got it
-          if (CastStaticRay(nullptr, facesubsec, facemid, *spt, 999999.0f)) {
+          if (CastStaticRay(nullptr, facesubsec, facemid, facesubsec, *spt, 999999.0f, false)) { // do not check textures
             //found = true;
             // move the point 1 unit above the surface
             //const TVec pp = surf->plane.Project(*spt)+surf->plane.normal;
@@ -584,7 +586,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     }
 
     float raydist;
-    if (!CastStaticRay(&raydist, srcsubsector, lorg+lnormal, (*spt)+lnormal, squaredist)) {
+    if (!CastStaticRay(&raydist, srcsubsector, lorg+lnormal, surf->subsector, (*spt)+lnormal, squaredist, true)) { // allow texture check
       // light ray is blocked
       continue;
     }
@@ -653,7 +655,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
             for (int dx = -1; dx < 2; ++dx) {
               for (int dz = -1; dz < 2; ++dz) {
                 if ((dx|dy|dz) == 0) continue;
-                if (CastStaticRay(&raydist, srcsubsector, lorg+lnormal, pt+TVec(4*dx, 4*dy, 4*dz), squaredist)) goto donetrace;
+                if (CastStaticRay(&raydist, srcsubsector, lorg+lnormal, surf->subsector, pt+TVec(4*dx, 4*dy, 4*dz), squaredist, true)) goto donetrace; // allow texture check
               }
             }
           }

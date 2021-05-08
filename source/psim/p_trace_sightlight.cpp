@@ -363,6 +363,7 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
   if (!trace.lightCheck) return true; // not blocked
 
   // light checks
+  // usually, `End` is light origin
 
   // just in case
   if (!line->frontsector || !line->backsector) return false; // looks like invalid line, so we'd better block
@@ -901,6 +902,8 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
 //  VLevel::CastLightRay
 //
 //  doesn't check pvs or reject
+//
+//  usually, `dest` is light origin
 //
 //==========================================================================
 bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector, const TVec &org, const TVec &dest, const subsector_t *endSubSector) {
