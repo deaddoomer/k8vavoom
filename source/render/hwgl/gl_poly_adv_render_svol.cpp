@@ -287,6 +287,7 @@ void VOpenGLDrawer::EndLightShadowVolumes () {
   #endif
   //glDisable(GL_SCISSOR_TEST);
   //glEnable(GL_TEXTURE_2D);
+  glEnable(GL_CULL_FACE);
   RestorePortalStenciling();
 }
 
