@@ -43,6 +43,7 @@ VCvarB r_shadowmap_fix_light_dist("r_shadowmap_fix_light_dist", false, "Move lig
 VCvarI r_shadowmap_sprshadows("r_shadowmap_sprshadows", "2", "Render shadows from sprites (0:none;1:non-rotational;2:all)?", /*CVAR_PreInit|*/CVAR_Archive);
 
 static VCvarF r_shadowmap_quality_distance("r_shadowmap_quality_distance", "512", "If the camera is further than this (from the light sphere), no shadowmap bluring will be done.", CVAR_Archive);
+static VCvarI r_shadowmap_small_light_divisor("r_shadowmap_small_light_divisor", "20", "If visible light rectangle is smaller than view width divided by this, no shadowmap bluring will be done.", CVAR_Archive);
 
 
 extern VCvarI gl_shadowmap_blur;
@@ -111,7 +112,8 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
 
   // check distance
   if (allowShadows) {
-    const int smallDim = Drawer->getWidth()/20;
+    const int smallDivisor = r_shadowmap_small_light_divisor.asInt();
+    const int smallDim = (smallDivisor > 0 ? Drawer->getWidth()/smallDivisor : 0);
     int prjdim = r_light_shadow_min_proj_dimension.asInt()*Drawer->getWidth()/1024;
     if (prjdim >= 9) {
       //const float ldist = (Drawer->vieworg-Pos).lengthSquared();
