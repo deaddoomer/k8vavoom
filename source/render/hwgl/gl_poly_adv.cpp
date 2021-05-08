@@ -37,7 +37,7 @@ VCvarB gl_smart_reject_shadows("gl_smart_reject_shadows", false, "Reject some su
 VCvarB gl_smart_reject_svol_segs("gl_smart_reject_svol_segs", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive);
 VCvarB gl_smart_reject_svol_flats("gl_smart_reject_svol_flats", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive);
 
-VCvarI gl_shadowmap_blur("gl_shadowmap_blur", "1", "Do very broken pseudo-PCF on shadowmaps?", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_shadowmap_blur("gl_shadowmap_blur", "1", "Shadowmap blur (pseudo-PCF or others)", /*CVAR_PreInit|*/CVAR_Archive);
 
 /*
 // this is for 128x128 shadowmaps
