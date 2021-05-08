@@ -576,5 +576,5 @@ defaultproperties {
   CloseOnBlur = true;
   OnTop = true;
   bTickEnabled = true;
-  //UseScissor = true;
+  //bUseScissor = true;
 }

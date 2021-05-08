@@ -66,8 +66,8 @@ override void OnDraw () {
 
 defaultproperties {
   Focusable = true;
-  //UseScissor = true;
-  //WantMouseInput = true;
+  //bUseScissor = true;
+  //bWantMouseInput = true;
 }
 
 
@@ -1194,7 +1194,7 @@ defaultproperties {
   Focusable = true;
   MenuScrollable = true; // was `false`
   AllowVerticalResize = true; // was `false`
-  //UseScissor = true;
+  //bUseScissor = true;
 
   X = 160;
   Y = 140;
@@ -1205,7 +1205,7 @@ defaultproperties {
   DeactivateSound = 'menu/backup';
   ClearMenusSound = 'menu/clear';
 
-  //WantMouseInput = true;
+  //bWantMouseInput = true;
   HighlightBackground = true;
   CenterChoicesVert = true;
 
