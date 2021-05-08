@@ -237,6 +237,24 @@ menudef ControlsMain {
   }
 
   option bind {
+    title = "Minimap";
+    button = ona;
+    command = "toggle minimap_active";
+  }
+
+  option bind {
+    title = "Minimap Bigger";
+    button = ona;
+    command = "cvar_add_f minimap_scale 1 128";
+  }
+
+  option bind {
+    title = "Minimap Smaller";
+    button = ona;
+    command = "cvar_sub_f minimap_scale 1 1";
+  }
+
+  option bind {
     title = "Chat";
     button = ona;
     command = "ChatMode";
