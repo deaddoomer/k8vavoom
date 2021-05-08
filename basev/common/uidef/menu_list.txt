@@ -21,6 +21,7 @@ menus {
   "menus/video/sprvideo.txt",
   "menus/video/aliasvideo.txt",
   "menus/video/pfxbloom.txt",
+  "menus/video/precache.txt",
   "menus/video/shadowmap.txt",
 
   "menus/sound/xmp.txt",
