@@ -32,7 +32,7 @@ void AM_Drawer ();
 void AM_Stop ();
 
 class VWidget;
-void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float alpha);
+void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float plrangle, float alpha);
 
 void AM_Dirty (); // trigger line visibility update (autoresets)
 

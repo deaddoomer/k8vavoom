@@ -23,23 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-import 'linespec';
+#include "ClientGameShared.vc"
+#include "HUDMessageContainer.vc"
+#include "HUDMinimap.vc"
+#include "StatusBarShared.vc"
+#include "IntermissionBackground.vc"
 
-#include "HelpText.vc"
-
-#include "MenuScreen.vc"
-#include "MenuDefLoader.vc"
-#include "MenuTitleText.vc"
-#include "MenuStaticBitmap.vc"
-#include "MenuSpriteAnim.vc"
-#include "MenuModel.vc"
-
-#include "wgselector/wgselector.all.vc"
-#include "wgchoice/wgchoice.all.vc"
-#include "wgslotsl/wgslotsl.all.vc"
-#include "wgtextbtn/wgtextbtn.all.vc"
-
-#include "menus/menus.all.vc"
-#include "client/client.all.vc"
-#include "finale/finale.all.vc"
-#include "condlg/condlg.all.vc"
+#include "hudmsg/hudmsg.all.vc"

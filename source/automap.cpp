@@ -247,6 +247,16 @@ static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill 
 static VCvarB draw_map_stats_items("draw_map_stats_items", false, "Draw map item stats when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map secret stats when not on automap?", CVAR_Archive);
 
+static VCvarB minimap_active("minimap_active", false, "Is minimap active?", CVAR_Archive);
+static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Archive);
+static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive);
+static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive);
+static VCvarF minimap_darken("minimap_darken", "0.4", "Minimap widget darkening.", CVAR_Archive);
+static VCvarF minimap_alpha("minimap_alpha", "0.6", "Minimap opacity.", CVAR_Archive);
+static VCvarF minimap_position_x("minimap_position_x", "-1", "Horizontal position of the minimap.", CVAR_Archive);
+static VCvarF minimap_position_y("minimap_position_y", "-0.88", "Vertical position of the minimap.", CVAR_Archive);
+static VCvarF minimap_size_x("minimap_size_x", "0.2", "Horizontal size of the minimap.", CVAR_Archive);
+static VCvarF minimap_size_y("minimap_size_y", "0.28", "Vertical size of the minimap.", CVAR_Archive);
 
 static VCvarB am_overlay("am_overlay", true, "Show automap in overlay mode?", CVAR_Archive);
 static VCvarF am_back_darken("am_back_darken", "0", "Overlay automap darken factor", CVAR_Archive);
@@ -1769,17 +1779,17 @@ static void AM_drawLineCharacter (const mline_t *lineguy, int lineguylines,
 static void AM_drawOnePlayer (float posx, float posy, float yaw, bool isMain) {
   const mline_t *player_arrow;
   float angle;
-  int NUMPLYRLINES;
+  int line_count;
 
   if (am_cheating) {
     player_arrow = player_arrow_ddt;
-    NUMPLYRLINES = NUMPLYRLINES3;
+    line_count = NUMPLYRLINES3;
   } else if (am_player_arrow == 1) {
     player_arrow = player_arrow2;
-    NUMPLYRLINES = NUMPLYRLINES2;
+    line_count = NUMPLYRLINES2;
   } else {
     player_arrow = player_arrow1;
-    NUMPLYRLINES = NUMPLYRLINES1;
+    line_count = NUMPLYRLINES1;
   }
 
   if (am_rotate) {
@@ -1793,7 +1803,7 @@ static void AM_drawOnePlayer (float posx, float posy, float yaw, bool isMain) {
   }
 
   //FIXME: use correct colors for other players
-  AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0.0f, angle, PlayerColor, FTOM(MTOF(posx)), FTOM(MTOF(posy)));
+  AM_drawLineCharacter(player_arrow, line_count, 0.0f, angle, PlayerColor, FTOM(MTOF(posx)), FTOM(MTOF(posy)));
 }
 
 
@@ -2281,13 +2291,16 @@ void AM_Drawer () {
 }
 
 
+#define WidgetTranslateXY(destx_,desty_,srcx_,srcy_)  \
+  const int destx_ = (int)roundf(((srcx_)*c-(srcy_)*s)+halfwdt); \
+  const int desty_ = (int)roundf(((srcy_)*c+(srcx_)*s)+halfhgt)
+
 //==========================================================================
 //
 //  AM_DrawAtWidget
 //
 //==========================================================================
-void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
-#ifdef CLIENT
+void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float plrangle, float alpha) {
   if (!w || scale <= 0.0f || alpha <= 0.0f || !GClLevel) return;
   //AM_Check();
   angle = AngleMod(angle);
@@ -2298,7 +2311,6 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
-  //xc = yc = 0.0f;
 
   // draw walls
   for (auto &&line : GClLevel->allLines()) {
@@ -2316,10 +2328,14 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
     const float lx2o = (line.v2->x-xc)*scale;
     const float ly2o = -(line.v2->y-yc)*scale;
 
+    WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
+    WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
+    /*
     const int lx1 = (int)roundf((lx1o*c-ly1o*s)+halfwdt);
     const int ly1 = (int)roundf((ly1o*c+lx1o*s)+halfhgt);
     const int lx2 = (int)roundf((lx2o*c-ly2o*s)+halfwdt);
     const int ly2 = (int)roundf((ly2o*c+lx2o*s)+halfhgt);
+    */
 
     // do not send the line to GPU if it is not visible
     if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
@@ -2337,7 +2353,40 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
       w->DrawLine(lx1, ly1, lx2, ly2, clr, alpha);
     }
   }
-#endif
+
+  if (minimap_draw_player) {
+    const mline_t *player_arrow;
+    int line_count;
+
+    if (am_cheating) {
+      player_arrow = player_arrow_ddt;
+      line_count = NUMPLYRLINES3;
+    } else if (am_player_arrow == 1) {
+      player_arrow = player_arrow2;
+      line_count = NUMPLYRLINES2;
+    } else {
+      player_arrow = player_arrow1;
+      line_count = NUMPLYRLINES1;
+    }
+
+    plrangle = AngleMod(360.0f-(plrangle+90.0f));
+    msincos(plrangle, &s, &c);
+    vuint32 pclr = PlayerColor;
+
+    for (int i = 0; i < line_count; ++i) {
+      const mline_t &l = player_arrow[i];
+
+      const float lx1o = (l.a.x)*scale;
+      const float ly1o = -(l.a.y)*scale;
+      const float lx2o = (l.b.x)*scale;
+      const float ly2o = -(l.b.y)*scale;
+
+      WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
+      WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
+
+      w->DrawLine(lx1, ly1, lx2, ly2, pclr, alpha);
+    }
+  }
 }
 
 

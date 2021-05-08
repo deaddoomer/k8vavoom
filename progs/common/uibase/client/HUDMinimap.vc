@@ -23,23 +23,40 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-import 'linespec';
+class HUDMinimap : Widget;
 
-#include "HelpText.vc"
 
-#include "MenuScreen.vc"
-#include "MenuDefLoader.vc"
-#include "MenuTitleText.vc"
-#include "MenuStaticBitmap.vc"
-#include "MenuSpriteAnim.vc"
-#include "MenuModel.vc"
+//==========================================================================
+//
+//  OnDraw
+//
+//==========================================================================
+override void OnDraw () {
+  float darken = fclamp(GetCvarF('minimap_darken'), 0.0, 1.0);
+  ShadeRect(0, 0, Width, Height, darken);
 
-#include "wgselector/wgselector.all.vc"
-#include "wgchoice/wgchoice.all.vc"
-#include "wgslotsl/wgslotsl.all.vc"
-#include "wgtextbtn/wgtextbtn.all.vc"
+  float xc, yc, angle, plrangle;
+  if (!AM_GetPlayerPos(out xc, out yc, out angle)) return;
 
-#include "menus/menus.all.vc"
-#include "client/client.all.vc"
-#include "finale/finale.all.vc"
-#include "condlg/condlg.all.vc"
+  if (!GetCvarB('minimap_rotate')) {
+    plrangle = angle;
+    angle = 0.0f;
+  } else {
+    plrangle = 0.0f;
+  }
+
+  float alpha = fclamp(GetCvarF('minimap_alpha'), 0.0, 1.0);
+  float scale = GetCvarF('minimap_scale');
+  if (scale <= 0.0f) return;
+  scale = 1.0f/scale;
+
+  AM_DrawAtWidget(self, xc, yc, scale:scale, angle:angle, plrangle:plrangle, alpha:alpha);
+}
+
+
+defaultproperties {
+  Visible = false;
+  Focusable = false;
+  //bUseScissor = true;
+  //bWantMouseInput = false;
+}

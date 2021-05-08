@@ -23,23 +23,6 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-import 'linespec';
-
-#include "HelpText.vc"
-
-#include "MenuScreen.vc"
-#include "MenuDefLoader.vc"
-#include "MenuTitleText.vc"
-#include "MenuStaticBitmap.vc"
-#include "MenuSpriteAnim.vc"
-#include "MenuModel.vc"
-
-#include "wgselector/wgselector.all.vc"
-#include "wgchoice/wgchoice.all.vc"
-#include "wgslotsl/wgslotsl.all.vc"
-#include "wgtextbtn/wgtextbtn.all.vc"
-
-#include "menus/menus.all.vc"
-#include "client/client.all.vc"
-#include "finale/finale.all.vc"
-#include "condlg/condlg.all.vc"
+#include "SaveLoadSlotBase.vc"
+#include "ChoiceLoadSlot.vc"
+#include "ChoiceSaveSlot.vc"

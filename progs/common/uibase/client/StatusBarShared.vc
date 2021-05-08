@@ -55,6 +55,8 @@ HUDMessageContainer HudMsgWin;
 
 bool lastWasFullscreen;
 
+HUDMinimap minimap;
+
 
 enum {
   SB_DMG_TOP,
@@ -95,6 +97,7 @@ const int SB_DMG_THICKNESS = 8;
 //==========================================================================
 override void OnCreate () {
   ::OnCreate();
+  minimap = NewChild(HUDMinimap);
   HudMsgWin = NewChild(HUDMessageContainer);
   HudMsgWin.ClGame = ClGame;
   Width = GetVirtualWidth();
@@ -150,7 +153,6 @@ void StartMap () {
 //
 //==========================================================================
 override void OnDraw () {
-  DrawMinimap();
   DrawNotify();
   DrawChat();
   DrawCenterMessage();
@@ -171,6 +173,7 @@ override void Tick (float DeltaTime) {
   UpdateNotify(DeltaTime);
   UpdateChat(DeltaTime);
   UpdateCenterMessage(DeltaTime);
+  UpdateMinimap(DeltaTime);
 }
 
 
@@ -350,18 +353,50 @@ void DrawChat () {
 
 //==========================================================================
 //
-//  DrawMinimap
+//  UpdateMinimap
 //
 //==========================================================================
-void DrawMinimap () {
-  /+
-  float xc, yc, angle;
-  if (!AM_GetPlayerPos(out xc, out yc, out angle)) return;
-  if (GetCvarB('am_active')) return;
-  //printdebug("ampos=(%s,%s); angle=%s", xc, yc, angle);
-  AM_DrawAtWidget(self, xc, yc, scale:0.2, angle:angle/*0.0*/, alpha:1.0);
-  //DrawLine(0, 0, 1000, 1000, RGB(255, 127, 0), 1.0);
-  +/
+void UpdateMinimap (float DeltaTime) {
+  if (!minimap) return; // just in case
+  if (GetCvarB('am_active') || !GetCvarB('minimap_active')) {
+    if (minimap.Visible) minimap.Hide();
+    return;
+  }
+
+  float xsize = GetCvarF('minimap_size_x');
+  float ysize = GetCvarF('minimap_size_y');
+  int newSizeX = clamp(cast(int)fround(Width*xsize), 8, Width);
+  int newSizeY = clamp(cast(int)fround(Height*ysize), 8, Height);
+
+  float xpos = GetCvarF('minimap_position_x');
+  float ypos = GetCvarF('minimap_position_y');
+  int newPosX, newPosY;
+
+  if (xpos < 0.0f) {
+    // from the right edge
+    newPosX = cast(int)fround(Width*(-xpos))-newSizeX;
+  } else {
+    // from the left edge
+    newPosX = cast(int)fround(Width*xpos);
+  }
+  newPosX = clamp(newPosX, 0, Width-newSizeX);
+
+  if (ypos < 0.0f) {
+    // from the right edge
+    newPosY = cast(int)fround(Height*(-ypos))-newSizeY;
+  } else {
+    // from the left edge
+    newPosY = cast(int)fround(Height*ypos);
+  }
+  newPosY = clamp(newPosY, 0, Height-newSizeY);
+
+  if (!minimap.Visible) minimap.Show();
+
+  if (newPosX != minimap.PosX || newPosY != minimap.PosY ||
+      newSizeX != minimap.Width || newSizeY != minimap.Height)
+  {
+    minimap.SetConfiguration(newPosX, newPosY, newSizeX, newSizeY);
+  }
 }
 
 

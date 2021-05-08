@@ -691,7 +691,7 @@ native static final class FindClassFromScriptId (int Id, int GameFilter);
 // ////////////////////////////////////////////////////////////////////////// //
 // returns `false` if there is no player
 native static final bool AM_GetPlayerPos (out float xc, out float yc, out float angle);
-native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float alpha);
+native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float plrangle, float alpha);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

@@ -629,13 +629,13 @@ IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetHash) {
 }
 
 
-//native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float alpha);
+//native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float plrangle, float alpha);
 IMPLEMENT_FREE_FUNCTION(VObject, AM_DrawAtWidget) {
   VWidget *w;
-  float xc, yc, scale, angle, alpha;
-  vobjGetParam(w, xc, yc, scale, angle, alpha);
+  float xc, yc, scale, angle, plrangle, alpha;
+  vobjGetParam(w, xc, yc, scale, angle, plrangle, alpha);
 #ifdef CLIENT
-  AM_DrawAtWidget(w, xc, yc, scale, angle, alpha);
+  AM_DrawAtWidget(w, xc, yc, scale, angle, plrangle, alpha);
 #endif
 }
 
