@@ -48,6 +48,11 @@ menudef OptionsMenu {
   }
 
   option submenu {
+    title = "Minimap Options";
+    submenu = MinimapOptions;
+  }
+
+  option submenu {
     title = "Sound Options";
     submenu = SoundOptions;
   }

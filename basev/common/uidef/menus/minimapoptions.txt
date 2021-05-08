@@ -1,0 +1,107 @@
+// Minimap options menu
+menudef MinimapOptions {
+  //selector = MenuSelector_SmallRight;
+  Title = "MINIMAP OPTIONS";
+
+  option bool {
+    title = "Active";
+    cvar = minimap_active;
+    help = "Is minimap active?";
+  }
+
+  option bool {
+    title = "Rotating";
+    cvar = minimap_rotate;
+    help = "Rotating minimap?";
+  }
+
+  option bool {
+    title = "Draw Player Arrow";
+    cvar = minimap_draw_player;
+    help = "Draw player arrow on the minimap?";
+  }
+
+  option bool {
+    title = "Draw Border Rectangle";
+    cvar = minimap_draw_border;
+    help = "Draw minimap border rectangle?";
+  }
+
+  option color {
+    title = "Border Color";
+    cvar = minimap_color_border;
+    help = "Minimap border color.";
+  }
+
+
+  option slider {
+    title = "Minimap scale";
+    cvar = minimap_scale;
+    step = 1;
+    min = 1;
+    max = 128;
+    help = "Minimap scale.";
+  }
+
+  option slider {
+    title = "Minimap darkening";
+    cvar = minimap_darken;
+    step = 0.1;
+    min = 0;
+    max = 1;
+    help = "Darkening factor for minimap background.";
+  }
+
+  option slider {
+    title = "Minimap opacity";
+    cvar = minimap_alpha;
+    step = 0.1;
+    min = 0;
+    max = 1;
+    help = "Minimap lines opacity.";
+  }
+
+
+  option slider {
+    title = "Minimap X Position";
+    cvar = minimap_position_x;
+    step = 0.02;
+    min = -1;
+    max = 1;
+    help =
+      "Horizontal minimap position.",
+      "Positive value means position for the left side,",
+      "negative value means position for the right side.";
+  }
+
+  option slider {
+    title = "Minimap Y Position";
+    cvar = minimap_position_y;
+    step = 0.02;
+    min = -1;
+    max = 1;
+    help =
+      "Vertical minimap position.",
+      "Positive value means position for the top side,",
+      "negative value means position for the bottom side.";
+  }
+
+
+  option slider {
+    title = "Minimap Width";
+    cvar = minimap_size_x;
+    step = 0.02;
+    min = 0;
+    max = 1;
+    help = "Minimap width, in screen width fraction.";
+  }
+
+  option slider {
+    title = "Minimap Height";
+    cvar = minimap_size_y;
+    step = 0.02;
+    min = 0;
+    max = 1;
+    help = "Minimap height, in screen height fraction.";
+  }
+}

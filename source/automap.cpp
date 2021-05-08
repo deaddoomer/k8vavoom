@@ -250,13 +250,16 @@ static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map 
 static VCvarB minimap_active("minimap_active", false, "Is minimap active?", CVAR_Archive);
 static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Archive);
 static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive);
+static VCvarB minimap_draw_border("minimap_draw_border", false, "Draw minimap border rectangle?", CVAR_Archive);
 static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive);
 static VCvarF minimap_darken("minimap_darken", "0.4", "Minimap widget darkening.", CVAR_Archive);
 static VCvarF minimap_alpha("minimap_alpha", "0.6", "Minimap opacity.", CVAR_Archive);
 static VCvarF minimap_position_x("minimap_position_x", "-1", "Horizontal position of the minimap.", CVAR_Archive);
 static VCvarF minimap_position_y("minimap_position_y", "-0.88", "Vertical position of the minimap.", CVAR_Archive);
 static VCvarF minimap_size_x("minimap_size_x", "0.2", "Horizontal size of the minimap.", CVAR_Archive);
-static VCvarF minimap_size_y("minimap_size_y", "0.28", "Vertical size of the minimap.", CVAR_Archive);
+static VCvarF minimap_size_y("minimap_size_y", "0.24", "Vertical size of the minimap.", CVAR_Archive);
+
+static VCvarS minimap_color_border("minimap_color_border", "ff 7f 00", "Minimap color: border.", CVAR_Archive);
 
 static VCvarB am_overlay("am_overlay", true, "Show automap in overlay mode?", CVAR_Archive);
 static VCvarF am_back_darken("am_back_darken", "0", "Overlay automap darken factor", CVAR_Archive);
@@ -349,6 +352,8 @@ static ColorCV PlayerColor(&am_color_player, &am_overlay_alpha);
 static ColorCV MinisegColor(&am_color_miniseg, &am_overlay_alpha);
 static ColorCV CurrMarkColor(&am_color_current_mark, &am_overlay_alpha);
 static ColorCV MarkBlinkColor(&am_color_mark_blink, &am_overlay_alpha);
+
+static ColorCV MinimapBorderColor(&minimap_color_border, &minimap_alpha);
 
 //static ColorCV PObjActiveColor(&am_cheat_pobj_active_color, &am_overlay_alpha);
 //static ColorCV PObjInactiveColor(&am_cheat_pobj_inactive_color, &am_overlay_alpha);
@@ -2347,6 +2352,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
     bool cheatOnly = false;
     vuint32 clr = AM_getLineColor(&line, &cheatOnly);
     if (cheatOnly) continue; //FIXME: should we draw these lines if automap powerup is active?
+    clr |= 0xff000000u;
 
     // fully mapped or automap revealed?
     /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
@@ -2372,6 +2378,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
     plrangle = AngleMod(360.0f-(plrangle+90.0f));
     msincos(plrangle, &s, &c);
     vuint32 pclr = PlayerColor;
+    pclr |= 0xff000000u;
 
     for (int i = 0; i < line_count; ++i) {
       const mline_t &l = player_arrow[i];
@@ -2386,6 +2393,12 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
       w->DrawLine(lx1, ly1, lx2, ly2, pclr, alpha);
     }
+  }
+
+  if (minimap_draw_border) {
+    vuint32 bclr = MinimapBorderColor;
+    bclr |= 0xff000000u;
+    w->DrawRect(0, 0, w->GetWidth(), w->GetHeight(), bclr, alpha);
   }
 }
 
