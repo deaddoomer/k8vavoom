@@ -904,6 +904,116 @@ bool VWidget::TransferAndClipRect (float &X1, float &Y1, float &X2, float &Y2) c
 
 //==========================================================================
 //
+//  VWidget::TransferAndClipLine
+//
+//  Automap clipping of lines.
+//
+//  Based on Cohen-Sutherland clipping algorithm but with a slightly faster
+//  reject and precalculated slopes. If the speed is needed, use a hash
+//  algorithm to handle the common cases.
+//
+//==========================================================================
+#define DOOUTCODE(oc,mx,my) \
+  (oc) = 0; \
+       if ((my) < 0.0f) (oc) |= TOP; \
+  else if ((my) >= f_h) (oc) |= BOTTOM; \
+       if ((mx) < 0.0f) (oc) |= LEFT; \
+  else if ((mx) >= f_w) (oc) |= RIGHT;
+
+bool VWidget::TransferAndClipLine (float &X1, float &Y1, float &X2, float &Y2) const noexcept {
+  enum {
+    LEFT   = 1u,
+    RIGHT  = 2u,
+    BOTTOM = 4u,
+    TOP    = 8u,
+  };
+
+  X1 = ClipRect.ScaleX*X1+ClipRect.OriginX;
+  Y1 = ClipRect.ScaleY*Y1+ClipRect.OriginY;
+  X2 = ClipRect.ScaleX*X2+ClipRect.OriginX;
+  Y2 = ClipRect.ScaleY*Y2+ClipRect.OriginY;
+
+  unsigned outcode1 = 0u;
+  unsigned outcode2 = 0u;
+
+  // do trivial rejects and outcodes
+  if (Y1 > ClipRect.ClipY2) outcode1 = TOP; else if (Y1 < ClipRect.ClipY1) outcode1 = BOTTOM;
+  if (Y2 > ClipRect.ClipY2) outcode2 = TOP; else if (Y2 < ClipRect.ClipY1) outcode2 = BOTTOM;
+  if (outcode1&outcode2) return false; // trivially outside
+
+  if (X1 < ClipRect.ClipX1) outcode1 |= LEFT; else if (X1 > ClipRect.ClipX2) outcode1 |= RIGHT;
+  if (X2 < ClipRect.ClipX1) outcode2 |= LEFT; else if (X2 > ClipRect.ClipX2) outcode2 |= RIGHT;
+  if (outcode1&outcode2) return false; // trivially outside
+
+  // transform to 0-based coords
+  X1 -= ClipRect.ClipX1;
+  Y1 -= ClipRect.ClipY1;
+  X2 -= ClipRect.ClipX1;
+  Y2 -= ClipRect.ClipY1;
+
+  const float f_w = ClipRect.ClipX2-ClipRect.ClipX1;
+  const float f_h = ClipRect.ClipY2-ClipRect.ClipY1;
+
+  DOOUTCODE(outcode1, X1, Y1);
+  DOOUTCODE(outcode2, X2, Y2);
+
+  if (outcode1&outcode2) return false;
+
+  float tmpx = 0.0f, tmpy = 0.0f;
+  while (outcode1|outcode2) {
+    // may be partially inside box
+    // find an outside point
+    const unsigned outside = (outcode1 ?: outcode2);
+
+    // clip to each side
+    if (outside&TOP) {
+      const float dy = Y1-Y2;
+      const float dx = X2-X1;
+      tmpx = X1+(dx*(Y1))/dy;
+      tmpy = 0.0f;
+    } else if (outside&BOTTOM) {
+      const float dy = Y1-Y2;
+      const float dx = X2-X1;
+      tmpx = X1+(dx*(Y1-f_h))/dy;
+      tmpy = f_h-1.0f;
+    } else if (outside&RIGHT) {
+      const float dy = Y2-Y1;
+      const float dx = X2-X1;
+      tmpy = Y1+(dy*(f_w-1-X1))/dx;
+      tmpx = f_w-1.0f;
+    } else if (outside&LEFT) {
+      const float dy = Y2-Y1;
+      const float dx = X2-X1;
+      tmpy = Y1+(dy*(-X1))/dx;
+      tmpx = 0.0f;
+    }
+
+    if (outside == outcode1) {
+      X1 = tmpx;
+      Y1 = tmpy;
+      DOOUTCODE(outcode1, X1, Y1);
+    } else {
+      X2 = tmpx;
+      Y2 = tmpy;
+      DOOUTCODE(outcode2, X2, Y2);
+    }
+
+    if (outcode1&outcode2) return false; // trivially outside
+  }
+
+  // transform back to normal coords
+  X1 += ClipRect.ClipX1;
+  Y1 += ClipRect.ClipY1;
+  X2 += ClipRect.ClipX1;
+  Y2 += ClipRect.ClipY1;
+
+  return true;
+}
+#undef DOOUTCODE
+
+
+//==========================================================================
+//
 //  VWidget::DrawPic
 //
 //==========================================================================
@@ -1299,7 +1409,7 @@ void VWidget::DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alp
   float Y1 = aY0;
   float X2 = aX1;
   float Y2 = aY1;
-  if (TransferAndClipRect(X1, Y1, X2, Y2)) {
+  if (TransferAndClipLine(X1, Y1, X2, Y2)) {
     Drawer->DrawLine(truncf(X1), truncf(Y1), truncf(X2), truncf(Y2), color, alpha);
   }
 }

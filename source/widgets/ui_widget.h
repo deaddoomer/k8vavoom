@@ -134,6 +134,8 @@ protected:
   // can return `none` if coords are out of any widget, including this one
   VWidget *GetWidgetAt (float X, float Y, bool allowDisabled=false) noexcept;
 
+  bool TransferAndClipLine (float &X1, float &Y1, float &X2, float &Y2) const noexcept;
+
   // translate screen and texture coordinates
   bool TransferAndClipRect (float &X1, float &Y1, float &X2, float &Y2, float &S1, float &T1, float &S2, float &T2) const noexcept;
   // translate screen coordinates
