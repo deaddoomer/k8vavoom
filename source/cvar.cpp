@@ -175,18 +175,169 @@ COMMAND_AC(cvar_whatis) { return DoCvarCompletions(args, aidx); }
 // Toggles boolean cvar
 COMMAND_WITH_AC(toggle) {
   if (Args.length() != 2) {
-    GCon->Logf("Toggles boolean cvar.");
-    GCon->Logf("usage: toggle varname");
-  } else {
-    VCvar *cvar = VCvar::FindVariable(*Args[1]);
-    if (cvar) {
-      cvar->Set(cvar->asBool() ? 0 : 1);
-    } else {
-      GCon->Logf("Unknown cvar: '%s'", *Args[1]);
-    }
+    GCon->Log("Toggles boolean cvar.");
+    GCon->Log("usage: toggle varname");
+    return;
   }
+  VCvar *cvar = VCvar::FindVariable(*Args[1]);
+  if (!cvar) {
+    GCon->Logf(NAME_Error, "Unknown cvar: '%s'", *Args[1]);
+    return;
+  }
+  cvar->Set(cvar->asBool() ? 0 : 1);
 }
 COMMAND_AC(toggle) { return DoCvarCompletions(args, aidx); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static void cvarDoAddSubF (TArray<VStr> &Args, bool asAdd) {
+  VCvar *cvar = VCvar::FindVariable(*Args[1]);
+  if (!cvar) {
+    GCon->Logf(NAME_Error, "Unknown cvar: '%s'", *Args[1]);
+    return;
+  }
+
+  if (cvar->GetType() != VCvar::CVType::Float) {
+    GCon->Logf(NAME_Error, "cvar '%s' is not float", *Args[1]);
+    return;
+  }
+
+  float delta = 0.0f;
+  if (!Args[2].convertFloat(&delta) || !isFiniteF(delta)) {
+    GCon->Logf(NAME_Error, "'%s' is not a float value", *Args[2]);
+    return;
+  }
+
+  bool hasLimit = false;
+  float limit = 0.0f;
+  if (Args.length() > 3) {
+    if (!Args[3].convertFloat(&limit) || !isFiniteF(limit)) {
+      GCon->Logf(NAME_Error, "'%s' is not a float value", *Args[3]);
+      return;
+    }
+    hasLimit = true;
+  }
+
+  float val = cvar->asFloat();
+  if (asAdd) {
+    val += delta;
+    if (hasLimit && val > limit) val = limit;
+  } else {
+    val -= delta;
+    if (hasLimit && val < limit) val = limit;
+  }
+  cvar->Set(val);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// COMMAND cvar_add_f name value [limit]
+//
+// add value to float cvar
+COMMAND_WITH_AC(cvar_add_f) {
+  if (Args.length() < 3) {
+    GCon->Log("Add value to float cvar.");
+    GCon->Log("usage: cvar_add_f varname value [limit]");
+    return;
+  }
+  cvarDoAddSubF(Args, true);
+}
+COMMAND_AC(cvar_add_f) { return DoCvarCompletions(args, aidx); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// COMMAND cvar_sub_f name value [limit]
+//
+// subtract value from float cvar
+COMMAND_WITH_AC(cvar_sub_f) {
+  if (Args.length() < 3) {
+    GCon->Log("Subtract value from float cvar.");
+    GCon->Log("usage: cvar_sub_f varname value [limit]");
+    return;
+  }
+  cvarDoAddSubF(Args, false);
+}
+COMMAND_AC(cvar_sub_f) { return DoCvarCompletions(args, aidx); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static void cvarDoAddSubI (TArray<VStr> &Args, bool asAdd) {
+  VCvar *cvar = VCvar::FindVariable(*Args[1]);
+  if (!cvar) {
+    GCon->Logf(NAME_Error, "Unknown cvar: '%s'", *Args[1]);
+    return;
+  }
+  if (cvar->GetType() != VCvar::CVType::Int) {
+    GCon->Logf(NAME_Error, "cvar '%s' is not int", *Args[1]);
+    return;
+  }
+
+  int delta = 0;
+  if (!Args[2].convertInt(&delta)) {
+    GCon->Logf(NAME_Error, "'%s' is not an int value", *Args[2]);
+    return;
+  }
+
+  bool hasLimit = false;
+  int limit = 0;
+  if (Args.length() > 3) {
+    if (!Args[3].convertInt(&limit)) {
+      GCon->Logf(NAME_Error, "'%s' is not an int value", *Args[3]);
+      return;
+    }
+    hasLimit = true;
+  }
+
+  bool hasWrap = false;
+  int wrap = 0;
+  if (Args.length() > 4) {
+    if (!Args[4].convertInt(&wrap)) {
+      GCon->Logf(NAME_Error, "'%s' is not an int value", *Args[4]);
+      return;
+    }
+    hasWrap = true;
+  }
+
+  int val = cvar->asInt();
+  if (asAdd) {
+    val += delta;
+    if (hasLimit && val > limit) val = (hasWrap ? wrap : limit);
+  } else {
+    val -= delta;
+    if (hasLimit && val < limit) val = (hasWrap ? wrap : limit);
+  }
+  cvar->Set(val);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// COMMAND cvar_add_i name value [limit] [lowrap]
+//
+// add value to int cvar
+COMMAND_WITH_AC(cvar_add_i) {
+  if (Args.length() < 3) {
+    GCon->Log("Add value to integer cvar.");
+    GCon->Log("usage: cvar_add_i varname value [limit] [lowrap]");
+    return;
+  }
+  cvarDoAddSubI(Args, true);
+}
+COMMAND_AC(cvar_add_i) { return DoCvarCompletions(args, aidx); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// COMMAND cvar_sub_i name value [limit] [hiwrap]
+//
+// subtract value from int cvar
+COMMAND_WITH_AC(cvar_sub_i) {
+  if (Args.length() < 3) {
+    GCon->Log("Subtract value from integer cvar.");
+    GCon->Log("usage: cvar_sub_i varname value [limit] [hiwrap]");
+    return;
+  }
+  cvarDoAddSubI(Args, false);
+}
+COMMAND_AC(cvar_sub_i) { return DoCvarCompletions(args, aidx); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
