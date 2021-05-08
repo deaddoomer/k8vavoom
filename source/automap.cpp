@@ -2321,10 +2321,11 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
   for (auto &&line : GClLevel->allLines()) {
     if (!line.firstseg) continue; // just in case
 
-    if (line.flags&ML_DONTDRAW) continue;
-
-    if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-      if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
+    if (!am_cheating) {
+      if (line.flags&ML_DONTDRAW) continue;
+      if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+        if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
+      }
     }
 
     // convert line coordinates
@@ -2351,7 +2352,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
     bool cheatOnly = false;
     vuint32 clr = AM_getLineColor(&line, &cheatOnly);
-    if (cheatOnly) continue; //FIXME: should we draw these lines if automap powerup is active?
+    if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
     clr |= 0xff000000u;
 
     // fully mapped or automap revealed?
