@@ -719,6 +719,7 @@ void SCR_Update (bool fullUpdate) {
         AM_Drawer();
         CT_Drawer();
         SB_Drawer();
+        //if (cl && cl->MO && cl->MO == cl->Camera) AM_DrawAtWidget(GRoot, cl->MO->Origin.x, cl->MO->Origin.y, 2.0f, 0.0f, 1.0f);
       }
     } else {
       //GCon->Logf("render: tic=%d; starttic=%d", GLevel->TicTime, serverStartRenderFramesTic);

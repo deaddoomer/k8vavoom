@@ -31,6 +31,7 @@
 #ifdef CLIENT
 # include "client/cl_local.h"
 # include "drawer.h"
+# include "widgets/ui.h"
 #endif
 
 // there is no need to do this anymore: OpenGL will do it for us
@@ -2277,6 +2278,66 @@ void AM_Drawer () {
   if (mapMarksAllowed) AM_drawMarks();
 
   //if (am_overlay) glColor4f(1, 1, 1, 1);
+}
+
+
+//==========================================================================
+//
+//  AM_DrawAtWidget
+//
+//==========================================================================
+void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+#ifdef CLIENT
+  if (!w || scale <= 0.0f || alpha <= 0.0f || !GClLevel) return;
+  //AM_Check();
+  angle = AngleMod(angle);
+  if (alpha > 1.0f) alpha = 1.0f;
+
+  float s, c;
+  msincos(angle, &s, &c);
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+  //xc = yc = 0.0f;
+
+  // draw walls
+  for (auto &&line : GClLevel->allLines()) {
+    if (!line.firstseg) continue; // just in case
+
+    if (line.flags&ML_DONTDRAW) continue;
+
+    if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+      if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
+    }
+
+    // convert line coordinates
+    const float lx1o = (line.v1->x-xc)*scale;
+    const float ly1o = -(line.v1->y-yc)*scale;
+    const float lx2o = (line.v2->x-xc)*scale;
+    const float ly2o = -(line.v2->y-yc)*scale;
+
+    const int lx1 = (int)roundf((lx1o*c-ly1o*s)+halfwdt);
+    const int ly1 = (int)roundf((ly1o*c+lx1o*s)+halfhgt);
+    const int lx2 = (int)roundf((lx2o*c-ly2o*s)+halfwdt);
+    const int ly2 = (int)roundf((ly2o*c+lx2o*s)+halfhgt);
+
+    // do not send the line to GPU if it is not visible
+    if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
+        min2(lx1, lx2) >= w->GetWidth() || min2(ly1, ly2) >= w->GetHeight())
+    {
+      continue;
+    }
+
+    bool cheatOnly = false;
+    vuint32 clr = AM_getLineColor(&line, &cheatOnly);
+    if (cheatOnly) continue; //FIXME: should we draw these lines if automap powerup is active?
+
+    // fully mapped or automap revealed?
+    /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
+      w->DrawLine(lx1, ly1, lx2, ly2, clr, alpha);
+    }
+  }
+#endif
 }
 
 

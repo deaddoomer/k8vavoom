@@ -627,3 +627,38 @@ IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetHash) {
   RET_STR(VStr::EmptyString);
 #endif
 }
+
+
+//native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float alpha);
+IMPLEMENT_FREE_FUNCTION(VObject, AM_DrawAtWidget) {
+  VWidget *w;
+  float xc, yc, scale, angle, alpha;
+  vobjGetParam(w, xc, yc, scale, angle, alpha);
+#ifdef CLIENT
+  AM_DrawAtWidget(w, xc, yc, scale, angle, alpha);
+#endif
+}
+
+
+//native static final bool AM_GetPlayerPos (out float xc, out float yc, out float angle);
+IMPLEMENT_FREE_FUNCTION(VObject, AM_GetPlayerPos) {
+  float *xc;
+  float *yc;
+  float *angle;
+  vobjGetParam(xc, yc, angle);
+#ifdef CLIENT
+  if (GGameInfo->NetMode != NM_TitleMap) {
+    if (cl && cl->MO && cl->MO == cl->Camera) {
+      *xc = cl->MO->Origin.x;
+      *yc = cl->MO->Origin.y;
+      *angle = AngleMod(cl->MO->Angles.yaw-90.0f);
+      RET_BOOL(true);
+      return;
+    }
+  }
+#endif
+  *xc = 0.0f;
+  *yc = 0.0f;
+  *angle = 0.0f;
+  RET_BOOL(false);
+}
