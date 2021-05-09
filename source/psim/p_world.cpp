@@ -673,54 +673,30 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       if (!po && ld->frontsector == ld->backsector && (scanflags&PT_COMPAT)) continue;
 
       if (ld->flags&ML_TWOSIDED) {
-        if (doopening) {
-          // flag-blocking line
-          if (ld->flags&lineflags) {
-            blockFlag = true;
-            // sky hack?
-            if (ld->frontsector->ceiling.pic == skyflatnum &&
-                ld->backsector->ceiling.pic == skyflatnum)
-            {
-              const TVec hitPoint = trace_org3d+trace_dir3d*frac;
-              const float hpz = hitPoint.z;
-              opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, false/*do3dmidtex*/);
-              //if (open && hpz > open->top) isSky = true;
-              while (open) {
-                if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
-                open = open->next;
-              }
-              if (!open) {
-                // check position and texture
-                const float cz = min2(ld->frontsector->ceiling.GetPointZClamped(hitPoint), ld->backsector->ceiling.GetPointZClamped(hitPoint));
-                if (hitPoint.z >= cz) isSky = true; // top texture
-              }
-            }
-          } else if (!po) {
-            // crosses a two sided line, check openings
-            const TVec hitPoint = trace_org3d+trace_dir3d*frac;
-            const float hpz = hitPoint.z; //trace_org3d.z+trace_dir3d.z*frac;
-            opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, false/*do3dmidtex*/);
-            while (open) {
-              if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
-              open = open->next;
-            }
-            blockFlag = !open;
-            // sky hack?
-            if (!open &&
-                ld->frontsector->ceiling.pic == skyflatnum &&
-                ld->backsector->ceiling.pic == skyflatnum)
-            {
-              // check position and texture
-              const float cz = min2(ld->frontsector->ceiling.GetPointZClamped(hitPoint), ld->backsector->ceiling.GetPointZClamped(hitPoint));
-              if (hitPoint.z >= cz) isSky = true; // top texture
-            }
-          } else {
-            // non-3d polyobject line (3d polyobjects already checked above)
-            blockFlag = false;
+        // flag-blocking line?
+        blockFlag = !!(ld->flags&lineflags);
+        if (doopening && !blockFlag && !po) {
+          // want opening scan, not blocked by flags check, and not a polyobject
+          // there is no reason to check openings for polyobjects, such openings are not valid anyway
+          // (proper opening check will be done with a proper two-sided sector line)
+          const TVec hitPoint = trace_org3d+trace_dir3d*frac;
+          const float hpz = hitPoint.z;
+          opening_t *open = Level->LineOpenings(ld, hitPoint, planeflags, false/*do3dmidtex*/);
+          while (open) {
+            if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
+            open = open->next;
           }
-        } else {
-          // no opening scan
-          blockFlag = false; // 2-sided line doesn't block
+          blockFlag = !open; // block if no opening was found
+        }
+        // sky hack?
+        if (blockFlag && doopening && !po &&
+            ld->frontsector->ceiling.pic == skyflatnum &&
+            ld->backsector->ceiling.pic == skyflatnum)
+        {
+          // check position (and texture?)
+          const TVec hitPoint = trace_org3d+trace_dir3d*frac; // we can cache this, but meh, sky hacks are not that frequent
+          const float cz = min2(ld->frontsector->ceiling.GetPointZClamped(hitPoint), ld->backsector->ceiling.GetPointZClamped(hitPoint));
+          if (hitPoint.z >= cz) isSky = true; // top texture
         }
       } else {
         // one-sided line always blocks
