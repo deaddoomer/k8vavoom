@@ -1401,6 +1401,23 @@ void VWidget::DrawRect (int X, int Y, int Width, int Height, int color, float al
 
 //==========================================================================
 //
+//  VWidget::DrawRectF
+//
+//==========================================================================
+void VWidget::DrawRectF (float X, float Y, float Width, float Height, int color, float alpha) {
+  if (Width <= 0.0f || Height <= 0.0f || alpha <= 0.0f) return;
+  float X1 = X;
+  float Y1 = Y;
+  float X2 = X+Width;
+  float Y2 = Y+Height;
+  if (TransferAndClipRect(X1, Y1, X2, Y2)) {
+    Drawer->DrawRect((int)roundf(X1), (int)roundf(Y1), (int)roundf(X2), (int)roundf(Y2), color, alpha);
+  }
+}
+
+
+//==========================================================================
+//
 //  VWidget::DrawLine
 //
 //==========================================================================
@@ -1411,6 +1428,18 @@ void VWidget::DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alp
   float Y2 = aY1;
   if (TransferAndClipLine(X1, Y1, X2, Y2)) {
     Drawer->DrawLine(truncf(X1), truncf(Y1), truncf(X2), truncf(Y2), color, alpha);
+  }
+}
+
+
+//==========================================================================
+//
+//  VWidget::DrawLineF
+//
+//==========================================================================
+void VWidget::DrawLineF (float X1, float Y1, float X2, float Y2, int color, float alpha) {
+  if (TransferAndClipLine(X1, Y1, X2, Y2)) {
+    Drawer->DrawLine((int)roundf(X1), (int)roundf(Y1), (int)roundf(X2), (int)roundf(Y2), color, alpha);
   }
 }
 

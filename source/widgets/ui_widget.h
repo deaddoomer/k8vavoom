@@ -401,7 +401,9 @@ public:
   void FillRect (int, int, int, int, int, float);
   void ShadeRect (int, int, int, int, float);
   void DrawRect (int X, int Y, int Width, int Height, int color, float alpha);
+  void DrawRectF (float X, float Y, float Width, float Height, int color, float alpha);
   void DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alpha);
+  void DrawLineF (float X1, float Y1, float X2, float Y2, int color, float alpha);
 
   VFont *GetFont () noexcept;
   void SetFont (VFont *AFont) noexcept;
