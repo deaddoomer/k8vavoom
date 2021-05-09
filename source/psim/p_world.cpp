@@ -689,7 +689,11 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
                 if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
                 open = open->next;
               }
-              if (!open) isSky = true;
+              if (!open) {
+                // check position and texture
+                const float cz = min2(ld->frontsector->ceiling.GetPointZClamped(hitPoint), ld->backsector->ceiling.GetPointZClamped(hitPoint));
+                if (hitPoint.z >= cz) isSky = true; // top texture
+              }
             }
           } else if (!po) {
             // crosses a two sided line, check openings
@@ -706,7 +710,9 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
                 ld->frontsector->ceiling.pic == skyflatnum &&
                 ld->backsector->ceiling.pic == skyflatnum)
             {
-              isSky = true;
+              // check position and texture
+              const float cz = min2(ld->frontsector->ceiling.GetPointZClamped(hitPoint), ld->backsector->ceiling.GetPointZClamped(hitPoint));
+              if (hitPoint.z >= cz) isSky = true; // top texture
             }
           } else {
             // non-3d polyobject line (3d polyobjects already checked above)
