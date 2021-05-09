@@ -280,6 +280,7 @@ VSearchPath::VSearchPath ()
   , userwad(false)
   , cosmetic(false)
   , required(false)
+  , hadfilters(false)
 {
   if (fsys_mark_as_user) userwad = true;
 }
@@ -436,7 +437,9 @@ void VFileDirectory::buildLumpNames () {
   for (auto &&fi : files) {
     VStr fn = fi.fileName;
     if (!fn.startsWith("filter/")) continue;
+    if (owner) owner->hadfilters = true;
     if (!FL_CheckFilterName(fn)) continue;
+    //GLog.Logf(NAME_Debug, "FILTER FILE: <%s> -> <%s>", *fi.fileName, *fn);
     // special extensions ".hide" and ".remove" will hide the file
     (void)IsHideRemoveFilterFileName(fn);
     // put everything in "hide map", becase the corresponding files will be hard-replaced

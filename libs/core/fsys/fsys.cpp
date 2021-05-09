@@ -52,6 +52,17 @@ mythread_mutex fsys_glock;
 
 //==========================================================================
 //
+//  FSysSavedState::needReload
+//
+//==========================================================================
+bool FSysSavedState::needReload () const noexcept {
+  for (auto &&sp : svSearchPaths) if (sp->HadFilters()) return true;
+  return false;
+}
+
+
+//==========================================================================
+//
 //  FSysSavedState::save
 //
 //  this clears current archives
@@ -64,6 +75,23 @@ void FSysSavedState::save () {
   fsysSearchPaths.reset();
   svwadfiles = fsysWadFileNames;
   fsysWadFileNames.reset();
+}
+
+
+//==========================================================================
+//
+//  FSysSavedState::unload
+//
+//  free all loaded archives (they must be reloaded)
+//  call this instead of `restore` if `needReload()` returned `true`
+//
+//==========================================================================
+void FSysSavedState::unload () {
+  if (!saved) Sys_Error("FSysSavedState: cannot restore empty save");
+  saved = false;
+  for (auto &&it : svSearchPaths) { delete it; it = nullptr; }
+  svSearchPaths.clear();
+  svwadfiles.clear();
 }
 
 
@@ -191,11 +219,14 @@ int FL_AddGameFilter (VStr path) {
 //
 //==========================================================================
 bool FL_CheckFilterName (VStr &fname) {
+  //GLog.Logf(NAME_Debug, "000: CHECKFILTER: <%s>", *fname);
   if (fname.isEmpty()) return false; // empty names should not be kept ;-)
   if (!fname.startsWith("filter/")) return true; // keep it
+  //GLog.Logf(NAME_Debug, "001: CHECKFILTER: <%s>", *fname);
   // this prevents reading archives without filtering, but meh
   // special filter for our engine
   if (fname.startsWith("filter/engine_k8vavoom/")) fname = "filter/"+fname.mid(23, fname.length());
+  //GLog.Logf(NAME_Debug, "002: CHECKFILTER: <%s>", *fname);
   // allow "any" and "anything" for all games
   // "any"
   if (fname.startsWith("filter/any/")) {
@@ -203,16 +234,20 @@ bool FL_CheckFilterName (VStr &fname) {
     if (fname.isEmpty() || fname.endsWith("/")) { fname.clear(); return false; } // drop it
     return true;
   }
+  //GLog.Logf(NAME_Debug, "003: CHECKFILTER: <%s>", *fname);
   // "anything"
   if (fname.startsWith("filter/anything/")) {
     fname.chopLeft(16);
     if (fname.isEmpty() || fname.endsWith("/")) { fname.clear(); return false; } // drop it
     return true; // keep it
   }
+  //GLog.Logf(NAME_Debug, "004: CHECKFILTER: <%s> (%d)", *fname, fsys_game_filters.length());
   if (fsys_game_filters.length() == 0 || fname.endsWith("/")) { fname.clear(); return false; } // drop it (it is a directory, or we have no filters set)
+  //GLog.Logf(NAME_Debug, "005: CHECKFILTER: <%s>", *fname);
   // filters are sorted from the longest one to the shortest one
   // also, a filter doesn't contain trailing slash
   for (VStr fs : fsys_game_filters) {
+    //GLog.Logf(NAME_Debug, "006:   CHECKFILTER: <%s> : <%s>", *fname, *fs);
     if (fname.length() > fs.length()+1 && fname[fs.length()] == '/' && fname.startsWith(fs)) {
       fname.chopLeft(fs.length()+1);
       while (fname.length() && fname[0] == '/') fname.chopLeft(1);
@@ -220,6 +255,7 @@ bool FL_CheckFilterName (VStr &fname) {
     }
   }
   // drop it
+  //GLog.Logf(NAME_Debug, "007: CHECKFILTER: <%s> -- DROP", *fname);
   fname.clear();
   return false;
 }

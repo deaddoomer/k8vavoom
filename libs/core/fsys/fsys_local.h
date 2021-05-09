@@ -66,6 +66,7 @@ public:
   bool userwad;
   bool cosmetic;
   bool required;
+  bool hadfilters;
 
 public:
   VSearchPath ();
@@ -77,6 +78,8 @@ public:
   inline bool IsAnyPak () const noexcept { return (type >= WAD && type < OTHER); }
   // is this not a known archive (probably zip container)?
   inline bool IsNonPak () const noexcept { return (type == OTHER); }
+
+  inline bool HadFilters () const noexcept { return hadfilters; }
 
   // all following methods are supposed to be called with global mutex protection
   // (i.e. they should not be called from multiple threads simultaneously)
@@ -373,6 +376,12 @@ public:
   inline ~FSysSavedState () noexcept {} // no autorestore
 
   inline bool isActive () const noexcept { return saved; }
+
+  bool needReload () const noexcept;
+
+  // free all loaded archives (they must be reloaded)
+  // call this instead of `restore` if `needReload()` returned `true`
+  void unload ();
 
   void save ();
   // this resets saved state
