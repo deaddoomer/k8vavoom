@@ -214,6 +214,8 @@ extern VCvarB r_dbg_use_fullsegs;
 
 VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive);
 
+static VClass *keyClass = nullptr;
+
 
 void AM_Dirty () { automapUpdateSeen = true; }
 
@@ -959,6 +961,7 @@ void AM_Stop () {
 //==========================================================================
 static void AM_Start () {
   //if (!stopped) AM_Stop();
+  if (!keyClass) keyClass = VClass::FindClass("Key");
   stopped = false;
   if (lastmap != GClLevel->MapName) AM_LevelInit();
   AM_ClearMarksIfMapChanged(GClLevel);
@@ -1900,11 +1903,7 @@ static void AM_drawThings () {
 //
 //==========================================================================
 static void AM_drawKeys () {
-  static VClass *keyClass = nullptr;
-  if (!keyClass) {
-    keyClass = VClass::FindClass("Key");
-    if (!keyClass) return; // the thing that should not be
-  }
+  if (!keyClass) return;
 
   // keys should blink
   float cbt = am_keys_blink_time.asFloat();
@@ -2296,21 +2295,35 @@ void AM_Drawer () {
 }
 
 
+#if 0
+
 #define WidgetTranslateXY(destx_,desty_,srcx_,srcy_)  \
   const int destx_ = (int)roundf(((srcx_)*c-(srcy_)*s)+halfwdt); \
   const int desty_ = (int)roundf(((srcy_)*c+(srcx_)*s)+halfhgt)
 
-//==========================================================================
-//
-//  AM_DrawAtWidget
-//
-//==========================================================================
-void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float plrangle, float alpha) {
-  if (!w || scale <= 0.0f || alpha <= 0.0f || !GClLevel) return;
-  //AM_Check();
-  angle = AngleMod(angle);
-  if (alpha > 1.0f) alpha = 1.0f;
+#define WidgetRotateXYAdd(destx_,desty_,srcx_,srcy_,addx_,addy_)  \
+  const int destx_ = (int)roundf((srcx_)*c-(srcy_)*s+(addx_)); \
+  const int desty_ = (int)roundf((srcy_)*c+(srcx_)*s+(addy_))
 
+#else
+
+#define WidgetTranslateXY(destx_,desty_,srcx_,srcy_)  \
+  const float destx_ = ((srcx_)*c-(srcy_)*s)+halfwdt; \
+  const float desty_ = ((srcy_)*c+(srcx_)*s)+halfhgt
+
+#define WidgetRotateXYAdd(destx_,desty_,srcx_,srcy_,addx_,addy_)  \
+  const float destx_ = (srcx_)*c-(srcy_)*s+(addx_); \
+  const float desty_ = (srcy_)*c+(srcx_)*s+(addy_)
+
+#endif
+
+
+//==========================================================================
+//
+//  AM_Minimap_DrawWalls
+//
+//==========================================================================
+void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
   float s, c;
   msincos(angle, &s, &c);
 
@@ -2336,12 +2349,6 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
     WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
     WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
-    /*
-    const int lx1 = (int)roundf((lx1o*c-ly1o*s)+halfwdt);
-    const int ly1 = (int)roundf((ly1o*c+lx1o*s)+halfhgt);
-    const int lx2 = (int)roundf((lx2o*c-ly2o*s)+halfwdt);
-    const int ly2 = (int)roundf((ly2o*c+lx2o*s)+halfhgt);
-    */
 
     // do not send the line to GPU if it is not visible
     if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
@@ -2357,44 +2364,233 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
     // fully mapped or automap revealed?
     /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
-      w->DrawLine(lx1, ly1, lx2, ly2, clr, alpha);
+      w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
     }
   }
+}
 
-  if (minimap_draw_player) {
-    const mline_t *player_arrow;
-    int line_count;
 
-    if (am_cheating) {
-      player_arrow = player_arrow_ddt;
-      line_count = NUMPLYRLINES3;
-    } else if (am_player_arrow == 1) {
-      player_arrow = player_arrow2;
-      line_count = NUMPLYRLINES2;
-    } else {
-      player_arrow = player_arrow1;
-      line_count = NUMPLYRLINES1;
+//==========================================================================
+//
+//  AM_Minimap_DrawPlayer
+//
+//==========================================================================
+void AM_Minimap_DrawPlayer (VWidget *w, float xc, float yc, float scale, float plrangle, float alpha) {
+  if (!minimap_draw_player) return;
+  float s, c;
+  const mline_t *player_arrow;
+  int line_count;
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  if (am_cheating) {
+    player_arrow = player_arrow_ddt;
+    line_count = NUMPLYRLINES3;
+  } else if (am_player_arrow == 1) {
+    player_arrow = player_arrow2;
+    line_count = NUMPLYRLINES2;
+  } else {
+    player_arrow = player_arrow1;
+    line_count = NUMPLYRLINES1;
+  }
+
+  plrangle = AngleMod(360.0f-(plrangle+90.0f));
+  msincos(plrangle, &s, &c);
+  vuint32 pclr = PlayerColor;
+  pclr |= 0xff000000u;
+
+  for (int i = 0; i < line_count; ++i) {
+    const mline_t &l = player_arrow[i];
+
+    const float lx1o = (l.a.x)*scale;
+    const float ly1o = -(l.a.y)*scale;
+    const float lx2o = (l.b.x)*scale;
+    const float ly2o = -(l.b.y)*scale;
+
+    WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
+    WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
+
+    w->DrawLineF(lx1, ly1, lx2, ly2, pclr, alpha);
+  }
+}
+
+
+//==========================================================================
+//
+//  AM_Minimap_DrawThings
+//
+//==========================================================================
+static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+  if (am_cheating < 2 && (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings) == 0) return;
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  bool invisible = false;
+  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
+    VEntity *mobj = *Ent;
+    if (!mobj->State || mobj->IsGoingToDie()) continue;
+    invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
+    if (invisible && am_cheating != 3) {
+      if (!mobj->IsMissile()) continue;
+      if (am_cheating < 3) continue;
     }
+    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
 
-    plrangle = AngleMod(360.0f-(plrangle+90.0f));
-    msincos(plrangle, &s, &c);
-    vuint32 pclr = PlayerColor;
-    pclr |= 0xff000000u;
+    vuint32 color;
+         if (invisible) color = InvisibleThingColor;
+    else if (mobj->EntityFlags&VEntity::EF_Corpse) color = DeadColor;
+    else if (mobj->FlagsEx&VEntity::EFEX_Monster) color = MonsterColor;
+    else if (mobj->EntityFlags&VEntity::EF_Missile) color = MissileColor;
+    else if (mobj->EntityFlags&VEntity::EF_Solid) color = SolidThingColor;
+    else color = ThingColor;
+    color |= 0xff000000u;
 
-    for (int i = 0; i < line_count; ++i) {
-      const mline_t &l = player_arrow[i];
+    //int sprIdx = (am_render_thing_sprites ? getSpriteIndex(mobj->GetClass()) : -1);
 
-      const float lx1o = (l.a.x)*scale;
-      const float ly1o = -(l.a.y)*scale;
-      const float lx2o = (l.b.x)*scale;
-      const float ly2o = -(l.b.y)*scale;
+    const TVec morg = mobj->GetDrawOrigin();
 
-      WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
-      WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
+    /*
+    if (sprIdx > 0) {
+      float x = morg.x;
+      float y = morg.y;
+      if (am_rotate) AM_rotatePoint(&x, &y);
+      if (!inSpriteMode) { inSpriteMode = true; Drawer->EndAutomap(); }
+      R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
+    } else
+    */
+    {
+      float s, c;
+      msincos(angle, &s, &c);
 
-      w->DrawLine(lx1, ly1, lx2, ly2, pclr, alpha);
+      const float morgx = (morg.x-xc)*scale;
+      const float morgy = -(morg.y-yc)*scale;
+
+      const float mcx = (morgx*c-morgy*s)+halfwdt;
+      const float mcy = (morgy*c+morgx*s)+halfhgt;
+
+      const float rad = max2(1.0f, mobj->Radius*scale);
+      if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
+
+      const float sprangle = AngleMod(mobj->/*Angles*/GetInterpolatedDrawAngles().yaw-90.0f+angle); // anyway
+      msincos(sprangle, &s, &c);
+
+      const float triscale = 12.0f;
+      for (size_t i = 0; i < NUMTHINTRIANGLEGUYLINES; ++i) {
+        const mline_t &l = thintriangle_guy[i];
+
+        const float lx1o = (l.a.x*triscale)*scale;
+        const float ly1o = -(l.a.y*triscale)*scale;
+        const float lx2o = (l.b.x*triscale)*scale;
+        const float ly2o = -(l.b.y*triscale)*scale;
+
+        WidgetRotateXYAdd(lx1, ly1, lx1o, ly1o, mcx, mcy);
+        WidgetRotateXYAdd(lx2, ly2, lx2o, ly2o, mcx, mcy);
+
+        w->DrawLineF(lx1, ly1, lx2, ly2, color, alpha);
+      }
+
+      // draw object box
+      if (am_cheating == 3 || am_cheating == 5) {
+        #if 0
+        const int x0 = (int)roundf(mcx);
+        const int y0 = (int)roundf(mcy);
+        const int sz = (int)roundf(max2(1.0f, mobj->Radius*scale));
+        w->DrawRect(x0-sz, y0-sz, sz*2, sz*2, color, alpha);
+        #else
+        //FIXME: rotate rect too
+        const float sz = max2(1.0f, mobj->Radius*scale);
+        w->DrawRectF(mcx-sz, mcy-sz, sz*2, sz*2, color, alpha);
+        #endif
+      }
     }
   }
+}
+
+
+#if 0
+//==========================================================================
+//
+//  AM_Minimap_DrawKeys
+//
+//==========================================================================
+static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+  if (!keyClass) return;
+  if (am_cheating >= 2 || (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings)) return;
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  // keys should blink
+  float cbt = am_keys_blink_time.asFloat();
+  if (isFiniteF(cbt) && cbt > 0.0f) {
+    if (cbt > 10.0f) cbt = 10.0f; // arbitrary limit
+    const float xtm = fmod(Sys_Time(), cbt*2.0);
+    if (xtm < cbt) return;
+  }
+
+  const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
+  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
+    VEntity *mobj = *Ent;
+    if (!mobj->State || mobj->IsGoingToDie()) continue;
+    if (mobj->RenderStyle == STYLE_None) continue;
+    if ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) != 0) continue;
+
+    // check for seen subsector
+    if (!mobj->SubSector) continue;
+    if (!allKeys && !(mobj->SubSector->miscFlags&subsector_t::SSMF_Rendered)) continue;
+    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
+
+    // check if this is a key
+    VClass *cls = mobj->GetClass();
+    if (!cls->IsChildOf(keyClass)) continue;
+
+    // check if it has a spawn sprite
+    int sprIdx = getSpriteIndex(cls);
+    if (sprIdx < 0) continue;
+
+    // ok, this looks like a valid key, render it
+    const TVec morg = mobj->GetDrawOrigin();
+
+    float s, c;
+    msincos(angle, &s, &c);
+
+    const float morgx = (morg.x-xc)*scale;
+    const float morgy = -(morg.y-yc)*scale;
+
+    const float mcx = (morgx*c-morgy*s)+halfwdt;
+    const float mcy = (morgy*c+morgx*s)+halfhgt;
+
+    //const float rad = max2(1.0f, mobj->Radius*scale);
+    //if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
+
+    vint32 color = 0xffffffff; //temp
+
+    w->DrawRectF(mcx-1.0f, mcy-1.0f, 2.0f, 2.0f, color, alpha);
+    w->DrawRectF(mcx-2.0f, mcy-2.0f, 4.0f, 4.0f, color, alpha);
+  }
+}
+#endif
+
+
+//==========================================================================
+//
+//  AM_DrawAtWidget
+//
+//==========================================================================
+void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, float plrangle, float alpha) {
+  if (!w || scale <= 0.0f || alpha <= 0.0f || !GClLevel) return;
+  //AM_Check();
+  angle = AngleMod(angle);
+  if (alpha > 1.0f) alpha = 1.0f;
+
+  if (!keyClass) keyClass = VClass::FindClass("Key");
+
+  AM_Minimap_DrawWalls(w, xc, yc, scale, angle, alpha);
+  AM_Minimap_DrawThings(w, xc, yc, scale, angle, alpha);
+  //AM_Minimap_DrawKeys(w, xc, yc, scale, angle, alpha); // rendering keys is not working right yet, and it is VERY SLOW
+  AM_Minimap_DrawPlayer(w, xc, yc, scale, plrangle, alpha);
 
   if (minimap_draw_border) {
     vuint32 bclr = MinimapBorderColor;
