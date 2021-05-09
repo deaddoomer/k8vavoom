@@ -2841,8 +2841,8 @@ void FL_Init () {
     fsys_skipDehacked = false;
   } else {
     pwadsSaved.restore();
+    for (auto &&it : wpklistSaved) wpklist.append(it);
   }
-  for (auto &&it : wpklistSaved) wpklist.append(it);
 
   // load custom mode pwads
   CustomModeLoadPwads(CM_POST_PWADS);
