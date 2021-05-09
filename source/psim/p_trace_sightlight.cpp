@@ -110,6 +110,97 @@ struct SightTraceInfo {
 };
 
 
+//==========================================================================
+//
+//  SightPassRegionPlaneTexture
+//
+//  usually, `End` is light origin
+//
+//  returns `true` if no hit was detected
+//
+//==========================================================================
+static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region_t *reg, const TSecPlaneRef &spl, const float frac) {
+  if (!trace.lightCheck || !trace.flatTextureCheck) return false; // blocked
+
+  //const TSecPlaneRef &spl = (checkFloor ? reg->efloor : reg->eceiling);
+  if ((spl.splane->flags&SPF_ADDITIVE) || spl.splane->Alpha < 1.0f) return true; // not blocked
+  if (GTextureManager.IsSightBlocking(spl.splane->pic)) return false; // blocked
+
+  VTexture *FTex = GTextureManager(spl.splane->pic);
+  if (!FTex || FTex->Type == TEXTYPE_Null) return true; // not blocked
+
+  const int thgt = FTex->GetHeight();
+  if (thgt < 1) return true; // just in case, not blocked
+  const int twdt = FTex->GetWidth();
+  if (twdt < 1) return true; // just in case, not blocked
+
+  //TODO: rotated textures
+
+  TVec saxis, taxis;
+
+  if (fabsf(spl.splane->normal.z) > 0.1f) {
+    float s, c;
+    msincos(spl.splane->BaseAngle-spl.splane->Angle, &s, &c);
+    //k8: do we really need to rotate lightmap axes? i don't think so
+    saxis = TVec(c,  s)*(FTex->TextureSScale()*spl.splane->XScale);
+    taxis = TVec(s, -c)*(FTex->TextureTScale()*spl.splane->YScale);
+  } else {
+    const TVec taxisLM = TVec(0.0f, 0.0f, -1.0f);
+    const TVec saxisLM = Normalise(CrossProduct(spl.GetNormal(), taxisLM));
+    taxis = taxisLM*(FTex->TextureTScale()*spl.splane->YScale);
+    saxis = saxisLM*(FTex->TextureSScale()*spl.splane->XScale);
+  }
+
+  //k8: i think that this is not completely right
+  if (spl.splane->flipFlags&SPF_FLIP_X) saxis = -saxis;
+  if (spl.splane->flipFlags&SPF_FLIP_Y) taxis = -taxis;
+
+  // /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, spl, Tex);
+
+  float soffs = spl.splane->xoffs*(FTex->TextureSScale()*spl.splane->XScale);
+  float toffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(FTex->TextureTScale()*spl.splane->YScale);
+
+  //k8: i think that this is not completely right
+  if (spl.splane->flipFlags&SPF_FLIP_X) soffs = -soffs;
+  if (spl.splane->flipFlags&SPF_FLIP_Y) toffs = -toffs;
+
+  const float cx = spl.splane->PObjCX;
+  const float cy = spl.splane->PObjCY;
+  if (cx || cy) {
+    TVec p(cx, cy);
+    soffs -= DotProduct(saxis, p);
+    toffs -= DotProduct(taxis, p);
+  }
+
+  const TVec hitPoint = trace.Start+trace.Delta*frac;
+
+  int texelT = (int)(DotProduct(hitPoint, taxis)+toffs)%thgt;
+  if (texelT < 0) texelT += thgt;
+
+  int texelS = (int)(DotProduct(hitPoint, saxis)+soffs)%twdt;
+  if (texelS < 0) texelS += twdt;
+
+  // i don't know why i shouldn't reverse Y here
+  auto pix = FTex->getPixel(texelS, texelT);
+  //GCon->Logf(NAME_Debug, "TEX %s: z=%g; ts=(%d,%d); a=%u", *MTex->Name, lend.z, texelS, texelT, pix.a);
+  return (pix.a < 169); // not blocked if the pixel is transparent enough
+}
+
+
+//==========================================================================
+//
+//  SightPlaneNeedCheck
+//
+//==========================================================================
+static inline bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
+  if (GTextureManager.IsSightBlocking(spl.splane->pic)) return false; // blocked
+  if (trace.lightCheck && trace.flatTextureCheck) {
+    if ((spl.splane->flags&SPF_ADDITIVE) || spl.splane->Alpha < 1.0f) return false; // cannot block
+  }
+  return true;
+}
+
+
 // helper: check plane hit time
 #define CheckPlaneHitInTime(pl_)  do { \
   const float ft = (pl_).IntersectionTime(p0, p1); \
@@ -161,17 +252,19 @@ static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const floa
 
   for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
-    if ((reg->efloor.splane->flags&sec_region_t::RF_SkipFloorSurf) == 0) {
+    if ((reg->regflags&sec_region_t::RF_SkipFloorSurf) == 0) {
       if ((reg->efloor.splane->flags&flagmask) == 0) {
-        if (!textureCheck || GTextureManager.IsSightBlocking(reg->efloor.splane->pic)) {
-          CheckPlaneHitInTime(reg->efloor);
+        if (SightPlaneNeedCheck(trace, reg->efloor)) {
+          const float ft = reg->efloor.IntersectionTime(p0, p1);
+          if (ft > frac0 && ft < frac1 && !SightPassRegionPlaneTexture(trace, reg, reg->efloor, ft)) return false;
         }
       }
     }
-    if ((reg->efloor.splane->flags&sec_region_t::RF_SkipCeilSurf) == 0) {
+    if ((reg->regflags&sec_region_t::RF_SkipCeilSurf) == 0) {
       if ((reg->eceiling.splane->flags&flagmask) == 0) {
-        if (!textureCheck || GTextureManager.IsSightBlocking(reg->eceiling.splane->pic)) {
-          CheckPlaneHitInTime(reg->eceiling);
+        if (SightPlaneNeedCheck(trace, reg->eceiling)) {
+          const float ft = reg->eceiling.IntersectionTime(p0, p1);
+          if (ft > frac0 && ft < frac1 && !SightPassRegionPlaneTexture(trace, reg, reg->eceiling, ft)) return false;
         }
       }
     }
