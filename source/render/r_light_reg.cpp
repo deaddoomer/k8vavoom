@@ -198,7 +198,7 @@ bool VRenderLevelLightmap::IsStaticLightmapTimeLimitExpired () {
 //  `p1` is light origin
 //
 //==========================================================================
-bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector, const TVec &p1, subsector_t *destsubsector, const TVec &p2, float squaredist, bool allowTextureCheck) {
+bool VRenderLevelLightmap::CastStaticRay (float *dist, const subsector_t *srcsubsector, const TVec &p1, const subsector_t *destsubsector, const TVec &p2, const float squaredist, const bool allowTextureCheck) {
   const TVec delta = p2-p1;
   const float t = DotProduct(delta, delta);
   if (t >= squaredist) {
@@ -206,10 +206,18 @@ bool VRenderLevelLightmap::CastStaticRay (float *dist, subsector_t *srcsubsector
     if (dist) *dist = 0.0f;
     return false;
   }
-  if (t <= 2.0f*2.0f) {
-    // at light point
-    if (dist) *dist = 1.0f;
-    return true;
+  if (allowTextureCheck) {
+    if (t <= 2.0f*2.0f) {
+      // at light point
+      if (dist) *dist = 1.0f;
+      return true;
+    }
+  } else {
+    if (t <= 0.0f) {
+      // at light point
+      if (dist) *dist = 1.0f;
+      return true;
+    }
   }
 
   if (!r_lmap_bsp_trace_static) {
@@ -379,8 +387,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
   lmi.didExtra = doExtra;
 
   bool dotrace = !lowres;
-  subsector_t *facesubsec = surf->subsector;
-  if (!facesubsec) dotrace = false;
+  if (!surf->subsector) dotrace = false; // just in case
   if (dotrace && !r_lmap_stfix_enabled) dotrace = false;
 
   lmi.numsurfpt = w*h;
@@ -398,9 +405,11 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
     // fill in surforg
     // the points are biased towards the center of the surface
     // to help avoid edge cases just inside walls
-    const float mids = surf->texturemins[0]+surf->extents[0]/2.0f;
-    const float midt = surf->texturemins[1]+surf->extents[1]/2.0f;
+    const float mids = surf->texturemins[0]+surf->extents[0]*0.5f;
+    const float midt = surf->texturemins[1]+surf->extents[1]*0.5f;
     const TVec facemid = lmi.texorg+lmi.textoworld[0]*mids+lmi.textoworld[1]*midt;
+    const float stfixStep = r_lmap_stfix_step.asFloat();
+    const subsector_t *facesubsec = Level->PointInSubsector(facemid);
 
     for (int t = 0; t < h; ++t) {
       for (int s = 0; s < w; ++s, ++spt) {
@@ -409,16 +418,14 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
         float ut = startt+t*step;
 
         // if a line can be traced from surf to facemid, the point is good
+        // k8: i don't really understand what this code is trying to do
         for (int i = 0; i < 6; ++i) {
           // calculate texture point
           *spt = lmi.calcTexPoint(us, ut);
-          //if (lowres) break;
-          //const TVec fmss = facemid-(*spt);
-          //if (length2DSquared(fmss) < 0.1f) break; // same point, got it
           //!if (Level->TraceLine(Trace, facemid, *spt, SPF_NOBLOCKSIGHT)) break; // got it
-          if (CastStaticRay(nullptr, facesubsec, facemid, facesubsec, *spt, 999999.0f, false)) { // do not check textures
+          if (CastStaticRay(nullptr, facesubsec, facemid, surf->subsector, *spt, 999999.0f, false)) { // do not check textures
             //found = true;
-            // move the point 1 unit above the surface
+            // move the point 1 unit above the surface (this seems to be done in `CalcFaceVectors()`)
             //const TVec pp = surf->plane.Project(*spt)+surf->plane.normal;
             //*spt = pp;
             break;
@@ -432,7 +439,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           }
 
           const TVec fms = facemid-(*spt);
-          *spt += r_lmap_stfix_step.asFloat()*Normalise(fms);
+          *spt += stfixStep*Normalise(fms);
         }
         // just in case
         /*
