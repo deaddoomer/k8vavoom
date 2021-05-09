@@ -140,6 +140,7 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
 
   foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING, ML_BLOCKEVERYTHING) {
     if (in.bIsAPlane) {
+      printdebug("skyplane!");
       tr.hit = in.hitpoint;
       tr.didhit = true;
       return false;
