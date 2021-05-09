@@ -146,7 +146,11 @@ public:
   virtual void RemoveStaticLightByOwner (vuint32 OwnerUId) = 0;
   virtual int GetNumberOfStaticLights () = 0;
 
-  virtual void InvalidateLMapsInSubsector (subsector_t *sub) = 0;
+  // for polyobjects
+  // called to invalidate polyobject containing subsector
+  virtual void InvalidateStaticLightmapsSubs (subsector_t *sub) = 0;
+  // only polyobject itself
+  virtual void InvalidatePObjLMaps (polyobj_t *po) = 0;
 
   virtual void ClearReferences () = 0;
 

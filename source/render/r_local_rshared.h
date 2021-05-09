@@ -438,8 +438,6 @@ public:
   inline bool IsShadowsEnabled () const noexcept { return (forceDisableShadows ? false : r_shadows.asBool()); }
 
 public:
-  virtual void InvalidateLMapsInSubsector (subsector_t *sub) override;
-
   virtual bool IsNodeRendered (const node_t *node) const noexcept override;
   virtual bool IsSubsectorRendered (const subsector_t *sub) const noexcept override;
 
@@ -1014,7 +1012,9 @@ protected:
 
   // called when some surface from the given subsector changed
   // invalidates lightmaps for all touching lights
-  virtual void InvalidateStaticLightmapsSubs (subsector_t *sub);
+  virtual void InvalidateStaticLightmapsSubs (subsector_t *sub) override;
+  // only polyobject itself
+  virtual void InvalidatePObjLMaps (polyobj_t *po) override;
 
   virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight);
 

@@ -146,12 +146,6 @@ protected:
   void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox);
   void InvalidateLightLMaps (const TVec &org, float radius);
 
-  void InvalidateAllSurfacesLMaps (surface_t *surf);
-  void InvalidateAllDrawsegLMaps (drawseg_t *dseg);
-
-public:
-  virtual void InvalidateLMapsInSubsector (subsector_t *sub) override;
-
 protected:
   void initLightChain ();
   void chainLightmap (surfcache_t *cache);
@@ -171,6 +165,12 @@ public:
   virtual surfcache_t *GetLightChainFirst (vuint32 bnum) override;
   virtual void NukeLightmapCache () override;
 
+  // called when some surface from the given subsector changed
+  // invalidates lightmaps for all touching lights
+  virtual void InvalidateStaticLightmapsSubs (subsector_t *sub) override;
+  // only polyobject itself
+  virtual void InvalidatePObjLMaps (polyobj_t *po) override;
+
 protected:
   // clears render queues
   virtual void ClearQueues () override;
@@ -178,10 +178,6 @@ protected:
   void InvalidateStaticLightmapsSurfaces (surface_t *surf);
   void InvalidateStaticLightmapsLine (drawseg_t *dseg);
   void InvalidateStaticLightmapsSubsector (subsector_t *sub);
-
-  // called when some surface from the given subsector changed
-  // invalidates lightmaps for all touching lights
-  virtual void InvalidateStaticLightmapsSubs (subsector_t *sub) override;
 
   virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight) override;
 

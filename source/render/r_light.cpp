@@ -1359,6 +1359,15 @@ void VRenderLevelShared::InvalidateStaticLightmapsSubs (subsector_t *sub) {
 
 //==========================================================================
 //
+//  VRenderLevelShared::InvalidatePObjLMaps
+//
+//==========================================================================
+void VRenderLevelShared::InvalidatePObjLMaps (polyobj_t *po) {
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::CalcEntityLight
 //
 //  `flags` is `VDrawer::ELFlag_XXX` set

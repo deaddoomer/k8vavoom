@@ -2363,15 +2363,6 @@ void VRenderLevelShared::setupCurrentLight (const TVec &LightPos, const float Ra
 }
 
 
-//==========================================================================
-//
-//  VRenderLevelShared::InvalidateLMapsInSubsector
-//
-//==========================================================================
-void VRenderLevelShared::InvalidateLMapsInSubsector (subsector_t *sub) {
-}
-
-
 #include "r_main_automap.cpp"
 
 
