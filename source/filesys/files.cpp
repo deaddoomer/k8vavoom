@@ -2696,6 +2696,7 @@ void FL_Init () {
     fsys_hasPwads = true;
   }
   FL_EndUserWads(); // stop marking
+
   fsys_skipSounds = false;
   fsys_skipSprites = false;
   fsys_skipDehacked = false;
@@ -2796,7 +2797,51 @@ void FL_Init () {
   CustomModeLoadPwads(CM_PRE_PWADS);
 
   // mount pwads (actually, add already mounted ones)
-  pwadsSaved.restore();
+  if (pwadsSaved.needReload()) {
+    GCon->Logf(NAME_Init, "some user archives had filters, reloading...");
+    pwadsSaved.unload();
+
+    // mount pwads
+    FL_StartUserWads(); // start marking
+    for (int pwidx = 0; pwidx < pwadList.length(); ++pwidx) {
+      PWadFile &pwf = pwadList[pwidx];
+      fsys_skipSounds = pwf.skipSounds;
+      fsys_skipSprites = pwf.skipSprites;
+      fsys_skipDehacked = pwf.skipDehacked;
+      //!int nextfid = W_NextMountFileId();
+
+      //GCon->Logf(NAME_Debug, "::: %d : <%s>", nextfid, *pwf.fname);
+      int currFCount = fsysSearchPaths.length();
+
+      auto mark = wpkMark(!pwf.storeInSave);
+
+      if (pwf.asDirectory) {
+        //if (pwf.storeInSave) wpkAppend(pwf.fname, false); // non-system pak
+        GCon->Logf(NAME_Init, "Mounting directory '%s' as emulated PK3 file.", *pwf.fname);
+        //AddPakDir(pwf.fname);
+        W_MountDiskDir(pwf.fname);
+      } else {
+        //if (pwf.storeInSave) wpkAppend(pwf.fname, false); // non-system pak
+        AddAnyFile(pwf.fname, true);
+      }
+
+      // ignore cosmetic pwads
+      if (!pwf.storeInSave) {
+        for (int f = currFCount; f < fsysSearchPaths.length(); ++f) fsysSearchPaths[f]->cosmetic = true;
+      }
+
+      wpkAddMarked(mark);
+
+      fsys_hasPwads = true;
+    }
+    FL_EndUserWads(); // stop marking
+
+    fsys_skipSounds = false;
+    fsys_skipSprites = false;
+    fsys_skipDehacked = false;
+  } else {
+    pwadsSaved.restore();
+  }
   for (auto &&it : wpklistSaved) wpklist.append(it);
 
   // load custom mode pwads
