@@ -77,9 +77,9 @@ struct SightTraceInfo {
   bool collectIntercepts; // set if we'll do "better sight" checks
   bool wasBlocked; // for `collectIntercepts`
   // the following are working vars, and should not be set
-  TVec Delta;
-  TPlane Plane;
   bool Hit1S; // `true` means "hit one-sided wall"
+  TVec Delta; // End-Start
+  TPlane Plane; // vertical plane for Start..End line
 
   inline SightTraceInfo () noexcept
     : LineBlockMask(0)
@@ -93,44 +93,39 @@ struct SightTraceInfo {
   {
   }
 
-  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) {
+  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) noexcept {
     Level = alevel;
     Start = org;
     End = dest;
+    #if 0
     // use buggy vanilla algo here, because this is what used for world linking
     StartSubSector = (sstart ?: alevel->PointInSubsector_Buggy(org));
     EndSubSector = (send ?: alevel->PointInSubsector_Buggy(dest));
+    #else
+    // nope, use correct code here
+    StartSubSector = (sstart ?: alevel->PointInSubsector(org));
+    EndSubSector = (send ?: alevel->PointInSubsector(dest));
+    #endif
   }
 };
 
 
+// helper: check plane hit time
+#define CheckPlaneHitInTime(pl_)  do { \
+  const float ft = (pl_).IntersectionTime(p0, p1); \
+  if (ft > frac0 && ft < frac1) return false; \
+} while (0)
+
+
 //==========================================================================
 //
-//  SightCheckPlanes
+//  SightPassPlanes
 //
 //  returns `true` if no hit was detected
 //
 //==========================================================================
-static inline bool CheckPlaneHitInTime (const TPlane &pl, const TVec &p0, const TVec &p1, const float frac0, const float frac1) noexcept {
-  const float ft = pl.IntersectionTime(p0, p1);
-  return (ft > frac0 && ft < frac1);
-}
-
-
-static inline bool CheckPlaneHitInTime (const TSecPlaneRef &pl, const TVec &p0, const TVec &p1, const float frac0, const float frac1) noexcept {
-  const float ft = pl.IntersectionTime(p0, p1);
-  return (ft > frac0 && ft < frac1);
-}
-
-
-//==========================================================================
-//
-//  SightCheckPlanes
-//
-//  returns `true` if no hit was detected
-//
-//==========================================================================
-static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector, const float frac0, const float frac1) {
+static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const float frac0, const float frac1) {
+  // sanity checks, just in case
   if (!sector || sector->isAnyPObj()) return true;
   if (frac0 >= frac1) return true;
 
@@ -150,33 +145,33 @@ static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector, const flo
     sector_t *hs = sector->heightsec;
     if (hs) {
       if (!textureCheck || GTextureManager.IsSightBlocking(hs->floor.pic)) {
-        if (CheckPlaneHitInTime(hs->floor, p0, p1, frac0, frac1)) return false;
+        CheckPlaneHitInTime(hs->floor);
       }
       if (!textureCheck || GTextureManager.IsSightBlocking(hs->ceiling.pic)) {
-        if (CheckPlaneHitInTime(hs->ceiling, p0, p1, frac0, frac1)) return false;
+        CheckPlaneHitInTime(hs->ceiling);
       }
     }
   }
 
   if (checkSectorBounds) {
     // check base sector planes
-    if (CheckPlaneHitInTime(sector->floor, p0, p1, frac0, frac1)) return false;
-    if (CheckPlaneHitInTime(sector->ceiling, p0, p1, frac0, frac1)) return false;
+    CheckPlaneHitInTime(sector->floor);
+    CheckPlaneHitInTime(sector->ceiling);
   }
 
-  for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+  for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
     if ((reg->efloor.splane->flags&sec_region_t::RF_SkipFloorSurf) == 0) {
       if ((reg->efloor.splane->flags&flagmask) == 0) {
         if (!textureCheck || GTextureManager.IsSightBlocking(reg->efloor.splane->pic)) {
-          if (CheckPlaneHitInTime(reg->efloor, p0, p1, frac0, frac1)) return false;
+          CheckPlaneHitInTime(reg->efloor);
         }
       }
     }
     if ((reg->efloor.splane->flags&sec_region_t::RF_SkipCeilSurf) == 0) {
       if ((reg->eceiling.splane->flags&flagmask) == 0) {
         if (!textureCheck || GTextureManager.IsSightBlocking(reg->eceiling.splane->pic)) {
-          if (CheckPlaneHitInTime(reg->eceiling, p0, p1, frac0, frac1)) return false;
+          CheckPlaneHitInTime(reg->eceiling);
         }
       }
     }
@@ -185,14 +180,18 @@ static bool SightCheckPlanes (SightTraceInfo &trace, sector_t *sector, const flo
   return true;
 }
 
+#undef CheckPlaneHitInTime
+
 
 //==========================================================================
 //
-//  SightCheckRegions
+//  SightPassRegions
+//
+//  returns `true` if no hit was detected
 //
 //==========================================================================
-static bool SightCheckRegions (const sector_t *sec, const TVec point, const unsigned flagmask) {
-  for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
+static bool SightPassRegions (const sector_t *sec, const TVec point, const unsigned flagmask) {
+  for (const sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
     if (((reg->efloor.splane->flags|reg->eceiling.splane->flags)&flagmask) != 0) continue; // bad flags
     // get opening points
@@ -213,6 +212,8 @@ static bool SightCheckRegions (const sector_t *sec, const TVec point, const unsi
 //  ignore 3d midtex here (for now)
 //
 //  3d pobj lines will never come here
+//
+//  returns `true` if no hit was detected
 //
 //==========================================================================
 static bool SightCanPassOpening (const line_t *linedef, const TVec point, const int side, const unsigned flagmask) {
@@ -245,9 +246,9 @@ static bool SightCanPassOpening (const line_t *linedef, const TVec point, const 
   // has 3d floors at least on one side, do full-featured search
 
   // front sector
-  if (!SightCheckRegions(fsec, point, flagmask)) return false;
+  if (!SightPassRegions(fsec, point, flagmask)) return false;
   // back sector
-  if (!SightCheckRegions(bsec, point, flagmask)) return false;
+  if (!SightPassRegions(bsec, point, flagmask)) return false;
 
   // done
   return true;
@@ -256,14 +257,14 @@ static bool SightCanPassOpening (const line_t *linedef, const TVec point, const 
 
 //==========================================================================
 //
-//  SightCheck2SLinePass
-//
-//  returns `false` if blocked
+//  SightPass2SLine
 //
 //  `iidx` is index in interceptions array
 //
+//  returns `true` if no hit was detected
+//
 //==========================================================================
-static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t *line, const int side, const float frac) {
+static bool SightPass2SLine (SightTraceInfo &trace, int iidx, const line_t *line, const int side, const float frac) {
   // check for 3d pobj
   polyobj_t *po = line->pobj();
 
@@ -461,37 +462,39 @@ static bool SightCheck2SLinePass (SightTraceInfo &trace, int iidx, const line_t 
 
 //==========================================================================
 //
-//  SightCheckSectorPlanesPass
-//
-//  returns `false` if blocked
+//  SightPassSectorPlanes
 //
 //  `iidx` is index in interceptions array
 //
+//  returns `true` if no hit was detected
+//
 //==========================================================================
-static bool SightCheckSectorPlanesPass (SightTraceInfo &trace, int iidx, const line_t *line, const int side, const float prevfrac, const float frac) {
+static bool SightPassSectorPlanes (SightTraceInfo &trace, int iidx, const line_t *line, const int side, const float prevfrac, const float frac) {
   if ((line->flags&ML_TWOSIDED) == 0 || !line->frontsector || !line->backsector) return false; // stop
-  // polyobjects correctly processed in `SightCheck2SLinePass()`
+  // polyobjects correctly processed in `SightPass2SLine()`
   // their sectors are not "valid" for checker, so don't check sector planes
   if (!line->pobj()) {
     sector_t *fsec = (side ? line->backsector : line->frontsector);
-    if (!SightCheckPlanes(trace, fsec, prevfrac, frac)) return false;
+    if (!SightPassPlanes(trace, fsec, prevfrac, frac)) return false;
   }
-  if (!SightCheck2SLinePass(trace, iidx, line, side, frac)) return false;
+  if (!SightPass2SLine(trace, iidx, line, side, frac)) return false;
   return true;
 }
 
 
 //==========================================================================
 //
-//  SightCheckLine
+//  SightPassLine
 //
 //  return `true` if line is not crossed or put into intercept list
 //  return `false` to stop checking due to blocking
 //
 //  `trace.Delta` must be correct
 //
+//  may set `trace.Hit1S`
+//
 //==========================================================================
-static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
+static bool SightPassLine (SightTraceInfo &trace, line_t *ld) {
   if (ld->validcount == validcount) return true;
 
   ld->validcount = validcount;
@@ -586,14 +589,15 @@ static bool SightCheckLine (SightTraceInfo &trace, line_t *ld) {
 
 //==========================================================================
 //
-//  SightBlockLinesIterator
-//
-//  returns `false` if blocked
+//  SightPassBlockLines
 //
 //  `trace.Delta` must be correct
 //
+//  returns `true` if no hit was detected
+//  may set `trace.Hit1S`
+//
 //==========================================================================
-static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
+static bool SightPassBlockLines (SightTraceInfo &trace, int x, int y) {
   // it should never happen, but...
   //if (x < 0 || y < 0 || x >= trace.Level->BlockMapWidth || y >= trace.Level->BlockMapHeight) return false;
 
@@ -606,14 +610,14 @@ static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
       for (auto &&sit : pobj->LineFirst()) {
         line_t *ld = sit.line();
         if (ld->validcount != validcount) {
-          if (!SightCheckLine(trace, ld)) return false;
+          if (!SightPassLine(trace, ld)) return false;
         }
       }
     }
   }
 
   for (const vint32 *list = trace.Level->BlockMapLump+(*(trace.Level->BlockMap+offset))+1; *list != -1; ++list) {
-    if (!SightCheckLine(trace, &trace.Level->Lines[*list])) return false;
+    if (!SightPassLine(trace, &trace.Level->Lines[*list])) return false;
   }
 
   return true; // everything was checked
@@ -622,32 +626,32 @@ static bool SightBlockLinesIterator (SightTraceInfo &trace, int x, int y) {
 
 //==========================================================================
 //
-//  SightTraverseIntercepts
-//
-//  Returns true if the traverser function returns true for all lines
+//  SightPassIntercepts
 //
 //  `trace.Delta` must be correct
 //
+//  returns `true` if no hit was detected
+//
 //==========================================================================
-static bool SightTraverseIntercepts (SightTraceInfo &trace) {
+static bool SightPassIntercepts (SightTraceInfo &trace) {
   float prevfrac = 0.0f;
   if (!intercepts.isEmpty()) {
     // go through in order
     const intercept_t *scan = intercepts.list;
     int iidx = 0;
     for (unsigned i = intercepts.count(); i--; ++scan, ++iidx) {
-      if (!SightCheckSectorPlanesPass(trace, iidx, scan->line, scan->side, prevfrac, scan->frac)) return false; // don't bother going further
+      if (!SightPassSectorPlanes(trace, iidx, scan->line, scan->side, prevfrac, scan->frac)) return false; // don't bother going further
       // ignore polyobject lines
       if (!scan->line->pobj()) prevfrac = scan->frac;
     }
   }
-  return SightCheckPlanes(trace, trace.EndSubSector->sector, prevfrac, 1.0f);
+  return SightPassPlanes(trace, trace.EndSubSector->sector, prevfrac, 1.0f);
 }
 
 
 //==========================================================================
 //
-//  SightCheckStartingPObj
+//  SightPassStartingPObj
 //
 //  check if starting point is inside any 3d pobj
 //  we have to do this to check pobj planes first
@@ -656,16 +660,13 @@ static bool SightTraverseIntercepts (SightTraceInfo &trace) {
 //  returns `false` if blocked
 //
 //==========================================================================
-static bool SightCheckStartingPObj (SightTraceInfo &trace) {
+static bool SightPassStartingPObj (SightTraceInfo &trace) {
   // check if both start point and end point are in the same 3d pobj
   if (!trace.Level->Has3DPolyObjects()) return true;
 
   const TVec p0 = trace.Start;
   const TVec p1 = trace.End;
 
-  #if 0
-  return (trace.Level->CheckPObjPlanesPoint(p0, p1, trace.StartSubSector) < 0.0f);
-  #else
   for (auto &&it : trace.StartSubSector->PObjFirst()) {
     polyobj_t *po = it.pobj();
     if (!po->Is3D()) continue;
@@ -673,9 +674,10 @@ static bool SightCheckStartingPObj (SightTraceInfo &trace) {
     if (!IsPointInside2DBBox(p0.x, p0.y, po->bbox2d)) continue;
     if (!IsPointInside2DBBox(p1.x, p1.y, po->bbox2d)) continue;
 
+    // check planes first, because it is usually faster than "point in sector" check
     TVec hp;
     const float frc = VLevel::CheckPObjPassPlanes(po, p0, p1, &hp, nullptr, nullptr);
-    if (frc < 0.0f || frc > 1.0) continue;
+    if (frc <= 0.0f || frc >= 1.0f) continue;
 
     // check if starting point is inside this pobj
     if (!trace.Level->IsPointInsideSector2D(po->GetSector(), p0.x, p0.y)) continue;
@@ -692,23 +694,23 @@ static bool SightCheckStartingPObj (SightTraceInfo &trace) {
   //GCon->Logf(NAME_Debug, "*** NO POBJ HIT!");
   // no starting hit
   return true;
-  #endif
 }
 
 
 //==========================================================================
 //
-//  SightPathTraverse
+//  SightPassPath
 //
 //  traces a sight ray from `trace.Start` to `trace.End`, possibly
 //  collecting intercepts
 //
 //  `trace.StartSubSector` and `trace.EndSubSector` must be set
 //
-//  returns `true` if no obstacle was hit
+//  returns `true` if no hit was detected
+//  may set `trace.Hit1S`
 //
 //==========================================================================
-static bool SightPathTraverse (SightTraceInfo &trace) {
+static bool SightPassPath (SightTraceInfo &trace) {
   VBlockMapWalker walker;
 
   intercepts.reset();
@@ -727,14 +729,14 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
       trace.Delta.z = 0.0f;
       return false;
     }
-    if (!SightCheckStartingPObj(trace) || !SightCheckPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) {
+    if (!SightPassStartingPObj(trace) || !SightPassPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) {
       trace.Hit1S = true; // block further height checks
       return false;
     }
     return true;
   }
 
-  if (!SightCheckStartingPObj(trace)) {
+  if (!SightPassStartingPObj(trace)) {
     trace.Hit1S = true; // block further height checks
     return false;
   }
@@ -744,11 +746,11 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
     trace.Level->IncrementValidCount();
     int mapx, mapy;
     while (walker.next(mapx, mapy)) {
-      if (!SightBlockLinesIterator(trace, mapx, mapy)) return false;
+      if (!SightPassBlockLines(trace, mapx, mapy)) return false;
     }
     if (trace.wasBlocked) return false;
     // couldn't early out, so go through the sorted list
-    return SightTraverseIntercepts(trace);
+    return SightPassIntercepts(trace);
   }
 
   // out of map, see nothing
@@ -758,12 +760,14 @@ static bool SightPathTraverse (SightTraceInfo &trace) {
 
 //==========================================================================
 //
-//  SightPathTraverse2
+//  SightPassCollectedPath
 //
 //  rechecks intercepts with different ending z value
 //
+//  returns `true` if no hit was detected
+//
 //==========================================================================
-static bool SightPathTraverse2 (SightTraceInfo &trace) {
+static bool SightPassCollectedPath (SightTraceInfo &trace) {
   // do not check for 3d pobj here (it is not fully right, but meh)
   trace.Delta = trace.End-trace.Start;
   if (fabsf(trace.Delta.x) <= 1.0f && fabsf(trace.Delta.y) <= 1.0f) {
@@ -775,19 +779,19 @@ static bool SightPathTraverse2 (SightTraceInfo &trace) {
       trace.Delta.z = 0.0f;
       return false;
     }
-    if (!SightCheckStartingPObj(trace) || !SightCheckPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) {
+    if (!SightPassStartingPObj(trace) || !SightPassPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) {
       trace.Hit1S = true; // block further height checks
       return false;
     }
     return true;
   }
 
-  if (!SightCheckStartingPObj(trace)) {
+  if (!SightPassStartingPObj(trace)) {
     trace.Hit1S = true; // block further height checks
     return false;
   }
 
-  return SightTraverseIntercepts(trace);
+  return SightPassIntercepts(trace);
 }
 
 
@@ -818,6 +822,8 @@ static VVA_CHECKRESULT inline bool isNotInsideBM (const TVec &pos, const VLevel 
 //  doesn't check pvs or reject
 //  if better sight is allowed, `orgdirRight` and `orgdirFwd` MUST be valid!
 //
+//  returns `true` if no hit was detected
+//
 //==========================================================================
 bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
                          const TVec &dest, float radius, float height, bool skipBaseRegion, const subsector_t *DestSubSector,
@@ -841,8 +847,6 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
   SightTraceInfo trace;
   trace.setup(this, org, dest, SubSector, DestSubSector);
 
-  if (trace.StartSubSector == trace.EndSubSector) return true; // same subsector, definitely visible
-
   trace.PlaneNoBlockFlags =
     SPF_NOBLOCKSIGHT|
     (ignoreFakeFloors ? SPF_IGNORE_FAKE_FLOORS : 0u)|
@@ -853,7 +857,15 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
     (ignoreBlockAll ? 0 : ML_BLOCKEVERYTHING)|
     (trace.PlaneNoBlockFlags&SPF_NOBLOCKSHOOT ? ML_BLOCKHITSCAN : 0u);
 
-  //allowBetterSight = false;
+  if (trace.StartSubSector == trace.EndSubSector) {
+    // same subsector, still may need to check 3d pobj/3d floors
+    if (org.z-dest.z != 0.0f) {
+      // vertical check
+      if (!SightPassStartingPObj(trace)) return false; // oops
+      if (!SightPassPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) return false;
+    }
+    return true; // not blocked
+  }
 
   if (!allowBetterSight || radius < 4.0f || height < 4.0f || myheight < 4.0f) {
     const TVec lookOrigin = org+TVec(0, 0, myheight*0.75f); // look from the eyes (roughly)
@@ -862,12 +874,12 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
     trace.End.z += height*0.85f; // roughly at the head
     const bool collectIntercepts = (height < 4.0f || trace.Delta.length2DSquared() <= 820.0f*820.0f); // arbitrary number
     trace.collectIntercepts = collectIntercepts;
-    if (SightPathTraverse(trace)) return true;
+    if (SightPassPath(trace)) return true;
     if (trace.Hit1S || !collectIntercepts) return false; // hit one-sided wall, or too far, no need to do other checks
     // another fast check
     trace.End = dest;
     trace.End.z += height*0.5f;
-    return SightPathTraverse2(trace);
+    return SightPassCollectedPath(trace);
   } else {
     const TVec lookOrigin = org+TVec(0, 0, myheight*0.86f); // look from the eyes (roughly)
     const float sidemult[3] = { 0.0f, -0.8f, 0.8f }; // side shift multiplier (by radius)
@@ -883,13 +895,13 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
 
       // check middle
       trace.End.z += height*0.5f;
-      if (SightPathTraverse(trace)) return true;
+      if (SightPassPath(trace)) return true;
       if (trace.Hit1S || intercepts.isEmpty() == 0) continue;
 
       // check eyes (roughly)
       trace.End = dest;
       trace.End.z += height*ithmult;
-      if (SightPathTraverse2(trace)) return true;
+      if (SightPassCollectedPath(trace)) return true;
     }
   }
 
@@ -904,6 +916,8 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
 //  doesn't check pvs or reject
 //
 //  usually, `dest` is light origin
+//
+//  returns `true` if no hit was detected
 //
 //==========================================================================
 bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector, const TVec &org, const TVec &dest, const subsector_t *endSubSector) {
@@ -920,9 +934,17 @@ bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector,
   trace.flatTextureCheck = true;
   trace.wallTextureCheck = true;
 
-  if (trace.StartSubSector == trace.EndSubSector) return true; // same subsector, definitely visible
+  if (trace.StartSubSector == trace.EndSubSector) {
+    // same subsector, still may need to check 3d pobj/3d floors
+    if (org.z-dest.z != 0.0f) {
+      // vertical check
+      if (!SightPassStartingPObj(trace)) return false; // oops
+      if (!SightPassPlanes(trace, trace.StartSubSector->sector, 0.0f, 1.0f)) return false;
+    }
+    return true; // not blocked
+  }
 
-  return SightPathTraverse(trace);
+  return SightPassPath(trace);
 }
 
 
