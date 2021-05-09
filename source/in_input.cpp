@@ -35,6 +35,7 @@
 
 
 static VCvarB allow_vanilla_cheats("allow_vanilla_cheats", true, "Allow vanilla keyboard cheat codes?", CVAR_Archive);
+static VCvarB mn_eat_all_buttons("mn_eat_all_buttons", true, "Should active menu eat all buttons?", CVAR_Archive);
 
 extern void UnpressAllButtons ();
 
@@ -659,8 +660,8 @@ void VInput::ProcessEvents () {
     //k8: this hack prevents "keyup" to be propagated when console is active
     //    this should be in console responder, but...
     //if (C_Active() && (ev.type == ev_keydown || ev.type == ev_keyup)) continue;
-    // actually, when console is active, it eats everything
-    if (initNetClient || C_Active()) continue;
+    // actually, when console (or menu) is active, it eats everything
+    if (initNetClient || C_Active() || (mn_eat_all_buttons.asBool() && MN_Active())) continue;
 
     // do not process bindings if the event is eaten
     if (ev.isEatenOrCancelled()) continue;
