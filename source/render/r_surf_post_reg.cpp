@@ -289,21 +289,18 @@ static surface_t *RemoveCentroids (surface_t *surf) {
 //  in renderer (which can cause t-junctions)
 //
 //==========================================================================
-static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf, bool asFlat) {
+static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf) {
   surface_t *prev = nullptr;
   for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
     if (ss->count > 4 && !ss->isCentroidCreated()) {
       // make room
       ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
       // add insert centroid
-      if (asFlat) ss->AddCentroidFlat(); else ss->AddCentroidWall();
+      ss->AddCentroid();
     }
   }
   return surf;
 }
-
-static inline surface_t *RecreateFlatCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, true); }
-static inline surface_t *RecreateWallCentroids (VRenderLevelShared *RLev, surface_t *surf) { return RecreateCentroids(RLev, surf, false); }
 
 
 //==========================================================================
@@ -826,7 +823,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateFlatCentroids(this, surf);
+  surf = RecreateCentroids(this, surf);
 
   if (!lastRenderQuality) return surf; // no "quality fixes" required
 
@@ -977,7 +974,7 @@ surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis
   surf = SubdivideSegInternal(surf, axis, nextaxis, seg);
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateWallCentroids(this, surf);
+  surf = RecreateCentroids(this, surf);
   return surf;
 }
 
@@ -1129,7 +1126,7 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateWallCentroids(this, surf);
+  surf = RecreateCentroids(this, surf);
 
   return surf;
 }

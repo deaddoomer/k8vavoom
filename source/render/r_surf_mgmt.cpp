@@ -27,6 +27,281 @@
 #include "r_local.h"
 
 //#define VV_ENSURE_POINTS_DEBUG
+#define VV_USE_PROPER_CENTROID
+
+
+//==========================================================================
+//
+//  surface_t::FreeLightmaps
+//
+//==========================================================================
+void surface_t::FreeLightmaps () noexcept {
+  if (lightmap) {
+    light_mem -= lmsize;
+    Z_Free(lightmap);
+    lightmap = nullptr;
+    lmsize = 0;
+  }
+  if (lightmap_rgb) {
+    light_mem -= lmrgbsize;
+    Z_Free(lightmap_rgb);
+    lightmap_rgb = nullptr;
+    lmrgbsize = 0;
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::FreeRGBLightmap
+//
+//==========================================================================
+void surface_t::FreeRGBLightmap () noexcept {
+  if (lightmap_rgb) {
+    light_mem -= lmrgbsize;
+    Z_Free(lightmap_rgb);
+    lightmap_rgb = nullptr;
+    lmrgbsize = 0;
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::ReserveMonoLightmap
+//
+//==========================================================================
+void surface_t::ReserveMonoLightmap (int sz) noexcept {
+  vassert(sz > 0);
+  if (lmsize < sz) {
+    light_mem -= lmsize;
+    light_mem += sz;
+    lightmap = (vuint8 *)Z_Realloc(lightmap, sz);
+    lmsize = sz;
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::ReserveRGBLightmap
+//
+//==========================================================================
+void surface_t::ReserveRGBLightmap (int sz) noexcept {
+  vassert(sz > 0);
+  if (lmrgbsize < sz) {
+    light_mem -= lmrgbsize;
+    light_mem += sz;
+    lmrgbsize = sz;
+    lightmap_rgb = (rgb_t *)Z_Realloc(lightmap_rgb, sz);
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::CalculateFastCentroid
+//
+//==========================================================================
+TVec surface_t::CalculateFastCentroid () const noexcept {
+  TVec cp(0.0f, 0.0f, 0.0f);
+  if (count > 0) {
+    const SurfVertex *sf = &verts[0];
+    if (plane.normal.z != 0.0f) {
+      // flat
+      for (int f = count; f--; ++sf) {
+        cp.x += sf->x;
+        cp.y += sf->y;
+      }
+      cp.x /= (float)count;
+      cp.y /= (float)count;
+      cp.z = plane.GetPointZ(cp);
+    } else {
+      // wall
+      for (int f = count; f--; ++sf) {
+        cp.x += sf->x;
+        cp.y += sf->y;
+        cp.z += sf->z;
+      }
+      cp.x /= (float)count;
+      cp.y /= (float)count;
+      cp.z /= (float)count;
+      // just in case, project it on the plane
+      if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
+    }
+  }
+  return cp;
+}
+
+
+//==========================================================================
+//
+//  surface_t::CalculateRealCentroid
+//
+//  surfaces can contain split points on the same line
+//  if i'll simply sum all vertices, our center could be not right
+//  so i will use only "turning points" (as it should be)
+//
+//==========================================================================
+TVec surface_t::CalculateRealCentroid () const noexcept {
+  // surfaces with 3 vertices are usually proper triangles,
+  // don't bother with complex calculations in this case
+  if (count <= 3) return CalculateFastCentroid();
+  TVec cp(0.0f, 0.0f, 0.0f); // accumulator, and final result
+  TVec pdir(0.0f, 0.0f, 0.0f); // last direction
+  const SurfVertex *sf = &verts[0];
+  TVec lastv1(sf->x, sf->y, sf->z);
+  ++sf;
+  TVec prevpt(lastv1); // previous vertex
+  int ccnt = 0;
+  for (int f = count+1; f--; ++sf) {
+    const TVec cv = sf->vec();
+    if (!ccnt) {
+      // first one
+      pdir = cv-lastv1;
+      if (pdir.lengthSquared() >= 0.2f*0.2f) {
+        pdir = pdir.normalised();
+        cp += lastv1;
+        ccnt = 1;
+      }
+    } else {
+      // are we making a turn here?
+      TVec xdir = cv-lastv1;
+      if (xdir.lengthSquared() >= 0.2f*0.2f) {
+        xdir = xdir.normalised();
+        if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
+          // looks like we did made a turn
+          // we have a new point
+          // remember it
+          lastv1 = prevpt;
+          // add it to the sum
+          cp += lastv1;
+          ++ccnt;
+          // and remember new direction
+          pdir = (cv-lastv1).normalised();
+        }
+      }
+    }
+    prevpt = cv;
+  }
+  // if we have less than three points, something's gone wrong...
+  if (ccnt < 3) return CalculateFastCentroid();
+  cp = cp/(float)ccnt;
+  if (plane.normal.z != 0.0f) {
+    cp.z = plane.GetPointZ(cp);
+  } else {
+    // just in case, project it on the plane
+    if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
+  }
+  return cp;
+}
+
+
+//==========================================================================
+//
+//  surface_t::AddCentroid
+//
+//  there should be enough room for two new points
+//
+//==========================================================================
+void surface_t::AddCentroid () noexcept {
+  vassert(!isCentroidCreated());
+  if (count >= 3) {
+    #ifdef VV_USE_PROPER_CENTROID
+    TVec cp(CalculateRealCentroid());
+    #else
+    TVec cp(CalculateFastCentroid());
+    #endif
+    InsertVertexAt(0, cp, nullptr, nullptr);
+    setCentroidCreated();
+    // and re-add the previous first point as the final one
+    // (so the final triangle will be rendered too)
+    // this is not required for quad, but required for "real" triangle fan
+    // need to copy the point first, because we're passing a reference to it
+    cp = verts[1].vec();
+    InsertVertexAt(count, cp, nullptr, nullptr);
+    vassert(verts[1].vec() == verts[count-1].vec());
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::InsertVertexAt
+//
+//  there should be enough room for vertex
+//
+//==========================================================================
+void surface_t::InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept {
+  vassert(idx >= 0 && idx <= count);
+  if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
+  ++count;
+  SurfVertex *dv = &verts[idx];
+  memset((void *)dv, 0, sizeof(*dv)); // just in case
+  dv->x = p.x;
+  dv->y = p.y;
+  dv->z = p.z;
+  dv->ownerssf = ownssf;
+  dv->ownerseg = ownseg;
+}
+
+
+//==========================================================================
+//
+//  surface_t::RemoveVertexAt
+//
+//==========================================================================
+void surface_t::RemoveVertexAt (int idx) noexcept {
+  vassert(idx >= 0 && idx < count);
+  if (idx < count-1) memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
+  --count;
+}
+
+
+//==========================================================================
+//
+//  surface_t::RemoveCentroid
+//
+//==========================================================================
+void surface_t::RemoveCentroid () noexcept {
+  if (isCentroidCreated()) {
+    vassert(count > 3);
+    vassert(verts[1].vec() == verts[count-1].vec());
+    resetCentroidCreated();
+    // `-2`, because we don't need the last point
+    memmove((void *)&verts[0], (void *)&verts[1], (count-2)*sizeof(verts[0]));
+    count -= 2;
+  }
+}
+
+
+//==========================================================================
+//
+//  surface_t::RemoveSsfOwnVertices
+//
+//  remove all vertices with this owning subsector
+//
+//==========================================================================
+void surface_t::RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept {
+  if (!ssf) return;
+  int idx = 0;
+  while (idx < count) if (verts[idx].ownerssf == ssf) RemoveVertexAt(idx); else ++idx;
+}
+
+
+//==========================================================================
+//
+//  surface_t::RemoveSegOwnVertices
+//
+//  remove all vertices with this owning seg
+//
+//==========================================================================
+void surface_t::RemoveSegOwnVertices (const seg_t *seg) noexcept {
+  if (!seg) return;
+  int idx = 0;
+  while (idx < count) if (verts[idx].ownerseg == seg) RemoveVertexAt(idx); else ++idx;
+}
+
 
 
 //**************************************************************************

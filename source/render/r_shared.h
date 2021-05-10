@@ -246,110 +246,19 @@ struct surface_t {
 
 
   // there should be enough room for vertex
-  inline void InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept {
-    vassert(idx >= 0 && idx <= count);
-    if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
-    ++count;
-    SurfVertex *dv = &verts[idx];
-    memset((void *)dv, 0, sizeof(*dv)); // just in case
-    dv->x = p.x;
-    dv->y = p.y;
-    dv->z = p.z;
-    dv->ownerssf = ownssf;
-    dv->ownerseg = ownseg;
-  }
+  void InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept;
+  void RemoveVertexAt (int idx) noexcept;
 
-  inline void RemoveVertexAt (int idx) noexcept {
-    vassert(idx >= 0 && idx < count);
-    if (idx < count-1) memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
-    --count;
-  }
-
-  void RemoveCentroid () noexcept {
-    if (isCentroidCreated()) {
-      vassert(count > 3);
-      vassert(verts[1].vec() == verts[count-1].vec());
-      resetCentroidCreated();
-      // `-2`, because we don't need the last point
-      memmove((void *)&verts[0], (void *)&verts[1], (count-2)*sizeof(verts[0]));
-      count -= 2;
-    }
-  }
+  void RemoveCentroid () noexcept;
 
   // there should be enough room for two new points
-  // works only for floor and ceiling surfaces
-  void AddCentroidFlat () noexcept {
-    vassert(plane.normal.z != 0.0f);
-    vassert(!isCentroidCreated());
-    if (count >= 3) {
-      TVec cp(0.0f, 0.0f, 0.0f);
-      const SurfVertex *sf = &verts[0];
-      for (int f = count; f--; ++sf) {
-        cp.x += sf->x;
-        cp.y += sf->y;
-      }
-      cp.x /= (float)count;
-      cp.y /= (float)count;
-      cp.z = plane.GetPointZ(cp);
-      InsertVertexAt(0, cp, nullptr, nullptr);
-      setCentroidCreated();
-      // and re-add the previous first point as the final one
-      // (so the final triangle will be rendered too)
-      // this is not required for quad, but required for "real" triangle fan
-      // need to copy the point first, because we're passing a reference to it
-      cp = verts[1].vec();
-      InsertVertexAt(count, cp, nullptr, nullptr);
-      vassert(verts[1].vec() == verts[count-1].vec());
-    }
-  }
-
-  // there should be enough room for two new points
-  // works only for all (strictly vertical) surfaces
-  void AddCentroidWall () noexcept {
-    vassert(plane.normal.z == 0.0f);
-    vassert(!isCentroidCreated());
-    if (count >= 3) {
-      TVec cp(0.0f, 0.0f, 0.0f);
-      const SurfVertex *sf = &verts[0];
-      for (int f = count; f--; ++sf) {
-        cp.x += sf->x;
-        cp.y += sf->y;
-        cp.z += sf->z;
-      }
-      cp.x /= (float)count;
-      cp.y /= (float)count;
-      cp.z /= (float)count;
-      // just in case, project it on the plane
-      if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
-      InsertVertexAt(0, cp, nullptr, nullptr);
-      setCentroidCreated();
-      // and re-add the previous first point as the final one
-      // (so the final triangle will be rendered too)
-      // this is not required for quad, but required for "real" triangle fan
-      // need to copy the point first, because we're passing a reference to it
-      cp = verts[1].vec();
-      InsertVertexAt(count, cp, nullptr, nullptr);
-      vassert(verts[1].vec() == verts[count-1].vec());
-    }
-  }
-
-  inline void AddCentroid () noexcept {
-    if (plane.normal.z == 0.0f) return AddCentroidWall(); else return AddCentroidFlat();
-  }
+  void AddCentroid () noexcept;
 
   // remove all vertices with this owning subsector
-  void RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept {
-    if (!ssf) return;
-    int idx = 0;
-    while (idx < count) if (verts[idx].ownerssf == ssf) RemoveVertexAt(idx); else ++idx;
-  }
+  void RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept;
 
-  // remove all vertices with this owning subsector
-  void RemoveSegOwnVertices (const seg_t *seg) noexcept {
-    if (!seg) return;
-    int idx = 0;
-    while (idx < count) if (verts[idx].ownerseg == seg) RemoveVertexAt(idx); else ++idx;
-  }
+  // remove all vertices with this owning seg
+  void RemoveSegOwnVertices (const seg_t *seg) noexcept;
 
 
   inline bool NeedRecalcStaticLightmap () const noexcept { return (drawflags&DF_CALC_LMAP); }
@@ -385,49 +294,17 @@ struct surface_t {
 
   inline void GetPlane (TPlane *p) const noexcept { *p = plane; }
 
-  inline void FreeLightmaps () noexcept {
-    if (lightmap) {
-      light_mem -= lmsize;
-      Z_Free(lightmap);
-      lightmap = nullptr;
-      lmsize = 0;
-    }
-    if (lightmap_rgb) {
-      light_mem -= lmrgbsize;
-      Z_Free(lightmap_rgb);
-      lightmap_rgb = nullptr;
-      lmrgbsize = 0;
-    }
-  }
+  void FreeLightmaps () noexcept;
+  void FreeRGBLightmap () noexcept;
 
-  inline void FreeRGBLightmap () noexcept {
-    if (lightmap_rgb) {
-      light_mem -= lmrgbsize;
-      Z_Free(lightmap_rgb);
-      lightmap_rgb = nullptr;
-      lmrgbsize = 0;
-    }
-  }
+  void ReserveMonoLightmap (int sz) noexcept;
+  void ReserveRGBLightmap (int sz) noexcept;
 
-  inline void ReserveMonoLightmap (int sz) noexcept {
-    vassert(sz > 0);
-    if (lmsize < sz) {
-      light_mem -= lmsize;
-      light_mem += sz;
-      lightmap = (vuint8 *)Z_Realloc(lightmap, sz);
-      lmsize = sz;
-    }
-  }
+private:
+  // calculated centroid may be wrong for invalid surfaces
 
-  inline void ReserveRGBLightmap (int sz) noexcept {
-    vassert(sz > 0);
-    if (lmrgbsize < sz) {
-      light_mem -= lmrgbsize;
-      light_mem += sz;
-      lmrgbsize = sz;
-      lightmap_rgb = (rgb_t *)Z_Realloc(lightmap_rgb, sz);
-    }
-  }
+  TVec CalculateFastCentroid () const noexcept;
+  TVec CalculateRealCentroid () const noexcept;
 };
 static_assert(sizeof(unsigned) >= 4, "struct surface_t expects `unsigned` of at least 4 bytes");
 

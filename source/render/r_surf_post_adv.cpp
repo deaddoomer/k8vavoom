@@ -66,7 +66,7 @@ surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, subregion_t
     // make room
     surf = EnsureSurfacePoints(surf, surf->count+2, surf, nullptr);
     // insert centroid
-    surf->AddCentroidFlat();
+    surf->AddCentroid();
   }
 
   return surf;

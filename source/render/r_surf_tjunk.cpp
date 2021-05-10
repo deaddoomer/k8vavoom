@@ -273,7 +273,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   vassert(!surf->isCentroidCreated());
   if (wasChanged && surf->count > 4) {
     surf = EnsureSurfacePoints(surf, surf->count+2, surf, nullptr);
-    surf->AddCentroidWall();
+    surf->AddCentroid();
   }
 
   if (wasChanged && dbg_fix_tjunctions.asBool()) GCon->Logf(NAME_Debug, "line #%d, seg #%d: fixed t-junctions", linenum, (int)(ptrdiff_t)(seg-&Level->Segs[0]));
