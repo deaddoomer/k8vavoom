@@ -49,54 +49,54 @@ struct ScriptSavedPos {
 
 native private readonly void *Internal;
 
-native string String { get; }
-native int Number { get; }
-native float Float { get; }
-native bool Crossed { get; }
-native bool Quoted { get; }
+native final string String { get; }
+native final int Number { get; }
+native final float Float { get; }
+native final bool Crossed { get; }
+native final bool Quoted { get; }
 
 #ifndef VCC_STANDALONE_EXECUTOR
-native void OpenLumpName (name Name);
-native void OpenLumpIndex (int lump);
+native final void OpenLumpName (name Name);
+native final void OpenLumpIndex (int lump);
 #endif
-native void OpenLumpFullName (string Name);
-native void OpenString (name Name, string s);
-native bool IsText ();
-native bool IsAtEol ();
-native bool IsCMode ();
-native bool IsEscape ();
-native bool IsAllowNumSign ();
-native void SetAllowNumSign (bool On);
-native void SetCMode (bool On);
-native void SetEscape (bool On);
-native bool AtEnd ();
-native bool GetString ();
-native void ExpectLoneChar ();
+native final void OpenLumpFullName (string Name);
+native final void OpenString (name Name, string s);
+native final bool IsText ();
+native final bool IsAtEol ();
+native final bool IsCMode ();
+native final bool IsEscape ();
+native final bool IsAllowNumSign ();
+native final void SetAllowNumSign (bool On);
+native final void SetCMode (bool On);
+native final void SetEscape (bool On);
+native final bool AtEnd ();
+native final bool GetString ();
+native final void ExpectLoneChar ();
 #ifndef VCC_STANDALONE_EXECUTOR
-native int ExpectColor ();
+native final int ExpectColor ();
 #endif
-native void ExpectString ();
-native bool Check (string Text);
-native bool CheckStartsWith (string Text);
-native void Expect (string Text);
-native bool CheckIdentifier ();
-native void ExpectIdentifier ();
-native bool CheckNumber (optional bool withSign); // default: false
-native void ExpectNumber (optional bool withSign); // default: false
-native bool CheckFloat (optional bool withSign); // default: false
-native void ExpectFloat (optional bool withSign); // default: false
-native void ResetQuoted ();
-native void ResetCrossed ();
-native void SkipBracketed (optional bool bracketEaten); // default is `false`
-native void SkipLine ();
-native void UnGet ();
-native string FileName ();
-native int CurrLine ();
-native void ScriptError (string Text, ...) [printf,1];
-native void ScriptMessage (string Text, ...) [printf,1];
+native final void ExpectString ();
+native final bool Check (string Text);
+native final bool CheckStartsWith (string Text);
+native final void Expect (string Text);
+native final bool CheckIdentifier ();
+native final void ExpectIdentifier ();
+native final bool CheckNumber (optional bool withSign/*=false*/);
+native final void ExpectNumber (optional bool withSign/*=false*/);
+native final bool CheckFloat (optional bool withSign/*=false*/);
+native final void ExpectFloat (optional bool withSign/*=false*/);
+native final void ResetQuoted ();
+native final void ResetCrossed ();
+native final void SkipBracketed (optional bool bracketEaten/*=false*/);
+native final void SkipLine ();
+native final void UnGet ();
+native final string FileName ();
+native final int CurrLine ();
+native final void ScriptError (string Text, ...) [printf,1];
+native final void ScriptMessage (string Text, ...) [printf,1];
 
-native void SavePos (out ScriptSavedPos pos);
-native void RestorePos (const ref ScriptSavedPos pos);
+native final void SavePos (out ScriptSavedPos pos);
+native final void RestorePos (const ref ScriptSavedPos pos);
 
 
 defaultproperties {
