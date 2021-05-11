@@ -371,6 +371,8 @@ void Host_Init () {
   CL_Init();
 #endif
 
+  if (VMethod::ReportUnusedBuiltins()) Sys_Error("found some unused builtins (internal engine error)");
+
   // "compile only"
   if (cli_CompileAndExit) {
     Z_Exit(0);
