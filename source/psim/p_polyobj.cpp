@@ -1793,13 +1793,24 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   for (po = pofirst; po; po = po->polink) {
     UnlinkPolyobj(po);
     const TVec delta(po->startSpot.x+x, po->startSpot.y+y);
+    const float an = AngleMod(po->angle);
+    float s, c;
+    msincos(an, &s, &c);
     // save previous points, move horizontally
     const TVec *origPts = po->originalPts;
     TVec *prevPts = po->prevPts;
     TVec **vptr = po->segPts;
     for (int f = po->segPtsCount; f--; ++vptr, ++origPts, ++prevPts) {
       *prevPts = **vptr;
-      **vptr = (*origPts)+delta;
+      //**vptr = (*origPts)+delta;
+      TVec np(*origPts);
+      // get the original X and Y values
+      const float tr_x = np.x;
+      const float tr_y = np.y;
+      // calculate the new X and Y values
+      np.x = (tr_x*c-tr_y*s)+delta.x;
+      np.y = (tr_y*c+tr_x*s)+delta.y;
+      **vptr = np;
     }
     UpdatePolySegs(po);
     if (verticalMove) OffsetPolyobjFlats(po, z);
@@ -1949,7 +1960,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
 
   // calculate the angle
   const float an = AngleMod(po->angle+angle);
-  float msinAn, mcosAn;
+  float s, c;
 
   // collect objects we need to move/rotate
   poAffectedEnitities.resetNoDtor();
@@ -1981,7 +1992,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
 
     // now unlink all affected objects, because we'll do "move and check" later
     // also, rotate objects
-    msincos(AngleMod(angle), &msinAn, &mcosAn);
+    msincos(AngleMod(angle), &s, &c);
     for (auto &&edata : poAffectedEnitities) {
       VEntity *mobj = edata.mobj;
       mobj->UnlinkFromWorld();
@@ -1993,8 +2004,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         const float yc = mobj->Origin.y-ssy;
         //GCon->Logf(NAME_Debug, "%s(%u): oldrelpos=(%g,%g)", mobj->GetClass()->GetName(), mobj->GetUniqueId(), xc, yc);
         // calculate the new X and Y values
-        const float nx = (xc*mcosAn-yc*msinAn);
-        const float ny = (yc*mcosAn+xc*msinAn);
+        const float nx = (xc*c-yc*s);
+        const float ny = (yc*c+xc*s);
         //GCon->Logf(NAME_Debug, "%s(%u): newrelpos=(%g,%g)", mobj->GetClass()->GetName(), mobj->GetUniqueId(), nx, ny);
         const float dx = (nx+ssx)-mobj->Origin.x;
         const float dy = (ny+ssy)-mobj->Origin.y;
@@ -2008,7 +2019,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   }
 
   // rotate all polyobjects
-  msincos(an, &msinAn, &mcosAn);
+  msincos(an, &s, &c);
   for (po = pofirst; po; po = po->polink) {
     /*if (IsForServer())*/ UnlinkPolyobj(po);
     const float ssx = po->startSpot.x;
@@ -2027,8 +2038,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       const float tr_x = origPts->x;
       const float tr_y = origPts->y;
       // calculate the new X and Y values
-      (*vptr)->x = (tr_x*mcosAn-tr_y*msinAn)+ssx;
-      (*vptr)->y = (tr_y*mcosAn+tr_x*msinAn)+ssy;
+      (*vptr)->x = (tr_x*c-tr_y*s)+ssx;
+      (*vptr)->y = (tr_y*c+tr_x*s)+ssy;
     }
     UpdatePolySegs(po);
     if (skipLink) break;
