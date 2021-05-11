@@ -743,6 +743,26 @@ if(ENABLE_CLIENT)
     install(FILES ../res/png/k8vavoom_icon9.png DESTINATION ${DATADIR}/icons)
   endif(WIN32)
 
+  # some specs and demos
+  if(WIN32)
+    install(FILES ../specs/3dpobj/k8vavoom_3dpobj.html DESTINATION ${SPECSDIR}/3dpobj)
+    install(FILES ../specs/3dpobj/fig1.png DESTINATION ${SPECSDIR}/3dpobj)
+    install(FILES ../specs/3dpobj/zacc_acs/zdefs.acs DESTINATION ${SPECSDIR}/3dpobj/zacc_acs)
+    install(FILES ../specs/3dpobj/zacc_acs/zspecial.acs DESTINATION ${SPECSDIR}/3dpobj/zacc_acs)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_crush.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_crush_side.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_railings.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_railings_blockhitscan.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_railings_blockproj.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/3d_polyobject_cabin_simple.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/big_dropoff.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/big_sight_faraway.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/empty.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/rotate.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/rotate_empty.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+    install(FILES ../specs/3dpobj/sample_wads/simple_test.wad DESTINATION ${SPECSDIR}/3dpobj/sample_wads)
+  endif(WIN32)
+
   if(ENABLE_WRAPPERS)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/k8vavoom
 "#!/bin/sh
