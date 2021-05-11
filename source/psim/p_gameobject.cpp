@@ -774,14 +774,6 @@ IMPLEMENT_FUNCTION(VGameObject, spPointOnSide2) {
   RET_INT(sp->PointOnSide2(*point));
 }
 
-//native static final int spSphereOnSide (const ref TSecPlaneRef sp, const ref TVec center, float radius);
-IMPLEMENT_FUNCTION(VGameObject, SphereOnSide) {
-  P_GET_FLOAT(radius);
-  P_GET_PTR(TVec, center);
-  P_GET_PTR(TSecPlaneRef, sp);
-  RET_INT(sp->SphereOnSide(*center, radius));
-}
-
 //native static final bool spSphereTouches (const ref TSecPlaneRef sp, const ref TVec center, float radius);
 IMPLEMENT_FUNCTION(VGameObject, spSphereTouches) {
   P_GET_FLOAT(radius);

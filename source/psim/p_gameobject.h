@@ -1636,7 +1636,6 @@ public:
   DECLARE_FUNCTION(spPointOnSideThreshold)
   DECLARE_FUNCTION(spPointOnSideFri)
   DECLARE_FUNCTION(spPointOnSide2)
-  DECLARE_FUNCTION(SphereOnSide)
   DECLARE_FUNCTION(spSphereTouches)
   DECLARE_FUNCTION(spSphereOnSide)
   DECLARE_FUNCTION(spSphereOnSide2)
