@@ -42,6 +42,7 @@ FBuiltinInfo::FBuiltinInfo (const char *InName, VClass *InClass, builtin_t InFun
   , OuterClassName(nullptr)
   , OuterStructName(nullptr)
   , Func(InFunc)
+  , used(false)
 {
   Next = Builtins;
   Builtins = this;
@@ -59,6 +60,7 @@ FBuiltinInfo::FBuiltinInfo (const char *InName, const char *InClassName, const c
   , OuterClassName(InClassName)
   , OuterStructName(InStructName)
   , Func(InFunc)
+  , used(false)
 {
   Next = Builtins;
   Builtins = this;
@@ -685,7 +687,10 @@ void VMethod::PostLoad () {
   if (NumParams > VMethod::MAX_PARAMS) VCFatalError("Function has more than %i params", VMethod::MAX_PARAMS);
 
   for (FBuiltinInfo *B = FBuiltinInfo::Builtins; B; B = B->Next) {
+    if (B->used) continue;
     if (!VStr::strEqu(*Name, B->Name)) continue;
+
+    //GLog.Logf(NAME_Debug, "trying builtin '%s' (struct:`%s`; class:`%s`) : `%s` (stm=%d)", B->Name, (B->OuterStructName ? B->OuterStructName : "<none>"), (B->OuterClassName ? B->OuterClassName : "<none>"), *GetFullName(), (int)IsStructMethod());
 
     bool okClass = false;
     bool okStruct = false;
@@ -726,6 +731,7 @@ void VMethod::PostLoad () {
     if (builtinOpc >= 0) VCFatalError("Trying to redefine `%s` builtin", *GetFullName());
 
     // ok
+    B->used = true;
     NativeFunc = B->Func;
     break;
   }
@@ -1033,6 +1039,38 @@ void VMethod::CleanupParams () const {
     default:
       VPackage::InternalFatalError(va("Bad return value type `%s`", *ReturnType.GetName()));
   }
+}
+
+
+//==========================================================================
+//
+//  VMethod::ReportUnusedBuiltins
+//
+//  returns `true` if there was any
+//
+//==========================================================================
+bool VMethod::ReportUnusedBuiltins () {
+  bool res = false;
+  for (FBuiltinInfo *B = FBuiltinInfo::Builtins; B; B = B->Next) {
+    if (B->used) continue;
+    res = true;
+    if (B->OuterClass) {
+      vassert(!B->OuterStructName);
+      vassert(!B->OuterClassName);
+      GLog.Logf(NAME_Error, "unused builtin '%s' (class:`%s`)", B->Name, *B->OuterClass->GetFullName());
+    } else {
+      if (B->OuterStructName && B->OuterClassName) {
+        GLog.Logf(NAME_Error, "unused builtin '%s' (struct:`%s`; class:`%s`)", B->Name, B->OuterStructName, B->OuterClassName);
+      } else if (B->OuterStructName) {
+        GLog.Logf(NAME_Error, "unused builtin '%s' (struct:`%s`)", B->Name, B->OuterStructName);
+      } else if (B->OuterClassName) {
+        GLog.Logf(NAME_Error, "unused builtin '%s' (class:`%s`)", B->Name, B->OuterClassName);
+      } else {
+        GLog.Logf(NAME_Error, "unused builtin '%s' (orphan)", B->Name);
+      }
+    }
+  }
+  return res;
 }
 
 

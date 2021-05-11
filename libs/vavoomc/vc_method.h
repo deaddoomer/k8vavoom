@@ -98,6 +98,7 @@ class FBuiltinInfo {
   const char *OuterStructName;
   builtin_t Func;
   FBuiltinInfo *Next;
+  bool used;
 
   static FBuiltinInfo *Builtins;
 
@@ -305,6 +306,9 @@ public:
     }
     return nullptr;
   }
+
+  // returns `true` if there was any
+  static bool ReportUnusedBuiltins ();
 
 private:
   // this generates VM (or other) executable code (to `Statements`) from IR `Instructions`
