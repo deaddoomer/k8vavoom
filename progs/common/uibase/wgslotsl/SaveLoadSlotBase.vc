@@ -132,9 +132,12 @@ override bool OnEvent (ref event_t evt) {
         case K_PADENTER:
         //case K_MOUSE1:
         case K_JOY1:
+        case K_BUTTON_A:
           waitingDeletion = false;
           bEnteringText = false;
-          if (evt.keycode == K_JOY1 && !EnterText) EnterText = va("saved game %d", SlotNum);
+          if ((evt.keycode == K_JOY1 || evt.keycode == K_BUTTON_A) && !EnterText) {
+            EnterText = va("saved game %d", SlotNum);
+          }
           if (EnterText) {
             Text = EnterText;
             CmdBuf_AddText("Save %d \"%q\"\n", SlotNum, Text);
