@@ -474,7 +474,7 @@ int Timidity_ReadConfig()
 #ifdef WIN32
 	add_to_pathlist("\\TIMIDITY");
 #elif defined(__SWITCH__)
-	add_to_pathlist("/switch/vavoom");
+	add_to_pathlist("/.");
 	add_to_pathlist("/switch");
 #else
 	add_to_pathlist("/usr/local/lib/timidity");

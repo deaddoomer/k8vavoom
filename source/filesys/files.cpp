@@ -2495,6 +2495,7 @@ void FL_Init () {
     /*static*/ const char *defaultBaseDirs[] = {
 #ifdef __SWITCH__
       ".",
+      "./share",
 #elif !defined(_WIN32)
       "/opt/vavoom/share/k8vavoom",
       "/opt/k8vavoom/share/k8vavoom",

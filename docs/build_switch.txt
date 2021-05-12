@@ -30,7 +30,6 @@ mkdir switchbuild && cd switchbuild
 source $DEVKITPRO/switchvars.sh
 cmake .. -G"Unix Makefiles" \
 -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/switch.cmake" \
--DPKG_CONFIG_EXECUTABLE="$DEVKITPRO/portlibs/switch/bin/aarch64-none-elf-pkg-config" \
 -DWITH_SYS_FLUID=ON \
 -DWITH_SYS_OPUS=ON \
 -DWITH_SYS_VORBIS=ON \

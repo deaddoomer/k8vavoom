@@ -856,39 +856,6 @@ void VSdlInputDevice::ReadInput () {
 #endif
 }
 
-#ifdef __SWITCH__
-//==========================================================================
-//
-//  SwitchJoyToKey
-//
-// TEMPORARY: maps joystick buttons to keys for fake kb events
-//
-//==========================================================================
-static inline int SwitchJoyToKey (int b) {
-  /*static*/ const int keymap[] = {
-      /* KEY_A      */ K_ENTER,
-      /* KEY_B      */ K_BACKSPACE,
-      /* KEY_X      */ K_RALT,
-      /* KEY_Y      */ K_LALT,
-      /* KEY_LSTICK */ 0,
-      /* KEY_RSTICK */ 0,
-      /* KEY_L      */ K_LSHIFT,
-      /* KEY_R      */ K_RSHIFT,
-      /* KEY_ZL     */ K_SPACE,
-      /* KEY_ZR     */ K_LCTRL,
-      /* KEY_PLUS   */ K_ESCAPE,
-      /* KEY_MINUS  */ K_TAB,
-      /* KEY_DLEFT  */ K_LEFTARROW,
-      /* KEY_DUP    */ K_UPARROW,
-      /* KEY_DRIGHT */ K_RIGHTARROW,
-      /* KEY_DDOWN  */ K_DOWNARROW,
-  };
-
-  if (b < 8 || b > 15) return 0;
-  return keymap[b];
-}
-#endif
-
 
 //**************************************************************************
 //**
@@ -1160,11 +1127,6 @@ void VSdlInputDevice::PostJoystick () {
     for (int i = 0; i < nb; ++i) {
       if ((joy_newb&(1u<<i)) != (joy_oldb&(1u<<i))) {
         const bool pressed = !!(joy_newb&(1u<<i));
-        #ifdef __SWITCH__
-        //TEMPORARY: also translate some buttons to keys
-        int key = SwitchJoyToKey(i);
-        if (key) GInput->PostKeyEvent(key, pressed, curmodflags);
-        #endif
         GInput->PostKeyEvent(K_JOY1+i, pressed, curmodflags);
       }
       joy_oldb = joy_newb;
