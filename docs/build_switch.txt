@@ -13,10 +13,10 @@ To build k8vavoom for the Nintendo Switch:
   * switch-libvorbis
   * switch-opusfile
   * switch-flac
-  * openal-soft for Switch ( https://github.com/fgsfdsfgs/openal-soft )
+  * switch-openal-soft
   * fluidsynth-lite for Switch ( https://github.com/fgsfdsfgs/fluidsynth-lite )
 You can use [dkp-]pacman in your devkitA64 environment for all of those, except
-the last two.
+the last one.
 
 3. Build k8vavoom for your host platform, e. g.:
 
