@@ -575,6 +575,7 @@ bool VExpression::IsTernary () const { return false; }
 bool VExpression::IsSingleName () const { return false; }
 bool VExpression::IsDoubleName () const { return false; }
 bool VExpression::IsDotField () const { return false; }
+bool VExpression::IsFieldAccess () const { return false; }
 bool VExpression::IsMarshallArg () const { return false; }
 bool VExpression::IsRefArg () const { return false; }
 bool VExpression::IsOutArg () const { return false; }

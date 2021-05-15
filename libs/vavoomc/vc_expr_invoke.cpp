@@ -2079,6 +2079,11 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
         ArgsOk = false;
         break;
       }
+      /*
+      if (i < requiredParams && (Func->ParamFlags[i]|(FPARM_Ref|FPARM_Out))) {
+        GLog.Logf(NAME_Debug, "MT:<%s>: arg#%d: pt=%s; at=%s (%s)", *Func->GetFullName(), i+1, *Func->ParamTypes[i].GetName(), *Args[i]->Type.GetName(), *Args[i]->toString());
+      }
+      */
       Args[i] = Args[i]->Resolve(ec);
       if (!Args[i]) { ArgsOk = false; break; }
     }
@@ -2889,6 +2894,24 @@ void VInvocation::CheckParams (VEmitContext &ec) {
           if (Args[i]->IsReadOnly() && (Func->ParamFlags[i]&FPARM_Const) == 0) {
             ParseError(Args[i]->Loc, "Cannot pass const argument #%d as non-const", i+1);
           }
+          // check for some forbidden things
+          if (Args[i]->IsFieldAccess()) {
+            bool ok = true;
+            if (Func->ParamTypes[i].Type == TYPE_Bool) {
+              // bool arg
+              if (Args[i]->RealType.Type == TYPE_Byte || Args[i]->RealType.Type == TYPE_Bool) ok = false;
+            } else if (Func->ParamTypes[i].Type == TYPE_Byte) {
+              // byte arg
+              if (Args[i]->RealType.Type != TYPE_Byte) ok = false;
+            } else if (Func->ParamTypes[i].Type == TYPE_Int) {
+              // int arg
+              if (Args[i]->RealType.Type != TYPE_Int) ok = false;
+            }
+            if (!ok) {
+              ParseError(Args[i]->Loc, "Cannot pass field of type `%s` as reference for argument #%d (not implemented yet)", *Args[i]->RealType.GetName(), i+1);
+            }
+          }
+          //GLog.Logf(NAME_Debug, "MT:<%s>: arg#%d: pt=%s; at=%s (%s) (%s)", *Func->GetFullName(), i+1, *Func->ParamTypes[i].GetName(), *Args[i]->Type.GetName(), *Args[i]->RealType.GetName(), *Args[i]->toString());
           Args[i]->RequestAddressOf();
         } else {
           // normal args: do int->float conversion

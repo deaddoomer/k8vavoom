@@ -118,6 +118,8 @@ public:
   virtual void RequestAddressOf () override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool IsFieldAccess () const override;
+
   virtual VStr toString () const override;
 
 protected:

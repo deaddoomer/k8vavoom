@@ -155,6 +155,7 @@ public:
   virtual bool IsSingleName () const;
   virtual bool IsDoubleName () const;
   virtual bool IsDotField () const;
+  virtual bool IsFieldAccess () const;
   virtual bool IsMarshallArg () const;
   virtual bool IsRefArg () const;
   virtual bool IsOutArg () const;
