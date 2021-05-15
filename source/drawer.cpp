@@ -95,6 +95,33 @@ TVec VDrawer::GetLightViewRight (unsigned int facenum) noexcept { return TVec(-L
 //
 //**************************************************************************
 
+// ////////////////////////////////////////////////////////////////////////// //
+// POV related
+// this should be prolly moved to renderer, and recorded in render list
+// if i'll do that, i will be able to render stacked sectors, and mirrors
+// without portals.
+//
+// in render lists it is prolly enough to store current view transformation
+// matrix, because surface visibility flags are already set by the queue manager.
+//
+// another thing to consider is queue manager limitation: one surface can be
+// queued only once. this is not a hard limitation, though, as queue manager is
+// using arrays to keep surface pointers, but it is handy for various render
+// checks. we prolly need to increment queue frame counter when view changes.
+//
+// half-done
+/*
+extern TVec vieworg;
+extern TVec viewforward;
+extern TVec viewright;
+extern TVec viewup;
+extern TAVec viewangles;
+extern TFrustum viewfrustum;
+
+extern bool MirrorFlip;
+extern bool MirrorClip;
+*/
+
 //==========================================================================
 //
 //  VDrawer::VDrawer

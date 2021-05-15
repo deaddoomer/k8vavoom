@@ -135,6 +135,7 @@ struct texinfo_t {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 //WARNING! take care of setting heights to non-zero, or glow shaders will fail!
 struct GlowParams {
   vuint32 glowCC, glowCF; // glow colors
@@ -146,7 +147,9 @@ struct GlowParams {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct surface_t {
+public:
   enum {
     MAXWVERTS = 8+8, // maximum number of vertices in wsurf (world/wall surface)
   };
@@ -177,7 +180,7 @@ struct surface_t {
     TF_3DPOBJ  = 1u<<7, // this surface comes from 3d polyobject
   };
 
-  // internal allocator flags
+  // internal allocator flags (allocflags)
   enum {
     // allocation type; it prolly doesn't belong there, but meh
     ALLOC_WORLD = 1u<<0,
@@ -188,12 +191,13 @@ struct surface_t {
     CENTROID_CREATED = 1u<<1,
   };
 
-  surface_t *next;
+public:
+  surface_t *next; // subdivisions can create surface chain
   texinfo_t *texinfo; // points to owning `sec_surface_t`
   TPlane plane; // was pointer
-  sec_plane_t *HorizonPlane;
+  sec_plane_t *HorizonPlane; // used in horizon rendering
   vuint32 Light; // light level and color
-  vuint32 Fade;
+  vuint32 Fade; // fog color, (a)rgb (`FADE_LIGHT` is "normal Doom fading")
   float glowFloorHeight;
   float glowCeilingHeight;
   vuint32 glowFloorColor;
@@ -204,18 +208,16 @@ struct surface_t {
   vuint32 typeFlags; // TF_xxx
   // not exposed to VC
   int lmsize, lmrgbsize; // to track static lightmap memory
-  vuint8 *lightmap;
-  rgb_t *lightmap_rgb;
+  vuint8 *lightmap; // only intensity
+  rgb_t *lightmap_rgb; // colored light
   unsigned queueframe; // this is used to prevent double queuing
-  unsigned dlightframe;
-  unsigned dlightbits;
+  unsigned dlightframe; // if equal to `currDLightFrame`, then `dlightbits` are valid
+  unsigned dlightbits; // bit N set if the corresponding dynamic light affects this surface
   unsigned drawflags; // DF_XXX
-  unsigned allocflags;
-  /*short*/int texturemins[2];
-  /*short*/int extents[2];
+  unsigned allocflags; // see enum above
+  int texturemins[2]; // used in lightmapping
+  int extents[2]; // used in lightmapping
   surfcache_t *CacheSurf; // lightmap atlas cache
-  //int plvisible; // cached visibility flag, set in main BSP collector (VRenderLevelShared::SurfCheckAndQueue)
-  //vuint32 fixvertbmp; // for world surfaces, this is bitmap of "fix" additional surfaces (bit 1 means "added fix")
   int shaderClass; // used in renderers
   int firstIndex; // address in VBO buffer; only used in world rendering
   GlowParams gp; // used in renderer to cache glow info
@@ -223,7 +225,7 @@ struct surface_t {
   int count; // number of used vertices
   SurfVertex verts[1]; // dynamic array of vertices
 
-
+public:
   inline bool isWorldAllocated () const noexcept { return (allocflags&ALLOC_WORLD); }
 
   inline bool isCentroidCreated () const noexcept { return (allocflags&CENTROID_CREATED); }
@@ -260,7 +262,6 @@ struct surface_t {
   // remove all vertices with this owning seg
   void RemoveSegOwnVertices (const seg_t *seg) noexcept;
 
-
   inline bool NeedRecalcStaticLightmap () const noexcept { return (drawflags&DF_CALC_LMAP); }
   inline bool IsMasked () const noexcept { return (drawflags&DF_MASKED); }
   inline bool IsTwoSided () const noexcept { return (drawflags&DF_NO_FACE_CULL); }
@@ -279,14 +280,8 @@ struct surface_t {
     return (!(drawflags&(DF_NO_FACE_CULL|DF_MIRROR)) ? !plane.PointOnSide(point) : (plane.PointOnSide2(point) != 2));
   }
 
-  inline int PointOnSide (const TVec &point) const noexcept {
-    return plane.PointOnSide(point);
-  }
-
-  inline bool SphereTouches (const TVec &center, float radius) const noexcept {
-    return plane.SphereTouches(center, radius);
-  }
-
+  inline int PointOnSide (const TVec &point) const noexcept { return plane.PointOnSide(point); }
+  inline bool SphereTouches (const TVec &center, float radius) const noexcept { return plane.SphereTouches(center, radius); }
   inline float GetNormalZ () const noexcept { return plane.normal.z; }
   inline const TVec &GetNormal () const noexcept { return plane.normal; }
   inline float GetDist () const noexcept { return plane.dist; }
@@ -866,32 +861,6 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 void R_DrawViewBorder ();
 void R_ParseGLDefSkyBoxesScript (VScriptParser *sc);
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-// POV related
-// k8: this should be prolly moved to renderer, and recorded in render list
-// if i'll do that, i will be able to render stacked sectors, and mirrors
-// without portals.
-//
-// in render lists it is prolly enough to store current view transformation
-// matrix, because surface visibility flags are already set by the queue manager.
-//
-// another thing to consider is queue manager limitation: one surface can be
-// queued only once. this is not a hard limitation, though, as queue manager is
-// using arrays to keep surface pointers, but it is handy for various render
-// checks. we prolly need to increment queue frame counter when view changes.
-/*
-extern TVec vieworg;
-extern TVec viewforward;
-extern TVec viewright;
-extern TVec viewup;
-extern TAVec viewangles;
-extern TFrustum viewfrustum;
-
-extern bool MirrorFlip;
-extern bool MirrorClip;
-*/
 
 
 // ////////////////////////////////////////////////////////////////////////// //
