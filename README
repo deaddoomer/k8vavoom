@@ -38,22 +38,6 @@ WARNING: SFPACK sound founts are not supported!
 you can use "snd_sf2_file" cvar to specify the path to your soundfont.
 
 
-## AUTOMAP KEYS
-
-currently, automap keys are not configurable, sorry.
-
-TOGGLE FLOOR/CEILING/NONE TEXTURING: T
-FOLLOW: H
-GRID ON/OFF: G
-PUT MARK: M
-SELECT NEXT MARK: N
-DELETE SELECTED MARK: C/DELETE
-
-note that you can manage your marks with "N" and "C". pressing "N"
-will cycle through all marks, and you can delete current mark with
-"C".
-
-
 ## GNU/LINUX GAMERS SECTION
 
 ### INSTALLATION
