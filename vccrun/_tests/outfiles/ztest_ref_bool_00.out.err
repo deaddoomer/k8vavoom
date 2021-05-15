@@ -1,0 +1,2 @@
+Error: ztest_ref_bool_00.vc:18: Cannot pass field of type `bool` as reference for argument #1 (not implemented yet)
+FATAL: Confused by previous errors, bailing out

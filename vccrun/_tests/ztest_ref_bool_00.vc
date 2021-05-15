@@ -1,0 +1,25 @@
+// FAIL
+class Main : Object;
+
+bool ba;
+bool bb;
+
+
+final void test (ref bool v) {
+  print("val=%B", v);
+  v = !v;
+}
+
+
+void main () {
+  bb = true;
+  print("ba=%B", ba);
+  print("bb=%B", bb);
+  test(ref bb);
+  print("ba=%B", ba);
+  print("bb=%B", bb);
+  bool zz = true;
+  print("zz=%B", zz);
+  test(ref zz);
+  print("zz=%B", zz);
+}
