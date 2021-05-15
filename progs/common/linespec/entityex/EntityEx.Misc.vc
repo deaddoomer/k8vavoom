@@ -4803,7 +4803,7 @@ final bool IsFriend (EntityEx Other) {
 //==========================================================================
 final bool IsHostile (EntityEx Other) {
   if (!Other) return false;
-  // if bot monsters are not friendles, hostiles depend on infighting.
+  // if both monsters are not friendles, hostiles depend on infighting
   if (!bFriendly && !Other.bFriendly) return false;
 
   if (bFriendly && Other.bFriendly) {
@@ -4844,7 +4844,7 @@ override int ClassifyActor () {
 //
 //==========================================================================
 final bool CountsAsKill () {
-  return bCountKill && !bFriendly;
+  return (bCountKill && !bFriendly);
 }
 
 
