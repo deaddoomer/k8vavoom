@@ -24,7 +24,9 @@
 //**
 //**************************************************************************
 
-int nextTicTimeCheck;
+transient int nextTicTimeCheck;
+// for selector cheat
+transient EntityEx selectorCheatEntity;
 
 
 //==========================================================================
@@ -34,6 +36,7 @@ int nextTicTimeCheck;
 //==========================================================================
 void HealthBarInit () {
   nextTicTimeCheck = 0;
+  selectorCheatEntity = none;
 }
 
 
@@ -44,6 +47,7 @@ void HealthBarInit () {
 //==========================================================================
 void HealthBarDeinit () {
   nextTicTimeCheck = 0;
+  selectorCheatEntity = none;
 }
 
 
@@ -117,4 +121,326 @@ void HealthBarProcessor () {
     HudWidth:/*640*/0, HudHeight:/*512*/0,
     HoldTime:7.0/35.0,
     Time1:hlt, Time2:hltmax, Alpha:1.0);
+}
+
+
+//==========================================================================
+//
+//  Cheat_MObj_Selector_AC
+//
+//==========================================================================
+void Cheat_MObj_Selector_AC (const ref array!string args, bool newArg, out array!string aclist) {
+       if (args.length == 1) { if (!newArg) return; }
+  else if (args.length == 2) { if (newArg) return; }
+  else return;
+
+  aclist[$] = "select";
+  aclist[$] = "current";
+  aclist[$] = "reset";
+}
+
+
+enum {
+  Mode_MObjSel_Select,
+  Mode_MObjSel_Reset,
+  Mode_MObjSel_Current,
+}
+
+
+//==========================================================================
+//
+//  Cheat_MObj_Selector
+//
+//==========================================================================
+void Cheat_MObj_Selector () {
+  if (selectorCheatEntity && selectorCheatEntity.IsDestroyed) selectorCheatEntity = none;
+
+  if (!MO.bIsPlayer || !Level || !EntityEx(MO)) return;
+
+  int mode = Mode_MObjSel_Select;
+  if (Cmd_GetArgC() > 1) {
+         if (Cmd_GetArgV(1).strEquCI("select")) mode = Mode_MObjSel_Select;
+    else if (Cmd_GetArgV(1).strEquCI("reset")) mode = Mode_MObjSel_Reset;
+    else if (Cmd_GetArgV(1).strEquCI("current")) mode = Mode_MObjSel_Current;
+  }
+
+  if (mode == Mode_MObjSel_Reset) {
+    selectorCheatEntity = none;
+    printdebug("entity selection cleared");
+    return;
+  }
+
+  if (mode == Mode_MObjSel_Current) {
+    if (selectorCheatEntity) {
+      printdebug("selected entity with class '%C', uid=%s", selectorCheatEntity, selectorCheatEntity.ServerUId);
+    } else {
+      printdebug("no entity selected");
+    }
+    return;
+  }
+
+  // cannot select anything without healthbar
+  if (!GetCvarB('k8HealthBar') || GetCvarF('k8HealthBarAlpha') <= 0) {
+    printwarn("please, turn on 'Health Bar'!");
+    return;
+  }
+
+  EntityEx ent = EntityEx(MO);
+
+  // find actor
+  TVec dir;
+  AngleVector(ent.Angles, out dir);
+  int actorMask = (GetCvarB('k8HealthBarShowAll') ? -1 : MF_SHOOTABLE);
+  EntityEx ee = EntityEx(ent.PickActor(org:default, dir:dir, distance:8192, actorMask:actorMask, wallMask:ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN));
+  if (!ee) {
+    printwarn("no actor selected.");
+    return;
+  }
+
+  if (actorMask != -1 && !ee.bMonster && GetCvarB('k8HealthBarOnlyMonsters')) {
+    printwarn("selected actor with class `%C` is not a monster.", ee);
+  }
+
+  selectorCheatEntity = ee;
+  printdebug("selected entity with class '%C', uid=%s", selectorCheatEntity, selectorCheatEntity.ServerUId);
+}
+
+
+//==========================================================================
+//
+//  MObjSet_GetBoolArg
+//
+//==========================================================================
+private final bool MObjSet_GetBoolArg (out bool val) {
+  if (Cmd_GetArgC() != 3) { printwarn("argument expected"); return false; }
+  string sv = Cmd_GetArgV(2);
+  bool err;
+  int ival = atoi(sv, out err);
+  if (!err) {
+    if (ival == 0) { val = false; return true; }
+    if (ival == 1) { val = true; return true; }
+  }
+  if (sv.strEquCI("on") ||
+      sv.strEquCI("yes") ||
+      sv.strEquCI("tan") ||
+      sv.strEquCI("true"))
+  {
+    val = true;
+    return true;
+  }
+  if (sv.strEquCI("off") ||
+      sv.strEquCI("no") ||
+      sv.strEquCI("ona") ||
+      sv.strEquCI("false"))
+  {
+    val = false;
+    return true;
+  }
+  printwarn("expected boolean, but got '%s'", sv);
+  return false;
+}
+
+
+//==========================================================================
+//
+//  MObjSet_GetIntArg
+//
+//==========================================================================
+private final bool MObjSet_GetIntArg (out int val) {
+  if (Cmd_GetArgC() != 3) { printwarn("argument expected"); return false; }
+  string sv = Cmd_GetArgV(2);
+  bool err;
+  val = atoi(sv, out err);
+  if (err) { printwarn("expected integer, but got '%s'", sv); return false; }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  MObjSet_GetFloatArg
+//
+//==========================================================================
+private final bool MObjSet_GetFloatArg (out float val) {
+  if (Cmd_GetArgC() != 3) { printwarn("argument expected"); return false; }
+  string sv = Cmd_GetArgV(2);
+  bool err;
+  val = atof(sv, out err);
+  if (err) { printwarn("expected float, but got '%s'", sv); return false; }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  MObjSet_BoolProperty
+//
+//  there is a bug in VC compiler: you cannot pass bitmasked bools as `ref`
+//
+//==========================================================================
+private final bool MObjSet_BoolProperty (string propname, ref bool propvalue, bool proporigvalue) {
+  if (!Cmd_GetArgV(1).strEquCI(propname)) return false;
+  EntityEx ee = selectorCheatEntity;
+  assert(ee && !ee.IsDestroyed);
+  propvalue = proporigvalue;
+  if (Cmd_GetArgC() == 2) { printdebug("selected entity with class '%C', uid=%s: %s is %B", ee, ee.ServerUId, propname, propvalue); return true; }
+  bool bval;
+       if (Cmd_GetArgV(2).strEquCI("toggle")) bval = !propvalue;
+  else if (!MObjSet_GetBoolArg(out bval)) return true;
+  if (propvalue != bval) {
+    printdebug("selected entity with class '%C', uid=%s: %s changed from %B to %B", ee, ee.ServerUId, propname, propvalue, bval);
+    propvalue = bval;
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  MObjSet_FloatProperty
+//
+//==========================================================================
+private final bool MObjSet_FloatProperty (string propname, ref float propvalue, optional float minval, optional float maxval, optional bool doRelink/*=false*/) {
+  if (!Cmd_GetArgV(1).strEquCI(propname)) return false;
+  EntityEx ee = selectorCheatEntity;
+  assert(ee && !ee.IsDestroyed);
+  if (Cmd_GetArgC() == 2) { printdebug("selected entity with class '%C', uid=%s: %s is %s", ee, ee.ServerUId, propname, propvalue); return true; }
+  float fval;
+  if (!MObjSet_GetFloatArg(out fval)) return true;
+  if (specified_minval && fval < minval) { printwarn("value %s for property '%s' is too small (min is %s)", fval, propname, minval); return true; }
+  if (specified_maxval && fval > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", fval, propname, maxval); return true; }
+  if (propvalue != fval) {
+    printdebug("selected entity with class '%C', uid=%s: %s changed from %s to %s", ee, ee.ServerUId, propname, propvalue, fval);
+    propvalue = fval;
+    if (doRelink) ee.LinkToWorld();
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  MObjSet_IntProperty
+//
+//==========================================================================
+private final bool MObjSet_IntProperty (string propname, ref int propvalue, optional int minval, optional int maxval, optional bool doRelink/*=false*/) {
+  if (!Cmd_GetArgV(1).strEquCI(propname)) return false;
+  EntityEx ee = selectorCheatEntity;
+  assert(ee && !ee.IsDestroyed);
+  if (Cmd_GetArgC() == 2) { printdebug("selected entity with class '%C', uid=%s: %s is %s", ee, ee.ServerUId, propname, propvalue); return true; }
+  int ival;
+  if (!MObjSet_GetIntArg(out ival)) return true;
+  if (specified_minval && ival < minval) { printwarn("value %s for property '%s' is too small (min is %s)", ival, propname, minval); return true; }
+  if (specified_maxval && ival > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", ival, propname, maxval); return true; }
+  if (propvalue != ival) {
+    printdebug("selected entity with class '%C', uid=%s: %s changed from %s to %s", ee, ee.ServerUId, propname, propvalue, ival);
+    propvalue = ival;
+    if (doRelink) ee.LinkToWorld();
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  Cheat_MObj_Set_AC
+//
+//==========================================================================
+void Cheat_MObj_Set_AC (const ref array!string args, bool newArg, out array!string aclist) {
+       if (args.length == 1) { if (!newArg) return; }
+  else if (args.length == 2) { if (newArg) return; }
+  else return;
+
+  // boolean
+  aclist[$] = "Solid"; // bSolid
+  aclist[$] = "NoGravity"; // bNoGravity
+  aclist[$] = "Shootable"; // bShootable
+  aclist[$] = "Ambush"; // bAmbush
+  aclist[$] = "TriggerHappy"; // bTriggerHappy
+  aclist[$] = "Invulnerable"; // bInvulnerable
+  aclist[$] = "Friendly"; // bFriendly
+  aclist[$] = "NoTargetSwitch"; // bNoTargetSwitch
+  aclist[$] = "NonShootable"; // bNonShootable
+  aclist[$] = "Pushable"; // bPushable
+  aclist[$] = "Neutral"; // bNeutral
+
+  // floating
+  aclist[$] = "Radius"; // Radius
+  aclist[$] = "Height"; // Height
+
+  // integer
+  aclist[$] = "Health"; // Health
+}
+
+
+//==========================================================================
+//
+//  Cheat_MObj_Set
+//
+//  this should use runtime reflection, but we don't have one yet
+//
+//==========================================================================
+void Cheat_MObj_Set () {
+  if (selectorCheatEntity && selectorCheatEntity.IsDestroyed) selectorCheatEntity = none;
+
+  if (!MO.bIsPlayer || !Level) return;
+
+  if (!selectorCheatEntity) {
+    printwarn("no entity selected!");
+    return;
+  }
+
+  if (Cmd_GetArgC() < 2) { printwarn("set what?"); return; }
+
+  EntityEx ee = selectorCheatEntity;
+
+  // bool properties
+  // there is a bug in VC compiler: you cannot pass bitmasked bools as `ref`
+  bool nbval;
+  if (MObjSet_BoolProperty("Solid", ref nbval, ee.bSolid)) { ee.bSolid = nbval; ee.LinkToWorld(); return; }
+  if (MObjSet_BoolProperty("NoGravity", ref nbval, ee.bNoGravity)) { ee.bNoGravity = nbval; ee.LinkToWorld(); return; }
+  if (MObjSet_BoolProperty("Shootable", ref nbval, ee.bShootable)) { ee.bShootable = nbval; return; }
+  if (MObjSet_BoolProperty("Ambush", ref nbval, ee.bAmbush)) { ee.bAmbush = nbval; return; }
+  if (MObjSet_BoolProperty("TriggerHappy", ref nbval, ee.bTriggerHappy)) { ee.bTriggerHappy = nbval; return; }
+  if (MObjSet_BoolProperty("Invulnerable", ref nbval, ee.bInvulnerable)) { ee.bInvulnerable = nbval; return; }
+  if (MObjSet_BoolProperty("Friendly", ref nbval, ee.bFriendly)) {
+    Level.TotalKills -= ee.CountsAsKill();
+    ee.bFriendly = nbval;
+    ee.TIDToHate = 0;
+    ee.LastLook = 0;
+    ee.LastLookActor = none;
+    ee.Target = none;
+    ee.LastHeard = none;
+    if (ee.bFriendly) {
+      ee.FriendPlayer = GetPlayerNum()+1;
+      //ee.bNoSightCheck = Src.bNoSightCheck;
+      ee.bHuntPlayers = false;
+      ee.bNoHatePlayers = false;
+      EntityEx Atk = Attacker;
+      if (Atk && !Atk.bFriendly) {
+        // make it attack monster who last attacked player
+        ee.LastHeard = Atk;
+        ee.Target = Atk;
+      }
+    } else {
+      ee.FriendPlayer = 0;
+      ee.bHuntPlayers = ee.default.bHuntPlayers;
+      ee.bNoHatePlayers = ee.default.bNoHatePlayers;
+    }
+    Level.TotalKills += ee.CountsAsKill();
+    return;
+  }
+  if (MObjSet_BoolProperty("NoTargetSwitch", ref nbval, ee.bNoTargetSwitch)) { ee.bNoTargetSwitch = nbval; return; }
+  if (MObjSet_BoolProperty("NonShootable", ref nbval, ee.bNonShootable)) { ee.bNonShootable = nbval; return; }
+  if (MObjSet_BoolProperty("Pushable", ref nbval, ee.bPushable)) { ee.bPushable = nbval; return; }
+  if (MObjSet_BoolProperty("Neutral", ref nbval, ee.bNeutral)) { ee.bNeutral = nbval; return; }
+
+  // float properties
+  if (MObjSet_FloatProperty("Radius", ref ee.Radius, minval:1.0, maxval:256, doRelink:true)) return;
+  if (MObjSet_FloatProperty("Height", ref ee.Height, minval:0.0, maxval:1024, doRelink:true)) return;
+
+  // int properties
+  if (MObjSet_IntProperty("Health", ref ee.Health, minval:0, maxval:999999)) return;
+
+  printwarn("unknown property: '%s'", Cmd_GetArgV(1));
 }
