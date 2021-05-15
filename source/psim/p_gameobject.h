@@ -1269,11 +1269,16 @@ struct subregion_t {
   subsector_t *sub; // subsector for this region
 
   // decal list
-  decal_t *decalhead;
-  decal_t *decaltail;
+  decal_t *floordecalhead;
+  decal_t *floordecaltail;
 
+  decal_t *ceildecalhead;
+  decal_t *ceildecaltail;
+
+  // decal type flag (floor/ceiling) must be already set!
   void appendDecal (decal_t *dc) noexcept;
   void removeDecal (decal_t *dc) noexcept; // will not delete it
+
   void killAllDecals () noexcept;
 
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
@@ -1357,11 +1362,6 @@ public:
   inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
   inline bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
   inline bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }
-
-  inline bool hasDecals () const noexcept {
-    for (const subregion_t *reg = regions; reg; reg = reg->next) if (reg->decalhead) return true;
-    return false;
-  }
 };
 
 

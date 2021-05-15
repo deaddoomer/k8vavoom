@@ -75,17 +75,16 @@ struct decal_t {
     NoTopTex = 0x2000U, // don't render on top texture
     NoBotTex = 0x4000U, // don't render on bottom texture
   };
-  // dcsurf values
+  // dcsurf bit values
   enum {
     Wall = 0u,
     Floor = 1u,
-    FakeFloor = 2u,
-    // yeah, 3 is not used
-    Ceiling = 4u,
-    FakeCeiling = 5u,
+    Ceiling = 2u,
+    FakeFlag = 4u,
+    SurfTypeMask = 0x03,
   };
-  decal_t *prev; // in this seg
-  decal_t *next; // in this seg
+  decal_t *prev; // in seg/sreg/slidesec
+  decal_t *next; // in seg/sreg/slidesec
   seg_t *seg; // this is non-null for wall decals
   subregion_t *sreg; // this is non-null for floor/ceiling decals
   vuint32 dcsurf; // decal type

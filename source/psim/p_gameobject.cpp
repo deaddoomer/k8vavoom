@@ -366,10 +366,18 @@ void subregion_t::appendDecal (decal_t *dc) noexcept {
   vassert(!dc->next);
   vassert(!dc->seg);
   vassert(!dc->sreg);
+  const unsigned type = dc->dcsurf&decal_t::SurfTypeMask;
+  vassert(type == decal_t::Floor || type == decal_t::Ceiling);
   dc->sreg = this;
-  dc->prev = decaltail;
-  if (decaltail) decaltail->next = dc; else decalhead = dc;
-  decaltail = dc;
+  if (type == decal_t::Floor) {
+    dc->prev = floordecaltail;
+    if (floordecaltail) floordecaltail->next = dc; else floordecalhead = dc;
+    floordecaltail = dc;
+  } else { // ceiling
+    dc->prev = ceildecaltail;
+    if (ceildecaltail) ceildecaltail->next = dc; else ceildecalhead = dc;
+    ceildecaltail = dc;
+  }
 }
 
 
@@ -384,8 +392,15 @@ void subregion_t::removeDecal (decal_t *dc) noexcept {
   if (!dc) return;
   vassert(!dc->seg);
   vassert(dc->sreg == this);
-  if (dc->prev) dc->prev->next = dc->next; else decalhead = dc->next;
-  if (dc->next) dc->next->prev = dc->prev; else decaltail = dc->prev;
+  const unsigned type = dc->dcsurf&decal_t::SurfTypeMask;
+  vassert(type == decal_t::Floor || type == decal_t::Ceiling);
+  if (type == decal_t::Floor) {
+    if (dc->prev) dc->prev->next = dc->next; else floordecalhead = dc->next;
+    if (dc->next) dc->next->prev = dc->prev; else floordecaltail = dc->prev;
+  } else { // ceiling
+    if (dc->prev) dc->prev->next = dc->next; else ceildecalhead = dc->next;
+    if (dc->next) dc->next->prev = dc->prev; else ceildecaltail = dc->prev;
+  }
   dc->prev = dc->next = nullptr;
   dc->sreg = nullptr;
 }
@@ -397,12 +412,19 @@ void subregion_t::removeDecal (decal_t *dc) noexcept {
 //
 //==========================================================================
 void subregion_t::killAllDecals () noexcept {
-  while (decalhead) {
-    decal_t *c = decalhead;
+  while (floordecalhead) {
+    decal_t *c = floordecalhead;
     removeDecal(c);
     delete c->animator;
     delete c;
   }
+  while (ceildecalhead) {
+    decal_t *c = ceildecalhead;
+    removeDecal(c);
+    delete c->animator;
+    delete c;
+  }
+  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr;
 }
 
 

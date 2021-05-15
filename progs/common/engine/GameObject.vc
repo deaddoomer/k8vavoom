@@ -1240,8 +1240,10 @@ struct subregion_t {
   //native transient readonly drawseg_t *lines;
   native transient readonly subsector_t *sub; // subsector for this region
   // decal list
-  native transient readonly /*decal_t*/void *decalhead;
-  native transient readonly /*decal_t*/void *decaltail;
+  native transient readonly void/*decal_t*/ *floordecalhead;
+  native transient readonly void/*decal_t*/ *floordecaltail;
+  native transient readonly void/*decal_t*/ *ceildecalhead;
+  native transient readonly void/*decal_t*/ *ceildecaltail;
 };
 
 
