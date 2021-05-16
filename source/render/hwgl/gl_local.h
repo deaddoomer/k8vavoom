@@ -776,7 +776,12 @@ private:
   virtual void DisableBlend () override;
   virtual void SetBlendEnabled (const bool v) override;
 
-  void RenderPrepareShaderDecals (surface_t *surf);
+  // returns `true` if there are some decals to render
+  // "prepare" and "finish" will perform no more checks!
+  bool RenderSurfaceHasDecals (const surface_t *surf) const;
+  // you *have* to call `RenderFinishShaderDecals()` to restore render state
+  void RenderPrepareShaderDecals (const surface_t *surf);
+  // returns `true` if any decals was rendered (i.e. render state was changed)
   bool RenderFinishShaderDecals (DecalType dtype, surface_t *surf, surfcache_t *cache, int cmap);
 
   // regular renderer building parts

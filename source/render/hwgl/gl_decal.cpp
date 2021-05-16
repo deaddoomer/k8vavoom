@@ -30,19 +30,71 @@ extern VCvarI gl_bigdecal_limit;
 extern VCvarI gl_smalldecal_limit;
 
 
+// decal kind
+enum { DWALL, DFLOOR, DCEILING };
+
+
+//==========================================================================
+//
+//  GetSurfDecalKind
+//
+//==========================================================================
+static inline int GetSurfDecalKind (const surface_t *surf) noexcept {
+  return
+    surf->plane.normal.z == 0.0f ? DWALL :
+    surf->plane.normal.z < 0.0f ? DCEILING : DFLOOR;
+}
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::RenderPrepareShaderDecals
 //
+//  returns `true` if there are some decals to render
+//
+//  "prepare" and "finish" will perform no more checks!
+//
 //==========================================================================
-void VOpenGLDrawer::RenderPrepareShaderDecals (surface_t *surf) {
-  if (!r_decals) return;
-  if (RendLev->/*PortalDepth*/PortalUsingStencil) return; //FIXME: not yet
+bool VOpenGLDrawer::RenderSurfaceHasDecals (const surface_t *surf) const {
+  if (!surf) return false; // just in case
+  if (!r_decals) return false;
+  if (RendLev->/*PortalDepth*/PortalUsingStencil) return false; //FIXME: not yet
 
-  if (!surf->seg || !surf->seg->decalhead) return; // nothing to do
+  // check texture (just in case)
+  const texinfo_t *tex = surf->texinfo;
+  if (!tex || !tex->Tex || tex->noDecals || tex->Tex->Type == TEXTYPE_Null) return false;
 
-  if (gl_decal_debug_nostencil) return; // debug
+  switch (GetSurfDecalKind(surf)) {
+    case DWALL:
+      if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
+      if (!surf->seg->linedef) return false; // check for miniseg, just in case
+      break;
+    case DFLOOR:
+      if (!surf->sreg || !surf->sreg->floordecalhead) return false; // nothing to do
+      break;
+    case DCEILING:
+      if (!surf->sreg || !surf->sreg->ceildecalhead) return false; // nothing to do
+      break;
+    default: return false; // just in case
+  }
 
+  if (gl_decal_debug_nostencil) return false; // debug
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::RenderPrepareShaderDecals
+//
+//  returns `true` if there are some decals to render
+//
+//  note that if it returned `true`, you *have* to call
+//  `RenderFinishShaderDecals()` to restore render state
+//
+//==========================================================================
+void VOpenGLDrawer::RenderPrepareShaderDecals (const surface_t *surf) {
   if (!decalUsedStencil) decalStcVal = (IsStencilBufferDirty() ? 255 : 0);
 
   if (++decalStcVal == 0) {
@@ -58,6 +110,14 @@ void VOpenGLDrawer::RenderPrepareShaderDecals (surface_t *surf) {
 }
 
 
+// fuck you, shitplusplus! where's my `finally`?!
+struct TurnOffStencitOnExit {
+  inline ~TurnOffStencitOnExit () noexcept {
+    glDisable(GL_STENCIL_TEST);
+  }
+};
+
+
 static int maxrdcount = 0; // sorry for this global, it is for debugging
 
 //==========================================================================
@@ -67,31 +127,15 @@ static int maxrdcount = 0; // sorry for this global, it is for debugging
 //  returns `true` if caller should restore vertex program and other params
 //  (i.e. some actual decals were rendered)
 //
+// this will never be called without some decals to process
+//
 //==========================================================================
 bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, surfcache_t *cache, int cmap) {
-  if (!r_decals) return false;
-  if (RendLev->/*PortalDepth*/PortalUsingStencil) return false; //FIXME: not yet
+  TurnOffStencitOnExit tss; // `finally` emulator (thank you for the convenience, shitplusplus!)
 
-  enum { DWALL, DFLOOR, DCEILING };
+  const int dkind = GetSurfDecalKind(surf);
 
-  const int dkind =
-    surf->plane.normal.z == 0.0f ? DWALL :
-    surf->plane.normal.z < 0.0f ? DCEILING : DFLOOR;
-
-  switch (dkind) {
-    case DWALL:
-      if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
-      break;
-    case DFLOOR:
-      if (!surf->sreg || !surf->sreg->floordecalhead) return false; // nothing to do
-      break;
-    case DCEILING:
-      if (!surf->sreg || !surf->sreg->ceildecalhead) return false; // nothing to do
-      break;
-    default: return false; // just in case
-  }
-
-  texinfo_t *tex = surf->texinfo;
+  const texinfo_t *tex = surf->texinfo;
 
   // setup shader
   switch (dtype) {
@@ -137,7 +181,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
   seg_t *seg = (dkind == DWALL ? surf->seg : nullptr);
   const line_t *line = (dkind == DWALL ? seg->linedef : nullptr);
-  if (dkind == DWALL && !line) return false; // just in case
 
   /*
   GLint oldDepthMask;
@@ -304,6 +347,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       v1.z = surf->plane.GetPointZ(v1);
       soffs = -DotProduct(v1, saxis); // horizontal
       toffs = -DotProduct(v1, taxis); // vertical
+
+      // fuck you, shitg++!
+      v2.x = v2.y = dcz = 0.0f;
     }
 
     // setup texture
@@ -384,7 +430,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   }
 
   if (gl_decal_debug_noalpha) GLEnableBlend();
-  glDisable(GL_STENCIL_TEST);
+  //glDisable(GL_STENCIL_TEST); // done with `tss`
   //glDepthMask(oldDepthMask);
   PopDepthMask();
   GLEnableBlend();

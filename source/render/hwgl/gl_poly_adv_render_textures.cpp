@@ -103,6 +103,8 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
 
   //WARNING! don't forget to flush VBO on each shader uniform change! this includes glow changes (glow values aren't cached yet)
 
+  const bool decalsEnabled = (r_decals.asBool() && !RendLev->PortalUsingStencil);
+
   // normal
   if (dls.DrawSurfListSolid.length() != 0) {
     lastTexinfo.resetLastUsed();
@@ -113,12 +115,7 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
     for (auto &&surf : dls.DrawSurfListSolid) {
       SADV_CHECK_TEXTURE(ShadowsTexture);
 
-      const bool doDecals =
-        currTexinfo->Tex && !currTexinfo->noDecals &&
-        ((surf->seg && surf->seg->decalhead) ||
-         (surf->sreg &&
-          (((surf->typeFlags&surface_t::TF_FLOOR) && surf->sreg->floordecalhead) ||
-           ((surf->typeFlags&surface_t::TF_CEILING) && surf->sreg->ceildecalhead))));
+      const bool doDecals = (decalsEnabled && RenderSurfaceHasDecals(surf));
 
       // fill stencil buffer for decals
       if (doDecals) {
@@ -158,7 +155,8 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
     for (auto &&surf : dls.DrawSurfListMasked) {
       SADV_CHECK_TEXTURE(ShadowsTextureMasked);
 
-      const bool doDecals = (currTexinfo->Tex && !currTexinfo->noDecals && surf->seg && surf->seg->decalhead);
+      //const bool doDecals = (currTexinfo->Tex && !currTexinfo->noDecals && surf->seg && surf->seg->decalhead);
+      const bool doDecals = (decalsEnabled && RenderSurfaceHasDecals(surf));
 
       // fill stencil buffer for decals
       if (doDecals) {
