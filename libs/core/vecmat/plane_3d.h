@@ -383,12 +383,30 @@ public:
   }
 
   // returns `false` if the box fully is on the back side of the plane
+  inline VVA_CHECKRESULT bool checkBox3DInclusive (const float bbox[6]) const noexcept {
+    // check reject point
+    return (PointDistance(get3DBBoxRejectPoint(bbox)) >= 0.0f); // at least partially on a front side?
+  }
+
+  // returns `false` if the box fully is on the back side of the plane
   // returns `true` for non-vertical planes (because our box is 2d)
   inline VVA_CHECKRESULT bool checkBox2D (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // vertical plane
       // check reject point
       return (PointDistance(get2DBBoxRejectPoint(bbox2d)) > 0.0f); // at least partially on a front side?
+    } else {
+      return true;
+    }
+  }
+
+  // returns `false` if the box fully is on the back side of the plane
+  // returns `true` for non-vertical planes (because our box is 2d)
+  inline VVA_CHECKRESULT bool checkBox2DInclusive (const float bbox2d[4]) const noexcept {
+    if (normal.z == 0.0f) {
+      // vertical plane
+      // check reject point
+      return (PointDistance(get2DBBoxRejectPoint(bbox2d)) >= 0.0f); // at least partially on a front side?
     } else {
       return true;
     }
