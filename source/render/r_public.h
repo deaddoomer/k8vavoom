@@ -184,6 +184,11 @@ public:
   // `dflags` is `VDrawer::ELFlag_XXX` set
   // returns 0 for unknown
   virtual vuint32 CalcEntityLight (VEntity *lowner, unsigned dflags) = 0;
+
+  // will create new decals for all touching subsectors
+  // `origdc` must be valid, with proper flags and region number
+  // `origdc` won't be modified, owned, or destroyed
+  void SpreadDecal (const decal_t *origdc);
 };
 
 

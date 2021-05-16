@@ -313,21 +313,6 @@ float R_GetAspectRatioValue () {
 
 //==========================================================================
 //
-//  VRenderLevelPublic::VRenderLevelPublic
-//
-//==========================================================================
-VRenderLevelPublic::VRenderLevelPublic () noexcept
-  : staticLightsFiltered(false)
-  //, clip_base()
-  //, refdef()
-{
-  Drawer->MirrorFlip = false;
-  Drawer->MirrorClip = false;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::RegisterAllThinkers
 //
 //  called from `PreRender()` to register all
