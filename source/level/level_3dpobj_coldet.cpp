@@ -267,24 +267,67 @@ float VLevel::CheckPObjPlanesPoint (const TVec &linestart, const TVec &lineend, 
 
 //==========================================================================
 //
+//  VLevel::IsPointInsideSubsector2D
+//
+//==========================================================================
+bool VLevel::IsPointInsideSubsector2D (const subsector_t *sub, const float x, const float y) const noexcept {
+  if (!sub) return false;
+  // subsector must be closed (it is guaranteed if it have enough segs)
+  if (sub->numlines < 3) return false;
+  if (!IsPointInside2DBBox(x, y, sub->bbox2d)) return false;
+  const TVec p(x, y, 0.0f);
+  const seg_t *seg = &Segs[sub->firstline];
+  for (int f = sub->numlines; f--; ++seg) {
+    //if (seg->PointDistance(p) < 0.0f) return false;
+    if (seg->normal.dot2D(p) < seg->dist) return false; // slightly faster
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VLevel::IsBBox2DTouchingSector
+//
+//==========================================================================
+bool VLevel::IsBBox2DTouchingSubsector (const subsector_t *sub, const float bb2d[4]) const noexcept {
+  if (!sub) return false;
+  // subsector must be closed (it is guaranteed if it have enough segs)
+  if (sub->numlines < 3) return false;
+  // if rectangles aren't intersecting... you got it
+  if (!Are2DBBoxesOverlap(sub->bbox2d, bb2d)) return false;
+  // if subsector is fully inside our rect, we're done
+  // strictly speaking, this check is not necessary, because
+  // for each seg `checkBox2DInclusive()` will select the point that is
+  // "on the right side", but why not?
+  if (sub->bbox2d[BOX2D_MINX] >= bb2d[BOX2D_MINX] &&
+      sub->bbox2d[BOX2D_MINY] >= bb2d[BOX2D_MINY] &&
+      sub->bbox2d[BOX2D_MAXX] <= bb2d[BOX2D_MAXX] &&
+      sub->bbox2d[BOX2D_MAXY] <= bb2d[BOX2D_MAXY])
+  {
+    return true;
+  }
+  // check subsector segs
+  // if our rect is fully outside of at least one seg, it is outside of subsector
+  // otherwise we are inside, and can return success
+  const seg_t *seg = &Segs[sub->firstline];
+  for (int f = sub->numlines; f--; ++seg) {
+    //if (!seg->checkBox2DInclusive(bb2d)) return false;
+    if (seg->normal.dot2D(seg->get2DBBoxRejectPoint(bb2d)) < seg->dist) return false; // slightly faster
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VLevel::IsPointInsideSector
 //
 //==========================================================================
 bool VLevel::IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept {
   if (!sec) return false;
-  TVec p(x, y, 0.0f);
   for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
-    if (sub->numlines < 3) continue;
-    if (!IsPointInside2DBBox(x, y, sub->bbox2d)) continue;
-    const seg_t *seg = &Segs[sub->firstline];
-    bool inside = true;
-    for (int f = sub->numlines; f--; ++seg) {
-      if (seg->PointDistance(p) <= 0.0f) {
-        inside = false;
-        break;
-      }
-    }
-    if (inside) return true;
+    if (IsPointInsideSubsector2D(sub, x, y)) return true;
   }
   return false;
 }
@@ -298,34 +341,7 @@ bool VLevel::IsPointInsideSector2D (const sector_t *sec, const float x, const fl
 bool VLevel::IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept {
   if (!sec) return false;
   for (const subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
-    if (sub->numlines == 0) continue;
-    // if rectangles aren't intersecting... you got it
-    if (!Are2DBBoxesOverlap(sub->bbox2d, bb2d)) continue;
-    // if subsector is fully inside our rect, we're done
-    // strictly speaking, this check is not necessary, because
-    // for each seg `checkBox2D()` will select the point that is
-    // "on the right side", but why not?
-    if (sub->bbox2d[BOX2D_MINX] >= bb2d[BOX2D_MINX] &&
-        sub->bbox2d[BOX2D_MINY] >= bb2d[BOX2D_MINY] &&
-        sub->bbox2d[BOX2D_MAXX] <= bb2d[BOX2D_MAXX] &&
-        sub->bbox2d[BOX2D_MAXY] <= bb2d[BOX2D_MAXY])
-    {
-      return true;
-    }
-    // subsector must be closed (it is guaranteed if it have enough segs)
-    if (sub->numlines < 3) continue;
-    // check subsector segs
-    // if our rect is fully outside of at least one seg, it is outside of subsector
-    // otherwise we are inside, and can return success
-    bool inside = true;
-    const seg_t *seg = &Segs[sub->firstline];
-    for (int f = sub->numlines; f--; ++seg) {
-      if (!seg->checkBox2D(bb2d)) {
-        inside = false;
-        break;
-      }
-    }
-    if (inside) return true;
+    if (IsBBox2DTouchingSubsector(sub, bb2d)) return true;
   }
   return false;
 }

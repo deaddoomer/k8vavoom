@@ -935,6 +935,11 @@ public:
   bool CanHave3DPolyObjAt2DBBox (const float bb2d[4]) const noexcept;
   bool CanHave3DPolyObjAt3DBBox (const float bb3d[6]) const noexcept;
 
+  // if the point is exactly on a seg, it is inside
+  bool IsPointInsideSubsector2D (const subsector_t *sub, const float x, const float y) const noexcept;
+  bool IsBBox2DTouchingSubsector (const subsector_t *sub, const float bb2d[4]) const noexcept;
+
+  // if the point is exactly on a seg, it is inside
   bool IsPointInsideSector2D (const sector_t *sec, const float x, const float y) const noexcept;
   bool IsBBox2DTouchingSector (const sector_t *sec, const float bb2d[4]) const noexcept;
 
