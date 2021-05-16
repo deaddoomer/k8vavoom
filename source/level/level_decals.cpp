@@ -229,10 +229,10 @@ decal_t *VLevel::AllocSRegDecal (subregion_t *sreg, VDecalDef *dec) {
 
 //==========================================================================
 //
-//  VLevel::CleanupDecals
+//  VLevel::CleanupSegDecals
 //
 //==========================================================================
-void VLevel::CleanupDecals (seg_t *seg) {
+void VLevel::CleanupSegDecals (seg_t *seg) {
   if (!seg) return;
   const int bigLimit = gl_bigdecal_limit.asInt();
   const int smallLimit = gl_smalldecal_limit.asInt();
@@ -321,6 +321,16 @@ void VLevel::CleanupDecals (seg_t *seg) {
       continue;
     }
   }
+}
+
+
+//==========================================================================
+//
+//  VLevel::CleanupSRegDecalsEx
+//
+//==========================================================================
+void VLevel::CleanupSRegDecalsEx (subregion_t *sreg, bool asFloor) {
+  //TODO
 }
 
 
@@ -444,7 +454,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
             decal->flags |= decal_t::SlideFloor;
             decal->curz -= decal->slidesec->floor.TexZ;
             //if (side != seg->side) decal->flags ^= decal_t::FlipX;
-            CleanupDecals(seg);
+            CleanupSegDecals(seg);
           } else {
             VDC_DLOG(NAME_Debug, " SKIP solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
           }
@@ -661,7 +671,7 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
 
       if (side != seg->side) decal->flags ^= decal_t::FlipX;
 
-      CleanupDecals(seg);
+      CleanupSegDecals(seg);
     }
   }
 

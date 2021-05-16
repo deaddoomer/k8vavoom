@@ -72,12 +72,24 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   if (!r_decals) return false;
   if (RendLev->/*PortalDepth*/PortalUsingStencil) return false; //FIXME: not yet
 
-  if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
+  enum { DWALL, DFLOOR, DCEILING };
 
-  seg_t *seg = surf->seg;
-  if (!seg) return false; // just in case
-  const line_t *line = seg->linedef;
-  if (!line) return false; // just in case
+  const int dkind =
+    surf->plane.normal.z == 0.0f ? DWALL :
+    surf->plane.normal.z < 0.0f ? DCEILING : DFLOOR;
+
+  switch (dkind) {
+    case DWALL:
+      if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
+      break;
+    case DFLOOR:
+      if (!surf->sreg || !surf->sreg->floordecalhead) return false; // nothing to do
+      break;
+    case DCEILING:
+      if (!surf->sreg || !surf->sreg->ceildecalhead) return false; // nothing to do
+      break;
+    default: return false; // just in case
+  }
 
   texinfo_t *tex = surf->texinfo;
 
@@ -123,6 +135,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       abort();
   }
 
+  seg_t *seg = (dkind == DWALL ? surf->seg : nullptr);
+  const line_t *line = (dkind == DWALL ? seg->linedef : nullptr);
+  if (dkind == DWALL && !line) return false; // just in case
+
   /*
   GLint oldDepthMask;
   glGetIntegerv(GL_DEPTH_WRITEMASK, &oldDepthMask);
@@ -157,7 +173,15 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   int smallDecalCount = 0;
 
   // also, clear dead decals here, 'cause why not?
-  decal_t *dcl = seg->decalhead;
+
+  decal_t *dcl;
+  switch (dkind) {
+    case DWALL: dcl = seg->decalhead; break;
+    case DFLOOR: dcl = surf->sreg->floordecalhead; break;
+    case DCEILING: dcl = surf->sreg->ceildecalhead; break;
+    default: abort(); // just in case
+  }
+
   while (dcl) {
     decal_t *dc = dcl;
     dcl = dcl->next;
@@ -172,16 +196,18 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     if (!dtex || dtex->Width < 1 || dtex->Height < 1 || dc->alpha <= 0.0f || dscaleX <= 0.0f || dscaleY <= 0.0f) {
       // remove it, if it is not animated
       if (!dc->animator) {
-        seg->removeDecal(dc);
+        if (dkind == DWALL) seg->removeDecal(dc); else surf->sreg->removeDecal(dc);
         delete dc;
       }
       continue;
     }
 
-    // check decal flags
-    if ((dc->flags&decal_t::NoMidTex) && (surf->typeFlags&surface_t::TF_MIDDLE)) continue;
-    if ((dc->flags&decal_t::NoTopTex) && (surf->typeFlags&surface_t::TF_TOP)) continue;
-    if ((dc->flags&decal_t::NoBotTex) && (surf->typeFlags&surface_t::TF_BOTTOM)) continue;
+    if (dkind == DWALL) {
+      // check decal flags
+      if ((dc->flags&decal_t::NoMidTex) && (surf->typeFlags&surface_t::TF_MIDDLE)) continue;
+      if ((dc->flags&decal_t::NoTopTex) && (surf->typeFlags&surface_t::TF_TOP)) continue;
+      if ((dc->flags&decal_t::NoBotTex) && (surf->typeFlags&surface_t::TF_BOTTOM)) continue;
+    }
 
     if (currTexId != dcTexId || lastTexTrans != dc->translation) {
       auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME! -- k8: what i wanted to fix here?
@@ -207,53 +233,78 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       SetDecalTexture(dtex, currTrans, cmap); // this sets `tex_iw` and `tex_ih`
     }
 
-    const float xstofs = dc->xdist-txofs+dc->ofsX;
-    const TVec v1 = (*line->v1)+line->ndir*xstofs;
-    const TVec v2 = v1+line->ndir*twdt;
-
-    float dcz = dc->curz+dscaleY+tyofs-dc->ofsY;
-    // fix Z, if necessary
-    if (dc->slidesec) {
-      if (dc->flags&decal_t::SlideFloor) {
-        // should slide with back floor
-        dcz += dc->slidesec->floor.TexZ;
-      } else if (dc->flags&decal_t::SlideCeil) {
-        // should slide with back ceiling
-        dcz += dc->slidesec->ceiling.TexZ;
-      }
-    }
-    // move to bottom
-    dcz -= thgt;
+    TVec v1, v2;
+    TVec saxis, taxis;
+    float soffs, toffs;
+    float dcz;
 
     // decal scale is not inverted, but we need inverted scale for some calculations
     const float dscaleXInv = 1.0f/dscaleX;
     const float dscaleYInv = 1.0f/dscaleY;
 
-    // calculate texture axes
-    TVec saxis(seg->dir);
-    TVec taxis(0.0f, 0.0f, -1.0f);
-    #if 0
-    // this does one part of decal rotation
-    // decal placement code is not ready for this yet, so it is disabled
-    float s = 1.0f, c = 1.0f;
-    const float angle = 0.0f;
-    if (angle != 0.0f) {
-      msincos(angle, &s, &c);
-      taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
-      saxis = Normalise(CrossProduct(seg->normal, taxis));
+    if (dkind == DWALL) {
+      const float xstofs = dc->xdist-txofs+dc->ofsX;
+      v1 = (*line->v1)+line->ndir*xstofs;
+      v2 = v1+line->ndir*twdt;
+
+      dcz = dc->curz+dscaleY+tyofs-dc->ofsY;
+      // fix Z, if necessary
+      if (dc->slidesec) {
+        if (dc->flags&decal_t::SlideFloor) {
+          // should slide with back floor
+          dcz += dc->slidesec->floor.TexZ;
+        } else if (dc->flags&decal_t::SlideCeil) {
+          // should slide with back ceiling
+          dcz += dc->slidesec->ceiling.TexZ;
+        }
+      }
+      // move to bottom
+      dcz -= thgt;
+
+      // calculate texture axes
+      saxis = TVec(seg->dir);
+      taxis = TVec(0.0f, 0.0f, -1.0f);
+      #if 0
+      // this does one part of decal rotation
+      // decal placement code is not ready for this yet, so it is disabled
+      float s = 1.0f, c = 1.0f;
+      const float angle = 0.0f;
+      if (angle != 0.0f) {
+        msincos(angle, &s, &c);
+        taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+        saxis = Normalise(CrossProduct(seg->normal, taxis));
+      }
+      #endif
+
+      saxis *= dtex->TextureSScale()*dscaleXInv;
+      taxis *= dtex->TextureTScale()*dscaleYInv;
+
+      if (dc->flags&decal_t::FlipX) saxis = -saxis;
+      if (dc->flags&decal_t::FlipY) taxis = -taxis;
+
+      // texture offset already taken into account, so we need only offsets for bottom left corner
+      //TODO: this is prolly not fully right for flipped decals
+      soffs = -DotProduct(v1, saxis); // horizontal
+      toffs = -DotProduct(TVec(v1.x, v1.y, dcz), taxis); // vertical
+    } else {
+      // floor/ceiling
+      saxis = TVec(1.0f,  0.0f);
+      taxis = TVec(0.0f, -1.0f);
+
+      saxis *= dtex->TextureSScale()*dscaleXInv;
+      taxis *= dtex->TextureTScale()*dscaleYInv;
+
+      if (dc->flags&decal_t::FlipX) saxis = -saxis;
+      if (dc->flags&decal_t::FlipY) taxis = -taxis;
+
+      // texture offset already taken into account, so we need only offsets for bottom left corner
+      //FIXME: this is TOTALLY wrong!
+      //TODO: this is prolly not fully right for flipped decals
+      v1 = TVec(dc->worldx, dc->worldy);
+      v1.z = surf->plane.GetPointZ(v1);
+      soffs = -DotProduct(v1, saxis); // horizontal
+      toffs = -DotProduct(v1, taxis); // vertical
     }
-    #endif
-
-    saxis *= dtex->TextureSScale()*dscaleXInv;
-    taxis *= dtex->TextureTScale()*dscaleYInv;
-
-    if (dc->flags&decal_t::FlipX) saxis = -saxis;
-    if (dc->flags&decal_t::FlipY) taxis = -taxis;
-
-    // texture offset already taken into account, so we need only offsets for bottom left corner
-    //TODO: this is prolly not fully right for flipped decals
-    float soffs = -DotProduct(v1, saxis); // horizontal
-    float toffs = -DotProduct(TVec(v1.x, v1.y, dcz), taxis); // vertical
 
     // setup texture
     switch (dtype) {
@@ -288,10 +339,32 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     currentActiveShader->UploadChangedUniforms();
     glBegin(GL_QUADS);
-      glVertex3f(v1.x, v1.y, dcz);
-      glVertex3f(v1.x, v1.y, dcz+thgt);
-      glVertex3f(v2.x, v2.y, dcz+thgt);
-      glVertex3f(v2.x, v2.y, dcz);
+      if (dkind == DWALL) {
+        glVertex3f(v1.x, v1.y, dcz);
+        glVertex3f(v1.x, v1.y, dcz+thgt);
+        glVertex3f(v2.x, v2.y, dcz+thgt);
+        glVertex3f(v2.x, v2.y, dcz);
+      } else {
+        // floor/ceiling
+        //TODO: rotation
+        // left-bottom
+        TVec qv0 = v1-TVec(txofs, tyofs);
+        qv0.z = surf->plane.GetPointZ(qv0);
+        // right-bottom
+        TVec qv1 = qv0+TVec(twdt, 0.0f);
+        qv1.z = surf->plane.GetPointZ(qv1);
+        // left-top
+        TVec qv2 = qv0-TVec(0.0f, thgt);
+        qv2.z = surf->plane.GetPointZ(qv2);
+        // right-top
+        TVec qv3 = qv1-TVec(0.0f, thgt);
+        qv3.z = surf->plane.GetPointZ(qv3);
+        // draw it
+        glVertex3f(qv0.x, qv0.y, qv0.z);
+        glVertex3f(qv2.x, qv2.y, qv2.z);
+        glVertex3f(qv3.x, qv3.y, qv3.z);
+        glVertex3f(qv1.x, qv1.y, qv1.z);
+      }
     glEnd();
 
     ++rdcount;
@@ -325,7 +398,13 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const int smallLimit = gl_smalldecal_limit.asInt();
     int toKillBig = (bigLimit > 0 ? bigDecalCount-bigLimit : 0);
     int toKillSmall = (smallLimit > 0 ? smallDecalCount-smallLimit : 0);
-    if (toKillBig > 0 || toKillSmall > 0) GClLevel->CleanupDecals(seg);
+    if (toKillBig > 0 || toKillSmall > 0) {
+      switch (dkind) {
+        case DWALL: GClLevel->CleanupSegDecals(seg); break;
+        case DFLOOR: GClLevel->CleanupSRegFloorDecals(surf->sreg); break;
+        case DCEILING: GClLevel->CleanupSRegCeilingDecals(surf->sreg); break;
+      }
+    }
   }
 
   return true;

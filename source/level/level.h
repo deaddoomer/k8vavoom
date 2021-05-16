@@ -1123,7 +1123,11 @@ public:
 public:
   // this will remove dead and over-the-limit decals (including animated)
   // called from `AddDecal()`
-  void CleanupDecals (seg_t *seg);
+  void CleanupSegDecals (seg_t *seg);
+  void CleanupSRegDecalsEx (subregion_t *sreg, bool asFloor);
+
+  inline void CleanupSRegFloorDecals (subregion_t *sreg) { CleanupSRegDecalsEx(sreg, true); }
+  inline void CleanupSRegCeilingDecals (subregion_t *sreg) { CleanupSRegDecalsEx(sreg, false); }
 
   void KillAllSectorDecals ();
 

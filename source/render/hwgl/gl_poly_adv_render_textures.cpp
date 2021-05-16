@@ -113,7 +113,12 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
     for (auto &&surf : dls.DrawSurfListSolid) {
       SADV_CHECK_TEXTURE(ShadowsTexture);
 
-      const bool doDecals = (currTexinfo->Tex && !currTexinfo->noDecals && surf->seg && surf->seg->decalhead);
+      const bool doDecals =
+        currTexinfo->Tex && !currTexinfo->noDecals &&
+        ((surf->seg && surf->seg->decalhead) ||
+         (surf->sreg &&
+          (((surf->typeFlags&surface_t::TF_FLOOR) && surf->sreg->floordecalhead) ||
+           ((surf->typeFlags&surface_t::TF_CEILING) && surf->sreg->ceildecalhead))));
 
       // fill stencil buffer for decals
       if (doDecals) {
