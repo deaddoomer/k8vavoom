@@ -114,13 +114,6 @@ struct decal_t {
 
 // ////////////////////////////////////////////////////////////////////////// //
 class VRenderLevelPublic : public VInterface {
-public: //k8: i am too lazy to write accessor methods
-  bool staticLightsFiltered;
-
-  // base planes to create fov-based frustum
-  TClipBase clip_base;
-  refdef_t refdef;
-
 public:
   struct LightInfo {
     TVec origin;
@@ -129,8 +122,19 @@ public:
     bool active;
   };
 
+public: //k8: i am too lazy to write accessor methods
+  bool staticLightsFiltered;
+
+  // base planes to create fov-based frustum
+  TClipBase clip_base;
+  refdef_t refdef;
+
+  VLevel *Level;
+
 public:
-  VRenderLevelPublic () noexcept;
+  VRenderLevelPublic (VLevel *ALevel) noexcept;
+
+  inline VLevel *GetLevel () const noexcept { return Level; }
 
   virtual void PreRender () = 0;
   virtual void PObjModified (polyobj_t *po) = 0; // fix polyobject segs

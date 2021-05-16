@@ -178,6 +178,7 @@ struct RenderStyleInfo {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 class VRenderLevelDrawer : public VRenderLevelPublic {
 protected:
   bool mIsShadowVolumeRenderer;
@@ -247,6 +248,7 @@ public:
     }
   };
 
+public:
   TArray<DrawLists> DrawListStack;
 
   int PortalDepth;
@@ -310,6 +312,8 @@ public:
   };
 
 public:
+  VRenderLevelDrawer (VLevel *ALevel) noexcept;
+
   // lightmap chain iterator (used in renderer)
   // block number+1 or 0
   virtual vuint32 GetLightChainHead () = 0;

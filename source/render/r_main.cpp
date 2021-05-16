@@ -592,8 +592,8 @@ void R_Start (VLevel *ALevel) {
 //
 //==========================================================================
 VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
-  : VRenderLevelDrawer()
-  , Level(ALevel)
+  : VRenderLevelDrawer(ALevel)
+  //, Level(ALevel)
   , ViewEnt(nullptr)
   , CurrPortal(nullptr)
   , MirrorLevel(0)

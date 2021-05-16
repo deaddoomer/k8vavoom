@@ -32,13 +32,36 @@
 //  VRenderLevelPublic::VRenderLevelPublic
 //
 //==========================================================================
-VRenderLevelPublic::VRenderLevelPublic () noexcept
+VRenderLevelPublic::VRenderLevelPublic (VLevel *ALevel) noexcept
   : staticLightsFiltered(false)
   //, clip_base()
   //, refdef()
+  , Level(ALevel)
 {
   Drawer->MirrorFlip = false;
   Drawer->MirrorClip = false;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct DInfo {
+  float bb2d[4];
+  const decal_t *origdc;
+};
+
+
+//==========================================================================
+//
+//  AddDecalToSubsector
+//
+//  `*udata` is `DInfo`
+//
+//==========================================================================
+static bool AddDecalToSubsector (VLevel *level, subsector_t *sub, void *udata) {
+  const DInfo *nfo = (const DInfo *)udata;
+  if (level->IsBBox2DTouchingSubsector(sub, nfo->bb2d)) {
+  }
+  return true; // continue checking
 }
 
 
@@ -61,4 +84,40 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
     --ridx;
     vassert(ridx >= 0);
   }
+
+  //TODO: rotated decals
+
+  const int dcTexId = origdc->texture; // "0" means "no texture found"
+  if (dcTexId <= 0) return;
+  VTexture *dtex = GTextureManager[dcTexId];
+
+  // decal scale is not inverted
+  const float dscaleX = origdc->scaleX;
+  const float dscaleY = origdc->scaleY;
+
+  // use origScale to get the original starting point
+  const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
+  const float tyofs = dtex->GetScaledTOffsetF()*origdc->origScaleY;
+
+  const float twdt = dtex->GetScaledWidthF()*dscaleX;
+  const float thgt = dtex->GetScaledHeightF()*dscaleY;
+
+  const TVec v1(origdc->worldx, origdc->worldy);
+  // left-bottom
+  const TVec qv0 = v1-TVec(txofs, tyofs);
+  // right-bottom
+  const TVec qv1 = qv0+TVec(twdt, 0.0f);
+  // left-top
+  const TVec qv2 = qv0-TVec(0.0f, thgt);
+  // right-top
+  const TVec qv3 = qv1-TVec(0.0f, thgt);
+
+  DInfo nfo;
+  nfo.origdc = origdc;
+  nfo.bb2d[BOX2D_MINX] = min2(min2(min2(qv0.x, qv1.x), qv2.x), qv3.x);
+  nfo.bb2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
+  nfo.bb2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
+  nfo.bb2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
+
+  Level->CheckBSPB2DBox(nfo.bb2d, &AddDecalToSubsector, &nfo);
 }

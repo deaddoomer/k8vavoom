@@ -509,6 +509,22 @@ vuint32 VDrawer::CalcEntityLight (VEntity *lowner, unsigned flags) {
 
 //==========================================================================
 //
+//  VRenderLevelDrawer::VRenderLevelDrawer
+//
+//==========================================================================
+VRenderLevelDrawer::VRenderLevelDrawer (VLevel *ALevel) noexcept
+  : VRenderLevelPublic(ALevel)
+  , mIsShadowVolumeRenderer(false)
+  , PortalDepth(0)
+  , PortalUsingStencil(0)
+  , currDLightFrame(0)
+  , currQueueFrame(0)
+{
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelDrawer::ResetDrawStack
 //
 //  should be called before rendering a frame

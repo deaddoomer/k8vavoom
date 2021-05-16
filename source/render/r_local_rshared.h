@@ -96,7 +96,7 @@ protected:
   };
 
 protected:
-  VLevel *Level;
+  //VLevel *Level; // moved to `VRenderLevelPublic()`
   VEntity *ViewEnt;
   VPortal *CurrPortal;
 
@@ -699,8 +699,6 @@ public:
   void SetupSky ();
 
 public:
-  inline VLevel *GetLevel () const noexcept { return Level; }
-
   void FlushSurfCaches (surface_t *InSurfs) noexcept;
 
   // `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
