@@ -148,6 +148,13 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   } else {
     atFloor = (origdc->eregindex ? origdc->isFloor() : origdc->isCeiling());
   }
+
+  // check texture
+  const int texid = (atFloor ? dreg->floorplane.splane : dreg->ceilplane.splane)->pic.id;
+  if (texid <= 0 || texid == skyflatnum) return true; // continue checking
+  VTexture *tex = GTextureManager[texid];
+  if (!tex || tex->Type == TEXTYPE_Null || tex->animated) return true; // continue checking
+
   // fix decal surface type
   dcnew->dcsurf = (atFloor ? decal_t::Floor : decal_t::Ceiling);
   // and append it
