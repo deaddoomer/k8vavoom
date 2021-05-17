@@ -40,9 +40,13 @@ enum { DWALL, DFLOOR, DCEILING };
 //
 //==========================================================================
 static inline int GetSurfDecalKind (const surface_t *surf) noexcept {
-  return
-    surf->plane.normal.z == 0.0f ? DWALL :
-    surf->plane.normal.z < 0.0f ? DCEILING : DFLOOR;
+  if (surf->plane.normal.z == 0.0f) return DWALL;
+  const subregion_t *sr = surf->sreg; // owning subsector region (can be `nullptr` for walls)
+  if (!sr || (sr->secregion->regflags&sec_region_t::RF_BaseRegion)) {
+    return (surf->plane.normal.z < 0.0f ? DCEILING : DFLOOR);
+  } else {
+    return (surf->plane.normal.z > 0.0f ? DCEILING : DFLOOR);
+  }
 }
 
 
@@ -96,7 +100,6 @@ bool VOpenGLDrawer::RenderSurfaceHasDecals (const surface_t *surf) const {
 //==========================================================================
 void VOpenGLDrawer::RenderPrepareShaderDecals (const surface_t *surf) {
   if (!decalUsedStencil) decalStcVal = (IsStencilBufferDirty() ? 255 : 0);
-
   if (++decalStcVal == 0) {
     // it wrapped, so clear stencil buffer
     ClearStencilBuffer();
@@ -108,14 +111,6 @@ void VOpenGLDrawer::RenderPrepareShaderDecals (const surface_t *surf) {
   decalUsedStencil = true;
   NoteStencilBufferDirty(); // it will be dirtied
 }
-
-
-// fuck you, shitplusplus! where's my `finally`?!
-struct TurnOffStencitOnExit {
-  inline ~TurnOffStencitOnExit () noexcept {
-    glDisable(GL_STENCIL_TEST);
-  }
-};
 
 
 static int maxrdcount = 0; // sorry for this global, it is for debugging
@@ -131,10 +126,6 @@ static int maxrdcount = 0; // sorry for this global, it is for debugging
 //
 //==========================================================================
 bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, surfcache_t *cache, int cmap) {
-  TurnOffStencitOnExit tss; // `finally` emulator (thank you for the convenience, shitplusplus!)
-
-  const int dkind = GetSurfDecalKind(surf);
-
   const texinfo_t *tex = surf->texinfo;
 
   // setup shader
@@ -179,6 +170,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       abort();
   }
 
+  const int dkind = GetSurfDecalKind(surf);
   seg_t *seg = (dkind == DWALL ? surf->seg : nullptr);
   const line_t *line = (dkind == DWALL ? seg->linedef : nullptr);
 
@@ -345,8 +337,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       //TODO: this is prolly not fully right for flipped decals
       v1 = TVec(dc->worldx, dc->worldy);
       v1.z = surf->plane.GetPointZ(v1);
-      soffs = -DotProduct(v1, saxis); // horizontal
-      toffs = -DotProduct(v1, taxis); // vertical
+      const TVec ofsv = v1+TVec(-txofs, tyofs);
+      soffs = -DotProduct(ofsv, saxis); // horizontal
+      toffs = -DotProduct(ofsv, taxis); // vertical
 
       // fuck you, shitg++!
       v2.x = v2.y = dcz = 0.0f;
@@ -430,7 +423,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   }
 
   if (gl_decal_debug_noalpha) GLEnableBlend();
-  //glDisable(GL_STENCIL_TEST); // done with `tss`
+  glDisable(GL_STENCIL_TEST);
   //glDepthMask(oldDepthMask);
   PopDepthMask();
   GLEnableBlend();
