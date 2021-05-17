@@ -40,6 +40,29 @@ final void DebugCheckMidTex () {
 
   trsplat_t tr;
   DebugTraceLineEx(shootOrigin, aimDir, 8192, allowEntities:false, out tr, stopat3dmidtex:true, nozofs:true);
+  // spawn particles
+  if (tr.didhit) {
+    TVec ptorg = tr.hit;
+    //if (!tr.line) ptorg += in.plane.normal*1.0f;
+    int c = P_Random()>>1;
+    foreach (int i; 0..MAXPLAYERS) {
+      if (!Level.Game.Players[i]) continue;
+      if (!Level.Game.Players[i].bSpawned) continue;
+      PlayerEx(Level.Game.Players[i]).ParticleEffect(20, LineSpecialLevelInfo::pt_static,
+               LineSpecialLevelInfo::pt_explode2, ptorg, 0.0, vector(32.0, 32.0, 32.0),
+               0.5, 10.0, 40.0, RGB(c, c, c), 0.8, 0.0);
+    }
+  }
+  // spawn decal
+  //k8:TODO: this should be strictly client-side
+  if (tr.didhit) {
+    if (tr.line) {
+      if (tr.sec) SpawnDecal(tr.hit, 'BigScorch', tr.side, tr.line);
+    } else {
+      XLevel.AddFlatDecal(tr.hit, 32, 'BigScorch');
+    }
+  }
+  // show some info
   if (tr.didhit && tr.line) {
     float top, bot;
     bool ok = XLevel.GetMidTexturePosition(tr.line, tr.side, out bot, out top);
@@ -96,10 +119,12 @@ final void DebugCheckMidTex () {
       }
     }
 
+    #if 0
     auto real_hit_point = tr.hit;
     auto hitPoint = real_hit_point-(4.0*aimDir);
     // spawn bullet puff
     SpawnPuff(hitPoint, /*distance*/8192, BulletPuff, false, tr.sec, tr.line, real_hit_point);
+    #endif
   }
 
   /+
@@ -144,23 +169,14 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
         printdebug("skyplane!");
       } else {
         if (in.plane.normal.z > 0.0f) printdebug("floor plane!"); else printdebug("ceiling plane!");
-        #if 1
+        #if 0
         // flat decal test
-        XLevel.AddFlatDecal(in.hitpoint, 32, 'K8BigScorchTest');
+        //XLevel.AddFlatDecal(in.hitpoint, 32, 'K8BigScorchTest');
+        XLevel.AddFlatDecal(in.hitpoint, 32, 'BigScorch');
         #endif
       }
       tr.hit = in.hitpoint;
       tr.didhit = true;
-      // spawn particles
-      TVec ptorg = in.hitpoint+in.plane.normal*1.0f;
-      int c = P_Random()>>1;
-      foreach (int i; 0..MAXPLAYERS) {
-        if (!Level.Game.Players[i]) continue;
-        if (!Level.Game.Players[i].bSpawned) continue;
-        PlayerEx(Level.Game.Players[i]).ParticleEffect(20, LineSpecialLevelInfo::pt_static,
-                 LineSpecialLevelInfo::pt_explode2, ptorg, 0.0, vector(32.0, 32.0, 32.0),
-                 0.5, 10.0, 40.0, RGB(c, c, c), 0.8, 0.0);
-      }
       return false;
     }
 
