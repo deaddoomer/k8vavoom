@@ -413,6 +413,9 @@ Actor K8Gore_BloodSpot : K8Gore_BloodBase {
             A_k8JumpIfLiquidFloor("ItLandedOnWater");
           }
         }
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "EndlessLoop")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Death")
     EndlessLoop:
       // become non-scripted; from 22 secs to 17 minutes
       "####" "#" -1 A_BecomeK8VavoomInternalNoTickGrav(frandom(800, 12600)/35.0, frandom(64, 90)/35.0/10.0)
@@ -517,6 +520,12 @@ Actor K8Gore_CeilBloodSpot : K8Gore_BloodSpot {
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner",0,0,0,true);
           }
         }
+
+      // if flat decals are allowed, get lost
+      //"####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      //"####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "DieNow")
+
+    GoOnToFade:
       "####" "################################################################################" 2
       "####" "################################################################################" 2
       "####" "################################################################################" 2
@@ -702,6 +711,12 @@ Actor K8Gore_DripingBloodLeavesSmallPool : K8Gore_TinyBlood {
         A_SpawnItem("K8Gore_MinuscleBloodSpot", 0, 0, 0, true);
         A_ChangeFlag("StickToFloor", 1);
       }
+
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "DieNow")
+
+    GoOnToFade:
       XDT1 EFGHIJKL 2
       Stop
 
@@ -776,6 +791,10 @@ Actor K8Gore_MinuscleBloodSpot : K8Gore_BloodSpot {
       Goto DoWaitAndFade
 
     DoWaitAndFade:
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Death")
+    GoOnToFade:
       "####" "#" random(400, 800)
     DoFade:
       "####" "#" 1 A_FadeOut(0.04)
@@ -831,6 +850,10 @@ Actor K8Gore_GrowingBloodPool : K8Gore_BloodSpot {
   States {
     Spawn:
       BPDL A 0
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
+    GoOnPool:
       BPDL A 0 A_Jump(256, "Pool1", "Pool2")
 
     Pool1:
@@ -1306,6 +1329,10 @@ Actor K8Gore_BloodSpotTransient : K8Gore_BloodBaseTransient {
           }
         }
       //"####" "#" random(100, 450)
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Death")
+    GoOnToFade:
       // become non-scripted
       "####" "#" -1 A_BecomeK8VavoomInternalNoTickGrav(frandom(100, 450)/35.0, frandom(64, 90)/35.0/10.0)
     FadeOutLoop:
@@ -1403,6 +1430,12 @@ Actor K8Gore_CeilBloodSpotTransient : K8Gore_BloodSpotTransient {
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawnerTransient",0,0,0,true);
           }
         }
+
+      // if flat decals are allowed, get lost
+      //"####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      //"####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "DieNow")
+
+    GoOnToFade:
       "####" "################################################################################" 2
       "####" "################################################################################" 2
       "####" "################################################################################" 2
@@ -1589,6 +1622,12 @@ Actor K8Gore_DripingBloodLeavesSmallPoolTransient : K8Gore_TinyBloodTransient {
         A_SpawnItem("K8Gore_MinuscleBloodSpotTransient", 0, 0, 0, true);
         A_ChangeFlag("StickToFloor", 1);
       }
+
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "DieNow")
+
+    GoOnToFade:
       XDT1 EFGHIJKL 2 A_FadeOut(0.1)
       Stop
 
@@ -1663,6 +1702,10 @@ Actor K8Gore_MinuscleBloodSpotTransient : K8Gore_BloodSpotTransient {
       Goto DoWaitAndFade
 
     DoWaitAndFade:
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnToFade")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Death")
+    GoOnToFade:
       "####" "#" random(400, 800)
     DoFade:
       "####" "#" 1 A_FadeOut(0.04)
@@ -1718,6 +1761,10 @@ Actor K8Gore_GrowingBloodPoolTransient : K8Gore_BloodSpotTransient {
   States {
     Spawn:
       BPDL A 0
+      // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
+      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
+    GoOnPool:
       BPDL A 0 A_Jump(256, "Pool1", "Pool2")
 
     Pool1:
