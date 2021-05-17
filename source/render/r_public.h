@@ -80,8 +80,9 @@ struct decal_t {
     Wall = 0u,
     Floor = 1u,
     Ceiling = 2u,
+    // note that `3u` is invalid
     FakeFlag = 4u,
-    SurfTypeMask = 0x03,
+    SurfTypeMask = 0x03u,
   };
   decal_t *prev; // in seg/sreg/slidesec
   decal_t *next; // in seg/sreg/slidesec
@@ -109,6 +110,21 @@ struct decal_t {
   VDecalAnim *animator; // decal animator (can be nullptr)
   decal_t *prevanimated; // so we can skip static decals
   decal_t *nextanimated; // so we can skip static decals
+
+  // nore that floor/ceiling type should be correctly set for 3d floor subregions
+  // i.e. decal on top of 3d floor is ceiling decal
+
+  inline bool isWall () const noexcept { return (dcsurf == Wall); }
+  inline bool isNonWall () const noexcept { return ((dcsurf&SurfTypeMask) != Wall); }
+  inline bool isFloor () const noexcept { return ((dcsurf&SurfTypeMask) == Floor); }
+  inline bool isCeiling () const noexcept { return ((dcsurf&SurfTypeMask) == Ceiling); }
+  // for fake floor/ceiling? (not implemented yet)
+  inline bool isFake () const noexcept { return (dcsurf&FakeFlag); }
+
+  // WARNING! call this ONLY for known non-wall decals!
+  // non-base regions has their floor and ceiling switched
+  // so floor decal for 3d floor region is actually ceiling decal, and vice versa
+  //inline bool isFloorEx () const noexcept { return (eregindex ? isCeiling() : isFloor()); }
 };
 
 

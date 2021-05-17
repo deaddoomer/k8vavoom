@@ -1344,10 +1344,13 @@ private:
 
   int SetBodyQueueTrans (int, int);
 
-  decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
-  decal_t *AllocSRegDecal (subregion_t *sreg, VDecalDef *dec);
+public: // used in renderer for flat decals
   void AddAnimatedDecal (decal_t *dc);
   void RemoveDecalAnimator (decal_t *dc); // this will also delete animator; safe to call on decals without an animator
+
+private:
+  decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
+  decal_t *AllocSRegDecal (subregion_t *sreg, VDecalDef *dec);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);
