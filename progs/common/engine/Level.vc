@@ -395,6 +395,13 @@ native final int SetBodyQueueTrans (int Slot, int Transl);
 native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation);
 native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation);
 
+// z coord matters!
+//native final void AddFloorDecal (TVec org, name dectype, optional int translation);
+// z coord matters!
+//native final void AddCeilingDecal (TVec org, name dectype, optional int translation);
+// z coord matters! `height` is from `org.z`
+native final void AddFlatDecal (TVec org, float height, name dectype, optional int translation);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // iterators

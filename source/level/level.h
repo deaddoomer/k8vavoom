@@ -1350,7 +1350,12 @@ public: // used in renderer for flat decals
 
 private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
-  decal_t *AllocSRegDecal (subregion_t *sreg, VDecalDef *dec);
+  //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);
+
+  void AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, float wx, float wy, VDecalDef *dec, int level, int translation);
+
+  // z coord matters!
+  void AddFlatDecal (TVec org, float height, VName dectype, int translation);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);
@@ -1611,6 +1616,10 @@ private:
 
   DECLARE_FUNCTION(AddDecal)
   DECLARE_FUNCTION(AddDecalById)
+
+  //DECLARE_FUNCTION(AddFloorDecal)
+  //DECLARE_FUNCTION(AddCeilingDecal)
+  DECLARE_FUNCTION(AddFlatDecal)
 
   DECLARE_FUNCTION(doRecursiveSound)
 

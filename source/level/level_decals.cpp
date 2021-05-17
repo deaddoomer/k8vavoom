@@ -193,33 +193,6 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec) {
 }
 
 
-//==========================================================================
-//
-//  VLevel::AllocSRegDecal
-//
-//==========================================================================
-decal_t *VLevel::AllocSRegDecal (subregion_t *sreg, VDecalDef *dec) {
-  vassert(sreg);
-  vassert(dec);
-  decal_t *decal = new decal_t;
-  memset((void *)decal, 0, sizeof(decal_t));
-  sreg->appendDecal(decal);
-  decal->dectype = dec->name;
-  //decal->texture = tex;
-  //decal->translation = translation;
-  //decal->orgz = decal->curz = orgz;
-  //decal->xdist = lineofs;
-  decal->ofsX = decal->ofsY = 0;
-  decal->scaleX = decal->origScaleX = dec->scaleX.value;
-  decal->scaleY = decal->origScaleY = dec->scaleY.value;
-  decal->alpha = decal->origAlpha = dec->alpha.value;
-  decal->addAlpha = dec->addAlpha.value;
-  decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
-  if (decal->animator) AddAnimatedDecal(decal);
-  return decal;
-}
-
-
 #define KILL_CDC_DECAL()  do { \
   RemoveDecalAnimator(cdc); \
   seg->removeDecal(cdc); \
@@ -894,6 +867,126 @@ void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, in
 }
 
 
+//==========================================================================
+//
+//  VLevel::AddFlatDecalEx
+//
+//  z coord doesn't matter
+//
+//==========================================================================
+void VLevel::AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, float wx, float wy, VDecalDef *dec, int level, int translation) {
+  if (level > 16) {
+    GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
+    return;
+  }
+
+  if (dec->lowername != NAME_None) {
+    if (dec->lowername != NAME_None && VStr::strEquCI(*dec->lowername, "none")) {
+      VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
+      if (dcl) AddFlatDecalEx(sec, eregidx, atRegFloor, wx, wy, dcl, level+1, translation);
+    }
+  }
+
+  int tex = dec->texid;
+  VTexture *DTex = GTextureManager[tex];
+  if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
+
+  decal_t *decal = new decal_t;
+  memset((void *)decal, 0, sizeof(decal_t));
+  decal->dectype = dec->name;
+  decal->texture = tex;
+  decal->translation = translation;
+  decal->slidesec = sec;
+  decal->eregindex = eregidx;
+  decal->dcsurf = (atRegFloor ? decal_t::Floor : decal_t::Ceiling);
+  decal->worldx = wx;
+  decal->worldy = wy;
+  //decal->orgz = decal->curz = 0.0f; // doesn't matter
+  //decal->xdist = 0.0f; // doesn't matter
+  //decal->ofsX = decal->ofsY = 0;
+  decal->scaleX = decal->origScaleX = dec->scaleX.value;
+  decal->scaleY = decal->origScaleY = dec->scaleY.value;
+  decal->alpha = decal->origAlpha = dec->alpha.value;
+  decal->addAlpha = dec->addAlpha.value;
+  decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
+  if (decal->animator) AddAnimatedDecal(decal);
+
+  // append to sector decal list
+  if (secdecaltail) {
+    decal->prev = secdecaltail;
+    decal->prev->next = decal;
+  } else {
+    vassert(!secdecalhead);
+    secdecalhead = decal;
+  }
+  secdecaltail = decal;
+
+  if (Renderer) Renderer->SpreadDecal(decal);
+}
+
+
+//==========================================================================
+//
+//  VLevel::AddFlatDecal
+//
+//  z coord matters!
+//  `height` is from `org.z`
+//
+//==========================================================================
+void VLevel::AddFlatDecal (TVec org, float height, VName dectype, int translation) {
+  if (!r_decals) return;
+  if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
+
+  VDecalDef *dec = VDecalDef::getDecal(dectype);
+  if (!dec) {
+    if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
+    return;
+  }
+
+  subsector_t *sub = PointInSubsector(org);
+  if (sub->sector->isOriginalPObj()) return; //wtf?!
+  if (sub->sector->isInnerPObj() && !sub->sector->ownpobj->Is3D()) return; //wtf?!
+
+  height = max2(2.0f, fabsf(height));
+
+  GCon->Logf(NAME_Debug, "adding flat decal '%s'; sector=%d; height=%g", *dec->name, (int)(ptrdiff_t)(sub->sector-&Sectors[0]), height);
+
+  // check sector regions, and add decals
+  int eregidx = 0;
+  for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+    if ((reg->regflags&sec_region_t::RF_BaseRegion) == 0) {
+      if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
+      if (reg->regflags&(sec_region_t::RF_SkipFloorSurf|sec_region_t::RF_SkipCeilSurf)) continue;
+    }
+    //FIXME: this is wrong!
+    const float fz = reg->efloor.GetPointZClamped(org);
+    const float cz = reg->eceiling.GetPointZClamped(org);
+    const float fdist = fabsf(fz-org.z);
+    const float cdist = fabsf(cz-org.z);
+    GCon->Logf(NAME_Debug, "  ereg #%d: fdist=%g (%d); cdist=%g (%d)", eregidx, fdist, (int)(fdist <= height), cdist, (int)(cdist <= height));
+    if (fdist < cdist) {
+      if (fdist > height) continue;
+      AddFlatDecalEx(sub->sector, eregidx, true/*floor*/, org.x, org.y, dec, 0, translation);
+    } else if (cdist < fdist) {
+      if (cdist > height) continue;
+      AddFlatDecalEx(sub->sector, eregidx, false/*ceiling*/, org.x, org.y, dec, 0, translation);
+    } else {
+      // both
+      if (fdist > height) continue;
+      AddFlatDecalEx(sub->sector, eregidx, true/*floor*/, org.x, org.y, dec, 0, translation);
+      AddFlatDecalEx(sub->sector, eregidx, false/*ceiling*/, org.x, org.y, dec, 0, translation);
+    }
+  }
+}
+
+
+
+//**************************************************************************
+//
+// VavoomC API
+//
+//**************************************************************************
+
 //native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation);
 IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   TVec org;
@@ -914,4 +1007,35 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
   VOptParamInt translation(0);
   vobjGetParamSelf(org, id, side, li, translation);
   Self->AddDecalById(org, id, side, li, 0, translation);
+}
+
+
+/*
+//native final void AddFloorDecal (TVec org, name dectype, optional int translation);
+IMPLEMENT_FUNCTION(VLevel, AddFloorDecal) {
+  TVec org;
+  VName dectype;
+  VOptParamInt translation(0);
+  vobjGetParamSelf(org, dectype, translation);
+  Self->AddFlatDecal(true, org, dectype, 0, translation);
+}
+
+//native final void AddCeilingDecal (TVec org, name dectype, optional int translation);
+IMPLEMENT_FUNCTION(VLevel, AddCeilingDecal) {
+  TVec org;
+  VName dectype;
+  VOptParamInt translation(0);
+  vobjGetParamSelf(org, dectype, translation);
+  Self->AddFlatDecal(false, org, dectype, 0, translation);
+}
+*/
+
+//native final void AddFlatDecal (TVec org, float height, name dectype, optional int translation);
+IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
+  TVec org;
+  float height;
+  VName dectype;
+  VOptParamInt translation(0);
+  vobjGetParamSelf(org, height, dectype, translation);
+  Self->AddFlatDecal(org, height, dectype, translation);
 }

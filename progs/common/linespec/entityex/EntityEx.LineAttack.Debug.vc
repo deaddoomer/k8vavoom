@@ -140,9 +140,27 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
 
   foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|(allowEntities ? PT_ADDTHINGS : 0)|(Level.CompatTrace ? PT_COMPAT : 0), SPF_NOBLOCKING, ML_BLOCKEVERYTHING) {
     if (in.bIsAPlane) {
-      printdebug("skyplane!");
+      if (in.bIsASky) {
+        printdebug("skyplane!");
+      } else {
+        if (in.plane.normal.z > 0.0f) printdebug("floor plane!"); else printdebug("ceiling plane!");
+        #if 1
+        // flat decal test
+        XLevel.AddFlatDecal(in.hitpoint, 32, 'K8BigScorchTest');
+        #endif
+      }
       tr.hit = in.hitpoint;
       tr.didhit = true;
+      // spawn particles
+      TVec ptorg = in.hitpoint+in.plane.normal*1.0f;
+      int c = P_Random()>>1;
+      foreach (int i; 0..MAXPLAYERS) {
+        if (!Level.Game.Players[i]) continue;
+        if (!Level.Game.Players[i].bSpawned) continue;
+        PlayerEx(Level.Game.Players[i]).ParticleEffect(20, LineSpecialLevelInfo::pt_static,
+                 LineSpecialLevelInfo::pt_explode2, ptorg, 0.0, vector(32.0, 32.0, 32.0),
+                 0.5, 10.0, 40.0, RGB(c, c, c), 0.8, 0.0);
+      }
       return false;
     }
 

@@ -554,4 +554,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   Level->ResetPObjRenderCounts(); // cleanup 'em, 'cause they were used above
 
   GCon->Log(NAME_Debug, "surface creation complete");
+
+  // add sector decals
+  for (decal_t *dc = Level->secdecalhead; dc; dc = dc->next) SpreadDecal(dc);
 }
