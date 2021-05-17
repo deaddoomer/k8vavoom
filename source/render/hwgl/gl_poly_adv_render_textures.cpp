@@ -103,7 +103,7 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
 
   //WARNING! don't forget to flush VBO on each shader uniform change! this includes glow changes (glow values aren't cached yet)
 
-  const bool decalsEnabled = (r_decals.asBool() && !RendLev->PortalUsingStencil);
+  const bool decalsEnabled = (r_decals.asBool() && RendLev->PortalUsingStencil == 0);
 
   // normal
   if (dls.DrawSurfListSolid.length() != 0) {
@@ -155,7 +155,6 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
     for (auto &&surf : dls.DrawSurfListMasked) {
       SADV_CHECK_TEXTURE(ShadowsTextureMasked);
 
-      //const bool doDecals = (currTexinfo->Tex && !currTexinfo->noDecals && surf->seg && surf->seg->decalhead);
       const bool doDecals = (decalsEnabled && RenderSurfaceHasDecals(surf));
 
       // fill stencil buffer for decals

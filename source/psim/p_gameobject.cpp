@@ -351,6 +351,7 @@ void seg_t::killAllDecals () noexcept {
     delete c->animator;
     delete c;
   }
+  decaltail = decalhead = nullptr; // just in case
 }
 
 
@@ -424,7 +425,7 @@ void subregion_t::killAllDecals () noexcept {
     delete c->animator;
     delete c;
   }
-  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr;
+  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr; // just in case
 }
 
 
