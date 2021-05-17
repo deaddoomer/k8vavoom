@@ -394,7 +394,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         // floor/ceiling
         //TODO: rotation
         // left-bottom
-        TVec qv0 = v1-TVec(txofs, tyofs);
+        TVec qv0 = v1+TVec(-txofs, tyofs);
         qv0.z = surf->plane.GetPointZ(qv0);
         // right-bottom
         TVec qv1 = qv0+TVec(twdt, 0.0f);

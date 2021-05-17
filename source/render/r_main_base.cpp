@@ -85,7 +85,11 @@ static decal_t *DupDecal (VLevel *Level, const decal_t *dc) noexcept {
 //==========================================================================
 static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   const DInfo *nfo = (const DInfo *)udata;
-  if (!Level->IsBBox2DTouchingSubsector(sub, nfo->bb2d)) return true; // continue checking
+  if (!Level->IsBBox2DTouchingSubsector(sub, nfo->bb2d)) {
+    //GCon->Logf(NAME_Debug, "  skip subsector #%d (sector #%d)", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
+    return true; // continue checking
+  }
+  //GCon->Logf(NAME_Debug, "  ADD subsector #%d (sector #%d)", (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
   const decal_t *origdc = nfo->origdc;
   // find region for decal
   subregion_t *dreg = nullptr;
@@ -101,12 +105,19 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   } else {
     // some other sector, check bounds, and find region by z coord
     const float dcz = nfo->dcz;
-    if (dcz < sub->sector->floor.minz || dcz > sub->sector->ceiling.maxz) return true; // continue checking
     const TVec p(origdc->worldx, origdc->worldy);
     const bool isFloorDc = (origdc->eregindex ? origdc->isFloor() : origdc->isCeiling()); // as if it is not in base subregion
+    if (!isFloorDc) {
+      // check base floor
+      if (fabsf(dcz-sub->sector->floor.minz) > 32.0f) return true; // continue checking
+    } else {
+      // check base ceiling
+      if (fabsf(dcz-sub->sector->ceiling.maxz) > 32.0f) return true; // continue checking
+    }
     // first subregions is always base sector subregion
     subregion_t *reg = sub->regions;
     float bestdist = fabsf(dcz-(!isFloorDc ? reg->floorplane.GetPointZClamped(p) : reg->ceilplane.GetPointZClamped(p))); // for base subregion, f/c flag is inverted
+    dreg = reg;
     for (reg = reg->next; reg; reg = reg->next) {
       const sec_region_t *sr = reg->secregion;
       if (sr->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
@@ -195,7 +206,7 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
 
   const TVec v1(origdc->worldx, origdc->worldy);
   // left-bottom
-  const TVec qv0 = v1-TVec(txofs, tyofs);
+  const TVec qv0 = v1+TVec(-txofs, tyofs);
   // right-bottom
   const TVec qv1 = qv0+TVec(twdt, 0.0f);
   // left-top
@@ -207,6 +218,8 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
   nfo.bb2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
   nfo.bb2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
   nfo.bb2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
+
+  //GCon->Logf(NAME_Debug, "decal tex %d: sector #%d; box: (%g,%g)-(%g,%g)", origdc->texture.id, (int)(ptrdiff_t)(origdc->slidesec-&Level->Sectors[0]), nfo.bb2d[BOX2D_MINX], nfo.bb2d[BOX2D_MINY], nfo.bb2d[BOX2D_MAXX], nfo.bb2d[BOX2D_MAXY]);
 
   Level->CheckBSPB2DBox(nfo.bb2d, &AddDecalToSubsector, &nfo);
 }

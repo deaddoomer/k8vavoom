@@ -949,7 +949,7 @@ void VLevel::AddFlatDecal (TVec org, float height, VName dectype, int translatio
 
   height = max2(2.0f, fabsf(height));
 
-  GCon->Logf(NAME_Debug, "adding flat decal '%s'; sector=%d; height=%g", *dec->name, (int)(ptrdiff_t)(sub->sector-&Sectors[0]), height);
+  //GCon->Logf(NAME_Debug, "adding flat decal '%s'; sector=%d; height=%g", *dec->name, (int)(ptrdiff_t)(sub->sector-&Sectors[0]), height);
 
   // check sector regions, and add decals
   int eregidx = 0;
@@ -963,7 +963,7 @@ void VLevel::AddFlatDecal (TVec org, float height, VName dectype, int translatio
     const float cz = reg->eceiling.GetPointZClamped(org);
     const float fdist = fabsf(fz-org.z);
     const float cdist = fabsf(cz-org.z);
-    GCon->Logf(NAME_Debug, "  ereg #%d: fdist=%g (%d); cdist=%g (%d)", eregidx, fdist, (int)(fdist <= height), cdist, (int)(cdist <= height));
+    //GCon->Logf(NAME_Debug, "  ereg #%d: fdist=%g (%d); cdist=%g (%d)", eregidx, fdist, (int)(fdist <= height), cdist, (int)(cdist <= height));
     if (fdist < cdist) {
       if (fdist > height) continue;
       AddFlatDecalEx(sub->sector, eregidx, true/*floor*/, org.x, org.y, dec, 0, translation);
