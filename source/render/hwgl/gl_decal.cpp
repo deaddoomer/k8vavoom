@@ -70,13 +70,16 @@ bool VOpenGLDrawer::RenderSurfaceHasDecals (const surface_t *surf) const {
 
   switch (GetSurfDecalKind(surf)) {
     case DWALL:
+      if (!r_decals_wall) return false;
       if (!surf->seg || !surf->seg->decalhead) return false; // nothing to do
       if (!surf->seg->linedef) return false; // check for miniseg, just in case
       break;
     case DFLOOR:
+      if (!r_decals_flat) return false;
       if (!surf->sreg || !surf->sreg->floordecalhead) return false; // nothing to do
       break;
     case DCEILING:
+      if (!r_decals_flat) return false;
       if (!surf->sreg || !surf->sreg->ceildecalhead) return false; // nothing to do
       break;
     default: return false; // just in case

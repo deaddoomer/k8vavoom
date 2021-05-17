@@ -36,6 +36,8 @@
 
 
 extern VCvarB r_decals;
+extern VCvarB r_decals_flat;
+extern VCvarB r_decals_wall;
 
 static VCvarI r_decal_onetype_max("r_decal_onetype_max", "128", "Maximum decals of one decaltype on a wall segment.", CVAR_Archive);
 static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum decals of one decaltype on a wall segment for Gore Mod.", CVAR_Archive);
@@ -831,7 +833,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 //
 //==========================================================================
 void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation) {
-  if (!r_decals) return;
+  if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
   //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g)", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z);
@@ -857,7 +859,7 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
 //
 //==========================================================================
 void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation) {
-  if (!r_decals) return;
+  if (!r_decals || !r_decals_wall) return;
   if (!li || id < 0) return; // just in case
   VDecalDef *dec = VDecalDef::getDecalById(id);
   if (dec) {
@@ -947,7 +949,7 @@ void VLevel::AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const 
 //
 //==========================================================================
 void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation) {
-  if (!r_decals) return;
+  if (!r_decals || !r_decals_flat) return;
   if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
   VDecalDef *dec = VDecalDef::getDecal(dectype);

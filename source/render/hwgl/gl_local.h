@@ -61,6 +61,8 @@ extern VCvarB gl_gpu_debug;
 extern VCvarF gl_alpha_threshold;
 extern VCvarB gl_sort_textures;
 extern VCvarB r_decals;
+extern VCvarB r_decals_flat;
+extern VCvarB r_decals_wall;
 extern VCvarB r_decals_wall_masked;
 extern VCvarB r_decals_wall_alpha;
 extern VCvarB gl_decal_debug_nostencil;
