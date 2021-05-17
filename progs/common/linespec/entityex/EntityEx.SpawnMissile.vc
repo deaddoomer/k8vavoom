@@ -161,8 +161,9 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
     TVec dir = Normalise(savedVelocity);
     trsplat_t tr;
     TVec org = Origin;
-    org.z += Height*0.5;
+    org.z += fabs(Height)*0.5;
     float rad = fmax(1.0, Radius);
+    SpawnFlatDecal(org, DecalName, fmax(1.0, fabs(Height*0.5))+2.0, atranslation:(bCopyBloodTranslation ? Translation : 0));
     #if 0
     if (line) {
       printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:%s; dir=%s; line=%s; rad=%s", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity, dir, line-&XLevel.Lines[0], rad);

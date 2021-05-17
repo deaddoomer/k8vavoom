@@ -38,7 +38,7 @@ final void SpawnDecal (TVec org, name dectype, int side, line_t *li, optional in
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level.Game.Players[i]) continue;
     if (!Level.Game.Players[i].bSpawned) continue;
-    PlayerEx(Level.Game.Players[i]).DecalEffect(org, dectype, side, lidx, atranslation);
+    PlayerEx(Level.Game.Players[i]).DecalEffect(org, dectype, side, lidx, atranslation!optional);
   }
 }
 
@@ -47,7 +47,7 @@ final void SpawnDecal (TVec org, name dectype, int side, line_t *li, optional in
 //
 //  SpawnDecalById
 //
-//  Used in player loader
+//  used in map loader to spawn map decals
 //
 //==========================================================================
 final void SpawnDecalById (TVec org, int id, int side, line_t *li) {
@@ -55,4 +55,23 @@ final void SpawnDecalById (TVec org, int id, int side, line_t *li) {
   int lidx = XLevel.GetLineIndex(li);
   if (lidx < 0 || lidx >= XLevel.Lines.length) return;
   XLevel.AddDecalById(org, id, side, li);
+}
+
+
+//==========================================================================
+//
+//  SpawnFlatDecal
+//
+//  z coord matters! `height` is from `org.z`
+//
+//==========================================================================
+final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation) {
+  //writeln("DECAL: ", dectype);
+  if (!dectype || !XLevel) return; // just in case
+  //XLevel.AddDecal(org, dectype, side, li);
+  for (int i = 0; i < MAXPLAYERS; ++i) {
+    if (!Level.Game.Players[i]) continue;
+    if (!Level.Game.Players[i].bSpawned) continue;
+    PlayerEx(Level.Game.Players[i]).FlatDecalEffect(org, dectype, range, atranslation!optional);
+  }
 }

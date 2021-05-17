@@ -2659,11 +2659,12 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
   if (decalType && sec && li) {
     //k8:TODO: this should be strictly client-side
     if (!specified_realOrg) realOrg = Org;
-    if (specified_decalType && decalType) {
-      SpawnDecal(realOrg, decalType, (sec == li->frontsector ? 0 : 1), li);
-    } else {
-      SpawnDecal(realOrg, PuffType.default.DecalName, (sec == li->frontsector ? 0 : 1), li);
-    }
+    name dcname = (specified_decalType && decalType ? decalType : PuffType.default.DecalName);
+    SpawnDecal(realOrg, dcname, (sec == li->frontsector ? 0 : 1), li);
+    float fdrange = fmax(1.0, fabs(Height)*0.5);
+    TVec forg = realOrg;
+    forg.z += fdrange;
+    SpawnFlatDecal(forg, dcname, fdrange+2.0);
   }
 
   if (PuffType) {

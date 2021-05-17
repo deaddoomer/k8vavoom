@@ -47,8 +47,6 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
       dc->texture = 0;
     }
     vio.io(VName("flags"), dc->flags);
-    vio.iodef(VName("worldx"), dc->worldx, 0.0f);
-    vio.iodef(VName("worldy"), dc->worldy, 0.0f);
     vio.io(VName("orgz"), dc->orgz);
     vio.io(VName("curz"), dc->curz);
     vio.io(VName("xdist"), dc->xdist);
@@ -86,6 +84,9 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     } else {
       // floor/ceiling decal
       if (!mustBeFlatDecal) Host_Error("error in decal i/o");
+      vio.iodef(VName("worldx"), dc->worldx, 0.0f);
+      vio.iodef(VName("worldy"), dc->worldy, 0.0f);
+      vio.iodef(VName("height"), dc->height, 2.0f);
       if (!Strm.IsLoading() && !dc->slidesec) Host_Error("error in decal i/o");
       vint32 slsec = (Strm.IsLoading() ? -666 : (int)(ptrdiff_t)(dc->slidesec-&level->Sectors[0]));
       vio.iodef(VName("ownersec"), slsec, -666);

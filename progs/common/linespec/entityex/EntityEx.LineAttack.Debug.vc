@@ -58,9 +58,12 @@ final void DebugCheckMidTex () {
   if (tr.didhit) {
     if (tr.line) {
       if (tr.sec) SpawnDecal(tr.hit, 'BigScorch', tr.side, tr.line);
-    } else {
-      XLevel.AddFlatDecal(tr.hit, 32, 'BigScorch');
     }
+    /*
+    else {
+      XLevel.AddFlatDecal(tr.hit, 'BigScorch', 32);
+    }
+    */
   }
   // show some info
   if (tr.didhit && tr.line) {
@@ -171,8 +174,8 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
         if (in.plane.normal.z > 0.0f) printdebug("floor plane!"); else printdebug("ceiling plane!");
         #if 0
         // flat decal test
-        //XLevel.AddFlatDecal(in.hitpoint, 32, 'K8BigScorchTest');
-        XLevel.AddFlatDecal(in.hitpoint, 32, 'BigScorch');
+        //XLevel.AddFlatDecal(in.hitpoint, 'K8BigScorchTest', 32);
+        XLevel.AddFlatDecal(in.hitpoint, 'BigScorch', 32);
         #endif
       }
       tr.hit = in.hitpoint;

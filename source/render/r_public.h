@@ -97,8 +97,8 @@ struct decal_t {
   int translation;
   vuint32 flags;
   // z and x positions has no image offset added
-  float worldx, worldy; // world coordinates for floor/ceiling decals
-  float orgz; // original z position for wall decals
+  float worldx, worldy, height; // world coordinates for floor/ceiling decals, and "spread height"
+  float orgz; // original z position for wall decals, and for flat decals
   float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
   float xdist; // offset from linedef start, in map units
   float ofsX, ofsY; // for animators

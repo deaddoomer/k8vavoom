@@ -48,6 +48,7 @@ struct DInfo {
   float bb2d[4];
   const decal_t *origdc;
   float dcz;
+  float height;
   const sec_region_t *sr;
 };
 
@@ -107,17 +108,14 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
     const float dcz = nfo->dcz;
     const TVec p(origdc->worldx, origdc->worldy);
     const bool isFloorDc = (origdc->eregindex ? origdc->isFloor() : origdc->isCeiling()); // as if it is not in base subregion
-    if (!isFloorDc) {
-      // check base floor
-      if (fabsf(dcz-sub->sector->floor.minz) > 32.0f) return true; // continue checking
-    } else {
-      // check base ceiling
-      if (fabsf(dcz-sub->sector->ceiling.maxz) > 32.0f) return true; // continue checking
-    }
-    // first subregions is always base sector subregion
+    // check base floor
+    if (dcz <= sub->sector->floor.minz-nfo->height) return true; // continue checking
+    // check base ceiling
+    if (dcz >= sub->sector->ceiling.maxz+nfo->height) return true; // continue checking
+    // first subregion is always base sector subregion
     subregion_t *reg = sub->regions;
     float bestdist = fabsf(dcz-(!isFloorDc ? reg->floorplane.GetPointZClamped(p) : reg->ceilplane.GetPointZClamped(p))); // for base subregion, f/c flag is inverted
-    dreg = reg;
+    if (bestdist <= nfo->height) dreg = reg;
     for (reg = reg->next; reg; reg = reg->next) {
       const sec_region_t *sr = reg->secregion;
       if (sr->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
@@ -131,7 +129,7 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
         const float rz = reg->ceilplane.GetPointZClamped(p);
         rdist = rz-(dcz-0.2f);
       }
-      if (rdist >= 0.0f && rdist < bestdist) {
+      if (rdist >= 0.0f && rdist < bestdist && fabsf(rdist-dcz) <= nfo->height) {
         dreg = reg;
         if (rdist == 0.0f) break;
       }
@@ -203,6 +201,10 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
 
   const float twdt = dtex->GetScaledWidthF()*dscaleX;
   const float thgt = dtex->GetScaledHeightF()*dscaleY;
+
+  //nfo.height = max2(2.0f, min2(twdt, thgt)*0.4f);
+  //nfo.dcz = origdc->orgz;
+  nfo.height = max2(2.0f, origdc->height);
 
   const TVec v1(origdc->worldx, origdc->worldy);
   // left-bottom

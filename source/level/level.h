@@ -1352,10 +1352,10 @@ private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
   //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);
 
-  void AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, float wx, float wy, VDecalDef *dec, int level, int translation);
+  void AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const TVec org, VDecalDef *dec, int level, int translation);
 
   // z coord matters!
-  void AddFlatDecal (TVec org, float height, VName dectype, int translation);
+  void AddFlatDecal (TVec org, VName dectype, float range, int translation);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);

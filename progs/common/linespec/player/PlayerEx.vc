@@ -289,7 +289,7 @@ replication {
 
   unreliable if (!bIsClient)
     ParticleEffect, ClientExplosion, ClientParticleExplosion,
-    ClientSparkParticles, ClientRailTrail, DecalEffect,
+    ClientSparkParticles, ClientRailTrail, DecalEffect, FlatDecalEffect,
     // we need this to update UI, but this is not vital info
     /*k8HealthAccum_Enabled_NWClient,*/ k8HealthAccum_Amount;
 
@@ -2559,6 +2559,17 @@ void DecalEffect (TVec org, name dectype, int side, /*line_t *li*/int lineidx, i
   if (!dectype || lineidx < 0 || !Level.XLevel) return; // just in case
   if (lineidx >= Level.XLevel.Lines.length) return;
   Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx], translation);
+}
+
+
+//==========================================================================
+//
+//  FlatDecalEffect
+//
+//==========================================================================
+void FlatDecalEffect (TVec org, name dectype, float range, int translation) {
+  if (!dectype) return; // just in case
+  Level.XLevel.AddFlatDecal(org, dectype, range, translation);
 }
 
 
