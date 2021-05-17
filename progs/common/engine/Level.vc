@@ -251,6 +251,8 @@ private native transient /*decal_t*/void *secdecalhead;
 private native transient /*decal_t*/void *secdecaltail;
 private native transient void *suid2ent;
 
+private native transient /*VDecalList*/void *sectorDecalList;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // natives

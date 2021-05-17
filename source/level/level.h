@@ -151,6 +151,7 @@ struct rep_light_t {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VSndSeqInfo {
   VName Name;
   vint32 OriginId;
@@ -160,6 +161,7 @@ struct VSndSeqInfo {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VCameraTextureInfo {
   VEntity *Camera;
   int TexNum;
@@ -214,6 +216,7 @@ enum {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VSectorLink {
   vint32 index;
   vint32 mts; // bit 30: set if ceiling; low byte: movetype
@@ -221,6 +224,7 @@ struct VSectorLink {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VCtl2DestLink {
   vint32 src; // sector number, just in case (can be -1 for unused slots)
   vint32 dest; // sector number (can be -1 for unused slots)
@@ -228,6 +232,7 @@ struct VCtl2DestLink {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VLightParams {
   TVec Origin;
   float Radius;
@@ -259,6 +264,7 @@ struct VLightParams {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct VPolyLink3D {
   vint32 srcpid;
   vint32 destpid;
@@ -302,6 +308,13 @@ struct VCustomKeyInfo {
     if (!mp) return nullptr;
     return mp->find(id);
   }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct VDecalList {
+  decal_t *head;
+  decal_t *tail;
 };
 
 
@@ -535,6 +548,9 @@ class VLevel : public VGameObject {
   // dynamically allocated, so it won't be scanned by GC
   // bookkeeping is done in `AddThinker()` and `RemoveThinker()`
   TMapNC<vuint32, VEntity *> *suid2ent;
+
+  // unified list for floor and ceiling decals
+  VDecalList *sectorDecalList;
 
 public:
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
@@ -1129,15 +1145,13 @@ public:
   // this will remove dead and over-the-limit decals (including animated)
   // called from `AddDecal()`
   void CleanupSegDecals (seg_t *seg);
-  void CleanupSRegDecalsEx (subregion_t *sreg, bool asFloor);
-
-  inline void CleanupSRegFloorDecals (subregion_t *sreg) { CleanupSRegDecalsEx(sreg, true); }
-  inline void CleanupSRegCeilingDecals (subregion_t *sreg) { CleanupSRegDecalsEx(sreg, false); }
 
   void KillAllSectorDecals ();
 
+  // only for flat decals
+  // decal must be fully initialised
+  // decal animator may be set, but you SHOULD NOT manually add it to animator list (this method will do it for you)
   void AppendDecalToSectorList (decal_t *dc);
-  void RemoveDecalFromSectorList (decal_t *dc);
 
 public:
   enum {
@@ -1351,6 +1365,8 @@ public: // used in renderer for flat decals
 private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
   //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);
+
+  void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
   void AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const TVec org, VDecalDef *dec, int level, int translation);
 

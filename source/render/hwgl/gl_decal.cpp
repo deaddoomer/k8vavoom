@@ -435,18 +435,13 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
   //if (bigDecalCount) GCon->Logf(NAME_Debug, "bigDecalCount=%d", bigDecalCount);
   // kill some big decals
-  if (GClLevel) {
+  // flat decals limiting is done in spread code
+  if (GClLevel && dkind == DWALL) {
     const int bigLimit = gl_bigdecal_limit.asInt();
     const int smallLimit = gl_smalldecal_limit.asInt();
     int toKillBig = (bigLimit > 0 ? bigDecalCount-bigLimit : 0);
     int toKillSmall = (smallLimit > 0 ? smallDecalCount-smallLimit : 0);
-    if (toKillBig > 0 || toKillSmall > 0) {
-      switch (dkind) {
-        case DWALL: GClLevel->CleanupSegDecals(seg); break;
-        case DFLOOR: GClLevel->CleanupSRegFloorDecals(surf->sreg); break;
-        case DCEILING: GClLevel->CleanupSRegCeilingDecals(surf->sreg); break;
-      }
-    }
+    if (toKillBig > 0 || toKillSmall > 0) GClLevel->CleanupSegDecals(seg);
   }
 
   return true;

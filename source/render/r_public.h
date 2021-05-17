@@ -110,6 +110,11 @@ struct decal_t {
   VDecalAnim *animator; // decal animator (can be nullptr)
   decal_t *prevanimated; // so we can skip static decals
   decal_t *nextanimated; // so we can skip static decals
+  // for flat decals
+  float bbox2d[4]; // 2d bounding box for the original (maximum) flat decal size
+  // in VLevel sector decal list
+  decal_t *secprev;
+  decal_t *secnext;
 
   // nore that floor/ceiling type should be correctly set for 3d floor subregions
   // i.e. decal on top of 3d floor is ceiling decal
@@ -125,6 +130,10 @@ struct decal_t {
   // non-base regions has their floor and ceiling switched
   // so floor decal for 3d floor region is actually ceiling decal, and vice versa
   //inline bool isFloorEx () const noexcept { return (eregindex ? isCeiling() : isFloor()); }
+
+  // should be called ONLY for flat decals, and after animator was set
+  // this also calculates `height`
+  void calculateBBox (VLevel *Level) noexcept;
 };
 
 

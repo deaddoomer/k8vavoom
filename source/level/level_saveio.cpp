@@ -492,7 +492,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     }
   }
 
-  // bsector decals
+  // sector decals
   if (hasSectorDecals) {
     vint32 sscount = (Strm.IsLoading() ? 0 : NumSectors);
     Strm << STRM_INDEX(sscount);
@@ -518,12 +518,6 @@ void VLevel::SerialiseOther (VStream &Strm) {
           } else {
             // add to decal list
             AppendDecalToSectorList(dc);
-            // append it to animation list
-            if (dc->animator) {
-              if (decanimlist) decanimlist->prevanimated = dc;
-              dc->nextanimated = decanimlist;
-              decanimlist = dc;
-            }
           }
         }
         GCon->Logf("%d subsector decals loaded", sdctotal);

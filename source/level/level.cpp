@@ -586,6 +586,11 @@ void VLevel::Destroy () {
     suid2ent = nullptr;
   }
 
+  if (sectorDecalList) {
+    delete[] sectorDecalList;
+    sectorDecalList = nullptr;
+  }
+
   ClearAllMapData();
 
   delete[] BaseLines;

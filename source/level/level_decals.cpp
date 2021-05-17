@@ -47,6 +47,8 @@ static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum
 VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive);
 
+VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "32", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
+
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 
 // sorry for this global
@@ -121,7 +123,7 @@ void VLevel::AddAnimatedDecal (decal_t *dc) {
 //  VLevel::RemoveDecalAnimator
 //
 //  this will also delete animator
-//  safe to call on decals without an animator//
+//  safe to call on decals without an animator
 //
 //==========================================================================
 void VLevel::RemoveDecalAnimator (decal_t *dc) {
@@ -132,39 +134,6 @@ void VLevel::RemoveDecalAnimator (decal_t *dc) {
   delete dc->animator;
   dc->animator = nullptr;
   dc->prevanimated = dc->nextanimated = nullptr;
-}
-
-
-//==========================================================================
-//
-//  VLevel::AppendDecalToSectorList
-//
-//==========================================================================
-void VLevel::AppendDecalToSectorList (decal_t *dc) {
-  if (!dc) return;
-  vassert(!dc->prev);
-  vassert(!dc->next);
-  vassert(!dc->seg);
-  vassert(!dc->sreg);
-  //vassert(dc->dcsurf);
-  //vassert(dc->slidesec);
-  //vassert(dc->eregindex >= 0);
-  dc->prev = secdecaltail;
-  if (secdecaltail) secdecaltail->next = dc; else secdecalhead = dc;
-  secdecaltail = dc;
-}
-
-
-//==========================================================================
-//
-//  VLevel::RemoveDecalFromSectorList
-//
-//==========================================================================
-void VLevel::RemoveDecalFromSectorList (decal_t *dc) {
-  if (!dc) return;
-  if (dc->prev) dc->prev->next = dc->next; else secdecalhead = dc->next;
-  if (dc->next) dc->next->prev = dc->prev; else secdecaltail = dc->prev;
-  dc->prev = dc->next = nullptr;
 }
 
 
@@ -296,16 +265,6 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
       continue;
     }
   }
-}
-
-
-//==========================================================================
-//
-//  VLevel::CleanupSRegDecalsEx
-//
-//==========================================================================
-void VLevel::CleanupSRegDecalsEx (subregion_t *sreg, bool asFloor) {
-  //TODO
 }
 
 
@@ -871,6 +830,140 @@ void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, in
 
 //==========================================================================
 //
+//  decal_t::calculateBBox
+//
+//  should be called ONLY for flat decals, and after animator was set
+//
+//==========================================================================
+void decal_t::calculateBBox (VLevel *Level) noexcept {
+  const int dcTexId = texture.id; // "0" means "no texture found"
+  if (dcTexId <= 0) {
+    height = 0.0f;
+    memset((void *)&bbox2d[0], 0, sizeof(bbox2d));
+    return;
+  }
+
+  VTexture *dtex = GTextureManager[dcTexId];
+
+  // decal scale is not inverted
+  const float dscaleX = scaleX;
+  const float dscaleY = scaleY;
+
+  // use origScale to get the original starting point
+  const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
+  const float tyofs = dtex->GetScaledTOffsetF()*dscaleY;
+
+  const float twdt = dtex->GetScaledWidthF()*dscaleX;
+  const float thgt = dtex->GetScaledHeightF()*dscaleY;
+
+  height = max2(2.0f, min2(twdt, thgt)*0.4f);
+
+  const TVec v1(worldx, worldy);
+  // left-bottom
+  const TVec qv0 = v1+TVec(-txofs, tyofs);
+  // right-bottom
+  const TVec qv1 = qv0+TVec(twdt, 0.0f);
+  // left-top
+  const TVec qv2 = qv0-TVec(0.0f, thgt);
+  // right-top
+  const TVec qv3 = qv1-TVec(0.0f, thgt);
+
+  bbox2d[BOX2D_MINX] = min2(min2(min2(qv0.x, qv1.x), qv2.x), qv3.x);
+  bbox2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
+  bbox2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
+  bbox2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
+}
+
+
+//==========================================================================
+//
+//  VLevel::DestroyFlatDecal
+//
+//  this will also destroy decal and its animator!
+//
+//==========================================================================
+void VLevel::DestroyFlatDecal (decal_t *dc) {
+  if (!dc || dc->isWall() || !dc->slidesec) return;
+  if (NumSectors == 0) return; // just in case
+  if (!sectorDecalList) return;
+  const int sidx = (int)(ptrdiff_t)(dc->slidesec-&Sectors[0]);
+  if (sidx < 0 || sidx >= NumSectors) return;
+  VDecalList *lst = &sectorDecalList[sidx];
+  if (dc->secprev) dc->secprev->secnext = dc->secnext; else lst->head = dc->secnext;
+  if (dc->secnext) dc->secnext->secprev = dc->secprev; else lst->tail = dc->secprev;
+  // remove from global list
+  if (dc->prev) dc->prev->next = dc->next; else secdecalhead = dc->next;
+  if (dc->next) dc->next->prev = dc->prev; else secdecaltail = dc->prev;
+  // remove animator
+  RemoveDecalAnimator(dc);
+  // and kill decal
+  delete dc;
+}
+
+
+//==========================================================================
+//
+//  VLevel::AppendDecalToSectorList
+//
+//==========================================================================
+void VLevel::AppendDecalToSectorList (decal_t *dc) {
+  if (!dc) return;
+
+  if (dc->animator) AddAnimatedDecal(dc);
+  dc->calculateBBox(this);
+
+  if (dc->isWall() || !dc->slidesec || NumSectors == 0/*just in case*/) {
+    RemoveDecalAnimator(dc);
+    delete dc;
+    return;
+  }
+  vassert(!dc->prev);
+  vassert(!dc->next);
+  vassert(!dc->secprev);
+  vassert(!dc->secnext);
+  vassert(!dc->seg);
+  vassert(!dc->sreg);
+  //vassert(dc->dcsurf);
+  //vassert(dc->slidesec);
+  //vassert(dc->eregindex >= 0);
+
+  // append to global sector decal list
+  dc->prev = secdecaltail;
+  if (dc->prev) dc->prev->next = dc; else secdecalhead = dc;
+  secdecaltail = dc;
+
+  // append to list of decals in the given sector
+  if (!sectorDecalList) {
+    sectorDecalList = new VDecalList[NumSectors];
+    for (int f = 0; f < NumSectors; ++f) sectorDecalList[f].head = sectorDecalList[f].tail = nullptr;
+  }
+
+  VDecalList *lst = &sectorDecalList[(unsigned)(ptrdiff_t)(dc->slidesec-&Sectors[0])];
+  dc->secprev = lst->tail;
+  if (dc->secprev) dc->secprev->secnext = dc; else lst->head = dc;
+  dc->secnext = nullptr; // just in case
+  lst->tail = dc;
+
+  // check sector decals limit
+  const int dclimit = gl_flatdecal_limit.asInt();
+  if (dclimit > 0 && sectorDecalList) {
+    int dcCount = 0;
+    decal_t *cdc = lst->tail;
+    while (cdc) {
+      decal_t *c = cdc;
+      cdc = cdc->secprev;
+      if (c->eregindex != dc->eregindex) continue;
+      if (c->dcsurf != dc->dcsurf) continue;
+      if (Are2DBBoxesOverlap(dc->bbox2d, c->bbox2d)) {
+        if (++dcCount > dclimit) DestroyFlatDecal(c);
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VLevel::AddFlatDecalEx
 //
 //  z coord doesn't matter
@@ -893,6 +986,7 @@ void VLevel::AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const 
   VTexture *DTex = GTextureManager[tex];
   if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
 
+  /*
   const float dscaleX = dec->scaleX.value;
   const float dscaleY = dec->scaleY.value;
 
@@ -902,6 +996,7 @@ void VLevel::AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const 
   if (twdt < 1.0f || thgt < 1.0f) return;
 
   const float height = max2(2.0f, min2(twdt, thgt)*0.4f);
+  */
 
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
@@ -914,26 +1009,17 @@ void VLevel::AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const 
   decal->worldx = org.x;
   decal->worldy = org.y;
   decal->orgz = org.z;
-  decal->height = height;
+  //!decal->height = height;
   //decal->curz = 0.0f; // doesn't matter
   //decal->xdist = 0.0f; // doesn't matter
-  //decal->ofsX = decal->ofsY = 0;
+  //decal->ofsX = decal->ofsY = 0.0f;
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dec->alpha.value;
   decal->addAlpha = dec->addAlpha.value;
   decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
-  if (decal->animator) AddAnimatedDecal(decal);
 
-  // append to sector decal list
-  if (secdecaltail) {
-    decal->prev = secdecaltail;
-    decal->prev->next = decal;
-  } else {
-    vassert(!secdecalhead);
-    secdecalhead = decal;
-  }
-  secdecaltail = decal;
+  AppendDecalToSectorList(decal);
 
   if (Renderer) Renderer->SpreadDecal(decal);
 }

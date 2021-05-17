@@ -26,6 +26,8 @@
 #include "../gamedefs.h"
 #include "r_local.h"
 
+extern VCvarI gl_flatdecal_limit;
+
 
 //==========================================================================
 //
@@ -68,6 +70,7 @@ static decal_t *DupDecal (VLevel *Level, const decal_t *dc) noexcept {
   dcnew->prev = dcnew->next = nullptr;
   dcnew->animator = nullptr;
   dcnew->prevanimated = dcnew->nextanimated = nullptr;
+  dcnew->secprev = dcnew->secnext = nullptr;
   // copy animator
   if (dc->animator) {
     dcnew->animator = dc->animator->clone();
@@ -149,6 +152,25 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   dcnew->dcsurf = (atFloor ? decal_t::Floor : decal_t::Ceiling);
   // and append it
   dreg->appendDecal(dcnew);
+
+  // decal limiter
+  const int dclimit = gl_flatdecal_limit.asInt();
+  if (dclimit > 0) {
+    int dcCount = 0;
+    decal_t *cdc = (atFloor ? dreg->floordecaltail : dreg->ceildecaltail);
+    while (cdc) {
+      decal_t *c = cdc;
+      cdc = cdc->prev;
+      if (Are2DBBoxesOverlap(dcnew->bbox2d, c->bbox2d)) {
+        if (++dcCount > dclimit) {
+          Level->RemoveDecalAnimator(c);
+          dreg->removeDecal(c);
+          delete c;
+        }
+      }
+    }
+  }
+
   return true; // continue checking
 }
 
@@ -189,6 +211,8 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
 
   const int dcTexId = origdc->texture; // "0" means "no texture found"
   if (dcTexId <= 0) return;
+
+  /*
   VTexture *dtex = GTextureManager[dcTexId];
 
   // decal scale is not inverted
@@ -220,6 +244,10 @@ void VRenderLevelPublic::SpreadDecal (const decal_t *origdc) {
   nfo.bb2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
   nfo.bb2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
   nfo.bb2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
+  */
+
+  memcpy((void *)&nfo.bb2d[0], (void *)&origdc->bbox2d[0], sizeof(nfo.bb2d));
+  nfo.height = origdc->height;
 
   //GCon->Logf(NAME_Debug, "decal tex %d: sector #%d; box: (%g,%g)-(%g,%g)", origdc->texture.id, (int)(ptrdiff_t)(origdc->slidesec-&Level->Sectors[0]), nfo.bb2d[BOX2D_MINX], nfo.bb2d[BOX2D_MINY], nfo.bb2d[BOX2D_MAXX], nfo.bb2d[BOX2D_MAXY]);
 
