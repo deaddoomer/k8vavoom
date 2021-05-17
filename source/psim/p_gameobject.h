@@ -446,7 +446,7 @@ struct seg_t : public TPlane {
 
   void appendDecal (decal_t *dc) noexcept;
   void removeDecal (decal_t *dc) noexcept; // will not delete it
-  void killAllDecals () noexcept;
+  void killAllDecals (VLevel *Level) noexcept;
 };
 
 
@@ -1279,7 +1279,7 @@ struct subregion_t {
   void appendDecal (decal_t *dc) noexcept;
   void removeDecal (decal_t *dc) noexcept; // will not delete it
 
-  void killAllDecals () noexcept;
+  void killAllDecals (VLevel *Level) noexcept;
 
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
   inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }

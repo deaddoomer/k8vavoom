@@ -759,7 +759,7 @@ VRenderLevelShared::~VRenderLevelShared () {
 
   for (auto &&sub : Level->allSubsectors()) {
     for (subregion_t *r = sub.regions; r != nullptr; r = r->next) {
-      r->killAllDecals();
+      r->killAllDecals(Level);
       if (r->realfloor != nullptr) {
         FreeSurfaces(r->realfloor->surfs);
         delete r->realfloor;
@@ -1470,6 +1470,9 @@ void VRenderLevelShared::RenderPlayerView () {
 
   Drawer->MirrorFlip = false;
   Drawer->MirrorClip = false;
+
+  refdef.drawworld = true;
+  refdef.DrawCamera = false;
 
   ResetDrawStack(); // prepare draw list stack
   ResetPortalPool();

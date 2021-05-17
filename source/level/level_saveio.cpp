@@ -153,13 +153,13 @@ void VLevel::SerialiseOther (VStream &Strm) {
       // clear seen subsectors
       sub.miscFlags &= ~subsector_t::SSMF_Rendered;
       // remove subsector decals (just in case, because renderer may still be alive here)
-      for (subregion_t *r = sub.regions; r != nullptr; r = r->next) r->killAllDecals();
+      for (subregion_t *r = sub.regions; r != nullptr; r = r->next) r->killAllDecals(this);
     }
     for (auto &&seg : allSegs()) {
       // clear seen segs on loading
       seg.flags &= ~SF_MAPPED;
       // remove seg decals
-      seg.killAllDecals();
+      seg.killAllDecals(this);
     }
     // remove all sector decals
     KillAllSectorDecals();

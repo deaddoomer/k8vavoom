@@ -388,10 +388,14 @@ void VLevel::KillAllSectorDecals () {
   while (secdecalhead) {
     decal_t *c = secdecalhead;
     secdecalhead = c->next;
-    delete c->animator;
+    RemoveDecalAnimator(c);
     delete c;
   }
   secdecalhead = secdecaltail = nullptr;
+  if (sectorDecalList) {
+    delete[] sectorDecalList;
+    sectorDecalList = nullptr;
+  }
 }
 
 
@@ -445,7 +449,7 @@ void VLevel::ClearAllMapData () {
   }
 
   if (Segs) {
-    for (auto &&seg : allSegs()) seg.killAllDecals();
+    for (auto &&seg : allSegs()) seg.killAllDecals(this);
   }
 
   KillAllSectorDecals();

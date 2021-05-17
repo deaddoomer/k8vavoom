@@ -344,14 +344,15 @@ void seg_t::removeDecal (decal_t *dc) noexcept {
 //  seg_t::killAllDecals
 //
 //==========================================================================
-void seg_t::killAllDecals () noexcept {
-  while (decalhead) {
-    decal_t *c = decalhead;
-    removeDecal(c);
-    delete c->animator;
-    delete c;
+void seg_t::killAllDecals (VLevel *Level) noexcept {
+  decal_t *c = decalhead;
+  while (c) {
+    decal_t *dc = c;
+    c = c->next;
+    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
+    delete dc;
   }
-  decaltail = decalhead = nullptr; // just in case
+  decaltail = decalhead = nullptr;
 }
 
 
@@ -412,20 +413,22 @@ void subregion_t::removeDecal (decal_t *dc) noexcept {
 //  subregion_t::killAllDecals
 //
 //==========================================================================
-void subregion_t::killAllDecals () noexcept {
-  while (floordecalhead) {
-    decal_t *c = floordecalhead;
-    removeDecal(c);
-    delete c->animator;
-    delete c;
+void subregion_t::killAllDecals (VLevel *Level) noexcept {
+  decal_t *c = floordecalhead;
+  while (c) {
+    decal_t *dc = c;
+    c = c->next;
+    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
+    delete dc;
   }
-  while (ceildecalhead) {
-    decal_t *c = ceildecalhead;
-    removeDecal(c);
-    delete c->animator;
-    delete c;
+  c = ceildecalhead;
+  while (c) {
+    decal_t *dc = c;
+    c = c->next;
+    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
+    delete dc;
   }
-  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr; // just in case
+  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr;
 }
 
 
