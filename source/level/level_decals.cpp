@@ -1103,6 +1103,21 @@ struct DInfo {
 
 //==========================================================================
 //
+//  IsGoodFlatTexture
+//
+//==========================================================================
+static inline bool IsGoodFlatTexture (int texid) noexcept {
+  if (texid <= 0 || texid == skyflatnum) return false;
+  VTexture *tex = GTextureManager[texid];
+  if (!tex || tex->Type == TEXTYPE_Null) return false;
+  if (tex->animated) return false;
+  if (tex->GetWidth() < 1 || tex->GetHeight() < 1) return false;
+  return true;
+}
+
+
+//==========================================================================
+//
 //  AddDecalToSubsector
 //
 //  `*udata` is `DInfo`
@@ -1117,24 +1132,42 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   // check sector regions, and add decals
   int eregidx = 0;
   for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
-    if ((reg->regflags&sec_region_t::RF_BaseRegion) == 0) {
-      if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
-      //if (reg->regflags&(sec_region_t::RF_SkipFloorSurf|sec_region_t::RF_SkipCeilSurf)) continue; // special 3d floor, skip it (for now)
-    }
-    // check floor
-    if ((reg->regflags&sec_region_t::RF_BaseRegion) || !(reg->regflags&sec_region_t::RF_SkipFloorSurf)) {
-      const float fz = reg->efloor.GetPointZClamped(nfo->org);
-      if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
-        // do it
-        Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+    // base region?
+    if (reg->regflags&sec_region_t::RF_BaseRegion) {
+      // check floor
+      if (IsGoodFlatTexture(reg->efloor.splane->pic)) {
+        const float fz = reg->efloor.GetPointZClamped(nfo->org);
+        if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
+          // do it
+          Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        }
       }
-    }
-    // check ceiling
-    if ((reg->regflags&sec_region_t::RF_BaseRegion) || !(reg->regflags&sec_region_t::RF_SkipFloorSurf)) {
-      const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-      if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
-        // do it
-        Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+      // check ceiling
+      if (IsGoodFlatTexture(reg->eceiling.splane->pic)) {
+        const float cz = reg->eceiling.GetPointZClamped(nfo->org);
+        if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
+          // do it
+          Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        }
+      }
+    } else {
+      // 3d floor region; here, floor and ceiling directions are inverted
+      if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
+      // check floor
+      if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
+        const float fz = reg->efloor.GetPointZClamped(nfo->org);
+        if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
+          // do it
+          Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        }
+      }
+      // check ceiling
+      if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->eceiling.splane->pic)) {
+        const float cz = reg->eceiling.GetPointZClamped(nfo->org);
+        if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
+          // do it
+          Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        }
       }
     }
   }
