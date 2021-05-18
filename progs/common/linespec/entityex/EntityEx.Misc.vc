@@ -5087,7 +5087,32 @@ void DaggerAlert (EntityEx atarget, EntityEx emitter) {
 
 //==========================================================================
 //
-//  DaggerAlert
+//  IsSectorFloorLiquid
+//
+//==========================================================================
+bool IsSectorFloorLiquid (sector_t *sec) {
+  if (!sec) return false; // just in case
+  if (IsAnimatedTexture(sec.floor.pic)) return true;
+  name fpname = GetTextureName(sec.floor.pic);
+  // slime13 and further are normal floors, not liquids
+  if (fpname == 'slime10' || fpname == 'slime11' || fpname == 'slime12') {
+    return true;
+  }
+  auto tname = string(fpname);
+  return
+    globmatch(tname, "*water*", caseSensitive:false) ||
+    globmatch(tname, "*nukage*", caseSensitive:false) ||
+    globmatch(tname, "*lava*", caseSensitive:false) ||
+    globmatch(tname, "*blood*", caseSensitive:false) ||
+    globmatch(tname, "*slime0*", caseSensitive:false) ||
+    globmatch(tname, "*slimage*", caseSensitive:false) ||
+    globmatch(tname, "f_watr*", caseSensitive:false); // Strife water
+}
+
+
+//==========================================================================
+//
+//  A_DormantWakeupInternal
 //
 //==========================================================================
 final void A_DormantWakeupInternal () {

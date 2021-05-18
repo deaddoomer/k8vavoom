@@ -2057,6 +2057,16 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 
 //==========================================================================
 //
+//  isOnLiquidFloor
+//
+//==========================================================================
+[decorate] final bool decorate_IsActorOnALiquidFloor () {
+  return IsSectorFloorLiquid(Sector);
+}
+
+
+//==========================================================================
+//
 //  common_k8JumpIfLiquidFloor
 //
 //==========================================================================
@@ -2064,25 +2074,7 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
   KeepChainResult();
   if (!tgt) return false;
   if (!tgt.Sector) return false; // just in case
-  if (IsAnimatedTexture(tgt.Sector.floor.pic)) {
-    //print("ANIM FLOOR: %s", GetTextureName(tgt.Sector.floor.pic));
-    DoJump(label);
-    return true;
-  }
-  auto tname = string(GetTextureName(tgt.Sector.floor.pic));
-  if (globmatch(tname, "*water*", caseSensitive:false) ||
-      globmatch(tname, "*nukage*", caseSensitive:false) ||
-      globmatch(tname, "*lava*", caseSensitive:false) ||
-      globmatch(tname, "*blood*", caseSensitive:false) ||
-      globmatch(tname, "*slime0*", caseSensitive:false) ||
-      globmatch(tname, "*slimage*", caseSensitive:false) ||
-      globmatch(tname, "f_watr*", caseSensitive:false)) // Strife water
-  {
-    DoJump(label);
-    return true;
-  }
-  // slime13 and further are normal floors, not liquids
-  if (tname == "slime10" || tname == "slime11" || tname == "slime12") {
+  if (IsSectorFloorLiquid(Sector)) {
     DoJump(label);
     return true;
   }
