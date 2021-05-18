@@ -730,6 +730,18 @@ override void Destroyed () {
 
 //==========================================================================
 //
+//  A_SetDecal
+//
+//==========================================================================
+[decorate] final void A_SetDecal (name aDecalName, optional int aptr) {
+  Entity tgt = DecorDoAAPtr('A_SetDecal', aptr!optional);
+  if (!tgt) return;
+  tgt.DecalName = aDecalName;
+}
+
+
+//==========================================================================
+//
 //  A_WeaponReady
 //
 //  The player can fire the weapon or change to another weapon at this time.
