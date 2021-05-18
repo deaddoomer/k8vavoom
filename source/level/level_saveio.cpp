@@ -202,13 +202,14 @@ void VLevel::SerialiseOther (VStream &Strm) {
             } else {
               // add to decal list
               dc->seg = nullptr;
-              Segs[f].appendDecal(dc);
               //if (decal) decal->next = dc; else Segs[f].decals = dc;
               if (dc->animator) {
                 if (decanimlist) decanimlist->prevanimated = dc;
                 dc->nextanimated = decanimlist;
                 decanimlist = dc;
               }
+              dc->calculateBBox(this);
+              Segs[f].appendDecal(dc);
               //decal = dc;
             }
             ++dctotal;

@@ -560,13 +560,11 @@ COMMAND(Info_ThinkerCount) {
 //  classNameCompare
 //
 //==========================================================================
-extern "C" {
-  static int classNameCompare (const void *aa, const void *bb, void *udata) {
-    if (aa == bb) return 0;
-    VClass *a = *(VClass **)aa;
-    VClass *b = *(VClass **)bb;
-    return VStr::ICmp(a->GetName(), b->GetName());
-  }
+static int classNameCompare (const void *aa, const void *bb, void *udata) {
+  if (aa == bb) return 0;
+  VClass *a = *(VClass **)aa;
+  VClass *b = *(VClass **)bb;
+  return VStr::ICmp(a->GetName(), b->GetName());
 }
 
 
