@@ -742,6 +742,34 @@ override void Destroyed () {
 
 //==========================================================================
 //
+//  A_SetFlatDecal
+//
+//==========================================================================
+[decorate] final void A_SetFlatDecal (name aDecalName, optional int aptr) {
+  Entity tgt = DecorDoAAPtr('A_SetFlatDecal', aptr!optional);
+  if (!tgt) return;
+  tgt.FlatDecalName = aDecalName;
+  tgt.bSeparateFlatDecal = true;
+}
+
+
+//==========================================================================
+//
+//  A_RemoveSeparateFlatDecal
+//
+//  this actually makes flat decal equal to normal decal
+//
+//==========================================================================
+[decorate] final void A_RemoveSeparateFlatDecal (optional int aptr) {
+  Entity tgt = DecorDoAAPtr('A_RemoveSeparateFlatDecal', aptr!optional);
+  if (!tgt) return;
+  tgt.FlatDecalName = '';
+  tgt.bSeparateFlatDecal = false;
+}
+
+
+//==========================================================================
+//
 //  A_WeaponReady
 //
 //  The player can fire the weapon or change to another weapon at this time.

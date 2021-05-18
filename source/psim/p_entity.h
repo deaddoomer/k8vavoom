@@ -439,6 +439,8 @@ class VEntity : public VThinker {
     EFEX_IsEntityEx       = 1u<<13u, // cannot optimise physics for this entity
     EFEX_IsActor          = 1u<<14u, // cannot optimise physics for this entity
     EFEX_AllowSimpleTick  = 1u<<15u, // do not fallback to full physics code even for states with action method calls
+    // put here for no real reason (it belongs to EntityEx)
+    EFEX_SeparateFlatDecal = 1u<<16u, // use `FlatDecalName` for flat decals
   };
   vuint32 FlagsEx;
 
@@ -497,6 +499,7 @@ class VEntity : public VThinker {
   VEntity *Owner;
 
   VName DecalName;
+  VName FlatDecalName;
 
   // set this field in `BeginPlay()` to override `VThinker::SpawnThinker()` result
   // this is required for `RandomSpawner`

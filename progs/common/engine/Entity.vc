@@ -335,6 +335,7 @@ transient native readonly bool bAlwaysTick; // cannot optimise physics for this 
 transient native readonly bool bThisIsEntityEx;
 transient native readonly bool bThisIsActor;
 transient native readonly bool bAllowSimpleTick; // do not fallback to full physics code even for states with action method calls
+bool bSeparateFlatDecal; // use `FlatDecalName` for flat decals
 
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)
@@ -399,6 +400,7 @@ name SoundGender;
 Entity Owner;
 
 name DecalName;
+name FlatDecalName;
 
 // set this field in `BeginPlay()` to override `VThinker::SpawnThinker()` result
 // this is required for `RandomSpawner`

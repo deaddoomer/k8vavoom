@@ -2656,15 +2656,22 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
 
   //print("SpawnPuff: Range=%s; PuffType=%C; decalType=%s(%B); puffdecal=%s; doDecal=%B", Range, PuffType, decalType, specified_decalType, (PuffType ? PuffType.default.DecalName : '<none>'), doDecal);
 
+  if (decalType) {
+    name flatDName = (specified_decalType && decalType ? decalType : PuffType.default.bSeparateFlatDecal ? PuffType.default.FlatDecalName : PuffType.default.DecalName);
+    if (flatDName) {
+      if (!specified_realOrg) realOrg = Org;
+      float fdrange = fmax(1.0, fabs(Height)*0.5);
+      TVec forg = realOrg;
+      forg.z += fdrange;
+      SpawnFlatDecal(forg, flatDName, fdrange+2.0);
+    }
+  }
+
   if (decalType && sec && li) {
     //k8:TODO: this should be strictly client-side
     if (!specified_realOrg) realOrg = Org;
     name dcname = (specified_decalType && decalType ? decalType : PuffType.default.DecalName);
     SpawnDecal(realOrg, dcname, (sec == li->frontsector ? 0 : 1), li);
-    float fdrange = fmax(1.0, fabs(Height)*0.5);
-    TVec forg = realOrg;
-    forg.z += fdrange;
-    SpawnFlatDecal(forg, dcname, fdrange+2.0);
   }
 
   if (PuffType) {

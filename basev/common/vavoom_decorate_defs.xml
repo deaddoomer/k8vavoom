@@ -70,6 +70,8 @@
     <prop_blood_translation name="BloodTranslation" />
     <flag name="CopyBloodTranslation" property="bCopyBloodTranslation" />
     <prop_name name="Decal" property="DecalName" />
+    <prop_name name="FlatDecal" property="FlatDecalName" />
+    <flag name="SeparateFlatDecal" property="bSeparateFlatDecal" />
     <prop_stencil_color name="StencilColor" property="StencilColor" />
     <!--  Obituaries -->
     <prop_string name="Obituary" property="Obituary" />

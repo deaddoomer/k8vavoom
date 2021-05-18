@@ -31,7 +31,7 @@
 //==========================================================================
 final void SpawnDecal (TVec org, name dectype, int side, line_t *li, optional int atranslation) {
   //writeln("DECAL: ", dectype);
-  if (!dectype || !li || !XLevel) return; // just in case
+  if (!dectype || nameEquCI(dectype, 'none') || !li || !XLevel) return; // just in case
   //XLevel.AddDecal(org, dectype, side, li);
   int lidx = XLevel.GetLineIndex(li);
   if (lidx < 0 || lidx >= XLevel.Lines.length) return;
@@ -67,7 +67,7 @@ final void SpawnDecalById (TVec org, int id, int side, line_t *li) {
 //==========================================================================
 final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation) {
   //writeln("DECAL: ", dectype);
-  if (!dectype || !XLevel) return; // just in case
+  if (!dectype || nameEquCI(dectype, 'none') || !XLevel) return; // just in case
   //XLevel.AddDecal(org, dectype, side, li);
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level.Game.Players[i]) continue;
