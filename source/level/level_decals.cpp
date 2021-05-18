@@ -184,8 +184,7 @@ void VLevel::DestroyDecal (decal_t *dc) {
 
 
 // sorry for those statics
-static TArray<decal_t *> dc2killNonAnim;
-static TArray<decal_t *> dc2killAnim;
+static TArray<decal_t *> dc2kill;
 
 
 //==========================================================================
@@ -194,7 +193,7 @@ static TArray<decal_t *> dc2killAnim;
 //
 //==========================================================================
 static inline float BBox2DArea (const float bbox2d[4]) noexcept {
-  return (bbox2d[BOX2D_MAXX]-bbox2d[BOX2D_MINX])*(bbox2d[BOX2D_MAXY]-bbox2d[BOX2D_MINY]);
+  return max2(1.0f, (bbox2d[BOX2D_MAXX]-bbox2d[BOX2D_MINX])*(bbox2d[BOX2D_MAXY]-bbox2d[BOX2D_MINY]));
 }
 
 
@@ -209,6 +208,15 @@ static int decalAreaCompare (const void *aa, const void *bb, void *udata) {
   const decal_t *bdc = *(const decal_t **)bb;
   const float areaA = BBox2DArea(adc->bbox2d);
   const float areaB = BBox2DArea(bdc->bbox2d);
+  // if one decal is more than two times smaller than the other, prefer smaller decal
+  if (areaA <= areaB*0.5f) return -1;
+  if (areaB <= areaA*0.5f) return +1;
+  // if the size is roughly the same, prefer animated
+  if (!!adc->animator != !!bdc->animator) {
+    const float prcsz = min2(areaA, areaB)/max2(areaA, areaB);
+    if (prcsz >= 0.88f) return (adc->animator ? -1 : +1);
+  }
+  // normal area comparison
   const float adiff = areaA-areaB;
   if (adiff < 0.0f) return -1;
   if (adiff > 0.0f) return +1;
@@ -227,8 +235,7 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
   const int smallLimit = gl_smalldecal_limit.asInt();
   if (bigLimit < 1 && smallLimit < 1) return; // nothing to do
 
-  dc2killNonAnim.resetNoDtor();
-  dc2killAnim.resetNoDtor();
+  dc2kill.resetNoDtor();
 
   // count decals
   int bigDecalCount = 0, smallDecalCount = 0;
@@ -255,7 +262,7 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
     }
 
     if (twdt >= BigDecalWidth || thgt >= BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
-    if (cdc->animator) dc2killAnim.append(cdc); else dc2killNonAnim.append(cdc);
+    dc2kill.append(cdc);
   }
 
   int toKillBig = (bigLimit > 0 ? bigDecalCount-bigLimit : 0);
@@ -282,27 +289,13 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
   // prefer smaller and animated decals
   int dcCount = toKillBig+toKillSmall;
 
-  // first kill animated decals
-  if (dc2killAnim.length()) {
-    // sort by size
-    timsort_r(dc2killAnim.ptr(), dc2killAnim.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
-    for (decal_t *dcdie : dc2killAnim) {
-      if (dcCount) {
-        --dcCount;
-        //GCon->Logf(NAME_Debug, "killing animated decal '%s' with area %g", *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
-        DestroyDecal(dcdie);
-      }
-    }
-  }
-  // now kill non-animated decals
-  if (dcCount && dc2killNonAnim.length()) {
-    timsort_r(dc2killNonAnim.ptr(), dc2killNonAnim.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
-    for (decal_t *dcdie : dc2killNonAnim) {
-      if (dcCount) {
-        --dcCount;
-        //GCon->Logf(NAME_Debug, "killing non-animated decal '%s' with area %g", *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
-        DestroyDecal(dcdie);
-      }
+  // sort by preference
+  timsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
+  for (decal_t *dcdie : dc2kill) {
+    if (dcCount) {
+      --dcCount;
+      //GCon->Logf(NAME_Debug, "killing animated decal '%s' with area %g", *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
+      DestroyDecal(dcdie);
     }
   }
 
@@ -1129,8 +1122,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
   const int dclimit = gl_flatdecal_limit.asInt();
   if (dclimit > 0) {
     // prefer decals with animators (they are usually transient blood or something like that)
-    dc2killNonAnim.resetNoDtor();
-    dc2killAnim.resetNoDtor();
+    dc2kill.resetNoDtor();
     constexpr float shrinkRatio = 0.8f;
     float mybbox[4];
     ShrinkBBox2D(mybbox, dc->bbox2d, shrinkRatio);
@@ -1145,7 +1137,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
       ShrinkBBox2D(curbbox, curdc->bbox2d, shrinkRatio);
       if (Are2DBBoxesOverlap(mybbox, curbbox)) {
         ++dcCount;
-        if (curdc->animator) dc2killAnim.append(curdc); else dc2killNonAnim.append(curdc);
+        dc2kill.append(curdc);
       }
     }
     // do we need to remove some decals?
@@ -1153,28 +1145,14 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
       // prefer smallest decals
       //GCon->Logf(NAME_Debug, "%d flat decals to remove (%d total)...", dcCount-dclimit, dcCount);
       dcCount -= dclimit; // decals left to remove
-      // first kill animated decals
-      if (dc2killAnim.length()) {
-        // sort by size
-        timsort_r(dc2killAnim.ptr(), dc2killAnim.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
-        for (decal_t *dcdie : dc2killAnim) {
-          if (dcCount) {
-            --dcCount;
-            DestroyFlatDecal(dcdie);
-          }
+      // sort by preference
+      timsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
+      for (decal_t *dcdie : dc2kill) {
+        if (dcCount) {
+          --dcCount;
+          DestroyFlatDecal(dcdie);
         }
       }
-      // now kill non-animated decals
-      if (dcCount && dc2killNonAnim.length()) {
-        timsort_r(dc2killNonAnim.ptr(), dc2killNonAnim.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
-        for (decal_t *dcdie : dc2killNonAnim) {
-          if (dcCount) {
-            --dcCount;
-            DestroyFlatDecal(dcdie);
-          }
-        }
-      }
-      vassert(dcCount == 0);
     }
   }
 }
