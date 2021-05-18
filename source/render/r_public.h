@@ -63,6 +63,7 @@ struct fakefloor_t {
 class VDecalAnim;
 
 struct decal_t {
+  // flags bit values
   enum {
     SlideFloor = 0x0001U, // curz: offset with floorz, slide with it
     SlideCeil = 0x0002U, // curz: offset with ceilingz, slide with it
@@ -75,30 +76,34 @@ struct decal_t {
     NoTopTex = 0x2000U, // don't render on top texture
     NoBotTex = 0x4000U, // don't render on bottom texture
   };
+
   // dcsurf bit values
   enum {
     Wall = 0u,
-    Floor = 1u,
-    Ceiling = 2u,
+    Floor = 1u, // for planes with positive `normal.z`
+    Ceiling = 2u, // for planes with negative `normal.z`
     // note that `3u` is invalid
     FakeFlag = 4u,
     SurfTypeMask = 0x03u,
   };
+
   decal_t *prev; // in seg/sreg/slidesec
   decal_t *next; // in seg/sreg/slidesec
   seg_t *seg; // this is non-null for wall decals
-  subregion_t *sreg; // this is non-null for floor/ceiling decals
+  subregion_t *sreg; // this is non-null for floor/ceiling decals (only in renderer clones)
   vuint32 dcsurf; // decal type
-  sector_t *slidesec; // backsector for SlideXXX, or owning sector for floor/ceiling decal (only in VLevel list)
+  sector_t *slidesec; // backsector for SlideXXX
+  subsector_t *sub; // owning subsector for floor/ceiling decal
   int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
   VName dectype;
   //VName picname;
   VTextureID texture;
   int translation;
-  vuint32 flags;
+  unsigned flags;
   // z and x positions has no image offset added
-  float worldx, worldy, height; // world coordinates for floor/ceiling decals, and "spread height"
-  float orgz; // original z position for wall decals, and for flat decals
+  float worldx, worldy; // world coordinates for floor/ceiling decals
+  //float height; // spread height
+  float orgz; // original z position for wall decals
   float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
   float xdist; // offset from linedef start, in map units
   float ofsX, ofsY; // for animators
@@ -112,9 +117,19 @@ struct decal_t {
   decal_t *nextanimated; // so we can skip static decals
   // for flat decals
   float bbox2d[4]; // 2d bounding box for the original (maximum) flat decal size
-  // in VLevel sector decal list
-  decal_t *secprev;
-  decal_t *secnext;
+  // in VLevel subsector decal list
+  decal_t *subprev;
+  decal_t *subnext;
+  // in renderer region decal list
+  decal_t *sregprev;
+  decal_t *sregnext;
+
+  /*
+  unsigned uid; // unique id, so we can process all clones
+  // linked list of all decals with the given uid
+  decal_t *uidprev;
+  decal_t *uidnext;
+  */
 
   // nore that floor/ceiling type should be correctly set for 3d floor subregions
   // i.e. decal on top of 3d floor is ceiling decal
@@ -217,7 +232,16 @@ public:
   // will create new decals for all touching subsectors
   // `origdc` must be valid, with proper flags and region number
   // `origdc` won't be modified, owned, or destroyed
-  void SpreadDecal (const decal_t *origdc);
+  //void SpreadDecal (const decal_t *origdc);
+
+  // this will NOT take ownership, nor create any clones!
+  // will include decal into list of decals for the given subregion
+  virtual void AppendFlatDecal (decal_t *dc) = 0;
+  // call this before destroying the decal
+  virtual void RemoveFlatDecal (decal_t *dc) = 0;
+
+  virtual decal_t *GetSRegFloorDecalHead (const subregion_t *sreg) noexcept = 0;
+  virtual decal_t *GetSRegCeilingDecalHead (const subregion_t *sreg) noexcept = 0;
 };
 
 

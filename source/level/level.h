@@ -541,8 +541,8 @@ class VLevel : public VGameObject {
   // this list will be passed to renderer, so it will be able to populate decal lists for subsectors
   // this list is kept up-to-date by renderer (via `dc->mainDecal` link)
   // note that animators will animate this list separately from renderer list (i.e. both lists will be animated)
-  decal_t *secdecalhead;
-  decal_t *secdecaltail;
+  decal_t *subdecalhead;
+  decal_t *subdecaltail;
 
   // server uid -> object
   // dynamically allocated, so it won't be scanned by GC
@@ -550,7 +550,7 @@ class VLevel : public VGameObject {
   TMapNC<vuint32, VEntity *> *suid2ent;
 
   // unified list for floor and ceiling decals
-  VDecalList *sectorDecalList;
+  VDecalList *subsectorDecalList;
 
 public:
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
@@ -1143,15 +1143,14 @@ public:
 
 public:
   // this will remove dead and over-the-limit decals (including animated)
-  // called from `AddDecal()`
+  // called from `AddDecal()` (and currently from renderer, therefore it is public)
   void CleanupSegDecals (seg_t *seg);
 
-  void KillAllSectorDecals ();
+  // currently called from renderer, therefore it is public
+  void DestroyDecal (decal_t *dc); // this will also destroy decal and its animator!
 
-  // only for flat decals
-  // decal must be fully initialised
-  // decal animator may be set, but you SHOULD NOT manually add it to animator list (this method will do it for you)
-  void AppendDecalToSectorList (decal_t *dc);
+  // used in some internal static functions. sigh.
+  void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation);
 
 public:
   enum {
@@ -1366,9 +1365,16 @@ private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
   //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);
 
+  void KillAllSubsectorDecals ();
+
+  // only for flat decals
+  // decal must be fully initialised
+  // decal animator may be set, but you SHOULD NOT manually add it to animator list (this method will do it for you)
+  void AppendDecalToSubsectorList (decal_t *dc);
+
   void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
-  void AddFlatDecalEx (sector_t *sec, int eregidx, bool atRegFloor, const TVec org, VDecalDef *dec, int level, int translation);
+  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation);
 
   // z coord matters!
   void AddFlatDecal (TVec org, VName dectype, float range, int translation);

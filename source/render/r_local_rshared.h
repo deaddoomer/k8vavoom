@@ -144,6 +144,7 @@ protected:
   subregion_t *AllocatedSubRegions;
   drawseg_t *AllocatedDrawSegs;
   segpart_t *AllocatedSegParts;
+  subregion_info_t *SubRegionInfo; // always allocated and inited with `AllocatedSubRegions`
 
   // static lights
   TArray<light_t> Lights;
@@ -1026,6 +1027,15 @@ public:
   virtual LightInfo GetDynamicLight (int idx) const noexcept override;
 
   virtual void RenderPlayerView () override;
+
+  // this will NOT take ownership, nor create any clones!
+  // will include decal into list of decals for the given subregion
+  virtual void AppendFlatDecal (decal_t *dc) override;
+  // call this before destroying the decal
+  virtual void RemoveFlatDecal (decal_t *dc) override;
+
+  virtual decal_t *GetSRegFloorDecalHead (const subregion_t *sreg) noexcept override;
+  virtual decal_t *GetSRegCeilingDecalHead (const subregion_t *sreg) noexcept override;
 
   // fix polyobject segs
   void SegMoved (seg_t *seg); // do not call this directly, it will be called from `PObjModified()`

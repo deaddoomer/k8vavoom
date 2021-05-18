@@ -30,6 +30,23 @@
 // this is used to compare floats like ints which is faster
 #define FASI(var_) (*(const int32_t *)&(var_))
 
+// used to work with double-linked lists
+#define DLListAppendEx(item_,head_,tail_,prevname_,nextname_)  do { \
+  (item_)->prevname_ = (tail_); \
+  if ((item_)->prevname_) (item_)->prevname_->nextname_ = (item_); else (head_) = (item_); \
+  (item_)->nextname_ = nullptr; /* just in case */ \
+  (tail_) = (item_); \
+} while (0)
+
+#define DLListAppend(item_,head_,tail_)  DLListAppendEx((item_),(head_),(tail_),prev,next)
+
+#define DLListRemoveEx(item_,head_,tail_,prevname_,nextname_)  do { \
+  if ((item_)->prevname_) (item_)->prevname_->nextname_ = (item_)->nextname_; else (head_) = (item_)->nextname_; \
+  if ((item_)->nextname_) (item_)->nextname_->prevname_ = (item_)->prevname_; else (tail_) = (item_)->prevname_; \
+} while (0)
+
+#define DLListRemove(item_,head_,tail_)  DLListRemoveEx((item_),(head_),(tail_),prev,next)
+
 
 // An output device.
 class FOutputDevice : public VLogListener {

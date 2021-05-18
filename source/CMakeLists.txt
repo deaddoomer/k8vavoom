@@ -150,6 +150,7 @@ set(RENDERBASE_SOURCES
   render/r_light_adv_fltopt.cpp
   render/r_main.cpp
   render/r_main_base.cpp
+  render/r_main_decals.cpp
   render/r_main_reg.cpp
   render/r_main_adv.cpp
   render/r_model.cpp

@@ -619,6 +619,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , AllocatedSubRegions(nullptr)
   , AllocatedDrawSegs(nullptr)
   , AllocatedSegParts(nullptr)
+  , SubRegionInfo(nullptr)
   , inWorldCreation(false)
   , updateWorldFrame(0)
   , bspVisRadius(nullptr)
@@ -757,9 +758,16 @@ VRenderLevelShared::~VRenderLevelShared () {
   delete[] bspVisRadius;
   bspVisRadius = nullptr;
 
+  // clean all subregion decal lists
+  // do this with a hack, because the renderer doesn't clone decals, ever
+  for (decal_t *dc = Level->subdecalhead; dc; dc = dc->next) {
+    dc->sreg = nullptr;
+    dc->sregprev = dc->sregnext = nullptr;
+  }
+
   for (auto &&sub : Level->allSubsectors()) {
     for (subregion_t *r = sub.regions; r != nullptr; r = r->next) {
-      r->killAllDecals(Level);
+      //r->killAllDecals(Level);
       if (r->realfloor != nullptr) {
         FreeSurfaces(r->realfloor->surfs);
         delete r->realfloor;
@@ -838,6 +846,8 @@ VRenderLevelShared::~VRenderLevelShared () {
   AllocatedDrawSegs = nullptr;
   delete[] AllocatedSegParts;
   AllocatedSegParts = nullptr;
+  delete[] SubRegionInfo;
+  SubRegionInfo = nullptr;
 
   delete[] Particles;
   Particles = nullptr;

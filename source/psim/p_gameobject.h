@@ -1264,22 +1264,8 @@ struct subregion_t {
     SRF_FORCE_RECREATE = 1u<<1, // autoreset
   };
   vuint32 flags;
-  //vint32 count;
-  //drawseg_t *lines;
   subsector_t *sub; // subsector for this region
-
-  // decal list
-  decal_t *floordecalhead;
-  decal_t *floordecaltail;
-
-  decal_t *ceildecalhead;
-  decal_t *ceildecaltail;
-
-  // decal type flag (floor/ceiling) must be already set!
-  void appendDecal (decal_t *dc) noexcept;
-  void removeDecal (decal_t *dc) noexcept; // will not delete it
-
-  void killAllDecals (VLevel *Level) noexcept;
+  vuint32 rdindex; // unique id in renderer (sequential, can be used to index various arrays)
 
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
   inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }

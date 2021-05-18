@@ -379,6 +379,16 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   memset((void *)pds, 0, sizeof(drawseg_t)*(dscount+1));
   memset((void *)pspart, 0, sizeof(segpart_t)*(spcount+1));
 
+  // allocate subregion info
+  SubRegionInfo = new subregion_info_t[srcount+1];
+  memset((void *)SubRegionInfo, 0, sizeof(subregion_info_t)*(srcount+1));
+
+  // set subregion unique ids, init subregion info pointers
+  for (unsigned id = 0; id < (unsigned)srcount+1u; ++id) {
+    sreg[id].rdindex = id;
+    SubRegionInfo[id].sreg = &sreg[id];
+  }
+
   pspartsLeft = spcount+1;
   int sregLeft = srcount+1;
   int pdsLeft = dscount+1;
@@ -555,6 +565,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
   GCon->Log(NAME_Debug, "surface creation complete");
 
-  // add sector decals
-  for (decal_t *dc = Level->secdecalhead; dc; dc = dc->next) SpreadDecal(dc);
+  // add subsector decals
+  for (decal_t *dc = Level->subdecalhead; dc; dc = dc->next) AppendFlatDecal(dc);
 }

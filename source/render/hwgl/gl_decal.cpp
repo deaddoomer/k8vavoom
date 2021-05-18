@@ -76,11 +76,11 @@ bool VOpenGLDrawer::RenderSurfaceHasDecals (const surface_t *surf) const {
       break;
     case DFLOOR:
       if (!r_decals_flat) return false;
-      if (!surf->sreg || !surf->sreg->floordecalhead) return false; // nothing to do
+      if (!surf->sreg || !RendLev->GetSRegFloorDecalHead(surf->sreg)) return false; // nothing to do
       break;
     case DCEILING:
       if (!r_decals_flat) return false;
-      if (!surf->sreg || !surf->sreg->ceildecalhead) return false; // nothing to do
+      if (!surf->sreg || !RendLev->GetSRegCeilingDecalHead(surf->sreg)) return false; // nothing to do
       break;
     default: return false; // just in case
   }
@@ -215,14 +215,14 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   decal_t *dcl;
   switch (dkind) {
     case DWALL: dcl = seg->decalhead; break;
-    case DFLOOR: dcl = surf->sreg->floordecalhead; break;
-    case DCEILING: dcl = surf->sreg->ceildecalhead; break;
+    case DFLOOR: dcl = RendLev->GetSRegFloorDecalHead(surf->sreg); break;
+    case DCEILING: dcl = RendLev->GetSRegCeilingDecalHead(surf->sreg); break;
     default: abort(); // just in case
   }
 
   while (dcl) {
     decal_t *dc = dcl;
-    dcl = dcl->next;
+    dcl = (dkind == DWALL ? dcl->next : dcl->sregnext);
 
     const int dcTexId = dc->texture; // "0" means "no texture found"
     VTexture *dtex = (dcTexId > 0 ? GTextureManager[dcTexId] : nullptr);
@@ -234,8 +234,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     if (!dtex || dtex->Width < 1 || dtex->Height < 1 || dc->alpha <= 0.0f || dscaleX <= 0.0f || dscaleY <= 0.0f) {
       // remove it, if it is not animated
       if (!dc->animator) {
-        if (dkind == DWALL) seg->removeDecal(dc); else surf->sreg->removeDecal(dc);
-        delete dc;
+        if (GClLevel) GClLevel->DestroyDecal(dc);
       }
       continue;
     }

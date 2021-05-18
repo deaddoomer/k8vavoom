@@ -86,13 +86,13 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
       if (!mustBeFlatDecal) Host_Error("error in decal i/o");
       vio.iodef(VName("worldx"), dc->worldx, 0.0f);
       vio.iodef(VName("worldy"), dc->worldy, 0.0f);
-      vio.iodef(VName("height"), dc->height, 2.0f);
-      if (!Strm.IsLoading() && !dc->slidesec) Host_Error("error in decal i/o");
-      vint32 slsec = (Strm.IsLoading() ? -666 : (int)(ptrdiff_t)(dc->slidesec-&level->Sectors[0]));
-      vio.iodef(VName("ownersec"), slsec, -666);
+      //vio.iodef(VName("height"), dc->height, 2.0f);
+      if (!Strm.IsLoading() && !dc->sub) Host_Error("error in decal i/o");
+      vint32 slsec = (Strm.IsLoading() ? -666 : (int)(ptrdiff_t)(dc->sub-&level->Subsectors[0]));
+      vio.iodef(VName("ownersubsec"), slsec, -666);
       if (Strm.IsLoading()) {
-        if (slsec < 0 || slsec >= level->NumSectors) Host_Error("error in decal i/o");
-        dc->slidesec = &level->Sectors[slsec];
+        if (slsec < 0 || slsec >= level->NumSubsectors) Host_Error("error in decal i/o");
+        dc->sub = &level->Subsectors[slsec];
       }
       vint32 eridx = (Strm.IsLoading() ? -666 : dc->eregindex);
       vio.iodef(VName("secregindex"), eridx, -666);
@@ -152,8 +152,6 @@ void VLevel::SerialiseOther (VStream &Strm) {
       sub.updateWorldFrame = 0;
       // clear seen subsectors
       sub.miscFlags &= ~subsector_t::SSMF_Rendered;
-      // remove subsector decals (just in case, because renderer may still be alive here)
-      for (subregion_t *r = sub.regions; r != nullptr; r = r->next) r->killAllDecals(this);
     }
     for (auto &&seg : allSegs()) {
       // clear seen segs on loading
@@ -161,8 +159,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
       // remove seg decals
       seg.killAllDecals(this);
     }
-    // remove all sector decals
-    KillAllSectorDecals();
+    // remove all subsector decals
+    KillAllSubsectorDecals();
     // decal animation list should be empty too
     decanimlist = nullptr;
   }
@@ -492,18 +490,18 @@ void VLevel::SerialiseOther (VStream &Strm) {
     }
   }
 
-  // sector decals
+  // subsector decals
   if (hasSectorDecals) {
-    vint32 sscount = (Strm.IsLoading() ? 0 : NumSectors);
+    vint32 sscount = (Strm.IsLoading() ? 0 : NumSubsectors);
     Strm << STRM_INDEX(sscount);
     vint32 sdctotal = 0;
     if (Strm.IsLoading()) {
       vint32 ssdatasize = 0;
       Strm << ssdatasize;
       auto stpos = Strm.Tell();
-      if (sscount != NumSectors) {
+      if (sscount != NumSubsectors) {
         // skip it
-        GCon->Log("skipping old sector decal data, cannot load it (this is harmless)");
+        GCon->Log("skipping old subsector decal data, cannot load it (this is harmless)");
       } else {
         // load number of decals
         Strm << STRM_INDEX(sdctotal);
@@ -517,7 +515,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
             delete dc;
           } else {
             // add to decal list
-            AppendDecalToSectorList(dc);
+            AppendDecalToSubsectorList(dc);
           }
         }
         GCon->Logf("%d subsector decals loaded", sdctotal);
@@ -530,11 +528,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
       int ssdpos = Strm.Tell();
       Strm << ssdatasize; // will be fixed later
       // count number of decals
-      for (const decal_t *dc = secdecalhead; dc; dc = dc->next) ++sdctotal;
+      for (const decal_t *dc = subdecalhead; dc; dc = dc->next) ++sdctotal;
       // save number of decals
       Strm << STRM_INDEX(sdctotal);
       // save sector decals
-      for (decal_t *dc = secdecalhead; dc; dc = dc->next) {
+      for (decal_t *dc = subdecalhead; dc; dc = dc->next) {
         DecalIO(Strm, dc, this, true);
       }
       auto currPos = Strm.Tell();

@@ -310,14 +310,13 @@ sec_region_t *sector_t::AllocRegion () {
 //==========================================================================
 void seg_t::appendDecal (decal_t *dc) noexcept {
   if (!dc) return;
+  vassert(dc->dcsurf == 0u);
   vassert(!dc->prev);
   vassert(!dc->next);
   vassert(!dc->seg);
   vassert(!dc->sreg);
   dc->seg = this;
-  dc->prev = decaltail;
-  if (decaltail) decaltail->next = dc; else decalhead = dc;
-  decaltail = dc;
+  DLListAppend(dc, decalhead, decaltail);
 }
 
 
@@ -330,10 +329,10 @@ void seg_t::appendDecal (decal_t *dc) noexcept {
 //==========================================================================
 void seg_t::removeDecal (decal_t *dc) noexcept {
   if (!dc) return;
+  vassert(dc->dcsurf == 0u);
   vassert(dc->seg == this);
   vassert(!dc->sreg);
-  if (dc->prev) dc->prev->next = dc->next; else decalhead = dc->next;
-  if (dc->next) dc->next->prev = dc->prev; else decaltail = dc->prev;
+  DLListRemove(dc, decalhead, decaltail);
   dc->prev = dc->next = nullptr;
   dc->seg = nullptr;
 }
@@ -353,82 +352,6 @@ void seg_t::killAllDecals (VLevel *Level) noexcept {
     delete dc;
   }
   decaltail = decalhead = nullptr;
-}
-
-
-
-//==========================================================================
-//
-//  subregion_t::appendDecal
-//
-//==========================================================================
-void subregion_t::appendDecal (decal_t *dc) noexcept {
-  if (!dc) return;
-  vassert(!dc->prev);
-  vassert(!dc->next);
-  vassert(!dc->seg);
-  vassert(!dc->sreg);
-  const unsigned type = dc->dcsurf&decal_t::SurfTypeMask;
-  vassert(type == decal_t::Floor || type == decal_t::Ceiling);
-  dc->sreg = this;
-  if (type == decal_t::Floor) {
-    dc->prev = floordecaltail;
-    if (floordecaltail) floordecaltail->next = dc; else floordecalhead = dc;
-    floordecaltail = dc;
-  } else { // ceiling
-    dc->prev = ceildecaltail;
-    if (ceildecaltail) ceildecaltail->next = dc; else ceildecalhead = dc;
-    ceildecaltail = dc;
-  }
-}
-
-
-//==========================================================================
-//
-//  subregion_t::removeDecal
-//
-//  will not delete it
-//
-//==========================================================================
-void subregion_t::removeDecal (decal_t *dc) noexcept {
-  if (!dc) return;
-  vassert(!dc->seg);
-  vassert(dc->sreg == this);
-  const unsigned type = dc->dcsurf&decal_t::SurfTypeMask;
-  vassert(type == decal_t::Floor || type == decal_t::Ceiling);
-  if (type == decal_t::Floor) {
-    if (dc->prev) dc->prev->next = dc->next; else floordecalhead = dc->next;
-    if (dc->next) dc->next->prev = dc->prev; else floordecaltail = dc->prev;
-  } else { // ceiling
-    if (dc->prev) dc->prev->next = dc->next; else ceildecalhead = dc->next;
-    if (dc->next) dc->next->prev = dc->prev; else ceildecaltail = dc->prev;
-  }
-  dc->prev = dc->next = nullptr;
-  dc->sreg = nullptr;
-}
-
-
-//==========================================================================
-//
-//  subregion_t::killAllDecals
-//
-//==========================================================================
-void subregion_t::killAllDecals (VLevel *Level) noexcept {
-  decal_t *c = floordecalhead;
-  while (c) {
-    decal_t *dc = c;
-    c = c->next;
-    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
-    delete dc;
-  }
-  c = ceildecalhead;
-  while (c) {
-    decal_t *dc = c;
-    c = c->next;
-    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
-    delete dc;
-  }
-  floordecalhead = floordecaltail = ceildecalhead = ceildecaltail = nullptr;
 }
 
 

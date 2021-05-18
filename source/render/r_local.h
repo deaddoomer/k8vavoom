@@ -183,6 +183,18 @@ struct sky_t {
 };
 
 
+struct subregion_info_t {
+  subregion_t *sreg; // our subregion
+
+  // decal list
+  decal_t *floordecalhead;
+  decal_t *floordecaltail;
+
+  decal_t *ceildecalhead;
+  decal_t *ceildecaltail;
+};
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarF gl_maxdist;
 extern VCvarF r_lights_radius;
