@@ -19,11 +19,12 @@ menus {
   "menus/video/advrender.txt",
   "menus/video/advvideo.txt",
   "menus/video/advvideolightfilter.txt",
-  "menus/video/sprvideo.txt",
   "menus/video/aliasvideo.txt",
+  "menus/video/decalvideo.txt",
   "menus/video/pfxbloom.txt",
   "menus/video/precache.txt",
   "menus/video/shadowmap.txt",
+  "menus/video/sprvideo.txt",
 
   "menus/sound/xmp.txt",
   "menus/sound/fluid.txt",

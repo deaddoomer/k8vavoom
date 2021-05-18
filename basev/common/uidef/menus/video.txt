@@ -246,6 +246,11 @@ menudef VideoOptions {
   }
 
   option submenu {
+    title = "Decal Options";
+    submenu = "DecalOptions";
+  }
+
+  option submenu {
     title = "Shadowmap Options";
     submenu = "ShadowMapOptions";
   }
