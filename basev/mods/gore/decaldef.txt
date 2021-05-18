@@ -356,7 +356,7 @@ DECAL K8Gore_NewBloodSplatPers01 {
   Pic BSPK8X01
   shade "50 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -365,7 +365,7 @@ DECAL K8Gore_NewBloodSplatPers02 {
   Pic BSPK8X02
   shade "50 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -374,7 +374,7 @@ DECAL K8Gore_NewBloodSplatPers03 {
   Pic BSPK8X03
   shade "50 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -383,7 +383,7 @@ DECAL K8Gore_NewBloodSplatPers04 {
   Pic BSPK8X04
   shade "50 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -392,7 +392,7 @@ DECAL K8Gore_NewBloodSplatPers05 {
   Pic BSPK8X05
   shade "50 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -412,7 +412,7 @@ DECAL K8Gore_NewBloodSplatPers07 {
   Pic BSPK8X07
   shade "50 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -421,7 +421,7 @@ DECAL K8Gore_NewBloodSplatPers08 {
   Pic BSPK8X08
   shade "50 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -430,7 +430,7 @@ DECAL K8Gore_NewBloodSplatPers09 {
   Pic BSPK8X09
   shade "50 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -439,7 +439,7 @@ DECAL K8Gore_NewBloodSplatPers10 {
   Pic BSPK8X10
   shade "50 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -826,7 +826,7 @@ DECAL K8Gore_NewBloodSplatPers01Transient {
   Pic BSPK8X01
   shade "4f 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -835,7 +835,7 @@ DECAL K8Gore_NewBloodSplatPers02Transient {
   Pic BSPK8X02
   shade "4f 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -844,7 +844,7 @@ DECAL K8Gore_NewBloodSplatPers03Transient {
   Pic BSPK8X03
   shade "4f 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -853,7 +853,7 @@ DECAL K8Gore_NewBloodSplatPers04Transient {
   Pic BSPK8X04
   shade "4f 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -862,7 +862,7 @@ DECAL K8Gore_NewBloodSplatPers05Transient {
   Pic BSPK8X05
   shade "4f 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -882,7 +882,7 @@ DECAL K8Gore_NewBloodSplatPers07Transient {
   Pic BSPK8X07
   shade "4f 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -891,7 +891,7 @@ DECAL K8Gore_NewBloodSplatPers08Transient {
   Pic BSPK8X08
   shade "4f 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -900,7 +900,7 @@ DECAL K8Gore_NewBloodSplatPers09Transient {
   Pic BSPK8X09
   shade "4f 00 00"
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -909,7 +909,7 @@ DECAL K8Gore_NewBloodSplatPers10Transient {
   Pic BSPK8X10
   shade "4f 00 00"
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }

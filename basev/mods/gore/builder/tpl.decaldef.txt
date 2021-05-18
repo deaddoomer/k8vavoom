@@ -621,7 +621,7 @@ DECAL K8Gore_NewBloodSplatPers01${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -640,7 +640,7 @@ DECAL K8Gore_NewBloodSplatPers02${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -659,7 +659,7 @@ DECAL K8Gore_NewBloodSplatPers03${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -678,7 +678,7 @@ DECAL K8Gore_NewBloodSplatPers04${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -697,7 +697,7 @@ DECAL K8Gore_NewBloodSplatPers05${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -737,7 +737,7 @@ DECAL K8Gore_NewBloodSplatPers07${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -756,7 +756,7 @@ DECAL K8Gore_NewBloodSplatPers08${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -775,7 +775,7 @@ DECAL K8Gore_NewBloodSplatPers09${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.28
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
@@ -794,7 +794,7 @@ DECAL K8Gore_NewBloodSplatPers10${Color} {
   shade "00 $(Shade) 00"
 #endif
   //Scale 0.26
-  Scale random 0.22 0.37
+  Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
