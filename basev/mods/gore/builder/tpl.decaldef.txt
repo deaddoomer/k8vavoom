@@ -600,3 +600,215 @@ decalgroup K8GoreBloodSuper${Color} {
   K8Gore_NewBloodSplatFade09${Color} 6
   K8Gore_NewBloodSplatFade10${Color} 6
 }
+
+
+//==========================================================================
+//
+//  non-transient flat decals for flying blood
+//
+//==========================================================================
+DECAL K8Gore_NewBloodSplatPers01${Color} {
+  Pic BSPK8X01
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.26
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers02${Color} {
+  Pic BSPK8X02
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.28
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers03${Color} {
+  Pic BSPK8X03
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.26
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers04${Color} {
+  Pic BSPK8X04
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.28
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers05${Color} {
+  Pic BSPK8X05
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.26
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers06${Color} {
+  Pic BSPK8X06
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //X-Scale 0.3
+  //Y-Scale 0.6
+  X-Scale random 0.22 0.40
+  Y-Scale multiply X-Scale 2
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers07${Color} {
+  Pic BSPK8X07
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.28
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers08${Color} {
+  Pic BSPK8X08
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.26
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers09${Color} {
+  Pic BSPK8X09
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.28
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+DECAL K8Gore_NewBloodSplatPers10${Color} {
+  Pic BSPK8X10
+#ifndef BLUE
+# ifndef GREEN
+  shade "$(Shade) 00 00"
+# endif
+#endif
+#ifdef BLUE
+  shade "00 00 $(Shade)"
+#endif
+#ifdef GREEN
+  shade "00 $(Shade) 00"
+#endif
+  //Scale 0.26
+  Scale random 0.22 0.37
+  RandomFlipX
+  RandomFlipY
+}
+
+
+decalgroup K8GoreBloodSuperPers${Color} {
+  K8Gore_NewBloodSplatPers01${Color} 6
+  K8Gore_NewBloodSplatPers02${Color} 6
+  K8Gore_NewBloodSplatPers03${Color} 6
+  K8Gore_NewBloodSplatPers04${Color} 6
+  K8Gore_NewBloodSplatPers05${Color} 6
+  K8Gore_NewBloodSplatPers06${Color} 6
+  K8Gore_NewBloodSplatPers07${Color} 6
+  K8Gore_NewBloodSplatPers08${Color} 6
+  K8Gore_NewBloodSplatPers09${Color} 6
+  K8Gore_NewBloodSplatPers10${Color} 6
+}

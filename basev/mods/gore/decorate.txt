@@ -135,6 +135,8 @@ Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSuper
+  FlatDecal K8GoreBloodSuperPers
+  +SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -250,6 +252,9 @@ Actor K8Gore_FlyingBloodTrail : K8Gore_BloodBase {
   mass 1
   gravity 0.4
   Decal K8GoreBloodSplat
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -294,6 +299,9 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSplat
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -337,6 +345,7 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
 Actor K8Gore_FlyingBloodFakeNoDecal : K8Gore_FlyingBloodFake {
   
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   +NoTeleport
   +k8DetachFromServer
@@ -377,6 +386,7 @@ Actor K8Gore_BloodSpot : K8Gore_BloodBase {
   Mass 99999
   Scale 0.5
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplat
   //+Decals2SPass
@@ -578,6 +588,7 @@ Actor K8Gore_TinyBlood : K8Gore_BloodBase {
   +DontSplash
   Gravity 0.3 //0.7
   Decal K8GoreBloodSplat
+  -SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -744,6 +755,7 @@ Actor K8Gore_MinuscleBloodSpot : K8Gore_BloodSpot {
   +OrientedOfs
   Scale 0.25
   Decal K8GoreBloodSplat
+  -SeparateFlatDecal
   +Decals2SPass
   +CopyBloodTranslation
   +NoExtremeDeath
@@ -831,6 +843,7 @@ Actor K8Gore_GrowingBloodPool : K8Gore_BloodSpot {
   +k8DetachFromServer
   Scale 1.0
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplat
   //+Decals2SPass
@@ -1042,6 +1055,8 @@ Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSuperTransient
+  FlatDecal K8GoreBloodSuperTransient
+  +SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -1157,6 +1172,9 @@ Actor K8Gore_FlyingBloodTrailTransient : K8Gore_BloodBaseTransient {
   mass 1
   gravity 0.4
   Decal K8GoreBloodSplatTransient
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -1201,6 +1219,9 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSplatTransient
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -1244,6 +1265,7 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
 Actor K8Gore_FlyingBloodFakeNoDecalTransient : K8Gore_FlyingBloodFakeTransient {
   
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   +NoTeleport
   +k8DetachFromServer
@@ -1284,6 +1306,7 @@ Actor K8Gore_BloodSpotTransient : K8Gore_BloodBaseTransient {
   Mass 99999
   Scale 0.5
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplatTransient
   //+Decals2SPass
@@ -1479,6 +1502,7 @@ Actor K8Gore_TinyBloodTransient : K8Gore_BloodBaseTransient {
   +DontSplash
   Gravity 0.3 //0.7
   Decal K8GoreBloodSplatTransient
+  -SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -1646,6 +1670,7 @@ Actor K8Gore_MinuscleBloodSpotTransient : K8Gore_BloodSpotTransient {
   +OrientedOfs
   Scale 0.25
   Decal K8GoreBloodSplatTransient
+  -SeparateFlatDecal
   +Decals2SPass
   +CopyBloodTranslation
   +NoExtremeDeath
@@ -1733,6 +1758,7 @@ Actor K8Gore_GrowingBloodPoolTransient : K8Gore_BloodSpotTransient {
   +k8DetachFromServer
   Scale 1.0
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplatTransient
   //+Decals2SPass

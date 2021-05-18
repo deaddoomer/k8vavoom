@@ -144,6 +144,12 @@ Actor K8Gore_FlyingBlood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSuper$(Color)
+#ifdef TRANSIENT
+  FlatDecal K8GoreBloodSuper$(Color)
+#else
+  FlatDecal K8GoreBloodSuperPers$(Color)
+#endif
+  +SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -263,6 +269,9 @@ Actor K8Gore_FlyingBloodTrail$(Color) : K8Gore_BloodBase$(TransientSfx) {
   mass 1
   gravity 0.4
   Decal K8GoreBloodSplat$(Color)
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -307,6 +316,9 @@ Actor K8Gore_FlyingBloodFake$(Color) : K8Gore_BloodBase$(TransientSfx) {
   damage 0
   DamageType Blood
   Decal K8GoreBloodSplat$(Color)
+  //k8: dunno
+  //FlatDecal none
+  //+SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -350,6 +362,7 @@ Actor K8Gore_FlyingBloodFake$(Color) : K8Gore_BloodBase$(TransientSfx) {
 Actor K8Gore_FlyingBloodFakeNoDecal$(Color) : K8Gore_FlyingBloodFake$(Color) {
   $(Translation)
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   +NoTeleport
   +k8DetachFromServer
@@ -394,6 +407,7 @@ Actor K8Gore_BloodSpot$(Color) : K8Gore_BloodBase$(TransientSfx) {
   Mass 99999
   Scale 0.5
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplat$(Color)
   //+Decals2SPass
@@ -621,6 +635,7 @@ Actor K8Gore_TinyBlood$(Color) : K8Gore_BloodBase$(TransientSfx) {
   +DontSplash
   Gravity 0.3 //0.7
   Decal K8GoreBloodSplat$(Color)
+  -SeparateFlatDecal
   +Decals2SPass
   +MISSILE
   +CLIENTSIDEONLY
@@ -812,6 +827,7 @@ Actor K8Gore_MinuscleBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
   +OrientedOfs
   Scale 0.25
   Decal K8GoreBloodSplat$(Color)
+  -SeparateFlatDecal
   +Decals2SPass
   +CopyBloodTranslation
   +NoExtremeDeath
@@ -899,6 +915,7 @@ Actor K8Gore_GrowingBloodPool$(Color) : K8Gore_BloodSpot$(Color) {
   +k8DetachFromServer
   Scale 1.0
   Decal None
+  -SeparateFlatDecal
   -Decals2SPass
   //Decal K8GoreBloodSplat$(Color)
   //+Decals2SPass
