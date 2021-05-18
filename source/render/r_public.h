@@ -80,8 +80,8 @@ struct decal_t {
   // dcsurf bit values
   enum {
     Wall = 0u,
-    Floor = 1u, // for planes with positive `normal.z`
-    Ceiling = 2u, // for planes with negative `normal.z`
+    Floor = 1u, // either base region floor, or 3d subregion floor
+    Ceiling = 2u, // either base region ceiling, or 3d subregion ceiling
     // note that `3u` is invalid
     FakeFlag = 4u,
     SurfTypeMask = 0x03u,
