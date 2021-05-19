@@ -1789,6 +1789,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     }
   }
 
+  const bool dovmove = (z != 0.0f); // cannot use `verticalMove` here
   // unlink and move all linked polyobjects
   for (po = pofirst; po; po = po->polink) {
     UnlinkPolyobj(po);
@@ -1813,7 +1814,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       **vptr = np;
     }
     UpdatePolySegs(po);
-    if (verticalMove) OffsetPolyobjFlats(po, z);
+    if (dovmove) OffsetPolyobjFlats(po, z);
     if (skipLink) break;
   }
 
