@@ -1916,7 +1916,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     OffsetPolyobjFlats(po, 0.0f, true);
     if (!linked) LinkPolyobj(po);
     // move decals
-    if (!forcedMove && subsectorDecalList) {
+    if (!forcedMove && po->Is3D() && subsectorDecalList) {
       for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
         const unsigned psnum = (unsigned)(ptrdiff_t)(posub-&Subsectors[0]);
         VDecalList *lst = &subsectorDecalList[psnum];
@@ -2111,7 +2111,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     }
     LinkPolyobj(po);
     // move decals
-    if (!forcedMove && subsectorDecalList) {
+    if (!forcedMove && po->Is3D() && subsectorDecalList) {
       for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
         const unsigned psnum = (unsigned)(ptrdiff_t)(posub-&Subsectors[0]);
         VDecalList *lst = &subsectorDecalList[psnum];
