@@ -241,11 +241,28 @@ Actor K8Gore_FlyingBloodLevel3 : K8Gore_FlyingBlood {
   Scale 1.0
   Speed 5 //7
   Mass 1
+  //FlatDecal none
+  //+SeparateFlatDecal
   //+KillOnUnarchive
   +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
+
+  States {
+    Spawn:
+      TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("k8GoreOpt_ExtraFlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
+      B8OD AB 2
+      TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
+      TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3")
+      Goto Spawn1
+  }
 }
 
 
@@ -310,7 +327,7 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
   DamageType Blood
   Decal K8GoreBloodSplat
   //k8: dunno
-  //FlatDecal none
+  //FlatDecal None
   //+SeparateFlatDecal
   +Decals2SPass
   +MISSILE
@@ -338,7 +355,7 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
     Spawn:
       TNT1 A 0
       TNT1 A 0 {
-        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("k8GoreOpt_ExtraFlatDecals")) {
           A_SetFlatDecal("None");
         }
         ThrustThingZ(0, random(2, 4)*4, 0, 1);
@@ -1192,11 +1209,28 @@ Actor K8Gore_FlyingBloodLevel3Transient : K8Gore_FlyingBloodTransient {
   Scale 1.0
   Speed 5 //7
   Mass 1
+  //FlatDecal none
+  //+SeparateFlatDecal
   //+KillOnUnarchive
   +NoTeleport
   +k8DetachFromServer
   +k8ServerSideOnly
   +k8AllowSimpleTick
+
+  States {
+    Spawn:
+      TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("k8GoreOpt_ExtraFlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
+      B8OD AB 2
+      TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
+      TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3")
+      Goto Spawn1
+  }
 }
 
 
@@ -1261,7 +1295,7 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
   DamageType Blood
   Decal K8GoreBloodSplatTransient
   //k8: dunno
-  //FlatDecal none
+  //FlatDecal None
   //+SeparateFlatDecal
   +Decals2SPass
   +MISSILE
@@ -1289,7 +1323,7 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
     Spawn:
       TNT1 A 0
       TNT1 A 0 {
-        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("k8GoreOpt_ExtraFlatDecals")) {
           A_SetFlatDecal("None");
         }
         ThrustThingZ(0, random(2, 4)*4, 0, 1);

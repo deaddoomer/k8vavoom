@@ -25,6 +25,12 @@ menudef GoreModMenu {
     help = "Use decals instead of sprites for floor/ceiling blood?";
   }
 
+  option bool {
+    title = "Extra Floor/Ceiling Decals";
+    cvar = k8GoreOpt_ExtraFlatDecals;
+    help = "Add many more floor/ceiling decals, if used?";
+  }
+
   option enum {
     title = "Blood Amount";
     cvar = k8GoreOpt_BloodAmount;
