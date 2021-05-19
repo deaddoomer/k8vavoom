@@ -297,7 +297,16 @@ VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &
 // check the relationship between the given box and the partition
 // line.  Returns -1 if box is on left side, +1 if box is on right
 // size, or 0 if the line intersects the box.
-VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noexcept;
+VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const TVec &v2) noexcept;
+
+
+static VVA_OKUNUSED inline void CopyBBox2D (float *__restrict__ bb2ddest/*[4]*/, const float *__restrict__ bb2dsrc/*[4]*/) noexcept {
+  memcpy(bb2ddest, bb2dsrc, sizeof(float)*4u);
+}
+
+static VVA_OKUNUSED inline void CopyBBox3D (float *__restrict__ bb3ddest/*[6]*/, const float *__restrict__ bb3dsrc/*[6]*/) noexcept {
+  memcpy(bb3ddest, bb3dsrc, sizeof(float)*6u);
+}
 
 
 static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DBBoxesOverlapIn2D (const float bbox0[6], const float bbox1[6]) noexcept {
@@ -333,3 +342,5 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside3DBBox (const TVec 
     p.y >= bbox3d[BOX3D_MINY] && p.y <= bbox3d[BOX3D_MAXY] &&
     p.z >= bbox3d[BOX3D_MINZ] && p.z <= bbox3d[BOX3D_MAXZ];
 }
+
+void ShrinkBBox2D (float bbox2d[4], const float bbox2dsrc[4], float ratio) noexcept;

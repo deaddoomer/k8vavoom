@@ -501,9 +501,9 @@ int TFrustum::checkQuadEx (const TVec &v1, const TVec &v2, const TVec &v3, const
 //  size, or 0 if the line intersects the box.
 //
 //==========================================================================
-VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noexcept {
-  v1.z = v2.z = 0;
-  TVec dir = v2-v1;
+VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const TVec &v2) noexcept {
+  //v1.z = v2.z = 0.0f;
+  const TVec dir(v2.x-v1.x, v2.y-v1.y, 0.0f);
 
   int p1, p2;
 
@@ -525,14 +525,14 @@ VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], TVec v1, TVec v2) noe
     }
   } else if (dir.y*dir.x >= 0.0f) {
     TPlane lpl;
-    lpl.SetPointDirXY(v1, dir);
+    lpl.SetPointDirXY(TVec(v1.x, v1.y, 0.0f), dir);
     // positive
     p1 = lpl.PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_TOP], 0));
     p2 = lpl.PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_BOTTOM], 0));
   } else {
     // negative
     TPlane lpl;
-    lpl.SetPointDirXY(v1, dir);
+    lpl.SetPointDirXY(TVec(v1.x, v1.y, 0.0f), dir);
     p1 = lpl.PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_TOP], 0));
     p2 = lpl.PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_BOTTOM], 0));
   }
@@ -653,4 +653,25 @@ VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg,
   d += s*s;
 
   return (d < radius*radius); // or <= if you want exact touching
+}
+
+
+//==========================================================================
+//
+//  ShrinkBBox2D
+//
+//==========================================================================
+void ShrinkBBox2D (float bbox2d[4], const float bbox2dsrc[4], float ratio) noexcept {
+  float wdt = bbox2dsrc[BOX2D_MAXX]-bbox2dsrc[BOX2D_MINX];
+  const float xc = bbox2dsrc[BOX2D_MINX]+wdt*0.5f;
+  float hgt = bbox2dsrc[BOX2D_MAXY]-bbox2dsrc[BOX2D_MINY];
+  const float yc = bbox2dsrc[BOX2D_MINY]+hgt*0.5f;
+
+  wdt = max2(8.0f, wdt*ratio);
+  hgt = max2(8.0f, hgt*ratio);
+
+  bbox2d[BOX2D_MINX] = xc-wdt*0.5f;
+  bbox2d[BOX2D_MAXX] = bbox2d[BOX2D_MINX]+wdt;
+  bbox2d[BOX2D_MINY] = yc-hgt*0.5f;
+  bbox2d[BOX2D_MAXY] = bbox2d[BOX2D_MINY]+hgt;
 }
