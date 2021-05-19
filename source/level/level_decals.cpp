@@ -47,7 +47,7 @@ static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum
 VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive);
 
-VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "18", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "12", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
 
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 
