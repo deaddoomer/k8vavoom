@@ -19,6 +19,12 @@ menudef GoreModMenu {
     help = "Spawn blood splats on floor?";
   }
 
+  option bool {
+    title = "Floor/Ceiling Decals";
+    cvar = k8GoreOpt_FlatDecals;
+    help = "Use decals instead of sprites for floor/ceiling blood?";
+  }
+
   option enum {
     title = "Blood Amount";
     cvar = k8GoreOpt_BloodAmount;

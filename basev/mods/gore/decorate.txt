@@ -163,7 +163,12 @@ Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
     Spawn:
       TNT1 A 0
       /*TNT1 A 0 A_k8ConLog("fake blood missile!")*/
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       //TNT1 A 0 ThrustThing(angle*256.0/360.0, random(0, 2), 1)
       //TNT1 A 0 ThrustThing(random(0, 255), random(0, 2), 1)
       B8OD AB 2
@@ -203,7 +208,7 @@ Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
           if (waterlevel == 0) {
             // spawn floor blood spot
             if (GetCVar("k8GoreOpt_FloorBlood")) {
-              if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+              if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
                 A_SpawnItem("K8Gore_BloodSpot", 0, 1, false, true);
               } else if (IsActorOnALiquidFloor()) {
                 A_SpawnItem("K8Gore_BloodSpot", 0, 1, false, true);
@@ -253,8 +258,8 @@ Actor K8Gore_FlyingBloodTrail : K8Gore_BloodBase {
   gravity 0.4
   Decal K8GoreBloodSplat
   //k8: dunno
-  //FlatDecal none
-  //+SeparateFlatDecal
+  FlatDecal none
+  +SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -276,7 +281,12 @@ Actor K8Gore_FlyingBloodTrail : K8Gore_BloodBase {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(4, 8)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(4, 8)*4, 0, 1);
+      }
       BTRL CCCCCCCCCC 4 A_CheckFloor("Death")
       Stop
 
@@ -327,7 +337,12 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       B8OD KKKKKKKKKKKK 1 A_FadeOut(0.05)
       Stop
 
@@ -527,7 +542,7 @@ Actor K8Gore_CeilBloodSpot : K8Gore_BloodSpot {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
-            if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+            if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
               A_SpawnItem("K8Gore_DripingBloodLeavesSmallPool",0,0,0,true);
             }
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner",0,0,0,true);
@@ -605,6 +620,11 @@ Actor K8Gore_TinyBlood : K8Gore_BloodBase {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       //TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
       BLUX A 500
       Stop
@@ -718,7 +738,7 @@ Actor K8Gore_DripingBloodLeavesSmallPool : K8Gore_TinyBlood {
       TNT1 A 0 A_k8JumpIfOnFloorSky("DieNow")
       TNT1 A 0 {
         if (GetCVar("k8GoreOpt_BloodDripSound") > 0) A_PlaySound_NoNet("k8gore/blooddrop2");
-        if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
           A_SpawnItem("K8Gore_MinuscleBloodSpot", 0, 0, 0, true);
         }
         A_ChangeFlag("StickToFloor", 1);
@@ -772,6 +792,11 @@ Actor K8Gore_MinuscleBloodSpot : K8Gore_BloodSpot {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
       TNT1 A 0 A_CheckFloor("SpawnNormally")
       Goto Splash
@@ -855,7 +880,13 @@ Actor K8Gore_GrowingBloodPool : K8Gore_BloodSpot {
   States {
     Spawn:
       BPDL A 0
+      "####" "#" 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
     GoOnPool:
@@ -1083,7 +1114,12 @@ Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
     Spawn:
       TNT1 A 0
       /*TNT1 A 0 A_k8ConLog("fake blood missile!")*/
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       //TNT1 A 0 ThrustThing(angle*256.0/360.0, random(0, 2), 1)
       //TNT1 A 0 ThrustThing(random(0, 255), random(0, 2), 1)
       B8OD AB 2
@@ -1123,7 +1159,7 @@ Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
           if (waterlevel == 0) {
             // spawn floor blood spot
             if (GetCVar("k8GoreOpt_FloorBlood")) {
-              if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+              if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
                 A_SpawnItem("K8Gore_BloodSpotTransient", 0, 1, false, true);
               } else if (IsActorOnALiquidFloor()) {
                 A_SpawnItem("K8Gore_BloodSpotTransient", 0, 1, false, true);
@@ -1173,8 +1209,8 @@ Actor K8Gore_FlyingBloodTrailTransient : K8Gore_BloodBaseTransient {
   gravity 0.4
   Decal K8GoreBloodSplatTransient
   //k8: dunno
-  //FlatDecal none
-  //+SeparateFlatDecal
+  FlatDecal none
+  +SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -1196,7 +1232,12 @@ Actor K8Gore_FlyingBloodTrailTransient : K8Gore_BloodBaseTransient {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(4, 8)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(4, 8)*4, 0, 1);
+      }
       BTRL CCCCCCCCCC 4 A_CheckFloor("Death")
       Stop
 
@@ -1247,7 +1288,12 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       B8OD KKKKKKKKKKKK 1 A_FadeOut(0.05)
       Stop
 
@@ -1441,7 +1487,7 @@ Actor K8Gore_CeilBloodSpotTransient : K8Gore_BloodSpotTransient {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
-            if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+            if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
               A_SpawnItem("K8Gore_DripingBloodLeavesSmallPoolTransient",0,0,0,true);
             }
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawnerTransient",0,0,0,true);
@@ -1519,6 +1565,11 @@ Actor K8Gore_TinyBloodTransient : K8Gore_BloodBaseTransient {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       //TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
     TinFade:
       BLUX A 2 A_FadeOut(0.01)
@@ -1633,7 +1684,7 @@ Actor K8Gore_DripingBloodLeavesSmallPoolTransient : K8Gore_TinyBloodTransient {
       TNT1 A 0 A_k8JumpIfOnFloorSky("DieNow")
       TNT1 A 0 {
         if (GetCVar("k8GoreOpt_BloodDripSound") > 0) A_PlaySound_NoNet("k8gore/blooddrop2");
-        if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
           A_SpawnItem("K8Gore_MinuscleBloodSpotTransient", 0, 0, 0, true);
         }
         A_ChangeFlag("StickToFloor", 1);
@@ -1687,6 +1738,11 @@ Actor K8Gore_MinuscleBloodSpotTransient : K8Gore_BloodSpotTransient {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
       TNT1 A 0 A_CheckFloor("SpawnNormally")
       Goto Splash
@@ -1770,7 +1826,13 @@ Actor K8Gore_GrowingBloodPoolTransient : K8Gore_BloodSpotTransient {
   States {
     Spawn:
       BPDL A 0
+      "####" "#" 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
     GoOnPool:

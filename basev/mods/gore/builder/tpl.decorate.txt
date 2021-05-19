@@ -176,7 +176,12 @@ Actor K8Gore_FlyingBlood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
     Spawn:
       TNT1 A 0
       /*TNT1 A 0 A_k8ConLog("fake blood missile!")*/
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       //TNT1 A 0 ThrustThing(angle*256.0/360.0, random(0, 2), 1)
       //TNT1 A 0 ThrustThing(random(0, 255), random(0, 2), 1)
       B8OD AB 2
@@ -220,7 +225,7 @@ Actor K8Gore_FlyingBlood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
           if (waterlevel == 0) {
             // spawn floor blood spot
             if (GetCVar("k8GoreOpt_FloorBlood")) {
-              if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+              if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
                 A_SpawnItem("K8Gore_BloodSpot$(Color)", 0, 1, false, true);
               } else if (IsActorOnALiquidFloor()) {
                 A_SpawnItem("K8Gore_BloodSpot$(Color)", 0, 1, false, true);
@@ -270,8 +275,8 @@ Actor K8Gore_FlyingBloodTrail$(Color) : K8Gore_BloodBase$(TransientSfx) {
   gravity 0.4
   Decal K8GoreBloodSplat$(Color)
   //k8: dunno
-  //FlatDecal none
-  //+SeparateFlatDecal
+  FlatDecal none
+  +SeparateFlatDecal
   +Decals2SPass
   +NOTELEPORT
   +NOBLOCKMAP
@@ -293,7 +298,12 @@ Actor K8Gore_FlyingBloodTrail$(Color) : K8Gore_BloodBase$(TransientSfx) {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(4, 8)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(4, 8)*4, 0, 1);
+      }
       BTRL CCCCCCCCCC 4 A_CheckFloor("Death")
       Stop
 
@@ -344,7 +354,12 @@ Actor K8Gore_FlyingBloodFake$(Color) : K8Gore_BloodBase$(TransientSfx) {
   States {
     Spawn:
       TNT1 A 0
-      TNT1 A 0 ThrustThingZ(0, random(2, 4)*4, 0, 1)
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+        ThrustThingZ(0, random(2, 4)*4, 0, 1);
+      }
       B8OD KKKKKKKKKKKK 1 A_FadeOut(0.05)
       Stop
 
@@ -574,7 +589,7 @@ Actor K8Gore_CeilBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
-            if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+            if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
               A_SpawnItem("K8Gore_DripingBloodLeavesSmallPool$(Color)",0,0,0,true);
             }
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner$(Color)",0,0,0,true);
@@ -652,6 +667,11 @@ Actor K8Gore_TinyBlood$(Color) : K8Gore_BloodBase$(TransientSfx) {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       //TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
 #ifndef TRANSIENT
       BLUX A 500
@@ -786,7 +806,7 @@ Actor K8Gore_DripingBloodLeavesSmallPool$(Color) : K8Gore_TinyBlood$(Color) {
       TNT1 A 0 A_k8JumpIfOnFloorSky("DieNow")
       TNT1 A 0 {
         if (GetCVar("k8GoreOpt_BloodDripSound") > 0) A_PlaySound_NoNet("k8gore/blooddrop2");
-        if (!GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
           A_SpawnItem("K8Gore_MinuscleBloodSpot$(Color)", 0, 0, 0, true);
         }
         A_ChangeFlag("StickToFloor", 1);
@@ -844,6 +864,11 @@ Actor K8Gore_MinuscleBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
   States {
     Spawn:
       TNT1 A 0
+      TNT1 A 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
       TNT1 A 0 A_CheckFloor("SpawnNormally")
       Goto Splash
@@ -927,7 +952,13 @@ Actor K8Gore_GrowingBloodPool$(Color) : K8Gore_BloodSpot$(Color) {
   States {
     Spawn:
       BPDL A 0
+      "####" "#" 0 {
+        if (!GetCVar("k8GoreOpt_FlatDecals")) {
+          A_SetFlatDecal("None");
+        }
+      }
       // if flat decals are allowed, get lost
+      "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
       "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
     GoOnPool:
