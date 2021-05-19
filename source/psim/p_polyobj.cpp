@@ -1914,6 +1914,17 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     po->startSpot.z += z;
     OffsetPolyobjFlats(po, 0.0f, true);
     if (!linked) LinkPolyobj(po);
+    // move decals
+    if (!forcedMove && subsectorDecalList) {
+      for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
+        const unsigned psnum = (unsigned)(ptrdiff_t)(posub-&Subsectors[0]);
+        VDecalList *lst = &subsectorDecalList[psnum];
+        for (decal_t *dc = lst->head; dc; dc = dc->subnext) {
+          dc->worldx += x;
+          dc->worldy += y;
+        }
+      }
+    }
     if (skipLink) break;
   }
 
@@ -2098,6 +2109,27 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       OffsetPolyobjFlats(po, 0.0f, true);
     }
     LinkPolyobj(po);
+    // move decals
+    if (!forcedMove && subsectorDecalList) {
+      for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
+        const unsigned psnum = (unsigned)(ptrdiff_t)(posub-&Subsectors[0]);
+        VDecalList *lst = &subsectorDecalList[psnum];
+        if (!lst->head) continue;
+        msincos(AngleMod(angle), &s, &c);
+        const float ssx = po->startSpot.x;
+        const float ssy = po->startSpot.y;
+        for (decal_t *dc = lst->head; dc; dc = dc->subnext) {
+          const float xc = dc->worldx-ssx;
+          const float yc = dc->worldy-ssy;
+          const float nx = (xc*c-yc*s);
+          const float ny = (yc*c+xc*s);
+          const float dx = (nx+ssx)-dc->worldx;
+          const float dy = (ny+ssy)-dc->worldy;
+          dc->worldx += dx;
+          dc->worldy += dy;
+        }
+      }
+    }
     if (skipLink) break;
   }
 

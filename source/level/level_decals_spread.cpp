@@ -37,7 +37,9 @@
 #ifdef VV_FLAT_DECAL_USE_FLOODFILL
 // "subsector touched" marks for portal spread
 static TArray<int> dcSubTouchMark;
+static TMapNC<polyobj_t *, bool> dcPobjTouched;
 static int dcSubTouchCounter = 0;
+static bool dcPobjTouchedReset = false;
 #endif
 
 
@@ -60,6 +62,7 @@ struct DInfo {
 //
 //==========================================================================
 static void IncSubTouchCounter (VLevel *Level) noexcept {
+  dcPobjTouchedReset = false;
   if (dcSubTouchMark.length() != Level->NumSubsectors) {
     dcSubTouchMark.setLength(Level->NumSubsectors);
     for (auto &&v : dcSubTouchMark) v = 0;
@@ -183,11 +186,18 @@ enum {
 static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, sec_region_t *reg, const int eregidx) {
   unsigned res = 0u;
   // base region?
-  if (reg->regflags&sec_region_t::RF_BaseRegion) {
+  if ((reg->regflags&sec_region_t::RF_BaseRegion)) {
     // check floor
     if (IsGoodFlatTexture(reg->efloor.splane->pic)) {
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
-      if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
+      if (sub->isInnerPObj()) {
+        // 3d polyobject
+        if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
+          // do it (for some reason it should be inverted here)
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+          res |= PutAtCeiling;
+        }
+      } else if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
         // do it
         nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtFloor;
@@ -196,7 +206,14 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     // check ceiling
     if (IsGoodFlatTexture(reg->eceiling.splane->pic)) {
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-      if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
+      if (sub->isInnerPObj()) {
+        // 3d polyobject
+        if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
+          // do it (for some reason it should be inverted here)
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+          res |= PutAtFloor;
+        }
+      } else if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
         // do it
         nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtCeiling;
@@ -204,6 +221,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     }
   } else {
     // 3d floor region; here, floor and ceiling directions are inverted
+    // we may come here with base region for 3d polyobject
     if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) return 0u;
     // check floor
     if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
@@ -274,6 +292,31 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
   if (!nfo->Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) return;
   // put decals
   PutDecalToSubsector(nfo, sub);
+
+  // process 3d polyobjects
+  if (sub->HasPObjs()) {
+    for (auto &&it : sub->PObjFirst()) {
+      polyobj_t *pobj = it.pobj();
+      if (!pobj->Is3D()) continue;
+      if (!dcPobjTouchedReset) {
+        dcPobjTouchedReset = true;
+        dcPobjTouched.reset();
+      }
+      if (dcPobjTouched.put(pobj, true)) continue; // already processed
+      for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
+        if (!IsSubTouched(nfo->Level, posub)) {
+          MarkSubTouched(nfo->Level, posub);
+          if (posub->numlines >= 3) {
+            if (nfo->Level->IsBBox2DTouchingSubsector(posub, nfo->bbox2d)) {
+              // put decals
+              PutDecalToSubsector(nfo, posub);
+            }
+          }
+        }
+      }
+    }
+  }
+
   // if subsector is fully inside our rect, we should spread over all segs
   bool spreadAllSegs = false;
   if (sub->bbox2d[BOX2D_MINX] >= nfo->bbox2d[BOX2D_MINX] &&
