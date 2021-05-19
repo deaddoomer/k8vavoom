@@ -184,6 +184,8 @@ enum {
 //
 //==========================================================================
 static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, sec_region_t *reg, const int eregidx) {
+  const float orgz = nfo->org.z;
+  const float xhgt = nfo->range+nfo->spheight;
   unsigned res = 0u;
   // base region?
   if ((reg->regflags&sec_region_t::RF_BaseRegion)) {
@@ -192,12 +194,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if (sub->isInnerPObj()) {
         // 3d polyobject
-        if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
+        if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
           nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
           res |= PutAtCeiling;
         }
-      } else if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
+      } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
         nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtFloor;
@@ -208,12 +210,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if (sub->isInnerPObj()) {
         // 3d polyobject
-        if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
+        if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
           nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
           res |= PutAtFloor;
         }
-      } else if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
+      } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
         nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtCeiling;
@@ -226,7 +228,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     // check floor
     if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
-      if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
+      if (orgz-2.0f <= fz && fz-orgz < xhgt) {
         // do it
         nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtFloor;
@@ -235,7 +237,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     // check ceiling
     if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->eceiling.splane->pic)) {
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-      if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
+      if (orgz+2.0f >= cz && orgz-cz < xhgt) {
         // do it
         nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
         res |= PutAtCeiling;
@@ -342,8 +344,20 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
     }
     // ok, we must spread over this seg; check if it is a closed something
     const line_t *line = seg->linedef;
-    if (line) {
+    if (line && !line->pobj() && seg->frontsector != seg->backsector) {
       if (VViewClipper::IsSegAClosedSomething(nfo->Level, nullptr, seg)) continue; // oops, it is closed
+      const float orgz = nfo->org.z;
+      const float xhgt = nfo->range+nfo->spheight;
+      // check if it is blocked by high floor
+      if (seg->backsector->floor.maxz > seg->frontsector->floor.maxz) {
+        // back sector floor is higher
+        if (orgz+xhgt <= seg->backsector->floor.maxz) continue;
+      }
+      // check if it is blocked by low ceiling
+      if (seg->frontsector->ceiling.minz < seg->backsector->ceiling.minz) {
+        // front sector ceiling is lower
+        if (orgz-xhgt >= seg->frontsector->ceiling.minz) continue;
+      }
     }
     // recurse
     DecalFloodFill(nfo, seg->partner->frontsub);
