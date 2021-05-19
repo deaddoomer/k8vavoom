@@ -891,17 +891,22 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   }
 
   //FIXME: actually, this is valid only for special runacs range for now; write a proper thingy instead
-  if ((L.L.special >= 80 && L.L.special <= 86) || L.L.special == 226) {
+  if ((L.L.special >= 80 && L.L.special <= 85) || L.L.special == 226) {
     if (hasArg0Str) {
       VName sn = VName(*arg0str, VName::AddLower); // 'cause script names are lowercased
       if (sn.GetIndex() != NAME_None) {
         L.L.arg1 = -(int)sn.GetIndex();
         //GCon->Logf("*** LINE #%d: ACS NAMED LINE SPECIAL %d: name is (%d) '%s'", ParsedLines.length()-1, L.L.special, sn.GetIndex(), *sn);
       } else {
+        L.L.special = 0;
         L.L.arg1 = 0;
       }
     } else {
-      if (L.L.arg1 < 0) L.L.arg1 = 0;
+      // not a string
+      if (L.L.arg1 < 0) {
+        L.L.special = 0;
+        L.L.arg1 = 0;
+      }
     }
   }
 }

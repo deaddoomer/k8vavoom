@@ -4289,31 +4289,55 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
 //==========================================================================
 void VAcs::TranslateSpecial (int &spec, int &arg1) {
   if (spec >= 0) return;
-  bool unknown = true;
-  if (spec >= -45 && spec <= -39) {
+
+/*
+  ACS_EXTFUNC(ACS_NamedExecute) // 39  --> ACS_Execute -- 80
+  ACS_EXTFUNC(ACS_NamedSuspend) // 40 --> ACS_Suspend -- 81
+  ACS_EXTFUNC(ACS_NamedTerminate) // 41 --> ACS_Terminate -- 82
+  ACS_EXTFUNC(ACS_NamedLockedExecute) // 42  --> ACS_LockedExecute -- 83
+  ACS_EXTFUNC(ACS_NamedLockedExecuteDoor) // 43 --> ACS_LockedExecuteDoor -- 85
+  ACS_EXTFUNC(ACS_NamedExecuteWithResult) // 44 --> ACS_ExecuteWithResult -- 84
+  ACS_EXTFUNC(ACS_NamedExecuteAlways) // 45 --> ACS_ExecuteAlways -- 226
+*/
+
+  const int spn = -spec;
+  if (spn >= 39 && spn <= 45) {
     // this is "ACS_NamedXXX", first arg is script name
     VName name = GetNameLowerCase(arg1);
-    if (spec != -45) {
-      GCon->Logf(NAME_Error, "Trying to set unknown ACSF execute special! NAME: '%s'", *name);
+    int newspn = 0;
+    // translate
+         if (spn >= 39 && spn <= 42) newspn = spn-39+80;
+    else if (spn == 43) newspn = 85;
+    else if (spn == 44) newspn = 84;
+    else if (spn == 45) newspn = 226; // "execute always"
+    else Sys_Error("internal error in VAcs::TranslateSpecial (%d)", spn);
+    if (name != NAME_None) {
+      spec = newspn;
+      arg1 = -(int)name.GetIndex();
+      const char *spname = "<unknown>";
+      for (const ACSF_Info *nfo = ACSF_List; nfo->name; ++nfo) {
+        if (nfo->index == spn) {
+          spname = nfo->name;
+          break;
+        }
+      }
+      GCon->Logf(NAME_Debug, "VAcs::TranslateSpecial: replaced ACSF %d (%s) with special %d (script name '%s')", spn, spname, newspn, *name);
     } else {
-      if (developer) GCon->Logf(NAME_Dev, "ACS: replaced `ACS_NamedExecuteAlways` with `ACS_ExecuteAlways`, script name is '%s'", *name);
-      unknown = false;
-      if (name != NAME_None) {
-        spec = 226; // "execute always"
-        arg1 = -(int)name.GetIndex();
-      } else {
-        spec = 0; // oops
+      spec = 0; // oops
+      arg1 = 0; // oops
+    }
+  } else {
+    // cannot translate this
+    spec = 0; // oops
+    arg1 = 0; // oops
+    for (const ACSF_Info *nfo = ACSF_List; nfo->name; ++nfo) {
+      if (nfo->index == spn) {
+        GCon->Logf(NAME_Error, "Trying to translate bad ACSF line special #%d (%s)", nfo->index, nfo->name);
+        return;
       }
     }
+    GCon->Logf(NAME_Error, "unimplemented ACSF line special #%d", spn);
   }
-  if (!unknown) return;
-  for (const ACSF_Info *nfo = ACSF_List; nfo->name; ++nfo) {
-    if (nfo->index == -spec) {
-      GCon->Logf(NAME_Error, "unimplemented ACSF line special #%d: '%s'", nfo->index, nfo->name);
-      return;
-    }
-  }
-  GCon->Logf(NAME_Error, "unimplemented ACSF line special #%d", -spec);
 }
 
 

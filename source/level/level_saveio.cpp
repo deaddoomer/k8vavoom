@@ -563,7 +563,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
         vio.io(VName("special"), li->special);
         vio.io(VName("arg1"), li->arg1);
         // UDMF arg0str hack
-        if (UDMFNamespace != NAME_None && ((li->special >= 80 && li->special <= 86) || li->special == 226)) {
+        if (UDMFNamespace != NAME_None && ((li->special >= 80 && li->special <= 85) || li->special == 226)) {
           if (Strm.IsLoading()) {
             // loading
             if (li->arg1 < 0) {
