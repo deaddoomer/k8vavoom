@@ -159,13 +159,14 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
   // trace decal even if no line hit (this may put decals if exploded at a floor, and the wall is close, for example)
   name flatDName = (bSeparateFlatDecal ? FlatDecalName : DecalName);
   //printdebug("%C(%s): bSeparateFlatDecal=%B; FlatDecalName=%s; DecalName=%s; fn=%s", self, UniqueId, bSeparateFlatDecal, FlatDecalName, DecalName, flatDName);
-  if (flatDName) {
+  if (flatDName && !nameEquCI(flatDName, 'none')) {
+    //printdebug("%C(%s): bSeparateFlatDecal=%B; FlatDecalName=%s; DecalName=%s; SPAWN fn=%s", self, UniqueId, bSeparateFlatDecal, FlatDecalName, DecalName, flatDName);
     TVec org = Origin;
     org.z += fabs(Height)*0.5;
     SpawnFlatDecal(org, flatDName, fmax(1.0, fabs(Height*0.5))+2.0, atranslation:(bCopyBloodTranslation ? Translation : 0));
   }
 
-  if (DecalName) {
+  if (DecalName && !nameEquCI(DecalName, 'none')) {
     TVec dir = Normalise(savedVelocity);
     trsplat_t tr;
     TVec org = Origin;

@@ -2658,7 +2658,7 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
 
   if (decalType) {
     name flatDName = (specified_decalType && decalType ? decalType : PuffType.default.bSeparateFlatDecal ? PuffType.default.FlatDecalName : PuffType.default.DecalName);
-    if (flatDName) {
+    if (flatDName && !nameEquCI(flatDName, 'none')) {
       if (!specified_realOrg) realOrg = Org;
       float fdrange = fmax(1.0, fabs(Height)*0.5);
       TVec forg = realOrg;
