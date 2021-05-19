@@ -239,7 +239,7 @@ final void BecomePickup () {
   bNoSector = false;
   bNoBlockmap = false;
   bIntrJustMoved = false; // disable movement interpolation
-  LinkToWorld(properFloorCheck:true);
+  LinkToWorld(properFloorCheck:true); //k8: really?
   bSpecial = default.bSpecial;
   SetState(IdleState);
 }

@@ -42,7 +42,7 @@ override bool DoRespawn () {
     EntityEx Spot;
     int SpotIdx = P_Random()%SpotCount;
     for (Spot = FirstSpot; Spot && SpotIdx > 0; --SpotIdx) Spot = Spot.Target;
-    if (Spot) SetOrigin(Spot.Origin, properFloorCheck:true);
+    if (Spot) SetOrigin(Spot.Origin/*, properFloorCheck:true*/); //k8: really?
   }
   return true;
 }

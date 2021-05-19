@@ -463,7 +463,7 @@ final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool F
 
   // the move is ok,
   // so link the thing into its new position
-  SetOrigin(org, properFloorCheck:(ForceProperFloorCheck ? -666 : 1));
+  SetOrigin(org, properFloorCheck:(ForceProperFloorCheck ? -666 : 1)); //k8: really?
   if (org.z == ONFLOORZ) Origin.z = FloorZ;
 
   bIntrJustMoved = false; // disable movement interpolation

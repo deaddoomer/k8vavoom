@@ -4109,7 +4109,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 
   if (A && Dest) {
     TVec OldOrg = A.Origin;
-    A.SetOrigin(Dest.Origin, properFloorCheck:true);
+    A.SetOrigin(Dest.Origin, properFloorCheck:true); //k8: really?
     if (A.TestLocation()) {
       if (Arg3) {
         Spawn(TeleportFog, OldOrg+vector(0.0, 0.0, LineSpecialGameInfo(Game).TeleFogHeight));
@@ -4117,7 +4117,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
       }
       return true;
     } else {
-      A.SetOrigin(OldOrg, properFloorCheck:true);
+      A.SetOrigin(OldOrg, properFloorCheck:true); //k8: really?
       return false;
     }
   }

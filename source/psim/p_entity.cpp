@@ -161,8 +161,9 @@ void VEntity::EntityStaticInit () {
 //
 //==========================================================================
 void VEntity::PostCtor () {
-  if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx; else FlagsEx &= ~EFEX_IsEntityEx;
-  if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor; else FlagsEx &= ~EFEX_IsActor;
+  FlagsEx &= ~(EFEX_IsEntityEx|EFEX_IsActor);
+  if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx;
+  if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor; else
   Super::PostCtor();
 }
 
@@ -175,12 +176,30 @@ void VEntity::PostCtor () {
 void VEntity::SerialiseOther (VStream &Strm) {
   Super::SerialiseOther(Strm);
   if (Strm.IsLoading()) {
-    if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx; else FlagsEx &= ~EFEX_IsEntityEx;
-    if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor; else FlagsEx &= ~EFEX_IsActor;
+    FlagsEx &= ~(EFEX_IsEntityEx|EFEX_IsActor);
+    if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx;
+    if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor;
     //CHECKME: k8: is this right? voodoo dolls?
     if (EntityFlags&EF_IsPlayer) Player->MO = this;
     SubSector = nullptr; // must mark as not linked
-    LinkToWorld(true); // proper floor check
+    // proper checks for player and monsters
+    if (IsPlayerOrMonster()) {
+      LinkToWorld(true); // proper floor check
+    } else {
+      // more complex code
+      //FIXME: special processing for `bSpecial`? (those are pickups)
+      // first use "proper" check to get FloorZ
+      LinkToWorld(true);
+      // now see if FloorZ is equal to our Z
+      if (FloorZ != Origin.z) {
+        // try non-proper check
+        LinkToWorld();
+        if (FloorZ != Origin.z) {
+          // both seems to be wrong, revert to "proper" again
+          LinkToWorld(true);
+        }
+      }
+    }
   }
 }
 

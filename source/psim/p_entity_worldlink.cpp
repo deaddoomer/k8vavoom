@@ -264,7 +264,9 @@ void VEntity::LinkToWorld (int properFloorCheck) {
   if (properFloorCheck != -666) {
     if (!IsPlayer()) {
       if (properFloorCheck) {
-        if (rad < 4.0f || (EntityFlags&(EF_ColideWithWorld|EF_NoSector|EF_NoBlockmap|EF_Invisible|EF_Missile|EF_ActLikeBridge)) != EF_ColideWithWorld) {
+        if (rad < 4.0f ||
+            (EntityFlags&(EF_ColideWithWorld|EF_NoSector|EF_NoBlockmap|EF_Invisible|EF_Missile|EF_ActLikeBridge)) != EF_ColideWithWorld)
+        {
           properFloorCheck = false;
         }
       }

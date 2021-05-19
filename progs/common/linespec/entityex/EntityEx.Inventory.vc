@@ -576,7 +576,7 @@ EntityEx DropInventory (Inventory SrcItem, optional int DropAmount) {
     AngleVector(Angles, out Dir);
     Dir.z = 0.0;
     Dir = Normalise(Dir);
-    Item.SetOrigin2(Origin+vector(0.0, 0.0, 32.0)+Dir*(Radius+32.0), properFloorCheck:true);
+    Item.SetOrigin2(Origin+vector(0.0, 0.0, 32.0)+Dir*(Radius+32.0), properFloorCheck:true); //k8: really?
     Item.Angles.yaw = Angles.yaw;
     Item.Velocity = Dir*128.0;
   }
@@ -679,7 +679,7 @@ override void GiveInventory (name ItemName, int Amount, bool allowReplacement) {
     Item.Destroy();
   } else if (!Item.IsDestroyed) {
     // just in case, move it to spawner's origin
-    Item.SetOrigin(Origin, properFloorCheck:true);
+    Item.SetOrigin(Origin, properFloorCheck:true); //k8: really?
   }
 
   // don't automatically bring up weapon

@@ -25,6 +25,12 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
+/*
+  i think i should use portal traversing code here instead of BSP bbox checks.
+  this way i can block spreading with closed doors, for example, and other
+  "closed" things.
+ */
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct DInfo {
