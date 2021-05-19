@@ -377,11 +377,9 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
     return;
   }
 
-  if (dec->lowername != NAME_None) {
-    if (dec->lowername != NAME_None && VStr::strEquCI(*dec->lowername, "none")) {
-      VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
-      if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation);
-    }
+  if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
+    VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
+    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation);
   }
 
   int tex = dec->texid;
