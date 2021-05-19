@@ -25,11 +25,20 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
+#define VV_FLAT_DECAL_USE_FLOODFILL
+
 /*
   i think i should use portal traversing code here instead of BSP bbox checks.
   this way i can block spreading with closed doors, for example, and other
   "closed" things.
  */
+
+
+#ifdef VV_FLAT_DECAL_USE_FLOODFILL
+// "subsector touched" marks for portal spread
+static TArray<int> dcSubTouchMark;
+static int dcSubTouchCounter = 0;
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -40,7 +49,54 @@ struct DInfo {
   float spheight; // spread height
   VDecalDef *dec;
   int translation;
+  VLevel *Level;
 };
+
+
+#ifdef VV_FLAT_DECAL_USE_FLOODFILL
+//==========================================================================
+//
+//  IncSubTouchCounter
+//
+//==========================================================================
+static void IncSubTouchCounter (VLevel *Level) noexcept {
+  if (dcSubTouchMark.length() != Level->NumSubsectors) {
+    dcSubTouchMark.setLength(Level->NumSubsectors);
+    for (auto &&v : dcSubTouchMark) v = 0;
+    dcSubTouchCounter = 1;
+    return;
+  }
+  if (++dcSubTouchCounter != MAX_VINT32) return;
+  for (auto &&v : dcSubTouchMark) v = 0;
+  dcSubTouchCounter = 1;
+}
+
+
+//==========================================================================
+//
+//  IsSubTouched
+//
+//  `IncSubTouchCounter()` should be already called
+//
+//  doesn't mark the subsector
+//
+//==========================================================================
+static inline bool IsSubTouched (VLevel *Level, const subsector_t *sub) noexcept {
+  return (sub ? (dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Level->Subsectors[0])] == dcSubTouchCounter) : true);
+}
+
+
+//==========================================================================
+//
+//  MarkSubTouched
+//
+//  `IncSubTouchCounter()` should be already called
+//
+//==========================================================================
+static inline void MarkSubTouched (VLevel *Level, const subsector_t *sub) noexcept {
+  if (sub) dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Level->Subsectors[0])] = dcSubTouchCounter;
+}
+#endif
 
 
 //==========================================================================
@@ -112,6 +168,83 @@ static bool IsGoodFlatTexture (int texid) noexcept {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+enum {
+  PutAtFloor   = 1u<<0,
+  PutAtCeiling = 1u<<1,
+};
+
+
+//==========================================================================
+//
+//  PutDecalToSubsectorRegion
+//
+//==========================================================================
+static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, sec_region_t *reg, const int eregidx) {
+  unsigned res = 0u;
+  // base region?
+  if (reg->regflags&sec_region_t::RF_BaseRegion) {
+    // check floor
+    if (IsGoodFlatTexture(reg->efloor.splane->pic)) {
+      const float fz = reg->efloor.GetPointZClamped(nfo->org);
+      if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
+        // do it
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        res |= PutAtFloor;
+      }
+    }
+    // check ceiling
+    if (IsGoodFlatTexture(reg->eceiling.splane->pic)) {
+      const float cz = reg->eceiling.GetPointZClamped(nfo->org);
+      if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
+        // do it
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        res |= PutAtCeiling;
+      }
+    }
+  } else {
+    // 3d floor region; here, floor and ceiling directions are inverted
+    if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) return 0u;
+    // check floor
+    if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
+      const float fz = reg->efloor.GetPointZClamped(nfo->org);
+      if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
+        // do it
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        res |= PutAtFloor;
+      }
+    }
+    // check ceiling
+    if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->eceiling.splane->pic)) {
+      const float cz = reg->eceiling.GetPointZClamped(nfo->org);
+      if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
+        // do it
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        res |= PutAtCeiling;
+      }
+    }
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  PutDecalToSubsector
+//
+//  does no "box touches subsector" checks
+//
+//==========================================================================
+static void PutDecalToSubsector (const DInfo *nfo, subsector_t *sub) {
+  // check sector regions, and add decals
+  int eregidx = 0;
+  for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+    (void)PutDecalToSubsectorRegion(nfo, sub, reg, eregidx);
+  }
+}
+
+
+#ifndef VV_FLAT_DECAL_USE_FLOODFILL
 //==========================================================================
 //
 //  AddDecalToSubsector
@@ -121,55 +254,59 @@ static bool IsGoodFlatTexture (int texid) noexcept {
 //==========================================================================
 static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   const DInfo *nfo = (const DInfo *)udata;
-  if (!Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) {
-    return true; // continue checking
+  if (Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) {
+    PutDecalToSubsector(nfo, sub);
   }
-
-  // check sector regions, and add decals
-  int eregidx = 0;
-  for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
-    // base region?
-    if (reg->regflags&sec_region_t::RF_BaseRegion) {
-      // check floor
-      if (IsGoodFlatTexture(reg->efloor.splane->pic)) {
-        const float fz = reg->efloor.GetPointZClamped(nfo->org);
-        if (nfo->org.z+2.0f >= fz && nfo->org.z-fz < nfo->range+nfo->spheight) {
-          // do it
-          Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
-        }
-      }
-      // check ceiling
-      if (IsGoodFlatTexture(reg->eceiling.splane->pic)) {
-        const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-        if (nfo->org.z-2.0f <= cz && cz-nfo->org.z < nfo->range+nfo->spheight) {
-          // do it
-          Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
-        }
-      }
-    } else {
-      // 3d floor region; here, floor and ceiling directions are inverted
-      if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) continue;
-      // check floor
-      if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
-        const float fz = reg->efloor.GetPointZClamped(nfo->org);
-        if (nfo->org.z-2.0f <= fz && fz-nfo->org.z < nfo->range+nfo->spheight) {
-          // do it
-          Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
-        }
-      }
-      // check ceiling
-      if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->eceiling.splane->pic)) {
-        const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-        if (nfo->org.z+2.0f >= cz && nfo->org.z-cz < nfo->range+nfo->spheight) {
-          // do it
-          Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
-        }
-      }
-    }
-  }
-
   return true; // continue checking
 }
+
+#else
+
+//==========================================================================
+//
+//  DecalFloodFill
+//
+//==========================================================================
+static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
+  if (IsSubTouched(nfo->Level, sub)) return;
+  MarkSubTouched(nfo->Level, sub);
+  if (sub->numlines < 3) return;
+  if (!nfo->Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) return;
+  // put decals
+  PutDecalToSubsector(nfo, sub);
+  // if subsector is fully inside our rect, we should spread over all segs
+  bool spreadAllSegs = false;
+  if (sub->bbox2d[BOX2D_MINX] >= nfo->bbox2d[BOX2D_MINX] &&
+      sub->bbox2d[BOX2D_MINY] >= nfo->bbox2d[BOX2D_MINY] &&
+      sub->bbox2d[BOX2D_MAXX] <= nfo->bbox2d[BOX2D_MAXX] &&
+      sub->bbox2d[BOX2D_MAXY] <= nfo->bbox2d[BOX2D_MAXY])
+  {
+    spreadAllSegs = true;
+  }
+  // check subsector segs
+  const seg_t *seg = &nfo->Level->Segs[sub->firstline];
+  for (int f = sub->numlines; f--; ++seg) {
+    if (!seg->frontsector || !seg->backsector || !seg->partner) continue;
+    if (IsSubTouched(nfo->Level, seg->partner->frontsub)) continue; // already processed
+    // check if we should spread over this seg
+    if (!spreadAllSegs) {
+      // our box should intersect with the seg
+      // check reject point
+      if (seg->PointDistance(seg->get2DBBoxRejectPoint(nfo->bbox2d)) <= 0.0f) continue; // entire box on a back side
+      // check accept point
+      // if accept point on another side (or on plane), assume intersection
+      if (seg->PointDistance(seg->get2DBBoxAcceptPoint(nfo->bbox2d)) >= 0.0f) continue;
+    }
+    // ok, we must spread over this seg; check if it is a closed something
+    const line_t *line = seg->linedef;
+    if (line) {
+      if (VViewClipper::IsSegAClosedSomething(nfo->Level, nullptr, seg)) continue; // oops, it is closed
+    }
+    // recurse
+    DecalFloodFill(nfo, seg->partner->frontsub);
+  }
+}
+#endif
 
 
 //==========================================================================
@@ -201,6 +338,19 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   nfo.range = range;
   nfo.dec = dec;
   nfo.translation = translation;
+  nfo.Level = this;
 
+#ifndef VV_FLAT_DECAL_USE_FLOODFILL
   CheckBSPB2DBox(nfo.bbox2d, &AddDecalToSubsector, &nfo);
+#else
+  // floodfill spread
+  subsector_t *sub = PointInSubsector(org);
+  /*
+  if (sub->sector->isOriginalPObj()) return; //wtf?!
+  if (sub->sector->isInnerPObj() && !sub->sector->ownpobj->Is3D()) return; //wtf?!
+  */
+  if (sub->sector->isAnyPObj()) return; // the thing that should not be
+  IncSubTouchCounter(this);
+  DecalFloodFill(&nfo, sub);
+#endif
 }
