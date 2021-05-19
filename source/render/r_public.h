@@ -102,6 +102,7 @@ struct decal_t {
   unsigned flags;
   // z and x positions has no image offset added
   float worldx, worldy; // world coordinates for floor/ceiling decals
+  float angle; // decal rotation angle (around its center point)
   //float height; // spread height
   float orgz; // original z position for wall decals
   float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
@@ -131,6 +132,19 @@ struct decal_t {
   decal_t *uidnext;
   */
 
+  // cache
+  unsigned lastFlags;
+  float lastScaleX, lastScaleY;
+  float lastWorldX, lastWorldY;
+  float lastAngle;
+  float lastOfsX, lastOfsY;
+  float lastCurZ;
+  float lastPlaneDist;
+  // calculated cached values
+  TVec saxis, taxis;
+  float soffs, toffs;
+  TVec v1, v2, v3, v4;
+
   // nore that floor/ceiling type should be correctly set for 3d floor subregions
   // i.e. decal on top of 3d floor is ceiling decal
 
@@ -149,6 +163,34 @@ struct decal_t {
   // should be called ONLY for flat decals, and after animator was set
   // this also calculates `height`
   void calculateBBox (VLevel *Level) noexcept;
+
+  inline bool needRecalc (const float pdist) const noexcept {
+    return
+      lastFlags != flags ||
+      FASI(lastPlaneDist) != FASI(pdist) ||
+      FASI(lastScaleX) != FASI(scaleX) ||
+      FASI(lastScaleY) != FASI(scaleY) ||
+      FASI(lastWorldX) != FASI(worldx) ||
+      FASI(lastWorldY) != FASI(worldy) ||
+      FASI(lastOfsX) != FASI(ofsX) ||
+      FASI(lastOfsY) != FASI(ofsY) ||
+      FASI(lastCurZ) != FASI(curz) ||
+      FASI(lastAngle) != FASI(angle);
+  }
+
+  // doesn't update axes and offsets
+  inline void updateCache (const float pdist) noexcept {
+    lastFlags = flags;
+    lastPlaneDist = pdist;
+    lastScaleX = scaleX;
+    lastScaleY = scaleY;
+    lastWorldX = worldx;
+    lastWorldY = worldy;
+    lastOfsX = ofsX;
+    lastOfsY = ofsY;
+    lastCurZ = curz;
+    lastAngle = angle;
+  }
 };
 
 

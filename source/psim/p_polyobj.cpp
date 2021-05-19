@@ -2124,10 +2124,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
           const float yc = dc->worldy-ssy;
           const float nx = (xc*c-yc*s);
           const float ny = (yc*c+xc*s);
-          const float dx = (nx+ssx)-dc->worldx;
-          const float dy = (ny+ssy)-dc->worldy;
-          dc->worldx += dx;
-          dc->worldy += dy;
+          dc->worldx = nx+ssx;
+          dc->worldy = ny+ssy;
         }
       }
     }

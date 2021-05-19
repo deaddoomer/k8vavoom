@@ -903,53 +903,6 @@ void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, in
 
 //==========================================================================
 //
-//  decal_t::calculateBBox
-//
-//  should be called ONLY for flat decals, and after animator was set
-//
-//==========================================================================
-void decal_t::calculateBBox (VLevel *Level) noexcept {
-  const int dcTexId = texture.id; // "0" means "no texture found"
-  if (dcTexId <= 0) {
-    //height = 0.0f;
-    memset((void *)&bbox2d[0], 0, sizeof(bbox2d));
-    return;
-  }
-
-  VTexture *dtex = GTextureManager[dcTexId];
-
-  // decal scale is not inverted
-  const float dscaleX = scaleX;
-  const float dscaleY = scaleY;
-
-  // use origScale to get the original starting point
-  const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
-  const float tyofs = dtex->GetScaledTOffsetF()*dscaleY;
-
-  const float twdt = dtex->GetScaledWidthF()*dscaleX;
-  const float thgt = dtex->GetScaledHeightF()*dscaleY;
-
-  //height = max2(2.0f, min2(twdt, thgt)*0.4f);
-
-  const TVec v1(worldx, worldy);
-  // left-bottom
-  const TVec qv0 = v1+TVec(-txofs, tyofs);
-  // right-bottom
-  const TVec qv1 = qv0+TVec(twdt, 0.0f);
-  // left-top
-  const TVec qv2 = qv0-TVec(0.0f, thgt);
-  // right-top
-  const TVec qv3 = qv1-TVec(0.0f, thgt);
-
-  bbox2d[BOX2D_MINX] = min2(min2(min2(qv0.x, qv1.x), qv2.x), qv3.x);
-  bbox2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
-  bbox2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
-  bbox2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
-}
-
-
-//==========================================================================
-//
 //  VLevel::DestroyFlatDecal
 //
 //  this will also destroy decal and its animator!

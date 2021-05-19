@@ -47,6 +47,7 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
       dc->texture = 0;
     }
     vio.io(VName("flags"), dc->flags);
+    vio.iodef(VName("angle"), dc->angle, 0.0f);
     vio.io(VName("orgz"), dc->orgz);
     vio.io(VName("curz"), dc->curz);
     vio.io(VName("xdist"), dc->xdist);
