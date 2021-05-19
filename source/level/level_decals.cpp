@@ -1088,7 +1088,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 //  VLevel::NewFlatDecal
 //
 //==========================================================================
-void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation) {
+void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags) {
   vassert(sub);
   vassert(eregidx >= 0);
   vassert(dec);
@@ -1113,6 +1113,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dec->alpha.value;
   decal->addAlpha = dec->addAlpha.value;
+  decal->flags = orflags|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
   decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
 
   AppendDecalToSubsectorList(decal);

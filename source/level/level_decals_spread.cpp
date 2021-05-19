@@ -52,6 +52,7 @@ struct DInfo {
   VDecalDef *dec;
   int translation;
   VLevel *Level;
+  unsigned orflags;
 };
 
 
@@ -196,12 +197,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
           res |= PutAtCeiling;
         }
       } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
         res |= PutAtFloor;
       }
     }
@@ -212,12 +213,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
           res |= PutAtFloor;
         }
       } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
         res |= PutAtCeiling;
       }
     }
@@ -230,7 +231,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if (orgz-2.0f <= fz && fz-orgz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
         res |= PutAtFloor;
       }
     }
@@ -239,7 +240,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if (orgz+2.0f >= cz && orgz-cz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
         res |= PutAtCeiling;
       }
     }
@@ -386,6 +387,19 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   VTexture *DTex = GTextureManager[tex];
   if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
 
+  // setup flips
+  unsigned flips = 0u;
+  if (dec->flipX == VDecalDef::FlipRandom) {
+    if (Random() < 0.5f) flips |= decal_t::FlipX;
+  } else if (dec->flipX == VDecalDef::FlipAlways) {
+    flips |= decal_t::FlipX;
+  }
+  if (dec->flipY == VDecalDef::FlipRandom) {
+    if (Random() < 0.5f) flips |= decal_t::FlipY;
+  } else if (dec->flipY == VDecalDef::FlipAlways) {
+    flips |= decal_t::FlipY;
+  }
+
   DInfo nfo;
   nfo.spheight = CalculateDecalBBox(nfo.bbox2d, dec, org.x, org.y);
   if (nfo.spheight == 0.0f) return; // just in case
@@ -394,6 +408,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   nfo.dec = dec;
   nfo.translation = translation;
   nfo.Level = this;
+  nfo.orflags = flips; //|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u); // done in `NewFlatDecal()`
 
 #ifndef VV_FLAT_DECAL_USE_FLOODFILL
   CheckBSPB2DBox(nfo.bbox2d, &AddDecalToSubsector, &nfo);
