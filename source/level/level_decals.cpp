@@ -361,12 +361,14 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
 //  VLevel::PutDecalAtLine
 //
 //==========================================================================
-void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck) {
+void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck) {
   // don't process linedef twice
   if (!skipMarkCheck) {
     if (IsLineTouched(li)) return;
     MarkLineTouched(li);
   }
+
+  const float orgz = org.z;
 
   VTexture *dtex = GTextureManager[dec->texid];
   //if (!dtex || dtex->Type == TEXTYPE_Null) return;
@@ -715,7 +717,7 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
       if (nside < 0) continue;
       if (li->v1 == nline->v2) {
         VDC_DLOG(NAME_Debug, "  v1 at nv2 (%d) (ok)", (int)(ptrdiff_t)(nline-Lines));
-        //!later:PutDecalAtLine(orgz, ((*nline->v2)-(*nline->v1)).length2D()+dstxofs, dec, nside, nline, flips, translation);
+        //!later:PutDecalAtLine(org, ((*nline->v2)-(*nline->v1)).length2D()+dstxofs, dec, nside, nline, flips, translation);
         DecalLineInfo &dlc = connectedLines.alloc();
         dlc.nline = nline;
         dlc.nside = nside;
@@ -723,7 +725,7 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
         dlc.isbackside = false;
       } else if (li->v1 == nline->v1) {
         VDC_DLOG(NAME_Debug, "  v1 at nv1 (%d) (opp)", (int)(ptrdiff_t)(nline-Lines));
-        //PutDecalAtLine(orgz, dstxofs, dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
+        //PutDecalAtLine(org, dstxofs, dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
         DecalLineInfo &dlc = connectedLines.alloc();
         dlc.nline = nline;
         dlc.nside = nside;
@@ -746,7 +748,7 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
       if (nside < 0) continue;
       if (li->v2 == nline->v1) {
         VDC_DLOG(NAME_Debug, "  v2 at nv1 (%d) (ok)", (int)(ptrdiff_t)(nline-Lines));
-        //!later:PutDecalAtLine(orgz, dstxofs-linelen, dec, nside, nline, flips, translation);
+        //!later:PutDecalAtLine(org, dstxofs-linelen, dec, nside, nline, flips, translation);
         DecalLineInfo &dlc = connectedLines.alloc();
         dlc.nline = nline;
         dlc.nside = nside;
@@ -754,7 +756,7 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
         dlc.isbackside = false;
       } else if (li->v2 == nline->v2) {
         VDC_DLOG(NAME_Debug, "  v2 at nv2 (%d) (opp)", (int)(ptrdiff_t)(nline-Lines));
-        //PutDecalAtLine(orgz, ((*nline->v2)-(*nline->v1)).length2D()+(dstxofs-linelen), dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
+        //PutDecalAtLine(org, ((*nline->v2)-(*nline->v1)).length2D()+(dstxofs-linelen), dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
         DecalLineInfo &dlc = connectedLines.alloc();
         dlc.nline = nline;
         dlc.nside = nside;
@@ -770,17 +772,17 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
     DecalLineInfo *dlc = connectedLines.ptr()+cc;
     if (dlc->isv1) {
       if (!dlc->isbackside) {
-        PutDecalAtLine(orgz, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()+dstxofs, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
+        PutDecalAtLine(org, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()+dstxofs, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
       } else {
         VDC_DLOG(NAME_Debug, ":::v1b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt);
-        PutDecalAtLine(orgz, -dcx0-twdt+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
+        PutDecalAtLine(org, -dcx0-twdt+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
       }
     } else {
       if (!dlc->isbackside) {
-        PutDecalAtLine(orgz, dstxofs-linelen, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
+        PutDecalAtLine(org, dstxofs-linelen, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
       } else {
         VDC_DLOG(NAME_Debug, ":::v2b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt);
-        PutDecalAtLine(orgz, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()-(dcx1-linelen)+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
+        PutDecalAtLine(org, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()-(dcx1-linelen)+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
       }
     }
   }
@@ -823,7 +825,13 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     return;
   }
 
-  dec->CalculateWallBBox(li->v1->x, li->v1->y);
+  // actually, we should check animator here, but meh...
+  if (!dec->animator && dec->alpha.value < 0.004f) {
+    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
+    return;
+  }
+
+  dec->CalculateWallBBox(org.x, org.y);
   //GCon->Logf(NAME_Debug, "decal '%s': scale=(%g:%g)", *dec->name, dec->scaleX.value, dec->scaleY.value);
 
   if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {
@@ -836,14 +844,6 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has invalid scale", *dec->name);
     return;
   }
-
-  // actually, we should check animator here, but meh...
-  /*
-  if (dec->alpha.value <= 0.004f) {
-    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
-    return;
-  }
-  */
 
   //GCon->Logf(NAME_Debug, "Decal '%s', texture '%s'", *dec->name, *dtex->Name);
 
@@ -867,7 +867,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   VDC_DLOG(NAME_Debug, "linelen=%g; dist=%g; lineofs=%g", (v2-v1).length2D(), dist, lineofs);
 
   connectedLines.resetNoDtor();
-  PutDecalAtLine(org.z, lineofs, dec, side, li, flips, translation, false); // don't skip mark check
+  PutDecalAtLine(org, lineofs, dec, side, li, flips, translation, false); // don't skip mark check
 }
 
 
