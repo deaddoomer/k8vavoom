@@ -409,14 +409,14 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
       const float orgz = nfo->org.z;
       const float xhgt = nfo->range+nfo->spheight;
       // check if it is blocked by high floor
-      if (seg->backsector->floor.maxz > seg->frontsector->floor.maxz) {
+      if (seg->backsector->floor.minz > seg->frontsector->floor.maxz) {
         // back sector floor is higher
-        if (orgz+xhgt <= seg->backsector->floor.maxz) continue;
+        if (orgz+xhgt <= seg->backsector->floor.minz) continue;
       }
       // check if it is blocked by low ceiling
-      if (seg->frontsector->ceiling.minz < seg->backsector->ceiling.minz) {
+      if (seg->frontsector->ceiling.maxz < seg->backsector->ceiling.minz) {
         // front sector ceiling is lower
-        if (orgz-xhgt >= seg->frontsector->ceiling.minz) continue;
+        if (orgz-xhgt >= seg->frontsector->ceiling.maxz) continue;
       }
     }
     // recurse
