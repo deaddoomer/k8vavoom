@@ -80,6 +80,7 @@ static VVA_OKUNUSED const char *lif2str (int flags) noexcept {
 //  calcDecalSide
 //
 //==========================================================================
+#if 0
 static int calcDecalSide (const line_t *li, const sector_t *fsec, const sector_t *bsec, const line_t *nline, int origside, int lvnum) {
   // find out correct side
   if (nline->frontsector == fsec || nline->backsector == bsec) return 0;
@@ -105,6 +106,7 @@ static int calcDecalSide (const line_t *li, const sector_t *fsec, const sector_t
   */
   return nside;
 }
+#endif
 
 
 //==========================================================================
@@ -378,18 +380,21 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
   const float twdt = dtex->GetScaledWidthF()*dec->scaleX.value;
   const float thgt = dtex->GetScaledHeightF()*dec->scaleY.value;
 
-  if (twdt < 1.0f || thgt < 1.0f) return;
-
   sector_t *fsec;
   sector_t *bsec;
   if (side == 0) {
+    // front side
     fsec = li->frontsector;
     bsec = li->backsector;
   } else {
+    // back side
     fsec = li->backsector;
     bsec = li->frontsector;
   }
 
+  if (fsec && bsec && fsec == bsec) bsec = nullptr; // self-referenced lines
+
+  // flip side if we somehow ended on the wrong side of one-sided line
   if (!fsec) {
     side ^= 1;
     fsec = bsec;
@@ -399,16 +404,18 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
     }
   }
 
+  // offset is always from `v1`
+  const unsigned stvflag = 0u; //(side ? decal_t::FromV2 : 0u);
+
   const side_t *sidedef = (li->sidenum[side] >= 0 ? &Sides[li->sidenum[side]] : nullptr);
   const TVec &v1 = *li->v1;
   const TVec &v2 = *li->v2;
   const float linelen = (v2-v1).length2D();
 
-  float txofs = dtex->GetScaledSOffsetF()*dec->scaleX.value;
-  // this is not quite right, but i need it this way
-  if (flips&decal_t::FlipX) txofs = twdt-txofs;
+  // decal flipping won't change decal offset
+  const float txofs = dtex->GetScaledSOffsetF()*dec->scaleX.value;
 
-  // calculate left and right texture bounds
+  // calculate left and right texture bounds on the line
   const float dcx0 = lineofs-txofs;
   const float dcx1 = dcx0+twdt;
 
@@ -419,6 +426,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
   }
 
   // calculate top and bottom texture bounds
+  // decal flipping won't change decal offset
   const float tyofs = dtex->GetScaledTOffsetF()*dec->scaleY.value;
   const float dcy1 = orgz+dec->scaleY.value+tyofs;
   const float dcy0 = dcy1-thgt;
@@ -433,10 +441,16 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
   const float bfloorZ = (bsec ? bsec->floor.GetPointZClamped(linepos) : ffloorZ);
   const float bceilingZ = (bsec ? bsec->ceiling.GetPointZClamped(linepos) : fceilingZ);
 
-  if (sidedef && (li->flags&(ML_NODECAL|ML_ADDITIVE)) == 0 && (sidedef->Flags&SDF_NODECAL) == 0) {
+  if (sidedef && ((li->flags&(ML_NODECAL|ML_ADDITIVE))|(sidedef->Flags&SDF_NODECAL)) == 0) {
     // find segs for this decal (there may be several segs)
     // for two-sided lines, put decal on segs for both sectors
     for (seg_t *seg = li->firstseg; seg; seg = seg->lsnext) {
+      if (seg->side != side) continue; // partner segs will be processed with normal segs
+      if (IsSegTouched(seg)) continue;
+      MarkSegTouched(seg);
+      const bool doParnter = !IsSegTouched(seg->partner);
+      MarkSegTouched(seg->partner);
+
       if (!seg->linedef) continue; // ignore minisegs (just in case)
       //if (seg->frontsub->isOriginalPObj()) continue; // ignore original polyobj sectors (just in case) -- nope, we want decals on polyobjects too
       if (seg->flags&SF_ZEROLEN) continue; // invalid seg
@@ -456,9 +470,9 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         // find solid region to put decal onto
         for (sec_region_t *reg = sec3d->eregions->next; reg; reg = reg->next) {
           if (!reg->extraline) continue; // no need to create extra side
-          // hack: 3d floor with sky texture seems to be transparent in renderer
-          if ((reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual)) != 0) continue;
+          if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual)) continue;
           const side_t *extraside = &Sides[reg->extraline->sidenum[0]];
+          // hack: 3d floor with sky texture seems to be transparent in renderer
           if (extraside->MidTexture == skyflatnum) continue;
           const float fz = reg->efloor.GetPointZClamped(linepos);
           const float cz = reg->eceiling.GetPointZClamped(linepos);
@@ -470,15 +484,26 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
-            decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+            decal->flags = flips|stvflag|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
             decal->flags |= /*disabledTextures*/0u;
             // slide with 3d floor floor
             decal->slidesec = sec3d;
             decal->flags |= decal_t::SlideFloor;
             decal->curz -= decal->slidesec->floor.TexZ;
-            //if (side != seg->side) decal->flags ^= decal_t::FlipX;
             decal->calculateBBox();
             CleanupSegDecals(seg);
+            if (doParnter) {
+              // create decal on partner seg
+              decal_t *dcp = AllocSegDecal(seg->partner, dec);
+              dcp->translation = translation;
+              dcp->orgz = decal->orgz;
+              dcp->curz = decal->curz;
+              dcp->xdist = decal->xdist;
+              dcp->flags = decal->flags/*^decal_t::FromV2*/^decal_t::FlipX;
+              dcp->slidesec = decal->slidesec;
+              dcp->calculateBBox();
+              CleanupSegDecals(seg->partner);
+            }
           } else {
             VDC_DLOG(NAME_Debug, " SKIP solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
           }
@@ -588,7 +613,9 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       if (!hasMidTex) {
         disabledTextures |= decal_t::NoMidTex;
       } else {
-        if (min2(dcy0, dcy1) >= max2(ffloorZ, bfloorZ) || max2(dcy0, dcy1) <= min2(fceilingZ, bceilingZ)) {
+        //if (min2(dcy0, dcy1) >= max2(ffloorZ, bfloorZ) || max2(dcy0, dcy1) <= min2(fceilingZ, bceilingZ))
+        if (dcy1 > ffloorZ && dcy0 < fceilingZ)
+        {
           // touching midtex
         } else {
           disabledTextures |= decal_t::NoMidTex;
@@ -634,15 +661,17 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         }
         */
       } else {
-        VDC_DLOG(NAME_Debug, "  1s: orgz=%g; front=(%g,%g)", orgz, ffloorZ, fceilingZ);
+        VDC_DLOG(NAME_Debug, "  1s: orgz=%g; front=(%g,%g); hasMidTex=%d; dcy=(%g : %g); gap=(%g : %g)", orgz, ffloorZ, fceilingZ, (int)hasMidTex, dcy0, dcy0, ffloorZ, fceilingZ);
         // one-sided
-        if (hasMidTex && orgz >= ffloorZ && orgz <= fceilingZ) {
+        if (hasMidTex && dcy1 > ffloorZ && dcy0 < fceilingZ) {
           // midtexture
                if (li->flags&ML_DONTPEGBOTTOM) slideWithFloor = true;
           else if (li->flags&ML_DONTPEGTOP) slideWithCeiling = true;
           else slideWithCeiling = true;
-          //GCon->Logf(NAME_Debug, "one-sided midtex: pegbot=%d; pegtop=%d; fslide=%d; cslide=%d", (int)(!!(li->flags&ML_DONTPEGBOTTOM)), (int)(!!(li->flags&ML_DONTPEGTOP)), (int)slideWithFloor, (int)slideWithCeiling);
+          VDC_DLOG(NAME_Debug, "   one-sided midtex: pegbot=%d; pegtop=%d; fslide=%d; cslide=%d", (int)(!!(li->flags&ML_DONTPEGBOTTOM)), (int)(!!(li->flags&ML_DONTPEGTOP)), (int)slideWithFloor, (int)slideWithCeiling);
+          disabledTextures = decal_t::NoBotTex|decal_t::NoTopTex;
         } else {
+          /*
           if (allowTopTex && allowBotTex) {
             // both top and bottom
             if (orgz < ffloorZ) {
@@ -659,6 +688,8 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             // only top texture
             if ((li->flags&ML_DONTPEGTOP) == 0) slideWithCeiling = true;
           }
+          */
+          continue;
         }
         if (slideWithFloor || slideWithCeiling) slidesec = fsec;
         VDC_DLOG(NAME_Debug, "  1s: front=(%g,%g); sc=%d; sf=%d", ffloorZ, fceilingZ, (int)slideWithFloor, (int)slideWithCeiling);
@@ -672,7 +703,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
-      decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+      decal->flags = flips|stvflag|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
       decal->flags |= disabledTextures;
       decal->calculateBBox();
 
@@ -692,19 +723,39 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           VDC_DLOG(NAME_Debug, "  ceil slide; sec=%d", (int)(ptrdiff_t)(decal->slidesec-Sectors));
         }
       }
-
-      if (side != seg->side) decal->flags ^= decal_t::FlipX;
-
+      //if (side != seg->side) decal->flags ^= decal_t::FlipX;
       CleanupSegDecals(seg);
+
+      if (doParnter) {
+        // create decal on partner seg
+        decal_t *dcp = AllocSegDecal(seg->partner, dec);
+        dcp->translation = translation;
+        dcp->orgz = decal->orgz;
+        dcp->curz = decal->curz;
+        dcp->xdist = lineofs;
+        // setup misc flags
+        dcp->flags = decal->flags/*^decal_t::FromV2*/^decal_t::FlipX;
+        //if (min2(dcy0, dcy1) >= max2(ffloorZ, bfloorZ) || max2(dcy0, dcy1) <= min2(fceilingZ, bceilingZ))
+        if (dcy1 > bfloorZ && dcy0 < bceilingZ) {
+          // touching midtex
+          dcp->flags &= ~decal_t::NoMidTex;
+        } else {
+          dcp->flags |= decal_t::NoMidTex;
+        }
+        dcp->slidesec = decal->slidesec;
+        dcp->calculateBBox();
+
+        CleanupSegDecals(seg->partner);
+      }
     }
   }
 
-  const float dstxofs = dcx0+txofs;
 
   // if our decal is not completely at linedef, spread it to adjacent linedefs
+  const float dstxofs = dcx0+txofs;
   const int clnum = connectedLines.length();
 
-  if (dcx0 < 0) {
+  if (dcx0 < 0.0f) {
     // to the left
     VDC_DLOG(NAME_Debug, "Decal '%s' at line #%d: going to the left; ofs=%g; side=%d", *dec->name, (int)(ptrdiff_t)(li-Lines), dcx0, side);
     line_t **ngb = li->v1lines;
@@ -712,24 +763,17 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       line_t *nline = *ngb;
       if (IsLineTouched(nline)) continue;
       MarkLineTouched(nline);
-      // find out correct side
-      const int nside = calcDecalSide(li, fsec, bsec, nline, side, 0);
-      if (nside < 0) continue;
-      if (li->v1 == nline->v2) {
-        VDC_DLOG(NAME_Debug, "  v1 at nv2 (%d) (ok)", (int)(ptrdiff_t)(nline-Lines));
-        //!later:PutDecalAtLine(org, ((*nline->v2)-(*nline->v1)).length2D()+dstxofs, dec, nside, nline, flips, translation);
-        DecalLineInfo &dlc = connectedLines.alloc();
-        dlc.nline = nline;
-        dlc.nside = nside;
-        dlc.isv1 = true;
+      DecalLineInfo &dlc = connectedLines.alloc();
+      dlc.nline = nline;
+      dlc.isv1 = true;
+      // determine correct decal side
+      if (nline->v2 == li->v1) {
+        // nline has the same orientation, so the same side
+        dlc.nside = 0;
         dlc.isbackside = false;
-      } else if (li->v1 == nline->v1) {
-        VDC_DLOG(NAME_Debug, "  v1 at nv1 (%d) (opp)", (int)(ptrdiff_t)(nline-Lines));
-        //PutDecalAtLine(org, dstxofs, dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
-        DecalLineInfo &dlc = connectedLines.alloc();
-        dlc.nline = nline;
-        dlc.nside = nside;
-        dlc.isv1 = true;
+      } else {
+        // nline is differently oriented, flip side
+        dlc.nside = 1;
         dlc.isbackside = true;
       }
     }
@@ -743,46 +787,50 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       line_t *nline = *ngb;
       if (IsLineTouched(nline)) continue;
       MarkLineTouched(nline);
-      // find out correct side
-      int nside = calcDecalSide(li, fsec, bsec, nline, side, 1);
-      if (nside < 0) continue;
+      DecalLineInfo &dlc = connectedLines.alloc();
+      dlc.nline = nline;
+      dlc.isv1 = false;
+      // determine correct decal side
       if (li->v2 == nline->v1) {
-        VDC_DLOG(NAME_Debug, "  v2 at nv1 (%d) (ok)", (int)(ptrdiff_t)(nline-Lines));
-        //!later:PutDecalAtLine(org, dstxofs-linelen, dec, nside, nline, flips, translation);
-        DecalLineInfo &dlc = connectedLines.alloc();
-        dlc.nline = nline;
-        dlc.nside = nside;
-        dlc.isv1 = false;
+        // nline has the same orientation, so the same side
+        dlc.nside = 0;
         dlc.isbackside = false;
-      } else if (li->v2 == nline->v2) {
-        VDC_DLOG(NAME_Debug, "  v2 at nv2 (%d) (opp)", (int)(ptrdiff_t)(nline-Lines));
-        //PutDecalAtLine(org, ((*nline->v2)-(*nline->v1)).length2D()+(dstxofs-linelen), dec, (nline->frontsector == fsec ? 0 : 1), nline, flips, translation);
-        DecalLineInfo &dlc = connectedLines.alloc();
-        dlc.nline = nline;
-        dlc.nside = nside;
-        dlc.isv1 = false;
+      } else {
+        // nline is differently oriented, flip side
+        dlc.nside = 1;
         dlc.isbackside = true;
       }
     }
   }
 
   // put decals
+  // cannot use iterator here, because `connectedLines()` may grow
   const int clend = connectedLines.length();
   for (int cc = clnum; cc < clend; ++cc) {
     DecalLineInfo *dlc = connectedLines.ptr()+cc;
     if (dlc->isv1) {
       if (!dlc->isbackside) {
-        PutDecalAtLine(org, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()+dstxofs, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
+        // normal continuation
+        // decal offset is dcx0, and it is negative
+        // we need to fix it for `v1`
+        const float nofs = dlc->nline->dir.length2D()+dstxofs;
+        VDC_DLOG(NAME_Debug, ":::v1f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
       } else {
-        VDC_DLOG(NAME_Debug, ":::v1b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt);
-        PutDecalAtLine(org, -dcx0-twdt+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
+        // reversed continuation
+        const float nofs = -dcx0-twdt+txofs;
+        VDC_DLOG(NAME_Debug, ":::v1b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, true); // skip mark check
       }
     } else {
       if (!dlc->isbackside) {
-        PutDecalAtLine(org, dstxofs-linelen, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
+        const float nofs = dstxofs-linelen;
+        VDC_DLOG(NAME_Debug, ":::v2f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, true); // skip mark check
       } else {
-        VDC_DLOG(NAME_Debug, ":::v2b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt);
-        PutDecalAtLine(org, ((*dlc->nline->v2)-(*dlc->nline->v1)).length2D()-(dcx1-linelen)+txofs, dec, dlc->nside, dlc->nline, flips^decal_t::FlipX, translation, true); // skip mark check
+        const float nofs = dlc->nline->dir.length2D()-(dcx1-linelen)+txofs;
+        VDC_DLOG(NAME_Debug, ":::v2b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, true); // skip mark check
       }
     }
   }
@@ -819,7 +867,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   int tex = dec->texid;
   VTexture *dtex = GTextureManager[tex];
-  if (!dtex || dtex->Type == TEXTYPE_Null) {
+  if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) {
     // no decal gfx, nothing to do
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has no pic", *dec->name);
     return;
@@ -843,6 +891,14 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   if (dec->scaleX.value <= 0.0f || dec->scaleY.value <= 0.0f) {
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has invalid scale", *dec->name);
     return;
+  }
+
+  const float twdt = dtex->GetScaledWidthF()*dec->scaleX.value;
+  const float thgt = dtex->GetScaledHeightF()*dec->scaleY.value;
+
+  //FIXME: change spreading code!
+  if (twdt < 1.0f || thgt < 1.0f) {
+    // too small
   }
 
   //GCon->Logf(NAME_Debug, "Decal '%s', texture '%s'", *dec->name, *dtex->Name);

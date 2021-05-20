@@ -75,6 +75,7 @@ struct decal_t {
     NoMidTex = 0x1000U, // don't render on middle texture
     NoTopTex = 0x2000U, // don't render on top texture
     NoBotTex = 0x4000U, // don't render on bottom texture
+    FromV2   = 0x8000U, // use `v2` vertex as base (for wall decals on partner segs)
   };
 
   // dcsurf bit values

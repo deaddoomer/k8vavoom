@@ -297,9 +297,12 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       float soffs, toffs;
       if (dkind == DWALL) {
         //const TVec wp = (*line->v1)+line->ndir*(dc->xdist+dc->ofsX);
+        const TVec &v0 = (dc->flags&decal_t::FromV2 ? (*line->v2) : (*line->v1));
+        TVec ndir = line->ndir;
+        if (dc->flags&decal_t::FromV2) ndir = -ndir;
         const float xstofs = dc->xdist-txofs+dc->ofsX;
-        TVec v1 = (*line->v1)+line->ndir*xstofs;
-        TVec v2 = v1+line->ndir*twdt;
+        TVec v1 = v0+ndir*xstofs;
+        TVec v2 = v1+ndir*twdt;
 
         float dcz = dc->curz+dscaleY+tyofs-dc->ofsY;
         // fix Z, if necessary
@@ -316,7 +319,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         dcz -= thgt;
 
         // calculate texture axes
-        saxis = TVec(seg->dir);
+        //saxis = TVec(seg->dir);
+        saxis = TVec(ndir);
         taxis = TVec(0.0f, 0.0f, -1.0f);
         #if 0
         // this does one part of decal rotation

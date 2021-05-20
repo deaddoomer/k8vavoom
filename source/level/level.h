@@ -607,7 +607,7 @@ public:
     return (seg ? (dcSegTouchMark.ptr()[(unsigned)(ptrdiff_t)(seg-&Segs[0])] == dcLineTouchCounter) : true);
   }
 
-  inline void MarkLineTouched (const seg_t *seg) noexcept {
+  inline void MarkSegTouched (const seg_t *seg) noexcept {
     if (seg) dcSegTouchMark.ptr()[(unsigned)(ptrdiff_t)(seg-&Segs[0])] = dcLineTouchCounter;
   }
 
