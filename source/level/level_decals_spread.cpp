@@ -89,13 +89,25 @@ void VLevel::IncSubTouchCounter () noexcept {
 //  IsGoodFlatTexture
 //
 //==========================================================================
-static bool IsGoodFlatTexture (int texid) noexcept {
+static bool IsGoodFlatTexture (const int texid) noexcept {
   if (texid <= 0 || texid == skyflatnum) return false;
   VTexture *tex = GTextureManager[texid];
   if (!tex || tex->Type == TEXTYPE_Null) return false;
   if (tex->animated) return false;
   if (tex->GetWidth() < 1 || tex->GetHeight() < 1) return false;
   return true;
+}
+
+
+//==========================================================================
+//
+//  IsTransparentFlatTexture
+//
+//==========================================================================
+static bool IsTransparentFlatTexture (const int texid) noexcept {
+  if (texid <= 0) return false;
+  VTexture *tex = GTextureManager[texid];
+  return (tex && tex->isTransparent());
 }
 
 
@@ -156,7 +168,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     // check floor
     if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->efloor.splane->pic)) {
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
-      if (orgz-2.0f <= fz && fz-orgz < xhgt) {
+      if ((orgz-2.0f <= fz || IsTransparentFlatTexture(reg->efloor.splane->pic)) && fz-orgz < xhgt) {
         // do it
         nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtFloor;
@@ -165,7 +177,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
     // check ceiling
     if (!(reg->regflags&sec_region_t::RF_SkipFloorSurf) && IsGoodFlatTexture(reg->eceiling.splane->pic)) {
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
-      if (orgz+2.0f >= cz && orgz-cz < xhgt) {
+      if ((orgz+2.0f >= cz || IsTransparentFlatTexture(reg->eceiling.splane->pic)) && orgz-cz < xhgt) {
         // do it
         nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtCeiling;
