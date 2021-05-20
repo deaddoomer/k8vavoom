@@ -31,26 +31,32 @@ class VDecalAnim;
 class VDecalGroup;
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct DecalFloatVal {
+public:
   enum Type {
     T_Fixed,
     T_Random,
     T_Undefined,
   };
 
+public:
   float value;
   int type;
   float rndMin, rndMax;
 
-  DecalFloatVal () : value(0.0f), type(T_Undefined), rndMin(0.0f), rndMax(0.0f) {}
-  DecalFloatVal (float aval) : value(aval), type(T_Fixed), rndMin(aval), rndMax(aval) {}
-  DecalFloatVal clone ();
+public:
+  inline DecalFloatVal (ENoInit) noexcept {}
 
-  void genValue (float defval);
+  inline DecalFloatVal () noexcept : value(0.0f), type(T_Undefined), rndMin(0.0f), rndMax(0.0f) {}
+  inline DecalFloatVal (const float aval) noexcept : value(aval), type(T_Fixed), rndMin(aval), rndMax(aval) {}
+  inline DecalFloatVal clone () noexcept;
+
+  void genValue (float defval) noexcept;
 
   void doIO (VStr prefix, VStream &strm, VNTValueIOEx &vio);
 
-  inline bool isDefined () const noexcept { return (type != T_Undefined); }
+  VVA_CHECKRESULT inline bool isDefined () const noexcept { return (type != T_Undefined); }
 };
 
 
@@ -65,12 +71,15 @@ public:
   };
 
 private:
+  static VDecalDef *listHead;
+  static TMapNC<VName, VDecalDef *> decalNameMap; // all names are lowercased
+
   VDecalDef *next; // in decalDefHead
   VName animname;
 
 private:
-  static void addToList (VDecalDef *dc);
-  static void removeFromList (VDecalDef *dc);
+  static void addToList (VDecalDef *dc) noexcept;
+  static void removeFromList (VDecalDef *dc, bool deleteIt=false) noexcept;
 
   void fixup ();
 
@@ -93,8 +102,7 @@ public:
   bool fullbright;
   VName lowername;
   VDecalAnim *animator; // decal animator (can be nullptr)
-  // this is used in animators
-  //float ofsX, ofsY;
+
 protected:
   bool useCommonScale;
   DecalFloatVal commonScale;
@@ -108,32 +116,39 @@ protected:
   float scaleMultiply;
 
 public:
-  VDecalDef ()
+  VDecalDef () noexcept
     : next(nullptr), animname(NAME_None), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
-    , scaleX(1), scaleY(1), flipX(FlipNone), flipY(FlipNone), alpha(1), addAlpha(0)
+    , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
     , fuzzy(false), fullbright(false), lowername(NAME_None), animator(nullptr)
-    , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1) {}
-  ~VDecalDef ();
+    , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f) {}
+  ~VDecalDef () noexcept;
 
-  void genValues ();
+  void genValues () noexcept;
+
+  //float genMaxHAngle ();
+  //float genMaxVAngle ();
+
+  // used to generate maximum scale for animators
+  // must be called after attaching animator (obviously)
+  //void genMaxScale (float *sx, float *sy);
 
 public:
-  static VDecalDef *find (VStr aname);
-  static VDecalDef *find (VName aname);
-  static VDecalDef *findById (int id);
+  static VDecalDef *find (const char *aname) noexcept;
+  static VDecalDef *find (VStr aname) noexcept;
+  static VDecalDef *find (VName aname) noexcept;
+  static VDecalDef *findById (int id) noexcept;
 
-  static VDecalDef *getDecal (VStr aname);
-  static VDecalDef *getDecal (VName aname);
-  static VDecalDef *getDecalById (int id);
+  static VDecalDef *getDecal (const char *aname) noexcept;
+  static VDecalDef *getDecal (VStr aname) noexcept;
+  static VDecalDef *getDecal (VName aname) noexcept;
+  static VDecalDef *getDecalById (int id) noexcept;
 
-  static bool hasDecal (VName aname);
+  static bool hasDecal (VName aname) noexcept;
 
 public:
   static void parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool withSign=false);
 
 private:
-  static VDecalDef *listHead;
-
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalGroup;
@@ -144,6 +159,9 @@ private:
 // will choose a random decal
 class VDecalGroup {
 private:
+  static VDecalGroup *listHead;
+  static TMapNC<VName, VDecalGroup *> decalNameMap; // all names are lowercased
+
   VDecalGroup *next; // in decalDefHead
 
 public:
@@ -151,21 +169,21 @@ public:
     VName name;
     vuint16 weight;
 
-    NameListItem () : name(NAME_None), weight(0) {}
-    NameListItem (VName aname, vuint16 aweight) : name(aname), weight(aweight) {}
+    inline NameListItem () noexcept : name(NAME_None), weight(0) {}
+    inline NameListItem (VName aname, vuint16 aweight) noexcept : name(aname), weight(aweight) {}
   };
 
   struct ListItem {
     VDecalDef *dd;
     VDecalGroup *dg;
 
-    ListItem () : dd(nullptr), dg(nullptr) {}
-    ListItem (VDecalDef *add, VDecalGroup *adg) : dd(add), dg(adg) {}
+    inline ListItem () noexcept : dd(nullptr), dg(nullptr) {}
+    inline ListItem (VDecalDef *add, VDecalGroup *adg) noexcept : dd(add), dg(adg) {}
   };
 
 private:
-  static void addToList (VDecalGroup *dg);
-  static void removeFromList (VDecalGroup *dg);
+  static void addToList (VDecalGroup *dg) noexcept;
+  static void removeFromList (VDecalGroup *dg, bool deleteIt=false) noexcept;
 
   void fixup ();
 
@@ -178,21 +196,20 @@ public:
   VName name;
   TArray<NameListItem> nameList; // can be empty in cloned/loaded object
   //FIXME: it can refer another decal group
-  TWeightedList</*VDecalDef*/ListItem*> list; // can contain less items than `nameList`
+  TWeightedList</*VDecalDef*/ListItem *> list; // can contain less items than `nameList`
 
 public:
-  VDecalGroup () : next(nullptr), name(NAME_None), nameList(), list() {}
-  ~VDecalGroup () {}
+  inline VDecalGroup () noexcept : next(nullptr), name(NAME_None), nameList(), list() {}
+  inline ~VDecalGroup () noexcept {}
 
-  VDecalDef *chooseDecal (int reclevel=0);
+  VDecalDef *chooseDecal (int reclevel=0) noexcept;
 
 public:
-  static VDecalGroup *find (VStr aname);
-  static VDecalGroup *find (VName aname);
+  static VDecalGroup *find (const char *aname) noexcept;
+  static VDecalGroup *find (VStr aname) noexcept;
+  static VDecalGroup *find (VName aname) noexcept;
 
 private:
-  static VDecalGroup *listHead;
-
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalDef;
@@ -205,20 +222,18 @@ class VDecalAnim {
 public:
   enum { TypeId = 0 };
 
-public:
 private:
   VDecalAnim *next; // animDefHead
 
 private:
-  static void addToList (VDecalAnim *anim);
-  static void removeFromList (VDecalAnim *anim);
+  static void addToList (VDecalAnim *anim) noexcept;
+  static void removeFromList (VDecalAnim *anim, bool deleteIt=false) noexcept;
 
 protected:
   // working data
   float timePassed;
 
-protected:
-  virtual vuint8 getTypeId () const { return VDecalAnim::TypeId; }
+  virtual vuint8 getTypeId () const noexcept;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) = 0;
   virtual void fixup ();
 
@@ -229,8 +244,12 @@ public:
   // decaldef properties
   VName name;
 
+protected:
+  inline void copyBaseFrom (const VDecalAnim *src) noexcept { timePassed = src->timePassed; name = src->name; }
+
 public:
-  VDecalAnim () : next(nullptr), timePassed(0), name(NAME_None) {}
+  inline VDecalAnim (ENoInit) noexcept : next(nullptr), name(NAME_None) {}
+  inline VDecalAnim () noexcept : next(nullptr), timePassed(0.0f), name(NAME_None) {}
   virtual ~VDecalAnim ();
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -243,8 +262,9 @@ public:
   static void Serialise (VStream &Strm, VDecalAnim *&aptr);
 
 public:
-  static VDecalAnim *find (VStr aname);
-  static VDecalAnim *find (VName aname);
+  static VDecalAnim *find (const char *aname) noexcept;
+  static VDecalAnim *find (VStr aname) noexcept;
+  static VDecalAnim *find (VName aname) noexcept;
 
 private:
   static VDecalAnim *listHead;
@@ -264,14 +284,15 @@ public:
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const override { return VDecalAnimFader::TypeId; }
+  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
   virtual bool parse (VScriptParser *sc) override;
 
 public:
-  VDecalAnimFader () : VDecalAnim(), startTime(0), actionTime(0) {}
+  inline VDecalAnimFader (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
+  inline VDecalAnimFader () noexcept : VDecalAnim(), startTime(0), actionTime(0) {}
   virtual ~VDecalAnimFader ();
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -295,14 +316,15 @@ public:
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const override { return VDecalAnimStretcher::TypeId; }
+  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
   virtual bool parse (VScriptParser *sc) override;
 
 public:
-  VDecalAnimStretcher () : goalX(), goalY(), startTime(0), actionTime(0) {}
+  inline VDecalAnimStretcher (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
+  inline VDecalAnimStretcher () noexcept : VDecalAnim(), goalX(), goalY(), startTime(0), actionTime(0) {}
   virtual ~VDecalAnimStretcher ();
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -327,14 +349,15 @@ public:
   bool k8reversey;
 
 protected:
-  virtual vuint8 getTypeId () const override { return VDecalAnimSlider::TypeId; }
+  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
   virtual bool parse (VScriptParser *sc) override;
 
 public:
-  VDecalAnimSlider () : VDecalAnim(), distX(), distY(), startTime(0), actionTime(0), k8reversey(false) {}
+  inline VDecalAnimSlider (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
+  inline VDecalAnimSlider () noexcept : VDecalAnim(), distX(), distY(), startTime(0), actionTime(0), k8reversey(false) {}
   virtual ~VDecalAnimSlider ();
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -358,14 +381,15 @@ public:
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const override { return VDecalAnimColorChanger::TypeId; }
+  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
   virtual bool parse (VScriptParser *sc) override;
 
 public:
-  VDecalAnimColorChanger () : VDecalAnim(), startTime(0), actionTime(0) { dest[0] = dest[1] = dest[2] = 0; }
+  inline VDecalAnimColorChanger (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
+  inline VDecalAnimColorChanger () noexcept : VDecalAnim(), startTime(0), actionTime(0) { dest[0] = dest[1] = dest[2] = 0; }
   virtual ~VDecalAnimColorChanger ();
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -387,7 +411,7 @@ private:
   bool mIsCloned;
 
 protected:
-  virtual vuint8 getTypeId () const override { return VDecalAnimCombiner::TypeId; }
+  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -402,7 +426,8 @@ public:
   virtual bool parse (VScriptParser *sc) override;
 
 public:
-  VDecalAnimCombiner () : VDecalAnim(), mIsCloned(false), nameList(), list() {}
+  inline VDecalAnimCombiner (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
+  inline VDecalAnimCombiner () noexcept : VDecalAnim(), mIsCloned(false), nameList(), list() {}
   virtual ~VDecalAnimCombiner ();
 
   // this does deep clone, so we can attach it to the actual decal object

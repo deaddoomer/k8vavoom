@@ -42,27 +42,48 @@ static TMapNC<VName, bool> optionalDecals;
 static TMapNC<VName, bool> optionalDecalGroups;
 
 
-static void addOptionalDecal (VName name) {
+//==========================================================================
+//
+//  addOptionalDecal
+//
+//==========================================================================
+static void addOptionalDecal (VName name) noexcept {
   if (name == NAME_None) return;
   VName n(*name, VName::AddLower);
   optionalDecals.put(n, true);
 }
 
-static void addOptionalDecalGroup (VName name) {
+
+//==========================================================================
+//
+//  addOptionalDecalGroup
+//
+//==========================================================================
+static void addOptionalDecalGroup (VName name) noexcept {
   if (name == NAME_None) return;
   VName n(*name, VName::AddLower);
   optionalDecalGroups.put(n, true);
 }
 
 
-static bool isOptionalDecal (VName name) {
+//==========================================================================
+//
+//  isOptionalDecal
+//
+//==========================================================================
+static bool isOptionalDecal (VName name) noexcept {
   if (name == NAME_None) return true;
   VName n(*name, VName::AddLower);
   return optionalDecals.has(n);
 }
 
 
-static bool isOptionalDecalGroup (VName name) {
+//==========================================================================
+//
+//  isOptionalDecalGroup
+//
+//==========================================================================
+static bool isOptionalDecalGroup (VName name) noexcept {
   if (name == NAME_None) return true;
   VName n(*name, VName::AddLower);
   return optionalDecalGroups.has(n);
@@ -70,22 +91,39 @@ static bool isOptionalDecalGroup (VName name) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+TMapNC<VName, VDecalDef *> VDecalDef::decalNameMap; // all names are lowercased
+TMapNC<VName, VDecalGroup *> VDecalGroup::decalNameMap; // all names are lowercased
+
 VDecalDef *VDecalDef::listHead = nullptr;
 VDecalAnim *VDecalAnim::listHead = nullptr;
 VDecalGroup *VDecalGroup::listHead = nullptr;
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-static bool parseHexRGB (VStr str, int *clr) {
+//==========================================================================
+//
+//  parseHexRGB
+//
+//==========================================================================
+static bool parseHexRGB (VStr str, int *clr) noexcept {
   vuint32 ppc = M_ParseColor(*str);
   if (clr) *clr = ppc&0xffffff;
   return true;
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-DecalFloatVal DecalFloatVal::clone () {
-  DecalFloatVal res;
+//**************************************************************************
+//
+// DecalFloatVal
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  DecalFloatVal::clone
+//
+//==========================================================================
+DecalFloatVal DecalFloatVal::clone () noexcept {
+  DecalFloatVal res(E_NoInit);
   res.type = type;
   res.rndMin = rndMin;
   res.rndMax = rndMax;
@@ -94,7 +132,12 @@ DecalFloatVal DecalFloatVal::clone () {
 }
 
 
-void DecalFloatVal::genValue (float defval) {
+//==========================================================================
+//
+//  DecalFloatVal::genValue
+//
+//==========================================================================
+void DecalFloatVal::genValue (float defval) noexcept {
   switch (type) {
     case T_Fixed:
       break;
@@ -108,6 +151,11 @@ void DecalFloatVal::genValue (float defval) {
 }
 
 
+//==========================================================================
+//
+//  DecalFloatVal::doIO
+//
+//==========================================================================
 void DecalFloatVal::doIO (VStr prefix, VStream &strm, VNTValueIOEx &vio) {
   vint32 rndflag = (type == T_Random ? 1 : 0);
   vint32 tt = type;
@@ -120,21 +168,40 @@ void DecalFloatVal::doIO (VStr prefix, VStream &strm, VNTValueIOEx &vio) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VDecalDef::addToList (VDecalDef *dc) {
+
+//**************************************************************************
+//
+// VDecalDef
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalDef::addToList
+//
+//==========================================================================
+void VDecalDef::addToList (VDecalDef *dc) noexcept {
   if (!dc) return;
   if (dc->name == NAME_None) { delete dc; return; }
   // remove old definitions
-  //FIXME: memory leak
-  VDecalDef::removeFromList(VDecalDef::find(dc->name));
-  VDecalGroup::removeFromList(VDecalGroup::find(dc->name));
+  VDecalDef::removeFromList(VDecalDef::find(dc->name), true); // delete
+  VDecalGroup::removeFromList(VDecalGroup::find(dc->name), true); // delete
   // insert new one
   dc->next = listHead;
   listHead = dc;
+  // and replace name in hash
+  VName xn = dc->name.GetLower();
+  decalNameMap.put(xn, dc);
 }
 
 
-void VDecalDef::removeFromList (VDecalDef *dc) {
+//==========================================================================
+//
+//  VDecalDef::removeFromList
+//
+//==========================================================================
+void VDecalDef::removeFromList (VDecalDef *dc, bool deleteIt) noexcept {
+  if (!dc) return;
   VDecalDef *prev = nullptr;
   VDecalDef *cur = listHead;
   while (cur && cur != dc) { prev = cur; cur = cur->next; }
@@ -142,16 +209,54 @@ void VDecalDef::removeFromList (VDecalDef *dc) {
   if (cur) {
     if (prev) prev->next = cur->next; else listHead = cur->next;
   }
+  // remove from hash
+  VName xn = dc->name.GetLowerNoCreate();
+  if (xn != NAME_None) decalNameMap.del(xn);
+  // kill it
+  if (deleteIt) delete dc;
 }
 
 
-VDecalDef *VDecalDef::find (VStr aname) {
-  VName xn = VName(*aname, VName::Find);
+//==========================================================================
+//
+//  VDecalDef::find
+//
+//==========================================================================
+VDecalDef *VDecalDef::find (const char *aname) noexcept {
+  if (!aname || !aname[0]) return nullptr;
+  VName xn = VName(aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  return find(xn);
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
 }
 
-VDecalDef *VDecalDef::find (VName aname) {
+
+//==========================================================================
+//
+//  VDecalDef::find
+//
+//==========================================================================
+VDecalDef *VDecalDef::find (VStr aname) noexcept {
+  if (aname.isEmpty()) return nullptr;
+  VName xn = VName(*aname, VName::FindLower);
+  if (xn == NAME_None) return nullptr;
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VDecalDef::find
+//
+//==========================================================================
+VDecalDef *VDecalDef::find (VName aname) noexcept {
+  if (aname == NAME_None) return nullptr;
+  VName xn = aname.GetLowerNoCreate();
+  if (xn == NAME_None) return nullptr;
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
+  /*
   for (auto it = listHead; it; it = it->next) {
     if (it->name == aname) return it;
   }
@@ -159,10 +264,18 @@ VDecalDef *VDecalDef::find (VName aname) {
     if (VStr::ICmp(*it->name, *aname) == 0) return it;
   }
   return nullptr;
+  */
 }
 
 
-VDecalDef *VDecalDef::findById (int id) {
+//==========================================================================
+//
+//  VDecalDef::findById
+//
+//  this is used on initial map spawn only, no need to make it faster
+//
+//==========================================================================
+VDecalDef *VDecalDef::findById (int id) noexcept {
   if (id < 0) return nullptr;
   for (auto it = listHead; it; it = it->next) {
     if (it->id == id) return it;
@@ -171,21 +284,50 @@ VDecalDef *VDecalDef::findById (int id) {
 }
 
 
-bool VDecalDef::hasDecal (VName aname) {
+//==========================================================================
+//
+//  VDecalDef::hasDecal
+//
+//==========================================================================
+bool VDecalDef::hasDecal (VName aname) noexcept {
   if (VDecalDef::find(aname)) return true;
   if (VDecalGroup::find(aname)) return true;
   return false;
 }
 
 
-VDecalDef *VDecalDef::getDecal (VStr aname) {
-  VName xn = VName(*aname, VName::Find);
+//==========================================================================
+//
+//  VDecalDef::getDecal
+//
+//==========================================================================
+VDecalDef *VDecalDef::getDecal (const char *aname) noexcept {
+  if (!aname || !aname[0]) return nullptr;
+  VName xn = VName(aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
   return getDecal(xn);
 }
 
 
-VDecalDef *VDecalDef::getDecal (VName aname) {
+//==========================================================================
+//
+//  VDecalDef::getDecal
+//
+//==========================================================================
+VDecalDef *VDecalDef::getDecal (VStr aname) noexcept {
+  if (aname.isEmpty()) return nullptr;
+  VName xn = VName(*aname, VName::FindLower);
+  if (xn == NAME_None) return nullptr;
+  return getDecal(xn);
+}
+
+
+//==========================================================================
+//
+//  VDecalDef::getDecal
+//
+//==========================================================================
+VDecalDef *VDecalDef::getDecal (VName aname) noexcept {
   VDecalDef *dc = VDecalDef::find(aname);
   if (dc) return dc;
   // try group
@@ -195,24 +337,38 @@ VDecalDef *VDecalDef::getDecal (VName aname) {
 }
 
 
-VDecalDef *VDecalDef::getDecalById (int id) {
+//==========================================================================
+//
+//  VDecalDef::getDecalById
+//
+//==========================================================================
+VDecalDef *VDecalDef::getDecalById (int id) noexcept {
   return VDecalDef::findById(id);
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-VDecalDef::~VDecalDef () {
-  removeFromList(this);
+//==========================================================================
+//
+//  VDecalDef::~VDecalDef
+//
+//==========================================================================
+VDecalDef::~VDecalDef () noexcept {
+  removeFromList(this, false); // don't delete, just remove
 }
 
 
-void VDecalDef::genValues () {
+//==========================================================================
+//
+//  VDecalDef::genValues
+//
+//==========================================================================
+void VDecalDef::genValues () noexcept {
   if (useCommonScale) {
-    commonScale.genValue(1);
+    commonScale.genValue(1.0f);
     scaleX.value = scaleY.value = commonScale.value;
   } else {
-    scaleX.genValue(1);
-    scaleY.genValue(1);
+    scaleX.genValue(1.0f);
+    scaleY.genValue(1.0f);
   }
 
   switch (scaleSpecial) {
@@ -221,11 +377,16 @@ void VDecalDef::genValues () {
     default: break;
   }
 
-  alpha.genValue(1);
-  addAlpha.genValue(0);
+  alpha.genValue(1.0f);
+  addAlpha.genValue(0.0f);
 }
 
 
+//==========================================================================
+//
+//  VDecalDef::fixup
+//
+//==========================================================================
 void VDecalDef::fixup () {
   if (animname == NAME_None) return;
   animator = VDecalAnim::find(animname);
@@ -233,6 +394,11 @@ void VDecalDef::fixup () {
 }
 
 
+//==========================================================================
+//
+//  VDecalDef::parseNumOrRandom
+//
+//==========================================================================
 void VDecalDef::parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool withSign) {
   if (sc->Check("random")) {
     // `random(min, max)`
@@ -258,7 +424,13 @@ void VDecalDef::parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool 
 }
 
 
-// name is not parsed yet
+//==========================================================================
+//
+//  VDecalDef::parse
+//
+//  name is not parsed yet
+//
+//==========================================================================
 bool VDecalDef::parse (VScriptParser *sc) {
   sc->SetCMode(false);
   sc->ExpectString();
@@ -380,24 +552,41 @@ bool VDecalDef::parse (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VDecalGroup::addToList (VDecalGroup *dg) {
+
+//**************************************************************************
+//
+// VDecalGroup
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalGroup::addToList
+//
+//==========================================================================
+void VDecalGroup::addToList (VDecalGroup *dg) noexcept {
   if (!dg) return;
   if (dg->name == NAME_None) { delete dg; return; }
   // remove old definitions
-  //FIXME: memory leak
-  //if (VDecalDef::find(dg->name)) GCon->Logf("replaced decal '%s'", *dg->name);
-  VDecalDef::removeFromList(VDecalDef::find(dg->name));
-  //if (VDecalGroup::find(dg->name)) GCon->Logf("replaced group '%s'", *dg->name);
-  VDecalGroup::removeFromList(VDecalGroup::find(dg->name));
+  VDecalDef::removeFromList(VDecalDef::find(dg->name), true); // delete
+  VDecalGroup::removeFromList(VDecalGroup::find(dg->name), true); // delete
   //GCon->Logf("new group: '%s' (%d items)", *dg->name, dg->nameList.Num());
   // insert new one
   dg->next = listHead;
   listHead = dg;
+  // and replace name in hash
+  VName xn = dg->name.GetLower();
+  decalNameMap.put(xn, dg);
 }
 
 
-void VDecalGroup::removeFromList (VDecalGroup *dg) {
+//==========================================================================
+//
+//  VDecalGroup::removeFromList
+//
+//==========================================================================
+void VDecalGroup::removeFromList (VDecalGroup *dg, bool deleteIt) noexcept {
+  if (!dg) return;
   VDecalGroup *prev = nullptr;
   VDecalGroup *cur = listHead;
   while (cur && cur != dg) { prev = cur; cur = cur->next; }
@@ -405,16 +594,54 @@ void VDecalGroup::removeFromList (VDecalGroup *dg) {
   if (cur) {
     if (prev) prev->next = cur->next; else listHead = cur->next;
   }
+  // remove from hash
+  VName xn = dg->name.GetLowerNoCreate();
+  if (xn != NAME_None) decalNameMap.del(xn);
+  // kill it
+  if (deleteIt) delete dg;
 }
 
 
-VDecalGroup *VDecalGroup::find (VStr aname) {
-  VName xn = VName(*aname, VName::Find);
+//==========================================================================
+//
+//  VDecalGroup::find
+//
+//==========================================================================
+VDecalGroup *VDecalGroup::find (const char *aname) noexcept {
+  if (!aname || !aname[0]) return nullptr;
+  VName xn = VName(aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  return find(xn);
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
 }
 
-VDecalGroup *VDecalGroup::find (VName aname) {
+
+//==========================================================================
+//
+//  VDecalGroup::find
+//
+//==========================================================================
+VDecalGroup *VDecalGroup::find (VStr aname) noexcept {
+  if (aname.isEmpty()) return nullptr;
+  VName xn = VName(*aname, VName::FindLower);
+  if (xn == NAME_None) return nullptr;
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VDecalGroup::find
+//
+//==========================================================================
+VDecalGroup *VDecalGroup::find (VName aname) noexcept {
+  if (aname == NAME_None) return nullptr;
+  VName xn = aname.GetLowerNoCreate();
+  if (xn == NAME_None) return nullptr;
+  auto dpp = decalNameMap.find(xn);
+  return (dpp ? *dpp : nullptr);
+  /*
   for (auto it = listHead; it; it = it->next) {
     if (it->name == aname) return it;
   }
@@ -422,10 +649,15 @@ VDecalGroup *VDecalGroup::find (VName aname) {
     if (VStr::ICmp(*it->name, *aname) == 0) return it;
   }
   return nullptr;
+  */
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VDecalGroup::fixup
+//
+//==========================================================================
 void VDecalGroup::fixup () {
   //GCon->Logf("fixing decal group '%s'", *name);
   for (int f = 0; f < nameList.Num(); ++f) {
@@ -450,7 +682,12 @@ void VDecalGroup::fixup () {
 }
 
 
-VDecalDef *VDecalGroup::chooseDecal (int reclevel) {
+//==========================================================================
+//
+//  VDecalGroup::chooseDecal
+//
+//==========================================================================
+VDecalDef *VDecalGroup::chooseDecal (int reclevel) noexcept {
   if (reclevel > 64) return nullptr; // too deep
   auto li = list.PickEntry();
   if (li) {
@@ -461,7 +698,13 @@ VDecalDef *VDecalGroup::chooseDecal (int reclevel) {
 }
 
 
-// name is not parsed yet
+//==========================================================================
+//
+//  VDecalGroup::parse
+//
+//  name is not parsed yet
+//
+//==========================================================================
 bool VDecalGroup::parse (VScriptParser *sc) {
   sc->SetCMode(false);
   sc->ExpectString();
@@ -488,8 +731,21 @@ bool VDecalGroup::parse (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VDecalAnim::addToList (VDecalAnim *anim) {
+
+//**************************************************************************
+//
+// VDecalAnim
+//
+// base decal animator class
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnim::addToList
+//
+//==========================================================================
+void VDecalAnim::addToList (VDecalAnim *anim) noexcept {
   if (!anim) return;
   if (anim->name == NAME_None) { delete anim; return; }
   // remove old definition
@@ -506,7 +762,13 @@ void VDecalAnim::addToList (VDecalAnim *anim) {
 }
 
 
-void VDecalAnim::removeFromList (VDecalAnim *anim) {
+//==========================================================================
+//
+//  VDecalAnim::removeFromList
+//
+//==========================================================================
+void VDecalAnim::removeFromList (VDecalAnim *anim, bool deleteIt) noexcept {
+  if (!anim) return;
   VDecalAnim *prev = nullptr;
   VDecalAnim *cur = listHead;
   while (cur && cur != anim) { prev = cur; cur = cur->next; }
@@ -514,52 +776,121 @@ void VDecalAnim::removeFromList (VDecalAnim *anim) {
   if (cur) {
     if (prev) prev->next = cur->next; else listHead = cur->next;
   }
+  // kill it
+  if (deleteIt) delete anim;
 }
 
 
-VDecalAnim *VDecalAnim::find (VStr aname) {
-  VName xn = VName(*aname, VName::Find);
-  if (xn == NAME_None) return nullptr;
-  return find(xn);
-}
-
-VDecalAnim *VDecalAnim::find (VName aname) {
+//==========================================================================
+//
+//  VDecalAnim::find
+//
+//==========================================================================
+VDecalAnim *VDecalAnim::find (const char *aname) noexcept {
+  if (!aname || !aname[0]) return nullptr;
   for (auto it = listHead; it; it = it->next) {
-    if (it->name == aname) return it;
-  }
-  for (auto it = listHead; it; it = it->next) {
-    if (VStr::ICmp(*it->name, *aname) == 0) return it;
+    if (VStr::strEquCI(*it->name, aname)) return it;
   }
   return nullptr;
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// base decal animator class
-VDecalAnim::~VDecalAnim () {
-  removeFromList(this);
+//==========================================================================
+//
+//  VDecalAnim::find
+//
+//==========================================================================
+VDecalAnim *VDecalAnim::find (VStr aname) noexcept {
+  if (aname.isEmpty()) return nullptr;
+  return find(*aname);
 }
 
 
+//==========================================================================
+//
+//  VDecalAnim::find
+//
+//==========================================================================
+VDecalAnim *VDecalAnim::find (VName aname) noexcept {
+  if (aname == NAME_None) return nullptr;
+  return find(*aname);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::~VDecalAnim
+//
+//==========================================================================
+VDecalAnim::~VDecalAnim () {
+  removeFromList(this, false); // don't remove
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnim::getTypeId () const noexcept {
+  return VDecalAnim::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::fixup
+//
+//==========================================================================
 void VDecalAnim::fixup () {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VDecalAnimFader
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnimFader::~VDecalAnimFader
+//
+//==========================================================================
 VDecalAnimFader::~VDecalAnimFader () {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimFader::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnimFader::getTypeId () const noexcept {
+  return VDecalAnimFader::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimFader::clone
+//
+//==========================================================================
 VDecalAnim *VDecalAnimFader::clone () {
-  VDecalAnimFader *res = new VDecalAnimFader();
-  res->name = name;
+  VDecalAnimFader *res = new VDecalAnimFader(E_NoInit);
+  res->copyBaseFrom(this);
   res->startTime = startTime.clone();
   res->actionTime = actionTime.clone();
-  res->timePassed = timePassed;
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimFader::doIO
+//
+//==========================================================================
 void VDecalAnimFader::doIO (VStream &strm, VNTValueIOEx &vio) {
   vio.io(VName("time_passed"), timePassed);
   startTime.doIO("start_time", strm, vio);
@@ -567,6 +898,11 @@ void VDecalAnimFader::doIO (VStream &strm, VNTValueIOEx &vio) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimFader::animate
+//
+//==========================================================================
 bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
   if (decal->origAlpha <= 0 || decal->alpha <= 0) return false;
   timePassed += timeDelta;
@@ -584,6 +920,11 @@ bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimFader::parse
+//
+//==========================================================================
 bool VDecalAnimFader::parse (VScriptParser *sc) {
   sc->SetCMode(true);
   sc->ExpectString();
@@ -602,23 +943,52 @@ bool VDecalAnimFader::parse (VScriptParser *sc) {
 
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//**************************************************************************
+//
+// VDecalAnimStretcher
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnimStretcher::~VDecalAnimStretcher
+//
+//==========================================================================
 VDecalAnimStretcher::~VDecalAnimStretcher () {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimStretcher::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnimStretcher::getTypeId () const noexcept {
+  return VDecalAnimStretcher::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimStretcher::clone
+//
+//==========================================================================
 VDecalAnim *VDecalAnimStretcher::clone () {
-  VDecalAnimStretcher *res = new VDecalAnimStretcher();
-  res->name = name;
+  VDecalAnimStretcher *res = new VDecalAnimStretcher(E_NoInit);
+  res->copyBaseFrom(this);
   res->goalX = goalX.clone();
   res->goalY = goalY.clone();
   res->startTime = startTime.clone();
   res->actionTime = actionTime.clone();
-  res->timePassed = timePassed;
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimStretcher::doIO
+//
+//==========================================================================
 void VDecalAnimStretcher::doIO (VStream &strm, VNTValueIOEx &vio) {
   vio.io(VName("time_passed"), timePassed);
   startTime.doIO("start_time", strm, vio);
@@ -628,6 +998,11 @@ void VDecalAnimStretcher::doIO (VStream &strm, VNTValueIOEx &vio) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimStretcher::animate
+//
+//==========================================================================
 bool VDecalAnimStretcher::animate (decal_t *decal, float timeDelta) {
   if (decal->origScaleX <= 0 || decal->origScaleY <= 0) { decal->alpha = 0; return false; }
   if (decal->scaleX <= 0 || decal->scaleY <= 0) { decal->alpha = 0; return false; }
@@ -652,6 +1027,11 @@ bool VDecalAnimStretcher::animate (decal_t *decal, float timeDelta) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimStretcher::parse
+//
+//==========================================================================
 bool VDecalAnimStretcher::parse (VScriptParser *sc) {
   sc->SetCMode(true);
   sc->ExpectString();
@@ -671,23 +1051,53 @@ bool VDecalAnimStretcher::parse (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VDecalAnimSlider
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnimSlider::~VDecalAnimSlider
+//
+//==========================================================================
 VDecalAnimSlider::~VDecalAnimSlider () {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimSlider::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnimSlider::getTypeId () const noexcept {
+  return VDecalAnimSlider::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimSlider::clone
+//
+//==========================================================================
 VDecalAnim *VDecalAnimSlider::clone () {
-  VDecalAnimSlider *res = new VDecalAnimSlider();
-  res->name = name;
+  VDecalAnimSlider *res = new VDecalAnimSlider(E_NoInit);
+  res->copyBaseFrom(this);
   res->distX = distX.clone();
   res->distY = distY.clone();
   res->startTime = startTime.clone();
   res->actionTime = actionTime.clone();
-  res->timePassed = timePassed;
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimSlider::doIO
+//
+//==========================================================================
 void VDecalAnimSlider::doIO (VStream &strm, VNTValueIOEx &vio) {
   vio.io(VName("time_passed"), timePassed);
   startTime.doIO("start_time", strm, vio);
@@ -700,6 +1110,11 @@ void VDecalAnimSlider::doIO (VStream &strm, VNTValueIOEx &vio) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimSlider::animate
+//
+//==========================================================================
 bool VDecalAnimSlider::animate (decal_t *decal, float timeDelta) {
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
@@ -715,6 +1130,11 @@ bool VDecalAnimSlider::animate (decal_t *decal, float timeDelta) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimSlider::parse
+//
+//==========================================================================
 bool VDecalAnimSlider::parse (VScriptParser *sc) {
   sc->SetCMode(true);
   sc->ExpectString();
@@ -736,24 +1156,54 @@ bool VDecalAnimSlider::parse (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VDecalAnimColorChanger
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnimColorChanger::~VDecalAnimColorChanger
+//
+//==========================================================================
 VDecalAnimColorChanger::~VDecalAnimColorChanger () {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimColorChanger::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnimColorChanger::getTypeId () const noexcept {
+  return VDecalAnimColorChanger::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimColorChanger::clone
+//
+//==========================================================================
 VDecalAnim *VDecalAnimColorChanger::clone () {
-  VDecalAnimColorChanger *res = new VDecalAnimColorChanger();
-  res->name = name;
+  VDecalAnimColorChanger *res = new VDecalAnimColorChanger(E_NoInit);
+  res->copyBaseFrom(this);
   res->dest[0] = dest[0];
   res->dest[1] = dest[1];
   res->dest[2] = dest[2];
   res->startTime = startTime.clone();
   res->actionTime = actionTime.clone();
-  res->timePassed = timePassed;
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimColorChanger::doIO
+//
+//==========================================================================
 void VDecalAnimColorChanger::doIO (VStream &strm, VNTValueIOEx &vio) {
   vio.io(VName("time_passed"), timePassed);
   startTime.doIO("start_time", strm, vio);
@@ -764,6 +1214,11 @@ void VDecalAnimColorChanger::doIO (VStream &strm, VNTValueIOEx &vio) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimColorChanger::animate
+//
+//==========================================================================
 bool VDecalAnimColorChanger::animate (decal_t *decal, float timeDelta) {
   // not yet, sorry
   // as we are using pre-translated textures, color changer cannot work
@@ -772,6 +1227,11 @@ bool VDecalAnimColorChanger::animate (decal_t *decal, float timeDelta) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimColorChanger::parse
+//
+//==========================================================================
 bool VDecalAnimColorChanger::parse (VScriptParser *sc) {
   sc->SetCMode(true);
   sc->ExpectString();
@@ -802,48 +1262,74 @@ bool VDecalAnimColorChanger::parse (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VDecalAnimCombiner
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::~VDecalAnimCombiner
+//
+//==========================================================================
 VDecalAnimCombiner::~VDecalAnimCombiner () {
   if (mIsCloned) {
-    for (int f = 0; f < list.Num(); ++f) { delete list[f]; list[f] = nullptr; }
+    for (auto &&da : list) { delete da; da = nullptr; }
   }
+  list.resetNoDtor();
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimCombiner::getTypeId
+//
+//==========================================================================
+vuint8 VDecalAnimCombiner::getTypeId () const noexcept {
+  return VDecalAnimCombiner::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::fixup
+//
+//==========================================================================
 void VDecalAnimCombiner::fixup () {
-  for (int f = 0; f < nameList.Num(); ++f) {
-    auto it = VDecalAnim::find(nameList[f]);
-    if (it) list.Append(it); else GCon->Logf(NAME_Warning, "animgroup '%s' contains unknown anim '%s'!", *name, *nameList[f]);
+  for (VName dn : nameList) {
+    auto it = VDecalAnim::find(dn);
+    if (it) list.Append(it); else GCon->Logf(NAME_Warning, "animgroup '%s' contains unknown anim '%s'!", *name, *dn);
   }
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimCombiner::clone
+//
+//==========================================================================
 VDecalAnim *VDecalAnimCombiner::clone () {
-  VDecalAnimCombiner *res = new VDecalAnimCombiner();
-  res->name = name;
+  VDecalAnimCombiner *res = new VDecalAnimCombiner(E_NoInit);
+  res->copyBaseFrom(this);
   res->mIsCloned = true;
-  for (int f = 0; f < nameList.Num(); ++f) res->nameList.Append(nameList[f]);
-  for (int f = 0; f < list.Num(); ++f) res->list.Append(list[f]->clone());
-  res->timePassed = timePassed; // why not?
+  // copy names
+  res->nameList.resize(nameList.length());
+  for (VName dn : nameList) res->nameList.append(dn);
+  // copy animators
+  res->list.resize(list.length());
+  for (auto &&da : list) res->list.append(da->clone());
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimCombiner::doIO
+//
+//==========================================================================
 void VDecalAnimCombiner::doIO (VStream &strm, VNTValueIOEx &vio) {
-  /*
-  Strm << timePassed;
-  int len = 0;
-  if (Strm.IsLoading()) {
-    Strm << len;
-    if (len < 0 || len > 65535) Host_Error("Level load: invalid number of animations in animcombiner");
-    list.SetNum(len);
-    for (int f = 0; f < list.Num(); ++f) list[f] = nullptr;
-  } else {
-    len = list.Num();
-    Strm << len;
-  }
-  for (int f = 0; f < list.Num(); ++f) VDecalAnim::Serialise(Strm, list[f]);
-  */
   vio.io(VName("time_passed"), timePassed);
   VStr oldpfx = vio.prefix;
   vio.prefix = "combiner h "+vio.prefix; // nested combiners will add more of this
@@ -857,6 +1343,7 @@ void VDecalAnimCombiner::doIO (VStream &strm, VNTValueIOEx &vio) {
 
   if (strm.IsLoading()) {
     // loading, alloc combiners
+    mIsCloned = true; // so we'll free combiners
     list.setLength(len);
   }
 
@@ -870,7 +1357,13 @@ void VDecalAnimCombiner::doIO (VStream &strm, VNTValueIOEx &vio) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimCombiner::animate
+//
+//==========================================================================
 bool VDecalAnimCombiner::animate (decal_t *decal, float timeDelta) {
+  vassert(mIsCloned);
   bool res = false;
   int f = 0;
   while (f < list.length()) {
@@ -881,12 +1374,19 @@ bool VDecalAnimCombiner::animate (decal_t *decal, float timeDelta) {
       delete list[f];
       list[f] = nullptr;
       list.removeAt(f);
+      // nope; saved combiners doesn't have name list
+      //nameList.removeAt(f);
     }
   }
   return res;
 }
 
 
+//==========================================================================
+//
+//  VDecalAnimCombiner::parse
+//
+//==========================================================================
 bool VDecalAnimCombiner::parse (VScriptParser *sc) {
   sc->SetCMode(true);
   sc->ExpectString();
@@ -908,6 +1408,11 @@ bool VDecalAnimCombiner::parse (VScriptParser *sc) {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnim::SerialiseNested
+//
+//==========================================================================
 void VDecalAnim::SerialiseNested (VStream &strm, VNTValueIOEx &vio, VDecalAnim *&aptr) {
   vint32 atype = 0;
   if (strm.IsLoading()) {
@@ -933,14 +1438,31 @@ void VDecalAnim::SerialiseNested (VStream &strm, VNTValueIOEx &vio, VDecalAnim *
 }
 
 
-// main decal serialisation code
+//==========================================================================
+//
+//  VDecalAnim::Serialise
+//
+//  main decal serialisation code
+//
+//==========================================================================
 void VDecalAnim::Serialise (VStream &Strm, VDecalAnim *&aptr) {
   VNTValueIOEx vio(&Strm);
   SerialiseNested(Strm, vio, aptr);
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// main parsing API
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  ParseDecalDef
+//
+//==========================================================================
 void ParseDecalDef (VScriptParser *sc) {
   const unsigned int MaxStack = 64;
   VScriptParser *scstack[MaxStack];
@@ -1072,7 +1594,11 @@ void ParseDecalDef (VScriptParser *sc) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  ProcessDecalDefs
+//
+//==========================================================================
 void ProcessDecalDefs () {
   GCon->Logf(NAME_Init, "Parsing DECAL definitions");
 
@@ -1088,6 +1614,4 @@ void ProcessDecalDefs () {
 
   optionalDecals.clear();
   optionalDecalGroups.clear();
-
-  //!TLocation::ClearSourceFiles();
 }

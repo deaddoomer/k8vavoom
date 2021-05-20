@@ -95,9 +95,9 @@ public:
   };
 
   // constructors
-  VName ()  noexcept: Index(0) {}
-  VName (ENoInit)  noexcept{}
-  VName (EName N)  noexcept: Index(N) {}
+  inline VName () noexcept : Index(0) {}
+  inline VName (ENoInit) noexcept {}
+  inline VName (EName N) noexcept : Index(N) {}
   VName (const char *, ENameFindType=Add) noexcept;
 
   static VVA_CHECKRESULT inline bool IsInitialised () noexcept { return Initialised; }
