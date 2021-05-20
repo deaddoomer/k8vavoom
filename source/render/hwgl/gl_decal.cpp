@@ -385,16 +385,12 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         // floor/ceiling
         // left-bottom
         TVec qv0 = v1+TVec(-txofs, tyofs);
-        qv0.z = surf->plane.GetPointZ(qv0);
         // right-bottom
         TVec qv1 = qv0+TVec(twdt, 0.0f);
-        qv1.z = surf->plane.GetPointZ(qv1);
         // left-top
         TVec qv2 = qv0-TVec(0.0f, thgt);
-        qv2.z = surf->plane.GetPointZ(qv2);
         // right-top
         TVec qv3 = qv1-TVec(0.0f, thgt);
-        qv3.z = surf->plane.GetPointZ(qv3);
 
         // now rotate it
         if (dc->angle != 0.0f) {
@@ -403,6 +399,13 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           ROTVEC(qv2);
           ROTVEC(qv3);
         }
+
+        // fix z points
+        qv0.z = surf->plane.GetPointZ(qv0);
+        qv1.z = surf->plane.GetPointZ(qv1);
+        qv2.z = surf->plane.GetPointZ(qv2);
+        qv3.z = surf->plane.GetPointZ(qv3);
+
         dc->v1 = qv0;
         dc->v2 = qv1;
         dc->v3 = qv2;
