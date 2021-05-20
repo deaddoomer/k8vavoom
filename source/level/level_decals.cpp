@@ -47,7 +47,7 @@ static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum
 VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive);
 
-VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "12", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
 
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 
@@ -207,6 +207,12 @@ static int decalAreaCompare (const void *aa, const void *bb, void *udata) {
     const float prcsz = min2(areaA, areaB)/max2(areaA, areaB);
     if (prcsz >= 0.88f) return (adc->animator ? -1 : +1);
   }
+  // prefer decal that will disappear anyway
+  if (adc->animator || bdc->animator) {
+    const bool aWillDie = (adc->animator ? adc->animator->calcWillDisappear() : false);
+    const bool bWillDie = (bdc->animator ? bdc->animator->calcWillDisappear() : false);
+    if (aWillDie != bWillDie) return (aWillDie ? -1 : +1);
+  }
   // normal area comparison
   const float adiff = areaA-areaB;
   if (adiff < 0.0f) return -1;
@@ -285,7 +291,7 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
   for (decal_t *dcdie : dc2kill) {
     if (dcCount) {
       --dcCount;
-      //GCon->Logf(NAME_Debug, "killing animated decal '%s' with area %g", *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
+      //GCon->Logf(NAME_Debug, "killing wall %sdecal '%s' with area %g", (dcdie->animator ? "animated " : ""), *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
       DestroyDecal(dcdie);
     }
   }
@@ -1022,6 +1028,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
       for (decal_t *dcdie : dc2kill) {
         if (dcCount) {
           --dcCount;
+          //GCon->Logf(NAME_Debug, "killing flat %sdecal '%s' with area %g", (dcdie->animator ? "animated " : ""), *GTextureManager[dcdie->texture]->Name, BBox2DArea(dcdie->bbox2d));
           DestroyFlatDecal(dcdie);
         }
       }
