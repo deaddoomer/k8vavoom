@@ -366,3 +366,33 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
   if (!sex || !sex.bIsPlayer || !PlayerPawn(sex)) return 1.0;
   return sex.crouchfactor;
 }
+
+
+//==========================================================================
+//
+//  IsDecalsAllowed
+//
+//==========================================================================
+[decorate] final int IsDecalsAllowed () {
+  return GetCvarB('r_decals');
+}
+
+
+//==========================================================================
+//
+//  IsFlatDecalsAllowed
+//
+//==========================================================================
+[decorate] final int IsFlatDecalsAllowed () {
+  return (GetCvarB('r_decals') && GetCvarB('r_decals_flat'));
+}
+
+
+//==========================================================================
+//
+//  IsWallDecalsAllowed
+//
+//==========================================================================
+[decorate] final int IsWallDecalsAllowed () {
+  return (GetCvarB('r_decals') && GetCvarB('r_decals_wall'));
+}
