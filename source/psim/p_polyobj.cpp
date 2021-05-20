@@ -1193,7 +1193,12 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
   // recalc lines's slope type, bounding box, normal and dist
   for (auto &&it : po->LineFirst()) CalcLine(it.line());
   // recalc seg's normal and dist
-  for (auto &&it : po->SegFirst()) CalcSegPlaneDir(it.seg());
+  for (auto &&it : po->SegFirst()) {
+    CalcSegPlaneDir(it.seg());
+    // invalidate decals
+    // we can check seg vertices in cache checks, but meh
+    for (decal_t *dc = it.seg()->decalhead; dc; dc = dc->next) dc->invalidateCache();
+  }
   // update region heights
   sector_t *sec = po->posector;
   if (sec) {
@@ -2126,6 +2131,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
           const float ny = (yc*c+xc*s);
           dc->worldx = nx+ssx;
           dc->worldy = ny+ssy;
+          dc->angle = AngleMod(dc->angle+angle);
         }
       }
     }

@@ -193,6 +193,8 @@ struct decal_t {
     lastCurZ = curz;
     lastAngle = angle;
   }
+
+  inline void invalidateCache () noexcept { lastPlaneDist = FLT_MAX; } // arbitrary number
 };
 
 

@@ -346,11 +346,18 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         dc->v4 = TVec(v2.x, v2.y, dcz);
       } else {
         // floor/ceiling
+        float s, c;
         #if 1
         // this distorts the texture, but it seams good
         // sloped textures are done this way too
-        saxis = TVec(1.0f,  0.0f);
-        taxis = TVec(0.0f, -1.0f);
+        if (dc->angle == 0.0f) {
+          saxis = TVec(1.0f,  0.0f);
+          taxis = TVec(0.0f, -1.0f);
+        } else {
+          msincos(dc->angle, &s, &c);
+          saxis = TVec(c,  s);
+          taxis = TVec(s, -c);
+        }
         #else
         // and this is right, but cannot seam when goes through different slopes
         taxis = TVec(0.0f, -1.0f);
@@ -368,7 +375,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         //TODO: this is prolly not fully right for flipped decals
         TVec v1 = TVec(dc->worldx, dc->worldy);
         v1.z = surf->plane.GetPointZ(v1);
-        const TVec ofsv = v1+TVec(-txofs, tyofs);
+        TVec ofsv = v1+TVec(-txofs, tyofs);
+        if (dc->angle != 0.0f) {
+          ROTVEC(ofsv);
+        }
         soffs = -DotProduct(ofsv, saxis); // horizontal
         toffs = -DotProduct(ofsv, taxis); // vertical
 
@@ -388,8 +398,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
         // now rotate it
         if (dc->angle != 0.0f) {
-          float s, c;
-          msincos(dc->angle, &s, &c);
           ROTVEC(qv0);
           ROTVEC(qv1);
           ROTVEC(qv2);
