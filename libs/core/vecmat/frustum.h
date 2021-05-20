@@ -323,24 +323,28 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are2DBBoxesOverlap (const float 
   );
 }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const float bbox3D[6], const float bbox2D[4]) {
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool Are3DAnd2DBBoxesOverlap (const float bbox3D[6], const float bbox2D[4]) noexcept {
   return !(
     bbox2D[BOX2D_MAXX] < bbox3D[BOX3D_MINX] || bbox2D[BOX2D_MAXY] < bbox3D[BOX3D_MINY] ||
     bbox2D[BOX2D_MINX] > bbox3D[BOX3D_MAXX] || bbox2D[BOX2D_MINY] > bbox3D[BOX3D_MAXY]
   );
 }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside2DBBox (const float x, const float y, const float bbox2d[4]) {
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside2DBBox (const float x, const float y, const float bbox2d[4]) noexcept {
   return
     x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
     y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
 }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside3DBBox (const TVec p, const float bbox3d[6]) {
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsPointInside3DBBox (const TVec p, const float bbox3d[6]) noexcept {
   return
     p.x >= bbox3d[BOX3D_MINX] && p.x <= bbox3d[BOX3D_MAXX] &&
     p.y >= bbox3d[BOX3D_MINY] && p.y <= bbox3d[BOX3D_MAXY] &&
     p.z >= bbox3d[BOX3D_MINZ] && p.z <= bbox3d[BOX3D_MAXZ];
+}
+
+static VVA_OKUNUSED VVA_CHECKRESULT inline float BBox2DArea (const float bbox2d[4]) noexcept {
+  return max2(1.0f, (bbox2d[BOX2D_MAXX]-bbox2d[BOX2D_MINX])*(bbox2d[BOX2D_MAXY]-bbox2d[BOX2D_MINY]));
 }
 
 void ShrinkBBox2D (float bbox2d[4], const float bbox2dsrc[4], float ratio) noexcept;
