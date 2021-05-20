@@ -103,7 +103,6 @@ struct decal_t {
   // z and x positions has no image offset added
   float worldx, worldy; // world coordinates for floor/ceiling decals
   float angle; // decal rotation angle (around its center point)
-  //float height; // spread height
   float orgz; // original z position for wall decals
   float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
   float xdist; // offset from linedef start, in map units
@@ -160,9 +159,9 @@ struct decal_t {
   // so floor decal for 3d floor region is actually ceiling decal, and vice versa
   //inline bool isFloorEx () const noexcept { return (eregindex ? isCeiling() : isFloor()); }
 
-  // should be called ONLY for flat decals, and after animator was set
-  // this also calculates `height`
-  void calculateBBox (VLevel *Level) noexcept;
+  // should be called after animator was set
+  // might be called by animation thinker too
+  void calculateBBox () noexcept;
 
   inline bool needRecalc (const float pdist, const float tz) const noexcept {
     return

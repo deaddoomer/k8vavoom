@@ -111,6 +111,82 @@ static bool parseHexRGB (VStr str, int *clr) noexcept {
 }
 
 
+#define ROTVEC(v_)  do { \
+  const float xc = (v_).x-worldx; \
+  const float yc = (v_).y-worldy; \
+  const float nx = xc*c-yc*s; \
+  const float ny = yc*c+xc*s; \
+  (v_).x = nx+worldx; \
+  (v_).y = ny+worldy; \
+} while (0)
+
+//==========================================================================
+//
+//  CalculateTextureBBox
+//
+//  calculates scaled and rotated texture bounding box in 2d space
+//  scales are NOT inverted ones!
+//
+//  returns vertical spread height
+//  zero means "no texture found"
+//
+//==========================================================================
+float CalculateTextureBBox (float bbox2d[4], int texid, const float worldx, const float worldy, const float angle, const float scaleX, const float scaleY) noexcept {
+  if (texid <= 0 || scaleX <= 0.0f || scaleY <= 0.0f) {
+    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
+    return 0.0f;
+  }
+
+  VTexture *dtex = GTextureManager[texid];
+  if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) {
+    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
+    return 0.0f;
+  }
+
+  const float twdt = dtex->GetScaledWidthF()*scaleX;
+  const float thgt = dtex->GetScaledHeightF()*scaleY;
+
+  if (twdt < 1.0f || thgt < 1.0f) {
+    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
+    return 0.0f;
+  }
+
+  const float height = max2(2.0f, min2(twdt, thgt)*0.4f);
+
+  const float txofs = dtex->GetScaledSOffsetF()*scaleX;
+  const float tyofs = dtex->GetScaledTOffsetF()*scaleY;
+
+  const TVec v1(worldx, worldy);
+  // left-bottom
+  TVec qv0 = v1+TVec(-txofs, tyofs);
+  // right-bottom
+  TVec qv1 = qv0+TVec(twdt, 0.0f);
+  // left-top
+  TVec qv2 = qv0-TVec(0.0f, thgt);
+  // right-top
+  TVec qv3 = qv1-TVec(0.0f, thgt);
+
+  // now rotate it
+  if (angle != 0.0f) {
+    float s, c;
+    msincos(AngleMod(angle), &s, &c);
+    ROTVEC(qv0);
+    ROTVEC(qv1);
+    ROTVEC(qv2);
+    ROTVEC(qv3);
+  }
+
+  bbox2d[BOX2D_MINX] = min2(min2(min2(qv0.x, qv1.x), qv2.x), qv3.x);
+  bbox2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
+  bbox2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
+  bbox2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
+
+  return height;
+}
+
+#undef ROTVEC
+
+
 //**************************************************************************
 //
 // DecalFloatVal
@@ -127,7 +203,8 @@ DecalFloatVal DecalFloatVal::clone () noexcept {
   res.type = type;
   res.rndMin = rndMin;
   res.rndMax = rndMax;
-  res.value = (type == T_Random ? RandomBetween(rndMin, rndMax) : value);
+  //res.value = (type == T_Random ? RandomBetween(rndMin, rndMax) : value);
+  res.value = value;
   return res;
 }
 
@@ -148,6 +225,26 @@ void DecalFloatVal::genValue (float defval) noexcept {
       value = defval;
       break;
   }
+}
+
+
+//==========================================================================
+//
+//  DecalFloatVal::getMinValue
+//
+//==========================================================================
+float DecalFloatVal::getMinValue () const noexcept {
+  return (type == T_Random ? rndMin : value);
+}
+
+
+//==========================================================================
+//
+//  DecalFloatVal::getMaxValue
+//
+//==========================================================================
+float DecalFloatVal::getMaxValue () const noexcept {
+  return (type == T_Random ? rndMax : value);
 }
 
 
@@ -379,6 +476,49 @@ void VDecalDef::genValues () noexcept {
 
   alpha.genValue(1.0f);
   addAlpha.genValue(0.0f);
+
+       if (flipX == FlipRandom) flipXValue = (Random() < 0.5f);
+  else if (flipX == FlipAlways) flipXValue = true;
+  else flipXValue = false;
+
+       if (flipY == FlipRandom) flipYValue = (Random() < 0.5f);
+  else if (flipY == FlipAlways) flipYValue = true;
+  else flipYValue = false;
+
+  angleWall.genValue(0.0f);
+  angleWall.value = AngleMod(angleWall.value);
+  angleFlat.genValue(0.0f);
+  angleFlat.value = AngleMod(angleFlat.value);
+
+  if (animator) animator->genValues();
+}
+
+
+//==========================================================================
+//
+//  VDecalDef::CalculateFlatBBox
+//
+//  calculate decal bbox, return spreading height
+//
+//==========================================================================
+void VDecalDef::CalculateFlatBBox (const float worldx, const float worldy) noexcept {
+  float sx, sy;
+  genMaxScales(&sx, &sy);
+  spheight = CalculateTextureBBox(bbox2d, texid, worldx, worldy, angleFlat.value, sx, sy);
+}
+
+
+//==========================================================================
+//
+//  VDecalDef::CalculateWallBBox
+//
+//  calculate decal bbox, return spreading height
+//
+//==========================================================================
+void VDecalDef::CalculateWallBBox (const float worldx, const float worldy) noexcept {
+  float sx, sy;
+  genMaxScales(&sx, &sy);
+  spheight = CalculateTextureBBox(bbox2d, texid, worldx, worldy, angleWall.value, sx, sy);
 }
 
 
@@ -401,7 +541,7 @@ void VDecalDef::fixup () {
 //==========================================================================
 void VDecalDef::parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool withSign) {
   if (sc->Check("random")) {
-    // `random(min, max)`
+    // `random min max`
     value->type = DecalFloatVal::T_Random;
     if (withSign) sc->ExpectFloatWithSign(); else sc->ExpectFloat();
     value->rndMin = sc->Float;
@@ -527,6 +667,9 @@ bool VDecalDef::parse (VScriptParser *sc) {
     if (sc->Check("randomflipx")) { flipX = FlipRandom; continue; }
     if (sc->Check("randomflipy")) { flipY = FlipRandom; continue; }
 
+    if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
+    if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
+
     if (sc->Check("solid")) { alpha = 1; continue; }
 
     if (sc->Check("translucent")) { parseNumOrRandom(sc, &alpha); continue; }
@@ -549,6 +692,21 @@ bool VDecalDef::parse (VScriptParser *sc) {
   }
 
   return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalDef::genMaxScale
+//
+//  used to generate maximum scale for animators
+//  must be called after attaching animator (obviously)
+//
+//==========================================================================
+void VDecalDef::genMaxScales (float *sx, float *sy) const noexcept {
+  *sx = scaleX.value;
+  *sy = scaleY.value;
+  if (animator) animator->calcMaxScales(sx, sy);
 }
 
 
@@ -846,6 +1004,26 @@ void VDecalAnim::fixup () {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnim::calcWillDisappear
+//
+//==========================================================================
+bool VDecalAnim::calcWillDisappear () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::calcMaxScales
+//
+//==========================================================================
+void VDecalAnim::calcMaxScales (float *sx, float *sy) const noexcept {
+  // nothing to do here
+}
+
+
 
 //**************************************************************************
 //
@@ -900,23 +1078,44 @@ void VDecalAnimFader::doIO (VStream &strm, VNTValueIOEx &vio) {
 
 //==========================================================================
 //
+//  VDecalAnimFader::genValues
+//
+//==========================================================================
+void VDecalAnimFader::genValues () noexcept {
+  startTime.genValue(0.0f);
+  actionTime.genValue(0.0f);
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimFader::animate
 //
 //==========================================================================
 bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
-  if (decal->origAlpha <= 0 || decal->alpha <= 0) return false;
+  if (decal->origAlpha <= 0.0f || decal->alpha <= 0.0f) return false;
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
-  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0) {
+  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
     //GCon->Logf("decal %p completely faded away", decal);
-    decal->alpha = 0;
+    decal->alpha = 0.0f;
     return false;
   }
   float dtx = timePassed-startTime.value;
   float aleft = decal->origAlpha;
   decal->alpha = aleft-aleft*dtx/actionTime.value;
   //GCon->Logf("decal %p: dtx=%f; origA=%f; a=%f", decal, dtx, decal->origAlpha, decal->alpha);
-  return (decal->alpha > 0);
+  return (decal->alpha > 0.0f);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimFader::calcWillDisappear
+//
+//==========================================================================
+bool VDecalAnimFader::calcWillDisappear () const noexcept {
+  return true; // fader will eventually destroy decal
 }
 
 
@@ -1000,30 +1199,66 @@ void VDecalAnimStretcher::doIO (VStream &strm, VNTValueIOEx &vio) {
 
 //==========================================================================
 //
+//  VDecalAnimStretcher::genValues
+//
+//==========================================================================
+void VDecalAnimStretcher::genValues () noexcept {
+  goalX.genValue(0.0f);
+  goalY.genValue(0.0f);
+  startTime.genValue(0.0f);
+  actionTime.genValue(0.0f);
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimStretcher::animate
 //
 //==========================================================================
 bool VDecalAnimStretcher::animate (decal_t *decal, float timeDelta) {
-  if (decal->origScaleX <= 0 || decal->origScaleY <= 0) { decal->alpha = 0; return false; }
-  if (decal->scaleX <= 0 || decal->scaleY <= 0) { decal->alpha = 0; return false; }
+  if (decal->origScaleX <= 0.0f || decal->origScaleY <= 0.0f) { decal->alpha = 0.0f; return false; }
+  if (decal->scaleX <= 0.0f || decal->scaleY <= 0.0f) { decal->alpha = 0.0f; return false; }
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
-  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0) {
+  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
     if (goalX.isDefined()) decal->scaleX = goalX.value;
     if (goalY.isDefined()) decal->scaleY = goalY.value;
-    if (decal->scaleX <= 0 || decal->scaleY <= 0) { decal->alpha = 0; return false; }
+    if (decal->scaleX <= 0.0f || decal->scaleY <= 0.0f) { decal->alpha = 0.0f; return false; }
     return false;
   }
   float dtx = timePassed-startTime.value;
   if (goalX.isDefined()) {
     float aleft = goalX.value-decal->origScaleX;
-    if ((decal->scaleX = decal->origScaleX+aleft*dtx/actionTime.value) <= 0) { decal->alpha = 0; return false; }
+    if ((decal->scaleX = decal->origScaleX+aleft*dtx/actionTime.value) <= 0.0f) { decal->alpha = 0.0f; return false; }
   }
   if (goalY.isDefined()) {
     float aleft = goalY.value-decal->origScaleY;
-    if ((decal->scaleY = decal->origScaleY+aleft*dtx/actionTime.value) <= 0) { decal->alpha = 0; return false; }
+    if ((decal->scaleY = decal->origScaleY+aleft*dtx/actionTime.value) <= 0.0f) { decal->alpha = 0.0f; return false; }
   }
   return true;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimStretcher::calcWillDisappear
+//
+//==========================================================================
+bool VDecalAnimStretcher::calcWillDisappear () const noexcept {
+  if (goalX.isDefined() && goalX.value <= 0.0f) return true;
+  if (goalY.isDefined() && goalY.value <= 0.0f) return true;
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimStretcher::calcMaxScales
+//
+//==========================================================================
+void VDecalAnimStretcher::calcMaxScales (float *sx, float *sy) const noexcept {
+  if (goalX.isDefined()) *sx = max2(*sx, goalX.value);
+  if (goalY.isDefined()) *sy = max2(*sy, goalY.value);
 }
 
 
@@ -1112,13 +1347,26 @@ void VDecalAnimSlider::doIO (VStream &strm, VNTValueIOEx &vio) {
 
 //==========================================================================
 //
+//  VDecalAnimSlider::genValues
+//
+//==========================================================================
+void VDecalAnimSlider::genValues () noexcept {
+  distX.genValue(0.0f);
+  distY.genValue(0.0f);
+  startTime.genValue(0.0f);
+  actionTime.genValue(0.0f);
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimSlider::animate
 //
 //==========================================================================
 bool VDecalAnimSlider::animate (decal_t *decal, float timeDelta) {
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
-  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0) {
+  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
     if (distX.isDefined()) decal->ofsX = distX.value;
     if (distY.isDefined()) decal->ofsY = distY.value*(k8reversey ? 1.0f : -1.0f);
     return false;
@@ -1211,6 +1459,17 @@ void VDecalAnimColorChanger::doIO (VStream &strm, VNTValueIOEx &vio) {
   vio.io(VName("dest_color_r"), dest[0]);
   vio.io(VName("dest_color_g"), dest[1]);
   vio.io(VName("dest_color_b"), dest[2]);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimColorChanger::genValues
+//
+//==========================================================================
+void VDecalAnimColorChanger::genValues () noexcept {
+  startTime.genValue(0.0f);
+  actionTime.genValue(0.0f);
 }
 
 
@@ -1359,6 +1618,16 @@ void VDecalAnimCombiner::doIO (VStream &strm, VNTValueIOEx &vio) {
 
 //==========================================================================
 //
+//  VDecalAnimCombiner::genValues
+//
+//==========================================================================
+void VDecalAnimCombiner::genValues () noexcept {
+  for (VDecalAnim *da : list) if (da) da->genValues();
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimCombiner::animate
 //
 //==========================================================================
@@ -1379,6 +1648,27 @@ bool VDecalAnimCombiner::animate (decal_t *decal, float timeDelta) {
     }
   }
   return res;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::calcWillDisappear
+//
+//==========================================================================
+bool VDecalAnimCombiner::calcWillDisappear () const noexcept {
+  for (VDecalAnim *da : list) if (da && da->calcWillDisappear()) return true;
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::calcMaxScales
+//
+//==========================================================================
+void VDecalAnimCombiner::calcMaxScales (float *sx, float *sy) const noexcept {
+  for (VDecalAnim *da : list) if (da) da->calcMaxScales(sx, sy);
 }
 
 

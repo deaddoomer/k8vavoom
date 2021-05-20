@@ -50,9 +50,13 @@ public:
 
   inline DecalFloatVal () noexcept : value(0.0f), type(T_Undefined), rndMin(0.0f), rndMax(0.0f) {}
   inline DecalFloatVal (const float aval) noexcept : value(aval), type(T_Fixed), rndMin(aval), rndMax(aval) {}
+  inline DecalFloatVal (const float amin, const float amax) noexcept : value(amin), type(T_Random), rndMin(amin), rndMax(amax) {}
   inline DecalFloatVal clone () noexcept;
 
   void genValue (float defval) noexcept;
+
+  float getMinValue () const noexcept;
+  float getMaxValue () const noexcept;
 
   void doIO (VStr prefix, VStream &strm, VNTValueIOEx &vio);
 
@@ -100,6 +104,9 @@ public:
   DecalFloatVal addAlpha; // alpha for additive translucency (not supported yet)
   bool fuzzy; // draw decal with "fuzzy" effect (not supported yet)
   bool fullbright;
+  bool flipXValue, flipYValue; // valid after `genValues()`
+  DecalFloatVal angleWall;
+  DecalFloatVal angleFlat;
   VName lowername;
   VDecalAnim *animator; // decal animator (can be nullptr)
 
@@ -116,21 +123,35 @@ protected:
   float scaleMultiply;
 
 public:
-  VDecalDef () noexcept
+  // used in various decal spreading code
+  float bbox2d[4];
+  float spheight; // spreading height
+
+  inline float bbWidth () const noexcept { return bbox2d[BOX2D_MAXX]-bbox2d[BOX2D_MINX]; }
+  inline float bbHeight () const noexcept { return bbox2d[BOX2D_MAXY]-bbox2d[BOX2D_MINY]; }
+
+public:
+  inline VDecalDef () noexcept
     : next(nullptr), animname(NAME_None), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
     , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
-    , fuzzy(false), fullbright(false), lowername(NAME_None), animator(nullptr)
-    , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f) {}
+    , fuzzy(false), fullbright(false), flipXValue(false), flipYValue(false)
+    , angleWall(0.0f), angleFlat(0.0f, 360.0f)
+    , lowername(NAME_None), animator(nullptr)
+    , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
+    {}
   ~VDecalDef () noexcept;
 
   void genValues () noexcept;
 
-  //float genMaxHAngle ();
-  //float genMaxVAngle ();
+  // `genValues()` must be already called
+
+  // calculate decal bbox, return spreading height
+  void CalculateFlatBBox (const float worldx, const float worldy) noexcept;
+  void CalculateWallBBox (const float worldx, const float worldy) noexcept;
 
   // used to generate maximum scale for animators
   // must be called after attaching animator (obviously)
-  //void genMaxScale (float *sx, float *sy);
+  void genMaxScales (float *sx, float *sy) const noexcept;
 
 public:
   static VDecalDef *find (const char *aname) noexcept;
@@ -255,8 +276,13 @@ public:
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () = 0;
 
+  virtual void genValues () noexcept = 0;
+
   // return `false` to stop continue animation; set decal alpha to 0 (or negative) to remove decal on next cleanup
   virtual bool animate (decal_t *decal, float timeDelta) = 0;
+
+  virtual bool calcWillDisappear () const noexcept;
+  virtual void calcMaxScales (float *sx, float *sy) const noexcept;
 
   static void SerialiseNested (VStream &strm, VNTValueIOEx &vio, VDecalAnim *&aptr);
   static void Serialise (VStream &Strm, VDecalAnim *&aptr);
@@ -298,7 +324,11 @@ public:
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
+  virtual void genValues () noexcept override;
+
   virtual bool animate (decal_t *decal, float timeDelta) override;
+
+  virtual bool calcWillDisappear () const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
@@ -330,7 +360,12 @@ public:
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
+  virtual void genValues () noexcept override;
+
   virtual bool animate (decal_t *decal, float timeDelta) override;
+
+  virtual bool calcWillDisappear () const noexcept override;
+  virtual void calcMaxScales (float *sx, float *sy) const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
@@ -363,6 +398,8 @@ public:
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
+  virtual void genValues () noexcept override;
+
   virtual bool animate (decal_t *decal, float timeDelta) override;
 
   friend void ParseDecalDef (VScriptParser *sc);
@@ -394,6 +431,8 @@ public:
 
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
+
+  virtual void genValues () noexcept override;
 
   virtual bool animate (decal_t *decal, float timeDelta) override;
 
@@ -433,7 +472,12 @@ public:
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
+  virtual void genValues () noexcept override;
+
   virtual bool animate (decal_t *decal, float timeDelta) override;
+
+  virtual bool calcWillDisappear () const noexcept override;
+  virtual void calcMaxScales (float *sx, float *sy) const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
@@ -441,6 +485,13 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// used to calculate decal bboxes
+// returns vertical spread height
+// zero means "no texture found or invalid arguments" (bbox2d is zeroed too)
+float CalculateTextureBBox (float bbox2d[4], int texid,
+                            const float worldx, const float worldy, const float angle,
+                            const float scaleX, const float scaleY) noexcept;
+
 void ParseDecalDef (VScriptParser *sc);
 
 void ProcessDecalDefs ();

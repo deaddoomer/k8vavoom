@@ -1474,11 +1474,13 @@ decal k8TestDecal {
 
 
 decal K8BigScorchTest {
-  pic SCORCH1
+  pic BSMEAR1
   shade "ff 7f 00"
   //shade "00 00 00"
-  x-scale 0.75
-  y-scale 0.75
+  // x-scale 0.75
+  // y-scale 0.75
   //randomflipx
   //randomflipy
+  flatangle random 0 360
+  wallangle random 0 360
 }

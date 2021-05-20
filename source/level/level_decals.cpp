@@ -189,16 +189,6 @@ static TArray<decal_t *> dc2kill;
 
 //==========================================================================
 //
-//  BBox2DArea
-//
-//==========================================================================
-static inline float BBox2DArea (const float bbox2d[4]) noexcept {
-  return max2(1.0f, (bbox2d[BOX2D_MAXX]-bbox2d[BOX2D_MINX])*(bbox2d[BOX2D_MAXY]-bbox2d[BOX2D_MINY]));
-}
-
-
-//==========================================================================
-//
 //  decalAreaCompare
 //
 //==========================================================================
@@ -452,14 +442,14 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
-            decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0)|(dec->fuzzy ? decal_t::Fuzzy : 0);
-            decal->flags |= /*disabledTextures*/0;
+            decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+            decal->flags |= /*disabledTextures*/0u;
             // slide with 3d floor floor
             decal->slidesec = sec3d;
             decal->flags |= decal_t::SlideFloor;
             decal->curz -= decal->slidesec->floor.TexZ;
             //if (side != seg->side) decal->flags ^= decal_t::FlipX;
-            decal->calculateBBox(this);
+            decal->calculateBBox();
             CleanupSegDecals(seg);
           } else {
             VDC_DLOG(NAME_Debug, " SKIP solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
@@ -655,9 +645,9 @@ void VLevel::PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec,
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
-      decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0)|(dec->fuzzy ? decal_t::Fuzzy : 0);
+      decal->flags = flips|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
       decal->flags |= disabledTextures;
-      decal->calculateBBox(this);
+      decal->calculateBBox();
 
       // setup curz and pegs
       if (slideWithFloor) {
@@ -794,20 +784,8 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     AddDecal(org, dec->lowername, side, li, level+1, translation);
   }
 
-  //HACK!
+  // generate decal values
   dec->genValues();
-  //GCon->Logf(NAME_Debug, "decal '%s': scale=(%g:%g)", *dec->name, dec->scaleX.value, dec->scaleY.value);
-
-  if (dec->scaleX.value <= 0.0f || dec->scaleY.value <= 0.0f) {
-    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero scale", *dec->name);
-    return;
-  }
-
-  // actually, we should check animator here, but meh...
-  if (dec->alpha.value <= 0.004f) {
-    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
-    return;
-  }
 
   int tex = dec->texid;
   VTexture *DTex = GTextureManager[tex];
@@ -816,6 +794,28 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has no pic", *dec->name);
     return;
   }
+
+  dec->CalculateWallBBox(li->v1->x, li->v1->y);
+  //GCon->Logf(NAME_Debug, "decal '%s': scale=(%g:%g)", *dec->name, dec->scaleX.value, dec->scaleY.value);
+
+  if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {
+    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
+    return;
+  }
+
+  //FIXME: change spreading code!
+  if (dec->scaleX.value <= 0.0f || dec->scaleY.value <= 0.0f) {
+    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has invalid scale", *dec->name);
+    return;
+  }
+
+  // actually, we should check animator here, but meh...
+  /*
+  if (dec->alpha.value <= 0.004f) {
+    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
+    return;
+  }
+  */
 
   //GCon->Logf(NAME_Debug, "Decal '%s', texture '%s'", *dec->name, *DTex->Name);
 
@@ -828,17 +828,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   }
 
   // setup flips
-  vuint32 flips = 0;
-  if (dec->flipX == VDecalDef::FlipRandom) {
-    if (Random() < 0.5f) flips |= decal_t::FlipX;
-  } else if (dec->flipX == VDecalDef::FlipAlways) {
-    flips |= decal_t::FlipX;
-  }
-  if (dec->flipY == VDecalDef::FlipRandom) {
-    if (Random() < 0.5f) flips |= decal_t::FlipY;
-  } else if (dec->flipY == VDecalDef::FlipAlways) {
-    flips |= decal_t::FlipY;
-  }
+  unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);
 
   // calculate offset from line start
   const TVec &v1 = *li->v1;
@@ -961,7 +951,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
   if (!dc) return;
 
   if (dc->animator) AddAnimatedDecal(dc);
-  dc->calculateBBox(this);
+  dc->calculateBBox();
 
   if (NumSubsectors == 0/*just in case*/) {
     RemoveDecalAnimator(dc);
@@ -1093,18 +1083,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
     return;
   }
 
-  int tex = dec->texid;
-  VTexture *DTex = GTextureManager[tex];
-  if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
-
-  /*
-  subsector_t *sub = PointInSubsector(org);
-  if (sub->sector->isOriginalPObj()) return; //wtf?!
-  if (sub->sector->isInnerPObj() && !sub->sector->ownpobj->Is3D()) return; //wtf?!
-  */
-
   range = max2(2.0f, fabs(range));
-
   SpreadFlatDecalEx(org, range, dec, 0, translation);
 }
 

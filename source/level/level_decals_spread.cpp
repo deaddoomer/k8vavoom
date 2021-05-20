@@ -45,7 +45,7 @@ static bool dcPobjTouchedReset = false;
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct DInfo {
-  float bbox2d[4];
+  //float bbox2d[4];
   TVec org;
   float range;
   float spheight; // spread height
@@ -55,6 +55,16 @@ struct DInfo {
   unsigned orflags;
   float angle;
 };
+
+
+//==========================================================================
+//
+//  decal_t::calculateBBox
+//
+//==========================================================================
+void decal_t::calculateBBox () noexcept {
+  return (void)CalculateTextureBBox(bbox2d, texture.id, worldx, worldy, angle, scaleX, scaleY);
+}
 
 
 #ifdef VV_FLAT_DECAL_USE_FLOODFILL
@@ -102,118 +112,6 @@ static inline void MarkSubTouched (VLevel *Level, const subsector_t *sub) noexce
   if (sub) dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Level->Subsectors[0])] = dcSubTouchCounter;
 }
 #endif
-
-
-#define ROTVEC(v_)  do { \
-  const float xc = (v_).x-worldx; \
-  const float yc = (v_).y-worldy; \
-  const float nx = xc*c-yc*s; \
-  const float ny = yc*c+xc*s; \
-  (v_).x = nx+worldx; \
-  (v_).y = ny+worldy; \
-} while (0)
-
-
-//==========================================================================
-//
-//  CalculateTextureBBox
-//
-//  calculates scaled and rotated texture bounding box in 2d space
-//  scales are NOT inverted ones!
-//
-//  returns vertical spread height
-//  zero means "no texture found"
-//
-//==========================================================================
-static float CalculateTextureBBox (float bbox2d[4], int texid, const float worldx, const float worldy, const float angle, const float scaleX, const float scaleY) noexcept {
-  if (texid <= 0) {
-    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
-    return 0.0f;
-  }
-
-  VTexture *dtex = GTextureManager[texid];
-  if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) {
-    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
-    return 0.0f;
-  }
-
-  const float twdt = dtex->GetScaledWidthF()*scaleX;
-  const float thgt = dtex->GetScaledHeightF()*scaleY;
-
-  if (twdt < 1.0f || thgt < 1.0f) {
-    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
-    return 0.0f;
-  }
-
-  const float height = max2(2.0f, min2(twdt, thgt)*0.4f);
-
-  const float txofs = dtex->GetScaledSOffsetF()*scaleX;
-  const float tyofs = dtex->GetScaledTOffsetF()*scaleY;
-
-  const TVec v1(worldx, worldy);
-  // left-bottom
-  TVec qv0 = v1+TVec(-txofs, tyofs);
-  // right-bottom
-  TVec qv1 = qv0+TVec(twdt, 0.0f);
-  // left-top
-  TVec qv2 = qv0-TVec(0.0f, thgt);
-  // right-top
-  TVec qv3 = qv1-TVec(0.0f, thgt);
-
-  // now rotate it
-  if (angle != 0.0f) {
-    float s, c;
-    msincos(AngleMod(angle), &s, &c);
-    ROTVEC(qv0);
-    ROTVEC(qv1);
-    ROTVEC(qv2);
-    ROTVEC(qv3);
-  }
-
-  bbox2d[BOX2D_MINX] = min2(min2(min2(qv0.x, qv1.x), qv2.x), qv3.x);
-  bbox2d[BOX2D_MAXX] = max2(max2(max2(qv0.x, qv1.x), qv2.x), qv3.x);
-  bbox2d[BOX2D_MINY] = min2(min2(min2(qv0.y, qv1.y), qv2.y), qv3.y);
-  bbox2d[BOX2D_MAXY] = max2(max2(max2(qv0.y, qv1.y), qv2.y), qv3.y);
-
-  return height;
-}
-
-
-//==========================================================================
-//
-//  CalculateDecalBBox
-//
-//  returns vertical spread height
-//  zero means "no texture found"
-//
-//==========================================================================
-static float CalculateDecalBBox (float bbox2d[4], VDecalDef *dec, const float worldx, const float worldy, const float angle) noexcept {
-  const int dcTexId = dec->texid; // "0" means "no texture found"
-  if (dcTexId <= 0.0f) {
-    memset((void *)&bbox2d[0], 0, sizeof(float)*4);
-    return 0.0f;
-  }
-  return CalculateTextureBBox(bbox2d, dcTexId, worldx, worldy, 0.0f/*angle*/, dec->scaleX.value, dec->scaleY.value);
-}
-
-
-//==========================================================================
-//
-//  decal_t::calculateBBox
-//
-//  should be called ONLY for flat decals, and after animator was set
-//
-//==========================================================================
-void decal_t::calculateBBox (VLevel *Level) noexcept {
-  const int dcTexId = texture.id; // "0" means "no texture found"
-  if (dcTexId <= 0) {
-    //height = 0.0f;
-    memset((void *)&bbox2d[0], 0, sizeof(bbox2d));
-    return;
-  }
-
-  return (void)CalculateTextureBBox(bbox2d, dcTexId, worldx, worldy, angle, scaleX, scaleY);
-}
 
 
 //==========================================================================
@@ -334,7 +232,7 @@ static void PutDecalToSubsector (const DInfo *nfo, subsector_t *sub) {
 //==========================================================================
 static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
   const DInfo *nfo = (const DInfo *)udata;
-  if (Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) {
+  if (Level->IsBBox2DTouchingSubsector(sub, nfo->dec->bbox2d)) {
     PutDecalToSubsector(nfo, sub);
   }
   return true; // continue checking
@@ -351,7 +249,8 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
   if (IsSubTouched(nfo->Level, sub)) return;
   MarkSubTouched(nfo->Level, sub);
   if (sub->numlines < 3) return;
-  if (!nfo->Level->IsBBox2DTouchingSubsector(sub, nfo->bbox2d)) return;
+  if (!nfo->Level->IsBBox2DTouchingSubsector(sub, nfo->dec->bbox2d)) return;
+  //GCon->Logf(NAME_Debug, "flat decal '%s' to sub #%d (sector #%d)", *nfo->dec->name, (int)(ptrdiff_t)(sub-&nfo->Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&nfo->Level->Sectors[0]));
   // put decals
   PutDecalToSubsector(nfo, sub);
 
@@ -369,7 +268,7 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
         if (!IsSubTouched(nfo->Level, posub)) {
           MarkSubTouched(nfo->Level, posub);
           if (posub->numlines >= 3) {
-            if (nfo->Level->IsBBox2DTouchingSubsector(posub, nfo->bbox2d)) {
+            if (nfo->Level->IsBBox2DTouchingSubsector(posub, nfo->dec->bbox2d)) {
               // put decals
               PutDecalToSubsector(nfo, posub);
             }
@@ -381,10 +280,10 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 
   // if subsector is fully inside our rect, we should spread over all segs
   bool spreadAllSegs = false;
-  if (sub->bbox2d[BOX2D_MINX] >= nfo->bbox2d[BOX2D_MINX] &&
-      sub->bbox2d[BOX2D_MINY] >= nfo->bbox2d[BOX2D_MINY] &&
-      sub->bbox2d[BOX2D_MAXX] <= nfo->bbox2d[BOX2D_MAXX] &&
-      sub->bbox2d[BOX2D_MAXY] <= nfo->bbox2d[BOX2D_MAXY])
+  if (sub->bbox2d[BOX2D_MINX] >= nfo->dec->bbox2d[BOX2D_MINX] &&
+      sub->bbox2d[BOX2D_MINY] >= nfo->dec->bbox2d[BOX2D_MINY] &&
+      sub->bbox2d[BOX2D_MAXX] <= nfo->dec->bbox2d[BOX2D_MAXX] &&
+      sub->bbox2d[BOX2D_MAXY] <= nfo->dec->bbox2d[BOX2D_MAXY])
   {
     spreadAllSegs = true;
   }
@@ -397,10 +296,10 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
     if (!spreadAllSegs) {
       // our box should intersect with the seg
       // check reject point
-      if (seg->PointDistance(seg->get2DBBoxRejectPoint(nfo->bbox2d)) <= 0.0f) continue; // entire box on a back side
+      if (seg->PointDistance(seg->get2DBBoxRejectPoint(nfo->dec->bbox2d)) <= 0.0f) continue; // entire box on a back side
       // check accept point
       // if accept point on another side (or on plane), assume intersection
-      if (seg->PointDistance(seg->get2DBBoxAcceptPoint(nfo->bbox2d)) >= 0.0f) continue;
+      if (seg->PointDistance(seg->get2DBBoxAcceptPoint(nfo->dec->bbox2d)) >= 0.0f) continue;
     }
     // ok, we must spread over this seg; check if it is a closed something
     const line_t *line = seg->linedef;
@@ -432,6 +331,8 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //
 //==========================================================================
 void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation) {
+  if (!dec) return; // just in case
+
   if (level > 16) {
     GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
     return;
@@ -442,27 +343,30 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
     if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation);
   }
 
+  dec->genValues();
+
   int tex = dec->texid;
   VTexture *DTex = GTextureManager[tex];
   if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
 
-  // setup flips
-  unsigned flips = 0u;
-  if (dec->flipX == VDecalDef::FlipRandom) {
-    if (Random() < 0.5f) flips |= decal_t::FlipX;
-  } else if (dec->flipX == VDecalDef::FlipAlways) {
-    flips |= decal_t::FlipX;
-  }
-  if (dec->flipY == VDecalDef::FlipRandom) {
-    if (Random() < 0.5f) flips |= decal_t::FlipY;
-  } else if (dec->flipY == VDecalDef::FlipAlways) {
-    flips |= decal_t::FlipY;
+  dec->CalculateFlatBBox(org.x, org.y);
+
+  /*
+  GCon->Logf(NAME_Debug, "decal '%s': angle=%g; scale=(%g,%g); spheight=%g; bbsize=(%g,%g)", *dec->name, dec->angleFlat.value,
+    dec->scaleX.value, dec->scaleY.value, dec->spheight, dec->bbWidth(), dec->bbHeight());
+  */
+
+  if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {
+    //if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
+    return;
   }
 
+  // setup flips
+  unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);
+
   DInfo nfo;
-  nfo.angle = 255.0f/(float)P_Random(); // random rotation angle
-  nfo.spheight = CalculateDecalBBox(nfo.bbox2d, dec, org.x, org.y, nfo.angle);
-  if (nfo.spheight == 0.0f) return; // just in case
+  nfo.angle = dec->angleFlat.value;
+  nfo.spheight = dec->spheight;
   nfo.org = org;
   nfo.range = range;
   nfo.dec = dec;
@@ -471,7 +375,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   nfo.orflags = flips; //|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u); // done in `NewFlatDecal()`
 
 #ifndef VV_FLAT_DECAL_USE_FLOODFILL
-  CheckBSPB2DBox(nfo.bbox2d, &AddDecalToSubsector, &nfo);
+  CheckBSPB2DBox(nfo.dec->bbox2d, &AddDecalToSubsector, &nfo);
 #else
   // floodfill spread
   subsector_t *sub = PointInSubsector(org);

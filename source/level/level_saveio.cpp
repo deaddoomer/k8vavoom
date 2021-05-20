@@ -209,7 +209,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
                 dc->nextanimated = decanimlist;
                 decanimlist = dc;
               }
-              dc->calculateBBox(this);
+              dc->calculateBBox();
               Segs[f].appendDecal(dc);
               //decal = dc;
             }
