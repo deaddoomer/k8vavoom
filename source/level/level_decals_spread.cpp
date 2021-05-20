@@ -333,6 +333,8 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation) {
   if (!dec) return; // just in case
 
+  if (dec->noFlat) return;
+
   if (level > 16) {
     GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
     return;
@@ -358,6 +360,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {
     //if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
+    GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
     return;
   }
 

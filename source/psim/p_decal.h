@@ -104,6 +104,7 @@ public:
   DecalFloatVal addAlpha; // alpha for additive translucency (not supported yet)
   bool fuzzy; // draw decal with "fuzzy" effect (not supported yet)
   bool fullbright;
+  bool noWall, noFlat;
   bool flipXValue, flipYValue; // valid after `genValues()`
   DecalFloatVal angleWall;
   DecalFloatVal angleFlat;
@@ -134,7 +135,7 @@ public:
   inline VDecalDef () noexcept
     : next(nullptr), animname(NAME_None), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
     , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
-    , fuzzy(false), fullbright(false), flipXValue(false), flipYValue(false)
+    , fuzzy(false), fullbright(false), noWall(false), noFlat(false), flipXValue(false), flipYValue(false)
     , angleWall(0.0f), angleFlat(0.0f, 360.0f)
     , lowername(NAME_None), animator(nullptr)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)

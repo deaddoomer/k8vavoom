@@ -667,8 +667,12 @@ bool VDecalDef::parse (VScriptParser *sc) {
     if (sc->Check("randomflipx")) { flipX = FlipRandom; continue; }
     if (sc->Check("randomflipy")) { flipY = FlipRandom; continue; }
 
-    if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
     if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
+    if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
+
+    // as we cannot inherit decals, there's no need in inverse flags
+    if (sc->Check("nowall")) { noWall = true; continue; }
+    if (sc->Check("noflat")) { noFlat = true; continue; }
 
     if (sc->Check("solid")) { alpha = 1; continue; }
 
