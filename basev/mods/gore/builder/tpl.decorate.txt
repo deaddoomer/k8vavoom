@@ -225,7 +225,7 @@ Actor K8Gore_FlyingBlood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
           if (waterlevel == 0) {
             // spawn floor blood spot
             if (GetCVar("k8GoreOpt_FloorBlood")) {
-              if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+              if (!GetCVar("k8GoreOpt_FlatDecals") || !IsFlatDecalsAllowed()) {
                 A_SpawnItem("K8Gore_BloodSpot$(Color)", 0, 1, false, true);
               } else if (IsActorOnALiquidFloor()) {
                 A_SpawnItem("K8Gore_BloodSpot$(Color)", 0, 1, false, true);
@@ -606,7 +606,7 @@ Actor K8Gore_CeilBloodSpot$(Color) : K8Gore_BloodSpot$(Color) {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
-            if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+            if (!GetCVar("k8GoreOpt_FlatDecals") || !IsFlatDecalsAllowed()) {
               A_SpawnItem("K8Gore_DripingBloodLeavesSmallPool$(Color)",0,0,0,true);
             }
             A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner$(Color)",0,0,0,true);
@@ -823,7 +823,7 @@ Actor K8Gore_DripingBloodLeavesSmallPool$(Color) : K8Gore_TinyBlood$(Color) {
       TNT1 A 0 A_k8JumpIfOnFloorSky("DieNow")
       TNT1 A 0 {
         if (GetCVar("k8GoreOpt_BloodDripSound") > 0) A_PlaySound_NoNet("k8gore/blooddrop2");
-        if (!GetCVar("k8GoreOpt_FlatDecals") || !GetCVar("r_decals") || !GetCVar("r_decals_flat")) {
+        if (!GetCVar("k8GoreOpt_FlatDecals") || !IsFlatDecalsAllowed()) {
           A_SpawnItem("K8Gore_MinuscleBloodSpot$(Color)", 0, 0, 0, true);
         }
         A_ChangeFlag("StickToFloor", 1);
@@ -976,8 +976,7 @@ Actor K8Gore_GrowingBloodPool$(Color) : K8Gore_BloodSpot$(Color) {
       }
       // if flat decals are allowed, get lost
       "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
-      "####" "#" 0 A_JumpIfCVarFalse("r_decals", "GoOnPool")
-      "####" "#" 0 A_JumpIfCVarTrue("r_decals_flat", "Die")
+      "####" "#" 0 A_JumpIf(IsFlatDecalsAllowed(), "Die")
     GoOnPool:
       BPDL A 0 A_Jump(256, "Pool1", "Pool2")
 
