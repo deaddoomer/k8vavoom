@@ -53,6 +53,7 @@ struct DInfo {
   int translation;
   VLevel *Level;
   unsigned orflags;
+  float angle;
 };
 
 
@@ -186,7 +187,7 @@ static float CalculateTextureBBox (float bbox2d[4], int texid, const float world
 //  zero means "no texture found"
 //
 //==========================================================================
-static float CalculateDecalBBox (float bbox2d[4], VDecalDef *dec, const float worldx, const float worldy) noexcept {
+static float CalculateDecalBBox (float bbox2d[4], VDecalDef *dec, const float worldx, const float worldy, const float angle) noexcept {
   const int dcTexId = dec->texid; // "0" means "no texture found"
   if (dcTexId <= 0.0f) {
     memset((void *)&bbox2d[0], 0, sizeof(float)*4);
@@ -255,12 +256,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
           res |= PutAtCeiling;
         }
       } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtFloor;
       }
     }
@@ -271,12 +272,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
           res |= PutAtFloor;
         }
       } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtCeiling;
       }
     }
@@ -289,7 +290,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if (orgz-2.0f <= fz && fz-orgz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtFloor;
       }
     }
@@ -298,7 +299,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if (orgz+2.0f >= cz && orgz-cz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
         res |= PutAtCeiling;
       }
     }
@@ -459,7 +460,8 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   }
 
   DInfo nfo;
-  nfo.spheight = CalculateDecalBBox(nfo.bbox2d, dec, org.x, org.y);
+  nfo.angle = 255.0f/(float)P_Random(); // random rotation angle
+  nfo.spheight = CalculateDecalBBox(nfo.bbox2d, dec, org.x, org.y, nfo.angle);
   if (nfo.spheight == 0.0f) return; // just in case
   nfo.org = org;
   nfo.range = range;

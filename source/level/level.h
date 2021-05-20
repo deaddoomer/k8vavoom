@@ -1150,7 +1150,7 @@ public:
   void DestroyDecal (decal_t *dc); // this will also destroy decal and its animator!
 
   // used in some internal static functions. sigh.
-  void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags);
+  void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags, float angle);
 
 public:
   enum {

@@ -1041,7 +1041,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 //  VLevel::NewFlatDecal
 //
 //==========================================================================
-void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags) {
+void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags, float angle) {
   vassert(sub);
   vassert(eregidx >= 0);
   vassert(dec);
@@ -1057,6 +1057,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->dcsurf = (asFloor ? decal_t::Floor : decal_t::Ceiling);
   decal->worldx = wx;
   decal->worldy = wy;
+  decal->angle = AngleMod(angle);
   //decal->orgz = org.z; // doesn't matter
   //!decal->height = height;
   //decal->curz = 0.0f; // doesn't matter
