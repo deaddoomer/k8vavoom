@@ -296,6 +296,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       TVec saxis, taxis;
       float soffs, toffs;
       if (dkind == DWALL) {
+        //const TVec wp = (*line->v1)+line->ndir*(dc->xdist+dc->ofsX);
         const float xstofs = dc->xdist-txofs+dc->ofsX;
         TVec v1 = (*line->v1)+line->ndir*xstofs;
         TVec v2 = v1+line->ndir*twdt;
@@ -320,9 +321,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         #if 0
         // this does one part of decal rotation
         // decal placement code is not ready for this yet, so it is disabled
-        float s = 1.0f, c = 1.0f;
-        const float angle = 0.0f;
-        if (angle != 0.0f) {
+        //float s = 1.0f, c = 1.0f;
+        //const float angle = 0.0f;
+        if (dc->angle != 0.0f) {
+          float s, c;
           msincos(angle, &s, &c);
           taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
           saxis = Normalise(CrossProduct(seg->normal, taxis));

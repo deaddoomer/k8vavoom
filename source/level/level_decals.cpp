@@ -152,6 +152,7 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec) {
   //decal->translation = translation;
   //decal->orgz = decal->curz = orgz;
   //decal->xdist = lineofs;
+  decal->angle = AngleMod(dec->angleWall.value);
   decal->ofsX = decal->ofsY = 0;
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
@@ -788,6 +789,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   // generate decal values
   dec->genValues();
+  dec->angleWall = 0.0f; // cannot rotate wall decals yet
 
   int tex = dec->texid;
   VTexture *DTex = GTextureManager[tex];
