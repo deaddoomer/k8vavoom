@@ -197,21 +197,15 @@ void VLevel::SerialiseOther (VStream &Strm) {
             memset((void *)dc, 0, sizeof(decal_t));
             dc->seg = &Segs[f];
             DecalIO(Strm, dc, this);
-            if (dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f || dc->texture <= 0) {
+            if (dc->texture <= 0) {
               delete dc->animator;
               delete dc;
             } else {
               // add to decal list
               dc->seg = nullptr;
-              //if (decal) decal->next = dc; else Segs[f].decals = dc;
-              if (dc->animator) {
-                if (decanimlist) decanimlist->prevanimated = dc;
-                dc->nextanimated = decanimlist;
-                decanimlist = dc;
-              }
+              AddAnimatedDecal(dc);
               dc->calculateBBox();
               Segs[f].appendDecal(dc);
-              //decal = dc;
             }
             ++dctotal;
           }
@@ -512,7 +506,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
           decal_t *dc = new decal_t;
           memset((void *)dc, 0, sizeof(decal_t));
           DecalIO(Strm, dc, this, true);
-          if (dc->alpha <= 0.0f || dc->scaleX <= 0.0f || dc->scaleY <= 0.0f || dc->texture <= 0) {
+          if (dc->texture <= 0) {
             delete dc->animator;
             delete dc;
           } else {

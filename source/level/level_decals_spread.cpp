@@ -348,8 +348,8 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   dec->genValues();
 
   int tex = dec->texid;
-  VTexture *DTex = GTextureManager[tex];
-  if (!DTex || DTex->Type == TEXTYPE_Null || DTex->GetWidth() < 1 || DTex->GetHeight() < 1) return;
+  VTexture *dtex = GTextureManager[tex];
+  if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) return;
 
   dec->CalculateFlatBBox(org.x, org.y);
 

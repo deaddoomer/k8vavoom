@@ -1358,6 +1358,8 @@ private:
   int SetBodyQueueTrans (int, int);
 
 public: // used in renderer for flat decals
+  // add animated decal to the list of all animated decals
+  // it is ok to call this with any `dc`, including `nullptr`
   void AddAnimatedDecal (decal_t *dc);
   void RemoveDecalAnimator (decal_t *dc); // this will also delete animator; safe to call on decals without an animator
 
@@ -1383,7 +1385,7 @@ private:
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);
   // called by `AddDecal()`
   void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation);
-  void PutDecalAtLine (int tex, float orgz, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck);
+  void PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck);
 
   void PostProcessForDecals ();
 
