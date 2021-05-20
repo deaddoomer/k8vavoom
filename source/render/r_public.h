@@ -139,7 +139,7 @@ struct decal_t {
   float lastAngle;
   float lastOfsX, lastOfsY;
   float lastCurZ;
-  float lastPlaneDist;
+  float lastPlaneDist, lastTexZ;
   // calculated cached values
   TVec saxis, taxis;
   float soffs, toffs;
@@ -164,10 +164,11 @@ struct decal_t {
   // this also calculates `height`
   void calculateBBox (VLevel *Level) noexcept;
 
-  inline bool needRecalc (const float pdist) const noexcept {
+  inline bool needRecalc (const float pdist, const float tz) const noexcept {
     return
       lastFlags != flags ||
       FASI(lastPlaneDist) != FASI(pdist) ||
+      FASI(lastTexZ) != tz ||
       FASI(lastScaleX) != FASI(scaleX) ||
       FASI(lastScaleY) != FASI(scaleY) ||
       FASI(lastWorldX) != FASI(worldx) ||
@@ -179,9 +180,10 @@ struct decal_t {
   }
 
   // doesn't update axes and offsets
-  inline void updateCache (const float pdist) noexcept {
+  inline void updateCache (const float pdist, const float tz) noexcept {
     lastFlags = flags;
     lastPlaneDist = pdist;
+    lastTexZ = tz;
     lastScaleX = scaleX;
     lastScaleY = scaleY;
     lastWorldX = worldx;

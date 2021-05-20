@@ -264,10 +264,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
     }
 
-    // use origScale to get the original starting point
-    const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
-    const float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
-
     const float twdt = dtex->GetScaledWidthF()*dscaleX;
     const float thgt = dtex->GetScaledHeightF()*dscaleY;
 
@@ -280,17 +276,22 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       SetDecalTexture(dtex, currTrans, cmap); // this sets `tex_iw` and `tex_ih`
     }
 
-    //TVec qv1, qv2, qv3, qv4;
-    //float dcz;
-
-    // decal scale is not inverted, but we need inverted scale for some calculations
-    const float dscaleXInv = 1.0f/dscaleX;
-    const float dscaleYInv = 1.0f/dscaleY;
+    const float pd2 =
+      dc->slidesec ?
+        (dc->flags&decal_t::SlideFloor ? dc->slidesec->floor.TexZ :
+         dc->flags&decal_t::SlideCeil ? dc->slidesec->ceiling.TexZ :
+         0.0f) : 0.0f;
 
     // check cache
-    if (dc->needRecalc(surf->plane.dist)) {
+    if (dc->needRecalc(surf->plane.dist, pd2)) {
       dc->angle = AngleMod(dc->angle);
-      dc->updateCache(surf->plane.dist);
+      dc->updateCache(surf->plane.dist, pd2);
+      // use origScale to get the original starting point
+      const float txofs = dtex->GetScaledSOffsetF()*dscaleX;
+      const float tyofs = dtex->GetScaledTOffsetF()*dc->origScaleY;
+      // decal scale is not inverted, but we need inverted scale for some calculations
+      const float dscaleXInv = 1.0f/dscaleX;
+      const float dscaleYInv = 1.0f/dscaleY;
       // recalc
       TVec saxis, taxis;
       float soffs, toffs;
@@ -371,11 +372,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         soffs = -DotProduct(ofsv, saxis); // horizontal
         toffs = -DotProduct(ofsv, taxis); // vertical
 
-        // fuck you, shitg++!
-        //v2.x = v2.y = dcz = 0.0f;
-
         // floor/ceiling
-        //TODO: rotation
         // left-bottom
         TVec qv0 = v1+TVec(-txofs, tyofs);
         qv0.z = surf->plane.GetPointZ(qv0);
