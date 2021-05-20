@@ -167,7 +167,7 @@ override void CreateChoices () {
       "Use vsync (synchronize screen updates with physical frame refresh)?\n"~
       "\n"~
       "You have to use \"Set Resolution\" to activate new setting.\n"~
-      "Note that FPS is capped at 90, so don't expect glaring numbers without vsync.");
+      "Note that FPS is hard-capped at 250, i.e. you will never get more than that.");
 
   VSyncAdaptive = GetItemContainer().NewChild(MenuChoice_OnOff);
   SetChoiceInitialSizePos(VSyncAdaptive);
