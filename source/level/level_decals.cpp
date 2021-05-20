@@ -51,8 +51,10 @@ VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping dec
 
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 
-// sorry for this global
-static TMapNC<VName, bool> baddecals;
+TMapNC<VName, bool> VLevel::baddecals;
+TArray<int> VLevel::dcLineTouchMark;
+TArray<int> VLevel::dcSegTouchMark;
+int VLevel::dcLineTouchCounter = 0;
 
 
 //==========================================================================
@@ -102,6 +104,24 @@ static int calcDecalSide (const line_t *li, const sector_t *fsec, const sector_t
   continue;
   */
   return nside;
+}
+
+
+//==========================================================================
+//
+//  VLevel::IncLineTouchCounter
+//
+//==========================================================================
+void VLevel::IncLineTouchCounter () noexcept {
+  if (dcLineTouchMark.length() == NumLines && dcSegTouchMark.length() == NumSegs) {
+    if (++dcLineTouchCounter != MAX_VINT32) return;
+  } else {
+    dcLineTouchMark.setLength(NumLines);
+    dcSegTouchMark.setLength(NumSegs);
+  }
+  for (auto &&v : dcLineTouchMark) v = 0;
+  for (auto &&v : dcSegTouchMark) v = 0;
+  dcLineTouchCounter = 1;
 }
 
 
@@ -344,8 +364,8 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
 void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck) {
   // don't process linedef twice
   if (!skipMarkCheck) {
-    if (li->decalMark == decanimuid) return;
-    li->decalMark = decanimuid;
+    if (IsLineTouched(li)) return;
+    MarkLineTouched(li);
   }
 
   VTexture *dtex = GTextureManager[dec->texid];
@@ -688,8 +708,8 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
     line_t **ngb = li->v1lines;
     for (int ngbCount = li->v1linesCount; ngbCount--; ++ngb) {
       line_t *nline = *ngb;
-      if (nline->decalMark == decanimuid) continue;
-      nline->decalMark = decanimuid;
+      if (IsLineTouched(nline)) continue;
+      MarkLineTouched(nline);
       // find out correct side
       const int nside = calcDecalSide(li, fsec, bsec, nline, side, 0);
       if (nside < 0) continue;
@@ -719,8 +739,8 @@ void VLevel::PutDecalAtLine (float orgz, float lineofs, VDecalDef *dec, int side
     line_t **ngb = li->v2lines;
     for (int ngbCount = li->v2linesCount; ngbCount--; ++ngb) {
       line_t *nline = *ngb;
-      if (nline->decalMark == decanimuid) continue;
-      nline->decalMark = decanimuid;
+      if (IsLineTouched(nline)) continue;
+      MarkLineTouched(nline);
       // find out correct side
       int nside = calcDecalSide(li, fsec, bsec, nline, side, 1);
       if (nside < 0) continue;
@@ -827,13 +847,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   //GCon->Logf(NAME_Debug, "Decal '%s', texture '%s'", *dec->name, *dtex->Name);
 
-  if (++decanimuid == MAX_VINT32) {
-    decanimuid = 1;
-    for (int f = 0; f < NumLines; ++f) {
-      line_t *ld = Lines+f;
-      if (ld->decalMark != -1) ld->decalMark = 0;
-    }
-  }
+  IncLineTouchCounter();
 
   // setup flips
   unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);

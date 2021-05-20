@@ -222,7 +222,6 @@ void VLevel::LoadMap (VName AMapName) {
   int lumpnum, xmaplumpnum = -1;
   VName MapLumpName;
   decanimlist = nullptr;
-  decanimuid = 0;
 
   mapTextureWarns.clear();
   // clear automap marks; save loader will restore them from a save

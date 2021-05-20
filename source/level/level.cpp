@@ -488,6 +488,15 @@ void VLevel::ClearAllMapData () {
   NumZones = 0;
 
   GTextureManager.ResetMapTextures();
+
+  dcSubTouchMark.resetNoDtor();
+  dcPobjTouched.reset();
+  dcSubTouchCounter = 0;
+  dcPobjTouchedReset = false;
+
+  dcLineTouchMark.resetNoDtor();
+  dcSegTouchMark.resetNoDtor();
+  dcLineTouchCounter = 0;
 }
 
 

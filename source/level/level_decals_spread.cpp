@@ -34,13 +34,13 @@
  */
 
 
-#ifdef VV_FLAT_DECAL_USE_FLOODFILL
+//#ifdef VV_FLAT_DECAL_USE_FLOODFILL
 // "subsector touched" marks for portal spread
-static TArray<int> dcSubTouchMark;
-static TMapNC<polyobj_t *, bool> dcPobjTouched;
-static int dcSubTouchCounter = 0;
-static bool dcPobjTouchedReset = false;
-#endif
+TArray<int> VLevel::dcSubTouchMark;
+TMapNC<polyobj_t *, bool> VLevel::dcPobjTouched;
+int VLevel::dcSubTouchCounter = 0;
+bool VLevel::dcPobjTouchedReset = false;
+//#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -67,51 +67,21 @@ void decal_t::calculateBBox () noexcept {
 }
 
 
-#ifdef VV_FLAT_DECAL_USE_FLOODFILL
 //==========================================================================
 //
-//  IncSubTouchCounter
+//  VLevel::IncSubTouchCounter
 //
 //==========================================================================
-static void IncSubTouchCounter (VLevel *Level) noexcept {
+void VLevel::IncSubTouchCounter () noexcept {
   dcPobjTouchedReset = false;
-  if (dcSubTouchMark.length() != Level->NumSubsectors) {
-    dcSubTouchMark.setLength(Level->NumSubsectors);
-    for (auto &&v : dcSubTouchMark) v = 0;
-    dcSubTouchCounter = 1;
-    return;
+  if (dcSubTouchMark.length() == NumSubsectors) {
+    if (++dcSubTouchCounter != MAX_VINT32) return;
+  } else {
+    dcSubTouchMark.setLength(NumSubsectors);
   }
-  if (++dcSubTouchCounter != MAX_VINT32) return;
   for (auto &&v : dcSubTouchMark) v = 0;
   dcSubTouchCounter = 1;
 }
-
-
-//==========================================================================
-//
-//  IsSubTouched
-//
-//  `IncSubTouchCounter()` should be already called
-//
-//  doesn't mark the subsector
-//
-//==========================================================================
-static inline bool IsSubTouched (VLevel *Level, const subsector_t *sub) noexcept {
-  return (sub ? (dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Level->Subsectors[0])] == dcSubTouchCounter) : true);
-}
-
-
-//==========================================================================
-//
-//  MarkSubTouched
-//
-//  `IncSubTouchCounter()` should be already called
-//
-//==========================================================================
-static inline void MarkSubTouched (VLevel *Level, const subsector_t *sub) noexcept {
-  if (sub) dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Level->Subsectors[0])] = dcSubTouchCounter;
-}
-#endif
 
 
 //==========================================================================
@@ -246,8 +216,8 @@ static bool AddDecalToSubsector (VLevel *Level, subsector_t *sub, void *udata) {
 //
 //==========================================================================
 static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
-  if (IsSubTouched(nfo->Level, sub)) return;
-  MarkSubTouched(nfo->Level, sub);
+  if (nfo->Level->IsSubTouched(sub)) return;
+  nfo->Level->MarkSubTouched(sub);
   if (sub->numlines < 3) return;
   if (!nfo->Level->IsBBox2DTouchingSubsector(sub, nfo->dec->bbox2d)) return;
   //GCon->Logf(NAME_Debug, "flat decal '%s' to sub #%d (sector #%d)", *nfo->dec->name, (int)(ptrdiff_t)(sub-&nfo->Level->Subsectors[0]), (int)(ptrdiff_t)(sub->sector-&nfo->Level->Sectors[0]));
@@ -259,14 +229,14 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.pobj();
       if (!pobj->Is3D()) continue;
-      if (!dcPobjTouchedReset) {
-        dcPobjTouchedReset = true;
-        dcPobjTouched.reset();
+      if (!nfo->Level->dcPobjTouchedReset) {
+        nfo->Level->dcPobjTouchedReset = true;
+        nfo->Level->dcPobjTouched.reset();
       }
-      if (dcPobjTouched.put(pobj, true)) continue; // already processed
+      if (nfo->Level->dcPobjTouched.put(pobj, true)) continue; // already processed
       for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
-        if (!IsSubTouched(nfo->Level, posub)) {
-          MarkSubTouched(nfo->Level, posub);
+        if (!nfo->Level->IsSubTouched(posub)) {
+          nfo->Level->MarkSubTouched(posub);
           if (posub->numlines >= 3) {
             if (nfo->Level->IsBBox2DTouchingSubsector(posub, nfo->dec->bbox2d)) {
               // put decals
@@ -291,7 +261,7 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
   const seg_t *seg = &nfo->Level->Segs[sub->firstline];
   for (int f = sub->numlines; f--; ++seg) {
     if (!seg->frontsector || !seg->backsector || !seg->partner) continue;
-    if (IsSubTouched(nfo->Level, seg->partner->frontsub)) continue; // already processed
+    if (nfo->Level->IsSubTouched(seg->partner->frontsub)) continue; // already processed
     // check if we should spread over this seg
     if (!spreadAllSegs) {
       // our box should intersect with the seg
@@ -359,8 +329,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   */
 
   if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {
-    //if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
-    GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
+    if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero size", *dec->name);
     return;
   }
 
@@ -387,7 +356,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   if (sub->sector->isInnerPObj() && !sub->sector->ownpobj->Is3D()) return; //wtf?!
   */
   if (sub->sector->isAnyPObj()) return; // the thing that should not be
-  IncSubTouchCounter(this);
+  IncSubTouchCounter();
   DecalFloodFill(&nfo, sub);
 #endif
 }

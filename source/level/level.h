@@ -469,7 +469,6 @@ class VLevel : public VGameObject {
   vint32 NextSoundOriginID;
 
   decal_t *decanimlist;
-  vint32 decanimuid;
 
   //vint32 tagHashesSaved; // for savegame compatibility
   TagHash *lineTags;
@@ -553,6 +552,66 @@ class VLevel : public VGameObject {
   VDecalList *subsectorDecalList;
 
 public:
+  // sorry for this global
+  static TMapNC<VName, bool> baddecals;
+
+public:
+  // decal floodfill statics
+  // "subsector touched" marks for portal spread
+  static TArray<int> dcSubTouchMark;
+  static int dcSubTouchCounter;
+  static TMapNC<polyobj_t *, bool> dcPobjTouched;
+  static bool dcPobjTouchedReset;
+
+  void IncSubTouchCounter () noexcept;
+
+  inline bool IsSubTouched (const subsector_t *sub) noexcept {
+    return (sub ? (dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])] == dcSubTouchCounter) : true);
+  }
+
+  inline void MarkSubTouched (const subsector_t *sub) noexcept {
+    if (sub) dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])] = dcSubTouchCounter;
+  }
+
+public:
+  // decal segfill statics
+  // "subsector touched" marks for portal spread
+  static TArray<int> dcLineTouchMark;
+  static TArray<int> dcSegTouchMark;
+  static int dcLineTouchCounter; // and for segs too
+  //static TMapNC<polyobj_t *, bool> dcPobjTouched;
+  //static bool dcPobjTouchedReset;
+
+  // temporary working set for decal spreader
+  struct DecalLineInfo {
+    line_t *nline;
+    int nside;
+    bool isv1;
+    bool isbackside;
+  };
+
+  static TArray<DecalLineInfo> connectedLines;
+
+
+  void IncLineTouchCounter () noexcept;
+
+  inline bool IsLineTouched (const line_t *line) noexcept {
+    return (line ? (dcLineTouchMark.ptr()[(unsigned)(ptrdiff_t)(line-&Lines[0])] == dcLineTouchCounter) : true);
+  }
+
+  inline void MarkLineTouched (const line_t *line) noexcept {
+    if (line) dcLineTouchMark.ptr()[(unsigned)(ptrdiff_t)(line-&Lines[0])] = dcLineTouchCounter;
+  }
+
+  inline bool IsSegTouched (const seg_t *seg) noexcept {
+    return (seg ? (dcSegTouchMark.ptr()[(unsigned)(ptrdiff_t)(seg-&Segs[0])] == dcLineTouchCounter) : true);
+  }
+
+  inline void MarkLineTouched (const seg_t *seg) noexcept {
+    if (seg) dcSegTouchMark.ptr()[(unsigned)(ptrdiff_t)(seg-&Segs[0])] = dcLineTouchCounter;
+  }
+
+public:
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }
 
   inline int GetTempPathInterceptsCount () const noexcept { return tempPathInterceptsUsed; }
@@ -609,17 +668,6 @@ public:
       if (size) memset(processedBMCells, 0, size*sizeof(processedBMCells[0]));
     }
   }
-
-protected:
-  // temporary working set for decal spreader
-  struct DecalLineInfo {
-    line_t *nline;
-    int nside;
-    bool isv1;
-    bool isbackside;
-  };
-
-  static TArray<DecalLineInfo> connectedLines;
 
 public:
   // iterator

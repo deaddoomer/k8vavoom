@@ -184,7 +184,6 @@ native readonly StateCall *StateCall;
 native readonly private int NextSoundOriginID;
 
 native readonly private void *__decanimlist;
-native readonly private int __decanimuid;
 
 native readonly private void *__lineTags;
 native readonly private void *__sectorTags;

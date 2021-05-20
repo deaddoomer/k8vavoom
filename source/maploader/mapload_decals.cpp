@@ -62,7 +62,6 @@ void VLevel::BuildDecalsVVList () {
   va.SetLength(NumLines*2);
   line_t *ld = Lines;
   for (unsigned i = 0; i < (unsigned)NumLines; ++i, ++ld) {
-    ld->decalMark = 0;
     ld->v1linesCount = ld->v2linesCount = 0;
     ld->v1lines = ld->v2lines = nullptr;
     for (unsigned vn = 0; vn < 2; ++vn) {
