@@ -2663,6 +2663,13 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
       float fdrange = fmax(1.0, fabs(Height)*0.5);
       TVec forg = realOrg;
       forg.z += fdrange;
+      //FIXME: caller should check if we are on the line?
+      if (sec && li) {
+        // check it here, because spawning exactly on the line may leak throug the closed door
+        if (fabs(li.PointDistance(forg)) < 1.0) {
+          forg -= li->normal*1.6; // move away slightly
+        }
+      }
       SpawnFlatDecal(forg, flatDName, fdrange+2.0);
     }
   }
