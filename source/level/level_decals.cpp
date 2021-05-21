@@ -360,6 +360,44 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
 
 //==========================================================================
 //
+//  IsWallSpreadAllowed
+//
+//  moving to another sector, check if we have any open line into it
+//  all prerequisites should be checked by the caller
+//
+//==========================================================================
+static bool IsWallSpreadAllowed (VLevel *Level, const sector_t *fsec,
+                                 const line_t *li, const int vxidx,
+                                 const line_t *nline, const int nside) noexcept
+{
+  if (nline->sidenum[nside] < 0) return false;
+  const sector_t *others = (nside ? nline->backsector : nline->frontsector);
+  if (!others) return false;
+  if (others == fsec) return true;
+  for (int ni = 0; ni < li->vxCount(vxidx); ++ni) {
+    const line_t *nb = li->vxLine(vxidx, ni);
+    if (nb == nline || nb == li || !(nb->flags&ML_TWOSIDED)) continue;
+    // one side should be our front sector, other side should be other sector
+    int checkside;
+         if (nb->frontsector == fsec && nb->backsector == others) checkside = 0;
+    else if (nb->frontsector == others && nb->backsector == fsec) checkside = 1;
+    else continue;
+    if (nb->sidenum[checkside] < 0) continue; // just in case
+    // check if it is opened
+    for (seg_t *seg = nb->firstseg; seg; seg = seg->lsnext) {
+      if (seg->side != checkside) continue; // partner segs will be processed with normal segs
+      if (seg->flags&SF_ZEROLEN) continue; // invalid seg
+      if (!VViewClipper::IsSegAClosedSomething(Level, nullptr, seg)) return true;
+      // no need to check other segs, the result will be the same
+      break;
+    }
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VLevel::PutDecalAtLine
 //
 //==========================================================================
@@ -762,10 +800,17 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
     for (int ngbCount = li->v1linesCount; ngbCount--; ++ngb) {
       line_t *nline = *ngb;
       if (IsLineTouched(nline)) continue;
+      // determine correct decal side
+      const int nside = (nline->v2 != li->v1); // see below
+      // spread check: do not go to another sector through closed lines
+      if (!IsWallSpreadAllowed(this, fsec, li, 0, nline, nside)) continue;
       MarkLineTouched(nline);
       DecalLineInfo &dlc = connectedLines.alloc();
       dlc.nline = nline;
       dlc.isv1 = true;
+      dlc.nside = nside;
+      dlc.isbackside = (nside == 1);
+      /*
       // determine correct decal side
       if (nline->v2 == li->v1) {
         // nline has the same orientation, so the same side
@@ -776,6 +821,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         dlc.nside = 1;
         dlc.isbackside = true;
       }
+      */
     }
   }
 
@@ -786,10 +832,15 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
     for (int ngbCount = li->v2linesCount; ngbCount--; ++ngb) {
       line_t *nline = *ngb;
       if (IsLineTouched(nline)) continue;
+      const int nside = (li->v2 != nline->v1); // see below
+      if (!IsWallSpreadAllowed(this, fsec, li, 1, nline, nside)) continue;
       MarkLineTouched(nline);
       DecalLineInfo &dlc = connectedLines.alloc();
       dlc.nline = nline;
       dlc.isv1 = false;
+      dlc.nside = nside;
+      dlc.isbackside = (nside == 1);
+      /*
       // determine correct decal side
       if (li->v2 == nline->v1) {
         // nline has the same orientation, so the same side
@@ -800,6 +851,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         dlc.nside = 1;
         dlc.isbackside = true;
       }
+      */
     }
   }
 
