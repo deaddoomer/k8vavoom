@@ -233,7 +233,7 @@ void VEntity::SlidePathTraverse (float &BestSlideFrac, line_t *&BestSlideLine, f
   } else {
     // old slide code
     intercept_t in;
-    for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS); It.GetNext(); ) {
+    for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS|PT_RAILINGS); It.GetNext(); ) {
       if (!(in.Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_SlideTraverse: not a line?");*/ }
 
       line_t *li = in.line;

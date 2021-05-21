@@ -1479,6 +1479,7 @@ enum {
   PT_NOOPENS   = 1<<2, // no opening/sector planes checks (and no 3d pobj checks); note that pobj heights are still checked
   PT_COMPAT    = 1<<3, // compat_trace (ignore self-referenced lines, don't add them to list)
   PT_AIMTHINGS = 1<<4, // do not reject things by their z value, do not adjust thing hitpoint (used in autoaim code)
+  PT_RAILINGS  = 1<<5, // block on railings
 };
 
 

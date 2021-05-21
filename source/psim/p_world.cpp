@@ -581,6 +581,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
   const bool doopening = !(scanflags&PT_NOOPENS);
   const bool doadd = (scanflags&PT_ADDLINES);
+  const bool dorailings = (scanflags&PT_RAILINGS);
   for (auto &&it : Level->allBlockLines(mapx, mapy)) {
     line_t *ld = it.line();
     const float dot1 = trace_plane.PointDistance(*ld->v1);
@@ -685,6 +686,12 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
           while (open) {
             if (open->range > 0.0f && hpz >= open->bottom && hpz <= open->top) break; // shot continues
             open = open->next;
+          }
+          if (open && dorailings && (ld->flags&ML_RAILING)) {
+            //GCon->Logf(NAME_Debug, "...railing bump: from %g to %g (valid=%d; hpok=%d)", open->bottom, open->bottom+32.0f, (int)(open->bottom+32.0f < open->top), (int)(hpz >= open->bottom+32.0f && hpz <= open->top));
+            open->bottom += 32.0f;
+            open->range -= 32.0f;
+            if (open->range <= 0.0f || hpz < open->bottom || hpz > open->top) open = nullptr;
           }
           blockFlag = !open; // block if no opening was found
         }

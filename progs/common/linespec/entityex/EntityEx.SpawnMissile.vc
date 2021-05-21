@@ -112,6 +112,7 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
 
   if (line) {
     // don't explode on horizon lines (just in case check)
+    //FIXME: this is wrong, because `line` is passed for floor/ceiling hits too
     if (line->special == LNSPEC_LineHorizon && !bExplodeOnSky) {
       Destroy();
       return false;
@@ -179,13 +180,13 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
       printdebug("%C: MISSILE DECAL %s: vel:%s; dir=%s; rad=%s", self, DecalName, savedVelocity, dir);
     }
     #endif
-    if (!TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
+    if (!TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0), doRailings:true)) {
       bool doNextTrace = true;
       if (line && savedVelocity.xy) {
         //printdebug("%C: MISSILE DECAL %s: (side:%d:%d) vel:(%f,%f,%f)", self, DecalName, PointOnPlaneSide(org, *line), PointOnPlaneSide(org-savedVelocity, *line), savedVelocity.x, savedVelocity.y, savedVelocity.z);
         TVec ndir = vector(fsign(savedVelocity.x), fsign(savedVelocity.y)).normalise;
         //printdebug("%C:  trace decal splat; ndir=%s", self, ndir);
-        if (TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
+        if (TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0), doRailings:true)) {
           //printdebug("%C:    decal splat tracing complete!", self);
           doNextTrace = false;
         }
@@ -194,15 +195,27 @@ final bool ExplodeMissile (EntityEx Victim, optional line_t *line, optional bool
         dir.z = 0;
         dir = dir.normalise;
         //printdebug("%C: secondary trace: dir=%s", self, dir);
-        if (TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0))) {
+        if (TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0), doRailings:true)) {
           doNextTrace = false;
         }
       }
       if (line && doNextTrace) {
         TVec ndir = -line->normal;
         //printdebug("%C: trinary trace: ndir=%s", self, ndir);
-        TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0));
+        if (TraceSplat(org-ndir, ndir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0), doRailings:true)) {
+          doNextTrace = false;
+        }
       }
+      /*
+      if (line && doNextTrace && (line->flags&ML_RAILING)) {
+        org = Origin;
+        org.z += 1.0;
+        dir.z = 0.0;
+        dir = dir.normalise;
+        //printdebug("%C: railing trace: dir=%s", self, dir);
+        TraceSplat(org-dir, dir, rad+16.0, &tr, 0, DecalName, atranslation:(bCopyBloodTranslation ? Translation : 0), doRailings:true);
+      }
+      */
     }
   }
 

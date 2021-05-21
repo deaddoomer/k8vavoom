@@ -199,7 +199,8 @@ bool IsGood2SLineForBloodSplat (const line_t *li) {
 //
 //==========================================================================
 final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *tr, optional float zofs,
-                       optional name aDecalName, optional bool pass2S, optional bool only2S, optional int atranslation)
+                       optional name aDecalName, optional bool pass2S, optional bool only2S, optional int atranslation,
+                       optional bool doRailings)
 {
   trsplat_t temptr;
 
@@ -229,8 +230,9 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
   sector_t *sec; // declared here, so VM don't need to clear it in the loop
 
   // no line can block The Mighty Blood Splats!
-  foreach PathTraverse(out in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/, SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
+  foreach PathTraverse(out in, org, dst, PT_ADDLINES/*|PT_NOOPENS*/|(doRailings ? PT_RAILINGS:0), SPF_NOBLOCKING, 0/*ML_BLOCKING|ML_BLOCKEVERYTHING*/) {
     if (in.bIsAPlane) {
+      //if (bMissile) printdebug("%C: plane hit!", self);
       // hit floor or ceiling
       tr->hit = in.hitpoint;
       tr->didhit = true;
@@ -238,6 +240,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
     }
 
     if (in.bIsALine) {
+      //if (bMissile) printdebug("%C: line #%d hit! blocking=%B", self, in.line-&XLevel.Lines[0], in.bIsABlockingLine);
       li = in.line;
       hitPoint = in.hitpoint; //shootOrigin+(distance*in.frac)*dir;
 

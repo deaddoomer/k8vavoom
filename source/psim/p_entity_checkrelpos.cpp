@@ -464,7 +464,14 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   // process railings
   if (open && (ld->flags&ML_RAILING)) {
     open->bottom += 32.0f;
-    if (open->bottom >= open->top) open = nullptr;
+    open->range -= 32.0f;
+    if (open->range <= 0.0f) {
+      open = nullptr;
+    } else {
+      const float z0 = tmtrace.End.z;
+      const float z1 = z0+hgt;
+      if (z1 < open->bottom || z0 > open->top) open = nullptr;
+    }
   }
   //if (ld->flags&ML_RAILING) tmtrace.FloorZ += 32.0f;
 
