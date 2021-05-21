@@ -1033,6 +1033,8 @@ static void performPWadScan () {
   pwadScanInfo.clear();
   pwadScanInfo.processed = true;
 
+  VStr giwad;
+
   auto milump = (cli_NoZMapinfo >= 0 ? W_CheckNumForName("zmapinfo") : -1);
   if (milump < 0 /*!!! || !W_IsAuxLump(milump)*/) milump = W_CheckNumForName("mapinfo");
   pwadScanInfo.hasMapinfo = (milump >= 0 /*!!! && W_IsAuxLump(milump)*/);
@@ -1054,6 +1056,8 @@ static void performPWadScan () {
     pwadScanInfo.iwad = pwadScanInfo.iwad.ExtractFileBaseName();
     if (!pwadScanInfo.iwad.isEmpty()) {
       if (!pwadScanInfo.iwad.extractFileExtension().strEquCI(".wad")) pwadScanInfo.iwad += ".wad";
+      GCon->Logf(NAME_Init, "gameinfo iwad: '%s'", *pwadScanInfo.iwad);
+      giwad = pwadScanInfo.iwad;
     }
   }
 
@@ -1081,6 +1085,7 @@ static void performPWadScan () {
   GCon->Log(NAME_Init, "pwad map detection complete.");
 
   fsys_hasMapPwads = (fsys_PWadMaps.length() > 0);
+  pwadScanInfo.iwad = giwad;
 }
 
 
