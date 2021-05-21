@@ -622,3 +622,22 @@ defaultproperties {
   caststrings[15] = "$cc_cyber";
   caststrings[16] = "$cc_hero";
 }
+
+
+class Arachnotron : Actor decorate;
+class Archvile : Actor decorate;
+class BaronOfHell : Actor decorate;
+class Cacodemon : Actor decorate;
+class ChaingunGuy : Actor decorate;
+class Cyberdemon : Actor decorate;
+class Demon : Actor decorate;
+class DoomImp : Actor decorate;
+class DoomPlayer : Actor decorate;
+class Fatso : Actor decorate;
+class HellKnight : Actor decorate;
+class LostSoul : Actor decorate;
+class PainElemental : Actor decorate;
+class Revenant : Actor decorate;
+class ShotgunGuy : Actor decorate;
+class SpiderMastermind : Actor decorate;
+class ZombieMan : Actor decorate;
