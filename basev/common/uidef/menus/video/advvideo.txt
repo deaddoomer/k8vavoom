@@ -337,15 +337,16 @@ menudef AdvVideoOptions {
   }
   */
 
-  header "Shadow Volumes";
 
-  option bool {
+  header "Shadow Volumes" [__gl_crippled_gpu == 0];
+
+  option bool [__gl_crippled_gpu == 0] {
     title = "Model Shadows";
     cvar = r_model_shadows;
     help = "Let 3D models cast shadows in stenciled lighting mode.";
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Player Shadows";
     cvar = r_camera_player_shadows;
     help =

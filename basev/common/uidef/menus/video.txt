@@ -3,6 +3,13 @@ menudef VideoOptions {
   //selector = MenuSelector_SmallRight;
   Title = "VIDEO OPTIONS";
 
+  header [__gl_crippled_gpu > 0] "WARNING!";
+  header [__gl_crippled_gpu > 0] "YOUR GPU IS SEVERELY CRIPPLED";
+  header [__gl_crippled_gpu > 0] "BY THE VENDOR!";
+  header [__gl_crippled_gpu > 0] "MOST ADVANCED K8VAVOOM GRAPHICAL";
+  header [__gl_crippled_gpu > 0] "FEATURES ARE DISABLED";
+  header [__gl_crippled_gpu > 0] "-";
+
   option slider {
     title = "Brightness";
     cvar = brightness;
@@ -240,7 +247,7 @@ menudef VideoOptions {
     submenu = "AdvVideoLightFilterOptions";
   }
 
-  option submenu {
+  option submenu [__gl_can_bloom > 0] {
     title = "Bloom Options";
     submenu = "PFXBloomOptions";
   }
@@ -250,7 +257,7 @@ menudef VideoOptions {
     submenu = "DecalOptions";
   }
 
-  option submenu {
+  option submenu [__gl_crippled_gpu == 0] {
     title = "Shadowmap Options";
     submenu = "ShadowMapOptions";
   }

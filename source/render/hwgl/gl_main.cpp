@@ -44,6 +44,9 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
+static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
+
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
 
@@ -816,7 +819,10 @@ void VOpenGLDrawer::InitResolution () {
     VStr ren((char *)glGetString(GL_RENDERER));
     VStr ver((char *)glGetString(GL_VERSION));
     GCon->Logf(NAME_Init, "OpenGL: %s / %s / %s", *ven, *ren, *ver);
-    if (ren.globMatchCI("*rtx*3060*")) {
+    if (ren.globMatchCI("*rtx*3060*") ||
+        (ren.globMatchCI("*rtx*3*0*0*") && ven.globMatchCI("NVIDIA") &&
+         (ven.globMatchCI("LHR") || ver.globMatchCI("LHR"))))
+    {
       isCrippledGPU = true;
       GCon->Logf(NAME_Error, "OpenGL: this videocard is severely crippled. turning off advanced effects.");
     }
@@ -861,6 +867,7 @@ void VOpenGLDrawer::InitResolution () {
     shittyGPUCheckDone = true;
     isShittyGPU = true;
   }
+  gl_crippled_gpu = isCrippledGPU;
 
   glVerMajor = major;
   glVerMinor = minor;
@@ -1092,6 +1099,7 @@ void VOpenGLDrawer::InitResolution () {
   } else {
     canIntoBloomFX = true;
   }
+  gl_can_bloom = canIntoBloomFX;
 
   if (hasBoundsTest) GCon->Log(NAME_Init, "Found GL_EXT_depth_bounds_test");
 

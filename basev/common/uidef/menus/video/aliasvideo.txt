@@ -88,39 +88,39 @@ menudef AliasModelVideoOptions {
   }
 
 
-  header "Stencil Shadows";
+  header "Stencil Shadows" [__gl_crippled_gpu == 0];
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Monsters";
     cvar = r_shadows_monsters;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Corpses";
     cvar = r_shadows_corpses;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Missiles";
     cvar = r_shadows_missiles;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Pickups";
     cvar = r_shadows_pickups;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Decorations";
     cvar = r_shadows_decorations;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Players";
     cvar = r_shadows_players;
   }
 
-  option bool {
+  option bool [__gl_crippled_gpu == 0] {
     title = "Other";
     cvar = r_shadows_other;
   }

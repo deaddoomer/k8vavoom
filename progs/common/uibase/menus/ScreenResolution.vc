@@ -51,6 +51,15 @@ MenuChoiceNumeric UIMaxScale;
 //
 //==========================================================================
 override void CreateChoices () {
+  if (GetCvarB('__gl_crippled_gpu')) {
+    CreateChoiceSubHeader("WARNING!");
+    CreateChoiceSubHeader("YOUR GPU IS SEVERELY CRIPPLED");
+    CreateChoiceSubHeader("BY THE VENDOR!");
+    CreateChoiceSubHeader("MOST ADVANCED K8VAVOOM GRAPHICAL");
+    CreateChoiceSubHeader("FEATURES ARE DISABLED");
+    CreateChoiceSubHeader("-");
+  }
+
   Mode = GetItemContainer().NewChild(MenuChoiceEnum);
   SetChoiceInitialSizePos(Mode);
   Mode.SetText("Resolution");
