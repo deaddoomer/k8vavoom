@@ -56,8 +56,12 @@ final void DebugCheckMidTex () {
   // spawn decal
   //k8:TODO: this should be strictly client-side
   if (tr.didhit) {
-    if (tr.line && tr.sec) SpawnDecal(tr.hit, 'K8BigScorchTest', tr.side, tr.line);
-    SpawnFlatDecal(tr.hit, 'K8BigScorchTest', 2);
+    TVec fdorg = tr.hit;
+    if (tr.line && tr.sec) {
+      SpawnDecal(tr.hit, 'K8BigScorchTest', tr.side, tr.line);
+      fdorg += tr.line.normal*2.0; // move slightly away from the wall
+    }
+    SpawnFlatDecal(fdorg, 'K8BigScorchTest', 2);
     /*
     else {
       XLevel.AddFlatDecal(tr.hit, 'BigScorch', 32);
