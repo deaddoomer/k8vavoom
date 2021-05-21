@@ -2247,7 +2247,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     ReplaceeClass = VClass::FindClassNoCase(*sc->String);
     if (ReplaceeClass == nullptr || ReplaceeClass->MemberType != MEMBER_Class) {
       // D4V (and other mods) hacks
-      bool ignoreReplaceError = CheckReplaceErrorHacks(sc, NameStr, ParentStr, sc->String);
+      bool ignoreReplaceError = (optionalActor || CheckReplaceErrorHacks(sc, NameStr, ParentStr, sc->String));
       if (cli_DecorateLaxParents || ignoreReplaceError) {
         ReplaceeClass = nullptr; // just in case
         if (!ignoreReplaceError) sc->Message(va("Replaced class `%s` not found for actor `%s` : `%s`", *sc->String, *NameStr, *ParentStr));
