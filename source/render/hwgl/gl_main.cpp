@@ -44,8 +44,12 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
+static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", false, "Use 128x128x128 color cube instead of 64x64x64?.", CVAR_Archive);
+
 static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
+
+static VCvarB gl_can_hires_tonemap("__gl_can_hires_tonemap", false, "who cares.", CVAR_Rom);
 
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
@@ -454,6 +458,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , tonemapSrcFBO()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
+  , tonemapMode(0)
 {
   glVerMajor = glVerMinor = 0;
 
@@ -708,6 +713,94 @@ void VOpenGLDrawer::EnsureShadowMapCube () {
 
 //==========================================================================
 //
+//  VOpenGLDrawer::GeneratePaletteLUT
+//
+//==========================================================================
+void VOpenGLDrawer::GeneratePaletteLUT () {
+  if (tonemapPalLUT) {
+    glBindTexture(GL_TEXTURE_2D, 0); // just in case
+    glDeleteTextures(1, &tonemapPalLUT);
+    tonemapPalLUT = 0;
+    GLDRW_CHECK_ERROR("destroy tonemapPalLUT");
+  }
+
+  if (!gl_can_hires_tonemap) tonemapMode = 0; // oops
+
+  rgba_t *tdata;
+  if (tonemapMode == 0) {
+    GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT...");
+    tdata = (rgba_t *)Z_Calloc(512*512*sizeof(rgba_t));
+    rgba_t *c = tdata;
+    const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
+    tonemapLastGamma = usegamma;
+    for (int r = 0; r < 64; ++r) {
+      for (int g = 0; g < 64; ++g) {
+        for (int b = 0; b < 64; ++b, ++c) {
+          //*c = R_LookupRGB((r<<2)|(r>>4), (g<<2)|(g>>4), (b<<2)|(b>>4));
+          const vuint8 r8 = clampToByte(r*255/63);
+          const vuint8 g8 = clampToByte(g*255/63);
+          const vuint8 b8 = clampToByte(b*255/63);
+          *c = r_palette[R_LookupRGB(r8, g8, b8)];
+          c->r = gt[c->r];
+          c->g = gt[c->g];
+          c->b = gt[c->b];
+          /* golden
+          int Gray = (r8*77+g8*143+b8*37)>>8;
+          c->r = min2(255, Gray+Gray/2);
+          c->g = Gray;
+          c->b = 0;
+          c->a = 255;
+          */
+        }
+      }
+    }
+  } else {
+    GCon->Logf(NAME_Init, "OpenGL: creating hires palette tonemap LUT...");
+    tdata = (rgba_t *)Z_Calloc(2048*2048*sizeof(rgba_t));
+    const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
+    tonemapLastGamma = usegamma;
+    for (int r = 0; r < 128; ++r) {
+      for (int g = 0; g < 128; ++g) {
+        for (int b = 0; b < 128; ++b) {
+          rgba_t *c = &tdata[(r*128+g)*128+b];
+          //*c = R_LookupRGB((r<<2)|(r>>4), (g<<2)|(g>>4), (b<<2)|(b>>4));
+          const vuint8 r8 = clampToByte(r*255/127);
+          const vuint8 g8 = clampToByte(g*255/127);
+          const vuint8 b8 = clampToByte(b*255/127);
+          *c = r_palette[R_LookupRGB(r8, g8, b8)];
+          c->r = gt[c->r];
+          c->g = gt[c->g];
+          c->b = gt[c->b];
+        }
+      }
+    }
+  }
+
+  glGenTextures(1, &tonemapPalLUT);
+  GLDRW_CHECK_ERROR("create tonemapPalLUT");
+  p_glObjectLabelVA(GL_TEXTURE, tonemapPalLUT, "Palette Tonemap LUT Texture");
+  glBindTexture(GL_TEXTURE_2D, tonemapPalLUT);
+  glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
+  GLDRW_CHECK_ERROR("bind tonemapPalLUT");
+  //glTexSubImage2D(GL_TEXTURE_2D, 0,  0, 0, 512, 512, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
+  if (tonemapMode == 0) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
+  } else {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2048, 2048, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
+  }
+  GLDRW_CHECK_ERROR("upload tonemapPalLUT");
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  Z_Free(tdata);
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::GLDisableDepthWriteSlow
 //
 //==========================================================================
@@ -803,66 +896,6 @@ void VOpenGLDrawer::DeinitResolution () {
 
   memset(currentViewport, 0, sizeof(currentViewport));
   currentViewport[0] = -666;
-}
-
-
-//==========================================================================
-//
-//  VOpenGLDrawer::GeneratePaletteLUT
-//
-//==========================================================================
-void VOpenGLDrawer::GeneratePaletteLUT () {
-  GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT...");
-
-  if (tonemapPalLUT) {
-    glBindTexture(GL_TEXTURE_2D, 0); // just in case
-    glDeleteTextures(1, &tonemapPalLUT);
-    tonemapPalLUT = 0;
-    GLDRW_CHECK_ERROR("destroy tonemapPalLUT");
-  }
-
-  rgba_t *tdata = (rgba_t *)Z_Malloc(512*512*sizeof(rgba_t));
-  rgba_t *c = tdata;
-  const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
-  tonemapLastGamma = usegamma;
-  for (int r = 0; r < 64; ++r) {
-    for (int g = 0; g < 64; ++g) {
-      for (int b = 0; b < 64; ++b, ++c) {
-        //*c = R_LookupRGB((r<<2)|(r>>4), (g<<2)|(g>>4), (b<<2)|(b>>4));
-        const vuint8 r8 = clampToByte(r*255/63);
-        const vuint8 g8 = clampToByte(g*255/63);
-        const vuint8 b8 = clampToByte(b*255/63);
-        *c = r_palette[R_LookupRGB(r8, g8, b8)];
-        c->r = gt[c->r];
-        c->g = gt[c->g];
-        c->b = gt[c->b];
-        /* golden
-        int Gray = (r8*77+g8*143+b8*37)>>8;
-        c->r = min2(255, Gray+Gray/2);
-        c->g = Gray;
-        c->b = 0;
-        c->a = 255;
-        */
-      }
-    }
-  }
-
-  glGenTextures(1, &tonemapPalLUT);
-  GLDRW_CHECK_ERROR("create tonemapPalLUT");
-  p_glObjectLabelVA(GL_TEXTURE, tonemapPalLUT, "Palette Tonemap LUT Texture");
-  glBindTexture(GL_TEXTURE_2D, tonemapPalLUT);
-  glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
-  GLDRW_CHECK_ERROR("bind tonemapPalLUT");
-  //glTexSubImage2D(GL_TEXTURE_2D, 0,  0, 0, 512, 512, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
-  GLDRW_CHECK_ERROR("upload tonemapPalLUT");
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  Z_Free(tdata);
 }
 
 
@@ -974,6 +1007,7 @@ void VOpenGLDrawer::InitResolution () {
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
   GCon->Logf(NAME_Init, "Maximum texture size: %d", maxTexSize);
   if (maxTexSize < 1024) maxTexSize = 1024; // 'cmon!
+  gl_can_hires_tonemap = (maxTexSize >= 2048);
 
   hasNPOT = CheckExtension("GL_ARB_texture_non_power_of_two") || CheckExtension("GL_OES_texture_npot");
   hasBoundsTest = CheckExtension("GL_EXT_depth_bounds_test");
@@ -1383,7 +1417,8 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight)
     tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
     p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
     GeneratePaletteLUT();
-  } else if (tonemapLastGamma != usegamma) {
+  } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool()) {
+    tonemapMode = (int)gl_tonemap_pal_hires.asBool();
     GeneratePaletteLUT();
   }
 
@@ -1400,19 +1435,26 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight)
   mfbo->blitTo(&tonemapSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, tonemapSrcFBO.getWidth(), tonemapSrcFBO.getHeight(), GL_NEAREST);
   mfbo->activate();
 
-  TonemapPalette.Activate();
   // source texture
   SelectTexture(0);
   glBindTexture(GL_TEXTURE_2D, tonemapSrcFBO.getColorTid());
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  TonemapPalette.SetScreenFBO(0);
   // LUT texture
   SelectTexture(1);
   glBindTexture(GL_TEXTURE_2D, tonemapPalLUT);
-  TonemapPalette.SetTexPalLUT(1);
-  TonemapPalette.UploadChangedUniforms();
-  //currentActiveShader->UploadChangedUniforms();
+
+  if (tonemapMode == 0) {
+    TonemapPalette64.Activate();
+    TonemapPalette64.SetScreenFBO(0);
+    TonemapPalette64.SetTexPalLUT(1);
+  } else {
+    TonemapPalette128.Activate();
+    TonemapPalette128.SetScreenFBO(0);
+    TonemapPalette128.SetTexPalLUT(1);
+  }
+
+  currentActiveShader->UploadChangedUniforms();
 
   // draw fullscreen quad
   glBegin(GL_QUADS);

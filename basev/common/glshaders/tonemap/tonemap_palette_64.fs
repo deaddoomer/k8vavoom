@@ -1,9 +1,5 @@
 #version 120
-//#extension GL_EXT_gpu_shader4 : enable
 $include "common/common.inc"
-
-#define LUT_WIDTH   512
-#define LUT_HEIGHT  512
 
 varying vec2 TextureCoordinate;
 uniform sampler2D ScreenFBO;

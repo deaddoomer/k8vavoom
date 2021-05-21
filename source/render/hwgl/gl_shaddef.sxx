@@ -333,5 +333,6 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
   Shader BloomKawase both="bloom/kawase";
 
   // tonemapping
-  Shader TonemapPalette both="tonemap/tonemap_palette";
+  Shader TonemapPalette64 vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_palette_64";
+  Shader TonemapPalette128 vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_palette_128";
 }

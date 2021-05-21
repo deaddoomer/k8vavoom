@@ -970,6 +970,7 @@ protected:
   FBO tonemapSrcFBO; // main fbo will be copied there
   GLuint tonemapPalLUT; // palette LUT texture
   int tonemapLastGamma;
+  int tonemapMode; // 0: 64x64x64, 1: 128x128x128
 
   GLint maxTexSize;
 

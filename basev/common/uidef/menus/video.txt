@@ -46,6 +46,15 @@ menudef VideoOptions {
       "\c[WHITE]WARNING: this feature is VERY EXPERIMENTAL.";
   }
 
+  option bool [__gl_can_hires_tonemap > 0] {
+    title = "HiRes Tonemap LUT";
+    cvar = gl_tonemap_pal_hires;
+    help =
+      "Use better palette LUT table for palette tonemap?",
+      "This will use 128x128x128 color cube, but will",
+      "require 16MB of VRAM instead of 1MB.";
+  }
+
 
   header "Renderer";
 
