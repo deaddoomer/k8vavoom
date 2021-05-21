@@ -91,6 +91,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
 
   bool skipEffects = (checkOnly || noPickups);
 
+  TMDbgF("%s: *** trying to move from (%g,%g,%g) to (%g,%g,%g); Height=%g; Radius=%g", GetClass()->GetName(), Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, Height, Radius);
   check = CheckRelPosition(tmtrace, newPos, skipEffects);
   tmtrace.TraceFlags &= ~tmtrace_t::TF_FloatOk;
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "trying to move from (%g,%g,%g) to (%g,%g,%g); check=%d", Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, (int)check);
@@ -198,7 +199,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
 
       if ((EntityFlags&EF_Missile) && !(EntityFlags&EF_StepMissile) && tmtrace.FloorZ > Origin.z) {
         PushLine(tmtrace, skipEffects);
-        TMDbgF("%s:   FLOORX(0)! z=%g; fl=%g; spechits=%d", GetClass()->GetName(), Origin.z, tmtrace.FloorZ, tmtrace.SpecHit.length());
+        TMDbgF("%s:   FLOORX(0)! z=%g; fl=%g; spechits=%d; Origin.z=%g to %g; FloorZ=%g", GetClass()->GetName(), Origin.z, tmtrace.FloorZ, tmtrace.SpecHit.length(), Origin.z, Origin.z+Height, tmtrace.FloorZ);
         return false;
       }
 
