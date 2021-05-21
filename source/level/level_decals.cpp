@@ -360,6 +360,35 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
 
 //==========================================================================
 //
+//  CheckLeakToSector
+//
+//  is there a way reach `destsec` from `fsec`?
+//
+//==========================================================================
+static bool CheckLeakToSector (VLevel *Level, const sector_t *fsec, const sector_t *destsec) noexcept {
+  if (!fsec || !destsec) return false;
+  if (fsec == destsec) return true;
+  line_t *const *lnp = fsec->lines;
+  for (int f = fsec->linecount; f--; ++lnp) {
+    const line_t *ln = *lnp;
+    if ((ln->flags&ML_TWOSIDED) == 0) continue;
+    int checkside;
+         if (ln->frontsector == fsec && ln->backsector == destsec) checkside = 0;
+    else if (ln->frontsector == destsec && ln->backsector == fsec) checkside = 1;
+    else continue;
+    if (ln->sidenum[checkside] < 0) continue; // just in case
+    for (seg_t *seg = ln->firstseg; seg; seg = seg->lsnext) {
+      if (seg->side != checkside) continue; // partner segs will be processed with normal segs
+      if (seg->flags&SF_ZEROLEN) continue; // invalid seg
+      if (!VViewClipper::IsSegAClosedSomething(Level, nullptr, seg)) return true;
+    }
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  IsWallSpreadAllowed
 //
 //  moving to another sector, check if we have any open line into it
@@ -370,6 +399,8 @@ static bool IsWallSpreadAllowed (VLevel *Level, const sector_t *fsec,
                                  const line_t *li, const int vxidx,
                                  const line_t *nline, const int nside) noexcept
 {
+  // this is wrong: we may not have proper connections (see MAP01 entrance)
+  // for now, let decals leak over one-sided lines
   if (nline->sidenum[nside] < 0) return false;
   const sector_t *others = (nside ? nline->backsector : nline->frontsector);
   if (!others) return false;
@@ -381,7 +412,14 @@ static bool IsWallSpreadAllowed (VLevel *Level, const sector_t *fsec,
     int checkside;
          if (nb->frontsector == fsec && nb->backsector == others) checkside = 0;
     else if (nb->frontsector == others && nb->backsector == fsec) checkside = 1;
-    else continue;
+    else {
+      if (nb->frontsector == fsec) {
+        if (CheckLeakToSector(Level, nb->backsector, others)) return true;
+      } else if (nb->backsector == fsec) {
+        if (CheckLeakToSector(Level, nb->frontsector, others)) return true;
+      }
+      continue;
+    }
     if (nb->sidenum[checkside] < 0) continue; // just in case
     // check if it is opened
     for (seg_t *seg = nb->firstseg; seg; seg = seg->lsnext) {
