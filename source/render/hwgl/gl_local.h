@@ -966,6 +966,11 @@ protected:
   // current "main" fbo: <0: `mainFBO`, otherwise camera FBO
   int currMainFBO;
 
+  // tonemap
+  FBO tonemapSrcFBO; // main fbo will be copied there
+  GLuint tonemapPalLUT; // palette LUT texture
+  int tonemapLastGamma;
+
   GLint maxTexSize;
 
   GLuint lmap_id[NUM_BLOCK_SURFS];
@@ -1256,6 +1261,8 @@ protected:
   void GenerateLightmapAtlasTextures ();
   void DeleteLightmapAtlases ();
 
+  void GeneratePaletteLUT ();
+
   virtual void FlushOneTexture (VTexture *tex, bool forced=false) override; // unload one texture
   virtual void FlushTextures (bool forced=false) override; // unload all textures
 
@@ -1363,6 +1370,7 @@ private: // bloom
 
 public:
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) override;
+  virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;

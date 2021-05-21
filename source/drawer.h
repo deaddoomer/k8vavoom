@@ -558,6 +558,8 @@ public:
   virtual void SetBlendEnabled (const bool v) = 0;
 
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) = 0;
+  virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) = 0;
+
   // can be called several times
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) = 0;
   // can be called several times in a row (i.e. one creation may lead to many shutdowns)

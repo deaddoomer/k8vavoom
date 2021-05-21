@@ -331,4 +331,7 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
   Shader BloomColorExp both="bloom/colorexp";
   Shader BloomColorScale both="bloom/colorscale";
   Shader BloomKawase both="bloom/kawase";
+
+  // tonemapping
+  Shader TonemapPalette both="tonemap/tonemap_palette";
 }

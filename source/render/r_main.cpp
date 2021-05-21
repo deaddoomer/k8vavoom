@@ -49,6 +49,8 @@ VCvarB r_allow_cameras("r_allow_cameras", true, "Allow rendering live cameras?",
 //VCvarB dbg_dlight_vis_check_messages("dbg_dlight_vis_check_messages", false, "Show dynlight vischeck debug messages?", 0);
 VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks? (AT MAJORITY OF CASES THIS IS SLOWER THAN BSP!)", CVAR_Archive);
 
+static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive);
+
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
@@ -1546,6 +1548,9 @@ void VRenderLevelShared::RenderPlayerView () {
 
   if (dbg_clip_dump_added_ranges) ViewClip.Dump();
 
+  // no, not here
+  //if (r_tonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height);
+
   // perform bloom effect
   //GCon->Logf(NAME_Debug, "BLOOM: (%d,%d); (%dx%d)", refdef.x, refdef.y, refdef.width, refdef.height);
   Drawer->Posteffect_Bloom(refdef.x, refdef.y, refdef.width, refdef.height);
@@ -1556,6 +1561,8 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // draw the psprites on top of everything
   if (cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) DrawPlayerSprites();
+
+  if (r_tonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height);
 
   Drawer->EndView();
 }
