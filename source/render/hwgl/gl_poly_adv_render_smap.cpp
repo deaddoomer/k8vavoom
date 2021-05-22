@@ -389,7 +389,7 @@ void VOpenGLDrawer::DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TV
     currTexinfo.noDecals = 0;
     currTexinfo.Alpha = 1.1f;
     currTexinfo.Additive = 0;
-    currTexinfo.ColorMap = 0;
+    currTexinfo.ColorMap = CM_Default;
 
     SurfShadowMapSpr.Activate();
     // activate shader, check for texture change

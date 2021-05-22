@@ -972,6 +972,9 @@ protected:
   int tonemapLastGamma;
   int tonemapMode; // 0: 64x64x64, 1: 128x128x128
 
+  // colormap
+  FBO colormapSrcFBO; // main fbo will be copied there
+
   GLint maxTexSize;
 
   GLuint lmap_id[NUM_BLOCK_SURFS];
@@ -1372,6 +1375,7 @@ private: // bloom
 public:
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) override;
   virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) override;
+  virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;

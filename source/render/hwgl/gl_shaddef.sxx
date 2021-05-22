@@ -335,4 +335,13 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
   // tonemapping
   Shader TonemapPalette64 vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_palette_64";
   Shader TonemapPalette128 vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_palette_128";
+
+  // global colormaps
+  Shader ColormapInverse vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_inverse"; // CM_Inverse
+  Shader ColormapGold vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_gold"; // CM_Gold
+  Shader ColormapRed vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_red"; // CM_Red
+  Shader ColormapGreen vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_green"; // CM_Green
+  Shader ColormapMono vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_mono"; // CM_Mono
+  Shader ColormapBeRed vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_bered"; // CM_BeRed
+  Shader ColormapBlue vertex="tonemap/tonemap_palette" fragment="tonemap/tonemap_colormap_blue"; // CM_Blue
 }

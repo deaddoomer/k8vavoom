@@ -459,6 +459,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
   , tonemapMode(0)
+  , colormapSrcFBO()
 {
   glVerMajor = glVerMinor = 0;
 
@@ -891,8 +892,10 @@ void VOpenGLDrawer::DeinitResolution () {
     glBindTexture(GL_TEXTURE_2D, 0); // just in case
     glDeleteTextures(1, &tonemapPalLUT);
     tonemapPalLUT = 0;
-    tonemapSrcFBO.destroy();
   }
+  tonemapSrcFBO.destroy();
+
+  colormapSrcFBO.destroy();
 
   memset(currentViewport, 0, sizeof(currentViewport));
   currentViewport[0] = -666;
@@ -1267,6 +1270,8 @@ void VOpenGLDrawer::InitResolution () {
   GeneratePaletteLUT();
   */
 
+  // `colormapSrcFBO` will be allocated on demand
+
   //if (major >= 3) canRenderShadowmaps = true;
   canRenderShadowmaps = !isCrippledGPU; //true;
 
@@ -1468,6 +1473,91 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight)
   glBindTexture(GL_TEXTURE_2D, 0);
   // unbind texture 0
   SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  // and deactivate shaders (just in case)
+  DeactivateShader();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::Posteffect_ColorMap
+//
+//==========================================================================
+void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) {
+  if (cmap <= CM_Default || cmap >= CM_Max) return;
+
+  SetMainFBO(true); // forced
+  auto mfbo = GetMainFBO();
+
+  // create colormap FBO
+  if (!colormapSrcFBO.isValid()) {
+    colormapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
+  }
+
+  SetOrthoProjection(0, mfbo->getWidth(), mfbo->getHeight(), 0);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  GLDisableBlend();
+  GLDisableDepthWrite();
+  glEnable(GL_TEXTURE_2D);
+
+  // copy main FBO to tonemap source FBO, so we can read it
+  mfbo->blitTo(&colormapSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, colormapSrcFBO.getWidth(), colormapSrcFBO.getHeight(), GL_NEAREST);
+  mfbo->activate();
+
+  // source texture
+  //SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, colormapSrcFBO.getColorTid());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  switch (cmap) {
+    case CM_Inverse:
+      ColormapInverse.Activate();
+      ColormapInverse.SetScreenFBO(0);
+      break;
+    case CM_Gold:
+      ColormapGold.Activate();
+      ColormapGold.SetScreenFBO(0);
+      break;
+    case CM_Red:
+      ColormapRed.Activate();
+      ColormapRed.SetScreenFBO(0);
+      break;
+    case CM_Green:
+      ColormapGreen.Activate();
+      ColormapGreen.SetScreenFBO(0);
+      break;
+    case CM_Mono:
+      ColormapMono.Activate();
+      ColormapMono.SetScreenFBO(0);
+      break;
+    case CM_BeRed:
+      ColormapBeRed.Activate();
+      ColormapBeRed.SetScreenFBO(0);
+      break;
+    case CM_Blue:
+      ColormapBlue.Activate();
+      ColormapBlue.SetScreenFBO(0);
+      break;
+    default:
+      Sys_Error("ketmar forgot to implement shader for colormap #%d", cmap);
+  }
+
+  currentActiveShader->UploadChangedUniforms();
+
+  // draw fullscreen quad
+  glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
+    glTexCoord2f(1.0f, 1.0f); glVertex2i(mfbo->getWidth(), 0);
+    glTexCoord2f(1.0f, 0.0f); glVertex2i(mfbo->getWidth(), mfbo->getHeight());
+    glTexCoord2f(0.0f, 0.0f); glVertex2i(0, mfbo->getHeight());
+  glEnd();
+
+  // unbind texture 0
   glBindTexture(GL_TEXTURE_2D, 0);
   // and deactivate shaders (just in case)
   DeactivateShader();

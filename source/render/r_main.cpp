@@ -51,6 +51,10 @@ VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform d
 
 static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive);
 
+static VCvarB r_shader_colormaps("r_shader_colormaps", true, "Use shaders to apply colormaps instead of texture reuploading.", CVAR_Archive);
+
+static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", 0);
+
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
@@ -686,7 +690,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   renderedLineCounter = 0;
   forceDisableShadows = false;
 
-  ColorMap = 0;
+  ColorMap = CM_Default;
   skyheight = 0;
   memset((void *)(&dlinfo[0]), 0, sizeof(dlinfo));
   CurrLightRadius = 0;
@@ -1370,7 +1374,7 @@ void VRenderLevelShared::SetupFrame () {
     else { FixedLight = 0; }
   } else {
     FixedLight = 0;
-    ColorMap = 0;
+    ColorMap = CM_Default;
   }
 
   // inverse colormap flash effect
@@ -1428,7 +1432,7 @@ void VRenderLevelShared::SetupCameraFrame (VEntity *Camera, VTexture *Tex, int F
 
   ExtraLight = 0;
   FixedLight = 0;
-  ColorMap = 0;
+  ColorMap = CM_Default;
 
   Drawer->SetupView(this, rd);
   //advanceCacheFrame();
@@ -1540,6 +1544,11 @@ void VRenderLevelShared::RenderPlayerView () {
 
   SetupFrame();
 
+  // reset global colormap, it will be done with the shader
+  const int savedColorMap = (r_dbg_force_colormap.asInt() ? r_dbg_force_colormap.asInt() : ColorMap);
+  const bool shaderCM = r_shader_colormaps.asBool();
+  if (shaderCM) ColorMap = CM_Default;
+
   if (dbg_clip_dump_added_ranges) GCon->Logf("=== RENDER SCENE: (%f,%f,%f); (yaw=%f; pitch=%f)", Drawer->vieworg.x, Drawer->vieworg.y, Drawer->vieworg.x, Drawer->viewangles.yaw, Drawer->viewangles.pitch);
 
   //GCon->Log(NAME_Debug, "*** VRenderLevelShared::RenderPlayerView: ENTER ***");
@@ -1547,9 +1556,6 @@ void VRenderLevelShared::RenderPlayerView () {
   //GCon->Log(NAME_Debug, "*** VRenderLevelShared::RenderPlayerView: EXIT ***");
 
   if (dbg_clip_dump_added_ranges) ViewClip.Dump();
-
-  // no, not here
-  //if (r_tonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height);
 
   // perform bloom effect
   //GCon->Logf(NAME_Debug, "BLOOM: (%d,%d); (%dx%d)", refdef.x, refdef.y, refdef.width, refdef.height);
@@ -1562,6 +1568,14 @@ void VRenderLevelShared::RenderPlayerView () {
   // draw the psprites on top of everything
   if (cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) DrawPlayerSprites();
 
+  // apply colormap
+  if (shaderCM) {
+    Drawer->Posteffect_ColorMap(savedColorMap, refdef.x, refdef.y, refdef.width, refdef.height);
+    // just in case
+    ColorMap = savedColorMap;
+  }
+
+  // apply tonemap
   if (r_tonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height);
 
   Drawer->EndView();

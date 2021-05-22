@@ -45,7 +45,7 @@ void VRenderLevelShared::SetupOneSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->texinfo.noDecals = sp->texinfo.Tex->noDecals;
   sp->texinfo.Alpha = 1.1f;
   sp->texinfo.Additive = false;
-  sp->texinfo.ColorMap = 0;
+  sp->texinfo.ColorMap = CM_Default;
 
   // not for polyobjects
   if (sp->texinfo.Tex->Type != TEXTYPE_Null && !seg->pobj) {

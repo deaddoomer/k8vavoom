@@ -228,7 +228,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   ssurf->texinfo.noDecals = (Tex ? Tex->noDecals : true);
   ssurf->texinfo.Alpha = (spl.splane->Alpha < 1.0f ? spl.splane->Alpha : 1.1f);
   ssurf->texinfo.Additive = !!(spl.splane->flags&SPF_ADDITIVE);
-  ssurf->texinfo.ColorMap = 0;
+  ssurf->texinfo.ColorMap = CM_Default;
   ssurf->XScale = spl.splane->XScale;
   ssurf->YScale = spl.splane->YScale;
   ssurf->Angle = spl.splane->BaseAngle-spl.splane->Angle;
@@ -359,7 +359,7 @@ void VRenderLevelShared::UpdateSecSurface (sec_surface_t *ssurf, TSecPlaneRef Re
     */
     sec_surface_t *newsurf = CreateSecSurface(ssurf, sub, RealPlane, sreg, fake);
     vassert(newsurf == ssurf); // sanity check
-    ssurf->texinfo.ColorMap = (!ignoreColorMap ? ColorMap : 0); // just in case
+    ssurf->texinfo.ColorMap = (!ignoreColorMap ? ColorMap : CM_Default); // just in case
     // nothing more to do
     return;
   }

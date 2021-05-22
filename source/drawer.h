@@ -559,6 +559,7 @@ public:
 
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) = 0;
   virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) = 0;
+  virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) = 0;
 
   // can be called several times
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) = 0;

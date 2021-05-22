@@ -43,7 +43,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTextu
     texinfo->Alpha = 1.1f;
     texinfo->Additive = false;
   }
-  texinfo->ColorMap = 0;
+  texinfo->ColorMap = CM_Default;
   texinfo->saxis = texinfo->saxisLM = TVec(1.0f, 0.0f, 0.0f);
   texinfo->taxis = texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
   texinfo->soffs = texinfo->toffs = 0.0f;
@@ -71,7 +71,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     texinfo->Alpha = 1.1f;
     texinfo->Additive = false;
   }
-  texinfo->ColorMap = 0;
+  texinfo->ColorMap = CM_Default;
 
   const bool xflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_X);
   const bool yflip = ((tparam->Flags^(segparam ? segparam->Flags : 0u))&STP_FLIP_Y);
