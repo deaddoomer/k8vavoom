@@ -19,6 +19,22 @@ menudef VideoOptions {
   }
 
   option slider {
+    title = "Light Fade Factor";
+    cvar = r_fade_factor;
+    step = 0.1;
+    min = 0.1;
+    max = 10;
+  }
+
+  option slider {
+    title = "Sky Brightness Factor";
+    cvar = r_sky_bright_factor;
+    step = 0.1;
+    min = 0;
+    max = 4;
+  }
+
+  option slider {
     title = "Menu darkness";
     cvar = menu_darkening;
     step = 0.1;
