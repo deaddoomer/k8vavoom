@@ -1105,6 +1105,7 @@ void VOpenGLDrawer::InitResolution () {
   GCon->Logf(NAME_Init, "Maximum texture size: %d", maxTexSize);
   if (maxTexSize < 1024) maxTexSize = 1024; // 'cmon!
   gl_can_hires_tonemap = (maxTexSize >= 2048);
+  if (!gl_can_hires_tonemap) gl_tonemap_pal_hires = false; // turn it off
 
   hasNPOT = CheckExtension("GL_ARB_texture_non_power_of_two") || CheckExtension("GL_OES_texture_npot");
   hasBoundsTest = CheckExtension("GL_EXT_depth_bounds_test");
