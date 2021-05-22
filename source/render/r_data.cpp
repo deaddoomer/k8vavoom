@@ -184,19 +184,11 @@ static void InitRgbTable () {
 
   const int algo = r_color_distance_algo.asInt();
 
-  double ungamma[256][3];
-  if (algo == 2) {
-    for (int i = 0; i < 256; ++i) {
-      ungamma[i][0] = sRGBungamma(r_palette[i].r);
-      ungamma[i][1] = sRGBungamma(r_palette[i].g);
-      ungamma[i][2] = sRGBungamma(r_palette[i].b);
-    }
-  } else {
-    for (int i = 0; i < 256; ++i) {
-      ungamma[i][0] = r_palette[i].r;
-      ungamma[i][1] = r_palette[i].g;
-      ungamma[i][2] = r_palette[i].b;
-    }
+  double *ungamma = (double *)Z_Calloc(256*4*sizeof(double));
+  for (unsigned i = 0; i < 256; ++i) {
+    ungamma[i*4+0] = r_palette[i].r;
+    ungamma[i*4+1] = r_palette[i].g;
+    ungamma[i*4+2] = r_palette[i].b;
   }
 
   for (int ir = 0; ir < VAVOOM_COLOR_COMPONENT_MAX; ++ir) {
@@ -209,14 +201,14 @@ static void InitRgbTable () {
         int best_color = -1;
         int best_dist = 0x7fffffff;
         double best_dist_dbl = DBL_MAX;
-        const double ur = (algo == 2 ? sRGBungamma(r) : r);
-        const double ug = (algo == 2 ? sRGBungamma(g) : g);
-        const double ub = (algo == 2 ? sRGBungamma(b) : b);
-        for (int i = 1; i < 256; ++i) {
+        const double ur = r;
+        const double ug = g;
+        const double ub = b;
+        for (unsigned i = 1; i < 256; ++i) {
           if (algo == 1) {
             const vint32 dist = rgbDistanceSquared(r_palette[i].r, r_palette[i].g, r_palette[i].b, r, g, b);
             if (best_color < 0 || dist < best_dist) {
-              best_color = i;
+              best_color = (int)i;
               best_dist = dist;
               if (!dist) break;
             }
@@ -226,12 +218,12 @@ static void InitRgbTable () {
                    (r_palette[i].g-g)*(r_palette[i].g-g)+
                    (r_palette[i].b-b)*(r_palette[i].b-b);
             #else
-            const double dr = ungamma[i][0]-ur;
-            const double dg = ungamma[i][1]-ug;
-            const double db = ungamma[i][2]-ub;
+            const double dr = ungamma[i*4+0]-ur;
+            const double dg = ungamma[i*4+1]-ug;
+            const double db = ungamma[i*4+2]-ub;
             const double dist = dr*dr+dg*dg+db*db;
             if (best_color < 0 || dist < best_dist_dbl) {
-              best_color = i;
+              best_color = (int)i;
               best_dist_dbl = dist;
               if (dist == 0.0f) break;
             }
@@ -243,6 +235,8 @@ static void InitRgbTable () {
       }
     }
   }
+
+  Z_Free(ungamma);
 }
 
 

@@ -44,8 +44,8 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
-static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", false, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive);
-static VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "2", "Tonemap color distance algorithm (0-2; 2 is the best one)", CVAR_Archive);
+static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", true, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive);
+static VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "1", "Tonemap color distance algorithm (0-1; 1 is the best one)", CVAR_Archive);
 
 static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
@@ -715,12 +715,10 @@ void VOpenGLDrawer::EnsureShadowMapCube () {
 
 
 static double *ungammaNormal = nullptr;
-static double *ungammaCorrected = nullptr;
 
 // 128x128x128
 static uint8_t *pallutAlgo0 = nullptr;
 static uint8_t *pallutAlgo1 = nullptr;
-static uint8_t *pallutAlgo2 = nullptr;
 
 
 //==========================================================================
@@ -733,12 +731,7 @@ static void PrepareUngamma () noexcept {
   GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT tables...");
   // calculate "ungamma" table
   ungammaNormal = (double *)Z_Calloc(256*4*sizeof(double));
-  ungammaCorrected = (double *)Z_Calloc(256*4*sizeof(double));
   for (unsigned i = 0; i < 256; ++i) {
-    // corrected
-    ungammaCorrected[i*4+0] = sRGBungamma(r_palette[i].r);
-    ungammaCorrected[i*4+1] = sRGBungamma(r_palette[i].g);
-    ungammaCorrected[i*4+2] = sRGBungamma(r_palette[i].b);
     // normal
     ungammaNormal[i*4+0] = r_palette[i].r;
     ungammaNormal[i*4+1] = r_palette[i].g;
@@ -752,28 +745,20 @@ static void PrepareUngamma () noexcept {
 //  TonemapPalFindColor
 //
 //  0: simple distance
-//  1: gamma-corrected distance
-//  2: rgbDistanceSquared
+//  1: rgbDistanceSquared
 //
 //==========================================================================
 static int TonemapPalFindColor (const int algo, const vuint8 r, const vuint8 g, const vuint8 b) noexcept {
-  PrepareUngamma();
-  switch (algo) {
-    case 0:
-      if (pallutAlgo0) return pallutAlgo0[((r>>1)*128+(g>>1))*128+(b>>1)];
-      break;
-    case 1:
-      if (pallutAlgo1) return pallutAlgo1[((r>>1)*128+(g>>1))*128+(b>>1)];
-      break;
-    case 2:
-      if (pallutAlgo2) return pallutAlgo2[((r>>1)*128+(g>>1))*128+(b>>1)];
-      break;
-    default: Sys_Error("invalid palette tonemap lut algo");
+  if (algo) {
+    if (pallutAlgo1) return pallutAlgo1[((r>>1)*128+(g>>1))*128+(b>>1)];
+  } else {
+    if (pallutAlgo0) return pallutAlgo0[((r>>1)*128+(g>>1))*128+(b>>1)];
   }
 
+  PrepareUngamma();
   GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT translation (algo #%d)...", algo);
 
-  const double *ungamma = (algo == 1 ? ungammaCorrected : ungammaNormal);
+  const double *ungamma = ungammaNormal;
 
   // no lut, calculate it
   vuint8 *lut = (vuint8 *)Z_Malloc(128*128*128);
@@ -784,11 +769,11 @@ static int TonemapPalFindColor (const int algo, const vuint8 r, const vuint8 g, 
         int best_color = -1;
         int best_dist = 0x7fffffff;
         double best_dist_dbl = DBL_MAX;
-        const double ur = (algo == 1 ? sRGBungamma(rr<<1) : (rr<<1));
-        const double ug = (algo == 1 ? sRGBungamma(gg<<1) : (gg<<1));
-        const double ub = (algo == 1 ? sRGBungamma(bb<<1) : (bb<<1));
+        const double ur = rr*255.0/127.0;
+        const double ug = gg*255.0/127.0;
+        const double ub = bb*255.0/127.0;
         for (unsigned i = 1; i < 256; ++i) {
-          if (algo == 2) {
+          if (algo) {
             const vint32 dist = rgbDistanceSquared(r_palette[i].r, r_palette[i].g, r_palette[i].b, rr<<1, gg<<1, bb<<1);
             if (best_color < 0 || dist < best_dist) {
               best_color = (int)i;
@@ -813,12 +798,7 @@ static int TonemapPalFindColor (const int algo, const vuint8 r, const vuint8 g, 
     }
   }
 
-  switch (algo) {
-    case 0: pallutAlgo0 = lut; break;
-    case 1: pallutAlgo1 = lut; break;
-    case 2: pallutAlgo2 = lut; break;
-    default: Sys_Error("invalid palette tonemap lut algo");
-  }
+  if (algo) pallutAlgo1 = lut; else pallutAlgo0 = lut;
 
   return TonemapPalFindColor(algo, r, g, b);
 }
@@ -839,10 +819,9 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
 
   if (!gl_can_hires_tonemap) tonemapMode = 0; // oops
 
-  tonemapColorAlgo = clampval(gl_tonemap_pal_algo.asInt(), 0, 2);
+  tonemapColorAlgo = gl_tonemap_pal_algo.asInt();
   // 0: simple distance
-  // 1: gamma-corrected distance
-  // 2: rgbDistanceSquared
+  // 1: rgbDistanceSquared
   const int algo = tonemapColorAlgo;
 
   rgba_t *tdata;
@@ -850,7 +829,7 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
     GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT...");
     tdata = (rgba_t *)Z_Calloc(512*512*sizeof(rgba_t));
     rgba_t *c = tdata;
-    const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
+    //const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
     tonemapLastGamma = usegamma;
     for (int r = 0; r < 64; ++r) {
       for (int g = 0; g < 64; ++g) {
@@ -861,16 +840,17 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
           const vuint8 b8 = clampToByte(b*255/63);
           const int cidx = TonemapPalFindColor(algo, r8, g8, b8); //R_LookupRGB(r8, g8, b8)
           *c = r_palette[cidx];
-          c->r = gt[c->r];
-          c->g = gt[c->g];
-          c->b = gt[c->b];
+          c->a = 255;
+          //c->r = gt[c->r];
+          //c->g = gt[c->g];
+          //c->b = gt[c->b];
         }
       }
     }
   } else {
     GCon->Logf(NAME_Init, "OpenGL: creating hires palette tonemap LUT...");
     tdata = (rgba_t *)Z_Calloc(2048*2048*sizeof(rgba_t));
-    const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
+    //const vuint8 *gt = getGammaTable(usegamma); //gammatable[usegamma];
     tonemapLastGamma = usegamma;
     for (int r = 0; r < 128; ++r) {
       for (int g = 0; g < 128; ++g) {
@@ -882,9 +862,10 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
           const vuint8 b8 = clampToByte(b*255/127);
           const int cidx = TonemapPalFindColor(algo, r8, g8, b8); //R_LookupRGB(r8, g8, b8)
           *c = r_palette[cidx];
-          c->r = gt[c->r];
-          c->g = gt[c->g];
-          c->b = gt[c->b];
+          c->a = 255;
+          //c->r = gt[c->r];
+          //c->g = gt[c->g];
+          //c->b = gt[c->b];
         }
       }
     }
