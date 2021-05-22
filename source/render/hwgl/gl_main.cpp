@@ -44,7 +44,8 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
-static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", false, "Use 128x128x128 color cube instead of 64x64x64?.", CVAR_Archive);
+static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", false, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive);
+static VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "2", "Tonemap color distance algorithm (0-2; 2 is the best one)", CVAR_Archive);
 
 static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
@@ -459,6 +460,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
   , tonemapMode(0)
+  , tonemapColorAlgo(0)
   , colormapSrcFBO()
 {
   glVerMajor = glVerMinor = 0;
@@ -712,6 +714,116 @@ void VOpenGLDrawer::EnsureShadowMapCube () {
 }
 
 
+static double *ungammaNormal = nullptr;
+static double *ungammaCorrected = nullptr;
+
+// 128x128x128
+static uint8_t *pallutAlgo0 = nullptr;
+static uint8_t *pallutAlgo1 = nullptr;
+static uint8_t *pallutAlgo2 = nullptr;
+
+
+//==========================================================================
+//
+//  PrepareUngamma
+//
+//==========================================================================
+static void PrepareUngamma () noexcept {
+  if (ungammaNormal) return;
+  GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT tables...");
+  // calculate "ungamma" table
+  ungammaNormal = (double *)Z_Calloc(256*4*sizeof(double));
+  ungammaCorrected = (double *)Z_Calloc(256*4*sizeof(double));
+  for (unsigned i = 0; i < 256; ++i) {
+    // corrected
+    ungammaCorrected[i*4+0] = sRGBungamma(r_palette[i].r);
+    ungammaCorrected[i*4+1] = sRGBungamma(r_palette[i].g);
+    ungammaCorrected[i*4+2] = sRGBungamma(r_palette[i].b);
+    // normal
+    ungammaNormal[i*4+0] = r_palette[i].r;
+    ungammaNormal[i*4+1] = r_palette[i].g;
+    ungammaNormal[i*4+2] = r_palette[i].b;
+  }
+}
+
+
+//==========================================================================
+//
+//  TonemapPalFindColor
+//
+//  0: simple distance
+//  1: gamma-corrected distance
+//  2: rgbDistanceSquared
+//
+//==========================================================================
+static int TonemapPalFindColor (const int algo, const vuint8 r, const vuint8 g, const vuint8 b) noexcept {
+  PrepareUngamma();
+  switch (algo) {
+    case 0:
+      if (pallutAlgo0) return pallutAlgo0[((r>>1)*128+(g>>1))*128+(b>>1)];
+      break;
+    case 1:
+      if (pallutAlgo1) return pallutAlgo1[((r>>1)*128+(g>>1))*128+(b>>1)];
+      break;
+    case 2:
+      if (pallutAlgo2) return pallutAlgo2[((r>>1)*128+(g>>1))*128+(b>>1)];
+      break;
+    default: Sys_Error("invalid palette tonemap lut algo");
+  }
+
+  GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT translation (algo #%d)...", algo);
+
+  const double *ungamma = (algo == 1 ? ungammaCorrected : ungammaNormal);
+
+  // no lut, calculate it
+  vuint8 *lut = (vuint8 *)Z_Malloc(128*128*128);
+
+  for (int rr = 0; rr < 128; ++rr) {
+    for (int gg = 0; gg < 128; ++gg) {
+      for (int bb = 0; bb < 128; ++bb) {
+        int best_color = -1;
+        int best_dist = 0x7fffffff;
+        double best_dist_dbl = DBL_MAX;
+        const double ur = (algo == 1 ? sRGBungamma(rr<<1) : (rr<<1));
+        const double ug = (algo == 1 ? sRGBungamma(gg<<1) : (gg<<1));
+        const double ub = (algo == 1 ? sRGBungamma(bb<<1) : (bb<<1));
+        for (unsigned i = 1; i < 256; ++i) {
+          if (algo == 2) {
+            const vint32 dist = rgbDistanceSquared(r_palette[i].r, r_palette[i].g, r_palette[i].b, rr<<1, gg<<1, bb<<1);
+            if (best_color < 0 || dist < best_dist) {
+              best_color = (int)i;
+              best_dist = dist;
+              if (!dist) break;
+            }
+          } else {
+            const double dr = ungamma[i*4+0]-ur;
+            const double dg = ungamma[i*4+1]-ug;
+            const double db = ungamma[i*4+2]-ub;
+            const double dist = dr*dr+dg*dg+db*db;
+            if (best_color < 0 || dist < best_dist_dbl) {
+              best_color = (int)i;
+              best_dist_dbl = dist;
+              if (dist == 0.0f) break;
+            }
+          }
+        }
+        vassert(best_color >= 0);
+        lut[(rr*128+gg)*128+bb] = (vuint8)best_color;
+      }
+    }
+  }
+
+  switch (algo) {
+    case 0: pallutAlgo0 = lut; break;
+    case 1: pallutAlgo1 = lut; break;
+    case 2: pallutAlgo2 = lut; break;
+    default: Sys_Error("invalid palette tonemap lut algo");
+  }
+
+  return TonemapPalFindColor(algo, r, g, b);
+}
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::GeneratePaletteLUT
@@ -727,6 +839,12 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
 
   if (!gl_can_hires_tonemap) tonemapMode = 0; // oops
 
+  tonemapColorAlgo = clampval(gl_tonemap_pal_algo.asInt(), 0, 2);
+  // 0: simple distance
+  // 1: gamma-corrected distance
+  // 2: rgbDistanceSquared
+  const int algo = tonemapColorAlgo;
+
   rgba_t *tdata;
   if (tonemapMode == 0) {
     GCon->Logf(NAME_Init, "OpenGL: creating palette tonemap LUT...");
@@ -741,17 +859,11 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
           const vuint8 r8 = clampToByte(r*255/63);
           const vuint8 g8 = clampToByte(g*255/63);
           const vuint8 b8 = clampToByte(b*255/63);
-          *c = r_palette[R_LookupRGB(r8, g8, b8)];
+          const int cidx = TonemapPalFindColor(algo, r8, g8, b8); //R_LookupRGB(r8, g8, b8)
+          *c = r_palette[cidx];
           c->r = gt[c->r];
           c->g = gt[c->g];
           c->b = gt[c->b];
-          /* golden
-          int Gray = (r8*77+g8*143+b8*37)>>8;
-          c->r = min2(255, Gray+Gray/2);
-          c->g = Gray;
-          c->b = 0;
-          c->a = 255;
-          */
         }
       }
     }
@@ -768,7 +880,8 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
           const vuint8 r8 = clampToByte(r*255/127);
           const vuint8 g8 = clampToByte(g*255/127);
           const vuint8 b8 = clampToByte(b*255/127);
-          *c = r_palette[R_LookupRGB(r8, g8, b8)];
+          const int cidx = TonemapPalFindColor(algo, r8, g8, b8); //R_LookupRGB(r8, g8, b8)
+          *c = r_palette[cidx];
           c->r = gt[c->r];
           c->g = gt[c->g];
           c->b = gt[c->b];
@@ -1413,7 +1526,7 @@ void VOpenGLDrawer::InitResolution () {
 //  VOpenGLDrawer::VOpenGLDrawer
 //
 //==========================================================================
-void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) {
+void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
   SetMainFBO(true); // forced
   auto mfbo = GetMainFBO();
 
@@ -1422,9 +1535,15 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight)
     tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
     p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
     GeneratePaletteLUT();
-  } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool()) {
+  } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool() || tonemapColorAlgo != gl_tonemap_pal_algo.asInt()) {
     tonemapMode = (int)gl_tonemap_pal_hires.asBool();
     GeneratePaletteLUT();
+  }
+
+  if (restoreMatrices) {
+    glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
+    glMatrixMode(GL_MODELVIEW); glPushMatrix();
+    glMatrixMode(GL_PROJECTION); glPushMatrix();
   }
 
   SetOrthoProjection(0, mfbo->getWidth(), mfbo->getHeight(), 0);
@@ -1476,6 +1595,12 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight)
   glBindTexture(GL_TEXTURE_2D, 0);
   // and deactivate shaders (just in case)
   DeactivateShader();
+
+  if (restoreMatrices) {
+    glPopAttrib();
+    glMatrixMode(GL_PROJECTION); glPopMatrix();
+    glMatrixMode(GL_MODELVIEW); glPopMatrix();
+  }
 }
 
 

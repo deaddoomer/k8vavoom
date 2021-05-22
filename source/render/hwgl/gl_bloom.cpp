@@ -555,11 +555,11 @@ void VOpenGLDrawer::Posteffect_Bloom (int ax, int ay, int awidth, int aheight) {
     GLEnableDepthWrite();
   }
 
+  glPopAttrib();
+
   // restore attributes
   glMatrixMode(GL_PROJECTION); glPopMatrix();
   glMatrixMode(GL_MODELVIEW); glPopMatrix();
-
-  glPopAttrib();
 
   SetMainFBO(true); // just in case, forced
   DeactivateShader();

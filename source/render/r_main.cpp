@@ -1576,7 +1576,9 @@ void VRenderLevelShared::RenderPlayerView () {
   }
 
   // apply tonemap
-  if (r_tonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height);
+  if (r_tonemap.asInt() == 1) {
+    Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height, false);
+  }
 
   Drawer->EndView();
 }

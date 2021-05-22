@@ -32,7 +32,7 @@
 
 
 extern VCvarB dbg_show_missing_classes;
-static VCvarI r_color_distance_algo("r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", CVAR_Archive);
+static VCvarI r_color_distance_algo("r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", /*CVAR_Archive*/CVAR_PreInit);
 // there is no sense to store this in config, because config is loaded after brightmaps
 static VCvarB x_brightmaps_ignore_iwad("x_brightmaps_ignore_iwad", false, "Ignore \"iwad\" option when *loading* brightmaps?", CVAR_PreInit);
 
@@ -181,27 +181,61 @@ static void InitRgbTable () {
   VStr rtblsize = VStr::size2human((unsigned)sizeof(r_rgbtable));
   if (developer) GCon->Logf(NAME_Dev, "building color translation table (%d bits, %d items per color, %s)", VAVOOM_COLOR_COMPONENT_BITS, VAVOOM_COLOR_COMPONENT_MAX, *rtblsize);
   memset(r_rgbtable, 0, sizeof(r_rgbtable));
+
+  const int algo = r_color_distance_algo.asInt();
+
+  double ungamma[256][3];
+  if (algo == 2) {
+    for (int i = 0; i < 256; ++i) {
+      ungamma[i][0] = sRGBungamma(r_palette[i].r);
+      ungamma[i][1] = sRGBungamma(r_palette[i].g);
+      ungamma[i][2] = sRGBungamma(r_palette[i].b);
+    }
+  } else {
+    for (int i = 0; i < 256; ++i) {
+      ungamma[i][0] = r_palette[i].r;
+      ungamma[i][1] = r_palette[i].g;
+      ungamma[i][2] = r_palette[i].b;
+    }
+  }
+
   for (int ir = 0; ir < VAVOOM_COLOR_COMPONENT_MAX; ++ir) {
     for (int ig = 0; ig < VAVOOM_COLOR_COMPONENT_MAX; ++ig) {
       for (int ib = 0; ib < VAVOOM_COLOR_COMPONENT_MAX; ++ib) {
         const int r = (int)(ir*255.0f/((float)(VAVOOM_COLOR_COMPONENT_MAX-1))/*+0.5f*/);
         const int g = (int)(ig*255.0f/((float)(VAVOOM_COLOR_COMPONENT_MAX-1))/*+0.5f*/);
         const int b = (int)(ib*255.0f/((float)(VAVOOM_COLOR_COMPONENT_MAX-1))/*+0.5f*/);
+        //GCon->Logf(NAME_Debug, "r=%d; b=%d; g=%d", r, g, b);
         int best_color = -1;
         int best_dist = 0x7fffffff;
+        double best_dist_dbl = DBL_MAX;
+        const double ur = (algo == 2 ? sRGBungamma(r) : r);
+        const double ug = (algo == 2 ? sRGBungamma(g) : g);
+        const double ub = (algo == 2 ? sRGBungamma(b) : b);
         for (int i = 1; i < 256; ++i) {
-          vint32 dist;
-          if (r_color_distance_algo) {
-            dist = rgbDistanceSquared(r_palette[i].r, r_palette[i].g, r_palette[i].b, r, g, b);
+          if (algo == 1) {
+            const vint32 dist = rgbDistanceSquared(r_palette[i].r, r_palette[i].g, r_palette[i].b, r, g, b);
+            if (best_color < 0 || dist < best_dist) {
+              best_color = i;
+              best_dist = dist;
+              if (!dist) break;
+            }
           } else {
+            #if 0
             dist = (r_palette[i].r-r)*(r_palette[i].r-r)+
                    (r_palette[i].g-g)*(r_palette[i].g-g)+
                    (r_palette[i].b-b)*(r_palette[i].b-b);
-          }
-          if (best_color < 0 || dist < best_dist) {
-            best_color = i;
-            best_dist = dist;
-            if (!dist) break;
+            #else
+            const double dr = ungamma[i][0]-ur;
+            const double dg = ungamma[i][1]-ug;
+            const double db = ungamma[i][2]-ub;
+            const double dist = dr*dr+dg*dg+db*db;
+            if (best_color < 0 || dist < best_dist_dbl) {
+              best_color = i;
+              best_dist_dbl = dist;
+              if (dist == 0.0f) break;
+            }
+            #endif
           }
         }
         vassert(best_color > 0 && best_color <= 255);

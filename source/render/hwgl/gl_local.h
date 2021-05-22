@@ -971,6 +971,7 @@ protected:
   GLuint tonemapPalLUT; // palette LUT texture
   int tonemapLastGamma;
   int tonemapMode; // 0: 64x64x64, 1: 128x128x128
+  int tonemapColorAlgo;
 
   // colormap
   FBO colormapSrcFBO; // main fbo will be copied there
@@ -1374,7 +1375,7 @@ private: // bloom
 
 public:
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) override;
-  virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight) override;
+  virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
   virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
