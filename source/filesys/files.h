@@ -33,8 +33,6 @@ void FL_InitOptions ();
 void FL_Init ();
 void FL_Shutdown ();
 
-VStr FL_GetConfigDir ();
-
 // set `isFullName` to `true` to prevent adding anything to file name
 VStream *FL_OpenFileWrite (VStr Name, bool isFullName=false);
 

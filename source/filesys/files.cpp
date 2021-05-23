@@ -2541,11 +2541,13 @@ void FL_Init () {
   if (cli_ConfigDir && cli_ConfigDir[0]) {
     fl_configdir = VStr(cli_ConfigDir).fixSlashes();
   } else {
+    fl_configdir = ".";
     #if !defined(_WIN32)
     const char *HomeDir = getenv("HOME");
     if (HomeDir && HomeDir[0]) fl_configdir = VStr(HomeDir)+"/.k8vavoom";
     #else
-    fl_configdir = ".";
+    //fl_configdir = ".";
+    fl_configdir = VStr(VArgs::GetBinaryDir());
     #endif
   }
   fl_configdir = fl_configdir.removeTrailingSlash();
@@ -2961,7 +2963,8 @@ VStr FL_GetConfigDir () {
     const char *HomeDir = getenv("HOME");
     res = (HomeDir && HomeDir[0] ? VStr(HomeDir)+"/.k8vavoom" : VStr("."));
     #else
-    res = ".";
+    //res = ".";
+    res = VStr(VArgs::GetBinaryDir());
     #endif
   }
   Sys_CreateDirectory(res);
