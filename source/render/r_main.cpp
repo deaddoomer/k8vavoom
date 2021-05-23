@@ -35,6 +35,9 @@ extern VCvarB r_advlight_opt_optimise_scissor;
 extern VCvarB dbg_clip_dump_added_ranges;
 extern VCvarI gl_release_ram_textures_mode;
 
+VCvarB r_dbg_proj_aspect("__r_dbg_proj_aspect", true, "Apply aspect correction to projection matrix?", CVAR_PreInit);
+static bool prev_r_dbg_proj_aspect = true;
+
 static VCvarB dbg_autoclear_automap("dbg_autoclear_automap", false, "Clear automap before rendering?", 0/*CVAR_Archive*/);
 VCvarB dbg_vischeck_time("dbg_vischeck_time", false, "Show frame vischeck time?", 0/*CVAR_Archive*/);
 
@@ -1097,7 +1100,7 @@ float VRenderLevelShared::CalcEffectiveFOV (float fov, const refdef_t &refdef) {
 //
 //==========================================================================
 void VRenderLevelShared::SetupRefdefWithFOV (refdef_t *refdef, float fov) {
-  clip_base.setupViewport(refdef->width, refdef->height, fov, PixelAspect);
+  clip_base.setupViewport(refdef->width, refdef->height, fov, (r_dbg_proj_aspect.asBool() ? PixelAspect : 1.0f));
   refdef->fovx = clip_base.fovx;
   refdef->fovy = clip_base.fovy;
 }
@@ -1110,6 +1113,7 @@ void VRenderLevelShared::SetupRefdefWithFOV (refdef_t *refdef, float fov) {
 //==========================================================================
 void VRenderLevelShared::ExecuteSetViewSize () {
   set_resolution_needed = false;
+  prev_r_dbg_proj_aspect = r_dbg_proj_aspect.asBool();
 
   // sanitise screen size
   if (allow_small_screen_size) {
@@ -1187,7 +1191,7 @@ void VRenderLevelShared::ExecuteSetViewSize () {
   }
   EffectiveFOV = effectiveFOV;
 
-  clip_base.setupViewport(refdef.width, refdef.height, effectiveFOV, PixelAspect);
+  clip_base.setupViewport(refdef.width, refdef.height, effectiveFOV, (r_dbg_proj_aspect.asBool() ? PixelAspect : 1.0f));
   refdef.fovx = clip_base.fovx;
   refdef.fovy = clip_base.fovy;
   refdef.drawworld = true;
@@ -1264,7 +1268,8 @@ void VRenderLevelShared::SetupFrame () {
   if (screen_size != screenblocks || !screenblocks ||
       set_resolution_needed || old_fov != fov_main || cl_fov >= 1 ||
       r_aspect_ratio != prev_aspect_ratio ||
-      r_vertical_fov != prev_vertical_fov_flag)
+      r_vertical_fov != prev_vertical_fov_flag ||
+      r_dbg_proj_aspect.asBool() != prev_r_dbg_proj_aspect)
   {
     ExecuteSetViewSize();
   }
@@ -1419,7 +1424,7 @@ void VRenderLevelShared::SetupCameraFrame (VEntity *Camera, VTexture *Tex, int F
 
   PixelAspect = CalcAspect(r_aspect_ratio, rd->width, rd->height);
 
-  clip_base.setupViewport(rd->width, rd->height, FOV, PixelAspect);
+  clip_base.setupViewport(rd->width, rd->height, FOV, (r_dbg_proj_aspect.asBool() ? PixelAspect : 1.0f));
   rd->fovx = clip_base.fovx;
   rd->fovy = clip_base.fovy;
   rd->drawworld = true;

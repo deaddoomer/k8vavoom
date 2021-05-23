@@ -37,7 +37,7 @@
 VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit);
 
 extern VCvarB gl_shadowmap_preclear;
-
+extern VCvarB r_dbg_proj_aspect;
 
 
 //==========================================================================
@@ -201,7 +201,23 @@ void VOpenGLDrawer::SetupView (VRenderLevelDrawer *ARLev, const refdef_t *rd) {
 void VOpenGLDrawer::SetupViewOrg () {
   glMatrixMode(GL_MODELVIEW);
   //glLoadIdentity();
-  CalcModelMatrix(vpmats.modelMat, vieworg, viewangles, MirrorClip);
+
+  if (r_dbg_proj_aspect.asBool()) {
+    CalcModelMatrix(vpmats.modelMat, vieworg, viewangles, MirrorClip);
+  } else {
+    //CalcModelMatrix(vpmats.modelMat, TVec(vieworg.x, vieworg.y, vieworg.z*PixelAspect), viewangles, MirrorClip);
+    vpmats.modelMat.SetIdentity();
+    vpmats.modelMat *= VMatrix4::RotateX(-90.0f); //glRotatef(-90, 1, 0, 0);
+    vpmats.modelMat *= VMatrix4::RotateZ(90.0f); //glRotatef(90, 0, 0, 1);
+    if (MirrorFlip) vpmats.modelMat *= VMatrix4::Scale(TVec(1, -1, 1)); //glScalef(1, -1, 1);
+    vpmats.modelMat *= VMatrix4::RotateX(-viewangles.roll); //glRotatef(-viewangles.roll, 1, 0, 0);
+    vpmats.modelMat *= VMatrix4::RotateY(-viewangles.pitch*PixelAspect); //glRotatef(-viewangles.pitch, 0, 1, 0);
+    vpmats.modelMat *= VMatrix4::RotateZ(-viewangles.yaw); //glRotatef(-viewangles.yaw, 0, 0, 1);
+    vpmats.modelMat *= VMatrix4::Translate(-TVec(vieworg.x, vieworg.y, vieworg.z*PixelAspect)); //glTranslatef(-vieworg.x, -vieworg.y, -vieworg.z);
+
+    vpmats.modelMat *= VMatrix4::Scale(TVec(1.0f, 1.0f, PixelAspect));
+  }
+
   glLoadMatrixf(vpmats.modelMat[0]);
 
   glCullFace(MirrorClip ? GL_BACK : GL_FRONT);

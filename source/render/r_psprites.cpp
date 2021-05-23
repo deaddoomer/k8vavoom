@@ -42,6 +42,7 @@ extern VCvarB gl_pic_filtering;
 extern VCvarB r_draw_psprites;
 extern VCvarB r_chasecam;
 extern VCvarB gl_crop_psprites;
+extern VCvarB r_dbg_proj_aspect;
 
 static VCvarI crosshair("crosshair", "2", "Crosshair type (0-2).", CVAR_Archive);
 static VCvarF crosshair_alpha("crosshair_alpha", "0.6", "Crosshair opacity.", CVAR_Archive);
@@ -136,7 +137,20 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   const float invScaleY = 1.0f/scaleY;
 
   const float PSP_DISTI = 1.0f/PSP_DIST;
-  TVec sprorigin = Drawer->vieworg+PSP_DIST*Drawer->viewforward;
+
+  TVec vo = Drawer->vieworg;
+  TVec vfwd = Drawer->viewforward;
+  TVec vright = Drawer->viewright;
+  TVec vup = Drawer->viewup;
+  //FIXME: doesn't work
+  if (!r_dbg_proj_aspect.asBool()) {
+    //vo.z *= PixelAspect;
+    TAVec aa = Drawer->viewangles;
+    aa.pitch *= PixelAspect;
+    AngleVectors(aa, vfwd, vright, vup);
+  }
+
+  TVec sprorigin = vo+PSP_DIST*vfwd;
 
   float sprx = 160.0f-SX+TexSOffset*invScaleX;
   float spry = 100.0f-SY+TexTOffset*invScaleY;
@@ -162,16 +176,18 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   const float sxymul = (1.0f+(ourfov != 90 ? AspectEffectiveFOVX-1.0f : 0.0f))/160.0f;
 
   // horizontal
-  TVec start = sprorigin-(sprx*PSP_DIST*sxymul)*Drawer->viewright;
-  TVec end = start+(TexWidth*invScaleX*PSP_DIST*sxymul)*Drawer->viewright;
+  TVec start = sprorigin-(sprx*PSP_DIST*sxymul)*vright;
+  TVec end = start+(TexWidth*invScaleX*PSP_DIST*sxymul)*vright;
 
-  TVec topdelta = (spry*PSP_DIST*sxymul)*Drawer->viewup;
-  TVec botdelta = topdelta-(TexHeight*invScaleY*PSP_DIST*sxymul)*Drawer->viewup;
+  TVec topdelta = (spry*PSP_DIST*sxymul)*vup;
+  TVec botdelta = topdelta-(TexHeight*invScaleY*PSP_DIST*sxymul)*vup;
 
   // this puts psprite at the fixed screen position (only for horizontal FOV)
-  if (!r_vertical_fov) {
-    topdelta /= PixelAspect;
-    botdelta /= PixelAspect;
+  if (r_dbg_proj_aspect.asBool()) {
+    if (!r_vertical_fov) {
+      topdelta /= PixelAspect;
+      botdelta /= PixelAspect;
+    }
   }
 
   TVec dv[4];
@@ -189,14 +205,14 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
 
   const float saxmul = 160.0f*axismul;
   if (flip) {
-    saxis = -(Drawer->viewright*saxmul*PSP_DISTI);
+    saxis = -(vright*saxmul*PSP_DISTI);
     texorg = dv[2];
   } else {
-    saxis = Drawer->viewright*saxmul*PSP_DISTI;
+    saxis = vright*saxmul*PSP_DISTI;
     texorg = dv[1];
   }
 
-  taxis = -(Drawer->viewup*100.0f*axismul*(320.0f/200.0f)*PSP_DISTI);
+  taxis = -(vup*100.0f*axismul*(320.0f/200.0f)*PSP_DISTI);
 
   saxis *= scaleX;
   taxis *= scaleY;
@@ -205,8 +221,8 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   Drawer->GLDisableDepthWriteSlow();
   Drawer->GLDisableDepthTestSlow();
   Drawer->DrawSpritePolygon((Level ? Level->Time : 0.0f), dv, GTextureManager[lump], ri,
-    nullptr, ColorMap, -Drawer->viewforward,
-    DotProduct(dv[0], -Drawer->viewforward), saxis, taxis, texorg, VDrawer::SpriteType::SP_PSprite);
+    nullptr, ColorMap, -vfwd,
+    DotProduct(dv[0], -vfwd), saxis, taxis, texorg, VDrawer::SpriteType::SP_PSprite);
   Drawer->PopDepthMaskSlow();
   Drawer->GLEnableDepthTestSlow();
 }
