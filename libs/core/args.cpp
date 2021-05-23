@@ -65,11 +65,18 @@ char *VArgs::GetBinaryDir () {
     }
   }
 #else
-  char *p;
+  char *p = nullptr;
   GetModuleFileName(GetModuleHandle(NULL), mydir, sizeof(mydir)-1);
-  p = strrchr(mydir, '\\');
+  #if 0
+  char *p = strrchr(mydir, '\\');
+  #else
+  char *p = nullptr;
+  for (char *t = mydir; *t; ++t) if (*t == '\\' || *t == '/') p = t;
+  #endif
   if (!p) strcpy(mydir, "."); else *p = '\0';
-  for (p = mydir; *p; ++p) if (*p == '\\') *p = '/';
+  p = mydir;
+  if (p[0] == '\\' && p[1] == '\\') p += 2;
+  for (; *p; ++p) if (*p == '\\') *p = '/';
 #endif
   return mydir;
 }
@@ -456,7 +463,7 @@ VParsedArgs GParsedArgs;
 //  VParsedArgs::VParsedArgs
 //
 //==========================================================================
-VParsedArgs::VParsedArgs () : mBinDir(nullptr) {}
+VParsedArgs::VParsedArgs () : mBinDir(nullptr) { clear(); }
 
 
 //==========================================================================
@@ -465,7 +472,18 @@ VParsedArgs::VParsedArgs () : mBinDir(nullptr) {}
 //
 //==========================================================================
 void VParsedArgs::clear () {
-  if (mBinDir) { ::free(mBinDir); mBinDir = nullptr; }
+  if (mBinDir) {
+    ::free(mBinDir);
+    mBinDir = nullptr;
+  }
+  #ifdef _WIN32
+  {
+    const char *bd = GetBinaryDir();
+    const size_t bdlen = strlen(bd);
+    mBinDir = malloc(bdlen+1);
+    strcpy(mBinDir, bdlen);
+  }
+  #endif
 }
 
 
@@ -701,6 +719,7 @@ static int parseBoolArg (const char *avalue) {
 void VParsedArgs::parse (VArgs &args) {
   clear();
   if (args.Count() == 0) return;
+  #ifndef _WIN32
   {
     const char *bpath = args[0];
     if (!bpath || !bpath[0]) {
@@ -716,6 +735,7 @@ void VParsedArgs::parse (VArgs &args) {
       #endif
     }
   }
+  #endif
   int aidx = 1;
   while (aidx < args.Count()) {
     const char *aname = args[aidx];
