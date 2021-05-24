@@ -5654,6 +5654,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
         float(PEEK_INT32_AT(ip+8))/float(0x10000),
         float(PEEK_INT32_AT(ip+12))/float(0x10000)),
         PEEK_INT32_AT(ip+16), float(PEEK_INT32_AT(ip+20))*45.0f/32.0f);
+      ip += 4*6;
       ++sp;
       ACSVM_BREAK;
 
@@ -5668,6 +5669,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       *sp = Level->eventAcsSpawnSpot(GetNameLowerCase(PEEK_INT32_AT(ip)|ActiveObject->GetLibraryID()),
                                      PEEK_INT32_AT(ip+4), PEEK_INT32_AT(ip+8),
                                      float(PEEK_INT32_AT(ip+12))*45.0f/32.0f);
+      ip += 4*4;
       ++sp;
       ACSVM_BREAK;
 
