@@ -2886,6 +2886,7 @@ override void PreTravel () {
     SavedInventory = none; // just in case
   }
   ResetACSButtons();
+  ResetBootPrints();
 }
 
 
@@ -3358,6 +3359,7 @@ override void SpawnClient () {
 
   k8BossesDetected = (GetCvarB('k8ElvenDetect') ? -0.5 : 666);
 
+  ResetBootPrints();
   HealthBarInit();
 }
 
@@ -3382,6 +3384,7 @@ override void NetGameReborn () {
   MO.bIsPlayer = false;
 
   LastRegenTicTime = 0;
+  ResetBootPrints();
 
   // spawn at random spot if in death match
   if (Level.Game.deathmatch) {
@@ -3616,6 +3619,17 @@ void ResetRenderStyles () {
 
 //==========================================================================
 //
+//  ResetBootPrints
+//
+//==========================================================================
+void ResetBootPrints () {
+  bootprintDecal = '';
+  bootprintTimeLeft = 0.0f;
+}
+
+
+//==========================================================================
+//
 //  ResetPlayerOnSpawn
 //
 //==========================================================================
@@ -3690,6 +3704,8 @@ void ResetPlayerOnSpawn (optional bool keepPlayerState) {
   ClientFOV(0);
 
   ResetRenderStyles();
+
+  ResetBootPrints();
 }
 
 
@@ -6161,8 +6177,7 @@ void LeaveBootPrints (float deltaTime) {
       bootprintLastOrg = MO.Origin;
       bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
     } else {
-      bootprintDecal = '';
-      bootprintTimeLeft = 0.0f;
+      ResetBootPrints();
       return;
     }
   }
