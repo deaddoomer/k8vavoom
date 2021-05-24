@@ -104,6 +104,62 @@ static int CheckTerrainKW (VScriptParser *sc) {
 
 //==========================================================================
 //
+//  ProcessFlatGlobMask
+//
+//==========================================================================
+static void ProcessFlatGlobMask (VStr mask, const char *tername) {
+  if (!tername) tername = "";
+  mask = mask.xstrip();
+  if (mask.isEmpty()) return;
+  //GCon->Logf(NAME_Debug, "checking flatglobmask <%s> (terrain: %s)", *mask, (tername ? tername : "<none>"));
+  const int tcount = GTextureManager.GetNumTextures();
+  for (int pic = 1; pic < tcount; ++pic) {
+    VTexture *tx = GTextureManager.getIgnoreAnim(pic);
+    if (!tx) continue;
+    VName tn = tx->Name;
+    if (tn == NAME_None) continue;
+    bool goodtx = false;
+    switch (tx->Type) {
+      case TEXTYPE_Any: //FIXME: dunno
+      case TEXTYPE_WallPatch:
+      case TEXTYPE_Wall:
+      case TEXTYPE_Flat:
+      case TEXTYPE_Overload:
+        goodtx = true;
+        break;
+      default: break;
+    }
+    if (!goodtx) {
+      //GCon->Logf(NAME_Debug, "  rejected texture '%s'", *tn);
+      continue;
+    }
+    if (!VStr::globMatchCI(*tn, *mask)) {
+      //GCon->Logf(NAME_Debug, "  skipped texture '%s'", *tn);
+      continue;
+    }
+    //GCon->Logf(NAME_Debug, "  matched texture '%s'", *tn);
+    // found texture
+    if (!tername[0]) {
+      //WARNING! memory leak on deletion!
+      TerrainTypeMap.del(pic);
+      continue;
+    }
+    auto pp = TerrainTypeMap.find(pic);
+    if (pp) {
+      // replace old one
+      TerrainTypes[*pp].TypeName = VName(tername);
+    } else {
+      //!GCon->Logf(NAME_Init, "%s: new terrain floor '%s' of type '%s' (pic=%d)", *sc->GetLoc().toStringNoCol(), *floorname, *sc->String, Pic);
+      VTerrainType &T = TerrainTypes.Alloc();
+      T.Pic = pic;
+      T.TypeName = VName(tername);
+      TerrainTypeMap.put(pic, TerrainTypes.length()-1);
+    }
+  }
+}
+
+//==========================================================================
+//
 //  ParseTerrainScript
 //
 //==========================================================================
@@ -113,6 +169,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
   int tkw;
   while (!sc->AtEnd()) {
     auto loc = sc->GetLoc();
+    // splash definition?
     if (sc->Check("splash")) {
       sc->ExpectString();
       if (sc->String.isEmpty()) sc->String = "none";
@@ -138,43 +195,68 @@ static void ParseTerrainScript (VScriptParser *sc) {
       SInfo->Flags = 0;
       sc->Expect("{");
       while (!sc->Check("}")) {
+        if (sc->AtEnd()) break;
         if (sc->Check("smallclass")) {
           sc->ExpectString();
           SInfo->SmallClass = VClass::FindClass(*sc->String);
-        } else if (sc->Check("smallclip")) {
+          continue;
+        }
+        if (sc->Check("smallclip")) {
           sc->ExpectFloat();
           SInfo->SmallClip = sc->Float;
-        } else if (sc->Check("smallsound")) {
+          continue;
+        }
+        if (sc->Check("smallsound")) {
           sc->ExpectString();
           SInfo->SmallSound = *sc->String;
-        } else if (sc->Check("baseclass")) {
+          continue;
+        }
+        if (sc->Check("baseclass")) {
           sc->ExpectString();
           SInfo->BaseClass = VClass::FindClass(*sc->String);
-        } else if (sc->Check("chunkclass")) {
+          continue;
+        }
+        if (sc->Check("chunkclass")) {
           sc->ExpectString();
           SInfo->ChunkClass = VClass::FindClass(*sc->String);
-        } else if (sc->Check("chunkxvelshift")) {
+          continue;
+        }
+        if (sc->Check("chunkxvelshift")) {
           sc->ExpectNumber();
           SInfo->ChunkXVelMul = sc->Number < 0 ? 0.0f : float((1<<sc->Number)/256);
-        } else if (sc->Check("chunkyvelshift")) {
+          continue;
+        }
+        if (sc->Check("chunkyvelshift")) {
           sc->ExpectNumber();
           SInfo->ChunkYVelMul = sc->Number < 0 ? 0.0f : float((1<<sc->Number)/256);
-        } else if (sc->Check("chunkzvelshift")) {
+          continue;
+        }
+        if (sc->Check("chunkzvelshift")) {
           sc->ExpectNumber();
           SInfo->ChunkZVelMul = sc->Number < 0 ? 0.0f : float((1<<sc->Number)/256);
-        } else if (sc->Check("chunkbasezvel")) {
+          continue;
+        }
+        if (sc->Check("chunkbasezvel")) {
           sc->ExpectFloat();
           SInfo->ChunkBaseZVel = sc->Float;
-        } else if (sc->Check("sound")) {
+          continue;
+        }
+        if (sc->Check("sound")) {
           sc->ExpectString();
           SInfo->Sound = *sc->String;
-        } else if (sc->Check("noalert")) {
-          SInfo->Flags |= VSplashInfo::F_NoAlert;
-        } else {
-          sc->Error(va("Unknown command (%s)", *sc->String));
+          continue;
         }
+        if (sc->Check("noalert")) {
+          SInfo->Flags |= VSplashInfo::F_NoAlert;
+          continue;
+        }
+        sc->Error(va("Unknown splash command (%s)", *sc->String));
       }
-    } else if ((tkw = CheckTerrainKW(sc)) != 0) {
+      continue;
+    }
+
+    // terrain definition?
+    if ((tkw = CheckTerrainKW(sc)) != 0) {
       sc->ExpectString();
       if (sc->String.isEmpty()) sc->String = "none";
       VTerrainInfo *TInfo;
@@ -185,43 +267,64 @@ static void ParseTerrainScript (VScriptParser *sc) {
         // if just a name, do nothing else
         if (sc->PeekChar() != '{') continue;
       }
+      //GCon->Logf(NAME_Debug, "terraindef '%s'...", *sc->String);
       // new terrain
       TInfo = GetTerrainInfo(*sc->String);
       if (!TInfo) {
         //!GCon->Logf(NAME_Init, "%s: new terrain '%s'", *sc->GetLoc().toStringNoCol(), *sc->String);
         VName nn = VName(*sc->String, VName::AddLower);
         TInfo = &TerrainInfos.Alloc();
+        memset((void *)TInfo, 0, sizeof(VTerrainInfo));
         TInfo->Name = nn;
         TInfo->OrigName = sc->String;
         TerrainMap.put(nn, TerrainInfos.length()-1);
       }
       TInfo->Splash = NAME_None;
+      TInfo->BootPrintDecal = NAME_None;
       TInfo->Flags = 0;
       TInfo->FootClip = 0;
       TInfo->DamageTimeMask = 0;
       TInfo->DamageAmount = 0;
       TInfo->DamageType = NAME_None;
       TInfo->Friction = 0.0f;
+      constexpr float BOOT_TIME_MIN = 4.0f;
+      constexpr float BOOT_TIME_MAX = 4.0f;
+      TInfo->BootPrintTimeMin = BOOT_TIME_MIN;
+      TInfo->BootPrintTimeMax = BOOT_TIME_MAX;
       sc->Expect("{");
       while (!sc->Check("}")) {
+        if (sc->AtEnd()) break;
+        //GCon->Logf(NAME_Debug, "  terraindef '%s': <%s>", *TInfo->OrigName, *sc->String);
         if (sc->Check("splash")) {
           sc->ExpectString();
           TInfo->Splash = *sc->String;
-        } else if (sc->Check("liquid")) {
+          continue;
+        }
+        if (sc->Check("liquid")) {
           TInfo->Flags |= VTerrainInfo::F_Liquid;
-        } else if (sc->Check("footclip")) {
+          continue;
+        }
+        if (sc->Check("footclip")) {
           sc->ExpectFloat();
           TInfo->FootClip = sc->Float;
-        } else if (sc->Check("damagetimemask")) {
+          continue;
+        }
+        if (sc->Check("damagetimemask")) {
           sc->ExpectNumber();
           TInfo->DamageTimeMask = sc->Number;
-        } else if (sc->Check("damageamount")) {
+          continue;
+        }
+        if (sc->Check("damageamount")) {
           sc->ExpectNumber();
           TInfo->DamageAmount = sc->Number;
-        } else if (sc->Check("damagetype")) {
+          continue;
+        }
+        if (sc->Check("damagetype")) {
           sc->ExpectString();
           TInfo->DamageType = *sc->String;
-        } else if (sc->Check("friction")) {
+          continue;
+        }
+        if (sc->Check("friction")) {
           sc->ExpectFloat();
           int friction, movefactor;
 
@@ -242,28 +345,79 @@ static void ParseTerrainScript (VScriptParser *sc) {
 
           TInfo->Friction = (1.0f-(float)friction/(float)0x10000)*35.0f;
           TInfo->MoveFactor = float(movefactor)/float(0x10000);
-        } else if (sc->Check("stepvolume")) {
+          continue;
+        }
+        if (sc->Check("stepvolume")) {
           sc->ExpectFloat();
           TInfo->StepVolume = sc->Float;
-        } else if (sc->Check("walkingsteptime")) {
+          continue;
+        }
+        if (sc->Check("walkingsteptime")) {
           sc->ExpectFloat();
           TInfo->WalkingStepTime = sc->Float;
-        } else if (sc->Check("runningsteptime")) {
+          continue;
+        }
+        if (sc->Check("runningsteptime")) {
           sc->ExpectFloat();
           TInfo->RunningStepTime = sc->Float;
-        } else if (sc->Check("leftstepsounds")) {
+          continue;
+        }
+        if (sc->Check("leftstepsounds")) {
           sc->ExpectString();
           TInfo->LeftStepSounds = *sc->String;
-        } else if (sc->Check("rightstepsounds")) {
+          continue;
+        }
+        if (sc->Check("rightstepsounds")) {
           sc->ExpectString();
           TInfo->RightStepSounds = *sc->String;
-        } else if (sc->Check("allowprotection")) {
-          TInfo->Flags |= VTerrainInfo::F_AllowProtection;
-        } else {
-          sc->Error(va("Unknown terrain command (%s)", *sc->String));
+          continue;
         }
+        if (sc->Check("allowprotection")) {
+          TInfo->Flags |= VTerrainInfo::F_AllowProtection;
+          continue;
+        }
+        // k8vavoom extensions
+        if (sc->Check("k8vavoom")) {
+          sc->Expect("{");
+          while (!sc->Check("}")) {
+            if (sc->AtEnd()) break;
+            if (sc->Check("bootprintdecal")) {
+              sc->ExpectString();
+              if (sc->String.strEquCI("none")) sc->String.clear();
+              TInfo->BootPrintDecal = VName(*sc->String);
+              continue;
+            }
+            if (sc->Check("bootprinttime")) {
+              if (sc->Check("default")) {
+                TInfo->BootPrintTimeMin = BOOT_TIME_MIN;
+                TInfo->BootPrintTimeMax = BOOT_TIME_MAX;
+              } else {
+                sc->ExpectFloat();
+                float tmin = sc->Float;
+                sc->ExpectFloat();
+                float tmax = sc->Float;
+                if (tmin > tmax) { const float tt = tmin; tmin = tmax; tmax = tt; }
+                TInfo->BootPrintTimeMin = tmin;
+                TInfo->BootPrintTimeMax = tmax;
+              }
+              continue;
+            }
+            if (sc->Check("detectfloorflat")) { // k8vavoom extension
+              sc->ExpectString();
+              ProcessFlatGlobMask(sc->String, *TInfo->Name);
+              continue;
+            }
+            sc->Error(va("Unknown k8vavoom terrain extension command (%s)", *sc->String));
+          }
+          continue;
+        }
+        sc->Error(va("Unknown terrain command (%s)", *sc->String));
       }
-    } else if (sc->Check("floor")) {
+      continue;
+    }
+
+    // floor detection definition?
+    if (sc->Check("floor")) {
       sc->Check("optional"); // ignore it
       sc->ExpectName8Warn();
       VName floorname = sc->Name8;
@@ -281,29 +435,32 @@ static void ParseTerrainScript (VScriptParser *sc) {
         T.TypeName = VName(*sc->String, VName::AddLower);
         TerrainTypeMap.put(Pic, TerrainTypes.length()-1);
       }
-      /*
-      bool Found = false;
-      for (int i = 0; i < TerrainTypes.Num(); ++i) {
-        if (TerrainTypes[i].Pic == Pic) {
-          TerrainTypes[i].TypeName = *sc->String;
-          Found = true;
-          break;
-        }
-      }
-      if (!Found) {
-        VTerrainType &T = TerrainTypes.Alloc();
-        T.Pic = Pic;
-        T.TypeName = *sc->String;
-      }
-      */
-    } else if (sc->Check("endif")) {
+      continue;
+    }
+
+    // floor detection by globmask definition?
+    if (sc->Check("floorglob")) {
+      sc->ExpectString();
+      VStr mask = sc->String;
+      sc->ExpectString();
+      VStr tername = sc->String;
+      ProcessFlatGlobMask(mask, *tername);
+      continue;
+    }
+
+    // endif?
+    if (sc->Check("endif")) {
       if (insideIf) {
         insideIf = false;
       } else {
         GCon->Logf(NAME_Warning, "%s: stray `endif` in terrain script", *loc.toStringNoCol());
       }
-    } else if (sc->Check("ifdoom") || sc->Check("ifheretic") ||
-               sc->Check("ifhexen") || sc->Check("ifstrife"))
+      continue;
+    }
+
+    // ifdefs?
+    if (sc->Check("ifdoom") || sc->Check("ifheretic") ||
+        sc->Check("ifhexen") || sc->Check("ifstrife"))
     {
       if (insideIf) {
         sc->Error(va("nested conditionals are not allowed (%s)", *sc->String));
@@ -325,9 +482,9 @@ static void ParseTerrainScript (VScriptParser *sc) {
           }
         }
       }
-    } else {
-      sc->Error(va("Unknown command (%s)", *sc->String));
+      continue;
     }
+    sc->Error(va("Unknown command (%s)", *sc->String));
   }
   delete sc;
 }

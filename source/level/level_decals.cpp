@@ -1214,6 +1214,15 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   vassert(eregidx >= 0);
   vassert(dec);
 
+  float dcalpha = dec->alpha.value;
+  if (alpha >= 0.0f) {
+    //GCon->Logf(NAME_Debug, "decal '%s': orig alpha=%g (forced alpha=%g)", *dec->name, dcalpha, alpha);
+    if (alpha < 1000.0f) dcalpha = alpha; else dcalpha *= alpha-1000.0f;
+    //GCon->Logf(NAME_Debug, "decal '%s': final alpha=%g", *dec->name, dcalpha);
+    if (dcalpha < 0.004f) return;
+    dcalpha = min2(1.0f, dcalpha);
+  }
+
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
   decal->dectype = dec->name;
@@ -1233,8 +1242,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   //decal->ofsX = decal->ofsY = 0.0f;
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
-  decal->alpha = decal->origAlpha = dec->alpha.value;
-  if (alpha >= 0.0f) decal->alpha = decal->origAlpha = min2(1.0f, alpha);
+  decal->alpha = decal->origAlpha = dcalpha;
   decal->addAlpha = dec->addAlpha.value;
   decal->flags =
     orflags|

@@ -1198,7 +1198,7 @@ public:
   void DestroyDecal (decal_t *dc); // this will also destroy decal and its animator!
 
   // used in some internal static functions. sigh.
-  // if `alpha` >= 0: override decal alpha
+  // if `alpha` >= 0: override decal alpha; >= 1000.0f -- mult by (alpha-1000.0f)
   void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
                      VDecalDef *dec, int translation, unsigned orflags, float angle, float alpha);
 

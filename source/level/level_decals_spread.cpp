@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../server/sv_local.h"
 
 #define VV_FLAT_DECAL_USE_FLOODFILL
 
@@ -54,7 +55,7 @@ struct DInfo {
   VLevel *Level;
   unsigned orflags;
   float angle;
-  float alpha; // >0: override
+  float alpha; // >0: override; >= 1000.0f -- mult by (alpha-1000.0f)
 };
 
 
@@ -321,7 +322,6 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   if (dec->noFlat) return;
 
   if (alphaOverride && alpha <= 0.004f) return;
-  alpha = min2(1.0f, alpha);
 
   if (level > 16) {
     GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
@@ -402,41 +402,68 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
   decalTranslation = 0;
   markTime = 0.0f;
 
-  if (!subsectorDecalList) return false;
-
   if (!sub) sub = PointInSubsector(org);
 
-  // check if we are inside any blood decal
-  constexpr float shrinkRatio = 0.8f;
-  float dcbb2d[4];
-  for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
-    if (dc->bootname == NAME_None) continue;
-    if (!dc->isFloor()) continue;
-    // check coords
-    ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
-    if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
-    /*if (dc->eregindex != 0)*/ {
-      const bool pobj3d = sub->isInnerPObj();
-      // 3d floor decal, check Z coord
-      bool zok = false;
-      int eregidx = 0;
-      for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
-        if (eregidx == dc->eregindex) {
-          const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
-          if (fabsf(fz-org.z) <= 0.1f) {
-            zok = true;
-            //org.z = fz;
+  if (subsectorDecalList) {
+    // check if we are inside any blood decal
+    constexpr float shrinkRatio = 0.8f;
+    float dcbb2d[4];
+    for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
+      if (dc->bootname == NAME_None) continue;
+      if (!dc->isFloor()) continue;
+      // check coords
+      ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
+      if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
+      /*if (dc->eregindex != 0)*/ {
+        const bool pobj3d = sub->isInnerPObj();
+        // 3d floor decal, check Z coord
+        bool zok = false;
+        int eregidx = 0;
+        for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+          if (eregidx == dc->eregindex) {
+            const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
+            if (fabsf(fz-org.z) <= 0.1f) {
+              zok = true;
+              //org.z = fz;
+            }
+            break;
           }
-          break;
+        }
+        if (!zok) return false;
+      }
+      // it seems that we found it
+      decalName = dc->bootname;
+      decalTranslation = dc->translation;
+      markTime = dc->boottime;
+      return true;
+    }
+  }
+
+  // no blood decal, try terrain
+  {
+    const bool pobj3d = sub->isInnerPObj();
+    int eregidx = 0;
+    for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+      const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
+      if (fabsf(fz-org.z) <= 0.1f) {
+        // region found, detect terrain
+        sec_plane_t *splane = (eregidx || pobj3d ? reg->eceiling.splane : reg->efloor.splane);
+        if (splane) {
+          VTerrainInfo *ter = SV_TerrainType(splane->pic);
+          if (ter && ter->BootPrintDecal != NAME_None) {
+            decalName = ter->BootPrintDecal;
+            decalTranslation = 0;
+            if (ter->BootPrintTimeMin != ter->BootPrintTimeMax) {
+              markTime = RandomBetween(ter->BootPrintTimeMin, ter->BootPrintTimeMax);
+            } else {
+              markTime = ter->BootPrintTimeMin;
+            }
+            if (markTime < 0.0f) markTime = 0.0f;
+            return true;
+          }
         }
       }
-      if (!zok) return false;
     }
-    // it seems that we found it
-    decalName = dc->bootname;
-    decalTranslation = dc->translation;
-    markTime = dc->boottime;
-    return true;
   }
 
   // oops

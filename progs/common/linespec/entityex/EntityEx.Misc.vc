@@ -5104,9 +5104,14 @@ void DaggerAlert (EntityEx atarget, EntityEx emitter) {
 //  IsSectorFloorLiquid
 //
 //==========================================================================
-bool IsSectorFloorLiquid (sector_t *sec) {
+static bool IsSectorFloorLiquid (sector_t *sec) {
   if (!sec) return false; // just in case
+  // animated is always liquid (for now)
   if (IsAnimatedTexture(sec.floor.pic)) return true;
+  // check terrain
+  VTerrainInfo *ti = TerrainType(sec.floor.pic);
+  if (ti && ti.bLiquid) return true;
+  // detect by texture name
   name fpname = GetTextureName(sec.floor.pic);
   // slime13 and further are normal floors, not liquids
   if (fpname == 'slime10' || fpname == 'slime11' || fpname == 'slime12') {

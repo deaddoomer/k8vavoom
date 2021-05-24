@@ -1620,8 +1620,10 @@ bool HitFloorType (optional bool justLanded) {
 //
 //  GetFloorType
 //
+//  this is `final` for now, because `TerrainType()` is used in bootprints
+//
 //===========================================================================
-VTerrainInfo *GetFloorType () {
+final VTerrainInfo *GetFloorType () {
   return TerrainType(EFloor.splane->pic);
 }
 

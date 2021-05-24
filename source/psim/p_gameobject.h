@@ -191,6 +191,10 @@ struct VTerrainInfo {
   float RunningStepTime;
   VName LeftStepSounds;
   VName RightStepSounds;
+  // bootprints
+  VName BootPrintDecal;
+  float BootPrintTimeMin;
+  float BootPrintTimeMax;
 };
 
 
