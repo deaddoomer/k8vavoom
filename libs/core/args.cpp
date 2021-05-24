@@ -761,6 +761,10 @@ void VParsedArgs::parse (VArgs &args) {
     if (aname[0] == '-') {
       // find handler
       ArgInfo *ai = findNamedArgInfo(aname);
+      if (!ai && aname[1] == '-') {
+        ai = findNamedArgInfo(aname+1);
+        if (ai) ++aname;
+      }
       // for callbacks, do no special parsing here
       if (ai && ai->type == AT_Callback) {
         if (!ai->cb) {
@@ -789,6 +793,7 @@ void VParsedArgs::parse (VArgs &args) {
         char *etmp = (char *)strchr(tmp, '=');
         *etmp = 0;
         ai = findNamedArgInfo(tmp);
+        if (!ai) ai = findNamedArgInfo(tmp+1);
         if (!ai) {
           GLog.Logf(NAME_Warning, "unknown CLI argument '%s', ignored", tmp);
           ::free(tmp);
@@ -818,6 +823,9 @@ void VParsedArgs::parse (VArgs &args) {
               GLog.Logf(NAME_Error, "option '%s' requires a value!", aname);
               break;
             } else if (avalue[0] == '-' && findNamedArgInfo(avalue)) {
+              GLog.Logf(NAME_Error, "option '%s' requires a value!", aname);
+              break;
+            } else if (avalue[0] == '-' && avalue[1] == '-' && findNamedArgInfo(avalue+1)) {
               GLog.Logf(NAME_Error, "option '%s' requires a value!", aname);
               break;
             }
