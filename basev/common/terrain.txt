@@ -1,78 +1,110 @@
 // Splashes ----------------------------------------------------------------
-
 splash Water
 {
-  smallclass    WaterSplashBase
+  smallclass  WaterSplashBase
   smallclip   12
-  smallsound    world/drip
+  smallsound  world/drip
 
   baseclass   WaterSplashBase
-  chunkclass    WaterSplash
+  chunkclass  WaterSplash
+
   chunkxvelshift  8
   chunkyvelshift  8
   chunkzvelshift  8
-  chunkbasezvel 2
-  sound     world/watersplash
+  chunkbasezvel   2
+
+  sound  world/watersplash
 }
 
 splash Sludge
 {
-  smallclass    SludgeSplash
+  smallclass  SludgeSplash
   smallclip   12
-  smallsound    world/sludgegloop
+  smallsound  world/sludgegloop
 
   baseclass   SludgeSplash
-  chunkclass    SludgeChunk
+  chunkclass  SludgeChunk
+
   chunkxvelshift  8
   chunkyvelshift  8
   chunkzvelshift  8
-  chunkbasezvel 1
-  sound     world/sludgegloop
+  chunkbasezvel   1
+
+  sound  world/sludgegloop
 }
 
 splash Lava
 {
-  smallclass    LavaSplash
+  smallclass  LavaSplash
   smallclip   12
-  smallsound    world/lavasizzle
+  smallsound  world/lavasizzle
 
   baseclass   LavaSplash
-  chunkclass    LavaSmoke
+  chunkclass  LavaSmoke
+
   chunkxvelshift  -1
   chunkyvelshift  -1
   chunkzvelshift  7
-  chunkbasezvel 1
-  sound     world/lavasizzle
+  chunkbasezvel   1
+
+  sound  world/lavasizzle
+}
+
+// added by k8
+splash Slime
+{
+  smallclass  SlimeSplash
+  smallclip   12
+  smallsound  world/sludgegloop
+
+  baseclass   SlimeSplash
+  chunkclass  SlimeChunk
+
+  chunkxvelshift  8
+  chunkyvelshift  8
+  chunkzvelshift  8
+  chunkbasezvel   1
+
+  sound  world/slimesplash
 }
 
 splash WaterSound
 {
-  smallclass    None
+  smallclass  None
   baseclass   None
-  chunkclass    None
-  sound     world/watersplash
+  chunkclass  None
+
+  sound  world/watersplash
   noalert
 }
 
-// Terrain types -----------------------------------------------------------
 
+// Terrain types -----------------------------------------------------------
 terrain Water
 {
-  splash      Water
-  footclip    10
+  splash    Water
+  footclip  10
   liquid
 }
 
 terrain Sludge
 {
-  splash      Sludge
-  footclip    10
+  splash    Sludge
+  footclip  10
+  liquid
+}
+
+// added by k8
+terrain Slime
+{
+  splash    Slime
+  footclip  10
   liquid
 }
 
 terrain JustASound
 {
-  splash      WaterSound
+  splash    WaterSound
+  footclip  12
   liquid
-  footclip    12
 }
