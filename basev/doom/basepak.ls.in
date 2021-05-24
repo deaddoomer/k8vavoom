@@ -40,6 +40,8 @@ sndseq.txt    @CMAKE_CURRENT_SOURCE_DIR@/sndseq.txt
 skyboxes.txt  @CMAKE_CURRENT_SOURCE_DIR@/skyboxes.txt
 // glow
 gldefs.txt    @CMAKE_CURRENT_SOURCE_DIR@/gldefs.txt
+// terrain detection
+terrain.txt   @CMAKE_CURRENT_SOURCE_DIR@/terrain.txt
 
 // big font
 $load @CMAKE_CURRENT_SOURCE_DIR@/bigfont.pcx

@@ -1,0 +1,61 @@
+// Terrain types -----------------------------------------------------------
+terrain VanillaWater
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   WaterLiquidBootPrint
+    bootprintTime    default  // or: bootprintTime minsecflt maxsecflt
+    detectfloorflat  "fwater[0-9]"
+  }
+}
+
+terrain VanillaLava
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   LavaLiquidBootPrint
+    bootprintTime    default
+    detectfloorflat  "lava[0-9]"
+  }
+}
+
+terrain VanillaAcid
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   AcidLiquidBootPrint
+    bootprintTime    default
+    detectfloorflat  "nukage[0-9]"
+  }
+}
+
+terrain VanillaSlime
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   SlimeLiquidBootPrint
+    bootprintTime    default
+    // other slimes are not slimes
+    detectfloorflat  "slime0[0-8]"
+  }
+}
+
+terrain VanillaBlood
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   BloodLiquidBootPrint
+    bootprintTime    default
+    detectfloorflat  "blood[0-9]"
+  }
+}
