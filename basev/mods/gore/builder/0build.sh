@@ -60,6 +60,8 @@ echo "//////////////////////////////////////////////////////////////////////////
 rdmd zprepro.d $DECAL_SELECTOR Shade=4f -DTRANSIENT --append TransientSfx=Transient Color=Transient Translation= $DECORATE_SRC $DECORATE_DEST
 rdmd zprepro.d $DECAL_SELECTOR Shade=$DECAL_SHADE_RED_TRANSIENT -DTRANSIENT --append TransientSfx=Transient Color=Transient Translation= $DECAL_SRC $DECAL_DEST
 
+cat decals_bootprints.txt >>$DECAL_DEST
+
 exit 0
 
 
@@ -135,6 +137,5 @@ echo "//////////////////////////////////////////////////////////////////////////
 
 rdmd zprepro.d $DECAL_SELECTOR Shade=6f -DBLUE -DTRANSIENT --append TransientSfx=Transient Color=Transient_Blue "Translation=$Translation" $DECORATE_SRC $DECORATE_DEST
 rdmd zprepro.d $DECAL_SELECTOR Shade=$DECAL_SHADE_BLUE_TRANSIENT -DBLUE -DTRANSIENT --append TransientSfx=Transient Color=Transient_Blue "Translation=$Translation" $DECAL_SRC $DECAL_DEST
-
 
 cd "$odir"

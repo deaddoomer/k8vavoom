@@ -1211,3 +1211,99 @@ decal K8Gore_BootPrintDecalTransient {
   }
   shade "4f 00 00"
 }
+////////////////////////////////////////////////////////////////////////////////
+// Liquid Bootprints
+////////////////////////////////////////////////////////////////////////////////
+fader K8Gore_LiquidFader {
+  DecayStart random 6.0 8.0
+  DecayTime random 10.0 14.0
+}
+
+/***** Water **********************************************************/
+decal K8Gore_WaterLiquidBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "00 00 4f"
+  translucent 0.6
+  animator K8Gore_LiquidFader
+}
+
+decalgroup WaterLiquidBootPrint {
+  K8Gore_WaterLiquidBootPrint0 6
+}
+
+
+/***** Acid **********************************************************/
+decal K8Gore_AcidLiquidBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "00 c0 00"
+  translucent 0.6
+  animator K8Gore_LiquidFader
+}
+
+decalgroup AcidLiquidBootPrint {
+  K8Gore_AcidLiquidBootPrint0 6
+}
+
+
+/***** Blood **********************************************************/
+decal K8Gore_BloodLiquidBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "4f 00 00"
+  translucent 0.6
+  animator K8Gore_LiquidFader
+}
+
+decalgroup BloodLiquidBootPrint {
+  K8Gore_BloodLiquidBootPrint0 6
+}
+
+
+/***** Slime **********************************************************/
+decal K8Gore_SlimeLiquidBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "4b 37 1b"
+  translucent 0.9
+  animator K8Gore_LiquidFader
+}
+
+decalgroup SlimeLiquidBootPrint {
+  K8Gore_SlimeLiquidBootPrint0 6
+}
+
+
+/***** Lava **********************************************************/
+decal K8Gore_LavaLiquidBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "ff 3f 1f"
+  translucent 0.6
+  animator K8Gore_LiquidFader
+}
+
+decalgroup LavaLiquidBootPrint {
+  K8Gore_LavaLiquidBootPrint0 6
+}
