@@ -2639,13 +2639,19 @@ static int doGetUserVarOrArray (VEntity *ent, VName fldname, bool isArray, int i
 #define ACSVM_DEFAULT   default:
 #endif
 
-#define PEEK_INT16_AT(p)   (vint32)(vint16)((p)[0]|((p)[1]<<8))
-#define PEEK_INT32_AT(p)   ((p)[0]|((p)[1]<<8)|((p)[2]<<16)|((p)[3]<<24))
+#ifdef VAVOOM_LITTLE_ENDIAN
+# define PEEK_INT16_AT(p_)   ((vint32)*((const vint16 *)(p_)))
+# define PEEK_INT32_AT(p_)   (*((const vint32 *)(p_)))
+#else
+# define PEEK_INT16(p_)  (vint32)(vint16)((p_)[0]|((p_)[1]<<8))
+# define PEEK_INT32(p_)  ((p_)[0]|((p_)[1]<<8)|((p_)[2]<<16)|((p_)[3]<<24))
+#endif
 
-#define PEEK_BYTEOR_INT32  (fmt == ACS_LittleEnhanced ? *ip : PEEK_INT32_AT(ip))
+#define PEEK_BYTEOR_INT32   (fmt == ACS_LittleEnhanced ? *ip : PEEK_INT32_AT(ip))
 #define PEEK_SHORTOR_INT32  (fmt == ACS_LittleEnhanced ? PEEK_INT16_AT(ip) : PEEK_INT32_AT(ip))
-#define INC_BYTE_OR_INT32 if (fmt == ACS_LittleEnhanced) ++ip; else ip += 4
-#define INC_SHORT_OR_INT32 if (fmt == ACS_LittleEnhanced) ip += 2; else ip += 4
+
+#define INC_BYTE_OR_INT32   if (fmt == ACS_LittleEnhanced) ++ip; else ip += 4
+#define INC_SHORT_OR_INT32  if (fmt == ACS_LittleEnhanced) ip += 2; else ip += 4
 
 // extfunction enum
 #define ACS_EXTFUNC(fnname)             ACSF_##fnname,
