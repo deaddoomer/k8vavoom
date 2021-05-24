@@ -21,7 +21,7 @@ DECAL K8Gore_NewBloodSplat01 {
     TypeBloodSplat
     BootPrintDecal K8Gore_BootPrintDecal // for bootprints
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 6 12  // this is default
+    //BootPrintTime random 4 8  // this is default
   }
   shade "50 00 00"
   //Scale 0.26
@@ -625,7 +625,7 @@ DECAL K8Gore_NewBloodSplat01Transient {
     TypeBloodSplat
     BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 6 12  // this is default
+    //BootPrintTime random 4 8  // this is default
   }
   shade "4f 00 00"
   //Scale 0.26

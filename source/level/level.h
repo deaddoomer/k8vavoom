@@ -1198,7 +1198,9 @@ public:
   void DestroyDecal (decal_t *dc); // this will also destroy decal and its animator!
 
   // used in some internal static functions. sigh.
-  void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags, float angle);
+  // if `alpha` >= 0: override decal alpha
+  void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
+                     VDecalDef *dec, int translation, unsigned orflags, float angle, float alpha);
 
 public:
   enum {
@@ -1434,10 +1436,12 @@ private:
 
   void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
-  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, float angle, bool angleOverride, bool forceFlipX);
+  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation,
+                          float angle, bool angleOverride, bool forceFlipX, float alpha, float alphaOverride);
 
   // z coord matters!
-  void AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride, bool forceFlipX);
+  void AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride,
+                     bool forceFlipX, float alpha, float alphaOverride);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);

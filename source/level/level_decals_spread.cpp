@@ -54,6 +54,7 @@ struct DInfo {
   VLevel *Level;
   unsigned orflags;
   float angle;
+  float alpha; // >0: override
 };
 
 
@@ -136,12 +137,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
           res |= PutAtCeiling;
         }
       } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
         res |= PutAtFloor;
       }
     }
@@ -152,12 +153,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
           res |= PutAtFloor;
         }
       } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
         res |= PutAtCeiling;
       }
     }
@@ -170,7 +171,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if ((orgz-2.0f <= fz || IsTransparentFlatTexture(reg->efloor.splane->pic)) && fz-orgz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
         res |= PutAtFloor;
       }
     }
@@ -179,7 +180,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if ((orgz+2.0f >= cz || IsTransparentFlatTexture(reg->eceiling.splane->pic)) && orgz-cz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
         res |= PutAtCeiling;
       }
     }
@@ -312,10 +313,15 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //  VLevel::SpreadFlatDecalEx
 //
 //==========================================================================
-void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, float angle, bool angleOverride, bool forceFlipX) {
+void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation,
+                                float angle, bool angleOverride, bool forceFlipX, float alpha, float alphaOverride)
+{
   if (!dec) return; // just in case
 
   if (dec->noFlat) return;
+
+  if (alphaOverride && alpha <= 0.004f) return;
+  alpha = min2(1.0f, alpha);
 
   if (level > 16) {
     GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
@@ -324,7 +330,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
-    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, angle, angleOverride, forceFlipX);
+    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, angle, angleOverride, forceFlipX, alpha, alphaOverride);
   }
 
   dec->genValues();
@@ -358,6 +364,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   nfo.translation = translation;
   nfo.Level = this;
   nfo.orflags = flips; //|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u); // done in `NewFlatDecal()`
+  nfo.alpha = (alphaOverride ? alpha : -1.0f);
 
 #ifndef VV_FLAT_DECAL_USE_FLOODFILL
   CheckBSPB2DBox(nfo.dec->bbox2d, &AddDecalToSubsector, &nfo);

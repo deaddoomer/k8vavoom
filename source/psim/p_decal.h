@@ -142,7 +142,7 @@ public:
     , flipXValue(false), flipYValue(false)
     , angleWall(0.0f), angleFlat(0.0f, 360.0f)
     , lowername(NAME_None)
-    , bootname(NAME_None), boottime(6.0f, 12.0f) // this is default time
+    , bootname(NAME_None), boottime(4.0f, 8.0f) // this is default time
     , animator(nullptr)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}

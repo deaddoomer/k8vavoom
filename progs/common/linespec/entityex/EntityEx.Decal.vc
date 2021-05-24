@@ -65,13 +65,13 @@ final void SpawnDecalById (TVec org, int id, int side, line_t *li) {
 //  z coord matters! `height` is from `org.z`
 //
 //==========================================================================
-final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation, optional float angle, optional bool forceFlipX) {
+final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation, optional float angle, optional bool forceFlipX, optional float alpha) {
   //writeln("DECAL: ", dectype);
   if (!dectype || nameEquCI(dectype, 'none') || !XLevel) return; // just in case
   //XLevel.AddDecal(org, dectype, side, li);
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level.Game.Players[i]) continue;
     if (!Level.Game.Players[i].bSpawned) continue;
-    PlayerEx(Level.Game.Players[i]).FlatDecalEffect(org, dectype, range, atranslation!optional, angle!optional, forceFlipX!optional);
+    PlayerEx(Level.Game.Players[i]).FlatDecalEffect(org, dectype, range, atranslation!optional, angle!optional, forceFlipX!optional, alpha!optional);
   }
 }

@@ -18,7 +18,7 @@ DECAL K8Gore_NewBloodSplat01${Color} {
     TypeBloodSplat
     BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 6 12  // this is default
+    //BootPrintTime random 4 8  // this is default
   }
 #ifndef BLUE
 # ifndef GREEN

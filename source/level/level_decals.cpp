@@ -1207,7 +1207,9 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 //  VLevel::NewFlatDecal
 //
 //==========================================================================
-void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy, VDecalDef *dec, int translation, unsigned orflags, float angle) {
+void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
+                           VDecalDef *dec, int translation, unsigned orflags, float angle, float alpha)
+{
   vassert(sub);
   vassert(eregidx >= 0);
   vassert(dec);
@@ -1232,6 +1234,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dec->alpha.value;
+  if (alpha >= 0.0f) decal->alpha = decal->origAlpha = min2(1.0f, alpha);
   decal->addAlpha = dec->addAlpha.value;
   decal->flags =
     orflags|
@@ -1256,7 +1259,10 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
 //  zero height means "take from decal texture"
 //
 //==========================================================================
-void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride, bool forceFlipX) {
+void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation,
+                           float angle, bool angleOverride, bool forceFlipX,
+                           float alpha, float alphaOverride)
+{
   if (!r_decals || !r_decals_flat) return;
   if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
@@ -1267,7 +1273,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
   }
 
   range = max2(2.0f, fabs(range));
-  SpreadFlatDecalEx(org, range, dec, 0, translation, angle, angleOverride, forceFlipX);
+  SpreadFlatDecalEx(org, range, dec, 0, translation, angle, angleOverride, forceFlipX, alpha, alphaOverride);
 }
 
 
@@ -1301,7 +1307,7 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
 }
 
 
-//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX);
+//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX, optional float alpha);
 IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   TVec org;
   VName dectype;
@@ -1309,8 +1315,9 @@ IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   VOptParamInt translation(0);
   VOptParamFloat angle(0.0f);
   VOptParamBool forceFlipX(false);
-  vobjGetParamSelf(org, dectype, range, translation, angle, forceFlipX);
-  Self->AddFlatDecal(org, dectype, range, translation, angle, angle.specified, forceFlipX);
+  VOptParamFloat alpha(1.0f);
+  vobjGetParamSelf(org, dectype, range, translation, angle, forceFlipX, alpha);
+  Self->AddFlatDecal(org, dectype, range, translation, angle, angle.specified, forceFlipX, alpha, alpha.specified);
 }
 
 

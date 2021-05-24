@@ -214,6 +214,7 @@ transient int lastCalcLight = 0;
 // bootprints helpers
 // don't bother saving this, this is purely cosmetic feature anyway
 transient TVec bootprintLastOrg;
+transient float bootprintTimeTotal; // to calculate alpha
 transient float bootprintTimeLeft; // <= 0: no bootprints
 transient float bootprintNextPutTime; // delay, decaying
 transient bool bootprintFlip;
@@ -2583,9 +2584,9 @@ void DecalEffect (TVec org, name dectype, int side, /*line_t *li*/int lineidx, i
 //  FlatDecalEffect
 //
 //==========================================================================
-void FlatDecalEffect (TVec org, name dectype, float range, int translation, optional float angle, optional bool forceFlipX) {
+void FlatDecalEffect (TVec org, name dectype, float range, int translation, optional float angle, optional bool forceFlipX, optional float alpha) {
   if (!dectype) return; // just in case
-  Level.XLevel.AddFlatDecal(org, dectype, range, translation, angle!optional, forceFlipX!optional);
+  Level.XLevel.AddFlatDecal(org, dectype, range, translation, angle!optional, forceFlipX!optional, alpha!optional);
 }
 
 
@@ -6156,6 +6157,7 @@ void LeaveBootPrints (float deltaTime) {
       bootprintDecal = bpd;
       bootprintDecalTranslation = bpt;
       bootprintTimeLeft = bptleft+deltaTime;
+      bootprintTimeTotal = bptleft;
       bootprintLastOrg = MO.Origin;
       bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
     } else {
@@ -6181,6 +6183,10 @@ void LeaveBootPrints (float deltaTime) {
   float dist2d = (bootprintLastOrg-MO.Origin).length2D();
   if (dist2d < BOOTPRINT_MIN_DIST) return;
 
+  // calculate alpha
+  // total time
+  float alpha = fclamp(bootprintTimeLeft/bootprintTimeTotal, 0.0f, 1.0f);
+
   TVec org = MO.Origin;
   bootprintLastOrg = org;
 
@@ -6190,7 +6196,7 @@ void LeaveBootPrints (float deltaTime) {
   //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(MO.Angles.yaw));
   org += YawVectorRight(MO.Angles.yaw)*xofs;
 
-  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw-90, forceFlipX:bootprintFlip);
+  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw-90, forceFlipX:bootprintFlip, alpha:alpha);
 
   bootprintFlip = !bootprintFlip;
 }

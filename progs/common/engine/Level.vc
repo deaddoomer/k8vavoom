@@ -398,7 +398,7 @@ native final void AddDecalById (TVec org, int id, int side, line_t *li, optional
 
 // z coord matters!
 // `range` is maximum distance from decal z to floor/ceiling
-native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX);
+native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX, optional float alpha);
 
 // check what kind of bootprint decal is required at `org`
 // returns `false` if none (other vars are undefined)
