@@ -356,7 +356,8 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   if (forceFlipX) flips ^= decal_t::FlipX;
 
   DInfo nfo;
-  nfo.angle = (angleOverride ? AngleMod(angle) : dec->angleFlat.value);
+  // `-90` is required to make decals correspond to in-game yaw angles
+  nfo.angle = AngleMod((angleOverride ? angle : dec->angleFlat.value)-90.0f);
   nfo.spheight = dec->spheight;
   nfo.org = org;
   nfo.range = range;
@@ -415,12 +416,13 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
     ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
     if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
     /*if (dc->eregindex != 0)*/ {
+      const bool pobj3d = sub->isInnerPObj();
       // 3d floor decal, check Z coord
       bool zok = false;
       int eregidx = 0;
       for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
         if (eregidx == dc->eregindex) {
-          const float fz = (eregidx ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
+          const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
           if (fabsf(fz-org.z) <= 0.1f) {
             zok = true;
             //org.z = fz;

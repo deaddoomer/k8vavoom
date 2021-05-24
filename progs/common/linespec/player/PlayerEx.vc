@@ -6196,7 +6196,7 @@ void LeaveBootPrints (float deltaTime) {
   //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(MO.Angles.yaw));
   org += YawVectorRight(MO.Angles.yaw)*xofs;
 
-  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw-90, forceFlipX:bootprintFlip, alpha:alpha);
+  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw, forceFlipX:bootprintFlip, alpha:alpha);
 
   bootprintFlip = !bootprintFlip;
 }
