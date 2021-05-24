@@ -1460,6 +1460,7 @@ generator MiniMissile   Scorch
 generator Mauler        RailScorchLower
 
 
+/***** Test Decals *********************************************************/
 
 /*
 decal k8TestDecal {

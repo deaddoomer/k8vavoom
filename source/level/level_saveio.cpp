@@ -61,6 +61,15 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     vio.io(VName("alpha"), dc->alpha);
     vio.io(VName("addAlpha"), dc->addAlpha);
     vio.iodef(VName("dcsurface"), dc->dcsurf, 0u);
+
+    // boot params
+    vuint32 hasBootParams = (dc->bootname != NAME_None || dc->boottime != 0.0f ? 1u : 0u);
+    vio.iodef(VName("hasBootParams"), hasBootParams, 0u);
+    if (hasBootParams) {
+      vio.io(VName("bootname"), dc->bootname);
+      vio.io(VName("boottime"), dc->boottime);
+    }
+
     // different code for wall/flat decals
     if (dc->dcsurf == 0) {
       if (mustBeFlatDecal) Host_Error("error in decal i/o");

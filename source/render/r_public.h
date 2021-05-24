@@ -76,6 +76,9 @@ struct decal_t {
     NoTopTex = 0x2000U, // don't render on top texture
     NoBotTex = 0x4000U, // don't render on bottom texture
     FromV2   = 0x8000U, // use `v2` vertex as base (for wall decals on partner segs)
+    // special decal types
+    BloodSplat = 0x10000U,
+    BootPrint  = 0x20000U,
   };
 
   // dcsurf bit values
@@ -91,12 +94,14 @@ struct decal_t {
   decal_t *prev; // in seg/sreg/slidesec
   decal_t *next; // in seg/sreg/slidesec
   seg_t *seg; // this is non-null for wall decals
-  subregion_t *sreg; // this is non-null for floor/ceiling decals (only in renderer clones)
+  subregion_t *sreg; // this is non-null for floor/ceiling decals (only set if renderer is active)
   vuint32 dcsurf; // decal type
   sector_t *slidesec; // backsector for SlideXXX
   subsector_t *sub; // owning subsector for floor/ceiling decal
   int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
   VName dectype;
+  VName bootname; // boot decal name
+  float boottime; // how long it bootprints should be emited after stepping onto this?
   //VName picname;
   VTextureID texture;
   int translation;
@@ -154,6 +159,8 @@ struct decal_t {
   inline bool isCeiling () const noexcept { return ((dcsurf&SurfTypeMask) == Ceiling); }
   // for fake floor/ceiling? (not implemented yet)
   inline bool isFake () const noexcept { return (dcsurf&FakeFlag); }
+
+  inline bool isFloorBloodSplat () const noexcept { return (((dcsurf&SurfTypeMask) == Floor) && (flags&BloodSplat)); }
 
   // WARNING! call this ONLY for known non-wall decals!
   // non-base regions has their floor and ceiling switched

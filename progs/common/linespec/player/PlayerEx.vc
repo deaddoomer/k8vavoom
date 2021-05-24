@@ -211,6 +211,22 @@ transient int lastCalcLight = 0;
 #endif
 
 
+// bootprints helpers
+// don't bother saving this, this is purely cosmetic feature anyway
+transient TVec bootprintLastOrg;
+transient float bootprintTimeLeft; // <= 0: no bootprints
+transient float bootprintNextPutTime; // delay, decaying
+transient bool bootprintFlip;
+
+transient name bootprintDecal;
+transient int bootprintDecalTranslation;
+
+// this should be configurable!
+const float BOOTPRINT_DELAY_TIME0 = 0.12; // seconds
+const float BOOTPRINT_DELAY_TIME1 = 0.16; // seconds
+
+const float BOOTPRINT_MIN_DIST = 12; // units
+
 
 //==========================================================================
 //
@@ -2567,9 +2583,9 @@ void DecalEffect (TVec org, name dectype, int side, /*line_t *li*/int lineidx, i
 //  FlatDecalEffect
 //
 //==========================================================================
-void FlatDecalEffect (TVec org, name dectype, float range, int translation) {
+void FlatDecalEffect (TVec org, name dectype, float range, int translation, optional float angle, optional bool forceFlipX) {
   if (!dectype) return; // just in case
-  Level.XLevel.AddFlatDecal(org, dectype, range, translation);
+  Level.XLevel.AddFlatDecal(org, dectype, range, translation, angle!optional, forceFlipX!optional);
 }
 
 
@@ -5072,6 +5088,10 @@ override void PlayerTick (float deltaTime) {
     //printdebug("%C: crouch reset!", self);
     bForceCrouchingDown = 0;
   }
+
+  // do it here, not in physics code, becase physics code is already overloaded with shit
+  // this is purely cosmetic feature, so i think it's ok
+  LeaveBootPrints(deltaTime);
 }
 
 
@@ -6093,9 +6113,87 @@ void CheatHelper_AllKeys () {
 }
 
 
-// can be overriden in user mods
-void AdjustForwardMove (ref float speed, ref float moveWalk, ref float moveRun) {}
-void AdjustSideMove (ref float speed, ref float moveWalk, ref float moveRun) {}
+//==========================================================================
+//
+//  AdjustForwardMove
+//
+//  can be overriden in user mods
+//
+//==========================================================================
+void AdjustForwardMove (ref float speed, ref float moveWalk, ref float moveRun) {
+}
+
+
+//==========================================================================
+//
+//  AdjustSideMove
+//
+//  can be overriden in user mods
+//
+//==========================================================================
+void AdjustSideMove (ref float speed, ref float moveWalk, ref float moveRun) {
+}
+
+
+//==========================================================================
+//
+//  LeaveBootPrints
+//
+//==========================================================================
+void LeaveBootPrints (float deltaTime) {
+  if (!MO || MO.Health <= 0) return; // just in case
+
+  if (!GetCvarB('r_bootprints')) return;
+
+  bool onFloor = (fabs(MO.Origin.z-MO.FloorZ) <= 0.1);
+
+  name bpd;
+  int bpt;
+  float bptleft;
+  if (onFloor && MO.XLevel.CheckBootPrints(MO.Origin, MO.SubSector, out bpd, out bpt, out bptleft)) {
+    if (bptleft > 0.0 && bpd && !nameEquCI(bootprintDecal, 'none')) {
+      //printdebug("PLR: bootprint decal '%s' (trans=%s; time=%s)", bpd, bpt, bptleft);
+      bootprintDecal = bpd;
+      bootprintDecalTranslation = bpt;
+      bootprintTimeLeft = bptleft+deltaTime;
+      bootprintLastOrg = MO.Origin;
+      bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
+    } else {
+      bootprintDecal = '';
+      bootprintTimeLeft = 0.0f;
+      return;
+    }
+  }
+
+  bootprintTimeLeft -= deltaTime;
+  if (bootprintTimeLeft <= 0.0f) {
+    bootprintTimeLeft = 0.0f;
+    return;
+  }
+
+  bootprintNextPutTime -= deltaTime;
+  if (bootprintNextPutTime > 0.0f) return;
+
+  bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
+
+  if (!onFloor) return; // not on the floor, oops
+
+  float dist2d = (bootprintLastOrg-MO.Origin).length2D();
+  if (dist2d < BOOTPRINT_MIN_DIST) return;
+
+  TVec org = MO.Origin;
+  bootprintLastOrg = org;
+
+  // bootprintFlip==true: right
+  float xofs = MO.Radius*0.4+FRandomBetween(0, 2);
+  if (bootprintFlip) xofs = -xofs;
+  //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(MO.Angles.yaw));
+  org += YawVectorRight(MO.Angles.yaw)*xofs;
+
+  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw-90, forceFlipX:bootprintFlip);
+
+  bootprintFlip = !bootprintFlip;
+}
 
 
 defaultproperties {

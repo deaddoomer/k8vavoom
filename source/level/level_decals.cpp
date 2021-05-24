@@ -180,6 +180,13 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec) {
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dec->alpha.value;
   decal->addAlpha = dec->addAlpha.value;
+  decal->flags =
+    (dec->fullbright ? decal_t::Fullbright : 0u)|
+    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
+    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
+    (dec->bootPrint ? decal_t::BootPrint : 0u);
+  decal->bootname = dec->bootname;
+  decal->boottime = dec->boottime.value;
   decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
   if (decal->animator) AddAnimatedDecal(decal);
   seg->appendDecal(decal);
@@ -560,7 +567,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
-            decal->flags = flips|stvflag|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+            decal->flags |= flips|stvflag;
             decal->flags |= /*disabledTextures*/0u;
             // slide with 3d floor floor
             decal->slidesec = sec3d;
@@ -779,7 +786,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
-      decal->flags = flips|stvflag|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+      decal->flags |= flips|stvflag;
       decal->flags |= disabledTextures;
       decal->calculateBBox();
 
@@ -1226,7 +1233,14 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dec->alpha.value;
   decal->addAlpha = dec->addAlpha.value;
-  decal->flags = orflags|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u);
+  decal->flags =
+    orflags|
+    (dec->fullbright ? decal_t::Fullbright : 0u)|
+    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
+    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
+    (dec->bootPrint ? decal_t::BootPrint : 0u);
+  decal->bootname = dec->bootname;
+  decal->boottime = dec->boottime.value;
   decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
 
   AppendDecalToSubsectorList(decal);
@@ -1242,7 +1256,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
 //  zero height means "take from decal texture"
 //
 //==========================================================================
-void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation) {
+void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride, bool forceFlipX) {
   if (!r_decals || !r_decals_flat) return;
   if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
@@ -1253,7 +1267,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
   }
 
   range = max2(2.0f, fabs(range));
-  SpreadFlatDecalEx(org, range, dec, 0, translation);
+  SpreadFlatDecalEx(org, range, dec, 0, translation, angle, angleOverride, forceFlipX);
 }
 
 
@@ -1287,12 +1301,32 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
 }
 
 
-//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation);
+//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX);
 IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   TVec org;
   VName dectype;
   float range;
   VOptParamInt translation(0);
-  vobjGetParamSelf(org, dectype, range, translation);
-  Self->AddFlatDecal(org, dectype, range, translation);
+  VOptParamFloat angle(0.0f);
+  VOptParamBool forceFlipX(false);
+  vobjGetParamSelf(org, dectype, range, translation, angle, forceFlipX);
+  Self->AddFlatDecal(org, dectype, range, translation, angle, angle.specified, forceFlipX);
+}
+
+
+// check what kind of bootprint decal is required at `org`
+// returns `false` if none (other vars are undefined)
+// otherwise:
+//   `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
+//   `decalTranslation` is translation (for translated blood)
+//   `markTime` is the time the marks should be left (in seconds)
+// native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out name decalName, out int decalTranslation, out float markTime);
+IMPLEMENT_FUNCTION(VLevel, CheckBootPrints) {
+  TVec org;
+  subsector_t *sub;
+  VName *decalName;
+  int *decalTranslation;
+  float *markTime;
+  vobjGetParamSelf(org, sub, decalName, decalTranslation, markTime);
+  RET_BOOL(Self->CheckBootPrints(org, sub, *decalName, *decalTranslation, *markTime));
 }

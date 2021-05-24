@@ -1411,6 +1411,16 @@ public: // used in renderer for flat decals
   void AddAnimatedDecal (decal_t *dc);
   void RemoveDecalAnimator (decal_t *dc); // this will also delete animator; safe to call on decals without an animator
 
+  // check what kind of bootprint decal is required at `org`
+  // returns `false` if none (other vars are undefined)
+  // otherwise:
+  //   `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
+  //   `decalTranslation` is translation (for translated blood)
+  //   `markTime` is the time the marks should be left (in seconds)
+  //
+  // `sub` can be `nullptr`
+  bool CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int &decalTranslation, float &markTime);
+
 private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec);
   //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);
@@ -1424,10 +1434,10 @@ private:
 
   void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
-  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation);
+  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, float angle, bool angleOverride, bool forceFlipX);
 
   // z coord matters!
-  void AddFlatDecal (TVec org, VName dectype, float range, int translation);
+  void AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride, bool forceFlipX);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);
@@ -1689,10 +1699,11 @@ private:
 
   DECLARE_FUNCTION(AddDecal)
   DECLARE_FUNCTION(AddDecalById)
-
   //DECLARE_FUNCTION(AddFloorDecal)
   //DECLARE_FUNCTION(AddCeilingDecal)
   DECLARE_FUNCTION(AddFlatDecal)
+
+  DECLARE_FUNCTION(CheckBootPrints)
 
   DECLARE_FUNCTION(doRecursiveSound)
 

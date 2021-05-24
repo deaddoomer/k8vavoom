@@ -312,7 +312,7 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //  VLevel::SpreadFlatDecalEx
 //
 //==========================================================================
-void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation) {
+void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, float angle, bool angleOverride, bool forceFlipX) {
   if (!dec) return; // just in case
 
   if (dec->noFlat) return;
@@ -324,7 +324,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
-    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation);
+    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, angle, angleOverride, forceFlipX);
   }
 
   dec->genValues();
@@ -347,9 +347,10 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   // setup flips
   unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);
+  if (forceFlipX) flips ^= decal_t::FlipX;
 
   DInfo nfo;
-  nfo.angle = dec->angleFlat.value;
+  nfo.angle = (angleOverride ? AngleMod(angle) : dec->angleFlat.value);
   nfo.spheight = dec->spheight;
   nfo.org = org;
   nfo.range = range;
@@ -371,4 +372,64 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   IncSubTouchCounter();
   DecalFloodFill(&nfo, sub);
 #endif
+}
+
+
+//==========================================================================
+//
+//  VLevel::CheckBootPrints
+//
+//  check what kind of bootprint decal is required at `org`
+//  returns `false` if none (other vars are undefined)
+//  otherwise:
+//  `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
+//  `decalTranslation` is translation (for translated blood)
+//  `markTime` is the time the marks should be left (in seconds)
+//
+//  `sub` can be `nullptr`
+//
+//==========================================================================
+bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int &decalTranslation, float &markTime) {
+  decalName = NAME_None;
+  decalTranslation = 0;
+  markTime = 0.0f;
+
+  if (!subsectorDecalList) return false;
+
+  if (!sub) sub = PointInSubsector(org);
+
+  // check if we are inside any blood decal
+  constexpr float shrinkRatio = 0.8f;
+  float dcbb2d[4];
+  for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
+    if (dc->bootname == NAME_None) continue;
+    if (!dc->isFloor()) continue;
+    // check coords
+    ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
+    if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
+    /*if (dc->eregindex != 0)*/ {
+      // 3d floor decal, check Z coord
+      bool zok = false;
+      int eregidx = 0;
+      for (sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+        if (eregidx == dc->eregindex) {
+          const float fz = (eregidx ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
+          if (fabsf(fz-org.z) <= 0.1f) {
+            zok = true;
+            //org.z = fz;
+          }
+          break;
+        }
+      }
+      if (!zok) return false;
+    }
+    // it seems that we found it
+    decalName = dc->bootname;
+    decalTranslation = dc->translation;
+    markTime = dc->boottime;
+    return true;
+  }
+
+  // oops
+  return false;
 }

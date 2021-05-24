@@ -105,10 +105,13 @@ public:
   bool fuzzy; // draw decal with "fuzzy" effect (not supported yet)
   bool fullbright;
   bool noWall, noFlat;
+  bool bloodSplat, bootPrint;
   bool flipXValue, flipYValue; // valid after `genValues()`
   DecalFloatVal angleWall;
   DecalFloatVal angleFlat;
   VName lowername;
+  VName bootname;
+  DecalFloatVal boottime;
   VDecalAnim *animator; // decal animator (can be nullptr)
 
 protected:
@@ -135,9 +138,12 @@ public:
   inline VDecalDef () noexcept
     : next(nullptr), animname(NAME_None), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
     , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
-    , fuzzy(false), fullbright(false), noWall(false), noFlat(false), flipXValue(false), flipYValue(false)
+    , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
+    , flipXValue(false), flipYValue(false)
     , angleWall(0.0f), angleFlat(0.0f, 360.0f)
-    , lowername(NAME_None), animator(nullptr)
+    , lowername(NAME_None)
+    , bootname(NAME_None), boottime(6.0f, 12.0f) // this is default time
+    , animator(nullptr)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}
   ~VDecalDef () noexcept;

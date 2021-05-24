@@ -490,6 +490,8 @@ void VDecalDef::genValues () noexcept {
   angleFlat.genValue(0.0f);
   angleFlat.value = AngleMod(angleFlat.value);
 
+  boottime.genValue(0.0f);
+
   if (animator) animator->genValues();
 }
 
@@ -670,10 +672,6 @@ bool VDecalDef::parse (VScriptParser *sc) {
     if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
     if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
 
-    // as we cannot inherit decals, there's no need in inverse flags
-    if (sc->Check("nowall")) { noWall = true; continue; }
-    if (sc->Check("noflat")) { noFlat = true; continue; }
-
     if (sc->Check("solid")) { alpha = 1; continue; }
 
     if (sc->Check("translucent")) { parseNumOrRandom(sc, &alpha); continue; }
@@ -684,10 +682,37 @@ bool VDecalDef::parse (VScriptParser *sc) {
 
     if (sc->Check("lowerdecal")) {
       sc->ExpectString();
-      if (sc->String.Length() == 0) { sc->Error("invalid lower decal name"); return false; }
+      if (sc->String.Length() == 0) { sc->Message("invalid lower decal name"); return false; }
       lowername = VName(*sc->String);
+      if (VStr::strEquCI(*lowername, "None")) lowername = NAME_None;
       continue;
     }
+
+    // k8vavoom decal options
+    if (sc->Check("k8vavoom")) {
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        // as we cannot inherit decals, there's no need in inverse flags
+        if (sc->Check("nowall")) { noWall = true; continue; }
+        if (sc->Check("noflat")) { noFlat = true; continue; }
+
+        if (sc->Check("typebloodsplat")) { bloodSplat = true; continue; }
+        if (sc->Check("typebootprint")) { bootPrint = true; continue; }
+
+        if (sc->Check("bootprintdecal")) {
+          sc->ExpectString();
+          if (sc->String.Length() == 0) { sc->Message("invalid bootprint decal name"); return false; }
+          bootname = VName(*sc->String);
+          if (VStr::strEquCI(*bootname, "None")) bootname = NAME_None;
+          continue;
+        }
+
+        sc->Error(va("unknown k8vavoom decal keyword '%s'", *sc->String));
+      }
+      continue;
+    }
+
+    if (sc->Check("bootprinttime")) { parseNumOrRandom(sc, &boottime); continue; }
 
     if (sc->Check("animator")) { sc->ExpectString(); animname = VName(*sc->String); continue; }
 

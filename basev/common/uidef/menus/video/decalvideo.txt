@@ -21,6 +21,15 @@ menudef DecalOptions {
     help = "Allow floor/ceiling decals (if decals are turned on).";
   }
 
+  option bool {
+    title = "Bootprint Decals";
+    cvar = r_bootprints;
+    help =
+      "If flat decals are allowed, and the mod has bootprint decals,",
+      "the player will leave bootprints.",
+      "Try built-in Gore mod with floor blood splats enabled to test it.";
+  }
+
 
   header "Wall Decals Limits";
 
