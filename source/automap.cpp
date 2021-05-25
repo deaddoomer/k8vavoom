@@ -2320,6 +2320,79 @@ void AM_Drawer () {
 
 //==========================================================================
 //
+//  AM_Minimap_DrawMarks
+//
+//==========================================================================
+static void AM_Minimap_DrawMarks (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+  if (!mapMarksAllowed) return;
+
+  float s, c;
+  msincos(angle, &s, &c);
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  for (int i = 0; i < AM_NUMMARKPOINTS; ++i) {
+    MarkPoint &mp = markpoints[i];
+    if (!mp.isActive()) continue;
+
+    //int w = LittleShort(GTextureManager.TextureWidth(marknums[i]));
+    //int h = LittleShort(GTextureManager.TextureHeight(marknums[i]));
+
+    // convert line coordinates
+    const float mx1o = (markpoints[i].x-xc)*scale;
+    const float my1o = -(markpoints[i].y-yc)*scale;
+
+    WidgetTranslateXY(mx1, my1, mx1o, my1o);
+
+    // do not send the line to GPU if it is not visible
+    /*
+    if (max2(mx1, mx2) < 0 || max2(my1, my2) < 0 ||
+        min2(mx1, mx2) >= w->GetWidth() || min2(my1, my2) >= w->GetHeight())
+    {
+      continue;
+    }
+    */
+
+    const char *numstr = va("%d", i);
+    // calc size
+    int wdt = 0;
+    int hgt = 0;
+    for (const char *tmps = numstr; *tmps; ++tmps) {
+      int ww = LittleShort(GTextureManager.TextureWidth(marknums[*tmps-'0']));
+      int hh = LittleShort(GTextureManager.TextureHeight(marknums[*tmps-'0']));
+      wdt += ww;
+      if (hgt < hh) hgt = hh;
+    }
+    if (wdt < 1 || hgt < 1) continue;
+
+    // clamp coords
+    float mx = clampval(mx1, 0.0f, float(w->GetWidth()-wdt));
+    float my = clampval(my1, 0.0f, float(w->GetHeight()-hgt));
+
+    if (i == markActive) {
+      w->FillRectF(mx, my, wdt, hgt, CurrMarkColor, 0.5f);
+    } else if (GClLevel && (GClLevel->TicTime&0x0f) >= 8) {
+      w->FillRectF(mx, my, wdt, hgt, MarkBlinkColor, 0.5f);
+    }
+
+    // render it
+    for (const char *tmps = numstr; *tmps; ++tmps) {
+      //R_DrawPicFloat(fx, fy, marknums[*tmps-'0']);
+      VTexture *Tex = GTextureManager(marknums[*tmps-'0']);
+      if (Tex && Tex->Type != TEXTYPE_Null) {
+        //float px = mx-Tex->GetScaledSOffsetF();
+        //float py = my-Tex->GetScaledTOffsetF();
+        w->DrawPic(mx, my, Tex, alpha);
+        mx += GTextureManager.TextureWidth(marknums[*tmps-'0']);
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  AM_Minimap_DrawWalls
 //
 //==========================================================================
@@ -2589,6 +2662,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 
   AM_Minimap_DrawWalls(w, xc, yc, scale, angle, alpha);
   AM_Minimap_DrawThings(w, xc, yc, scale, angle, alpha);
+  AM_Minimap_DrawMarks(w, xc, yc, scale, angle, alpha);
   //AM_Minimap_DrawKeys(w, xc, yc, scale, angle, alpha); // rendering keys is not working right yet, and it is VERY SLOW
   AM_Minimap_DrawPlayer(w, xc, yc, scale, plrangle, alpha);
 
