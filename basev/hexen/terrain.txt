@@ -1,5 +1,4 @@
 // Terrain types -----------------------------------------------------------
-
 terrain Lava
 {
   splash      Lava
@@ -8,6 +7,11 @@ terrain Lava
   damageamount  5
   damagetype    lava
   damagetimemask  31
+
+  k8vavoom {
+    bootprintDecal   LavaLiquidBootPrint
+    bootprintTime    default
+  }
 }
 
 terrain Ice
@@ -21,7 +25,6 @@ terrain Ice
 }
 
 // Floor -> terrain mappings -----------------------------------------------
-
 floor x_005 Water
 floor x_001 Lava
 floor x_009 Sludge
