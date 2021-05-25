@@ -317,14 +317,14 @@ vuint8 *VPcxTexture::GetPixels () {
 
     // read palette
     Palette = new rgba_t[256];
-    for (int c = 0; c < 256; ++c) {
+    for (unsigned c = 0; c < 256; ++c) {
       if (Strm.TotalSize()-Strm.Tell() < 3) {
         GCon->Logf(NAME_Warning, "palette data too short in '%s'", *W_FullLumpName(SourceLump));
         Palette[c].r = Palette[c].g = Palette[c].b = 0;
       } else {
         Strm << Palette[c].r << Palette[c].g << Palette[c].b;
       }
-      Palette[c].a = 255;
+      //Palette[c].a = 255; // no need, it will be set by `FixupPalette()`
     }
 
     FixupPalette(Palette);

@@ -32,7 +32,8 @@
 
 
 extern VCvarB dbg_show_missing_classes;
-static VCvarI r_color_distance_algo("r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", /*CVAR_Archive*/CVAR_PreInit);
+static VCvarI r_emulate_vga_palette("__r_emulate_vga_palette", "3", "VGA palette emulation mode (0: off).", /*CVAR_Archive*/CVAR_PreInit);
+static VCvarI r_color_distance_algo("__r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", /*CVAR_Archive*/CVAR_PreInit);
 // there is no sense to store this in config, because config is loaded after brightmaps
 static VCvarB x_brightmaps_ignore_iwad("x_brightmaps_ignore_iwad", false, "Ignore \"iwad\" option when *loading* brightmaps?", CVAR_PreInit);
 
@@ -106,6 +107,85 @@ static VCvarB spr_report_missing_patches("spr_report_missing_patches", false, "R
 
 //==========================================================================
 //
+//  R_ProcessPalette
+//
+//  remaps color 0 to the nearest color, emulates VGA if necessary
+//  if `forceOpacity` is set, colors [1..255] will be forced to full opacity
+//
+//  returns index of new color 0
+//
+//==========================================================================
+int R_ProcessPalette (rgba_t pal[256], bool forceOpacity) {
+  const int emulateVGA = r_emulate_vga_palette.asInt();
+  const bool newDistAlgo = (r_color_distance_algo.asInt() > 0);
+  int new0color = 0;
+  int best_dist_black = 0x7fffffff;
+  int c0r = 0, c0g = 0, c0b = 0;
+  for (unsigned i = 0; i < 256; ++i) {
+    if (forceOpacity) pal[i].a = 255;
+    switch (emulateVGA) {
+      case 1:
+        // clear two lower bits, to emulate VGA palette
+        // do it this way: if either bit 0 or bit 1 is zero, clear two last bits
+        // this is so solid colors like white will retain their "whiteness"
+        if ((pal[i].r&0x03) != 3) pal[i].r &= 0xfc;
+        if ((pal[i].g&0x03) != 3) pal[i].g &= 0xfc;
+        if ((pal[i].b&0x03) != 3) pal[i].b &= 0xfc;
+        break;
+      case 2:
+        // if either of lower two bits is set, set them both
+        if (pal[i].r&0x03) pal[i].r |= 0x03;
+        if (pal[i].g&0x03) pal[i].g |= 0x03;
+        if (pal[i].b&0x03) pal[i].b |= 0x03;
+        break;
+      case 3:
+        // remap
+        pal[i].r = clampToByte((pal[i].r>>2)*255/63);
+        pal[i].g = clampToByte((pal[i].g>>2)*255/63);
+        pal[i].b = clampToByte((pal[i].b>>2)*255/63);
+        break;
+    }
+    if (i == 0) {
+      //k8: force color 0 to transparent black (it doesn't matter, but anyway)
+      //GCon->Logf(NAME_Debug, "color #0 is (%02x_%02x_%02x)", pal[0].r, pal[0].g, pal[0].b);
+      c0r = pal[i].r;
+      c0g = pal[i].g;
+      c0b = pal[i].b;
+      if (pal[i].a != 255) {
+        c0r = c0r*pal[i].a/255;
+        c0g = c0g*pal[i].a/255;
+        c0b = c0b*pal[i].a/255;
+      }
+      pal[i].r = pal[i].g = pal[i].b = 0;
+      pal[i].a = 0;
+    } else if (best_dist_black) {
+      // remap color 0
+      int pr = pal[i].r;
+      int pg = pal[i].g;
+      int pb = pal[i].b;
+      if (pal[i].a != 255) {
+        pr = pr*pal[i].a/255;
+        pg = pg*pal[i].a/255;
+        pb = pb*pal[i].a/255;
+      }
+      int dist;
+      if (newDistAlgo) {
+        dist = rgbDistanceSquared(pr, pg, pb, c0r, c0g, c0b);
+      } else {
+        dist = (pr-c0r)*(pr-c0r)+(pg-c0g)*(pg-c0g)+(pb-c0b)*(pb-c0b);
+      }
+      if (dist < best_dist_black) {
+        new0color = (int)i;
+        best_dist_black = dist;
+      }
+    }
+  }
+  return new0color;
+}
+
+
+//==========================================================================
+//
 //  InitPalette
 //
 //==========================================================================
@@ -124,46 +204,33 @@ static void InitPalette () {
   // with modified graphics.
   // Strife uses color 0 as transparent. I already had problems with fact
   // that color 255 is normal color, now there shouldn't be any problems.
+  //
+  // k8: color 0 is not guaranteed to be black; map it to the actual palette color instead
   VStream *lumpstream = W_CreateLumpReaderName(NAME_playpal);
   VCheckedStream Strm(lumpstream, true); // load to memory
+  // load it
   rgba_t *pal = r_palette;
-  int best_dist_black = 0x7fffffff;
-  int best_dist_white = (r_color_distance_algo ? 0x7fffffff : -0x7fffffff);
-  for (int i = 0; i < 256; ++i) {
+  for (unsigned i = 0; i < 256; ++i) {
     Strm << pal[i].r << pal[i].g << pal[i].b;
-    if (i == 0) {
-      //k8: force color 0 to transparent black (it doesn't matter, but anyway)
-      //GCon->Logf("color #0 is (%02x_%02x_%02x)", pal[0].r, pal[0].g, pal[0].b);
-      pal[i].r = 0;
-      pal[i].g = 0;
-      pal[i].b = 0;
-      pal[i].a = 0;
+  }
+  // find white color
+  // preprocess, remap color 0
+  r_black_color = R_ProcessPalette(pal);
+  // find white color
+  const bool newDistAlgo = (r_color_distance_algo.asInt() > 0);
+  int best_dist_white = (newDistAlgo ? 0x7fffffff : -0x7fffffff);
+  for (unsigned i = 1; i < 256; ++i) {
+    if (newDistAlgo) {
+      const int dist = rgbDistanceSquared(pal[i].r, pal[i].g, pal[i].b, 255, 255, 255);
+      if (dist < best_dist_white) {
+        r_white_color = (int)i;
+        best_dist_white = dist;
+      }
     } else {
-      pal[i].a = 255;
-      // black
-      int dist;
-      if (r_color_distance_algo) {
-        dist = rgbDistanceSquared(pal[i].r, pal[i].g, pal[i].b, 0, 0, 0);
-      } else {
-        dist = pal[i].r*pal[i].r+pal[i].g*pal[i].g+pal[i].b*pal[i].b;
-      }
-      if (dist < best_dist_black) {
-        r_black_color = i;
-        best_dist_black = dist;
-      }
-      // white
-      if (r_color_distance_algo) {
-        dist = rgbDistanceSquared(pal[i].r, pal[i].g, pal[i].b, 255, 255, 255);
-        if (dist < best_dist_white) {
-          r_white_color = i;
-          best_dist_white = dist;
-        }
-      } else {
-        //dist = pal[i].r*pal[i].r+pal[i].g*pal[i].g+pal[i].b*pal[i].b;
-        if (dist > best_dist_white) {
-          r_white_color = i;
-          best_dist_white = dist;
-        }
+      const int dist = pal[i].r*pal[i].r+pal[i].g*pal[i].g+pal[i].b*pal[i].b;
+      if (dist > best_dist_white) {
+        r_white_color = (int)i;
+        best_dist_white = dist;
       }
     }
   }
@@ -273,9 +340,9 @@ static void InitTranslationTables () {
   IceTranslation.Table[0] = 0;
   IceTranslation.Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int r = int(r_palette[i].r*0.5f+64*0.5f);
-    int g = int(r_palette[i].g*0.5f+64*0.5f);
-    int b = int(r_palette[i].b*0.5f+255*0.5f);
+    const vuint8 r = clampToByte(int(r_palette[i].r*0.5f+64*0.5f));
+    const vuint8 g = clampToByte(int(r_palette[i].g*0.5f+64*0.5f));
+    const vuint8 b = clampToByte(int(r_palette[i].b*0.5f+255*0.5f));
     IceTranslation.Palette[i].r = r;
     IceTranslation.Palette[i].g = g;
     IceTranslation.Palette[i].b = b;
@@ -298,8 +365,8 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
-    int Val = 255-Gray;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
+    const int Val = 255-Gray;
     T->Palette[i].r = Val;
     T->Palette[i].g = Val;
     T->Palette[i].b = Val;
@@ -312,7 +379,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = min2(255, Gray+Gray/2);
     T->Palette[i].g = Gray;
     T->Palette[i].b = 0;
@@ -325,7 +392,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = min2(255, Gray+Gray/2);
     T->Palette[i].g = 0;
     T->Palette[i].b = 0;
@@ -338,7 +405,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = Gray; //min2(255, Gray+Gray/2);
     T->Palette[i].g = Gray/8;
     T->Palette[i].b = Gray/8;
@@ -351,7 +418,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = 0;
     T->Palette[i].g = min2(255, Gray+Gray/2);
     T->Palette[i].b = 0;
@@ -364,7 +431,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = Gray/8;
     T->Palette[i].g = Gray/8;
     T->Palette[i].b = min2(255, Gray+Gray/2);
@@ -377,7 +444,7 @@ static void InitColorMaps () {
   T->Table[0] = 0;
   T->Palette[0] = r_palette[0];
   for (int i = 1; i < 256; ++i) {
-    int Gray = (r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8;
+    const int Gray = clampToByte((r_palette[i].r*77+r_palette[i].g*143+r_palette[i].b*37)>>8);
     T->Palette[i].r = min2(255, Gray+Gray/2);
     T->Palette[i].g = min2(255, Gray+Gray/2);
     T->Palette[i].b = Gray;

@@ -534,7 +534,9 @@ public:
   static void PremultiplyRGBA (void *dest, const void *src, int w, int h);
 
 protected:
-  void FixupPalette (rgba_t *Palette);
+  // normalize 8-bit palette, remap color 0
+  // if `forceOpacity` is set, colors [1..255] will be forced to full opacity
+  void FixupPalette (rgba_t Palette[256], bool forceOpacity=true);
 };
 
 

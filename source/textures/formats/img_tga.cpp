@@ -153,24 +153,41 @@ vuint8 *VTgaTexture::GetPixels () {
 
   Strm.Seek(Strm.Tell()+hdr.id_length);
 
+  bool forcePalOpacity = true;
+
   if (hdr.pal_type == 1) {
+    if (hdr.pal_entry_size == 32) forcePalOpacity = false;
     Palette = new rgba_t[256];
-    for (int i = 0; i < hdr.pal_colors; ++i) {
-      vuint16 col;
+    memset((void *)Palette, 0, sizeof(rgba_t)*256);
+    for (unsigned i = 0; i < 256; ++i) Palette[i].a = 255;
+    vuint16 col;
+    for (unsigned i = 0; i < hdr.pal_colors; ++i) {
       switch (hdr.pal_entry_size) {
         case 16:
           Strm << col;
-          Palette[i].r = (col&0x1F)<<3;
-          Palette[i].g = ((col>>5)&0x1F)<<3;
-          Palette[i].b = ((col>>10)&0x1F)<<3;
-          Palette[i].a = 255;
+          if (i <= 255) {
+            Palette[i].r = clampToByte((col&0x1F)*255/0x1F);
+            Palette[i].g = clampToByte(((col>>5)&0x1F)*255/0x1F);
+            Palette[i].b = clampToByte(((col>>10)&0x1F)*255/0x1F);
+            Palette[i].a = 255;
+          }
           break;
         case 24:
-          Strm << Palette[i].b << Palette[i].g << Palette[i].r;
+          if (i <= 255) {
+            Strm << Palette[i].b << Palette[i].g << Palette[i].r;
+          } else {
+            vuint8 t;
+            Strm << t << t << t;
+          }
           Palette[i].a = 255;
           break;
         case 32:
-          Strm << Palette[i].b << Palette[i].g << Palette[i].r << Palette[i].a;
+          if (i <= 255) {
+            Strm << Palette[i].b << Palette[i].g << Palette[i].r << Palette[i].a;
+          } else {
+            vuint8 t;
+            Strm << t << t << t << t;
+          }
           break;
       }
     }
@@ -235,7 +252,8 @@ vuint8 *VTgaTexture::GetPixels () {
     }
   } else if (hdr.img_type == 3 && hdr.bpp == 8 && hdr.pal_type == 1) {
     // grayscale uncompressed
-    for (int i = 0; i < 256; ++i) {
+    if (!Palette) Palette = new rgba_t[256];
+    for (unsigned i = 0; i < 256; ++i) {
       Palette[i].r = i;
       Palette[i].g = i;
       Palette[i].b = i;
@@ -361,7 +379,8 @@ vuint8 *VTgaTexture::GetPixels () {
     }
   } else if (hdr.img_type == 11 && hdr.bpp == 8 && hdr.pal_type == 1) {
     // grayscale RLE compressed
-    for (int i = 0; i < 256; ++i) {
+    if (!Palette) Palette = new rgba_t[256];
+    for (unsigned i = 0; i < 256; ++i) {
       Palette[i].r = i;
       Palette[i].g = i;
       Palette[i].b = i;
@@ -393,7 +412,7 @@ vuint8 *VTgaTexture::GetPixels () {
 
   // for 8-bit textures remap color 0
   if (mFormat == TEXFMT_8Pal) {
-    FixupPalette(Palette);
+    FixupPalette(Palette, forcePalOpacity);
     if (Width > 0 && Height > 0) {
       const vuint8 *s = Pixels;
       for (int cnt = Width*Height; cnt--; ++s) {

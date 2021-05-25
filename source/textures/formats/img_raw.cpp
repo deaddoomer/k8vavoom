@@ -123,24 +123,13 @@ vuint8 *VRawPicTexture::GetPixels () {
   if (PalLumpNum < 0) {
     black = r_black_color;
   } else {
-    // load palette and find black color for remaping
+    // load palette and remap color 0
     Palette = new rgba_t[256];
     VCheckedStream PStrm(PalLumpNum);
-    int best_dist = 0x10000;
-    black = 0;
-    for (int i = 0; i < 256; ++i) {
+    for (unsigned i = 0; i < 256; ++i) {
       PStrm << Palette[i].r << Palette[i].g << Palette[i].b;
-      if (i == 0) {
-        Palette[i].a = 0;
-      } else {
-        Palette[i].a = 255;
-        int dist = Palette[i].r*Palette[i].r+Palette[i].g*Palette[i].g+Palette[i].b*Palette[i].b;
-        if (dist < best_dist) {
-          black = i;
-          best_dist = dist;
-        }
-      }
     }
+    black = R_ProcessPalette(Palette);
   }
 
   // read data
