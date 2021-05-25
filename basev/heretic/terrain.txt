@@ -1,16 +1,18 @@
 // Terrain types -----------------------------------------------------------
-
 terrain Lava
 {
   splash      Lava
   footclip    10
   liquid
+  k8vavoom {
+    bootprintDecal   LavaLiquidBootPrint
+    bootprintTime    default
+  }
 }
 
 // Floor -> terrain mappings -----------------------------------------------
-
-floor fltwawa1 Water
-floor fltflww1 Water
-floor fltlava1 Lava
-floor flathuh1 Lava
-floor fltslud1 Sludge
+floorglob "fltwawa[1-3]" Water
+floorglob "fltflww[1-3]" Water
+floorglob "fltlava[1-4]" Lava
+floorglob "flathuh[1-4]" Lava
+floorglob "fltslud[1-3]" Sludge

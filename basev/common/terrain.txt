@@ -85,6 +85,12 @@ terrain Water
   splash    Water
   footclip  10
   liquid
+
+  // for Heretic and Hexen it should look more-or-less ok
+  k8vavoom {
+    bootprintDecal   WaterLiquidBootPrint
+    bootprintTime    default  // or: bootprintTime minsecflt maxsecflt
+  }
 }
 
 terrain Sludge
@@ -92,6 +98,12 @@ terrain Sludge
   splash    Sludge
   footclip  10
   liquid
+
+  // for Heretic and Hexen it doesn't look really ok, but meh
+  k8vavoom {
+    bootprintDecal   SlimeLiquidBootPrint
+    bootprintTime    default
+  }
 }
 
 // added by k8
