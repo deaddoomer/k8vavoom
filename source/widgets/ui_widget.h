@@ -383,10 +383,10 @@ public:
 
   void DrawPicScaledIgnoreOffset (int X, int Y, int Handle, float scaleX=1.0f, float scaleY=1.0f, float Alpha=1.0f, int Trans=0);
 
-  void DrawPic (int, int, int, float = 1.0f, int = 0);
+  void DrawPic (int X, int Y, int Handle, float Alpha=1.0f, int Trans=0);
   void DrawPicScaled (int X, int Y, int Handle, float scaleX, float scaleY, float Alpha=1.0f, int Trans=0);
   void DrawPicScaled (int X, int Y, VTexture *Tex, float scaleX, float scaleY, float Alpha=1.0f, int Trans=0);
-  void DrawPic (int, int, VTexture *, float = 1.0f, int = 0);
+  void DrawPic (int X, int Y, VTexture *Tex, float Alpha=1.0f, int Trans=0);
 
   void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, float alpha);
   void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha);
@@ -394,12 +394,14 @@ public:
   void DrawShadowedPic (int X, int Y, int Handle, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
   void DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
 
-  void FillRectWithFlat (int, int, int, int, VName);
-  void FillRectWithFlatHandle (int, int, int, int, int);
-  void FillRectWithFlatRepeat (int, int, int, int, VName);
-  void FillRectWithFlatRepeatHandle (int, int, int, int, int);
-  void FillRect (int, int, int, int, int, float);
-  void ShadeRect (int, int, int, int, float);
+  void FillRectWithFlat (int X, int Y, int Width, int Height, VName Name);
+  void FillRectWithFlatHandle (int X, int Y, int Width, int Height, int Handle);
+  void FillRectWithFlatRepeat (int X, int Y, int Width, int Height, VName Name);
+  void FillRectWithFlatRepeatHandle (int X, int Y, int Width, int Height, int Handle);
+  void FillRect (int X, int Y, int Width, int Height, int color, float alpha);
+  void FillRectF (float X1, float Y1, float Width, float Height, int color, float alpha);
+  void ShadeRect (int X, int Y, int Width, int Height, float Shade);
+  void ShadeRectF (float X1, float Y1, float Width, float Height, float Shade);
   void DrawRect (int X, int Y, int Width, int Height, int color, float alpha);
   void DrawRectF (float X, float Y, float Width, float Height, int color, float alpha);
   void DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alpha);

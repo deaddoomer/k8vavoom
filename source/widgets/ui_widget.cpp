@@ -1367,6 +1367,20 @@ void VWidget::FillRect (int X, int Y, int Width, int Height, int color, float al
 
 //==========================================================================
 //
+//  VWidget::FillRectF
+//
+//==========================================================================
+void VWidget::FillRectF (float X1, float Y1, float Width, float Height, int color, float alpha) {
+  float X2 = X1+Width;
+  float Y2 = Y1+Height;
+  if (TransferAndClipRect(X1, Y1, X2, Y2)) {
+    Drawer->FillRect((int)roundf(X1), (int)roundf(Y1), (int)roundf(X2), (int)roundf(Y2), color, alpha);
+  }
+}
+
+
+//==========================================================================
+//
 //  VWidget::ShadeRect
 //
 //==========================================================================
@@ -1378,6 +1392,21 @@ void VWidget::ShadeRect (int X, int Y, int Width, int Height, float Shade) {
   float Y2 = Y+Height;
   if (TransferAndClipRect(X1, Y1, X2, Y2)) {
     Drawer->ShadeRect(truncf(X1), truncf(Y1), truncf(X2), truncf(Y2), Shade);
+  }
+}
+
+
+//==========================================================================
+//
+//  VWidget::ShadeRectF
+//
+//==========================================================================
+void VWidget::ShadeRectF (float X1, float Y1, float Width, float Height, float Shade) {
+  if (Width <= 0.0f || Height <= 0.0f || Shade <= 0.0f) return;
+  float X2 = X1+Width;
+  float Y2 = Y1+Height;
+  if (TransferAndClipRect(X1, Y1, X2, Y2)) {
+    Drawer->ShadeRect((int)roundf(X1), (int)roundf(Y1), (int)roundf(X2), (int)roundf(Y2), Shade);
   }
 }
 
