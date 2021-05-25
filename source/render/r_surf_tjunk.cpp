@@ -45,6 +45,7 @@
 //
 //==========================================================================
 static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t *&surf, int vf0, int &vf1, const bool goUp, bool &wasChanged, const int linenum) {
+  TJLOG(NAME_Debug, "InsertEdgePoint: hz=%g; goUp=%d; vf0=%d; vf1=%d; vf0.z=%g; vf1.z=%g", hz, (int)goUp, vf0, vf1, surf->verts[vf0].z, surf->verts[vf1-1].z);
   // find the index to insert new vertex (before)
   int insidx = vf0;
   if (goUp) {
@@ -115,6 +116,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   if (seg->pobj) return surf; // do not fix polyobjects (yet?)
 
   const line_t *line = seg->linedef;
+  //if (line) TJLOG(NAME_Debug, "FixSegTJunctions:000: line #%d, seg #%d: surf->count=%d; surf->next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   const sector_t *mysec = seg->frontsector;
   if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
 
@@ -176,6 +178,8 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   minz[1] = min2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
   maxz[1] = max2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
 
+  TJLOG(NAME_Debug, "FixSegTJunctions:003: line #%d, seg #%d: minz=%g : %g; maxz=%g : %g", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), minz[0], minz[1], maxz[0], maxz[1]);
+
   bool wasChanged = false;
   const int linenum = (int)(ptrdiff_t)(line-&Level->Lines[0]);
 
@@ -185,25 +189,25 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
     // do not fix anything for seg vertex that doesn't touch line vertex
     // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
     // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
+    const TVec *segv = (vidx == 0 ? seg->v1 : seg->v2);
     int lvidx;
     if (vidx == 0) {
-           if (seg->v1 == line->v1) lvidx = 0;
-      else if (seg->v1 == line->v2) lvidx = 1;
+           if (segv == line->v1) lvidx = 0;
+      else if (segv == line->v2) lvidx = 1;
       else continue;
     } else {
-           if (seg->v2 == line->v1) lvidx = 0;
-      else if (seg->v2 == line->v2) lvidx = 1;
+           if (segv == line->v1) lvidx = 0;
+      else if (segv == line->v2) lvidx = 1;
       else continue;
     }
+    const TVec lv = (lvidx ? *line->v2 : *line->v1);
 
     // collect all possible height fixes
     const int lvxCount = line->vxCount(lvidx);
+    TJLOG(NAME_Debug, "FixSegTJunctions:003:   vidx=%d; lvidx=%d; lvxCount=%d", vidx, lvidx, lvxCount);
     if (!lvxCount) continue;
-    const TVec lv = (lvidx ? *line->v2 : *line->v1);
 
     // get side indicies
-    const TVec *segv = (vidx == 0 ? seg->v1 : seg->v2);
-
     int vf0 = 0;
     while (vf0 < surf->count && (surf->verts[vf0].x != segv->x || surf->verts[vf0].y != segv->y)) ++vf0;
     if (vf0 >= surf->count-1) {
@@ -218,7 +222,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
       continue;
     }
 
-    const bool goUp = (surf->verts[vf0].z <= surf->verts[vf1].z);
+    const bool goUp = (surf->verts[vf0].z <= surf->verts[vf1-1].z);
     // our edge is [vf0..vf1)
 
     //TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", linenum, vf0, vf1, surf->count, (int)goUp);
@@ -227,19 +231,27 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
     for (int f = 0; f < lvxCount; ++f) {
       const line_t *ln = line->vxLine(lvidx, f);
       if (ln == line) continue;
-      //TJLOG(NAME_Debug, "  vidx=%d; other line #%d...", vidx, (int)(ptrdiff_t)(ln-&Level->Lines[0]));
+      TJLOG(NAME_Debug, "  vidx=%d; other line #%d...", vidx, (int)(ptrdiff_t)(ln-&Level->Lines[0]));
       for (int sn = 0; sn < 2; ++sn) {
         const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
+        TJLOG(NAME_Debug, "   sn=%d; mysec=%d; sec=%d", sn, (int)(ptrdiff_t)(mysec-&Level->Sectors[0]), (sec ? (int)(ptrdiff_t)(sec-&Level->Sectors[0]) : -1));
         if (!sec || sec == mysec) continue;
         if (sn && ln->frontsector == ln->backsector) continue; // self-referenced line
 
         /*const*/ float fz = sec->floor.GetPointZClamped(lv);
         /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
+        TJLOG(NAME_Debug, "    fz=%g; cz=%g", fz, cz);
         if (fz > cz) continue; // just in case
         if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
         //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
-        if (fz > minz[vidx]) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-        if (cz != fz && cz < maxz[vidx]) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+        if (fz > minz[vidx]) {
+          TJLOG(NAME_Debug, "      adding fz as edge point: %g", fz);
+          InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+        }
+        if (cz != fz && cz < maxz[vidx]) {
+          TJLOG(NAME_Debug, "      adding cz as edge point: %g", cz);
+          InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+        }
 
         // fake floors
         if (sec->heightsec) {
