@@ -94,3 +94,31 @@ decal K8Gore_LavaLiquidBootPrint0 {
 decalgroup LavaLiquidBootPrint {
   K8Gore_LavaLiquidBootPrint0 6
 }
+
+
+/***** Strife Green Mood **********************************************************/
+decal StrifeGreenMoodLiquidBootPrint {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "40 48 18"
+  //translucent 0.6
+  animator Zan_LiquidFader
+}
+
+
+/***** Strife Cyan Water **********************************************************/
+decal StrifeCyanWaterLiquidBootPrint {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "2c 71 7d"
+  translucent 0.6
+  animator Zan_LiquidFader
+}
