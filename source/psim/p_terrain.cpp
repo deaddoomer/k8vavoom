@@ -422,8 +422,9 @@ static void ParseTerrainScript (VScriptParser *sc) {
       sc->ExpectName8Warn();
       VName floorname = sc->Name8;
       int Pic = GTextureManager.CheckNumForName(floorname, TEXTYPE_Flat, false);
+      if (Pic <= 0) continue;
       sc->ExpectString();
-      if (sc->String.isEmpty()) sc->String = "none";
+      if (sc->String.isEmpty()) sc->String = "none"; //k8:???
       auto pp = TerrainTypeMap.find(Pic);
       if (pp) {
         // replace old one
