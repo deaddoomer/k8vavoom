@@ -1228,6 +1228,15 @@ BETA_BONUS2 = "You pick up a skullchest.";
 BETA_BONUS3 = "You pick up an evil sceptre.";
 BETA_BONUS4 = "You pick up an unholy bible.";
 
+AMSTR_FOLLOWON = "Follow Mode ON";
+AMSTR_FOLLOWOFF = "Follow Mode OFF";
+AMSTR_GRIDON = "Grid ON";
+AMSTR_GRIDOFF = "Grid OFF";
+AMSTR_TEXON = "Texture Mode ON";
+AMSTR_TEXOFF = "Texture Mode OFF";
+AMSTR_MARKEDSPOT = "Marked Spot";
+AMSTR_MARKSCLEARED = "All Marks Cleared";
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // Chex Quest

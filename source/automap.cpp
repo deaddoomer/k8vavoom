@@ -50,15 +50,15 @@
 // scale on entry
 #define INITSCALEMTOF  (0.2f)
 
-#define AMSTR_FOLLOWON   "Follow Mode ON"
-#define AMSTR_FOLLOWOFF  "Follow Mode OFF"
+#define AMSTR_FOLLOWON   "$AMSTR_FOLLOWON"
+#define AMSTR_FOLLOWOFF  "$AMSTR_FOLLOWOFF"
 
-#define AMSTR_GRIDON   "Grid ON"
-#define AMSTR_GRIDOFF  "Grid OFF"
+#define AMSTR_GRIDON   "$AMSTR_GRIDON"
+#define AMSTR_GRIDOFF  "$AMSTR_GRIDOFF"
 
-#define AMSTR_MARKEDSPOT     "Marked Spot"
-#define AMSTR_MARKSCLEARED   "All Marks Cleared"
-#define AMSTR_MARKEDSPOTDEL  "Removed Mark Spot"
+#define AMSTR_MARKEDSPOT     "$AMSTR_MARKEDSPOT"
+#define AMSTR_MARKSCLEARED   "$AMSTR_MARKSCLEARED"
+#define AMSTR_MARKEDSPOTDEL  "$AMSTR_MARKEDSPOTDEL"
 
 
 // automap bindings
@@ -2751,20 +2751,20 @@ bool AM_Responder (event_t *ev) {
         if (kp == AM_PTYPE_PRESS) {
           am_follow_player = !am_follow_player;
           f_oldloc.x = 99999.0f;
-          cl->Printf(am_follow_player ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF);
+          cl->Printf("%s", *GLanguage.Translate(am_follow_player ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF));
         }
         break;
       case AM_BIND_GRID:
         if (kp == AM_PTYPE_PRESS) {
           am_draw_grid = !am_draw_grid;
-          cl->Printf(am_draw_grid ? AMSTR_GRIDON : AMSTR_GRIDOFF);
+          cl->Printf("%s", *GLanguage.Translate(am_draw_grid ? AMSTR_GRIDON : AMSTR_GRIDOFF));
         }
         break;
       case AM_BIND_ADDMARK:
         if (kp == AM_PTYPE_PRESS) {
           if (mapMarksAllowed) {
             int mnum = AM_addMark();
-            if (mnum >= 0) cl->Printf("%s %d", AMSTR_MARKEDSPOT, mnum);
+            if (mnum >= 0) cl->Printf("%s %d", *GLanguage.Translate(AMSTR_MARKEDSPOT), mnum);
           }
         }
         break;
@@ -2803,7 +2803,7 @@ bool AM_Responder (event_t *ev) {
           if (mapMarksAllowed) {
             if (markActive >= 0 && markActive < AM_NUMMARKPOINTS && markpoints[markActive].isActive()) {
               markpoints[markActive].deactivate();
-              cl->Printf("%s %d", AMSTR_MARKEDSPOTDEL, markActive);
+              cl->Printf("%s %d", *GLanguage.Translate(AMSTR_MARKEDSPOTDEL), markActive);
             }
           }
         }
@@ -2811,7 +2811,7 @@ bool AM_Responder (event_t *ev) {
       case AM_BIND_CLEARMARKS:
         if (kp == AM_PTYPE_PRESS) {
           if (mapMarksAllowed) {
-            if (AM_clearMarks()) cl->Printf(AMSTR_MARKSCLEARED);
+            if (AM_clearMarks()) cl->Printf("%s", *GLanguage.Translate(AMSTR_MARKSCLEARED));
           }
         }
         break;
