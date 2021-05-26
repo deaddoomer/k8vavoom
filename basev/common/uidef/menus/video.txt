@@ -62,6 +62,12 @@ menudef VideoOptions {
       "\c[WHITE]WARNING: this feature is VERY EXPERIMENTAL.";
   }
 
+  option bool {
+    title = "Tonemap PSprites";
+    cvar = r_tonemap_psprites;
+    help = "Apply tonemap filter to player sprites too?";
+  }
+
   option bool [__gl_can_hires_tonemap > 0] {
     title = "HiRes Tonemap LUT";
     cvar = gl_tonemap_pal_hires;

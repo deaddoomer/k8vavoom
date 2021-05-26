@@ -53,6 +53,7 @@ VCvarB r_allow_cameras("r_allow_cameras", true, "Allow rendering live cameras?",
 VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks? (AT MAJORITY OF CASES THIS IS SLOWER THAN BSP!)", CVAR_Archive);
 
 static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive);
+static VCvarB r_tonemap_psprites("r_tonemap_psprites", true, "Apply tonemap after rendering psprites?", CVAR_Archive);
 
 static VCvarB r_shader_colormaps("r_shader_colormaps", true, "Use shaders to apply colormaps instead of texture reuploading.", CVAR_Archive);
 
@@ -1566,12 +1567,24 @@ void VRenderLevelShared::RenderPlayerView () {
   //GCon->Logf(NAME_Debug, "BLOOM: (%d,%d); (%dx%d)", refdef.x, refdef.y, refdef.width, refdef.height);
   Drawer->Posteffect_Bloom(refdef.x, refdef.y, refdef.width, refdef.height);
 
+  const bool drawPSprites = (cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap);
+
+  bool doTonemap = (r_tonemap.asInt() == 1);
+
+  // if we don't have to tonemap psprites, and have no shader colormaps, do tonemapping now
+  if (doTonemap && drawPSprites && !r_tonemap_psprites.asBool()) {
+    if (!shaderCM || savedColorMap == CM_Default) {
+      doTonemap = false;
+      Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height, true);
+    }
+  }
+
   // recalc in case recursive scene renderer moved it
   // we need it for psprite rendering
   r_viewleaf = (Drawer->vieworg == lastorg ? playerViewLeaf : Level->PointInSubsector(Drawer->vieworg));
 
   // draw the psprites on top of everything
-  if (cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) DrawPlayerSprites();
+  if (drawPSprites) DrawPlayerSprites();
 
   // apply colormap
   if (shaderCM) {
@@ -1580,10 +1593,8 @@ void VRenderLevelShared::RenderPlayerView () {
     ColorMap = savedColorMap;
   }
 
-  // apply tonemap
-  if (r_tonemap.asInt() == 1) {
-    Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height, false);
-  }
+  // apply tonemap, if necessary
+  if (doTonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height, false);
 
   Drawer->EndView();
 }
