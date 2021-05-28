@@ -8,6 +8,8 @@ terrain VanillaWater
     bootprintDecal   WaterLiquidBootPrint
     bootprintTime    default  // or: bootprintTime minsecflt maxsecflt
     detectfloorflat  "fwater[0-9]"
+    // for pwads with extra flats
+    detectfloorflat  "fwater[0-9][0-9]"
   }
 }
 
@@ -20,6 +22,8 @@ terrain VanillaLava
     bootprintDecal   LavaLiquidBootPrint
     bootprintTime    default
     detectfloorflat  "lava[0-9]"
+    // for pwads with extra flats
+    detectfloorflat  "lava[0-9][0-9]"
   }
 }
 
@@ -32,6 +36,8 @@ terrain VanillaAcid
     bootprintDecal   AcidLiquidBootPrint
     bootprintTime    default
     detectfloorflat  "nukage[0-9]"
+    // for pwads with extra flats
+    detectfloorflat  "nukage[0-9][0-9]"
   }
 }
 
@@ -57,5 +63,7 @@ terrain VanillaBlood
     bootprintDecal   BloodLiquidBootPrint
     bootprintTime    default
     detectfloorflat  "blood[0-9]"
+    // for pwads with extra flats
+    detectfloorflat  "blood[0-9][0-9]"
   }
 }
