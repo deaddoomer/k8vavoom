@@ -778,13 +778,19 @@ vuint32 VLevel::IsFloodBugSector (sector_t *sec) {
     }
     return res;
   } else {
+    lineSectorPart.resetNoDtor();
     for (int f = 0; f < sec->linecount; ++f) {
       line_t *line = sec->lines[f];
-      if (line->vxCount(0) == 0 || line->vxCount(1) == 0) continue;
+      if (line->vxCount(0) == 0 || line->vxCount(1) == 0) {
+        if (dbg_floodfill_fixer) GCon->Logf(NAME_Debug, "IsFloodBugSector: triangle sector #%d, line #%d: vx(0)=%d; vx(1)=%d", (int)(ptrdiff_t)(sec-&Sectors[0]), (int)(ptrdiff_t)(line-&Lines[0]), line->vxCount(0), line->vxCount(1));
+        continue;
+      }
       const int lidx = (int)(ptrdiff_t)(sec->lines[f]-&Lines[0]);
       lineSectorPart.append(lidx);
     }
+    if (dbg_floodfill_fixer) GCon->Logf(NAME_Debug, "IsFloodBugSector: triangle sector #%d, found #%d parts", (int)(ptrdiff_t)(sec-&Sectors[0]), lineSectorPart.length());
     if (lineSectorPart.length() != 3) return 0;
+    if (dbg_floodfill_fixer) GCon->Logf(NAME_Debug, "IsFloodBugSector: checking triangle sector #%d", (int)(ptrdiff_t)(sec-&Sectors[0]));
     return IsFloodBugSectorPart(sec);
   }
 }
@@ -933,7 +939,11 @@ void VLevel::FixDeepWaters () {
     // fix "floor holes"
     for (int sidx = 0; sidx < NumSectors; ++sidx) {
       sector_t *sec = &Sectors[sidx];
-      if (sec->linecount < 3 || sec->deepref) continue;
+      if (sec->linecount < 3) continue;
+      if (sec->deepref) {
+        if (dbg_floodfill_fixer) GCon->Logf(NAME_Debug, "sector #%d skipped due to deepref", (int)(ptrdiff_t)(sec-&Sectors[0]));
+        continue;
+      }
       if (sec->SectorFlags&sector_t::SF_UnderWater) continue; // this is special sector, skip it
       if ((sec->SectorFlags&(sector_t::SF_HasExtrafloors|sector_t::SF_ExtrafloorSource|sector_t::SF_TransferSource|sector_t::SF_UnderWater))) {
         if (!(sec->SectorFlags&sector_t::SF_IgnoreHeightSec)) continue; // this is special sector, skip it
