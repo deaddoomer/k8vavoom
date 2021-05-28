@@ -2021,6 +2021,68 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 }
 
 
+// offset origin by actor radius
+const [decorate] int SP_DECAL_RADIUS_OFS = 1<<0;
+// offset origin by actor radius by actor angles, not by `dir`
+const [decorate] int SP_DECAL_RADIUS_OFS_ANGLES = 1<<1;
+// use only yaw in radius offsets
+const [decorate] int SP_DECAL_RADIUS_OFS_YAW_ONLY = 1<<2;
+// use current bootprint decal if there is any (instead of `decalname`)
+const [decorate] int SP_DECAL_BOOTPRINT = 1<<3;
+
+
+//==========================================================================
+//
+//  A_SprayDecal
+//
+//==========================================================================
+[decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags) {
+  int trans = 0;
+  if (flags&SP_DECAL_BOOTPRINT) {
+    if (bIsPlayer) {
+      PlayerEx pex = PlayerEx(Player);
+      if (pex && pex.bootprintDecal && pex.bootprintTimeLeft > 0.0f) {
+        decalname = pex.bootprintDecal;
+        trans = pex.bootprintDecalTranslation;
+      }
+    }
+  }
+
+  if (!decalname || nameEquCI(decalname, 'none')) return;
+  if (!specified_dist) dist = 172.0f;
+  if (dist <= 0) return;
+  if (!specified_dir) {
+    AngleVector(Angles, out dir);
+  } else {
+    if (dir.isZero) return
+    dir = dir.normalize;
+  }
+  if (!specified_ofs) ofs = Origin; else ofs += Origin;
+  ofs.z += fmax(0.0f, Height)*0.5;
+  // offset by radius?
+  if ((flags&SP_DECAL_RADIUS_OFS) && Radius > 0) {
+    TVec rofs;
+    if (flags&SP_DECAL_RADIUS_OFS_ANGLES) {
+      if (flags&SP_DECAL_RADIUS_OFS_YAW_ONLY) {
+        rofs = AngleYawVector(Angles.yaw);
+      } else {
+        AngleVector(Angles, out rofs);
+      }
+    } else {
+      // by dir
+      if (flags&SP_DECAL_RADIUS_OFS_YAW_ONLY) {
+        float ay = VectorAngleYaw(dir);
+        rofs = AngleYawVector(ay);
+      } else {
+        rofs = dir;
+      }
+    }
+    ofs += rofs;
+  }
+  TraceSplat(ofs, dir, dist, aDecalName:decalname, atranslation:trans, doRailings:true);
+}
+
+
 //==========================================================================
 //
 //  A_k8MoveBy

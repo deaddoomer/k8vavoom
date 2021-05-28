@@ -307,6 +307,29 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final Object decorate_GetSSR () { /*print("(SSR.self=%C)", self);*/ return _stateRouteSelf; }
 
 
+[decorate] final TVec decorate_fvector (float x, float y, optional float z) { return vector(x, y, z); }
+[decorate] final TAVec decorate_fangles (float yaw, optional float pitch, optional float roll) { return vector(pitch, yaw, roll); }
+
+[decorate] final TVec decorate_OriginVector () { return Origin; }
+[decorate] final TAVec decorate_AnglesVector () { return Angles; }
+
+[decorate] final TVec decorate_FVectorSetX (TVec fv, float v) { fv.x = v; return fv; }
+[decorate] final TVec decorate_FVectorSetY (TVec fv, float v) { fv.y = v; return fv; }
+[decorate] final TVec decorate_FVectorSetZ (TVec fv, float v) { fv.z = v; return fv; }
+
+[decorate] final TAVec decorate_AVectorSetRoll (TAVec a, float v) { a.roll = v; return a; }
+[decorate] final TAVec decorate_AVectorSetPitch (TAVec a, float v) { a.pitch = v; return a; }
+[decorate] final TAVec decorate_AVectorSetYaw (TAVec a, float v) { a.yaw = v; return a; }
+
+[decorate] final TVec decorate_YawVector (float yaw) { return AngleYawVector(yaw); }
+
+[decorate] final TVec decorate_DirVector (const TAVec ang) {
+  TVec res;
+  AngleVector(ang, out res);
+  return res;
+}
+
+
 private final EntityEx dccDoAPtr (optional int aptr0) {
   if (!specified_aptr0) aptr0 = AAPTR_DEFAULT;
   EntityEx sex = EntityEx(self);
