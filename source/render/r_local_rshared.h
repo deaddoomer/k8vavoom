@@ -987,6 +987,10 @@ protected:
   // both `w` and `h` can be `nullptr`
   bool CalcScreenLightDimensions (const TVec &LightPos, const float LightRadius, int *w, int *h) noexcept;
 
+  // does very primitive Z clipping
+  // returns `false` if fully out of screen
+  bool CalcBBox3DScreenPosition (const float bbox3d[6], int *x0, int *y0, int *x1, int *y1) noexcept;
+
 protected:
   static int prevCrosshairPic;
 

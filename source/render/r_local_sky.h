@@ -88,7 +88,8 @@ public:
   VEntity *Viewport;
 
 public:
-  inline VSectorStackPortal (VRenderLevelShared *ARLev, VEntity *AViewport) noexcept : VPortal(ARLev), Viewport(AViewport) {}
+  // no bbox for now
+  inline VSectorStackPortal (VRenderLevelShared *ARLev, VEntity *AViewport) noexcept : VPortal(ARLev), Viewport(AViewport) { needBBox = false; }
 
   virtual bool IsStack () const noexcept override;
 
@@ -104,7 +105,8 @@ public:
   TPlane Plane;
 
 public:
-  inline VMirrorPortal (VRenderLevelShared *ARLev, const TPlane *APlane) : VPortal(ARLev), Plane(*APlane) {}
+  // no bbox for now
+  inline VMirrorPortal (VRenderLevelShared *ARLev, const TPlane *APlane) : VPortal(ARLev), Plane(*APlane) { needBBox = false; }
 
   virtual bool IsMirror () const noexcept override;
 

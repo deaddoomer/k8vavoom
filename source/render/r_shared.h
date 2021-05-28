@@ -742,6 +742,8 @@ public:
   VRenderLevelShared *RLev;
   TArray<surface_t *> Surfs;
   int Level;
+  float bbox3d[6];
+  bool needBBox; // default is `true`
 
 public:
   VPortal (VRenderLevelShared *ARLev) noexcept;
@@ -765,6 +767,9 @@ public:
 
   // portal content renderer (K.O.)
   virtual void DrawContents () = 0;
+
+  // this also updates bbox
+  void AppendSurface (surface_t *surf) noexcept;
 
 protected:
   void SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Revert, bool SetFrustum);

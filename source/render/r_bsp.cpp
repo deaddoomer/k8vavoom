@@ -35,6 +35,8 @@
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)
 
+#define VV_CHOOSE_SKY_BY_AREA
+
 static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? Most of the time this is not needed; might be useful for complex stacked sectors.", CVAR_Archive);
 
 VCvarB r_draw_pobj("r_draw_pobj", true, "Render polyobjects?", CVAR_PreInit);
@@ -595,7 +597,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       // k8: this can cause "double surface queue" error (if stacked sector is used more than once)
       //     also, for some reason surfaces are added both to portal, and to renderer; wtf?!
       //     it seems that this is done for things like mirrors or such; dunno yet
-      bool doRenderSurf = (surf ? IsStack && CheckSkyBoxAlways : false);
+      bool doRenderSurf = (surf ? (IsStack && CheckSkyBoxAlways) : false);
       float alpha = 0.0f;
       //k8: wtf is this?
       if (doRenderSurf) {
@@ -615,7 +617,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
         surf->glowCeilingHeight = glowCeilingHeight;
         surf->glowFloorColor = glowFloorColor;
         surf->glowCeilingColor = glowCeilingColor;
-        Portal->Surfs.Append(surf);
+        Portal->AppendSurface(surf); // Portal->Surfs.Append(surf);
         if (!doRenderSurf) continue;
         if (surf->queueframe == currQueueFrame) continue;
         //GCon->Logf("  SURF!");
@@ -835,7 +837,9 @@ void VRenderLevelShared::RenderMirror (subsector_t *sub, sec_region_t *secregion
       Portals.Append(Portal);
     }
 
-    for (surface_t *surf = dseg->mid->surfs; surf; surf = surf->next) Portal->Surfs.Append(surf);
+    for (surface_t *surf = dseg->mid->surfs; surf; surf = surf->next) {
+      Portal->AppendSurface(surf); //Portal->Surfs.Append(surf);
+    }
   } else {
     if (dseg->mid) {
       DrawSurfaces(sub, secregion, seg, dseg->mid->surfs, &dseg->mid->texinfo,
@@ -1070,7 +1074,7 @@ void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secre
       for (surface_t *surfs = ssurf->surfs; surfs; surfs = surfs->next) {
         //surfs->drawflags |= surface_t::DF_NO_FACE_CULL;
         surfs->drawflags |= surface_t::DF_MIRROR;
-        Portal->Surfs.Append(surfs);
+        Portal->AppendSurface(surfs); // Portal->Surfs.Append(surfs);
       }
 
       if (plane.splane->MirrorAlpha <= 0.0f) return;
@@ -1484,15 +1488,53 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
 
   // draw the most complex sky portal behind the scene first, without the need to use stencil buffer
   // most of the time this is the only sky portal, so we can get away without rendering portals at all
+  // use bounding box for checking
+  // also, always prefer skybox portals
   if (PortalLevel == 0) {
     VPortal *BestSky = nullptr;
     int BestSkyIndex = -1;
-    for (auto &&it : Portals.itemsIdx()) {
-      VPortal *pp = it.value();
-      if (pp && pp->IsSky() && (!BestSky || BestSky->Surfs.length() < pp->Surfs.length())) {
-        BestSky = pp;
-        BestSkyIndex = it.index();
+    #ifdef VV_CHOOSE_SKY_BY_AREA
+    float BestArea = -FLT_MAX;
+    #endif
+    bool BestIsSkyBox = false;
+    int pidx = 0;
+    while (pidx < Portals.length()) {
+      VPortal *pp = Portals.ptr()[pidx];
+      if (pp && pp->IsSky()) {
+        #ifdef VV_CHOOSE_SKY_BY_AREA
+        vassert(pp->needBBox);
+        int x0, y0, x1, y1;
+        if (!CalcBBox3DScreenPosition(pp->bbox3d, &x0, &y0, &x1, &y1)) {
+          // delete this sky portal, it seems to be invisible
+          delete pp;
+          Portals.ptr()[pidx] = nullptr;
+          Portals.RemoveIndex(pidx);
+          continue;
+        }
+        // calculate portal area
+        const float pw = (float)(x1-x0+1);
+        const float ph = (float)(y1-y0+1);
+        const float area = pw*ph;
+        //BestSky->Surfs.length() < pp->Surfs.length()
+        if (!BestSky || (!BestIsSkyBox && pp->IsSkyBox()) ||
+            (BestIsSkyBox == pp->IsSkyBox() && area > BestArea))
+        {
+          BestSky = pp;
+          BestSkyIndex = pidx;
+          BestArea = area;
+          BestIsSkyBox = pp->IsSkyBox();
+        }
+        #else
+        if (!BestSky || (!BestIsSkyBox && pp->IsSkyBox()) ||
+            (BestIsSkyBox == pp->IsSkyBox() && BestSky->Surfs.length() < pp->Surfs.length()))
+        {
+          BestSky = pp;
+          BestSkyIndex = pidx;
+          BestIsSkyBox = pp->IsSkyBox();
+        }
+        #endif
       }
+      ++pidx;
     }
 
     // if we found a sky, render it, and remove it from portal list
@@ -1500,7 +1542,7 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
       PortalLevel = 1;
       BestSky->Draw(false);
       delete BestSky;
-      BestSky = nullptr;
+      //BestSky = nullptr;
       Portals.RemoveIndex(BestSkyIndex);
       PortalLevel = 0;
     }

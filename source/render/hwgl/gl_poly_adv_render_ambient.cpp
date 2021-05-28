@@ -47,7 +47,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
       DoHorizonPolygon(surf);
     }
 
-    // set z-buffer for skies
+    // for sky areas we just write to the depth buffer to prevent drawing polygons behind the sky
     if (dls.DrawSkyList.length()) {
       SurfZBuf.Activate();
       SurfZBuf.UploadChangedUniforms();

@@ -140,12 +140,12 @@ bool VOpenGLDrawer::StartPortal (VPortal *Portal, bool UseStencil) {
       //glDepthMask(GL_TRUE); // allow z-buffer writes
       GLEnableDepthWrite();
       // clear depth buffer
-      if (CanUseRevZ()) glDepthRange(0, 0); else glDepthRange(1, 1);
+      if (CanUseRevZ()) glDepthRange(0.0f, 0.0f); else glDepthRange(1.0f, 1.0f);
       glDepthFunc(GL_ALWAYS);
       DrawPortalArea(Portal);
       //glDepthFunc(GL_LEQUAL);
       RestoreDepthFunc();
-      glDepthRange(0, 1);
+      glDepthRange(0.0f, 1.0f);
     } else {
       //glDepthMask(GL_FALSE); // no z-buffer writes
       GLDisableDepthWrite();
@@ -174,6 +174,8 @@ bool VOpenGLDrawer::StartPortal (VPortal *Portal, bool UseStencil) {
 //==========================================================================
 //
 //  VOpenGLDrawer::EndPortal
+//
+//  this is called with restored view
 //
 //==========================================================================
 void VOpenGLDrawer::EndPortal (VPortal *Portal, bool UseStencil) {
@@ -204,12 +206,12 @@ void VOpenGLDrawer::EndPortal (VPortal *Portal, bool UseStencil) {
 
     if (Portal->NeedsDepthBuffer()) {
       // clear depth buffer
-      if (CanUseRevZ()) glDepthRange(0, 0); else glDepthRange(1, 1);
+      if (CanUseRevZ()) glDepthRange(0.0f, 0.0f); else glDepthRange(1.0f, 1.0f);
       glDepthFunc(GL_ALWAYS);
       DrawPortalArea(Portal);
       //glDepthFunc(GL_LEQUAL);
       RestoreDepthFunc();
-      glDepthRange(0, 1);
+      glDepthRange(0.0f, 1.0f);
     } else {
       //glDepthMask(GL_TRUE); // allow z-buffer writes
       GLEnableDepthWrite();
@@ -219,10 +221,11 @@ void VOpenGLDrawer::EndPortal (VPortal *Portal, bool UseStencil) {
     //k8: do not bother clearing stencil buffer
     // but not disable stencil writing, because portal may be partially obscured
     //glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP); // this is marginally faster, and we don't care
+    // it's already set to this
+    //glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP); // this is marginally faster, and we don't care
 
     // set proper z-buffer values for the portal area
-    glDepthFunc(GL_ALWAYS);
+    //glDepthFunc(GL_ALWAYS);
     DrawPortalArea(Portal);
 
     RestoreDepthFunc();
@@ -234,7 +237,7 @@ void VOpenGLDrawer::EndPortal (VPortal *Portal, bool UseStencil) {
 
     --RendLev->PortalUsingStencil;
     --RendLev->PortalDepth;
-    if (RendLev->PortalDepth == 0) glDisable(GL_STENCIL_TEST);
+    /*if (RendLev->PortalDepth == 0)*/ glDisable(GL_STENCIL_TEST);
   } else {
     if (Portal->NeedsDepthBuffer()) {
       // clear depth buffer

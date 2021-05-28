@@ -167,8 +167,10 @@ struct AutoSavedBspVis {
 //==========================================================================
 VPortal::VPortal (VRenderLevelShared *ARLev) noexcept
   : RLev(ARLev)
+  , needBBox(true)
 {
   Level = RLev->PortalLevel+1;
+  memset((void *)bbox3d, 0, sizeof(float)*6);
 }
 
 
@@ -263,6 +265,36 @@ bool VPortal::MatchMirror (const TPlane *) const noexcept {
 
 //==========================================================================
 //
+//  VPortal::AppendSurface
+//
+//  this also updates bbox
+//
+//==========================================================================
+void VPortal::AppendSurface (surface_t *surf) noexcept {
+  if (!surf || surf->count < 3) return; // just in case
+  // first surface?
+  if (Surfs.length() == 0) {
+    bbox3d[BOX3D_MINX] = bbox3d[BOX3D_MINY] = bbox3d[BOX3D_MINZ] = +FLT_MAX;
+    bbox3d[BOX3D_MAXX] = bbox3d[BOX3D_MAXY] = bbox3d[BOX3D_MAXZ] = -FLT_MAX;
+  }
+  Surfs.Append(surf);
+  // update bbox
+  if (needBBox) {
+    const SurfVertex *sv = surf->verts;
+    for (int f = surf->count; f--; ++sv) {
+      bbox3d[BOX3D_MINX] = min2(bbox3d[BOX3D_MINX], sv->x);
+      bbox3d[BOX3D_MINY] = min2(bbox3d[BOX3D_MINY], sv->y);
+      bbox3d[BOX3D_MINZ] = min2(bbox3d[BOX3D_MINZ], sv->z);
+      bbox3d[BOX3D_MAXX] = max2(bbox3d[BOX3D_MAXX], sv->x);
+      bbox3d[BOX3D_MAXY] = max2(bbox3d[BOX3D_MAXY], sv->y);
+      bbox3d[BOX3D_MAXZ] = max2(bbox3d[BOX3D_MAXZ], sv->z);
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VPortal::Draw
 //
 //==========================================================================
@@ -314,7 +346,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
       }
     } else {
       //k8: do we need to do this?
-      #if 0
+      #if 1
       // floor/ceiling
       for (int j = 0; j < surf->count; ++j) {
         TVec v1, v2;
@@ -327,7 +359,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
         }
         TVec Dir = v2-v1;
         Dir.z = 0;
-        if (Dir.x > -0.01f && Dir.x < 0.01f && Dir.y > -0.01f && Dir.y < 0.01f) continue; // too short
+        if (fabsf(Dir.x) < 0.01f && fabsf(Dir.y) < 0.01f) continue; // too short
         TPlane P;
         P.SetPointDirXY(v1, Dir);
         if ((P.PointDistance(Drawer->vieworg) < 0.01f) != Revert) continue; // view origin is on the back side

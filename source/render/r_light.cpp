@@ -202,6 +202,63 @@ bool VRenderLevelShared::CalcScreenLightDimensions (const TVec &LightPos, const 
 
 //==========================================================================
 //
+//  VRenderLevelShared::CalcBBox3DScreenPosition
+//
+//  does very primitive Z clipping
+//  returns `false` if fully out of screen
+//
+//==========================================================================
+bool VRenderLevelShared::CalcBBox3DScreenPosition (const float bbox3d[6], int *x0, int *y0, int *x1, int *y1) noexcept {
+  // just in case
+  if (!Drawer->vpmats.vport.isValid()) return false;
+
+  CONST_BBoxVertexIndex;
+
+  TVec vbbox[8]; // transformed bbox points
+  bool seenOkZ = false;
+  // transform into world coords
+  for (unsigned f = 0; f < 8; ++f) {
+    vbbox[f] = Drawer->vpmats.toWorld(TVec(bbox3d[BBoxVertexIndex[f][0]], bbox3d[BBoxVertexIndex[f][1]], bbox3d[BBoxVertexIndex[f][2]]));
+    if (vbbox[f].z > -1.0f) vbbox[f].z = -1.0f; else seenOkZ = true;
+  }
+  if (!seenOkZ) return false;
+
+  const int scrx0 = Drawer->vpmats.vport.x0;
+  const int scry0 = Drawer->vpmats.vport.y0;
+  const int scrx1 = Drawer->vpmats.vport.getX1();
+  const int scry1 = Drawer->vpmats.vport.getY1();
+
+  int minx = scrx1+64, miny = scry1+64;
+  int maxx = -(scrx0-64), maxy = -(scry0-64);
+
+  // transform points, get min and max
+  for (unsigned f = 0; f < 8; ++f) {
+    int winx, winy;
+    Drawer->vpmats.project(vbbox[f], &winx, &winy);
+
+    if (minx > winx) minx = winx;
+    if (miny > winy) miny = winy;
+    if (maxx < winx) maxx = winx;
+    if (maxy < winy) maxy = winy;
+  }
+
+  if (minx > scrx1 || miny > scry1 || maxx < scrx0 || maxy < scry0) return false;
+
+  minx = midval(scrx0, minx, scrx1);
+  miny = midval(scry0, miny, scry1);
+  maxx = midval(scrx0, maxx, scrx1);
+  maxy = midval(scry0, maxy, scry1);
+
+  *x0 = minx;
+  *y0 = miny;
+  *x1 = maxx;
+  *y1 = maxy;
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::RefilterStaticLights
 //
 //==========================================================================
