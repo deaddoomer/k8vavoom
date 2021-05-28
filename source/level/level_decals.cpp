@@ -43,7 +43,7 @@ static VCvarI r_decal_onetype_max("r_decal_onetype_max", "128", "Maximum decals 
 static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum decals of one decaltype on a wall segment for Gore Mod.", CVAR_Archive);
 
 // make renderer life somewhat easier by not allowing alot of decals
-// main work is done by `VLevel->CleanupDecals()`
+// main work is done by `VLevel->CleanupSegDecals()`
 VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive);
 VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive);
 
@@ -254,6 +254,8 @@ static int decalAreaCompare (const void *aa, const void *bb, void *udata) {
 //
 //  VLevel::CleanupSegDecals
 //
+//  permament decals are simply ignored
+//
 //==========================================================================
 void VLevel::CleanupSegDecals (seg_t *seg) {
   if (!seg) return;
@@ -286,6 +288,8 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
       DestroyDecal(cdc);
       continue;
     }
+
+    if (cdc->isPermanent()) continue;
 
     if (twdt >= BigDecalWidth || thgt >= BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
     dc2kill.append(cdc);
@@ -445,8 +449,10 @@ static bool IsWallSpreadAllowed (VLevel *Level, const sector_t *fsec,
 //
 //  VLevel::PutDecalAtLine
 //
+//  `flips` will be bitwise-ored with decal flags
+//
 //==========================================================================
-void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck) {
+void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, unsigned flips, int translation, bool skipMarkCheck) {
   // don't process linedef twice
   if (!skipMarkCheck) {
     if (IsLineTouched(li)) return;
@@ -574,7 +580,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             decal->flags |= decal_t::SlideFloor;
             decal->curz -= decal->slidesec->floor.TexZ;
             decal->calculateBBox();
-            CleanupSegDecals(seg);
+            if (!decal->isPermanent()) CleanupSegDecals(seg);
             if (doParnter) {
               // create decal on partner seg
               decal_t *dcp = AllocSegDecal(seg->partner, dec);
@@ -585,7 +591,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
               dcp->flags = decal->flags/*^decal_t::FromV2*/^decal_t::FlipX;
               dcp->slidesec = decal->slidesec;
               dcp->calculateBBox();
-              CleanupSegDecals(seg->partner);
+              if (!dcp->isPermanent()) CleanupSegDecals(seg->partner);
             }
           } else {
             VDC_DLOG(NAME_Debug, " SKIP solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
@@ -807,7 +813,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         }
       }
       //if (side != seg->side) decal->flags ^= decal_t::FlipX;
-      CleanupSegDecals(seg);
+      if (!decal->isPermanent()) CleanupSegDecals(seg);
 
       if (doParnter) {
         // create decal on partner seg
@@ -828,7 +834,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         dcp->slidesec = decal->slidesec;
         dcp->calculateBBox();
 
-        CleanupSegDecals(seg->partner);
+        if (!dcp->isPermanent()) CleanupSegDecals(seg->partner);
       }
     }
   }
@@ -941,7 +947,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 //  VLevel::AddOneDecal
 //
 //==========================================================================
-void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation) {
+void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation, bool permanent) {
   if (!dec || !li) return;
 
   if (dec->noWall) return;
@@ -955,7 +961,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   if (dec->lowername != NAME_None) {
     //GCon->Logf(NAME_Debug, "adding lower decal '%s' for decal '%s' (level %d)", *dec->lowername, *dec->name, level);
-    AddDecal(org, dec->lowername, side, li, level+1, translation);
+    AddDecal(org, dec->lowername, side, li, level+1, translation, permanent);
   }
 
   // generate decal values
@@ -1003,7 +1009,10 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   IncLineTouchCounter();
 
   // setup flips
-  unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);
+  unsigned flips =
+    (dec->flipXValue ? decal_t::FlipX : 0u)|
+    (dec->flipYValue ? decal_t::FlipY : 0u)|
+    (permanent ? decal_t::Permanent : 0u);
 
   // calculate offset from line start
   const TVec &v1 = *li->v1;
@@ -1029,7 +1038,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 //  VLevel::AddDecal
 //
 //==========================================================================
-void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation) {
+void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, bool permanent) {
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
@@ -1043,7 +1052,7 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
   if (dec) {
     org = li->landAlongNormal(org);
     //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);
-    AddOneDecal(level, org, dec, side, li, translation);
+    AddOneDecal(level, org, dec, side, li, translation, permanent);
   } else {
     if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
   }
@@ -1055,13 +1064,13 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
 //  VLevel::AddDecalById
 //
 //==========================================================================
-void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation) {
+void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation, bool permanent) {
   if (!r_decals || !r_decals_wall) return;
   if (!li || id < 0) return; // just in case
   VDecalDef *dec = VDecalDef::getDecalById(id);
   if (dec) {
     org = li->landAlongNormal(org);
-    AddOneDecal(level, org, dec, side, li, translation);
+    AddOneDecal(level, org, dec, side, li, translation, true);
   }
 }
 
@@ -1121,6 +1130,8 @@ void VLevel::KillAllSubsectorDecals () {
 //
 //  VLevel::AppendDecalToSubsectorList
 //
+//  permament decals are simply ignored by the limiter
+//
 //==========================================================================
 void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
   if (!dc) return;
@@ -1163,7 +1174,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 
   // check subsector decals limit
   const int dclimit = gl_flatdecal_limit.asInt();
-  if (dclimit > 0) {
+  if (dclimit > 0 && !dc->isPermanent()) {
     // prefer decals with animators (they are usually transient blood or something like that)
     dc2kill.resetNoDtor();
     constexpr float shrinkRatio = 0.8f;
@@ -1177,6 +1188,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
       prdc = prdc->subnext;
       if (curdc->eregindex != dc->eregindex) continue;
       if (curdc->dcsurf != dc->dcsurf) continue;
+      if (curdc->isPermanent()) continue;
       ShrinkBBox2D(curbbox, curdc->bbox2d, shrinkRatio);
       if (Are2DBBoxesOverlap(mybbox, curbbox)) {
         ++dcCount;
@@ -1292,15 +1304,16 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
 //
 //**************************************************************************
 
-//native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation);
+//native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation, optional bool permanent);
 IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   TVec org;
   VName dectype;
   int side;
   line_t *li;
   VOptParamInt translation(0);
-  vobjGetParamSelf(org, dectype, side, li, translation);
-  Self->AddDecal(org, dectype, side, li, 0, translation);
+  VOptParamBool permanent(false);
+  vobjGetParamSelf(org, dectype, side, li, translation, permanent);
+  Self->AddDecal(org, dectype, side, li, 0, translation, permanent);
 }
 
 //native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation);
@@ -1311,7 +1324,7 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
   line_t *li;
   VOptParamInt translation(0);
   vobjGetParamSelf(org, id, side, li, translation);
-  Self->AddDecalById(org, id, side, li, 0, translation);
+  Self->AddDecalById(org, id, side, li, 0, translation, true);
 }
 
 

@@ -199,8 +199,8 @@ bool IsGood2SLineForBloodSplat (const line_t *li) {
 //
 //==========================================================================
 final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *tr, optional float zofs,
-                       optional name aDecalName, optional bool pass2S, optional bool only2S, optional int atranslation,
-                       optional bool doRailings)
+                       optional name aDecalName, optional bool pass2S, optional bool only2S,
+                       optional int atranslation, optional bool doRailings, optional bool permanent)
 {
   trsplat_t temptr;
 
@@ -250,14 +250,14 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       if (!in.bIsASky) {
         if (Level.CompatTrace && li->frontsector == li->backsector) {
           if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
-            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
+            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional, permanent!optional);
           }
         }
 
         if (!li->pobject && (li->flags&ML_TWOSIDED)) {
           // alpha check for various special fx (additive lines are mostly used for fx too)
           if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
-            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
+            SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional, permanent!optional);
           }
         }
       } else {
@@ -279,7 +279,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       tr->side = side;
       tr->didhit = true;
 
-      if (aDecalName && !only2S) SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional);
+      if (aDecalName && !only2S) SpawnDecal(hitPoint, aDecalName, side, li, atranslation!optional, permanent!optional);
 
       return true;
     }

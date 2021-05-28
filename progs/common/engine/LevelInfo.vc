@@ -1328,6 +1328,16 @@ int AcsDamageActor (int targettid, int targetptr, int inflictortid, int inflicto
 
 //==========================================================================
 //
+//  AcsSpawnDecal
+//
+//==========================================================================
+int AcsSpawnDecal (Entity ent, name decalname, TVec org, float dist, float angle, bool permanent) {
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  AcsPolyMoveEx
 //
 //==========================================================================

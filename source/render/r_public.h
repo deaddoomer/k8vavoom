@@ -79,6 +79,7 @@ struct decal_t {
     // special decal types
     BloodSplat = 0x10000U,
     BootPrint  = 0x20000U,
+    Permanent  = 0x40000U, // will not be removed by limiter
   };
 
   // dcsurf bit values
@@ -149,6 +150,8 @@ struct decal_t {
   TVec saxis, taxis;
   float soffs, toffs;
   TVec v1, v2, v3, v4;
+
+  inline bool isPermanent () const noexcept { return (flags&Permanent); }
 
   // nore that floor/ceiling type should be correctly set for 3d floor subregions
   // i.e. decal on top of 3d floor is ceiling decal

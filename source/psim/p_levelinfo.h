@@ -292,6 +292,12 @@ public:
     VMT_RET_INT(method);
   }
 
+  int AcsSpawnDecal (VEntity *ent, VName decalname, TVec org, float dist, float angle, bool permanent) {
+    static VMethodProxy method("AcsSpawnDecal");
+    vobjPutParamSelf(ent, decalname, org, dist, angle, permanent);
+    VMT_RET_INT(method);
+  }
+
   int eventAcsPolyMoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveEx");
     vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, override, Activator);

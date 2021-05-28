@@ -78,6 +78,9 @@
 #define POBJ_FLAGS_SET      1
 #define POBJ_FLAGS_REPLACE  -1
 
+#define SDF_ABSANGLE   (1)
+#define SDF_PERMANENT  (2)
+
 
 static VCvarI acs_screenblocks_override("acs_screenblocks_override", "-1", "Overrides 'screenblocks' variable for acs scripts (-1: don't).", CVAR_Archive);
 static VCvarB acs_halt_on_unimplemented_opcode("acs_halt_on_unimplemented_opcode", false, "Halt ACS VM on unimplemented opdode?", CVAR_Archive);
@@ -4111,7 +4114,23 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
       return 0;
 
     case ACSF_SpawnDecal:
-      GCon->Logf(NAME_Error, "unimplemented ACSF function '%s' (%d args)", "SpawnDecal", argCount);
+      if (argCount >= 2) {
+        VEntity *Ent = EntityFromTID(args[0], Activator);
+        if (Ent) {
+          VName decalname = GetNameLowerCase(args[1]);
+          if (decalname != NAME_None && !VStr::strEquCI(*decalname, "none")) {
+            int flags = (argCount > 2 ? args[2] : 0);
+            float angle = AngleMod((argCount > 3 ? args[3] : 0)/65536.0f*360.0f);
+            float zofs = (argCount > 4 ? args[4] : 0)/65536.0f;
+            float dist = (argCount > 5 ? args[5] : 0)/65536.0f;
+            TVec org = Ent->Origin;
+            //TODO: y-flipped decal should have reverse offset
+            org.z += max2(0.0f, Ent->Height)*0.5f+zofs;
+            if ((flags&SDF_ABSANGLE) == 0) angle = AngleMod(angle+Ent->Angles.yaw);
+            return Level->AcsSpawnDecal(Ent, decalname, org, dist, angle, !!(flags&SDF_PERMANENT));
+          }
+        }
+      }
       return 0;
 
     // bool IsPointerEqual (int ptr_select1, int ptr_select2 [, int tid1 [, int tid2]]);

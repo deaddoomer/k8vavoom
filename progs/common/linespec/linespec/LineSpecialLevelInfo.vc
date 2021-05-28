@@ -3777,6 +3777,24 @@ override int AcsDamageActor (int targettid, int targetptr, int inflictortid, int
 
 //==========================================================================
 //
+//  AcsSpawnDecal
+//
+//==========================================================================
+override int AcsSpawnDecal (Entity ent, name decalname, TVec org, float dist, float angle, bool permanent) {
+  EntityEx ee = EntityEx(ent);
+  if (!ee) return 0;
+  if (!decalname || nameEquCI(decalname, 'none')) return 0;
+  if (!dist) dist = 64.0f;
+  if (dist <= 0) return 0;
+  TVec dir = AngleYawVector(angle);
+  // offset by radius?
+  bool res = ee.TraceSplat(org, dir, dist, aDecalName:decalname, doRailings:true, permanent:permanent);
+  return (res ? 1 : 0);
+}
+
+
+//==========================================================================
+//
 //  EV_ThingActivate
 //
 //==========================================================================

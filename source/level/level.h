@@ -1443,12 +1443,13 @@ private:
   void AddFlatDecal (TVec org, VName dectype, float range, int translation, float angle, bool angleOverride,
                      bool forceFlipX, float alpha, float alphaOverride);
 
-  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation);
-  void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation);
+  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, bool permanent);
+  void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation, bool permanent);
   // called by `AddDecal()`
-  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation);
+  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation, bool permanent);
 
-  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, vuint32 flips, int translation, bool skipMarkCheck);
+  // `flips` will be bitwise-ored with decal flags
+  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, unsigned flips, int translation, bool skipMarkCheck);
 
   void PostProcessForDecals ();
 

@@ -269,7 +269,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     if (twdt < 1.0f || thgt < 1.0f) continue;
 
-    if (twdt >= VLevel::BigDecalWidth || thgt >= VLevel::BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
+    // permament decals are ignored
+    if (!dc->isPermanent()) {
+      if (twdt >= VLevel::BigDecalWidth || thgt >= VLevel::BigDecalHeight) ++bigDecalCount; else ++smallDecalCount;
+    }
 
     if (currTexId != dcTexId) {
       currTexId = dcTexId;
