@@ -34,6 +34,7 @@
 
 
 extern VCvarB gl_dbg_wireframe;
+extern VCvarB clip_frustum;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -56,6 +57,7 @@ struct AutoSavedView {
   TPlane SavedMirrorPlane;
 
   bool shadowsDisabled;
+  bool oldFrustumClip;
 
   AutoSavedView () = delete;
   AutoSavedView (const AutoSavedView &) = delete;
@@ -82,6 +84,7 @@ struct AutoSavedView {
     planeCount = Drawer->viewfrustum.planeCount;
 
     shadowsDisabled = RLev->forceDisableShadows;
+    oldFrustumClip = clip_frustum.asBool();
   }
 
   inline ~AutoSavedView () noexcept {
@@ -104,6 +107,7 @@ struct AutoSavedView {
     Drawer->viewfrustum.planeCount = planeCount;
 
     RLev->forceDisableShadows = shadowsDisabled;
+    clip_frustum = oldFrustumClip;
 
     // resetup view origin
     Drawer->SetupViewOrg();
@@ -313,6 +317,7 @@ void VPortal::Draw (bool UseStencil) {
     AutoSavedView guard(RLev/*, !IsSky()*/);
     RLev->CurrPortal = this; // will be restored by the guard
     RLev->forceDisableShadows = true; // will be restored by the guard
+    clip_frustum = false; // anyway
     DrawContents();
   }
 
