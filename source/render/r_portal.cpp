@@ -36,6 +36,7 @@
 extern VCvarB gl_dbg_wireframe;
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // "autosave" struct to avoid some pasta
 struct AutoSavedView {
   VRenderLevelShared *RLev;
@@ -110,6 +111,7 @@ struct AutoSavedView {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct AutoSavedBspVis {
   VRenderLevelShared *RLev;
   unsigned *SavedBspVis;
@@ -152,12 +154,18 @@ struct AutoSavedBspVis {
 
 
 
+//**************************************************************************
+//
+// VPortal
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VPortal::VPortal
 //
 //==========================================================================
-VPortal::VPortal (VRenderLevelShared *ARLev)
+VPortal::VPortal (VRenderLevelShared *ARLev) noexcept
   : RLev(ARLev)
 {
   Level = RLev->PortalLevel+1;
@@ -178,7 +186,7 @@ VPortal::~VPortal () {
 //  VPortal::NeedsDepthBuffer
 //
 //==========================================================================
-bool VPortal::NeedsDepthBuffer () const {
+bool VPortal::NeedsDepthBuffer () const noexcept {
   return true;
 }
 
@@ -188,7 +196,7 @@ bool VPortal::NeedsDepthBuffer () const {
 //  VPortal::IsSky
 //
 //==========================================================================
-bool VPortal::IsSky () const {
+bool VPortal::IsSky () const noexcept {
   return false;
 }
 
@@ -198,7 +206,7 @@ bool VPortal::IsSky () const {
 //  VPortal::IsSkyBox
 //
 //==========================================================================
-bool VPortal::IsSkyBox () const {
+bool VPortal::IsSkyBox () const noexcept {
   return false;
 }
 
@@ -208,7 +216,7 @@ bool VPortal::IsSkyBox () const {
 //  VPortal::IsMirror
 //
 //==========================================================================
-bool VPortal::IsMirror () const {
+bool VPortal::IsMirror () const noexcept {
   return false;
 }
 
@@ -218,7 +226,7 @@ bool VPortal::IsMirror () const {
 //  VPortal::IsStack
 //
 //==========================================================================
-bool VPortal::IsStack () const {
+bool VPortal::IsStack () const noexcept {
   return false;
 }
 
@@ -228,7 +236,7 @@ bool VPortal::IsStack () const {
 //  VPortal::MatchSky
 //
 //==========================================================================
-bool VPortal::MatchSky (VSky *) const {
+bool VPortal::MatchSky (VSky *) const noexcept {
   return false;
 }
 
@@ -238,7 +246,7 @@ bool VPortal::MatchSky (VSky *) const {
 //  VPortal::MatchSkyBox
 //
 //==========================================================================
-bool VPortal::MatchSkyBox (VEntity *) const {
+bool VPortal::MatchSkyBox (VEntity *) const noexcept {
   return false;
 }
 
@@ -248,7 +256,7 @@ bool VPortal::MatchSkyBox (VEntity *) const {
 //  VPortal::MatchMirror
 //
 //==========================================================================
-bool VPortal::MatchMirror (const TPlane *) const {
+bool VPortal::MatchMirror (const TPlane *) const noexcept {
   return false;
 }
 
@@ -271,8 +279,8 @@ void VPortal::Draw (bool UseStencil) {
   {
     // save renderer settings
     AutoSavedView guard(RLev/*, !IsSky()*/);
-    RLev->CurrPortal = this;
-    RLev->forceDisableShadows = true;
+    RLev->CurrPortal = this; // will be restored by the guard
+    RLev->forceDisableShadows = true; // will be restored by the guard
     DrawContents();
   }
 
@@ -305,6 +313,8 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
         Range.AddClipRange(*Seg->v2, *Seg->v1);
       }
     } else {
+      //k8: do we need to do this?
+      #if 0
       // floor/ceiling
       for (int j = 0; j < surf->count; ++j) {
         TVec v1, v2;
@@ -323,17 +333,25 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
         if ((P.PointDistance(Drawer->vieworg) < 0.01f) != Revert) continue; // view origin is on the back side
         Range.AddClipRange(v2, v1);
       }
+      #endif
     }
   }
 }
 
+
+
+//**************************************************************************
+//
+// VSkyPortal
+//
+//**************************************************************************
 
 //==========================================================================
 //
 //  VSkyPortal::NeedsDepthBuffer
 //
 //==========================================================================
-bool VSkyPortal::NeedsDepthBuffer () const {
+bool VSkyPortal::NeedsDepthBuffer () const noexcept {
   return false;
 }
 
@@ -343,7 +361,7 @@ bool VSkyPortal::NeedsDepthBuffer () const {
 //  VSkyPortal::IsSky
 //
 //==========================================================================
-bool VSkyPortal::IsSky () const {
+bool VSkyPortal::IsSky () const noexcept {
   return true;
 }
 
@@ -353,7 +371,7 @@ bool VSkyPortal::IsSky () const {
 //  VSkyPortal::MatchSky
 //
 //==========================================================================
-bool VSkyPortal::MatchSky (VSky *ASky) const {
+bool VSkyPortal::MatchSky (VSky *ASky) const noexcept {
   return (Level == RLev->PortalLevel+1 && Sky == ASky);
 }
 
@@ -361,6 +379,8 @@ bool VSkyPortal::MatchSky (VSky *ASky) const {
 //==========================================================================
 //
 //  VSkyPortal::DrawContents
+//
+//  TODO: use scissor for secondary skies
 //
 //==========================================================================
 void VSkyPortal::DrawContents () {
@@ -379,12 +399,18 @@ void VSkyPortal::DrawContents () {
 
 
 
+//**************************************************************************
+//
+// VSkyBoxPortal
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VSkyBoxPortal::IsSky
 //
 //==========================================================================
-bool VSkyBoxPortal::IsSky () const {
+bool VSkyBoxPortal::IsSky () const noexcept {
   return true;
 }
 
@@ -394,7 +420,7 @@ bool VSkyBoxPortal::IsSky () const {
 //  VSkyBoxPortal::IsSkyBox
 //
 //==========================================================================
-bool VSkyBoxPortal::IsSkyBox () const {
+bool VSkyBoxPortal::IsSkyBox () const noexcept {
   return true;
 }
 
@@ -404,7 +430,7 @@ bool VSkyBoxPortal::IsSkyBox () const {
 //  VSkyBoxPortal::MatchSkyBox
 //
 //==========================================================================
-bool VSkyBoxPortal::MatchSkyBox (VEntity *AEnt) const {
+bool VSkyBoxPortal::MatchSkyBox (VEntity *AEnt) const noexcept {
   return (Level == RLev->PortalLevel+1 && Viewport == AEnt);
 }
 
@@ -412,6 +438,8 @@ bool VSkyBoxPortal::MatchSkyBox (VEntity *AEnt) const {
 //==========================================================================
 //
 //  VSkyBoxPortal::DrawContents
+//
+//  TODO: use scissor for secondary skies
 //
 //==========================================================================
 void VSkyBoxPortal::DrawContents () {
@@ -425,7 +453,8 @@ void VSkyBoxPortal::DrawContents () {
 
   // no light flashes in the sky
   RLev->ExtraLight = 0;
-  if (RLev->ColorMap == CM_Default) RLev->FixedLight = 0;
+  //if (RLev->ColorMap == CM_Default) RLev->FixedLight = 0;
+  if (!RLev->ColorMapFixedLight) RLev->FixedLight = 0;
 
   // prevent recursion
   VEntity::AutoPortalDirty guard(Viewport);
@@ -437,12 +466,18 @@ void VSkyBoxPortal::DrawContents () {
 
 
 
+//**************************************************************************
+//
+// VSectorStackPortal
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VSectorStackPortal::IsStack
 //
 //==========================================================================
-bool VSectorStackPortal::IsStack () const {
+bool VSectorStackPortal::IsStack () const noexcept {
   return true;
 }
 
@@ -452,7 +487,7 @@ bool VSectorStackPortal::IsStack () const {
 //  VSectorStackPortal::MatchSkyBox
 //
 //==========================================================================
-bool VSectorStackPortal::MatchSkyBox (VEntity *AEnt) const {
+bool VSectorStackPortal::MatchSkyBox (VEntity *AEnt) const noexcept {
   return (Level == RLev->PortalLevel+1 && Viewport == AEnt);
 }
 
@@ -467,7 +502,7 @@ void VSectorStackPortal::DrawContents () {
   refdef_t rd = RLev->refdef;
   // this range is used to clip away everything that is not "filled", hence "no revert" here
   // frustum doesn't matter, so don't bother initialising it too
-  VPortal::SetupRanges(rd, Range, false, false);
+  VPortal::SetupRanges(rd, Range, false/*revert*/, false/*setfrustum*/);
 
   RLev->ViewEnt = Viewport;
   VEntity *Mate = Viewport->GetSkyBoxMate();
@@ -486,12 +521,18 @@ void VSectorStackPortal::DrawContents () {
 
 
 
+//**************************************************************************
+//
+// VMirrorPortal
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VMirrorPortal::IsMirror
 //
 //==========================================================================
-bool VMirrorPortal::IsMirror () const {
+bool VMirrorPortal::IsMirror () const noexcept {
   return true;
 }
 
@@ -501,8 +542,8 @@ bool VMirrorPortal::IsMirror () const {
 //  VMirrorPortal::MatchMirror
 //
 //==========================================================================
-bool VMirrorPortal::MatchMirror (const TPlane *APlane) const {
-  return (Level == RLev->PortalLevel+1 && Plane.normal == APlane->normal && Plane.dist == APlane->dist);
+bool VMirrorPortal::MatchMirror (const TPlane *APlane) const noexcept {
+  return (Level == RLev->PortalLevel+1 && Plane.dist == APlane->dist && Plane.normal == APlane->normal);
 }
 
 
@@ -538,7 +579,7 @@ void VMirrorPortal::DrawContents () {
 
   refdef_t rd = RLev->refdef;
   VViewClipper Range;
-  SetupRanges(rd, Range, true, false);
+  SetupRanges(rd, Range, true/*revert*/, false/*setfrustum*/);
 
   {
     AutoSavedBspVis bspvisguard(RLev);

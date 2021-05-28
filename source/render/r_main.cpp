@@ -1349,6 +1349,7 @@ void VRenderLevelShared::SetupFrame () {
     Drawer->vieworg = cl->ViewOrg;
   }
 
+  ColorMapFixedLight = false;
   ExtraLight = (ViewEnt && ViewEnt->Player ? ViewEnt->Player->ExtraLight*8 : 0);
   bool doInverseHack = true;
   if (cl->Camera == cl->MO) {
@@ -1403,6 +1404,8 @@ void VRenderLevelShared::SetupFrame () {
     }
   }
 
+  if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
+
   Drawer->SetupView(this, &refdef);
   //advanceCacheFrame();
   PortalDepth = 0;
@@ -1439,6 +1442,7 @@ void VRenderLevelShared::SetupCameraFrame (VEntity *Camera, VTexture *Tex, int F
   ExtraLight = 0;
   FixedLight = 0;
   ColorMap = CM_Default;
+  ColorMapFixedLight = false;
 
   Drawer->SetupView(this, rd);
   //advanceCacheFrame();

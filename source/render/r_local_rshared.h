@@ -118,6 +118,9 @@ protected:
   int ExtraLight;
   int FixedLight;
   int ColorMap;
+  // some code checks for `ColorMap == CM_Default` to resed fixed light
+  // this is now wrong, as we may render colormaps with postprocess shader
+  bool ColorMapFixedLight;
 
   int NumParticles;
   particle_t *Particles;

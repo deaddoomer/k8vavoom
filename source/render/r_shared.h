@@ -736,26 +736,34 @@ class VRenderLevelShared;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// base class for portals
+// base class for view portals
 class VPortal {
 public:
   VRenderLevelShared *RLev;
   TArray<surface_t *> Surfs;
   int Level;
 
-  VPortal (VRenderLevelShared *ARLev);
+public:
+  VPortal (VRenderLevelShared *ARLev) noexcept;
   virtual ~VPortal ();
-  virtual bool NeedsDepthBuffer () const;
-  virtual bool IsSky () const;
-  virtual bool IsSkyBox () const;
-  virtual bool IsMirror () const;
-  virtual bool IsStack () const;
-  virtual bool MatchSky (class VSky *) const;
-  virtual bool MatchSkyBox (VEntity *) const;
-  virtual bool MatchMirror (const TPlane *) const;
+
+  virtual bool NeedsDepthBuffer () const noexcept;
+  virtual bool IsSky () const noexcept;
+  virtual bool IsSkyBox () const noexcept;
+  virtual bool IsMirror () const noexcept;
+  virtual bool IsStack () const noexcept;
+
+  virtual bool MatchSky (class VSky *) const noexcept;
+  virtual bool MatchSkyBox (VEntity *) const noexcept;
+  virtual bool MatchMirror (const TPlane *) const noexcept;
 
   // most portals will override `DrawContents()`, but for sky we could skip all the heavy mechanics
-  void Draw (bool UseStencil);
+  // `Draw()` will save rendering state (view), and call `DrawContents()`
+  // this will also turn off shadows for portals
+  // (because for shadows we usually need stencils, and also for speed)
+  virtual void Draw (bool UseStencil);
+
+  // portal content renderer (K.O.)
   virtual void DrawContents () = 0;
 
 protected:

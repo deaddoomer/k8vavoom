@@ -53,10 +53,14 @@ class VSkyPortal : public VPortal {
 public:
   VSky *Sky;
 
-  inline VSkyPortal (VRenderLevelShared *ARLev, VSky *ASky) : VPortal(ARLev), Sky(ASky) {}
-  virtual bool NeedsDepthBuffer () const override;
-  virtual bool IsSky () const override;
-  virtual bool MatchSky (VSky *) const override;
+public:
+  inline VSkyPortal (VRenderLevelShared *ARLev, VSky *ASky) noexcept : VPortal(ARLev), Sky(ASky) {}
+
+  virtual bool NeedsDepthBuffer () const noexcept override;
+  virtual bool IsSky () const noexcept override;
+
+  virtual bool MatchSky (VSky *) const noexcept override;
+
   virtual void DrawContents () override;
 };
 
@@ -66,10 +70,14 @@ class VSkyBoxPortal : public VPortal {
 public:
   VEntity *Viewport;
 
-  inline VSkyBoxPortal (VRenderLevelShared *ARLev, VEntity *AViewport) : VPortal(ARLev), Viewport(AViewport) {}
-  virtual bool IsSky () const override;
-  virtual bool IsSkyBox () const override;
-  virtual bool MatchSkyBox (VEntity *) const override;
+public:
+  inline VSkyBoxPortal (VRenderLevelShared *ARLev, VEntity *AViewport) noexcept : VPortal(ARLev), Viewport(AViewport) {}
+
+  virtual bool IsSky () const noexcept override;
+  virtual bool IsSkyBox () const noexcept override;
+
+  virtual bool MatchSkyBox (VEntity *) const noexcept override;
+
   virtual void DrawContents () override;
 };
 
@@ -79,9 +87,13 @@ class VSectorStackPortal : public VPortal {
 public:
   VEntity *Viewport;
 
-  inline VSectorStackPortal (VRenderLevelShared *ARLev, VEntity *AViewport) : VPortal(ARLev), Viewport(AViewport) {}
-  virtual bool IsStack () const override;
-  virtual bool MatchSkyBox (VEntity *) const override;
+public:
+  inline VSectorStackPortal (VRenderLevelShared *ARLev, VEntity *AViewport) noexcept : VPortal(ARLev), Viewport(AViewport) {}
+
+  virtual bool IsStack () const noexcept override;
+
+  virtual bool MatchSkyBox (VEntity *) const noexcept override;
+
   virtual void DrawContents () override;
 };
 
@@ -91,9 +103,13 @@ class VMirrorPortal : public VPortal {
 public:
   TPlane Plane;
 
+public:
   inline VMirrorPortal (VRenderLevelShared *ARLev, const TPlane *APlane) : VPortal(ARLev), Plane(*APlane) {}
-  virtual bool IsMirror () const override;
-  virtual bool MatchMirror (const TPlane *) const override;
+
+  virtual bool IsMirror () const noexcept override;
+
+  virtual bool MatchMirror (const TPlane *) const noexcept override;
+
   virtual void DrawContents () override;
 };
 
