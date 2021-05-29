@@ -934,9 +934,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       if (anisotropyExists) {
-        glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT),
-          (gl_texture_filter_anisotropic > max_anisotropy ? max_anisotropy : gl_texture_filter_anisotropic)
-        );
+        glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
       }
 
       // check for lightmap update
@@ -967,9 +965,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         if (anisotropyExists) {
-          glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT),
-            (float)(gl_texture_filter_anisotropic > max_anisotropy ? max_anisotropy : gl_texture_filter_anisotropic)
-          );
+          glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
         }
 
         if (addBlockDirty.isValid()) {

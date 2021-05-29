@@ -70,7 +70,7 @@ VCvarF gl_letterbox_scale("gl_letterbox_scale", "1", "Letterbox scaling factor i
 VCvarI VOpenGLDrawer::texture_filter("gl_texture_filter", "0", "Texture filtering mode.", CVAR_Archive);
 VCvarI VOpenGLDrawer::sprite_filter("gl_sprite_filter", "0", "Sprite filtering mode.", CVAR_Archive);
 VCvarI VOpenGLDrawer::model_filter("gl_model_filter", "0", "Model filtering mode.", CVAR_Archive);
-VCvarI VOpenGLDrawer::gl_texture_filter_anisotropic("gl_texture_filter_anisotropic", "1", "Texture anisotropic filtering (<=1 is off).", CVAR_Archive);
+VCvarI VOpenGLDrawer::gl_texture_filter_anisotropic("gl_texture_filter_anisotropic", "0", "Texture anisotropic filtering (<=1 is off).", CVAR_Archive);
 VCvarB VOpenGLDrawer::clear("gl_clear", true, "Clear screen before rendering new frame?", CVAR_Archive);
 VCvarB VOpenGLDrawer::ext_anisotropy("gl_ext_anisotropy", true, "Use OpenGL anisotropy extension (if present)?", CVAR_Archive|CVAR_PreInit);
 VCvarI VOpenGLDrawer::multisampling_sample("gl_multisampling_sample", "1", "Multisampling mode.", CVAR_Archive);
@@ -1176,14 +1176,22 @@ void VOpenGLDrawer::InitResolution () {
   */
 
   // anisotropy extension
-  max_anisotropy = 1.0f;
+  float max_aniso = 1.0f;
   if (!isCrippledGPU && ext_anisotropy && CheckExtension("GL_EXT_texture_filter_anisotropic")) {
-    glGetFloatv(GLenum(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT), &max_anisotropy);
-    if (max_anisotropy < 1) max_anisotropy = 1;
-    GCon->Logf(NAME_Init, "Max anisotropy: %g", (double)max_anisotropy);
+    glGetFloatv(GLenum(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT), &max_aniso);
+    if (max_aniso < 1.0f) max_aniso = 1.0f;
+    GCon->Logf(NAME_Init, "Max anisotropy: %g", (double)max_aniso);
   }
-  gl_max_anisotropy = (int)max_anisotropy;
-  anisotropyExists = (gl_max_anisotropy > 1);
+  max_anisotropy = clampval((int)max_aniso, 1, 255);
+  gl_max_anisotropy = max_anisotropy;
+  anisotropyExists = (max_anisotropy > 1);
+  if (gl_texture_filter_anisotropic.asInt() == 0) {
+    int defani = clampval(max_anisotropy/2, 1, max_anisotropy);
+    if (defani > 8) defani = 8;
+    if (max_anisotropy > 1 && max_anisotropy < 4) defani = 2;
+    gl_texture_filter_anisotropic.Set(defani);
+    if (max_anisotropy > 1) GCon->Logf(NAME_Init, "Set default anisotropy filtering level to %d", defani);
+  }
 
   // clamp to edge extension
   if (CheckExtension("GL_SGIS_texture_edge_clamp") || CheckExtension("GL_EXT_texture_edge_clamp")) {

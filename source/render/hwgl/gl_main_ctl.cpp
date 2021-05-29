@@ -257,8 +257,8 @@ void VOpenGLDrawer::ForceTextureFiltering (VTexture *Tex, int level, int wrap) {
   } else {
     if (level < 0 || level > 4) level = 0;
     if (anisotropyExists) {
-      aniso = (gl_texture_filter_anisotropic > max_anisotropy ? max_anisotropy : gl_texture_filter_anisotropic);
-      if (aniso < 1) aniso = 1; else if (aniso > 256) aniso = 256;
+      aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy);
+      aniso = clampval(aniso, 1, 255);
     } else {
       aniso = 1;
     }
@@ -313,8 +313,8 @@ void VOpenGLDrawer::SetupTextureFiltering (VTexture *Tex, int level, int wrap) {
   } else {
     if (level < 0 || level > 4) level = 0;
     if (anisotropyExists) {
-      aniso = (gl_texture_filter_anisotropic > max_anisotropy ? max_anisotropy : gl_texture_filter_anisotropic);
-      if (aniso < 1) aniso = 1; else if (aniso > 256) aniso = 256;
+      aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy);
+      aniso = clampval(aniso, 1, 255);
     } else {
       aniso = 1;
     }
