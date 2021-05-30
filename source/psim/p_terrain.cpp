@@ -30,6 +30,9 @@
 #include "../gamedefs.h"
 
 
+static VCvarB gm_vanilla_liquids("gm_vanilla_liquids", true, "Allow liquid sounds for Vanilla Doom?", CVAR_Archive);
+
+
 struct VTerrainType {
   int Pic;
   VName TypeName;
@@ -407,29 +410,11 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
       sc->Expect("{");
       while (!sc->Check("}")) {
         if (sc->AtEnd()) break;
-        /*
-        if (sc->Check("bootprintdecal")) {
-          sc->ExpectString();
-          if (sc->String.strEquCI("none")) sc->String.clear();
-          TInfo->BootPrintDecal = VName(*sc->String);
-          continue;
-        }
-        if (sc->Check("bootprinttime")) {
-          if (sc->Check("default")) {
-            TInfo->BootPrintTimeMin = BOOT_TIME_MIN;
-            TInfo->BootPrintTimeMax = BOOT_TIME_MAX;
-          } else {
-            sc->ExpectFloat();
-            float tmin = sc->Float;
-            sc->ExpectFloat();
-            float tmax = sc->Float;
-            if (tmin > tmax) { const float tt = tmin; tmin = tmax; tmax = tt; }
-            TInfo->BootPrintTimeMin = tmin;
-            TInfo->BootPrintTimeMax = tmax;
-          }
-          continue;
-        }
-        */
+        if (sc->Check("noprotection")) { TInfo->Flags &= ~VTerrainInfo::F_AllowProtection; continue; }
+        if (sc->Check("playeronly")) { TInfo->Flags |= VTerrainInfo::F_PlayerOnly; continue; }
+        if (sc->Check("everybody")) { TInfo->Flags &= ~VTerrainInfo::F_PlayerOnly; continue; }
+        if (sc->Check("optout")) { TInfo->Flags |= VTerrainInfo::F_OptOut; continue; }
+        if (sc->Check("nooptout")) { TInfo->Flags &= ~VTerrainInfo::F_OptOut; continue; }
         if (sc->Check("bootprint")) {
           sc->ExpectString();
           TInfo->BootPrint = FindBootprint(*sc->String, true);
@@ -751,9 +736,13 @@ void P_InitTerrainTypes () {
 //  SV_TerrainType
 //
 //==========================================================================
-VTerrainInfo *SV_TerrainType (int pic) {
+VTerrainInfo *SV_TerrainType (int pic, bool asPlayer) {
+  if (pic <= 0) return &TerrainInfos[DefaultTerrainIndex];
   auto pp = TerrainTypeMap.find(pic);
-  return (pp ? TerrainTypes[*pp].Info : &TerrainInfos[DefaultTerrainIndex]);
+  VTerrainInfo *ter = (pp ? TerrainTypes[*pp].Info : nullptr);
+  if (ter && !asPlayer && (ter->Flags&VTerrainInfo::F_PlayerOnly)) ter = nullptr;
+  if (ter && (ter->Flags&VTerrainInfo::F_OptOut) && !gm_vanilla_liquids.asBool()) ter = nullptr;
+  return (ter ? ter : &TerrainInfos[DefaultTerrainIndex]);
 }
 
 
@@ -763,9 +752,13 @@ VTerrainInfo *SV_TerrainType (int pic) {
 //
 //==========================================================================
 VTerrainBootprint *SV_TerrainBootprint (int pic) {
+  if (pic <= 0) return nullptr;
   auto pp = TerrainBootprintMap.find(pic);
-  //return (pp ? TerrainBootprints[*pp] : nullptr);
-  return (pp ? *pp : nullptr);
+  if (pp) return *pp;
+  // try terrain
+  VTerrainInfo *ter = SV_TerrainType(pic, true/*asPlayer*/); // this is used ONLY for player
+  if (ter) return ter->BootPrint;
+  return nullptr;
 }
 
 

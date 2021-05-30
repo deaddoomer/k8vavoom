@@ -661,8 +661,8 @@ float GetAttackZOfs () {
 //==========================================================================
 final void ThrustPlayer (float angle, float move, float deltaTime) {
   if ((!EntityEx(MO).FindInventory(PowerFlight) || MO.Origin.z <= MO.FloorZ) &&
-      ((EntityEx(MO).GetFloorType()->Friction &&
-        EntityEx(MO).GetFloorType()->Friction < EntityEx::FRICTION_NORMAL) ||
+      ((EntityEx(MO).GetActorTerrain()->Friction &&
+        EntityEx(MO).GetActorTerrain()->Friction < EntityEx::FRICTION_NORMAL) ||
       (MO.Sector->special&SECSPEC_BASE_MASK) == SECSPEC_FrictionLow))
   {
     move *= LineSpecialGameInfo(Level.Game).IceMoveFactor;
@@ -4975,7 +4975,7 @@ override void PlayerTick (float deltaTime) {
 
   // do not apply effects continuously on the same tick
   if (LastSectorDamageTic != Level.XLevel.TicTime) {
-    PlayerOnSpecialFlat(Actor(MO).GetFloorType());
+    PlayerOnSpecialFlat(Actor(MO).GetActorTerrain());
     PlayerInContents(deltaTime);
     LastSectorDamageTic = Level.XLevel.TicTime;
   }

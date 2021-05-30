@@ -181,7 +181,7 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
     }
   }
 
-  VTerrainInfo *TInfo = GetFloorType();
+  VTerrainInfo *TInfo = GetActorTerrain();
   if (bFloorClip && TInfo->bLiquid && Origin.z == FloorZ) {
     FloorClip = TInfo->FootClip;
   } else {
@@ -5109,7 +5109,7 @@ static bool IsSectorFloorLiquid (sector_t *sec) {
   // animated is always liquid (for now)
   if (IsAnimatedTexture(sec.floor.pic)) return true;
   // check terrain
-  VTerrainInfo *ti = TerrainType(sec.floor.pic);
+  VTerrainInfo *ti = TerrainType(sec.floor.pic, false); // not only for player
   if (ti && ti.bLiquid) return true;
   // detect by texture name
   name fpname = GetTextureName(sec.floor.pic);

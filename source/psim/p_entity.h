@@ -1072,6 +1072,8 @@ public:
   DECLARE_FUNCTION(SetDecorateFlag)
   DECLARE_FUNCTION(GetDecorateFlag)
 
+  DECLARE_FUNCTION(GetActorTerrain)
+
   DECLARE_FUNCTION(CalcLight)
 
   DECLARE_FUNCTION(QS_PutInt);

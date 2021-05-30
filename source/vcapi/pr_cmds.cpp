@@ -115,8 +115,9 @@ IMPLEMENT_FREE_FUNCTION(VObject, GetSeqSlot) {
 
 IMPLEMENT_FREE_FUNCTION(VObject, TerrainType) {
   int pic;
-  vobjGetParam(pic);
-  RET_PTR(SV_TerrainType(pic));
+  bool asPlayer;
+  vobjGetParam(pic, asPlayer);
+  RET_PTR(SV_TerrainType(pic, asPlayer));
 }
 
 IMPLEMENT_FREE_FUNCTION(VObject, TerrainBootprint) {

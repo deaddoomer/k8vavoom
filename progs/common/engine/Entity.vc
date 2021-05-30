@@ -589,6 +589,8 @@ native final iterator RoughBlockSearch (out Entity EntPtr, int Distance);
 native final void SetDecorateFlag (string Name, bool Value);
 native final bool GetDecorateFlag (string Name);
 
+native final VTerrainInfo *GetActorTerrain (); // never returns `nullptr`
+
 
 bitenum {
   ELFlag_IgnoreDynLights,

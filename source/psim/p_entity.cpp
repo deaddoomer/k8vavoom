@@ -1103,7 +1103,7 @@ sector_t *VEntity::GetTouchedFloorSectorEx (sector_t **swimmable) {
 //
 //==========================================================================
 VTerrainInfo *VEntity::GetActorTerrain () {
-  return SV_TerrainType(Sector ? EFloor.splane->pic.id : -1);
+  return SV_TerrainType((Sector ? EFloor.splane->pic.id : -1), IsPlayer());
 }
 
 
@@ -1112,6 +1112,11 @@ VTerrainInfo *VEntity::GetActorTerrain () {
 //  Script natives
 //
 //==========================================================================
+IMPLEMENT_FUNCTION(VEntity, GetActorTerrain) {
+  vobjGetParamSelf();
+  RET_PTR((Self ? Self->GetActorTerrain() : SV_TerrainType(-1, false)));
+}
+
 IMPLEMENT_FUNCTION(VEntity, GetTouchedFloorSector) {
   vobjGetParamSelf();
   RET_PTR((Self ? Self->GetTouchedFloorSectorEx(nullptr) : nullptr));

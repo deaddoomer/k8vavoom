@@ -450,11 +450,6 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
         sec_plane_t *splane = (eregidx || pobj3d ? reg->eceiling.splane : reg->efloor.splane);
         if (splane) {
           VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
-          if (!bp) {
-            // try terrain
-            VTerrainInfo *ter = SV_TerrainType(splane->pic);
-            if (ter) bp = ter->BootPrint;
-          }
           if (bp && bp->DecalName != NAME_None) {
             decalName = bp->DecalName;
             decalTranslation = bp->Translation;

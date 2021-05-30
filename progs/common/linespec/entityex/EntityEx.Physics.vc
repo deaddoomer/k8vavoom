@@ -1386,7 +1386,7 @@ void PlayerLandedOnThing () {
         PlaySound('*grunt', CHAN_VOICE);
       }
     }
-    if ((Origin.z > FloorZ || !GetFloorType()->bLiquid) && !AreSoundsEquivalent('*grunt', '*land')) {
+    if ((Origin.z > FloorZ || !GetActorTerrain()->bLiquid) && !AreSoundsEquivalent('*grunt', '*land')) {
       PlaySound('*land', CHAN_BODY);
     }
   }
@@ -1537,7 +1537,7 @@ bool HitFloorType (optional bool justLanded) {
   }
   */
 
-  VTerrainInfo *TInfo = GetFloorType();
+  VTerrainInfo *TInfo = GetActorTerrain();
   //if (bIsPlayer /*&& tsec != Sector*/) printdebug("%C: orgz=%s; fz=%s; TInfo->DamageAmount=%s; floor=%s", self, Origin.z, FloorZ, TInfo->DamageAmount, EFloor.splane->pic);
 
   // small splash for small masses
@@ -1616,18 +1616,6 @@ bool HitFloorType (optional bool justLanded) {
 }
 
 
-//===========================================================================
-//
-//  GetFloorType
-//
-//  this is `final` for now, because `TerrainType()` is used in bootprints
-//
-//===========================================================================
-final VTerrainInfo *GetFloorType () {
-  return TerrainType(EFloor.splane->pic);
-}
-
-
 //==========================================================================
 //
 //  HandleFloorclip
@@ -1635,7 +1623,7 @@ final VTerrainInfo *GetFloorType () {
 //==========================================================================
 override void HandleFloorclip () {
   if (bFloorClip) {
-    VTerrainInfo *TInfo = GetFloorType();
+    VTerrainInfo *TInfo = GetActorTerrain();
     if (Origin.z == FloorZ && TInfo->bLiquid) {
       FloorClip = TInfo->FootClip;
     } else {
@@ -1741,7 +1729,7 @@ float GetFriction () {
   if (WaterLevel > 1) return FRICTION_WATER;
   if (bFly && Origin.z > FloorZ && !bOnMobj) return FRICTION_FLY;
   if (Sector && (Sector->special&SECSPEC_BASE_MASK) == SECSPEC_FrictionLow) return FRICTION_LOW;
-  VTerrainInfo *TInfo = GetFloorType();
+  VTerrainInfo *TInfo = GetActorTerrain();
   if (TInfo && TInfo->Friction) return TInfo->Friction;
   if (Sector && (Sector->special&SECSPEC_FRICTION_MASK)) return Sector->Friction;
   return FRICTION_NORMAL;

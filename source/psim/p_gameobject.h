@@ -188,8 +188,10 @@ struct VTerrainInfo {
   VStr OrigName; // as comes from the definition
   VName Splash;
   enum {
-    F_Liquid          = 0x00000001,
-    F_AllowProtection = 0x00000002,
+    F_Liquid          = 1<<0,
+    F_AllowProtection = 1<<1,
+    F_PlayerOnly      = 1<<2, // only for player mobj
+    F_OptOut          = 1<<3, // can be turned off with "gm_vanilla_liquids" cvar
   };
   vuint32 Flags;
   float FootClip;

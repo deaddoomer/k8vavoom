@@ -1467,6 +1467,8 @@ struct VTerrainInfo {
   name Splash;
   bool bLiquid;
   bool bAllowProtection;
+  bool bPlayerOnly;
+  bool bOptOut; // can be turned off with "gm_vanilla_liquids" cvar
   float FootClip;
   int DamageTimeMask;
   int DamageAmount;

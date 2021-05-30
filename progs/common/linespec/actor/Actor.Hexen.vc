@@ -98,7 +98,7 @@ const int KORAX_BOLT_LIFETIME = 3;
 //==========================================================================
 [decorate] final void A_SerpentHeadCheck () {
   if (Origin.z <= FloorZ) {
-    if (GetFloorType()->bLiquid) {
+    if (GetActorTerrain()->bLiquid) {
       HitFloorType();
       SetState(none);
     } else {
