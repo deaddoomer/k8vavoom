@@ -67,3 +67,27 @@ terrain VanillaBlood
     detectfloorflat  "blood[0-9][0-9]"
   }
 }
+
+terrain VanillaRedRocks
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   RedRockBootPrint
+    bootprintTime    default
+    detectfloorflat  "rrock01"
+  }
+}
+
+terrain VanillaYellowRocks
+{
+  splash    None
+  //footclip  4
+  liquid
+  k8vavoom {
+    bootprintDecal   YellowRockBootPrint
+    bootprintTime    default
+    detectfloorflat  "rrock02"
+  }
+}
