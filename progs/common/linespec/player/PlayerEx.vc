@@ -6232,7 +6232,7 @@ void LeaveBootPrints (float deltaTime) {
 void ProduceFootSteps (float deltaTime) {
   if (!MO || MO.Health <= 0) return; // just in case
 
-  if (fabs(MO.Origin.z-MO.FloorZ) > 0.1) {
+  if (MO.WaterLevel > 1 || fabs(MO.Origin.z-MO.FloorZ) > 0.1) {
     // not on a floor, reset footstep time
     lastFootstepSoundTime = GameTime;
     return;
