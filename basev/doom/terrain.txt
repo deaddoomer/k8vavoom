@@ -39,3 +39,31 @@ bootprint VanillaRedRocks modify {
 bootprint VanillaYellowRocks modify {
   flat   "rrock02"
 }
+
+
+terrain JustASoundVanilla modify {
+  k8vavoom {
+    // --- WATER ---
+    detectfloorflat "fwater[0-9]"
+    // for pwads with extra flats
+    detectfloorflat "fwater[0-9][0-9]"
+
+    // --- LAVA ---
+    detectfloorflat "lava[0-9]"
+    // for pwads with extra flats
+    detectfloorflat "lava[0-9][0-9]"
+
+    // --- ACID ---
+    detectfloorflat "nukage[0-9]"
+    // for pwads with extra flats
+    detectfloorflat "nukage[0-9][0-9]"
+
+    // --- SLIME ---
+    detectfloorflat "slime0[0-8]"
+
+    // --- BLOOD ---
+    detectfloorflat "blood[0-9]"
+    // for pwads with extra flats
+    detectfloorflat "blood[0-9][0-9]"
+  }
+}

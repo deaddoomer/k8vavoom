@@ -1,22 +1,22 @@
 // Floor -> terrain mappings -----------------------------------------------
 
 // cyan "water"
-floor f_watr01 JustASoundCyanWater
-floor f_watr02 JustASoundCyanWater
-floor f_watr03 JustASoundCyanWater
+floor f_watr01 JustASound
+floor f_watr02 JustASound
+floor f_watr03 JustASound
 // cyan "water"
-floor f_vwatr2 JustASoundCyanWater
-floor f_vwatr3 JustASoundCyanWater
+floor f_vwatr2 JustASound
+floor f_vwatr3 JustASound
 // cyan "water"
-floor p_vwatr1 JustASoundCyanWater
+floor p_vwatr1 JustASound
 // cyan "water"
-floor f_hwatr1 JustASoundCyanWater
-floor f_hwatr2 JustASoundCyanWater
-floor f_hwatr3 JustASoundCyanWater
+floor f_hwatr1 JustASound
+floor f_hwatr2 JustASound
+floor f_hwatr3 JustASound
 // green "water"
-floor f_pwatr1 JustASoundGreenMood
-floor f_pwatr2 JustASoundGreenMood
-floor f_pwatr3 JustASoundGreenMood
+floor f_pwatr1 JustASound
+floor f_pwatr2 JustASound
+floor f_pwatr3 JustASound
 
 
 // strife cyan water

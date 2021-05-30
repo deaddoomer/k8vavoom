@@ -120,6 +120,17 @@ terrain JustASound
   liquid
 }
 
+// used in Vanilla Doom (extended by flats)
+terrain JustASoundVanilla
+{
+  splash  WaterSound
+  liquid
+  k8vavoom {
+    playeronly
+    optout // can be turned off with "gm_vanilla_liquids" cvar
+  }
+}
+
 
 // flat bootprints -----------------------------------------------------------
 // you can override bootprints
