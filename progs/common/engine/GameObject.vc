@@ -1469,6 +1469,7 @@ struct VTerrainInfo {
   bool bAllowProtection;
   bool bPlayerOnly;
   bool bOptOut; // can be turned off with "gm_vanilla_liquids" cvar
+  bool bDamageOnLand;
   float FootClip;
   int DamageTimeMask;
   int DamageAmount;

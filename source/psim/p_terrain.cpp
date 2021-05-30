@@ -312,7 +312,7 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
     TInfo->DamageAmount = 0;
     TInfo->DamageType = NAME_None;
     TInfo->Friction = 0.0f;
-    TInfo->MoveFactor = 1.0f; // this seems to be unused
+    TInfo->MoveFactor = 0.0f; // this seems to be unused
     TInfo->StepVolume = 1.0f; // this seems to be unused
     TInfo->WalkingStepTime = 0.0f; // this seems to be unused
     TInfo->RunningStepTime = 0.0f; // this seems to be unused
@@ -353,6 +353,10 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
       TInfo->DamageType = *sc->String;
       continue;
     }
+    if (sc->Check("damageonland")) {
+      TInfo->Flags |= VTerrainInfo::F_DamageOnLand;
+      continue;
+    }
     if (sc->Check("friction")) {
       sc->ExpectFloat();
       int friction, movefactor;
@@ -376,31 +380,6 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
       TInfo->MoveFactor = float(movefactor)/float(0x10000);
       continue;
     }
-    if (sc->Check("stepvolume")) {
-      sc->ExpectFloat();
-      TInfo->StepVolume = sc->Float;
-      continue;
-    }
-    if (sc->Check("walkingsteptime")) {
-      sc->ExpectFloat();
-      TInfo->WalkingStepTime = sc->Float;
-      continue;
-    }
-    if (sc->Check("runningsteptime")) {
-      sc->ExpectFloat();
-      TInfo->RunningStepTime = sc->Float;
-      continue;
-    }
-    if (sc->Check("leftstepsounds")) {
-      sc->ExpectString();
-      TInfo->LeftStepSounds = *sc->String;
-      continue;
-    }
-    if (sc->Check("rightstepsounds")) {
-      sc->ExpectString();
-      TInfo->RightStepSounds = *sc->String;
-      continue;
-    }
     if (sc->Check("allowprotection")) {
       TInfo->Flags |= VTerrainInfo::F_AllowProtection;
       continue;
@@ -411,6 +390,8 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
       while (!sc->Check("}")) {
         if (sc->AtEnd()) break;
         if (sc->Check("noprotection")) { TInfo->Flags &= ~VTerrainInfo::F_AllowProtection; continue; }
+        if (sc->Check("notliqid")) { TInfo->Flags &= ~VTerrainInfo::F_Liquid; continue; }
+        if (sc->Check("nodamageonland")) { TInfo->Flags &= ~VTerrainInfo::F_DamageOnLand; continue; }
         if (sc->Check("playeronly")) { TInfo->Flags |= VTerrainInfo::F_PlayerOnly; continue; }
         if (sc->Check("everybody")) { TInfo->Flags &= ~VTerrainInfo::F_PlayerOnly; continue; }
         if (sc->Check("optout")) { TInfo->Flags |= VTerrainInfo::F_OptOut; continue; }
@@ -423,6 +404,37 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
         if (sc->Check("detectfloorflat")) { // k8vavoom extension
           sc->ExpectString();
           ProcessFlatGlobMask(sc->String, *TInfo->Name);
+          continue;
+        }
+        // footsteps
+        if (sc->Check("stepvolume")) {
+          sc->ExpectFloat();
+          TInfo->StepVolume = sc->Float;
+          continue;
+        }
+        if (sc->Check("walkingsteptime")) {
+          sc->ExpectFloat();
+          TInfo->WalkingStepTime = sc->Float;
+          continue;
+        }
+        if (sc->Check("runningsteptime")) {
+          sc->ExpectFloat();
+          TInfo->RunningStepTime = sc->Float;
+          continue;
+        }
+        if (sc->Check("leftstepsound")) {
+          sc->ExpectString();
+          TInfo->LeftStepSounds = *sc->String;
+          continue;
+        }
+        if (sc->Check("rightstepsound")) {
+          sc->ExpectString();
+          TInfo->RightStepSounds = *sc->String;
+          continue;
+        }
+        if (sc->Check("stepsound")) {
+          sc->ExpectString();
+          TInfo->LeftStepSounds = TInfo->RightStepSounds = *sc->String;
           continue;
         }
         sc->Error(va("Unknown k8vavoom terrain extension command (%s)", *sc->String));
@@ -667,11 +679,18 @@ void P_InitTerrainTypes () {
   DefT.OrigName = "Solid";
   DefT.Splash = NAME_None;
   DefT.Flags = 0;
-  DefT.FootClip = 0;
+  DefT.FootClip = 0.0f;
   DefT.DamageTimeMask = 0;
   DefT.DamageAmount = 0;
   DefT.DamageType = NAME_None;
   DefT.Friction = 0.0f;
+  DefT.MoveFactor = 0.0f;
+  DefT.StepVolume = 1.0f;
+  DefT.WalkingStepTime = 0.0f;
+  DefT.RunningStepTime = 0.0f;
+  DefT.LeftStepSounds = NAME_None;
+  DefT.RightStepSounds = NAME_None;
+  DefT.BootPrint = nullptr;
 
   DefaultTerrainName = DefT.Name;
   DefaultTerrainNameStr = DefT.OrigName;

@@ -192,6 +192,7 @@ struct VTerrainInfo {
     F_AllowProtection = 1<<1,
     F_PlayerOnly      = 1<<2, // only for player mobj
     F_OptOut          = 1<<3, // can be turned off with "gm_vanilla_liquids" cvar
+    F_DamageOnLand    = 1<<4, // whether or not damage is applied upon hitting the floor, in addition to the periodic damage
   };
   vuint32 Flags;
   float FootClip;

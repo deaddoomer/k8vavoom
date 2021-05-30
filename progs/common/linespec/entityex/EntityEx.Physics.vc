@@ -1579,6 +1579,11 @@ bool HitFloorType (optional bool justLanded) {
         }
         //printdebug("%C: Velocity=%s (%s)", self, Velocity, Velocity.length2DSquared);
       }
+    } else {
+      // just landed, damage if the corresponding terrain flag is set
+      if (TInfo->bDamageOnLand && TInfo->DamageAmount) {
+        Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
+      }
     }
   }
 
