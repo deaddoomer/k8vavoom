@@ -824,20 +824,21 @@ int GetMoveSpeedType () {
   float velyawdiff = fabs(AngleDiff(VectorAngleYaw(Velocity.xy), Angles.yaw));
   //printdebug("%C: velyawdiff=%s", self, velyawdiff);
 
-  float fwd = 0, side = 0;
+  float fwd = 0, side = 0, mult = 2;
   if (velyawdiff >= 120) {
     // mostly side move, use side speed
     fwd = GetCvarF('cl_sidespeed');
   } if (velyawdiff >= 110) {
     // mostly backward move, use forward speed
     fwd = GetCvarF('cl_backspeed');
-  } else if (velyawdiff >= 70) {
+  } else if (velyawdiff >= 80) {
     // mostly side move, use side speed
     side = GetCvarF('cl_sidespeed');
   } else {
     // mostly forward move, use forward speed
     fwd = GetCvarF('cl_forwardspeed');
   }
+  if (velyawdiff >= 25) mult = 3;
   //printdebug("%C: velyawdiff=%s; fwd=%s; side=%s", self, velyawdiff, fwd, side);
 
   if (fwd) {
@@ -846,13 +847,13 @@ int GetMoveSpeedType () {
     pex.AdjustForwardMove(ref fwd, ref fm1, ref fm2);
     //printdebug("%C: adiff=%s; fm1=%s (%s); fm2=%s (%s); fwd=%s (%s); vel=%s", self, velyawdiff, fm1, ForwardMove1, fm2, ForwardMove2, fwd, WALKING_SPEED, vel);
     fwd *= fm1;
-    return (vel > fwd*2 ? PMT_Running : PMT_Walking);
+    return (vel > fwd*mult ? PMT_Running : PMT_Walking);
   } else {
     float sm1 = SideMove1, sm2 = SideMove2;
     //if (sm2 <= sm1) return PMT_Walking;
     pex.AdjustSideMove(ref side, ref sm1, ref sm2);
     side *= sm1;
-    return (vel > side*2 ? PMT_Running : PMT_Walking);
+    return (vel > side*mult ? PMT_Running : PMT_Walking);
   }
 }
 
