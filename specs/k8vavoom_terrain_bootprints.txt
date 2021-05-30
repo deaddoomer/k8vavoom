@@ -1,0 +1,156 @@
+k8vavoom terrain extensions and bootprint definition, v0.90
+===========================================================
+
+
+terrain
+=======
+
+everything that is at https://zdoom.org/wiki/TERRAIN is supported (as of May, 2021).
+
+in addition, you can modify an existing terrain by redefining it like:
+
+  terrain Name modify {
+    ...
+  }
+
+the difference between this and standard terrain override is that without "modify"
+keyword, existing terrain will be reset to default values. if you'll try to modify
+the definition that wasn't yet defined, "modify" will be ignored.
+
+there are extended options for terrain, which should be usedin "k8vavoom" block.
+
+  terrain Name {
+    ...
+    k8vavoom {
+      ...
+    }
+  }
+
+this is done so other engines could simply skip the extensions without knowing how to
+parse k8vavoom options.
+
+
+extended options are:
+
+noprotection
+  removes "allowprotection" flag.
+
+notliquid
+  removes "liquid" flag.
+
+nodamageonland
+  removes "damageonland" flag.
+
+playeronly
+  this terrain definition is applied only for players. for other entities, default
+  terrain will be used.
+
+everybody
+  removes "playeronly" flag.
+
+optout
+  if "gm_vanilla_liquids" cvar is false, default terrain will be returned instead of this one.
+
+nooptout
+  removes "optout" flag.
+
+bootprint <name>
+  bootprint definition for this terrain.
+  note that bootprint flat (specified in bootprint definition) has higher priority.
+
+detectfloorflat <globmask>
+  flats matching this globmask will be marked as belonging to this terrain.
+  this option can be specified several times, and it is cumulative.
+  "globmask" is a wildcard expression, it supports "*" and ranges in "[]"
+
+NOTE: footsteps are not implemented yet. the following options will be parsed, but
+      will do nothing yet. they will be implemented in the future, though.
+
+stepvolume <float>
+  footstep sound volume, [0..1]. default is 1.0.
+
+walkingsteptime <float>
+  footstep sound interval when walking, in seconds. default is 0.0 (no sound).
+
+runningsteptime <float>
+  footstep sound interval when running, in seconds. default is 0.0 (no sound).
+
+leftstepsound <soundname>
+  sound for the left foot.
+
+rightstepsound <soundname>
+  sound for the right foot.
+
+stepsound <soundname>
+  assign the given sound for both feets.
+
+
+bootprint
+=========
+
+this is bootprint definition section. example:
+
+  bootprint VanillaWater {
+    decal  WaterLiquidBootPrint
+    time   default
+    flat   "fwater[0-9]"
+  }
+
+bootprint redifinition completely removes old bootprint, including any flats for it.
+i.e. redefined bootprint will not be assigned to any flats. you can use "modify" to
+modify an existing bootprint. if you'll try to modify the definition that wasn't yet
+defined, "modify" wiil be ignored.
+
+note that bootprint decal should be done for the right foot. it will be mirrored for
+the left foot. the engine will automatically apply some offset too, so decal sprite
+"center point" should be roughly at the center of the decal.
+
+
+booptprint options:
+
+decal <name>
+  decal name for this bootprint
+
+time <default | min max>
+  how long the player should leave bootprints, in seconds?
+  "default" is some default value (around 4.0 seconds).
+  you can specify minimum and maximum time instead, and the engine will choose something
+  in that range (inclusive) at random.
+
+flat <globmask>
+  globlask for flats that leaves this bootprint. this option is cumulative.
+
+
+
+default bootprint decals
+========================
+
+the engine will use decals with the following names for some known flats.
+you can (re)define them in your mod.
+
+WaterLiquidBootPrint
+  decal for water-like flats
+
+LavaLiquidBootPrint
+  decal for lava-like flats
+
+AcidLiquidBootPrint
+  decal for acid-like flats (green liquid)
+
+SlimeLiquidBootPrint
+  decal for slime-like flats (brown mood)
+
+BloodLiquidBootPrint
+  decal for blood-like flats
+
+RedRockBootPrint
+  decal for "red rock floor" (rrock01)
+
+YellowRockBootPrint
+  decal for "yellow rock floor" (rrock02)
+
+StrifeCyanWaterLiquidBootPrint
+  decal for Strife water
+
+StrifeGreenMoodLiquidBootPrint
+  decal for Strife green mood liquid
