@@ -1476,11 +1476,17 @@ struct VTerrainInfo {
   name DamageType;
   float Friction;
   float MoveFactor;
+  // footsteps
   float StepVolume;
   float WalkingStepTime;
   float RunningStepTime;
-  name LeftStepSounds;
-  name RightStepSounds;
+  name LeftStepSound;
+  name RightStepSound;
+  // first step sound (for players and monsters)
+  float LandVolume;
+  name LandSound;
+  float SmallLandVolume; // for small mass
+  name SmallLandSound; // for small mass
   VTerrainBootprint *BootPrint; // can be `nullptr`
 };
 

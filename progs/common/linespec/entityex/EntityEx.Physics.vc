@@ -1558,6 +1558,25 @@ bool HitFloorType (optional bool justLanded) {
     if (doIt) Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
   }
 
+  if (specified_justLanded && justLanded) {
+    // just landed, damage if the corresponding terrain flag is set
+    if (bIsPlayer && TInfo->bDamageOnLand && TInfo->DamageAmount) {
+      Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
+    }
+    // play land sound
+    if (bIsPlayer || bMonster) {
+      if (smallsplash) {
+        if (TInfo->SmallLandSound && TInfo->SmallLandVolume > 0.0f) {
+          PlaySound(TInfo->SmallLandSound, CHAN_SPLASH, fmin(1.0f, TInfo->SmallLandVolume));
+        }
+      } else {
+        if (TInfo->LandSound && TInfo->LandVolume > 0.0f) {
+          PlaySound(TInfo->LandSound, CHAN_SPLASH, fmin(1.0f, TInfo->LandVolume));
+        }
+      }
+    }
+  }
+
   VSplashInfo *SInfo = GetSplashInfo(TInfo->Splash);
   if (!SInfo) return TInfo->bLiquid;
 
@@ -1579,11 +1598,6 @@ bool HitFloorType (optional bool justLanded) {
         }
         //printdebug("%C: Velocity=%s (%s)", self, Velocity, Velocity.length2DSquared);
       }
-    } else {
-      // just landed, damage if the corresponding terrain flag is set
-      if (TInfo->bDamageOnLand && TInfo->DamageAmount) {
-        Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
-      }
     }
   }
 
@@ -1596,17 +1610,17 @@ bool HitFloorType (optional bool justLanded) {
   EntityEx A;
 
   if (smallsplash) {
-    if (SInfo->SmallClass) {
+    if (class!EntityEx(SInfo->SmallClass)) {
       A = Spawn(class!EntityEx(SInfo->SmallClass), org);
       A.FloorClip += SInfo->SmallClip;
       if (SInfo->SmallSound) A.PlaySound(SInfo->SmallSound, CHAN_SPLASH);
     }
   } else {
-    if (SInfo->BaseClass) {
+    if (class!EntityEx(SInfo->BaseClass)) {
       A = Spawn(class!EntityEx(SInfo->BaseClass), org);
       if (SInfo->Sound && !SInfo->ChunkClass) A.PlaySound(SInfo->Sound, CHAN_SPLASH);
     }
-    if (SInfo->ChunkClass) {
+    if (class!EntityEx(SInfo->ChunkClass)) {
       A = Spawn(class!EntityEx(SInfo->ChunkClass), org);
       A.Target = self;
       A.Velocity.x = (Random()-Random())*SInfo->ChunkXVelMul*35.0;

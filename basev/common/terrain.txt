@@ -118,16 +118,24 @@ terrain JustASound
   splash    WaterSound
   footclip  12
   liquid
+  k8vavoom {
+  }
 }
 
 // used in Vanilla Doom (extended by flats)
 terrain JustASoundVanilla
 {
-  splash  WaterSound
+  splash  None
   liquid
   k8vavoom {
     playeronly
     optout // can be turned off with "gm_vanilla_liquids" cvar
+
+    landvolume  0.8
+    landsound   world/watersplash
+
+    smalllandvolume  0.8
+    smalllandsound   world/watersplash
   }
 }
 

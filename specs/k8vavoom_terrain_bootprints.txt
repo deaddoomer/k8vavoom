@@ -63,6 +63,26 @@ detectfloorflat <globmask>
   this option can be specified several times, and it is cumulative.
   "globmask" is a wildcard expression, it supports "*" and ranges in "[]"
 
+
+"land step sound" will be used when a player or a monster landed on the given terrain.
+"small object" is the object with a mass less than 10, or with "small splash" flag set.
+landing sound will be played regardless of splash object presence. i.e. you can use
+landing sound to avoid spawning dummy splash objects. this sound will be played for both
+liquids and normal terrains.
+
+landvolume <float>
+  landing sound volume, [0..1]. default is 1.0.
+
+landsound <soundname>
+  landing sound name.
+
+smalllandvolume <float>
+  "small object" landing sound volume, [0..1]. default is 1.0.
+
+smalllandsound <soundname>
+  "small object" landing sound name.
+
+
 NOTE: footsteps are not implemented yet. the following options will be parsed, but
       will do nothing yet. they will be implemented in the future, though.
 

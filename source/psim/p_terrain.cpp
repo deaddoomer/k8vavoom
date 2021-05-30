@@ -173,6 +173,25 @@ static void ProcessFlatGlobMask (VStr mask, const char *tername) {
 
 //==========================================================================
 //
+//  ParseTerrainSplashClassName
+//
+//==========================================================================
+static VClass *ParseTerrainSplashClassName (VScriptParser *sc) {
+  sc->ExpectString();
+  if (sc->String.isEmpty() || sc->String.strEquCI("none")) return nullptr;
+  VClass *cls = VClass::FindClass(*sc->String);
+  if (!cls) {
+    sc->Message(va("splash class '%s' not found", *sc->String));
+  } else if (!cls->IsChildOf(VEntity::StaticClass())) {
+    sc->Message(va("splash class '%s' is not an Entity, ignored", *sc->String));
+    cls = nullptr;
+  }
+  return cls;
+}
+
+
+//==========================================================================
+//
 //  ParseTerrainSplashDef
 //
 //  "splash" is already eaten
@@ -205,8 +224,7 @@ static void ParseTerrainSplashDef (VScriptParser *sc) {
   while (!sc->Check("}")) {
     if (sc->AtEnd()) break;
     if (sc->Check("smallclass")) {
-      sc->ExpectString();
-      SInfo->SmallClass = VClass::FindClass(*sc->String);
+      SInfo->SmallClass = ParseTerrainSplashClassName(sc);
       continue;
     }
     if (sc->Check("smallclip")) {
@@ -220,13 +238,11 @@ static void ParseTerrainSplashDef (VScriptParser *sc) {
       continue;
     }
     if (sc->Check("baseclass")) {
-      sc->ExpectString();
-      SInfo->BaseClass = VClass::FindClass(*sc->String);
+      SInfo->BaseClass = ParseTerrainSplashClassName(sc);
       continue;
     }
     if (sc->Check("chunkclass")) {
-      sc->ExpectString();
-      SInfo->ChunkClass = VClass::FindClass(*sc->String);
+      SInfo->ChunkClass = ParseTerrainSplashClassName(sc);
       continue;
     }
     if (sc->Check("chunkxvelshift")) {
@@ -316,8 +332,12 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
     TInfo->StepVolume = 1.0f; // this seems to be unused
     TInfo->WalkingStepTime = 0.0f; // this seems to be unused
     TInfo->RunningStepTime = 0.0f; // this seems to be unused
-    TInfo->LeftStepSounds = NAME_None;
-    TInfo->RightStepSounds = NAME_None;
+    TInfo->LeftStepSound = NAME_None;
+    TInfo->RightStepSound = NAME_None;
+    TInfo->LandVolume = 1.0f;
+    TInfo->LandSound = NAME_None;
+    TInfo->SmallLandVolume = 1.0f;
+    TInfo->SmallLandSound = NAME_None;
     TInfo->BootPrint = nullptr;
   }
   sc->Expect("{");
@@ -407,36 +427,17 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
           continue;
         }
         // footsteps
-        if (sc->Check("stepvolume")) {
-          sc->ExpectFloat();
-          TInfo->StepVolume = sc->Float;
-          continue;
-        }
-        if (sc->Check("walkingsteptime")) {
-          sc->ExpectFloat();
-          TInfo->WalkingStepTime = sc->Float;
-          continue;
-        }
-        if (sc->Check("runningsteptime")) {
-          sc->ExpectFloat();
-          TInfo->RunningStepTime = sc->Float;
-          continue;
-        }
-        if (sc->Check("leftstepsound")) {
-          sc->ExpectString();
-          TInfo->LeftStepSounds = *sc->String;
-          continue;
-        }
-        if (sc->Check("rightstepsound")) {
-          sc->ExpectString();
-          TInfo->RightStepSounds = *sc->String;
-          continue;
-        }
-        if (sc->Check("stepsound")) {
-          sc->ExpectString();
-          TInfo->LeftStepSounds = TInfo->RightStepSounds = *sc->String;
-          continue;
-        }
+        if (sc->Check("stepvolume")) { sc->ExpectFloat(); TInfo->StepVolume = sc->Float; continue; }
+        if (sc->Check("walkingsteptime")) { sc->ExpectFloat(); TInfo->WalkingStepTime = sc->Float; continue; }
+        if (sc->Check("runningsteptime")) { sc->ExpectFloat(); TInfo->RunningStepTime = sc->Float; continue; }
+        if (sc->Check("leftstepsound")) { sc->ExpectString(); TInfo->LeftStepSound = *sc->String; continue; }
+        if (sc->Check("rightstepsound")) { sc->ExpectString(); TInfo->RightStepSound = *sc->String; continue; }
+        if (sc->Check("stepsound")) { sc->ExpectString(); TInfo->LeftStepSound = TInfo->RightStepSound = *sc->String; continue; }
+        // first step
+        if (sc->Check("landvolume")) { sc->ExpectFloat(); TInfo->LandVolume = sc->Float; continue; }
+        if (sc->Check("smalllandvolume")) { sc->ExpectFloat(); TInfo->SmallLandVolume = sc->Float; continue; }
+        if (sc->Check("landsound")) { sc->ExpectString(); TInfo->LandSound = *sc->String; continue; }
+        if (sc->Check("smalllandsound")) { sc->ExpectString(); TInfo->SmallLandSound = *sc->String; continue; }
         sc->Error(va("Unknown k8vavoom terrain extension command (%s)", *sc->String));
       }
       continue;
@@ -688,8 +689,12 @@ void P_InitTerrainTypes () {
   DefT.StepVolume = 1.0f;
   DefT.WalkingStepTime = 0.0f;
   DefT.RunningStepTime = 0.0f;
-  DefT.LeftStepSounds = NAME_None;
-  DefT.RightStepSounds = NAME_None;
+  DefT.LeftStepSound = NAME_None;
+  DefT.RightStepSound = NAME_None;
+  DefT.LandVolume = 1.0f;
+  DefT.LandSound = NAME_None;
+  DefT.SmallLandVolume = 1.0f;
+  DefT.SmallLandSound = NAME_None;
   DefT.BootPrint = nullptr;
 
   DefaultTerrainName = DefT.Name;
