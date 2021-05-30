@@ -1,38 +1,33 @@
 // Floor -> terrain mappings -----------------------------------------------
 
-terrain JustASoundCyanWater {
-  splash    WaterSound
-  footclip  12
-  liquid
-  k8vavoom {
-    bootprintDecal   StrifeCyanWaterLiquidBootPrint
-    bootprintTime    default
-  }
-}
-
-terrain JustASoundGreenMood {
-  splash    WaterSound
-  footclip  12
-  liquid
-  k8vavoom {
-    bootprintDecal   StrifeGreenMoodLiquidBootPrint
-    bootprintTime    default
-  }
-}
-
 // cyan "water"
-floor f_watr03 JustASoundCyanWater
-floor f_watr02 JustASoundCyanWater
 floor f_watr01 JustASoundCyanWater
+floor f_watr02 JustASoundCyanWater
+floor f_watr03 JustASoundCyanWater
 // cyan "water"
-floor f_vwatr3 JustASoundCyanWater
 floor f_vwatr2 JustASoundCyanWater
+floor f_vwatr3 JustASoundCyanWater
 // cyan "water"
 floor p_vwatr1 JustASoundCyanWater
-floor f_hwatr3 JustASoundCyanWater
-floor f_hwatr2 JustASoundCyanWater
+// cyan "water"
 floor f_hwatr1 JustASoundCyanWater
+floor f_hwatr2 JustASoundCyanWater
+floor f_hwatr3 JustASoundCyanWater
 // green "water"
-floor f_pwatr3 JustASoundGreenMood
-floor f_pwatr2 JustASoundGreenMood
 floor f_pwatr1 JustASoundGreenMood
+floor f_pwatr2 JustASoundGreenMood
+floor f_pwatr3 JustASoundGreenMood
+
+
+// strife cyan water
+bootprint StrifeWater modify {
+  flat "f_watr0[1-3]"
+  flat "f_vwatr[23]"
+  flat "p_vwatr1"
+  flat "f_hwatr[1-3]"
+}
+
+// strife green mood
+bootprint StrifeMood modify {
+  flat "f_pwatr[1-3]"
+}

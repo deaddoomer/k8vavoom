@@ -119,6 +119,12 @@ IMPLEMENT_FREE_FUNCTION(VObject, TerrainType) {
   RET_PTR(SV_TerrainType(pic));
 }
 
+IMPLEMENT_FREE_FUNCTION(VObject, TerrainBootprint) {
+  int pic;
+  vobjGetParam(pic);
+  RET_PTR(SV_TerrainBootprint(pic));
+}
+
 
 IMPLEMENT_FREE_FUNCTION(VObject, SB_Start) {
 #ifdef CLIENT

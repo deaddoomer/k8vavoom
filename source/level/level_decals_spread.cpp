@@ -449,14 +449,14 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
         // region found, detect terrain
         sec_plane_t *splane = (eregidx || pobj3d ? reg->eceiling.splane : reg->efloor.splane);
         if (splane) {
-          VTerrainInfo *ter = SV_TerrainType(splane->pic);
-          if (ter && ter->BootPrintDecal != NAME_None) {
-            decalName = ter->BootPrintDecal;
-            decalTranslation = 0;
-            if (ter->BootPrintTimeMin != ter->BootPrintTimeMax) {
-              markTime = RandomBetween(ter->BootPrintTimeMin, ter->BootPrintTimeMax);
+          VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
+          if (bp && bp->DecalName != NAME_None) {
+            decalName = bp->DecalName;
+            decalTranslation = bp->Translation;
+            if (bp->TimeMin != bp->TimeMax) {
+              markTime = RandomBetween(bp->TimeMin, bp->TimeMax);
             } else {
-              markTime = ter->BootPrintTimeMin;
+              markTime = bp->TimeMin;
             }
             if (markTime < 0.0f) markTime = 0.0f;
             return true;

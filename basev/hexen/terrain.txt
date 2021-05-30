@@ -9,8 +9,7 @@ terrain Lava
   damagetimemask  31
 
   k8vavoom {
-    bootprintDecal   LavaLiquidBootPrint
-    bootprintTime    default
+    bootprint  VanillaLava
   }
 }
 

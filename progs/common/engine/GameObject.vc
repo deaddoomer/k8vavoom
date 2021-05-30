@@ -1450,6 +1450,17 @@ struct VSplashInfo {
 };
 
 
+// bootprints are moved to separate struct,
+// becase they can be attached to both flats and terrains
+struct VTerrainBootprint {
+  name Name; // bootprint name (this is empty for "forward declarations")
+  string OrigName; // as comes from the definition, never empty
+  name DecalName;
+  float TimeMin;
+  float TimeMax;
+  int Translation;
+};
+
 struct VTerrainInfo {
   name Name;
   string OrigName;
@@ -1467,10 +1478,7 @@ struct VTerrainInfo {
   float RunningStepTime;
   name LeftStepSounds;
   name RightStepSounds;
-  // bootprints
-  name BootPrintDecal;
-  float BootPrintTimeMin;
-  float BootPrintTimeMax;
+  VTerrainBootprint *BootPrint; // can be `nullptr`
 };
 
 

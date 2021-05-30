@@ -231,6 +231,7 @@ void P_InitSwitchList ();
 struct VTerrainInfo;
 void P_InitTerrainTypes ();
 VTerrainInfo *SV_TerrainType (int pic);
+VTerrainBootprint *SV_TerrainBootprint (int pic);
 VTerrainInfo *SV_GetDefaultTerrain ();
 void P_FreeTerrainTypes ();
 

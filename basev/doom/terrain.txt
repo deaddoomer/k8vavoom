@@ -1,93 +1,41 @@
-// Terrain types -----------------------------------------------------------
-terrain VanillaWater
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   WaterLiquidBootPrint
-    bootprintTime    default  // or: bootprintTime minsecflt maxsecflt
-    detectfloorflat  "fwater[0-9]"
-    // for pwads with extra flats
-    detectfloorflat  "fwater[0-9][0-9]"
-  }
+// flat bootprints
+// you can override bootprints
+// overriden bootprint will delete the old one, unless you use
+//   bootprint Name modify { ... }
+
+bootprint VanillaWater modify {
+  flat   "fwater[0-9]"
+  // for pwads with extra flats
+  flat   "fwater[0-9][0-9]"
 }
 
-terrain VanillaLava
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   LavaLiquidBootPrint
-    bootprintTime    default
-    detectfloorflat  "lava[0-9]"
-    // for pwads with extra flats
-    detectfloorflat  "lava[0-9][0-9]"
-  }
+bootprint VanillaLava modify {
+  flat   "lava[0-9]"
+  // for pwads with extra flats
+  flat   "lava[0-9][0-9]"
 }
 
-terrain VanillaAcid
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   AcidLiquidBootPrint
-    bootprintTime    default
-    detectfloorflat  "nukage[0-9]"
-    // for pwads with extra flats
-    detectfloorflat  "nukage[0-9][0-9]"
-  }
+bootprint VanillaAcid modify {
+  flat   "nukage[0-9]"
+  // for pwads with extra flats
+  flat   "nukage[0-9][0-9]"
 }
 
-terrain VanillaSlime
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   SlimeLiquidBootPrint
-    bootprintTime    default
-    // other slimes are not slimes
-    detectfloorflat  "slime0[0-8]"
-  }
+bootprint VanillaSlime modify {
+  // other slimes are not slimes
+  flat   "slime0[0-8]"
 }
 
-terrain VanillaBlood
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   BloodLiquidBootPrint
-    bootprintTime    default
-    detectfloorflat  "blood[0-9]"
-    // for pwads with extra flats
-    detectfloorflat  "blood[0-9][0-9]"
-  }
+bootprint VanillaBlood modify {
+  flat   "blood[0-9]"
+  // for pwads with extra flats
+  flat   "blood[0-9][0-9]"
 }
 
-terrain VanillaRedRocks
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   RedRockBootPrint
-    bootprintTime    default
-    detectfloorflat  "rrock01"
-  }
+bootprint VanillaRedRocks modify {
+  flat   "rrock01"
 }
 
-terrain VanillaYellowRocks
-{
-  splash    None
-  //footclip  4
-  liquid
-  k8vavoom {
-    bootprintDecal   YellowRockBootPrint
-    bootprintTime    default
-    detectfloorflat  "rrock02"
-  }
+bootprint VanillaYellowRocks modify {
+  flat   "rrock02"
 }

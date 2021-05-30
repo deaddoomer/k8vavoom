@@ -88,8 +88,7 @@ terrain Water
 
   // for Heretic and Hexen it should look more-or-less ok
   k8vavoom {
-    bootprintDecal   WaterLiquidBootPrint
-    bootprintTime    default  // or: bootprintTime minsecflt maxsecflt
+    bootprint  VanillaWater
   }
 }
 
@@ -101,8 +100,7 @@ terrain Sludge
 
   // for Heretic and Hexen it doesn't look really ok, but meh
   k8vavoom {
-    bootprintDecal   SlimeLiquidBootPrint
-    bootprintTime    default
+    bootprint  VanillaSlime
   }
 }
 
@@ -114,9 +112,67 @@ terrain Slime
   liquid
 }
 
+// used in Strife
 terrain JustASound
 {
   splash    WaterSound
   footclip  12
   liquid
+}
+
+
+// flat bootprints -----------------------------------------------------------
+// you can override bootprints
+// overriden bootprint will delete the old one, unless you use
+//   bootprint Name modify { ... }
+// the following are modified in Doom/Hexen/etc. definitions
+
+bootprint VanillaWater {
+  decal  WaterLiquidBootPrint
+  time   default  // or: time minsecflt maxsecflt
+}
+
+bootprint VanillaLava {
+  decal  LavaLiquidBootPrint
+  time   default
+}
+
+bootprint VanillaAcid {
+  decal  AcidLiquidBootPrint
+  time   default
+}
+
+bootprint VanillaSlime {
+  decal  SlimeLiquidBootPrint
+  time   default
+}
+
+bootprint VanillaBlood {
+  decal  BloodLiquidBootPrint
+  time   default
+}
+
+// Doom rocks that look like they should make boots dirty
+bootprint VanillaRedRocks {
+  decal  RedRockBootPrint
+  time   default
+}
+
+bootprint VanillaYellowRocks {
+  decal  YellowRockBootPrint
+  time   default
+}
+
+
+// Strife
+// strife cyan water
+bootprint StrifeWater {
+  decal  StrifeCyanWaterLiquidBootPrint
+  time   default
+}
+
+// strife green mood
+bootprint StrifeMood {
+  decal  StrifeGreenMoodLiquidBootPrint
+  time   default
 }

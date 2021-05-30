@@ -5,8 +5,7 @@ terrain Lava
   footclip    10
   liquid
   k8vavoom {
-    bootprintDecal   LavaLiquidBootPrint
-    bootprintTime    default
+    bootprint  VanillaLava
   }
 }
 
