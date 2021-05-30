@@ -17,7 +17,7 @@ the difference between this and standard terrain override is that without "modif
 keyword, existing terrain will be reset to default values. if you'll try to modify
 the definition that wasn't yet defined, "modify" will be ignored.
 
-there are extended options for terrain, which should be usedin "k8vavoom" block.
+there are extended options for terrain, which should be used in "k8vavoom" block.
 
   terrain Name {
     ...
@@ -138,12 +138,12 @@ this is bootprint definition section. example:
     flat   "fwater[0-9]"
   }
 
-bootprint redifinition completely removes old bootprint, including any flats for it.
+bootprint redefinition completely removes the old bootprint, including any flats for it.
 i.e. redefined bootprint will not be assigned to any flats. you can use "modify" to
 modify an existing bootprint. if you'll try to modify the definition that wasn't yet
 defined, "modify" wiil be ignored.
 
-note that bootprint decal should be done for the right foot. it will be mirrored for
+note that bootprint decal should be drawn for the right foot. it will be mirrored for
 the left foot. the engine will automatically apply some offset too, so decal sprite
 "center point" should be roughly at the center of the decal.
 
@@ -151,7 +151,7 @@ the left foot. the engine will automatically apply some offset too, so decal spr
 booptprint options:
 
 decal <name>
-  decal name for this bootprint
+  decal name for this bootprint.
 
 time <default | min max>
   how long the player should leave bootprints, in seconds?
@@ -171,28 +171,28 @@ the engine will use decals with the following names for some known flats.
 you can (re)define them in your mod.
 
 WaterLiquidBootPrint
-  decal for water-like flats
+  decal for water-like flats.
 
 LavaLiquidBootPrint
-  decal for lava-like flats
+  decal for lava-like flats.
 
 AcidLiquidBootPrint
-  decal for acid-like flats (green liquid)
+  decal for acid-like flats (green liquid).
 
 SlimeLiquidBootPrint
-  decal for slime-like flats (brown mood)
+  decal for slime-like flats (brown mood).
 
 BloodLiquidBootPrint
-  decal for blood-like flats
+  decal for blood-like flats.
 
 RedRockBootPrint
-  decal for "red rock floor" (rrock01)
+  decal for "red rock floor" (rrock01).
 
 YellowRockBootPrint
-  decal for "yellow rock floor" (rrock02)
+  decal for "yellow rock floor" (rrock02).
 
 StrifeCyanWaterLiquidBootPrint
-  decal for Strife water
+  decal for Strife water.
 
 StrifeGreenMoodLiquidBootPrint
-  decal for Strife green mood liquid
+  decal for Strife green mood liquid.
