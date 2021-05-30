@@ -113,22 +113,6 @@ static VTerrainBootprint *FindBootprint (const char *bpname, bool allowCreation,
 
 //==========================================================================
 //
-//  CheckTerrainKW
-//
-//  returns:
-//    0: nope
-//    1: terrain definition
-//    2: default terrain definition
-//
-//==========================================================================
-static int CheckTerrainKW (VScriptParser *sc) {
-  if (sc->Check("terrain")) return 1;
-  return (sc->Check("defaultterrain") ? 2 : 0);
-}
-
-
-//==========================================================================
-//
 //  ProcessFlatGlobMask
 //
 //==========================================================================
@@ -286,41 +270,53 @@ static void ParseTerrainSplashDef (VScriptParser *sc) {
 static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
   sc->ExpectString();
   if (sc->String.isEmpty()) sc->String = "none";
+  VStr TerName = sc->String;
+  bool modify = false;
   VTerrainInfo *TInfo;
   if (tkw == 2) {
     // default terrain definition, remember new default terrain
-    DefaultTerrainNameStr = sc->String;
-    DefaultTerrainName = VName(*sc->String, VName::AddLower);
+    DefaultTerrainNameStr = TerName;
+    DefaultTerrainName = VName(*TerName, VName::AddLower);
     // if just a name, do nothing else
     if (sc->PeekChar() != '{') return;
+  } else {
+    if (sc->Check("modify")) modify = true;
   }
-  //GCon->Logf(NAME_Debug, "terraindef '%s'...", *sc->String);
+  //GCon->Logf(NAME_Debug, "terraindef '%s'...", *TerName);
   // new terrain
-  TInfo = GetTerrainInfo(*sc->String);
+  TInfo = GetTerrainInfo(*TerName);
   if (!TInfo) {
-    //!GCon->Logf(NAME_Init, "%s: new terrain '%s'", *sc->GetLoc().toStringNoCol(), *sc->String);
-    VName nn = VName(*sc->String, VName::AddLower);
+    //GCon->Logf(NAME_Debug, "%s: new terrain '%s'", *sc->GetLoc().toStringNoCol(), *TerName);
+    VName nn = VName(*TerName, VName::AddLower);
     TInfo = &TerrainInfos.Alloc();
     memset((void *)TInfo, 0, sizeof(VTerrainInfo));
     TInfo->Name = nn;
-    TInfo->OrigName = sc->String;
+    TInfo->OrigName = TerName;
     TerrainMap.put(nn, TerrainInfos.length()-1);
+    modify = false; // clear it
   }
+  /*
+  else {
+    GCon->Logf(NAME_Debug, "%s: %s terrain '%s'", *sc->GetLoc().toStringNoCol(), (modify ? "modifying" : "redefining"), *TerName);
+  }
+  */
   // clear
-  TInfo->Splash = NAME_None;
-  TInfo->Flags = 0;
-  TInfo->FootClip = 0.0f;
-  TInfo->DamageTimeMask = 0;
-  TInfo->DamageAmount = 0;
-  TInfo->DamageType = NAME_None;
-  TInfo->Friction = 0.0f;
-  TInfo->MoveFactor = 1.0f; // this seems to be unused
-  TInfo->StepVolume = 1.0f; // this seems to be unused
-  TInfo->WalkingStepTime = 0.0f; // this seems to be unused
-  TInfo->RunningStepTime = 0.0f; // this seems to be unused
-  TInfo->LeftStepSounds = NAME_None;
-  TInfo->RightStepSounds = NAME_None;
-  TInfo->BootPrint = nullptr;
+  if (!modify) {
+    TInfo->Splash = NAME_None;
+    TInfo->Flags = 0;
+    TInfo->FootClip = 0.0f;
+    TInfo->DamageTimeMask = 0;
+    TInfo->DamageAmount = 0;
+    TInfo->DamageType = NAME_None;
+    TInfo->Friction = 0.0f;
+    TInfo->MoveFactor = 1.0f; // this seems to be unused
+    TInfo->StepVolume = 1.0f; // this seems to be unused
+    TInfo->WalkingStepTime = 0.0f; // this seems to be unused
+    TInfo->RunningStepTime = 0.0f; // this seems to be unused
+    TInfo->LeftStepSounds = NAME_None;
+    TInfo->RightStepSounds = NAME_None;
+    TInfo->BootPrint = nullptr;
+  }
   sc->Expect("{");
   while (!sc->Check("}")) {
     if (sc->AtEnd()) break;
@@ -548,6 +544,22 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       }
     }
   }
+}
+
+
+//==========================================================================
+//
+//  CheckTerrainKW
+//
+//  returns:
+//    0: nope
+//    1: terrain definition
+//    2: default terrain definition
+//
+//==========================================================================
+static int CheckTerrainKW (VScriptParser *sc) {
+  if (sc->Check("terrain")) return 1;
+  return (sc->Check("defaultterrain") ? 2 : 0);
 }
 
 
