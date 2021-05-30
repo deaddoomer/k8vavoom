@@ -64,36 +64,58 @@ detectfloorflat <globmask>
   "globmask" is a wildcard expression, it supports "*" and ranges in "[]"
 
 
-"land step sound" will be used when a player or a monster landed on the given terrain.
+"land step sound" will be used when a player landed on the given terrain.
 "small object" is the object with a mass less than 10, or with "small splash" flag set.
 landing sound will be played regardless of splash object presence. i.e. you can use
 landing sound to avoid spawning dummy splash objects. this sound will be played for both
 liquids and normal terrains.
+you can use zero volume to disable land sounds.
 
 landvolume <float>
   landing sound volume, [0..1]. default is 1.0.
 
-landsound <soundname>
-  landing sound name.
-
 smalllandvolume <float>
   "small object" landing sound volume, [0..1]. default is 1.0.
+
+alllandvolume <float>
+  landing sound volume for both object types, [0..1]. default is 1.0.
+
+landsound <soundname>
+  landing sound name.
 
 smalllandsound <soundname>
   "small object" landing sound name.
 
+alllandsound <soundname>
+  landing sound name for both object types.
 
-NOTE: footsteps are not implemented yet. the following options will be parsed, but
-      will do nothing yet. they will be implemented in the future, though.
 
-stepvolume <float>
-  footstep sound volume, [0..1]. default is 1.0.
+footsteps are used to produce footstep sounds on a given terrain.
+you can use zero time or volume to disable footstep sounds for a given mode.
+
+walkingstepvolume <float>
+  footstep sound volume when walking, [0..1]. default is 1.0.
+
+runningstepvolume <float>
+  footstep sound volume when running, [0..1]. default is 1.0.
+
+crouchingstepvolume <float>
+  footstep sound volume when crouching, [0..1]. default is 1.0.
+
+allstepvolume <float>
+  footstep sound volume for all modes, [0..1]. default is 1.0.
 
 walkingsteptime <float>
   footstep sound interval when walking, in seconds. default is 0.0 (no sound).
 
+crouchingsteptime <float>
+  footstep sound interval when crouching, in seconds. default is 0.0 (no sound).
+
 runningsteptime <float>
   footstep sound interval when running, in seconds. default is 0.0 (no sound).
+
+allsteptime <float>
+  footstep sound interval for all modes, in seconds. default is 0.0 (no sound).
 
 leftstepsound <soundname>
   sound for the left foot.
@@ -101,7 +123,7 @@ leftstepsound <soundname>
 rightstepsound <soundname>
   sound for the right foot.
 
-stepsound <soundname>
+allstepsound <soundname>
   assign the given sound for both feets.
 
 

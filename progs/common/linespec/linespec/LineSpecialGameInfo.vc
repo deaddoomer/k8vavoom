@@ -179,6 +179,7 @@ override void Init () {
   CreateCvarBool('r_flip_corpses', false, "Randomly flip corpses?", CVAR_ARCHIVE);
 
   CreateCvarBool('r_bootprints', true, "Allow bootprints?", CVAR_ARCHIVE);
+  CreateCvarBool('gm_footsteps', true, "Allow footsteps?", CVAR_ARCHIVE);
 
   // debug headshots?
   CreateCvarBool('k8HSDebug', false, "Show headshots debug messages?", 0);

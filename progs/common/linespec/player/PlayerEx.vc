@@ -222,6 +222,10 @@ transient bool bootprintFlip;
 transient name bootprintDecal;
 transient int bootprintDecalTranslation;
 
+// footsteps timing; no need to save
+transient float lastFootstepSoundTime;
+transient bool lastFootstepIsLeft;
+
 // this should be configurable!
 const float BOOTPRINT_DELAY_TIME0 = 0.12; // seconds
 const float BOOTPRINT_DELAY_TIME1 = 0.16; // seconds
@@ -5110,6 +5114,8 @@ override void PlayerTick (float deltaTime) {
   // do it here, not in physics code, becase physics code is already overloaded with shit
   // this is purely cosmetic feature, so i think it's ok
   LeaveBootPrints(deltaTime);
+
+  ProduceFootSteps(deltaTime);
 }
 
 
@@ -6215,6 +6221,56 @@ void LeaveBootPrints (float deltaTime) {
   EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw, forceFlipX:bootprintFlip, alpha:alpha+1000.0f);
 
   bootprintFlip = !bootprintFlip;
+}
+
+
+//==========================================================================
+//
+//  ProduceFootSteps
+//
+//==========================================================================
+void ProduceFootSteps (float deltaTime) {
+  if (!MO || MO.Health <= 0) return; // just in case
+
+  if (fabs(MO.Origin.z-MO.FloorZ) > 0.1) {
+    // not on a floor, reset footstep time
+    lastFootstepSoundTime = GameTime;
+    return;
+  }
+
+  PlayerPawn pwn = PlayerPawn(MO);
+  if (!pwn) return;
+
+  //printdebug("VEL=%s", MO.Velocity);
+
+  VTerrainInfo *TInfo = MO.GetActorTerrain();
+
+  int speed = pwn.GetMoveSpeedType();
+  //if (speed) printdebug("%C: speedtype=%s", MO, speed);
+  if (!speed) return;
+
+  float tm, vol;
+  switch (speed) {
+    case PlayerPawn::PMT_Crouching: tm = TInfo.CrouchingStepTime; vol = TInfo.CrouchingStepVolume; break;
+    case PlayerPawn::PMT_Walking: tm = TInfo.WalkingStepTime; vol = TInfo.WalkingStepVolume; break;
+    case PlayerPawn::PMT_Running: tm = TInfo.RunningStepTime; vol = TInfo.RunningStepVolume; break;
+    default: return; // just in case
+  }
+  if (tm <= 0.0f || vol <= 0.0f) {
+    // reset footstep time
+    lastFootstepSoundTime = GameTime;
+    return;
+  }
+
+  float gt = GameTime;
+  if (gt-lastFootstepSoundTime < tm) return; // not yet
+  lastFootstepSoundTime = gt;
+
+  name snd = (lastFootstepIsLeft ? TInfo.LeftStepSound : TInfo.RightStepSound);
+  lastFootstepIsLeft = !lastFootstepIsLeft;
+  if (GetCvarB('gm_footsteps')) {
+    if (snd) MO.PlaySound(snd, CHAN_FOOTSTEP, fmin(1.0f, vol));
+  }
 }
 
 

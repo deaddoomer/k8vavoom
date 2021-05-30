@@ -131,11 +131,14 @@ terrain JustASoundVanilla
     playeronly
     optout // can be turned off with "gm_vanilla_liquids" cvar
 
-    landvolume  0.8
-    landsound   world/watersplash
+    alllandvolume  0.9
+    alllandsound   world/watersplash
 
-    smalllandvolume  0.8
-    smalllandsound   world/watersplash
+    //landvolume  0.9
+    //landsound   world/watersplash
+
+    //smalllandvolume  0.9
+    //smalllandsound   world/watersplash
   }
 }
 

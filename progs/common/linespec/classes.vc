@@ -35,6 +35,8 @@ enum {
   CHAN_SIGHT = 42,
   // channel for splashes
   CHAN_SPLASH,
+  // channel for footsteps
+  CHAN_FOOTSTEP,
 };
 
 enum {

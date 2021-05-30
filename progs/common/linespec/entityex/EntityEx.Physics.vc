@@ -1545,26 +1545,28 @@ bool HitFloorType (optional bool justLanded) {
 
   // this should be done for Voodoo Dolls only, because for the main player entity it is done in `PlayerEx`
   // also, don't do it more than once per tick
-  if (TInfo->DamageAmount && bIsPlayer && (XLevel.TicTime&TInfo->DamageTimeMask)) {
-    bool doIt = true;
+  if (bIsPlayer) {
     PlayerEx pex = PlayerEx(Player);
-    if (pex) {
-           if (pex.MO == self) doIt = false; // check for Voodoo Doll
-      else if (pex.LastSectorDamageTic >= XLevel.TicTime) doIt = false; // check for proper tick
-      // apply protection suit (leaky)
-      // nope, Voodoo Dools cannot have any protection
-      //if (doIt && TInfo->bAllowProtection && P_Random() >= 5 && pex.FindProtectionSuit()) doIt = false;
+    if (TInfo->DamageAmount) {
+      if (XLevel.TicTime&TInfo->DamageTimeMask) {
+        bool doIt = true;
+        if (pex) {
+               if (pex.MO == self) doIt = false; // check for Voodoo Doll
+          else if (pex.LastSectorDamageTic >= XLevel.TicTime) doIt = false; // check for proper tick
+          // apply protection suit (leaky)
+          // nope, Voodoo Dools cannot have any protection
+          //if (doIt && TInfo->bAllowProtection && P_Random() >= 5 && pex.FindProtectionSuit()) doIt = false;
+        }
+        if (doIt) Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
+      }
+      if (specified_justLanded && justLanded && TInfo->bDamageOnLand) {
+        // just landed, damage if the corresponding terrain flag is set
+        Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
+      }
     }
-    if (doIt) Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
-  }
 
-  if (specified_justLanded && justLanded) {
-    // just landed, damage if the corresponding terrain flag is set
-    if (bIsPlayer && TInfo->bDamageOnLand && TInfo->DamageAmount) {
-      Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
-    }
-    // play land sound
-    if (bIsPlayer || bMonster) {
+    // play landing sound (but not for Voodoo Dolls)
+    if (specified_justLanded && justLanded && pex.MO == self) {
       if (smallsplash) {
         if (TInfo->SmallLandSound && TInfo->SmallLandVolume > 0.0f) {
           PlaySound(TInfo->SmallLandSound, CHAN_SPLASH, fmin(1.0f, TInfo->SmallLandVolume));

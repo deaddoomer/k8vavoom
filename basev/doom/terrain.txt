@@ -65,5 +65,19 @@ terrain JustASoundVanilla modify {
     detectfloorflat "blood[0-9]"
     // for pwads with extra flats
     detectfloorflat "blood[0-9][0-9]"
+
+    walkingsteptime   0.8
+    walkingstepvolume 0.6
+
+    runningsteptime    0.42
+    runningstepvolume  0.8
+
+    crouchingsteptime    1.2
+    crouchingstepvolume  0.4
+
+    //leftstepsound   world/watersplash
+    //rightstepsound  world/watersplash
+
+    allstepsound world/watersplash
   }
 }

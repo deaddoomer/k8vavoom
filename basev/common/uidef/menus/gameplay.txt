@@ -101,6 +101,12 @@ menudef GameplayOptions {
   }
 
   option bool {
+    title = "Footstep Sound";
+    cvar = gm_footsteps;
+    help = "Allow playing terrain footstep sounds?";
+  }
+
+  option bool {
     title = "Vanilla Liquids";
     cvar = gm_vanilla_liquids;
     help =

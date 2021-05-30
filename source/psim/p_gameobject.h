@@ -202,9 +202,12 @@ struct VTerrainInfo {
   float Friction;
   float MoveFactor;
   // footsteps
-  float StepVolume;
+  float WalkingStepVolume;
+  float RunningStepVolume;
+  float CrouchingStepVolume;
   float WalkingStepTime;
   float RunningStepTime;
+  float CrouchingStepTime;
   VName LeftStepSound;
   VName RightStepSound;
   // first step sound (for players and monsters)

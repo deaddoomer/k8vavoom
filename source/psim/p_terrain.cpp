@@ -328,10 +328,13 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
     TInfo->DamageAmount = 0;
     TInfo->DamageType = NAME_None;
     TInfo->Friction = 0.0f;
-    TInfo->MoveFactor = 0.0f; // this seems to be unused
-    TInfo->StepVolume = 1.0f; // this seems to be unused
-    TInfo->WalkingStepTime = 0.0f; // this seems to be unused
-    TInfo->RunningStepTime = 0.0f; // this seems to be unused
+    TInfo->MoveFactor = 0.0f;
+    TInfo->WalkingStepVolume = 1.0f;
+    TInfo->RunningStepVolume = 1.0f;
+    TInfo->CrouchingStepVolume = 1.0f;
+    TInfo->WalkingStepTime = 0.0f;
+    TInfo->RunningStepTime = 0.0f;
+    TInfo->CrouchingStepTime = 0.0f;
     TInfo->LeftStepSound = NAME_None;
     TInfo->RightStepSound = NAME_None;
     TInfo->LandVolume = 1.0f;
@@ -427,17 +430,24 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
           continue;
         }
         // footsteps
-        if (sc->Check("stepvolume")) { sc->ExpectFloat(); TInfo->StepVolume = sc->Float; continue; }
+        if (sc->Check("walkingstepvolume")) { sc->ExpectFloat(); TInfo->WalkingStepVolume = sc->Float; continue; }
+        if (sc->Check("runningstepvolume")) { sc->ExpectFloat(); TInfo->RunningStepVolume = sc->Float; continue; }
+        if (sc->Check("crouchingstepvolume")) { sc->ExpectFloat(); TInfo->CrouchingStepVolume = sc->Float; continue; }
+        if (sc->Check("allstepvolume")) { sc->ExpectFloat(); TInfo->WalkingStepVolume = TInfo->RunningStepVolume = TInfo->CrouchingStepVolume = sc->Float; continue; }
         if (sc->Check("walkingsteptime")) { sc->ExpectFloat(); TInfo->WalkingStepTime = sc->Float; continue; }
         if (sc->Check("runningsteptime")) { sc->ExpectFloat(); TInfo->RunningStepTime = sc->Float; continue; }
+        if (sc->Check("crouchingsteptime")) { sc->ExpectFloat(); TInfo->CrouchingStepTime = sc->Float; continue; }
+        if (sc->Check("allsteptime")) { sc->ExpectFloat(); TInfo->WalkingStepTime = TInfo->RunningStepTime = TInfo->CrouchingStepTime = sc->Float; continue; }
         if (sc->Check("leftstepsound")) { sc->ExpectString(); TInfo->LeftStepSound = *sc->String; continue; }
         if (sc->Check("rightstepsound")) { sc->ExpectString(); TInfo->RightStepSound = *sc->String; continue; }
-        if (sc->Check("stepsound")) { sc->ExpectString(); TInfo->LeftStepSound = TInfo->RightStepSound = *sc->String; continue; }
+        if (sc->Check("allstepsound")) { sc->ExpectString(); TInfo->LeftStepSound = TInfo->RightStepSound = *sc->String; continue; }
         // first step
         if (sc->Check("landvolume")) { sc->ExpectFloat(); TInfo->LandVolume = sc->Float; continue; }
         if (sc->Check("smalllandvolume")) { sc->ExpectFloat(); TInfo->SmallLandVolume = sc->Float; continue; }
+        if (sc->Check("alllandvolume")) { sc->ExpectFloat(); TInfo->LandVolume = TInfo->SmallLandVolume = sc->Float; continue; }
         if (sc->Check("landsound")) { sc->ExpectString(); TInfo->LandSound = *sc->String; continue; }
         if (sc->Check("smalllandsound")) { sc->ExpectString(); TInfo->SmallLandSound = *sc->String; continue; }
+        if (sc->Check("alllandsound")) { sc->ExpectString(); TInfo->LandSound = TInfo->SmallLandSound = *sc->String; continue; }
         sc->Error(va("Unknown k8vavoom terrain extension command (%s)", *sc->String));
       }
       continue;
@@ -686,9 +696,12 @@ void P_InitTerrainTypes () {
   DefT.DamageType = NAME_None;
   DefT.Friction = 0.0f;
   DefT.MoveFactor = 0.0f;
-  DefT.StepVolume = 1.0f;
+  DefT.WalkingStepVolume = 1.0f;
+  DefT.RunningStepVolume = 1.0f;
+  DefT.CrouchingStepVolume = 1.0f;
   DefT.WalkingStepTime = 0.0f;
   DefT.RunningStepTime = 0.0f;
+  DefT.CrouchingStepTime = 0.0f;
   DefT.LeftStepSound = NAME_None;
   DefT.RightStepSound = NAME_None;
   DefT.LandVolume = 1.0f;

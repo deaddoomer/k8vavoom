@@ -785,6 +785,78 @@ void AdjustCrouchSpeed (ref float forward, ref float side) {
 }
 
 
+enum {
+  PMT_Standing,
+  PMT_Crouching,
+  PMT_Walking,
+  PMT_Running,
+};
+
+
+//==========================================================================
+//
+//  GetMoveSpeedType
+//
+//==========================================================================
+int GetMoveSpeedType () {
+  if (Health <= 0) return PMT_Standing;
+  if (!bIsPlayer) return PMT_Standing;
+
+  PlayerEx pex = PlayerEx(Player);
+  if (!pex || pex.MO != self) return PMT_Standing; // ignore Voodoo Dolls
+
+  float vel = Velocity.length2D();
+
+  if (vel < 1.0) return PMT_Standing;
+
+  if (pex) {
+    if (fabs(pex.ForwardMove) || fabs(pex.SideMove)) {
+      // moving
+      if (vel < 16.0) return PMT_Standing;
+    } else {
+      // not moving
+      if (vel < 26.0) return PMT_Standing;
+    }
+  }
+
+  if (crouchfactor != 1) return PMT_Crouching;
+
+  float velyawdiff = fabs(AngleDiff(VectorAngleYaw(Velocity.xy), Angles.yaw));
+  //printdebug("%C: velyawdiff=%s", self, velyawdiff);
+
+  float fwd = 0, side = 0;
+  if (velyawdiff >= 120) {
+    // mostly side move, use side speed
+    fwd = GetCvarF('cl_sidespeed');
+  } if (velyawdiff >= 110) {
+    // mostly backward move, use forward speed
+    fwd = GetCvarF('cl_backspeed');
+  } else if (velyawdiff >= 70) {
+    // mostly side move, use side speed
+    side = GetCvarF('cl_sidespeed');
+  } else {
+    // mostly forward move, use forward speed
+    fwd = GetCvarF('cl_forwardspeed');
+  }
+  //printdebug("%C: velyawdiff=%s; fwd=%s; side=%s", self, velyawdiff, fwd, side);
+
+  if (fwd) {
+    float fm1 = ForwardMove1, fm2 = ForwardMove2;
+    //if (fm2 <= fm1) return PMT_Walking;
+    pex.AdjustForwardMove(ref fwd, ref fm1, ref fm2);
+    //printdebug("%C: adiff=%s; fm1=%s (%s); fm2=%s (%s); fwd=%s (%s); vel=%s", self, velyawdiff, fm1, ForwardMove1, fm2, ForwardMove2, fwd, WALKING_SPEED, vel);
+    fwd *= fm1;
+    return (vel > fwd*2 ? PMT_Running : PMT_Walking);
+  } else {
+    float sm1 = SideMove1, sm2 = SideMove2;
+    //if (sm2 <= sm1) return PMT_Walking;
+    pex.AdjustSideMove(ref side, ref sm1, ref sm2);
+    side *= sm1;
+    return (vel > side*2 ? PMT_Running : PMT_Walking);
+  }
+}
+
+
 //==========================================================================
 //
 //  AdjustSpeed
@@ -814,7 +886,7 @@ void AdjustSpeed (ref float forward, ref float side) {
     //printdebug("%C:000: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
     float sm1 = SideMove1, sm2 = SideMove2;
     if (pex) pex.AdjustSideMove(ref side, ref sm1, ref sm2);
-    side *= (fabs(side) <= 1000 ? sm1 : sm2);
+    side *= (fabs(side) <= 1000.0 ? sm1 : sm2);
     //printdebug("%C:001: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
   }
 
