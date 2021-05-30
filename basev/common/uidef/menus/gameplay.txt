@@ -101,6 +101,15 @@ menudef GameplayOptions {
   }
 
   option bool {
+    title = "Vanilla Liquids";
+    cvar = gm_vanilla_liquids;
+    help =
+      "Detect some liqiuds for Vanilla Doom?",
+      "Some standard flats will emit a sound, and be detected as liquid terrain.";
+  }
+
+
+  option bool {
     title = "Player Hit Kickback";
     cvar = plr_allow_damage_thrust;
     help = "Can the player be knocked back when damaged?";
