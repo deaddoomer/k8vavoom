@@ -1281,7 +1281,7 @@ decal K8Gore_SlimeLiquidBootPrint0 {
     NoWall
     TypeBootPrint
   }
-  shade "4b 37 1b"
+  shade "5f 40 15"
   translucent 0.9
   animator K8Gore_LiquidFader
 }
@@ -1306,6 +1306,42 @@ decal K8Gore_LavaLiquidBootPrint0 {
 
 decalgroup LavaLiquidBootPrint {
   K8Gore_LavaLiquidBootPrint0 6
+}
+
+
+/***** Red Rock **********************************************************/
+decal K8Gore_RedRockBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "c0 00 00"
+  translucent 0.8
+  animator K8Gore_LiquidFader
+}
+
+decalgroup RedRockBootPrint {
+  K8Gore_RedRockBootPrint0 6
+}
+
+
+/***** Yellow Rock **********************************************************/
+decal K8Gore_YellowRockBootPrint0 {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    NoWall
+    TypeBootPrint
+  }
+  shade "f1 a2 08"
+  translucent 0.8
+  animator K8Gore_LiquidFader
+}
+
+decalgroup YellowRockBootPrint {
+  K8Gore_YellowRockBootPrint0 6
 }
 
 
