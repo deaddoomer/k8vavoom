@@ -59,7 +59,7 @@
 
 // taken from GZDoom
 template<class T> class TWeightedList {
-private:
+public:
   template<class U> struct Choice {
     Choice<U> *Next;
     vuint16 Weight;
@@ -69,16 +69,19 @@ private:
     Choice(vuint16 w, U v) : Next(nullptr), Weight(w), RandomVal(0), Value(v) {}
   };
 
-private:
+public:
   Choice<T> *Choices;
   //FRandom &RandomClass;
 
+private:
   void RecalcRandomVals ();
 
-  TWeightedList &operator= (const TWeightedList &) { return *this; }
+  //TWeightedList &operator= (const TWeightedList &) { return *this; }
 
 public:
-  TWeightedList (/*FRandom &pr*/) : Choices(nullptr)/*, RandomClass(pr)*/ {}
+  inline TWeightedList (/*FRandom &pr*/) noexcept : Choices(nullptr)/*, RandomClass(pr)*/ {}
+
+  TWeightedList &operator= (const TWeightedList &) = delete;
 
   ~TWeightedList () {
     Choice<T> *choice = Choices;
@@ -92,7 +95,17 @@ public:
   void AddEntry (T value, vuint16 weight);
   T PickEntry () const;
   void ReplaceValues (T oldval, T newval);
+  TWeightedList<T> Clone ();
 };
+
+
+template<class T> TWeightedList<T> TWeightedList<T>::Clone () {
+  TWeightedList<T> *res = new TWeightedList<T>();
+  for (const Choice<T> *c = Choices; c; c = c->Next) {
+    res->AddEntry(c->Weight, c->Value);
+  }
+  return res;
+}
 
 
 template<class T> void TWeightedList<T>::AddEntry (T value, vuint16 weight) {
