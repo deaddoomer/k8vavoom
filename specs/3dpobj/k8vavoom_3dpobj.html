@@ -55,7 +55,15 @@ will look like platform floor for the player).
 <a href="#linkit">Linked 3d polyobjects</a><br>
 <a href="#blockflags">Line blocking flags</a><br>
 <a href="#movenote">Notes about movement</a><br>
-<a href="#acsapi">New ACS API</a><br>
+<a href="#acsapi">New ACS API Overview</a><br>
+<a href="#acsapiexpl">ACS API Explanation</a><br>
+<ul>
+  <li><a href="#acs_Polyobj_MoveEx">Polyobj_MoveEx</a></li>
+  <li><a href="#acs_Polyobj_MoveToEx">Polyobj_MoveToEx</a></li>
+  <li><a href="#acs_Polyobj_MoveToSpotEx">Polyobj_MoveToSpotEx</a></li>
+  <li><a href="#acs_Polyobj_IsBusy">Polyobj_IsBusy</a></li>
+  <li><a href="#acs_POBJ_FLAG_SIDE_CRUSH">POBJ_FLAG_SIDE_CRUSH</a></li>
+</ul>
 <a href="#limitations">Current Limitations</a><br>
 </div>
 
@@ -303,6 +311,79 @@ be crushed (because it is considered as "blocking" one).
 <div class="content">
 
 <hr>
+<a id="acsapiexpl"></a><h1>ACS API Explanation</h1>
+<a id="acs_Polyobj_MoveEx"><b><u>Polyobj_MoveEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags);</code>
+</p>
+<p>
+This is extension of 3D movement function. Note that <code>`vdist`</code> should always be positive, the
+actual direction is specified by <code>`vspeed`</code> (positive is up, negative is down).
+</p>
+<p>The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.</p>
+<p>Speed is in map units per 1/8 of second.</p>
+
+<br />
+
+<a id="acs_Polyobj_MoveToEx"><b><u>Polyobj_MoveToEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags);</code>
+</p>
+<p>
+This moves the polyobject to the specified world coordinates.
+</p>
+<p>Speed is in map units per 1/8 of second.</p>
+
+<br />
+
+<a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags);</code>
+</p>
+<p>
+This is 3D extension of <code>`Polyobj_MoveToSpot()`</code>.
+</p>
+<p>Speed is in map units per 1/8 of second.</p>
+
+<br />
+
+<a id="acs_Polyobj_IsBusy"><b><u>Polyobj_IsBusy</u></b></a>
+<p>
+<code>int Polyobj_IsBusy (int po);</code>
+</p>
+<p>
+This checks if polyobject is currently busy with movement or rotation. Contrary to <code>`PolyWait()`</code>,
+this call is not blocking.<br />
+Return values:
+<ul>
+  <li>-1: there is no polyobject with the given tag.</li>
+  <li>0: the polyobject is not busy.</li>
+  <li>1: the polyobject is busy.</li>
+</ul>
+Basically, any negative value means "no such polyobject", and any positive value means "it is busy".
+</p>
+
+<br />
+
+<a id="acs_POBJ_FLAG_SIDE_CRUSH"><b><u>POBJ_FLAG_SIDE_CRUSH</u></b></a>
+<p>
+This flag is required due to the way the movement of polyobjects is implemented.
+Basically, if entity is collided with polyobject linedef, it is impossible to
+determine if it is due to polyobject is "crushing" the entity from above, or due to
+side movement. So even crushing polyobjects may push entities away. With this flag set,
+<b>any</b> collision with moving polyobject is fatal.
+</p>
+<p>
+The one quirk here is that even if polyobject is horizontally moving, and touched some
+entity, that entity will be crushed. So use this flag with care. It is mostly useful for
+"crusher" polyobjects, not for platforms.
+</p>
+<p><b>NOTE</b>: In the future polyobject crushing detection may be improved, and new flag
+will be introduced for "proper" crushing platforms.
+</p>
+
+
+<hr>
 <a id="limitations"></a><h1>Current Limitations</h1>
 <p>
 Riding on the moving 3d polyobject is done by teleporting. It means that entities are not moved
@@ -317,14 +398,13 @@ of another and make them both ride on a 3d polyobject: if an entity is moved to 
 occupied by another entity, it will be processed as a normal blocking (see above).
 </p>
 <p>
-Impassable top texture currently doesn't block hitscan attacks or projectile movement. Do not try to use
-"blocks projectile" or other linedef flags yet, please -- they <b>may</b> work, but it is not guaranteed, and
-may be changed in the future.
+Impassable top texture currently doesn't block sight, and may fail to block hitscan attacks. This will be
+improved in the future.
 </p>
 <p>
-Also, please, set <b>only</b> "impassable" flag on 3d polyobject linedefs. Other flags may or may not work
-properly, and nothing is guaranteed. Even if it seems to work now (or do nothing), the engine may refuse
-to load such maps in the future, or flag meaning may change.
+Also, please, use <b>only</b> the flags that are defined in this spec on 3d polyobject linedefs. Other flags
+may or may not work properly, and nothing is guaranteed. Even if it seems to work now (or do nothing), the
+engine may refuse to load such maps in the future, or flag meaning may change.
 </p>
 <p>
 Currently you cannot assign "masked" or translucent middle texture (i.e. things like grates and such). This limitation
