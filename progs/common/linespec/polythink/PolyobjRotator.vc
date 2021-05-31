@@ -67,18 +67,21 @@ override bool Accumulate (PolyobjThinker other) {
 //
 //==========================================================================
 override void Tick (float deltaTime) {
-  float move;
-  float absMove;
-  polyobj_t *poly;
+  if (!speed) {
+    polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+    if (poly) PolyobjStopSequence(poly);
+    Destroy();
+    return;
+  }
 
-  move = speed*deltaTime;
-  absMove = fabs(move);
+  float move = speed*deltaTime;
+  float absMove = fabs(move);
   if (dist >= 0.0 && dist < absMove) move = dist*(speed < 0.0 ? -1.0 : 1.0);
   if (XLevel.RotatePolyobj(polyobj, move, (nolink ? VLevel::POFLAG_NOLINK : 0))) {
     if (dist < 0.0) return; // perpetual polyobj
     dist -= absMove;
     if (dist <= 0.0) {
-      poly = XLevel.GetPolyobj(polyobj);
+      polyobj_t *poly = XLevel.GetPolyobj(polyobj);
       if (poly) PolyobjStopSequence(poly);
       Destroy();
       return;
