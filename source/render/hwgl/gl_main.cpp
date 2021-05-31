@@ -1051,7 +1051,11 @@ void VOpenGLDrawer::InitResolution () {
   glGetIntegerv(GL_MINOR_VERSION, &minor);
   if (major > 8 || minor > 16 || major < 1 || minor < 0) {
     GCon->Log(NAME_Error, "OpenGL: your GPU drivers are absolutely broken.");
-    GCon->Logf(NAME_Error, "OpenGL: reported OpenGL version is v%d.%d, which is nonsence.", major, minor);
+    if (major == 30000 && minor == 30000) {
+      GCon->Logf(NAME_Error, "OpenGL: reported OpenGL version is NOTHING, which is a nonsense.");
+    } else {
+      GCon->Logf(NAME_Error, "OpenGL: reported OpenGL version is v%d.%d, which is a nonsense.", major, minor);
+    }
     GCon->Log(NAME_Error, "OpenGL: expect crashes and visual glitches (if the engine will run at all).");
     major = minor = 2;
     if (!isShittyGPU) {
