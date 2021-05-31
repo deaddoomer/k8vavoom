@@ -55,8 +55,8 @@ override void CreateChoices () {
     CreateChoiceSubHeader("WARNING!");
     CreateChoiceSubHeader("YOUR GPU IS SEVERELY CRIPPLED");
     CreateChoiceSubHeader("BY THE VENDOR!");
-    CreateChoiceSubHeader("MOST ADVANCED K8VAVOOM GRAPHICAL");
-    CreateChoiceSubHeader("FEATURES ARE DISABLED");
+    CreateChoiceSubHeader("ADVANCED K8VAVOOM GRAPHICAL");
+    CreateChoiceSubHeader("FEATURES CAN BE VERY SLOW!");
     CreateChoiceSubHeader("-");
   }
 

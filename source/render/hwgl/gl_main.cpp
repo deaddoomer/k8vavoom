@@ -48,9 +48,11 @@ static VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", true, "Use 128x128x12
 static VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "1", "Tonemap color distance algorithm (0-1; 1 is the best one)", CVAR_Archive);
 
 static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
-static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
 
+static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_hires_tonemap("__gl_can_hires_tonemap", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_shadowmaps("__gl_can_shadowmaps", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_shadowvols("__gl_can_shadowvols", false, "who cares.", CVAR_Rom);
 
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
@@ -1013,6 +1015,7 @@ void VOpenGLDrawer::InitResolution () {
   GCon->Logf(NAME_Init, "Setting up new resolution: %dx%d (%dx%d)", RealScreenWidth, RealScreenHeight, calcWidth, calcHeight);
 
   bool isCrippledGPU = false;
+  bool setCrippledGPU = false; // just report it, but don't turn off the features
 
   if (gl_dump_vendor) {
     GCon->Logf(NAME_Init, "GL_VENDOR: %s", glGetString(GL_VENDOR));
@@ -1027,8 +1030,15 @@ void VOpenGLDrawer::InitResolution () {
         (ren.globMatchCI("*rtx*3*0*0*") && ven.globMatchCI("NVIDIA") &&
          (ven.globMatchCI("LHR") || ver.globMatchCI("LHR"))))
     {
+      // oh... ok, if somebody wants to eat shit that shitvidia fed them... it's possible to recompile the code anyway
+      #if 0
       isCrippledGPU = true;
-      GCon->Logf(NAME_Error, "OpenGL: this videocard is severely crippled. turning off advanced effects.");
+      GCon->Log(NAME_Error, "OpenGL: this videocard is severely crippled. turning off advanced effects.");
+      #else
+      setCrippledGPU = true;
+      GCon->Log(NAME_Error, "OpenGL: This videocard is severely crippled. It may or may not work properly. Continue on your own risk.");
+      GCon->Log(NAME_Error, "OpenGL: Go on on your own risk, i cannot give any guarantees.");
+      #endif
     }
   }
 
@@ -1075,7 +1085,7 @@ void VOpenGLDrawer::InitResolution () {
     shittyGPUCheckDone = true;
     isShittyGPU = true;
   }
-  gl_crippled_gpu = isCrippledGPU;
+  gl_crippled_gpu = (isCrippledGPU || setCrippledGPU);
 
   glVerMajor = major;
   glVerMinor = minor;
@@ -1396,6 +1406,9 @@ void VOpenGLDrawer::InitResolution () {
       GCon->Log(NAME_Init, "OpenGL: no floating point textures, shadowmaps disabled.");
     }
   }
+
+  gl_can_shadowmaps = canRenderShadowmaps;
+  gl_can_shadowvols = SupportsShadowVolumeRendering();
 
   mainFBO.activate();
 

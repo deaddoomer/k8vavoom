@@ -50,79 +50,94 @@ menudef AliasModelVideoOptions {
   option bool {
     title = "Monsters";
     cvar = r_models_monsters;
+    help = "Allow 3D models for monsters?";
   }
 
   option bool {
     title = "Corpses";
     cvar = r_models_corpses;
+    help = "Allow 3D models for corpses?";
   }
 
   option bool {
     title = "Missiles";
     cvar = r_models_missiles;
+    help = "Allow 3D models for projectiles?";
   }
 
   option bool {
     title = "Pickups";
     cvar = r_models_pickups;
+    help = "Allow 3D models for pickups?";
   }
 
   option bool {
     title = "Decorations";
     cvar = r_models_decorations;
+    help = "Allow 3D models for decorations?";
   }
 
   option bool {
     title = "Players";
     cvar = r_models_players;
+    help = "Allow 3D models for players?";
   }
 
   option bool {
     title = "Other";
     cvar = r_models_other;
+    help = "Allow 3D models for things that are none of the above?";
   }
 
   option bool {
     title = "HUD Hand Weapon";
     cvar = r_models_view;
+    help = "Allow 3D models for HUD weapons?";
   }
 
 
-  header "Stencil Shadows" [__gl_crippled_gpu == 0];
+  header "Stencil Shadows" [__gl_can_shadowvols > 0];
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Monsters";
     cvar = r_shadows_monsters;
+    help = "Allow shadows for monster 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Corpses";
     cvar = r_shadows_corpses;
+    help = "Allow shadows for corpse 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Missiles";
     cvar = r_shadows_missiles;
+    help = "Allow shadows for projectile 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Pickups";
     cvar = r_shadows_pickups;
+    help = "Allow shadows for pickup 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Decorations";
     cvar = r_shadows_decorations;
+    help = "Allow shadows for decoration 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Players";
     cvar = r_shadows_players;
+    help = "Allow shadows for player 3D models?";
   }
 
-  option bool [__gl_crippled_gpu == 0] {
+  option bool [__gl_can_shadowvols > 0] {
     title = "Other";
     cvar = r_shadows_other;
+    help = "Allow shadows for other (none of the above) 3D models?";
   }
 
 

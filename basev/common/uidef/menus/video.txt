@@ -6,8 +6,8 @@ menudef VideoOptions {
   header [__gl_crippled_gpu > 0] "WARNING!";
   header [__gl_crippled_gpu > 0] "YOUR GPU IS SEVERELY CRIPPLED";
   header [__gl_crippled_gpu > 0] "BY THE VENDOR!";
-  header [__gl_crippled_gpu > 0] "MOST ADVANCED K8VAVOOM GRAPHICAL";
-  header [__gl_crippled_gpu > 0] "FEATURES ARE DISABLED";
+  header [__gl_crippled_gpu > 0] "ADVANCED K8VAVOOM GRAPHICAL";
+  header [__gl_crippled_gpu > 0] "FEATURES CAN BE VERY SLOW!";
   header [__gl_crippled_gpu > 0] "-";
 
   option slider {
@@ -300,7 +300,7 @@ menudef VideoOptions {
     submenu = "DecalOptions";
   }
 
-  option submenu [__gl_crippled_gpu == 0] {
+  option submenu [__gl_can_shadowmaps > 0] {
     title = "Shadowmap Options";
     submenu = "ShadowMapOptions";
   }
