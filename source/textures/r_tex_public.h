@@ -696,6 +696,7 @@ public:
   void GetTextureInfo (int TexNum, picinfo_t *info);
   int AddPatch (VName Name, int Type, bool Silent=false, bool asXHair=false);
   int AddPatchShaded (VName Name, int Type, int shade, bool Silent=false); // shade==-1: don't shade
+  int AddPatchShadedById (int texid, int shade); // shade==-1: don't shade
   int AddPatchLump (int LumpNum, VName Name, int Type, bool Silent=false);
   int AddRawWithPal (VName Name, VName PalName);
   int AddFileTexture (VName Name, int Type);

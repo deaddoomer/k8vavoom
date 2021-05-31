@@ -495,11 +495,14 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
   }
   bp->Name = VName(*bp->OrigName, VName::AddLower);
   sc->Check("{");
+  bool wasDecalName = false;
   while (!sc->Check("}")) {
     if (sc->AtEnd()) sc->Error(va("unfinished bootprint '%s' definition", *bp->OrigName));
 
     // decal name
     if (sc->Check("decal")) {
+      if (wasDecalName) sc->Error("duplicate decal name");
+      wasDecalName = true;
       sc->ExpectString();
       bp->DecalName = (sc->String.isEmpty() ? NAME_None : VName(*sc->String));
       continue;
@@ -550,7 +553,31 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
         // found texture
         TerrainBootprintMap.put(pic, bp);
       }
+      continue;
     }
+
+    // base decal
+    if (sc->Check("basedecal")) {
+      sc->ExpectString();
+      VStr bdbname = sc->String;
+      if (bdbname.isEmpty() || bdbname.strEquCI("none")) {
+        sc->Expect("{");
+        sc->SkipBracketed(true/*bracketEaten*/);
+        continue;
+      }
+      if (!wasDecalName) sc->Error("decal name should be defined");
+      if (bp->DecalName == NAME_None || VStr::strEquCI(*bp->DecalName, "none")) {
+        sc->Expect("{");
+        sc->SkipBracketed(true/*bracketEaten*/);
+        continue;
+      }
+      if (bdbname.strEquCI(*bp->DecalName)) sc->Error("base decal name should not be equal to decal name");
+      //GCon->Logf(NAME_Debug, "creating decal '%s' from base decal '%s'", *bp->DecalName, *bdbname);
+      VDecalDef::CreateFromBaseDecal(sc, VName(*bdbname), bp->DecalName);
+      continue;
+    }
+
+    sc->Error(va("Unknown bootprint command (%s)", *sc->String));
   }
 }
 

@@ -1319,6 +1319,41 @@ int VTextureManager::AddPatchShaded (VName Name, int Type, int shade, bool Silen
 
 //==========================================================================
 //
+//  VTextureManager::AddPatchShadedById
+//
+//  used in decal cloner
+//
+//==========================================================================
+int VTextureManager::AddPatchShadedById (int texid, int shade) {
+  if (shade == -1) return texid;
+  if (texid <= 0) return texid;
+  if (texid >= FirstMapTextureIndex) return -1; //FIXME
+  VTexture *tx = getIgnoreAnim(texid);
+  if (!tx) return -1;
+  if (tx->Type == TEXTYPE_Null) return 0;
+  VName shName;
+  if (tx->Name == NAME_None) {
+    shName = VName(va(" (%d) %08x", texid, (vuint32)shade));
+  } else {
+    shName = VName(va("%s %08x", *tx->Name, (vuint32)shade));
+  }
+  // check if it's already registered
+  int i = CheckNumForName(shName, tx->Type);
+  if (i >= 0) return i;
+
+  if (tx->SourceLump < 0) return -1; // alas
+
+  VTexture *newtx = VTexture::CreateTexture(tx->Type, tx->SourceLump, false/*setName*/);
+  if (!newtx) return -1;
+
+  newtx->Name = shName;
+  newtx->Shade(shade);
+  return AddTexture(newtx);
+}
+
+
+//==========================================================================
+//
 //  VTextureManager::CheckNumForNameAndForce
 //
 //  find or force-load texture

@@ -65,6 +65,23 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+class VDecalAnim;
+struct VDecalCloneParams {
+  DecalFloatVal scaleX, scaleY;
+  DecalFloatVal alpha;
+  VDecalAnim *animator;
+  bool hasScaleX, hasScaleY, hasAlpha, hasAnimator;
+  int shadeclr;
+
+  inline VDecalCloneParams () noexcept
+    : scaleX(1.0f), scaleY(1.0f), alpha(1.0f), animator(nullptr)
+    , hasScaleX(false), hasScaleY(false), hasAlpha(false), hasAnimator(false)
+    , shadeclr(-1)
+  {}
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // linked list of all known decals
 class VDecalDef {
 public:
@@ -80,6 +97,7 @@ private:
 
   VDecalDef *next; // in decalDefHead
   VName animname;
+  bool animoptional;
 
 private:
   static void addToList (VDecalDef *dc) noexcept;
@@ -136,7 +154,7 @@ public:
 
 public:
   inline VDecalDef () noexcept
-    : next(nullptr), animname(NAME_None), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
+    : next(nullptr), animname(NAME_None), animoptional(false), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
     , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
     , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
     , flipXValue(false), flipYValue(false)
@@ -173,6 +191,13 @@ public:
 
   static bool hasDecal (VName aname) noexcept;
 
+  // "basedecal" keyword and name should be already parsed
+  // i.e. the parser should be at "{"; it will skip the final "}"
+  // if there is no "basename" decal, `false` will be returned, and the block will be skipped
+  // if base decal is decal group, all decals from the group will be cloned
+  // new decal names will be created like this: `va("%s_%s_%d", basename, newname, index)`
+  static bool CreateFromBaseDecal (VScriptParser *sc, VName basename, VName newname);
+
 public:
   static void parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool withSign=false);
 
@@ -180,6 +205,9 @@ private:
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalGroup;
+
+private:
+  VDecalDef *CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname, int index=-1) const;
 };
 
 
@@ -241,6 +269,10 @@ private:
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalDef;
+
+private:
+  VDecalGroup *CloneDecalWithInternal (const VDecalCloneParams &params, VName basename, VName newname) const;
+  void CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname) const;
 };
 
 
@@ -258,6 +290,7 @@ private:
   static void removeFromList (VDecalAnim *anim, bool deleteIt=false) noexcept;
 
 protected:
+  bool empty;
   // working data
   float timePassed;
 
@@ -273,12 +306,14 @@ public:
   VName name;
 
 protected:
-  inline void copyBaseFrom (const VDecalAnim *src) noexcept { timePassed = src->timePassed; name = src->name; }
+  inline void copyBaseFrom (const VDecalAnim *src) noexcept { empty = src->empty; timePassed = src->timePassed; name = src->name; }
 
 public:
-  inline VDecalAnim (ENoInit) noexcept : next(nullptr), name(NAME_None) {}
+  inline VDecalAnim (ENoInit) noexcept : next(nullptr), empty(true), name(NAME_None) {}
   inline VDecalAnim () noexcept : next(nullptr), timePassed(0.0f), name(NAME_None) {}
   virtual ~VDecalAnim ();
+
+  inline bool isEmpty () const noexcept { return empty; }
 
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () = 0;
