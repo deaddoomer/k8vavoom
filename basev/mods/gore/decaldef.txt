@@ -590,14 +590,7 @@ decalgroup K8GoreBloodSuperPers {
 
 
 /***** BootPrints **********************************************************/
-decal K8Gore_BootPrintDecal {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "50 00 00"
+fader K8GoreBloodPrint_FaderAnim {
 }
 
 
@@ -1202,172 +1195,21 @@ decalgroup K8GoreBloodSuperPersTransient {
 
 
 /***** BootPrints **********************************************************/
-decal K8Gore_BootPrintDecalTransient {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "4f 00 00"
+fader K8GoreBloodPrint_FaderAnimTransient {
+  DecayStart random 10 20
+  DecayTime random 10 40
 }
+
+
 ////////////////////////////////////////////////////////////////////////////////
-// Liquid Bootprints
+// Base Bootprints
 ////////////////////////////////////////////////////////////////////////////////
-fader K8Gore_LiquidFader {
-  DecayStart random 6.0 8.0
-  DecayTime random 10.0 14.0
-}
-
-/***** Water **********************************************************/
-decal K8Gore_WaterLiquidBootPrint0 {
+decal BaseBootPrint {
   pic BOOTPRN0
   scale 0.5
   k8vavoom {
-    NoWall
+    //NoWall
     TypeBootPrint
   }
-  shade "00 00 4f"
-  translucent 0.6
-  animator K8Gore_LiquidFader
-}
-
-decalgroup WaterLiquidBootPrint {
-  K8Gore_WaterLiquidBootPrint0 6
-}
-
-
-/***** Acid **********************************************************/
-decal K8Gore_AcidLiquidBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "00 c0 00"
-  translucent 0.6
-  animator K8Gore_LiquidFader
-}
-
-decalgroup AcidLiquidBootPrint {
-  K8Gore_AcidLiquidBootPrint0 6
-}
-
-
-/***** Blood **********************************************************/
-decal K8Gore_BloodLiquidBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "4f 00 00"
-  translucent 0.6
-  animator K8Gore_LiquidFader
-}
-
-decalgroup BloodLiquidBootPrint {
-  K8Gore_BloodLiquidBootPrint0 6
-}
-
-
-/***** Slime **********************************************************/
-decal K8Gore_SlimeLiquidBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "5f 40 15"
-  translucent 0.9
-  animator K8Gore_LiquidFader
-}
-
-decalgroup SlimeLiquidBootPrint {
-  K8Gore_SlimeLiquidBootPrint0 6
-}
-
-
-/***** Lava **********************************************************/
-decal K8Gore_LavaLiquidBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "ff 3f 1f"
-  translucent 0.6
-  animator K8Gore_LiquidFader
-}
-
-decalgroup LavaLiquidBootPrint {
-  K8Gore_LavaLiquidBootPrint0 6
-}
-
-
-/***** Red Rock **********************************************************/
-decal K8Gore_RedRockBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "c0 00 00"
-  translucent 0.8
-  animator K8Gore_LiquidFader
-}
-
-decalgroup RedRockBootPrint {
-  K8Gore_RedRockBootPrint0 6
-}
-
-
-/***** Yellow Rock **********************************************************/
-decal K8Gore_YellowRockBootPrint0 {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "f1 a2 08"
-  translucent 0.8
-  animator K8Gore_LiquidFader
-}
-
-decalgroup YellowRockBootPrint {
-  K8Gore_YellowRockBootPrint0 6
-}
-
-
-/***** Strife Green Mood **********************************************************/
-decal StrifeGreenMoodLiquidBootPrint {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "40 48 18"
-  //translucent 0.6
-  animator Zan_LiquidFader
-}
-
-
-/***** Strife Cyan Water **********************************************************/
-decal StrifeCyanWaterLiquidBootPrint {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-  shade "2c 71 7d"
-  translucent 0.6
-  animator Zan_LiquidFader
+  // shade, translucency and animator will be set by bootprint definition
 }

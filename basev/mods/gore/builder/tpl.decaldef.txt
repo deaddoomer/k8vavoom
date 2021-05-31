@@ -945,22 +945,9 @@ decalgroup K8GoreBloodSuperPers${Color} {
 
 
 /***** BootPrints **********************************************************/
-decal K8Gore_BootPrintDecal${Color} {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    NoWall
-    TypeBootPrint
-  }
-#ifndef BLUE
-# ifndef GREEN
-  shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
+fader K8GoreBloodPrint_FaderAnim${Color} {
+#ifdef TRANSIENT
+  DecayStart random 10 20
+  DecayTime random 10 40
 #endif
 }
