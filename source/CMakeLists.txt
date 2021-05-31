@@ -769,6 +769,7 @@ if(ENABLE_CLIENT)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/rotate.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/rotate_empty.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/simple_test.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads)
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/boris/3dpolyobj_testmap00.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads/boris)
   # more specs
   install(FILES ${CMAKE_SOURCE_DIR}/specs/udmf_k8vavoom.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_terrain_bootprints.txt DESTINATION ${DSPECSDIR})
