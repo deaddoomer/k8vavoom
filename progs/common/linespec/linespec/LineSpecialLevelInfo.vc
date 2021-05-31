@@ -1942,6 +1942,9 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //  AcsPolyMoveEx
 //
+//  vdist should always be positive
+//  vspeed can be negative
+//
 //==========================================================================
 override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
                             int vspeed, int vdist, int moveflags, Entity Activator)
@@ -1949,6 +1952,7 @@ override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
   //printdebug("AcsPolyMoveEx: po=%s; hspeed=%s; yawangle=%s; dist=%s; vspeed=%s; vdist=%s; forced=%s", po, hspeed, yawangle, dist, vspeed, vdist, forced);
   bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
   bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
+  if (vdist < 0) vspeed = -abs(vspeed); // just in case, negative distance
   return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist, nolink:nolink);
 }
 
@@ -1965,12 +1969,14 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int movefl
   TVec dst = vector(x, y, 0);
   TVec rel = vector(dst.x-poly.startSpot.x, dst.y-poly.startSpot.y, 0);
   float vdist = z-poly.startSpot.z;
+  //printdebug("AcsPolyMoveToEx(%s): speed=%s; rel=%s; vdist=%s", po, speed, rel, vdist);
   if (!rel && !vdist) return 1;
 
   float dist = length2D(rel);
-  if (dist < 1 || fabs(vdist) < 1) return 1;
+  //printdebug("AcsPolyMoveToEx(%s): speed=%s; rel=%s; vdist=%s; dist=%s", po, speed, rel, vdist, dist);
+  if (dist < 0.01 && fabs(vdist) < 0.01) return 1;
 
-  int vspeed = (vdist < 0 ? -speed : speed);
+  //int vspeed = (vdist < 0 ? -speed : speed);
 
   bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
   bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
@@ -1978,7 +1984,9 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int movefl
   rel = normalize(rel);
   TAVec angles;
   VectorAngles(rel, out angles);
-  return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced, floatAngle:angles.yaw, floatDist:dist, vspeed:vspeed, vdist:cast(int)fabs(vdist), nolink:nolink);
+  // pass signed vertical distance here, and let `EV_MovePoly()` calculate vertical speed
+  return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced,
+    floatAngle:angles.yaw, floatDist:dist, /*vspeed:vspeed,*/ floatVDist:vdist, nolink:nolink);
 }
 
 
@@ -2152,7 +2160,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
 //==========================================================================
 /*final*/ bool EV_MovePoly (line_t *line, int Arg1, int Arg2, int Arg3, int Arg4,
                             int Arg5, bool timesEight, bool overRide,
-                            optional float floatAngle, optional float floatDist,
+                            optional float floatAngle, optional float floatDist, optional float floatVDist,
                             //optional bool ignoreThings,
                             optional int vspeed, optional int vdist,
                             optional bool nolink)
@@ -2164,15 +2172,59 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
   if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) return false; // poly is already moving
 
   // no z movement for non-3d pobjs
-  if (!poly->posector) { vspeed = 0; vdist = 0; }
+  if (!poly->posector) { vspeed = 0; floatVDist = 0; vdist = 0; }
 
-  float realDist = float(Arg4)*(timesEight ? 8.0 : 1.0);
-  float realVDist = float(vdist)*(timesEight ? 8.0 : 1.0);
+  float realDist = (specified_floatDist ? floatDist : float(Arg4)*(timesEight ? 8.0 : 1.0));
   float realSpeed = float(Arg2)*4.0;
-  float realVSpeed = float(vspeed)*4.0;
+  if (fabs(realDist) < 0.00001) realDist = 0.0; //FIXME
 
-  // just in case
-  if (!poly->posector) { realVDist = 0; realVSpeed = 0; }
+  // vertical distance should be positive; direction is specified by vertical speed
+  // hack: if vdist is negative, force negative vspeed, otherwise leave vspeed as is
+  float realVDist, realVSpeed;
+  if (poly->posector) {
+    realVDist = (specified_floatVDist ? floatVDist : float(abs(vdist))*(timesEight ? 8.0 : 1.0));
+    if (fabs(realVDist) < 0.00001) realVDist = 0.0; //FIXME
+    if (specified_vspeed) {
+      // we have known vspeed, use it as is (the sign will be fixed later, if necessary)
+      realVSpeed = float(vspeed)*4.0;
+      //printdebug("000: move pobj #%s: vspeed=%s; realVSpeed=%s", polyNum, vspeed, realVSpeed);
+    } else if (realVDist) {
+      // calculate vspeed from hspeed
+      //printdebug("move pobj #%s: realDist=%s; realVDist=%s; realSpeed=%s", polyNum, realDist, realVDist, realSpeed);
+      if (realDist && realSpeed) {
+        // has both horizontal distance and horizontal speed
+        float step = fabs(realDist/realSpeed);
+        // step can be REALLY small, because horizontal movement is not always snapped to exact integer coords
+        if (step < 0.0001) {
+          realVSpeed = fabs(realSpeed);
+        } else {
+          realVSpeed = fabs(realVDist/step);
+        }
+        //printdebug("HDIST: move pobj #%s: speed=%s; realSpeed=%s; realDist=%s; realVDist=%s; step=%s; realVSpeed=%s", polyNum, Arg2, realSpeed, realDist, realVDist, step, realVSpeed);
+      } else {
+        // only vertical distance (sign will be fixed later)
+        realVSpeed = fabs(realSpeed);
+        //printdebug("VDIST: move pobj #%s: speed=%s; realSpeed=%s; realDist=%s; realVDist=%s; realVSpeed=%s", polyNum, Arg2, realSpeed, realDist, realVDist, realVSpeed);
+      }
+    } else {
+      realVDist = 0;
+      realVSpeed = 0;
+    }
+  } else {
+    // just in case
+    realVDist = 0;
+    realVSpeed = 0;
+  }
+
+  if (!realVSpeed || !realVDist) {
+    // it will never arrive to the destination anyway
+    realVDist = 0;
+    realVSpeed = 0;
+  } else if (realVDist < 0) {
+    // vertical distance is negative: make it positive, and use negative vertical speed
+    realVDist = -realVDist;
+    realVSpeed = -fabs(realVSpeed);
+  }
 
   //printdebug("EV_MovePoly: po=%s; vspeed=%s; vdist=%s", polyNum, realVSpeed, realVDist);
 
@@ -2180,10 +2232,10 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
   //pe.ignoreThings = ignoreThings;
   //pe.polyobj = polyNum;
   pe.dist = realDist;
-  if (specified_floatDist) pe.dist = floatDist;
+  //if (specified_floatDist) pe.dist = floatDist;
   pe.speed = realSpeed;
   pe.thrust_force = pe.speed/8.0; //THRUST
-  if (specified_vspeed) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
+  if (realVSpeed && realVDist) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
 
   float an = (specified_floatAngle ? floatAngle : float(Arg3)*(90.0/64.0));
   if (!Arg2) an = 0;
@@ -2218,7 +2270,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
     pe.dist = realDist;
     pe.speed = realSpeed;
     pe.thrust_force = pe.speed/8.0; //THRUST
-    if (specified_vspeed) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
+    if (realVSpeed && realVDist) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
     if (Arg2) an = AngleMod360(an+180.0); // reverse the angle
     pe.angle = an;
     pe.nolink = nolink;
