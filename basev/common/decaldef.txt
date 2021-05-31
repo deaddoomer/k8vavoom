@@ -1460,6 +1460,13 @@ generator MiniMissile   Scorch
 generator Mauler        RailScorchLower
 
 
+/***** Fade for Luquid Bootprint Decals *************************************/
+fader LiquidBootPrintFader {
+  DecayStart random 6.0 8.0
+  DecayTime random 10.0 14.0
+}
+
+
 /***** Test Decals *********************************************************/
 
 /*
