@@ -969,6 +969,7 @@ static int findAndLoadTexture (VTextureManager &txman, VName Name, int Type, EWa
 //  FIXME: make this faster!
 //
 //==========================================================================
+/*
 static int findAndLoadTextureShaded (VTextureManager &txman, VName Name, VName shName, int Type, EWadNamespace NS, int shade) {
   //if (Name == NAME_None) return -1;
   if (VTextureManager::IsDummyTextureName(Name)) return 0;
@@ -1013,6 +1014,7 @@ static int findAndLoadTextureShaded (VTextureManager &txman, VName Name, VName s
 
   return -1;
 }
+*/
 
 
 //==========================================================================
@@ -1288,6 +1290,7 @@ int VTextureManager::AddFileTextureShaded (VName Name, int Type, int shade) {
 //  VTextureManager::AddPatchShaded
 //
 //==========================================================================
+/*
 int VTextureManager::AddPatchShaded (VName Name, int Type, int shade, bool Silent) {
   if (shade == -1) return AddPatch(Name, Type, Silent);
 
@@ -1315,6 +1318,7 @@ int VTextureManager::AddPatchShaded (VName Name, int Type, int shade, bool Silen
   warnMissingTexture(Name, Silent);
   return -1;
 }
+*/
 
 
 //==========================================================================
@@ -1324,6 +1328,7 @@ int VTextureManager::AddPatchShaded (VName Name, int Type, int shade, bool Silen
 //  used in decal cloner
 //
 //==========================================================================
+/*
 int VTextureManager::AddPatchShadedById (int texid, int shade) {
   if (shade == -1) return texid;
   if (texid <= 0) return texid;
@@ -1343,13 +1348,14 @@ int VTextureManager::AddPatchShadedById (int texid, int shade) {
 
   if (tx->SourceLump < 0) return -1; // alas
 
-  VTexture *newtx = VTexture::CreateTexture(tx->Type, tx->SourceLump, false/*setName*/);
+  VTexture *newtx = VTexture::CreateTexture(tx->Type, tx->SourceLump, false/ *setName* /);
   if (!newtx) return -1;
 
   newtx->Name = shName;
   newtx->Shade(shade);
   return AddTexture(newtx);
 }
+*/
 
 
 //==========================================================================

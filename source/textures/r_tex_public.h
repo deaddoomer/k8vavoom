@@ -695,12 +695,12 @@ public:
   void SetFrontSkyLayer (int tex);
   void GetTextureInfo (int TexNum, picinfo_t *info);
   int AddPatch (VName Name, int Type, bool Silent=false, bool asXHair=false);
-  int AddPatchShaded (VName Name, int Type, int shade, bool Silent=false); // shade==-1: don't shade
-  int AddPatchShadedById (int texid, int shade); // shade==-1: don't shade
+  //int AddPatchShaded (VName Name, int Type, int shade, bool Silent=false); // shade==-1: don't shade
+  //int AddPatchShadedById (int texid, int shade); // shade==-1: don't shade
   int AddPatchLump (int LumpNum, VName Name, int Type, bool Silent=false);
   int AddRawWithPal (VName Name, VName PalName);
   int AddFileTexture (VName Name, int Type);
-  int AddFileTextureShaded (VName Name, int Type, int shade); // shade==-1: don't shade
+  int AddFileTextureShaded (VName Name, int Type, int shade); // shade==-1: don't shade; used only for alias model skins
   int AddFileTextureChecked (VName Name, int Type, VName forceName=NAME_None); // returns -1 if no texture found
   // try to force-load texture
   int CheckNumForNameAndForce (VName Name, int Type, bool bOverload, bool silent);
