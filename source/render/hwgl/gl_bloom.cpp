@@ -547,7 +547,7 @@ void VOpenGLDrawer::Posteffect_Bloom (int ax, int ay, int awidth, int aheight) {
     BloomDrawEffect(ax, ay, awidth, aheight);
     //BloomDrawEffect(0, 0, bloomScrWdt, bloomScrHgt);
 
-    glColor3f(1.0f, 1.0f, 1.0f);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     GLDisableBlend();
     glEnable(GL_TEXTURE_2D);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

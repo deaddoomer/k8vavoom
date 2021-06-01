@@ -276,14 +276,14 @@ void VOpenGLDrawer::RenderSurfaceShadowVolumeZPassIntr (VLevel *Level, const sur
       p_glUseProgramObjectARB(DrawAutomap_Program);
       //glEnable(GL_LINE_SMOOTH);
       //GLEnableBlend();
-      glColor3f(1.0f, 1.0f, 0.0f);
+      glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
       glBegin(GL_LINES);
         for (unsigned i = 0; i < vcount; ++i) {
           glVertex(sverts[i].vec());
           glVertex(sverts[(i+1)%vcount].vec());
         }
       glEnd();
-      //glColor3f(1.0f, 1.0f, 1.0f);
+      //glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
       glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
       p_glUseProgramObjectARB(SurfShadowVolume_Program);
       glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);

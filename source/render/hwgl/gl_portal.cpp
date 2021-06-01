@@ -192,7 +192,7 @@ void VOpenGLDrawer::EndPortal (VPortal *Portal, bool UseStencil) {
       glDepthFunc(GL_ALWAYS);
       //glDepthMask(GL_FALSE); // no z-buffer writes
       GLDisableDepthWrite();
-      glColor3f(1, 0, 0);
+      glColor4f(1.0f, 0.0f, 0.0f, 0.0f);
       //GLDisableBlend();
       glDisable(GL_STENCIL_TEST);
       DrawPortalArea(Portal);
