@@ -337,7 +337,7 @@ void VTextureTranslation::MapDesaturated (int AStart, int AEnd, float rs, float 
   //GCon->Logf(NAME_Debug, "DESAT: %d:%d [%g,%g,%g]-[%g,%g,%g]", AStart, AEnd, rs, gs, bs, re, ge, be);
   for (int i = AStart; i <= AEnd; ++i) {
     if (i < 0 || i > 255) continue;
-    float gray = colorIntensity(r_palette[i].r, r_palette[i].g, r_palette[i].b)/255.0f;
+    const float gray = colorIntensityGamma2Float(r_palette[i].r, r_palette[i].g, r_palette[i].b);
     Palette[i].r = clampToByte((int)((rs+gray*(re-rs))*255.0f));
     Palette[i].g = clampToByte((int)((gs+gray*(ge-gs))*255.0f));
     Palette[i].b = clampToByte((int)((bs+gray*(be-bs))*255.0f));
@@ -377,7 +377,7 @@ void VTextureTranslation::MapBlended (int AStart, int AEnd, int R, int G, int B)
   }
   for (int i = AStart; i <= AEnd; ++i) {
     if (i < 0 || i > 255) continue;
-    float gray = colorIntensity(r_palette[i].r, r_palette[i].g, r_palette[i].b)/255.0f;
+    const float gray = colorIntensityGamma2Float(r_palette[i].r, r_palette[i].g, r_palette[i].b)/255.0f;
     Palette[i].r = clampToByte((int)(R*gray));
     Palette[i].g = clampToByte((int)(G*gray));
     Palette[i].b = clampToByte((int)(B*gray));

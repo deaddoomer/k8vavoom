@@ -198,7 +198,9 @@ void VRenderLevelShared::RenderTexturedAutomap (float m_x, float m_y, float m_x2
       (light&255)*lev/255.0f);
     // draw hidden parts bluish
     if (IsHiddenSubsector(subsec)) {
-      const float intensity = colorIntensity((light>>16)&255, (light>>8)&255, light&255)/255.0f;
+      //const float intensity = colorIntensityGamma2Float((light>>16)&255, (light>>8)&255, light&255);
+      const float intensity = clampToByte((((light>>16)&255)*76+((light>>8)&255)*150+(light&255)*29)>>8)/255.0f;
+      //const float intensity = clampToByte((((light>>16)&255)*77+((light>>8)&255)*143+(light&255)*37)>>8)/255.0f;
       vlight = TVec(0.1f, 0.1f, intensity);
     }
     // render surfaces

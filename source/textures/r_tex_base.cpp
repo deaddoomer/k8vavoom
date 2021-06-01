@@ -994,7 +994,7 @@ void VTexture::stencilPixelsRGBA (int shadeColor) {
   const float shadeB = (shadeColor)&0xff;
   rgba_t *pic = (rgba_t *)Pixels;
   for (int f = Width*Height; f > 0; --f, ++pic) {
-    float intensity = colorIntensity(pic->r, pic->g, pic->b)/255.0f;
+    const float intensity = colorIntensityGamma2Float(pic->r, pic->g, pic->b);
     pic->r = clampToByte(intensity*shadeR);
     pic->g = clampToByte(intensity*shadeG);
     pic->b = clampToByte(intensity*shadeB);
@@ -1032,7 +1032,7 @@ rgba_t *VTexture::CreateShadedPixels (vuint32 shadeColor, const rgba_t *palette)
     const rgba_t *src = (const rgba_t *)Pixels;
     for (int f = Width*Height; f--; ++dest, ++src) {
       #if 1
-      const vuint8 ci = colorIntensity(src->r, src->g, src->b);
+      const vuint8 ci = colorIntensityGamma2(src->r, src->g, src->b);
       dest->r = shadeR;
       dest->g = shadeG;
       dest->b = shadeB;
@@ -1048,7 +1048,7 @@ rgba_t *VTexture::CreateShadedPixels (vuint32 shadeColor, const rgba_t *palette)
       dest->r = clampToByte((shadeR/255.0f)*(src->r/255.0f)*255.0f);
       dest->g = clampToByte((shadeR/255.0f)*(src->g/255.0f)*255.0f);
       dest->b = clampToByte((shadeR/255.0f)*(src->b/255.0f)*255.0f);
-      dest->a = colorIntensity(src->r, src->g, src->b);
+      dest->a = colorIntensityGamma2(src->r, src->g, src->b);
       #endif
     }
   }
