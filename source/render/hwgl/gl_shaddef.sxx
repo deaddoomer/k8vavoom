@@ -280,7 +280,8 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
   Shader [advanced] ShadowsAmbient both="shadowvol/surf/shadows_surf_ambient";
   Shader [advanced] ShadowsAmbientMasked both="shadowvol/surf/shadows_surf_ambient" { define "VV_AMBIENT_MASKED_WALL"; }
   Shader [advanced] ShadowsAmbientBrightmap both="shadowvol/surf/shadows_surf_ambient" { define "VV_AMBIENT_BRIGHTMAP_WALL"; }
-  Shader [advanced] ShadowsSurfTransDecals both="shadowvol/surf/shadows_surf_transdecals";
+  // the following shader is not used anymore
+  //Shader [advanced] ShadowsSurfTransDecals both="shadowvol/surf/shadows_surf_transdecals";
   Shader [advanced] ShadowsTexture both="shadowvol/surf/shadows_surf_texture";
   Shader [advanced] ShadowsTextureMasked both="shadowvol/surf/shadows_surf_texture" { define "VV_TEXTURED_MASKED_WALL"; }
   Shader [advanced] ShadowsFog both="shadowvol/surf/shadows_surf_fog";

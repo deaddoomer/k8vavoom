@@ -637,8 +637,8 @@ public:
 
   virtual void DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite, bool onlyTranslucent) = 0;
 
-  virtual void BeginTranslucentPolygonDecals () = 0;
-  virtual void DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, bool Additive) = 0;
+  //virtual void BeginTranslucentPolygonDecals () = 0;
+  //virtual void DrawTranslucentPolygonDecals (surface_t *surf, float Alpha, bool Additive) = 0;
 
   virtual void DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex,
                                   const RenderStyleInfo &ri,
