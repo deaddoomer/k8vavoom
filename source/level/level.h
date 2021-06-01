@@ -44,7 +44,6 @@ extern int validcount;
 extern vint64 validcountState;
 
 struct VBootPrintDecalParams {
-  VName Name;
   VName Animator;
   vint32 Translation;
   vint32 Shade;

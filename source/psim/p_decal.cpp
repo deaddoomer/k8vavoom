@@ -500,27 +500,24 @@ void VDecalDef::genValues () noexcept {
     if (!bootprint) {
       bootprintname = NAME_None;
     } else {
-      bootdecalname = bootprint->DecalName;
       bootanimator = bootprint->Animator;
       bootshade = (bootprint->ShadeColor >= 0 ? bootprint->ShadeColor : -2);
       boottranslation = -2; //bootprint->Translation;
-      if (bootprint->TimeMin == bootprint->TimeMax) {
-        boottime = DecalFloatVal(bootprint->TimeMin, bootprint->TimeMax);
-      } else {
-        boottime = DecalFloatVal(bootprint->TimeMin);
-      }
+      bootalpha = bootprint->Alpha;
+      boottime = DecalFloatVal(bootprint->TimeMin, bootprint->TimeMax);
     }
   }
 
   if (bootprintname == NAME_None) {
-    bootdecalname = NAME_None;
     bootanimator = NAME_None;
     bootshade = -2;
     boottranslation = -2;
+    bootalpha = -1.0f;
     bootprint = nullptr;
+    boottime.value = 0.0f;
+  } else {
+    boottime.genValue(0.0f);
   }
-
-  boottime.genValue(0.0f);
 }
 
 

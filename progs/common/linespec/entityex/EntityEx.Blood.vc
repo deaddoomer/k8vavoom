@@ -251,7 +251,7 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       if (!in.bIsASky) {
         if (Level.CompatTrace && li->frontsector == li->backsector) {
           if (aDecalName && (pass2S || only2S) && IsGood2SLineForBloodSplat(li)) {
-            SpawnDecal(hitPoint, aDecalName, side, li, atranslation:atranslation!optional, ashadeclr:shadeclr!optional, animator:animator!optional, permanent:permanent!optional);
+            SpawnDecal(hitPoint, aDecalName, side, li, atranslation:atranslation!optional, ashadeclr:shadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
           }
         }
 
@@ -280,7 +280,9 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       tr->side = side;
       tr->didhit = true;
 
-      if (aDecalName && !only2S) SpawnDecal(hitPoint, aDecalName, side, li, atranslation:atranslation!optional, ashadeclr:shadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
+      if (aDecalName && !only2S) {
+        SpawnDecal(hitPoint, aDecalName, side, li, atranslation:atranslation!optional, ashadeclr:shadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
+      }
 
       return true;
     }

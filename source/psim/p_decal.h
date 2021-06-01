@@ -131,10 +131,10 @@ public:
   VName bootprintname;
   VDecalAnim *animator; // decal animator (can be nullptr)
   // the following values will be inited by `genValues()`
-  VName bootdecalname;
   DecalFloatVal boottime;
   VName bootanimator;
   int bootshade, boottranslation;
+  float bootalpha;
   VTerrainBootprint *bootprint;
 
 protected:
@@ -166,8 +166,8 @@ public:
     , angleWall(0.0f), angleFlat(0.0f, 360.0f), shadeclr(-1)
     , lowername(NAME_None), bootprintname(NAME_None)
     , animator(nullptr)
-    , bootdecalname(NAME_None), boottime(4.0f, 8.0f), bootanimator(NAME_None)
-    , bootshade(-2), boottranslation(-2)
+    , boottime(4.0f, 8.0f), bootanimator(NAME_None)
+    , bootshade(-2), boottranslation(-2), bootalpha(-1.0f)
     , bootprint(nullptr)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}

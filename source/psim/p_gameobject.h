@@ -176,7 +176,6 @@ struct VSplashInfo {
 struct VTerrainBootprint {
   VName Name; // bootprint name (this is empty for "forward declarations")
   VStr OrigName; // as comes from the definition, never empty
-  VName DecalName;
   float TimeMin;
   float TimeMax;
   float Alpha;

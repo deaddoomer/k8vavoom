@@ -393,9 +393,12 @@ native final int SetBodyQueueTrans (int Slot, int Transl);
 
 // ////////////////////////////////////////////////////////////////////////// //
 // decal functions
-native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent);
+native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation,
+                            optional int shadeclr, optional float alpha, optional name animator,
+                            optional bool permanent);
 // this adds permament decal
-native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator);
+native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation,
+                                optional int shadeclr, optional float alpha, optional name animator);
 
 // z coord matters!
 // `range` is maximum distance from decal z to floor/ceiling
@@ -411,7 +414,6 @@ native final void AddFlatDecal (TVec org, name dectype, float range, optional in
 //
 // `sub` can be `nullptr`
 struct VBootPrintDecalParams {
-  name Name;
   name Animator;
   int Translation;
   int Shade;

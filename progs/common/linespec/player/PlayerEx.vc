@@ -225,12 +225,6 @@ transient VLevel::VBootPrintDecalParams bootprintParams;
 transient float lastFootstepSoundTime;
 transient bool lastFootstepIsLeft;
 
-// this should be configurable!
-const float BOOTPRINT_DELAY_TIME0 = 0.12; // seconds
-const float BOOTPRINT_DELAY_TIME1 = 0.16; // seconds
-
-const float BOOTPRINT_MIN_DIST = 12; // units
-
 
 //==========================================================================
 //
@@ -2579,7 +2573,8 @@ void ParticleEffect (int count, int type1, int type2, TVec origin, float ornd,
 void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent) {
   if (!dectype || lineidx < 0 || !Level.XLevel) return; // just in case
   if (lineidx >= Level.XLevel.Lines.length) return;
-  Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx], translation!optional, shadeclr!optional, alpha:alpha!optional, animator!optional, permanent!optional);
+  Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx],
+    translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
 }
 
 
@@ -2592,7 +2587,9 @@ void FlatDecalEffect (TVec org, name dectype, float range, optional int translat
                       optional name animator, optional float angle, optional bool forceFlipX)
 {
   if (!dectype) return; // just in case
-  Level.XLevel.AddFlatDecal(org, dectype, range, translation!optional, shadeclr!optional, alpha!optional, animator!optional, angle!optional, forceFlipX!optional);
+  Level.XLevel.AddFlatDecal(org, dectype, range,
+    translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional,
+    animator:animator!optional, angle:angle!optional, forceFlipX:forceFlipX!optional);
 }
 
 
@@ -3629,7 +3626,6 @@ void ResetRenderStyles () {
 //
 //==========================================================================
 void ResetBootPrints () {
-  bootprintParams.Name = '';
   bootprintTimeLeft = 0.0f;
 }
 
@@ -6168,24 +6164,38 @@ void AdjustSideMove (ref float speed, ref float moveWalk, ref float moveRun) {
 void LeaveBootPrints (float deltaTime) {
   if (!MO || MO.Health <= 0) return; // just in case
 
+  PlayerPawn pawn = PlayerPawn(MO);
+  if (!pawn.BootPrintEnabled) return;
+
   if (!GetCvarB('r_bootprints')) return;
 
-  bool onFloor = (fabs(MO.Origin.z-MO.FloorZ) <= 0.1);
+  name dcname = pawn.BaseBootPrintDecal;
+  if (!dcname || nameEquCI(dcname, 'none')) return;
+
+  float mintm = pawn.BootPrintDelayTime0;
+  float maxtm = pawn.BootPrintDelayTime1;
+
+  if (mintm <= 0.0f && maxtm <= 0.0f) return;
+
+  bool onFloor = (fabs(pawn.Origin.z-pawn.FloorZ) <= 0.1);
 
   VLevel::VBootPrintDecalParams newpar;
 
-  if (onFloor && MO.XLevel.CheckBootPrints(MO.Origin, MO.SubSector, out newpar)) {
-    if (newpar.markTime > 0.0 && newpar.Name && !nameEquCI(newpar.Name, 'none')) {
+  if (onFloor && pawn.XLevel.CheckBootPrints(pawn.Origin, pawn.SubSector, out newpar)) {
+    if (newpar.markTime > 0.0) {
+      //printdebug("%C: new mark time: %s", pawn, newpar.markTime);
       bootprintParams = newpar;
       bootprintTimeLeft = newpar.markTime+deltaTime;
       bootprintTimeTotal = newpar.markTime;
-      bootprintLastOrg = MO.Origin;
-      bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
+      bootprintLastOrg = pawn.Origin;
+      bootprintNextPutTime = FRandomBetween(mintm, maxtm);
     } else {
       ResetBootPrints();
       return;
     }
   }
+
+  //printdebug("%C: dcname=%s; tm=(%s,%s); bootprintTimeLeft=%s; bootprintNextPutTime=%s", pawn, dcname, mintm, maxtm, bootprintTimeLeft, bootprintNextPutTime);
 
   bootprintTimeLeft -= deltaTime;
   if (bootprintTimeLeft <= 0.0f) {
@@ -6196,12 +6206,12 @@ void LeaveBootPrints (float deltaTime) {
   bootprintNextPutTime -= deltaTime;
   if (bootprintNextPutTime > 0.0f) return;
 
-  bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
+  bootprintNextPutTime = FRandomBetween(mintm, maxtm);
 
   if (!onFloor) return; // not on the floor, oops
 
-  float dist2d = (bootprintLastOrg-MO.Origin).length2D();
-  if (dist2d < BOOTPRINT_MIN_DIST) return;
+  float dist2d = (bootprintLastOrg-pawn.Origin).length2D();
+  if (dist2d < pawn.BootPrintMinDist) return;
 
   // calculate alpha
   // total time
@@ -6212,18 +6222,19 @@ void LeaveBootPrints (float deltaTime) {
     return;
   }
 
-  TVec org = MO.Origin;
+  TVec org = pawn.Origin;
   bootprintLastOrg = org;
 
   // bootprintFlip==true: right
-  float xofs = MO.Radius*0.4+FRandomBetween(0, 2);
+  float xofs = pawn.Radius*pawn.BootPrintRadiusMult+FRandomBetween(pawn.BootPrintRandomOfs0, pawn.BootPrintRandomOfs1);
+  if (!pawn.BootPrintFlip) bootprintFlip = false;
   if (bootprintFlip) xofs = -xofs;
-  //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(MO.Angles.yaw));
-  org += YawVectorRight(MO.Angles.yaw)*xofs;
+  //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(pawn.Angles.yaw));
+  org += YawVectorRight(pawn.Angles.yaw)*xofs;
 
-  EntityEx(MO).SpawnFlatDecal(org, bootprintParams.Name, range:0,
+  pawn.SpawnFlatDecal(org, dcname, range:0,
     atranslation:bootprintParams.Translation, ashadeclr:bootprintParams.Shade, alpha:alpha+1000.0f,
-    animator:bootprintParams.Animator, angle:MO.Angles.yaw,
+    animator:bootprintParams.Animator, angle:pawn.Angles.yaw,
     forceFlipX:bootprintFlip);
 
   bootprintFlip = !bootprintFlip;

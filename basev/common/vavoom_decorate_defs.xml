@@ -570,6 +570,16 @@
     <!-- k8vavoom flags -->
     <flag name="IgnoreAmmoKing" property="bIgnoreAmmoKing" />
     <flag name="AutoCrouch" property="bAutoCrouch" />
+    <!-- k8vavoom bootprints -->
+    <prop_name name="Player.BaseBootPrintDecal" property="BaseBootPrintDecal" />
+    <prop_float name="Player.BootPrintDelayTime0" property="BootPrintDelayTime0" />
+    <prop_float name="Player.BootPrintDelayTime1" property="BootPrintDelayTime1" />
+    <prop_float name="Player.BootPrintMinDist" property="BootPrintMinDist" />
+    <prop_float name="Player.BootPrintRadiusMult" property="BootPrintRadiusMult" />
+    <prop_float name="Player.BootPrintRandomOfs0" property="BootPrintRandomOfs0" />
+    <prop_float name="Player.BootPrintRandomOfs1" property="BootPrintRandomOfs1" />
+    <flag name="Player.BootPrintFlip" property="BootPrintFlip" />
+    <flag name="Player.BootPrintEnabled" property="BootPrintEnabled" />
   </class>
 
   <class name="MorphProjectile">

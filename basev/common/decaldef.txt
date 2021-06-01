@@ -1467,6 +1467,20 @@ fader LiquidBootPrintFader {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Base Bootprints
+////////////////////////////////////////////////////////////////////////////////
+decal BaseBootPrintDecal {
+  pic BOOTPRN0
+  scale 0.5
+  k8vavoom {
+    //NoWall
+    TypeBootPrint
+  }
+  // shade, translucency and animator will be set by bootprint definition
+}
+
+
 /***** Test Decals *********************************************************/
 
 /*

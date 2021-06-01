@@ -2045,15 +2045,28 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
   int trans = 0;
   int shade = (specified_shadeclr ? shadeclr : -2);
   name animator;
+
+  if (decalname.nameEquCI('BaseBootPrintDecal')) {
+    if (!bIsPlayer) return;
+    PlayerEx pex = PlayerEx(Player);
+    if (!pex || !pex.MO) return;
+    PlayerPawn pawn = PlayerPawn(pex.MO);
+    if (!pawn || !pawn.BaseBootPrintDecal || !pawn.BootPrintEnabled) return;
+    decalname = pawn.BaseBootPrintDecal;
+  }
+
   if (flags&SP_DECAL_BOOTPRINT) {
     if (bIsPlayer) {
       PlayerEx pex = PlayerEx(Player);
-      if (pex && pex.bootprintParams.Name && pex.bootprintTimeLeft > 0.0f) {
-        decalname = pex.bootprintParams.Name;
-        trans = pex.bootprintParams.Translation;
-        alpha = pex.bootprintParams.Alpha;
-        animator = pex.bootprintParams.Animator;
-        shade = pex.bootprintParams.Shade;
+      if (pex && pex.MO && pex.bootprintTimeLeft > 0.0f) {
+        PlayerPawn pawn = PlayerPawn(pex.MO);
+        if (pawn.BaseBootPrintDecal && pawn.BootPrintEnabled) {
+          decalname = pawn.BaseBootPrintDecal;
+          trans = pex.bootprintParams.Translation;
+          alpha = pex.bootprintParams.Alpha;
+          animator = pex.bootprintParams.Animator;
+          shade = pex.bootprintParams.Shade;
+        }
       }
     }
   }
@@ -2092,9 +2105,10 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
   }
 
   TraceSplat(ofs, dir, dist,
-    aDecalName:decalname, pass2S:!!(flags&SP_DECAL_2S_WALLS), only2S:!!(flags&SP_DECAL_2S_ONLY),
-    atranslation:trans, doRailings:true,
-    shadeclr:shade, animator:animator, alpha:alpha);
+    aDecalName:decalname,
+    pass2S:!!(flags&SP_DECAL_2S_WALLS), only2S:!!(flags&SP_DECAL_2S_ONLY),
+    atranslation:trans, shadeclr:shade, animator:animator, alpha:alpha,
+    doRailings:true);
 }
 
 

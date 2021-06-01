@@ -101,9 +101,8 @@ struct decal_t {
   subsector_t *sub; // owning subsector for floor/ceiling decal
   int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
   VDecalDef *proto; // prototype for this decal; was needed to recreate textures
-  VName bootname; // boot decal name (copied from proto)
   float boottime; // how long it bootprints should be emited after stepping onto this? (copied from proto)
-  VName bootanimator;
+  VName bootanimator; // NAME_None means "don't change"; 'none' means "reset"
   int bootshade; // -2: use this decal shade
   int boottranslation; // <0: use this decal translation
   float bootalpha; // <0: use current decal alpha

@@ -1259,17 +1259,3 @@ fader K8GoreBloodPrint_FaderAnimTransient {
   DecayStart random 10 20
   DecayTime random 10 40
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Base Bootprints
-////////////////////////////////////////////////////////////////////////////////
-decal BaseBootPrint {
-  pic BOOTPRN0
-  scale 0.5
-  k8vavoom {
-    //NoWall
-    TypeBootPrint
-  }
-  // shade, translucency and animator will be set by bootprint definition
-}

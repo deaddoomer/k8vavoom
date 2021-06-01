@@ -400,7 +400,6 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 //
 //==========================================================================
 bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams &params) {
-  params.Name = NAME_None;
   params.Animator = NAME_None;
   params.Translation = 0;
   params.Shade = -1;
@@ -414,7 +413,7 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
     constexpr float shrinkRatio = 0.84f;
     float dcbb2d[4];
     for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
-      if (dc->bootname == NAME_None) continue;
+      if (dc->boottime <= 0.0f) continue;
       if (!dc->isFloor()) continue;
       // check coords
       ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
@@ -437,7 +436,6 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
         if (!zok) return false;
       }
       // it seems that we found it
-      params.Name = dc->bootname;
       params.Translation = dc->translation;
       if (dc->boottranslation >= 0) params.Translation = dc->boottranslation;
       params.Shade = dc->shadeclr;
@@ -463,17 +461,12 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
         sec_plane_t *splane = (eregidx || pobj3d ? reg->eceiling.splane : reg->efloor.splane);
         if (splane) {
           VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
-          if (bp && bp->DecalName != NAME_None) {
-            params.Name = bp->DecalName;
+          if (bp) {
             params.Translation = bp->Translation;
             params.Shade = bp->ShadeColor;
             params.Animator = bp->Animator;
             params.Alpha = clampval(bp->Alpha, 0.0f, 1.0f);
-            if (bp->TimeMin != bp->TimeMax) {
-              params.markTime = RandomBetween(bp->TimeMin, bp->TimeMax);
-            } else {
-              params.markTime = bp->TimeMin;
-            }
+            params.markTime = RandomBetween(bp->TimeMin, bp->TimeMax);
             if (params.markTime < 0.0f) params.markTime = 0.0f;
             return true;
           }

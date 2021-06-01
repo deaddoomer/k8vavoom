@@ -188,9 +188,11 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
     (dec->fuzzy ? decal_t::Fuzzy : 0u)|
     (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
     (dec->bootPrint ? decal_t::BootPrint : 0u);
-  decal->bootname = NAME_None;//dec->bootname;
   decal->boottime = 0.0f; //dec->boottime.value;
   decal->bootanimator = NAME_None; //dec->bootanimator;
+  decal->bootshade = -2;
+  decal->boottranslation = -1;
+  decal->bootalpha = -1.0f;
   decal->animator = (animator ? animator : dec->animator);
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
   if (decal->animator) decal->animator = decal->animator->clone();
@@ -1285,11 +1287,11 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
     (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
     (dec->bootPrint ? decal_t::BootPrint : 0u);
 
-  decal->bootname = dec->bootdecalname;
   decal->boottime = dec->boottime.value;
   decal->bootanimator = dec->bootanimator;
   decal->bootshade = dec->bootshade;
   decal->boottranslation = dec->boottranslation;
+  decal->bootalpha = dec->bootalpha;
 
   decal->animator = (animator ? animator : dec->animator);
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
@@ -1332,7 +1334,9 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
 //
 //**************************************************************************
 
-//native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent);
+//native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation,
+//                            optional int shadeclr, optional float alpha, optional name animator,
+//                            optional bool permanent);
 IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   TVec org;
   VName dectype;
@@ -1343,11 +1347,12 @@ IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   VOptParamBool permanent(false);
-  vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, animator, alpha, permanent);
-  Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator), permanent);
+  vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, alpha, animator, permanent);
+  Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), permanent);
 }
 
-//native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator);
+//native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation,
+//                                optional int shadeclr, optional float alpha, optional name animator);
 IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
   TVec org;
   int id;
@@ -1358,11 +1363,12 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   vobjGetParamSelf(org, id, side, li, translation, shadeclr, alpha, animator);
-  Self->AddDecalById(org, id, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator), true);
+  Self->AddDecalById(org, id, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), true);
 }
 
 
-//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional float angle, optional bool forceFlipX);
+//native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
+//                                optional name animator, optional float angle, optional bool forceFlipX);
 IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   TVec org;
   VName dectype;
@@ -1374,7 +1380,7 @@ IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   VOptParamBool forceFlipX(false);
   VOptParamFloat alpha(-2.0f);
   vobjGetParamSelf(org, dectype, range, translation, shadeclr, alpha, animator, angle, forceFlipX);
-  Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator), angle, angle.specified, forceFlipX);
+  Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), angle, angle.specified, forceFlipX);
 }
 
 

@@ -488,7 +488,6 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
   }
   bp->Name = VName(*bp->OrigName, VName::AddLower);
   if (doclear) {
-    bp->DecalName = VName("BaseBootPrint");
     bp->TimeMin = BOOT_TIME_MIN;
     bp->TimeMax = BOOT_TIME_MAX;
     bp->Alpha = 1.0f;

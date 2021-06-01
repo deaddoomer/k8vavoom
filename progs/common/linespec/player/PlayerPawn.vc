@@ -110,6 +110,18 @@ transient int k8hsLastHitscanRefire;
 transient float k8hsLastCritMsgHideTime;
 transient int k8hsLastCritMsgCoeff;
 
+// bootprint decal
+name BaseBootPrintDecal = 'BaseBootPrintDecal';
+float BootPrintDelayTime0 = 0.12; // seconds
+float BootPrintDelayTime1 = 0.16; // seconds
+float BootPrintMinDist = 12; // units
+float BootPrintRadiusMult = 0.4; // multiply radius by this for decal offset
+float BootPrintRandomOfs0 = 0; // random bootprint offset
+float BootPrintRandomOfs1 = 2; // random bootprint offset
+float BootPrintFlip = true;
+
+bool BootPrintEnabled = true;
+
 // both 64 by default
 float UseRange;
 float UseThingRange;

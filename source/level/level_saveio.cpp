@@ -81,10 +81,9 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     vio.iodef(VName("dcsurface"), dc->dcsurf, 0u);
 
     // boot params
-    vuint32 hasBootParams = (dc->bootname != NAME_None || dc->boottime != 0.0f ? 1u : 0u);
+    vuint32 hasBootParams = (dc->boottime > 0.0f ? 1u : 0u);
     vio.iodef(VName("hasBootParams"), hasBootParams, 0u);
     if (hasBootParams) {
-      vio.io(VName("bootname"), dc->bootname);
       vio.io(VName("boottime"), dc->boottime);
       vio.iodef(VName("bootanimator"), dc->bootanimator, NAME_None);
       vio.iodef(VName("bootshade"), dc->bootshade, -2);
