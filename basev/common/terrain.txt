@@ -151,8 +151,6 @@ terrain JustASoundVanilla
 
 bootprint VanillaWater {
   time   default  // or: time minsecflt maxsecflt
-  // if there is no decal named "WaterLiquidBootPrint",
-  // it will be created from base decal
   // you can change:
   //   shade
   //   translucent

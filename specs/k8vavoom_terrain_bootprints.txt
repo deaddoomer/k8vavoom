@@ -1,4 +1,4 @@
-k8vavoom terrain extensions and bootprint definition, v0.90
+k8vavoom terrain extensions and bootprint definition, v0.91
 ===========================================================
 
 
@@ -127,14 +127,19 @@ allstepsound <soundname>
   assign the given sound for both feets.
 
 
+
 bootprint
 =========
 
-this is bootprint definition section. example:
+this is bootprint definition section. it will use base bootprint decal (as specified
+in `PlayerPawn`) to leave bootprints. You can change decal shade, translucency and
+animator.
 
   bootprint VanillaWater {
-    decal  WaterLiquidBootPrint
-    time   default
+    time   default  // or: time minsecflt maxsecflt
+    shade "00 00 4f"
+    translucent 0.6
+    animator LiquidBootPrintFader
     flat   "fwater[0-9]"
   }
 
@@ -150,9 +155,6 @@ the left foot. the engine will automatically apply some offset too, so decal spr
 
 booptprint options:
 
-decal <name>
-  decal name for this bootprint.
-
 time <default | min max>
   how long the player should leave bootprints, in seconds?
   "default" is some default value (around 4.0 seconds).
@@ -162,37 +164,82 @@ time <default | min max>
 flat <globmask>
   globlask for flats that leaves this bootprint. this option is cumulative.
 
+shade <color>
+  set decal shade (as in decaldef):
+    shade "ff 00 ff"
+
+translucency <float>
+  set decal translucency
+
+solid
+  set translucency to 1.0
+
+animator <name>
+  force decal animator. you can use "none" to remove default decal animators.
+
+usesourcedecalalpha
+  this is useful for decals from bloodsplats: bootprint decal will take its
+  translucency from the corresponding bloodsplat decal.
 
 
-default bootprint decals
-========================
 
-the engine will use decals with the following names for some known flats.
-you can (re)define them in your mod.
+default bootprint animators
+===========================
 
-WaterLiquidBootPrint
-  decal for water-like flats.
+there are some predefined animators you can use for various bootprint types.
 
-LavaLiquidBootPrint
-  decal for lava-like flats.
+LiquidBootPrintFader
+  this is default fadeoff animator for bootprints from liquids.
 
-AcidLiquidBootPrint
-  decal for acid-like flats (green liquid).
 
-SlimeLiquidBootPrint
-  decal for slime-like flats (brown mood).
 
-BloodLiquidBootPrint
-  decal for blood-like flats.
+new `PlayerPawn` properties
+===========================
 
-RedRockBootPrint
-  decal for "red rock floor" (rrock01).
+you can use the following DECORATE properties to control player decal:
 
-YellowRockBootPrint
-  decal for "yellow rock floor" (rrock02).
+Player.BaseBootPrintDecal <name>
+  set base decal name for bootprints.
+  default is "BaseBootPrintDecal"
 
-StrifeCyanWaterLiquidBootPrint
-  decal for Strife water.
+Player.BootPrintDelayTime0 <float>
+Player.BootPrintDelayTime1 <float>
+  delay between bootprints, in seconds.
+  this specifies the interval, the actual time will something inside that
+  interval (choosen by random). always specify both values.
+  default is: 0.12 to 0.16
 
-StrifeGreenMoodLiquidBootPrint
-  decal for Strife green mood liquid.
+Player.BootPrintMinDist <float>
+  minimum distance between two bootprints, in game units.
+  default is 12
+
+Player.BootPrintRadiusMult <float>
+  actor radius will be multiplied by this value to calculate bootprint
+  decal offset from the actor origin.
+  default is 0.4
+
+Player.BootPrintRandomOfs0 <float>
+Player.BootPrintRandomOfs1 <float>
+  a random value from this interval will be added to decal offset.
+  default: 0 to 2
+
+
+new `PlayerPawn` flags
+======================
+
++Player.BootPrintFlip
+-Player.BootPrintFlip
+  enable or disable bootprint decal flipping.
+  default: enabled
+
+Player.BootPrintFlip
+  should the engine flip bootprint decal for the left foot?
+  default: true
+
+Player.BootPrintFlipOffset
+  should the engine flip bootprint decal offset for the left foot?
+  default: true
+
+Player.BootPrintEnabled
+  are bootprints enabled for this pawn?
+  default: true

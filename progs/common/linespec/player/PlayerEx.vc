@@ -6227,15 +6227,15 @@ void LeaveBootPrints (float deltaTime) {
 
   // bootprintFlip==true: right
   float xofs = pawn.Radius*pawn.BootPrintRadiusMult+FRandomBetween(pawn.BootPrintRandomOfs0, pawn.BootPrintRandomOfs1);
-  if (!pawn.BootPrintFlip) bootprintFlip = false;
-  if (bootprintFlip) xofs = -xofs;
+  if (pawn.BootPrintFlipOffset && bootprintFlip) xofs = -xofs;
   //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(pawn.Angles.yaw));
   org += YawVectorRight(pawn.Angles.yaw)*xofs;
 
+  bool doflip = (pawn.BootPrintFlip ? bootprintFlip : false);
   pawn.SpawnFlatDecal(org, dcname, range:0,
     atranslation:bootprintParams.Translation, ashadeclr:bootprintParams.Shade, alpha:alpha+1000.0f,
     animator:bootprintParams.Animator, angle:pawn.Angles.yaw,
-    forceFlipX:bootprintFlip);
+    forceFlipX:doflip);
 
   bootprintFlip = !bootprintFlip;
 }

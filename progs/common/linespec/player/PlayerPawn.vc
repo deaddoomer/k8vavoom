@@ -119,6 +119,7 @@ float BootPrintRadiusMult = 0.4; // multiply radius by this for decal offset
 float BootPrintRandomOfs0 = 0; // random bootprint offset
 float BootPrintRandomOfs1 = 2; // random bootprint offset
 float BootPrintFlip = true;
+float BootPrintFlipOffset = true;
 
 bool BootPrintEnabled = true;
 
