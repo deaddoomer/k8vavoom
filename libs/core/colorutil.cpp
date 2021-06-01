@@ -275,3 +275,77 @@ void M_RgbToHsl (float r, float g, float b, float &h, float &s, float &l/*, bool
   s = S;
   l = L;
 }
+
+
+//==========================================================================
+//
+//  sRGBungamma
+//
+//  inverse of sRGB "gamma" function. (approx 2.2)
+//
+//==========================================================================
+double sRGBungamma (int ic) {
+  const double c = ic/255.0;
+  if (c <= 0.04045) return c/12.92;
+  return pow((c+0.055)/1.055, 2.4);
+}
+
+
+//==========================================================================
+//
+//  sRGBgamma
+//
+//  sRGB "gamma" function (approx 2.2)
+//
+//==========================================================================
+int sRGBgamma (double v) {
+  if (v <= 0.0031308) v *= 12.92; else v = 1.055*pow(v, 1.0/2.4)-0.055;
+  return int(v*255+0.5);
+}
+
+
+//==========================================================================
+//
+//  colorIntensity
+//
+//==========================================================================
+vuint8 colorIntensity (int r, int g, int b) {
+  // sRGB luminance(Y) values
+  const double rY = 0.212655;
+  const double gY = 0.715158;
+  const double bY = 0.072187;
+  return clampToByte(sRGBgamma(rY*sRGBungamma(r)+gY*sRGBungamma(g)+bY*sRGBungamma(b)));
+}
+
+
+//==========================================================================
+//
+//  colorIntensityGamma2Float
+//
+//  roughly 2.0 gamma, faster than `colorIntensity()`
+//  returns float value -- [0..1]
+//
+//==========================================================================
+float colorIntensityGamma2Float (int r, int g, int b) noexcept {
+  const float rf = clampToByte(r)/255.0f;
+  const float gf = clampToByte(g)/255.0f;
+  const float bf = clampToByte(b)/255.0f;
+  const float i = 0.212655f*(rf*rf)+0.715158f*(gf*gf)+0.072187*(bf*bf);
+  return clampval(1.0f/fastInvSqrtfLP(i), 0.0f, 1.0f);
+}
+
+
+//==========================================================================
+//
+//  colorIntensityGamma2
+//
+//  roughly 2.0 gamma, faster than `colorIntensity()`
+//
+//==========================================================================
+vuint8 colorIntensityGamma2 (int r, int g, int b) noexcept {
+  const float rf = clampToByte(r)/255.0f;
+  const float gf = clampToByte(g)/255.0f;
+  const float bf = clampToByte(b)/255.0f;
+  const float i = 0.212655f*(rf*rf)+0.715158f*(gf*gf)+0.072187*(bf*bf);
+  return clampToByte((int)(clampval(1.0f/fastInvSqrtfLP(i), 0.0f, 1.0f)*255.0f));
+}

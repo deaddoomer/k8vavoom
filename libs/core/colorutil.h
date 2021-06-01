@@ -112,45 +112,24 @@ vint32 rgbDistanceSquared (vuint8 r0, vuint8 g0, vuint8 b0, vuint8 r1, vuint8 g1
 }
 
 
-//==========================================================================
-//
-//  sRGBungamma
-//
-//  inverse of sRGB "gamma" function. (approx 2.2)
-//
-//==========================================================================
-static inline VVA_OKUNUSED VVA_CHECKRESULT
-double sRGBungamma (int ic) {
-  const double c = ic/255.0;
-  if (c <= 0.04045) return c/12.92;
-  return pow((c+0.055)/1.055, 2.4);
-}
+// sRGB "gamma" function (approx 2.2)
+int sRGBgamma (double v);
+// inverse of sRGB "gamma" function. (approx 2.2)
+double sRGBungamma (int ic);
 
+// color intensity with gamma 2.2 (slow)
+vuint8 colorIntensity (int r, int g, int b);
 
-//==========================================================================
-//
-//  sRGBungamma
-//
-//  sRGB "gamma" function (approx 2.2)
-//
-//==========================================================================
-static inline VVA_OKUNUSED VVA_CHECKRESULT
-int sRGBgamma (double v) {
-  if (v <= 0.0031308) v *= 12.92; else v = 1.055*pow(v, 1.0/2.4)-0.055;
-  return int(v*255+0.5);
-}
+// roughly 2.0 gamma, faster than `colorIntensity()`
+// returns float value -- [0..1]
+float colorIntensityGamma2Float (int r, int g, int b) noexcept;
 
+// roughly 2.0 gamma, faster than `colorIntensity()`
+vuint8 colorIntensityGamma2 (int r, int g, int b) noexcept;
 
-//==========================================================================
-//
-//  colorIntensity
-//
-//==========================================================================
-static inline VVA_OKUNUSED VVA_CHECKRESULT
-vuint8 colorIntensity (int r, int g, int b) {
-  // sRGB luminance(Y) values
-  const double rY = 0.212655;
-  const double gY = 0.715158;
-  const double bY = 0.072187;
-  return clampToByte(sRGBgamma(rY*sRGBungamma(r)+gY*sRGBungamma(g)+bY*sRGBungamma(b)));
-}
+// ignores gamma, faster than other functions
+// returns float value -- [0..1]
+float colorIntensityNoGammaFloat (int r, int g, int b) noexcept;
+
+// ignores gamma, faster than other functions
+vuint8 colorIntensityNoGamma (int r, int g, int b) noexcept;
