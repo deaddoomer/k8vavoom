@@ -24,14 +24,17 @@ void main () {
   vec4 FinalColor;
   vec4 TexColor;
 
-  if (SplatAlpha <= ALPHA_MIN) discard;
+  //!if (SplatAlpha <= ALPHA_MIN) discard;
 
+  /*
   TexColor = GetStdTexel(Texture, TextureCoordinate);
   //if (TexColor.a < ALPHA_MIN) discard;
-
   FinalColor.a = clamp(TexColor.a*SplatAlpha, 0.0, 1.0);
   if (FinalColor.a < ALPHA_MIN) discard;
   FinalColor.rgb = TexColor.rgb;
+  */
+  FinalColor = GetStdTexelShaded(Texture, TextureCoordinate);
+  if (FinalColor.a < ALPHA_MIN) discard;
 
 #ifdef REG_LIGHTMAP
   // lightmapped

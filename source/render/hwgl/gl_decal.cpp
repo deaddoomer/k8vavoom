@@ -174,10 +174,10 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
       break;
     case DT_ADVANCED:
-      SurfAdvDecal.Activate();
-      SurfAdvDecal.SetTexture(0);
-      SurfAdvDecal.SetAmbLightTexture(1);
-      SurfAdvDecal.SetScreenSize((float)getWidth(), (float)getHeight());
+      SurfDecalAdv.Activate();
+      SurfDecalAdv.SetTexture(0);
+      SurfDecalAdv.SetAmbLightTexture(1);
+      SurfDecalAdv.SetScreenSize((float)getWidth(), (float)getHeight());
       break;
     default:
       abort();
@@ -204,6 +204,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   //glDisable(GL_ALPHA_TEST); // just in case
 
   GLEnableBlend();
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // this was for non-premultiplied
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   if (gl_decal_debug_nostencil) glDisable(GL_STENCIL_TEST);
@@ -230,6 +231,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     default: abort(); // just in case
   }
 
+  // shade colors and mode
+  float sr = 0.0f, sg = 0.0f, sb = 0.0f, smode = 0.0f;
+
   while (dcl) {
     decal_t *dc = dcl;
     dcl = (dkind == DWALL ? dcl->next : dcl->sregnext);
@@ -241,7 +245,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const float dscaleX = dc->scaleX;
     const float dscaleY = dc->scaleY;
 
-    if (!dtex || dtex->Width < 1 || dtex->Height < 1 || dc->alpha <= 0.0f || dscaleX <= 0.0f || dscaleY <= 0.0f) {
+    if (!dtex || dtex->Width < 1 || dtex->Height < 1 || dc->alpha <= 0.004f || dscaleX <= 0.0f || dscaleY <= 0.0f) {
       // remove it, if it is not animated
       if (!dc->animator) {
         if (GClLevel) GClLevel->DestroyDecal(dc);
@@ -433,34 +437,51 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const float &soffs = dc->soffs;
     const float &toffs = dc->toffs;
 
+    if (dc->shadeclr != -1) {
+      smode = 1.0f;
+      sr = ((dc->shadeclr>>16)&255)/255.0f;
+      sg = ((dc->shadeclr>>8)&255)/255.0f;
+      sb = (dc->shadeclr&255)/255.0f;
+    } else {
+      smode = 0.0f;
+    }
+
     // setup texture
     switch (dtype) {
       case DT_SIMPLE:
         SurfDecalNoLMap.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-        SurfDecalNoLMap.SetSplatAlpha(dc->alpha);
+        SurfDecalNoLMap.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
         SurfDecalNoLMap.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        SurfDecalNoLMap.SetTexShade(sr, sg, sb);
+        SurfDecalNoLMap.SetTexShadeMode(smode);
         break;
       case DT_LIGHTMAP:
         if (gl_regular_disable_overbright) {
           SurfDecalLMapNoOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-          SurfDecalLMapNoOverbright.SetSplatAlpha(dc->alpha);
+          SurfDecalLMapNoOverbright.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
           SurfDecalLMapNoOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+          SurfDecalLMapNoOverbright.SetTexShade(sr, sg, sb);
+          SurfDecalLMapNoOverbright.SetTexShadeMode(smode);
         } else {
           SurfDecalLMapOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-          SurfDecalLMapOverbright.SetSplatAlpha(dc->alpha);
+          SurfDecalLMapOverbright.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
           SurfDecalLMapOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+          SurfDecalLMapOverbright.SetTexShade(sr, sg, sb);
+          SurfDecalLMapOverbright.SetTexShadeMode(smode);
         }
         break;
       case DT_ADVANCED:
-        SurfAdvDecal.SetSplatAlpha(dc->alpha);
+        SurfDecalAdv.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
         if (!tex1set) {
           tex1set = true;
           SelectTexture(1);
           glBindTexture(GL_TEXTURE_2D, ambLightFBO.getColorTid());
           SelectTexture(0);
         }
-        SurfAdvDecal.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-        SurfAdvDecal.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        SurfDecalAdv.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
+        SurfDecalAdv.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        SurfDecalAdv.SetTexShade(sr, sg, sb);
+        SurfDecalAdv.SetTexShadeMode(smode);
         break;
     }
 

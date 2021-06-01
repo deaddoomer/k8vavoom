@@ -169,8 +169,10 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec) {
   vassert(dec);
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
-  decal->dectype = dec->name;
+  //decal->dectype = dec->name;
+  decal->proto = dec;
   decal->texture = dec->texid;
+  decal->shadeclr = dec->shadeclr;
   //decal->translation = translation;
   //decal->orgz = decal->curz = orgz;
   //decal->xdist = lineofs;
@@ -1237,9 +1239,11 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
 
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
-  decal->dectype = dec->name;
+  //decal->dectype = dec->name;
+  decal->proto = dec;
   decal->texture = dec->texid;
   decal->translation = translation;
+  decal->shadeclr = dec->shadeclr;
   decal->slidesec = nullptr;
   decal->sub = sub;
   decal->eregindex = eregidx;

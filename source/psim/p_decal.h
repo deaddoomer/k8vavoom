@@ -70,13 +70,12 @@ struct VDecalCloneParams {
   DecalFloatVal scaleX, scaleY;
   DecalFloatVal alpha;
   VDecalAnim *animator;
-  bool hasScaleX, hasScaleY, hasAlpha, hasAnimator;
   int shadeclr;
+  bool hasScaleX, hasScaleY, hasAlpha, hasAnimator, hasShade;
 
   inline VDecalCloneParams () noexcept
-    : scaleX(1.0f), scaleY(1.0f), alpha(1.0f), animator(nullptr)
-    , hasScaleX(false), hasScaleY(false), hasAlpha(false), hasAnimator(false)
-    , shadeclr(-1)
+    : scaleX(1.0f), scaleY(1.0f), alpha(1.0f), animator(nullptr), shadeclr(-1)
+    , hasScaleX(false), hasScaleY(false), hasAlpha(false), hasAnimator(false), hasShade(false)
   {}
 };
 
@@ -127,6 +126,7 @@ public:
   bool flipXValue, flipYValue; // valid after `genValues()`
   DecalFloatVal angleWall;
   DecalFloatVal angleFlat;
+  int shadeclr; // -1: no shade; >0: shade rgb
   VName lowername;
   VName bootname;
   DecalFloatVal boottime;
@@ -158,7 +158,7 @@ public:
     , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
     , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
     , flipXValue(false), flipYValue(false)
-    , angleWall(0.0f), angleFlat(0.0f, 360.0f)
+    , angleWall(0.0f), angleFlat(0.0f, 360.0f), shadeclr(-1)
     , lowername(NAME_None)
     , bootname(NAME_None), boottime(4.0f, 8.0f) // this is default time
     , animator(nullptr)

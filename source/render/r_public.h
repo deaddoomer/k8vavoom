@@ -100,12 +100,12 @@ struct decal_t {
   sector_t *slidesec; // backsector for SlideXXX
   subsector_t *sub; // owning subsector for floor/ceiling decal
   int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
-  VName dectype;
-  VName bootname; // boot decal name
-  float boottime; // how long it bootprints should be emited after stepping onto this?
-  //VName picname;
+  VDecalDef *proto; // prototype for this decal; was needed to recreate textures
+  VName bootname; // boot decal name (copied from proto)
+  float boottime; // how long it bootprints should be emited after stepping onto this? (copied from proto)
   VTextureID texture;
   int translation;
+  int shadeclr; // -1: no shade (needed to recreate texture, and for future GLSL shade rendering)
   unsigned flags;
   // z and x positions has no image offset added
   float worldx, worldy; // world coordinates for floor/ceiling decals

@@ -597,7 +597,6 @@ bool VDecalDef::parse (VScriptParser *sc) {
 
   VName pic = NAME_None;
   texid = -1;
-  int shadeclr = -1;
 
   while (!sc->AtEnd()) {
     if (sc->Check("}")) {
@@ -607,6 +606,7 @@ bool VDecalDef::parse (VScriptParser *sc) {
         return true;
       }
       //texid = GTextureManager./*AddPatch*/CheckNumForNameAndForce(pic, TEXTYPE_Pic, false, true);
+      /*
       if (shadeclr != -1) {
         texid = GTextureManager.AddPatchShaded(pic, TEXTYPE_Pic, shadeclr, true);
         if (texid < 0 && VStr::length(*pic) > 8) {
@@ -625,6 +625,16 @@ bool VDecalDef::parse (VScriptParser *sc) {
           texid = GTextureManager.AddPatch(pp, TEXTYPE_Pic, true);
         }
       }
+      */
+
+      texid = GTextureManager.AddPatch(pic, TEXTYPE_Pic, true);
+      if (texid < 0 && VStr::length(*pic) > 8) {
+        // try short version
+        VStr pn = VStr(pic);
+        VName pp = *pn.left(8);
+        texid = GTextureManager.AddPatch(pp, TEXTYPE_Pic, true);
+      }
+
       if (texid < 0) {
         if (!isOptionalDecal(name)) GCon->Logf(NAME_Warning, "decal '%s' has no pic '%s'", *name, *pic);
         return true;
@@ -791,6 +801,7 @@ bool VDecalDef::CreateFromBaseDecal (VScriptParser *sc, VName basename, VName ne
     if (sc->AtEnd()) sc->Expect("}");
 
     if (sc->Check("shade")) {
+      params.hasShade = true;
       sc->ExpectString();
       if (sc->String.ICmp("BloodDefault") == 0) {
         if (!parseHexRGB("88 00 00", &params.shadeclr)) { sc->Error("invalid color"); return false; }
@@ -889,6 +900,7 @@ VDecalDef *VDecalDef::CloneDecalWith (const VDecalCloneParams &params, VName bas
   res->flipYValue = flipYValue;
   res->angleWall = angleWall;
   res->angleFlat = angleFlat;
+  res->shadeclr = shadeclr;
   res->lowername = lowername;
   res->bootname = bootname;
   res->boottime = boottime;
@@ -920,12 +932,8 @@ VDecalDef *VDecalDef::CloneDecalWith (const VDecalCloneParams &params, VName bas
   if (params.hasAlpha) {
     res->alpha = params.alpha;
   }
-  if (params.shadeclr != -1) {
-    // load texture (and shade it if necessary)
-    res->texid = GTextureManager.AddPatchShadedById(res->texid, params.shadeclr);
-    if (res->texid <= 0) {
-      if (!isOptionalDecal(name)) GCon->Logf(NAME_Warning, "decal '%s' has no pic defined", *name);
-    }
+  if (params.hasShade) {
+    res->shadeclr = params.shadeclr;
   }
   VDecalDef::addToList(res);
   return res;

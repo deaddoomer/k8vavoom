@@ -28,7 +28,7 @@ void main () {
   if (VDist <= 0.0 || Dist <= 0.0) discard;
 
 #ifdef VV_SHADOW_CHECK_TEXTURE
-  vec4 TexColor = GetStdTexelSimpleShade(Texture, TextureCoordinate);
+  vec4 TexColor = GetStdTexel(Texture, TextureCoordinate);
   //if (TexColor.a < ALPHA_MIN) discard; //FIXME
   if (TexColor.a < ALPHA_MASKED) discard; // only normal and masked walls should go thru this
 #endif

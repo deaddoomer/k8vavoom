@@ -243,10 +243,26 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
   Shader SurfZBuf both="surf_zbuf";
   Shader SurfZBufMasked both="surf_zbuf_masked";
 
-  Shader SurfDecalNoLMap both="decal/surf_decal_nolmap";
-  Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT" } }
-  Shader SurfDecalLMapNoOverbright both="decal/surf_decal_lmap";
-  Shader SurfAdvDecal both="decal/surf_decal_adv";
+  // use universal shader (color/shade)
+  Shader SurfDecalNoLMap both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
+  Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_SHADE_EX" } }
+  Shader SurfDecalLMapNoOverbright both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
+  Shader SurfDecalAdv both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
+
+  //Shader SurfDecalNoLMap both="decal/surf_decal_nolmap";
+  //Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT" } }
+  //Shader SurfDecalLMapNoOverbright both="decal/surf_decal_lmap";
+  //Shader SurfDecalAdv both="decal/surf_decal_adv";
+
+  //Shader SurfDecalNoLMapShade both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_SHADE"; }
+  //Shader SurfDecalLMapOverbrightShade both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_SHADE" } }
+  //Shader SurfDecalLMapNoOverbrightShade both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_SHADE"; }
+  //Shader SurfDecalAdvShade both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_SHADE"; }
+
+  //Shader SurfDecalNoLMapStencil both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
+  //Shader SurfDecalLMapOverbrightStencil both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_STENCIL" } }
+  //Shader SurfDecalLMapNoOverbrightStencil both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
+  //Shader SurfDecalAdvStencil both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
 
   Shader SurfSimple both="lightmap/surf_simple";
   Shader SurfSimpleMasked both="lightmap/surf_simple" { define "VV_SIMPLE_MASKED"; }

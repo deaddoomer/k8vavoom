@@ -38,12 +38,30 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     VNTValueIOEx vio(&Strm);
     //if (!vio.IsLoading()) GCon->Logf("SAVE: texture: id=%d; name=<%s>", dc->texture.id, *GTextureManager.GetTextureName(dc->texture));
     vio.io(VName("texture"), dc->texture);
-    vio.io(VName("dectype"), dc->dectype);
+    // decal prototyps
+    VName decname = (dc->proto ? dc->proto->name : NAME_None);
+    vio.iodef(VName("proto"), decname, NAME_None);
+    if (Strm.IsLoading()) dc->proto = VDecalDef::find(decname);
+    //vio.io(VName("dectype"), dc->dectype);
     vio.io(VName("translation"), dc->translation);
+    if (Strm.IsLoading()) {
+      vint32 hsc = 0;
+      vio.iodef(VName("hasShadeClr"), hsc, 0); // special value
+      if (hsc == 1) {
+        vio.io(VName("shadeclr"), dc->shadeclr); // special value
+      } else {
+        dc->shadeclr = (dc->proto ? dc->proto->shadeclr : -1);
+      }
+    } else {
+      // saving
+      vint32 hsc = 1;
+      vio.io(VName("hasShadeClr"), hsc); // special value
+      vio.io(VName("shadeclr"), dc->shadeclr); // special value
+    }
     if (vio.IsError()) Host_Error("error reading decals");
     //if (vio.IsLoading()) GCon->Logf("LOAD: texture: id=%d; name=<%s>", dc->texture.id, *GTextureManager.GetTextureName(dc->texture));
     if (dc->texture <= 0) {
-      GCon->Logf(NAME_Warning, "LOAD: decal of type '%s' has missing texture", *dc->dectype);
+      GCon->Logf(NAME_Warning, "LOAD: decal of type '%s' has missing texture", *decname);
       dc->texture = 0;
     }
     vio.io(VName("flags"), dc->flags);
