@@ -179,7 +179,10 @@ struct VTerrainBootprint {
   VName DecalName;
   float TimeMin;
   float TimeMax;
+  float Alpha;
   vint32 Translation;
+  vint32 ShadeColor; // -2: don't change
+  VName Animator; // if not `NAME_None`, replace the animator
 };
 
 

@@ -16,9 +16,10 @@ DECAL K8Gore_NewBloodSplat01${Color} {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 4 8  // this is default
+    //BootPrintTime random 4 8  // use one from bootprint
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -44,7 +45,8 @@ DECAL K8Gore_NewBloodSplat02${Color} {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -70,7 +72,8 @@ DECAL K8Gore_NewBloodSplat03${Color} {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -96,7 +99,8 @@ DECAL K8Gore_NewBloodSplat04${Color} {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -122,7 +126,8 @@ DECAL K8Gore_NewBloodSplat05${Color} {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -148,7 +153,8 @@ DECAL K8Gore_NewBloodSplat06${Color} {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -176,7 +182,8 @@ DECAL K8Gore_NewBloodSplat07${Color} {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -202,7 +209,8 @@ DECAL K8Gore_NewBloodSplat08${Color} {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -228,7 +236,8 @@ DECAL K8Gore_NewBloodSplat09${Color} {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -254,7 +263,8 @@ DECAL K8Gore_NewBloodSplat10${Color} {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -425,7 +435,8 @@ DECAL K8Gore_NewBloodSplatFade01${Color} {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -449,7 +460,8 @@ DECAL K8Gore_NewBloodSplatFade02${Color} {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -473,7 +485,8 @@ DECAL K8Gore_NewBloodSplatFade03${Color} {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -497,7 +510,8 @@ DECAL K8Gore_NewBloodSplatFade04${Color} {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -521,7 +535,8 @@ DECAL K8Gore_NewBloodSplatFade05${Color} {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -545,7 +560,8 @@ DECAL K8Gore_NewBloodSplatFade06${Color} {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -571,7 +587,8 @@ DECAL K8Gore_NewBloodSplatFade07${Color} {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -595,7 +612,8 @@ DECAL K8Gore_NewBloodSplatFade08${Color} {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -619,7 +637,8 @@ DECAL K8Gore_NewBloodSplatFade09${Color} {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -643,7 +662,8 @@ DECAL K8Gore_NewBloodSplatFade10${Color} {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -701,7 +721,8 @@ DECAL K8Gore_NewBloodSplatPers01${Color} {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -724,7 +745,8 @@ DECAL K8Gore_NewBloodSplatPers02${Color} {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -747,7 +769,8 @@ DECAL K8Gore_NewBloodSplatPers03${Color} {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -770,7 +793,8 @@ DECAL K8Gore_NewBloodSplatPers04${Color} {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -793,7 +817,8 @@ DECAL K8Gore_NewBloodSplatPers05${Color} {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -816,7 +841,8 @@ DECAL K8Gore_NewBloodSplatPers06${Color} {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -841,7 +867,8 @@ DECAL K8Gore_NewBloodSplatPers07${Color} {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -864,7 +891,8 @@ DECAL K8Gore_NewBloodSplatPers08${Color} {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -887,7 +915,8 @@ DECAL K8Gore_NewBloodSplatPers09${Color} {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -910,7 +939,8 @@ DECAL K8Gore_NewBloodSplatPers10${Color} {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
+    BootPrint K8Gore_BootPrint${Color}
   }
 #ifndef BLUE
 # ifndef GREEN

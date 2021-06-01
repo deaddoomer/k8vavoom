@@ -393,13 +393,14 @@ native final int SetBodyQueueTrans (int Slot, int Transl);
 
 // ////////////////////////////////////////////////////////////////////////// //
 // decal functions
-native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation, optional bool permanent);
+native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent);
 // this adds permament decal
-native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation);
+native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation, optional int shadeclr, optional float alpha, optional name animator);
 
 // z coord matters!
 // `range` is maximum distance from decal z to floor/ceiling
-native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional float angle, optional bool forceFlipX, optional float alpha);
+native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
+                                optional name animator, optional float angle, optional bool forceFlipX);
 
 // check what kind of bootprint decal is required at `org`
 // returns `false` if none (other vars are undefined)
@@ -409,7 +410,16 @@ native final void AddFlatDecal (TVec org, name dectype, float range, optional in
 //   `markTime` is the time the marks should be left (in seconds)
 //
 // `sub` can be `nullptr`
-native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out name decalName, out int decalTranslation, out float markTime);
+struct VBootPrintDecalParams {
+  name Name;
+  name Animator;
+  int Translation;
+  int Shade;
+  float Alpha;
+  float markTime;
+};
+
+native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out VBootPrintDecalParams params);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

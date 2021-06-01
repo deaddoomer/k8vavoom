@@ -52,6 +52,8 @@ struct DInfo {
   float spheight; // spread height
   VDecalDef *dec;
   int translation;
+  int shadeclr; // -2: don't change
+  VDecalAnim *animator;
   VLevel *Level;
   unsigned orflags;
   float angle;
@@ -138,12 +140,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
           res |= PutAtCeiling;
         }
       } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
         res |= PutAtFloor;
       }
     }
@@ -154,12 +156,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
           res |= PutAtFloor;
         }
       } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
         res |= PutAtCeiling;
       }
     }
@@ -172,7 +174,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if ((orgz-2.0f <= fz || IsTransparentFlatTexture(reg->efloor.splane->pic)) && fz-orgz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
         res |= PutAtFloor;
       }
     }
@@ -181,7 +183,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if ((orgz+2.0f >= cz || IsTransparentFlatTexture(reg->eceiling.splane->pic)) && orgz-cz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->orflags, nfo->angle, nfo->alpha);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
         res |= PutAtCeiling;
       }
     }
@@ -314,14 +316,12 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //  VLevel::SpreadFlatDecalEx
 //
 //==========================================================================
-void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation,
-                                float angle, bool angleOverride, bool forceFlipX, float alpha, float alphaOverride)
+void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, int shadeclr,
+                                float alpha, VDecalAnim *animator, float angle, bool angleOverride, bool forceFlipX)
 {
   if (!dec) return; // just in case
 
   if (dec->noFlat) return;
-
-  if (alphaOverride && alpha <= 0.004f) return;
 
   if (level > 16) {
     GCon->Logf(NAME_Warning, "too many lower decals '%s'", *dec->name);
@@ -330,7 +330,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
-    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, angle, angleOverride, forceFlipX, alpha, alphaOverride);
+    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, angle, angleOverride, forceFlipX);
   }
 
   dec->genValues();
@@ -363,9 +363,11 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   nfo.range = range;
   nfo.dec = dec;
   nfo.translation = translation;
+  nfo.shadeclr = shadeclr;
+  nfo.animator = animator;
   nfo.Level = this;
   nfo.orflags = flips; //|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u); // done in `NewFlatDecal()`
-  nfo.alpha = (alphaOverride ? alpha : -1.0f);
+  nfo.alpha = alpha;
 
 #ifndef VV_FLAT_DECAL_USE_FLOODFILL
   CheckBSPB2DBox(nfo.dec->bbox2d, &AddDecalToSubsector, &nfo);
@@ -397,16 +399,19 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 //  `sub` can be `nullptr`
 //
 //==========================================================================
-bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int &decalTranslation, float &markTime) {
-  decalName = NAME_None;
-  decalTranslation = 0;
-  markTime = 0.0f;
+bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams &params) {
+  params.Name = NAME_None;
+  params.Animator = NAME_None;
+  params.Translation = 0;
+  params.Shade = -1;
+  params.Alpha = 1.0f;
+  params.markTime = 0.0f;
 
   if (!sub) sub = PointInSubsector(org);
 
   if (subsectorDecalList) {
     // check if we are inside any blood decal
-    constexpr float shrinkRatio = 0.8f;
+    constexpr float shrinkRatio = 0.84f;
     float dcbb2d[4];
     for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
       if (dc->bootname == NAME_None) continue;
@@ -432,9 +437,17 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
         if (!zok) return false;
       }
       // it seems that we found it
-      decalName = dc->bootname;
-      decalTranslation = dc->translation;
-      markTime = dc->boottime;
+      params.Name = dc->bootname;
+      params.Translation = dc->translation;
+      if (dc->boottranslation >= 0) params.Translation = dc->boottranslation;
+      params.Shade = dc->shadeclr;
+      if (dc->bootshade != -2) params.Shade = dc->bootshade;
+      params.Alpha = dc->bootalpha;
+      if (params.Alpha < 0.0f) params.Alpha = dc->alpha;
+      params.Alpha = clampval(params.Alpha, 0.0f, 1.0f);
+      params.Animator = dc->bootanimator;
+      params.markTime = dc->boottime;
+      if (params.markTime < 0.0f) params.markTime = 0.0f;
       return true;
     }
   }
@@ -451,14 +464,17 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VName &decalName, int 
         if (splane) {
           VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
           if (bp && bp->DecalName != NAME_None) {
-            decalName = bp->DecalName;
-            decalTranslation = bp->Translation;
+            params.Name = bp->DecalName;
+            params.Translation = bp->Translation;
+            params.Shade = bp->ShadeColor;
+            params.Animator = bp->Animator;
+            params.Alpha = clampval(bp->Alpha, 0.0f, 1.0f);
             if (bp->TimeMin != bp->TimeMax) {
-              markTime = RandomBetween(bp->TimeMin, bp->TimeMax);
+              params.markTime = RandomBetween(bp->TimeMin, bp->TimeMax);
             } else {
-              markTime = bp->TimeMin;
+              params.markTime = bp->TimeMin;
             }
-            if (markTime < 0.0f) markTime = 0.0f;
+            if (params.markTime < 0.0f) params.markTime = 0.0f;
             return true;
           }
         }

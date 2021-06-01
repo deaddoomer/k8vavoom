@@ -1,0 +1,17 @@
+// blood decal translation will be used
+bootprint K8Gore_BootPrint {
+  time   4 8
+  // do not change shade!
+  shade "50 00 00"
+  usesourcedecalalpha
+  animator K8GoreBloodPrint_FaderAnim
+}
+
+// blood decal translation will be used
+bootprint K8Gore_BootPrintTransient {
+  time   4 8
+  // do not change shade!
+  shade "4f 00 00"
+  usesourcedecalalpha
+  animator K8GoreBloodPrint_FaderAnimTransient
+}

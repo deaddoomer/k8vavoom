@@ -57,28 +57,24 @@ bootprint VanillaYellowRocks modify {
 
 
 bootprint OtexMagentaLiquid {
-  decal  OtexMagentaBootPrint
   time   default
   flat   "ogoopy0[1-8]"
-  basedecal BaseBootPrint {
-    shade "d3 03 c4"
-    translucent 0.8
-    animator LiquidBootPrintFader
-  }
+
+  shade "d3 03 c4"
+  translucent 0.8
+  animator LiquidBootPrintFader
 }
 
 bootprint OtexOliveLava {
-  decal  OtexOliveLavaBootPrint
   time   default
   flat   "orockl11"
   flat   "olavae0[1-8]"
   flat   "olavaf0[1-9]"
   flat   "olavaf10"
-  basedecal BaseBootPrint {
-    shade "ff 7f 00"
-    translucent 0.8
-    animator LiquidBootPrintFader
-  }
+
+  shade "ff 7f 00"
+  translucent 0.8
+  animator LiquidBootPrintFader
 }
 
 

@@ -30,7 +30,8 @@
 //
 //==========================================================================
 final void SpawnDecal (TVec org, name dectype, int side, line_t *li,
-                       optional int atranslation, optional bool permanent)
+                       optional int atranslation, optional int ashadeclr,
+                       optional float alpha, optional name animator, optional bool permanent)
 {
   //writeln("DECAL: ", dectype);
   if (!dectype || nameEquCI(dectype, 'none') || !li || !XLevel) return; // just in case
@@ -40,7 +41,7 @@ final void SpawnDecal (TVec org, name dectype, int side, line_t *li,
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level.Game.Players[i]) continue;
     if (!Level.Game.Players[i].bSpawned) continue;
-    PlayerEx(Level.Game.Players[i]).DecalEffect(org, dectype, side, lidx, atranslation!optional, permanent!optional);
+    PlayerEx(Level.Game.Players[i]).DecalEffect(org, dectype, side, lidx, atranslation!optional, ashadeclr!optional, alpha:alpha!optional, animator!optional, permanent!optional);
   }
 }
 
@@ -67,8 +68,8 @@ final void SpawnDecalById (TVec org, int id, int side, line_t *li) {
 //  z coord matters! `height` is from `org.z`
 //
 //==========================================================================
-final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation,
-                           optional float angle, optional bool forceFlipX, optional float alpha)
+final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atranslation, optional int ashadeclr,
+                           optional float alpha, optional name animator, optional float angle, optional bool forceFlipX)
 {
   //writeln("DECAL: ", dectype);
   if (!dectype || nameEquCI(dectype, 'none') || !XLevel) return; // just in case
@@ -76,6 +77,6 @@ final void SpawnFlatDecal (TVec org, name dectype, float range, optional int atr
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level.Game.Players[i]) continue;
     if (!Level.Game.Players[i].bSpawned) continue;
-    PlayerEx(Level.Game.Players[i]).FlatDecalEffect(org, dectype, range, atranslation!optional, angle!optional, forceFlipX!optional, alpha!optional);
+    PlayerEx(Level.Game.Players[i]).FlatDecalEffect(org, dectype, range, atranslation!optional, ashadeclr!optional, alpha!optional, animator!optional, angle!optional, forceFlipX!optional);
   }
 }

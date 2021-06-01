@@ -52,6 +52,7 @@ static TMapNC<VName, int> SplashMap; // key: lowercased name; value: index in `S
 static TMapNC<VName, int> TerrainMap; // key: lowercased name; value: index in `TerrainInfos`
 static TMapNC<int, int> TerrainTypeMap; // key: pic number; value: index in `TerrainTypes`
 static TMapNC<int, VTerrainBootprint *> TerrainBootprintMap; // key: pic number
+static TMap<VStrCI, VTerrainBootprint *> TerrainBootprintNameMap;
 static VName DefaultTerrainName;
 static VStr DefaultTerrainNameStr;
 static int DefaultTerrainIndex;
@@ -472,12 +473,9 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
   vassert(bp); // invariant
   constexpr float BOOT_TIME_MIN = 3.8f;
   constexpr float BOOT_TIME_MAX = 4.2f;
+  bool doclear = true;
   if (sc->Check("modify")) {
-    // do nothing (but init times)
-    if (bp->Name == NAME_None) {
-      bp->TimeMin = BOOT_TIME_MIN;
-      bp->TimeMax = BOOT_TIME_MAX;
-    }
+    doclear = (bp->Name == NAME_None);
   } else {
     // remove from bootprint map
     if (bp->Name != NAME_None) {
@@ -487,19 +485,24 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       }
       for (int ri : rmidx) TerrainBootprintMap.del(ri);
     }
-    // clear
-    bp->DecalName = NAME_None;
-    bp->TimeMin = BOOT_TIME_MIN;
-    bp->TimeMax = BOOT_TIME_MAX;
-    bp->Translation = 0;
   }
   bp->Name = VName(*bp->OrigName, VName::AddLower);
+  if (doclear) {
+    bp->DecalName = VName("BaseBootPrint");
+    bp->TimeMin = BOOT_TIME_MIN;
+    bp->TimeMax = BOOT_TIME_MAX;
+    bp->Alpha = 1.0f;
+    bp->Translation = 0;
+    bp->ShadeColor = -2;
+    bp->Animator = NAME_None;
+  }
   sc->Check("{");
-  bool wasDecalName = false;
+  //bool wasDecalName = false;
   while (!sc->Check("}")) {
     if (sc->AtEnd()) sc->Error(va("unfinished bootprint '%s' definition", *bp->OrigName));
 
     // decal name
+    /*
     if (sc->Check("decal")) {
       if (wasDecalName) sc->Error("duplicate decal name");
       wasDecalName = true;
@@ -507,6 +510,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       bp->DecalName = (sc->String.isEmpty() ? NAME_None : VName(*sc->String));
       continue;
     }
+    */
 
     // times
     if (sc->Check("time")) {
@@ -556,6 +560,40 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       continue;
     }
 
+    if (sc->Check("shade")) {
+      sc->ExpectString();
+      vuint32 ppc = M_ParseColor(*sc->String);
+      bp->ShadeColor = ppc&0xffffff;
+      continue;
+    }
+
+    if (sc->Check("animator")) {
+      sc->ExpectString();
+      if (sc->String.isEmpty()) {
+        bp->Animator = VName("none");
+      } else {
+        bp->Animator = VName(*sc->String);
+      }
+      continue;
+    }
+
+    if (sc->Check("translucent")) {
+      sc->ExpectFloat();
+      bp->Alpha = clampval(sc->Float, 0.0f, 1.0f);
+      continue;
+    }
+
+    if (sc->Check("solid")) {
+      bp->Alpha = 1.0f;
+      continue;
+    }
+
+    if (sc->Check("usesourcedecalalpha")) {
+      bp->Alpha = -1.0f;
+      continue;
+    }
+
+    #if 0
     // base decal
     if (sc->Check("basedecal")) {
       sc->ExpectString();
@@ -576,6 +614,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       VDecalDef::CreateFromBaseDecal(sc, VName(*bdbname), bp->DecalName);
       continue;
     }
+    #endif
 
     sc->Error(va("Unknown bootprint command (%s)", *sc->String));
   }
@@ -792,6 +831,13 @@ void P_InitTerrainTypes () {
     }
   }
   if (wasErrors) Sys_Error("error(s) in bootprint definitions");
+
+  // build name map
+  for (VTerrainBootprint *bp : TerrainBootprints) {
+    if (bp->Name != NAME_None) {
+      TerrainBootprintNameMap.put(VStrCI(*bp->Name), bp);
+    }
+  }
 }
 
 
@@ -828,6 +874,18 @@ VTerrainBootprint *SV_TerrainBootprint (int pic) {
 
 //==========================================================================
 //
+//  SV_FindBootprintByName
+//
+//==========================================================================
+VTerrainBootprint *SV_FindBootprintByName (const char *name) {
+  if (!name || !name[0] || VStr::strEquCI(name, "none")) return nullptr;
+  auto bpp = TerrainBootprintNameMap.find(name);
+  return (bpp ? *bpp : nullptr);
+}
+
+
+//==========================================================================
+//
 //  SV_GetDefaultTerrain
 //
 //==========================================================================
@@ -851,6 +909,7 @@ void P_FreeTerrainTypes () {
   for (auto &&bp : TerrainBootprints) { delete bp; bp = nullptr; }
   TerrainBootprints.clear();
   TerrainBootprintMap.clear();
+  TerrainBootprintNameMap.clear();
 }
 
 

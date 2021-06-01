@@ -232,6 +232,7 @@ struct VTerrainInfo;
 void P_InitTerrainTypes ();
 VTerrainInfo *SV_TerrainType (int pic, bool asPlayer);
 VTerrainBootprint *SV_TerrainBootprint (int pic);
+VTerrainBootprint *SV_FindBootprintByName (const char *name);
 VTerrainInfo *SV_GetDefaultTerrain ();
 void P_FreeTerrainTypes ();
 

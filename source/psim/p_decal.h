@@ -126,11 +126,16 @@ public:
   bool flipXValue, flipYValue; // valid after `genValues()`
   DecalFloatVal angleWall;
   DecalFloatVal angleFlat;
-  int shadeclr; // -1: no shade; >0: shade rgb
+  int shadeclr; // -1: no shade; >=0: shade rgb
   VName lowername;
-  VName bootname;
-  DecalFloatVal boottime;
+  VName bootprintname;
   VDecalAnim *animator; // decal animator (can be nullptr)
+  // the following values will be inited by `genValues()`
+  VName bootdecalname;
+  DecalFloatVal boottime;
+  VName bootanimator;
+  int bootshade, boottranslation;
+  VTerrainBootprint *bootprint;
 
 protected:
   bool useCommonScale;
@@ -159,9 +164,11 @@ public:
     , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
     , flipXValue(false), flipYValue(false)
     , angleWall(0.0f), angleFlat(0.0f, 360.0f), shadeclr(-1)
-    , lowername(NAME_None)
-    , bootname(NAME_None), boottime(4.0f, 8.0f) // this is default time
+    , lowername(NAME_None), bootprintname(NAME_None)
     , animator(nullptr)
+    , bootdecalname(NAME_None), boottime(4.0f, 8.0f), bootanimator(NAME_None)
+    , bootshade(-2), boottranslation(-2)
+    , bootprint(nullptr)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}
   ~VDecalDef () noexcept;
@@ -191,13 +198,6 @@ public:
 
   static bool hasDecal (VName aname) noexcept;
 
-  // "basedecal" keyword and name should be already parsed
-  // i.e. the parser should be at "{"; it will skip the final "}"
-  // if there is no "basename" decal, `false` will be returned, and the block will be skipped
-  // if base decal is decal group, all decals from the group will be cloned
-  // new decal names will be created like this: `va("%s_%s_%d", basename, newname, index)`
-  static bool CreateFromBaseDecal (VScriptParser *sc, VName basename, VName newname);
-
 public:
   static void parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool withSign=false);
 
@@ -205,9 +205,6 @@ private:
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalGroup;
-
-private:
-  VDecalDef *CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname, int index=-1) const;
 };
 
 
@@ -269,10 +266,6 @@ private:
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
   friend class VDecalDef;
-
-private:
-  VDecalGroup *CloneDecalWithInternal (const VDecalCloneParams &params, VName basename, VName newname) const;
-  void CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname) const;
 };
 
 
@@ -333,6 +326,9 @@ public:
   static VDecalAnim *find (const char *aname) noexcept;
   static VDecalAnim *find (VStr aname) noexcept;
   static VDecalAnim *find (VName aname) noexcept;
+
+  // used by decal spawners
+  static VDecalAnim *GetAnimatorByName (VName animator) noexcept;
 
 private:
   static VDecalAnim *listHead;
@@ -537,3 +533,5 @@ float CalculateTextureBBox (float bbox2d[4], int texid,
 void ParseDecalDef (VScriptParser *sc);
 
 void ProcessDecalDefs ();
+
+extern VDecalAnim *DummyDecalAnimator; // used to set empty decal animator

@@ -149,128 +149,77 @@ terrain JustASoundVanilla
 //   bootprint Name modify { ... }
 // the following are modified in Doom/Hexen/etc. definitions
 
-// this is used to create shaded decals
-// time doesn't matter
-bootprint K8Gore_BootPrintDecal {
-  decal  K8Gore_BootPrintDecal
-  time   default  // or: time minsecflt maxsecflt
-  basedecal BaseBootPrint {
-    // do not change shade!
-    shade "50 00 00"
-    animator K8GoreBloodPrint_FaderAnim
-  }
-}
-
-// this is used to create shaded decals
-// time doesn't matter
-bootprint K8Gore_BootPrintDecalTransient {
-  decal  K8Gore_BootPrintDecalTransient
-  time   default  // or: time minsecflt maxsecflt
-  basedecal BaseBootPrint {
-    // do not change shade!
-    shade "4f 00 00"
-    animator K8GoreBloodPrint_FaderAnimTransient
-  }
-}
-
-
 bootprint VanillaWater {
-  decal  WaterLiquidBootPrint
   time   default  // or: time minsecflt maxsecflt
   // if there is no decal named "WaterLiquidBootPrint",
   // it will be created from base decal
   // you can change:
-  //   scale
-  //   translucent
   //   shade
-  basedecal BaseBootPrint {
-    shade "00 00 4f"
-    translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  //   translucent
+  //   animator
+  // special animator name "none" means "remove any animator"
+  shade "00 00 4f"
+  translucent 0.6
+  animator LiquidBootPrintFader
 }
 
 bootprint VanillaLava {
-  decal  LavaLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "ff 3f 1f"
-    translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  shade "ff 3f 1f"
+  translucent 0.6
+  animator LiquidBootPrintFader
 }
 
 bootprint VanillaAcid {
-  decal  AcidLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "00 c0 00"
-    translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  shade "00 c0 00"
+  translucent 0.6
+  animator LiquidBootPrintFader
 }
 
 bootprint VanillaSlime {
-  decal  SlimeLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "5f 40 15"
-    translucent 0.9
-    animator LiquidBootPrintFader
-  }
+  shade "5f 40 15"
+  translucent 0.9
+  animator LiquidBootPrintFader
 }
 
 bootprint VanillaBlood {
-  decal  BloodLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "4f 00 00"
-    translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  shade "4f 00 00"
+  translucent 0.6
+  animator LiquidBootPrintFader
 }
 
 // Doom rocks that look like they should make boots dirty
 bootprint VanillaRedRocks {
-  decal  RedRockBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "c0 00 00"
-    translucent 0.8
-    animator LiquidBootPrintFader
-  }
+  shade "c0 00 00"
+  translucent 0.8
+  animator LiquidBootPrintFader
 }
 
 bootprint VanillaYellowRocks {
-  decal  YellowRockBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "f1 a2 08"
-    translucent 0.8
-    animator LiquidBootPrintFader
-  }
+  shade "f1 a2 08"
+  translucent 0.8
+  animator LiquidBootPrintFader
 }
 
 
 // Strife
 // strife cyan water
 bootprint StrifeWater {
-  decal  StrifeCyanWaterLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "2c 71 7d"
-    translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  shade "2c 71 7d"
+  translucent 0.6
+  animator LiquidBootPrintFader
 }
 
 // strife green mood
 bootprint StrifeMood {
-  decal  StrifeGreenMoodLiquidBootPrint
   time   default
-  basedecal BaseBootPrint {
-    shade "40 48 18"
-    //translucent 0.6
-    animator LiquidBootPrintFader
-  }
+  shade "40 48 18"
+  //translucent 0.6
+  animator LiquidBootPrintFader
 }

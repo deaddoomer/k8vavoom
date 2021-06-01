@@ -19,9 +19,10 @@ DECAL K8Gore_NewBloodSplat01 {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 4 8  // this is default
+    //BootPrintTime random 4 8  // use one from bootprint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -34,7 +35,8 @@ DECAL K8Gore_NewBloodSplat02 {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -47,7 +49,8 @@ DECAL K8Gore_NewBloodSplat03 {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -60,7 +63,8 @@ DECAL K8Gore_NewBloodSplat04 {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -73,7 +77,8 @@ DECAL K8Gore_NewBloodSplat05 {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -86,7 +91,8 @@ DECAL K8Gore_NewBloodSplat06 {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //X-Scale 0.3
@@ -101,7 +107,8 @@ DECAL K8Gore_NewBloodSplat07 {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -114,7 +121,8 @@ DECAL K8Gore_NewBloodSplat08 {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -127,7 +135,8 @@ DECAL K8Gore_NewBloodSplat09 {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -140,7 +149,8 @@ DECAL K8Gore_NewBloodSplat10 {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -270,7 +280,8 @@ DECAL K8Gore_NewBloodSplatFade01 {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -284,7 +295,8 @@ DECAL K8Gore_NewBloodSplatFade02 {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -298,7 +310,8 @@ DECAL K8Gore_NewBloodSplatFade03 {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -312,7 +325,8 @@ DECAL K8Gore_NewBloodSplatFade04 {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -326,7 +340,8 @@ DECAL K8Gore_NewBloodSplatFade05 {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -340,7 +355,8 @@ DECAL K8Gore_NewBloodSplatFade06 {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //X-Scale 0.3
@@ -356,7 +372,8 @@ DECAL K8Gore_NewBloodSplatFade07 {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -370,7 +387,8 @@ DECAL K8Gore_NewBloodSplatFade08 {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -384,7 +402,8 @@ DECAL K8Gore_NewBloodSplatFade09 {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -398,7 +417,8 @@ DECAL K8Gore_NewBloodSplatFade10 {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -446,7 +466,8 @@ DECAL K8Gore_NewBloodSplatPers01 {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -459,7 +480,8 @@ DECAL K8Gore_NewBloodSplatPers02 {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -472,7 +494,8 @@ DECAL K8Gore_NewBloodSplatPers03 {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -485,7 +508,8 @@ DECAL K8Gore_NewBloodSplatPers04 {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -498,7 +522,8 @@ DECAL K8Gore_NewBloodSplatPers05 {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -511,7 +536,8 @@ DECAL K8Gore_NewBloodSplatPers06 {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //X-Scale 0.3
@@ -526,7 +552,8 @@ DECAL K8Gore_NewBloodSplatPers07 {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -539,7 +566,8 @@ DECAL K8Gore_NewBloodSplatPers08 {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -552,7 +580,8 @@ DECAL K8Gore_NewBloodSplatPers09 {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.28
@@ -565,7 +594,8 @@ DECAL K8Gore_NewBloodSplatPers10 {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecal // for bootprints
+    BootPrint K8Gore_BootPrint
   }
   shade "50 00 00"
   //Scale 0.26
@@ -616,9 +646,10 @@ DECAL K8Gore_NewBloodSplat01Transient {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
     // how long this decal bootprint time should last, in seconds; no value means "default"
-    //BootPrintTime random 4 8  // this is default
+    //BootPrintTime random 4 8  // use one from bootprint
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -632,7 +663,8 @@ DECAL K8Gore_NewBloodSplat02Transient {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -646,7 +678,8 @@ DECAL K8Gore_NewBloodSplat03Transient {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -660,7 +693,8 @@ DECAL K8Gore_NewBloodSplat04Transient {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -674,7 +708,8 @@ DECAL K8Gore_NewBloodSplat05Transient {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -688,7 +723,8 @@ DECAL K8Gore_NewBloodSplat06Transient {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //X-Scale 0.3
@@ -704,7 +740,8 @@ DECAL K8Gore_NewBloodSplat07Transient {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -718,7 +755,8 @@ DECAL K8Gore_NewBloodSplat08Transient {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -732,7 +770,8 @@ DECAL K8Gore_NewBloodSplat09Transient {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -746,7 +785,8 @@ DECAL K8Gore_NewBloodSplat10Transient {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -875,7 +915,8 @@ DECAL K8Gore_NewBloodSplatFade01Transient {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -889,7 +930,8 @@ DECAL K8Gore_NewBloodSplatFade02Transient {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -903,7 +945,8 @@ DECAL K8Gore_NewBloodSplatFade03Transient {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -917,7 +960,8 @@ DECAL K8Gore_NewBloodSplatFade04Transient {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -931,7 +975,8 @@ DECAL K8Gore_NewBloodSplatFade05Transient {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -945,7 +990,8 @@ DECAL K8Gore_NewBloodSplatFade06Transient {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //X-Scale 0.3
@@ -961,7 +1007,8 @@ DECAL K8Gore_NewBloodSplatFade07Transient {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -975,7 +1022,8 @@ DECAL K8Gore_NewBloodSplatFade08Transient {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -989,7 +1037,8 @@ DECAL K8Gore_NewBloodSplatFade09Transient {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -1003,7 +1052,8 @@ DECAL K8Gore_NewBloodSplatFade10Transient {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -1051,7 +1101,8 @@ DECAL K8Gore_NewBloodSplatPers01Transient {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -1064,7 +1115,8 @@ DECAL K8Gore_NewBloodSplatPers02Transient {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -1077,7 +1129,8 @@ DECAL K8Gore_NewBloodSplatPers03Transient {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -1090,7 +1143,8 @@ DECAL K8Gore_NewBloodSplatPers04Transient {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -1103,7 +1157,8 @@ DECAL K8Gore_NewBloodSplatPers05Transient {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -1116,7 +1171,8 @@ DECAL K8Gore_NewBloodSplatPers06Transient {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //X-Scale 0.3
@@ -1131,7 +1187,8 @@ DECAL K8Gore_NewBloodSplatPers07Transient {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -1144,7 +1201,8 @@ DECAL K8Gore_NewBloodSplatPers08Transient {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26
@@ -1157,7 +1215,8 @@ DECAL K8Gore_NewBloodSplatPers09Transient {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.28
@@ -1170,7 +1229,8 @@ DECAL K8Gore_NewBloodSplatPers10Transient {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    //BootPrintDecal K8Gore_BootPrintDecalTransient // for bootprints
+    BootPrint K8Gore_BootPrintTransient
   }
   shade "4f 00 00"
   //Scale 0.26

@@ -86,6 +86,10 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     if (hasBootParams) {
       vio.io(VName("bootname"), dc->bootname);
       vio.io(VName("boottime"), dc->boottime);
+      vio.iodef(VName("bootanimator"), dc->bootanimator, NAME_None);
+      vio.iodef(VName("bootshade"), dc->bootshade, -2);
+      vio.iodef(VName("boottranslation"), dc->boottranslation, -2);
+      vio.iodef(VName("bootalpha"), dc->bootalpha, -1.0f);
     }
 
     // different code for wall/flat decals

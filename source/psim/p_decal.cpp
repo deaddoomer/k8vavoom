@@ -23,6 +23,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../server/sv_local.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -40,6 +41,8 @@ static int cli_DebugDecals = 0;
 // all names are lowercased
 static TMapNC<VName, bool> optionalDecals;
 static TMapNC<VName, bool> optionalDecalGroups;
+
+VDecalAnim *DummyDecalAnimator = nullptr;
 
 
 //==========================================================================
@@ -490,9 +493,34 @@ void VDecalDef::genValues () noexcept {
   angleFlat.genValue(0.0f);
   angleFlat.value = AngleMod(angleFlat.value);
 
-  boottime.genValue(0.0f);
-
   if (animator) animator->genValues();
+
+  if (!bootprint && bootprintname != NAME_None) {
+    bootprint = SV_FindBootprintByName(*bootprintname);
+    if (!bootprint) {
+      bootprintname = NAME_None;
+    } else {
+      bootdecalname = bootprint->DecalName;
+      bootanimator = bootprint->Animator;
+      bootshade = (bootprint->ShadeColor >= 0 ? bootprint->ShadeColor : -2);
+      boottranslation = -2; //bootprint->Translation;
+      if (bootprint->TimeMin == bootprint->TimeMax) {
+        boottime = DecalFloatVal(bootprint->TimeMin, bootprint->TimeMax);
+      } else {
+        boottime = DecalFloatVal(bootprint->TimeMin);
+      }
+    }
+  }
+
+  if (bootprintname == NAME_None) {
+    bootdecalname = NAME_None;
+    bootanimator = NAME_None;
+    bootshade = -2;
+    boottranslation = -2;
+    bootprint = nullptr;
+  }
+
+  boottime.genValue(0.0f);
 }
 
 
@@ -720,11 +748,11 @@ bool VDecalDef::parse (VScriptParser *sc) {
         if (sc->Check("typebloodsplat")) { bloodSplat = true; continue; }
         if (sc->Check("typebootprint")) { bootPrint = true; continue; }
 
-        if (sc->Check("bootprintdecal")) {
+        if (sc->Check("bootprint")) {
           sc->ExpectString();
-          if (sc->String.Length() == 0) { sc->Message("invalid bootprint decal name"); return false; }
-          bootname = VName(*sc->String);
-          if (VStr::strEquCI(*bootname, "None")) bootname = NAME_None;
+          if (sc->String.Length() == 0) { sc->Message("invalid bootprint name"); return false; }
+          bootprintname = VName(*sc->String);
+          if (VStr::strEquCI(*bootprintname, "None")) bootprintname = NAME_None;
           continue;
         }
 
@@ -732,8 +760,6 @@ bool VDecalDef::parse (VScriptParser *sc) {
       }
       continue;
     }
-
-    if (sc->Check("bootprinttime")) { parseNumOrRandom(sc, &boottime); continue; }
 
     if (sc->Check("animator")) { animoptional = false; sc->ExpectString(); animname = VName(*sc->String); continue; }
     if (sc->Check("optionalanimator")) { animoptional = true; sc->ExpectString(); animname = VName(*sc->String); continue; }
@@ -758,185 +784,6 @@ void VDecalDef::genMaxScales (float *sx, float *sy) const noexcept {
   *sx = scaleX.value;
   *sy = scaleY.value;
   if (animator) animator->calcMaxScales(sx, sy);
-}
-
-
-//==========================================================================
-//
-//  VDecalDef::CreateFromBaseDecal
-//
-//  "basedecal" keyword and name should be already parsed
-//  i.e. the parser should be at "{"; it will skip the final "}"
-//  if there is no "basename" decal, `false` will be returned, and the block will be skipped
-//  if base decal is decal group, all decals from the group will be cloned
-//  new decal names will be created like this: `va("%s_%s_%d", basename, newname, index)`
-//
-//==========================================================================
-bool VDecalDef::CreateFromBaseDecal (VScriptParser *sc, VName basename, VName newname) {
-  sc->Expect("{");
-  VDecalDef *dcdef = VDecalDef::find(basename);
-  VDecalGroup *dcgrp = (dcdef ? nullptr : VDecalGroup::find(basename));
-  if ((!dcdef && !dcgrp) || VDecalDef::find(newname) || VDecalGroup::find(newname)) {
-    /*
-    GCon->Logf(NAME_Debug, "OOPS! cannot clone decal '%s' to decal '%s'", *basename, *newname);
-    if (!dcdef && !dcgrp) GCon->Logf(NAME_Debug, "...no base decal found");
-    if (VDecalDef::find(newname)) GCon->Logf(NAME_Debug, "...new decal already present (decal)");
-    if (VDecalGroup::find(newname)) GCon->Logf(NAME_Debug, "...new decal already present (group)");
-    */
-    sc->SkipBracketed(true/*bracketEaten*/);
-    return false;
-  }
-  if (newname == NAME_None) {
-    sc->SkipBracketed(true/*bracketEaten*/);
-    return false;
-  }
-
-  // parse replacements
-  VDecalCloneParams params;
-
-  const bool savedCMode = sc->IsCMode();
-  sc->SetCMode(false);
-
-  while (!sc->Check("}")) {
-    if (sc->AtEnd()) sc->Expect("}");
-
-    if (sc->Check("shade")) {
-      params.hasShade = true;
-      sc->ExpectString();
-      if (sc->String.ICmp("BloodDefault") == 0) {
-        if (!parseHexRGB("88 00 00", &params.shadeclr)) { sc->Error("invalid color"); return false; }
-      } else {
-        if (!parseHexRGB(sc->String, &params.shadeclr)) { sc->Error("invalid color"); return false; }
-      }
-      continue;
-    }
-
-    if (sc->Check("x-scale")) {
-      params.hasScaleX = true;
-      parseNumOrRandom(sc, &params.scaleX);
-      continue;
-    }
-
-    if (sc->Check("y-scale")) {
-      params.hasScaleY = true;
-      parseNumOrRandom(sc, &params.scaleY);
-      continue;
-    }
-
-    if (sc->Check("scale")) {
-      parseNumOrRandom(sc, &params.scaleX);
-      params.hasScaleX = true;
-      params.hasScaleY = true;
-      params.scaleY = params.scaleX;
-      continue;
-    }
-
-    if (sc->Check("solid")) { params.hasAlpha = true; params.alpha = 1.0f; continue; }
-
-    if (sc->Check("translucent")) { params.hasAlpha = true; parseNumOrRandom(sc, &params.alpha); continue; }
-
-    int isanim = 0;
-         if (sc->Check("animator")) isanim = 1;
-    else if (sc->Check("optionalanimator")) isanim = -1;
-    if (isanim) {
-      params.hasAnimator = true;
-      sc->ExpectString();
-      params.animator = VDecalAnim::find(sc->String);
-      if (!params.animator) {
-        if (isanim < 0) {
-          GCon->Logf(NAME_Init, "decal '%s': ignored optional animator '%s'.", *basename, *sc->String);
-        } else {
-          GCon->Logf(NAME_Warning, "decal '%s': animator '%s' not found!", *basename, *sc->String);
-        }
-      } else {
-        if (params.animator->isEmpty()) {
-          params.animator = nullptr;
-          GCon->Logf(NAME_Init, "decal '%s': removed empty animator '%s'.", *basename, *sc->String);
-        }
-      }
-      continue;
-    }
-
-    sc->Error(va("unknown decal modifier keyword '%s'", *sc->String));
-  }
-
-  sc->SetCMode(savedCMode);
-
-  // now clone decal
-  if (dcdef) dcdef->CloneDecalWith(params, basename, newname);
-  else dcgrp->CloneDecalWith(params, basename, newname);
-  return true;
-}
-
-
-//==========================================================================
-//
-//  VDecalDef::CloneDecalWith
-//
-//==========================================================================
-VDecalDef *VDecalDef::CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname, int index) const {
-  VDecalDef *res = new VDecalDef();
-  if (index >= 0) {
-    res->name = VName(va("%s_%s_%d", *basename, *newname, index));
-  } else {
-    res->name = newname;
-  }
-  //GCon->Logf(NAME_Debug, "cloned decal '%s' to decal '%s' (new shade is 0x%08x)", *name, *res->name, (params.shadeclr != -1 ? (vuint32)params.shadeclr : 0xffffffffu));
-  res->texid = texid;
-  res->id = 0;
-  res->scaleX = scaleX;
-  res->scaleY = scaleY;
-  res->flipX = flipX;
-  res->flipY = flipY;
-  res->alpha = alpha;
-  res->addAlpha = addAlpha;
-  res->fuzzy = fuzzy;
-  res->fullbright = fullbright;
-  res->noWall = noWall;
-  res->noFlat = noFlat;
-  res->bloodSplat = bloodSplat;
-  res->bootPrint = bootPrint;
-  res->flipXValue = flipXValue;
-  res->flipYValue = flipYValue;
-  res->angleWall = angleWall;
-  res->angleFlat = angleFlat;
-  res->shadeclr = shadeclr;
-  res->lowername = lowername;
-  res->bootname = bootname;
-  res->boottime = boottime;
-  res->animator = animator;
-  res->useCommonScale = useCommonScale;
-  res->commonScale = commonScale;
-  res->scaleSpecial = scaleSpecial;
-  res->scaleMultiply = scaleMultiply;
-  memcpy((void *)res->bbox2d, bbox2d, sizeof(float)*4);
-  res->spheight = spheight;
-  // apply params
-  if (params.hasAnimator) {
-    res->animator = params.animator;
-  }
-  if (params.hasScaleX) {
-    if (res->useCommonScale) {
-      res->useCommonScale = false;
-      res->scaleY = res->commonScale;
-      res->scaleX = params.scaleX;
-    }
-  }
-  if (params.hasScaleY) {
-    if (res->useCommonScale) {
-      res->useCommonScale = false;
-      res->scaleX = res->commonScale;
-      res->scaleY = params.scaleY;
-    }
-  }
-  if (params.hasAlpha) {
-    res->alpha = params.alpha;
-  }
-  if (params.hasShade) {
-    res->shadeclr = params.shadeclr;
-  }
-  VDecalDef::addToList(res);
-  return res;
 }
 
 
@@ -1119,56 +966,6 @@ bool VDecalGroup::parse (VScriptParser *sc) {
 }
 
 
-static TMapNC<const VDecalGroup *, VDecalGroup *> clonedGroups; // key: old group; value: new group
-
-//==========================================================================
-//
-//  VDecalGroup::CloneDecalWithInternal
-//
-//==========================================================================
-VDecalGroup *VDecalGroup::CloneDecalWithInternal (const VDecalCloneParams &params, VName basename, VName newname) const {
-  auto cpx = clonedGroups.find(this);
-  if (cpx) return *cpx;
-  VDecalGroup *res = new VDecalGroup();
-  clonedGroups.put(this, res);
-  // decaldef properties
-  res->name = newname;
-  res->nameList.resize(nameList.length());
-  for (auto &&li : nameList) {
-    NameListItem newli(li.name, li.weight);
-    res->nameList.append(newli);
-  }
-  int idx = 0;
-  for (const TWeightedList<ListItem *>::Choice<ListItem *> *cc = list.Choices; cc; cc = cc->Next, ++idx) {
-    ListItem *newli = (cc->Value ? new ListItem(cc->Value->dd, cc->Value->dg) : nullptr);
-    if (newli) {
-      if (newli->dd) {
-        VName nn = VName(va(":_:%s:%s:_:cloned decal:", *basename, *newname));
-        newli->dd = newli->dd->CloneDecalWith(params, basename, nn, idx);
-      }
-      if (newli->dg) {
-        VName nn = VName(va(":_:%s:%s:_:cloned group:", *basename, *newname));
-        newli->dg = CloneDecalWithInternal(params, basename, nn);
-      }
-      res->list.AddEntry(newli, cc->Weight);
-    }
-  }
-  VDecalGroup::addToList(res);
-  return res;
-}
-
-
-//==========================================================================
-//
-//  VDecalGroup::CloneDecalWith
-//
-//==========================================================================
-void VDecalGroup::CloneDecalWith (const VDecalCloneParams &params, VName basename, VName newname) const {
-  clonedGroups.clear();
-  CloneDecalWithInternal(params, basename, newname);
-  clonedGroups.clear();
-}
-
 
 //**************************************************************************
 //
@@ -1252,6 +1049,22 @@ VDecalAnim *VDecalAnim::find (VStr aname) noexcept {
 VDecalAnim *VDecalAnim::find (VName aname) noexcept {
   if (aname == NAME_None) return nullptr;
   return find(*aname);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::GetAnimatorByName
+//
+//  used by decal spawners
+//
+//==========================================================================
+VDecalAnim *VDecalAnim::GetAnimatorByName (VName animator) noexcept {
+  if (animator == NAME_None) return nullptr;
+  if (VStr::strEquCI(*animator, "none")) return DummyDecalAnimator;
+  VDecalAnim *res = VDecalAnim::find(animator);
+  if (!res) res = DummyDecalAnimator; // oops
+  return res;
 }
 
 
@@ -2173,6 +1986,8 @@ void ParseDecalDef (VScriptParser *sc) {
 //==========================================================================
 void ProcessDecalDefs () {
   GCon->Logf(NAME_Init, "Parsing DECAL definitions");
+
+  DummyDecalAnimator = new VDecalAnimFader();
 
   for (auto &&it : WadNSNameIterator(NAME_decaldef, WADNS_Global)) {
     const int Lump = it.lump;

@@ -2040,14 +2040,20 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
 //  A_SprayDecal
 //
 //==========================================================================
-[decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags) {
+[decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags, optional int shadeclr, optional float alpha) {
+  if (!specified_alpha) alpha = -2;
   int trans = 0;
+  int shade = (specified_shadeclr ? shadeclr : -2);
+  name animator;
   if (flags&SP_DECAL_BOOTPRINT) {
     if (bIsPlayer) {
       PlayerEx pex = PlayerEx(Player);
-      if (pex && pex.bootprintDecal && pex.bootprintTimeLeft > 0.0f) {
-        decalname = pex.bootprintDecal;
-        trans = pex.bootprintDecalTranslation;
+      if (pex && pex.bootprintParams.Name && pex.bootprintTimeLeft > 0.0f) {
+        decalname = pex.bootprintParams.Name;
+        trans = pex.bootprintParams.Translation;
+        alpha = pex.bootprintParams.Alpha;
+        animator = pex.bootprintParams.Animator;
+        shade = pex.bootprintParams.Shade;
       }
     }
   }
@@ -2063,6 +2069,7 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
   }
   if (!specified_ofs) ofs = Origin; else ofs += Origin;
   ofs.z += fmax(0.0f, Height)*0.5;
+
   // offset by radius?
   if ((flags&SP_DECAL_RADIUS_OFS) && Radius > 0) {
     TVec rofs;
@@ -2083,7 +2090,11 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
     }
     ofs += rofs;
   }
-  TraceSplat(ofs, dir, dist, aDecalName:decalname, pass2S:!!(flags&SP_DECAL_2S_WALLS), only2S:!!(flags&SP_DECAL_2S_ONLY), atranslation:trans, doRailings:true);
+
+  TraceSplat(ofs, dir, dist,
+    aDecalName:decalname, pass2S:!!(flags&SP_DECAL_2S_WALLS), only2S:!!(flags&SP_DECAL_2S_ONLY),
+    atranslation:trans, doRailings:true,
+    shadeclr:shade, animator:animator, alpha:alpha);
 }
 
 

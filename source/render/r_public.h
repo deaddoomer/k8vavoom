@@ -103,9 +103,13 @@ struct decal_t {
   VDecalDef *proto; // prototype for this decal; was needed to recreate textures
   VName bootname; // boot decal name (copied from proto)
   float boottime; // how long it bootprints should be emited after stepping onto this? (copied from proto)
+  VName bootanimator;
+  int bootshade; // -2: use this decal shade
+  int boottranslation; // <0: use this decal translation
+  float bootalpha; // <0: use current decal alpha
   VTextureID texture;
   int translation;
-  int shadeclr; // -1: no shade (needed to recreate texture, and for future GLSL shade rendering)
+  int shadeclr; // -1: no shade
   unsigned flags;
   // z and x positions has no image offset added
   float worldx, worldy; // world coordinates for floor/ceiling decals

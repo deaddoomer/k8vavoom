@@ -219,8 +219,7 @@ transient float bootprintTimeLeft; // <= 0: no bootprints
 transient float bootprintNextPutTime; // delay, decaying
 transient bool bootprintFlip;
 
-transient name bootprintDecal;
-transient int bootprintDecalTranslation;
+transient VLevel::VBootPrintDecalParams bootprintParams;
 
 // footsteps timing; no need to save
 transient float lastFootstepSoundTime;
@@ -2577,10 +2576,10 @@ void ParticleEffect (int count, int type1, int type2, TVec origin, float ornd,
 //  DecalEffect
 //
 //==========================================================================
-void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int translation, optional bool permanent) {
+void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent) {
   if (!dectype || lineidx < 0 || !Level.XLevel) return; // just in case
   if (lineidx >= Level.XLevel.Lines.length) return;
-  Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx], translation!optional, permanent!optional);
+  Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx], translation!optional, shadeclr!optional, alpha:alpha!optional, animator!optional, permanent!optional);
 }
 
 
@@ -2589,9 +2588,11 @@ void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int tr
 //  FlatDecalEffect
 //
 //==========================================================================
-void FlatDecalEffect (TVec org, name dectype, float range, int translation, optional float angle, optional bool forceFlipX, optional float alpha) {
+void FlatDecalEffect (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
+                      optional name animator, optional float angle, optional bool forceFlipX)
+{
   if (!dectype) return; // just in case
-  Level.XLevel.AddFlatDecal(org, dectype, range, translation, angle!optional, forceFlipX!optional, alpha!optional);
+  Level.XLevel.AddFlatDecal(org, dectype, range, translation!optional, shadeclr!optional, alpha!optional, animator!optional, angle!optional, forceFlipX!optional);
 }
 
 
@@ -3628,7 +3629,7 @@ void ResetRenderStyles () {
 //
 //==========================================================================
 void ResetBootPrints () {
-  bootprintDecal = '';
+  bootprintParams.Name = '';
   bootprintTimeLeft = 0.0f;
 }
 
@@ -6171,16 +6172,13 @@ void LeaveBootPrints (float deltaTime) {
 
   bool onFloor = (fabs(MO.Origin.z-MO.FloorZ) <= 0.1);
 
-  name bpd;
-  int bpt;
-  float bptleft;
-  if (onFloor && MO.XLevel.CheckBootPrints(MO.Origin, MO.SubSector, out bpd, out bpt, out bptleft)) {
-    if (bptleft > 0.0 && bpd && !nameEquCI(bootprintDecal, 'none')) {
-      //printdebug("PLR: bootprint decal '%s' (trans=%s; time=%s)", bpd, bpt, bptleft);
-      bootprintDecal = bpd;
-      bootprintDecalTranslation = bpt;
-      bootprintTimeLeft = bptleft+deltaTime;
-      bootprintTimeTotal = bptleft;
+  VLevel::VBootPrintDecalParams newpar;
+
+  if (onFloor && MO.XLevel.CheckBootPrints(MO.Origin, MO.SubSector, out newpar)) {
+    if (newpar.markTime > 0.0 && newpar.Name && !nameEquCI(newpar.Name, 'none')) {
+      bootprintParams = newpar;
+      bootprintTimeLeft = newpar.markTime+deltaTime;
+      bootprintTimeTotal = newpar.markTime;
       bootprintLastOrg = MO.Origin;
       bootprintNextPutTime = FRandomBetween(BOOTPRINT_DELAY_TIME0, BOOTPRINT_DELAY_TIME1);
     } else {
@@ -6207,7 +6205,12 @@ void LeaveBootPrints (float deltaTime) {
 
   // calculate alpha
   // total time
-  float alpha = fclamp(bootprintTimeLeft/bootprintTimeTotal, 0.0f, 1.0f);
+  float alpha = fclamp(bootprintTimeLeft/bootprintTimeTotal*bootprintParams.Alpha, 0.0f, 1.0f);
+
+  if (alpha <= 0.004) {
+    ResetBootPrints();
+    return;
+  }
 
   TVec org = MO.Origin;
   bootprintLastOrg = org;
@@ -6218,7 +6221,10 @@ void LeaveBootPrints (float deltaTime) {
   //printdebug("org=%s; xofs=%s; neworg=%s", org, xofs, xofs+YawVectorRight(MO.Angles.yaw));
   org += YawVectorRight(MO.Angles.yaw)*xofs;
 
-  EntityEx(MO).SpawnFlatDecal(org, bootprintDecal, range:0, atranslation:bootprintDecalTranslation, angle:MO.Angles.yaw, forceFlipX:bootprintFlip, alpha:alpha+1000.0f);
+  EntityEx(MO).SpawnFlatDecal(org, bootprintParams.Name, range:0,
+    atranslation:bootprintParams.Translation, ashadeclr:bootprintParams.Shade, alpha:alpha+1000.0f,
+    animator:bootprintParams.Animator, angle:MO.Angles.yaw,
+    forceFlipX:bootprintFlip);
 
   bootprintFlip = !bootprintFlip;
 }
