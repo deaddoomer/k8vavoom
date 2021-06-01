@@ -13,32 +13,74 @@ bootprint VanillaLava modify {
   flat   "lava[0-9]"
   // for pwads with extra flats
   flat   "lava[0-9][0-9]"
+  // OTEX
+  flat   "olavac0[1-8]"
+  flat   "olavab01"
 }
 
 bootprint VanillaAcid modify {
   flat   "nukage[0-9]"
   // for pwads with extra flats
   flat   "nukage[0-9][0-9]"
+  // OTEX
+  flat   "onukea0[1-8]"
 }
 
 bootprint VanillaSlime modify {
   // other slimes are not slimes
   flat   "slime0[0-8]"
+  // OTEX
+  flat   "opoopy0[1-8]"
+  flat   "osludg0[1-8]"
 }
 
 bootprint VanillaBlood modify {
   flat   "blood[0-9]"
   // for pwads with extra flats
   flat   "blood[0-9][0-9]"
+  // OTEX
+  flat   "obloda0[1-8]"
 }
 
 bootprint VanillaRedRocks modify {
   flat   "rrock01"
+  flat   "orockl12"
 }
 
 bootprint VanillaYellowRocks modify {
   flat   "rrock02"
+  // OTEX
+  flat   "orockl10"
+  flat   "olavaa02"
+  flat   "olavad0[1-8]"
 }
+
+
+bootprint OtexMagentaLiquid {
+  decal  OtexMagentaBootPrint
+  time   default
+  flat   "ogoopy0[1-8]"
+  basedecal BaseBootPrint {
+    shade "d3 03 c4"
+    translucent 0.8
+    animator LiquidBootPrintFader
+  }
+}
+
+bootprint OtexOliveLava {
+  decal  OtexOliveLavaBootPrint
+  time   default
+  flat   "orockl11"
+  flat   "olavae0[1-8]"
+  flat   "olavaf0[1-9]"
+  flat   "olavaf10"
+  basedecal BaseBootPrint {
+    shade "ff 7f 00"
+    translucent 0.8
+    animator LiquidBootPrintFader
+  }
+}
+
 
 
 terrain JustASoundVanilla modify {
