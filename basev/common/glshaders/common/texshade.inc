@@ -7,28 +7,14 @@
 uniform vec3 TexShade;
 uniform float TexShadeMode;
 
-/* VV_TEXTURED_ZDOOM_SHADE
-vec3 TexShade;
 vec4 GetStdTexelShaded (sampler2D smp, vec2 tcoord) {
   vec4 clr = texture2D(smp, tcoord);
-  clr.a = clamp(clr.r*SplatAlpha, 0.0, 1.0); // red channel is intensity
-  clr.rgb = TexShade.rgb;
-  return clr;
-}
-*/
-
-vec4 GetStdTexelShaded (sampler2D smp, vec2 tcoord) {
-  vec4 clr = texture2D(smp, tcoord);
-  /*
-  clr.g = 0.0;
-  clr.b = 0.0;
-  clr.a = clr.r*clr.a;
-  clr.a *= SplatAlpha;
-  return clr;
-  */
   float smode = TexShadeMode;
   float nmode = 1.0-smode;
-  clr.a = clr.a*clr.r*smode+clr.a*nmode; // red channel is intensity
+  float i = clr.r;
+  //clr.a = sign(max(0.0, i-10.0/255.0))*smode+clr.a*nmode; // red channel is intensity
+  //clr.rgb = TexShade.rgb*i*smode+clr.rgb*nmode;
+  clr.a = clr.a*i*smode+clr.a*nmode; // red channel is intensity
   clr.rgb = TexShade.rgb*smode+clr.rgb*nmode;
   clr.a *= SplatAlpha;
   return clr;
