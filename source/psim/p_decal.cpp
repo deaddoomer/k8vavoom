@@ -428,12 +428,17 @@ VDecalDef *VDecalDef::getDecal (VStr aname) noexcept {
 //
 //==========================================================================
 VDecalDef *VDecalDef::getDecal (VName aname) noexcept {
+  aname = aname.GetLowerNoCreate();
+  if (aname == NAME_None) return nullptr;
   VDecalDef *dc = VDecalDef::find(aname);
-  if (dc) return dc;
-  // try group
-  VDecalGroup *gp = VDecalGroup::find(aname);
-  if (!gp) return nullptr;
-  return gp->chooseDecal();
+  if (!dc) {
+    // try group
+    VDecalGroup *gp = VDecalGroup::find(aname);
+    if (!gp) return nullptr;
+    dc = gp->chooseDecal();
+  }
+  if (dc) dc->genValues();
+  return dc;
 }
 
 

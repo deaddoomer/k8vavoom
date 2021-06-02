@@ -981,7 +981,6 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   }
 
   // generate decal values
-  dec->genValues();
   dec->angleWall = 0.0f; // cannot rotate wall decals yet
 
   int tex = dec->texid;

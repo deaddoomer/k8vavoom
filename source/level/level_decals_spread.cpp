@@ -333,8 +333,6 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
     if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, angle, angleOverride, forceFlipX);
   }
 
-  dec->genValues();
-
   int tex = dec->texid;
   VTexture *dtex = GTextureManager[tex];
   if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) return;
