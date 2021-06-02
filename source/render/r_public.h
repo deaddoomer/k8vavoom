@@ -109,6 +109,7 @@ struct decal_t {
   VTextureID texture;
   int translation;
   int shadeclr; // -1: no shade
+  int origshadeclr; // for animators
   unsigned flags;
   // z and x positions has no image offset added
   float worldx, worldy; // world coordinates for floor/ceiling decals

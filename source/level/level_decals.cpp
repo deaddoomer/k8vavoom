@@ -172,7 +172,7 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   //decal->dectype = dec->name;
   decal->proto = dec;
   decal->texture = dec->texid;
-  decal->shadeclr = dec->shadeclr;
+  decal->shadeclr = decal->origshadeclr = dec->shadeclr;
   //decal->translation = translation;
   //decal->orgz = decal->curz = orgz;
   //decal->xdist = lineofs;
@@ -580,7 +580,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             // create decal
             decal_t *decal = AllocSegDecal(seg, dec, alpha, animator);
             decal->translation = translation;
-            if (shadeclr != -2) decal->shadeclr = shadeclr;
+            if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
@@ -595,7 +595,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
               // create decal on partner seg
               decal_t *dcp = AllocSegDecal(seg->partner, dec, alpha, animator);
               dcp->translation = decal->translation;
-              dcp->shadeclr = decal->shadeclr;
+              dcp->shadeclr = dcp->origshadeclr = decal->shadeclr;
               dcp->orgz = decal->orgz;
               dcp->curz = decal->curz;
               dcp->xdist = decal->xdist;
@@ -801,7 +801,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       // create decal
       decal_t *decal = AllocSegDecal(seg, dec, alpha, animator);
       decal->translation = translation;
-      if (shadeclr != -2) decal->shadeclr = shadeclr;
+      if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
@@ -832,7 +832,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         // create decal on partner seg
         decal_t *dcp = AllocSegDecal(seg->partner, dec, alpha, animator);
         dcp->translation = translation;
-        if (shadeclr != -2) decal->shadeclr = shadeclr;
+        if (shadeclr != -2) dcp->shadeclr = dcp->origshadeclr = shadeclr;
         dcp->orgz = decal->orgz;
         dcp->curz = decal->curz;
         dcp->xdist = lineofs;
@@ -1261,8 +1261,8 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->proto = dec;
   decal->texture = dec->texid;
   decal->translation = translation;
-  decal->shadeclr = dec->shadeclr;
-  if (shadeclr != -2) decal->shadeclr = shadeclr;
+  decal->shadeclr = decal->origshadeclr = dec->shadeclr;
+  if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
   decal->slidesec = nullptr;
   decal->sub = sub;
   decal->eregindex = eregidx;

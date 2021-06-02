@@ -49,14 +49,17 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
       vio.iodef(VName("hasShadeClr"), hsc, 0); // special value
       if (hsc == 1) {
         vio.io(VName("shadeclr"), dc->shadeclr); // special value
+        vio.iodef(VName("origshadeclr"), dc->origshadeclr, -3); // special value
+        if (dc->origshadeclr == -3) dc->origshadeclr = dc->shadeclr;
       } else {
-        dc->shadeclr = (dc->proto ? dc->proto->shadeclr : -1);
+        dc->shadeclr = dc->origshadeclr = (dc->proto ? dc->proto->shadeclr : -1);
       }
     } else {
       // saving
       vint32 hsc = 1;
       vio.io(VName("hasShadeClr"), hsc); // special value
       vio.io(VName("shadeclr"), dc->shadeclr); // special value
+      vio.io(VName("origshadeclr"), dc->shadeclr); // special value
     }
     if (vio.IsError()) Host_Error("error reading decals");
     //if (vio.IsLoading()) GCon->Logf("LOAD: texture: id=%d; name=<%s>", dc->texture.id, *GTextureManager.GetTextureName(dc->texture));

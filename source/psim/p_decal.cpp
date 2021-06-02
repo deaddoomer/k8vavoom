@@ -1574,10 +1574,27 @@ void VDecalAnimColorChanger::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimColorChanger::animate (decal_t *decal, float timeDelta) {
-  // not yet, sorry
-  // as we are using pre-translated textures, color changer cannot work
-  // and we need pre-translated textures for working colormaps
-  return true;
+  timePassed += timeDelta;
+  if (timePassed < startTime.value) return true; // not yet
+  if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
+    //GCon->Logf("decal %p completely faded away", decal);
+    decal->shadeclr = PackRGBf(dest[0], dest[1], dest[2])&0xffffff;
+    return false;
+  }
+  if (decal->origshadeclr == -1) decal->origshadeclr = 0x7f7f7f; // this cannot be done yet, so choose arbitrary starting color
+  float orig[3];
+  UnpackRGBf(decal->origshadeclr, orig[0], orig[1], orig[2]);
+  if (orig[0] == dest[0] && orig[1] == dest[1] && orig[2] == dest[2]) return false;
+  bool done = true;
+  const float dtx = (timePassed-startTime.value)/actionTime.value;
+  for (unsigned f = 0; f < 3; ++f) {
+    const float left = dest[f]-orig[f];
+    float newv = dest[f]+left*dtx;
+    if (fabsf(newv-dest[f]) < 0.004f) newv = dest[f]; else done = false;
+    orig[f] = newv;
+  }
+  decal->shadeclr = PackRGBf(orig[0], orig[1], orig[2])&0xffffff;
+  return !done;
 }
 
 
@@ -1601,9 +1618,7 @@ bool VDecalAnimColorChanger::parse (VScriptParser *sc) {
       sc->ExpectString();
       int destclr = 0;
       if (!parseHexRGB(sc->String, &destclr)) { sc->Error("invalid color"); return false; }
-      dest[0] = ((destclr>>16)&0xff)/255.0f;
-      dest[1] = ((destclr>>8)&0xff)/255.0f;
-      dest[2] = (destclr&0xff)/255.0f;
+      UnpackRGBf(destclr, dest[0], dest[1], dest[2]);
       continue;
     }
     if (sc->Check("fadestart")) { empty = false; VDecalDef::parseNumOrRandom(sc, &startTime); continue; }
