@@ -1064,7 +1064,7 @@ static int FindMusicLump (const char *songName) {
     nullptr
   };
 
-  if (!songName || !songName[0] || VStr::ICmp(songName, "none") == 0) return -1;
+  if (!songName || !songName[0] || VStr::strEquCI(songName, "none")) return -1;
   int Lump = -1;
   VName sn8 = VName(songName, VName::FindLower8);
   if (sn8 != NAME_None) {
@@ -1147,7 +1147,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     // look for replacement
     VSoundManager::VMusicAlias *mal = nullptr;
     for (int f = GSoundManager->MusicAliases.length()-1; f >= 0; --f) {
-      if (VStr::ICmp(*GSoundManager->MusicAliases[f].origName, Song) == 0) {
+      if (VStr::strEquCI(*GSoundManager->MusicAliases[f].origName, Song)) {
         mal = &GSoundManager->MusicAliases[f];
         break;
       }
@@ -1172,7 +1172,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   if (StreamMusicPlayer) {
     StreamMusicPlayer->SetVolume(snd_music_volume*MusicVolumeFactor, fromStreamThread);
     //if (fromStreamThread) SoundDevice->SetStreamVolume(snd_music_volume*MusicVolumeFactor*snd_master_volume);
-    if (fromStreamThread) SoundDevice->SetStreamVolume(StreamMusicPlayer->stpNewVolume);
+    if (fromStreamThread) SoundDevice->SetStreamVolume(StreamMusicPlayer->GetNewVolume());
   }
 
   VStream *Strm = W_CreateLumpReaderNum(Lump);
@@ -1317,12 +1317,12 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
 
   VStr command = Args[1];
 
-  if (command.ICmp("on") == 0) {
+  if (command.strEquCI("on")) {
     MusicEnabled = true;
     return;
   }
 
-  if (command.ICmp("off") == 0) {
+  if (command.strEquCI("off")) {
     if (StreamMusicPlayer) StreamMusicPlayer->Stop();
     MusicEnabled = false;
     return;
@@ -1330,7 +1330,7 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
 
   if (!MusicEnabled) return;
 
-  if (command.ICmp("play") == 0) {
+  if (command.strEquCI("play")) {
     if (Args.Num() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (play).");
       return;
@@ -1339,7 +1339,7 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
     return;
   }
 
-  if (command.ICmp("loop") == 0) {
+  if (command.strEquCI("loop")) {
     if (Args.Num() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (loop).");
       return;
@@ -1348,24 +1348,29 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
     return;
   }
 
-  if (command.ICmp("pause") == 0) {
+  if (command.strEquCI("pause")) {
     StreamMusicPlayer->Pause();
     return;
   }
 
-  if (command.ICmp("resume") == 0) {
+  if (command.strEquCI("resume")) {
     StreamMusicPlayer->Resume();
     return;
   }
 
-  if (command.ICmp("stop") == 0) {
+  if (command.strEquCI("stop")) {
     StreamMusicPlayer->Stop();
     return;
   }
 
-  if (command.ICmp("info") == 0) {
+  if (command.strEquCI("restart")) {
+    StreamMusicPlayer->Restart();
+    return;
+  }
+
+  if (command.strEquCI("info")) {
     if (StreamMusicPlayer->IsPlaying()) {
-      GCon->Logf("Currently %s %s.", (StreamMusicPlayer->CurrLoop ? "looping" : "playing"), *StreamMusicPlayer->CurrSong);
+      GCon->Logf("Currently %s %s.", (StreamMusicPlayer->IsCurrentSongLooped() ? "looping" : "playing"), *StreamMusicPlayer->GetCurrentSong());
     } else {
       GCon->Log("No song currently playing");
     }
@@ -1664,6 +1669,7 @@ COMMAND_AC(Music) {
     list.append("pause");
     list.append("play");
     list.append("resume");
+    list.append("restart");
     list.append("stop");
     return AutoCompleteFromListCmd(prefix, list);
   } else {

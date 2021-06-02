@@ -40,12 +40,12 @@ extern VCvarF snd_master_volume;
 
 //==========================================================================
 //
-//  doTick
+//  VStreamMusicPlayerWorker::doTick
 //
 //  returns `true` if caller should perform stopping
 //
 //==========================================================================
-static bool doTick (VStreamMusicPlayer *strm) {
+bool VStreamMusicPlayerWorker::doTick (VStreamMusicPlayer *strm) {
   if (!strm->StrmOpened) return false;
   if (strm->Stopping && strm->FinishTime+0.5 < Sys_Time()) {
     // finish playback
@@ -72,13 +72,16 @@ static bool doTick (VStreamMusicPlayer *strm) {
       if (strm->Codec->Finished() || SamplesDecoded <= 0) {
         // stream ended
         strm->IncLoopCounter();
-        if (strm->CurrLoop) {
+        bool bislooped;
+        { VStreamMusicPlayer::DataLocker dlock(strm); bislooped = strm->CurrLoop; }
+        if (bislooped) {
           // restart stream
           strm->Codec->Restart();
           ++loopCount;
           if (loopCount == 1) decodedFromLoop = 0;
           if (loopCount == 3 && decodedFromLoop < 256) {
             GLog.WriteLine("Looped music stream is too short, aborting it");
+            VStreamMusicPlayer::DataLocker dlock(strm);
             strm->CurrLoop = false;
             strm->Stopping = true;
             strm->FinishTime = Sys_Time();
@@ -175,10 +178,10 @@ void VStreamMusicPlayer::stpThreadSendCommand (STPCommand acmd) {
 
 //==========================================================================
 //
-//  streamPlayerThread
+//  VStreamMusicPlayerWorker::streamPlayerThread
 //
 //==========================================================================
-static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
+MYTHREAD_RET_TYPE VStreamMusicPlayerWorker::streamPlayerThread (void *adevobj) {
   VStreamMusicPlayer *strm = (VStreamMusicPlayer *)adevobj;
   mythread_mutex_lock(&strm->stpPingLock);
   // set sound device context for this thread
@@ -189,6 +192,8 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
   strm->stpThreadSendPong();
   bool doLoop = false;
   VStr newSongName;
+  VStr lastLoadedSongName;
+  bool lastSongWasLooped = false;
   bool doLoadNewSong = false;
   SDLOG("STP: streaming thread started.");
   for (;;) {
@@ -213,12 +218,25 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
             delete strm->Codec;
             strm->Codec = nullptr;
           }
+          lastLoadedSongName.clear();
           break;
         case VStreamMusicPlayer::STP_Start: // start playing current stream
           SDLOG("STP:   start");
           strm->StrmOpened = true;
           strm->SoundDevice->SetStreamPitch(1.0f);
           strm->SoundDevice->SetStreamVolume(strm->stpNewVolume);
+          {
+            VStreamMusicPlayer::DataLocker dlock(strm);
+            lastLoadedSongName = strm->CurrSong.cloneUnique();
+          }
+          break;
+        case VStreamMusicPlayer::STP_Restart: // start playing current stream
+          SDLOG("STP:   restart");
+          if (!lastLoadedSongName.isEmpty()) {
+            doLoadNewSong = true;
+            doLoop = lastSongWasLooped;
+            newSongName = lastLoadedSongName;
+          }
           break;
         case VStreamMusicPlayer::STP_Pause: // pause current stream
           SDLOG("STP:   pause");
@@ -283,6 +301,9 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
       } else {
         wasPlaying = false;
       }
+      lastSongWasLooped = doLoop;
+      lastLoadedSongName = newSongName.cloneUnique();
+      bool success = false;
       // load a new song
       if (!newSongName.isEmpty() && GAudio) {
         // unlock thread, so other song commands won't stall
@@ -296,10 +317,14 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
           if (!xopened) {
             GLog.WriteLine(NAME_Warning, "cannot' start song '%s'", *newSongName);
           } else {
+            success = true;
             //GLog.Logf("STRM: starting song '%s'", *newSongName);
             strm->Codec = codec;
-            strm->CurrSong = newSongName;
-            strm->CurrLoop = doLoop;
+            {
+              VStreamMusicPlayer::DataLocker dlock(strm);
+              strm->CurrSong = newSongName.cloneUnique();
+              strm->CurrLoop = doLoop;
+            }
             strm->Stopping = false;
             strm->stpNewVolume = strm->lastVolume;
             strm->stpNewPitch = 1.0f;
@@ -311,6 +336,7 @@ static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj) {
         }
       }
       newSongName.clear();
+      if (!success) lastLoadedSongName.clear();
     }
     // tick
     if (strm->StrmOpened) {
@@ -355,7 +381,7 @@ void VStreamMusicPlayer::Init () {
   mythread_mutex_lock(&stpLockPong);
 
   // create stream player thread
-  if (mythread_create(&stpThread, &streamPlayerThread, this)) Sys_Error("OpenAL driver cannot create streaming thread");
+  if (mythread_create(&stpThread, &VStreamMusicPlayerWorker::streamPlayerThread, this)) Sys_Error("OpenAL driver cannot create streaming thread");
   // wait for the first pong
   mythread_cond_wait(&stpCondPong, &stpLockPong);
   SDLOG("MAIN: first pong received.");
@@ -406,12 +432,16 @@ void VStreamMusicPlayer::Play (VAudioCodec *InCodec, const char *InName, bool In
       GLog.WriteLine("WARNING: cannot' start song '%s'", InName);
       return;
     }
-    Codec = InCodec;
-    CurrSong = InName;
-    CurrLoop = InLoop;
-    Stopping = false;
-    stpNewVolume = lastVolume;
-    stpNewPitch = 1.0f;
+    // no need to lock anything here, because no song is playing, but just in case
+    {
+      DataLocker dlock(this);
+      Codec = InCodec;
+      CurrSong = InName;
+      CurrLoop = InLoop;
+      Stopping = false;
+      stpNewVolume = lastVolume;
+      stpNewPitch = 1.0f;
+    }
     stpThreadSendCommand(STP_Start);
   }
 }
@@ -466,6 +496,16 @@ void VStreamMusicPlayer::Stop () {
 
 //==========================================================================
 //
+//  VStreamMusicPlayer::Restart
+//
+//==========================================================================
+void VStreamMusicPlayer::Restart () {
+  if (threadInited) stpThreadSendCommand(STP_Restart);
+}
+
+
+//==========================================================================
+//
 //  VStreamMusicPlayer::IsPlaying
 //
 //==========================================================================
@@ -500,4 +540,36 @@ void VStreamMusicPlayer::SetVolume (float volume, bool fromStreamThread) {
   if (!fromStreamThread) {
     if (threadInited) stpThreadSendCommand(STP_SetVolume);
   }
+}
+
+
+//==========================================================================
+//
+//  VStreamMusicPlayer::GetCurrentSong
+//
+//==========================================================================
+VStr VStreamMusicPlayer::GetCurrentSong () {
+  DataLocker dlock(this);
+  return CurrSong;
+}
+
+
+//==========================================================================
+//
+//  VStreamMusicPlayer::IsCurrentSongLooped
+//
+//==========================================================================
+bool VStreamMusicPlayer::IsCurrentSongLooped () {
+  DataLocker dlock(this);
+  return CurrLoop;
+}
+
+
+//==========================================================================
+//
+//  VStreamMusicPlayer::GetNewVolume
+//
+//==========================================================================
+float VStreamMusicPlayer::GetNewVolume () {
+  return stpNewVolume;
 }

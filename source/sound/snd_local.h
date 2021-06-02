@@ -383,7 +383,8 @@ public:
 
 // music player (controls streaming thread)
 class VStreamMusicPlayer {
-public:
+  friend class VStreamMusicPlayerWorker;
+private:
   // stream player is using a separate thread
   mythread stpThread;
   mythread_mutex stpPingLock;
@@ -394,13 +395,13 @@ public:
   bool threadInited;
   char namebuf[1024];
 
-public:
+private:
+  //WARNING! never use/access those directly!
   bool StrmOpened;
   VAudioCodec *Codec;
   // current playing song info
-  bool CurrLoop;
-  //VName CurrSong;
-  VStr CurrSong;
+  bool CurrLoop; // access with data locked
+  VStr CurrSong; // access with data locked
   bool Stopping;
   bool Paused;
   double FinishTime;
@@ -408,47 +409,13 @@ public:
 
 private:
   atomic_int loopCounter;
-
-public:
-  VStreamMusicPlayer (VOpenALDevice *InSoundDevice)
-    : lastVolume(1.0f)
-    , threadInited(false)
-    , StrmOpened(false)
-    , Codec(nullptr)
-    , CurrLoop(false)
-    , Stopping(false)
-    , Paused(false)
-    , SoundDevice(InSoundDevice)
-    , loopCounter(0)
-    , stpIsPlaying(false)
-    , stpNewPitch(1.0f)
-    , stpNewVolume(1.0f)
-  {}
-
-  ~VStreamMusicPlayer () { Shutdown(); }
-
-  void Init ();
-  void Shutdown ();
-  void Play (VAudioCodec *InCodec, const char *InName, bool InLoop);
-  void Pause ();
-  void Resume ();
-  void Stop ();
-  bool IsPlaying ();
-  void SetPitch (float pitch);
-  void SetVolume (float volume, bool fromStreamThread=false);
-
-  // all play functions will reset loop counter
-  inline void ResetLoopCounter () noexcept { atomic_set(&loopCounter, 0); }
-  inline int GetLoopCounter () noexcept { return atomic_get(&loopCounter); }
-  inline void IncLoopCounter () noexcept { atomic_increment(&loopCounter); }
-
-  void LoadAndPlay (const char *InName, bool InLoop);
+  atomic_int dataSpinlock;
 
   // streamer thread ping/pong bussiness
-  // k8: it is public to free me from fuckery with `friends`
   enum STPCommand {
     STP_Quit, // stop playing, and quit immediately
     STP_Start, // start playing current stream
+    STP_Restart, // restart playing current stream
     STP_Stop, // stop current stream
     STP_Pause, // pause current stream
     STP_Resume, // resume current stream
@@ -469,6 +436,71 @@ public:
   void stpThreadSendPong ();
 
   void stpThreadSendCommand (STPCommand acmd);
+
+  inline void LockData () noexcept {
+    // this returns old value; wait unit it will be zero
+    while (atomic_cmp_xchg(&dataSpinlock, 0, 1)) {}
+  }
+
+  inline void UnlockData () noexcept {
+    atomic_set(&dataSpinlock, 0);
+  }
+
+  struct DataLocker {
+    VStreamMusicPlayer *plr;
+    inline DataLocker (VStreamMusicPlayer *aplr) noexcept : plr(aplr) { plr->LockData(); }
+    inline ~DataLocker () noexcept { plr->UnlockData(); }
+    DataLocker (const DataLocker &) = delete;
+    DataLocker & operator = (const DataLocker &) = delete;
+  };
+
+public:
+  inline VStreamMusicPlayer (VOpenALDevice *InSoundDevice)
+    : lastVolume(1.0f)
+    , threadInited(false)
+    , StrmOpened(false)
+    , Codec(nullptr)
+    , CurrLoop(false)
+    , Stopping(false)
+    , Paused(false)
+    , SoundDevice(InSoundDevice)
+    , loopCounter(0)
+    , dataSpinlock(0)
+    , stpIsPlaying(false)
+    , stpNewPitch(1.0f)
+    , stpNewVolume(1.0f)
+  {}
+
+  inline ~VStreamMusicPlayer () { Shutdown(); }
+
+  void Init ();
+  void Shutdown ();
+  void Play (VAudioCodec *InCodec, const char *InName, bool InLoop);
+  void Pause ();
+  void Resume ();
+  void Stop ();
+  void Restart ();
+  bool IsPlaying ();
+  void SetPitch (float pitch);
+  void SetVolume (float volume, bool fromStreamThread=false);
+
+  VStr GetCurrentSong ();
+  bool IsCurrentSongLooped ();
+  float GetNewVolume ();
+
+  // all play functions will reset loop counter
+  inline void ResetLoopCounter () noexcept { atomic_set(&loopCounter, 0); }
+  inline int GetLoopCounter () noexcept { return atomic_get(&loopCounter); }
+  inline void IncLoopCounter () noexcept { atomic_increment(&loopCounter); }
+
+  void LoadAndPlay (const char *InName, bool InLoop);
+};
+
+class VStreamMusicPlayerWorker {
+  friend class VStreamMusicPlayer;
+private:
+  static bool doTick (VStreamMusicPlayer *strm);
+  static MYTHREAD_RET_TYPE streamPlayerThread (void *adevobj);
 };
 
 
