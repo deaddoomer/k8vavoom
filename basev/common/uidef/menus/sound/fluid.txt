@@ -117,4 +117,12 @@ menudef FluidSynthOptions {
     min = 0;
     max = 21;
   }
+
+
+  header "Console Logs";
+
+  option bool {
+    title = "MIDI Track Mesages";
+    cvar = snd_midi_messages;
+  }
 }
