@@ -144,4 +144,16 @@ menudef SoundOptions {
     help =
       "This will amplify random pitching (0 will disable it completely).";
   }
+
+  header "";
+
+  option concmd {
+    title = "Restart Current Music";
+    concmd = "music restart";
+  }
+
+  option concmd {
+    title = "Stop Music";
+    concmd = "music stop";
+  }
 }
