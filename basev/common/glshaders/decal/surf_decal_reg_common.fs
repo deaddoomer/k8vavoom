@@ -1,6 +1,7 @@
 // decal renderer for regular case (normal and lightmapped surfaces)
 
 uniform sampler2D Texture;
+uniform float SplatAlpha; // image alpha will be multiplied by this
 #ifdef REG_LIGHTMAP
 $include "common/texlmap_vars.fs"
 #else
@@ -16,7 +17,6 @@ uniform float FullBright; // for fullbright; either 0.0 or 1.0
 #ifndef REG_LIGHTMAP
 uniform vec4 Light;
 #endif
-uniform float SplatAlpha; // image alpha will be multiplied by this
 $include "common/fog_vars.fs"
 
 
