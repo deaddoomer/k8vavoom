@@ -792,6 +792,10 @@ void P_InitTerrainTypes () {
     const int Lump = it.lump;
     ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
   }
+  for (auto &&it : WadNSNameIterator(NAME_vterrain, WADNS_Global)) {
+    const int Lump = it.lump;
+    ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+  }
   GCon->Logf(NAME_Init, "got %d terrain definition%s", TerrainInfos.length(), (TerrainInfos.length() != 1 ? "s" : ""));
 
   // fix default terrain name (why not?)
