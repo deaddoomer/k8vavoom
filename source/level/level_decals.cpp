@@ -194,10 +194,12 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   decal->boottranslation = -1;
   decal->bootalpha = -1.0f;
   decal->animator = (animator ? animator : dec->animator);
+  //if (decal->animator) GCon->Logf(NAME_Debug, "setting animator for '%s': <%s> (%s : %d)", *dec->name, *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
   if (decal->animator) decal->animator = decal->animator->clone();
-  decal->animator = (dec->animator ? dec->animator->clone() : nullptr);
+  //if (decal->animator) GCon->Logf(NAME_Debug, "set animator for '%s': <%s> (%s : %d)", *dec->name, *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   seg->appendDecal(decal);
+  if (decal->animator) AddAnimatedDecal(decal);
   return decal;
 }
 
@@ -291,7 +293,7 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
     const int twdt = (int)(dtex->GetScaledWidthF()*cdc->scaleX);
     const int thgt = (int)(dtex->GetScaledHeightF()*cdc->scaleY);
 
-    if (!cdc->animator && (twdt < 1 || thgt < 1)) {
+    if (!cdc->animator && (twdt < 1 || thgt < 1 || cdc->alpha < 0.004f)) {
       // remove this decal (just in case)
       DestroyDecal(cdc);
       continue;
@@ -336,44 +338,6 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
       DestroyDecal(dcdie);
     }
   }
-
-  /*
-  dc = seg->decalhead;
-  while (dc && (toKillBig|toKillSmall)) {
-    decal_t *cdc = dc;
-    dc = dc->next;
-    int dcTexId = cdc->texture;
-    auto dtex = GTextureManager[dcTexId];
-
-    if (!dtex || dtex->Width < 1 || dtex->Height < 1) {
-      // remove this decal (just in case)
-      DestroyDecal(cdc);
-      continue;
-    }
-
-    const int twdt = (int)(dtex->GetScaledWidthF()*cdc->scaleX);
-    const int thgt = (int)(dtex->GetScaledHeightF()*cdc->scaleY);
-
-    if (!cdc->animator && (twdt < 1 || thgt < 1)) {
-      // remove this decal (just in case)
-      DestroyDecal(cdc);
-      continue;
-    }
-
-    //GCon->Logf(NAME_Debug, "twdt=%g; thgt=%g", twdt, thgt);
-    bool doKill = false;
-    if (twdt >= BigDecalWidth || thgt >= BigDecalHeight) {
-      if (toKillBig) { --toKillBig; doKill = true; }
-    } else {
-      if (toKillSmall) { --toKillSmall; doKill = true; }
-    }
-
-    if (doKill) {
-      DestroyDecal(cdc);
-      continue;
-    }
-  }
-  */
 }
 
 
@@ -450,6 +414,19 @@ static bool IsWallSpreadAllowed (VLevel *Level, const sector_t *fsec,
     }
   }
   return false;
+}
+
+
+//==========================================================================
+//
+//  hasSliderAnimator
+//
+//==========================================================================
+static inline bool hasSliderAnimator (const VDecalDef *dec, const VDecalAnim *anim) noexcept {
+  if (!dec) return false;
+  if (!anim) anim = dec->animator;
+  if (!anim) return false;
+  return (anim->hasTypeId(TDecAnimSlider));
 }
 
 
@@ -688,14 +665,14 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           } else if (fsec->floor.maxz >= bsec->floor.maxz) {
             // if front floor is higher than back floor, bottex cannot be visible
             allowBotTex = false;
-          } else if (!dec->animator && dcy0 >= max2(ffloorZ, bfloorZ)) {
+          } else if (!hasSliderAnimator(dec, animator) && dcy0 >= max2(ffloorZ, bfloorZ)) {
             // if decal bottom is higher than highest floor, consider toptex invisible
             // (but don't do this for animated decals -- this may be sliding blood)
             allowBotTex = false;
           }
         } else {
           // one-sided: see the last coment above
-          if (!dec->animator && dcy0 >= ffloorZ) allowBotTex = false;
+          if (!hasSliderAnimator(dec, animator) && dcy0 >= ffloorZ) allowBotTex = false;
         }
       }
 
@@ -992,7 +969,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   }
 
   // actually, we should check animator here, but meh...
-  if (!dec->animator && dec->alpha.value < 0.004f) {
+  if (!dec->animator && !animator && dec->alpha.value < 0.004f) {
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
     return;
   }
@@ -1059,13 +1036,15 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
-  //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g)", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z);
+  GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g)", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z);
 
 #ifdef VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
   //dectype = VName("k8TestDecal");
   dectype = VName("k8TestDecal001");
 #endif
   VDecalDef *dec = VDecalDef::getDecal(dectype);
+  //if (dec->animator) GCon->Logf(NAME_Debug, "   animator: <%s> (%s : %d)", *dec->animator->name, dec->animator->getTypeName(), (int)dec->animator->isEmpty());
+  //if (animator) GCon->Logf(NAME_Debug, "   forced animator: <%s> (%s : %d)", *animator->name, animator->getTypeName(), (int)animator->isEmpty());
   if (dec) {
     org = li->landAlongNormal(org);
     //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);

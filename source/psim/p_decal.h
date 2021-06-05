@@ -270,10 +270,21 @@ private:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+enum {
+  TDecAnimBase = 0,
+  TDecAnimFader = 1,
+  TDecAnimStretcher = 2,
+  TDecAnimSlider = 3,
+  TDecAnimColorChanger = 4,
+  TDecAnimCombiner = 5,
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // base decal animator class
 class VDecalAnim {
 public:
-  enum { TypeId = 0 };
+  enum { TypeId = TDecAnimBase };
 
 private:
   VDecalAnim *next; // animDefHead
@@ -287,7 +298,6 @@ protected:
   // working data
   float timePassed;
 
-  virtual vuint8 getTypeId () const noexcept;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) = 0;
   virtual void fixup ();
 
@@ -306,6 +316,9 @@ public:
   inline VDecalAnim () noexcept : next(nullptr), timePassed(0.0f), name(NAME_None) {}
   virtual ~VDecalAnim ();
 
+  virtual vuint8 getTypeId () const noexcept;
+  virtual const char *getTypeName () const noexcept = 0;
+
   inline bool isEmpty () const noexcept { return empty; }
 
   // this does deep clone, so we can attach it to the actual decal object
@@ -318,6 +331,17 @@ public:
 
   virtual bool calcWillDisappear () const noexcept;
   virtual void calcMaxScales (float *sx, float *sy) const noexcept;
+
+  virtual bool isFader () const noexcept;
+  virtual bool isStretcher () const noexcept;
+  virtual bool isSlider () const noexcept;
+  virtual bool isColorChanger () const noexcept;
+  virtual bool isCombiner () const noexcept;
+
+  // for combiners, let it be here too
+  virtual int getCount () const noexcept;
+  virtual VDecalAnim *getAt (int idx) noexcept;
+  virtual bool hasTypeId (vuint8 tid, int depth=0) const noexcept;
 
   static void SerialiseNested (VStream &strm, VNTValueIOEx &vio, VDecalAnim *&aptr);
   static void Serialise (VStream &Strm, VDecalAnim *&aptr);
@@ -341,14 +365,13 @@ private:
 // ////////////////////////////////////////////////////////////////////////// //
 class VDecalAnimFader : public VDecalAnim {
 public:
-  enum { TypeId = 1 };
+  enum { TypeId = TDecAnimFader };
 
 public:
   // animator properties
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -359,6 +382,9 @@ public:
   inline VDecalAnimFader () noexcept : VDecalAnim(), startTime(0), actionTime(0) {}
   virtual ~VDecalAnimFader ();
 
+  virtual vuint8 getTypeId () const noexcept override;
+  virtual const char *getTypeName () const noexcept override;
+
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
@@ -368,6 +394,8 @@ public:
 
   virtual bool calcWillDisappear () const noexcept override;
 
+  virtual bool isFader () const noexcept override;
+
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
 };
@@ -376,7 +404,7 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 class VDecalAnimStretcher : public VDecalAnim {
 public:
-  enum { TypeId = 2 };
+  enum { TypeId = TDecAnimStretcher };
 
 public:
   // animator properties
@@ -384,7 +412,6 @@ public:
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -394,6 +421,9 @@ public:
   inline VDecalAnimStretcher (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
   inline VDecalAnimStretcher () noexcept : VDecalAnim(), goalX(), goalY(), startTime(0), actionTime(0) {}
   virtual ~VDecalAnimStretcher ();
+
+  virtual vuint8 getTypeId () const noexcept override;
+  virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
@@ -405,6 +435,8 @@ public:
   virtual bool calcWillDisappear () const noexcept override;
   virtual void calcMaxScales (float *sx, float *sy) const noexcept override;
 
+  virtual bool isStretcher () const noexcept override;
+
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
 };
@@ -413,7 +445,7 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 class VDecalAnimSlider : public VDecalAnim {
 public:
-  enum { TypeId = 3 };
+  enum { TypeId = TDecAnimSlider };
 
 public:
   // animator properties
@@ -422,7 +454,6 @@ public:
   bool k8reversey;
 
 protected:
-  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -433,12 +464,17 @@ public:
   inline VDecalAnimSlider () noexcept : VDecalAnim(), distX(), distY(), startTime(0), actionTime(0), k8reversey(false) {}
   virtual ~VDecalAnimSlider ();
 
+  virtual vuint8 getTypeId () const noexcept override;
+  virtual const char *getTypeName () const noexcept override;
+
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
   virtual void genValues () noexcept override;
 
   virtual bool animate (decal_t *decal, float timeDelta) override;
+
+  virtual bool isSlider () const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
@@ -448,7 +484,7 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 class VDecalAnimColorChanger : public VDecalAnim {
 public:
-  enum { TypeId = 4 };
+  enum { TypeId = TDecAnimColorChanger };
 
 public:
   // animator properties
@@ -456,7 +492,6 @@ public:
   DecalFloatVal startTime, actionTime; // in seconds
 
 protected:
-  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -467,12 +502,17 @@ public:
   inline VDecalAnimColorChanger () noexcept : VDecalAnim(), startTime(0), actionTime(0) { dest[0] = dest[1] = dest[2] = 0; }
   virtual ~VDecalAnimColorChanger ();
 
+  virtual vuint8 getTypeId () const noexcept override;
+  virtual const char *getTypeName () const noexcept override;
+
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
   virtual void genValues () noexcept override;
 
   virtual bool animate (decal_t *decal, float timeDelta) override;
+
+  virtual bool isColorChanger () const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
@@ -482,13 +522,12 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 class VDecalAnimCombiner : public VDecalAnim {
 public:
-  enum { TypeId = 5 };
+  enum { TypeId = TDecAnimCombiner };
 
 private:
   bool mIsCloned;
 
 protected:
-  virtual vuint8 getTypeId () const noexcept override;
   virtual void doIO (VStream &strm, VNTValueIOEx &vio) override;
 
 public:
@@ -507,6 +546,9 @@ public:
   inline VDecalAnimCombiner () noexcept : VDecalAnim(), mIsCloned(false), nameList(), list() {}
   virtual ~VDecalAnimCombiner ();
 
+  virtual vuint8 getTypeId () const noexcept override;
+  virtual const char *getTypeName () const noexcept override;
+
   // this does deep clone, so we can attach it to the actual decal object
   virtual VDecalAnim *clone () override;
 
@@ -516,6 +558,12 @@ public:
 
   virtual bool calcWillDisappear () const noexcept override;
   virtual void calcMaxScales (float *sx, float *sy) const noexcept override;
+
+  virtual bool isCombiner () const noexcept override;
+
+  virtual int getCount () const noexcept override;
+  virtual VDecalAnim *getAt (int idx) noexcept override;
+  virtual bool hasTypeId (vuint8 tid, int depth=0) const noexcept override;
 
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();

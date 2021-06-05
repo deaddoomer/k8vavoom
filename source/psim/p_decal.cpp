@@ -1092,6 +1092,36 @@ vuint8 VDecalAnim::getTypeId () const noexcept {
 
 //==========================================================================
 //
+//  VDecalAnim::getCount
+//
+//==========================================================================
+int VDecalAnim::getCount () const noexcept {
+  return 1;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::getAt
+//
+//==========================================================================
+VDecalAnim *VDecalAnim::getAt (int idx) noexcept {
+  return (idx == 0 ? this : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::hasTypeId
+//
+//==========================================================================
+bool VDecalAnim::hasTypeId (vuint8 tid, int depth) const noexcept {
+  return (getTypeId() == tid);
+}
+
+
+//==========================================================================
+//
 //  VDecalAnim::fixup
 //
 //==========================================================================
@@ -1119,6 +1149,56 @@ void VDecalAnim::calcMaxScales (float *sx, float *sy) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VDecalAnim::isFader
+//
+//==========================================================================
+bool VDecalAnim::isFader () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::isStretcher
+//
+//==========================================================================
+bool VDecalAnim::isStretcher () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::isSlider
+//
+//==========================================================================
+bool VDecalAnim::isSlider () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::isColorChanger
+//
+//==========================================================================
+bool VDecalAnim::isColorChanger () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnim::isCombiner
+//
+//==========================================================================
+bool VDecalAnim::isCombiner () const noexcept {
+  return false;
+}
+
+
 
 //**************************************************************************
 //
@@ -1142,6 +1222,15 @@ VDecalAnimFader::~VDecalAnimFader () {
 //==========================================================================
 vuint8 VDecalAnimFader::getTypeId () const noexcept {
   return VDecalAnimFader::TypeId;
+}
+
+//==========================================================================
+//
+//  VDecalAnimFader::getTypeName
+//
+//==========================================================================
+const char *VDecalAnimFader::getTypeName () const noexcept {
+  return "Fader";
 }
 
 
@@ -1188,6 +1277,7 @@ void VDecalAnimFader::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
+  //GCon->Logf(NAME_Debug, "VDecalAnimFader(%p:%s):000: origAlpha=%g; alpha=%g; tp=%g; stt=%g", decal, *decal->proto->name, decal->origAlpha, decal->alpha, timePassed, startTime.value);
   if (decal->origAlpha <= 0.0f || decal->alpha <= 0.0f) return false;
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
@@ -1199,6 +1289,7 @@ bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
   float dtx = timePassed-startTime.value;
   float aleft = decal->origAlpha;
   decal->alpha = aleft-aleft*dtx/actionTime.value;
+  //GCon->Logf(NAME_Debug, "VDecalAnimFader(%p):001: origAlpha=%g; alpha=%g; dtx=%g", decal, decal->origAlpha, decal->alpha, dtx/actionTime.value);
   //GCon->Logf("decal %p: dtx=%f; origA=%f; a=%f", decal, dtx, decal->origAlpha, decal->alpha);
   return (decal->alpha > 0.0f);
 }
@@ -1211,6 +1302,16 @@ bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
 //==========================================================================
 bool VDecalAnimFader::calcWillDisappear () const noexcept {
   return true; // fader will eventually destroy decal
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimFader::isFader
+//
+//==========================================================================
+bool VDecalAnimFader::isFader () const noexcept {
+  return true;
 }
 
 
@@ -1259,6 +1360,16 @@ VDecalAnimStretcher::~VDecalAnimStretcher () {
 //==========================================================================
 vuint8 VDecalAnimStretcher::getTypeId () const noexcept {
   return VDecalAnimStretcher::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimStretcher::getTypeName
+//
+//==========================================================================
+const char *VDecalAnimStretcher::getTypeName () const noexcept {
+  return "Stretcher";
 }
 
 
@@ -1359,6 +1470,16 @@ void VDecalAnimStretcher::calcMaxScales (float *sx, float *sy) const noexcept {
 
 //==========================================================================
 //
+//  VDecalAnimStretcher::isStretcher
+//
+//==========================================================================
+bool VDecalAnimStretcher::isStretcher () const noexcept {
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimStretcher::parse
 //
 //==========================================================================
@@ -1404,6 +1525,16 @@ VDecalAnimSlider::~VDecalAnimSlider () {
 //==========================================================================
 vuint8 VDecalAnimSlider::getTypeId () const noexcept {
   return VDecalAnimSlider::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimSlider::getTypeName
+//
+//==========================================================================
+const char *VDecalAnimSlider::getTypeName () const noexcept {
+  return "Slider";
 }
 
 
@@ -1475,6 +1606,16 @@ bool VDecalAnimSlider::animate (decal_t *decal, float timeDelta) {
 
 //==========================================================================
 //
+//  VDecalAnimSlider::isSlider
+//
+//==========================================================================
+bool VDecalAnimSlider::isSlider () const noexcept {
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimSlider::parse
 //
 //==========================================================================
@@ -1522,6 +1663,16 @@ VDecalAnimColorChanger::~VDecalAnimColorChanger () {
 //==========================================================================
 vuint8 VDecalAnimColorChanger::getTypeId () const noexcept {
   return VDecalAnimColorChanger::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimColorChanger::getTypeName
+//
+//==========================================================================
+const char *VDecalAnimColorChanger::getTypeName () const noexcept {
+  return "ColorChanger";
 }
 
 
@@ -1600,6 +1751,16 @@ bool VDecalAnimColorChanger::animate (decal_t *decal, float timeDelta) {
 
 //==========================================================================
 //
+//  VDecalAnimColorChanger::isColorChanger
+//
+//==========================================================================
+bool VDecalAnimColorChanger::isColorChanger () const noexcept {
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VDecalAnimColorChanger::parse
 //
 //==========================================================================
@@ -1659,6 +1820,16 @@ VDecalAnimCombiner::~VDecalAnimCombiner () {
 //==========================================================================
 vuint8 VDecalAnimCombiner::getTypeId () const noexcept {
   return VDecalAnimCombiner::TypeId;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::getTypeName
+//
+//==========================================================================
+const char *VDecalAnimCombiner::getTypeName () const noexcept {
+  return "Combiner";
 }
 
 
@@ -1780,6 +1951,50 @@ bool VDecalAnimCombiner::calcWillDisappear () const noexcept {
 //==========================================================================
 void VDecalAnimCombiner::calcMaxScales (float *sx, float *sy) const noexcept {
   for (VDecalAnim *da : list) if (da) da->calcMaxScales(sx, sy);
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::isCombiner
+//
+//==========================================================================
+bool VDecalAnimCombiner::isCombiner () const noexcept {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::getCount
+//
+//==========================================================================
+int VDecalAnimCombiner::getCount () const noexcept {
+  return list.length();
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::getAt
+//
+//==========================================================================
+VDecalAnim *VDecalAnimCombiner::getAt (int idx) noexcept {
+  if (idx >= 0 && idx < list.length()) return list[idx];
+  return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VDecalAnimCombiner::hasTypeId
+//
+//==========================================================================
+bool VDecalAnimCombiner::hasTypeId (vuint8 tid, int depth) const noexcept {
+  if (getTypeId() == tid) return true;
+  if (depth >= 64) return false;
+  for (VDecalAnim *da : list) if (da && da->hasTypeId(tid, depth+1)) return true;
+  return false;
 }
 
 
