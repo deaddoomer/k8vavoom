@@ -268,7 +268,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     if (lastTexTrans != dc->translation) {
       auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME! -- k8: what i wanted to fix here?
-      if (trans->isBloodTranslation) {
+      if (trans && trans->isBloodTranslation) {
         if (currTrans) {
           currTrans = nullptr;
           currTexId = -1;
@@ -278,8 +278,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         if (currTrans != trans) {
           currTexId = -1;
           currTrans = trans;
-          currBloodTrans = -1;
         }
+        currBloodTrans = -1;
       }
       lastTexTrans = dc->translation;
     }
