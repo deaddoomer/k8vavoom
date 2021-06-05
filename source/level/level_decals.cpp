@@ -1036,7 +1036,7 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
-  //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g)", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z);
+  //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g); trans=%d", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z, translation);
 
 #ifdef VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
   //dectype = VName("k8TestDecal");
