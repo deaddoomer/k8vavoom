@@ -508,7 +508,7 @@ void VDecalDef::genValues () noexcept {
       bootanimator = bootprint->Animator;
       bootshade = (bootprint->ShadeColor >= 0 ? bootprint->ShadeColor : -2);
       boottranslation = -2; //bootprint->Translation;
-      bootalpha = bootprint->Alpha;
+      //bootalpha = bootprint->Alpha;
       boottime = DecalFloatVal(bootprint->TimeMin, bootprint->TimeMax);
     }
   }
@@ -521,6 +521,8 @@ void VDecalDef::genValues () noexcept {
     bootprint = nullptr;
     boottime.value = 0.0f;
   } else {
+    bootprint->genValues();
+    bootalpha = bootprint->AlphaValue;
     boottime.genValue(0.0f);
   }
 }
@@ -1239,7 +1241,8 @@ const char *VDecalAnimFader::getTypeName () const noexcept {
 //  VDecalAnimFader::clone
 //
 //==========================================================================
-VDecalAnim *VDecalAnimFader::clone () {
+VDecalAnim *VDecalAnimFader::clone (bool forced) {
+  if (!forced && isEmpty()) return nullptr;
   VDecalAnimFader *res = new VDecalAnimFader(E_NoInit);
   res->copyBaseFrom(this);
   res->startTime = startTime.clone();
@@ -1277,6 +1280,7 @@ void VDecalAnimFader::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimFader::animate (decal_t *decal, float timeDelta) {
+  if (isEmpty()) return false; // just in case
   //GCon->Logf(NAME_Debug, "VDecalAnimFader(%p:%s):000: origAlpha=%g; alpha=%g; tp=%g; stt=%g", decal, *decal->proto->name, decal->origAlpha, decal->alpha, timePassed, startTime.value);
   if (decal->origAlpha <= 0.0f || decal->alpha <= 0.0f) return false;
   timePassed += timeDelta;
@@ -1321,6 +1325,7 @@ bool VDecalAnimFader::isFader () const noexcept {
 //
 //==========================================================================
 bool VDecalAnimFader::parse (VScriptParser *sc) {
+  empty = true;
   sc->SetCMode(true);
   sc->ExpectString();
   if (sc->String.Length() == 0) { sc->Error("invalid decal fader name"); return false; }
@@ -1378,7 +1383,8 @@ const char *VDecalAnimStretcher::getTypeName () const noexcept {
 //  VDecalAnimStretcher::clone
 //
 //==========================================================================
-VDecalAnim *VDecalAnimStretcher::clone () {
+VDecalAnim *VDecalAnimStretcher::clone (bool forced) {
+  if (!forced && isEmpty()) return nullptr;
   VDecalAnimStretcher *res = new VDecalAnimStretcher(E_NoInit);
   res->copyBaseFrom(this);
   res->goalX = goalX.clone();
@@ -1422,6 +1428,7 @@ void VDecalAnimStretcher::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimStretcher::animate (decal_t *decal, float timeDelta) {
+  if (isEmpty()) return false; // just in case
   if (decal->origScaleX <= 0.0f || decal->origScaleY <= 0.0f) { decal->alpha = 0.0f; return false; }
   if (decal->scaleX <= 0.0f || decal->scaleY <= 0.0f) { decal->alpha = 0.0f; return false; }
   timePassed += timeDelta;
@@ -1484,6 +1491,7 @@ bool VDecalAnimStretcher::isStretcher () const noexcept {
 //
 //==========================================================================
 bool VDecalAnimStretcher::parse (VScriptParser *sc) {
+  empty = true;
   sc->SetCMode(true);
   sc->ExpectString();
   if (sc->String.Length() == 0) { sc->Error("invalid decal fader name"); return false; }
@@ -1491,8 +1499,8 @@ bool VDecalAnimStretcher::parse (VScriptParser *sc) {
   sc->Expect("{");
   while (!sc->AtEnd()) {
     if (sc->Check("}")) return true;
-    if (sc->Check("goalx")) { empty = false; VDecalDef::parseNumOrRandom(sc, &goalX); continue; }
-    if (sc->Check("goaly")) { empty = false; VDecalDef::parseNumOrRandom(sc, &goalY); continue; }
+    if (sc->Check("goalx")) { VDecalDef::parseNumOrRandom(sc, &goalX); continue; }
+    if (sc->Check("goaly")) { VDecalDef::parseNumOrRandom(sc, &goalY); continue; }
     if (sc->Check("stretchstart")) { empty = false; VDecalDef::parseNumOrRandom(sc, &startTime); continue; }
     if (sc->Check("stretchtime")) { empty = false; VDecalDef::parseNumOrRandom(sc, &actionTime); continue; }
     sc->Error(va("unknown decal keyword '%s'", *sc->String));
@@ -1543,7 +1551,8 @@ const char *VDecalAnimSlider::getTypeName () const noexcept {
 //  VDecalAnimSlider::clone
 //
 //==========================================================================
-VDecalAnim *VDecalAnimSlider::clone () {
+VDecalAnim *VDecalAnimSlider::clone (bool forced) {
+  if (!forced && isEmpty()) return nullptr;
   VDecalAnimSlider *res = new VDecalAnimSlider(E_NoInit);
   res->copyBaseFrom(this);
   res->distX = distX.clone();
@@ -1590,6 +1599,7 @@ void VDecalAnimSlider::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimSlider::animate (decal_t *decal, float timeDelta) {
+  if (isEmpty()) return false; // just in case
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
   if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
@@ -1620,6 +1630,7 @@ bool VDecalAnimSlider::isSlider () const noexcept {
 //
 //==========================================================================
 bool VDecalAnimSlider::parse (VScriptParser *sc) {
+  empty = true;
   sc->SetCMode(true);
   sc->ExpectString();
   if (sc->String.Length() == 0) { sc->Error("invalid decal fader name"); return false; }
@@ -1628,11 +1639,11 @@ bool VDecalAnimSlider::parse (VScriptParser *sc) {
   sc->Expect("{");
   while (!sc->AtEnd()) {
     if (sc->Check("}")) return true;
-    if (sc->Check("distx")) { empty = false; VDecalDef::parseNumOrRandom(sc, &distX, true); continue; }
-    if (sc->Check("disty")) { empty = false; VDecalDef::parseNumOrRandom(sc, &distY, true); continue; }
+    if (sc->Check("distx")) { VDecalDef::parseNumOrRandom(sc, &distX, true); continue; }
+    if (sc->Check("disty")) { VDecalDef::parseNumOrRandom(sc, &distY, true); continue; }
     if (sc->Check("slidestart")) { empty = false; VDecalDef::parseNumOrRandom(sc, &startTime); continue; }
     if (sc->Check("slidetime")) { empty = false; VDecalDef::parseNumOrRandom(sc, &actionTime); continue; }
-    if (sc->Check("k8reversey")) { empty = false; k8reversey = true; continue; }
+    if (sc->Check("k8reversey")) { k8reversey = true; continue; }
     sc->Error(va("unknown decal keyword '%s'", *sc->String));
     break;
   }
@@ -1681,7 +1692,8 @@ const char *VDecalAnimColorChanger::getTypeName () const noexcept {
 //  VDecalAnimColorChanger::clone
 //
 //==========================================================================
-VDecalAnim *VDecalAnimColorChanger::clone () {
+VDecalAnim *VDecalAnimColorChanger::clone (bool forced) {
+  if (!forced && isEmpty()) return nullptr;
   VDecalAnimColorChanger *res = new VDecalAnimColorChanger(E_NoInit);
   res->copyBaseFrom(this);
   res->dest[0] = dest[0];
@@ -1725,6 +1737,7 @@ void VDecalAnimColorChanger::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimColorChanger::animate (decal_t *decal, float timeDelta) {
+  if (isEmpty()) return false; // just in case
   timePassed += timeDelta;
   if (timePassed < startTime.value) return true; // not yet
   if (timePassed >= startTime.value+actionTime.value || actionTime.value <= 0.0f) {
@@ -1765,6 +1778,7 @@ bool VDecalAnimColorChanger::isColorChanger () const noexcept {
 //
 //==========================================================================
 bool VDecalAnimColorChanger::parse (VScriptParser *sc) {
+  empty = true;
   sc->SetCMode(true);
   sc->ExpectString();
   if (sc->String.Length() == 0) { sc->Error("invalid decal fader name"); return false; }
@@ -1775,7 +1789,6 @@ bool VDecalAnimColorChanger::parse (VScriptParser *sc) {
     if (sc->Check("}")) return true;
 
     if (sc->Check("color") || sc->Check("colour")) {
-      empty = false;
       sc->ExpectString();
       int destclr = 0;
       if (!parseHexRGB(sc->String, &destclr)) { sc->Error("invalid color"); return false; }
@@ -1839,9 +1852,15 @@ const char *VDecalAnimCombiner::getTypeName () const noexcept {
 //
 //==========================================================================
 void VDecalAnimCombiner::fixup () {
+  empty = true;
   for (VName dn : nameList) {
     auto it = VDecalAnim::find(dn);
-    if (it) list.Append(it); else GCon->Logf(NAME_Warning, "animgroup '%s' contains unknown anim '%s'!", *name, *dn);
+    if (it) {
+      if (!it->isEmpty()) empty = false;
+      list.Append(it);
+    } else {
+      GCon->Logf(NAME_Warning, "animgroup '%s' contains unknown anim '%s'!", *name, *dn);
+    }
   }
 }
 
@@ -1851,7 +1870,8 @@ void VDecalAnimCombiner::fixup () {
 //  VDecalAnimCombiner::clone
 //
 //==========================================================================
-VDecalAnim *VDecalAnimCombiner::clone () {
+VDecalAnim *VDecalAnimCombiner::clone (bool forced) {
+  if (!forced && isEmpty()) return nullptr;
   VDecalAnimCombiner *res = new VDecalAnimCombiner(E_NoInit);
   res->copyBaseFrom(this);
   res->mIsCloned = true;
@@ -1860,7 +1880,7 @@ VDecalAnim *VDecalAnimCombiner::clone () {
   for (VName dn : nameList) res->nameList.append(dn);
   // copy animators
   res->list.resize(list.length());
-  for (auto &&da : list) res->list.append(da->clone());
+  for (auto &&da : list) res->list.append(da->clone(true));
   return res;
 }
 
@@ -1914,6 +1934,7 @@ void VDecalAnimCombiner::genValues () noexcept {
 //
 //==========================================================================
 bool VDecalAnimCombiner::animate (decal_t *decal, float timeDelta) {
+  if (isEmpty()) return false; // just in case
   vassert(mIsCloned);
   bool res = false;
   int f = 0;
@@ -2004,6 +2025,7 @@ bool VDecalAnimCombiner::hasTypeId (vuint8 tid, int depth) const noexcept {
 //
 //==========================================================================
 bool VDecalAnimCombiner::parse (VScriptParser *sc) {
+  empty = true;
   sc->SetCMode(true);
   sc->ExpectString();
   if (sc->String.Length() == 0) { sc->Error("invalid decal fader name"); return false; }

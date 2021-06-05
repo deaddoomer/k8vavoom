@@ -322,7 +322,8 @@ public:
   inline bool isEmpty () const noexcept { return empty; }
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () = 0;
+  // by default, returns `nullptr` for empty animators
+  virtual VDecalAnim *clone (bool forced=false) = 0;
 
   virtual void genValues () noexcept = 0;
 
@@ -386,7 +387,7 @@ public:
   virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () override;
+  virtual VDecalAnim *clone (bool forced=false) override;
 
   virtual void genValues () noexcept override;
 
@@ -426,7 +427,7 @@ public:
   virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () override;
+  virtual VDecalAnim *clone (bool forced=false) override;
 
   virtual void genValues () noexcept override;
 
@@ -468,7 +469,7 @@ public:
   virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () override;
+  virtual VDecalAnim *clone (bool forced=false) override;
 
   virtual void genValues () noexcept override;
 
@@ -506,7 +507,7 @@ public:
   virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () override;
+  virtual VDecalAnim *clone (bool forced=false) override;
 
   virtual void genValues () noexcept override;
 
@@ -550,7 +551,7 @@ public:
   virtual const char *getTypeName () const noexcept override;
 
   // this does deep clone, so we can attach it to the actual decal object
-  virtual VDecalAnim *clone () override;
+  virtual VDecalAnim *clone (bool forced=false) override;
 
   virtual void genValues () noexcept override;
 

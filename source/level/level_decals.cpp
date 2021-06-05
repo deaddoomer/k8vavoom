@@ -1232,6 +1232,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
     //GCon->Logf(NAME_Debug, "decal '%s': final alpha=%g", *dec->name, dcalpha);
     if (dcalpha < 0.004f) return;
     dcalpha = min2(1.0f, dcalpha);
+    //GCon->Logf(NAME_Debug, "decal '%s': final clamped alpha=%g", *dec->name, dcalpha);
   }
 
   decal_t *decal = new decal_t;
@@ -1272,7 +1273,9 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->bootalpha = dec->bootalpha;
 
   decal->animator = (animator ? animator : dec->animator);
+  //if (decal->animator) GCon->Logf(NAME_Debug, "anim: %s(%s) (%d)", *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
+  //decal->animator = nullptr;
   if (decal->animator) decal->animator = decal->animator->clone();
 
   AppendDecalToSubsectorList(decal);
@@ -1353,21 +1356,17 @@ IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   float range;
   VOptParamInt translation(0);
   VOptParamInt shadeclr(-2);
+  VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   VOptParamFloat angle(0.0f);
   VOptParamBool forceFlipX(false);
-  VOptParamFloat alpha(-2.0f);
   vobjGetParamSelf(org, dectype, range, translation, shadeclr, alpha, animator, angle, forceFlipX);
   Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), angle, angle.specified, forceFlipX);
 }
 
 
 // check what kind of bootprint decal is required at `org`
-// returns `false` if none (other vars are undefined)
-// otherwise:
-//   `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
-//   `decalTranslation` is translation (for translated blood)
-//   `markTime` is the time the marks should be left (in seconds)
+// returns `false` if none (params are undefined)
 // native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out VBootPrintDecalParams params);
 IMPLEMENT_FUNCTION(VLevel, CheckBootPrints) {
   TVec org;

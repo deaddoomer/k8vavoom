@@ -410,7 +410,7 @@ native final void AddFlatDecal (TVec org, name dectype, float range, optional in
 // otherwise:
 //   `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
 //   `decalTranslation` is translation (for translated blood)
-//   `markTime` is the time the marks should be left (in seconds)
+//   `MarkTime` is the time the marks should be left (in seconds)
 //
 // `sub` can be `nullptr`
 struct VBootPrintDecalParams {
@@ -418,7 +418,7 @@ struct VBootPrintDecalParams {
   int Translation;
   int Shade;
   float Alpha;
-  float markTime;
+  float MarkTime;
 };
 
 native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out VBootPrintDecalParams params);

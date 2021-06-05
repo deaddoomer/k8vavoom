@@ -2586,7 +2586,7 @@ void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int tr
 void FlatDecalEffect (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
                       optional name animator, optional float angle, optional bool forceFlipX)
 {
-  if (!dectype) return; // just in case
+  if (!dectype || !Level.XLevel) return; // just in case
   Level.XLevel.AddFlatDecal(org, dectype, range,
     translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional,
     animator:animator!optional, angle:angle!optional, forceFlipX:forceFlipX!optional);
@@ -6182,11 +6182,11 @@ void LeaveBootPrints (float deltaTime) {
   VLevel::VBootPrintDecalParams newpar;
 
   if (onFloor && pawn.XLevel.CheckBootPrints(pawn.Origin, pawn.SubSector, out newpar)) {
-    if (newpar.markTime > 0.0) {
-      //printdebug("%C: new mark time: %s", pawn, newpar.markTime);
+    if (newpar.MarkTime > 0.0) {
+      //printdebug("%C: new mark time: %s", pawn, newpar.MarkTime);
       bootprintParams = newpar;
-      bootprintTimeLeft = newpar.markTime+deltaTime;
-      bootprintTimeTotal = newpar.markTime;
+      bootprintTimeLeft = newpar.MarkTime+deltaTime;
+      bootprintTimeTotal = newpar.MarkTime;
       bootprintLastOrg = pawn.Origin;
       bootprintNextPutTime = FRandomBetween(mintm, maxtm);
     } else {
@@ -6216,6 +6216,7 @@ void LeaveBootPrints (float deltaTime) {
   // calculate alpha
   // total time
   float alpha = fclamp(bootprintTimeLeft/bootprintTimeTotal*bootprintParams.Alpha, 0.0f, 1.0f);
+  //printdebug("...alpha=%s (%s)", alpha, bootprintParams.Alpha);
 
   if (alpha <= 0.004) {
     ResetBootPrints();
@@ -6233,7 +6234,7 @@ void LeaveBootPrints (float deltaTime) {
 
   bool doflip = (pawn.BootPrintFlip ? bootprintFlip : false);
   pawn.SpawnFlatDecal(org, dcname, range:0,
-    atranslation:bootprintParams.Translation, ashadeclr:bootprintParams.Shade, alpha:alpha+1000.0f,
+    atranslation:bootprintParams.Translation, ashadeclr:bootprintParams.Shade, alpha:alpha/*+1000.0f*/,
     animator:bootprintParams.Animator, angle:pawn.Angles.yaw,
     forceFlipX:doflip);
 

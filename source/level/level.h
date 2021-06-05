@@ -48,7 +48,7 @@ struct VBootPrintDecalParams {
   vint32 Translation;
   vint32 Shade;
   float Alpha;
-  float markTime;
+  float MarkTime;
 };
 
 // WARNING! keep in sync with VavoomC code!
@@ -1425,12 +1425,7 @@ public: // used in renderer for flat decals
   void RemoveDecalAnimator (decal_t *dc); // this will also delete animator; safe to call on decals without an animator
 
   // check what kind of bootprint decal is required at `org`
-  // returns `false` if none (other vars are undefined)
-  // otherwise:
-  //   `decalName` is decal name (WARNING! DON'T RETURN 'None' for no decals, return '' (empty name)!)
-  //   `decalTranslation` is translation (for translated blood)
-  //   `markTime` is the time the marks should be left (in seconds)
-  //
+  // returns `false` if none (params are undefined)
   // `sub` can be `nullptr`
   bool CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams &params);
 

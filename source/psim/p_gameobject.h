@@ -178,10 +178,20 @@ struct VTerrainBootprint {
   VStr OrigName; // as comes from the definition, never empty
   float TimeMin;
   float TimeMax;
-  float Alpha;
+  float AlphaMin;
+  float AlphaMax;
+  float AlphaValue;
   vint32 Translation;
   vint32 ShadeColor; // -2: don't change
   VName Animator; // if not `NAME_None`, replace the animator
+
+  void genValues () noexcept {
+    if (AlphaMin < 0.0f) {
+      AlphaValue = -1.0f;
+    } else {
+      AlphaValue = RandomBetween(AlphaMin, AlphaMax);
+    }
+  }
 };
 
 

@@ -490,7 +490,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
   if (doclear) {
     bp->TimeMin = BOOT_TIME_MIN;
     bp->TimeMax = BOOT_TIME_MAX;
-    bp->Alpha = 1.0f;
+    bp->AlphaMin = bp->AlphaMax = bp->AlphaValue = 1.0f;
     bp->Translation = 0;
     bp->ShadeColor = -2;
     bp->Animator = NAME_None;
@@ -577,18 +577,27 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
     }
 
     if (sc->Check("translucent")) {
-      sc->ExpectFloat();
-      bp->Alpha = clampval(sc->Float, 0.0f, 1.0f);
+      if (sc->Check("random")) {
+        // `random min max`
+        sc->ExpectFloat();
+        bp->AlphaMin = clampval(sc->Float, 0.0f, 1.0f);
+        sc->ExpectFloat();
+        bp->AlphaMax = clampval(sc->Float, 0.0f, 1.0f);
+        bp->AlphaValue = RandomBetween(bp->AlphaMin, bp->AlphaMax);
+      } else {
+        sc->ExpectFloat();
+        bp->AlphaMin = bp->AlphaMax = bp->AlphaValue = clampval(sc->Float, 0.0f, 1.0f);
+      }
       continue;
     }
 
     if (sc->Check("solid")) {
-      bp->Alpha = 1.0f;
+      bp->AlphaMin = bp->AlphaMax = bp->AlphaValue = 1.0f;
       continue;
     }
 
     if (sc->Check("usesourcedecalalpha")) {
-      bp->Alpha = -1.0f;
+      bp->AlphaMin = bp->AlphaMax = bp->AlphaValue = -1.0f;
       continue;
     }
 

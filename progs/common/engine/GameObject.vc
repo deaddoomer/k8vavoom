@@ -1457,7 +1457,9 @@ struct VTerrainBootprint {
   string OrigName; // as comes from the definition, never empty
   float TimeMin;
   float TimeMax;
-  float Alpha; // <0: use alpha from the source decal
+  float AlphaMin; // <0: use alpha from the source decal
+  float AlphaMax;
+  float AlphaValue; // <0: use alpha from the source decal
   int Translation;
   int ShadeColor; // -2: don't change
   name Animator; // if not empty, replace the animator

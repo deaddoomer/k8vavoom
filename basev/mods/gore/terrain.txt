@@ -4,6 +4,7 @@ bootprint K8Gore_BootPrint {
   // do not change shade!
   shade "50 00 00"
   usesourcedecalalpha
+  //translucent random 0.84 0.96
   animator K8GoreBloodPrint_FaderAnim
 }
 
@@ -13,5 +14,6 @@ bootprint K8Gore_BootPrintTransient {
   // do not change shade!
   shade "4f 00 00"
   usesourcedecalalpha
+  //translucent random 0.84 0.96
   animator K8GoreBloodPrint_FaderAnimTransient
 }
