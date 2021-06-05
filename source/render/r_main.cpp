@@ -1194,6 +1194,14 @@ void VRenderLevelShared::ExecuteSetViewSize () {
 
     // GZDoom does this; i don't know why yet
     PSpriteOfsAspect = (!IsAspectTallerThanWide(baseAspect) ? 0.0f : ((4.0f/3.0f)/baseAspect-1.0f)*97.5f);
+    if (ScreenHeight+64 > ScreenWidth) {
+      //PSpriteOfsAspect = ((4.0f/3.0f)/baseAspect)*97.5f;
+      //PSpriteOfsAspect = baseAspect*100.0f;
+      //PSpriteOfsAspect = (float)ScreenHeight/(float)ScreenWidth/1.2f*baseAspect*97.5f;
+      PSpriteOfsAspect = (float)ScreenHeight/(float)ScreenWidth*97.5f;
+      //PSpriteOfsAspect = baseAspect*97.5f;
+      GCon->Logf(NAME_Debug, "*** baseAspect=%f; taller=%d; psofs=%f", baseAspect, (int)IsAspectTallerThanWide(baseAspect), PSpriteOfsAspect);
+    }
   } else {
     PSpriteOfsAspect = 0.0f;
   }
