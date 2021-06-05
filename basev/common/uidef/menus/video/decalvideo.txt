@@ -17,7 +17,7 @@ menudef DecalOptions {
 
   option bool {
     title = "Floor/Ceiling Decals";
-    cvar = r_decals_flag;
+    cvar = r_decals_flat;
     help = "Allow floor/ceiling decals (if decals are turned on).";
   }
 
