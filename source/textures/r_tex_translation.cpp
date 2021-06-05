@@ -37,6 +37,7 @@ VTextureTranslation::VTextureTranslation ()
   , TranslStart(0)
   , TranslEnd(0)
   , Color(0)
+  , isBloodTranslation(false)
 {
   Clear();
 }
@@ -81,9 +82,9 @@ void VTextureTranslation::CalcCrc () {
 void VTextureTranslation::Serialise (VStream &Strm) {
   //k8: is this right at all?
   //    this is used for translations added by ACS
-  vuint8 xver = 0;
+  vuint8 xver = 1;
   Strm << xver;
-  if (xver != 0) Host_Error("invalid `VTextureTranslation` version: %u", xver);
+  if (xver != 0 && xver != 1) Host_Error("invalid `VTextureTranslation` version: %u", xver);
   // color translation
   Strm.Serialise(Table, 256);
   Strm.Serialise(Palette, sizeof(Palette));
@@ -98,6 +99,13 @@ void VTextureTranslation::Serialise (VStream &Strm) {
   for (int i = 0; i < CmdsSize; ++i) {
     VTransCmd &C = Commands[i];
     Strm << C.Type << C.Start << C.End << C.R1 << C.G1 << C.B1 << C.R2 << C.G2 << C.B2;
+  }
+  if (xver == 1) {
+    vuint8 btr = (isBloodTranslation ? 1 : 0);
+    Strm << btr;
+    if (Strm.IsLoading()) isBloodTranslation = (btr != 0);
+  } else {
+    isBloodTranslation = false; //FIXME: because ACS cannot add blood translations
   }
   //CalcCrc();
 }
@@ -124,6 +132,7 @@ void VTextureTranslation::BuildPlayerTrans (int Start, int End, int Col) {
     Table[Idx] = R_LookupRGB(Palette[Idx].r, Palette[Idx].g, Palette[Idx].b);
   }
   //for (int f = 0; f < 256; ++f) Table[f] = R_LookupRGB(255, 0, 0);
+  isBloodTranslation = false;
   CalcCrc();
   TranslStart = Start;
   TranslEnd = End;
@@ -149,6 +158,7 @@ void VTextureTranslation::BuildBloodTrans (int Col) {
     Table[i] = R_LookupRGB(Palette[i].r, Palette[i].g, Palette[i].b);
     //Table[i] = R_LookupRGB(255, 0, 0);
   }
+  isBloodTranslation = true;
   CalcCrc();
   Color = Col&0xffffff;
 }
@@ -180,6 +190,7 @@ void VTextureTranslation::MapToPalette (const VColorRGBA newpal[768]) {
       Table[i] = i;
     }
   }
+  isBloodTranslation = false;
   CalcCrc();
 }
 
@@ -232,6 +243,7 @@ void VTextureTranslation::MapToRange (int AStart, int AEnd, int ASrcStart, int A
   C.End = End;
   C.R1 = SrcStart;
   C.R2 = SrcEnd;
+  isBloodTranslation = false;
   CalcCrc();
 }
 
@@ -310,6 +322,7 @@ void VTextureTranslation::MapToColors (int AStart, int AEnd, int AR1, int AG1, i
   C.R2 = R2;
   C.G2 = G2;
   C.B2 = B2;
+  isBloodTranslation = false;
   CalcCrc();
 }
 
@@ -354,6 +367,7 @@ void VTextureTranslation::MapDesaturated (int AStart, int AEnd, float rs, float 
   C.R2 = clampToByte((int)(re*128.0f));
   C.G2 = clampToByte((int)(ge*128.0f));
   C.B2 = clampToByte((int)(be*128.0f));
+  isBloodTranslation = false;
   CalcCrc();
 }
 
@@ -390,6 +404,7 @@ void VTextureTranslation::MapBlended (int AStart, int AEnd, int R, int G, int B)
   C.R1 = R;
   C.G1 = G;
   C.B1 = B;
+  isBloodTranslation = false;
   CalcCrc();
 }
 
@@ -432,6 +447,7 @@ void VTextureTranslation::MapTinted (int AStart, int AEnd, int R, int G, int B, 
   C.G1 = G;
   C.B1 = B;
   C.R2 = Amount;
+  isBloodTranslation = false;
   CalcCrc();
 }
 

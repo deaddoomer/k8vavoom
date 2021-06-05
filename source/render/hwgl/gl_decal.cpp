@@ -217,6 +217,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   int currTexId = -1; // don't call `SetTexture()` repeatedly
   VTextureTranslation *currTrans = nullptr;
   int lastTexTrans = 0;
+  int currBloodTrans = -1; // special code for "blood translation" color translations
 
   int bigDecalCount = 0;
   int smallDecalCount = 0;
@@ -260,18 +261,28 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       if ((dc->flags&decal_t::NoBotTex) && (surf->typeFlags&surface_t::TF_BOTTOM)) continue;
     }
 
-    if (currTexId != dcTexId || lastTexTrans != dc->translation) {
-      auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME! -- k8: what i wanted to fix here?
-      if (currTrans != trans) {
-        currTexId = -1;
-        currTrans = trans;
-      }
-    }
-
     const float twdt = dtex->GetScaledWidthF()*dscaleX;
     const float thgt = dtex->GetScaledHeightF()*dscaleY;
 
     if (twdt < 1.0f || thgt < 1.0f) continue;
+
+    if (lastTexTrans != dc->translation) {
+      auto trans = R_GetCachedTranslation(dc->translation, GClLevel); //FIXME! -- k8: what i wanted to fix here?
+      if (trans->isBloodTranslation) {
+        if (currTrans) {
+          currTrans = nullptr;
+          currTexId = -1;
+        }
+        currBloodTrans = trans->Color&0xffffff;
+      } else {
+        if (currTrans != trans) {
+          currTexId = -1;
+          currTrans = trans;
+          currBloodTrans = -1;
+        }
+      }
+      lastTexTrans = dc->translation;
+    }
 
     // permament decals are ignored
     if (!dc->isPermanent()) {
@@ -437,11 +448,20 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     const float &soffs = dc->soffs;
     const float &toffs = dc->toffs;
 
-    if (dc->shadeclr != -1) {
-      smode = 1.0f;
-      sr = ((dc->shadeclr>>16)&255)/255.0f;
-      sg = ((dc->shadeclr>>8)&255)/255.0f;
-      sb = (dc->shadeclr&255)/255.0f;
+    if (!currTrans) {
+      if (currBloodTrans != -1) {
+        smode = 1.0f;
+        sr = ((currBloodTrans>>16)&255)/255.0f;
+        sg = ((currBloodTrans>>8)&255)/255.0f;
+        sb = (currBloodTrans&255)/255.0f;
+      } else if (dc->shadeclr != -1) {
+        smode = 1.0f;
+        sr = ((dc->shadeclr>>16)&255)/255.0f;
+        sg = ((dc->shadeclr>>8)&255)/255.0f;
+        sb = (dc->shadeclr&255)/255.0f;
+      } else {
+        smode = 0.0f;
+      }
     } else {
       smode = 0.0f;
     }

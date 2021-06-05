@@ -476,6 +476,8 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
     GCon->Logf(NAME_Debug, "set camera texture; fboidx=%d; fbotid=%u; tid=%d; curtid=%d; size=%dx%d; ofs=(%d,%d); scale=(%g,%g)", CamTex->camfboidx, cameraFBOList[CamTex->camfboidx]->fbo.getColorTid(), tid, oldbindtex, Tex->Width, Tex->Height, Tex->SOffset, Tex->TOffset, Tex->SScale, Tex->TScale);
     #endif
   } else {
+    bool forceRelease = false;
+
     // handle non-camera texture
     if (!*pHandle) glGenTextures(1, pHandle);
     glBindTexture(GL_TEXTURE_2D, *pHandle);
@@ -520,20 +522,41 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       const rgba_t *CMPal = ColorMaps[CMap].GetPalette();
       for (int i = 0; i < 256; ++i) tmppal[i] = CMPal[TrTab[i]];
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      if (ttype == SetTexType::TT_Decal) {
+        SrcTex->ReleasePixels();
+        SrcTex->Shade(0xffffff); // shade to white
+        (void)SrcTex->GetPixels(); // shaded
+        forceRelease = true;
+      } else {
+        if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      }
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), tmppal, SrcTex->SourceLump, hitype);
     } else if (Translation) {
       // only translation
       //GCon->Logf("uploading translated texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       //for (int f = 0; f < 256; ++f) GCon->Logf("  %3d: r:g:b=%02x:%02x:%02x", f, Translation->GetPalette()[f].r, Translation->GetPalette()[f].g, Translation->GetPalette()[f].b);
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      if (ttype == SetTexType::TT_Decal) {
+        SrcTex->ReleasePixels();
+        SrcTex->Shade(0xffffff); // shade to white
+        (void)SrcTex->GetPixels(); // shaded
+        forceRelease = true;
+      } else {
+        if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      }
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), Translation->GetPalette(), SrcTex->SourceLump, hitype);
     } else if (CMap) {
       // only colormap
       //GCon->Logf(NAME_Dev, "uploading colormapped texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      if (ttype == SetTexType::TT_Decal) {
+        SrcTex->ReleasePixels();
+        SrcTex->Shade(0xffffff); // shade to white
+        (void)SrcTex->GetPixels(); // shaded
+        forceRelease = true;
+      } else {
+        if (needUpdate) (void)SrcTex->GetPixels(); // this updates warp and other textures
+      }
       UploadTexture8A(SrcTex->GetWidth(), SrcTex->GetHeight(), SrcTex->GetPixels8A(), ColorMaps[CMap].GetPalette(), SrcTex->SourceLump, hitype);
     } else if (ShadeColor) {
       // shade (and possible colormap)
@@ -556,7 +579,9 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
 
     // do not release cropped textures, we may need their pixels in the future
     //FIXME: make them "releaseable"
-    if (!doCrop) {
+    if (forceRelease) {
+      SrcTex->ReleasePixels();
+    } else if (!doCrop) {
       if (SrcTex && !SrcTex->IsDynamicTexture() && (SrcTex->IsHugeTexture() || gl_release_ram_textures_mode.asInt() >= 2)) {
         //if (SrcTex->IsHugeTexture()) GCon->Logf(NAME_Debug, "freeing \"huge\" texture '%s' (%s) (%dx%d)", *SrcTex->Name, *W_FullLumpName(SrcTex->SourceLump), SrcTex->Width, SrcTex->Height);
         SrcTex->ReleasePixels();

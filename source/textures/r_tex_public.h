@@ -136,7 +136,8 @@ public:
   // used to detect changed player translations
   vuint8 TranslStart;
   vuint8 TranslEnd;
-  vint32 Color;
+  vint32 Color; // used for blood translations too
+  bool isBloodTranslation;
 
   // used to replicate translation tables in more efficient way
   struct VTransCmd {
