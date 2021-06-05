@@ -222,7 +222,14 @@ static float CalcAspect (int aspectRatio, int scrwdt, int scrhgt, int *aspHoriz=
   if (aspHoriz) *aspHoriz = AspectList[aspectRatio].horiz;
   if (aspVert) *aspVert = AspectList[aspectRatio].vert;
   if (aspectRatio == 0) return 1.2f*VDrawer::GetWindowAspect();
+  #if 0
   return ((float)scrhgt*(float)AspectList[aspectRatio].horiz)/((float)scrwdt*(float)AspectList[aspectRatio].vert)*1.2f*VDrawer::GetWindowAspect();
+  #else
+  const int sh = min2(scrhgt, scrwdt);
+  const int sw = max2(scrhgt, scrwdt);
+  return ((float)sh*(float)AspectList[aspectRatio].horiz)/((float)sw*(float)AspectList[aspectRatio].vert)*1.2f*VDrawer::GetWindowAspect();
+  //return (200.0f*(float)AspectList[aspectRatio].vert)/(320.0f*(float)AspectList[aspectRatio].horiz)*1.2f*VDrawer::GetWindowAspect();
+  #endif
 }
 
 
