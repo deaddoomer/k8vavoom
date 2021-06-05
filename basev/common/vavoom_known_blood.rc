@@ -1,7 +1,9 @@
 known_blood {
   name = "NashGore";
-  match = ["NashGore*", "Nash_Gore*"];
-  blockspawn = true; // this is actually the default
+  matchany = ["*NashGore*", "*Nash_Gore*"];
+  blockspawn = false; // block is the default one, but it should be false in order to properly replace blood
+  replace "*NashGore*Blood*" with "Blood";
+  replace "*Nash_Gore*Blood*" with "Blood";
 }
 
 known_blood {
