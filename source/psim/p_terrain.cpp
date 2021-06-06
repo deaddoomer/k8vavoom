@@ -677,22 +677,73 @@ static void ParseTerrainScript (VScriptParser *sc) {
 
     // floor detection definition?
     if (sc->Check("floor")) {
+      const VStr slocstr = sc->GetLoc().toStringNoCol();
       sc->Check("optional"); // ignore it
       sc->ExpectName8Warn();
       VName floorname = sc->Name8;
-      int Pic = GTextureManager.CheckNumForName(floorname, TEXTYPE_Flat, false);
-      if (Pic <= 0) continue;
       sc->ExpectString();
-      if (sc->String.isEmpty()) sc->String = "none"; //k8:???
+      VStr tername = sc->String;
+      if (tername.isEmpty()) tername = "none"; //k8:???
+      //GCon->Logf(NAME_Debug, "::: <%s> -- <%s>", *floorname, *tername);
+      int Pic = GTextureManager.CheckNumForName(floorname, TEXTYPE_Flat, /*false*/true); // allow overloads
+      if (Pic == 0) {
+        GCon->Logf(NAME_Warning, "%s: cannot assign NULL floor texture '%s' for terrain '%s'", *slocstr, *floorname, *tername);
+        continue;
+      }
+      if (Pic < 0) {
+        GCon->Logf(NAME_Warning, "%s: ignored unknown floor texture '%s' for terrain '%s'", *slocstr, *floorname, *tername);
+        continue;
+        /*
+        Pic = GTextureManager.CheckNumForName(floorname, TEXTYPE_Wall, false);
+        if (Pic == 0) { GCon->Logf(NAME_Warning, "%s: cannot assign NULL wall texture '%s' for terrain '%s'", *slocstr, *floorname, *tername); continue; }
+        if (Pic < 0) {
+          Pic = GTextureManager.CheckNumForName(floorname, TEXTYPE_WallPatch, false);
+          if (Pic == 0) { GCon->Logf(NAME_Warning, "%s: cannot assign NULL patch texture '%s' for terrain '%s'", *slocstr, *floorname, *tername); continue; }
+          if (Pic < 0) { GCon->Logf(NAME_Warning, "%s: ignored unknown floor texture '%s' for terrain '%s'", *slocstr, *floorname, *tername); continue; }
+          GCon->Logf(NAME_Init, "%s; assigning patch texture '%s' to terrain '%s'", *slocstr, *floorname, *tername);
+        } else {
+          GCon->Logf(NAME_Init, "%s; assigning wall texture '%s' to terrain '%s'", *slocstr, *floorname, *tername);
+        }
+        */
+      } else {
+        VTexture *tex = GTextureManager[Pic];
+        if (!tex) {
+          GCon->Logf(NAME_Warning, "%s: ignored unknown floor texture '%s' for terrain '%s'", *slocstr, *floorname, *tername);
+          continue;
+        }
+        bool invalid = false;
+        const char *stn = "wtf?";
+        switch (tex->Type) {
+          case TEXTYPE_WallPatch: stn = "patch"; break;
+          case TEXTYPE_Wall: stn = "wall"; break;
+          case TEXTYPE_Flat: stn = nullptr; break;
+          case TEXTYPE_Overload: stn = nullptr/*"overload"*/; break;
+          case TEXTYPE_Sprite: stn = "sprite"; invalid = true; break;
+          case TEXTYPE_SkyMap: stn = "skymap"; invalid = true; break;
+          case TEXTYPE_Skin: stn = "skin"; invalid = true; break;
+          case TEXTYPE_Pic: stn = "pic"; invalid = true; break;
+          case TEXTYPE_Autopage: stn = "autopage"; invalid = true; break;
+          case TEXTYPE_Null: stn = "null"; invalid = true; break;
+          case TEXTYPE_FontChar: stn = "font"; invalid = true; break;
+          default: break;
+        }
+        if (invalid) {
+          GCon->Logf(NAME_Warning, "%s: cannot assign %s floor texture '%s' for terrain '%s'", *slocstr, stn, *floorname, *tername);
+          continue;
+        }
+        if (stn) {
+          GCon->Logf(NAME_Init, "%s: assigning %s texture '%s' for terrain '%s'", *slocstr, stn, *floorname, *tername);
+        }
+      }
       auto pp = TerrainTypeMap.find(Pic);
       if (pp) {
         // replace old one
-        TerrainTypes[*pp].TypeName = VName(*sc->String, VName::AddLower);
+        TerrainTypes[*pp].TypeName = VName(*tername, VName::AddLower);
       } else {
-        //!GCon->Logf(NAME_Init, "%s: new terrain floor '%s' of type '%s' (pic=%d)", *sc->GetLoc().toStringNoCol(), *floorname, *sc->String, Pic);
+        //!GCon->Logf(NAME_Init, "%s: new terrain floor '%s' of type '%s' (pic=%d)", *sc->GetLoc().toStringNoCol(), *floorname, *tername, Pic);
         VTerrainType &T = TerrainTypes.Alloc();
         T.Pic = Pic;
-        T.TypeName = VName(*sc->String, VName::AddLower);
+        T.TypeName = VName(*tername, VName::AddLower);
         TerrainTypeMap.put(Pic, TerrainTypes.length()-1);
       }
       continue;
@@ -744,6 +795,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
       }
       continue;
     }
+
     sc->Error(va("Unknown command (%s)", *sc->String));
   }
   delete sc;
