@@ -507,10 +507,17 @@ void VUdmfParser::Parse (VLevel *Level, const VMapInfo &MInfo) {
     else if (sc.Check("sidedef")) ParseSideDef();
     else if (sc.Check("thing")) ParseThing();
     else {
+      VStr slocstr = sc.GetLoc().toStringNoCol();
       if (!sc.GetString()) break;
-      sc.Message(va("UDMF: ignoring unknown block '%s'", *sc.String));
-      sc.Expect("{");
-      sc.SkipBracketed(true); // bracket eaten
+      VStr kn = sc.String;
+      GCon->Logf(NAME_Error, "%s:UDMF ignoring wtfidontknow '%s'", *slocstr, *kn);
+      if (sc.Check("=")) {
+        sc.ExpectString();
+        sc.Expect(";");
+      } else {
+        sc.Expect("{");
+        sc.SkipBracketed(true); // bracket eaten
+      }
     }
   }
 }
