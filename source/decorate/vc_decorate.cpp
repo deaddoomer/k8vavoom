@@ -40,6 +40,10 @@ static int bloodOverrideAllowed = 0;
 static int enableKnownBlood = 0;
 bool decorateSkipBDWClasses = false;
 
+// you cannot override/replace those actors
+static bool GlobalDisableOverride = false;
+static TMap<VStrCI, bool> NoOverrideNames;
+
 // globals
 bool decoIgnorePlayerSpeed = false;
 TMapNC<VName, bool> BlockedSpawnSet;
@@ -275,6 +279,26 @@ static inline bool getIgnoreMoronicStateCommands () { return !!cli_DecorateMoron
 // the same mod (yes, smoothdoom, i am talking about you).
 // we will cut off old override if we'll find a new one
 static TMapNC<VClass *, bool> currFileRepls; // set; key is old class
+
+
+//==========================================================================
+//
+//  IsNoOverrideName
+//
+//==========================================================================
+static inline bool IsNoOverrideName (VStr name) noexcept {
+  return NoOverrideNames.has(name);
+}
+
+
+//==========================================================================
+//
+//  AddNoOverrideName
+//
+//==========================================================================
+static void AddNoOverrideName (VStr name) noexcept {
+  if (!name.isEmpty()) NoOverrideNames.put(name, true);
+}
 
 
 //==========================================================================
@@ -2173,6 +2197,14 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     return;
   }
 
+  if (IsNoOverrideName(NameStr)) {
+    sc->Message(va("skipping class `%s` due to override protection", *NameStr));
+    sc->SkipBracketed(false); // bracket is not eaten
+    return;
+    //NameStr += "_k8NoOverride";
+  }
+  if (GlobalDisableOverride) AddNoOverrideName(NameStr);
+
   VClass *ParentClass = ActorClass;
   if (ParentStr.IsNotEmpty()) {
     ParentClass = VClass::FindClassNoCase(*ParentStr);
@@ -2245,34 +2277,39 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   if (sc->Check("replaces")) {
     sc->ExpectString();
     ReplaceeClass = VClass::FindClassNoCase(*sc->String);
-    if (ReplaceeClass == nullptr || ReplaceeClass->MemberType != MEMBER_Class) {
-      // D4V (and other mods) hacks
-      bool ignoreReplaceError = (optionalActor || CheckReplaceErrorHacks(sc, NameStr, ParentStr, sc->String));
-      if (cli_DecorateLaxParents || ignoreReplaceError) {
-        ReplaceeClass = nullptr; // just in case
-        if (!ignoreReplaceError) sc->Message(va("Replaced class `%s` not found for actor `%s` : `%s`", *sc->String, *NameStr, *ParentStr));
-      } else {
-        sc->Error(va("Replaced class `%s` not found for actor `%s` : `%s`", *sc->String, *NameStr, *ParentStr));
+    if (ReplaceeClass && IsNoOverrideName(sc->String)) {
+      sc->Message(va("skipping class `%s` replacement (%s) due to override protection", *NameStr, *sc->String));
+      ReplaceeClass = nullptr;
+    } else {
+      if (ReplaceeClass == nullptr || ReplaceeClass->MemberType != MEMBER_Class) {
+        // D4V (and other mods) hacks
+        bool ignoreReplaceError = (optionalActor || CheckReplaceErrorHacks(sc, NameStr, ParentStr, sc->String));
+        if (cli_DecorateLaxParents || ignoreReplaceError) {
+          ReplaceeClass = nullptr; // just in case
+          if (!ignoreReplaceError) sc->Message(va("Replaced class `%s` not found for actor `%s` : `%s`", *sc->String, *NameStr, *ParentStr));
+        } else {
+          sc->Error(va("Replaced class `%s` not found for actor `%s` : `%s`", *sc->String, *NameStr, *ParentStr));
+        }
       }
-    }
-    if (ReplaceeClass != nullptr && !ReplaceeClass->IsChildOf(ActorClass)) {
-      if (cli_DecorateNonActorReplace) {
-        ReplaceeClass = nullptr; // just in case
-        sc->Message(va("Replaced class `%s` is not an actor class", *sc->String));
-      } else {
-        sc->Error(va("Replaced class `%s` is not an actor class", *sc->String));
+      if (ReplaceeClass != nullptr && !ReplaceeClass->IsChildOf(ActorClass)) {
+        if (cli_DecorateNonActorReplace) {
+          ReplaceeClass = nullptr; // just in case
+          sc->Message(va("Replaced class `%s` is not an actor class", *sc->String));
+        } else {
+          sc->Error(va("Replaced class `%s` is not an actor class", *sc->String));
+        }
       }
-    }
-    /*
-    if (ReplaceeClass != nullptr && !ReplaceeClass->IsChildOf(ParentClass)) {
-      ReplaceeClass = nullptr; // just in case
-      sc->Message(va("Replaced class `%s` is not a child of `%s`", *sc->String, ParentClass->GetName()));
-    }
-    */
-    // skip this actor if it has invalid replacee
-    if (ReplaceeClass == nullptr) {
-      sc->SkipBracketed(false); // bracket is not eaten
-      return;
+      /*
+      if (ReplaceeClass != nullptr && !ReplaceeClass->IsChildOf(ParentClass)) {
+        ReplaceeClass = nullptr; // just in case
+        sc->Message(va("Replaced class `%s` is not a child of `%s`", *sc->String, ParentClass->GetName()));
+      }
+      */
+      // skip this actor if it has invalid replacee
+      if (ReplaceeClass == nullptr) {
+        sc->SkipBracketed(false); // bracket is not eaten
+        return;
+      }
     }
   }
 
@@ -3207,6 +3244,14 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
   // get name of the class
   sc->ExpectString();
   VName ClassName = *sc->String;
+  bool allowReplace = true;
+
+  if (IsNoOverrideName(sc->String)) {
+    ClassName = VName(*(sc->String+"_k8NoOverride"));
+    allowReplace = false;
+  } else if (GlobalDisableOverride) {
+    AddNoOverrideName(sc->String);
+  }
 
   // create class
   TArray<VDecorateUserVarDef> uvars;
@@ -3466,14 +3511,16 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
   if (Type == OLDDEC_Breakable && DeathEnd == 0) sc->Error(va("%s has no DeathFrames definition", *ClassName));
   if (GenericIceDeath && IceEnd != 0) sc->Error("IceDeathFrames and GenericIceDeath are mutually exclusive");
 
-  if (DoomEdNum > 0) {
-    /*mobjinfo_t *nfo =*/ VClass::AllocMObjId(DoomEdNum, (GameFilter ? GameFilter : GAME_Any), Class);
-    //if (nfo) nfo->Class = Class;
-  }
+  if (allowReplace) {
+    if (DoomEdNum > 0) {
+      /*mobjinfo_t *nfo =*/ VClass::AllocMObjId(DoomEdNum, (GameFilter ? GameFilter : GAME_Any), Class);
+      //if (nfo) nfo->Class = Class;
+    }
 
-  if (SpawnNum > 0) {
-    /*mobjinfo_t *nfo =*/ VClass::AllocScriptId(SpawnNum, (GameFilter ? GameFilter : GAME_Any), Class);
-    //if (nfo) nfo->Class = Class;
+    if (SpawnNum > 0) {
+      /*mobjinfo_t *nfo =*/ VClass::AllocScriptId(SpawnNum, (GameFilter ? GameFilter : GAME_Any), Class);
+      //if (nfo) nfo->Class = Class;
+    }
   }
 
   // set up linked list of states
@@ -3690,14 +3737,18 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
                if (sc->Check("true") || sc->Check("tan")) thisIsBasePak = true;
           else if (sc->Check("false") || sc->Check("ona")) thisIsBasePak = false;
           else sc->Error("boolean expected for k8vavoom command 'basepak'");
-        } else if (sc->Check("AllowBloodReplacement")) {
+          continue;
+        }
+        if (sc->Check("AllowBloodReplacement")) {
           sc->Expect("=");
                if (sc->Check("true") || sc->Check("tan")) bloodOverrideAllowed = true;
           else if (sc->Check("false") || sc->Check("ona")) bloodOverrideAllowed = false;
           else sc->Error("boolean expected for k8vavoom command 'AllowBloodReplacement'");
-        } else {
-          sc->Error(va("invalid k8vavoom command '%s'", *sc->String));
+          continue;
         }
+        if (sc->Check("GlobalDisableOverride")) { GlobalDisableOverride = true; continue; }
+        if (sc->Check("GlobalEnableOverride")) { GlobalDisableOverride = false; continue; }
+        sc->Error(va("invalid k8vavoom command '%s'", *sc->String));
       }
     } else {
       ParseOldDecoration(sc, OLDDEC_Decoration);
@@ -3939,12 +3990,14 @@ void ProcessDecorateScripts () {
     }
     thisIsBasePak = false;
     bloodOverrideAllowed = false;
+    GlobalDisableOverride = false;
     ParseDecorate(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
     thisIsBasePak = false; // reset it
     mainDecorateLump = -1;
   }
 
   decoLumps.clear();
+  NoOverrideNames.clear();
 
   //VMemberBase::StaticDumpMObjInfo();
   ClearReplacementBase();

@@ -44,6 +44,30 @@ static TMapNC<VName, bool> optionalDecalGroups;
 
 VDecalAnim *DummyDecalAnimator = nullptr;
 
+static bool GlobalDisableOverride = false;
+static TMap<VStrCI, bool> NoOverrideNames;
+
+
+
+//==========================================================================
+//
+//  IsNoOverrideName
+//
+//==========================================================================
+static inline bool IsNoOverrideName (VStr name) noexcept {
+  return NoOverrideNames.has(name);
+}
+
+
+//==========================================================================
+//
+//  AddNoOverrideName
+//
+//==========================================================================
+static void AddNoOverrideName (VStr name) noexcept {
+  if (!name.isEmpty()) NoOverrideNames.put(name, true);
+}
+
 
 //==========================================================================
 //
@@ -2142,11 +2166,19 @@ void ParseDecalDef (VScriptParser *sc) {
         VClass *klass = VClass::FindClassNoCase(*clsname);
         if (klass) {
           if (developer && cli_DebugDecals > 0) GCon->Logf(NAME_Dev, "%s: class '%s': set decal '%s'", *sc->GetLoc().toStringNoCol(), klass->GetName(), *decname);
-          klass->SetFieldNameValue(VName("DecalName"), VName(*decname));
+          if (IsNoOverrideName(VStr(klass->GetFieldNameValue(VName("DecalName"))))) {
+            GCon->Logf(NAME_Init, "%s: skipped generator override at class '%s' due to global protection", *sc->GetLoc().toStringNoCol(), klass->GetName());
+          } else {
+            klass->SetFieldNameValue(VName("DecalName"), VName(*decname));
+          }
           VClass *k2 = klass->GetReplacee();
           if (k2 && k2 != klass) {
             if (developer) GCon->Logf(NAME_Dev, "  repclass '%s': set decal '%s'", k2->GetName(), *decname);
-            k2->SetFieldNameValue(VName("DecalName"), VName(*decname));
+            if (IsNoOverrideName(VStr(k2->GetFieldNameValue(VName("DecalName"))))) {
+              GCon->Logf(NAME_Init, "%s: skipped generator override at class '%s' due to global protection", *sc->GetLoc().toStringNoCol(), k2->GetName());
+            } else {
+              k2->SetFieldNameValue(VName("DecalName"), VName(*decname));
+            }
           }
         } else {
           GCon->Logf(NAME_Warning, "%s: ignored 'generator' definition for class '%s'", *sc->GetLoc().toStringNoCol(), *clsname);
@@ -2161,6 +2193,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto dc = new VDecalDef();
         if ((error = !dc->parse(sc)) == true) { delete dc; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(dc->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped decal override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *dc->name);
+          delete dc;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(dc->name));
         if (dc->texid > 0) VDecalDef::addToList(dc); else delete dc;
         continue;
       }
@@ -2169,6 +2207,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto dg = new VDecalGroup();
         if ((error = !dg->parse(sc)) == true) { delete dg; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(dg->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped decal group override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *dg->name);
+          delete dg;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(dg->name));
         VDecalGroup::addToList(dg);
         continue;
       }
@@ -2177,6 +2221,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto ani = new VDecalAnimFader();
         if ((error = !ani->parse(sc)) == true) { delete ani; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(ani->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped animator override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *ani->name);
+          delete ani;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(ani->name));
         VDecalAnim::addToList(ani);
         continue;
       }
@@ -2185,6 +2235,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto ani = new VDecalAnimStretcher();
         if ((error = !ani->parse(sc)) == true) { delete ani; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(ani->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped animator override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *ani->name);
+          delete ani;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(ani->name));
         VDecalAnim::addToList(ani);
         continue;
       }
@@ -2193,6 +2249,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto ani = new VDecalAnimSlider();
         if ((error = !ani->parse(sc)) == true) { delete ani; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(ani->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped animator override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *ani->name);
+          delete ani;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(ani->name));
         VDecalAnim::addToList(ani);
         continue;
       }
@@ -2201,6 +2263,12 @@ void ParseDecalDef (VScriptParser *sc) {
         auto ani = new VDecalAnimColorChanger();
         if ((error = !ani->parse(sc)) == true) { delete ani; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(ani->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped animator override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *ani->name);
+          delete ani;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(ani->name));
         VDecalAnim::addToList(ani);
         continue;
       }
@@ -2209,7 +2277,25 @@ void ParseDecalDef (VScriptParser *sc) {
         auto ani = new VDecalAnimCombiner();
         if ((error = !ani->parse(sc)) == true) { delete ani; break; }
         sc->SetCMode(false);
+        if (IsNoOverrideName(VStr(ani->name))) {
+          GCon->Logf(NAME_Init, "%s: skipped animator override '%s' due to global protection", *sc->GetLoc().toStringNoCol(), *ani->name);
+          delete ani;
+          continue;
+        }
+        if (GlobalDisableOverride) AddNoOverrideName(VStr(ani->name));
         VDecalAnim::addToList(ani);
+        continue;
+      }
+
+      // k8vavoom options?
+      if (sc->Check("k8vavoom")) {
+        sc->Expect("{");
+        while (!sc->Check("}")) {
+          if (sc->AtEnd()) sc->Expect("}");
+          if (sc->Check("GlobalDisableOverride")) { GlobalDisableOverride = true; continue; }
+          if (sc->Check("GlobalEnableOverride")) { GlobalDisableOverride = false; continue; }
+          sc->Error(va("Unknown k8vavoom global command (%s)", *sc->String));
+        }
         continue;
       }
 
@@ -2244,6 +2330,7 @@ void ProcessDecalDefs () {
   DummyDecalAnimator = new VDecalAnimFader();
 
   for (auto &&it : WadNSNameIterator(NAME_decaldef, WADNS_Global)) {
+    GlobalDisableOverride = false;
     const int Lump = it.lump;
     GCon->Logf(NAME_Init, "Parsing decal definition script '%s'", *W_FullLumpName(Lump));
     ParseDecalDef(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
@@ -2255,4 +2342,5 @@ void ProcessDecalDefs () {
 
   optionalDecals.clear();
   optionalDecalGroups.clear();
+  NoOverrideNames.clear();
 }

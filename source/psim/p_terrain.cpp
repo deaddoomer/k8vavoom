@@ -57,6 +57,71 @@ static VName DefaultTerrainName;
 static VStr DefaultTerrainNameStr;
 static int DefaultTerrainIndex;
 
+static bool GlobalDisableOverride = false;
+static TMap<VStrCI, bool> NoOverrideSplash;
+static TMap<VStrCI, bool> NoOverrideTerrain;
+static TMap<VStrCI, bool> NoOverrideBootprint;
+
+
+//==========================================================================
+//
+//  IsSplashNoOverride
+//
+//==========================================================================
+static inline bool IsSplashNoOverride (VStr name) noexcept {
+  return NoOverrideSplash.has(name);
+}
+
+
+//==========================================================================
+//
+//  IsTerrainNoOverride
+//
+//==========================================================================
+static inline bool IsTerrainNoOverride (VStr name) noexcept {
+  return NoOverrideTerrain.has(name);
+}
+
+
+//==========================================================================
+//
+//  IsBootprintNoOverride
+//
+//==========================================================================
+static inline bool IsBootprintNoOverride (VStr name) noexcept {
+  return NoOverrideBootprint.has(name);
+}
+
+
+//==========================================================================
+//
+//  AddSplashNoOverride
+//
+//==========================================================================
+static inline void AddSplashNoOverride (VStr name) noexcept {
+  if (!name.isEmpty()) NoOverrideSplash.put(name, true);
+}
+
+
+//==========================================================================
+//
+//  AddTerrainNoOverride
+//
+//==========================================================================
+static inline void AddTerrainNoOverride (VStr name) noexcept {
+  if (!name.isEmpty()) NoOverrideTerrain.put(name, true);
+}
+
+
+//==========================================================================
+//
+//  AddBootprintNoOverride
+//
+//==========================================================================
+static inline void AddBootprintNoOverride (VStr name) noexcept {
+  if (!name.isEmpty()) NoOverrideBootprint.put(name, true);
+}
+
 
 //==========================================================================
 //
@@ -120,7 +185,7 @@ static VTerrainBootprint *FindBootprint (const char *bpname, bool allowCreation,
 //  ProcessFlatGlobMask
 //
 //==========================================================================
-static void ProcessFlatGlobMask (VStr mask, const char *tername) {
+static void ProcessFlatGlobMask (VStr mask, const char *tername, VStr slocstr) {
   if (!tername) tername = "";
   mask = mask.xstrip();
   if (mask.isEmpty()) return;
@@ -160,7 +225,11 @@ static void ProcessFlatGlobMask (VStr mask, const char *tername) {
     auto pp = TerrainTypeMap.find(pic);
     if (pp) {
       // replace old one
-      TerrainTypes[*pp].TypeName = VName(tername);
+      if (GlobalDisableOverride && IsTerrainNoOverride(VStr(TerrainTypes[*pp].TypeName))) {
+        GCon->Logf(NAME_Init, "%s: skipped floor '%s' override to '%s' due to 'GlobalDisableOverride'", *slocstr, *tn, tername);
+      } else {
+        TerrainTypes[*pp].TypeName = VName(tername);
+      }
     } else {
       //!GCon->Logf(NAME_Init, "%s: new terrain floor '%s' of type '%s' (pic=%d)", *sc->GetLoc().toStringNoCol(), *floorname, *sc->String, Pic);
       VTerrainType &T = TerrainTypes.Alloc();
@@ -201,6 +270,14 @@ static VClass *ParseTerrainSplashClassName (VScriptParser *sc) {
 static void ParseTerrainSplashDef (VScriptParser *sc) {
   sc->ExpectString();
   if (sc->String.isEmpty()) sc->String = "none";
+
+  if (IsSplashNoOverride(sc->String)) {
+    GCon->Logf(NAME_Init, "%s: skipped splash '%s' override due to 'GlobalDisableOverride'", *sc->GetLoc().toStringNoCol(), *sc->String);
+    sc->Expect("{");
+    sc->SkipBracketed(true/*bracketEaten*/);
+    return;
+  }
+
   VSplashInfo *SInfo = GetSplashInfo(*sc->String);
   if (!SInfo) {
     //!GCon->Logf(NAME_Init, "%s: new splash '%s'", *sc->GetLoc().toStringNoCol(), *sc->String);
@@ -221,6 +298,9 @@ static void ParseTerrainSplashDef (VScriptParser *sc) {
   SInfo->ChunkBaseZVel = 0;
   SInfo->Sound = NAME_None;
   SInfo->Flags = 0;
+
+  if (GlobalDisableOverride) AddSplashNoOverride(SInfo->OrigName);
+
   sc->Expect("{");
   while (!sc->Check("}")) {
     if (sc->AtEnd()) break;
@@ -291,6 +371,14 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
   sc->ExpectString();
   if (sc->String.isEmpty()) sc->String = "none";
   VStr TerName = sc->String;
+
+  if (IsTerrainNoOverride(sc->String)) {
+    GCon->Logf(NAME_Init, "%s: skipped terrain '%s' override due to 'GlobalDisableOverride'", *sc->GetLoc().toStringNoCol(), *sc->String);
+    sc->Check("modify");
+    if (sc->Check("{")) sc->SkipBracketed(true/*bracketEaten*/);
+    return;
+  }
+
   bool modify = false;
   VTerrainInfo *TInfo;
   if (tkw == 2) {
@@ -315,6 +403,9 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
     TerrainMap.put(nn, TerrainInfos.length()-1);
     modify = false; // clear it
   }
+
+  if (GlobalDisableOverride) AddTerrainNoOverride(TInfo->OrigName);
+
   /*
   else {
     GCon->Logf(NAME_Debug, "%s: %s terrain '%s'", *sc->GetLoc().toStringNoCol(), (modify ? "modifying" : "redefining"), *TerName);
@@ -344,6 +435,7 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
     TInfo->SmallLandSound = NAME_None;
     TInfo->BootPrint = nullptr;
   }
+
   sc->Expect("{");
   while (!sc->Check("}")) {
     if (sc->AtEnd()) break;
@@ -427,7 +519,7 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
         }
         if (sc->Check("detectfloorflat")) { // k8vavoom extension
           sc->ExpectString();
-          ProcessFlatGlobMask(sc->String, *TInfo->Name);
+          ProcessFlatGlobMask(sc->String, *TInfo->Name, sc->GetLoc().toStringNoCol());
           continue;
         }
         // footsteps
@@ -469,10 +561,20 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
   sc->ExpectString();
   if (sc->String.isEmpty()) sc->String = "none";
   if (sc->String.strEquCI("none")) sc->Error("invalid bootprint name");
+
+  if (IsBootprintNoOverride(sc->String)) {
+    GCon->Logf(NAME_Init, "%s: skipped bootprint '%s' override due to 'GlobalDisableOverride'", *sc->GetLoc().toStringNoCol(), *sc->String);
+    sc->Check("modify");
+    if (sc->Check("{")) sc->SkipBracketed(true/*bracketEaten*/);
+    return;
+  }
+
   VTerrainBootprint *bp = FindBootprint(*sc->String, true);
   vassert(bp); // invariant
+
   constexpr float BOOT_TIME_MIN = 3.8f;
   constexpr float BOOT_TIME_MAX = 4.2f;
+
   bool doclear = true;
   if (sc->Check("modify")) {
     doclear = (bp->Name == NAME_None);
@@ -486,6 +588,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
       for (int ri : rmidx) TerrainBootprintMap.del(ri);
     }
   }
+
   bp->Name = VName(*bp->OrigName, VName::AddLower);
   if (doclear) {
     bp->TimeMin = BOOT_TIME_MIN;
@@ -495,6 +598,9 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
     bp->ShadeColor = -2;
     bp->Animator = NAME_None;
   }
+
+  if (GlobalDisableOverride) AddBootprintNoOverride(bp->OrigName);
+
   sc->Check("{");
   //bool wasDecalName = false;
   while (!sc->Check("}")) {
@@ -738,7 +844,11 @@ static void ParseTerrainScript (VScriptParser *sc) {
       auto pp = TerrainTypeMap.find(Pic);
       if (pp) {
         // replace old one
-        TerrainTypes[*pp].TypeName = VName(*tername, VName::AddLower);
+        if (GlobalDisableOverride && IsTerrainNoOverride(VStr(TerrainTypes[*pp].TypeName))) {
+          GCon->Logf(NAME_Init, "%s: skipped floor '%s' override to '%s' due to 'GlobalDisableOverride'", *sc->GetLoc().toStringNoCol(), *floorname, *tername);
+        } else {
+          TerrainTypes[*pp].TypeName = VName(*tername, VName::AddLower);
+        }
       } else {
         //!GCon->Logf(NAME_Init, "%s: new terrain floor '%s' of type '%s' (pic=%d)", *sc->GetLoc().toStringNoCol(), *floorname, *tername, Pic);
         VTerrainType &T = TerrainTypes.Alloc();
@@ -755,7 +865,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
       VStr mask = sc->String;
       sc->ExpectString();
       VStr tername = sc->String;
-      ProcessFlatGlobMask(mask, *tername);
+      ProcessFlatGlobMask(mask, *tername, sc->GetLoc().toStringNoCol());
       continue;
     }
 
@@ -792,6 +902,18 @@ static void ParseTerrainScript (VScriptParser *sc) {
             }
           }
         }
+      }
+      continue;
+    }
+
+    // k8vavoom options?
+    if (sc->Check("k8vavoom")) {
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->AtEnd()) sc->Expect("}");
+        if (sc->Check("GlobalDisableOverride")) { GlobalDisableOverride = true; continue; }
+        if (sc->Check("GlobalEnableOverride")) { GlobalDisableOverride = false; continue; }
+        sc->Error(va("Unknown k8vavoom global command (%s)", *sc->String));
       }
       continue;
     }
@@ -842,10 +964,12 @@ void P_InitTerrainTypes () {
 
   for (auto &&it : WadNSNameIterator(NAME_terrain, WADNS_Global)) {
     const int Lump = it.lump;
+    GlobalDisableOverride = false;
     ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
   }
   for (auto &&it : WadNSNameIterator(NAME_vterrain, WADNS_Global)) {
     const int Lump = it.lump;
+    GlobalDisableOverride = false;
     ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
   }
   GCon->Logf(NAME_Init, "got %d terrain definition%s", TerrainInfos.length(), (TerrainInfos.length() != 1 ? "s" : ""));
@@ -902,6 +1026,10 @@ void P_InitTerrainTypes () {
       TerrainBootprintNameMap.put(VStrCI(*bp->Name), bp);
     }
   }
+
+  NoOverrideSplash.clear();
+  NoOverrideTerrain.clear();
+  NoOverrideBootprint.clear();
 }
 
 
