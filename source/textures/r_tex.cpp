@@ -574,23 +574,22 @@ int VTextureManager::CheckNumForName (VName Name, int Type, bool bOverload) {
     if (res >= 0) return res;
   }
 
+  //k8: sorry, this code is a mess, i know it
+
+  // if we didn't found a type we want, and there's no single texture with the given name,
+  // search it again, with another set of checks
   bool secondary = false;
 
 doitagain:
-  int seenOther = -1;
-  int seenType = -1;
-  int seenOne = -1;
-  int seenOneType = -1;
+  int seenOther = -1; // other type lump
+  int seenType = -1; // type for `seenOther`
+  int seenOne = -1; // one of unknown type (reset if there are several textures with the same name)
+  int seenOneType = -1; // type for `seenOne` (this can be set if we've seen several textures with the same name, set to first seen)
 
-  //if (secondary) GCon->Logf("*** SECONDARY lookup for texture '%s'", *Name);
-
-  //GCon->Logf("::: LOOKING FOR '%s' (%s)", *Name, VTexture::TexTypeToStr(Type));
+  // textures are added to hashtable in reverse order, so "first" is actually last added
   for (auto it = firstWithName(Name); !it.empty(); it.next()) {
-    //GCon->Logf("  (---) %d", it.index());
     VTexture *ctex = it.tex();
-    //GCon->Logf("* %s * idx=%d; name='%s' (%s : %s)", *Name, it.index(), *ctex->Name, VTexture::TexTypeToStr(Type), VTexture::TexTypeToStr(ctex->Type));
     if (Type == TEXTYPE_Any || ctex->Type == Type || (bOverload && ctex->Type == TEXTYPE_Overload)) {
-      //GCon->Logf("  (000) %d", it.index());
       if (secondary) {
         // secondary check
         switch (ctex->Type) {
@@ -600,19 +599,14 @@ doitagain:
           case TEXTYPE_Autopage:
           case TEXTYPE_Null:
           case TEXTYPE_FontChar:
-            //GCon->Logf("  (001) %d", it.index());
             continue;
         }
       }
-      //GCon->Logf("   HIT! '%s' (%s)", *ctex->Name, VTexture::TexTypeToStr(ctex->Type));
       if (ctex->Type == TEXTYPE_Null) {
-        //GCon->Logf("  (002) %d", it.index());
         return 0;
       }
-      //GCon->Logf("  (003) %d", it.index());
       return it.index();
     } else if (Type == TEXTYPE_WallPatch && ctex->Type != TEXTYPE_Null) {
-      //GCon->Logf("  (004) %d", it.index());
       bool repl = false;
       switch (ctex->Type) {
         case TEXTYPE_Wall: repl = (seenType < 0 || seenType == TEXTYPE_Sprite || seenType == TEXTYPE_Flat); break;
@@ -621,12 +615,10 @@ doitagain:
         case TEXTYPE_Pic: repl = (seenType < 0 || seenType == TEXTYPE_Sprite || seenType == TEXTYPE_Flat || seenType == TEXTYPE_Wall); break;
       }
       if (repl) {
-        //GCon->Logf("  (005) %d", it.index());
         seenOther = it.index();
         seenType = ctex->Type;
       }
     } else {
-      //GCon->Logf("  (100) %d", it.index());
       switch (ctex->Type) {
         case TEXTYPE_WallPatch:
         case TEXTYPE_Overload:
@@ -648,24 +640,20 @@ doitagain:
   }
 
   if (seenOther >= 0) {
-    //GCon->Logf("  SO-HIT: * %s * idx=%d; name='%s' (%s : %s)", *Name, seenOther, *getTxByIndex(seenOther)->Name, VTexture::TexTypeToStr(Type), VTexture::TexTypeToStr(getTxByIndex(seenOther)->Type));
+    // no exact type match, but found good other texture
     return seenOther;
   }
 
-  //GCon->Logf("* %s * NOT FOUND! (%s)", *Name, VTexture::TexTypeToStr(Type));
-
   if (!secondary && Type != TEXTYPE_Any) {
-    //GCon->Logf("  (006)");
     if (seenOne >= 0) {
-      //VTexture *ctex = getTxByIndex(seenOne);
-      //GCon->Logf("SEENONE '%s' for type '%s' (%d : %s : %s)", *Name, VTexture::TexTypeToStr(Type), seenOne, *ctex->Name, VTexture::TexTypeToStr(ctex->Type));
+      // seen exactly one texture with a different type, return it, and hope for the best
       return seenOne;
     }
     switch (Type) {
       case TEXTYPE_Wall:
       case TEXTYPE_Flat:
       case TEXTYPE_Pic:
-        //GCon->Logf("*** looking for any texture for %s '%s'", VTexture::TexTypeToStr(Type), *Name);
+        // try secondary (relaxed) search for the given types
         secondary = true;
         Type = TEXTYPE_Any;
         goto doitagain;
