@@ -1,6 +1,8 @@
 Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" +NoTeleport }
 Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" +NoTeleport }
 k8VaVoom { AllowBloodReplacement = true }
+Actor K8Gore_BloodTranslationGreen { BloodColor "00 40 00" }
+Actor K8Gore_BloodTranslationBlue { BloodColor "00 00 40" }
 ////////////////////////////////////////////////////////////////////////////////
 // RED BLOOD
 ////////////////////////////////////////////////////////////////////////////////

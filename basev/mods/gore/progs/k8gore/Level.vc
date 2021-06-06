@@ -98,14 +98,14 @@ override void OnEntitySpawned (Entity ent) {
       //ee.BloodSplatterType = K8Gore_Blood_SplatterReplacerBlue;
       ee.BloodType = K8Gore_Blood;
       ee.BloodSplatterType = K8Gore_Blood_SplatterReplacer;
-      ee.BloodColor = 0xff_00_00_66;
+      ee.BloodColor = 0xff_00_00_40;
       ee.BloodTranslation = R_GetBloodTranslation(ee.BloodColor);
     } else if (ee isa BaronOfHell || ee isa HellKnight) {
       //ee.BloodType = K8Gore_BloodGreen;
       //ee.BloodSplatterType = K8Gore_Blood_SplatterReplacerGreen;
       ee.BloodType = K8Gore_Blood;
       ee.BloodSplatterType = K8Gore_Blood_SplatterReplacer;
-      ee.BloodColor = 0xff_00_66_00;
+      ee.BloodColor = 0xff_00_40_00;
       ee.BloodTranslation = R_GetBloodTranslation(ee.BloodColor);
     }
   }

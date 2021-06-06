@@ -28,7 +28,9 @@ rm $DECORATE_DEST $DECAL_DEST 2>/dev/null
 echo 'Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" +NoTeleport }' >>$DECORATE_DEST
 echo 'Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" +NoTeleport }' >>$DECORATE_DEST
 echo "k8VaVoom { AllowBloodReplacement = true }" >>$DECORATE_DEST
-
+# this is required to create blood translations for colored blood option
+echo "Actor K8Gore_BloodTranslationGreen { BloodColor \"00 40 00\" }" >>$DECORATE_DEST
+echo "Actor K8Gore_BloodTranslationBlue { BloodColor \"00 00 40\" }" >>$DECORATE_DEST
 
 
 echo "////////////////////////////////////////////////////////////////////////////////" >>$DECORATE_DEST
