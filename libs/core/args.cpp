@@ -65,7 +65,7 @@ char *VArgs::GetBinaryDir () {
     }
   }
 #else
-  char *p = nullptr;
+  //char *p = nullptr;
   GetModuleFileName(GetModuleHandle(NULL), mydir, sizeof(mydir)-1);
   #if 0
   char *p = strrchr(mydir, '\\');
@@ -478,10 +478,10 @@ void VParsedArgs::clear () {
   }
   #ifdef _WIN32
   {
-    const char *bd = GetBinaryDir();
+    const char *bd = VArgs::GetBinaryDir();
     const size_t bdlen = strlen(bd);
-    mBinDir = malloc(bdlen+1);
-    strcpy(mBinDir, bdlen);
+    mBinDir = (char *)malloc(bdlen+1);
+    memcpy(mBinDir, bd, bdlen+1);
   }
   #endif
 }
