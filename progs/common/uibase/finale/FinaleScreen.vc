@@ -166,7 +166,7 @@ override void Tick (float DeltaTime) {
 //==========================================================================
 void InitPic (name PicName) {
   Background.InitPic(PicName);
-  CmdBuf_AddText(va("music loop \"%q\"\n", ClGame.DefaultFinaleMusic));
+  CmdBuf_AddText(va("music looprandom \"%q\"\n", ClGame.DefaultFinaleMusic));
 }
 
 
@@ -177,7 +177,7 @@ void InitPic (name PicName) {
 //==========================================================================
 void InitUnderwater () {
   Background.InitPicPal('e2end', 'e2pal');
-  CmdBuf_AddText(va("music loop \"%q\"\n", ClGame.DefaultFinaleMusic));
+  CmdBuf_AddText(va("music looprandom \"%q\"\n", ClGame.DefaultFinaleMusic));
 }
 
 
@@ -188,7 +188,7 @@ void InitUnderwater () {
 //==========================================================================
 void InitBunnyScroll () {
   Background.InitBunnyScroll();
-  CmdBuf_AddText("music loop d_bunny\n");
+  CmdBuf_AddText("music looprandom d_bunny\n");
 }
 
 
@@ -199,7 +199,7 @@ void InitBunnyScroll () {
 //==========================================================================
 void InitDemonScroll () {
   Background.InitDemon();
-  CmdBuf_AddText(va("music loop \"%q\"\n", ClGame.DefaultFinaleMusic));
+  CmdBuf_AddText(va("music looprandom \"%q\"\n", ClGame.DefaultFinaleMusic));
 }
 
 
@@ -209,7 +209,7 @@ void InitDemonScroll () {
 //
 //==========================================================================
 void StartCast () {
-  CmdBuf_AddText("music loop d_evil\n");
+  CmdBuf_AddText("music looprandom d_evil\n");
   Background.InitPic('bossback');
 
   if (!CastWin) {
@@ -392,7 +392,7 @@ void InitChess () {
   FinaleStage = 0;
   FinaleEndTime = 2.0;
   Background.InitChess();
-  CmdBuf_AddText("music play hall\n");  // don't loop the song
+  CmdBuf_AddText("music playrandom hall\n");  // don't loop the song
 }
 
 
@@ -412,7 +412,7 @@ void ChessTicker () {
       case 2: // Pic 2, Text 2
         GetFinaleText('win2msg');
         Background.fpage1 = R_RegisterPic('finale2');
-        CmdBuf_AddText("music play orb\n");
+        CmdBuf_AddText("music playrandom orb\n");
         break;
       case 3: // Pic 2 -- Fade out
         FinaleEndTime = 2.0;
@@ -420,7 +420,7 @@ void ChessTicker () {
       case 4: // Pic 3 -- Fade in
         Background.fpage1 = R_RegisterPic('finale3');
         FinaleEndTime = 2.0;
-        CmdBuf_AddText("music loop chess\n");
+        CmdBuf_AddText("music looprandom chess\n");
         break;
       case 5: // Pic 3 , Text 3
         GetFinaleText('win3msg');
@@ -493,7 +493,7 @@ void PlayStrifeFinalePage () {
     // happy ending
     case 0:
       StopLocalSounds();
-      CmdBuf_AddText("music loop d_happy\n");
+      CmdBuf_AddText("music looprandom d_happy\n");
       Background.InitPic('ss4f1');
       LocalSound('svox/rie01');
       FinaleTimer = 13.0;
@@ -519,7 +519,7 @@ void PlayStrifeFinalePage () {
     // sad ending
     case 10:
       StopLocalSounds();
-      CmdBuf_AddText("music loop d_sad\n");
+      CmdBuf_AddText("music looprandom d_sad\n");
       Background.InitPic('ss5f1');
       LocalSound('svox/ss501b');
       FinaleTimer = 11.0;
@@ -540,7 +540,7 @@ void PlayStrifeFinalePage () {
     // dark ending
     case 20:
       StopLocalSounds();
-      CmdBuf_AddText("music loop d_end\n");
+      CmdBuf_AddText("music looprandom d_end\n");
       Background.InitPic('ss6f1');
       LocalSound('svox/ss601a');
       FinaleTimer = 8.0;
@@ -559,7 +559,7 @@ void PlayStrifeFinalePage () {
       FinalePage = -1;
       break;
     case -1:
-      CmdBuf_AddText("music loop d_fast\n");
+      CmdBuf_AddText("music looprandom d_fast\n");
       Background.InitPic('credit');
       FinaleStage = 1;
       break;

@@ -48,7 +48,7 @@ override void CreateChoices () {
   }
   StopLocalSounds();
   LocalSound(QuitSound);
-  CmdBuf_AddText("music play d_fast\n");
+  CmdBuf_AddText("music playrandom d_fast\n");
 }
 
 

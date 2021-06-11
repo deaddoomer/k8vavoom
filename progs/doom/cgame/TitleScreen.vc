@@ -73,10 +73,10 @@ void AdvanceDemo () {
       page_pic = R_RegisterPic('titlepic');
       if (!IsAnyDoom2) {
         if (!waitingMusic) pagetime = 170.0/35.0;
-        CmdBuf_AddText("music play d_intro\n");
+        CmdBuf_AddText("music playrandom d_intro\n");
       } else {
         if (!waitingMusic) pagetime = 11.0;
-        CmdBuf_AddText("music play d_dm2ttl\n");
+        CmdBuf_AddText("music playrandom d_dm2ttl\n");
       }
       break;
 
@@ -101,7 +101,7 @@ void AdvanceDemo () {
         waitingMusic = MUS_IsMusicAvailable();
         pagetime = (waitingMusic ? 2.0 : 11.0);
         page_pic = R_RegisterPic('titlepic');
-        CmdBuf_AddText("music play d_dm2ttl\n");
+        CmdBuf_AddText("music playrandom d_dm2ttl\n");
       }
       break;
 

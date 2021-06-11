@@ -220,11 +220,11 @@ void Start () {
     IM_LoadData();
     // intermission music
     string musname;
-    CmdBuf_AddText(va("music loop \"%q\"\n", ClGame.im.InterMusic));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", ClGame.im.InterMusic));
          if (ClGame.im.InterMusic) musname = string(ClGame.im.InterMusic);
     else if (checkForDoom2()) musname = "d_dm2int";
     else musname = "d_inter";
-    CmdBuf_AddText(va("music loop \"%q\"\n", musname));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", musname));
   } else {
     // this will take care of empty text
     IM_InitText();
@@ -1154,12 +1154,12 @@ void IM_InitText () {
   intertime = 0.0;
 
   if (itext.TextMusic) {
-    CmdBuf_AddText(va("music loop \"%q\"\n", itext.TextMusic));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", itext.TextMusic));
   } else {
     if (checkForDoom2()) {
-      CmdBuf_AddText("music loop d_read_m\n");
+      CmdBuf_AddText("music looprandom d_read_m\n");
     } else {
-      CmdBuf_AddText("music loop d_victor\n");
+      CmdBuf_AddText("music looprandom d_victor\n");
     }
   }
 }

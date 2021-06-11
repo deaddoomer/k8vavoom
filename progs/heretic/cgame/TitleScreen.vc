@@ -63,7 +63,7 @@ void AdvanceDemo()
   case 0:
     pagetime = 10.0;
     page_pic = R_RegisterPic('title');
-    CmdBuf_AddText("music play mus_titl\n");
+    CmdBuf_AddText("music playrandom mus_titl\n");
     break;
 
   case 1:

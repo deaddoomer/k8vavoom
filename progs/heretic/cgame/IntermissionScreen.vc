@@ -345,9 +345,9 @@ void IM_InitStats () {
   oldintertime = (im_episode > 3 ? 35.0 : 10.0);
   im_sounds = 0;
   if (ClGame.im.InterMusic) {
-    CmdBuf_AddText(va("music loop \"%q\"\n", ClGame.im.InterMusic));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", ClGame.im.InterMusic));
   } else {
-    CmdBuf_AddText("music loop mus_intr\n");
+    CmdBuf_AddText("music looprandom mus_intr\n");
   }
 }
 
@@ -635,9 +635,9 @@ void IM_InitText () {
   intertime = 0.0;
   oldintertime = HubCount;
   if (itext.TextMusic) {
-    CmdBuf_AddText(va("music loop \"%q\"\n", itext.TextMusic));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", itext.TextMusic));
   } else {
-    CmdBuf_AddText("music loop mus_cptd\n");
+    CmdBuf_AddText("music looprandom mus_cptd\n");
   }
 }
 

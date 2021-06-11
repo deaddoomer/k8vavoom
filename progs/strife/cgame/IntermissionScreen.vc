@@ -151,11 +151,11 @@ void IM_InitHubText()
 
   if (itext.TextMusic)
   {
-    CmdBuf_AddText(va("music loop \"%q\"\n", itext.TextMusic));
+    CmdBuf_AddText(va("music looprandom \"%q\"\n", itext.TextMusic));
   }
   else
   {
-    CmdBuf_AddText("music loop d_intro\n");
+    CmdBuf_AddText("music looprandom d_intro\n");
   }
   interstate = IMS_Text;
 }

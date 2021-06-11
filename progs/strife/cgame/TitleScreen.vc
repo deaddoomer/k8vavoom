@@ -62,7 +62,7 @@ void AdvanceDemo()
   case 0:
     pagetime = 12.0;
     page_pic = R_RegisterPic('titlepic');
-    CmdBuf_AddText("music play d_logo");
+    CmdBuf_AddText("music playrandom d_logo");
     break;
 
   case 1:
@@ -74,7 +74,7 @@ void AdvanceDemo()
   case 2:
     pagetime = 7.0;
     page_pic = R_RegisterPic('panel1');
-    CmdBuf_AddText("music play d_intro");
+    CmdBuf_AddText("music playrandom d_intro");
     LocalSound('svox/pro1');
     break;
 

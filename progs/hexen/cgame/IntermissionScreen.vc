@@ -197,7 +197,7 @@ void IM_InitStats () {
       // don't do the slaughter stuff if everyone is equal
       slaughterboy = 0;
     }
-    CmdBuf_AddText("music loop hub\n");
+    CmdBuf_AddText("music looprandom hub\n");
   }
 }
 
@@ -236,9 +236,9 @@ void IM_InitHubText () {
     }
 
     if (itext.TextMusic) {
-      CmdBuf_AddText(va("music loop \"%q\"\n", itext.TextMusic));
+      CmdBuf_AddText(va("music looprandom \"%q\"\n", itext.TextMusic));
     } else {
-      CmdBuf_AddText("music loop hub\n");
+      CmdBuf_AddText("music looprandom hub\n");
     }
   } else {
     interstate = IMS_Done;
