@@ -203,11 +203,11 @@ public:
   virtual void MoveSounds (int origin_id, const TVec &neworigin) = 0;
 
   // music and general sound control
-  virtual void StartSong (VName, bool) = 0;
+  virtual void StartSong (VName song, bool loop, bool allowRandom) = 0;
   virtual void PauseSound () = 0;
   virtual void ResumeSound () = 0;
   virtual void Start () = 0;
-  virtual void MusicChanged () = 0;
+  virtual void MusicChanged (bool allowRandom) = 0;
   virtual void UpdateSounds () = 0;
 
   //  Sound sequences

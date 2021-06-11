@@ -253,7 +253,7 @@ void CL_ReadFromServer (float deltaTime) {
   if (deltaTime && GClLevel && GClLevel->LevelInfo) {
     if (CurrentSongLump != GClLevel->LevelInfo->SongLump) {
       CurrentSongLump = GClLevel->LevelInfo->SongLump;
-      GAudio->MusicChanged();
+      GAudio->MusicChanged(true/*allowrandom*/);
     }
   }
 }

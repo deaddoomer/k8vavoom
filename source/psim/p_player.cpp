@@ -787,7 +787,7 @@ void VBasePlayer::DoClientFinale (VStr Type) {
 void VBasePlayer::DoClientChangeMusic (VName Song) {
   Level->SongLump = Song;
 #ifdef CLIENT
-  GAudio->MusicChanged();
+  GAudio->MusicChanged(false/*allowrandom*/);
 #endif
 }
 

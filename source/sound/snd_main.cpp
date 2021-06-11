@@ -91,11 +91,11 @@ public:
   virtual void MoveSounds (int origin_id, const TVec &neworigin) override;
 
   // music and general sound control
-  virtual void StartSong (VName song, bool loop) override;
+  virtual void StartSong (VName song, bool loop, bool allowRandom) override;
   virtual void PauseSound () override;
   virtual void ResumeSound () override;
   virtual void Start () override;
-  virtual void MusicChanged () override;
+  virtual void MusicChanged (bool allowRandom) override;
   virtual void UpdateSounds () override;
 
   // sound sequences
@@ -181,8 +181,8 @@ private:
   void UpdateSfx ();
 
   // music playback
-  void StartMusic ();
-  void PlaySong (const char *, bool);
+  void StartMusic (bool allowRandom);
+  void PlaySong (const char *Song, bool Loop, bool allowRandom);
 
   // execution of console commands
   void CmdMusic (const TArray<VStr>&);
@@ -227,6 +227,92 @@ VCvarI snd_module_player("snd_module_player", "1", "Module player type (0:none; 
 
 //k8: it seems to be weirdly unstable (at least under windoze). sigh.
 static VCvarB snd_bgloading_music("snd_bgloading_music", false, "Load music in the background thread?", CVAR_Archive|CVAR_PreInit);
+
+static VCvarS snd_random_midi_dir("snd_random_midi_dir", "", "Directory to load random midis from.", CVAR_Archive);
+static VCvarB snd_random_midi_rescan("snd_random_midi_rescan", false, "Force random midi dir rescan.", 0);
+static VCvarB snd_random_midi_enabled("snd_random_midi_enabled", true, "Enable random midi replacements?", CVAR_Archive);
+
+
+static VStr sndLastRandomMidiDir;
+static TArray<VStr> sndMusList;
+// store replacement here
+static TMap<VStrCI, VStr> sndRandomMusReplace;
+
+// need to keep it global for background loading
+static VStr selectedSongName;
+
+
+//==========================================================================
+//
+//  scanMidiDir
+//
+//==========================================================================
+static void scanMidiDir (VStr path, int level) {
+  if (level > 8) return; // just in case
+  void *dir = Sys_OpenDir(path, true/*wantdirs*/);
+  if (!dir) return;
+  GCon->Logf(NAME_Debug, "scanning midi dir '%s'...", *path);
+  TArray<VStr> pathlist;
+  for (;;) {
+    VStr fn = Sys_ReadDir(dir);
+    if (fn.isEmpty()) break;
+    const bool isdir = fn.endsWith("/");
+    fn = path.appendPath(fn);
+    if (isdir) {
+      pathlist.append(fn);
+    } else {
+      VStream *fi = FL_OpenSysFileRead(fn);
+      if (!fi) continue;
+      char sign[4];
+      fi->Serialise(sign, 4);
+      const bool err = fi->IsError();
+      fi->Close();
+      delete fi;
+      if (err) continue;
+      if (memcmp(sign, "MThd", 4) == 0 || memcmp(sign, "MUS\x1a", 4) == 0) {
+        fn = VStr("\x01")+fn;
+        sndMusList.append(fn);
+      }
+    }
+  }
+  Sys_CloseDir(dir);
+  for (auto &&dn : pathlist) scanMidiDir(dn, level+1);
+}
+
+
+
+//==========================================================================
+//
+//  SelectRandomSong
+//
+//==========================================================================
+static VStr SelectRandomSong (VStr song) {
+  VStr rdir = snd_random_midi_dir.asStr();
+  if (rdir.isEmpty()) return song;
+  if (!snd_random_midi_enabled.asBool()) {
+    snd_random_midi_rescan = false;
+    sndLastRandomMidiDir.clear();
+    sndMusList.clear();
+    sndRandomMusReplace.clear();
+    return song;
+  }
+  // need to rescan?
+  if (snd_random_midi_rescan.asBool() || sndLastRandomMidiDir != rdir) {
+    snd_random_midi_rescan = false;
+    sndLastRandomMidiDir = rdir;
+    sndMusList.clear();
+    sndRandomMusReplace.clear();
+    scanMidiDir(rdir, 0);
+  }
+  auto pp = sndRandomMusReplace.find(song);
+  if (pp) return *pp;
+  if (sndMusList.length() == 0) return song;
+  int n = GenRandomU31()%sndMusList.length();
+  VStr sname = sndMusList[n];
+  sndMusList.removeAt(n);
+  sndRandomMusReplace.put(song, sname);
+  return sname;
+}
 
 
 //==========================================================================
@@ -955,12 +1041,15 @@ void VAudio::UpdateSfx () {
 //  VAudio::StartSong
 //
 //==========================================================================
-void VAudio::StartSong (VName song, bool loop) {
-  if (loop) {
-    GCmdBuf << "Music Loop " << *VStr(song).quote() << "\n";
+void VAudio::StartSong (VName song, bool loop, bool allowRandom) {
+  VStr cmd("Music");
+  if (allowRandom) {
+    cmd += (loop ? " LoopRandom " : " PlayRandom ");
   } else {
-    GCmdBuf << "Music Play " << *VStr(song).quote() << "\n";
+    cmd += (loop ? " Loop " : " Play ");
   }
+  cmd += *VStr(song).quote();
+  GCmdBuf << *cmd << "\n";
 }
 
 
@@ -980,7 +1069,7 @@ void VAudio::PauseSound () {
 //
 //==========================================================================
 void VAudio::ResumeSound () {
-  GCmdBuf << "Music resume\n";
+  GCmdBuf << "Music Resume\n";
 }
 
 
@@ -989,8 +1078,8 @@ void VAudio::ResumeSound () {
 //  VAudio::StartMusic
 //
 //==========================================================================
-void VAudio::StartMusic () {
-  StartSong(MapSong, true);
+void VAudio::StartMusic (bool allowRandom) {
+  StartSong(MapSong, true/*loop*/, allowRandom);
 }
 
 
@@ -1013,10 +1102,12 @@ void VAudio::Start () {
 //
 //  VAudio::MusicChanged
 //
+//  called on map change, or when music changed via ACS
+//
 //==========================================================================
-void VAudio::MusicChanged () {
+void VAudio::MusicChanged (bool allowRandom) {
   MapSong = GClLevel->LevelInfo->SongLump;
-  StartMusic();
+  StartMusic(allowRandom);
 }
 
 
@@ -1088,7 +1179,7 @@ static int FindMusicLump (const char *songName) {
 //
 //==========================================================================
 VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool fromStreamThread) {
-  /*static*/ const char *ExtraExts[] = { "opus", "ogg", "flac", "mp3", nullptr };
+  /*static*/ const char *ExtraExts[] = { "opus", "ogg", "flac", "mp3", "mid", "mus", nullptr };
 
   if (!Song || !Song[0]) return nullptr;
 
@@ -1113,58 +1204,73 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   }
 #endif
 
-  // find the song
+  VStream *diskStream = nullptr;
   int Lump = -1;
-  if (snd_external_music) {
-    // check external music definition file
-    //TODO: cache this!
-    VStream *XmlStrm = FL_OpenFileRead("extras/music/remap.xml");
-    if (XmlStrm) {
-      VXmlDocument *Doc = new VXmlDocument();
-      Doc->Parse(*XmlStrm, "extras/music/remap.xml");
-      delete XmlStrm;
-      XmlStrm = nullptr;
-      for (VXmlNode *N = Doc->Root.FirstChild; N; N = N->NextSibling) {
-        if (N->Name != "song") continue;
-        if (!N->GetAttribute("name").strEquCI(Song)) continue;
-        VStr fname = N->GetAttribute("file");
-        if (fname.length() == 0 || fname.strEquCI("none")) {
-          delete Doc;
-          return nullptr;
+  VStr songName;
+
+  // special: from the disk
+  if (Song[0] == '\x01') {
+    songName = VStr(Song+1);
+    diskStream = FL_OpenSysFileRead(songName);
+    if (!diskStream) {
+      GCon->Logf(NAME_Warning, "Can't find random song \"%s\"", *songName);
+      return nullptr;
+    }
+  } else {
+    // find the song
+    if (snd_external_music) {
+      // check external music definition file
+      //TODO: cache this!
+      VStream *XmlStrm = FL_OpenFileRead("extras/music/remap.xml");
+      if (XmlStrm) {
+        VXmlDocument *Doc = new VXmlDocument();
+        Doc->Parse(*XmlStrm, "extras/music/remap.xml");
+        delete XmlStrm;
+        XmlStrm = nullptr;
+        for (VXmlNode *N = Doc->Root.FirstChild; N; N = N->NextSibling) {
+          if (N->Name != "song") continue;
+          if (!N->GetAttribute("name").strEquCI(Song)) continue;
+          VStr fname = N->GetAttribute("file");
+          if (fname.length() == 0 || fname.strEquCI("none")) {
+            delete Doc;
+            return nullptr;
+          }
+          Lump = W_CheckNumForFileName(fname);
+          if (Lump >= 0) break;
         }
-        Lump = W_CheckNumForFileName(fname);
-        if (Lump >= 0) break;
+        delete Doc;
       }
-      delete Doc;
+      // also try OGG or MP3 directly
+      if (Lump < 0) Lump = W_FindLumpByFileNameWithExts(va("extras/music/%s", Song), ExtraExts);
     }
-    // also try OGG or MP3 directly
-    if (Lump < 0) Lump = W_FindLumpByFileNameWithExts(va("extras/music/%s", Song), ExtraExts);
-  }
 
-  if (Lump < 0) {
-    // get the lump that comes last
-    Lump = FindMusicLump(Song);
-    // look for replacement
-    VSoundManager::VMusicAlias *mal = nullptr;
-    for (int f = GSoundManager->MusicAliases.length()-1; f >= 0; --f) {
-      if (VStr::strEquCI(*GSoundManager->MusicAliases[f].origName, Song)) {
-        mal = &GSoundManager->MusicAliases[f];
-        break;
+    if (Lump < 0) {
+      // get the lump that comes last
+      Lump = FindMusicLump(Song);
+      // look for replacement
+      VSoundManager::VMusicAlias *mal = nullptr;
+      for (int f = GSoundManager->MusicAliases.length()-1; f >= 0; --f) {
+        if (VStr::strEquCI(*GSoundManager->MusicAliases[f].origName, Song)) {
+          mal = &GSoundManager->MusicAliases[f];
+          break;
+        }
+      }
+      if (mal && (Lump < 0 || mal->fileid >= W_LumpFile(Lump))) {
+        if (mal->newName == NAME_None) return nullptr; // replaced with nothing
+        int l2 = FindMusicLump(*mal->newName);
+        if (Lump < 0 || (l2 >= 0 && mal->fileid >= W_LumpFile(l2))) {
+          Lump = l2;
+          Song = *mal->newName;
+        }
       }
     }
-    if (mal && (Lump < 0 || mal->fileid >= W_LumpFile(Lump))) {
-      if (mal->newName == NAME_None) return nullptr; // replaced with nothing
-      int l2 = FindMusicLump(*mal->newName);
-      if (Lump < 0 || (l2 >= 0 && mal->fileid >= W_LumpFile(l2))) {
-        Lump = l2;
-        Song = *mal->newName;
-      }
-    }
-  }
 
-  if (Lump < 0) {
-    GCon->Logf(NAME_Warning, "Can't find song \"%s\"", Song);
-    return nullptr;
+    if (Lump < 0) {
+      GCon->Logf(NAME_Warning, "Can't find song \"%s\"", Song);
+      return nullptr;
+    }
+
+    songName = W_FullLumpName(Lump);
   }
 
   // get music volume for this song
@@ -1175,9 +1281,10 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     if (fromStreamThread) SoundDevice->SetStreamVolume(StreamMusicPlayer->GetNewVolume());
   }
 
-  VStream *Strm = W_CreateLumpReaderNum(Lump);
+  VStream *Strm = (Lump >= 0 ? W_CreateLumpReaderNum(Lump) : diskStream);
+  diskStream = nullptr;
   if (Strm->TotalSize() < 4) {
-    GCon->Logf(NAME_Warning, "Lump '%s' for song \"%s\" is too small (%d)", *W_FullLumpName(Lump), Song, Strm->TotalSize());
+    GCon->Logf(NAME_Warning, "Lump '%s' for song \"%s\" is too small (%d)", *songName, Song, Strm->TotalSize());
     delete Strm;
     return nullptr;
   }
@@ -1195,19 +1302,19 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     if (err) {
       ms->Close();
       delete ms;
-      GCon->Logf(NAME_Warning, "Lump '%s' for song \"%s\" cannot be read", *W_FullLumpName(Lump), Song);
+      GCon->Logf(NAME_Warning, "Lump '%s' for song \"%s\" cannot be read", *songName, Song);
       return nullptr;
     }
     ms->BeginRead();
     Strm = ms;
-    GCon->Logf(NAME_Debug, "Lump '%s' for song \"%s\" loaded into memory (%d bytes)", *W_FullLumpName(Lump), Song, strmsize);
+    GCon->Logf(NAME_Debug, "Lump '%s' for song \"%s\" loaded into memory (%d bytes)", *songName, Song, strmsize);
   }
 
   // load signature, so we can pass it to codecs
   vuint8 sign[4];
   Strm->Serialise(sign, 4);
   if (Strm->IsError()) {
-    GCon->Logf(NAME_Error, "error loading song '%s'", *W_FullLumpName(Lump));
+    GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
     Strm->Close();
     delete Strm;
     return nullptr;
@@ -1233,12 +1340,12 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     Strm = MidStrm;
     Strm->Serialise(sign, 4);
     if (Strm->IsError()) {
-      GCon->Logf(NAME_Error, "error loading song '%s'", *W_FullLumpName(Lump));
+      GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
       Strm->Close();
       delete Strm;
       return nullptr;
     }
-    GCon->Logf("converted MUS '%s' to MIDI", *W_FullLumpName(Lump));
+    GCon->Logf("converted MUS '%s' to MIDI", *songName);
   }
 
   // try to create audio codec
@@ -1249,7 +1356,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     //GCon->Logf(NAME_Debug, "Trying codec `%s` (%d) to open the stream", Desc->Description, Desc->Priority);
     Strm->Seek(0);
     if (Strm->IsError()) {
-      GCon->Logf(NAME_Error, "error loading song '%s'", *W_FullLumpName(Lump));
+      GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
       Strm->Close();
       delete Strm;
       return nullptr;
@@ -1259,13 +1366,13 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   }
 
   if (Codec) {
-    GCon->Logf("starting song '%s' with codec '%s'", *W_FullLumpName(Lump), codecName);
+    GCon->Logf("starting song '%s' with codec '%s'", *songName, codecName);
     // start playing streamed music
     //StreamMusicPlayer->Play(Codec, Song, Loop);
     return Codec;
   }
 
-  GCon->Logf(NAME_Warning, "couldn't find codec for song '%s'", *W_FullLumpName(Lump));
+  GCon->Logf(NAME_Warning, "couldn't find codec for song '%s'", *songName);
   Strm->Close();
   delete Strm;
   return nullptr;
@@ -1277,19 +1384,24 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
 //  VAudio::PlaySong
 //
 //==========================================================================
-void VAudio::PlaySong (const char *Song, bool Loop) {
+void VAudio::PlaySong (const char *Song, bool Loop, bool allowRandom) {
   if (!Song || !Song[0] || !StreamMusicPlayer) return;
 
+  VStr ss(Song);
+  while (ss.length() && ss[0] == '\x01') ss.chopLeft(1);
+  if (allowRandom) ss = SelectRandomSong(ss);
+  selectedSongName = ss.cloneUnique();
+
   if (snd_bgloading_music) {
-    StreamMusicPlayer->LoadAndPlay(Song, Loop);
+    StreamMusicPlayer->LoadAndPlay(*selectedSongName, Loop);
   } else {
     bool wasPlaying = StreamMusicPlayer->IsPlaying();
     if (wasPlaying) StreamMusicPlayer->Stop();
 
-    VAudioCodec *Codec = LoadSongInternal(Song, wasPlaying, false); // not from a stream thread
+    VAudioCodec *Codec = LoadSongInternal(*selectedSongName, wasPlaying, false); // not from a stream thread
 
     if (Codec && StreamMusicPlayer) {
-      StreamMusicPlayer->Play(Codec, Song, Loop);
+      StreamMusicPlayer->Play(Codec, *selectedSongName, Loop);
     }
   }
 }
@@ -1330,21 +1442,21 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
 
   if (!MusicEnabled) return;
 
-  if (command.strEquCI("play")) {
+  if (command.strEquCI("play") || command.strEquCI("playrandom")) {
     if (Args.Num() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (play).");
       return;
     }
-    PlaySong(*Args[2].ToLower(), false);
+    PlaySong(*Args[2].ToLower(), false, command.strEquCI("playrandom"));
     return;
   }
 
-  if (command.strEquCI("loop")) {
+  if (command.strEquCI("loop") || command.strEquCI("looprandom")) {
     if (Args.Num() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (loop).");
       return;
     }
-    PlaySong(*Args[2].ToLower(), true);
+    PlaySong(*Args[2].ToLower(), true, command.strEquCI("looprandom"));
     return;
   }
 
@@ -1391,7 +1503,7 @@ VSoundSeqNode::VSoundSeqNode (int AOriginId, const TVec &AOrigin, int ASequence,
   , Origin(AOrigin)
   , CurrentSoundID(0)
   , DelayTime(0.0f)
-  , Volume(1.0f) // Start at max volume
+  , Volume(1.0f) // start at max volume
   , Attenuation(1.0f)
   , StopSound(0)
   , DidDelayOnce(0)
@@ -1664,12 +1776,14 @@ COMMAND_AC(Music) {
   if (aidx == 1) {
     list.append("info");
     list.append("loop");
+    list.append("looprandom");
     list.append("off");
     list.append("on");
     list.append("pause");
     list.append("play");
-    list.append("resume");
+    list.append("playrandom");
     list.append("restart");
+    list.append("resume");
     list.append("stop");
     return AutoCompleteFromListCmd(prefix, list);
   } else {
