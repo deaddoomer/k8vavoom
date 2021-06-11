@@ -1420,14 +1420,13 @@ void VSoundManager::DoneWithLump (int sound_id) {
     if (lst == sfxinfo_t::ST_Invalid) return; // oops
     if (lst == sfxinfo_t::ST_NotLoaded) return; // oops
     if (sndThreadDebug) fprintf(stderr, "STRD: releasing sound #%d (uc=%d; lst=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].GetUseCount(), lst, *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
-    if (sfx.GetUseCount() <= 0) Sys_Error("invalid UseCount for sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].GetUseCount(), *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
-    sfx.DecUseCount();
+    if (sfx.GetUseCount() < 0) Sys_Error("invalid UseCount for sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].GetUseCount(), *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
+    if (sfx.GetUseCount()) sfx.DecUseCount();
+    sfx.lastUseTime = Sys_Time(); // for bg loader
     //GCon->Logf("SND: done with sound '%s' (rc=%d)", *S_sfx[sound_id].TagName, S_sfx[sound_id].GetUseCount());
     if (sfx.GetUseCount() == 0 && lst == sfxinfo_t::ST_Loaded) {
       //GCon->Logf("SND: unloaded sound '%s'", *S_sfx[sound_id].TagName);
       if (sndThreadDebug) fprintf(stderr, "STRD: delay unloading sound #%d (uc=%d) (%s : %s)\n", sound_id, S_sfx[sound_id].GetUseCount(), *S_sfx[sound_id].TagName, *W_FullLumpName(S_sfx[sound_id].LumpNum));
-      //sfx.SetLoadedState(sfxinfo_t::ST_NotLoaded);
-      sfx.lastUseTime = Sys_Time(); // for bg loader
       releaseSfxData(this, sound_id);
     }
   }
