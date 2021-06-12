@@ -790,7 +790,7 @@ static void ParseFTAnim (int wadfile, VScriptParser *sc, int fttype) {
 //
 //==========================================================================
 static int AddSwitchDef (TSwitch *Switch) {
-//meh, RAM is cheap; besides, replacing switches may cause problems
+//meh, RAM is cheap; besides, replacing switches may cause problems with indicies and such
 #if 0
   for (auto &&it : Switches.itemsIdx()) {
     TSwitch *sw = it.value();
@@ -803,6 +803,7 @@ static int AddSwitchDef (TSwitch *Switch) {
     }
   }
 #endif
+  Switch->InternalIndex = Switches.length();
   return Switches.Append(Switch);
 }
 
@@ -818,13 +819,14 @@ static TSwitch *ParseSwitchState (VScriptParser *sc, bool IgnoreBad) {
   bool Bad = false;
   bool silentTexError = !cli_WarnSwitchTextures;
 
-  //GCon->Logf("+============+");
-  while (1) {
+  for (;;) {
     if (sc->Check("sound")) {
       if (Sound) sc->Error("Switch state already has a sound");
       sc->ExpectString();
       Sound = GSoundManager->GetSoundID(*sc->String);
-    } else if (sc->Check("pic")) {
+      continue;
+    }
+    if (sc->Check("pic")) {
       sc->ExpectString();
       int Tex = GTextureManager.FindOrLoadFullyNamedTexture(sc->String, nullptr, TEXTYPE_Wall, true, /*false*/IgnoreBad || silentTexError);
       if (Tex < 0 && !IgnoreBad) Bad = true;
@@ -839,21 +841,16 @@ static TSwitch *ParseSwitchState (VScriptParser *sc, bool IgnoreBad) {
         int Min = sc->Number;
         sc->ExpectNumber();
         int Max = sc->Number;
-        if (Min < Max) {
-          F.BaseTime = Min;
-          F.RandomRange = Max-Min+1;
-        } else {
-          F.BaseTime = Max;
-          F.RandomRange = Min-Max+1;
-        }
+        if (Max < Min) { const int tt = Min; Min = Max; Max = tt; }
+        F.BaseTime = Min;
+        F.RandomRange = Max-Min+1;
       } else {
         sc->Error("Must specify a duration for switch frame");
       }
-    } else {
-      break;
+      continue;
     }
+    break;
   }
-  //GCon->Logf("*============*");
 
   if (!Frames.length()) sc->Error("Switch state needs at least one frame");
   if (Bad) return nullptr;
@@ -897,15 +894,19 @@ static void ParseSwitchDef (VScriptParser *sc) {
   for (;;) {
     if (sc->Check("quest")) {
       Quest = true;
-    } else if (sc->Check("on")) {
+      continue;
+    }
+    if (sc->Check("on")) {
       if (Def1) sc->Error("Switch already has an on state");
       Def1 = ParseSwitchState(sc, t1 == -1);
-    } else if (sc->Check("off")) {
+      continue;
+    }
+    if (sc->Check("off")) {
       if (Def2) sc->Error("Switch already has an off state");
       Def2 = ParseSwitchState(sc, t1 == -1);
-    } else {
-      break;
+      continue;
     }
+    break;
   }
 
   if (t1 < 0 || !Def1) {

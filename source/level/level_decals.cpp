@@ -39,8 +39,10 @@ extern VCvarB r_decals;
 extern VCvarB r_decals_flat;
 extern VCvarB r_decals_wall;
 
-static VCvarI r_decal_onetype_max("r_decal_onetype_max", "128", "Maximum decals of one decaltype on a wall segment.", CVAR_Archive);
-static VCvarI r_decal_gore_onetype_max("r_decal_gore_onetype_max", "8", "Maximum decals of one decaltype on a wall segment for Gore Mod.", CVAR_Archive);
+static VCvarB r_decal_switch_special("r_decal_switch_special", true, "Make decals more translucent on switch textures?", CVAR_Archive);
+static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "Force this transparency for blood decals on switches.", CVAR_Archive);
+static VCvarF r_decal_switch_boot_alpha("r_decal_switch_boot_alpha", "0.36", "Force this transparency for boot decals on switches.", CVAR_Archive);
+static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.66", "Force this transparency for decals on switches.", CVAR_Archive);
 
 // make renderer life somewhat easier by not allowing alot of decals
 // main work is done by `VLevel->CleanupSegDecals()`
@@ -167,6 +169,7 @@ void VLevel::RemoveDecalAnimator (decal_t *dc) {
 decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalAnim *animator) {
   vassert(seg);
   vassert(dec);
+  alpha = clampval((alpha >= 0.0f ? alpha : dec->alpha.value), 0.0f, 1.0f);
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
   //decal->dectype = dec->name;
@@ -180,8 +183,7 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   decal->ofsX = decal->ofsY = 0.0f;
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
-  decal->alpha = decal->origAlpha = dec->alpha.value;
-  if (alpha >= 0.0f) decal->alpha = clampval(alpha, 0.0f, 1.0f);
+  decal->alpha = decal->origAlpha = alpha;
   decal->addAlpha = dec->addAlpha.value;
   decal->flags =
     (dec->fullbright ? decal_t::Fullbright : 0u)|
@@ -432,6 +434,26 @@ static inline bool hasSliderAnimator (const VDecalDef *dec, const VDecalAnim *an
 
 //==========================================================================
 //
+//  CalcSwitchDecalAlpha
+//
+//  switches should be more visible, so make decals almost transparent
+//
+//==========================================================================
+static float CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha) {
+  if (!r_decal_switch_special.asBool()) return ovralpha;
+  vassert(dec);
+  float alpha = clampval(ovralpha >= 0.0f ? ovralpha : dec->alpha.value, 0.0f, 1.0f);
+  if (alpha <= 0.0f) return alpha;
+  // blood?
+  if (dec->bloodSplat) return clampval(min2(alpha, r_decal_switch_blood_alpha.asFloat()), 0.0f, 1.0f);
+  if (dec->bootPrint) return clampval(min2(alpha, r_decal_switch_boot_alpha.asFloat()), 0.0f, 1.0f);
+  // others
+  return clampval(min2(alpha, r_decal_switch_other_alpha.asFloat()), 0.0f, 1.0f);
+}
+
+
+//==========================================================================
+//
 //  VLevel::PutDecalAtLine
 //
 //  `flips` will be bitwise-ored with decal flags
@@ -553,9 +575,10 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           const float fz = reg->efloor.GetPointZClamped(linepos);
           const float cz = reg->eceiling.GetPointZClamped(linepos);
           if (dcy0 < cz && dcy1 > fz) {
+            const float swalpha = (VLevelInfo::IsSwitchTexture(extraside->MidTexture) ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
             VDC_DLOG(NAME_Debug, " HIT solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
             // create decal
-            decal_t *decal = AllocSegDecal(seg, dec, alpha, animator);
+            decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
             decal->translation = translation;
             if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
             decal->orgz = decal->curz = orgz;
@@ -570,7 +593,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             decal->calculateBBox();
             if (doParnter) {
               // create decal on partner seg
-              decal_t *dcp = AllocSegDecal(seg->partner, dec, alpha, animator);
+              decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
               dcp->translation = decal->translation;
               dcp->shadeclr = dcp->origshadeclr = decal->shadeclr;
               dcp->orgz = decal->orgz;
@@ -617,6 +640,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       bool slideWithCeiling = false;
       sector_t *slidesec = nullptr;
       bool hasMidTex = true;
+      bool onSwitch = false;
 
       if (sb->MidTexture <= 0 || GTextureManager(sb->MidTexture)->Type == TEXTYPE_Null) {
         hasMidTex = false;
@@ -633,6 +657,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         VTexture *xtx = GTextureManager(sb->BottomTexture);
         allowBotTex = (xtx && xtx->Type != TEXTYPE_Null && !xtx->noDecals);
       }
+
       // can we hit toptex?
       if (allowTopTex) {
         if (fsec && bsec) {
@@ -654,6 +679,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           if (dcy1 <= fceilingZ) allowTopTex = false;
         }
       }
+
       // can we hit bottex?
       if (allowBotTex) {
         if (fsec && bsec) {
@@ -707,22 +733,27 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
                if (li->flags&ML_DONTPEGBOTTOM) slideWithFloor = true;
           else if (li->flags&ML_DONTPEGTOP) slideWithCeiling = true;
           else slideWithCeiling = true;
+          onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
         } else {
           if (allowTopTex && allowBotTex) {
             // both top and bottom
             if (orgz < max2(ffloorZ, bfloorZ)) {
               // bottom texture
               if ((li->flags&ML_DONTPEGBOTTOM) == 0) slideWithFloor = true;
+              onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture);
             } else if (orgz > min2(fceilingZ, bceilingZ)) {
               // top texture
               if ((li->flags&ML_DONTPEGTOP) == 0) slideWithCeiling = true;
+              onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
             }
           } else if (allowBotTex) {
             // only bottom texture
             if ((li->flags&ML_DONTPEGBOTTOM) == 0) slideWithFloor = true;
+            onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture);
           } else if (allowTopTex) {
             // only top texture
             if ((li->flags&ML_DONTPEGTOP) == 0) slideWithCeiling = true;
+            onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
           }
           VDC_DLOG(NAME_Debug, "  2s: front=(%g,%g); back=(%g,%g); sc=%d; sf=%d", ffloorZ, fceilingZ, bfloorZ, bceilingZ, (int)slideWithFloor, (int)slideWithCeiling);
         }
@@ -748,6 +779,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           else slideWithCeiling = true;
           VDC_DLOG(NAME_Debug, "   one-sided midtex: pegbot=%d; pegtop=%d; fslide=%d; cslide=%d", (int)(!!(li->flags&ML_DONTPEGBOTTOM)), (int)(!!(li->flags&ML_DONTPEGTOP)), (int)slideWithFloor, (int)slideWithCeiling);
           disabledTextures = decal_t::NoBotTex|decal_t::NoTopTex;
+          onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
         } else {
           /*
           if (allowTopTex && allowBotTex) {
@@ -775,8 +807,10 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
       VDC_DLOG(NAME_Debug, "  decaling seg #%d; offset=%g; length=%g", (int)(ptrdiff_t)(seg-Segs), seg->offset, seg->length);
 
+      const float swalpha = (onSwitch ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
+
       // create decal
-      decal_t *decal = AllocSegDecal(seg, dec, alpha, animator);
+      decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
       decal->translation = translation;
       if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
       decal->orgz = decal->curz = orgz;
@@ -807,7 +841,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
       if (doParnter) {
         // create decal on partner seg
-        decal_t *dcp = AllocSegDecal(seg->partner, dec, alpha, animator);
+        decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
         dcp->translation = translation;
         if (shadeclr != -2) dcp->shadeclr = dcp->origshadeclr = shadeclr;
         dcp->orgz = decal->orgz;

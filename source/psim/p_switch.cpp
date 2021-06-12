@@ -40,11 +40,31 @@ enum EBWhere {
 };
 
 
-//==================================================================
+static TMapNC<int, TSwitch *> switchTextures;
+static bool switchTexturesInited = false;
+
+
+//==========================================================================
 //
-//      CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
+//  InitSwitchTextureCache
 //
-//==================================================================
+//==========================================================================
+void InitSwitchTextureCache () noexcept {
+  if (!switchTexturesInited) {
+    switchTexturesInited = true;
+    //GCon->Logf(NAME_Debug, "initializing switch texture cache...");
+    for (TSwitch *sw : Switches) {
+      if (sw->Tex > 0) switchTextures.put(sw->Tex, sw);
+    }
+  }
+}
+
+
+//**************************************************************************
+//
+// change the texture of a wall switch to its opposite
+//
+//**************************************************************************
 class VThinkButton : public VThinker {
   DECLARE_CLASS(VThinkButton, VThinker, 0)
   NO_DEFAULT_CONSTRUCTOR(VThinkButton)
@@ -75,10 +95,15 @@ IMPLEMENT_CLASS(V, ThinkButton)
 //==========================================================================
 bool VLevelInfo::IsSwitchTexture (int texid) {
   if (texid <= 0) return false;
+  InitSwitchTextureCache();
+  /*
   for (TSwitch *sw : Switches) {
     if (sw->Tex > 0 && sw->Tex == texid) return true;
   }
   return false;
+  */
+  auto pp = switchTextures.find(texid);
+  return !!pp;
 }
 
 
@@ -91,7 +116,54 @@ bool VLevelInfo::IsSwitchTexture (int texid) {
 //
 //==========================================================================
 bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultSound, bool &Quest) {
-  if (sidenum < 0) { Quest = false; return false; }
+  Quest = false;
+  if (sidenum < 0 || sidenum >= XLevel->NumSides) return false;
+  InitSwitchTextureCache();
+
+  TSwitch **swpp = nullptr;
+  EBWhere where = SWITCH_Top;
+  do {
+    // top?
+    swpp = switchTextures.find(XLevel->Sides[sidenum].TopTexture);
+    if (swpp) {
+      where = SWITCH_Top;
+      XLevel->Sides[sidenum].TopTexture = (*swpp)->Frames[0].Texture;
+      break;
+    }
+    // middle?
+    swpp = switchTextures.find(XLevel->Sides[sidenum].MidTexture);
+    if (swpp) {
+      where = SWITCH_Middle;
+      XLevel->Sides[sidenum].MidTexture = (*swpp)->Frames[0].Texture;
+      break;
+    }
+    // bottom?
+    swpp = switchTextures.find(XLevel->Sides[sidenum].BottomTexture);
+    if (swpp) {
+      where = SWITCH_Bottom;
+      XLevel->Sides[sidenum].BottomTexture = (*swpp)->Frames[0].Texture;
+      break;
+    }
+  } while (0);
+
+  if (!swpp) return false;
+
+  TSwitch *sw = *swpp;
+  vassert(sw);
+
+  bool PlaySound = true;
+  if (useAgain || sw->NumFrames > 1) {
+    PlaySound = StartButton(sidenum, where, sw->InternalIndex, DefaultSound, useAgain);
+  }
+
+  if (PlaySound) {
+    SectorStartSound(XLevel->Sides[sidenum].Sector, (sw->Sound ? sw->Sound : GSoundManager->GetSoundID(DefaultSound)), 0, 1, 1);
+  }
+
+  Quest = sw->Quest;
+  return true;
+
+  /*
   const int texTop = XLevel->Sides[sidenum].TopTexture;
   const int texMid = XLevel->Sides[sidenum].MidTexture;
   const int texBot = XLevel->Sides[sidenum].BottomTexture;
@@ -125,8 +197,8 @@ bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultS
     Quest = sw->Quest;
     return true;
   }
+  */
 
-  Quest = false;
   return false;
 }
 

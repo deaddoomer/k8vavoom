@@ -98,22 +98,23 @@ struct VAnimDoorDef {
 
 
 struct TSwitchFrame {
-  vint16 Texture;
-  vint16 BaseTime;
-  vint16 RandomRange;
+  VTextureID Texture;
+  /*vint16*/int BaseTime;
+  /*vint16*/int RandomRange;
 };
 
 
 struct TSwitch {
-  vint16 Tex;
-  vint16 PairIndex;
-  vint16 Sound;
+  VTextureID Tex;
+  /*vint16*/int PairIndex;
+  /*vint16*/int Sound;
   TSwitchFrame *Frames;
-  vint16 NumFrames;
+  /*vint16*/int NumFrames;
   bool Quest;
+  int InternalIndex;
 
-  TSwitch () : Tex(0), PairIndex(0), Sound(0), Frames(nullptr), NumFrames(0), Quest(false) {}
-  ~TSwitch () { if (Frames) { delete[] Frames; Frames = nullptr; } }
+  inline TSwitch () noexcept : Tex(0), PairIndex(0), Sound(0), Frames(nullptr), NumFrames(0), Quest(false), InternalIndex(0) {}
+  inline ~TSwitch () noexcept { if (Frames) { delete[] Frames; Frames = nullptr; } }
 };
 
 
