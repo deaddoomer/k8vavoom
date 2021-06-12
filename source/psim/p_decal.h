@@ -313,7 +313,7 @@ protected:
 
 public:
   inline VDecalAnim (ENoInit) noexcept : next(nullptr), empty(true), name(NAME_None) {}
-  inline VDecalAnim () noexcept : next(nullptr), timePassed(0.0f), name(NAME_None) {}
+  inline VDecalAnim () noexcept : next(nullptr), empty(true), timePassed(0.0f), name(NAME_None) {}
   virtual ~VDecalAnim ();
 
   virtual vuint8 getTypeId () const noexcept;
@@ -380,7 +380,7 @@ public:
 
 public:
   inline VDecalAnimFader (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
-  inline VDecalAnimFader () noexcept : VDecalAnim(), startTime(0), actionTime(0) {}
+  inline VDecalAnimFader () noexcept : VDecalAnim(), startTime(0.0f), actionTime(0.0f) {}
   virtual ~VDecalAnimFader ();
 
   virtual vuint8 getTypeId () const noexcept override;
@@ -420,7 +420,7 @@ public:
 
 public:
   inline VDecalAnimStretcher (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
-  inline VDecalAnimStretcher () noexcept : VDecalAnim(), goalX(), goalY(), startTime(0), actionTime(0) {}
+  inline VDecalAnimStretcher () noexcept : VDecalAnim(), goalX(), goalY(), startTime(0.0f), actionTime(0.0f) {}
   virtual ~VDecalAnimStretcher ();
 
   virtual vuint8 getTypeId () const noexcept override;
@@ -462,7 +462,7 @@ public:
 
 public:
   inline VDecalAnimSlider (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
-  inline VDecalAnimSlider () noexcept : VDecalAnim(), distX(), distY(), startTime(0), actionTime(0), k8reversey(false) {}
+  inline VDecalAnimSlider () noexcept : VDecalAnim(), distX(), distY(), startTime(0.0f), actionTime(0.0f), k8reversey(false) {}
   virtual ~VDecalAnimSlider ();
 
   virtual vuint8 getTypeId () const noexcept override;
@@ -500,7 +500,7 @@ public:
 
 public:
   inline VDecalAnimColorChanger (ENoInit) noexcept : VDecalAnim(E_NoInit) {}
-  inline VDecalAnimColorChanger () noexcept : VDecalAnim(), startTime(0), actionTime(0) { dest[0] = dest[1] = dest[2] = 0; }
+  inline VDecalAnimColorChanger () noexcept : VDecalAnim(), startTime(0.0f), actionTime(0.0f) { dest[0] = dest[1] = dest[2] = 0.0f; }
   virtual ~VDecalAnimColorChanger ();
 
   virtual vuint8 getTypeId () const noexcept override;

@@ -1591,6 +1591,7 @@ VDecalAnim *VDecalAnimSlider::clone (bool forced) {
   res->distY = distY.clone();
   res->startTime = startTime.clone();
   res->actionTime = actionTime.clone();
+  res->k8reversey = k8reversey;
   return res;
 }
 
