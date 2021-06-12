@@ -81,7 +81,10 @@ struct SightTraceInfo {
   TVec Delta; // End-Start
   TPlane Plane; // vertical plane for Start..End line
 
-  inline SightTraceInfo () noexcept
+  SightTraceInfo () = delete;
+
+  inline SightTraceInfo (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) noexcept
+    /*
     : LineBlockMask(0)
     , PlaneNoBlockFlags(0)
     , lightCheck(false)
@@ -90,10 +93,9 @@ struct SightTraceInfo {
     , collectIntercepts(false)
     , wasBlocked(false)
     , Hit1S(false)
+    */
   {
-  }
-
-  inline void setup (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) noexcept {
+    memset((void *)this, 0, sizeof(SightTraceInfo));
     Level = alevel;
     Start = org;
     End = dest;
@@ -937,8 +939,7 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
   height = max2(0.0f, height);
   myheight = max2(0.0f, myheight);
 
-  SightTraceInfo trace;
-  trace.setup(this, org, dest, SubSector, DestSubSector);
+  SightTraceInfo trace(this, org, dest, SubSector, DestSubSector);
 
   trace.PlaneNoBlockFlags =
     SPF_NOBLOCKSIGHT|
@@ -1021,8 +1022,7 @@ bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector,
 
   if (lengthSquared(org-dest) <= 2.0f) return true;
 
-  SightTraceInfo trace;
-  trace.setup(this, org, dest, startSubSector, endSubSector);
+  SightTraceInfo trace(this, org, dest, startSubSector, endSubSector);
   trace.lightCheck = true;
   trace.flatTextureCheck = true;
   trace.wallTextureCheck = true;
