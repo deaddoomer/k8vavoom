@@ -5,8 +5,9 @@
 //===========================================================================
 actor FlemoidusCommonus : ZombieMan 3004 {
   Game Chex
-  BloodColor "00 66 00" // for particles
-  BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
+  BloodColor "00 66 00" // for particles and decals
+  //k8 no need to do this
+  //BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   DropItem ""
   Obituary "$OB_COMMONUS"
   States {
@@ -26,8 +27,9 @@ actor FlemoidusCommonus : ZombieMan 3004 {
 //===========================================================================
 actor FlemoidusBipedicus : ShotgunGuy 9 {
   Game Chex
-  BloodColor "00 66 00" // for particles
-  BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
+  BloodColor "00 66 00" // for particles and decals
+  //k8 no need to do this
+  //!BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   DropItem ""
   Obituary "$OB_BIPEDICUS"
   States {
@@ -47,8 +49,9 @@ actor FlemoidusBipedicus : ShotgunGuy 9 {
 //===========================================================================
 actor ArmoredFlemoidusBipedicus : DoomImp 3001 {
   Game Chex
-  BloodColor "00 66 00" // for particles
-  BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
+  BloodColor "00 66 00" // for particles and decals
+  //k8 no need to do this
+  //!BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   Obituary "$OB_BIPEDICUS2"
   HitObituary "$OB_BIPEDICUS2"
 }
@@ -61,8 +64,9 @@ actor ArmoredFlemoidusBipedicus : DoomImp 3001 {
 //===========================================================================
 actor FlemoidusCycloptisCommonus : Demon 3002 {
   Game Chex
-  BloodColor "00 66 00" // for particles
-  BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
+  BloodColor "00 66 00" // for particles and decals
+  //k8 no need to do this
+  //!BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   Obituary "$OB_CYCLOPTIS"
 }
 
@@ -74,8 +78,9 @@ actor FlemoidusCycloptisCommonus : Demon 3002 {
 //===========================================================================
 actor Flembrane : BaronOfHell 3003 {
   Game Chex
-  BloodColor "00 66 00" // for particles
-  BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
+  BloodColor "00 66 00" // for particles and decals
+  //k8 no need to do this
+  //!BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   radius 44
   height 100
   speed 0
