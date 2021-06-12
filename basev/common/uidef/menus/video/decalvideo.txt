@@ -65,7 +65,7 @@ menudef DecalOptions {
 
   option slider {
     title = "Maximum Overlapping Decals";
-    cvar = gl_flatdecal_limit;;
+    cvar = gl_flatdecal_limit;
     help =
       "Maximum number of overlapping decals on one floor/ceiling.",
       "",
@@ -73,5 +73,41 @@ menudef DecalOptions {
     step = 1;
     min = 0;
     max = 128;
+  }
+
+
+  header "Decals On Switches";
+
+  option bool {
+    title = "Special Switch Translucency";
+    cvar = r_decal_switch_special;
+    help = "Use the following translucent values on switch textures?";
+  }
+
+  option slider {
+    title = "Blood Decals Translucency";
+    cvar = r_decal_switch_blood_alpha;
+    help = "Maximum translucency for blood decals on switch textures.";
+    step = 0.02;
+    min = 0;
+    max = 1;
+  }
+
+  option slider {
+    title = "Boot Decals Translucency";
+    cvar = r_decal_switch_boot_alpha;
+    help = "Maximum translucency for bootprint decals on switch textures.";
+    step = 0.02;
+    min = 0;
+    max = 1;
+  }
+
+  option slider {
+    title = "Other Decals Translucency";
+    cvar = r_decal_switch_other_alpha;
+    help = "Maximum translucency for other decals on switch textures.";
+    step = 0.02;
+    min = 0;
+    max = 1;
   }
 }
