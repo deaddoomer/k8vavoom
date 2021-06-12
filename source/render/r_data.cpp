@@ -1061,7 +1061,7 @@ int R_FindTranslationByName (VStr trname) {
 int R_GetBloodTranslation (int Col, bool allowAdd) {
   // check for duplicate blood translation
   auto ppi = BloodTransMap.find(Col&0xffffff);
-  if (ppi) return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+(*ppi);
+  if (ppi) return *ppi;
   /*
   // check for duplicate blood translation
   for (int i = 0; i < BloodTranslations.Num(); ++i) {
@@ -1073,13 +1073,8 @@ int R_GetBloodTranslation (int Col, bool allowAdd) {
 
   if (!allowAdd) return 0;
 
-  // create new translation
-  VTextureTranslation *Tr = new VTextureTranslation;
-  Tr->BuildBloodTrans(Col);
-
-  // add it
-  if (BloodTranslations.Num() >= MAX_BLOOD_TRANSLATIONS) {
-    delete Tr;
+  // check if we have enough room
+  if (BloodTranslations.length() >= MAX_BLOOD_TRANSLATIONS) {
     static bool warnPrinted = false;
     if (!warnPrinted) {
       warnPrinted = true;
@@ -1088,11 +1083,18 @@ int R_GetBloodTranslation (int Col, bool allowAdd) {
     return 0;
   }
 
-  // register in map
-  BloodTransMap.put(Col&0xffffff, BloodTranslations.length());
+  // create new translation
+  VTextureTranslation *Tr = new VTextureTranslation;
+  Tr->BuildBloodTrans(Col);
 
+  const int idx = (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+BloodTranslations.length();
+  // append
   BloodTranslations.Append(Tr);
-  return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+BloodTranslations.Num()-1;
+  // register in map
+  BloodTransMap.put(Col&0xffffff, idx);
+
+  // done
+  return idx;
 }
 
 
