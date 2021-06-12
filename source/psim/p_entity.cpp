@@ -74,6 +74,9 @@ static VField *fldbSkullFly = nullptr;
 static VField *fldbTouchy = nullptr;
 static VField *fldbDormant = nullptr;
 
+static VField *fldiBloodColor = nullptr;
+static VField *fldiBloodTranslation = nullptr;
+
 static VClass *classActor = nullptr;
 
 
@@ -150,6 +153,9 @@ void VEntity::EntityStaticInit () {
   fldbSkullFly = FindTypedField(classEntityEx, "bSkullFly", TYPE_Bool);
   fldbTouchy = FindTypedField(classEntityEx, "bTouchy", TYPE_Bool);
   fldbDormant = FindTypedField(classEntityEx, "bDormant", TYPE_Bool);
+  // blood
+  fldiBloodColor = FindTypedField(classEntityEx, "BloodColor", TYPE_Int);
+  fldiBloodTranslation = FindTypedField(classEntityEx, "BloodTranslation", TYPE_Int);
 
   // `Actor` -- no fields yet
 }
@@ -198,6 +204,19 @@ void VEntity::SerialiseOther (VStream &Strm) {
           // both seems to be wrong, revert to "proper" again
           LinkToWorld(true);
         }
+      }
+    }
+    // create and fix blood translation for actor if necessary
+    int bcolor = fldiBloodColor->GetInt(this);
+    if (bcolor) {
+      int btrans = fldiBloodTranslation->GetInt(this);
+      if (btrans) {
+        auto trans = R_GetCachedTranslation(btrans, XLevel);
+        if (!trans /*|| trans->isBloodTranslation*/) btrans = 0;
+      }
+      if (!btrans) {
+        btrans = R_GetBloodTranslation(bcolor, true/*allowAdd*/);
+        fldiBloodTranslation->SetInt(this, btrans);
       }
     }
   }
