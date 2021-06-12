@@ -212,7 +212,7 @@ void VEntity::SerialiseOther (VStream &Strm) {
       int btrans = fldiBloodTranslation->GetInt(this);
       if (btrans) {
         auto trans = R_GetCachedTranslation(btrans, XLevel);
-        if (!trans /*|| trans->isBloodTranslation*/) btrans = 0;
+        if (!trans || trans->isBloodTranslation) btrans = 0; // recreate it
       }
       if (!btrans) {
         btrans = R_GetBloodTranslation(bcolor, true/*allowAdd*/);
