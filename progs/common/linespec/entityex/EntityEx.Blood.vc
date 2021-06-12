@@ -364,7 +364,7 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
   // blood color
   int btrans = 0;
   if (!bDontTranslate) {
-         if (BloodColor) btrans = R_GetBloodTranslation(BloodColor, allowadd:true); // this is fast
+         if (BloodColor) btrans = R_GetBloodTranslation(BloodColor, allowadd:true); // this is fast, and allowed
     else if (BloodTranslation) btrans = BloodTranslation;
     else if (bCopyBloodTranslation) btrans = Translation;
   }

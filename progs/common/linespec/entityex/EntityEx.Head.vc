@@ -633,16 +633,18 @@ void CopyBloodTranslations (Entity src, bool copyNormalTranslation) {
   if (copyNormalTranslation /*|| !specified_copyNormalTranslation*/) CopyTranslations(src);
   EntityEx ee = EntityEx(src);
   if (!ee) return;
-  if (ee.BloodTranslation) {
+  if (ee.BloodColor) {
+    BloodColor = ee.BloodColor;
+    Translation = R_GetBloodTranslation(ee.BloodColor, allowadd:true); // this is fast, and allowed
+    BloodTranslation = Translation;
+  } else if (ee.BloodTranslation) {
+    BloodColor = ee.BloodColor; // always copy blood color, it has preference for decals
     Translation = ee.BloodTranslation;
     BloodTranslation = Translation;
-    /*if (ee.BloodColor)*/ BloodColor = ee.BloodColor; // always copy blood color, it has preference for decals
-  } else if (ee.bCopyBloodTranslation) {
-    if (ee.Translation) {
-      Translation = ee.Translation;
-      BloodTranslation = Translation;
-      BloodColor = 0; // otherwise it will be used instead of translation
-    }
+  } else if (ee.bCopyBloodTranslation && ee.Translation) {
+    Translation = ee.Translation;
+    BloodTranslation = Translation;
+    BloodColor = 0; // otherwise it will be used instead of translation
   }
 }
 
