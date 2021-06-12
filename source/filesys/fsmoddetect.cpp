@@ -396,6 +396,7 @@ static void ParseDetectors (VStr name, bool inHomeDir) {
     if (!sc->GetString()) break;
     sc->Error(va("unknown detection section '%s'", *sc->String));
   }
+  delete sc;
 }
 
 
