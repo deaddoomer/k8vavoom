@@ -2167,7 +2167,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     NameStr = sc->String;
   }
 
-  if (getDecorateDebug()) sc->Message(va("Parsing class `%s`", *NameStr));
+  if (getDecorateDebug()) sc->DebugMessage(va("Parsing class `%s`", *NameStr));
 
   VClass *DupCheck = VClass::FindClassNoCase(*NameStr);
   if (DupCheck != nullptr && DupCheck->MemberType == MEMBER_Class) {
@@ -2210,7 +2210,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     ParentClass = VClass::FindClassNoCase(*ParentStr);
     if (ParentClass == nullptr || ParentClass->MemberType != MEMBER_Class) {
       if (optionalActor) {
-        sc->Message(va("Skipping optional actor `%s`", *NameStr));
+        sc->DebugMessage(va("Skipping optional actor `%s`", *NameStr));
         ParentClass = nullptr; // just in case
       } else if (CheckParentErrorHacks(sc, NameStr, ParentStr)) {
         ParentClass = nullptr; // ignore it
@@ -2251,7 +2251,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     delete sc2;
   }
 
-  if (getDecorateDebug()) sc->Message(va("Creating derived class `%s` from `%s`", *NameStr, ParentClass->GetName()));
+  if (getDecorateDebug()) sc->DebugMessage(va("Creating derived class `%s` from `%s`", *NameStr, ParentClass->GetName()));
   VClass *Class = ParentClass->CreateDerivedClass(*NameStr, DecPkg, uvars, sc->GetLoc());
   uvars.clear(); // we don't need it anymore
   DecPkg->ParsedClasses.Append(Class);
