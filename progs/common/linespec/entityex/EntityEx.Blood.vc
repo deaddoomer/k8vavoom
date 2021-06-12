@@ -361,9 +361,11 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
 
   if (isSmallDamage && !radiusDamage) return; // oops
 
+  // blood color
   int btrans = 0;
   if (!bDontTranslate) {
-         if (BloodTranslation) btrans = BloodTranslation;
+         if (BloodColor) btrans = R_GetBloodTranslation(BloodColor, allowadd:true); // this is fast
+    else if (BloodTranslation) btrans = BloodTranslation;
     else if (bCopyBloodTranslation) btrans = Translation;
   }
   //print("btrans for %C is %s", self, btrans);
