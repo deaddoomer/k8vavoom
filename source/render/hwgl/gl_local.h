@@ -1284,6 +1284,7 @@ protected:
     TT_PSprite,
     TT_PSpriteBrightmap,
     TT_Decal,
+    TT_BloodDecal,
     TT_Pic,
     TT_Model, // textures for alias models
     TT_Shadow, // sprite texture for sprite shadow
@@ -1322,7 +1323,7 @@ public:
   // high byte of `ShadeColor` means nothing
   // returns `false` if non-main texture was bound
   bool SetCommonTexture (VTexture *Tex, int CMap, vuint32 ShadeColor=0);
-  bool SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
+  bool SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, bool isBloodSplat); // bloodsplats will be converted to pure red
   void SetBrightmapTexture (VTexture *Tex);
   void SetSpriteBrightmapTexture (SpriteType sptype, VTexture *Tex);
   bool SetPic (VTexture *Tex, VTextureTranslation *Trans, int CMap, vuint32 ShadeColor=0);

@@ -291,7 +291,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
     if (currTexId != dcTexId) {
       currTexId = dcTexId;
-      SetDecalTexture(dtex, currTrans, cmap); // this sets `tex_iw` and `tex_ih`
+      SetDecalTexture(dtex, currTrans, cmap, (dc->flags&(decal_t::BloodSplat|decal_t::BootPrint))); // this sets `tex_iw` and `tex_ih`
     }
 
     const float pd2 =

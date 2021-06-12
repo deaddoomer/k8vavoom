@@ -287,12 +287,13 @@ bool VOpenGLDrawer::SetCommonTexture (VTexture *Tex, int CMap, vuint32 ShadeColo
 //  VOpenGLDrawer::SetDecalTexture
 //
 //  returns `false` if non-main texture was bound
+//  bloodsplats will be converted to pure red
 //
 //==========================================================================
-bool VOpenGLDrawer::SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor) {
+bool VOpenGLDrawer::SetDecalTexture (VTexture *Tex, VTextureTranslation *Translation, int CMap, bool isBloodSplat) {
   if (!Tex) Sys_Error("cannot set null texture");
   //GCon->Logf(NAME_Debug, "DECAL TEXTURE '%s'", *Tex->Name);
-  const bool res = SetTextureLump(SetTexType::TT_Decal, Tex, Translation, CMap, ShadeColor);
+  const bool res = SetTextureLump((isBloodSplat ? SetTexType::TT_BloodDecal : SetTexType::TT_Decal), Tex, Translation, CMap, /*ShadeColor*/0);
   SetOrForceTextureFiltering(res, Tex, texture_filter, TexWrapRepeat);
   return res;
 }
@@ -522,9 +523,16 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       const rgba_t *CMPal = ColorMaps[CMap].GetPalette();
       for (int i = 0; i < 256; ++i) tmppal[i] = CMPal[TrTab[i]];
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (ttype == SetTexType::TT_Decal) {
+      if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        SrcTex->Shade(0xffffff); // shade to white
+        /*
+        if (ttype == SetTexType::TT_Decal) {
+          SrcTex->Shade(0xffffff); // shade to white
+        } else
+        */
+        {
+          SrcTex->Shade(0xff0000); // shade to red
+        }
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
@@ -536,9 +544,16 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       //GCon->Logf("uploading translated texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       //for (int f = 0; f < 256; ++f) GCon->Logf("  %3d: r:g:b=%02x:%02x:%02x", f, Translation->GetPalette()[f].r, Translation->GetPalette()[f].g, Translation->GetPalette()[f].b);
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (ttype == SetTexType::TT_Decal) {
+      if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        SrcTex->Shade(0xffffff); // shade to white
+        /*
+        if (ttype == SetTexType::TT_Decal) {
+          SrcTex->Shade(0xffffff); // shade to white
+        } else
+        */
+        {
+          SrcTex->Shade(0xff0000); // shade to red
+        }
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
@@ -549,9 +564,16 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       // only colormap
       //GCon->Logf(NAME_Dev, "uploading colormapped texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
-      if (ttype == SetTexType::TT_Decal) {
+      if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        SrcTex->Shade(0xffffff); // shade to white
+        /*
+        if (ttype == SetTexType::TT_Decal) {
+          SrcTex->Shade(0xffffff); // shade to white
+        } else
+        */
+        {
+          SrcTex->Shade(0xff0000); // shade to red
+        }
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
