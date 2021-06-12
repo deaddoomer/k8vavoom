@@ -504,7 +504,7 @@ float CameraHeight;
 class!Actor BloodType;
 class!Actor BloodSplatterType;
 class!Actor AxeBloodType;
-int BloodColor; // used for particle effects
+int BloodColor; // used for particle effects and blood decals
 int BloodTranslation; // forced onto blood actors and decals
 bool bBloodDisableSplats; // has sense only for blood actors
 bool bCopyBloodTranslation; // set in decorate with "+CopyBloodTranslation", used in blood actors to force-copy their translation (blood color)
@@ -636,11 +636,12 @@ void CopyBloodTranslations (Entity src, bool copyNormalTranslation) {
   if (ee.BloodTranslation) {
     Translation = ee.BloodTranslation;
     BloodTranslation = Translation;
-    if (ee.BloodColor) BloodColor = ee.BloodColor;
+    /*if (ee.BloodColor)*/ BloodColor = ee.BloodColor; // always copy blood color, it has preference for decals
   } else if (ee.bCopyBloodTranslation) {
     if (ee.Translation) {
       Translation = ee.Translation;
       BloodTranslation = Translation;
+      BloodColor = 0; // otherwise it will be used instead of translation
     }
   }
 }
