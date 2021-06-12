@@ -85,6 +85,9 @@ TArray<VTextureTranslation *> DecorateTranslations;
 TArray<VTextureTranslation *> BloodTranslations;
 TMap<VStrCI, int> NamedTranslations;
 
+// key: color&0xffffff, value: index in BloodTranslations
+static TMapNC<int, int> BloodTransMap;
+
 // they basicly work the same as translations
 VTextureTranslation ColorMaps[CM_Max];
 
@@ -1057,11 +1060,16 @@ int R_FindTranslationByName (VStr trname) {
 //==========================================================================
 int R_GetBloodTranslation (int Col, bool allowAdd) {
   // check for duplicate blood translation
+  auto ppi = BloodTransMap.find(Col&0xffffff);
+  if (ppi) return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+(*ppi);
+  /*
+  // check for duplicate blood translation
   for (int i = 0; i < BloodTranslations.Num(); ++i) {
     if (BloodTranslations[i]->Color == (Col&0xffffff)) {
       return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+i;
     }
   }
+  */
 
   if (!allowAdd) return 0;
 
@@ -1079,6 +1087,9 @@ int R_GetBloodTranslation (int Col, bool allowAdd) {
     }
     return 0;
   }
+
+  // register in map
+  BloodTransMap.put(Col&0xffffff, BloodTranslations.length());
 
   BloodTranslations.Append(Tr);
   return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+BloodTranslations.Num()-1;
