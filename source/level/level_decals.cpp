@@ -575,7 +575,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           const float fz = reg->efloor.GetPointZClamped(linepos);
           const float cz = reg->eceiling.GetPointZClamped(linepos);
           if (dcy0 < cz && dcy1 > fz) {
-            const float swalpha = (VLevelInfo::IsSwitchTexture(extraside->MidTexture) ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
+            const float swalpha = (reg->extraline->special && VLevelInfo::IsSwitchTexture(extraside->MidTexture) ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
             VDC_DLOG(NAME_Debug, " HIT solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
             // create decal
             decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
@@ -733,27 +733,27 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
                if (li->flags&ML_DONTPEGBOTTOM) slideWithFloor = true;
           else if (li->flags&ML_DONTPEGTOP) slideWithCeiling = true;
           else slideWithCeiling = true;
-          onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
+          onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture));
         } else {
           if (allowTopTex && allowBotTex) {
             // both top and bottom
             if (orgz < max2(ffloorZ, bfloorZ)) {
               // bottom texture
               if ((li->flags&ML_DONTPEGBOTTOM) == 0) slideWithFloor = true;
-              onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture);
+              onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture));
             } else if (orgz > min2(fceilingZ, bceilingZ)) {
               // top texture
               if ((li->flags&ML_DONTPEGTOP) == 0) slideWithCeiling = true;
-              onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
+              onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture));
             }
           } else if (allowBotTex) {
             // only bottom texture
             if ((li->flags&ML_DONTPEGBOTTOM) == 0) slideWithFloor = true;
-            onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture);
+            onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->BottomTexture));
           } else if (allowTopTex) {
             // only top texture
             if ((li->flags&ML_DONTPEGTOP) == 0) slideWithCeiling = true;
-            onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
+            onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture));
           }
           VDC_DLOG(NAME_Debug, "  2s: front=(%g,%g); back=(%g,%g); sc=%d; sf=%d", ffloorZ, fceilingZ, bfloorZ, bceilingZ, (int)slideWithFloor, (int)slideWithCeiling);
         }
@@ -779,7 +779,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           else slideWithCeiling = true;
           VDC_DLOG(NAME_Debug, "   one-sided midtex: pegbot=%d; pegtop=%d; fslide=%d; cslide=%d", (int)(!!(li->flags&ML_DONTPEGBOTTOM)), (int)(!!(li->flags&ML_DONTPEGTOP)), (int)slideWithFloor, (int)slideWithCeiling);
           disabledTextures = decal_t::NoBotTex|decal_t::NoTopTex;
-          onSwitch = VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture);
+          onSwitch = (li->special && VLevelInfo::IsSwitchTexture(seg->sidedef->TopTexture));
         } else {
           /*
           if (allowTopTex && allowBotTex) {
