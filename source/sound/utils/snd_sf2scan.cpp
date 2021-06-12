@@ -222,6 +222,17 @@ void SF2_ScanDiskBanks () {
 }
 
 
+//==========================================================================
+//
+//  CountAllEntities
+//
+//==========================================================================
+static VVA_OKUNUSED int cmpSF2FileNames (const void *aa, const void *bb, void *) {
+  const VStr *a = (const VStr *)aa;
+  const VStr *b = (const VStr *)bb;
+  return a->ICmp(*b);
+}
+
 
 //==========================================================================
 //
@@ -284,6 +295,8 @@ static void SF2_KnownScan () {
     }
   }
 #endif
+
+  timsort_r(sf2KnownFiles.ptr(), sf2KnownFiles.length(), sizeof(sf2KnownFiles[0]), &cmpSF2FileNames, nullptr);
 }
 
 
