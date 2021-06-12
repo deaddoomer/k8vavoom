@@ -861,7 +861,26 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
     if (count < 1) {
       opt.AddItem("<DEFAULT>", -1);
     } else {
-      foreach (int idx; 0..count) opt.AddItem(SF2_GetShortName(idx), idx);
+      float vv = 0;
+      string sf2fn = GetCvarS('snd_sf2_file');
+      foreach (int idx; 0..count) {
+        if (SF2_GetName(idx).strEqu(sf2fn)) {
+          //printdebug("found soundfound #%s (%s)", idx, sf2fn);
+          vv = idx;
+        } else {
+          //printdebug("...soundfound #%s (%s)", idx, SF2_GetName(idx));
+        }
+        opt.AddItem(SF2_GetShortName(idx), idx);
+      }
+      opt.SetInitialValue(vv);
+      if (cvar) {
+        if (!CvarExists(cvar)) {
+          CreateCvarFloat(cvar, vv, "___saved_menu__value___", 0);
+        } else {
+          SetCvarF(cvar, vv);
+        }
+      }
+      //printdebug("<<%s>>", cvar);
     }
     opt.ValueChanging = delegate bool (Object Sender, float NewValue) {
       int val = cast(int)NewValue;

@@ -142,7 +142,7 @@ final static int getSavedInt (name Name, int defval) {
 //==========================================================================
 final static void setSavedFloat (name Name, float val) {
   if (!CvarExists(Name)) {
-    CreateCvar(Name, va("%f", val), "___saved_menu__value___", 0);
+    CreateCvarFloat(Name, val, "___saved_menu__value___", 0);
   } else {
     SetCvarF(Name, val);
     int cf = CvarGetFlags(Name);
