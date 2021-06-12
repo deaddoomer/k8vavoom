@@ -92,6 +92,16 @@
   DECLARE_FUNCTION(nameStrEqu)
   DECLARE_FUNCTION(nameStrEquCI)
 
+  DECLARE_FUNCTION(nameStartsWith)
+  DECLARE_FUNCTION(nameStartsWithCI)
+  DECLARE_FUNCTION(nameStrStartsWith)
+  DECLARE_FUNCTION(nameStrStartsWithCI)
+
+  DECLARE_FUNCTION(nameEndsWith)
+  DECLARE_FUNCTION(nameEndsWithCI)
+  DECLARE_FUNCTION(nameStrEndsWith)
+  DECLARE_FUNCTION(nameStrEndsWithCI)
+
   // string functions
   DECLARE_FUNCTION(strEqu)
   DECLARE_FUNCTION(strEquCI)

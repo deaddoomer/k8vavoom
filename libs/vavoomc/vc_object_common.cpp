@@ -506,6 +506,98 @@ IMPLEMENT_FUNCTION(VObject, nameStrEquCI) {
   RET_BOOL(s2.strEquCI(*n1));
 }
 
+// native static final bool nameStartsWith (name s1, name pfx) [property(name) startsWith];
+IMPLEMENT_FUNCTION(VObject, nameStartsWith) {
+  VName n1, pfx;
+  vobjGetParam(n1, pfx);
+  if (n1 != NAME_None && pfx != NAME_None) {
+    RET_BOOL(VStr::startsWith(*n1, *pfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameStartsWithCI (name s1, name pfx) [property(name) startsWithCI];
+IMPLEMENT_FUNCTION(VObject, nameStartsWithCI) {
+  VName n1, pfx;
+  vobjGetParam(n1, pfx);
+  if (n1 != NAME_None && pfx != NAME_None) {
+    RET_BOOL(VStr::startsWithCI(*n1, *pfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameStrStartsWith (name s1, name pfx) [property(name) startsWithStr];
+IMPLEMENT_FUNCTION(VObject, nameStrStartsWith) {
+  VName n1;
+  VStr pfx;
+  vobjGetParam(n1, pfx);
+  if (n1 != NAME_None && !pfx.isEmpty()) {
+    RET_BOOL(VStr::startsWith(*n1, *pfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameStrStartsWithCI (name s1, name pfx) [property(name) startsWithStrCI];
+IMPLEMENT_FUNCTION(VObject, nameStrStartsWithCI) {
+  VName n1;
+  VStr pfx;
+  vobjGetParam(n1, pfx);
+  if (n1 != NAME_None && !pfx.isEmpty()) {
+    RET_BOOL(VStr::startsWithCI(*n1, *pfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameEndsWith (name s1, name sfx) [property(name) endsWith];
+IMPLEMENT_FUNCTION(VObject, nameEndsWith) {
+  VName n1, sfx;
+  vobjGetParam(n1, sfx);
+  if (n1 != NAME_None && sfx != NAME_None) {
+    RET_BOOL(VStr::endsWith(*n1, *sfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameEndsWithCI (name s1, name sfx) [property(name) endsWithCI];
+IMPLEMENT_FUNCTION(VObject, nameEndsWithCI) {
+  VName n1, sfx;
+  vobjGetParam(n1, sfx);
+  if (n1 != NAME_None && sfx != NAME_None) {
+    RET_BOOL(VStr::endsWithCI(*n1, *sfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameStrEndsWith (name s1, name sfx) [property(name) endsWithStr];
+IMPLEMENT_FUNCTION(VObject, nameStrEndsWith) {
+  VName n1;
+  VStr sfx;
+  vobjGetParam(n1, sfx);
+  if (n1 != NAME_None && !sfx.isEmpty()) {
+    RET_BOOL(VStr::endsWith(*n1, *sfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
+// native static final bool nameStrEndsWithCI (name s1, name sfx) [property(name) endsWithStrCI];
+IMPLEMENT_FUNCTION(VObject, nameStrEndsWithCI) {
+  VName n1;
+  VStr sfx;
+  vobjGetParam(n1, sfx);
+  if (n1 != NAME_None && !sfx.isEmpty()) {
+    RET_BOOL(VStr::endsWithCI(*n1, *sfx));
+  } else {
+    RET_BOOL(false);
+  }
+}
+
 
 //**************************************************************************
 //

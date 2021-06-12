@@ -1166,6 +1166,16 @@ native static final bool nameStrEqu (name s1, string s2) [property(name) strEqu]
 // compare name and string ignoring case (not utf8-aware)
 native static final bool nameStrEquCI (name s1, string s2) [property(name) strEquCI];
 
+native static final bool nameStartsWith (name s1, name pfx) [property(name) startsWith];
+native static final bool nameStartsWithCI (name s1, name pfx) [property(name) startsWithCI];
+native static final bool nameStrStartsWith (name s1, string pfx) [property(name) startsWithStr];
+native static final bool nameStrStartsWithCI (name s1, string pfx) [property(name) startsWithStrCI];
+
+native static final bool nameEndsWith (name s1, name sfx) [property(name) endsWith];
+native static final bool nameEndsWithCI (name s1, name sfx) [property(name) endsWithCI];
+native static final bool nameStrEndsWith (name s1, string sfx) [property(name) endsWithStr];
+native static final bool nameStrEndsWithCI (name s1, string sfx) [property(name) endsWithStrCI];
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // string functions
