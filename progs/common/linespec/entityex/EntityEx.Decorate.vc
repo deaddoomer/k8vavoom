@@ -105,7 +105,8 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
   }
   int RVal;
   if (To-From > 255) {
-    RVal = (P_Random()<<24)|(P_Random()<<16)|(P_Random()<<8)|P_Random();
+    //RVal = (P_Random()<<24)|(P_Random()<<16)|(P_Random()<<8)|P_Random();
+    RVal = GenRandomU31();
   } else {
     RVal = P_Random();
   }
