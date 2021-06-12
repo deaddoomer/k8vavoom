@@ -236,7 +236,8 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       //if (bMissile) printdebug("%C: plane hit!", self);
       // hit floor or ceiling
       tr->hit = in.hitpoint;
-      tr->didhit = true;
+      tr->didhit = !in.bIsASky;
+      if (tr->didhit) tr->hit += in.plane.normal; // move it away a little
       return false;
     }
 
@@ -264,7 +265,8 @@ final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *t
       } else {
         // sky hit, stop
         tr->hit = hitPoint;
-        tr->didhit = true;
+        //tr->didhit = true;
+        tr->didhit = false;
         return false;
       }
 
@@ -370,6 +372,7 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
   }
   //print("btrans for %C is %s", self, btrans);
 
+  //int goreDecal = 0;
   trsplat_t tr;
   bool wsp = GetCvarB('blood_widespread');
   while (count-- > 0) {
@@ -396,7 +399,18 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
     if (isSmallDamage && !radiusDamage) continue;
 
     //print("TraceBleed: %s", bloodTypeName);
-    TraceSplat(pos, vdir, 172.0, &tr, 0, bloodTypeName, pass2S:true, only2S:false, atranslation:btrans);
+    if (!TraceSplat(pos, vdir, 172.0, &tr, 0, bloodTypeName, pass2S:true, only2S:false, atranslation:btrans)) {
+      /*
+      if (tr.didhit) {
+        // hits some plane
+        if (!goreDecal) goreDecal = (bloodTypeName.startsWith('K8Gore_') ? 1 : -1);
+        if (goreDecal < 0) {
+          printdebug("%C: spawning flat decal '%s'; pos=%s; hit=%s", self, bloodTypeName, pos, tr.hit);
+          SpawnFlatDecal(tr.hit, bloodTypeName, 4, atranslation:btrans);
+        }
+      }
+      */
+    }
   }
 }
 
