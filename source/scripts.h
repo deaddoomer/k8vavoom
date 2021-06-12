@@ -138,9 +138,9 @@ public:
   void ExpectName8Def (VName def);
   void ExpectName ();
   void ExpectIdentifier ();
-  bool Check (const char *);
-  bool CheckStartsWith (const char *);
-  void Expect (const char *);
+  bool Check (const char *str);
+  bool CheckStartsWith (const char *str);
+  void Expect (const char *name);
   bool CheckQuotedString ();
   bool CheckIdentifier ();
   bool CheckNumber ();
@@ -156,11 +156,12 @@ public:
   void UnGet ();
   void SkipBracketed (bool bracketEaten=false);
   void SkipLine ();
-  void Message (const char *);
-  void MessageErr (const char *);
-  void Error (const char *);
+  void Message (const char *message);
+  void DebugMessage (const char *message);
+  void MessageErr (const char *message);
+  void Error (const char *message);
 #if !defined(VCC_STANDALONE_EXECUTOR)
-  void HostError (const char *);
+  void HostError (const char *message);
 #endif
 
   // slow! returns 0 on EOF

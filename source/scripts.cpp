@@ -733,7 +733,7 @@ void VScriptParser::SkipLine () {
 //
 //==========================================================================
 void VScriptParser::ExpectString () {
-  if (!GetString()) Error("Missing string.");
+  if (!GetString()) Error("String expected");
 }
 
 
@@ -760,7 +760,7 @@ void VScriptParser::ExpectLoneChar () {
       }
     }
   }
-  if (!ch) Error("Missing char.");
+  if (!ch) Error("Char expected");
   String.clear();
   String += ch;
 }
@@ -886,7 +886,7 @@ void VScriptParser::ExpectName () {
 //
 //==========================================================================
 vuint32 VScriptParser::ExpectColor () {
-  if (!GetString()) Error("color expected");
+  if (!GetString()) Error("Color expected");
   //vuint32 clr = M_LookupColorName(String);
   //if (clr) return clr;
   // hack to allow numbers like "008000"
@@ -921,6 +921,8 @@ vuint32 VScriptParser::ExpectColor () {
 //
 //==========================================================================
 bool VScriptParser::Check (const char *str) {
+  vassert(str);
+  vassert(str[0]);
   if (GetString()) {
     if (!String.ICmp(str)) return true;
     UnGet();
@@ -935,6 +937,8 @@ bool VScriptParser::Check (const char *str) {
 //
 //==========================================================================
 bool VScriptParser::CheckStartsWith (const char *str) {
+  vassert(str);
+  vassert(str[0]);
   if (GetString()) {
     VStr s = VStr(str);
     if (String.length() < s.length()) { UnGet(); return false; }
@@ -952,6 +956,8 @@ bool VScriptParser::CheckStartsWith (const char *str) {
 //
 //==========================================================================
 void VScriptParser::Expect (const char *name) {
+  vassert(name);
+  vassert(name[0]);
   ExpectString();
   if (String.ICmp(name)) Error(va("Bad syntax, \"%s\" expected", name));
 }
@@ -1060,7 +1066,7 @@ bool VScriptParser::CheckNumber () {
 //==========================================================================
 void VScriptParser::ExpectNumber (bool allowFloat, bool truncFloat) {
   if (!GetString()) {
-    Error("Missing integer.");
+    Error("Integer expected");
   } else {
     VStr str = NormalizeFuckedGozzoNumber(String);
     if (str.length() > 0) {
@@ -1082,7 +1088,7 @@ void VScriptParser::ExpectNumber (bool allowFloat, bool truncFloat) {
         }
       }
     } else {
-      Error("Missing integer.");
+      Error("Integer expected");
     }
   }
 }
@@ -1156,7 +1162,7 @@ bool VScriptParser::CheckFloat () {
 //==========================================================================
 void VScriptParser::ExpectFloat () {
   if (!GetString()) {
-    Error("Missing float.");
+    Error("Float expected");
   } else {
     VStr str = NormalizeFuckedGozzoNumber(String);
     if (str.length() > 0) {
@@ -1195,7 +1201,7 @@ void VScriptParser::ExpectFloat () {
         Float = ff;
       }
     } else {
-      Error("Missing float.");
+      Error("Float expected");
     }
   }
 }
@@ -1319,6 +1325,21 @@ void VScriptParser::Message (const char *message) {
   GCon->Logf(NAME_Warning, "%s:%d: %s", *ScriptName, TokLine, Msg);
 #else
   GLog.WriteLine(NAME_Warning, "%s:%d: %s", *ScriptName, TokLine, Msg);
+#endif
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::DebugMessage
+//
+//==========================================================================
+void VScriptParser::DebugMessage (const char *message) {
+  const char *Msg = (message ? message : "Bad syntax.");
+#if !defined(VCC_STANDALONE_EXECUTOR)
+  GCon->Logf(NAME_Debug, "%s:%d: %s", *ScriptName, TokLine, Msg);
+#else
+  GLog.WriteLine(NAME_Debu, "%s:%d: %s", *ScriptName, TokLine, Msg);
 #endif
 }
 
