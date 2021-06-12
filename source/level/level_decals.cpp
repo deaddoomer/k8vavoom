@@ -837,7 +837,6 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         }
       }
       //if (side != seg->side) decal->flags ^= decal_t::FlipX;
-      if (!decal->isPermanent()) CleanupSegDecals(seg);
 
       if (doParnter) {
         // create decal on partner seg
@@ -858,9 +857,9 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         }
         dcp->slidesec = decal->slidesec;
         dcp->calculateBBox();
-
         if (!dcp->isPermanent()) CleanupSegDecals(seg->partner);
       }
+      if (!decal->isPermanent()) CleanupSegDecals(seg);
     }
   }
 
