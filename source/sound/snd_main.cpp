@@ -251,7 +251,7 @@ static void scanMidiDir (VStr path, int level) {
   if (level > 8) return; // just in case
   void *dir = Sys_OpenDir(path, true/*wantdirs*/);
   if (!dir) return;
-  GCon->Logf(NAME_Debug, "scanning midi dir '%s'...", *path);
+  GCon->Logf(NAME_Debug, "scanning midi dir '%s' (%d music file%s so far)", *path, sndMusList.length(), (sndMusList.length() == 1 ? "" : "s"));
   TArray<VStr> pathlist;
   for (;;) {
     VStr fn = Sys_ReadDir(dir);
@@ -303,6 +303,7 @@ static VStr SelectRandomSong (VStr song) {
     sndMusList.clear();
     sndRandomMusReplace.clear();
     scanMidiDir(rdir, 0);
+    GCon->Logf(NAME_Debug, "%d music file%s found", sndMusList.length(), (sndMusList.length() == 1 ? "" : "s"));
   }
   auto pp = sndRandomMusReplace.find(song);
   if (pp) return *pp;
