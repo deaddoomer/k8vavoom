@@ -119,6 +119,9 @@ decal BloodSplat1
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat2
@@ -129,6 +132,9 @@ decal BloodSplat2
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat3
@@ -139,6 +145,9 @@ decal BloodSplat3
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat4
@@ -149,6 +158,9 @@ decal BloodSplat4
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat5
@@ -159,6 +171,9 @@ decal BloodSplat5
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat6
@@ -169,6 +184,9 @@ decal BloodSplat6
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat7
@@ -179,6 +197,9 @@ decal BloodSplat7
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 // The smaller blood splats are more common than the big ones.
@@ -209,71 +230,92 @@ decalgroup BloodSplatRadius
 decal BloodSplat1Blue
 {
   pic BSPLAT1
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat2Blue
 {
   pic BSPLAT2
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat3Blue
 {
   pic BSPLAT3
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat4Blue
 {
   pic BSPLAT4
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat5Blue
 {
   pic BSPLAT5
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat6Blue
 {
   pic BSPLAT6
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat7Blue
 {
   pic BSPLAT7
-  shade "00 00 ff"
+  shade "00 00 40"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 // The smaller blood splats are more common than the big ones.
@@ -304,71 +346,92 @@ decalgroup BloodSplatRadiusBlue
 decal BloodSplat1Green
 {
   pic BSPLAT1
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat2Green
 {
   pic BSPLAT2
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat3Green
 {
   pic BSPLAT3
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat4Green
 {
   pic BSPLAT4
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat5Green
 {
   pic BSPLAT5
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat6Green
 {
   pic BSPLAT6
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSplat7Green
 {
   pic BSPLAT7
-  shade "00 aa 00"
+  shade "00 40 00"
   x-scale 0.75
   y-scale 0.75
   randomflipx
   randomflipy
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 // The smaller blood splats are more common than the big ones.
@@ -404,6 +467,9 @@ decal BloodSmear1
   shade "BloodDefault"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSmear2
@@ -414,6 +480,9 @@ decal BloodSmear2
   shade "BloodDefault"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decalgroup BloodSmear
@@ -434,9 +503,12 @@ decal BloodSmear1Blue
   pic BSMEAR1
   x-scale 0.625
   y-scale 0.625
-  shade "00 00 ff"
+  shade "00 00 40"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSmear2Blue
@@ -444,9 +516,12 @@ decal BloodSmear2Blue
   pic BSMEAR1
   x-scale 0.625
   y-scale 0.625
-  shade "00 00 ff"
+  shade "00 00 40"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decalgroup BloodSmearBlue
@@ -467,9 +542,12 @@ decal BloodSmear1Green
   pic BSMEAR1
   x-scale 0.625
   y-scale 0.625
-  shade "00 aa 00"
+  shade "00 40 00"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decal BloodSmear2Green
@@ -477,9 +555,12 @@ decal BloodSmear2Green
   pic BSMEAR1
   x-scale 0.625
   y-scale 0.625
-  shade "00 aa 00"
+  shade "00 40 00"
   randomflipx
   animator BloodSmearer
+  k8vavoom {
+    TypeBloodSplat
+  }
 }
 
 decalgroup BloodSmearGreen
