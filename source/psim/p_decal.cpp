@@ -649,6 +649,8 @@ bool VDecalDef::parse (VScriptParser *sc) {
 
   if (sc->Check("optional")) addOptionalDecal(name);
 
+  bool wasBloodSet = false;
+
   sc->Expect("{");
 
   VName pic = NAME_None;
@@ -656,6 +658,9 @@ bool VDecalDef::parse (VScriptParser *sc) {
 
   while (!sc->AtEnd()) {
     if (sc->Check("}")) {
+      if (!wasBloodSet && VStr::globmatch(*name, "*blood*", false/*casesens*/)) bloodSplat = true;
+      //if (!wasBootSet && VStr::globmatch(*name, "*boot*", false/*casesens*/)) bootPrint = true;
+
       // load texture (and shade it if necessary)
       if (pic == NAME_None) {
         if (!isOptionalDecal(name)) GCon->Logf(NAME_Warning, "decal '%s' has no pic defined", *name);
@@ -773,8 +778,11 @@ bool VDecalDef::parse (VScriptParser *sc) {
         if (sc->Check("nowall")) { noWall = true; continue; }
         if (sc->Check("noflat")) { noFlat = true; continue; }
 
-        if (sc->Check("typebloodsplat")) { bloodSplat = true; continue; }
-        if (sc->Check("typebootprint")) { bootPrint = true; continue; }
+        if (sc->Check("typebloodsplat")) { bloodSplat = true; wasBloodSet = true; continue; }
+        if (sc->Check("typenotbloodsplat")) { bloodSplat = false; wasBloodSet = true; continue; }
+
+        if (sc->Check("typebootprint")) { bootPrint = true; /*wasBootSet = true;*/ continue; }
+        if (sc->Check("typenotbootprint")) { bootPrint = false; /*wasBootSet = true;*/ continue; }
 
         if (sc->Check("bootprint")) {
           sc->ExpectString();
