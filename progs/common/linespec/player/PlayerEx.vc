@@ -2570,11 +2570,15 @@ void ParticleEffect (int count, int type1, int type2, TVec origin, float ornd,
 //  DecalEffect
 //
 //==========================================================================
-void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int translation, optional int shadeclr, optional float alpha, optional name animator, optional bool permanent) {
+void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int translation, optional int shadeclr,
+                  optional float alpha, optional name animator, optional bool permanent,
+                  optional float angle, optional bool forceFlipX)
+{
   if (!dectype || lineidx < 0 || !Level.XLevel) return; // just in case
   if (lineidx >= Level.XLevel.Lines.length) return;
   Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx],
-    translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
+    translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional,
+    animator:animator!optional, permanent:permanent!optional, angle:angle!optional, forceFlipX:forceFlipX!optional);
 }
 
 
@@ -2583,8 +2587,8 @@ void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int tr
 //  FlatDecalEffect
 //
 //==========================================================================
-void FlatDecalEffect (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
-                      optional name animator, optional float angle, optional bool forceFlipX)
+void FlatDecalEffect (TVec org, name dectype, float range, optional int translation, optional int shadeclr,
+                      optional float alpha, optional name animator, optional float angle, optional bool forceFlipX)
 {
   if (!dectype || !Level.XLevel) return; // just in case
   Level.XLevel.AddFlatDecal(org, dectype, range,

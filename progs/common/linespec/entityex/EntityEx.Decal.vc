@@ -31,7 +31,8 @@
 //==========================================================================
 final void SpawnDecal (TVec org, name dectype, int side, line_t *li,
                        optional int atranslation, optional int ashadeclr,
-                       optional float alpha, optional name animator, optional bool permanent)
+                       optional float alpha, optional name animator,
+                       optional bool permanent, optional float angle, optional bool forceFlipX)
 {
   //writeln("DECAL: ", dectype);
   if (!dectype || nameEquCI(dectype, 'none') || !li || !XLevel) return; // just in case
@@ -42,7 +43,8 @@ final void SpawnDecal (TVec org, name dectype, int side, line_t *li,
     if (!Level.Game.Players[i]) continue;
     if (!Level.Game.Players[i].bSpawned) continue;
     PlayerEx(Level.Game.Players[i]).DecalEffect(org, dectype, side, lidx,
-      translation:atranslation!optional, shadeclr:ashadeclr!optional, alpha:alpha!optional, animator:animator!optional, permanent:permanent!optional);
+      translation:atranslation!optional, shadeclr:ashadeclr!optional, alpha:alpha!optional,
+      animator:animator!optional, permanent:permanent!optional, angle:angle!optional, forceFlipX:forceFlipX!optional);
   }
 }
 

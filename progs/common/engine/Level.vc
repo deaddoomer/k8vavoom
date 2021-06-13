@@ -395,7 +395,7 @@ native final int SetBodyQueueTrans (int Slot, int Transl);
 // decal functions
 native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation,
                             optional int shadeclr, optional float alpha, optional name animator,
-                            optional bool permanent);
+                            optional bool permanent, optional float angle, optional bool forceFlipX);
 // this adds permament decal
 native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation,
                                 optional int shadeclr, optional float alpha, optional name animator);

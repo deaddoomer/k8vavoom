@@ -344,8 +344,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         // this does one part of decal rotation
         // decal placement code is not ready for this yet, so it is disabled
         //float s = 1.0f, c = 1.0f;
-        //const float angle = 0.0f;
-        if (dc->angle != 0.0f) {
+        //const float angle = -dc->angle;
+        const float angle = 37.0f;
+        if (angle != 0.0f) {
           float s, c;
           msincos(angle, &s, &c);
           taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
@@ -372,7 +373,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         // floor/ceiling
         float s, c;
         #if 1
-        // this distorts the texture, but it seams good
+        // this distorts the texture, but it seems good
         // sloped textures are done this way too
         if (dc->angle == 0.0f) {
           saxis = TVec(1.0f,  0.0f);

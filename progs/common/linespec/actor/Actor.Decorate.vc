@@ -2110,7 +2110,7 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
     aDecalName:decalname,
     pass2S:!!(flags&SP_DECAL_2S_WALLS), only2S:!!(flags&SP_DECAL_2S_ONLY),
     atranslation:trans, shadeclr:shade, animator:animator, alpha:alpha,
-    doRailings:true);
+    doRailings:true, angle:angle!optional);
 }
 
 

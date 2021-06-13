@@ -463,7 +463,8 @@ static float CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha) {
 //
 //==========================================================================
 void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li,
-                             unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool skipMarkCheck)
+                             unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator,
+                             float angle, bool skipMarkCheck)
 {
   // don't process linedef twice
   if (!skipMarkCheck) {
@@ -582,6 +583,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             VDC_DLOG(NAME_Debug, " HIT solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
             // create decal
             decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
+            if (isFiniteF(angle)) decal->angle = AngleMod(angle);
             decal->translation = translation;
             if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
             decal->orgz = decal->curz = orgz;
@@ -597,6 +599,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             if (doParnter) {
               // create decal on partner seg
               decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
+              dcp->angle = decal->angle;
               dcp->translation = decal->translation;
               dcp->shadeclr = dcp->origshadeclr = decal->shadeclr;
               dcp->orgz = decal->orgz;
@@ -814,6 +817,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
       // create decal
       decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
+      if (isFiniteF(angle)) decal->angle = AngleMod(angle);
       decal->translation = translation;
       if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
       decal->orgz = decal->curz = orgz;
@@ -844,6 +848,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
       if (doParnter) {
         // create decal on partner seg
         decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
+        dcp->angle = decal->angle;
         dcp->translation = translation;
         if (shadeclr != -2) dcp->shadeclr = dcp->origshadeclr = shadeclr;
         dcp->orgz = decal->orgz;
@@ -945,22 +950,22 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         // we need to fix it for `v1`
         const float nofs = dlc->nline->dir.length2D()+dstxofs;
         VDC_DLOG(NAME_Debug, ":::v1f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, angle, true); // skip mark check
       } else {
         // reversed continuation
         const float nofs = -dcx0-twdt+txofs;
         VDC_DLOG(NAME_Debug, ":::v1b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, alpha, shadeclr, animator, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, alpha, shadeclr, animator, angle, true); // skip mark check
       }
     } else {
       if (!dlc->isbackside) {
         const float nofs = dstxofs-linelen;
         VDC_DLOG(NAME_Debug, ":::v2f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, angle, true); // skip mark check
       } else {
         const float nofs = dlc->nline->dir.length2D()-(dcx1-linelen)+txofs;
         VDC_DLOG(NAME_Debug, ":::v2b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, shadeclr, alpha, animator, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, shadeclr, alpha, animator, angle, true); // skip mark check
       }
     }
   }
@@ -975,7 +980,8 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 //
 //==========================================================================
 void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li,
-                          int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent)
+                          int translation, int shadeclr, float alpha, VDecalAnim *animator,
+                          bool permanent, float angle, bool forceFlipX)
 {
   if (!dec || !li) return;
 
@@ -990,7 +996,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   if (dec->lowername != NAME_None) {
     //GCon->Logf(NAME_Debug, "adding lower decal '%s' for decal '%s' (level %d)", *dec->lowername, *dec->name, level);
-    AddDecal(org, dec->lowername, side, li, level+1, translation, shadeclr, alpha, animator, permanent);
+    AddDecal(org, dec->lowername, side, li, level+1, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
   }
 
   // generate decal values
@@ -1041,6 +1047,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     (dec->flipXValue ? decal_t::FlipX : 0u)|
     (dec->flipYValue ? decal_t::FlipY : 0u)|
     (permanent ? decal_t::Permanent : 0u);
+  if (forceFlipX) flips ^= decal_t::FlipX;
 
   // calculate offset from line start
   const TVec &v1 = *li->v1;
@@ -1057,7 +1064,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   VDC_DLOG(NAME_Debug, "linelen=%g; dist=%g; lineofs=%g", (v2-v1).length2D(), dist, lineofs);
 
   connectedLines.resetNoDtor();
-  PutDecalAtLine(org, lineofs, dec, side, li, flips, translation, shadeclr, alpha, animator, false); // don't skip mark check
+  PutDecalAtLine(org, lineofs, dec, side, li, flips, translation, shadeclr, alpha, animator, angle, false); // don't skip mark check
 }
 
 
@@ -1067,7 +1074,8 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 //
 //==========================================================================
 void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
-                       int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent)
+                       int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent,
+                       float angle, bool forceFlipX)
 {
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
@@ -1084,7 +1092,7 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
   if (dec) {
     org = li->landAlongNormal(org);
     //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);
-    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, permanent);
+    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
   } else {
     if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
   }
@@ -1104,7 +1112,7 @@ void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level,
   VDecalDef *dec = VDecalDef::getDecalById(id);
   if (dec) {
     org = li->landAlongNormal(org);
-    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, true);
+    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, true, INFINITY, false);
   }
 }
 
@@ -1347,7 +1355,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
 
 //native final void AddDecal (TVec org, name dectype, int side, line_t *li, optional int translation,
 //                            optional int shadeclr, optional float alpha, optional name animator,
-//                            optional bool permanent);
+//                            optional bool permanent, optional float angle, optional bool forceFlipX);
 IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   TVec org;
   VName dectype;
@@ -1358,8 +1366,11 @@ IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   VOptParamBool permanent(false);
-  vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, alpha, animator, permanent);
-  Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), permanent);
+  VOptParamFloat angle(0.0f);
+  VOptParamBool forceFlipX(false);
+  vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
+  if (!angle.specified) angle.value = INFINITY;
+  Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), permanent, angle, forceFlipX);
 }
 
 //native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation,

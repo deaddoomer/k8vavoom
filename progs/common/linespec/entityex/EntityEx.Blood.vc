@@ -201,7 +201,9 @@ bool IsGood2SLineForBloodSplat (const line_t *li) {
 final bool TraceSplat (TVec org, TVec dir, float distance, optional trsplat_t *tr, optional float zofs,
                        optional name aDecalName, optional bool pass2S, optional bool only2S,
                        optional int atranslation, optional bool doRailings,
-                       optional int shadeclr, optional float alpha, optional name animator, optional bool permanent)
+                       optional int shadeclr, optional float alpha,
+                       optional name animator, optional bool permanent,
+                       optional float angle)
 {
   trsplat_t temptr;
 

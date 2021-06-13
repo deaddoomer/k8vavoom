@@ -1451,13 +1451,14 @@ private:
   void AddFlatDecal (TVec org, VName dectype, float range, int translation, int shadeclr, float alpha, VDecalAnim *animator,
                      float angle, bool angleOverride, bool forceFlipX);
 
-  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent);
+  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent, float angle, bool forceFlipX);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent);
   // called by `AddDecal()`
-  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent);
+  // if angle is not finite, don't override
+  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent, float angle, bool forceFlipX);
 
   // `flips` will be bitwise-ored with decal flags
-  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool skipMarkCheck);
+  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator, float angle, bool skipMarkCheck);
 
   void PostProcessForDecals ();
 
