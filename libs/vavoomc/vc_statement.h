@@ -157,6 +157,12 @@ protected:
 public: // shitplusplus is idiotic, hence the `public` here
   // this is used when `VSwitch` is syntax-copied, to fix links
   virtual void DoFixSwitch (VSwitch *aold, VSwitch *anew);
+
+public:
+  static void *operator new (size_t size);
+  static void *operator new[] (size_t size);
+  static void operator delete (void *p);
+  static void operator delete[] (void *p);
 };
 
 

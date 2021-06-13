@@ -207,7 +207,7 @@ public:
   static void operator delete (void *p);
   static void operator delete[] (void *p);
 
-  static void ReportLeaks ();
+  static void ReportLeaks (bool detailed=false);
 
 protected:
   // `e` should be of correct type
