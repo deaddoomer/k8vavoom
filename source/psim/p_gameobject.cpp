@@ -348,7 +348,9 @@ void seg_t::killAllDecals (VLevel *Level) noexcept {
   while (c) {
     decal_t *dc = c;
     c = c->next;
-    if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
+    if (dc->animator) {
+      if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
+    }
     delete dc;
   }
   decaltail = decalhead = nullptr;

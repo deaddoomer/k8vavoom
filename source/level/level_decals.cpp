@@ -135,7 +135,10 @@ void VLevel::IncLineTouchCounter () noexcept {
 //
 //==========================================================================
 void VLevel::AddAnimatedDecal (decal_t *dc) {
-  if (!dc || dc->prevanimated || dc->nextanimated || decanimlist == dc || !dc->animator) return;
+  if (!dc || !dc->animator) return;
+  vassert(!dc->prevanimated);
+  vassert(!dc->nextanimated);
+  vassert(decanimlist != dc);
   if (decanimlist) decanimlist->prevanimated = dc;
   dc->nextanimated = decanimlist;
   decanimlist = dc;
@@ -151,8 +154,8 @@ void VLevel::AddAnimatedDecal (decal_t *dc) {
 //
 //==========================================================================
 void VLevel::RemoveDecalAnimator (decal_t *dc) {
-  if (!dc->animator) return;
-  if (!dc || (!dc->prevanimated && !dc->nextanimated && decanimlist != dc)) return;
+  if (!dc || !dc->animator) return;
+  vassert(dc->prevanimated || dc->nextanimated || decanimlist == dc);
   if (dc->prevanimated) dc->prevanimated->nextanimated = dc->nextanimated; else decanimlist = dc->nextanimated;
   if (dc->nextanimated) dc->nextanimated->prevanimated = dc->prevanimated;
   delete dc->animator;
@@ -1121,19 +1124,13 @@ void VLevel::DestroyFlatDecal (decal_t *dc) {
   vassert(subsectorDecalList);
   // remove from renderer
   if (dc->sreg && Renderer) Renderer->RemoveFlatDecal(dc);
-  //if (NumSubsectors == 0) return; // just in case
-  //if (!subsectorDecalList) return;
   const int sidx = (int)(ptrdiff_t)(dc->sub-&Subsectors[0]);
   if (sidx < 0 || sidx >= NumSubsectors) return;
   // remove from subsector list
   VDecalList *lst = &subsectorDecalList[sidx];
   DLListRemoveEx(dc, lst->head, lst->tail, subprev, subnext);
-  //if (dc->subprev) dc->subprev->subnext = dc->subnext; else lst->head = dc->subnext;
-  //if (dc->subnext) dc->subnext->subprev = dc->subprev; else lst->tail = dc->subprev;
   // remove from global list
   DLListRemove(dc, subdecalhead, subdecaltail);
-  //if (dc->prev) dc->prev->next = dc->next; else subdecalhead = dc->next;
-  //if (dc->next) dc->next->prev = dc->prev; else subdecaltail = dc->prev;
   // remove animator
   RemoveDecalAnimator(dc);
   // and kill decal
