@@ -1339,7 +1339,7 @@ void VScriptParser::DebugMessage (const char *message) {
 #if !defined(VCC_STANDALONE_EXECUTOR)
   GCon->Logf(NAME_Debug, "%s:%d: %s", *ScriptName, TokLine, Msg);
 #else
-  GLog.WriteLine(NAME_Debu, "%s:%d: %s", *ScriptName, TokLine, Msg);
+  GLog.WriteLine(NAME_Debug, "%s:%d: %s", *ScriptName, TokLine, Msg);
 #endif
 }
 
