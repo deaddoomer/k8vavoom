@@ -125,6 +125,7 @@ public:
   static void CoerceTypes (VEmitContext &ec, VExpression *&op1, VExpression *&op2, bool coerceNoneDelegate); // expression *MUST* be already resolved
   virtual void RequestAddressOf ();
   virtual void RequestAddressOfForAssign (); // most of the time this forwards to `RequestAddressOf()`
+  void EmitCheckResolved (VEmitContext &ec);
   virtual void Emit (VEmitContext &ec) = 0;
   virtual void EmitBranchable (VEmitContext &ec, VLabel Lbl, bool OnTrue);
   void EmitPushPointedCode (VFieldType type, VEmitContext &ec); // yeah, non-virtual

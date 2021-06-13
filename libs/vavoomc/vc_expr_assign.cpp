@@ -222,6 +222,7 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VAssignment::Emit (VEmitContext &ec) {
   if (!op1 || !op2) return; // just in case
+  EmitCheckResolved(ec);
   switch (Oper) {
     case Assign:
       op1->Emit(ec);

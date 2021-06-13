@@ -556,6 +556,18 @@ void VExpression::RequestAddressOfForAssign () {
 
 //==========================================================================
 //
+//  VExpression::EmitCheckResolved
+//
+//==========================================================================
+void VExpression::EmitCheckResolved (VEmitContext &ec) {
+  if (!IsResolved()) {
+    VCFatalError("%s: trying to emit unresolved expression (%s) (%s)", *Loc.toStringNoCol(), *toString(), *GetMyTypeName());
+  }
+}
+
+
+//==========================================================================
+//
 //  VExpression::EmitBranchable
 //
 //==========================================================================
@@ -575,6 +587,7 @@ void VExpression::EmitBranchable (VEmitContext &ec, VLabel Lbl, bool OnTrue) {
 //
 //==========================================================================
 void VExpression::EmitPushPointedCode (VFieldType type, VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ec.EmitPushPointedCode(type, Loc);
 }
 

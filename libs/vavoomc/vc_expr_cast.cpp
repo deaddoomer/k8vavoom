@@ -104,6 +104,7 @@ VExpression *VDelegateToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDelegateToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_PushPointedPtr, Loc);
   ec.AddStatement(OPC_PtrToBool, Loc);
@@ -177,6 +178,7 @@ VExpression *VStringToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VStringToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_StrToBool, Loc);
 }
@@ -249,6 +251,7 @@ VExpression *VNameToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VNameToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   // no further conversion required
 }
@@ -320,6 +323,7 @@ VExpression *VFloatToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VFloatToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_FloatToBool, Loc);
 }
@@ -392,6 +396,7 @@ VExpression *VVectorToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VVectorToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_VectorToBool, Loc);
 }
@@ -475,6 +480,7 @@ VExpression *VPointerToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VPointerToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_PtrToBool, Loc);
 }
@@ -558,6 +564,7 @@ VExpression *VScalarToFloat::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VScalarToFloat::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   switch (op->Type.Type) {
     case TYPE_Int:
@@ -651,6 +658,7 @@ VExpression *VScalarToInt::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VScalarToInt::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   switch (op->Type.Type) {
     case TYPE_Int:
@@ -741,6 +749,7 @@ VExpression *VCastToString::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VCastToString::Emit (VEmitContext &ec) {
   if (!op) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   switch (op->Type.Type) {
     case TYPE_String:
@@ -826,6 +835,7 @@ VExpression *VCastToName::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VCastToName::Emit (VEmitContext &ec) {
   if (!op) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   switch (op->Type.Type) {
     case TYPE_String:
@@ -912,6 +922,7 @@ VExpression *VDynamicCast::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynamicCast::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_DynamicCast, Class, Loc);
 }
@@ -999,6 +1010,7 @@ VExpression *VDynamicClassCast::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynamicClassCast::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_DynamicClassCast, Type.Class, Loc);
 }
@@ -1089,7 +1101,10 @@ VExpression *VStructPtrCast::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VStructPtrCast::Emit (VEmitContext &ec) {
-  if (op) op->Emit(ec);
+  if (op) {
+    EmitCheckResolved(ec);
+    op->Emit(ec);
+  }
 }
 
 
@@ -1263,6 +1278,7 @@ VExpression *VSliceToBool::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VSliceToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_SliceToBool, Loc);
 }

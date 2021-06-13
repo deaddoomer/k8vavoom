@@ -563,6 +563,7 @@ void VArrayElement::RequestAddressOf () {
 //
 //==========================================================================
 void VArrayElement::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (op) op->Emit(ec);
   if (ind) ind->Emit(ec);
   if (ind2) ind2->Emit(ec);
@@ -836,6 +837,7 @@ void VSliceOp::RequestAddressOf () {
 //==========================================================================
 void VSliceOp::Emit (VEmitContext &ec) {
   if (!op || !ind || !hi) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ind->Emit(ec);
   hi->Emit(ec);
@@ -935,6 +937,7 @@ VExpression *VDynArrayGetNum::DoResolve (VEmitContext &) {
 //
 //==========================================================================
 void VDynArrayGetNum::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (ArrayExpr) ArrayExpr->Emit(ec);
   switch (dimNumber) {
     case 0: ec.AddStatement(OPC_DynArrayGetNum, Loc); break;
@@ -1057,6 +1060,7 @@ VExpression *VDynArraySetNum::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArraySetNum::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (ArrayExpr) ArrayExpr->Emit(ec);
   if (NumExpr) NumExpr->Emit(ec);
   if (NumExpr2) NumExpr2->Emit(ec);
@@ -1210,6 +1214,7 @@ VExpression *VDynArrayInsert::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArrayInsert::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   IndexExpr->Emit(ec);
   CountExpr->Emit(ec);
@@ -1333,6 +1338,7 @@ VExpression *VDynArrayRemove::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArrayRemove::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   IndexExpr->Emit(ec);
   CountExpr->Emit(ec);
@@ -1428,6 +1434,7 @@ VExpression *VDynArrayClear::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArrayClear::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   //ec.AddStatement(OPC_DynArrayClear, ArrayExpr->Type.GetArrayInnerType(), Loc);
   ec.AddStatement(OPC_DynArrayDispatch, ArrayExpr->Type.GetArrayInnerType(), OPC_DynArrDispatch_DynArrayClear, Loc);
@@ -1613,6 +1620,7 @@ VExpression *VDynArraySort::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArraySort::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   DgExpr->Emit(ec);
   //ec.AddStatement(OPC_DynArraySort, ArrayExpr->Type.GetArrayInnerType(), Loc);
@@ -1735,6 +1743,7 @@ VExpression *VDynArraySwap1D::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArraySwap1D::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   Index0Expr->Emit(ec);
   Index1Expr->Emit(ec);
@@ -1847,6 +1856,7 @@ VExpression *VDynArrayCopyFrom::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArrayCopyFrom::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   SrcExpr->Emit(ec);
   ec.AddStatement(OPC_TypeDeepCopy, ArrayExpr->Type, Loc);
@@ -1941,6 +1951,7 @@ VExpression *VDynArrayAllocElement::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynArrayAllocElement::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ArrayExpr->Emit(ec);
   ec.AddStatement(OPC_DynArrayDispatch, ArrayExpr->Type.GetArrayInnerType(), OPC_DynArrDispatch_DynArrayAlloc, Loc);
 }
@@ -2038,6 +2049,7 @@ VExpression *VStringGetLength::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VStringGetLength::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   StrExpr->Emit(ec);
   ec.AddStatement(OPC_StrLength, Loc);
 }
@@ -2124,6 +2136,7 @@ VExpression *VSliceGetLength::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VSliceGetLength::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   /*
   ec.AddStatement(OPC_OffsetPtr, (int)sizeof(void *), Loc);
@@ -2218,6 +2231,7 @@ VExpression *VSliceGetPtr::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VSliceGetPtr::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_PushPointedPtr, Loc);
 }
@@ -2305,6 +2319,7 @@ VExpression *VDictGetLength::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictGetLength::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_Length, Loc);
 }
@@ -2392,6 +2407,7 @@ VExpression *VDictGetCapacity::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictGetCapacity::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_Capacity, Loc);
 }
@@ -2487,6 +2503,7 @@ VExpression *VDictClearOrReset::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictClearOrReset::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(),
     (doClear ? OPC_DictDispatch_Clear : OPC_DictDispatch_Reset), Loc);
@@ -2583,6 +2600,7 @@ VExpression *VDictRehash::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictRehash::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(),
     (doCompact ? OPC_DictDispatch_Compact : OPC_DictDispatch_Rehash), Loc);
@@ -2687,6 +2705,7 @@ VExpression *VDictFind::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictFind::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   keyexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_Find, Loc);
@@ -2797,6 +2816,7 @@ VExpression *VDictDelete::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictDelete::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   keyexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_Delete, Loc);
@@ -2925,6 +2945,7 @@ VExpression *VDictPut::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictPut::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   keyexpr->Emit(ec);
   valexpr->Emit(ec);
@@ -3014,6 +3035,7 @@ VExpression *VDictFirstIndex::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictFirstIndex::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_FirstIndex, Loc);
 }
@@ -3114,6 +3136,7 @@ VExpression *VDictIsValidIndex::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictIsValidIndex::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   idxexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_IsValidIndex, Loc);
@@ -3223,6 +3246,7 @@ VExpression *VDictNextIndex::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictNextIndex::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   idxexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(),
@@ -3327,6 +3351,7 @@ VExpression *VDictKeyAtIndex::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictKeyAtIndex::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   idxexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_GetKeyAtIndex, Loc);
@@ -3430,6 +3455,7 @@ VExpression *VDictValueAtIndex::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictValueAtIndex::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   idxexpr->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, sexpr->Type.GetDictKeyType(), sexpr->Type.GetDictValueType(), OPC_DictDispatch_GetValueAtIndex, Loc);
@@ -3525,6 +3551,7 @@ VExpression *VStructZero::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VStructZero::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   sexpr->Emit(ec);
   if (sexpr->Type.Type == TYPE_Struct && sexpr->Type.Struct) {
     // destruct fields (but don't call struct dtor)
@@ -3565,6 +3592,7 @@ VStr VStructZero::toString () const {
 //
 //==========================================================================
 void VDynArrayToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_DynArrayDispatch, op->Type.GetArrayInnerType(), OPC_DynArrDispatch_DynArrayToBool, Loc);
 }
@@ -3583,6 +3611,7 @@ void VDynArrayToBool::Emit (VEmitContext &ec) {
 //
 //==========================================================================
 void VDictToBool::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_DictDispatch, op->Type.GetDictKeyType(), op->Type.GetDictValueType(), OPC_DictDispatch_DictToBool, Loc);
 }

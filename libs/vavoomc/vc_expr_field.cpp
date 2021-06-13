@@ -990,6 +990,7 @@ VExpression *VDotField::ResolveAssignmentValue (VEmitContext &ec) {
 //
 //==========================================================================
 void VDotField::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (builtin < 0) {
     ParseError(Loc, "Should not happen (VDotField)");
   } else {
@@ -1080,6 +1081,7 @@ VExpression *VVectorDirectFieldAccess::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VVectorDirectFieldAccess::Emit (VEmitContext &ec) {
   if (!op) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   ec.AddStatement(OPC_VectorDirect, index, Loc);
 }
@@ -1211,6 +1213,7 @@ VExpression *VVectorSwizzleExpr::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VVectorSwizzleExpr::Emit (VEmitContext &ec) {
   if (!op) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   // for indirect, load a vector, and then issue direct swizzle
   if (!direct) ec.AddStatement(OPC_VFieldValue, (VField *)nullptr, Loc);
@@ -1315,6 +1318,7 @@ void VFieldAccess::RequestAddressOf () {
 //==========================================================================
 void VFieldAccess::Emit (VEmitContext &ec) {
   if (!op) return; //k8: don't segfault
+  EmitCheckResolved(ec);
   op->Emit(ec);
   if (AddressRequested) {
     ec.AddStatement(OPC_Offset, field, Loc);
@@ -1439,6 +1443,11 @@ void VDelegateVal::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VDelegateVal::DoResolve (VEmitContext &ec) {
   if (!ec.SelfClass) { ParseError(Loc, "delegate should be in class"); delete this; return nullptr; }
+  // parser creates this with unresolved self expression
+  if (op && !op->IsResolved()) {
+    op = op->Resolve(ec);
+    if (!op) { delete this; return nullptr; }
+  }
   bool wasError = false;
   if ((M->Flags&FUNC_Static) != 0) { wasError = true; ParseError(Loc, "delegate should not be static"); }
   if ((M->Flags&FUNC_VarArgs) != 0) { wasError = true; ParseError(Loc, "delegate should not be vararg"); }
@@ -1461,6 +1470,7 @@ VExpression *VDelegateVal::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VDelegateVal::Emit (VEmitContext &ec) {
   if (!op) return;
+  EmitCheckResolved(ec);
   op->Emit(ec);
   // call class postload, so `FUNC_NonVirtual` will be set
   //ec.SelfClass->PostLoad();

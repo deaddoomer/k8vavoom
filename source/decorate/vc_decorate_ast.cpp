@@ -1482,6 +1482,8 @@ void VDecorateAJump::Emit (VEmitContext &ec) {
      for checks and sets
    */
 
+  EmitCheckResolved(ec);
+
   VLabel endTarget = ec.DefineLabel();
   VLabel doitTarget = ec.DefineLabel();
 
@@ -1729,6 +1731,8 @@ VExpression *VDecorateRndPick::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDecorateRndPick::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
+
   vassert(numbers.length() > 0);
   if (numbers.length() == 1) {
     numbers[0]->Emit(ec); // number

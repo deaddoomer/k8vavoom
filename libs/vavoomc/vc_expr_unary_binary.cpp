@@ -312,6 +312,7 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VUnary::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
 
   switch (Oper) {
@@ -341,6 +342,7 @@ void VUnary::Emit (VEmitContext &ec) {
 //==========================================================================
 void VUnary::EmitBranchable (VEmitContext &ec, VLabel Lbl, bool OnTrue) {
   //WARNING! do not optimise here, external optimiser will do the work (so we can avoid emiting drops)
+  EmitCheckResolved(ec);
   if (Oper == Not) {
     op->EmitBranchable(ec, Lbl, !OnTrue);
   } else {
@@ -483,6 +485,7 @@ VExpression *VUnaryMutator::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VUnaryMutator::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   switch (Oper) {
     case PreInc: ec.AddStatement(OPC_PreInc, Loc); break;
@@ -1103,6 +1106,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
 //==========================================================================
 void VBinary::Emit (VEmitContext &ec) {
   if (!op1 || !op2) return;
+  EmitCheckResolved(ec);
 
   // `isa` and `!isa`
   if (Oper == IsA || Oper == NotIsA) {
@@ -1474,6 +1478,7 @@ VExpression *VBinaryLogical::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VBinaryLogical::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   VLabel Push01 = ec.DefineLabel();
   VLabel End = ec.DefineLabel();
 
@@ -1495,6 +1500,7 @@ void VBinaryLogical::Emit (VEmitContext &ec) {
 //
 //==========================================================================
 void VBinaryLogical::EmitBranchable (VEmitContext &ec, VLabel Lbl, bool OnTrue) {
+  EmitCheckResolved(ec);
   switch (Oper) {
     case And:
       if (OnTrue) {

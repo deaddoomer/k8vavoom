@@ -489,6 +489,7 @@ void VLocalVar::RequestAddressOfForAssign () {
 //
 //==========================================================================
 void VLocalVar::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   const VLocalVarDef &loc = ec.GetLocalByIndex(num);
 
   // check if we won't forgont to allocate the local

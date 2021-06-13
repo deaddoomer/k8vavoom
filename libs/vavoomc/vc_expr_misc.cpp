@@ -141,6 +141,7 @@ VExpression *VVectorExpr::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VVectorExpr::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (op1) op1->Emit(ec);
   if (op1) op2->Emit(ec);
   if (op1) op3->Emit(ec);
@@ -296,7 +297,7 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
       if (M->IsStatic()) {
         e = new VInvocation(nullptr, M, nullptr, false, false, Loc, 0, nullptr);
       } else {
-        //e = new VInvocation(new VSelf(Loc), M, nullptr, true, false, Loc, 0, nullptr);
+        //e = new VInvocation((new VSelf(Loc))->Resolve(ec), M, nullptr, true, false, Loc, 0, nullptr);
         if (ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_ConstSelf) != (M->Flags&FUNC_ConstSelf)) {
           ParseError(Loc, "`self` is read-only (const method `%s`), but invocation method is not", *ec.CurrentFunc->GetFullName());
           delete this;
@@ -389,7 +390,7 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
           if ((Prop->GetFunc->Flags&FUNC_Static) != 0) {
             e = new VInvocation(nullptr, Prop->GetFunc, nullptr, false, false, Loc, 0, nullptr);
           } else {
-            e = new VInvocation(new VSelf(Loc), Prop->GetFunc, nullptr, true, false, Loc, 0, nullptr);
+            e = new VInvocation((new VSelf(Loc))->Resolve(ec), Prop->GetFunc, nullptr, true, false, Loc, 0, nullptr);
           }
           delete this;
           return e->Resolve(ec);
@@ -425,7 +426,7 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
       if ((M->Flags&FUNC_Static) != 0) {
         e = new VInvocation(nullptr, M, nullptr, false, false, Loc, 0, nullptr);
       } else {
-        //e = new VInvocation(new VSelf(Loc), M, nullptr, true, false, Loc, 0, nullptr);
+        //e = new VInvocation((new VSelf(Loc))->Resolve(ec), M, nullptr, true, false, Loc, 0, nullptr);
         e = new VDotInvocation(new VSelf(Loc), Name, Loc, 0, nullptr);
       }
       delete this;
@@ -786,6 +787,7 @@ VExpression *VDefaultObject::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDefaultObject::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
        if (op->Type.Type == TYPE_Reference) ec.AddStatement(OPC_GetDefaultObj, Loc);
   else if (op->Type.Type == TYPE_Class) ec.AddStatement(OPC_GetClassDefaultObj, Loc);
@@ -913,6 +915,7 @@ void VPushPointed::RequestAddressOf () {
 //
 //==========================================================================
 void VPushPointed::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
   if (!AddressRequested) EmitPushPointedCode(RealType, ec);
 }
@@ -1049,6 +1052,7 @@ VExpression *VConditional::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VConditional::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   VLabel FalseTarget = ec.DefineLabel();
   VLabel End = ec.DefineLabel();
 
@@ -1147,6 +1151,7 @@ VExpression *VCommaExprRetOp0::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VCommaExprRetOp0::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (op0) op0->Emit(ec);
   if (op1) op1->Emit(ec);
 }
@@ -1283,6 +1288,7 @@ VExpression *VDropResult::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDropResult::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   op->Emit(ec);
        if (op->Type.Type == TYPE_String) ec.AddStatement(OPC_DropStr, Loc);
   else if (op->Type.Type == TYPE_Vector) ec.AddStatement(OPC_VDrop, Loc);
@@ -1366,6 +1372,7 @@ VExpression *VClassConstant::DoResolve (VEmitContext &) {
 //
 //==========================================================================
 void VClassConstant::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ec.AddStatement(OPC_PushClassId, Class, Loc);
 }
 
@@ -1435,6 +1442,7 @@ VExpression *VStateConstant::DoResolve (VEmitContext &) {
 //
 //==========================================================================
 void VStateConstant::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ec.AddStatement(OPC_PushState, State, Loc);
 }
 
@@ -1504,6 +1512,7 @@ VExpression *VConstantValue::DoResolve (VEmitContext &) {
 //
 //==========================================================================
 void VConstantValue::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ec.EmitPushNumber(Const->Value, Loc);
 }
 
@@ -1634,6 +1643,7 @@ VExpression *VObjectPropGetIsDestroyed::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VObjectPropGetIsDestroyed::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   ObjExpr->Emit(ec);
   ec.AddStatement(OPC_GetIsDestroyed, Loc);
 }

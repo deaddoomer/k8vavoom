@@ -125,6 +125,7 @@ VExpression *VDynCastWithVar::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VDynCastWithVar::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   if (what) what->Emit(ec);
   if (destclass) destclass->Emit(ec);
   ec.AddStatement((what && what->Type.Type == TYPE_Class ? OPC_DynamicClassCastIndirect : OPC_DynamicCastIndirect), Loc);
@@ -2088,6 +2089,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
       //FIXME: this can be already resolved if we're in `VPropertyAssign`
       if (!Args[i]->IsResolved()) Args[i] = Args[i]->Resolve(ec);
       if (!Args[i]) { ArgsOk = false; break; }
+      //GLog.Logf(NAME_Debug, "%s: ...#%d: <%s>", *Args[i]->Loc.toStringNoCol(), i, *Args[i]->toString());
     }
   }
 
@@ -2096,6 +2098,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
 
+  // this also adds argc to vararg functions
   CheckParams(ec);
 
   Type = Func->ReturnType;
@@ -2105,7 +2108,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
   // we may create new locals, so activate local reuse mechanics
   for (int f = 0; f < VMethod::MAX_PARAMS; ++f) lcidx[f] = -1;
 
-  // for ommited "optional ref", create temporary locals
+  // for omited "optional ref", create temporary locals
   for (int i = 0; i < NumArgs; ++i) {
     if (!Args[i] && i < VMethod::MAX_PARAMS) {
       if ((Func->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) != 0) {
@@ -2516,6 +2519,8 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
 //
 //==========================================================================
 void VInvocation::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
+
   if (SelfExpr) {
     if (!Func->IsStatic()) SelfExpr->Emit(ec);
   }
@@ -2631,6 +2636,7 @@ void VInvocation::Emit (VEmitContext &ec) {
         } else {
           SelfOffset += Args[i]->Type.GetStackSlotCount();
         }
+        //GLog.Logf(NAME_Debug, "%s: #%d: <%s>", *Args[i]->Loc.toStringNoCol(), i, *Args[i]->toString());
         Args[i]->Emit(ec);
       }
       if (Func->ParamFlags[i]&FPARM_Optional) {
@@ -2818,7 +2824,8 @@ bool VInvocation::IsGoodMethodParams (VEmitContext &ec, VMethod *m, int argc, VE
 //
 //  VInvocation::CheckParams
 //
-//  argc/argv: non-resolved argument copies)
+//  this also adds argc to vararg functions
+//  must be called after resolving all args
 //
 //==========================================================================
 void VInvocation::CheckParams (VEmitContext &ec) {
@@ -2962,7 +2969,8 @@ void VInvocation::CheckParams (VEmitContext &ec) {
   if (Func->Flags&FUNC_VarArgs) {
     //Args[NumArgs++] = new VIntLiteral(argsize/4-requiredParams, Loc);
     int argc = NumArgs-requiredParams;
-    Args[NumArgs++] = new VIntLiteral(argc, Loc);
+    Args[NumArgs++] = (new VIntLiteral(argc, Loc))->Resolve(ec);
+    vassert(Args[NumArgs-1]);
   }
 }
 
@@ -3213,6 +3221,7 @@ VExpression *VInvokeWrite::DoResolve (VEmitContext &ec) {
 //
 //==========================================================================
 void VInvokeWrite::Emit (VEmitContext &ec) {
+  EmitCheckResolved(ec);
   for (int i = 0; i < NumArgs; ++i) {
     if (!Args[i]) continue;
     Args[i]->Emit(ec);
