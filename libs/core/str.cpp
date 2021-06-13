@@ -2422,3 +2422,29 @@ __attribute__((format(printf, 1, 2))) VVA_CHECKRESULT char *va (const char *text
   va_end(ap);
   return res;
 }
+
+
+#define COMATOZE_BUF_SIZE   (128)
+#define COMATOZE_BUF_COUNT  (32)
+static char comatozebufs[COMATOZE_BUF_SIZE][COMATOZE_BUF_COUNT];
+static unsigned comatozebufidx = 0;
+
+
+//==========================================================================
+//
+//  comatoze
+//
+//==========================================================================
+const char *comatoze (vuint32 n) {
+  char *buf = comatozebufs[comatozebufidx++];
+  if (comatozebufidx == COMATOZE_BUF_COUNT) comatozebufidx = 0;
+  int bpos = (int)COMATOZE_BUF_SIZE;
+  buf[--bpos] = 0;
+  int xcount = 0;
+  do {
+    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
+    buf[--bpos] = '0'+n%10;
+    ++xcount;
+  } while ((n /= 10) != 0);
+  return &buf[bpos];
+}

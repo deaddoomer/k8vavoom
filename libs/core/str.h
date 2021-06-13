@@ -36,6 +36,7 @@
 
 extern char *va (const char *text, ...) noexcept __attribute__((format(printf, 1, 2))) VVA_CHECKRESULT;
 extern char *vavarg (const char *text, va_list ap) noexcept VVA_CHECKRESULT;
+extern const char *comatoze (vuint32 n);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
