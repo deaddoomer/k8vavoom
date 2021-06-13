@@ -102,18 +102,6 @@ struct PLPkgInfo {
 
 //==========================================================================
 //
-//  secs2msecs
-//
-//==========================================================================
-static inline int secs2msecs (const double secs) noexcept {
-  if (secs <= 0.0) return 1;
-  int msecs = (int)(secs*1000.0+0.5);
-  return msecs+!msecs;
-}
-
-
-//==========================================================================
-//
 //  PutClassToList
 //
 //==========================================================================
@@ -560,8 +548,7 @@ void VPackage::StaticEmitPackages () {
       pi.others.clear();
       if (vcErrorCount) BailOut();
       if (showInfo) {
-        const int msecs = secs2msecs(stt);
-        GLog.Logf(NAME_Init, "VavoomC: generated %s bytes of code for package '%s' (%s methods) in %s msecs", comatoze(codesize), *pi.pkg->Name, comatoze(mtcount), comatoze(msecs));
+        GLog.Logf(NAME_Init, "VavoomC: generated %s bytes of code for package '%s' (%s methods) in %s", comatoze(codesize), *pi.pkg->Name, comatoze(mtcount), secs2timestr(stt));
       }
     }
 
@@ -618,12 +605,10 @@ void VPackage::LoadSourceObject (VStream *Strm, VStr filename, TLocation l) {
   ctt -= xtt;
   if (showInfo) {
     const int msecs = secs2msecs(stt);
-    const int emsecs = secs2msecs(ctt);
-    if (ctt <= 0.0) ctt = 1.0/1000.0;
-    //int pspeed = (int)((double)Lex.GetTotalSize()/ctt/1024.0);
+    //const int emsecs = secs2msecs(ctt);
     int pspeed = Lex.GetTotalSize()/msecs/1024;
     pspeed += !pspeed;
-    GLog.Logf(NAME_Init, "VavoomC: parsed %s bytes of package '%s' in %s msecs (%s mb/sec), generated IR in %s msecs", comatoze(Lex.GetTotalSize()), *Name, comatoze(msecs), comatoze(pspeed), comatoze(emsecs));
+    GLog.Logf(NAME_Init, "VavoomC: parsed %s bytes of package '%s' in %s (%s mb/sec), generated IR in %s", comatoze(Lex.GetTotalSize()), *Name, secs2timestr(stt), comatoze(pspeed), secs2timestr(ctt));
   }
 }
 

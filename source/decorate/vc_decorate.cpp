@@ -286,18 +286,6 @@ static TMapNC<VClass *, bool> currFileRepls; // set; key is old class
 
 //==========================================================================
 //
-//  secs2msecs
-//
-//==========================================================================
-static inline int secs2msecs (const double secs) noexcept {
-  if (secs <= 0.0) return 1;
-  int msecs = (int)(secs*1000.0+0.5);
-  return msecs+!msecs;
-}
-
-
-//==========================================================================
-//
 //  IsNoOverrideName
 //
 //==========================================================================
@@ -4225,11 +4213,12 @@ void ProcessDecorateScripts () {
 
   {
     const int pms = secs2msecs(dcParseTime);
-    const int cms = secs2msecs(dcCompileTime);
-    const int gms = secs2msecs(dcCodegenTime);
+    //const int cms = secs2msecs(dcCompileTime);
+    //const int gms = secs2msecs(dcCodegenTime);
     int pspeed = dcTotalSourceSize/pms/1024;
     pspeed += !pspeed;
-    GLog.Logf(NAME_Init, "parsed %s decorate bytes in %s msecs (%s mb/sec), compiled in %s msecs, codegen took %s msecs", comatoze(dcTotalSourceSize), comatoze(pms), comatoze(pspeed), comatoze(cms), comatoze(gms));
+    GLog.Logf(NAME_Init, "parsed %s decorate bytes in %s (%s mb/sec), compiled in %s, codegen took %s",
+      comatoze(dcTotalSourceSize), secs2timestr(dcParseTime), comatoze(pspeed), secs2timestr(dcCompileTime), secs2timestr(dcCodegenTime));
   }
 }
 

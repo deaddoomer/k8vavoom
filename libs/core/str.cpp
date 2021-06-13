@@ -2424,7 +2424,7 @@ __attribute__((format(printf, 1, 2))) VVA_CHECKRESULT char *va (const char *text
 }
 
 
-#define COMATOZE_BUF_SIZE   (128)
+#define COMATOZE_BUF_SIZE   (256)
 #define COMATOZE_BUF_COUNT  (32)
 static char comatozebufs[COMATOZE_BUF_SIZE][COMATOZE_BUF_COUNT];
 static unsigned comatozebufidx = 0;
@@ -2435,16 +2435,57 @@ static unsigned comatozebufidx = 0;
 //  comatoze
 //
 //==========================================================================
-const char *comatoze (vuint32 n) {
+const char *comatoze (vuint32 n, const char *sfx) noexcept {
   char *buf = comatozebufs[comatozebufidx++];
   if (comatozebufidx == COMATOZE_BUF_COUNT) comatozebufidx = 0;
   int bpos = (int)COMATOZE_BUF_SIZE;
   buf[--bpos] = 0;
+  if (sfx) {
+    size_t slen = strlen(sfx);
+    while (slen--) {
+      if (bpos > 0) buf[--bpos] = sfx[slen];
+    }
+  }
   int xcount = 0;
   do {
-    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
-    buf[--bpos] = '0'+n%10;
+    if (xcount == 3) { if (bpos > 0) buf[--bpos] = ','; xcount = 0; }
+    if (bpos > 0) buf[--bpos] = '0'+n%10;
     ++xcount;
   } while ((n /= 10) != 0);
   return &buf[bpos];
+}
+
+
+//==========================================================================
+//
+//  secs2msecs
+//
+//==========================================================================
+int secs2msecs (const double secs) noexcept {
+  const int msecs = (secs > 0.0 ? (int)(secs*1000.0+0.5) : 1);
+  return msecs+!msecs;
+}
+
+
+//==========================================================================
+//
+//  secs2timestr
+//
+//==========================================================================
+const char *secs2timestr (const double secs) noexcept {
+  const int msecs = secs2msecs(secs);
+  const char *s;
+  if (msecs < 100) {
+    s = comatoze(msecs, (msecs > 1 ? " msecs" : " msec"));
+  } else {
+    // seconds
+    //const int scs = msecs/1000+(msecs%1000 >= 500);
+    //s = comatoze(scs, (scs > 1 ? " secs" : " sec"));
+    const int scs = msecs/1000;//+(msecs%1000 >= 500);
+    const int hsc = (msecs/100)%10+((msecs/10)%10 >= 5);
+    char xbuf[16];
+    snprintf(xbuf, sizeof(xbuf), ".%d sec%s", hsc, (hsc == 0 ? "" : "s"));
+    s = comatoze(scs, xbuf);
+  }
+  return s;
 }

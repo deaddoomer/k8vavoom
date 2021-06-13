@@ -34,9 +34,15 @@
 #define TEXT_COLOR_ESCAPE_STR  "\034"
 
 
+extern int secs2msecs (const double secs) noexcept;
+
+// guaranteed up to 16 separate values
 extern char *va (const char *text, ...) noexcept __attribute__((format(printf, 1, 2))) VVA_CHECKRESULT;
 extern char *vavarg (const char *text, va_list ap) noexcept VVA_CHECKRESULT;
-extern const char *comatoze (vuint32 n);
+extern const char *comatoze (vuint32 n, const char *sfx=nullptr) noexcept;
+// returns string that can be directly printed
+extern const char *secs2timestr (const double secs) noexcept;
+
 
 
 // ////////////////////////////////////////////////////////////////////////// //
