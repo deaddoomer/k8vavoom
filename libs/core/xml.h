@@ -59,6 +59,8 @@ public:
   bool HasAttribute (VStr AttrName) const;
   VStr GetAttribute (const char *AttrName, bool Required=true) const;
   VStr GetAttribute (VStr AttrName, bool Required=true) const;
+  const VTextLocation GetAttributeLoc (const char *AttrName) const;
+  const VTextLocation GetAttributeLoc (VStr AttrName) const;
 };
 
 

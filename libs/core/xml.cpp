@@ -90,7 +90,7 @@ VXmlNode *VXmlNode::FindChild (VStr AName) const {
 //==========================================================================
 VXmlNode *VXmlNode::GetChild (const char *AName) const {
   VXmlNode *N = FindChild(AName);
-  if (!N) Sys_Error("XML node '%s' not found", (AName ? AName : ""));
+  if (!N) Sys_Error("XML node '%s' not found in node '%s' at %s", (AName ? AName : ""), *Name, *Loc.toStringNoCol());
   return N;
 }
 
@@ -102,7 +102,7 @@ VXmlNode *VXmlNode::GetChild (const char *AName) const {
 //==========================================================================
 VXmlNode *VXmlNode::GetChild (VStr AName) const {
   VXmlNode *N = FindChild(AName);
-  if (!N) Sys_Error("XML node '%s' not found", *AName);
+  if (!N) Sys_Error("XML node '%s' not found in node '%s' at %s", *AName, *Name, *Loc.toStringNoCol());
   return N;
 }
 
@@ -153,7 +153,7 @@ VXmlNode *VXmlNode::FindNext () const {
 //  VXmlNode::HasAttribute
 //
 //==========================================================================
-bool VXmlNode::HasAttribute(const char *AttrName) const {
+bool VXmlNode::HasAttribute (const char *AttrName) const {
   if (!AttrName || !AttrName[0]) return false;
   for (int i = 0; i < Attributes.length(); ++i) {
     if (Attributes[i].Name == AttrName) return true;
@@ -192,7 +192,7 @@ VStr VXmlNode::GetAttribute (const char *AttrName, bool Required) const {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
-    Sys_Error("XML attribute \"%s\" not found in node \"%s\"", (AttrName ? AttrName : ""), *Name);
+    Sys_Error("XML attribute \"%s\" not found in node \"%s\" at %s", (AttrName ? AttrName : ""), *Name, *Loc.toStringNoCol());
   }
   return VStr::EmptyString;
 }
@@ -214,9 +214,39 @@ VStr VXmlNode::GetAttribute (VStr AttrName, bool Required) const {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
-    Sys_Error("XML attribute \"%s\" not found in node \"%s\" (%s)", *AttrName, *Name, *Loc.toStringNoCol());
+    Sys_Error("XML attribute \"%s\" not found in node \"%s\" at %s", *AttrName, *Name, *Loc.toStringNoCol());
   }
   return VStr::EmptyString;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::GetAttributeLoc
+//
+//==========================================================================
+const VTextLocation VXmlNode::GetAttributeLoc (const char *AttrName) const {
+  if (AttrName && AttrName[0]) {
+    for (int i = 0; i < Attributes.length(); ++i) {
+      if (Attributes[i].Name == AttrName) return Attributes[i].Loc;
+    }
+  }
+  return VTextLocation();
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::GetAttributeLoc
+//
+//==========================================================================
+const VTextLocation VXmlNode::GetAttributeLoc (VStr AttrName) const {
+  if (!AttrName.isEmpty()) {
+    for (int i = 0; i < Attributes.length(); ++i) {
+      if (Attributes[i].Name == AttrName) return Attributes[i].Loc;
+    }
+  }
+  return VTextLocation();
 }
 
 
