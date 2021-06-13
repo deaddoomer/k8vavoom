@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../../libs/vavoomc/vc_local.h"
 #include "../gamedefs.h"
+#include "../render/r_local.h" // for SPR_xxx
 
 // WARNING! dehacked parser requires this!
 #define VC_DECORATE_ACTION_BELONGS_TO_STATE
@@ -729,6 +730,40 @@ static void NewPropLimitSubCvar (VClass *abaseClass, VStr cvar) {
 
 //==========================================================================
 //
+//  DefParseIntConst
+//
+//==========================================================================
+int DefParseIntConst (VStr s) {
+  // sprite orientations
+  if (s.strEquCI("SPR_VP_PARALLEL_UPRIGHT")) return SPR_VP_PARALLEL_UPRIGHT;
+  if (s.strEquCI("SPR_FACING_UPRIGHT")) return SPR_FACING_UPRIGHT;
+  if (s.strEquCI("SPR_VP_PARALLEL")) return SPR_VP_PARALLEL;
+  if (s.strEquCI("SPR_ORIENTED")) return SPR_ORIENTED;
+  if (s.strEquCI("SPR_VP_PARALLEL_ORIENTED")) return SPR_VP_PARALLEL_ORIENTED;
+  if (s.strEquCI("SPR_VP_PARALLEL_UPRIGHT_ORIENTED")) return SPR_VP_PARALLEL_UPRIGHT_ORIENTED;
+  if (s.strEquCI("SPR_ORIENTED_OFS")) return SPR_ORIENTED_OFS;
+  if (s.strEquCI("SPR_FLAT")) return SPR_FLAT;
+  if (s.strEquCI("SPR_WALL")) return SPR_WALL;
+  int res = 0;
+  if (!s.convertInt(&res)) Sys_Error("Invalid integer in XML: '%s'", *s);
+  return res;
+};
+
+
+//==========================================================================
+//
+//  DefParseFloatConst
+//
+//==========================================================================
+float DefParseFloatConst (VStr s) {
+  float res = 0.0f;
+  if (!s.convertFloat(&res)) Sys_Error("Invalid float in XML: '%s'", *s);
+  return res;
+}
+
+
+//==========================================================================
+//
 //  ParseDecorateDef
 //
 //==========================================================================
@@ -747,7 +782,7 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "prop_int_const") {
         VPropDef &P = Lst.NewProp(PROP_IntConst, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
-        P.IConst = VStr::atoi(*PN->GetAttribute("value")); //FIXME
+        P.IConst = DefParseIntConst(PN->GetAttribute("value")); //FIXME
       } else if (PN->Name == "prop_int_bob_phase") {
         VPropDef &P = Lst.NewProp(PROP_IntBobPhase, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
@@ -787,14 +822,14 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "prop_float_clamped") {
         VPropDef &P = Lst.NewProp(PROP_FloatClamped, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
-        P.FMin = VStr::atof(*PN->GetAttribute("min"), 0); //FIXME
-        P.FMax = VStr::atof(*PN->GetAttribute("max"), 1); //FIXME
+        P.FMin = DefParseFloatConst(PN->GetAttribute("min"));
+        P.FMax = DefParseFloatConst(PN->GetAttribute("max"));
       } else if (PN->Name == "prop_float_clamped_2") {
         VPropDef &P = Lst.NewProp(PROP_FloatClamped2, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
         P.SetField2(Lst.Class, *PN->GetAttribute("property2"));
-        P.FMin = VStr::atof(*PN->GetAttribute("min"), 0); //FIXME
-        P.FMax = VStr::atof(*PN->GetAttribute("max"), 1); //FIXME
+        P.FMin = DefParseFloatConst(PN->GetAttribute("min"));
+        P.FMax = DefParseFloatConst(PN->GetAttribute("max"));
       } else if (PN->Name == "prop_float_optional_2") {
         VPropDef &P = Lst.NewProp(PROP_FloatOpt2, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
@@ -924,13 +959,13 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "flag_byte") {
         VFlagDef &F = Lst.NewFlag(FLAG_Byte, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
-        F.BTrue = VStr::atoi(*PN->GetAttribute("true_value")); //FIXME
-        F.BFalse = VStr::atoi(*PN->GetAttribute("false_value")); //FIXME
+        F.BTrue = DefParseIntConst(PN->GetAttribute("true_value"));
+        F.BFalse = DefParseIntConst(PN->GetAttribute("false_value"));
       } else if (PN->Name == "flag_float") {
         VFlagDef &F = Lst.NewFlag(FLAG_Float, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
-        F.FTrue = VStr::atof(*PN->GetAttribute("true_value"), 0); //FIXME
-        F.FFalse = VStr::atof(*PN->GetAttribute("false_value"), 1); //FIXME
+        F.FTrue = DefParseFloatConst(PN->GetAttribute("true_value"));
+        F.FFalse = DefParseFloatConst(PN->GetAttribute("false_value"));
       } else if (PN->Name == "flag_name") {
         VFlagDef &F = Lst.NewFlag(FLAG_Name, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
