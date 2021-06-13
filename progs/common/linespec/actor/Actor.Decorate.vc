@@ -2040,7 +2040,9 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
 //  A_SprayDecal
 //
 //==========================================================================
-[decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags, optional int shadeclr, optional float alpha) {
+[decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags,
+                                    optional int shadeclr, optional float alpha, optional float angle)
+{
   if (!specified_alpha) alpha = -2;
   int trans = 0;
   int shade = (specified_shadeclr ? shadeclr : -2);
