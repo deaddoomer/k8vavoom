@@ -733,7 +733,8 @@ static void NewPropLimitSubCvar (VClass *abaseClass, VStr cvar) {
 //  DefParseIntConst
 //
 //==========================================================================
-int DefParseIntConst (VStr s) {
+int DefParseIntConst (const VXmlNode *node, const char *attrname) {
+  VStr s = node->GetAttribute(attrname);
   // sprite orientations
   if (s.strEquCI("SPR_VP_PARALLEL_UPRIGHT")) return SPR_VP_PARALLEL_UPRIGHT;
   if (s.strEquCI("SPR_FACING_UPRIGHT")) return SPR_FACING_UPRIGHT;
@@ -745,7 +746,7 @@ int DefParseIntConst (VStr s) {
   if (s.strEquCI("SPR_FLAT")) return SPR_FLAT;
   if (s.strEquCI("SPR_WALL")) return SPR_WALL;
   int res = 0;
-  if (!s.convertInt(&res)) Sys_Error("Invalid integer in XML: '%s'", *s);
+  if (!s.convertInt(&res)) Sys_Error("Invalid integer \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, node->GetAttributeLoc(attrname));
   return res;
 };
 
@@ -755,9 +756,10 @@ int DefParseIntConst (VStr s) {
 //  DefParseFloatConst
 //
 //==========================================================================
-float DefParseFloatConst (VStr s) {
+float DefParseFloatConst (const VXmlNode *node, const char *attrname) {
+  VStr s = node->GetAttribute(attrname);
   float res = 0.0f;
-  if (!s.convertFloat(&res)) Sys_Error("Invalid float in XML: '%s'", *s);
+  if (!s.convertFloat(&res)) Sys_Error("Invalid float \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, node->GetAttributeLoc(attrname));
   return res;
 }
 
@@ -782,7 +784,7 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "prop_int_const") {
         VPropDef &P = Lst.NewProp(PROP_IntConst, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
-        P.IConst = DefParseIntConst(PN->GetAttribute("value")); //FIXME
+        P.IConst = DefParseIntConst(PN, "value");
       } else if (PN->Name == "prop_int_bob_phase") {
         VPropDef &P = Lst.NewProp(PROP_IntBobPhase, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
@@ -822,14 +824,14 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "prop_float_clamped") {
         VPropDef &P = Lst.NewProp(PROP_FloatClamped, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
-        P.FMin = DefParseFloatConst(PN->GetAttribute("min"));
-        P.FMax = DefParseFloatConst(PN->GetAttribute("max"));
+        P.FMin = DefParseFloatConst(PN, "min");
+        P.FMax = DefParseFloatConst(PN, "max");
       } else if (PN->Name == "prop_float_clamped_2") {
         VPropDef &P = Lst.NewProp(PROP_FloatClamped2, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
         P.SetField2(Lst.Class, *PN->GetAttribute("property2"));
-        P.FMin = DefParseFloatConst(PN->GetAttribute("min"));
-        P.FMax = DefParseFloatConst(PN->GetAttribute("max"));
+        P.FMin = DefParseFloatConst(PN, "min");
+        P.FMax = DefParseFloatConst(PN, "max");
       } else if (PN->Name == "prop_float_optional_2") {
         VPropDef &P = Lst.NewProp(PROP_FloatOpt2, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
@@ -959,13 +961,13 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
       } else if (PN->Name == "flag_byte") {
         VFlagDef &F = Lst.NewFlag(FLAG_Byte, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
-        F.BTrue = DefParseIntConst(PN->GetAttribute("true_value"));
-        F.BFalse = DefParseIntConst(PN->GetAttribute("false_value"));
+        F.BTrue = DefParseIntConst(PN, "true_value");
+        F.BFalse = DefParseIntConst(PN, "false_value");
       } else if (PN->Name == "flag_float") {
         VFlagDef &F = Lst.NewFlag(FLAG_Float, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
-        F.FTrue = DefParseFloatConst(PN->GetAttribute("true_value"));
-        F.FFalse = DefParseFloatConst(PN->GetAttribute("false_value"));
+        F.FTrue = DefParseFloatConst(PN, "true_value");
+        F.FFalse = DefParseFloatConst(PN, "false_value");
       } else if (PN->Name == "flag_name") {
         VFlagDef &F = Lst.NewFlag(FLAG_Name, PN);
         F.SetField(Lst.Class, *PN->GetAttribute("property"));
