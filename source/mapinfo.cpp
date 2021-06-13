@@ -644,7 +644,7 @@ void InitMapInfo () {
   for (auto &&klmp : fileKeyconfLump) VCommand::LoadKeyconfLump(klmp);
   fileKeyconfLump.resetNoDtor();
 
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (VStr(MapInfo[i].NextMap).StartsWith("&wt@")) {
       MapInfo[i].NextMap = P_TranslateMap(VStr::atoi(*MapInfo[i].NextMap+4));
     }
@@ -653,7 +653,7 @@ void InitMapInfo () {
     }
   }
 
-  for (int i = 0; i < EpisodeDefs.Num(); ++i) {
+  for (int i = 0; i < EpisodeDefs.length(); ++i) {
     if (VStr(EpisodeDefs[i].Name).StartsWith("&wt@")) {
       EpisodeDefs[i].Name = P_TranslateMap(VStr::atoi(*EpisodeDefs[i].Name+4));
     }
@@ -1167,7 +1167,7 @@ MAPINFOCMD(specialaction) {
   sc->Expect(",");
   sc->ExpectString();
   A.Special = 0;
-  for (int i = 0; i < LineSpecialInfos.Num(); ++i) {
+  for (int i = 0; i < LineSpecialInfos.length(); ++i) {
     if (!LineSpecialInfos[i].Name.ICmp(sc->String)) {
       A.Special = LineSpecialInfos[i].Number;
       break;
@@ -1777,7 +1777,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, VMapInfo &Default, int
 
   // check for replaced map info
   bool replacement = false;
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (MapLumpName == MapInfo[i].LumpName) {
       info = &MapInfo[i];
       //GCon->Logf(NAME_Init, "replaced map '%s' (Sky1Texture=%d; default=%d)", *info->LumpName, info->Sky1Texture, Default.Sky1Texture);
@@ -1859,7 +1859,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, VMapInfo &Default, int
   }
 
   // set song lump name from SNDINFO script
-  for (int i = 0; i < MapSongList.Num(); ++i) {
+  for (int i = 0; i < MapSongList.length(); ++i) {
     if (MapSongList[i].MapName == info->LumpName) {
       info->SongLump = MapSongList[i].SongName;
     }
@@ -1900,7 +1900,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, VMapInfo &Default, int
 
   // avoid duplicate levelnums, later one takes precedance
   if (info->LevelNum) {
-    for (int i = 0; i < MapInfo.Num(); ++i) {
+    for (int i = 0; i < MapInfo.length(); ++i) {
       if (MapInfo[i].LevelNum == info->LevelNum && &MapInfo[i] != info) {
         if (W_IsUserWadLump(MapInfo[i].MapinfoSourceLump)) {
           if (MapInfo[i].MapinfoSourceLump != info->MapinfoSourceLump) {
@@ -1932,7 +1932,7 @@ static void ParseClusterDef (VScriptParser *sc) {
   sc->ExpectNumber();
 
   // check for replaced cluster def
-  for (int i = 0; i < ClusterDefs.Num(); ++i) {
+  for (int i = 0; i < ClusterDefs.length(); ++i) {
     if (sc->Number == ClusterDefs[i].Cluster) {
       CDef = &ClusterDefs[i];
       break;
@@ -2041,7 +2041,7 @@ static void ParseEpisodeDef (VScriptParser *sc, int milumpnum) {
   sc->ExpectName();
 
   // check for replaced episode
-  for (int i = 0; i < EpisodeDefs.Num(); ++i) {
+  for (int i = 0; i < EpisodeDefs.length(); ++i) {
     if (sc->Name == EpisodeDefs[i].Name) {
       EDef = &EpisodeDefs[i];
       EIdx = i;
@@ -2050,7 +2050,7 @@ static void ParseEpisodeDef (VScriptParser *sc, int milumpnum) {
   }
   if (!EDef) {
     EDef = &EpisodeDefs.Alloc();
-    EIdx = EpisodeDefs.Num()-1;
+    EIdx = EpisodeDefs.length()-1;
   }
 
   // check for removal of an episode
@@ -2199,7 +2199,7 @@ static void ParseSkillDef (VScriptParser *sc) {
   sc->ExpectString();
 
   // check for replaced skill
-  for (int i = 0; i < SkillDefs.Num(); ++i) {
+  for (int i = 0; i < SkillDefs.length(); ++i) {
     if (sc->String.ICmp(SkillDefs[i].Name) == 0) {
       sdef = &SkillDefs[i];
       //GCon->Logf(NAME_Debug, "SKILLDEF:%s: replaced skill #%d '%s' (%s)", *sc->GetLoc().toStringNoCol(), i, *sc->String, *SkillDefs[i].Name);
@@ -2220,7 +2220,7 @@ static void ParseSkillDef (VScriptParser *sc) {
   sdef->RespawnLimit = 0;
   sdef->Aggressiveness = 1.0f;
   sdef->SpawnFilter = 0;
-  sdef->AcsReturn = SkillDefs.Num()-1;
+  sdef->AcsReturn = SkillDefs.length()-1;
   sdef->MenuName.Clean();
   sdef->PlayerClassNames.Clear();
   sdef->ConfirmationText.Clean();
@@ -2778,7 +2778,7 @@ static void ParseUMapinfo (VScriptParser *sc, int milumpnum) {
 //
 //==========================================================================
 static int QualifyMap (int map) {
-  return (map < 0 || map >= MapInfo.Num() ? 0 : map);
+  return (map < 0 || map >= MapInfo.length() ? 0 : map);
 }
 
 
@@ -2788,7 +2788,7 @@ static int QualifyMap (int map) {
 //
 //==========================================================================
 const VMapInfo &P_GetMapInfo (VName map) {
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (map == MapInfo[i].LumpName) return MapInfo[i];
   }
   return DefaultMap;
@@ -2813,7 +2813,7 @@ VStr P_GetMapName (int map) {
 //
 //==========================================================================
 int P_GetMapIndexByLevelNum (int map) {
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (MapInfo[i].LevelNum == map) return i;
   }
   // not found
@@ -2871,7 +2871,7 @@ VName P_TranslateMapEx (int map) {
 //
 //==========================================================================
 VName P_GetMapLumpNameByLevelNum (int map) {
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (MapInfo[i].LevelNum == map) return MapInfo[i].LumpName;
   }
   // not found, use map##
@@ -2897,7 +2897,7 @@ void P_PutMapSongLump (int map, VName lumpName) {
 //
 //==========================================================================
 const VClusterDef *P_GetClusterDef (int Cluster) {
-  for (int i = 0; i < ClusterDefs.Num(); ++i) {
+  for (int i = 0; i < ClusterDefs.length(); ++i) {
     if (Cluster == ClusterDefs[i].Cluster) return &ClusterDefs[i];
   }
   return &DefaultClusterDef;
@@ -2910,7 +2910,7 @@ const VClusterDef *P_GetClusterDef (int Cluster) {
 //
 //==========================================================================
 int P_GetNumEpisodes () {
-  return EpisodeDefs.Num();
+  return EpisodeDefs.length();
 }
 
 
@@ -2920,7 +2920,7 @@ int P_GetNumEpisodes () {
 //
 //==========================================================================
 int P_GetNumMaps () {
-  return MapInfo.Num();
+  return MapInfo.length();
 }
 
 
@@ -2930,7 +2930,7 @@ int P_GetNumMaps () {
 //
 //==========================================================================
 VMapInfo *P_GetMapInfoPtr (int mapidx) {
-  return (mapidx >= 0 && mapidx < MapInfo.Num() ? &MapInfo[mapidx] : nullptr);
+  return (mapidx >= 0 && mapidx < MapInfo.length() ? &MapInfo[mapidx] : nullptr);
 }
 
 
@@ -2950,7 +2950,7 @@ VEpisodeDef *P_GetEpisodeDef (int Index) {
 //
 //==========================================================================
 int P_GetNumSkills () {
-  return SkillDefs.Num();
+  return SkillDefs.length();
 }
 
 
@@ -2970,7 +2970,7 @@ const VSkillDef *P_GetSkillDef (int Index) {
 //
 //==========================================================================
 void P_GetMusicLumpNames (TArray<FReplacedString> &List) {
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     const char *MName = *MapInfo[i].SongLump;
     if (MName[0] == 'd' && MName[1] == '_') {
       FReplacedString &R = List.Alloc();
@@ -2988,7 +2988,7 @@ void P_GetMusicLumpNames (TArray<FReplacedString> &List) {
 //
 //==========================================================================
 void P_ReplaceMusicLumpNames (TArray<FReplacedString> &List) {
-  for (int i = 0; i < List.Num(); ++i) {
+  for (int i = 0; i < List.length(); ++i) {
     if (List[i].Replaced) {
       MapInfo[List[i].Index].SongLump = VName(*(VStr("d_")+List[i].New), VName::AddLower8);
     }
@@ -3039,7 +3039,7 @@ bool IsMapPresent (VName MapName) {
 //
 //==========================================================================
 COMMAND(MapList) {
-  for (int i = 0; i < MapInfo.Num(); ++i) {
+  for (int i = 0; i < MapInfo.length(); ++i) {
     if (IsMapPresent(MapInfo[i].LumpName)) {
       GCon->Log(VStr(MapInfo[i].LumpName)+" - "+(MapInfo[i].Flags&VLevelInfo::LIF_LookupName ? GLanguage[*MapInfo[i].Name] : MapInfo[i].Name));
     }

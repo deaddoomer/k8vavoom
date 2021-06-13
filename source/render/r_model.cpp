@@ -873,7 +873,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
       F.ModelIndex = -1;
       VStr MdlName = N->GetAttribute("model");
-      for (int i = 0; i < Mdl->Models.Num(); ++i) {
+      for (int i = 0; i < Mdl->Models.length(); ++i) {
         if (Mdl->Models[i].Name == *MdlName) {
           F.ModelIndex = i;
           break;

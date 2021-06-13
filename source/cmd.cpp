@@ -374,7 +374,7 @@ void VCommand::AddToAutoComplete (const char *string) {
   AutoCompleteTable.Append(vs);
 
   // alphabetic sort
-  for (int i = AutoCompleteTable.Num()-1; i && AutoCompleteTable[i-1].ICmp(AutoCompleteTable[i]) > 0; --i) {
+  for (int i = AutoCompleteTable.length()-1; i && AutoCompleteTable[i-1].ICmp(AutoCompleteTable[i]) > 0; --i) {
     VStr swap = AutoCompleteTable[i];
     AutoCompleteTable[i] = AutoCompleteTable[i-1];
     AutoCompleteTable[i-1] = swap;
@@ -738,7 +738,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   //GCon->Logf(NAME_Debug, "+++ command argc=%d (<%s>)\n", Args.length(), *Acmd);
   //for (int f = 0; f < Args.length(); ++f) GCon->Logf(NAME_Debug, "  #%d: <%s>\n", f, *Args[f]);
 
-  if (!Args.Num()) return;
+  if (!Args.length()) return;
 
   if (Args[0] == "__run_cli_commands__") {
     FL_ProcessPreInits(); // override configs
@@ -870,7 +870,7 @@ void VCommand::ForwardToServer () {
 //
 //==========================================================================
 int VCommand::CheckParm (const char *check) {
-  for (int i = 1; i < Args.Num(); ++i) {
+  for (int i = 1; i < Args.length(); ++i) {
     if (Args[i].ICmp(check) == 0) return i;
   }
   return 0;
@@ -883,7 +883,7 @@ int VCommand::CheckParm (const char *check) {
 //
 //==========================================================================
 int VCommand::GetArgC () {
-  return Args.Num();
+  return Args.length();
 }
 
 
@@ -893,7 +893,7 @@ int VCommand::GetArgC () {
 //
 //==========================================================================
 VStr VCommand::GetArgV (int idx) {
-  if (idx < 0 || idx >= Args.Num()) return VStr();
+  if (idx < 0 || idx >= Args.length()) return VStr();
   return Args[idx];
 }
 
@@ -1021,7 +1021,7 @@ void VCmdBuf::Exec () {
 //
 //==========================================================================
 COMMAND(CmdList) {
-  const char *prefix = (Args.Num() > 1 ? *Args[1] : "");
+  const char *prefix = (Args.length() > 1 ? *Args[1] : "");
   int pref_len = VStr::Length(prefix);
   int count = 0;
   for (VCommand *cmd = Cmds; cmd; cmd = cmd->Next) {
@@ -1144,10 +1144,10 @@ COMMAND(Alias) {
 //
 //==========================================================================
 COMMAND(Echo) {
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
 
   VStr Text = Args[1];
-  for (int i = 2; i < Args.Num(); ++i) {
+  for (int i = 2; i < Args.length(); ++i) {
     Text += " ";
     Text += Args[i];
   }

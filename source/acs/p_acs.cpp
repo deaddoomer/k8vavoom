@@ -1233,7 +1233,7 @@ void VAcsObject::LoadEnhancedObject () {
     }
 
     // go through each imported object in order and resolve all imported functions and map variables
-    for (i = 0; i < Imports.Num(); ++i) {
+    for (i = 0; i < Imports.length(); ++i) {
       VAcsObject *lib = Imports[i];
       int j;
 
@@ -1734,7 +1734,7 @@ VAcsLevel::VAcsLevel (VLevel *ALevel)
 //
 //==========================================================================
 VAcsLevel::~VAcsLevel () {
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     delete LoadedObjects[i];
     LoadedObjects[i] = nullptr;
   }
@@ -1791,7 +1791,7 @@ int VAcsLevel::PutNewString (VStr str) {
 //
 //==========================================================================
 VAcsObject *VAcsLevel::LoadObject (int Lump) {
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     if (LoadedObjects[i]->LumpNum == Lump) {
       return LoadedObjects[i];
     }
@@ -1806,7 +1806,7 @@ VAcsObject *VAcsLevel::LoadObject (int Lump) {
 //
 //==========================================================================
 VAcsInfo *VAcsLevel::FindScript (int Number, VAcsObject *&Object) {
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     VAcsInfo *Found = LoadedObjects[i]->FindScript(Number);
     if (Found) {
       Object = LoadedObjects[i];
@@ -1823,7 +1823,7 @@ VAcsInfo *VAcsLevel::FindScript (int Number, VAcsObject *&Object) {
 //
 //==========================================================================
 VAcsInfo *VAcsLevel::FindScriptByName (int Number, VAcsObject *&Object) {
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     VAcsInfo *Found = LoadedObjects[i]->FindScriptByName(Number);
     if (Found) {
       Object = LoadedObjects[i];
@@ -1843,7 +1843,7 @@ VAcsInfo *VAcsLevel::FindScriptByNameStr (VStr aname, VAcsObject *&Object) {
   if (aname.length() == 0) return nullptr;
   VName nn = VName(*aname, VName::FindLower);
   if (nn == NAME_None) return nullptr;
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     VAcsInfo *Found = LoadedObjects[i]->FindScriptByName(-nn.GetIndex());
     if (Found) {
       Object = LoadedObjects[i];
@@ -1880,7 +1880,7 @@ int VAcsLevel::FindScriptNumberByName (VStr aname, VAcsObject *&Object) {
 VStr VAcsLevel::GetString (int Index) {
   int ObjIdx = (vuint32)Index>>16;
   if (ObjIdx == ACSLEVEL_INTERNAL_STRING_STORAGE_INDEX) return GetNewString(Index&0xffff);
-  if (ObjIdx >= LoadedObjects.Num()) return "";
+  if (ObjIdx >= LoadedObjects.length()) return "";
   return LoadedObjects[ObjIdx]->GetString(Index&0xffff);
 }
 
@@ -1897,7 +1897,7 @@ VName VAcsLevel::GetNameLowerCase (int Index) {
     //GCon->Logf(NAME_Debug, "VAcsLevel::GetNameLowerCase: INTERNAL: '%s'", *GetNewLowerName(Index&0xffff));
     return GetNewLowerName(Index&0xffff);
   }
-  if (ObjIdx >= LoadedObjects.Num()) return NAME_None;
+  if (ObjIdx >= LoadedObjects.length()) return NAME_None;
   //GCon->Logf(NAME_Debug, "VAcsLevel::GetNameLowerCase: object #%d: '%s'", ObjIdx, *LoadedObjects[ObjIdx]->GetNameLowerCase(Index&0xffff));
   return LoadedObjects[ObjIdx]->GetNameLowerCase(Index&0xffff);
 }
@@ -1909,7 +1909,7 @@ VName VAcsLevel::GetNameLowerCase (int Index) {
 //
 //==========================================================================
 VAcsObject *VAcsLevel::GetObject (int Index) {
-  if ((unsigned)Index >= (unsigned)LoadedObjects.Num()) return nullptr;
+  if ((unsigned)Index >= (unsigned)LoadedObjects.length()) return nullptr;
   return LoadedObjects[Index];
 }
 
@@ -1922,7 +1922,7 @@ VAcsObject *VAcsLevel::GetObject (int Index) {
 void VAcsLevel::StartTypedACScripts (int Type, int Arg1, int Arg2, int Arg3,
                                      VEntity *Activator, bool Always, bool RunNow)
 {
-  for (int i = 0; i < LoadedObjects.Num(); ++i) {
+  for (int i = 0; i < LoadedObjects.length(); ++i) {
     LoadedObjects[i]->StartTypedACScripts(Type, Arg1, Arg2, Arg3, Activator, Always, RunNow);
   }
 }
@@ -6100,7 +6100,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     ACSVM_CASE(PCD_StartTranslation)
       ACSVM_CHECK_STACK_UNDER(1);
       if (sp[-1] >= 1 && sp[-1] <= MAX_LEVEL_TRANSLATIONS) {
-        while (XLevel->Translations.Num() < sp[-1]) {
+        while (XLevel->Translations.length() < sp[-1]) {
           XLevel->Translations.Append(nullptr);
         }
         Translation = XLevel->Translations[sp[-1]-1];
@@ -8373,7 +8373,7 @@ IMPLEMENT_FUNCTION(VLevel, RunNamedACSWithResult) {
 COMMAND(Puke) {
   CMD_FORWARD_TO_SERVER();
 
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
 
   int Script = VStr::atoi(*Args[1]);
   if (Script == 0) return; // script 0 is special
@@ -8384,7 +8384,7 @@ COMMAND(Puke) {
 
   int ScArgs[4];
   for (int i = 0; i < 4; ++i) {
-    if (Args.Num() >= i+3) {
+    if (Args.length() >= i+3) {
       ScArgs[i] = VStr::atoi(*Args[i+2]);
     } else {
       ScArgs[i] = 0;
@@ -8408,14 +8408,14 @@ COMMAND(PukeName) {
     GCon->Logf(NAME_Error, "cannot call named ACS script when no game is running!");
   }
 
-  if (Args.Num() < 2 || Args[1].length() == 0) return;
+  if (Args.length() < 2 || Args[1].length() == 0) return;
 
   VName Script = VName(*Args[1], VName::AddLower);
   if (Script == NAME_None) return;
 
   int ScArgs[4];
   for (int i = 0; i < 4; ++i) {
-    if (Args.Num() >= i+3) {
+    if (Args.length() >= i+3) {
       ScArgs[i] = VStr::atoi(*Args[i+2]);
     } else {
       ScArgs[i] = 0;

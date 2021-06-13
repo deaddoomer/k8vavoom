@@ -262,7 +262,7 @@ VLoopbackSocket::~VLoopbackSocket () {
 //
 //==========================================================================
 int VLoopbackSocket::GetMessage (void *dest, size_t destSize) {
-  if (!LoopbackMessages.Num()) return 0;
+  if (!LoopbackMessages.length()) return 0;
   int res = LoopbackMessages[0].Data.length();
   if (res > (int)destSize) return -1;
   if (res) memcpy(dest, LoopbackMessages[0].Data.ptr(), res);

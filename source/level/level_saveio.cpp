@@ -831,7 +831,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   // camera textures
   {
-    int NumCamTex = CameraTextures.Num();
+    int NumCamTex = CameraTextures.length();
     Strm << STRM_INDEX(NumCamTex);
     if (Strm.IsLoading()) CameraTextures.SetNum(NumCamTex);
     for (i = 0; i < NumCamTex; ++i) {
@@ -844,7 +844,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   // translation tables
   {
-    int NumTrans = Translations.Num();
+    int NumTrans = Translations.length();
     Strm << STRM_INDEX(NumTrans);
     if (Strm.IsLoading()) Translations.SetNum(NumTrans);
     for (i = 0; i < NumTrans; ++i) {
@@ -866,7 +866,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   // body queue translation tables
   {
-    int NumTrans = BodyQueueTrans.Num();
+    int NumTrans = BodyQueueTrans.length();
     Strm << STRM_INDEX(NumTrans);
     if (Strm.IsLoading()) BodyQueueTrans.SetNum(NumTrans);
     for (i = 0; i < NumTrans; ++i) {

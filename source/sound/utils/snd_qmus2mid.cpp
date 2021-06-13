@@ -342,10 +342,10 @@ void VQMus2Mid::WriteMIDIFile (VStream &Strm) {
     /*static*/ const char TrackId[4] = { 'M', 'T', 'r', 'k' };
     Strm.Serialise(TrackId, 4);
     // data size
-    vuint32 TrackSize = Tracks[i].Data.Num();
+    vuint32 TrackSize = Tracks[i].Data.length();
     Strm.SerialiseBigEndian(&TrackSize, 4);
     // data
-    Strm.Serialise(Tracks[i].Data.Ptr(), Tracks[i].Data.Num());
+    Strm.Serialise(Tracks[i].Data.Ptr(), Tracks[i].Data.length());
   }
 }
 

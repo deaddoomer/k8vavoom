@@ -145,7 +145,7 @@ static VStr DoMenuCompletions (const TArray<VStr> &args, int aidx, int mode) {
 //
 //==========================================================================
 COMMAND_WITH_AC(SetMenu) {
-  GClGame->eventSetMenu(Args.Num() > 1 ? *Args[1] : "");
+  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -165,7 +165,7 @@ COMMAND_AC(SetMenu) {
 //
 //==========================================================================
 COMMAND_WITH_AC(OpenMenu) {
-  GClGame->eventSetMenu(Args.Num() > 1 ? *Args[1] : "");
+  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -185,7 +185,7 @@ COMMAND_AC(OpenMenu) {
 //
 //==========================================================================
 COMMAND_WITH_AC(OpenGZMenu) {
-  GClGame->eventSetMenu(Args.Num() > 1 ? *Args[1] : "");
+  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 

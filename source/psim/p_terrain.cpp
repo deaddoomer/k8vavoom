@@ -135,7 +135,7 @@ static VSplashInfo *GetSplashInfo (const char *Name) {
   auto spp = SplashMap.find(loname);
   return (spp ? &SplashInfos[*spp] : nullptr);
   /*
-  for (int i = 0; i < SplashInfos.Num(); ++i) {
+  for (int i = 0; i < SplashInfos.length(); ++i) {
     if (VStr::strEquCI(*SplashInfos[i].Name, *Name)) return &SplashInfos[i];
   }
   return nullptr;

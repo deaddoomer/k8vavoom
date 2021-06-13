@@ -395,7 +395,7 @@ float TKButton::KeyState () {
 //
 //==========================================================================
 void TCmdKeyDown::Run () {
-  Key.KeyDown(Args.Num() > 1 ? *Args[1] : "");
+  Key.KeyDown(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -405,7 +405,7 @@ void TCmdKeyDown::Run () {
 //
 //==========================================================================
 void TCmdKeyUp::Run () {
-  Key.KeyUp(Args.Num() > 1 ? *Args[1] : "");
+  Key.KeyUp(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -415,7 +415,7 @@ void TCmdKeyUp::Run () {
 //
 //==========================================================================
 COMMAND(Impulse) {
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
   currImpulse = VStr::atoi(*Args[1]);
   //GCon->Logf(NAME_Debug, "IMPULSE COMMAND: %d (%s)", currImpulse, *Args[1]);
 }
@@ -455,7 +455,7 @@ COMMAND(ToggleAlwaysRun) {
 //
 //==========================================================================
 COMMAND(Use) {
-  if (Args.Num() < 1) return;
+  if (Args.length() < 1) return;
 #ifdef CLIENT
   if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
     if (cl) cl->Printf("Cannot use artifact while not in game!"); else GCon->Log(NAME_Warning, "Cannot use artifact while not in game!");

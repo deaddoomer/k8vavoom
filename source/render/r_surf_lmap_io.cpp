@@ -950,7 +950,7 @@ COMMAND(NukeLightmapCache) {
 COMMAND_WITH_AC(LightmapsReset) {
   if (GClLevel && GClLevel->Renderer) {
     bool recalcNow = true;
-    if (Args.Num() > 1) recalcNow = false;
+    if (Args.length() > 1) recalcNow = false;
     GCon->Log("resetting lightmaps");
     double stt = -Sys_Time();
     GClLevel->Renderer->ResetLightmaps(recalcNow);

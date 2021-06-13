@@ -1223,7 +1223,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   }
 
   // copy sectors
-  NumSectors = Parser.ParsedSectors.Num();
+  NumSectors = Parser.ParsedSectors.length();
   Sectors = new sector_t[NumSectors];
   for (int i = 0; i < NumSectors; ++i) {
     Sectors[i] = Parser.ParsedSectors[i].S;
@@ -1236,7 +1236,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   HashSectors();
 
   // copy linedefs
-  NumLines = Parser.ParsedLines.Num();
+  NumLines = Parser.ParsedLines.length();
   Lines = new line_t[NumLines];
   for (int i = 0; i < NumLines; ++i) {
     Lines[i] = Parser.ParsedLines[i].L;
@@ -1268,7 +1268,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   }
 
   // copy sidedefs
-  NumSides = Parser.ParsedSides.Num();
+  NumSides = Parser.ParsedSides.length();
   CreateSides();
 
   side_t *sd = Sides;
@@ -1357,7 +1357,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
   }
 
   // copy things
-  NumThings = Parser.ParsedThings.Num();
+  NumThings = Parser.ParsedThings.length();
   Things = new mthing_t[NumThings+1];
   memset((void *)Things, 0, (NumThings+1)*sizeof(mthing_t));
   for (int f = 0; f < Parser.ParsedThings.length(); ++f) {

@@ -835,7 +835,7 @@ void R_ShutdownData () {
     TranslationTables = nullptr;
   }
 
-  for (int i = 0; i < DecorateTranslations.Num(); ++i) {
+  for (int i = 0; i < DecorateTranslations.length(); ++i) {
     delete DecorateTranslations[i];
     DecorateTranslations[i] = nullptr;
   }
@@ -876,7 +876,7 @@ int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname) {
   } while (sc->Check(","));
 
   // see if we already have this translation
-  for (int i = 0; i < DecorateTranslations.Num(); ++i) {
+  for (int i = 0; i < DecorateTranslations.length(); ++i) {
     if (DecorateTranslations[i]->Crc != Tr->Crc) continue;
     if (memcmp(DecorateTranslations[i]->Palette, Tr->Palette, sizeof(Tr->Palette))) continue;
     // found a match
@@ -886,11 +886,11 @@ int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname) {
   }
 
   // add it
-  if (DecorateTranslations.Num() >= MAX_DECORATE_TRANSLATIONS) {
+  if (DecorateTranslations.length() >= MAX_DECORATE_TRANSLATIONS) {
     sc->Error("Too many translations in DECORATE scripts");
   }
   DecorateTranslations.Append(Tr);
-  int res = (TRANSL_Decorate<<TRANSL_TYPE_SHIFT)+DecorateTranslations.Num()-1;
+  int res = (TRANSL_Decorate<<TRANSL_TYPE_SHIFT)+DecorateTranslations.length()-1;
   if (!trname.isEmpty()) NamedTranslations.put(trname, res);
   return res;
 }
@@ -915,7 +915,7 @@ static inline bool isGoodTranslationArgs (int AStart, int AEnd) noexcept {
 //==========================================================================
 static int appendLevelTranslation (VTextureTranslation *tr) {
   // see if we already have this translation
-  for (int i = 0; i < GLevel->Translations.Num(); ++i) {
+  for (int i = 0; i < GLevel->Translations.length(); ++i) {
     if (GLevel->Translations[i]->Crc != tr->Crc) continue;
     if (memcmp(GLevel->Translations[i]->Palette, tr->Palette, sizeof(tr->Palette))) continue;
     // found a match
@@ -1064,7 +1064,7 @@ int R_GetBloodTranslation (int Col, bool allowAdd) {
   if (ppi) return *ppi;
   /*
   // check for duplicate blood translation
-  for (int i = 0; i < BloodTranslations.Num(); ++i) {
+  for (int i = 0; i < BloodTranslations.length(); ++i) {
     if (BloodTranslations[i]->Color == (Col&0xffffff)) {
       return (TRANSL_Blood<<TRANSL_TYPE_SHIFT)+i;
     }
@@ -1106,7 +1106,7 @@ int R_GetBloodTranslation (int Col, bool allowAdd) {
 VLightEffectDef *R_FindLightEffect (VStr Name) {
   if (Name.length()) {
     /*
-    for (int i = 0; i < GLightEffectDefs.Num(); ++i) {
+    for (int i = 0; i < GLightEffectDefs.length(); ++i) {
       if (Name.ICmp(*GLightEffectDefs[i].Name) == 0) return &GLightEffectDefs[i];
     }
     */
@@ -1125,7 +1125,7 @@ VLightEffectDef *R_FindLightEffect (VStr Name) {
 static VParticleEffectDef *FindParticleEffect (VStr Name) {
   if (Name.length()) {
     /*
-    for (int i = 0; i < GParticleEffectDefs.Num(); ++i) {
+    for (int i = 0; i < GParticleEffectDefs.length(); ++i) {
       if (Name.ICmp(*GParticleEffectDefs[i].Name) == 0) return &GParticleEffectDefs[i];
     }
     */
@@ -1470,7 +1470,7 @@ static void ParseClassEffects (VScriptParser *sc, TArray<VTempClassEffects> &Cla
   // get name, find it in the list or add it if it's not there yet
   sc->ExpectString();
   VTempClassEffects *C = nullptr;
-  for (int i = 0; i < ClassDefs.Num(); ++i) {
+  for (int i = 0; i < ClassDefs.length(); ++i) {
     if (ClassDefs[i].ClassName.ICmp(sc->String) == 0) {
       C = &ClassDefs[i];
       break;
@@ -2035,7 +2035,7 @@ void R_ParseEffectDefs () {
   for (auto &&cd : ClassDefs) knownClasses.put(cd.ClassName, true);
 
   // add effects to the classes
-  for (int i = 0; i < ClassDefs.Num(); ++i) {
+  for (int i = 0; i < ClassDefs.length(); ++i) {
     VTempClassEffects &CD = ClassDefs[i];
     VClass *Cls = VClass::FindClassNoCase(*CD.ClassName);
     if (Cls) {
@@ -2074,7 +2074,7 @@ void R_ParseEffectDefs () {
       }
     }
 
-    for (int j = 0; j < CD.SpriteEffects.Num(); j++) {
+    for (int j = 0; j < CD.SpriteEffects.length(); j++) {
       VTempSpriteEffectDef &SprDef = CD.SpriteEffects[j];
       // sprite name must be either 4 or 5 chars
       // 6-char is for '0' frames (not properly implemented yet, just a hack)

@@ -81,7 +81,7 @@ bool VOpenGLDrawer::CheckExtension (const char *ext) {
   if (!ext || !ext[0]) return false;
   TArray<VStr> Exts;
   VStr((char *)glGetString(GL_EXTENSIONS)).Split(' ', Exts);
-  for (int i = 0; i < Exts.Num(); ++i) if (Exts[i] == ext) return true;
+  for (int i = 0; i < Exts.length(); ++i) if (Exts[i] == ext) return true;
   return false;
 }
 

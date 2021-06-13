@@ -1214,7 +1214,7 @@ int VLevelChannel::UpdateCameraTexture (VMessageOut &Msg, VBitStreamWriter &strm
   vassert(idx >= 0 && idx < Level->CameraTextures.length());
 
   // grow replication array if needed
-  if (CameraTextures.Num() == idx) {
+  if (CameraTextures.length() == idx) {
     VCameraTextureInfo &C = CameraTextures.Alloc();
     C.Camera = nullptr;
     C.TexNum = -1;
@@ -1262,7 +1262,7 @@ bool VLevelChannel::ParseCameraTexture (VMessageIn &Msg) {
     return false;
   }
 
-  while (Level->CameraTextures.Num() <= idx) {
+  while (Level->CameraTextures.length() <= idx) {
     VCameraTextureInfo &C = Level->CameraTextures.Alloc();
     C.Camera = nullptr;
     C.TexNum = -1;
@@ -1287,14 +1287,14 @@ int VLevelChannel::UpdateTranslation (VMessageOut &Msg, VBitStreamWriter &strm, 
   vassert(idx >= 0 && idx < Level->Translations.length());
 
   // grow replication array if needed
-  if (Translations.Num() == idx) Translations.Alloc();
+  if (Translations.length() == idx) Translations.Alloc();
   if (!Level->Translations[idx]) return 0;
 
   VTextureTranslation *Tr = Level->Translations[idx];
   TArray<VTextureTranslation::VTransCmd> &Rep = Translations[idx];
-  bool Eq = (Tr->Commands.Num() == Rep.Num());
+  bool Eq = (Tr->Commands.length() == Rep.length());
   if (Eq) {
-    for (int j = 0; j < Rep.Num(); ++j) {
+    for (int j = 0; j < Rep.length(); ++j) {
       if (memcmp(&Tr->Commands[j], &Rep[j], sizeof(Rep[j]))) {
         Eq = false;
         break;
@@ -1307,9 +1307,9 @@ int VLevelChannel::UpdateTranslation (VMessageOut &Msg, VBitStreamWriter &strm, 
   strm.WriteUInt(CMD_LevelTrans);
   strm << STRM_INDEX_U(idx);
 
-  strm.WriteUInt((vuint32)Tr->Commands.Num());
-  Rep.SetNum(Tr->Commands.Num());
-  for (int j = 0; j < Tr->Commands.Num(); ++j) {
+  strm.WriteUInt((vuint32)Tr->Commands.length());
+  Rep.SetNum(Tr->Commands.length());
+  for (int j = 0; j < Tr->Commands.length(); ++j) {
     VTextureTranslation::VTransCmd &C = Tr->Commands[j];
     strm.WriteUInt(C.Type);
          if (C.Type == 0) strm << C.Start << C.End << C.R1 << C.R2;
@@ -1341,7 +1341,7 @@ bool VLevelChannel::ParseTranslation (VMessageIn &Msg) {
     return false;
   }
 
-  while (Level->Translations.Num() <= idx) Level->Translations.Append(nullptr);
+  while (Level->Translations.length() <= idx) Level->Translations.Append(nullptr);
   VTextureTranslation *Tr = Level->Translations[idx];
   if (!Tr) {
     Tr = new VTextureTranslation;
@@ -1421,7 +1421,7 @@ int VLevelChannel::UpdateBodyQueueTran (VMessageOut &Msg, VBitStreamWriter &strm
   vassert(idx >= 0 && idx < Level->BodyQueueTrans.length());
 
   // grow replication array if needed
-  if (BodyQueueTrans.Num() == idx) BodyQueueTrans.Alloc().TranslStart = 0;
+  if (BodyQueueTrans.length() == idx) BodyQueueTrans.Alloc().TranslStart = 0;
   if (!Level->BodyQueueTrans[idx]) return 0;
   VTextureTranslation *Tr = Level->BodyQueueTrans[idx];
   if (!Tr->TranslStart) return 0;
@@ -1459,7 +1459,7 @@ bool VLevelChannel::ParseBodyQueueTran (VMessageIn &Msg) {
     return false;
   }
 
-  while (Level->BodyQueueTrans.Num() <= idx) Level->BodyQueueTrans.Append(nullptr);
+  while (Level->BodyQueueTrans.length() <= idx) Level->BodyQueueTrans.Append(nullptr);
   VTextureTranslation *Tr = Level->BodyQueueTrans[idx];
   if (!Tr) {
     Tr = new VTextureTranslation;

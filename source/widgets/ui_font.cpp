@@ -326,12 +326,12 @@ void VFont::ParseTextColors () {
       }
 
       if (Names[0] == "untranslated") {
-        if (Col.Translations.Num() != 0 || Col.ConsoleTranslations.Num() != 0) {
+        if (Col.Translations.length() != 0 || Col.ConsoleTranslations.length() != 0) {
           sc.Error("The \"untranslated\" color must be left undefined");
         }
       } else {
-        if (Col.Translations.Num() == 0) sc.Error("There must be at least one normal range for a color");
-        if (Col.ConsoleTranslations.Num() == 0) {
+        if (Col.Translations.length() == 0) sc.Error("There must be at least one normal range for a color");
+        if (Col.ConsoleTranslations.length() == 0) {
           // if console color translation is not defined, make it white
           TDef.From.r = 0;
           TDef.From.g = 0;
@@ -348,30 +348,30 @@ void VFont::ParseTextColors () {
       }
 
       // add all names to the list of colors
-      for (int i = 0; i < Names.Num(); ++i) {
+      for (int i = 0; i < Names.length(); ++i) {
         // check for redefined colors
         int CIdx;
-        for (CIdx = 0; CIdx < TempColors.Num(); ++CIdx) {
+        for (CIdx = 0; CIdx < TempColors.length(); ++CIdx) {
           if (TempColors[CIdx].Name == Names[i]) {
-            TempColors[CIdx].Index = TempDefs.Num()-1;
+            TempColors[CIdx].Index = TempDefs.length()-1;
             break;
           }
         }
-        if (CIdx == TempColors.Num()) {
+        if (CIdx == TempColors.length()) {
           VColTransMap &CMap = TempColors.Alloc();
           CMap.Name = Names[i];
-          CMap.Index = TempDefs.Num()-1;
+          CMap.Index = TempDefs.length()-1;
         }
       }
     }
   }
 
   // put color definitions in it's final location
-  for (int i = 0; i < TempColors.Num(); ++i) {
+  for (int i = 0; i < TempColors.length(); ++i) {
     VColTransMap &TmpCol = TempColors[i];
     VTextColorDef &TmpDef = TempDefs[TmpCol.Index];
     if (TmpDef.Index == -1) {
-      TmpDef.Index = TextColors.Num();
+      TmpDef.Index = TextColors.length();
       TextColors.Append(TmpDef);
     }
     VColTransMap &Col = TextColorLookup.Alloc();
@@ -380,7 +380,7 @@ void VFont::ParseTextColors () {
   }
 
   // make sure all built-in colors are defined
-  vassert(TextColors.Num() >= NUM_TEXT_COLORS);
+  vassert(TextColors.length() >= NUM_TEXT_COLORS);
 }
 
 
@@ -474,7 +474,7 @@ void VFont::ParseFontDefs () {
             delete fnt;
           }
         } else if (FontType == 2) {
-          if (CharIndexes.Num()) {
+          if (CharIndexes.length()) {
             GCon->Logf(NAME_Init, "creating special font '%s'", *FontName);
             new VSpecialFont(FontName, CharIndexes, CharLumps, NoTranslate, SpaceWidth);
           }
@@ -692,7 +692,7 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
         FChar.Char = Char;
         FChar.TexNum = -1;
         FChar.BaseTex = Tex;
-        if (Char < 128) AsciiChars[Char] = Chars.Num()-1;
+        if (Char < 128) AsciiChars[Char] = Chars.length()-1;
 
         // calculate height of font character and adjust font height as needed
         int Height = Tex->GetScaledHeightI();
@@ -741,9 +741,9 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
   BuildTranslations(ColorsUsed, r_palette, false, true);
 
   // create texture objects for all different colors
-  for (int i = 0; i < Chars.Num(); ++i) {
-    Chars[i].Textures = new VTexture*[TextColors.Num()];
-    for (int j = 0; j < TextColors.Num(); ++j) {
+  for (int i = 0; i < Chars.length(); ++i) {
+    Chars[i].Textures = new VTexture*[TextColors.length()];
+    for (int j = 0; j < TextColors.length(); ++j) {
       Chars[i].Textures[j] = new VFontChar(Chars[i].BaseTex, Translation+j*256);
       // currently all render drivers expect all textures to be registered in texture manager
       GTextureManager.AddTexture(Chars[i].Textures[j]);
@@ -758,7 +758,7 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
 //
 //==========================================================================
 VFont::~VFont () {
-  for (int i = 0; i < Chars.Num(); ++i) {
+  for (int i = 0; i < Chars.length(); ++i) {
     if (Chars[i].Textures) {
       delete[] Chars[i].Textures;
       Chars[i].Textures = nullptr;
@@ -797,8 +797,8 @@ void VFont::BuildTranslations (const bool *ColorsUsed, rgba_t *Pal, bool Console
     Luminosity[i] = midval(0.0f, Luminosity[i], 1.0f);
   }
 
-  Translation = new rgba_t[256*TextColors.Num()];
-  for (int ColIdx = 0; ColIdx < TextColors.Num(); ++ColIdx) {
+  Translation = new rgba_t[256*TextColors.length()];
+  for (int ColIdx = 0; ColIdx < TextColors.length(); ++ColIdx) {
     rgba_t *pOut = Translation+ColIdx*256;
     const TArray<VColTranslationDef> &TList = (ConsoleTrans ? TextColors[ColIdx].ConsoleTranslations : TextColors[ColIdx].Translations);
     if (ColIdx == CR_UNTRANSLATED || !TList.length()) {
@@ -810,7 +810,7 @@ void VFont::BuildTranslations (const bool *ColorsUsed, rgba_t *Pal, bool Console
     for (int i = 1; i < 256; ++i) {
       int ILum = (int)(Luminosity[i]*256);
       int TDefIdx = 0;
-      while (TDefIdx < TList.Num()-1 && ILum > TList[TDefIdx].LumTo) ++TDefIdx;
+      while (TDefIdx < TList.length()-1 && ILum > TList[TDefIdx].LumTo) ++TDefIdx;
       const VColTranslationDef &TDef = TList[TDefIdx];
 
       // linearly interpolate between colors
@@ -856,7 +856,7 @@ int VFont::FindChar (int Chr) {
   return (pp ? *pp : -1);
   /*
   // a slower one for unicode
-  for (int i = 0; i < Chars.Num(); ++i) if (Chars[i].Char == Chr) return i;
+  for (int i = 0; i < Chars.length(); ++i) if (Chars[i].Char == Chr) return i;
   // oops
   return -1;
   */
@@ -880,7 +880,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
     }
   }
 
-  if (Color < 0 || Color >= TextColors.Num()) Color = CR_UNTRANSLATED;
+  if (Color < 0 || Color >= TextColors.length()) Color = CR_UNTRANSLATED;
   VTexture *Tex = Chars[Idx].Textures ? Chars[Idx].Textures[Color] :
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
@@ -972,7 +972,7 @@ int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor
 //
 //==========================================================================
 int VFont::FindTextColor (VName Name) {
-  for (int i = 0; i < TextColorLookup.Num(); ++i) {
+  for (int i = 0; i < TextColorLookup.length(); ++i) {
     if (TextColorLookup[i].Name == Name) return TextColorLookup[i].Index;
   }
   return CR_UNTRANSLATED;
@@ -1114,7 +1114,7 @@ int VFont::SplitText (VStr Text, TArray<VSplitLine> &Lines, int MaxWidth, bool t
     }
   }
 
-  return Lines.Num()*FontHeight;
+  return Lines.length()*FontHeight;
 }
 
 
@@ -1127,7 +1127,7 @@ VStr VFont::SplitTextWithNewlines (VStr Text, int MaxWidth, bool trimRight) {
   TArray<VSplitLine> Lines;
   SplitText(Text, Lines, MaxWidth, trimRight);
   VStr Ret;
-  for (int i = 0; i < Lines.Num(); ++i) {
+  for (int i = 0; i < Lines.length(); ++i) {
     if (i != 0) Ret += "\n";
     Ret += Lines[i].Text;
   }
@@ -1154,8 +1154,8 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
   bool ColorsUsed[256];
   memset(ColorsUsed, 0, sizeof(ColorsUsed));
 
-  vassert(CharIndexes.Num() == CharLumps.Num());
-  for (int i = 0; i < CharIndexes.Num(); ++i) {
+  vassert(CharIndexes.length() == CharLumps.length());
+  for (int i = 0; i < CharIndexes.length(); ++i) {
     int Char = CharIndexes[i];
     if (Char < 0) Char = (vuint8)(Char&0xff); // just in case
     VName LumpName = CharLumps[i];
@@ -1171,7 +1171,7 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
       FChar.Char = Char;
       FChar.TexNum = -1;
       FChar.BaseTex = Tex;
-      if (Char < 128) AsciiChars[Char] = Chars.Num()-1;
+      if (Char < 128) AsciiChars[Char] = Chars.length()-1;
 
       //GCon->Logf(NAME_Debug, "font '%s': char #%d (%c): patch '%s', texture size:%dx%d; ofs:%d,%d; scale:%g,%g", *AName, Char, (Char > 32 && Char < 127 ? (char)Char : '?'), *LumpName, Tex->GetWidth(), Tex->GetHeight(), Tex->SOffset, Tex->TOffset, Tex->SScale, Tex->TScale);
 
@@ -1210,16 +1210,16 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
   BuildTranslations(ColorsUsed, r_palette, false, true);
 
   // map non-translated colors to their original values
-  for (int i = 0; i < TextColors.Num(); ++i) {
+  for (int i = 0; i < TextColors.length(); ++i) {
     for (int j = 0; j < 256; ++j) {
       if (NoTranslate[j]) Translation[i*256+j] = r_palette[j];
     }
   }
 
   // create texture objects for all different colors
-  for (int i = 0; i < Chars.Num(); ++i) {
-    Chars[i].Textures = new VTexture*[TextColors.Num()];
-    for (int j = 0; j < TextColors.Num(); ++j) {
+  for (int i = 0; i < Chars.length(); ++i) {
+    Chars[i].Textures = new VTexture*[TextColors.length()];
+    for (int j = 0; j < TextColors.length(); ++j) {
       Chars[i].Textures[j] = new VFontChar(Chars[i].BaseTex, Translation+j*256);
       // currently all render drivers expect all textures to be registered in texture manager
       GTextureManager.AddTexture(Chars[i].Textures[j]);
@@ -1278,8 +1278,8 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) {
     FChar.TexNum = -1;
 
     // create texture objects for all different colors
-    FChar.Textures = new VTexture*[TextColors.Num()];
-    for (int j = 0; j < TextColors.Num(); ++j) {
+    FChar.Textures = new VTexture*[TextColors.length()];
+    for (int j = 0; j < TextColors.length(); ++j) {
       FChar.Textures[j] = new VFontChar2(LumpNum, Strm.Tell(), SpaceWidth, FontHeight, Translation+j*256, 255);
       // currently all render drivers expect all textures to be registered in texture manager
       GTextureManager.AddTexture(FChar.Textures[j]);
@@ -1382,12 +1382,12 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
       FFontChar &FChar = Chars.Alloc();
       FChar.Char = Chr;
       FChar.TexNum = -1;
-      if (Chr < 128) AsciiChars[Chr] = Chars.Num()-1;
+      if (Chr < 128) AsciiChars[Chr] = Chars.length()-1;
       //GCon->Logf(NAME_Debug, "FON2 '%s': chr=%d (%c); size=(%dx%d)", *AName, Chr, (Chr >= 32 && Chr != 127 ? (char)Chr : '?'), Widths[i], FontHeight);
 
       // create texture objects for all different colors
-      FChar.Textures = new VTexture*[TextColors.Num()];
-      for (int j = 0; j < TextColors.Num(); ++j) {
+      FChar.Textures = new VTexture*[TextColors.length()];
+      for (int j = 0; j < TextColors.length(); ++j) {
         FChar.Textures[j] = new VFontChar2(LumpNum, Strm.Tell(), Widths[i], FontHeight, Translation+j*256, ActiveColors);
         // currently all render drivers expect all textures to be registered in texture manager
         GTextureManager.AddTexture(FChar.Textures[j]);

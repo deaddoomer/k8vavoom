@@ -311,7 +311,7 @@ public:
     if (TmpIdx == 0) {
       Ref = nullptr;
     } else if (TmpIdx > 0) {
-      if (TmpIdx > Exports.Num()) Sys_Error("Bad index %d", TmpIdx);
+      if (TmpIdx > Exports.length()) Sys_Error("Bad index %d", TmpIdx);
       Ref = Exports[TmpIdx-1];
       //vassert(Ref);
       //GCon->Logf(NAME_Debug, "IO OBJECT: '%s'", Ref->GetClass()->GetName());
@@ -381,7 +381,7 @@ public:
     }
     if (dbg_save_verbose&0x02) GCon->Logf("*** unique object (%u : %s)", o->GetUniqueId(), *o->GetClass()->GetFullName());
     Exports.Append(o);
-    ObjectsMap.put(o->GetUniqueId(), Exports.Num());
+    ObjectsMap.put(o->GetUniqueId(), Exports.length());
   }
 
   virtual void io (VSerialisable *&Ref) override {
@@ -806,7 +806,7 @@ void VSaveSlot::Clear () {
   Description.Clean();
   CurrentMap = NAME_None;
   SavedSkill = -1;
-  for (int i = 0; i < Maps.Num(); ++i) { delete Maps[i]; Maps[i] = nullptr; }
+  for (int i = 0; i < Maps.length(); ++i) { delete Maps[i]; Maps[i] = nullptr; }
   Maps.Clear();
   CheckPoint.Clear();
 }
@@ -1007,7 +1007,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     *Strm << TmpName << Map->Compressed << STRM_INDEX(Map->DecompressedSize) << STRM_INDEX(DataLen);
     Map->Name = *TmpName;
     Map->Data.SetNum(DataLen);
-    Strm->Serialise(Map->Data.Ptr(), Map->Data.Num());
+    Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
   }
 
   //HACK: if `NumMaps` is 0, we're loading a checkpoint
@@ -1124,13 +1124,13 @@ bool VSaveSlot::SaveToSlot (int Slot) {
   VStr TmpName(CurrentMap);
   *Strm << TmpName;
 
-  vint32 NumMaps = Maps.Num();
+  vint32 NumMaps = Maps.length();
   *Strm << STRM_INDEX(NumMaps);
-  for (int i = 0; i < Maps.Num(); ++i) {
+  for (int i = 0; i < Maps.length(); ++i) {
     TmpName = VStr(Maps[i]->Name);
-    vint32 DataLen = Maps[i]->Data.Num();
+    vint32 DataLen = Maps[i]->Data.length();
     *Strm << TmpName << Maps[i]->Compressed << STRM_INDEX(Maps[i]->DecompressedSize) << STRM_INDEX(DataLen);
-    Strm->Serialise(Maps[i]->Data.Ptr(), Maps[i]->Data.Num());
+    Strm->Serialise(Maps[i]->Data.Ptr(), Maps[i]->Data.length());
   }
 
   //HACK: if `NumMaps` is 0, we're saving checkpoint
@@ -1178,7 +1178,7 @@ bool VSaveSlot::SaveToSlot (int Slot) {
 //
 //==========================================================================
 VSavedMap *VSaveSlot::FindMap (VName Name) {
-  for (int i = 0; i < Maps.Num(); ++i) if (Maps[i]->Name == Name) return Maps[i];
+  for (int i = 0; i < Maps.length(); ++i) if (Maps[i]->Name == Name) return Maps[i];
   return nullptr;
 }
 
@@ -1339,7 +1339,7 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
   Saver->Seek(NamesOffset);
 
   // serialise names
-  vint32 Count = Saver->Names.Num();
+  vint32 Count = Saver->Names.length();
   *Saver << STRM_INDEX(Count);
   for (int i = 0; i < Count; ++i) {
     //*Saver << *VName::GetEntry(Saver->Names[i].GetIndex());
@@ -1429,7 +1429,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
   }
 
   // add thinkers
-  int ThinkersStart = Saver->Exports.Num();
+  int ThinkersStart = Saver->Exports.length();
   for (TThinkerIterator<VThinker> Th(GLevel); Th; ++Th) {
     // players will be skipped by `Saver`
     Saver->RegisterObject(*Th);
@@ -1442,15 +1442,15 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
   }
 
   // write exported object names
-  vint32 NumObjects = Saver->Exports.Num()-ThinkersStart;
+  vint32 NumObjects = Saver->Exports.length()-ThinkersStart;
   *Saver << STRM_INDEX(NumObjects);
-  for (int i = ThinkersStart; i < Saver->Exports.Num(); ++i) {
+  for (int i = ThinkersStart; i < Saver->Exports.length(); ++i) {
     VName CName = Saver->Exports[i]->GetClass()->GetVName();
     *Saver << CName;
   }
 
   // serialise objects
-  for (int i = 0; i < Saver->Exports.Num(); ++i) {
+  for (int i = 0; i < Saver->Exports.length(); ++i) {
     if (dbg_save_verbose&0x10) GCon->Logf("** SR #%d: <%s>", i, *Saver->Exports[i]->GetClass()->GetFullName());
     Saver->Exports[i]->Serialise(*Saver);
   }
@@ -1550,7 +1550,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   GLevelInfo->Game = GGameInfo;
   GLevelInfo->World = GGameInfo->WorldInfo;
 
-  for (int i = 0; i < Loader->Exports.Num(); ++i) {
+  for (int i = 0; i < Loader->Exports.length(); ++i) {
     vassert(Loader->Exports[i]);
 #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
     auto dpp = deadThinkers.find(Loader->Exports[i]);
@@ -1713,7 +1713,7 @@ static void SV_SaveMap (bool savePlayers) {
   }
 
   // compress map data
-  Map->DecompressedSize = Buf.Num();
+  Map->DecompressedSize = Buf.length();
   Map->Data.Clear();
   if (save_compression_level <= 0) {
     Map->Compressed = 0;
@@ -1724,7 +1724,7 @@ static void SV_SaveMap (bool savePlayers) {
     VArrayStream *ArrStrm = new VArrayStream("<savemap>", Map->Data);
     ArrStrm->BeginWrite();
     VZLibStreamWriter *ZipStrm = new VZLibStreamWriter(ArrStrm, (int)save_compression_level);
-    ZipStrm->Serialise(Buf.Ptr(), Buf.Num());
+    ZipStrm->Serialise(Buf.Ptr(), Buf.length());
     const bool wasErr = ZipStrm->IsError();
     ZipStrm->Close();
     ArrStrm->Close();
@@ -1950,7 +1950,7 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
     VArrayStream *ArrStrm = new VArrayStream("<savemap:mapdata>", Map->Data);
     VZLibStreamReader *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
     DecompressedData.SetNum(Map->DecompressedSize);
-    ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.Num());
+    ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
     const bool wasErr = ZipStrm->IsError();
     ZipStrm->Close();
     ArrStrm->Close();
@@ -2223,7 +2223,7 @@ void SV_MapTeleport (VName mapname, int flags, int newskill) {
   if (flags&CHANGELEVEL_NOMONSTERS) GGameInfo->nomonsters = oldNoMonsters;
 
   // add traveling thinkers to the new level
-  for (int i = 0; i < TravelObjs.Num(); ++i) {
+  for (int i = 0; i < TravelObjs.length(); ++i) {
     //GCon->Logf(NAME_Debug, "SV_MapTeleport: adding back player inventory item '%s'", TravelObjs[i]->GetClass()->GetName());
     GLevel->AddThinker(TravelObjs[i]);
     VEntity *Ent = Cast<VEntity>(TravelObjs[i]);
@@ -2400,7 +2400,7 @@ void SV_AutoSaveOnLevelExit () {
 //
 //==========================================================================
 COMMAND(Save) {
-  if (Args.Num() != 3) {
+  if (Args.length() != 3) {
     GCon->Log("usage: save slotindex description");
     return;
   }
@@ -2429,7 +2429,7 @@ COMMAND(Save) {
 COMMAND(DeleteSavedGame) {
   //GCon->Logf("DeleteSavedGame: argc=%d", Args.length());
 
-  if (Args.Num() != 2) return;
+  if (Args.length() != 2) return;
 
   if (!CheckIfLoadIsAllowed()) return;
 
@@ -2482,7 +2482,7 @@ COMMAND(DeleteSavedGame) {
 //
 //==========================================================================
 COMMAND(Load) {
-  if (Args.Num() != 2) return;
+  if (Args.length() != 2) return;
 
   if (!CheckIfLoadIsAllowed()) return;
 

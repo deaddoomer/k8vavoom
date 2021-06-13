@@ -591,7 +591,7 @@ static void CheckResolutionChange () {
 //
 //==========================================================================
 COMMAND(SetResolution) {
-  if (Args.Num() == 3) {
+  if (Args.length() == 3) {
     int w = VStr::atoi(*Args[1]);
     int h = VStr::atoi(*Args[2]);
     if (w >= 320 && h >= 200 && w <= 8192 && h <= 8192) {

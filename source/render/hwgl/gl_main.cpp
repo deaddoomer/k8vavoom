@@ -1046,7 +1046,7 @@ void VOpenGLDrawer::InitResolution () {
     GCon->Log(NAME_Init, "GL_EXTENSIONS:");
     TArray<VStr> Exts;
     VStr((char *)glGetString(GL_EXTENSIONS)).Split(' ', Exts);
-    for (int i = 0; i < Exts.Num(); ++i) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
+    for (int i = 0; i < Exts.length(); ++i) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
   }
 
   memset(currentViewport, 0, sizeof(currentViewport));

@@ -49,7 +49,7 @@ void VEntity::PushLine (const tmtrace_t &tmtrace, bool checkOnly) {
   if (checkOnly || GGameInfo->NetMode == NM_Client) return;
   if (EntityFlags&EF_ColideWithWorld) {
     if (EntityFlags&EF_Blasted) eventBlastedHitLine();
-    int NumSpecHitTemp = tmtrace.SpecHit.Num();
+    int NumSpecHitTemp = tmtrace.SpecHit.length();
     while (NumSpecHitTemp > 0) {
       --NumSpecHitTemp;
       // see if the line was crossed
@@ -293,10 +293,10 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
   if (!noPickups && !isClient) {
     // if any special lines were hit, do the effect
     if (EntityFlags&EF_ColideWithWorld) {
-      while (tmtrace.SpecHit.Num() > 0) {
+      while (tmtrace.SpecHit.length() > 0) {
         // see if the line was crossed
-        ld = tmtrace.SpecHit[tmtrace.SpecHit.Num()-1];
-        tmtrace.SpecHit.SetNum(tmtrace.SpecHit.Num()-1, false);
+        ld = tmtrace.SpecHit[tmtrace.SpecHit.length()-1];
+        tmtrace.SpecHit.SetNum(tmtrace.SpecHit.length()-1, false);
         // some moron once placed the entity *EXACTLY* on the fuckin' linedef! what a brilliant idea!
         // this will *NEVER* be fixed, it is a genuine map bug (it's impossible to fix it with our freestep engine anyway)
         // let's try use "front inclusive" here; it won't solve all cases, but *may* solve the one above

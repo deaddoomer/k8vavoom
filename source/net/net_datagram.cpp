@@ -1696,7 +1696,7 @@ COMMAND(NetStats) {
   VSocket *s;
 
   VNetworkLocal *Net = (VNetworkLocal *)GNet;
-  if (Args.Num() == 1) {
+  if (Args.length() == 1) {
     GCon->Logf(NAME_DevNet, "unreliable messages sent = %d", Net->UnreliableMessagesSent);
     GCon->Logf(NAME_DevNet, "unreliable messages recv = %d", Net->UnreliableMessagesReceived);
     GCon->Logf(NAME_DevNet, "packetsSent              = %d", Net->packetsSent);

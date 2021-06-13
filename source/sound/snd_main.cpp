@@ -1426,7 +1426,7 @@ void VAudio::NotifySoundLoaded (int sound_id, bool success) {
 void VAudio::CmdMusic (const TArray<VStr> &Args) {
   if (!StreamMusicPlayer) return;
 
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
 
   VStr command = Args[1];
 
@@ -1444,7 +1444,7 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
   if (!MusicEnabled) return;
 
   if (command.strEquCI("play") || command.strEquCI("playrandom")) {
-    if (Args.Num() < 3) {
+    if (Args.length() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (play).");
       return;
     }
@@ -1453,7 +1453,7 @@ void VAudio::CmdMusic (const TArray<VStr> &Args) {
   }
 
   if (command.strEquCI("loop") || command.strEquCI("looprandom")) {
-    if (Args.Num() < 3) {
+    if (Args.length() < 3) {
       GCon->Log(NAME_Warning, "Please enter name of the song (loop).");
       return;
     }
@@ -1644,10 +1644,10 @@ void VSoundSeqNode::Update (float DeltaTime) {
       SequencePtr += 2;
       break;
     case SSCMD_RandomSequence:
-      if (SeqChoices.Num() == 0) {
+      if (SeqChoices.length() == 0) {
         ++SequencePtr;
       } else if (!ChildSeq) {
-        int Choice = GenRandomU31()%SeqChoices.Num();
+        int Choice = GenRandomU31()%SeqChoices.length();
         ChildSeq = new VSoundSeqNode(OriginId, Origin, SeqChoices[Choice], ModeNum);
         ChildSeq->ParentSeq = this;
         ChildSeq->Volume = Volume;
@@ -1738,9 +1738,9 @@ void VSoundSeqNode::Serialise (VStream &Strm) {
     vint32 Offset = SequencePtr - GSoundManager->SeqInfo[Sequence].Data;
     Strm << STRM_INDEX(Offset);
 
-    vint32 Count = SeqChoices.Num();
+    vint32 Count = SeqChoices.length();
     Strm << STRM_INDEX(Count);
-    for (int i = 0; i < SeqChoices.Num(); ++i) Strm << GSoundManager->SeqInfo[SeqChoices[i]].Name;
+    for (int i = 0; i < SeqChoices.length(); ++i) Strm << GSoundManager->SeqInfo[SeqChoices[i]].Name;
 
     vint32 ParentSeqIdx = -1;
     vint32 ChildSeqIdx = -1;

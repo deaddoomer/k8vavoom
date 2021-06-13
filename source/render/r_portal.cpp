@@ -334,7 +334,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
   Range.ClearClipNodes(Drawer->vieworg, RLev->Level);
   if (SetFrustum) {
     Range.ClipInitFrustumRange(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup, refdef.fovx, refdef.fovy);
-    //GCon->Logf("SURFS: %d", Surfs.Num());
+    //GCon->Logf("SURFS: %d", Surfs.length());
     //return;
   }
   for (auto &&surf : Surfs) {

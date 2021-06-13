@@ -192,16 +192,16 @@ bool VOpenALDevice::Init () {
     GCon->Log(NAME_Init, "AL_EXTENSIONS:");
     TArray<VStr> Exts;
     VStr((char *)alGetString(AL_EXTENSIONS)).Split(' ', Exts);
-    for (int i = 0; i < Exts.Num(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
+    for (int i = 0; i < Exts.length(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
     GCon->Log(NAME_Init, "ALC_EXTENSIONS:");
     VStr((char *)alcGetString(Device, ALC_EXTENSIONS)).Split(' ', Exts);
-    for (int i = 0; i < Exts.Num(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
+    for (int i = 0; i < Exts.length(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
   }
 
   // allocate array for buffers
   /*
-  Buffers = new ALuint[GSoundManager->S_sfx.Num()];
-  memset(Buffers, 0, sizeof(ALuint) * GSoundManager->S_sfx.Num());
+  Buffers = new ALuint[GSoundManager->S_sfx.length()];
+  memset(Buffers, 0, sizeof(ALuint) * GSoundManager->S_sfx.length());
   */
 
   GCon->Log(NAME_Init, "OpenAL initialized.");

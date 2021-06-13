@@ -511,7 +511,7 @@ VMultiPatchTexture::VMultiPatchTexture (VScriptParser *sc, int AType)
       }
     }
 
-    PatchCount = Parts.Num();
+    PatchCount = Parts.length();
     if (PatchCount) {
       Patches = new VTexPatch[PatchCount];
       memcpy(Patches, Parts.Ptr(), sizeof(VTexPatch)*PatchCount);

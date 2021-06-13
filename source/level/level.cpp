@@ -628,7 +628,7 @@ void VLevel::Destroy () {
 
   ActiveSequences.Clear();
 
-  for (int i = 0; i < Translations.Num(); ++i) {
+  for (int i = 0; i < Translations.length(); ++i) {
     if (Translations[i]) {
       delete Translations[i];
       Translations[i] = nullptr;
@@ -636,7 +636,7 @@ void VLevel::Destroy () {
   }
   Translations.Clear();
 
-  for (int i = 0; i < BodyQueueTrans.Num(); ++i) {
+  for (int i = 0; i < BodyQueueTrans.length(); ++i) {
     if (BodyQueueTrans[i]) {
       delete BodyQueueTrans[i];
       BodyQueueTrans[i] = nullptr;
@@ -807,7 +807,7 @@ void VLevel::SetCameraToTexture (VEntity *Ent, VName TexName, int FOV) {
   // make camera to be always relevant
   Ent->ThinkerFlags |= VEntity::TF_AlwaysRelevant;
 
-  for (int i = 0; i < CameraTextures.Num(); ++i) {
+  for (int i = 0; i < CameraTextures.length(); ++i) {
     if (CameraTextures[i].TexNum == TexNum) {
       CameraTextures[i].Camera = Ent;
       CameraTextures[i].FOV = FOV;
@@ -838,7 +838,7 @@ int VLevel::SetBodyQueueTrans (int Slot, int Trans) {
   }
 
   // add it
-  while (BodyQueueTrans.Num() <= Slot) BodyQueueTrans.Append(nullptr);
+  while (BodyQueueTrans.length() <= Slot) BodyQueueTrans.Append(nullptr);
   VTextureTranslation *Tr = BodyQueueTrans[Slot];
   if (!Tr) {
     Tr = new VTextureTranslation;

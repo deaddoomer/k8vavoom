@@ -841,7 +841,7 @@ void VDecalGroup::addToList (VDecalGroup *dg) noexcept {
   // remove old definitions
   VDecalDef::removeFromList(VDecalDef::find(dg->name), true); // delete
   VDecalGroup::removeFromList(VDecalGroup::find(dg->name), true); // delete
-  //GCon->Logf("new group: '%s' (%d items)", *dg->name, dg->nameList.Num());
+  //GCon->Logf("new group: '%s' (%d items)", *dg->name, dg->nameList.length());
   // insert new one
   dg->next = listHead;
   listHead = dg;
@@ -931,7 +931,7 @@ VDecalGroup *VDecalGroup::find (VName aname) noexcept {
 //==========================================================================
 void VDecalGroup::fixup () {
   //GCon->Logf("fixing decal group '%s'", *name);
-  for (int f = 0; f < nameList.Num(); ++f) {
+  for (int f = 0; f < nameList.length(); ++f) {
     auto it = VDecalDef::find(nameList[f].name);
     if (it) {
       auto li = new ListItem(it, nullptr);

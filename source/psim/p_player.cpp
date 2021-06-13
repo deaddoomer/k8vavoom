@@ -172,13 +172,13 @@ void VBasePlayer::SpawnClient () {
     if (PlayerFlags&PF_Spawned) GCon->Log(NAME_Dev, "Already spawned");
     if (MO) GCon->Log(NAME_Dev, "Mobj already spawned");
     eventSpawnClient();
-    for (int i = 0; i < Level->XLevel->ActiveSequences.Num(); ++i) {
+    for (int i = 0; i < Level->XLevel->ActiveSequences.length(); ++i) {
       eventClientStartSequence(
         Level->XLevel->ActiveSequences[i].Origin,
         Level->XLevel->ActiveSequences[i].OriginId,
         Level->XLevel->ActiveSequences[i].Name,
         Level->XLevel->ActiveSequences[i].ModeNum);
-      for (int j = 0; j < Level->XLevel->ActiveSequences[i].Choices.Num(); ++j) {
+      for (int j = 0; j < Level->XLevel->ActiveSequences[i].Choices.length(); ++j) {
         eventClientAddSequenceChoice(
           Level->XLevel->ActiveSequences[i].OriginId,
           Level->XLevel->ActiveSequences[i].Choices[j]);
@@ -967,7 +967,7 @@ COMMAND(SetInfo) {
     return;
   }
 
-  if (Args.Num() != 3) return;
+  if (Args.length() != 3) return;
 
   Info_SetValueForKey(Player->UserInfo, *Args[1], *Args[2]);
   Player->ReadFromUserInfo();
@@ -1334,7 +1334,7 @@ COMMAND(ChangeWeapon) {
   CMD_FORWARD_TO_SERVER();
 
   if (!Player) return;
-  if (Args.Num() < 2) { GCon->Logf(NAME_Warning, "ChangeWeapon expects weapon list"); return; }
+  if (Args.length() < 2) { GCon->Logf(NAME_Warning, "ChangeWeapon expects weapon list"); return; }
 
   VEntity *curwpn = Player->eventGetReadyWeapon();
 

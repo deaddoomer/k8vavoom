@@ -1518,7 +1518,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
   VState *PrevState = nullptr; // previous state in current execution chain
   VState *LastState = nullptr; // last defined state (`nullptr` right after new label)
   VState *LoopStart = nullptr; // state with last defined label (used to resolve `loop`)
-  int NewLabelsStart = Class->StateLabelDefs.Num(); // first defined, but not assigned label index
+  int NewLabelsStart = Class->StateLabelDefs.length(); // first defined, but not assigned label index
 
   VStr LastDefinedLabel; // to workaround another ZDoom idiocity
 
@@ -1605,10 +1605,10 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           LastState->NextState = LastState;
           PrevState = nullptr; // new execution chain
         } else {
-          if (!LastState && NewLabelsStart == Class->StateLabelDefs.Num()) {
+          if (!LastState && NewLabelsStart == Class->StateLabelDefs.length()) {
             if (!getIgnoreMoronicStateCommands()) sc->Error("'Goto' before first state frame");
             sc->Message("'Goto' before first state frame");
-            NewLabelsStart = Class->StateLabelDefs.Num();
+            NewLabelsStart = Class->StateLabelDefs.length();
           } else {
             // if we have no defined states for latest labels, create dummy state to attach gotos to it
             // simple redirection won't work, because this label can be used as `A_JumpXXX()` destination, for example
@@ -1616,7 +1616,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
             if (!LastState) {
               // yet if we are in spawn label, demand at least one defined state
               // ah, screw it, just define TNT1
-              VState *dummyState = new VState(va("S_%d", States.Num()), Class, TmpLoc);
+              VState *dummyState = new VState(va("S_%d", States.length()), Class, TmpLoc);
               States.Append(dummyState);
               dummyState->SpriteName = "tnt1";
               dummyState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;
@@ -1624,23 +1624,23 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
               // link previous state
               if (PrevState) PrevState->NextState = dummyState;
               // assign state to the labels
-              for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+              for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
                 Class->StateLabelDefs[i].State = dummyState;
                 LoopStart = dummyState; // this will replace loop start only if we have any labels
               }
-              NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+              NewLabelsStart = Class->StateLabelDefs.length(); // no current label
               PrevState = dummyState;
               LastState = dummyState;
             }
             LastState->GotoLabel = GotoLabel;
             LastState->GotoOffset = GotoOffset;
-            vassert(NewLabelsStart == Class->StateLabelDefs.Num());
+            vassert(NewLabelsStart == Class->StateLabelDefs.length());
             /*k8: this doesn't work, see above
-            for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+            for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
               Class->StateLabelDefs[i].GotoLabel = GotoLabel;
               Class->StateLabelDefs[i].GotoOffset = GotoOffset;
             }
-            NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+            NewLabelsStart = Class->StateLabelDefs.length(); // no current label
             */
           }
           PrevState = nullptr; // new execution chain
@@ -1663,7 +1663,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           continue;
         }
         lastWasGoto = true;
-        if (!LastState && NewLabelsStart == Class->StateLabelDefs.Num()) {
+        if (!LastState && NewLabelsStart == Class->StateLabelDefs.length()) {
           if (!getIgnoreMoronicStateCommands()) sc->Error("'Stop' before first state frame");
           sc->Message("'Stop' before first state frame");
         } else {
@@ -1681,14 +1681,14 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
           // if we have no defined states for latest labels, simply redirect labels to nowhere
           // this will make `FindStateLabel()` to return `nullptr`, effectively removing the state
-          for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+          for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
             if (!vcWarningsSilenced && cli_ShowRemoveStateWarning > 0) GLog.Logf(NAME_Warning, "%s: removed state '%s'!", *TmpLoc.toStringNoCol(), *Class->StateLabelDefs[i].Name);
             Class->StateLabelDefs[i].State = nullptr;
           }
         }
-        NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+        NewLabelsStart = Class->StateLabelDefs.length(); // no current label
 
-        vassert(NewLabelsStart == Class->StateLabelDefs.Num());
+        vassert(NewLabelsStart == Class->StateLabelDefs.length());
         PrevState = nullptr; // new execution chain
         if (!sc->Crossed && sc->Check(";")) {}
         continue;
@@ -1699,13 +1699,13 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     // this removes the inherited state
     if (TmpName.ICmp("RemoveState") == 0) {
       if (LastState) sc->Error("cannot remove non-empty state");
-      for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+      for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
         //GLog.Logf(NAME_Init, "%s: removed state '%s'", *TmpLoc.toStringNoCol(), *Class->StateLabelDefs[i].Name);
         Class->StateLabelDefs[i].State = nullptr;
       }
-      NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+      NewLabelsStart = Class->StateLabelDefs.length(); // no current label
 
-      vassert(NewLabelsStart == Class->StateLabelDefs.Num());
+      vassert(NewLabelsStart == Class->StateLabelDefs.length());
       PrevState = nullptr; // new execution chain
       if (!sc->Crossed && sc->Check(";")) {}
       continue;
@@ -1761,7 +1761,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     lastWasGoto = false;
 
     // create new state
-    VState *State = new VState(va("S_%d", States.Num()), Class, TmpLoc);
+    VState *State = new VState(va("S_%d", States.length()), Class, TmpLoc);
     States.Append(State);
 
     // sprite name
@@ -1856,7 +1856,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         // k8: play safe here: add dummy state for any label, just in case
         if (!LastState) {
           // there were no states after the label, insert dummy one
-          VState *dupState = new VState(va("S_%d", States.Num()), Class, TmpLoc);
+          VState *dupState = new VState(va("S_%d", States.length()), Class, TmpLoc);
           States.Append(dupState);
           // copy real state data to duplicate one (it will be used as new "real" state)
           dupState->SpriteName = State->SpriteName;
@@ -1878,11 +1878,11 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           // link previous state
           if (PrevState) PrevState->NextState = State;
           // assign state to the labels
-          for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+          for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
             Class->StateLabelDefs[i].State = State;
             LoopStart = State;
           }
-          NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+          NewLabelsStart = Class->StateLabelDefs.length(); // no current label
           PrevState = State;
           LastState = State;
           // and use duplicate state as a new state
@@ -1946,11 +1946,11 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     if (PrevState) PrevState->NextState = State;
 
     // assign state to the labels
-    for (int i = NewLabelsStart; i < Class->StateLabelDefs.Num(); ++i) {
+    for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
       Class->StateLabelDefs[i].State = State;
       LoopStart = State; // this will replace loop start only if we have any labels
     }
-    NewLabelsStart = Class->StateLabelDefs.Num(); // no current label
+    NewLabelsStart = Class->StateLabelDefs.length(); // no current label
     PrevState = State;
     LastState = State;
 
@@ -1974,7 +1974,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (keepSpriteBase) frm |= VState::FF_KEEPSPRITE;
 
       // create a new state
-      VState *s2 = new VState(va("S_%d", States.Num()), Class, sc->GetLoc());
+      VState *s2 = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
       States.Append(s2);
       s2->SpriteName = State->SpriteName;
       s2->Frame = frm;
@@ -2295,7 +2295,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 
   if (Class) {
     // copy class fixups of the parent class
-    for (int i = 0; i < ClassFixups.Num(); ++i) {
+    for (int i = 0; i < ClassFixups.length(); ++i) {
       VClassFixup *CF = &ClassFixups[i];
       if (CF->Class == ParentClass) {
         VClassFixup &NewCF = ClassFixups.Alloc();
@@ -2422,7 +2422,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     }
     //VName PropName = *Prop.ToLower();
     bool FoundProp = false;
-    for (int j = 0; j < FlagList.Num() && !FoundProp; ++j) {
+    for (int j = 0; j < FlagList.length() && !FoundProp; ++j) {
       VFlagList &ClassDef = FlagList[j];
       if (!Class->IsChildOf(ClassDef.Class)) continue;
       VPropDef *pdef = ClassDef.FindProp(Prop);
@@ -2619,7 +2619,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             // check pain chances array for replacements
             TArray<VPainChanceInfo> &PainChances = GetClassPainChances(Class);
             VPainChanceInfo *PC = nullptr;
-            for (int i = 0; i < PainChances.Num(); ++i) {
+            for (int i = 0; i < PainChances.length(); ++i) {
               if (PainChances[i].DamageType == DamageType) {
                 PC = &PainChances[i];
                 break;
@@ -2650,7 +2650,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             // check damage factors array for replacements
             TArray<VDamageFactor> &DamageFactors = GetClassDamageFactors(Class);
             VDamageFactor *DF = nullptr, *ncDF = nullptr;
-            for (int i = 0; i < DamageFactors.Num(); ++i) {
+            for (int i = 0; i < DamageFactors.length(); ++i) {
               if (DamageFactors[i].DamageType == DamageType) {
                 DF = &DamageFactors[i];
                 break;
@@ -2822,9 +2822,9 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           }
           break;
         case PROP_ClearFlags:
-          for (int jj = 0; jj < FlagList.Num(); ++jj) {
+          for (int jj = 0; jj < FlagList.length(); ++jj) {
             if (FlagList[jj].Class != ActorClass) continue;
-            for (int i = 0; i < FlagList[jj].Flags.Num(); ++i) {
+            for (int i = 0; i < FlagList[jj].Flags.length(); ++i) {
               VFlagDef &F = FlagList[jj].Flags[i];
               switch (F.Type) {
                 case FLAG_Bool: F.Field->SetBool(DefObj, false); break;
@@ -3156,9 +3156,9 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   Class->EmitStateLabels();
 
   // set up linked list of states
-  if (States.Num()) {
+  if (States.length()) {
     Class->States = States[0];
-    for (int i = 0; i < States.Num()-1; ++i) States[i]->Next = States[i+1];
+    for (int i = 0; i < States.length()-1; ++i) States[i]->Next = States[i+1];
     for (auto &&sts : States) {
       #if defined(VC_DECORATE_ACTION_BELONGS_TO_STATE)
       sts->Define(); // this defines state functions
@@ -3239,7 +3239,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 static void ParseOldDecStates (VScriptParser *sc, TArray<VState *> &States, VClass *Class) {
   TArray<VStr> Tokens;
   sc->String.Split(",\t\r\n", Tokens);
-  for (int TokIdx = 0; TokIdx < Tokens.Num(); ++TokIdx) {
+  for (int TokIdx = 0; TokIdx < Tokens.length(); ++TokIdx) {
     const char *pFrame = *Tokens[TokIdx];
     int DurColon = Tokens[TokIdx].IndexOf(':');
     float Duration = 4;
@@ -3256,12 +3256,12 @@ static void ParseOldDecStates (VScriptParser *sc, TArray<VState *> &States, VCla
       if (cc == ' ') {
       } else if (cc == '*') {
         if (!GotState) sc->Error("* must come after a frame");
-        States[States.Num()-1]->Frame |= VState::FF_FULLBRIGHT;
+        States[States.length()-1]->Frame |= VState::FF_FULLBRIGHT;
       } else if (cc < 'A' || cc > '^') {
         sc->Error("Frames must be A-Z, [, \\, or ]");
       } else {
         GotState = true;
-        VState *State = new VState(va("S_%d", States.Num()), Class, sc->GetLoc());
+        VState *State = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
         States.Append(State);
         State->Frame = cc-'A';
         State->Time = float(Duration)/35.0f;
@@ -3357,9 +3357,9 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       Sprite = *sc->String.ToLower();
     } else if (sc->Check("Frames")) {
       sc->ExpectString();
-      SpawnStart = States.Num();
+      SpawnStart = States.length();
       ParseOldDecStates(sc, States, Class);
-      SpawnEnd = States.Num();
+      SpawnEnd = States.length();
     } else if ((Type == OLDDEC_Breakable || Type == OLDDEC_Projectile) && sc->Check("DeathSprite")) {
       // death states
       sc->ExpectString();
@@ -3367,29 +3367,29 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       DeathSprite = *sc->String.ToLower();
     } else if ((Type == OLDDEC_Breakable || Type == OLDDEC_Projectile) && sc->Check("DeathFrames")) {
       sc->ExpectString();
-      DeathStart = States.Num();
+      DeathStart = States.length();
       ParseOldDecStates(sc, States, Class);
-      DeathEnd = States.Num();
+      DeathEnd = States.length();
     } else if (Type == OLDDEC_Breakable && sc->Check("DiesAway")) {
       DiesAway = true;
     } else if (Type == OLDDEC_Breakable && sc->Check("BurnDeathFrames")) {
       sc->ExpectString();
-      BurnStart = States.Num();
+      BurnStart = States.length();
       ParseOldDecStates(sc, States, Class);
-      BurnEnd = States.Num();
+      BurnEnd = States.length();
     } else if (Type == OLDDEC_Breakable && sc->Check("BurnsAway")) {
       BurnsAway = true;
     } else if (Type == OLDDEC_Breakable && sc->Check("IceDeathFrames")) {
       sc->ExpectString();
-      IceStart = States.Num();
+      IceStart = States.length();
       ParseOldDecStates(sc, States, Class);
 
       // make a copy of the last state for A_FreezeDeathChunks
-      VState *State = new VState(va("S_%d", States.Num()), Class, sc->GetLoc());
+      VState *State = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
       States.Append(State);
-      State->Frame = States[States.Num()-2]->Frame;
+      State->Frame = States[States.length()-2]->Frame;
 
-      IceEnd = States.Num();
+      IceEnd = States.length();
     } else if (Type == OLDDEC_Breakable && sc->Check("GenericIceDeath")) {
       GenericIceDeath = true;
     }
@@ -3562,10 +3562,10 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
 
   // set up linked list of states
   Class->States = States[0];
-  for (int i = 0; i < States.Num()-1; ++i) States[i]->Next = States[i+1];
+  for (int i = 0; i < States.length()-1; ++i) States[i]->Next = States[i+1];
 
   // set up default sprite for all states
-  for (int i = 0; i < States.Num(); ++i) States[i]->SpriteName = Sprite;
+  for (int i = 0; i < States.length(); ++i) States[i]->SpriteName = Sprite;
 
   // set death sprite if it's defined
   if (DeathSprite != NAME_None && DeathEnd != 0) {
@@ -3573,7 +3573,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
   }
 
   // set up links of spawn states
-  if (States.Num() == 1) {
+  if (States.length() == 1) {
     States[SpawnStart]->Time = -1.0f;
   } else {
     for (int i = SpawnStart; i < SpawnEnd-1; ++i) States[i]->NextState = States[i+1];
@@ -4040,8 +4040,8 @@ void ProcessDecorateScripts () {
   ClearReplacementBase();
 
   // make sure all import classes were defined
-  if (VMemberBase::GDecorateClassImports.Num()) {
-    for (int i = 0; i < VMemberBase::GDecorateClassImports.Num(); ++i) {
+  if (VMemberBase::GDecorateClassImports.length()) {
+    for (int i = 0; i < VMemberBase::GDecorateClassImports.length(); ++i) {
       GLog.Logf(NAME_Warning, "Undefined DECORATE class `%s`", VMemberBase::GDecorateClassImports[i]->GetName());
     }
     Sys_Error("Not all DECORATE class imports were defined");
@@ -4052,7 +4052,7 @@ void ProcessDecorateScripts () {
 
   // set class properties
   TMap<VStr, bool> powerfixReported;
-  for (int i = 0; i < ClassFixups.Num(); ++i) {
+  for (int i = 0; i < ClassFixups.length(); ++i) {
     VClassFixup &CF = ClassFixups[i];
     if (!CF.ReqParent) Sys_Error("Invalid decorate class fixup (no parent); class is '%s', offset is %d, name is '%s'", (CF.Class ? *CF.Class->GetFullName() : "None"), CF.Offset, *CF.Name);
     vassert(CF.ReqParent);
@@ -4094,7 +4094,7 @@ void ProcessDecorateScripts () {
   }
 
   VField *DropItemListField = ActorClass->FindFieldChecked("DropItemList");
-  for (int i = 0; i < DecPkg->ParsedClasses.Num(); ++i) {
+  for (int i = 0; i < DecPkg->ParsedClasses.length(); ++i) {
     TArray<VDropItemInfo> &List = *(TArray<VDropItemInfo>*)DropItemListField->GetFieldPtr((VObject *)DecPkg->ParsedClasses[i]->Defaults);
     for (auto &&DI : List) {
       //VDropItemInfo &DI = List[j];

@@ -832,7 +832,7 @@ void CL_StopRecording () {
 //==========================================================================
 #ifdef CLIENT
 COMMAND(Connect) {
-  CL_EstablishConnection(Args.Num() > 1 ? *Args[1] : "");
+  CL_EstablishConnection(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -874,7 +874,7 @@ COMMAND(StopDemo) {
 COMMAND_WITH_AC(RecordDemo) {
   if (Source != SRC_Command) return;
 
-  int c = Args.Num();
+  int c = Args.length();
   if (c != 2 && c != 3) {
     GCon->Log("RecordDemo <demoname> [<map>]");
     return;
@@ -980,7 +980,7 @@ COMMAND_AC(RecordDemo) {
 //==========================================================================
 COMMAND_WITH_AC(PlayDemo) {
   if (Source != SRC_Command) return;
-  if (Args.Num() != 2) {
+  if (Args.length() != 2) {
     GCon->Log("play <demoname> : plays a demo");
     return;
   }
@@ -1031,7 +1031,7 @@ COMMAND_AC(PlayDemo) {
 //==========================================================================
 COMMAND_WITH_AC(TimeDemo) {
   if (Source != SRC_Command) return;
-  if (Args.Num() != 2) {
+  if (Args.length() != 2) {
     GCon->Log("timedemo <demoname> : gets demo speeds");
     return;
   }

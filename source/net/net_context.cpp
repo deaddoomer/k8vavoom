@@ -155,7 +155,7 @@ void VNetContext::Tick () {
 //
 //==========================================================================
 void VNetContext::KeepaliveTick () {
-  for (int i = 0; i < ClientConnections.Num(); ++i) {
+  for (int i = 0; i < ClientConnections.length(); ++i) {
     VNetConnection *Conn = ClientConnections[i];
     if (!Conn) continue; // just in case
     if (Conn->IsOpen() && Conn->GetGeneralChannel()->Closing) {

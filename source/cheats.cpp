@@ -136,7 +136,7 @@ COMMAND_AC(Summon) {
 /*
 COMMAND(VScript_Command) {
   CMD_FORWARD_TO_SERVER();
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
   if (!Player) return;
   if (CheatAllowed(Player)) {
     Args.removeAt(0); // remove command name
@@ -171,7 +171,7 @@ COMMAND(Script) {
   if (GGameInfo->NetMode == NM_Client) return;
   CMD_FORWARD_TO_SERVER();
   if (CheatAllowed(Player)) {
-    if (Args.Num() != 2) return;
+    if (Args.length() != 2) return;
     int script = VStr::atoi(*Args[1]);
     if (script < 1) return;
     if (script > 65535) return;

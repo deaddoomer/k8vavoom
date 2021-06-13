@@ -853,7 +853,7 @@ VState *VEntity::FindStateEx (VStr StateName, bool Exact) {
 //==========================================================================
 bool VEntity::HasSpecialStates (VName StateName) {
   VStateLabel *Lbl = GetClass()->FindStateLabel(StateName);
-  return (Lbl != nullptr && Lbl->SubLabels.Num() > 0);
+  return (Lbl != nullptr && Lbl->SubLabels.length() > 0);
 }
 
 

@@ -93,7 +93,7 @@ void VTextureTranslation::Serialise (VStream &Strm) {
     << TranslStart
     << TranslEnd
     << Color;
-  int CmdsSize = Commands.Num();
+  int CmdsSize = Commands.length();
   Strm << STRM_INDEX(CmdsSize);
   if (Strm.IsLoading()) Commands.SetNum(CmdsSize);
   for (int i = 0; i < CmdsSize; ++i) {

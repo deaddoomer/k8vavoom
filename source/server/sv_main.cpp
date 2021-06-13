@@ -1204,7 +1204,7 @@ COMMAND_WITH_AC(TeleportNewMap) {
 
   CMD_FORWARD_TO_SERVER();
 
-  if (Args.Num() == 3) {
+  if (Args.length() == 3) {
     GLevelInfo->NextMap = VName(*Args[1], VName::AddLower8);
     LeavePosition = VStr::atoi(*Args[2]);
   } else if (sv.intermission != server_t::IM_EndLevel) { //k8: why check for `IM_EndLevel` here?
@@ -2066,7 +2066,7 @@ void SV_ConnectBot (const char *name) {
 //
 //==========================================================================
 COMMAND(AddBot) {
-  SV_ConnectBot(Args.Num() > 1 ? *Args[1] : "");
+  SV_ConnectBot(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -2078,7 +2078,7 @@ COMMAND(AddBot) {
 COMMAND_WITH_AC(Map) {
   VStr mapname;
 
-  if (Args.Num() != 2) {
+  if (Args.length() != 2) {
     GCon->Log("map <mapname> : change level");
     return;
   }
@@ -2195,7 +2195,7 @@ bool Host_StartTitleMap () {
 //
 //==========================================================================
 COMMAND(MaxPlayers) {
-  if (Args.Num() < 2 || Args.Num() > 3) {
+  if (Args.length() < 2 || Args.length() > 3) {
     GCon->Logf("maxplayers is %d", svs.max_clients);
     return;
   }
@@ -2343,7 +2343,7 @@ VClass *SV_FindClassFromScriptId (int Id, int GameFilter) {
 //==========================================================================
 COMMAND(Say) {
   CMD_FORWARD_TO_SERVER();
-  if (Args.Num() < 2) return;
+  if (Args.length() < 2) return;
 
   VStr Text;
   for (int i = 1; i < Args.length(); ++i) {

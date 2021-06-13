@@ -163,9 +163,9 @@ void VPlayerChannel::ResetLevel () {
 //==========================================================================
 void VPlayerChannel::EvalCondValues (VObject *Obj, VClass *Class, vuint8 *Values) {
   if (Class->GetSuperClass()) EvalCondValues(Obj, Class->GetSuperClass(), Values);
-  for (int i = 0; i < Class->RepInfos.Num(); ++i) {
+  for (int i = 0; i < Class->RepInfos.length(); ++i) {
     bool Val = VObject::ExecuteFunctionNoArgs(Obj, Class->RepInfos[i].Cond, true).getBool(); // allow VMT lookups
-    for (int j = 0; j < Class->RepInfos[i].RepFields.Num(); ++j) {
+    for (int j = 0; j < Class->RepInfos[i].RepFields.length(); ++j) {
       if (Class->RepInfos[i].RepFields[j].Member->MemberType != MEMBER_Field) continue;
       Values[((VField *)Class->RepInfos[i].RepFields[j].Member)->NetIndex] = Val;
     }

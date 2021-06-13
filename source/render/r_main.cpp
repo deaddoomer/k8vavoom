@@ -877,7 +877,7 @@ VRenderLevelShared::~VRenderLevelShared () {
   delete[] LightBspVis;
   LightBspVis = nullptr;
 
-  for (int i = 0; i < SideSkies.Num(); ++i) {
+  for (int i = 0; i < SideSkies.length(); ++i) {
     delete SideSkies[i];
     SideSkies[i] = nullptr;
   }
@@ -2469,19 +2469,19 @@ VTextureTranslation *R_GetCachedTranslation (int TransNum, VLevel *Level) {
       Tr = PlayerTranslations[Index];
       break;
     case TRANSL_Level:
-      if (!Level || Index < 0 || Index >= Level->Translations.Num()) return nullptr;
+      if (!Level || Index < 0 || Index >= Level->Translations.length()) return nullptr;
       Tr = Level->Translations[Index];
       break;
     case TRANSL_BodyQueue:
-      if (!Level || Index < 0 || Index >= Level->BodyQueueTrans.Num()) return nullptr;
+      if (!Level || Index < 0 || Index >= Level->BodyQueueTrans.length()) return nullptr;
       Tr = Level->BodyQueueTrans[Index];
       break;
     case TRANSL_Decorate:
-      if (Index < 0 || Index >= DecorateTranslations.Num()) return nullptr;
+      if (Index < 0 || Index >= DecorateTranslations.length()) return nullptr;
       Tr = DecorateTranslations[Index];
       break;
     case TRANSL_Blood:
-      if (Index < 0 || Index >= BloodTranslations.Num()) return nullptr;
+      if (Index < 0 || Index >= BloodTranslations.length()) return nullptr;
       Tr = BloodTranslations[Index];
       break;
     default:
@@ -2639,7 +2639,7 @@ void V_Shutdown () {
     }
   }
   /*
-  for (int i = 0; i < CachedTranslations.Num(); ++i) {
+  for (int i = 0; i < CachedTranslations.length(); ++i) {
     delete CachedTranslations[i];
     CachedTranslations[i] = nullptr;
   }
