@@ -118,6 +118,8 @@ public:
 
   VScriptParser *clone () const;
 
+  inline int GetScriptSize () const noexcept { return ScriptSize; }
+
   bool IsText ();
   bool IsAtEol ();
   inline void SetCMode (bool val) { CMode = val; }
