@@ -108,7 +108,7 @@ private:
   // read next character into `currCh`
   void NextChr ();
   // 0 is "currCh"
-  char Peek (int dist=0) const noexcept; 
+  char Peek (int dist=0) const noexcept;
 
   // this skips comment, `currCh` is the first non-comment char
   // at enter, `currCh` must be the first comment char

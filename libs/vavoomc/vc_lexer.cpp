@@ -237,7 +237,7 @@ void VLexer::PushSource (VStream *Strm, VStr FileName) {
   NewSrc->FilePtr = NewSrc->FileStart;
 
   // skip garbage some editors add in the begining of UTF-8 files (BOM)
-  if ((vuint8)NewSrc->FilePtr[0] == 0xef && (vuint8)NewSrc->FilePtr[1] == 0xbb && (vuint8)NewSrc->FilePtr[2] == 0xbf) NewSrc->FilePtr += 3;
+  if (FileSize >= 3 && (vuint8)NewSrc->FilePtr[0] == 0xef && (vuint8)NewSrc->FilePtr[1] == 0xbb && (vuint8)NewSrc->FilePtr[2] == 0xbf) NewSrc->FilePtr += 3;
 
   // save current character and location to be able to restore them
   NewSrc->currCh = currCh;
