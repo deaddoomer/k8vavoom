@@ -845,7 +845,7 @@ void VObject::CollectGarbage (bool destroyDelayed) {
 //
 //==========================================================================
 int VObject::GetObjectsCount () noexcept {
-  return GObjObjects.Num();
+  return GObjObjects.length();
 }
 
 
@@ -1110,7 +1110,7 @@ public:
   VClassesIterator (VClass *ABaseClass, VClass **AOut) : BaseClass(ABaseClass), Out(AOut), Index(0) {}
 
   virtual bool GetNext () override {
-    while (Index < VMemberBase::GMembers.Num()) {
+    while (Index < VMemberBase::GMembers.length()) {
       VMemberBase *Check = VMemberBase::GMembers[Index];
       ++Index;
       if (Check->MemberType == MEMBER_Class && ((VClass *)Check)->IsChildOf(BaseClass)) {

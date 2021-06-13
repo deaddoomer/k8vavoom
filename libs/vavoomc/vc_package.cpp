@@ -320,7 +320,7 @@ VConstant *VPackage::FindConstant (VName Name, VName EnumName) {
 //
 //==========================================================================
 VClass *VPackage::FindDecorateImportClass (VName AName) const {
-  for (int i = 0; i < ParsedDecorateImportClasses.Num(); ++i) {
+  for (int i = 0; i < ParsedDecorateImportClasses.length(); ++i) {
     if (ParsedDecorateImportClasses[i]->Name == AName) {
       return ParsedDecorateImportClasses[i];
     }

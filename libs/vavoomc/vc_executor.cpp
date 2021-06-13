@@ -2449,7 +2449,7 @@ func_loop:
           VScriptArray &A = *(VScriptArray *)sp[-2].p;
           int idx = sp[-1].i;
           if (idx < 0) { cstDump(ip); VPackage::InternalFatalError(va("Array index %d is negative", idx)); }
-          if (idx >= A.Num()) {
+          if (idx >= A.length()) {
             if (A.Is2D()) { cstDump(ip); VPackage::InternalFatalError("Cannot grow 2D array"); }
             if (idx >= MaxDynArrayLength) { cstDump(ip); VPackage::InternalFatalError(va("Array index %d is too big", idx)); }
             A.SetNum(idx+1, Type);
@@ -3531,7 +3531,7 @@ static inline double nano2sec (vuint64 nano) {
 void VObject::DumpProfileInternal (int type) {
   TArray<VMethod *> funclist;
   // collect
-  for (int i = 0; i < VMemberBase::GMembers.Num(); ++i) {
+  for (int i = 0; i < VMemberBase::GMembers.length(); ++i) {
     if (VMemberBase::GMembers[i]->MemberType != MEMBER_Method) continue;
     VMethod *func = (VMethod *)VMemberBase::GMembers[i];
     if (!func->Profile.callCount) continue; // never called
@@ -3558,7 +3558,7 @@ void VObject::DumpProfileInternal (int type) {
 //
 //==========================================================================
 void VObject::ClearProfiles () {
-  for (int i = 0; i < VMemberBase::GMembers.Num(); ++i) {
+  for (int i = 0; i < VMemberBase::GMembers.length(); ++i) {
     if (VMemberBase::GMembers[i]->MemberType != MEMBER_Method) continue;
     VMethod *func = (VMethod *)VMemberBase::GMembers[i];
     func->Profile.clear();

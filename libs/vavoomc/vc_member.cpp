@@ -326,7 +326,7 @@ void VMemberBase::StaticInit () {
 void VMemberBase::StaticExit () {
   vassert(!GSystemShuttingDown);
   /*
-  for (int i = 0; i < GMembers.Num(); ++i) {
+  for (int i = 0; i < GMembers.length(); ++i) {
     if (!GMembers[i]) continue;
     if (GMembers[i]->MemberType != MEMBER_Class || (((VClass *)GMembers[i])->ObjectFlags&CLASSOF_Native) == 0) {
       delete GMembers[i];
@@ -380,7 +380,7 @@ void VMemberBase::StaticAddPackagePath (const char *Path) {
 VPackage *VMemberBase::StaticLoadPackage (VName AName, const TLocation &l) {
   vassert(AName != NAME_None);
   // check if already loaded
-  for (int i = 0; i < GLoadedPackages.Num(); ++i) if (GLoadedPackages[i]->Name == AName) return GLoadedPackages[i];
+  for (int i = 0; i < GLoadedPackages.length(); ++i) if (GLoadedPackages[i]->Name == AName) return GLoadedPackages[i];
   if (VObject::cliShowPackageLoading) GLog.WriteLine(NAME_Init, "VavoomC: loading package '%s'", *AName);
   VPackage *Pkg = new VPackage(AName);
   GLoadedPackages.Append(Pkg);
@@ -643,7 +643,7 @@ void VMemberBase::StaticSplitStateLabel (VStr LabelName, TArray<VName> &Parts, b
       Parts.Append(*StrParts[0]);
     }
   }
-  for (int i = 1; i < StrParts.Num(); ++i) {
+  for (int i = 1; i < StrParts.length(); ++i) {
     if (StrParts[i].length()) Parts.Append(*StrParts[i]);
   }
 }

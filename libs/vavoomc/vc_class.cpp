@@ -442,7 +442,7 @@ void VClass::InitSpriteList () {
 //==========================================================================
 int VClass::FindSprite (VName Name, bool Append) {
   /*
-  for (int i = 0; i < GSpriteNames.Num(); ++i) {
+  for (int i = 0; i < GSpriteNames.length(); ++i) {
     if (GSpriteNames[i] == Name) return i;
   }
   */
@@ -501,7 +501,7 @@ void VClass::ReplaceSpriteNames (TArray<FReplacedString> &List) {
   if (!doRebuild) return; // nothing to do
   RebuildSpriteMap();
   // update sprite names in states
-  for (int i = 0; i < VMemberBase::GMembers.Num(); ++i) {
+  for (int i = 0; i < VMemberBase::GMembers.length(); ++i) {
     if (GMembers[i] && GMembers[i]->MemberType == MEMBER_State) {
       VState *S = (VState *)GMembers[i];
       S->SpriteName = GSpriteNames[S->SpriteIndex];
@@ -1000,12 +1000,12 @@ VStateLabel *VClass::FindStateLabel (VName AName, VName SubLabel, bool Exact) {
     return FindStateLabel(names, Exact);
   }
 
-  for (int i = 0; i < StateLabels.Num(); ++i) {
+  for (int i = 0; i < StateLabels.length(); ++i) {
     //fprintf(stderr, "%s:<%s>: i=%d; lname=%s\n", GetName(), *AName, i, *StateLabels[i].Name);
     if (VStr::ICmp(*StateLabels[i].Name, *AName) == 0) {
       if (SubLabel != NAME_None) {
         TArray<VStateLabel> &SubList = StateLabels[i].SubLabels;
-        for (int j = 0; j < SubList.Num(); ++j) {
+        for (int j = 0; j < SubList.length(); ++j) {
           if (VStr::ICmp(*SubList[j].Name, *SubLabel) == 0) return &SubList[j];
         }
         if (Exact /*&& VStr::ICmp(*SubLabel, "None") != 0*/) return nullptr; //k8:HACK! 'None' is nothing
@@ -1029,7 +1029,7 @@ VStateLabel *VClass::FindStateLabel (TArray<VName> &Names, bool Exact) {
   if (Names.length() > 0 && (VStr::ICmp(*Names[0], "None") == 0 || VStr::ICmp(*Names[0], "Null") == 0)) return nullptr;
   TArray<VStateLabel> *List = &StateLabels;
   VStateLabel *Best = nullptr;
-  for (int ni = 0; ni < Names.Num(); ++ni) {
+  for (int ni = 0; ni < Names.length(); ++ni) {
     if (Names[ni] == NAME_None) continue;
     VStateLabel *Lbl = nullptr;
     for (int i = 0; i < List->Num(); ++i) {
@@ -1083,7 +1083,7 @@ VStateLabel *VClass::FindStateLabelChecked (TArray<VName> &Names, bool Exact) {
   VStateLabel *Lbl = FindStateLabel(Names, Exact);
   if (!Lbl) {
     VStr FullName = *Names[0];
-    for (int i = 1; i < Names.Num(); ++i) {
+    for (int i = 1; i < Names.length(); ++i) {
       FullName += ".";
       FullName += *Names[i];
     }
@@ -1347,10 +1347,10 @@ bool VClass::Define () {
 bool VClass::DefineRepInfos () {
   bool Ret = true;
 
-  for (int ri = 0; ri < RepInfos.Num(); ++ri) {
+  for (int ri = 0; ri < RepInfos.length(); ++ri) {
     if (!RepInfos[ri].Cond->Define()) Ret = false;
     TArray<VRepField> &RepFields = RepInfos[ri].RepFields;
-    for (int i = 0; i < RepFields.Num(); ++i) {
+    for (int i = 0; i < RepFields.length(); ++i) {
       VField *RepField = nullptr;
       for (VField *F = Fields; F; F = F->Next) {
         if (compareNames(F->Name, RepFields[i].Name)) {
@@ -1370,7 +1370,7 @@ bool VClass::DefineRepInfos () {
       }
 
       VMethod *RepMethod = nullptr;
-      for (int mi = 0; mi < Methods.Num(); ++mi) {
+      for (int mi = 0; mi < Methods.length(); ++mi) {
         if (compareNames(Methods[mi]->Name, RepFields[i].Name)) {
           RepMethod = Methods[mi];
           break;
@@ -1408,8 +1408,8 @@ bool VClass::DefineMembers () {
   bool Ret = true;
 
   // moved to `Define()`
-  //for (int i = 0; i < Constants.Num(); ++i) if (!Constants[i]->Define()) Ret = false;
-  for (int i = 0; i < Structs.Num(); ++i) Structs[i]->DefineMembers();
+  //for (int i = 0; i < Constants.length(); ++i) if (!Constants[i]->Define()) Ret = false;
+  for (int i = 0; i < Structs.length(); ++i) Structs[i]->DefineMembers();
 
   VField *PrevBool = nullptr;
   for (VField *fi = Fields; fi; fi = fi->Next) {
@@ -1420,8 +1420,8 @@ bool VClass::DefineMembers () {
     PrevBool = (fi->Type.Type == TYPE_Bool ? fi : nullptr);
   }
 
-  for (int i = 0; i < Properties.Num(); ++i) if (!Properties[i]->Define()) Ret = false;
-  for (int i = 0; i < Methods.Num(); ++i) if (!Methods[i]->Define()) Ret = false;
+  for (int i = 0; i < Properties.length(); ++i) if (!Properties[i]->Define()) Ret = false;
+  for (int i = 0; i < Methods.length(); ++i) if (!Methods[i]->Define()) Ret = false;
 
   if (!DefaultProperties->Define()) Ret = false;
 
@@ -1813,7 +1813,7 @@ void VClass::Emit () {
 //==========================================================================
 void VClass::DecorateEmit () {
   // emit method code
-  for (int i = 0; i < Methods.Num(); ++i) Methods[i]->Emit();
+  for (int i = 0; i < Methods.length(); ++i) Methods[i]->Emit();
   // define state functions
   /*
   for (VState *S = States; S; S = S->Next) {
@@ -1834,7 +1834,7 @@ void VClass::EmitStateLabels () {
   }
 
   // first add all labels
-  for (int i = 0; i < StateLabelDefs.Num(); ++i) {
+  for (int i = 0; i < StateLabelDefs.length(); ++i) {
     VStateLabelDef &Lbl = StateLabelDefs[i];
     //if (VStr::ICmp(GetName(), "SmoothZombieman") == 0) fprintf(stderr, "SMZ: label '%s' at '%s'\n", *Lbl.Name, (Lbl.State ? *Lbl.State->GetFullName() : "???"));
     TArray<VName> Names;
@@ -1844,7 +1844,7 @@ void VClass::EmitStateLabels () {
   }
 
   // then resolve state labels that do immediate jumps
-  for (int i = 0; i < StateLabelDefs.Num(); ++i) {
+  for (int i = 0; i < StateLabelDefs.length(); ++i) {
     VStateLabelDef &Lbl = StateLabelDefs[i];
     if (Lbl.GotoLabel != NAME_None) {
       //fprintf(stderr, "XXXLABEL:%s: '%s': dest label is '%s', dest offset is %d\n", GetName(), *StateLabelDefs[i].Name, *StateLabelDefs[i].GotoLabel, StateLabelDefs[i].GotoOffset);
@@ -1925,7 +1925,7 @@ VState *VClass::ResolveStateLabel (const TLocation &Loc, VName LabelName, int Of
 //
 //==========================================================================
 void VClass::SetStateLabel (VName AName, VState *State) {
-  for (int i = 0; i < StateLabels.Num(); ++i) {
+  for (int i = 0; i < StateLabels.length(); ++i) {
     if (VStr::ICmp(*StateLabels[i].Name, *AName) == 0) {
       StateLabels[i].State = State;
       return;
@@ -1943,10 +1943,10 @@ void VClass::SetStateLabel (VName AName, VState *State) {
 //
 //==========================================================================
 void VClass::SetStateLabel (const TArray<VName> &Names, VState *State) {
-  if (!Names.Num()) return;
+  if (!Names.length()) return;
   TArray<VStateLabel> *List = &StateLabels;
   VStateLabel *Lbl = nullptr;
-  for (int ni = 0; ni < Names.Num(); ++ni) {
+  for (int ni = 0; ni < Names.length(); ++ni) {
     Lbl = nullptr;
     for (int i = 0; i < List->Num(); ++i) {
       if (VStr::ICmp(*(*List)[i].Name, *Names[ni]) == 0) {
@@ -2060,7 +2060,7 @@ void VClass::DecoratePostLoad () {
   // fix method VMT indicies
   int PrevClassNumMethods = ClassNumMethods;
   int numMethods = (ParentClass ? ParentClass->ClassNumMethods : 0);
-  for (int i = 0; i < Methods.Num(); ++i) {
+  for (int i = 0; i < Methods.length(); ++i) {
     VMethod *M = (VMethod *)Methods[i];
     int MOfs = -1;
     if (ParentClass) MOfs = ParentClass->GetMethodIndex(M->Name);
@@ -2115,7 +2115,7 @@ void VClass::CalcFieldOffsets () {
 
   int PrevClassNumMethods = ClassNumMethods;
   int numMethods = (ParentClass ? ParentClass->ClassNumMethods : 0);
-  for (int i = 0; i < Methods.Num(); ++i) {
+  for (int i = 0; i < Methods.length(); ++i) {
     VMethod *M = (VMethod *)Methods[i];
     int MOfs = -1;
     if (ParentClass) MOfs = ParentClass->GetMethodIndex(M->Name);
@@ -2196,7 +2196,7 @@ void VClass::InitNetFields () {
     NetFields = fi;
   }
 
-  for (int i = 0; i < Methods.Num(); ++i) {
+  for (int i = 0; i < Methods.length(); ++i) {
     VMethod *M = Methods[i];
     if ((M->Flags&FUNC_Net) == 0) continue;
     VMethod *MPrev = nullptr;
@@ -2329,7 +2329,7 @@ void VClass::InitDestructorFields () {
 void VClass::CreateVTable () {
   if (!ClassVTable) ClassVTable = new VMethod*[ClassNumMethods];
   if (ParentClass) memcpy(ClassVTable, ParentClass->ClassVTable, ParentClass->ClassNumMethods*sizeof(VMethod *));
-  for (int i = 0; i < Methods.Num(); ++i) {
+  for (int i = 0; i < Methods.length(); ++i) {
     VMethod *M = Methods[i];
     vassert(M->VTableIndex >= -1);
     if (M->VTableIndex == -1) continue;
@@ -2423,16 +2423,16 @@ VMethod *VClass::FindConCommandMethod (VStr name, bool exact) {
 //==========================================================================
 void VClass::InitStatesLookup () {
   // this is also called from dehacked parser, so we must do this check
-  if (StatesLookup.Num()) return;
+  if (StatesLookup.length()) return;
   // create states lookup table
   if (GetSuperClass()) {
     GetSuperClass()->InitStatesLookup();
-    for (int i = 0; i < GetSuperClass()->StatesLookup.Num(); ++i) {
+    for (int i = 0; i < GetSuperClass()->StatesLookup.length(); ++i) {
       StatesLookup.Append(GetSuperClass()->StatesLookup[i]);
     }
   }
   for (VState *S = NetStates; S; S = S->NetNext) {
-    S->NetId = StatesLookup.Num();
+    S->NetId = StatesLookup.length();
     StatesLookup.Append(S);
   }
 }
@@ -2553,7 +2553,7 @@ void VClass::DestructObject (VObject *Obj) {
 //==========================================================================
 VClass *VClass::CreateDerivedClass (VName AName, VMemberBase *AOuter, TArray<VDecorateUserVarDef> &uvlist, const TLocation &ALoc) {
   VClass *NewClass = nullptr;
-  for (int i = 0; i < GDecorateClassImports.Num(); ++i) {
+  for (int i = 0; i < GDecorateClassImports.length(); ++i) {
     if (compareNames(GDecorateClassImports[i]->Name, AName)) {
       // this class implements a decorate import class
       NewClass = GDecorateClassImports[i];

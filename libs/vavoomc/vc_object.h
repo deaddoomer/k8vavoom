@@ -895,10 +895,10 @@ protected:
 public:
   FObjectIterator (VClass *InClass=VObject::StaticClass()) : Class(InClass), Index(-1) { ++*this; }
 
-  void operator ++ () { while (++Index < VObject::GObjObjects.Num() && (!VObject::GObjObjects[Index] || !VObject::GObjObjects[Index]->IsA(Class))) {} }
+  void operator ++ () { while (++Index < VObject::GObjObjects.length() && (!VObject::GObjObjects[Index] || !VObject::GObjObjects[Index]->IsA(Class))) {} }
   VObject *operator * () { return VObject::GObjObjects[Index]; }
   VObject *operator -> () { return VObject::GObjObjects[Index]; }
-  operator bool () { return (Index < VObject::GObjObjects.Num()); }
+  operator bool () { return (Index < VObject::GObjObjects.length()); }
 };
 
 

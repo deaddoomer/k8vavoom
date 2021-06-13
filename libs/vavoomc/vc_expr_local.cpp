@@ -71,8 +71,8 @@ VExpression *VLocalDecl::SyntaxCopy () {
 void VLocalDecl::DoSyntaxCopyTo (VExpression *e) {
   VExpression::DoSyntaxCopyTo(e);
   auto res = (VLocalDecl *)e;
-  res->Vars.SetNum(Vars.Num());
-  for (int f = 0; f < Vars.Num(); ++f) {
+  res->Vars.SetNum(Vars.length());
+  for (int f = 0; f < Vars.length(); ++f) {
     res->Vars[f] = Vars[f];
     if (Vars[f].TypeExpr) res->Vars[f].TypeExpr = Vars[f].TypeExpr->SyntaxCopy();
     if (Vars[f].Value) res->Vars[f].Value = Vars[f].Value->SyntaxCopy();

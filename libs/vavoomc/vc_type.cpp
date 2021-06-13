@@ -801,14 +801,14 @@ VScriptArray::VScriptArray (const TArray<VStr> &xarr) {
   ArrData = nullptr;
   ArrNum = 0;
   ArrSize = 0;
-  if (xarr.Num()) {
-    size_t bytesize = xarr.Num()*sizeof(VStr);
+  if (xarr.length()) {
+    size_t bytesize = xarr.length()*sizeof(VStr);
     //ArrData = new vuint8[bytesize];
     ArrData = (vuint8 *)Z_Malloc(bytesize);
     memset(ArrData, 0, bytesize);
     VStr **aa = (VStr **)ArrData;
-    for (int f = 0; f < xarr.Num(); ++f) *(VStr *)(&aa[f]) = xarr[f];
-    ArrSize = ArrNum = xarr.Num();
+    for (int f = 0; f < xarr.length(); ++f) *(VStr *)(&aa[f]) = xarr[f];
+    ArrSize = ArrNum = xarr.length();
   }
 }
 

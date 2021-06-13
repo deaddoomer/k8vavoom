@@ -198,8 +198,8 @@ void VField::CopyFieldValue (const vuint8 *Src, vuint8 *Dst, const VFieldType &T
         VFieldType IntType = Type;
         IntType.Type = Type.ArrayInnerType;
         int InnerSize = IntType.GetSize();
-        ADst.SetNum(ASrc.Num(), IntType);
-        for (int i = 0; i < ASrc.Num(); ++i) CopyFieldValue(ASrc.Ptr()+i*InnerSize, ADst.Ptr()+i*InnerSize, IntType);
+        ADst.SetNum(ASrc.length(), IntType);
+        for (int i = 0; i < ASrc.length(); ++i) CopyFieldValue(ASrc.Ptr()+i*InnerSize, ADst.Ptr()+i*InnerSize, IntType);
       }
       break;
     case TYPE_SliceArray:
@@ -521,7 +521,7 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
         IntType = Type;
         IntType.Type = Type.ArrayInnerType;
         InnerSize = IntType.GetSize();
-        vint32 ArrNum = A.Num();
+        vint32 ArrNum = A.length();
         tp = IntType.Type;
         Strm << tp;
         Strm << STRM_INDEX(ArrNum);
@@ -541,7 +541,7 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
           Strm << STRM_INDEX(/*InnerSize*/isz);
         }
         if (Strm.IsLoading()) A.SetNum(ArrNum, IntType);
-        for (int i = 0; i < A.Num(); ++i) SerialiseFieldValue(Strm, A.Ptr()+i*InnerSize, IntType);
+        for (int i = 0; i < A.length(); ++i) SerialiseFieldValue(Strm, A.Ptr()+i*InnerSize, IntType);
       }
       break;
     case TYPE_SliceArray:
@@ -631,7 +631,7 @@ bool VField::CleanField (vuint8 *Data, const VFieldType &Type) {
         IntType.Type = Type.ArrayInnerType;
         if (NeedToCleanField(IntType)) {
           InnerSize = IntType.GetSize();
-          for (int i = 0; i < A.Num(); ++i) {
+          for (int i = 0; i < A.length(); ++i) {
             if (CleanField(A.Ptr()+i*InnerSize, IntType)) res = true;
           }
         }
@@ -768,7 +768,7 @@ bool VField::IdenticalValue (const vuint8 *Val1, const vuint8 *Val2, const VFiel
       {
         VScriptArray &Arr1 = *(VScriptArray *)Val1;
         VScriptArray &Arr2 = *(VScriptArray *)Val2;
-        if (Arr1.Num() != Arr2.Num()) return false;
+        if (Arr1.length() != Arr2.length()) return false;
         IntType = Type;
         IntType.Type = Type.ArrayInnerType;
         InnerSize = IntType.GetSize();
