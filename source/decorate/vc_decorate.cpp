@@ -746,7 +746,7 @@ int DefParseIntConst (const VXmlNode *node, const char *attrname) {
   if (s.strEquCI("SPR_FLAT")) return SPR_FLAT;
   if (s.strEquCI("SPR_WALL")) return SPR_WALL;
   int res = 0;
-  if (!s.convertInt(&res)) Sys_Error("Invalid integer \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, node->GetAttributeLoc(attrname));
+  if (!s.convertInt(&res)) Sys_Error("Invalid integer \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, *node->GetAttributeLoc(attrname).toStringNoCol());
   return res;
 };
 
@@ -759,7 +759,7 @@ int DefParseIntConst (const VXmlNode *node, const char *attrname) {
 float DefParseFloatConst (const VXmlNode *node, const char *attrname) {
   VStr s = node->GetAttribute(attrname);
   float res = 0.0f;
-  if (!s.convertFloat(&res)) Sys_Error("Invalid float \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, node->GetAttributeLoc(attrname));
+  if (!s.convertFloat(&res)) Sys_Error("Invalid float \"%s\" in node '%s' attribute '%s' at %s", *s, *node->Name, attrname, *node->GetAttributeLoc(attrname).toStringNoCol());
   return res;
 }
 
