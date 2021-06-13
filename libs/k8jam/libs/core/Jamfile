@@ -36,6 +36,8 @@ Library libcore.a :
   src/stream/streamszlib.cpp
   src/stream/ntvalue.cpp
 
+  src/textparser.cpp
+
   src/hash/crc.cpp
   src/hash/md5.cpp
   src/hash/rg32.cpp

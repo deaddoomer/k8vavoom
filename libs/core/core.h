@@ -155,6 +155,8 @@
 #include "stream/streamsex.h" // extended streams
 #include "stream/streamszlib.h" // packed streams
 
+#include "textparser.h"
+
 #include "mathutil.h"
 
 // vector math

@@ -50,6 +50,8 @@ add_library(core STATIC
   stream/streamszlib.h
   stream/streamszlib.cpp
   stream/ntvalue.cpp
+  textparser.h
+  textparser.cpp
   mathutil.h
   vecmat/vector_avec.h
   vecmat/vector_3d.h
