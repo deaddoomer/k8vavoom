@@ -438,23 +438,24 @@ VFieldType VFieldType::GetDictValueType () const {
 //==========================================================================
 int VFieldType::GetStackSize () const noexcept {
   switch (Type) {
-    case TYPE_Int: return 4;
-    case TYPE_Byte: return 4;
-    case TYPE_Bool: return 4;
-    case TYPE_Float: return 4;
-    case TYPE_Name: return 4;
-    case TYPE_String: return 4;
-    case TYPE_Pointer: return 4;
-    case TYPE_Reference: return 4;
-    case TYPE_Class: return 4;
-    case TYPE_State: return 4;
-    case TYPE_Delegate: return 2*4; // self, funcptr
-    case TYPE_Struct: return Struct->StackSize*4;
-    case TYPE_Vector: return 3*4; // 3 floats
+    case TYPE_Int:
+    case TYPE_Byte:
+    case TYPE_Bool:
+    case TYPE_Float:
+    case TYPE_Name:
+    case TYPE_String:
+    case TYPE_Pointer:
+    case TYPE_Reference:
+    case TYPE_Class:
+    case TYPE_State:
+      return 1;
+    case TYPE_Delegate: return 2; // self, funcptr
+    case TYPE_Struct: return Struct->StackSize;
+    case TYPE_Vector: return 3; // 3 floats
     case TYPE_Array: return GetArrayDim()*GetArrayInnerType().GetStackSize();
-    case TYPE_SliceArray: return 2*4; // ptr and length
-    case TYPE_DynamicArray: return 3*4; // 3 fields in VScriptArray
-    case TYPE_Dictionary: return 4; // VScriptDict is just a pointer to the underlying implementation class
+    case TYPE_SliceArray: return 2; // ptr and length
+    case TYPE_DynamicArray: return 3; // 3 fields in VScriptArray
+    case TYPE_Dictionary: return 1; // VScriptDict is just a pointer to the underlying implementation class
   }
   return 0;
 }
@@ -526,7 +527,7 @@ int VFieldType::GetAlignment () const noexcept {
 //
 //==========================================================================
 bool VFieldType::CheckPassable (const TLocation &l, bool raiseError) const {
-  if (GetStackSize() != 4 && Type != TYPE_Vector && Type != TYPE_Delegate && Type != TYPE_SliceArray) {
+  if (GetStackSize() != 1 && Type != TYPE_Vector && Type != TYPE_Delegate && Type != TYPE_SliceArray) {
     if (raiseError) ParseError(l, "Type `%s` is not passable", *GetName());
     return false;
   }
@@ -546,7 +547,7 @@ bool VFieldType::CheckPassable (const TLocation &l, bool raiseError) const {
 //
 //==========================================================================
 bool VFieldType::CheckReturnable (const TLocation &l, bool raiseError) const {
-  if (GetStackSlotCount() != 1 && Type != TYPE_Vector) {
+  if (GetStackSize() != 1 && Type != TYPE_Vector) {
     if (raiseError) ParseError(l, "Type `%s` is not returnable", *GetName());
     return false;
   }

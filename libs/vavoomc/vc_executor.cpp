@@ -3185,7 +3185,7 @@ VFuncRes VObject::ExecuteFunction (VMethod *func) {
 
   // get return value
   if (func->ReturnType.Type) {
-    const int tsz = func->ReturnType.GetStackSlotCount();
+    const int tsz = func->ReturnType.GetStackSize();
     switch (func->ReturnType.Type) {
       case TYPE_Void: abort(); // the thing that should not be
       case TYPE_Int: vassert(tsz == 1); ret = VFuncRes(pr_stackPtr[-1].i); break;

@@ -16,7 +16,7 @@ to get executable VM code, the compiler basically does this (see `VPackage::Load
       2.0.8. calls `PostLoad()` for all package structs (to calculate their sizes)
       2.0.9. calls `Emit()` for all package classes.
         2.0.10. each package class calls `Emit()` for all class structs.
-    2.1. calls `PostLoad()` for all package members, in arbirary order (excluding structs)
+    2.1. calls `PostLoad()` for all package members, in arbirary order (excluding struct members)
 
 note that struct `PostLoad()` will not call struct methods postloaders, "2.1" will
 take care of that.
@@ -26,7 +26,7 @@ take care of that.
 notes about the compiler itself
 ===============================
 
-VC compiler is classic multipass one.
+VC compiler is the classic multipass one.
 
 first, the source code is parsed to AST, with only basic syntax checking.
 at this stage, AST is highly abstract, and almost 1:1 identical to the source text.
@@ -39,9 +39,12 @@ then, `VMethod::Emit()` resolves statements, emits IR code, and optimises it.
 
 and finally, `VMethod::PostLoad()` generates VM bytecode from IR code.
 
-`Type.GetStackSize()` returns the size in "stack slots"*4 (i.e. stack slot
-size is always 4, regardless of real underlying stack slot size).
-do not use this value to calculate real structure size!
+`Type.GetStackSize()` returns the size in "stack slots". stack slot size in
+bytes doesn't matter, VM can choose that on its own. the only requirement is
+that one stack slot should be big enough to keep float and pointer types.
+(note: on x86 it is usually 4 bytes, on x86_64 it is usually 8 bytes).
+WARNING! do not use this value to calculate real structure size!
+NOTE: vector type always uses 3 stack slots for now.
 
 
 
@@ -64,9 +67,10 @@ it has some interesting public fields:
     here, only `FIELD_ReadOnly` has any sense. it means that this expression
     represents `read-only` one (i.e. you can take pointer to it, but cannot
     perform assign on that pointer).
+    (there can be other flags, tho, so use bitops! or even better, accessors.)
 
   TLocation Loc;
-    source code location
+    source code location.
 
 
 some interesting methods:
@@ -77,7 +81,7 @@ some interesting methods:
   virtual VExpression *DoResolve (VEmitContext &ec) = 0;
     this is our general "resolver". it resolves operands, determines expression
     type, and such.
-    if called on already resolved node, the result is undefined.
+    if called on an already resolved node, the result is undefined.
     variuous node types overloads this.
 
   virtual VTypeExpr *ResolveAsType (VEmitContext &ec);
@@ -88,7 +92,7 @@ some interesting methods:
     does normal resolve, and then calls `RequestAddressOf()`.
 
   virtual VExpression *ResolveAssignmentValue (VEmitContext &ec);
-    this resolves a node as assignment value. most of the time it
+    this resolves a node as an assignment value. most of the time it
     simply calls the normal resolver.
 
   virtual VExpression *ResolveIterator (VEmitContext &ec);
@@ -108,14 +112,14 @@ some interesting methods:
         delete this;
         return e;
       }
-    note that you cannot process `op=` in this way (for now).
+    note that you cannot process `mathop=` in this way (for now).
 
   virtual void RequestAddressOf ();
     this is used to set "address requested" flag, which in turn is used in the codegen.
 
 
   VExpression *Resolve (VEmitContext &ec);
-    this just calls `DoResolve()`.
+    this performs some checks, and calls `DoResolve()`.
 
   VExpression *ResolveBoolean (VEmitContext &ec);
     this resolves a value, and coerces that resolved value to boolean.
@@ -136,11 +140,11 @@ some interesting methods:
   virtual VExpression *AddDropResult ();
     called on an resolved node, to notify it that its result is not needed.
     used in increments/decrements, to optimise use cases when their results
-    are not needed (i.e. user wrote something like `var++;`).
+    are not needed (i.e. when user wrote something like `var++;`).
 
 
   WARNING! emitters should not change/destroy any node internal state, because
-           the compiler may call them many times (when generating finalizing
+           the compiler may call them several times (when generating finalizer
            code for breaks/returns, for example)!
 
   virtual void Emit (VEmitContext &ec) = 0;

@@ -497,8 +497,9 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
         Strm << STRM_INDEX(isz);
         if (tp != IntType.Type) VPackage::IOError(va("invalid array element type, expected '%s', got '%s'", *IntType.GetName(), *VFieldType(EType(tp)).GetName()));
         // meh, type serialiser will take care of this
-        if (isz != /*InnerSize*/IntType.GetStackSize()) {
-          GLog.WriteLine("I/O: invalid array element size, expected %d, got %d (this is mostly harmless)", /*InnerSize*/IntType.GetStackSize(), isz);
+        //*4, because of the old code
+        if (isz != /*InnerSize*/IntType.GetStackSize()*4) {
+          GLog.WriteLine("I/O: invalid array element size, expected %d, got %d (this is mostly harmless)", /*InnerSize*/IntType.GetStackSize()*4, isz);
         }
         for (int i = 0; i < Type.GetArrayDim(); ++i) {
           if (i < n) {
@@ -508,7 +509,8 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
           }
         }
       } else {
-        vint32 isz = IntType.GetStackSize();
+        //*4, because of the old code
+        vint32 isz = IntType.GetStackSize()*4;
         Strm << STRM_INDEX(/*InnerSize*/isz);
         for (int i = 0; i < n; ++i) SerialiseFieldValue(Strm, Data+i*InnerSize, IntType);
       }
@@ -529,11 +531,13 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
           Strm << STRM_INDEX(isz);
           if (tp != IntType.Type) VPackage::IOError(va("invalid dynarray element type, expected '%s', got '%s'", *IntType.GetName(), *VFieldType(EType(tp)).GetName()));
           // meh, type serialiser will take care of this
-          if (isz != /*InnerSize*/IntType.GetStackSize()) {
-            GLog.WriteLine("I/O: invalid array element size, expected %d, got %d (this is mostly harmless)", /*InnerSize*/IntType.GetStackSize(), isz);
+          //*4, because of the old code
+          if (isz != /*InnerSize*/IntType.GetStackSize()*4) {
+            GLog.WriteLine("I/O: invalid array element size, expected %d, got %d (this is mostly harmless)", /*InnerSize*/IntType.GetStackSize()*4, isz);
           }
         } else {
-          vint32 isz = IntType.GetStackSize();
+          //*4, because of the old code
+          vint32 isz = IntType.GetStackSize()*4;
           Strm << STRM_INDEX(/*InnerSize*/isz);
         }
         if (Strm.IsLoading()) A.SetNum(ArrNum, IntType);

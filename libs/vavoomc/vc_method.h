@@ -186,7 +186,7 @@ public:
   vint32 Flags;
   VFieldType ReturnType;
   vint32 NumParams;
-  vint32 ParamsSize;
+  vint32 ParamsSize; // in stack slots
   VFieldType ParamTypes[MAX_PARAMS+1];
   vuint8 ParamFlags[MAX_PARAMS+1];
   TArray<FInstruction> Instructions;

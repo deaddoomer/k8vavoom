@@ -442,7 +442,7 @@ int VEmitContext::CalcUsedStackSize () const noexcept {
 //
 //==========================================================================
 VLocalVarDef &VEmitContext::NewLocal (VName aname, const VFieldType &atype, const TLocation &aloc, vuint32 pflags) {
-  const int ssz = (pflags&(FPARM_Out|FPARM_Ref) ? 1 : atype.GetStackSlotCount());
+  const int ssz = (pflags&(FPARM_Out|FPARM_Ref) ? 1 : atype.GetStackSize());
 
   VLocalVarDef &loc = LocalDefs.Alloc();
   loc.Name = aname;
@@ -1027,7 +1027,7 @@ void VEmitContext::EmitLocalZero (int locidx, const TLocation &aloc) {
 
   if (loc.Type.Type == TYPE_Vector) {
     EmitLocalAddress(loc.Offset, aloc);
-    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSlotCount(), aloc);
+    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSize(), aloc);
     return;
   }
 
@@ -1062,14 +1062,14 @@ void VEmitContext::EmitLocalZero (int locidx, const TLocation &aloc) {
       loc.Type.Type == TYPE_DynamicArray)
   {
     EmitLocalAddress(loc.Offset, aloc);
-    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSlotCount(), aloc);
+    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSize(), aloc);
     return;
   }
 
   // clear whole slot for boolean, just to be sure
   if (loc.Type.Type == TYPE_Bool) {
     EmitLocalAddress(loc.Offset, aloc);
-    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSlotCount(), aloc);
+    AddStatement(OPC_ZeroSlotsByPtr, loc.Type.GetStackSize(), aloc);
     return;
   }
 

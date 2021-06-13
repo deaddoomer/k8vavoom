@@ -378,15 +378,14 @@ bool VStruct::DefineMembers () {
   fmMap.clear();
 
   // define fields
-  vint32 size = 0;
-  if (ParentStruct) size = ParentStruct->StackSize*4;
+  StackSize = (ParentStruct ? ParentStruct->StackSize : 0);
   VField *PrevBool = nullptr;
   for (VField *fi = Fields; fi; fi = fi->Next) {
     if (!fi->Define()) Ret = false;
     if (fi->Type.Type == TYPE_Bool && PrevBool && PrevBool->Type.BitMask != 0x80000000) {
       fi->Type.BitMask = PrevBool->Type.BitMask<<1;
     } else {
-      size += fi->Type.GetStackSize();
+      StackSize += fi->Type.GetStackSize();
     }
     PrevBool = (fi->Type.Type == TYPE_Bool ? fi : nullptr);
   }
@@ -406,8 +405,6 @@ bool VStruct::DefineMembers () {
       Ret = false;
     }
   }
-
-  StackSize = (size+3)/4;
 
   // define methods
   for (auto &&mt : Methods) if (!mt->Define()) Ret = false;

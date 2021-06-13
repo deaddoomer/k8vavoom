@@ -118,8 +118,7 @@ public:
   // get second dimension (or 1 for 1d array)
   inline vint32 GetSecondDim () const noexcept { return (ArrayDimInternal >= 0 ? 1 : (ArrayDimInternal>>16)&0x7fff); }
 
-  int GetStackSize () const noexcept; // in 4-byte slots (this is wrong for x86_64, but the code is used to that)
-  inline int GetStackSlotCount () const noexcept { return GetStackSize()>>2; }
+  int GetStackSize () const noexcept; // in stack slots (NOT BYTES!)
 
   int GetSize () const noexcept;
   int GetAlignment () const noexcept;

@@ -2630,11 +2630,11 @@ void VInvocation::Emit (VEmitContext &ec) {
               SelfOffset += 1;
               break;
             default:
-              SelfOffset += Args[i]->Type.GetStackSlotCount();
+              SelfOffset += Args[i]->Type.GetStackSize();
               break;
           }
         } else {
-          SelfOffset += Args[i]->Type.GetStackSlotCount();
+          SelfOffset += Args[i]->Type.GetStackSize();
         }
         //GLog.Logf(NAME_Debug, "%s: #%d: <%s>", *Args[i]->Loc.toStringNoCol(), i, *Args[i]->toString());
         Args[i]->Emit(ec);
@@ -2831,7 +2831,7 @@ bool VInvocation::IsGoodMethodParams (VEmitContext &ec, VMethod *m, int argc, VE
 void VInvocation::CheckParams (VEmitContext &ec) {
   //GLog.Logf(NAME_Debug, "%s: VInvocation::CheckParams: %s", *Loc.toStringNoCol(), *Func->GetFullName());
   // determine parameter count
-  int argsize = 0;
+  //int argsize = 0;
   int requiredParams = Func->NumParams;
   int maxParams = (Func->Flags&FUNC_VarArgs ? VMethod::MAX_PARAMS-1 : Func->NumParams);
 
@@ -2839,16 +2839,16 @@ void VInvocation::CheckParams (VEmitContext &ec) {
     if (i < requiredParams) {
       if (!Args[i]) {
         if ((Func->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) != 0) {
-          argsize += 4; // pointer
+          //argsize += 1; // pointer
         } else {
           if (!(Func->ParamFlags[i]&FPARM_Optional)) ParseError(Loc, "Cannot omit non-optional argument #%d to `%s`", i+1, *Func->GetFullName());
-          argsize += Func->ParamTypes[i].GetStackSize();
+          //argsize += Func->ParamTypes[i].GetStackSize();
         }
       } else if ((Args[i]->IsNoneLiteral() || Args[i]->IsNullLiteral()) && (Func->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) != 0) {
         // `ref`/`out` arg can be ommited with `none` or `null`
         delete Args[i];
         Args[i] = nullptr;
-        argsize += 4; // pointer
+        //argsize += 1; // pointer
       } else {
         // check for `ref`/`out` validness
         //if (Args[i]->IsRefArg() && (Func->ParamFlags[i]&FPARM_Ref) == 0) ParseError(Args[i]->Loc, "`ref` argument for non-ref parameter");
@@ -2943,14 +2943,14 @@ void VInvocation::CheckParams (VEmitContext &ec) {
             //fprintf(stderr, "  <%s>\n", *Args[i]->toString());
           }
         }
-        argsize += Args[i]->Type.GetStackSize();
+        //argsize += Args[i]->Type.GetStackSize();
       }
     } else if (!Args[i]) {
            if (Func->Flags&FUNC_VarArgs) ParseError(Loc, "Cannot omit arguments for vararg function");
       else if (i >= Func->NumParams) ParseError(Loc, "Cannot omit extra arguments for vararg function");
       else ParseError(Loc, "Cannot omit argument (for some reason)");
     } else {
-      argsize += Args[i]->Type.GetStackSize();
+      //argsize += Args[i]->Type.GetStackSize();
     }
   }
 
@@ -2967,7 +2967,6 @@ void VInvocation::CheckParams (VEmitContext &ec) {
   }
 
   if (Func->Flags&FUNC_VarArgs) {
-    //Args[NumArgs++] = new VIntLiteral(argsize/4-requiredParams, Loc);
     int argc = NumArgs-requiredParams;
     Args[NumArgs++] = (new VIntLiteral(argc, Loc))->Resolve(ec);
     vassert(Args[NumArgs-1]);
