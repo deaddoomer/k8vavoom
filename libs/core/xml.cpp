@@ -61,6 +61,7 @@ VXmlNode::~VXmlNode () {
 //
 //==========================================================================
 VXmlNode *VXmlNode::FindChild (const char *AName) const {
+  if (!AName || !AName[0]) return nullptr;
   for (VXmlNode *N = FirstChild; N; N = N->NextSibling) {
     if (N->Name == AName) return N;
   }
@@ -74,6 +75,7 @@ VXmlNode *VXmlNode::FindChild (const char *AName) const {
 //
 //==========================================================================
 VXmlNode *VXmlNode::FindChild (VStr AName) const {
+  if (AName.isEmpty()) return nullptr;
   for (VXmlNode *N = FirstChild; N; N = N->NextSibling) {
     if (N->Name == AName) return N;
   }
@@ -88,7 +90,7 @@ VXmlNode *VXmlNode::FindChild (VStr AName) const {
 //==========================================================================
 VXmlNode *VXmlNode::GetChild (const char *AName) const {
   VXmlNode *N = FindChild(AName);
-  if (!N) Sys_Error("XML node '%s' not found", AName);
+  if (!N) Sys_Error("XML node '%s' not found", (AName ? AName : ""));
   return N;
 }
 
@@ -111,6 +113,7 @@ VXmlNode *VXmlNode::GetChild (VStr AName) const {
 //
 //==========================================================================
 VXmlNode *VXmlNode::FindNext (const char *AName) const {
+  if (!AName || !AName[0]) return nullptr;
   for (VXmlNode *N = NextSibling; N; N = N->NextSibling) {
     if (N->Name == AName) return N;
   }
@@ -124,6 +127,7 @@ VXmlNode *VXmlNode::FindNext (const char *AName) const {
 //
 //==========================================================================
 VXmlNode *VXmlNode::FindNext (VStr AName) const {
+  if (AName.isEmpty()) return nullptr;
   for (VXmlNode *N = NextSibling; N; N = N->NextSibling) {
     if (N->Name == AName) return N;
   }
@@ -143,12 +147,14 @@ VXmlNode *VXmlNode::FindNext () const {
   return nullptr;
 }
 
+
 //==========================================================================
 //
 //  VXmlNode::HasAttribute
 //
 //==========================================================================
 bool VXmlNode::HasAttribute(const char *AttrName) const {
+  if (!AttrName || !AttrName[0]) return false;
   for (int i = 0; i < Attributes.length(); ++i) {
     if (Attributes[i].Name == AttrName) return true;
   }
@@ -162,6 +168,7 @@ bool VXmlNode::HasAttribute(const char *AttrName) const {
 //
 //==========================================================================
 bool VXmlNode::HasAttribute (VStr AttrName) const {
+  if (AttrName.isEmpty()) return false;
   for (int i = 0; i < Attributes.length(); ++i) {
     if (Attributes[i].Name == AttrName) return true;
   }
@@ -175,15 +182,17 @@ bool VXmlNode::HasAttribute (VStr AttrName) const {
 //
 //==========================================================================
 VStr VXmlNode::GetAttribute (const char *AttrName, bool Required) const {
-  for (int i = 0; i < Attributes.length(); ++i) {
-    if (Attributes[i].Name == AttrName) return Attributes[i].Value;
+  if (AttrName && AttrName[0]) {
+    for (int i = 0; i < Attributes.length(); ++i) {
+      if (Attributes[i].Name == AttrName) return Attributes[i].Value;
+    }
   }
   if (Required) {
     if (Attributes.length()) {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
-    Sys_Error("XML attribute \"%s\" not found in node \"%s\"", AttrName, *Name);
+    Sys_Error("XML attribute \"%s\" not found in node \"%s\"", (AttrName ? AttrName : ""), *Name);
   }
   return VStr::EmptyString;
 }
@@ -195,15 +204,17 @@ VStr VXmlNode::GetAttribute (const char *AttrName, bool Required) const {
 //
 //==========================================================================
 VStr VXmlNode::GetAttribute (VStr AttrName, bool Required) const {
-  for (int i = 0; i < Attributes.length(); ++i) {
-    if (Attributes[i].Name == AttrName) return Attributes[i].Value;
+  if (!AttrName.isEmpty()) {
+    for (int i = 0; i < Attributes.length(); ++i) {
+      if (Attributes[i].Name == AttrName) return Attributes[i].Value;
+    }
   }
   if (Required) {
     if (Attributes.length()) {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
-    Sys_Error("XML attribute \"%s\" not found in node \"%s\"", *AttrName, *Name);
+    Sys_Error("XML attribute \"%s\" not found in node \"%s\" (%s)", *AttrName, *Name, *Loc.toStringNoCol());
   }
   return VStr::EmptyString;
 }
@@ -222,29 +233,31 @@ void VXmlDocument::Parse (VStream &Strm, VStr AName) {
   Strm.Seek(0);
   Strm.Serialise(Buf, Strm.TotalSize());
   Buf[Strm.TotalSize()] = 0;
-  CurPos = 0;
+  CurrPos = 0;
   EndPos = Strm.TotalSize();
+  CurrLoc = VTextLocation(AName, 1, 1);
 
-  // skip garbage some editors add in the begining of UTF-8 files
-  if ((vuint8)Buf[0] == 0xef && (vuint8)Buf[1] == 0xbb && (vuint8)Buf[2] == 0xbf) CurPos += 3;
+  // skip garbage some editors add to the begining of UTF-8 files
+  if ((vuint8)Buf[0] == 0xef && (vuint8)Buf[1] == 0xbb && (vuint8)Buf[2] == 0xbf) CurrPos += 3;
 
   do { SkipWhitespace(); } while (SkipComment());
 
-  if (CurPos >= EndPos) Error("Empty document");
+  if (CurrPos >= EndPos) Error("Empty document");
 
-  if (!(Buf[CurPos] == '<' && Buf[CurPos+1] == '?' && Buf[CurPos+2] == 'x' &&
-        Buf[CurPos+3] == 'm' && Buf[CurPos+4] == 'l' && Buf[CurPos+5] > 0 && Buf[CurPos+5] <= ' '))
+  if (!(Buf[CurrPos] == '<' && Buf[CurrPos+1] == '?' && Buf[CurrPos+2] == 'x' &&
+        Buf[CurrPos+3] == 'm' && Buf[CurrPos+4] == 'l' && Buf[CurrPos+5] > 0 && Buf[CurrPos+5] <= ' '))
   {
-    Error("XML declaration expected");
+    ErrorAtCurrLoc("XML declaration expected");
   }
-  CurPos += 5;
+  CurrLoc.ConsumeChars(5);
+  CurrPos += 5;
   SkipWhitespace();
 
   VStr AttrName;
   VStr AttrValue;
-  if (!ParseAttribute(AttrName, AttrValue)) Error("XML version expected");
-  if (AttrName != "version") Error("XML version expected");
-  if (AttrValue != "1.0" && AttrValue != "1.1") Error("Bad XML version");
+  if (!ParseAttribute(AttrName, AttrValue)) ErrorAtCurrLoc("XML version expected");
+  if (AttrName != "version") ErrorAtCurrLoc("XML version expected");
+  if (AttrValue != "1.0" && AttrValue != "1.1") ErrorAtCurrLoc("Bad XML version");
 
   SkipWhitespace();
   while (ParseAttribute(AttrName, AttrValue)) {
@@ -261,26 +274,27 @@ void VXmlDocument::Parse (VStream &Strm, VStr AName) {
       else if (ec.ICmp("KOI8") == 0) Encoding = KOI8;
       else if (ec.ICmp("KOI8U") == 0) Encoding = KOI8;
       else if (ec.ICmp("KOI8R") == 0) Encoding = KOI8;
-      else Error(va("Unknown XML encoding '%s'", *ec));
+      else ErrorAtCurrLoc(va("Unknown XML encoding '%s'", *ec));
     } else if (AttrName == "standalone") {
-      if (AttrValue.ICmp("yes") != 0) Error("Only standalone is supported");
+      if (AttrValue.ICmp("yes") != 0) ErrorAtCurrLoc("Only standalone is supported");
     } else {
-      Error(va("Unknown attribute '%s'", *AttrName));
+      ErrorAtCurrLoc(va("Unknown attribute '%s'", *AttrName));
     }
     SkipWhitespace();
   }
 
-  if (Buf[CurPos] != '?' || Buf[CurPos+1] != '>') Error("Bad syntax");
-  CurPos += 2;
+  if (Buf[CurrPos] != '?' || Buf[CurrPos+1] != '>') ErrorAtCurrLoc("Bad syntax");
+  CurrPos += 2;
+  CurrLoc.ConsumeChars(2);
 
   do { SkipWhitespace(); } while (SkipComment());
 
-  if (Buf[CurPos] != '<') Error("Root node expected");
+  if (Buf[CurrPos] != '<') ErrorAtCurrLoc("Root node expected");
   ParseNode(&Root);
 
   do { SkipWhitespace(); } while (SkipComment());
 
-  if (CurPos != EndPos) Error("Text after root node");
+  if (CurrPos != EndPos) ErrorAtCurrLoc("Text after root node");
 
   delete[] Buf;
   Buf = nullptr;
@@ -293,7 +307,10 @@ void VXmlDocument::Parse (VStream &Strm, VStr AName) {
 //
 //==========================================================================
 void VXmlDocument::SkipWhitespace () {
-  while (Buf[CurPos] > 0 && (vuint8)Buf[CurPos] <= ' ') ++CurPos;
+  while (Buf[CurrPos] > 0 && (vuint8)Buf[CurrPos] <= ' ') {
+    CurrLoc.ConsumeChar(Buf[CurrPos] == '\n');
+    ++CurrPos;
+  }
 }
 
 
@@ -303,14 +320,19 @@ void VXmlDocument::SkipWhitespace () {
 //
 //==========================================================================
 bool VXmlDocument::SkipComment () {
-  if (Buf[CurPos] == '<' && Buf[CurPos+1] == '!' &&
-      Buf[CurPos+2] == '-' && Buf[CurPos+3] == '-')
+  if (Buf[CurrPos] == '<' && Buf[CurrPos+1] == '!' &&
+      Buf[CurrPos+2] == '-' && Buf[CurrPos+3] == '-')
   {
     // skip comment
-    CurPos += 4;
-    while (CurPos < EndPos-2 && (Buf[CurPos] != '-' || Buf[CurPos+1] != '-' || Buf[CurPos+2] != '>')) ++CurPos;
-    if (CurPos >= EndPos-2) Error("Unterminated comment");
-    CurPos += 3;
+    CurrPos += 4;
+    CurrLoc.ConsumeChars(4);
+    while (CurrPos < EndPos-2 && (Buf[CurrPos] != '-' || Buf[CurrPos+1] != '-' || Buf[CurrPos+2] != '>')) {
+      CurrLoc.ConsumeChar(Buf[CurrPos] == '\n');
+      ++CurrPos;
+    }
+    if (CurrPos >= EndPos-2) ErrorAtCurrLoc("Unterminated comment");
+    CurrPos += 3;
+    CurrLoc.ConsumeChars(3);
     return true;
   }
   return false;
@@ -322,8 +344,28 @@ bool VXmlDocument::SkipComment () {
 //  VXmlDocument::Error
 //
 //==========================================================================
-void VXmlDocument::Error (const char *Msg) {
-  Sys_Error("%s: %s", *Name, Msg);
+void VXmlDocument::Error (const char *msg) {
+  Sys_Error("%s: %s", *Name, msg);
+}
+
+
+//==========================================================================
+//
+//  VXmlDocument::ErrorAtLoc
+//
+//==========================================================================
+void VXmlDocument::ErrorAtLoc (const VTextLocation &loc, const char *msg) {
+  Sys_Error("%s: %s", *loc.toStringNoCol(), msg);
+}
+
+
+//==========================================================================
+//
+//  VXmlDocument::ErrorAtCurrLoc
+//
+//==========================================================================
+void VXmlDocument::ErrorAtCurrLoc (const char *msg) {
+  ErrorAtLoc(CurrLoc, msg);
 }
 
 
@@ -334,13 +376,14 @@ void VXmlDocument::Error (const char *Msg) {
 //==========================================================================
 VStr VXmlDocument::ParseName () {
   VStr Ret;
-  char c = Buf[CurPos];
+  char c = Buf[CurrPos];
   if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' || c == ':')) return VStr();
 
   do {
+    CurrLoc.ConsumeChar(c == '\n');
     Ret += c;
-    CurPos++;
-    c = Buf[CurPos];
+    CurrPos++;
+    c = Buf[CurrPos];
   } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == ':' || c == '.');
 
   return Ret;
@@ -355,9 +398,10 @@ VStr VXmlDocument::ParseName () {
 //
 //==========================================================================
 vuint32 VXmlDocument::GetChar () {
-  if (CurPos >= EndPos) Error("unexpected EOF");
-  char ch = Buf[CurPos++];
-  if (ch == '\r' && Buf[CurPos] == '\n') { ch = '\n'; ++CurPos; }
+  if (CurrPos >= EndPos) ErrorAtCurrLoc("unexpected EOF");
+  char ch = Buf[CurrPos++];
+  if (ch == '\r' && Buf[CurrPos] == '\n') { ch = '\n'; ++CurrPos; }
+  CurrLoc.ConsumeChar(ch == '\n');
   if (!ch) ch = ' ';
   if ((vuint8)ch < 128) return (vuint32)(ch&0xff);
   switch (Encoding) {
@@ -367,17 +411,18 @@ vuint32 VXmlDocument::GetChar () {
       {
         VUtf8DecoderFast dc;
         if (!dc.put(ch)) {
-          while (CurPos < EndPos) {
-            if (dc.put(Buf[CurPos++])) {
-              if (dc.invalid()) Error("invalid UTF-8 char");
+          while (CurrPos < EndPos) {
+            CurrLoc.ConsumeChar(Buf[CurrPos] == '\n');
+            if (dc.put(Buf[CurrPos++])) {
+              if (dc.invalid()) ErrorAtCurrLoc("invalid UTF-8 char");
               return dc.codepoint;
             }
           }
         }
-        Error("invalid UTF-8 char");
+        ErrorAtCurrLoc("invalid UTF-8 char");
       }
   }
-  Error("WUT?!");
+  ErrorAtCurrLoc("WUT?!");
   return 0;
 }
 
@@ -389,9 +434,10 @@ vuint32 VXmlDocument::GetChar () {
 //==========================================================================
 VStr VXmlDocument::ParseAttrValue (char EndChar) {
   VStr Ret;
-  while (CurPos < EndPos && Buf[CurPos] != EndChar) Ret.utf8Append(GetChar());
-  if (CurPos >= EndPos) Error("Unterminated attribute value");
-  ++CurPos;
+  while (CurrPos < EndPos && Buf[CurrPos] != EndChar) Ret.utf8Append(GetChar());
+  if (CurrPos >= EndPos) ErrorAtCurrLoc("Unterminated attribute value");
+  ++CurrPos;
+  CurrLoc.ConsumeChars(1);
   return HandleReferences(Ret);
 }
 
@@ -405,15 +451,17 @@ bool VXmlDocument::ParseAttribute (VStr &AttrName, VStr &AttrValue) {
   AttrName = ParseName();
   if (AttrName.IsEmpty()) return false;
   SkipWhitespace();
-  if (Buf[CurPos] != '=') Error("Attribute value expected");
-  ++CurPos;
+  if (Buf[CurrPos] != '=') ErrorAtCurrLoc("Attribute value expected");
+  ++CurrPos;
+  CurrLoc.ConsumeChars(1);
   SkipWhitespace();
-  if (CurPos >= EndPos) Error("unexpected end of document");
-  if (Buf[CurPos] == '\"' || Buf[CurPos] == '\'') {
-    ++CurPos;
-    AttrValue = ParseAttrValue(Buf[CurPos-1]);
+  if (CurrPos >= EndPos) ErrorAtCurrLoc("unexpected end of document");
+  if (Buf[CurrPos] == '\"' || Buf[CurrPos] == '\'') {
+    ++CurrPos;
+    CurrLoc.ConsumeChars(1);
+    AttrValue = ParseAttrValue(Buf[CurrPos-1]);
   } else {
-    Error("Unquoted attribute value");
+    ErrorAtCurrLoc("Unquoted attribute value");
   }
   return true;
 }
@@ -425,42 +473,51 @@ bool VXmlDocument::ParseAttribute (VStr &AttrName, VStr &AttrValue) {
 //
 //==========================================================================
 void VXmlDocument::ParseNode (VXmlNode *Node) {
-  if (Buf[CurPos] != '<') Error("Bad tag start");
-  ++CurPos;
+  if (Buf[CurrPos] != '<') ErrorAtCurrLoc("Bad tag start");
+  Node->Loc = CurrLoc;
+  ++CurrPos;
+  CurrLoc.ConsumeChars(1);
   Node->Name = ParseName();
-  if (Node->Name.IsEmpty()) Error("Bad or missing tag name");
+  if (Node->Name.IsEmpty()) ErrorAtCurrLoc("Bad or missing tag name");
 
   SkipWhitespace();
   VStr AttrName;
   VStr AttrValue;
+  VTextLocation aloc = CurrLoc;
   while (ParseAttribute(AttrName, AttrValue)) {
     VXmlAttribute &A = Node->Attributes.Alloc();
     A.Name = AttrName;
     A.Value = AttrValue;
+    A.Loc = aloc;
     SkipWhitespace();
+    aloc = CurrLoc;
   }
 
-  if (Buf[CurPos] == '/' && Buf[CurPos+1] == '>') {
-    CurPos += 2;
-  } else if (Buf[CurPos] == '>') {
-    ++CurPos;
-    while (CurPos < EndPos && (Buf[CurPos] != '<' || Buf[CurPos+1] != '/')) {
-      if (Buf[CurPos] == '<') {
-        if (Buf[CurPos+1] == '!' && Buf[CurPos+2] == '-' && Buf[CurPos+3] == '-') {
+  if (Buf[CurrPos] == '/' && Buf[CurrPos+1] == '>') {
+    CurrPos += 2;
+    CurrLoc.ConsumeChars(2);
+  } else if (Buf[CurrPos] == '>') {
+    ++CurrPos;
+    CurrLoc.ConsumeChars(1);
+    while (CurrPos < EndPos && (Buf[CurrPos] != '<' || Buf[CurrPos+1] != '/')) {
+      if (Buf[CurrPos] == '<') {
+        if (Buf[CurrPos+1] == '!' && Buf[CurrPos+2] == '-' && Buf[CurrPos+3] == '-') {
           SkipComment();
-        } else if (Buf[CurPos+1] == '!' && Buf[CurPos+2] == '[' &&
-                   Buf[CurPos+3] == 'C' && Buf[CurPos+4] == 'D' &&
-                   Buf[CurPos+5] == 'A' && Buf[CurPos+6] == 'T' &&
-                   Buf[CurPos+7] == 'A' && Buf[CurPos+8] == '[')
+        } else if (Buf[CurrPos+1] == '!' && Buf[CurrPos+2] == '[' &&
+                   Buf[CurrPos+3] == 'C' && Buf[CurrPos+4] == 'D' &&
+                   Buf[CurrPos+5] == 'A' && Buf[CurrPos+6] == 'T' &&
+                   Buf[CurrPos+7] == 'A' && Buf[CurrPos+8] == '[')
         {
-          CurPos += 9;
+          CurrPos += 9;
+          CurrLoc.ConsumeChars(9);
           VStr TextVal;
-          while (CurPos < EndPos && (Buf[CurPos] != ']' || Buf[CurPos+1] != ']' || Buf[CurPos+2] != '>')) {
+          while (CurrPos < EndPos && (Buf[CurrPos] != ']' || Buf[CurrPos+1] != ']' || Buf[CurrPos+2] != '>')) {
             TextVal.utf8Append(GetChar());
           }
-          if (CurPos >= EndPos) Error("Unexpected end of file in CDATA");
+          if (CurrPos >= EndPos) ErrorAtCurrLoc("Unexpected end of file in CDATA");
           Node->Value += TextVal;
-          CurPos += 3;
+          CurrPos += 3;
+          CurrLoc.ConsumeChars(3);
         } else {
           VXmlNode *NewChild = new VXmlNode();
           NewChild->PrevSibling = Node->LastChild;
@@ -476,21 +533,23 @@ void VXmlDocument::ParseNode (VXmlNode *Node) {
       } else {
         VStr TextVal;
         bool HasNonWhitespace = false;
-        while (CurPos < EndPos && Buf[CurPos] != '<') {
-          if (!HasNonWhitespace && (vuint8)Buf[CurPos] > ' ') HasNonWhitespace = true;
+        while (CurrPos < EndPos && Buf[CurrPos] != '<') {
+          if (!HasNonWhitespace && (vuint8)Buf[CurrPos] > ' ') HasNonWhitespace = true;
           TextVal.utf8Append(GetChar());
         }
         if (HasNonWhitespace) Node->Value += HandleReferences(TextVal);
       }
     }
-    if (CurPos >= EndPos) Error("Unexpected end of file");
-    CurPos += 2;
+    if (CurrPos >= EndPos) ErrorAtCurrLoc("Unexpected end of file");
+    CurrPos += 2;
+    CurrLoc.ConsumeChars(2);
     VStr Test = ParseName();
-    if (Node->Name != Test) Error("Wrong end tag");
-    if (Buf[CurPos] != '>') Error("Tag not closed");
-    ++CurPos;
+    if (Node->Name != Test) ErrorAtCurrLoc("Wrong end tag");
+    if (Buf[CurrPos] != '>') ErrorAtCurrLoc("Tag not closed");
+    ++CurrPos;
+    CurrLoc.ConsumeChars(1);
   } else {
-    Error("Tag is not closed");
+    ErrorAtCurrLoc("Tag is not closed");
   }
 }
 
@@ -506,7 +565,7 @@ VStr VXmlDocument::HandleReferences (VStr AStr) {
     if (Ret[i] == '&') {
       int EndPos = i+1;
       while (EndPos < Ret.length() && Ret[EndPos] != ';') ++EndPos;
-      if (EndPos >= Ret.length()) Error("Unterminated character or entity reference");
+      if (EndPos >= Ret.length()) ErrorAtCurrLoc("Unterminated character or entity reference");
       ++EndPos;
       VStr Seq = VStr(Ret, i, EndPos-i);
       VStr NewVal;
@@ -514,7 +573,7 @@ VStr VXmlDocument::HandleReferences (VStr AStr) {
         int Val = 0;
         for (int j = 3; j < Seq.length()-1; ++j) {
           int dg = VStr::digitInBase(Seq[j], 16);
-          if (dg < 0) Error("Bad character reference");
+          if (dg < 0) ErrorAtCurrLoc("Bad character reference");
           Val = (Val<<4)|dg;
         }
         NewVal = VStr::FromUtf8Char(Val);
@@ -522,7 +581,7 @@ VStr VXmlDocument::HandleReferences (VStr AStr) {
         int Val = 0;
         for (int j = 2; j < Seq.length()-1; ++j) {
           int dg = VStr::digitInBase(Seq[j], 10);
-          if (dg < 0) Error("Bad character reference");
+          if (dg < 0) ErrorAtCurrLoc("Bad character reference");
           Val = (Val*10)+dg;
         }
         NewVal = VStr::FromUtf8Char(Val);
@@ -531,7 +590,7 @@ VStr VXmlDocument::HandleReferences (VStr AStr) {
         else if (Seq == "&apos;") NewVal = "\'";
         else if (Seq == "&lt;") NewVal = "<";
         else if (Seq == "&gt;") NewVal = ">";
-        else Error(va("Unknown entity reference '%s'", *Seq));
+        else ErrorAtCurrLoc(va("Unknown entity reference '%s'", *Seq));
       Ret = VStr(Ret, 0, i)+NewVal+VStr(Ret, EndPos, Ret.length()-EndPos);
       i += NewVal.length()-1;
     }

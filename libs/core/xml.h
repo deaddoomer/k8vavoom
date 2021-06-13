@@ -28,6 +28,7 @@ class VXmlAttribute {
 public:
   VStr Name;
   VStr Value;
+  VTextLocation Loc;
 };
 
 
@@ -35,6 +36,7 @@ class VXmlNode {
 public:
   VStr Name;
   VStr Value;
+  VTextLocation Loc;
   VXmlNode *Parent;
   VXmlNode *FirstChild;
   VXmlNode *LastChild;
@@ -66,9 +68,10 @@ private:
 
 private:
   char *Buf;
-  int CurPos;
+  int CurrPos;
   int EndPos;
   int Encoding;
+  VTextLocation CurrLoc;
 
 public:
   VStr Name;
@@ -82,10 +85,12 @@ private:
 
   void SkipWhitespace ();
   bool SkipComment ();
-  void Error (const char*);
+  void Error (const char *msg);
+  void ErrorAtLoc (const VTextLocation &loc, const char *msg);
+  void ErrorAtCurrLoc (const char *msg);
   VStr ParseName ();
-  VStr ParseAttrValue (char);
-  bool ParseAttribute (VStr &, VStr &);
+  VStr ParseAttrValue (char EndChar);
+  bool ParseAttribute (VStr &AttrName, VStr &AttrValue);
   void ParseNode (VXmlNode *);
   VStr HandleReferences (VStr);
 };
