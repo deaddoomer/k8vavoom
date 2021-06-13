@@ -207,7 +207,7 @@ public:
   ProfileInfo Profile;
 
   // run-time fields
-  TArray<vuint8> Statements;
+  TArray<vuint8> Statements; // generated VM bytecode
   TArray<TLocation> StatLocs; // locations for each code point
   builtin_t NativeFunc;
   vint16 VTableIndex; // -666 means "not determined yet"
@@ -262,7 +262,7 @@ public:
   inline bool IsStatic () const noexcept { return !!(Flags&FUNC_Static); }
   inline bool IsVarArgs () const noexcept { return !!(Flags&FUNC_VarArgs); }
   inline bool IsFinal () const noexcept { return !!(Flags&FUNC_Final); }
-  inline bool IsSpawnder () const noexcept { return !!(Flags&FUNC_Spawner); }
+  inline bool IsSpawner () const noexcept { return !!(Flags&FUNC_Spawner); }
   inline bool IsNet () const noexcept { return !!(Flags&FUNC_Net); }
   inline bool IsNetReliable () const noexcept { return !!(Flags&FUNC_NetReliable); }
   inline bool IsIterator () const noexcept { return !!(Flags&FUNC_Iterator); }

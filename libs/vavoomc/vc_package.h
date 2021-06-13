@@ -131,6 +131,8 @@ public:
   // it should abort, hence `noreturn`
   static void InternalFatalError (const char *msg) __attribute__((noreturn)) __declspec(noreturn);
 
+  static void DumpCodeSizeStats ();
+
 public:
   // returns `nullptr` on list end; starts with 0
   static const char *GetPkgImportFile (unsigned idx);

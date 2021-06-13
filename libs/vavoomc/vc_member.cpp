@@ -579,7 +579,7 @@ VClass *VMemberBase::StaticFindClassByGameObjName (VName aname, VName pkgname) {
     pkg = StaticFindMember(pkgname, nullptr, MEMBER_Package);
     if (!pkg) return nullptr;
   }
-  int len = GMembers.length();
+  const int len = GMembers.length();
   for (int f = 0; f < len; ++f) {
     if (GMembers[f] && GMembers[f]->MemberType == MEMBER_Class) {
       VClass *c = (VClass *)GMembers[f];

@@ -571,3 +571,46 @@ void VPackage::LoadSourceObject (VStream *Strm, VStr filename, TLocation l) {
   Parser.Parse();
   Emit();
 }
+
+
+//==========================================================================
+//
+//  comatoze
+//
+//==========================================================================
+static const char *comatoze (vuint32 n) {
+  static char buf[128];
+  int bpos = (int)sizeof(buf);
+  buf[--bpos] = 0;
+  int xcount = 0;
+  do {
+    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
+    buf[--bpos] = '0'+n%10;
+    ++xcount;
+  } while ((n /= 10) != 0);
+  return &buf[bpos];
+}
+
+
+//==========================================================================
+//
+//  VPackage::DumpCodeSizeStats
+//
+//==========================================================================
+void VPackage::DumpCodeSizeStats () {
+  int mtcount = 0, vmtcound = 0, vstcount = 0, vnatcount = 0, vsmcount = 0, codesize = 0;
+  for (VMemberBase *m : GMembers) {
+    if (!m || m->MemberType != MEMBER_Method) continue;
+    VMethod *mt = (VMethod *)m;
+    ++mtcount;
+    if (mt->IsNative()) ++vnatcount;
+    if (mt->IsStructMethod()) {
+      ++vsmcount;
+    } else {
+      if (mt->IsStatic() || mt->IsFinal()) ++vstcount; else ++vmtcound;
+    }
+    codesize += ((VMethod *)m)->Statements.length();
+  }
+  GLog.Logf(NAME_Init, "%d VavoomC methods (%d native, %d virtual, %d static, %d struct); %s bytes of code generated.",
+    mtcount, vnatcount, vmtcound, vstcount, vsmcount, comatoze(codesize));
+}
