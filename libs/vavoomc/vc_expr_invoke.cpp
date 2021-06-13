@@ -672,7 +672,7 @@ VExpression *VCastOrInvocation::DoResolve (VEmitContext &ec) {
           delete this;
           return nullptr;
         }
-        VExpression *e = new VDynCastWithVar(Args[0], new VFieldAccess(new VSelf(Loc), field, Loc, 0), Loc);
+        VExpression *e = new VDynCastWithVar(Args[0], new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, 0), Loc);
         NumArgs = 0;
         delete this;
         return e->Resolve(ec);
