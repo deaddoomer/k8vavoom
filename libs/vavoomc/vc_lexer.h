@@ -102,6 +102,7 @@ private:
   TArray<VStr> defines;
   TArray<VStr> includePath;
   VSourceFile *src;
+  int totalSize;
 
   inline bool checkStrTk (const char *tokname) const { return (strcmp(tokenStringBuffer, tokname) == 0); }
 
@@ -191,6 +192,8 @@ public:
   // otherwise falls back to standard vfs (`VPackage::OpenFileStreamRO()`)
   // should NOT fail if file not found
   virtual VStream *doOpenFile (VStr filename);
+
+  inline int GetTotalSize () const noexcept { return totalSize; }
 
   void AddDefine (VStr CondName, bool showWarning=true);
   void RemoveDefine (VStr CondName, bool showWarning=true);

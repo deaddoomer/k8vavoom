@@ -87,7 +87,8 @@ public:
 
   VClass *FindDecorateImportClass (VName) const;
 
-  void Emit ();
+  // returns time spend loading other packages
+  double Emit ();
   // should be implemented by the host
   void LoadObject (TLocation l);
 

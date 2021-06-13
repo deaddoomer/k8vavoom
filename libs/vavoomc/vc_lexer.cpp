@@ -50,6 +50,7 @@ VLexer::VLexer () noexcept
   : sourceOpen(false)
   , currCh(0)
   , src(nullptr)
+  , totalSize(0)
   , Token(TK_NoToken)
   , Number(0)
   , Float(0)
@@ -231,6 +232,8 @@ void VLexer::PushSource (VStream *Strm, VStr FileName) {
   Strm->Close();
   if (Strm->IsError() || FileSize < 0) { delete Strm; VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
   delete Strm;
+
+  totalSize += FileSize;
 
   NewSrc->FileStart[FileSize] = 0; // this is not really required, but let's make the whole buffer initialized
   NewSrc->FileEnd = NewSrc->FileStart+FileSize;

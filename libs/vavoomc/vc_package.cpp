@@ -102,6 +102,18 @@ struct PLPkgInfo {
 
 //==========================================================================
 //
+//  secs2msecs
+//
+//==========================================================================
+static inline int secs2msecs (const double secs) noexcept {
+  if (secs <= 0.0) return 1;
+  int msecs = (int)(secs*1000.0+0.5);
+  return msecs+!msecs;
+}
+
+
+//==========================================================================
+//
 //  PutClassToList
 //
 //==========================================================================
@@ -363,13 +375,17 @@ void VPackage::SortParsedClasses () {
 //
 //  VPackage::Emit
 //
+//  returns time spend loading other packages
+//
 //==========================================================================
-void VPackage::Emit () {
+double VPackage::Emit () {
+  double stt = -Sys_Time();
   vdlogf("Importing packages for '%s'", *Name);
   for (auto &&pkg : PackagesToLoad) {
     vdlogf("  importing package '%s'", *pkg.Name);
     pkg.Pkg = StaticLoadPackage(pkg.Name, pkg.Loc);
   }
+  stt += Sys_Time();
 
   SortParsedClasses();
 
@@ -430,6 +446,8 @@ void VPackage::Emit () {
   bool found = false;
   for (auto &&pkg : PackagesToEmit) if (pkg == this) { found = true; break; }
   if (!found) PackagesToEmit.append(this);
+
+  return stt;
 }
 
 
@@ -521,14 +539,30 @@ void VPackage::StaticEmitPackages () {
     */
     for (auto &&pi : pinfo) {
       vassert(pi.pkg);
-      if (VObject::cliShowPackageLoading) GLog.Logf(NAME_Init, "VavoomC: generating code for package '%s'", *pi.pkg->Name);
+      const bool showInfo = VObject::cliShowPackageLoading;
+      //if (showInfo) GLog.Logf(NAME_Init, "VavoomC: generating code for package '%s'", *pi.pkg->Name);
+      double stt = -Sys_Time();
       for (PLMember *pm = pi.others.head; pm; pm = pm->next) {
         //GLog.Logf(NAME_Debug, "  `%s`", *pm->m->Name);
         pm->m->PostLoad();
       }
+      stt += Sys_Time();
+      int codesize = 0, mtcount = 0;
+      if (showInfo) {
+        for (PLMember *pm = pi.others.head; pm; pm = pm->next) {
+          VMemberBase *m = pm->m;
+          if (!m || m->MemberType != MEMBER_Method) continue;
+          ++mtcount;
+          codesize += ((VMethod *)m)->Statements.length();
+        }
+      }
       // we can free others list now
       pi.others.clear();
       if (vcErrorCount) BailOut();
+      if (showInfo) {
+        const int msecs = secs2msecs(stt);
+        GLog.Logf(NAME_Init, "VavoomC: generated %s bytes of code for package '%s' (%s methods) in %s msecs", comatoze(codesize), *pi.pkg->Name, comatoze(mtcount), comatoze(msecs));
+      }
     }
 
     // create defaultproperties for all classes
@@ -564,31 +598,33 @@ void VPackage::StaticEmitPackages () {
 void VPackage::LoadSourceObject (VStream *Strm, VStr filename, TLocation l) {
   if (!Strm) return;
 
+  const bool showInfo = VObject::cliShowPackageLoading;
+  if (showInfo) GLog.Logf(NAME_Init, "VavoomC: parsing package '%s'", *Name);
+  double stt = -Sys_Time();
+
   VLexer Lex;
   VMemberBase::InitLexer(Lex);
   Lex.OpenSource(Strm, filename);
   VParser Parser(Lex, this);
   Parser.Parse();
-  Emit();
-}
 
+  double ctt = -Sys_Time();
+  stt -= ctt;
 
-//==========================================================================
-//
-//  comatoze
-//
-//==========================================================================
-static const char *comatoze (vuint32 n) {
-  static char buf[128];
-  int bpos = (int)sizeof(buf);
-  buf[--bpos] = 0;
-  int xcount = 0;
-  do {
-    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
-    buf[--bpos] = '0'+n%10;
-    ++xcount;
-  } while ((n /= 10) != 0);
-  return &buf[bpos];
+  if (showInfo) GLog.Logf(NAME_Init, "VavoomC: compiling package '%s'", *Name);
+  double xtt = Emit();
+
+  ctt += Sys_Time();
+  ctt -= xtt;
+  if (showInfo) {
+    const int msecs = secs2msecs(stt);
+    const int emsecs = secs2msecs(ctt);
+    if (ctt <= 0.0) ctt = 1.0/1000.0;
+    //int pspeed = (int)((double)Lex.GetTotalSize()/ctt/1024.0);
+    int pspeed = Lex.GetTotalSize()/msecs/1024;
+    pspeed += !pspeed;
+    GLog.Logf(NAME_Init, "VavoomC: parsed %s bytes of package '%s' in %s msecs (%s mb/sec), generated IR in %s msecs", comatoze(Lex.GetTotalSize()), *Name, comatoze(msecs), comatoze(pspeed), comatoze(emsecs));
+  }
 }
 
 
@@ -609,8 +645,8 @@ void VPackage::DumpCodeSizeStats () {
     } else {
       if (mt->IsStatic() || mt->IsFinal()) ++vstcount; else ++vmtcound;
     }
-    codesize += ((VMethod *)m)->Statements.length();
+    codesize += mt->Statements.length();
   }
-  GLog.Logf(NAME_Init, "%d VavoomC methods (%d native, %d virtual, %d static, %d struct); %s bytes of code generated.",
-    mtcount, vnatcount, vmtcound, vstcount, vsmcount, comatoze(codesize));
+  GLog.Logf(NAME_Init, "%s VavoomC methods (%s native, %s virtual, %s static, %s struct); %s bytes of code generated.",
+    comatoze(mtcount), comatoze(vnatcount), comatoze(vmtcound), comatoze(vstcount), comatoze(vsmcount), comatoze(codesize));
 }
