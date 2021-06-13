@@ -60,6 +60,9 @@ public:
   inline void ConsumeChar (bool doNewline) noexcept {
     if (doNewline) { ++Line; Col = 1; } else ++Col;
   }
+
+  inline void ConsumeChars (int count) noexcept { Col += count; }
+  inline void NewLine () noexcept { ++Line; Col = 1; }
 };
 
 
