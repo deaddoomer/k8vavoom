@@ -228,10 +228,10 @@
     <flag_unsupported name="NoSkin" />
     <flag name="DontTranslate" property="bDontTranslate" />
     <flag name="NoPain" property="bNoPain" />
-    <flag_byte name="ForceYBillboard" property="SpriteType" true_value="0" false_value="0" />
-    <flag_byte name="ForceXYBillboard" property="SpriteType" true_value="4" false_value="0" />
-    <flag_byte name="FlatSprite" property="SpriteType" true_value="7" false_value="0" />
-    <flag_byte name="WallSprite" property="SpriteType" true_value="8" false_value="0" />
+    <flag_byte name="ForceYBillboard" property="SpriteType" true_value="SPR_VP_PARALLEL_UPRIGHT" false_value="SPR_VP_PARALLEL_UPRIGHT" />
+    <flag_byte name="ForceXYBillboard" property="SpriteType" true_value="SPR_VP_PARALLEL_ORIENTED" false_value="SPR_VP_PARALLEL_UPRIGHT" />
+    <flag_byte name="FlatSprite" property="SpriteType" true_value="SPR_FLAT" false_value="SPR_VP_PARALLEL_UPRIGHT" />
+    <flag_byte name="WallSprite" property="SpriteType" true_value="SPR_WALL" false_value="SPR_VP_PARALLEL_UPRIGHT" />
     <!-- Projectile -->
     <flag name="Missile" property="bMissile" />
     <flag name="Ripper" property="bRip" />
@@ -341,7 +341,7 @@
     <flag name="StickToFloor" property="bStickToFloor" relinktoworld="true" />
     <flag name="StickToCeiling" property="bStickToCeiling" relinktoworld="true" />
     <flag name="KillOnUnarchive" property="bKillOnUnarchive" />
-    <flag_byte name="OrientedOfs" property="SpriteType" true_value="6" false_value="0" />
+    <flag_byte name="OrientedOfs" property="SpriteType" true_value="SPR_ORIENTED_OFS" false_value="SPR_VP_PARALLEL_UPRIGHT" />
     <flag name="k8MissileHeadshots" property="bMissileHeadshotsAllowed" />
     <!-- use `+k8MuzzleFlash` for muzzle flash actors, so their light will be ignored in `CalcLight()` -->
     <flag name="k8MuzzleFlash" property="bMeIsMuzzleFlash" />
