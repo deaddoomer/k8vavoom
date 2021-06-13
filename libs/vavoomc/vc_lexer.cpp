@@ -26,6 +26,7 @@
 #include "vc_local.h"
 
 //#define VC_LEXER_DUMP_COLLECTED_NUMBERS
+#define VC_LEXER_USE_TOKEN_HASHTABLE
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -39,6 +40,126 @@ const char *VLexer::TokenNames[] = {
 char VLexer::ASCIIToChrCode[256];
 vuint8 VLexer::ASCIIToHexDigit[256];
 bool VLexer::tablesInited = false;
+
+static unsigned tkCanBeToken[256];
+static unsigned tkMinLen;
+static unsigned tkMaxLen;
+static bool tkHashInited = false;
+#ifdef VC_LEXER_USE_TOKEN_HASHTABLE
+# define VC_LEXER_HTABLE_SIZE  (1024u)
+struct THEntry {
+  vuint32 hash;
+  unsigned slen;
+  unsigned tidx;
+  unsigned next;
+  const char *str;
+};
+static unsigned tkHashTable[VC_LEXER_HTABLE_SIZE];
+static THEntry tkHashBuckets[TK_TotalTokenCount+64]; // index 0 is unused
+#endif
+
+
+//==========================================================================
+//
+//  AddTokenToHashTable
+//
+//==========================================================================
+static void AddTokenToHashTable (const char *s, unsigned tidx, unsigned &bkidx) noexcept {
+  if (!s || !s[0] || s[0] == '<') return;
+  const unsigned slen = (unsigned)strlen(s);
+  if (tkMinLen == 0 || tkMinLen > slen) tkMinLen = slen;
+  if (tkMaxLen < slen) tkMaxLen = slen;
+  tkCanBeToken[(vuint8)s[0]] = 1;
+#ifdef VC_LEXER_USE_TOKEN_HASHTABLE
+  const vuint32 hash = djbHashBuf(s, slen);
+  const unsigned htidx = hash&(VC_LEXER_HTABLE_SIZE-1u);
+  THEntry &e = tkHashBuckets[bkidx++];
+  e.hash = hash;
+  e.slen = slen;
+  e.tidx = tidx;
+  e.next = tkHashTable[htidx];
+  e.str = s;
+  tkHashTable[htidx] = bkidx-1u;
+#endif
+}
+
+
+//==========================================================================
+//
+//  InitTokenHashTable
+//
+//==========================================================================
+static void InitTokenHashTable () noexcept {
+  tkHashInited = true;
+  memset(tkCanBeToken, 0, sizeof(tkCanBeToken));
+#ifdef VC_LEXER_USE_TOKEN_HASHTABLE
+  memset(tkHashTable, 0, sizeof(tkHashTable));
+  memset(tkHashBuckets, 0, sizeof(tkHashBuckets));
+#endif
+  unsigned bkidx = 1u;
+  tkMinLen = tkMaxLen = 0;
+  for (unsigned tidx = TK_Abstract; tidx < TK_URShiftAssign; ++tidx) {
+    AddTokenToHashTable(VLexer::TokenNames[tidx], tidx, bkidx);
+  }
+  // hacks
+  AddTokenToHashTable("nullptr", (unsigned)TK_Null, bkidx);
+  AddTokenToHashTable("NULL", (unsigned)TK_Null, bkidx);
+
+#ifdef VC_LEXER_USE_TOKEN_HASHTABLE
+  GLog.Logf(NAME_Debug, "%u buckets used (%u : %u)", bkidx-1, tkMinLen, tkMaxLen);
+  #if 0
+  for (unsigned htidx = 0; htidx < VC_LEXER_HTABLE_SIZE; ++htidx) {
+    unsigned n = tkHashTable[htidx];
+    if (!n) continue;
+    GLog.Logf(NAME_Debug, "=== %08x ===", htidx);
+    while (n) {
+      const THEntry &e = tkHashBuckets[n];
+      GLog.Logf(NAME_Debug, "  %08x %2u %4u <%s> <%s>", e.hash, e.slen, e.tidx, e.str, VLexer::TokenNames[e.tidx]);
+      n = e.next;
+    }
+  }
+  #endif
+#endif
+}
+
+
+//==========================================================================
+//
+//  FindToken
+//
+//==========================================================================
+static EToken FindToken (const char *s, const unsigned slen) noexcept {
+#ifdef VC_LEXER_USE_TOKEN_HASHTABLE
+  // hash is inited here
+  if (!tkCanBeToken[(vuint8)s[0]]) return TK_NoToken;
+  //const unsigned slen = (unsigned)strlen(s);
+  if (slen < tkMinLen || slen > tkMaxLen) return TK_NoToken;
+  const vuint32 hash = djbHashBuf(s, slen);
+  unsigned n = tkHashTable[hash&(VC_LEXER_HTABLE_SIZE-1u)];
+  while (n) {
+    const THEntry &e = tkHashBuckets[n];
+    if (e.hash == hash && e.slen == slen && s[0] == e.str[0] && strcmp(s, e.str) == 0) {
+      //GLog.Logf(NAME_Debug, "FOUND! %08x %2u %4u <%s> : <%s>", e.hash, e.slen, e.tidx, e.str, s);
+      return (EToken)e.tidx;
+    }
+    n = e.next;
+  }
+  //GLog.Logf(NAME_Debug, "*** NOT FOUND! <%s>", s);
+  return TK_NoToken;
+#else
+  if (!tkCanBeToken[(vuint8)s[0]]) return TK_NoToken;
+  if (slen < tkMinLen || slen > tkMaxLen) return TK_NoToken;
+  // hacks
+  if (s[0] == 'n' && s[1] == 'u' && strcmp(s, "nullptr") == 0) return TK_Null;
+  if (s[0] == 'N' && s[1] == 'U' && strcmp(s, "NULL") == 0) return TK_Null;
+  //k8: it was a giant `switch`, but meh... it is 2018^w 2019^w 2020^w 2021 now!
+  for (unsigned tidx = TK_Abstract; tidx < TK_URShiftAssign; ++tidx) {
+    const char *tstr = VLexer::TokenNames[tidx];
+    if (s[0] == tstr[0] && strcmp(s, tstr) == 0) return (EToken)tidx;
+  }
+  return TK_NoToken;
+#endif
+}
 
 
 //==========================================================================
@@ -59,6 +180,7 @@ VLexer::VLexer () noexcept
   , dgOpenFile(nullptr)
 {
   memset(tokenStringBuffer, 0, sizeof(tokenStringBuffer));
+  if (!tkHashInited) InitTokenHashTable();
   if (!tablesInited) {
     for (int i = 0; i < 256; ++i) {
       ASCIIToChrCode[i] = CHR_Special;
@@ -1318,19 +1440,8 @@ void VLexer::ProcessLetterToken (bool CheckKeywords) {
 
   if (!CheckKeywords) return;
 
-  //k8: it was a giant `switch`, but meh... it is 2018^w 2019^w 2020^w 2021 now!
-  const char *s = tokenStringBuffer;
-  for (unsigned tidx = TK_Abstract; tidx < TK_URShiftAssign; ++tidx) {
-    if (s[0] == TokenNames[tidx][0] && strcmp(s, TokenNames[tidx]) == 0) {
-      Token = (EToken)tidx;
-      break;
-    }
-  }
-  // hacks
-  if (Token == TK_Identifier) {
-         if (s[0] == 'n' && strcmp(s, "nullptr") == 0) Token = TK_Null;
-    else if (s[0] == 'N' && strcmp(s, "NULL") == 0) Token = TK_Null;
-  }
+  const EToken tkk = FindToken(tokenStringBuffer, len);
+  if (tkk != TK_NoToken) Token = tkk;
 
   if (Token == TK_Identifier) Name = tokenStringBuffer;
 }
@@ -1693,12 +1804,25 @@ EToken VLexer::skipTokenFrom (int &cpos, VStr *str=nullptr) const {
       }
       break;
     }
+    /*
     // check for synonyms
     if (isNStrEqu(spos, cpos, "NULL")) return TK_Null;
     if (isNStrEqu(spos, cpos, "null")) return TK_Null;
     // look in tokens
     for (unsigned f = TK_Abstract; f < TK_URShiftAssign; ++f) {
       if (isNStrEqu(spos, cpos, TokenNames[f])) return (EToken)f;
+    }
+    */
+    if (tkCanBeToken[(vuint8)src->FileStart[spos]]) {
+      const unsigned tkslen = (unsigned)(cpos-spos);
+      if (tkslen >= tkMinLen && tkslen <= tkMaxLen) {
+        vassert(tkslen < MAX_IDENTIFIER_LENGTH);
+        char tmpbuf[MAX_IDENTIFIER_LENGTH];
+        memcpy(tmpbuf, src->FileStart+spos, tkslen);
+        tmpbuf[tkslen] = 0;
+        const EToken tkk = FindToken(tmpbuf, tkslen);
+        if (tkk != TK_NoToken) return tkk;
+      }
     }
     return TK_Identifier;
   }
