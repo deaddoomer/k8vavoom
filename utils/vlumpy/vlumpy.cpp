@@ -117,28 +117,6 @@ static bool Fon2ColorsUsed[256] = {0};
 
 //==========================================================================
 //
-//  comatoze
-//
-//==========================================================================
-static __attribute__((unused)) const char *comatoze (unsigned n) {
-  static char buffers[128][128];
-  static unsigned bufidx = 0;
-  char *buf = buffers[bufidx];
-  bufidx = (bufidx+1)&0x7f;
-  int bpos = (int)sizeof(buf);
-  buf[--bpos] = 0;
-  int xcount = 0;
-  do {
-    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
-    buf[--bpos] = '0'+n%10;
-    ++xcount;
-  } while ((n /= 10) != 0);
-  return &buf[bpos];
-}
-
-
-//==========================================================================
-//
 //  makecol8
 //
 //==========================================================================
