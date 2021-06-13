@@ -127,20 +127,6 @@ static void OnSysError (const char *msg) {
 }
 
 
-static const char *comatoze (vuint32 n) {
-  static char buf[128];
-  int bpos = (int)sizeof(buf);
-  buf[--bpos] = 0;
-  int xcount = 0;
-  do {
-    if (xcount == 3) { buf[--bpos] = ','; xcount = 0; }
-    buf[--bpos] = '0'+n%10;
-    ++xcount;
-  } while ((n /= 10) != 0);
-  return &buf[bpos];
-}
-
-
 // ////////////////////////////////////////////////////////////////////////// //
 /*
 class VVccLog : public VLogListener {
