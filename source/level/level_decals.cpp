@@ -1333,7 +1333,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
     return;
   }
 
-  range = max2(2.0f, fabs(range));
+  range = max2(2.0f, fabsf(range));
   SpreadFlatDecalEx(org, range, dec, 0, translation, shadeclr, alpha, animator, angle, angleOverride, forceFlipX);
 }
 

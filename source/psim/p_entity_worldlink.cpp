@@ -507,7 +507,7 @@ bool VEntity::FixMapthingPos () {
         float dlv_dy = -dll_dx/linelen;
 
         //double distance = fabs(P_InterceptVector(&dlv, &dll));
-        float distance = 0;
+        float distance = 0.0f;
         {
           const double v1x = dll_x;
           const double v1y = dll_y;

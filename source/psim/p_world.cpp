@@ -56,7 +56,7 @@ static inline float RayBoxIntersection2D (const TVec &c, const float rad, const 
     tmin = max2(tmin, min2(t1, t2));
     tmax = min2(tmax, max2(t1, t2));
   } else {
-    if (fabs(xc) > rad) return -1.0f;
+    if (fabsf(xc) > rad) return -1.0f;
   }
 
   // y
@@ -67,7 +67,7 @@ static inline float RayBoxIntersection2D (const TVec &c, const float rad, const 
     tmin = max2(tmin, min2(t1, t2));
     tmax = min2(tmax, max2(t1, t2));
   } else {
-    if (fabs(yc) > rad) return -1.0f;
+    if (fabsf(yc) > rad) return -1.0f;
   }
 
   // `tmin` is "enter time", `tmax` is "exit time"
@@ -101,7 +101,7 @@ static inline float RayBoxIntersection (const TVec &c, const float rad, const fl
     tmin = max2(tmin, min2(t1, t2));
     tmax = min2(tmax, max2(t1, t2));
   } else {
-    if (fabs(xc) > rad) return -1.0f;
+    if (fabsf(xc) > rad) return -1.0f;
   }
 
   // y
@@ -112,7 +112,7 @@ static inline float RayBoxIntersection (const TVec &c, const float rad, const fl
     tmin = max2(tmin, min2(t1, t2));
     tmax = min2(tmax, max2(t1, t2));
   } else {
-    if (fabs(yc) > rad) return -1.0f;
+    if (fabsf(yc) > rad) return -1.0f;
   }
 
   // z
