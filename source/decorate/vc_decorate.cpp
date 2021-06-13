@@ -36,6 +36,8 @@ static VCvarB dbg_dump_flag_changes("dbg_dump_flag_changes", false, "Dump all fl
 VCvarB dbg_show_missing_classes("dbg_show_missing_classes", false, "Show missing classes?", CVAR_PreInit|CVAR_Archive);
 VCvarB decorate_fail_on_unknown("decorate_fail_on_unknown", false, "Fail on unknown decorate properties?", CVAR_PreInit|CVAR_Archive);
 
+static int dcTotalSourceSize = 0;
+
 static int disableBloodReplaces = 0;
 static int bloodOverrideAllowed = 0;
 static int enableKnownBlood = 0;
@@ -280,6 +282,18 @@ static inline bool getIgnoreMoronicStateCommands () { return !!cli_DecorateMoron
 // the same mod (yes, smoothdoom, i am talking about you).
 // we will cut off old override if we'll find a new one
 static TMapNC<VClass *, bool> currFileRepls; // set; key is old class
+
+
+//==========================================================================
+//
+//  secs2msecs
+//
+//==========================================================================
+static inline int secs2msecs (const double secs) noexcept {
+  if (secs <= 0.0) return 1;
+  int msecs = (int)(secs*1000.0+0.5);
+  return msecs+!msecs;
+}
 
 
 //==========================================================================
@@ -1548,6 +1562,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       //ParseDecorate(new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
       //GCon->Logf(NAME_Debug, "*** state include: %s", *W_FullLumpName(Lump));
       VScriptParser *nsp = new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
+      dcTotalSourceSize += nsp->GetScriptSize();
       ParseStatesStack.append(sc);
       sc = nsp;
       sc->SetCMode(true);
@@ -3730,6 +3745,7 @@ static void ParseDamageType (VScriptParser *sc) {
 //
 //==========================================================================
 static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TArray<VWeaponSlotFixups> &newWSlots) {
+  dcTotalSourceSize += sc->GetScriptSize();
   while (!sc->AtEnd()) {
     if (sc->Check("#region") || sc->Check("#endregion")) {
       //GLog.Logf(NAME_Warning, "REGION: crossed=%d", (sc->Crossed ? 1 : 0));
@@ -4018,6 +4034,7 @@ void ProcessDecorateScripts () {
   TArray<VWeaponSlotFixups> newWSlots;
   int lastDecoFile = -1;
 
+  double dcParseTime = -Sys_Time();
   for (auto &&Lump : decoLumps) {
     mainDecorateLump = Lump;
     GLog.Logf(NAME_Init, "Parsing decorate script '%s'", *W_FullLumpName(Lump));
@@ -4032,6 +4049,7 @@ void ProcessDecorateScripts () {
     thisIsBasePak = false; // reset it
     mainDecorateLump = -1;
   }
+  dcParseTime += Sys_Time();
 
   decoLumps.clear();
   NoOverrideNames.clear();
@@ -4155,6 +4173,7 @@ void ProcessDecorateScripts () {
   }
 
   GLog.Logf(NAME_Init, "Compiling decorate code");
+  double dcCompileTime = -Sys_Time();
   // emit code
   for (auto &&dcls : DecPkg->ParsedClasses) {
     if (getDecorateDebug()) GLog.Logf("Emiting Class %s", *dcls->GetFullName());
@@ -4164,8 +4183,10 @@ void ProcessDecorateScripts () {
     for (VState *sts = dcls->States; sts; sts = sts->Next) sts->Emit();
     #endif
   }
+  dcCompileTime += Sys_Time();
 
   GLog.Logf(NAME_Init, "Generating decorate code");
+  double dcCodegenTime = -Sys_Time();
   // compile and set up for execution
   for (auto &&dcls : DecPkg->ParsedClasses) {
     if (getDecorateDebug()) GLog.Logf("Compiling Class %s", *dcls->GetFullName());
@@ -4188,6 +4209,7 @@ void ProcessDecorateScripts () {
     }
     #endif
   }
+  dcCodegenTime += Sys_Time();
 
   if (vcErrorCount) BailOut();
   //VMemberBase::StaticDumpMObjInfo();
@@ -4200,6 +4222,15 @@ void ProcessDecorateScripts () {
   ShutdownKnownBlood();
   ShutdownKnownClassIgnores();
   //!TLocation::ClearSourceFiles();
+
+  {
+    const int pms = secs2msecs(dcParseTime);
+    const int cms = secs2msecs(dcCompileTime);
+    const int gms = secs2msecs(dcCodegenTime);
+    int pspeed = dcTotalSourceSize/pms/1024;
+    pspeed += !pspeed;
+    GLog.Logf(NAME_Init, "parsed %s decorate bytes in %s msecs (%s mb/sec), compiled in %s msecs, codegen took %s msecs", comatoze(dcTotalSourceSize), comatoze(pms), comatoze(pspeed), comatoze(cms), comatoze(gms));
+  }
 }
 
 
