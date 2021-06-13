@@ -373,6 +373,8 @@ void Host_Init () {
 
   if (VMethod::ReportUnusedBuiltins()) Sys_Error("found some unused builtins (internal engine error)");
 
+  VPackage::DumpCodeSizeStats();
+
   // "compile only"
   if (cli_CompileAndExit) {
     Z_Exit(0);
