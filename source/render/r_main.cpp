@@ -55,8 +55,6 @@ VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform d
 static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive);
 static VCvarB r_tonemap_psprites("r_tonemap_psprites", true, "Apply tonemap after rendering psprites?", CVAR_Archive);
 
-static VCvarB r_shader_colormaps("r_shader_colormaps", true, "Use shaders to apply colormaps instead of texture reuploading.", CVAR_Archive);
-
 static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", 0);
 
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
@@ -1571,7 +1569,7 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // reset global colormap, it will be done with the shader
   const int savedColorMap = (r_dbg_force_colormap.asInt() ? r_dbg_force_colormap.asInt() : ColorMap);
-  const bool shaderCM = r_shader_colormaps.asBool();
+  const bool shaderCM = true;
   if (shaderCM) ColorMap = CM_Default;
 
   if (dbg_clip_dump_added_ranges) GCon->Logf("=== RENDER SCENE: (%f,%f,%f); (yaw=%f; pitch=%f)", Drawer->vieworg.x, Drawer->vieworg.y, Drawer->vieworg.x, Drawer->viewangles.yaw, Drawer->viewangles.pitch);

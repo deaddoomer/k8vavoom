@@ -1,3 +1,4 @@
+#version 120
 $include "common/common.inc"
 
 // faster gamma is much cheaper, but assuming gamma of 2.0 instead of 2.2
@@ -7,6 +8,13 @@ $include "common/common.inc"
 
 varying vec2 TextureCoordinate;
 uniform sampler2D ScreenFBO;
+
+// the formula is:
+//   i = clamp(i*IntRange.z+IntRange.a, IntRange.x, IntRange.y);
+//   vec3 clr = clamp(vec3(i, i, i)*ColorMult+ColorAdd, 0.0, 1.0);
+uniform vec4 IntRange;
+uniform vec3 ColorMult;
+uniform vec3 ColorAdd;
 
 
 #ifndef USE_NO_GAMMA
@@ -47,7 +55,8 @@ float intensity (vec3 c) {
 
 vec3 Tonemap (vec3 color) {
   float i = intensity(color);
-  return CALCTMAP;
+  i = clamp(i*IntRange.z+IntRange.a, IntRange.x, IntRange.y);
+  return clamp(vec3(i, i, i)*ColorMult+ColorAdd, 0.0, 1.0);
 }
 
 

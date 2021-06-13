@@ -1646,34 +1646,43 @@ void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, i
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+  // the formula is:
+  //   i = clamp(i*IntRange.z+IntRange.a, IntRange.x, IntRange.y);
+  //   vec3 clr = clamp(vec3(i, i, i)*ColorMult+ColorAdd, 0.0, 1.0);
+  ColormapTonemap.Activate();
+  ColormapTonemap.SetScreenFBO(0);
+  ColormapTonemap.SetIntRange(0.0f, 1.0f, 1.0f, 0.0f);
+  ColormapTonemap.SetColorMult(1.0f, 1.0f, 1.0f);
+  ColormapTonemap.SetColorAdd(0.0f, 0.0f, 0.0f);
+
   switch (cmap) {
     case CM_Inverse:
-      ColormapInverse.Activate();
-      ColormapInverse.SetScreenFBO(0);
+      //vec3(1.0-i, 1.0-i, 1.0-i)
+      ColormapTonemap.SetIntRange(0.0f, 1.0f, -1.0f, 1.0f);
       break;
     case CM_Gold:
-      ColormapGold.Activate();
-      ColormapGold.SetScreenFBO(0);
+      //vec3(min(1.0, i*1.5), i, 0)
+      ColormapTonemap.SetColorMult(1.5f, 1.0f, 0.0f);
       break;
     case CM_Red:
-      ColormapRed.Activate();
-      ColormapRed.SetScreenFBO(0);
+      //vec3(min(1.0, i*1.5), 0, 0)
+      ColormapTonemap.SetColorMult(1.5f, 0.0f, 0.0f);
       break;
     case CM_Green:
-      ColormapGreen.Activate();
-      ColormapGreen.SetScreenFBO(0);
+      //vec3(0.0, min(1.0, i*1.5), 0)
+      ColormapTonemap.SetColorMult(0.0f, 1.5f, 0.0f);
       break;
     case CM_Mono:
-      ColormapMono.Activate();
-      ColormapMono.SetScreenFBO(0);
+      //vec3(min(1.0, i*1.5), min(1.0, i*1.5), i)
+      ColormapTonemap.SetColorMult(1.5f, 1.5f, 1.0f);
       break;
     case CM_BeRed:
-      ColormapBeRed.Activate();
-      ColormapBeRed.SetScreenFBO(0);
+      //vec3(i, i*0.125, i*0.125)
+      ColormapTonemap.SetColorMult(1.0f, 0.125f, 0.125f);
       break;
     case CM_Blue:
-      ColormapBlue.Activate();
-      ColormapBlue.SetScreenFBO(0);
+      //vec3(i*0.125, i*0.125, i)
+      ColormapTonemap.SetColorMult(0.125f, 0.125f, 1.0f);
       break;
     default:
       Sys_Error("ketmar forgot to implement shader for colormap #%d", cmap);
