@@ -703,10 +703,10 @@ VExpression *VParser::ParseExpressionPriority0 () {
           if (!op) ParseError(l, "Expression expected");
           Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
           switch (tk) {
-            case TK_Int: return new VScalarToInt(op, false);
-            case TK_Float: return new VScalarToFloat(op, false);
-            case TK_String: return new VCastToString(op, false);
-            case TK_Name: return new VCastToName(op, false);
+            case TK_Int: return new VScalarToInt(op);
+            case TK_Float: return new VScalarToFloat(op);
+            case TK_String: return new VCastToString(op);
+            case TK_Name: return new VCastToName(op);
             default: VCFatalError("VC: Ketmar forgot to handle some type in `VParser::ParseExpressionPriority0()`");
           }
         }
@@ -740,10 +740,10 @@ VExpression *VParser::ParseExpressionPriority0 () {
               VExpression *op = ParseExpressionPriority1();
               if (!op) ParseError(l, "Expression expected");
               switch (tk) {
-                case TK_Int: return new VScalarToInt(op, false);
-                case TK_Float: return new VScalarToFloat(op, false);
-                case TK_String: return new VCastToString(op, false);
-                case TK_Name: return new VCastToName(op, false);
+                case TK_Int: return new VScalarToInt(op);
+                case TK_Float: return new VScalarToFloat(op);
+                case TK_String: return new VCastToString(op);
+                case TK_Name: return new VCastToName(op);
                 case TK_Void: return new VDropResult(op);
                 default: VCFatalError("VC: Ketmar forgot to handle some type in `VParser::ParseExpressionPriority0()`");
               }

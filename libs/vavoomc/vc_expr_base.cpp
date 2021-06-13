@@ -25,6 +25,7 @@
 //**************************************************************************
 //#define VCC_DEBUG_COMPILER_LEAKS
 //#define VCC_DEBUG_COMPILER_LEAKS_CHECKS
+//#define VCC_RESOLVE_DEBUG
 
 #include "vc_local.h"
 
@@ -48,7 +49,7 @@ static const char *comatoze (vuint32 n) {
 }
 
 
-#if defined(VCC_DEBUG_COMPILER_LEAKS)
+#if defined(VCC_DEBUG_COMPILER_LEAKS) || defined(VCC_RESOLVE_DEBUG)
 #include <string>
 #include <cstdlib>
 #include <cxxabi.h>
@@ -217,12 +218,13 @@ VExpression::~VExpression () {
 
 //==========================================================================
 //
-//  VExpression::DoRestSyntaxCopyTo
+//  VExpression::DoSyntaxCopyTo
 //
 //==========================================================================
 //#include <typeinfo>
 void VExpression::DoSyntaxCopyTo (VExpression *e) {
   //fprintf(stderr, "  ***VExpression::DoSyntaxCopyTo for `%s`\n", typeid(*e).name());
+  if (IsResolved()) VCFatalError("%s: trying to syntaxcopy already resolved expression (%s) (%s)", *Loc.toStringNoCol(), *toString(), *GetMyTypeName());
   e->Type = Type;
   e->RealType = RealType;
   e->Flags = Flags;
@@ -236,7 +238,30 @@ void VExpression::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VExpression::Resolve (VEmitContext &ec) {
+  #if defined(VCC_RESOLVE_DEBUG)
+    static int indent = 0;
+    ++indent;
+    VStr ss = va("%p: %s: (%s) (%s)", this, *Loc.toStringNoCol(), *toString(), *GetMyTypeName());
+    for (int f = 0; f < indent; ++f) ss = VStr(" ")+ss;
+    GLog.Logf(NAME_Debug, "<<<RESOLVING:%s>>>", *ss);
+  #endif
+  if (IsResolved()) {
+    #if defined(VCC_RESOLVE_DEBUG)
+      GLog.Logf(NAME_Error, "<<<RESOLVING:%s>>>", *ss);
+    #endif
+    VCFatalError("%s: trying to resolve already resolved expression (%s) (%s)", *Loc.toStringNoCol(), *toString(), *GetMyTypeName());
+  }
   VExpression *e = DoResolve(ec);
+  #if defined(VCC_RESOLVE_DEBUG)
+    --indent;
+    GLog.Logf(NAME_Debug, "<<<RESOLVED*:%s>>>", *ss);
+  #endif
+  if (e && !e->IsResolved()) {
+    #if defined(VCC_RESOLVE_DEBUG)
+      GLog.Logf(NAME_Error, "<<<RESOLVED*:%s>>>", *ss);
+    #endif
+    VCFatalError("%s: resolver returned unresolved expression (%s) (%s)", *e->Loc.toStringNoCol(), *e->toString(), *e->GetMyTypeName());
+  }
   return e;
 }
 
@@ -259,35 +284,36 @@ VExpression *VExpression::ResolveBoolean (VEmitContext &ec) {
 //
 //==========================================================================
 VExpression *VExpression::CoerceToBool (VEmitContext &ec) {
+  vassert(IsResolved());
   switch (Type.Type) {
     case TYPE_Int:
     case TYPE_Byte:
     case TYPE_Bool:
       break;
     case TYPE_Float:
-      return (new VFloatToBool(this, true))->Resolve(ec);
+      return (new VFloatToBool(this))->Resolve(ec);
     case TYPE_Name:
-      return (new VNameToBool(this, true))->Resolve(ec);
+      return (new VNameToBool(this))->Resolve(ec);
     case TYPE_Pointer:
     case TYPE_Reference:
     case TYPE_Class:
     case TYPE_State:
-      return (new VPointerToBool(this, true))->Resolve(ec);
+      return (new VPointerToBool(this))->Resolve(ec);
     case TYPE_String:
-      return (new VStringToBool(this, true))->Resolve(ec);
+      return (new VStringToBool(this))->Resolve(ec);
       break;
     case TYPE_Delegate:
-      return (new VDelegateToBool(this, true))->Resolve(ec);
+      return (new VDelegateToBool(this))->Resolve(ec);
       break;
     case TYPE_Vector:
-      return (new VVectorToBool(this, true))->Resolve(ec);
+      return (new VVectorToBool(this))->Resolve(ec);
     case TYPE_DynamicArray:
-      return (new VDynArrayToBool(this, true))->Resolve(ec);
+      return (new VDynArrayToBool(this))->Resolve(ec);
     case TYPE_Dictionary:
-      return (new VDictToBool(this, true))->Resolve(ec);
+      return (new VDictToBool(this))->Resolve(ec);
     case TYPE_SliceArray:
       ParseWarning(Loc, "Coercing slice to boolean is not tested yet");
-      return (new VSliceToBool(this, true))->Resolve(ec);
+      return (new VSliceToBool(this))->Resolve(ec);
     default:
       ParseError(Loc, "Expression type mismatch, boolean expression expected, got `%s`", *Type.GetName());
       delete this;
@@ -329,7 +355,7 @@ VExpression *VExpression::ResolveFloat (VEmitContext &ec) {
     case TYPE_Int:
     case TYPE_Byte:
     //case TYPE_Bool:
-      e = (new VScalarToFloat(e, true))->Resolve(ec);
+      e = (new VScalarToFloat(e))->Resolve(ec);
       break;
     case TYPE_Float:
       break;
@@ -350,6 +376,7 @@ VExpression *VExpression::ResolveFloat (VEmitContext &ec) {
 //
 //==========================================================================
 VExpression *VExpression::CoerceToFloat (VEmitContext &ec) {
+  vassert(IsResolved());
   if (Type.Type == TYPE_Float) return this; // nothing to do
   if (Type.Type == TYPE_Int || Type.Type == TYPE_Byte) {
     if (IsIntConst()) {
@@ -357,7 +384,7 @@ VExpression *VExpression::CoerceToFloat (VEmitContext &ec) {
       delete this;
       return e->Resolve(ec);
     }
-    return (new VScalarToFloat(this, true))->Resolve(ec);
+    return (new VScalarToFloat(this))->Resolve(ec);
   }
   ParseError(Loc, "Expression type mismatch, float expression expected");
   delete this;

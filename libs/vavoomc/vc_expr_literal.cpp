@@ -69,6 +69,7 @@ void VIntLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VIntLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -157,6 +158,7 @@ void VFloatLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VFloatLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -265,6 +267,7 @@ VName VNameLiteral::GetNameConst () const {
 //
 //==========================================================================
 VExpression *VNameLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -415,6 +418,7 @@ void VStringLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VStringLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -514,6 +518,7 @@ VExpression *VSelf::DoResolve (VEmitContext &ec) {
   } else {
     Type = VFieldType(ec.SelfClass);
   }
+  SetResolved();
   return this;
 }
 
@@ -593,6 +598,7 @@ VExpression *VSelfClass::DoResolve (VEmitContext &ec) {
   }
   Type = VFieldType(ec.SelfClass);
   if (ec.CurrentFunc->Flags&FUNC_Static) Type.Type = TYPE_Class;
+  SetResolved();
   return this;
 }
 
@@ -670,6 +676,7 @@ void VNoneLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VNoneLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -743,6 +750,7 @@ void VNoneDelegateLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VNoneDelegateLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -817,6 +825,7 @@ void VNullLiteral::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VNullLiteral::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 

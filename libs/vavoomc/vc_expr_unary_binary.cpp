@@ -282,7 +282,7 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
     }
     if (e) {
       delete this;
-      return e;
+      return e->Resolve(ec);
     }
   }
 
@@ -297,10 +297,11 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
     }
     if (e) {
       delete this;
-      return e;
+      return e->Resolve(ec);
     }
   }
 
+  SetResolved();
   return this;
 }
 
@@ -471,7 +472,7 @@ VExpression *VUnaryMutator::DoResolve (VEmitContext &ec) {
 
   Type = TYPE_Int;
   op->RequestAddressOf();
-
+  SetResolved();
   return this;
 }
 
@@ -706,7 +707,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         ParseWarning(Loc, "shifting float value is something you should not do!");
       }
       // convert float to int
-      op1 = (new VScalarToInt(op1, true/*resolved*/))->Resolve(ec);
+      op1 = (new VScalarToInt(op1))->Resolve(ec);
       if (!op1) { delete this; return nullptr; }
     }
     switch (Oper) {
@@ -917,6 +918,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
           op1 = nullptr;
         } else if (Value2 > 31) {
           e = new VIntLiteral(0, Loc);
+          e = e->Resolve(ec);
         }
         break;
       case RShift:
@@ -931,6 +933,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
           op1 = nullptr;
         } else if (Value2 > 31) {
           e = new VIntLiteral(0, Loc);
+          e = e->Resolve(ec);
         }
         break;
       default: break;
@@ -1006,7 +1009,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     }
     if (e) {
       delete this;
-      return e;
+      return e->Resolve(ec);
     }
   }
 
@@ -1034,7 +1037,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         break;
       default: break;
     }
-    if (e) { delete this; return e; }
+    if (e) { delete this; return e->Resolve(ec); }
   }
 
   // division by zero check
@@ -1088,6 +1091,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     default: break;
   }
 
+  SetResolved();
   return this;
 }
 
@@ -1241,7 +1245,7 @@ void VBinary::Emit (VEmitContext &ec) {
       else err = true;
       break;
     case IsA: case NotIsA: VCFatalError("wtf?!");
-    default: VCFatalError("VBinary::DoResolve: forgot to handle oper %d in code emiter", (int)Oper);
+    default: VCFatalError("VBinary::Emit: forgot to handle oper %d in code emiter", (int)Oper);
   }
   if (err) VCFatalError("VBinary::Emit(%s): internal compiler error", getOpName());
 }
@@ -1455,10 +1459,11 @@ VExpression *VBinaryLogical::DoResolve (VEmitContext &ec) {
     }
     if (e) {
       delete this;
-      return e;
+      return e->Resolve(ec);
     }
   }
 
+  SetResolved();
   return this;
 }
 

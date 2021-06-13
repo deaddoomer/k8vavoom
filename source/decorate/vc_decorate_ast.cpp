@@ -562,7 +562,7 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
               TmpArgs[0] = this->SyntaxCopy();
               if (lx->Type.Type == TYPE_Float) {
                 ParseWarningAsError(Loc, "jump offset argument #%d for `%s` should be integer, not float! PLEASE, FIX THE CODE!", argnum, funcName);
-                TmpArgs[0] = new VScalarToInt(TmpArgs[0], false); // not resolved
+                TmpArgs[0] = new VScalarToInt(TmpArgs[0]); // not resolved
               }
               VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, Loc, 1, TmpArgs);
               //GCon->Logf("   NEW: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
@@ -1456,7 +1456,7 @@ VExpression *VDecorateAJump::DoResolve (VEmitContext &ec) {
   }
 
   Type.Type = TYPE_Void;
-
+  SetResolved();
   return this;
 }
 
@@ -1681,11 +1681,15 @@ VExpression *VDecorateRndPick::DoResolve (VEmitContext &ec) {
     if (!lbl) { delete this; return nullptr; }
 
     if (lbl->Type.Type == TYPE_Int || lbl->Type.Type == TYPE_Byte) {
-      if (asFloat) numbers[lbidx] = new VScalarToFloat(lbl, true); // resolved
+      if (asFloat) {
+        numbers[lbidx] = (new VScalarToFloat(lbl))->Resolve(ec);
+        if (!numbers[lbidx]) { delete this; return nullptr; }
+      }
     } else if (lbl->Type.Type == TYPE_Float) {
       if (!asFloat) {
         ParseWarning(Loc, "`%srandompick()` argument #%d must be int", (asFloat ? "f" : ""), lbidx+1);
-        numbers[lbidx] = new VScalarToInt(lbl, true); // resolved
+        numbers[lbidx] = (new VScalarToInt(lbl))->Resolve(ec);
+        if (!numbers[lbidx]) { delete this; return nullptr; }
       }
     } else {
       ParseError(Loc, "`%srandompick()` argument #%d has invalid type `%s`", (asFloat ? "f" : ""), lbidx+1, *lbl->Type.GetName());
@@ -1714,6 +1718,7 @@ VExpression *VDecorateRndPick::DoResolve (VEmitContext &ec) {
   }
 
   Type.Type = (asFloat ? TYPE_Float : TYPE_Int);
+  SetResolved();
   return this;
 }
 

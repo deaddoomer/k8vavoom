@@ -2642,7 +2642,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             if (!Expr) {
               ParseError(sc->GetLoc(), "Damage expression expected");
             } else {
-              Expr = new VScalarToInt(Expr, false); // not resolved
+              Expr = new VScalarToInt(Expr); // not resolved
               VMethod *M = new VMethod("GetMissileDamage", Class, sc->GetLoc());
               M->Flags = FUNC_Override;
               M->ReturnTypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetLoc());

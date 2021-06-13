@@ -32,10 +32,9 @@
 class VCastExpressionBase : public VExpression {
 public:
   VExpression *op;
-  bool opResolved;
 
-  VCastExpressionBase (VExpression *AOp, bool aOpResolved);
-  VCastExpressionBase (const TLocation &ALoc, bool aOpResolved);
+  VCastExpressionBase (VExpression *AOp);
+  VCastExpressionBase (const TLocation &ALoc);
   virtual ~VCastExpressionBase () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
 
@@ -52,7 +51,7 @@ protected:
 //==========================================================================
 class VDelegateToBool : public VCastExpressionBase {
 public:
-  VDelegateToBool (VExpression *AOp, bool aOpResolved);
+  VDelegateToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -71,7 +70,7 @@ protected:
 //==========================================================================
 class VStringToBool : public VCastExpressionBase {
 public:
-  VStringToBool (VExpression *AOp, bool aOpResolved);
+  VStringToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -90,7 +89,7 @@ protected:
 //==========================================================================
 class VNameToBool : public VCastExpressionBase {
 public:
-  VNameToBool (VExpression *AOp, bool aOpResolved);
+  VNameToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -109,7 +108,7 @@ protected:
 //==========================================================================
 class VFloatToBool : public VCastExpressionBase {
 public:
-  VFloatToBool (VExpression *AOp, bool aOpResolved);
+  VFloatToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -128,7 +127,7 @@ protected:
 //==========================================================================
 class VVectorToBool : public VCastExpressionBase {
 public:
-  VVectorToBool (VExpression *AOp, bool aOpResolved);
+  VVectorToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -147,7 +146,7 @@ protected:
 //==========================================================================
 class VPointerToBool : public VCastExpressionBase {
 public:
-  VPointerToBool (VExpression *AOp, bool aOpResolved);
+  VPointerToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -166,7 +165,7 @@ protected:
 //==========================================================================
 class VDynArrayToBool : public VCastExpressionBase {
 public:
-  VDynArrayToBool (VExpression *AOp, bool aOpResolved);
+  VDynArrayToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override; // implementation is in `vc_expr_array.cpp`
@@ -185,7 +184,7 @@ protected:
 //==========================================================================
 class VDictToBool : public VCastExpressionBase {
 public:
-  VDictToBool (VExpression *AOp, bool aOpResolved);
+  VDictToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override; // implementation is in `vc_expr_array.cpp`
@@ -204,7 +203,7 @@ protected:
 //==========================================================================
 class VSliceToBool : public VCastExpressionBase {
 public:
-  VSliceToBool (VExpression *AOp, bool aOpResolved);
+  VSliceToBool (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -223,7 +222,7 @@ protected:
 //==========================================================================
 class VScalarToFloat : public VCastExpressionBase {
 public:
-  VScalarToFloat (VExpression *AOp, bool aOpResolved);
+  VScalarToFloat (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -242,7 +241,7 @@ protected:
 //==========================================================================
 class VScalarToInt : public VCastExpressionBase {
 public:
-  VScalarToInt (VExpression *AOp, bool aOpResolved);
+  VScalarToInt (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -261,7 +260,7 @@ protected:
 //==========================================================================
 class VCastToString : public VCastExpressionBase {
 public:
-  VCastToString (VExpression *AOp, bool aOpResolved);
+  VCastToString (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -280,7 +279,7 @@ protected:
 //==========================================================================
 class VCastToName : public VCastExpressionBase {
 public:
-  VCastToName (VExpression *AOp, bool aOpResolved);
+  VCastToName (VExpression *AOp);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;

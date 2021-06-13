@@ -31,6 +31,8 @@ class VInvocation;
 // ////////////////////////////////////////////////////////////////////////// //
 class VExpression {
 public:
+  enum { EXPR_Resolved = 0x40000000u };
+public:
   struct AutoCopy {
   protected:
     VExpression *e;
@@ -92,6 +94,12 @@ public:
   inline bool IsReadOnly () const noexcept { return !!(Flags&FIELD_ReadOnly); }
   inline void SetReadOnly () noexcept { Flags |= FIELD_ReadOnly; }
   inline void ResetReadOnly () noexcept { Flags &= ~FIELD_ReadOnly; }
+
+  inline bool IsResolved () const noexcept { return !!(Flags&EXPR_Resolved); }
+
+protected:
+  inline void SetResolved () noexcept { Flags |= EXPR_Resolved; }
+  inline void ResetResolved () noexcept { Flags &= ~EXPR_Resolved; }
 
 public:
   VExpression (const TLocation &ALoc);

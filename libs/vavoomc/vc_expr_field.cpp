@@ -820,6 +820,7 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       //FIXME: use int instead of bool here, it generates faster opcode, and doesn't matter for now
       //Type = VFieldType(TYPE_Bool); Type.BitMask = 1;
       Type = VFieldType(TYPE_Int);
+      SetResolved();
       return this;
     }
   }
@@ -1067,6 +1068,7 @@ VExpression *VVectorDirectFieldAccess::DoResolve (VEmitContext &ec) {
   //if (op) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   Type = VFieldType(TYPE_Float);
+  SetResolved();
   return this;
 }
 
@@ -1197,6 +1199,7 @@ VExpression *VVectorSwizzleExpr::DoResolve (VEmitContext &ec) {
   //if (op) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   Type = VFieldType(TYPE_Vector);
+  SetResolved();
   return this;
 }
 
@@ -1289,6 +1292,7 @@ VExpression *VFieldAccess::DoResolve (VEmitContext &) {
   Type = field->Type;
   RealType = field->Type;
   if (Type.Type == TYPE_Byte || Type.Type == TYPE_Bool) Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -1445,6 +1449,7 @@ VExpression *VDelegateVal::DoResolve (VEmitContext &ec) {
   if (wasError) { delete this; return nullptr; }
   Type = TYPE_Delegate;
   Type.Function = M;
+  SetResolved();
   return this;
 }
 

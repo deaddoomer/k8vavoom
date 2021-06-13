@@ -130,6 +130,7 @@ VExpression *VVectorExpr::DoResolve (VEmitContext &ec) {
   Type = TYPE_Vector;
   // no, this will break things like: `TAVec a = vector();`
   //Type.Struct = VMemberBase::StaticFindTVec();
+  SetResolved();
   return this;
 }
 
@@ -758,6 +759,7 @@ VExpression *VDefaultObject::DoResolve (VEmitContext &ec) {
 
   if (op->Type.Type == TYPE_Reference) {
     Type = op->Type;
+    SetResolved();
     return this;
   }
 
@@ -768,6 +770,7 @@ VExpression *VDefaultObject::DoResolve (VEmitContext &ec) {
       return nullptr;
     }
     Type = VFieldType(op->Type.Class);
+    SetResolved();
     return this;
   }
 
@@ -884,7 +887,7 @@ VExpression *VPushPointed::DoResolve (VEmitContext &ec) {
   Type = op->Type.GetPointerInnerType();
   RealType = Type;
   if (Type.Type == TYPE_Byte || Type.Type == TYPE_Bool) Type = VFieldType(TYPE_Int);
-
+  SetResolved();
   return this;
 }
 
@@ -1035,6 +1038,7 @@ VExpression *VConditional::DoResolve (VEmitContext &ec) {
     Type = op2->Type;
   }
 
+  SetResolved();
   return this;
 }
 
@@ -1132,6 +1136,7 @@ VExpression *VCommaExprRetOp0::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
   Type = op0->Type;
+  SetResolved();
   return this;
 }
 
@@ -1230,7 +1235,8 @@ void VDropResult::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VDropResult::DoResolve (VEmitContext &ec) {
-  if (op) op = op->Resolve(ec);
+  //k8: oops, this can be added to resolved expressions sometimes (FIXME!)
+  if (op /*&& !op->IsResolved()*/) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
 
   if (op->Type.Type == TYPE_Delegate) {
@@ -1266,6 +1272,7 @@ VExpression *VDropResult::DoResolve (VEmitContext &ec) {
 
   Type = TYPE_Void;
   if (op->IsReadOnly()) SetReadOnly();
+  SetResolved();
   return this;
 }
 
@@ -1348,6 +1355,7 @@ void VClassConstant::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VClassConstant::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -1416,6 +1424,7 @@ void VStateConstant::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VStateConstant::DoResolve (VEmitContext &) {
+  SetResolved();
   return this;
 }
 
@@ -1484,6 +1493,7 @@ void VConstantValue::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VConstantValue::DoResolve (VEmitContext &) {
   Type = (EType)Const->Type;
+  SetResolved();
   return this;
 }
 
@@ -1590,7 +1600,7 @@ VExpression *VObjectPropGetIsDestroyed::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VObjectPropGetIsDestroyed::DoRestSyntaxCopyTo
+//  VObjectPropGetIsDestroyed::DoSyntaxCopyTo
 //
 //==========================================================================
 void VObjectPropGetIsDestroyed::DoSyntaxCopyTo (VExpression *e) {
@@ -1613,6 +1623,7 @@ VExpression *VObjectPropGetIsDestroyed::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 

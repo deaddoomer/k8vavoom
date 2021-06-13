@@ -233,6 +233,7 @@ VExpression *VTypeExprSimple::SyntaxCopy () {
 //
 //==========================================================================
 VTypeExpr *VTypeExprSimple::ResolveAsType (VEmitContext &) {
+  //vassert(!IsResolved());
   if (Type.Type == TYPE_Unknown) {
     ParseError(Loc, "Bad type");
     delete this;
@@ -242,6 +243,7 @@ VTypeExpr *VTypeExprSimple::ResolveAsType (VEmitContext &) {
   if (Type.Type == TYPE_Automatic) VCFatalError("VC INTERNAL COMPILER ERROR: unresolved automatic type (0)!");
   if (Type.Type == TYPE_Class) VCFatalError("VC INTERNAL COMPILER ERROR: 19463!");
 
+  SetResolved();
   return this;
 }
 
@@ -310,6 +312,7 @@ VTypeExpr *VTypeExprClass::ResolveAsType (VEmitContext &) {
     }
   }
 
+  SetResolved();
   return this;
 }
 
@@ -362,6 +365,7 @@ VTypeExpr *VPointerType::ResolveAsType (VEmitContext &ec) {
     if (!Expr) { delete this; return nullptr; }
     Type = Expr->Type.MakePointerType();
   }
+  SetResolved();
   return this;
 }
 
@@ -475,6 +479,7 @@ VTypeExpr *VFixedArrayType::ResolveAsType (VEmitContext &ec) {
       Type = Expr->Type.MakeArrayType(Size, Loc);
     }
   }
+  SetResolved();
   return this;
 }
 
@@ -544,6 +549,7 @@ VTypeExpr *VDynamicArrayType::ResolveAsType (VEmitContext &ec) {
 
     Type = Expr->Type.MakeDynamicArrayType(Loc);
   }
+  SetResolved();
   return this;
 }
 
@@ -613,6 +619,7 @@ VTypeExpr *VSliceType::ResolveAsType (VEmitContext &ec) {
 
     Type = Expr->Type.MakeSliceType(Loc);
   }
+  SetResolved();
   return this;
 }
 
@@ -736,6 +743,7 @@ VTypeExpr *VDelegateType::ResolveAsType (VEmitContext &ec) {
     Type = VFieldType(TYPE_Delegate);
     Type.Function = Func;
   }
+  SetResolved();
   return this;
 }
 
@@ -832,6 +840,7 @@ VTypeExpr *VDictType::ResolveAsType (VEmitContext &ec) {
   if (!Expr || !VExpr) { delete this; return nullptr; }
 
   Type = VFieldType::MakeDictType(Expr->Type, VExpr->Type, Loc);
+  SetResolved();
   return this;
 }
 

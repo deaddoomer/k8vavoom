@@ -31,23 +31,22 @@
 //  VCastExpressionBase
 //
 //==========================================================================
-VCastExpressionBase::VCastExpressionBase (VExpression *AOp, bool aOpResolved) : VExpression(AOp->Loc), op(AOp), opResolved(aOpResolved) {}
-VCastExpressionBase::VCastExpressionBase (const TLocation &ALoc, bool aOpResolved) : VExpression(ALoc), op(nullptr), opResolved(aOpResolved) {}
+VCastExpressionBase::VCastExpressionBase (VExpression *AOp) : VExpression(AOp->Loc), op(AOp) {}
+VCastExpressionBase::VCastExpressionBase (const TLocation &ALoc) : VExpression(ALoc), op(nullptr) {}
 VCastExpressionBase::~VCastExpressionBase () { if (op) { delete op; op = nullptr; } }
 
 void VCastExpressionBase::DoSyntaxCopyTo (VExpression *e) {
   VExpression::DoSyntaxCopyTo(e);
   auto res = (VCastExpressionBase *)e;
   res->op = (op ? op->SyntaxCopy() : nullptr);
-  res->opResolved = opResolved;
 }
 
 VExpression *VCastExpressionBase::DoResolve (VEmitContext &ec) {
-  if (op && !opResolved) {
-    opResolved = true;
+  if (op && !op->IsResolved()) {
     op = op->Resolve(ec);
     if (!op) { delete this; return nullptr; }
   }
+  SetResolved();
   return this;
 }
 
@@ -57,11 +56,11 @@ VExpression *VCastExpressionBase::DoResolve (VEmitContext &ec) {
 //  VDelegateToBool::VDelegateToBool
 //
 //==========================================================================
-VDelegateToBool::VDelegateToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VDelegateToBool::VDelegateToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
-  if (aOpResolved) op->RequestAddressOf();
+  if (op && op->IsResolved()) op->RequestAddressOf();
 }
 
 
@@ -83,9 +82,8 @@ VExpression *VDelegateToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VDelegateToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) {
-    opResolved = true;
-    if (op) op = op->Resolve(ec);
+  if (op && !op->IsResolved()) {
+    op = op->Resolve(ec);
     if (op) op->RequestAddressOf();
   }
   if (!op) { delete this; return nullptr; }
@@ -95,6 +93,7 @@ VExpression *VDelegateToBool::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -127,8 +126,8 @@ VStr VDelegateToBool::toString () const {
 //  VStringToBool::VStringToBool
 //
 //==========================================================================
-VStringToBool::VStringToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VStringToBool::VStringToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -152,7 +151,7 @@ VExpression *VStringToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VStringToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_String) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -167,6 +166,7 @@ VExpression *VStringToBool::DoResolve (VEmitContext &ec) {
     return e->Resolve(ec);
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -198,8 +198,8 @@ VStr VStringToBool::toString () const {
 //  VNameToBool::VNameToBool
 //
 //==========================================================================
-VNameToBool::VNameToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VNameToBool::VNameToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -223,7 +223,7 @@ VExpression *VNameToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VNameToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Name) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -238,6 +238,7 @@ VExpression *VNameToBool::DoResolve (VEmitContext &ec) {
     return e->Resolve(ec);
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -269,8 +270,8 @@ VStr VNameToBool::toString () const {
 //  VFloatToBool::VFloatToBool
 //
 //==========================================================================
-VFloatToBool::VFloatToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VFloatToBool::VFloatToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -294,7 +295,7 @@ VExpression *VFloatToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VFloatToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Float) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -308,6 +309,7 @@ VExpression *VFloatToBool::DoResolve (VEmitContext &ec) {
     return e->Resolve(ec);
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -339,8 +341,8 @@ VStr VFloatToBool::toString () const {
 //  VVectorToBool::VVectorToBool
 //
 //==========================================================================
-VVectorToBool::VVectorToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VVectorToBool::VVectorToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -364,7 +366,7 @@ VExpression *VVectorToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VVectorToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Vector) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -379,6 +381,7 @@ VExpression *VVectorToBool::DoResolve (VEmitContext &ec) {
     return e->Resolve(ec);
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -410,8 +413,8 @@ VStr VVectorToBool::toString () const {
 //  VPointerToBool::VPointerToBool
 //
 //==========================================================================
-VPointerToBool::VPointerToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VPointerToBool::VPointerToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -435,7 +438,7 @@ VExpression *VPointerToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VPointerToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   // do it in-place for pointers
   switch (op->Type.Type) {
@@ -461,6 +464,7 @@ VExpression *VPointerToBool::DoResolve (VEmitContext &ec) {
       return nullptr;
   }
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -492,8 +496,8 @@ VStr VPointerToBool::toString () const {
 //  VScalarToFloat::VScalarToFloat
 //
 //==========================================================================
-VScalarToFloat::VScalarToFloat (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VScalarToFloat::VScalarToFloat (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Float;
 }
@@ -517,7 +521,7 @@ VExpression *VScalarToFloat::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VScalarToFloat::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   switch (op->Type.Type) {
     case TYPE_Int:
@@ -534,6 +538,7 @@ VExpression *VScalarToFloat::DoResolve (VEmitContext &ec) {
         VExpression *e = op;
         op = nullptr;
         delete this;
+        vassert(e->IsResolved());
         return e;
       }
       break;
@@ -542,6 +547,7 @@ VExpression *VScalarToFloat::DoResolve (VEmitContext &ec) {
       delete this;
       return nullptr;
   }
+  SetResolved();
   return this;
 }
 
@@ -583,8 +589,8 @@ VStr VScalarToFloat::toString () const {
 //  VScalarToInt::VScalarToInt
 //
 //==========================================================================
-VScalarToInt::VScalarToInt (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VScalarToInt::VScalarToInt (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -608,7 +614,7 @@ VExpression *VScalarToInt::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VScalarToInt::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   switch (op->Type.Type) {
     case TYPE_Int:
@@ -618,6 +624,7 @@ VExpression *VScalarToInt::DoResolve (VEmitContext &ec) {
         VExpression *e = op;
         op = nullptr;
         delete this;
+        vassert(e->IsResolved());
         return e;
       }
       break;
@@ -633,6 +640,7 @@ VExpression *VScalarToInt::DoResolve (VEmitContext &ec) {
       delete this;
       return nullptr;
   }
+  SetResolved();
   return this;
 }
 
@@ -676,8 +684,8 @@ VStr VScalarToInt::toString () const {
 //  VCastToString::VCastToString
 //
 //==========================================================================
-VCastToString::VCastToString (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VCastToString::VCastToString (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_String;
 }
@@ -701,7 +709,7 @@ VExpression *VCastToString::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VCastToString::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   switch (op->Type.Type) {
     case TYPE_String:
@@ -713,7 +721,7 @@ VExpression *VCastToString::DoResolve (VEmitContext &ec) {
         int val = ec.Package->FindString(*ns);
         VExpression *e = (new VStringLiteral(ns, val, Loc))->Resolve(ec);
         delete this;
-        return e->Resolve(ec);
+        return e;
       }
       break;
     default:
@@ -721,6 +729,7 @@ VExpression *VCastToString::DoResolve (VEmitContext &ec) {
       delete this;
       return nullptr;
   }
+  SetResolved();
   return this;
 }
 
@@ -761,8 +770,8 @@ VStr VCastToString::toString () const {
 //  VCastToName::VCastToName
 //
 //==========================================================================
-VCastToName::VCastToName (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VCastToName::VCastToName (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Name;
 }
@@ -786,7 +795,7 @@ VExpression *VCastToName::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VCastToName::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   switch (op->Type.Type) {
     case TYPE_String:
@@ -795,7 +804,7 @@ VExpression *VCastToName::DoResolve (VEmitContext &ec) {
         VStr s = op->GetStrConst(ec.Package);
         VExpression *e = (new VNameLiteral(VName(*s), Loc))->Resolve(ec);
         delete this;
-        return e->Resolve(ec);
+        return e;
       }
       break;
     case TYPE_Name:
@@ -805,6 +814,7 @@ VExpression *VCastToName::DoResolve (VEmitContext &ec) {
       delete this;
       return nullptr;
   }
+  SetResolved();
   return this;
 }
 
@@ -846,7 +856,7 @@ VStr VCastToName::toString () const {
 //
 //==========================================================================
 VDynamicCast::VDynamicCast (VClass *AClass, VExpression *AOp, const TLocation &ALoc)
-  : VCastExpressionBase(ALoc, false)
+  : VCastExpressionBase(ALoc)
   , Class(AClass)
 {
   op = AOp;
@@ -867,7 +877,7 @@ VExpression *VDynamicCast::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynamicCast::DoRestSyntaxCopyTo
+//  VDynamicCast::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynamicCast::DoSyntaxCopyTo (VExpression *e) {
@@ -883,7 +893,7 @@ void VDynamicCast::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VDynamicCast::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Reference) {
     ParseError(Loc, "Bad expression, class reference required");
@@ -891,6 +901,7 @@ VExpression *VDynamicCast::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
   Type = VFieldType(Class);
+  SetResolved();
   return this;
 }
 
@@ -923,7 +934,7 @@ VStr VDynamicCast::toString () const {
 //
 //==========================================================================
 VDynamicClassCast::VDynamicClassCast (VName AClassName, VExpression *AOp, const TLocation &ALoc)
-  : VCastExpressionBase(ALoc, false)
+  : VCastExpressionBase(ALoc)
   , ClassName(AClassName)
 {
   op = AOp;
@@ -944,7 +955,7 @@ VExpression *VDynamicClassCast::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynamicCast::DoRestSyntaxCopyTo
+//  VDynamicCast::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynamicClassCast::DoSyntaxCopyTo (VExpression *e) {
@@ -960,7 +971,7 @@ void VDynamicClassCast::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VDynamicClassCast::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
 
   if (op->Type.Type != TYPE_Class) {
@@ -977,6 +988,7 @@ VExpression *VDynamicClassCast::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
 
+  SetResolved();
   return this;
 }
 
@@ -1009,7 +1021,7 @@ VStr VDynamicClassCast::toString () const {
 //
 //==========================================================================
 VStructPtrCast::VStructPtrCast (VExpression *aop, VExpression *adest, const TLocation &aloc)
-  : VCastExpressionBase(aloc, false)
+  : VCastExpressionBase(aloc)
   , dest(adest)
 {
   op = aop;
@@ -1056,7 +1068,7 @@ void VStructPtrCast::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VStructPtrCast::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (dest) dest = dest->ResolveAsType(ec);
   if (!op || !dest) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Pointer || dest->Type.Type != TYPE_Pointer) {
@@ -1066,6 +1078,7 @@ VExpression *VStructPtrCast::DoResolve (VEmitContext &ec) {
   }
   //FIXME: this is unsafe!
   Type = dest->Type;
+  SetResolved();
   return this;
 }
 
@@ -1096,8 +1109,8 @@ VStr VStructPtrCast::toString () const {
 //  VDynArrayToBool::VDynArrayToBool
 //
 //==========================================================================
-VDynArrayToBool::VDynArrayToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VDynArrayToBool::VDynArrayToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -1121,7 +1134,7 @@ VExpression *VDynArrayToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VDynArrayToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_DynamicArray) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -1130,6 +1143,7 @@ VExpression *VDynArrayToBool::DoResolve (VEmitContext &ec) {
   }
   op->RequestAddressOf();
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -1150,8 +1164,8 @@ VStr VDynArrayToBool::toString () const {
 //  VDictToBool::VDictToBool
 //
 //==========================================================================
-VDictToBool::VDictToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VDictToBool::VDictToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -1175,7 +1189,7 @@ VExpression *VDictToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VDictToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_Dictionary) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -1184,6 +1198,7 @@ VExpression *VDictToBool::DoResolve (VEmitContext &ec) {
   }
   op->RequestAddressOf();
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 
@@ -1203,8 +1218,8 @@ VStr VDictToBool::toString () const {
 //  VSliceToBool::VSliceToBool
 //
 //==========================================================================
-VSliceToBool::VSliceToBool (VExpression *AOp, bool aOpResolved)
-  : VCastExpressionBase(AOp, aOpResolved)
+VSliceToBool::VSliceToBool (VExpression *AOp)
+  : VCastExpressionBase(AOp)
 {
   Type = TYPE_Int;
 }
@@ -1228,7 +1243,7 @@ VExpression *VSliceToBool::SyntaxCopy () {
 //
 //==========================================================================
 VExpression *VSliceToBool::DoResolve (VEmitContext &ec) {
-  if (!opResolved) { opResolved = true; if (op) op = op->Resolve(ec); }
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   if (op->Type.Type != TYPE_SliceArray) {
     ParseError(Loc, "cannot convert type `%s` to `bool`", *op->Type.GetName());
@@ -1237,6 +1252,7 @@ VExpression *VSliceToBool::DoResolve (VEmitContext &ec) {
   }
   op->RequestAddressOf();
   Type = TYPE_Int;
+  SetResolved();
   return this;
 }
 

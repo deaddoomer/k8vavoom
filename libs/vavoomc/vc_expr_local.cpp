@@ -89,6 +89,7 @@ void VLocalDecl::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VLocalDecl::DoResolve (VEmitContext &ec) {
   VCFatalError("internal compiler error: VLocalDecl::DoResolve should not be called directly");
   Declare(ec);
+  SetResolved();
   return this;
 }
 
@@ -437,6 +438,7 @@ VExpression *VLocalVar::DoResolve (VEmitContext &ec) {
   if (Type.Type == TYPE_Byte || Type.Type == TYPE_Bool) Type = VFieldType(TYPE_Int);
   PushOutParam = !!(locSavedFlags&(FPARM_Out|FPARM_Ref));
   if (locSavedFlags&FPARM_Const) SetReadOnly();
+  SetResolved();
   return this;
 }
 

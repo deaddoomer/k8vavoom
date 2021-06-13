@@ -341,6 +341,7 @@ VExpression *VArrayElement::InternalResolve (VEmitContext &ec, bool assTarget) {
 
   RealType = Type;
   if (Type.Type == TYPE_Byte || Type.Type == TYPE_Bool) Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -390,7 +391,7 @@ VExpression *VArrayElement::ResolveAssignmentTarget (VEmitContext &ec) {
 //
 //==========================================================================
 VExpression *VArrayElement::ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved) {
-  if (ind2) return this;
+  if (ind2) return this; // do not set "resolved" flag here
 
   if (op && op->IsReadOnly()) {
     ParseError(Loc, "Cannot assign to read-only destination");
@@ -539,6 +540,7 @@ VExpression *VArrayElement::ResolveCompleteAssign (VEmitContext &ec, VExpression
 
   genStringAssign = true;
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -730,6 +732,7 @@ VExpression *VSliceOp::DoResolve (VEmitContext &ec) {
   if (op->Type.Type == TYPE_SliceArray) op->RequestAddressOf();
 
   Type = op->Type;
+  SetResolved();
   return this;
 }
 
@@ -811,6 +814,7 @@ VExpression *VSliceOp::ResolveCompleteAssign (VEmitContext &ec, VExpression *val
 
   genStringAssign = true;
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -902,7 +906,7 @@ VExpression *VDynArrayGetNum::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayGetNum::DoRestSyntaxCopyTo
+//  VDynArrayGetNum::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayGetNum::DoSyntaxCopyTo (VExpression *e) {
@@ -920,6 +924,7 @@ void VDynArrayGetNum::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VDynArrayGetNum::DoResolve (VEmitContext &) {
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -1000,7 +1005,7 @@ VExpression *VDynArraySetNum::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArraySetNum::DoRestSyntaxCopyTo
+//  VDynArraySetNum::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArraySetNum::DoSyntaxCopyTo (VExpression *e) {
@@ -1041,6 +1046,7 @@ VExpression *VDynArraySetNum::DoResolve (VEmitContext &ec) {
     NumExpr->Type.CheckMatch(false, NumExpr->Loc, VFieldType(TYPE_Int));
     if (NumExpr2) NumExpr2->Type.CheckMatch(false, NumExpr2->Loc, VFieldType(TYPE_Int));
   }
+  SetResolved();
   return this;
 }
 
@@ -1146,7 +1152,7 @@ VExpression *VDynArrayInsert::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayInsert::DoRestSyntaxCopyTo
+//  VDynArrayInsert::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayInsert::DoSyntaxCopyTo (VExpression *e) {
@@ -1193,6 +1199,7 @@ VExpression *VDynArrayInsert::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1268,7 +1275,7 @@ VExpression *VDynArrayRemove::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayRemove::DoRestSyntaxCopyTo
+//  VDynArrayRemove::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayRemove::DoSyntaxCopyTo (VExpression *e) {
@@ -1315,6 +1322,7 @@ VExpression *VDynArrayRemove::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1386,7 +1394,7 @@ VExpression *VDynArrayClear::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayClear::DoRestSyntaxCopyTo
+//  VDynArrayClear::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayClear::DoSyntaxCopyTo (VExpression *e) {
@@ -1409,6 +1417,7 @@ VExpression *VDynArrayClear::DoResolve (VEmitContext &ec) {
   }
   if (ArrayExpr) ArrayExpr->RequestAddressOf();
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1480,7 +1489,7 @@ VExpression *VDynArraySort::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArraySort::DoRestSyntaxCopyTo
+//  VDynArraySort::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArraySort::DoSyntaxCopyTo (VExpression *e) {
@@ -1497,7 +1506,7 @@ void VDynArraySort::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 bool VDynArraySort::checkDelegateType (VMethod *dg) {
-  if (!dg) { ParseError(Loc, "VDynArraySort::DoResolve: internal compiler error"); return false; }
+  if (!dg) { ParseError(Loc, "VDynArraySort::checkDelegateType: internal compiler error"); return false; }
 
   if (dg->NumParams != 2) { ParseError(Loc, "`.sort` delegate must have two parameters"); return false; }
 
@@ -1593,6 +1602,7 @@ VExpression *VDynArraySort::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1667,7 +1677,7 @@ VExpression *VDynArraySwap1D::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArraySwap1D::DoRestSyntaxCopyTo
+//  VDynArraySwap1D::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArraySwap1D::DoSyntaxCopyTo (VExpression *e) {
@@ -1714,6 +1724,7 @@ VExpression *VDynArraySwap1D::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1787,7 +1798,7 @@ VExpression *VDynArrayCopyFrom::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayCopyFrom::DoRestSyntaxCopyTo
+//  VDynArrayCopyFrom::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayCopyFrom::DoSyntaxCopyTo (VExpression *e) {
@@ -1825,6 +1836,7 @@ VExpression *VDynArrayCopyFrom::DoResolve (VEmitContext &ec) {
   SrcExpr->RequestAddressOf();
 
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -1894,7 +1906,7 @@ VExpression *VDynArrayAllocElement::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VDynArrayAllocElement::DoRestSyntaxCopyTo
+//  VDynArrayAllocElement::DoSyntaxCopyTo
 //
 //==========================================================================
 void VDynArrayAllocElement::DoSyntaxCopyTo (VExpression *e) {
@@ -1918,6 +1930,7 @@ VExpression *VDynArrayAllocElement::DoResolve (VEmitContext &ec) {
   if (!ArrayExpr) { delete this; return nullptr; }
   ArrayExpr->RequestAddressOf();
   Type = ArrayExpr->Type.GetArrayInnerType().MakePointerType();
+  SetResolved();
   return this;
 }
 
@@ -1989,7 +2002,7 @@ VExpression *VStringGetLength::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VStringGetLength::DoRestSyntaxCopyTo
+//  VStringGetLength::DoSyntaxCopyTo
 //
 //==========================================================================
 void VStringGetLength::DoSyntaxCopyTo (VExpression *e) {
@@ -2014,6 +2027,7 @@ VExpression *VStringGetLength::DoResolve (VEmitContext &ec) {
     return e;
   }
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -2099,6 +2113,7 @@ void VSliceGetLength::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VSliceGetLength::DoResolve (VEmitContext &ec) {
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -2192,6 +2207,7 @@ VExpression *VSliceGetPtr::DoResolve (VEmitContext &ec) {
   Type = sexpr->Type.GetArrayInnerType();
   //Type = Type.MakePointerType();
   if (sexpr->IsReadOnly()) SetReadOnly();
+  SetResolved();
   return this;
 }
 
@@ -2278,6 +2294,7 @@ void VDictGetLength::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VDictGetLength::DoResolve (VEmitContext &ec) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -2364,6 +2381,7 @@ void VDictGetCapacity::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VDictGetCapacity::DoResolve (VEmitContext &ec) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -2458,6 +2476,7 @@ VExpression *VDictClearOrReset::DoResolve (VEmitContext &ec) {
   }
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -2553,6 +2572,7 @@ VExpression *VDictRehash::DoResolve (VEmitContext &ec) {
   }
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 
@@ -2656,6 +2676,7 @@ VExpression *VDictFind::DoResolve (VEmitContext &ec) {
   if (!VScriptDictElem::isSimpleType(sexpr->Type.GetDictKeyType())) keyexpr->RequestAddressOf();
 
   Type = sexpr->Type.GetDictValueType().MakePointerType();
+  SetResolved();
   return this;
 }
 
@@ -2765,6 +2786,7 @@ VExpression *VDictDelete::DoResolve (VEmitContext &ec) {
   if (!VScriptDictElem::isSimpleType(sexpr->Type.GetDictKeyType())) keyexpr->RequestAddressOf();
 
   Type = VFieldType(TYPE_Int); // bool
+  SetResolved();
   return this;
 }
 
@@ -2892,6 +2914,7 @@ VExpression *VDictPut::DoResolve (VEmitContext &ec) {
   if (!VScriptDictElem::isSimpleType(sexpr->Type.GetDictValueType())) valexpr->RequestAddressOf();
 
   Type = VFieldType(TYPE_Int); // bool
+  SetResolved();
   return this;
 }
 
@@ -2980,6 +3003,7 @@ void VDictFirstIndex::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VDictFirstIndex::DoResolve (VEmitContext &ec) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -3079,6 +3103,7 @@ VExpression *VDictIsValidIndex::DoResolve (VEmitContext &ec) {
 
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int); // bool
+  SetResolved();
   return this;
 }
 
@@ -3187,6 +3212,7 @@ VExpression *VDictNextIndex::DoResolve (VEmitContext &ec) {
 
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
+  SetResolved();
   return this;
 }
 
@@ -3290,6 +3316,7 @@ VExpression *VDictKeyAtIndex::DoResolve (VEmitContext &ec) {
   Type = sexpr->Type.GetDictKeyType();
   if (Type.Type != TYPE_String && !VScriptDictElem::isSimpleType(Type)) Type = Type.MakePointerType();
   SetReadOnly();
+  SetResolved();
   return this;
 }
 
@@ -3392,6 +3419,7 @@ VExpression *VDictValueAtIndex::DoResolve (VEmitContext &ec) {
   Type = sexpr->Type.GetDictValueType();
   Type = Type.MakePointerType();
   if (sexpr->IsReadOnly()) SetReadOnly();
+  SetResolved();
   return this;
 }
 
@@ -3486,6 +3514,7 @@ VExpression *VStructZero::DoResolve (VEmitContext &ec) {
   }
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Void);
+  SetResolved();
   return this;
 }
 

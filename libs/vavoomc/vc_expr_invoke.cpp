@@ -114,6 +114,7 @@ VExpression *VDynCastWithVar::DoResolve (VEmitContext &ec) {
   Type = destclass->Type;
   Type.Type = what->Type.Type;
   Type.Class = destclass->Type.Class;
+  SetResolved();
   return this;
 }
 
@@ -2084,7 +2085,8 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
         GLog.Logf(NAME_Debug, "MT:<%s>: arg#%d: pt=%s; at=%s (%s)", *Func->GetFullName(), i+1, *Func->ParamTypes[i].GetName(), *Args[i]->Type.GetName(), *Args[i]->toString());
       }
       */
-      Args[i] = Args[i]->Resolve(ec);
+      //FIXME: this can be already resolved if we're in `VPropertyAssign`
+      if (!Args[i]->IsResolved()) Args[i] = Args[i]->Resolve(ec);
       if (!Args[i]) { ArgsOk = false; break; }
     }
   }
@@ -2114,10 +2116,10 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
       }
     }
   }
+  SetResolved();
 
   // some special functions will be converted to builtins, try to const-optimize 'em
   if (Func->builtinOpc >= 0) return OptimizeBuiltin(ec);
-
   return this;
 }
 
@@ -2773,28 +2775,30 @@ bool VInvocation::IsGoodMethodParams (VEmitContext &ec, VMethod *m, int argc, VE
       if (argv[i]->IsRefArg() && (m->ParamFlags[i]&FPARM_Ref) == 0) return false;
       if (argv[i]->IsOutArg() && (m->ParamFlags[i]&FPARM_Out) == 0) return false;
       // resolve it
-      VExpression *aa = argv[i]->SyntaxCopy()->Resolve(ec);
+      //FIXME: this can be already resolved if we're in `VPropertyAssign`
+      bool doDeleteAA = !argv[i]->IsResolved();
+      VExpression *aa = (doDeleteAA ? argv[i]->SyntaxCopy()->Resolve(ec) : argv[i]);
       if (!aa) return false;
       // other checks
       if (ec.Package->Name == NAME_decorate) {
         switch (m->ParamTypes[i].Type) {
           case TYPE_Int:
           case TYPE_Float:
-            if (aa->Type.Type == TYPE_Float || aa->Type.Type == TYPE_Int) { delete aa; continue; }
+            if (aa->Type.Type == TYPE_Float || aa->Type.Type == TYPE_Int) { if (doDeleteAA) delete aa; continue; }
             break;
         }
       }
       if (m->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) {
         if (!aa->Type.Equals(m->ParamTypes[i])) {
           // check, but don't raise any errors
-          if (!aa->Type.CheckMatch(true, aa->Loc, m->ParamTypes[i], false)) { delete aa; return false; }
+          if (!aa->Type.CheckMatch(true, aa->Loc, m->ParamTypes[i], false)) { if (doDeleteAA) delete aa; return false; }
         }
       } else {
-        if (m->ParamTypes[i].Type == TYPE_Float && aa->Type.Type == TYPE_Int) { delete aa; continue; }
+        if (m->ParamTypes[i].Type == TYPE_Float && aa->Type.Type == TYPE_Int) { if (doDeleteAA) delete aa; continue; }
         // check, but don't raise any errors
-        if (!aa->Type.CheckMatch(false, aa->Loc, m->ParamTypes[i], false)) { delete aa; return false; }
+        if (!aa->Type.CheckMatch(false, aa->Loc, m->ParamTypes[i], false)) { if (doDeleteAA) delete aa; return false; }
       }
-      delete aa;
+      if (doDeleteAA) delete aa;
     } else {
       // vararg
       if (!argv[i]) return false;
@@ -2853,7 +2857,7 @@ void VInvocation::CheckParams (VEmitContext &ec) {
                 Args[i] = new VIntLiteral(Val, Loc);
                 Args[i] = Args[i]->Resolve(ec);
               } else if (Args[i]->Type.Type == TYPE_Float) {
-                Args[i] = (new VScalarToInt(Args[i], true))->Resolve(ec);
+                Args[i] = (new VScalarToInt(Args[i]))->Resolve(ec);
               }
               break;
             case TYPE_Float:
@@ -2865,7 +2869,7 @@ void VInvocation::CheckParams (VEmitContext &ec) {
                 Args[i] = new VFloatLiteral(Val, Loc);
                 Args[i] = Args[i]->Resolve(ec);
               } else if (Args[i]->Type.Type == TYPE_Int) {
-                Args[i] = (new VScalarToFloat(Args[i], true))->Resolve(ec);
+                Args[i] = (new VScalarToFloat(Args[i]))->Resolve(ec);
               }
               break;
           }
@@ -2923,7 +2927,7 @@ void VInvocation::CheckParams (VEmitContext &ec) {
               Args[i] = (new VFloatLiteral(val, Loc))->Resolve(ec); // literal's `Reslove()` does nothing, but...
             } else if (Args[i]->Type.Type == TYPE_Int || Args[i]->Type.Type == TYPE_Byte) {
               auto erloc = Args[i]->Loc;
-              Args[i] = (new VScalarToFloat(Args[i], true))->Resolve(ec);
+              Args[i] = (new VScalarToFloat(Args[i]))->Resolve(ec);
               if (!Args[i]) ParseError(erloc, "Cannot convert argument to float for arg #%d", i+1);
             }
           }
@@ -3198,7 +3202,7 @@ VExpression *VInvokeWrite::DoResolve (VEmitContext &ec) {
   }
 
   Type = VFieldType(TYPE_Void);
-
+  SetResolved();
   return this;
 }
 

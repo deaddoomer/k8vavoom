@@ -69,7 +69,7 @@ VExpression *VAssignment::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VAssignment::DoRestSyntaxCopyTo
+//  VAssignment::DoSyntaxCopyTo
 //
 //==========================================================================
 void VAssignment::DoSyntaxCopyTo (VExpression *e) {
@@ -96,12 +96,15 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
       return nullptr;
     }
     if (resolved) {
+      vassert(op1->IsResolved());
       VExpression *e = op1;
       op1 = nullptr;
       op2 = nullptr;
       delete this;
       return e;
     }
+    vassert(!op1->IsResolved());
+    vassert(!op2 || !op2->IsResolved());
   }
 
   // to optimize `+= 1` and `-= 1`
@@ -113,8 +116,12 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
   }
   */
 
+  vassert(!op1 || !op1->IsResolved());
+  vassert(!op2 || !op2->IsResolved());
+
   if (op1) op1 = op1->ResolveAssignmentTarget(ec);
   if (op2) op2 = (op1 && op1->Type.Type == TYPE_Float ? op2->ResolveFloat(ec) : op2->ResolveAssignmentValue(ec));
+  // op2 can be unresolved if it is a property assign (HACK!)
 
   if (!op1 || !op2) { delete this; return nullptr; }
 
@@ -130,7 +137,10 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
       delete this;
       return nullptr;
     }
+    vassert(!op1->IsResolved()); // invariant
+    vassert(op2->IsResolved()); // invariant
     VPropertyAssign *e = (VPropertyAssign *)op1;
+    vassert(e->NumArgs == 0);
     e->NumArgs = 1;
     e->Args[0] = op2;
     op1 = nullptr;
@@ -139,6 +149,10 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
     return e->Resolve(ec);
   }
 
+  //if (!op1->IsResolved()) GLog.Logf("%s: unresolved op1 in assign: %s", *op1->Loc.toStringNoCol(), *op1->toString());
+  vassert(op1 && op1->IsResolved());
+  vassert(op2 && op2->IsResolved());
+
   if (op1->IsDynArraySetNum()) {
     if (Oper != Assign && Oper != AddAssign && Oper != MinusAssign) {
       ParseError(Loc, "Only `=`, `+=`, or `-=` can be used to resize a dynamic array");
@@ -146,6 +160,8 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
       return nullptr;
     }
     op2->Type.CheckMatch(false, Loc, VFieldType(TYPE_Int));
+    vassert(op1->IsResolved()); // invariant
+    vassert(op2->IsResolved()); // invariant
     VDynArraySetNum *e = (VDynArraySetNum *)op1;
     e->NumExpr = op2;
          if (Oper == Assign) e->opsign = 0;
@@ -154,7 +170,7 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
     op1 = nullptr;
     op2 = nullptr;
     delete this;
-    return e->Resolve(ec);
+    return e; //->Resolve(ec); -- already resolved
   }
 
   // struct assignment
@@ -194,6 +210,7 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
     op1->RequestAddressOfForAssign();
   }
 
+  SetResolved();
   return this;
 }
 
@@ -518,7 +535,7 @@ VExpression *VPropertyAssign::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VPropertyAssign::DoRestSyntaxCopyTo
+//  VPropertyAssign::DoSyntaxCopyTo
 //
 //==========================================================================
 void VPropertyAssign::DoSyntaxCopyTo (VExpression *e) {
