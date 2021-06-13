@@ -328,9 +328,14 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
     return;
   }
 
+  // calculate it here, so lower decals will have the same angle too
+  const float decalAngle = AngleMod((angleOverride ? angle : dec->angleFlat.value)-90.0f);
+
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
-    if (dcl) SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, angle, angleOverride, forceFlipX);
+    if (dcl) {
+      SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, decalAngle, /*angleOverride*/true, forceFlipX);
+    }
   }
 
   int tex = dec->texid;
@@ -355,7 +360,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   DInfo nfo;
   // `-90` is required to make decals correspond to in-game yaw angles
-  nfo.angle = AngleMod((angleOverride ? angle : dec->angleFlat.value)-90.0f);
+  nfo.angle = decalAngle;
   nfo.spheight = dec->spheight;
   nfo.org = org;
   nfo.range = range;
