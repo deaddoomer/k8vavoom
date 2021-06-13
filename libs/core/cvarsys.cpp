@@ -975,7 +975,7 @@ bool VCvar::Command (const TArray<VStr> &Args) {
   if (!cvar) return false;
 
   bool needHelp = false;
-  if (Args.Num() == 2) {
+  if (Args.length() == 2) {
     for (const char *s = *(Args[1]); *s; ++s) {
       if (*s == ' ') continue;
       if (*s == '?') { needHelp = true; continue; }
@@ -985,7 +985,7 @@ bool VCvar::Command (const TArray<VStr> &Args) {
   }
 
   // perform a variable print or set
-  if (Args.Num() == 1) {
+  if (Args.length() == 1) {
     GLog.Logf("%s is \"%s\"", cvar->Name, *cvar->StringValue.quote());
     if ((cvar->Flags&CVAR_Latch) && cvar->LatchedString.IsNotEmpty()) {
       GLog.Logf("Latched \"%s\"", *cvar->LatchedString.quote());

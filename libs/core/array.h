@@ -266,10 +266,10 @@ public:
 
   friend VStream &operator << (VStream &Strm, TArray<T> &Array) noexcept {
     vassert(!Array.Is2D());
-    int NumElem = Array.Num();
+    int NumElem = Array.length();
     Strm << STRM_INDEX(NumElem);
     if (Strm.IsLoading()) Array.SetNum(NumElem);
-    for (int i = 0; i < Array.Num(); ++i) Strm << Array[i];
+    for (int i = 0; i < Array.length(); ++i) Strm << Array[i];
     return Strm;
   }
 

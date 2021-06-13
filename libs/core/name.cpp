@@ -334,7 +334,7 @@ __attribute__((used)) VNameAutoIniter vNameAutoIniter;
 
 /*k8: there is no reason to do this
 void VName::StaticExit () {
-  for (int i = NUM_HARDCODED_NAMES; i < Names.Num(); ++i) Z_Free(Names[i]);
+  for (int i = NUM_HARDCODED_NAMES; i < Names.length(); ++i) Z_Free(Names[i]);
   Names.Clear();
   Initialised = false;
 }
