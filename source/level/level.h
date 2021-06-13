@@ -1429,6 +1429,8 @@ public: // used in renderer for flat decals
   // `sub` can be `nullptr`
   bool CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams &params);
 
+  void KillAllMapDecals ();
+
 private:
   decal_t *AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalAnim *animator);
   //decal_t *AllocSRegDecal (sector_t *sec, int eregidx, bool atFloor, VDecalDef *dec);

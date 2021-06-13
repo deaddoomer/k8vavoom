@@ -1405,3 +1405,14 @@ IMPLEMENT_FUNCTION(VLevel, CheckBootPrints) {
   vobjGetParamSelf(org, sub, params);
   RET_BOOL(Self->CheckBootPrints(org, sub, *params));
 }
+
+
+COMMAND(RemoveAllDecals) {
+  VLevel *lvl = (GLevel ? GLevel : GClLevel);
+  if (!lvl) {
+    GCon->Log(NAME_Error, "no level loaded");
+    return;
+  }
+  lvl->KillAllMapDecals();
+  GCon->Log("removed all decals");
+}

@@ -221,7 +221,7 @@ void VLevel::LoadMap (VName AMapName) {
   bool AuxiliaryMap = false;
   int lumpnum, xmaplumpnum = -1;
   VName MapLumpName;
-  decanimlist = nullptr;
+  vassert(!decanimlist);
 
   mapTextureWarns.clear();
   // clear automap marks; save loader will restore them from a save

@@ -381,6 +381,26 @@ void VLevel::ClearReferences () {
 
 //==========================================================================
 //
+//  VLevel::KillAllMapDecals
+//
+//==========================================================================
+void VLevel::KillAllMapDecals () {
+  // remove all wall decals
+  if (Segs) for (auto &&seg : allSegs()) seg.killAllDecals(this);
+  // remove all flat decals
+  KillAllSubsectorDecals();
+  // decal animation list should be empty too
+  vassert(!decanimlist);
+  // clear subsector decal list (it should be empty anyway)
+  if (subsectorDecalList) {
+    delete[] subsectorDecalList;
+    subsectorDecalList = nullptr;
+  }
+}
+
+
+//==========================================================================
+//
 //  VLevel::ClearAllMapData
 //
 //  this is also used in dtor
@@ -408,6 +428,8 @@ void VLevel::ClearAllMapData () {
   delete UserSideIdxKeyInfo;
   UserSideIdxKeyInfo = nullptr;
 
+  KillAllMapDecals();
+
   if (Sectors) {
     for (auto &&sec : allSectors()) {
       sec.DeleteAllRegions();
@@ -426,18 +448,6 @@ void VLevel::ClearAllMapData () {
       delete[] line.v2lines;
       line.moreTags.clear();
     }
-  }
-
-  if (Segs) {
-    for (auto &&seg : allSegs()) seg.killAllDecals(this);
-  }
-
-  KillAllSubsectorDecals(); // kills all flat decals
-
-  // just in case
-  if (subsectorDecalList) {
-    delete[] subsectorDecalList;
-    subsectorDecalList = nullptr;
   }
 
   delete[] Vertexes;
@@ -506,8 +516,6 @@ void VLevel::ClearAllMapData () {
 //
 //==========================================================================
 void VLevel::Destroy () {
-  decanimlist = nullptr; // why not?
-
   // destroy all thinkers (including scripts)
   DestroyAllThinkers();
 

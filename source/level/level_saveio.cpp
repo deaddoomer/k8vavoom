@@ -181,22 +181,14 @@ void VLevel::SerialiseOther (VStream &Strm) {
   #endif
 
   if (Strm.IsLoading()) {
+    KillAllMapDecals();
+    // reset subsector update frame and "seen" flag
     for (auto &&sub : allSubsectors()) {
-      // reset subsector update frame
       sub.updateWorldFrame = 0;
-      // clear seen subsectors
       sub.miscFlags &= ~subsector_t::SSMF_Rendered;
     }
-    for (auto &&seg : allSegs()) {
-      // clear seen segs on loading
-      seg.flags &= ~SF_MAPPED;
-      // remove seg decals
-      seg.killAllDecals(this);
-    }
-    // remove all subsector decals
-    KillAllSubsectorDecals();
-    // decal animation list should be empty too
-    decanimlist = nullptr;
+    // clear seen segs on loading
+    for (auto &&seg : allSegs()) seg.flags &= ~SF_MAPPED;
   }
 
   // write/check various numbers, so we won't load invalid save accidentally
