@@ -39,7 +39,6 @@
 #include "textdefs.h"
 #include "psim/p_gameobject.h"
 #include "textures/r_tex_id.h"
-#include "ntvalueioex.h"
 #include "level/level.h"
 #include "mapinfo.h"
 #include "lockdefs.h"
@@ -55,7 +54,6 @@
 #include "finale.h"
 #include "server/server.h"
 #include "server/sv_save.h"
-#include "qs_data.h"
 #include "psim/p_gameinfo.h"
 
 #endif

@@ -26,6 +26,7 @@
 #include "../server/sv_local.h"
 #include "p_decal.h"
 #include "p_decal_private.h"
+#include "../ntvalueioex.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //

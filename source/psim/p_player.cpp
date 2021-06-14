@@ -34,6 +34,7 @@
 # include "../automap.h"
 # include "../client/client.h"
 #endif
+#include "../qs_data.h"
 
 //#define VV_SETSTATE_DEBUG
 

@@ -36,6 +36,7 @@
 #ifdef CLIENT
 # include "../client/client.h"
 #endif
+#include "../qs_data.h"
 #include "sv_local.h"
 
 #include <time.h>

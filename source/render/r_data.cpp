@@ -31,6 +31,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../decorate/vc_decorate.h"
 #include "../dehacked/vc_dehacked.h"
+#include "../ntvalueioex.h"  /* VCheckedStream */
 #include "r_local.h"
 
 

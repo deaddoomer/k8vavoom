@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../ntvalueioex.h"  /* VCheckedStream */
 #include "r_tex.h"
 
 //#define VV_VERY_VERBOSE_TEXTURE_LOADER

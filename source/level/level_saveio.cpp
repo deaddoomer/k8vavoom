@@ -30,6 +30,7 @@
 #ifdef CLIENT
 # include "../automap.h"
 #endif
+#include "../ntvalueioex.h"
 
 
 //==========================================================================
