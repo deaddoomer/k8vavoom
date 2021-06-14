@@ -30,6 +30,7 @@
 # include "../automap.h"
 #endif
 #include "../psim/p_decal.h"
+#include "../psim/p_entity.h"
 
 
 VStream *VPackage::OpenFileStreamRO (VStr fname) { return FL_OpenFileRead(fname); }

@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../net/network.h"
+#include "../psim/p_entity.h"
 #include "sv_local.h"
 #ifdef CLIENT
 # include "../screen.h"

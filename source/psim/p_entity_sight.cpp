@@ -31,6 +31,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 
 
 static VCvarB compat_better_sight("compat_better_sight", true, "Check more points in LOS calculations?", CVAR_Archive);

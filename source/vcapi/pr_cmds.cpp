@@ -31,6 +31,7 @@
 #include "../net/network.h" /* for server list */
 #include "../server/sv_local.h"
 #include "../drawer.h"
+#include "../psim/p_entity.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
 # include "../screen.h"

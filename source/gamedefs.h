@@ -59,7 +59,6 @@
 #include "psim/p_worldinfo.h"
 #include "psim/p_thinker.h"
 #include "psim/p_levelinfo.h"
-#include "psim/p_entity.h"
 #include "psim/p_playerreplicationinfo.h"
 #include "psim/p_player.h"
 #include "psim/p_gameinfo.h"

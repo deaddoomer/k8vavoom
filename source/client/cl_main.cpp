@@ -27,6 +27,7 @@
 #include "../drawer.h"
 #include "../text.h"
 #include "../net/network.h"
+#include "../psim/p_entity.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"
 #include "../server/sv_local.h"

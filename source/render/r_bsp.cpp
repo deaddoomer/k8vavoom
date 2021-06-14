@@ -32,6 +32,7 @@
 
 #include "../gamedefs.h"
 #include "../automap.h"
+#include "../psim/p_entity.h"
 #include "r_local.h"
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)

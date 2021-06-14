@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 
 //#define VV_DBG_VERBOSE_REL_LINE_FC
 

@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 #include "network.h"
 #include "../server/sv_local.h"
 

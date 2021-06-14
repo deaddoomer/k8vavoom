@@ -501,12 +501,7 @@ public:
   static vuint32 CountSegSurfacesInChain (const segpart_t *sp) noexcept;
   vuint32 CountAllSurfaces () const noexcept;
 
-  static inline VName GetClassNameForModel (VEntity *mobj) noexcept {
-    return
-      mobj && mobj->State ?
-        (r_models_strict ? mobj->GetClass()->Name : mobj->State->Outer->Name) :
-        NAME_None;
-  }
+  static VName GetClassNameForModel (VEntity *mobj) noexcept;
 
   // fuckery to avoid having friends, because i am asocial
   inline void CallTransformFrustum () { TransformFrustum(); }

@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 #include "sv_local.h"
 
 #include <time.h>

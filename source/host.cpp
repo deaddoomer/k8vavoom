@@ -26,6 +26,7 @@
 #include "gitversion.h"
 #include "gamedefs.h"
 #include "net/network.h"
+#include "psim/p_entity.h"
 #ifdef CLIENT
 # include "screen.h"
 # include "client/cl_local.h"

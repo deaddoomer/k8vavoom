@@ -181,19 +181,7 @@ protected:
   // doesn't do any checks, just renders it
   void RenderMobjShadowMapSprite (VEntity *ent, const unsigned int facenum, const bool allowRotating);
 
-
-  inline bool IsTouchedByCurrLight (const VEntity *ent) const {
-    const float clr = CurrLightRadius;
-    //if (clr < 2) return false; // arbitrary number
-    const TVec eofs = CurrLightPos-ent->Origin;
-    const float edist = ent->Radius+clr;
-    if (eofs.Length2DSquared() >= edist*edist) return false;
-    // if light is higher than thing height, assume that the thing is not touched
-    if (eofs.z >= clr+ent->Height) return false;
-    // if light is lower than the thing, assume that the thing is not touched
-    if (eofs.z <= -clr) return false;
-    return true;
-  }
+  bool IsTouchedByCurrLight (const VEntity *ent) const noexcept;
 
 public:
   VRenderLevelShadowVolume (VLevel *);

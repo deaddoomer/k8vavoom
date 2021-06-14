@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 #include "r_local.h"
 
 
@@ -1765,6 +1766,19 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         break;
     }
   }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::GetClassNameForModel
+//
+//==========================================================================
+VName VRenderLevelShared::GetClassNameForModel (VEntity *mobj) noexcept {
+  return
+    mobj && mobj->State ?
+      (r_models_strict ? mobj->GetClass()->Name : mobj->State->Outer->Name) :
+      NAME_None;
 }
 
 

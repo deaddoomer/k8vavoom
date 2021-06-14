@@ -38,6 +38,170 @@ enum {
 };
 
 
+struct VDropItemInfo {
+  VClass *Type;
+  VName TypeName;
+  vint32 Amount;
+  float Chance;
+};
+
+struct VDamageFactor {
+  VName DamageType;
+  float Factor;
+  enum {
+    DF_REPLACE = 1u<<0,
+    DF_NOARMOR = 1u<<1,
+  };
+  vuint32 Flags;
+};
+
+struct VPainChanceInfo {
+  VName DamageType;
+  float Chance;
+};
+
+struct VDamageColorType {
+  VName Type;
+  vint32 Color;
+  float Intensity;
+};
+
+
+struct VDropOffLineInfo {
+  line_t *line;
+  vint32 side; // is front dropoff?
+  // side -> dir:
+  //  0: line->normal
+  //  1: -line->normal
+};
+
+
+enum {
+  STYLE_None, // do not draw
+  STYLE_Normal, // normal; just copy the image to the screen
+  STYLE_Fuzzy, // draw silhouette using "fuzz" effect
+  STYLE_SoulTrans, // draw translucent with amount in r_transsouls
+  STYLE_OptFuzzy, // draw as fuzzy or translucent, based on user preference
+  STYLE_Stencil, // solid color
+  STYLE_Translucent, // draw translucent
+  STYLE_Add, // draw additive
+  STYLE_Shaded, // implemented
+  STYLE_TranslucentStencil, // implemented
+  STYLE_Shadow, // implemented
+  STYLE_Subtract, // not implemented
+  STYLE_AddStencil, // solid color, additive
+  STYLE_AddShaded, // implemented
+  // special style for sprites only
+  STYLE_Dark = 64,
+};
+
+// color tralslation types
+enum {
+  TRANSL_None, // no translation
+  TRANSL_Standard, // game's standard translations
+  TRANSL_Player, // per-player translations
+  TRANSL_Level, // ACS translations
+  TRANSL_BodyQueue, // translations of dead players
+  TRANSL_Decorate, // translations defined in DECORATE
+  TRANSL_Blood, // blood translations, for blood color
+
+  TRANSL_Max,
+
+  TRANSL_TYPE_SHIFT = 16,
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+/*
+struct cptrace_t {
+  TVec Pos;
+  float BBox[4];
+  float FloorZ;
+  float CeilingZ;
+  float DropOffZ;
+  sec_plane_t *EFloor;
+  sec_plane_t *ECeiling;
+};
+*/
+
+struct tmtrace_t {
+  VEntity *StepThing; // not for cptrace_t
+  TVec End; // for cptrace_t, this is `Pos`
+  float BBox[4]; // valid for cptrace_t
+  float FloorZ; // valid for cptrace_t
+  float CeilingZ; // valid for cptrace_t
+  float DropOffZ; // valid for cptrace_t
+
+  // WARNING! keep in sync with VEntity fcflags
+  /*
+  enum {
+    FC_FlipFloor = 1u<<0,
+    FC_FlipCeiling = 1u<<1,
+  };
+  vuint32 fcflags; // valid for cptrace_t
+  */
+  TSecPlaneRef EFloor; // valid for cptrace_t
+  TSecPlaneRef ECeiling; // valid for cptrace_t
+
+  enum {
+    TF_FloatOk = 0x01u, // if true, move would be ok if within tmtrace.FloorZ - tmtrace.CeilingZ
+  };
+  vuint32 TraceFlags;
+
+  // keep track of the line that lowers the ceiling,
+  // so missiles don't explode against sky hack walls
+  line_t *CeilingLine;
+  line_t *FloorLine;
+  // also keep track of the blocking line, for checking
+  // against doortracks
+  line_t *BlockingLine; // only lines without backsector
+
+  // keep track of special lines as they are hit,
+  // but don't process them until the move is proven valid
+  TArray<line_t *> SpecHit;
+
+  VEntity *BlockingMobj;
+  // any blocking line (including passable two-sided!); only has any sense if trace returned `false`
+  // note that this is really *any* line, not necessarily first or last crossed!
+  line_t *AnyBlockingLine;
+
+  // polyobject we are standing on, valid for cptrace_t
+  polyobj_t *PolyObj;
+
+  // from cptrace_t
+  //TVec Pos; // valid for cptrace_t
+
+  inline void setupGap (VLevel *XLevel, sector_t *sector, float Height) {
+    XLevel->FindGapFloorCeiling(sector, End, Height, EFloor, ECeiling);
+    FloorZ = DropOffZ = EFloor.GetPointZClamped(End);
+    CeilingZ = ECeiling.GetPointZClamped(End);
+  }
+
+  /*
+  inline void CopyRegFloor (sec_region_t *r, const TVec *Origin) {
+    EFloor = r->efloor;
+    if (Origin) FloorZ = EFloor.GetPointZClamped(*Origin);
+  }
+
+  inline void CopyRegCeiling (sec_region_t *r, const TVec *Origin) {
+    ECeiling = r->eceiling;
+    if (Origin) CeilingZ = ECeiling.GetPointZClamped(*Origin);
+  }
+  */
+
+  inline void CopyOpenFloor (opening_t *o, bool setz=true) noexcept {
+    EFloor = o->efloor;
+    if (setz) FloorZ = o->bottom;
+  }
+
+  inline void CopyOpenCeiling (opening_t *o, bool setz=true) noexcept {
+    ECeiling = o->eceiling;
+    if (setz) CeilingZ = o->top;
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 class VGameInfo : public VGameObject {
   DECLARE_CLASS(VGameInfo, VGameObject, 0)
   NO_DEFAULT_CONSTRUCTOR(VGameInfo)

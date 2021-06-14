@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 
 /*
   3d polyobjects, will sector-link to themselves all things that are touching

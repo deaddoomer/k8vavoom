@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "network.h"
 #include "net_message.h"
+#include "../psim/p_entity.h"
 #include "../client/cl_local.h"
 
 

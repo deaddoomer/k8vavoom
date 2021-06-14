@@ -26,6 +26,8 @@
 #include "../../libs/vavoomc/vc_local.h"
 #include "../gamedefs.h"
 #include "../render/r_local.h" // for SPR_xxx
+#include "../psim/p_entity.h"
+
 
 // WARNING! dehacked parser requires this!
 #define VC_DECORATE_ACTION_BELONGS_TO_STATE

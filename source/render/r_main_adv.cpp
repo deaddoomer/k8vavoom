@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 #include "r_local.h"
 
 
@@ -105,6 +106,25 @@ VRenderLevelShadowVolume::VRenderLevelShadowVolume (VLevel *ALevel)
 //
 //==========================================================================
 VRenderLevelShadowVolume::~VRenderLevelShadowVolume () {
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShadowVolume::IsTouchedByCurrLight
+//
+//==========================================================================
+bool VRenderLevelShadowVolume::IsTouchedByCurrLight (const VEntity *ent) const noexcept {
+  const float clr = CurrLightRadius;
+  //if (clr < 2) return false; // arbitrary number
+  const TVec eofs = CurrLightPos-ent->Origin;
+  const float edist = ent->Radius+clr;
+  if (eofs.Length2DSquared() >= edist*edist) return false;
+  // if light is higher than thing height, assume that the thing is not touched
+  if (eofs.z >= clr+ent->Height) return false;
+  // if light is lower than the thing, assume that the thing is not touched
+  if (eofs.z <= -clr) return false;
+  return true;
 }
 
 

@@ -33,6 +33,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_entity.h"
 #include "../screen.h"
 #include "r_local.h"
 
