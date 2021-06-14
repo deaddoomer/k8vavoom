@@ -27,6 +27,8 @@
 #include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../server/sv_save.h"
+#include "../language.h"
+#include "../infostr.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_player.h"
@@ -300,6 +302,16 @@ VEntity *VLevelInfo::FindMobjFromTID (int tid, VEntity *Prev) {
 //==========================================================================
 void VLevelInfo::ChangeMusic (VName SongName) {
   SongLump = SongName;
+}
+
+
+//==========================================================================
+//
+//  VLevelInfo::GetLevelName
+//
+//==========================================================================
+VStr VLevelInfo::GetLevelName () const {
+  return (LevelInfoFlags & LIF_LookupName ? GLanguage[*LevelName] : LevelName);
 }
 
 

@@ -28,6 +28,8 @@
 #include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../client/cl_local.h"
+#include "../language.h"
+#include "../infostr.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_player.h"

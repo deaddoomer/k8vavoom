@@ -32,9 +32,10 @@
 
 #include "gamecommon.h"
 
+#include "console.h"
+#include "cmd.h"
+
 #include "scripts.h"
-#include "language.h"
-#include "infostr.h"
 #include "filesys/files.h"
 #include "textdefs.h"
 #include "psim/p_gameobject.h"
@@ -46,8 +47,6 @@
 #include "textures/r_tex_public.h"
 #include "render/r_public.h"
 #include "sound/sound.h"
-#include "console.h"
-#include "cmd.h"
 #include "psim/p_gameinfo.h"
 
 #endif

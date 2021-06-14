@@ -30,6 +30,7 @@
 #ifdef CLIENT
 # include "client/client.h"
 #endif
+#include "infostr.h"
 
 
 //==========================================================================

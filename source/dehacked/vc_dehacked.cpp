@@ -29,6 +29,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#include "../language.h"
 #include "vc_dehacked.h"
 
 

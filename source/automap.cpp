@@ -39,6 +39,7 @@
 # include "psim/p_levelinfo.h"
 # include "psim/p_player.h"
 # include "client/client.h"
+# include "language.h"
 #endif
 #include "text.h"
 

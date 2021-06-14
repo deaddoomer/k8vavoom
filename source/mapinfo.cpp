@@ -28,6 +28,7 @@
 #include "server/server.h"
 #include "server/sv_local.h"
 #include "decorate/vc_decorate.h"
+#include "language.h"
 
 
 static int cli_NoMapinfoPlrClasses = 0;

@@ -58,6 +58,7 @@
 #include "../psim/p_worldinfo.h"
 #include "../psim/p_player.h"
 #include "../server/server.h"
+#include "../language.h"
 #ifdef CLIENT
 # include "../screen.h"
 # include "../text.h"

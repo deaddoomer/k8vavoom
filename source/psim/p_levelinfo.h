@@ -175,7 +175,7 @@ public:
 
   void ChangeMusic (VName);
 
-  inline VStr GetLevelName () const { return (LevelInfoFlags & LIF_LookupName ? GLanguage[*LevelName] : LevelName); }
+  VStr GetLevelName () const;
 
   int FindFreeTID (int tidstart, int limit=0) const;
   bool IsTIDUsed (int tid, bool allowdead=false) const;
