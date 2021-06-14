@@ -26,7 +26,7 @@
 //**  extended NTValue-based I/O
 //**
 //**************************************************************************
-#include "gamedefs.h"
+#include "../gamedefs.h"
 #include "ntvalueioex.h"
 
 

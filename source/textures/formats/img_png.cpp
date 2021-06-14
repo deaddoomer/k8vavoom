@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 #include "../../gamedefs.h"
-#include "../../ntvalueioex.h"  /* VCheckedStream */
+#include "../../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "../../filesys/files.h"
 #include "../r_tex.h"
 

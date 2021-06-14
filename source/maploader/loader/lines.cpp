@@ -25,7 +25,7 @@
 //**************************************************************************
 #include "../../gamedefs.h"
 #include "../../psim/p_levelinfo.h"
-#include "../../ntvalueioex.h"  /* VCheckedStream */
+#include "../../utils/ntvalueioex.h"  /* VCheckedStream */
 
 
 //==========================================================================

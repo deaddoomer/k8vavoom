@@ -28,8 +28,8 @@
 # include "language.h"
 # include "filesys/files.h"
 #elif defined(VCC_STANDALONE_EXECUTOR)
-# include "../vccrun/vcc_run_vc.h"
-# include "../libs/vavoomc/vc_public.h"
+# include "../../vccrun/vcc_run_vc.h"
+# include "../../libs/vavoomc/vc_public.h"
 # include "scripts.h"
 #endif
 

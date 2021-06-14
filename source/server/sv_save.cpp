@@ -40,7 +40,7 @@
 # include "../client/client.h"
 # include "../sound/sound.h"
 #endif
-#include "../qs_data.h"
+#include "../utils/qs_data.h"
 #include "server.h"
 #include "sv_local.h"
 #include "sv_save.h"

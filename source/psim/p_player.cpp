@@ -38,7 +38,7 @@
 # include "../client/client.h"
 # include "../sound/sound.h"
 #endif
-#include "../qs_data.h"
+#include "../utils/qs_data.h"
 
 //#define VV_SETSTATE_DEBUG
 

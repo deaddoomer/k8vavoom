@@ -44,13 +44,13 @@
 
 #include "gamedefs_build.h"
 #include "gamedefs_fwd.h"
-#include "misc.h"
+#include "utils/misc.h"
 #include "../libs/vavoomc/vc_public.h"
 
 #include "console.h"
 #include "cmd.h"
 
-#include "scripts.h"
+#include "utils/scripts.h"
 #include "psim/p_gameobject.h"
 #include "level/level.h"
 #include "textures/r_tex_public.h"

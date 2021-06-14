@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 // quicksave data
-#include "gamedefs.h"
+#include "../gamedefs.h"
 #include "qs_data.h"
 
 

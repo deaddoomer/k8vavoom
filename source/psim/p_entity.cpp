@@ -30,7 +30,7 @@
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_player.h"
-#include "../qs_data.h"
+#include "../utils/qs_data.h"
 
 //#define VV_SETSTATE_DEBUG
 

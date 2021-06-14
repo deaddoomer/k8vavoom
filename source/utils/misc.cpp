@@ -24,9 +24,9 @@
 //**
 //**************************************************************************
 #if !defined(VCC_STANDALONE_EXECUTOR)
-# include "gamedefs.h"
+# include "../gamedefs.h"
 #else
-# include "../libs/core/core.h"
+# include "../../libs/core/core.h"
 # include "misc.h"
 #endif
 

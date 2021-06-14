@@ -54,8 +54,8 @@ if (ENABLE_VCCRUN)
   endif(WITH_SDL2 AND SDL2_FOUND)
 
   set(VCCRUN_RUNTIME_SOURCES
-    ../source/scripts.h
-    ../source/scripts.cpp
+    ../source/utils/scripts.h
+    ../source/utils/scripts.cpp
   )
 
   set(VCCRUN_FSYS_SOURCES
@@ -146,7 +146,7 @@ if (ENABLE_VCCRUN)
     # entity grid
     modules/mod_entgrid.h
     modules/mod_entgrid.cpp
-    ../source/misc.cpp
+    ../source/utils/misc.cpp
   )
 
   set(VCCRUN_LINKLIBS ${VCCRUN_LINKLIBS} ${NET_LIBRARIES})

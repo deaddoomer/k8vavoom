@@ -425,9 +425,6 @@ set(CS_SHARED_SOURCES
   cvar.h
   cvar.cpp
 
-  misc.h
-  misc.cpp
-
   # yeah, the server needs this
   text.h
   text.cpp
@@ -444,13 +441,15 @@ set(CS_SHARED_SOURCES
   mapinfo.h
   mapinfo.cpp
 
-  qs_data.h
-  qs_data.cpp
-  ntvalueioex.h
-  ntvalueioex.cpp
+  utils/misc.h
+  utils/misc.cpp
+  utils/qs_data.h
+  utils/qs_data.cpp
+  utils/ntvalueioex.h
+  utils/ntvalueioex.cpp
 
-  scripts.h
-  scripts.cpp
+  utils/scripts.h
+  utils/scripts.cpp
 
   ${FILESYS_SOURCES}
   ${VLEVEL_CLASS_SOURCES}

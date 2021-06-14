@@ -49,8 +49,8 @@ float Random () {
 //#include "vcc_netobj.h"
 #include "vcc_run_vc.h"
 #include "../libs/vavoomc/vc_public.h"
-#include "../source/scripts.h"
-//#include "../source/misc.h"
+#include "../source/utils/scripts.h"
+//#include "../source/utils/misc.h"
 
 
 //extern VStream *OpenFile (const VStr &Name);

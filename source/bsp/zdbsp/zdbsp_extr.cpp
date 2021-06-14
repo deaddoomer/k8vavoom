@@ -1,5 +1,5 @@
 #include "zdbsp_extr.h"
-#include "../../misc.h"
+#include "../../utils/misc.h"
 extern FOutputDevice *GCon;
 
 
@@ -21,7 +21,7 @@ void ZDWarn (const char *format, ...) {
     --ebuf;
     *ebuf = 0;
   }
-  GCon->Log(buf);
+  GCon->Log(NAME_Warning, buf);
 }
 
 

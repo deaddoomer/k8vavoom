@@ -29,14 +29,14 @@
 #include <stdio.h>
 
 #include "../libs/core/core.h"
-#include "../source/common.h"
+#include "../source/gamedefs_fwd.h"
 
 #include "vcc_netobj.h"
 
 #include "convars.h"
 #include "filesys/fsys.h"
 
-#include "../source/misc.h"
+#include "../source/utils/misc.h"
 
 
 extern int devprintf (const char *text, ...) __attribute__((format(printf, 1, 2)));

@@ -30,7 +30,7 @@
 #include "../gamedefs.h"
 #include "../sound/sound.h"
 #include "p_levelinfo.h"
-#include "../ntvalueioex.h"
+#include "../utils/ntvalueioex.h"
 
 
 #define BUTTONTIME  (1.0f) /* 1 second */
