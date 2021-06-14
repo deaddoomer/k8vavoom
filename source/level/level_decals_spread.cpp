@@ -317,7 +317,7 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //
 //==========================================================================
 void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, int shadeclr,
-                                float alpha, VDecalAnim *animator, float angle, bool angleOverride, bool forceFlipX)
+                                float alpha, VDecalAnim *animator, float angle, bool forceFlipX)
 {
   if (!dec) return; // just in case
 
@@ -329,12 +329,12 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   }
 
   // calculate it here, so lower decals will have the same angle too
-  const float decalAngle = AngleMod((angleOverride ? angle : dec->angleFlat.value)-90.0f);
+  const float decalAngle = AngleMod((isFiniteF(angle) ? angle : dec->angleFlat.value)-90.0f);
 
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
     if (dcl) {
-      SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, decalAngle, /*angleOverride*/true, forceFlipX);
+      SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, decalAngle, forceFlipX);
     }
   }
 

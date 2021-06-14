@@ -1330,7 +1330,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
 //
 //==========================================================================
 void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation, int shadeclr, float alpha,
-                           VDecalAnim *animator, float angle, bool angleOverride, bool forceFlipX)
+                           VDecalAnim *animator, float angle, bool forceFlipX)
 {
   if (!r_decals || !r_decals_flat) return;
   if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
@@ -1342,7 +1342,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
   }
 
   range = max2(2.0f, fabsf(range));
-  SpreadFlatDecalEx(org, range, dec, 0, translation, shadeclr, alpha, animator, angle, angleOverride, forceFlipX);
+  SpreadFlatDecalEx(org, range, dec, 0, translation, shadeclr, alpha, animator, angle, forceFlipX);
 }
 
 
@@ -1366,10 +1366,10 @@ IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   VOptParamBool permanent(false);
-  VOptParamFloat angle(0.0f);
+  VOptParamFloat angle(INFINITY);
   VOptParamBool forceFlipX(false);
   vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
-  if (!angle.specified) angle.value = INFINITY;
+  //if (!angle.specified) angle.value = INFINITY;
   Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), permanent, angle, forceFlipX);
 }
 
@@ -1399,10 +1399,11 @@ IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   VOptParamInt shadeclr(-2);
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
-  VOptParamFloat angle(0.0f);
+  VOptParamFloat angle(INFINITY);
   VOptParamBool forceFlipX(false);
   vobjGetParamSelf(org, dectype, range, translation, shadeclr, alpha, animator, angle, forceFlipX);
-  Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), angle, angle.specified, forceFlipX);
+  //if (!angle.specified) angle = INFINITY;
+  Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), angle, forceFlipX);
 }
 
 

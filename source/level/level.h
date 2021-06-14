@@ -1445,11 +1445,11 @@ private:
   void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
   void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                          float angle, bool angleOverride, bool forceFlipX);
+                          float angle, bool forceFlipX);
 
   // z coord matters!
   void AddFlatDecal (TVec org, VName dectype, float range, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                     float angle, bool angleOverride, bool forceFlipX);
+                     float angle, bool forceFlipX);
 
   void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent, float angle, bool forceFlipX);
   void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent);
