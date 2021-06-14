@@ -39,7 +39,6 @@
 #include "psim/p_gameobject.h"
 #include "level/level.h"
 #include "textures/r_tex_public.h"
-#include "sound/sound.h"
 #include "psim/p_gameinfo.h"
 
 #endif

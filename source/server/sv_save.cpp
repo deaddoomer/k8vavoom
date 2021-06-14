@@ -38,6 +38,7 @@
 #ifdef CLIENT
 # include "../drawer.h"  /* VRenderLevelPublic */
 # include "../client/client.h"
+# include "../sound/sound.h"
 #endif
 #include "../qs_data.h"
 #include "server.h"

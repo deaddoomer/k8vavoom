@@ -37,6 +37,8 @@
 # endif
 #endif
 
+#include "sound.h"
+
 
 enum ESSCmds {
   SSCMD_None,

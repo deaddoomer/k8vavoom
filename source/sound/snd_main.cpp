@@ -29,6 +29,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_player.h"
 #include "../client/client.h"
+#include "sound.h"
 #include "snd_local.h"
 
 

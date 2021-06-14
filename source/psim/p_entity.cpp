@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "../render/r_public.h"
 #include "../server/sv_local.h"
+#include "../sound/sound.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_player.h"

@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "../ntvalueioex.h"  /* VCheckedStream */
 #include "../filesys/files.h"
+#include "../sound/sound.h"
 #include "r_tex.h"
 
 

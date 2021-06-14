@@ -47,6 +47,7 @@
 #include "language.h"
 #include "mapinfo.h"
 #include "filesys/files.h"
+#include "sound/sound.h"
 
 // we need it to init some data even in the server
 #include "render/r_public.h"

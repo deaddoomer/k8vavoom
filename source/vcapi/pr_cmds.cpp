@@ -31,6 +31,7 @@
 #include "../net/network.h" /* for server list */
 #include "../server/sv_local.h"
 #include "../server/sv_save.h"
+#include "../sound/sound.h"
 #include "../drawer.h"
 #include "../sbar.h"
 #include "../mapinfo.h"

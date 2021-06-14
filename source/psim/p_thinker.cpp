@@ -38,6 +38,7 @@
 #include "../net/network.h"
 #include "../server/server.h"
 #include "../client/cl_local.h" // for dlight_t
+#include "../sound/sound.h"
 #include "p_thinker.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"

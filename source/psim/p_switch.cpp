@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../sound/sound.h"
 #include "p_levelinfo.h"
 #include "../ntvalueioex.h"
 

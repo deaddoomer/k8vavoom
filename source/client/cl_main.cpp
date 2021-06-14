@@ -35,6 +35,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_player.h"
 #include "../filesys/files.h"
+#include "../sound/sound.h"
 #include "client.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"

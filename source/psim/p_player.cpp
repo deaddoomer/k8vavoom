@@ -36,6 +36,7 @@
 #ifdef CLIENT
 # include "../automap.h"
 # include "../client/client.h"
+# include "../sound/sound.h"
 #endif
 #include "../qs_data.h"
 

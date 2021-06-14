@@ -32,6 +32,7 @@
 #include "../language.h"
 #include "../mapinfo.h"
 #include "../filesys/files.h"
+#include "../sound/sound.h"
 #include "vc_dehacked.h"
 
 

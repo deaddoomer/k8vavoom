@@ -66,6 +66,7 @@
 # include "../text.h"
 # include "../client/client.h"
 #endif
+#include "../sound/sound.h"
 #include "p_acs.h"
 
 
