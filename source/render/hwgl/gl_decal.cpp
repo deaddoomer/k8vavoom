@@ -206,6 +206,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   GLEnableBlend();
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // this was for non-premultiplied
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  bool additiveMode = false;
 
   if (gl_decal_debug_nostencil) glDisable(GL_STENCIL_TEST);
   if (gl_decal_debug_noalpha) GLDisableBlend();
@@ -507,6 +508,17 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
     }
 
     currentActiveShader->UploadChangedUniforms();
+
+    const bool dcadditive = dc->isAdditive();
+    if (dcadditive != additiveMode) {
+      additiveMode = dcadditive;
+      if (additiveMode) {
+        glBlendFunc(GL_ONE, GL_ONE); // our source rgb is already premultiplied
+      } else {
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      }
+    }
+
     glBegin(GL_QUADS);
       if (dkind == DWALL) {
         glVertex(dc->v1);
@@ -519,34 +531,6 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         glVertex(dc->v4);
         glVertex(dc->v2);
       }
-      /*
-      if (dkind == DWALL) {
-        glVertex3f(v1.x, v1.y, dcz);
-        glVertex3f(v1.x, v1.y, dcz+thgt);
-        glVertex3f(v2.x, v2.y, dcz+thgt);
-        glVertex3f(v2.x, v2.y, dcz);
-      } else {
-        // floor/ceiling
-        //TODO: rotation
-        // left-bottom
-        TVec qv0 = v1+TVec(-txofs, tyofs);
-        qv0.z = surf->plane.GetPointZ(qv0);
-        // right-bottom
-        TVec qv1 = qv0+TVec(twdt, 0.0f);
-        qv1.z = surf->plane.GetPointZ(qv1);
-        // left-top
-        TVec qv2 = qv0-TVec(0.0f, thgt);
-        qv2.z = surf->plane.GetPointZ(qv2);
-        // right-top
-        TVec qv3 = qv1-TVec(0.0f, thgt);
-        qv3.z = surf->plane.GetPointZ(qv3);
-        // draw it
-        glVertex3f(qv0.x, qv0.y, qv0.z);
-        glVertex3f(qv2.x, qv2.y, qv2.z);
-        glVertex3f(qv3.x, qv3.y, qv3.z);
-        glVertex3f(qv1.x, qv1.y, qv1.z);
-      }
-      */
     glEnd();
 
     ++rdcount;
@@ -570,6 +554,9 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
   //glDepthMask(oldDepthMask);
   PopDepthMask();
   GLEnableBlend();
+
+  // restore blending mode
+  if (additiveMode) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   //if (rdcount && dbg_noblend) GCon->Logf(NAME_Debug, "DECALS: total=%d; noblend=%d", rdcount, dbg_noblend);
 
