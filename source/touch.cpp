@@ -30,7 +30,10 @@
 # include <SDL2/SDL.h>
 #endif
 #include "gamedefs.h"
+#include "touch.h"
 #include "drawer.h"
+#include "menu.h"
+#include "input.h"
 #include "touch.h"
 
 #define ID_UNDEF (-666)

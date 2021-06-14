@@ -29,6 +29,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "menu.h"
 #ifdef CLIENT
 # include "input.h"
 #endif

@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../server/server.h"
+#include "../menu.h"
 #ifdef CLIENT
 # include "../client/client.h"
 #endif

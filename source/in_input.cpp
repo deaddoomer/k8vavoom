@@ -34,6 +34,10 @@
 #include "input.h"
 #include "widgets/ui.h"
 #include "automap.h"
+#include "menu.h"
+#include "sbar.h"
+#include "chat.h"
+#include "finale.h"
 #include "client/client.h"
 
 

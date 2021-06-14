@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "chat.h"
 #include "iline.h"
 #include "input.h"
 #include "text.h"

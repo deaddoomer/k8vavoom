@@ -37,6 +37,9 @@
 # include "text.h"
 # include "automap.h"
 # include "client/client.h"
+# include "menu.h"
+# include "sbar.h"
+# include "chat.h"
 #endif
 #include "net/network.h"
 #include "decorate/vc_decorate.h"

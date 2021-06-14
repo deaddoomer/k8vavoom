@@ -32,6 +32,7 @@
 #include "../server/sv_local.h"
 #include "../server/sv_save.h"
 #include "../drawer.h"
+#include "../sbar.h"
 #include "../psim/p_entity.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"

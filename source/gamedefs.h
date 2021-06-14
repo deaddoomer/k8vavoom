@@ -46,12 +46,8 @@
 #include "textures/r_tex_public.h"
 #include "render/r_public.h"
 #include "sound/sound.h"
-#include "menu.h"
 #include "console.h"
 #include "cmd.h"
-#include "sbar.h"
-#include "chat.h"
-#include "finale.h"
 #include "psim/p_gameinfo.h"
 
 #endif
