@@ -29,6 +29,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_levelinfo.h"
+#include "../decorate/vc_decorate.h"
+#include "../dehacked/vc_dehacked.h"
 #include "r_local.h"
 
 

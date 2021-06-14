@@ -24,6 +24,8 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "decorate/vc_decorate.h"
+
 
 static VLockDef *LockDefs[256];
 

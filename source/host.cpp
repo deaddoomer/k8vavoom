@@ -37,6 +37,7 @@
 # include "automap.h"
 #endif
 #include "net/network.h"
+#include "decorate/vc_decorate.h"
 
 #include <time.h>
 #ifndef WIN32

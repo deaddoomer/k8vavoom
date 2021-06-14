@@ -27,6 +27,7 @@
 #include "../gamedefs.h"
 #include "../render/r_local.h" // for SPR_xxx
 #include "../psim/p_entity.h"
+#include "vc_decorate.h"
 
 
 // WARNING! dehacked parser requires this!

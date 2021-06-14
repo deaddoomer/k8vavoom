@@ -29,6 +29,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#include "vc_dehacked.h"
 
 
 static VCvarB dbg_dehacked_codepointers("dbg_dehacked_codepointers", false, "Show DEHACKED replaced code pointers?", CVAR_PreInit);

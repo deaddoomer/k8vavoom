@@ -37,6 +37,8 @@
 # include "../client/cl_local.h"
 #endif
 #include "../psim/p_decal.h"
+#include "../decorate/vc_decorate.h"
+#include "../dehacked/vc_dehacked.h"
 
 #ifndef CLIENT
 // this is for BDW mod, to have tracers

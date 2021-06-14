@@ -26,6 +26,7 @@
 #include "gamedefs.h"
 #include "psim/p_levelinfo.h"
 #include "server/sv_local.h"
+#include "decorate/vc_decorate.h"
 
 
 static int cli_NoMapinfoPlrClasses = 0;

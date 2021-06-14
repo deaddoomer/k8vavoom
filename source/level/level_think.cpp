@@ -31,6 +31,7 @@
 # include "../client/cl_local.h"
 #endif
 #include "../psim/p_decal.h"
+#include "../decorate/vc_decorate.h"
 
 
 extern VCvarB r_decals;

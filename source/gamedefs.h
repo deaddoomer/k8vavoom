@@ -57,8 +57,6 @@
 #include "server/sv_save.h"
 #include "qs_data.h"
 #include "psim/p_gameinfo.h"
-#include "decorate/vc_decorate.h"
-#include "dehacked/vc_dehacked.h"
 #include "client/client.h"
 
 #endif
