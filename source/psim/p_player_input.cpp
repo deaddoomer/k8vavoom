@@ -42,6 +42,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "p_levelinfo.h"
+#include "p_player.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
 #endif

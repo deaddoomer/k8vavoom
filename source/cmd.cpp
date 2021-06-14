@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "psim/p_player.h"
 #ifdef CLIENT
 # include "text.h"
 #endif

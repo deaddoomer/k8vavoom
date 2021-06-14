@@ -27,6 +27,7 @@
 #include "network.h"
 #include "net_message.h"
 #include "../psim/p_entity.h"
+#include "../psim/p_player.h"
 #include "../client/cl_local.h"
 
 

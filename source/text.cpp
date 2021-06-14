@@ -31,6 +31,7 @@
 # include "net/network.h" /* sorry */
 #endif
 #include "text.h"
+#include "psim/p_player.h"
 
 
 int NetLagChart[NETLAG_CHART_ITEMS] = {0};

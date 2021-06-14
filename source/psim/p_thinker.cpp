@@ -38,6 +38,7 @@
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_world.h"
+#include "p_player.h"
 
 
 static VClass *eexCls = nullptr;

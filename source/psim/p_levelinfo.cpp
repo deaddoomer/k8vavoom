@@ -27,6 +27,7 @@
 #include "../server/sv_local.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
+#include "p_player.h"
 
 
 VCvarB compat_shorttex("compat_shorttex", false, "Compatibility: shorttex", 0);

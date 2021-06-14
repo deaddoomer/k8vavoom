@@ -265,33 +265,23 @@ public:
     int plridx;
     int type;
 
-    inline void nextByType () {
-      for (++plridx; plridx < MAXPLAYERS; ++plridx) {
-        if (!gi->Players[plridx]) continue;
-        switch (type) {
-          case PlrAll: return;
-          default: // just in case
-          case PlrOnlySpawned: if (gi->Players[plridx]->PlayerFlags&VBasePlayer::PF_Spawned) return; break;
-        }
-      }
-      plridx = MAXPLAYERS;
-    }
+    void nextByType () noexcept;
 
   public:
-    PlayersIter (int atype, VGameInfo *agi) : gi(agi), plridx(-1), type(atype) { nextByType(); }
-    PlayersIter (const PlayersIter &src) : gi(src.gi), plridx(src.plridx), type(src.type) {}
-    PlayersIter (const PlayersIter &src, bool atEnd) : gi(src.gi), plridx(MAXPLAYERS), type(src.type) {}
+    inline PlayersIter (int atype, VGameInfo *agi) noexcept : gi(agi), plridx(-1), type(atype) { nextByType(); }
+    inline PlayersIter (const PlayersIter &src) noexcept : gi(src.gi), plridx(src.plridx), type(src.type) {}
+    inline PlayersIter (const PlayersIter &src, bool atEnd) noexcept : gi(src.gi), plridx(MAXPLAYERS), type(src.type) {}
 
-    inline PlayersIter begin () { return PlayersIter(*this); }
-    inline PlayersIter end () { return PlayersIter(*this, true); }
-    inline bool operator == (const PlayersIter &b) const { return (gi == b.gi && plridx == b.plridx && type == b.type); }
-    inline bool operator != (const PlayersIter &b) const { return (gi != b.gi || plridx != b.plridx || type != b.type); }
-    inline PlayersIter operator * () const { return PlayersIter(*this); } /* required for iterator */
-    inline void operator ++ () { if (plridx < MAXPLAYERS) nextByType(); } /* this is enough for iterator */
+    inline PlayersIter begin () noexcept { return PlayersIter(*this); }
+    inline PlayersIter end () noexcept { return PlayersIter(*this, true); }
+    inline bool operator == (const PlayersIter &b) const noexcept { return (gi == b.gi && plridx == b.plridx && type == b.type); }
+    inline bool operator != (const PlayersIter &b) const noexcept { return (gi != b.gi || plridx != b.plridx || type != b.type); }
+    inline PlayersIter operator * () const noexcept { return PlayersIter(*this); } /* required for iterator */
+    inline void operator ++ () noexcept { if (plridx < MAXPLAYERS) nextByType(); } /* this is enough for iterator */
     // accessors
-    inline int index () const { return plridx; }
-    inline VBasePlayer *value () const { return gi->Players[plridx]; }
-    inline VBasePlayer *player () const { return gi->Players[plridx]; }
+    inline int index () const noexcept { return plridx; }
+    inline VBasePlayer *value () const noexcept { return gi->Players[plridx]; }
+    inline VBasePlayer *player () const noexcept { return gi->Players[plridx]; }
   };
 
   PlayersIter playersAll () { return PlayersIter(PlrAll, this); }

@@ -33,6 +33,7 @@
 #include "input.h"
 #include "touch.h"
 #include "widgets/ui.h"
+#include "psim/p_player.h"
 
 // k8: joysticks have 16 buttons; no, really, you don't need more
 

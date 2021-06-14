@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#include "../psim/p_player.h"
 #include "network.h"
 #include "net_message.h"
 

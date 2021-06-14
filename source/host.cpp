@@ -25,7 +25,7 @@
 //**************************************************************************
 #include "gitversion.h"
 #include "gamedefs.h"
-#include "net/network.h"
+#include "psim/p_player.h"
 #include "psim/p_entity.h"
 #ifdef CLIENT
 # include "screen.h"
@@ -36,6 +36,7 @@
 # include "text.h"
 # include "automap.h"
 #endif
+#include "net/network.h"
 
 #include <time.h>
 #ifndef WIN32

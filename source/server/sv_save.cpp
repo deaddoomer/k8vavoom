@@ -32,6 +32,7 @@
 #include "../psim/p_worldinfo.h"
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
+#include "../psim/p_player.h"
 #include "sv_local.h"
 
 #include <time.h>

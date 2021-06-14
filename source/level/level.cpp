@@ -27,6 +27,7 @@
 #include "../server/sv_local.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"
+#include "../psim/p_player.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
 # include "../drawer.h"

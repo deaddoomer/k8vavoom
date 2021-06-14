@@ -165,6 +165,7 @@ struct VNetClientServerInfo {
 // network message classes
 class VMessageIn;
 class VMessageOut;
+class VNetConnection;
 
 
 // ////////////////////////////////////////////////////////////////////////// //

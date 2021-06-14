@@ -29,6 +29,7 @@
 #include "touch.h"
 #include "widgets/ui.h"
 #include "automap.h"
+#include "psim/p_player.h"
 
 
 extern int screenblocks;

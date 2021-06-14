@@ -29,6 +29,7 @@
 #include "../net/network.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"
+#include "../psim/p_player.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"
 #include "../server/sv_local.h"

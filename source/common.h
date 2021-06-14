@@ -58,5 +58,8 @@ class VThinker;
 class VEntity;
 class VPlayerReplicationInfo;
 
+class VBasePlayer;
+struct VViewState;
+
 
 #endif

@@ -24,11 +24,30 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "p_player.h"
 
 
 IMPLEMENT_CLASS(V, GameInfo)
 
 VGameInfo *GGameInfo = nullptr;
+
+
+//==========================================================================
+//
+//  VGameInfo::PlayersIter::nextByType
+//
+//==========================================================================
+void VGameInfo::PlayersIter::nextByType () noexcept {
+  for (++plridx; plridx < MAXPLAYERS; ++plridx) {
+    if (!gi->Players[plridx]) continue;
+    switch (type) {
+      case PlrAll: return;
+      default: // just in case
+      case PlrOnlySpawned: if (gi->Players[plridx]->PlayerFlags&VBasePlayer::PF_Spawned) return; break;
+    }
+  }
+  plridx = MAXPLAYERS;
+}
 
 
 //==========================================================================

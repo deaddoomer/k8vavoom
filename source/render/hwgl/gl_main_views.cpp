@@ -32,6 +32,7 @@
 #include <stdarg.h>
 
 #include "gl_local.h"
+#include "../../psim/p_player.h"
 
 
 VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit);

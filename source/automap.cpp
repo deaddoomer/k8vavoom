@@ -36,6 +36,7 @@
 # include "input.h"
 # include "psim/p_entity.h"
 # include "psim/p_levelinfo.h"
+# include "psim/p_player.h"
 #endif
 #include "text.h"
 

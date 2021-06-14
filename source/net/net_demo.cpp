@@ -33,6 +33,7 @@
 // is read from the demo file.
 //
 #include "../gamedefs.h"
+#include "../psim/p_player.h"
 #include "network.h"
 
 static VCvarB demo_flush_each_packet("demo_flush_each_packet", false, "Flush file after each written demo packet?", CVAR_PreInit|CVAR_Archive);

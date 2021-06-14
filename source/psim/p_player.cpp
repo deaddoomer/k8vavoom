@@ -29,6 +29,7 @@
 #include "../client/cl_local.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
+#include "p_player.h"
 #ifdef CLIENT
 # include "../automap.h"
 #endif

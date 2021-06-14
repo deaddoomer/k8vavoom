@@ -30,6 +30,7 @@
 #include "../gamedefs.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
+#include "p_player.h"
 
 //#define VV_DBG_VERBOSE_TRYMOVE
 
