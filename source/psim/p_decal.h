@@ -118,7 +118,8 @@ public:
   DecalFloatVal scaleX, scaleY;
   int flipX, flipY; // FlipXXX constant
   DecalFloatVal alpha; // decal alpha
-  DecalFloatVal addAlpha; // alpha for additive translucency (not supported yet)
+  //DecalFloatVal addAlpha; // alpha for additive translucency (if zero, use `alpha`)
+  bool additive;
   bool fuzzy; // draw decal with "fuzzy" effect (not supported yet)
   bool fullbright;
   bool noWall, noFlat;
@@ -160,8 +161,8 @@ public:
 public:
   inline VDecalDef () noexcept
     : next(nullptr), animname(NAME_None), animoptional(false), name(NAME_None), texid(-1)/*pic(NAME_None)*/, id(-1)
-    , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f), addAlpha(0.0f)
-    , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
+    , scaleX(1.0f), scaleY(1.0f), flipX(FlipNone), flipY(FlipNone), alpha(1.0f)/*, addAlpha(0.0f)*/
+    , additive(false) , fuzzy(false), fullbright(false), noWall(false), noFlat(false), bloodSplat(false), bootPrint(false)
     , flipXValue(false), flipYValue(false)
     , angleWall(0.0f), angleFlat(0.0f, 360.0f), shadeclr(-1)
     , lowername(NAME_None), bootprintname(NAME_None)

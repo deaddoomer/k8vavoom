@@ -46,18 +46,12 @@ bool VLevel::dcPobjTouchedReset = false;
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct DInfo {
-  //float bbox2d[4];
   TVec org;
   float range;
   float spheight; // spread height
   VDecalDef *dec;
-  int translation;
-  int shadeclr; // -2: don't change
-  VDecalAnim *animator;
   VLevel *Level;
-  unsigned orflags;
-  float angle;
-  float alpha; // >0: override; >= 1000.0f -- mult by (alpha-1000.0f)
+  const VLevel::DecalParams *params;
 };
 
 
@@ -140,12 +134,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz-2.0f <= fz && fz-orgz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+          nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
           res |= PutAtCeiling;
         }
       } else if (fz > orgz-xhgt && fz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
         res |= PutAtFloor;
       }
     }
@@ -156,12 +150,12 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
         // 3d polyobject
         if (orgz+2.0f >= cz && orgz-cz < xhgt) {
           // do it (for some reason it should be inverted here)
-          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+          nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
           res |= PutAtFloor;
         }
       } else if (cz > orgz-xhgt && cz < orgz+xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
         res |= PutAtCeiling;
       }
     }
@@ -174,7 +168,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float fz = reg->efloor.GetPointZClamped(nfo->org);
       if ((orgz-2.0f <= fz || IsTransparentFlatTexture(reg->efloor.splane->pic)) && fz-orgz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(true/*asfloor*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
         res |= PutAtFloor;
       }
     }
@@ -183,7 +177,7 @@ static unsigned PutDecalToSubsectorRegion (const DInfo *nfo, subsector_t *sub, s
       const float cz = reg->eceiling.GetPointZClamped(nfo->org);
       if ((orgz+2.0f >= cz || IsTransparentFlatTexture(reg->eceiling.splane->pic)) && orgz-cz < xhgt) {
         // do it
-        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, nfo->translation, nfo->shadeclr, nfo->alpha, nfo->animator, nfo->orflags, nfo->angle);
+        nfo->Level->NewFlatDecal(false/*asceiling*/, sub, eregidx, nfo->org.x, nfo->org.y, nfo->dec, *nfo->params);
         res |= PutAtCeiling;
       }
     }
@@ -316,9 +310,7 @@ static void DecalFloodFill (const DInfo *nfo, subsector_t *sub) {
 //  VLevel::SpreadFlatDecalEx
 //
 //==========================================================================
-void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, int shadeclr,
-                                float alpha, VDecalAnim *animator, float angle, bool forceFlipX)
-{
+void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, DecalParams &params) {
   if (!dec) return; // just in case
 
   if (dec->noFlat) return;
@@ -329,12 +321,13 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   }
 
   // calculate it here, so lower decals will have the same angle too
-  const float decalAngle = AngleMod((isFiniteF(angle) ? angle : dec->angleFlat.value)-90.0f);
+  // `-90` is required to make decals correspond to in-game yaw angles
+  params.angle = AngleMod((isFiniteF(params.angle) ? params.angle : dec->angleFlat.value)-90.0f);
 
   if (dec->lowername != NAME_None && !VStr::strEquCI(*dec->lowername, "none")) {
     VDecalDef *dcl = VDecalDef::getDecal(dec->lowername);
     if (dcl) {
-      SpreadFlatDecalEx(org, range, dcl, level+1, translation, shadeclr, alpha, animator, decalAngle, forceFlipX);
+      SpreadFlatDecalEx(org, range, dcl, level+1, params);
     }
   }
 
@@ -355,22 +348,20 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   }
 
   // setup flips
-  unsigned flips = (dec->flipXValue ? decal_t::FlipX : 0u)|(dec->flipYValue ? decal_t::FlipY : 0u);
-  if (forceFlipX) flips ^= decal_t::FlipX;
+  unsigned flips =
+    (dec->flipXValue ? decal_t::FlipX : 0u)|
+    (dec->flipYValue ? decal_t::FlipY : 0u)|
+    (params.forcePermanent ? decal_t::Permanent : 0u);
+  if (params.forceFlipX) flips ^= decal_t::FlipX;
+  params.orflags |= flips;
 
   DInfo nfo;
-  // `-90` is required to make decals correspond to in-game yaw angles
-  nfo.angle = decalAngle;
-  nfo.spheight = dec->spheight;
   nfo.org = org;
   nfo.range = range;
+  nfo.spheight = dec->spheight;
   nfo.dec = dec;
-  nfo.translation = translation;
-  nfo.shadeclr = shadeclr;
-  nfo.animator = animator;
   nfo.Level = this;
-  nfo.orflags = flips; //|(dec->fullbright ? decal_t::Fullbright : 0u)|(dec->fuzzy ? decal_t::Fuzzy : 0u); // done in `NewFlatDecal()`
-  nfo.alpha = alpha;
+  nfo.params = &params;
 
   //GCon->Logf(NAME_Debug, "SpawnFlatDecal '%s': alpha=%g", *dec->name, alpha);
 

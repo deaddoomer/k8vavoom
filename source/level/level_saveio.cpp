@@ -80,7 +80,9 @@ static void DecalIO (VStream &Strm, decal_t *dc, VLevel *level, bool mustBeFlatD
     vio.io(VName("scaleY"), dc->scaleY);
     vio.io(VName("origAlpha"), dc->origAlpha);
     vio.io(VName("alpha"), dc->alpha);
-    vio.io(VName("addAlpha"), dc->addAlpha);
+    //vuint32 additive = (dc->additive ? 1 : 0);
+    //vio.iodef(VName("additive"), additive, 0u);
+    //if (Strm.IsLoading()) dc->additive = (additive != 0);
     vio.iodef(VName("dcsurface"), dc->dcsurf, 0u);
 
     // boot params

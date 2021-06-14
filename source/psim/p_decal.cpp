@@ -507,7 +507,6 @@ void VDecalDef::genValues () noexcept {
   }
 
   alpha.genValue(1.0f);
-  addAlpha.genValue(0.0f);
 
        if (flipX == FlipRandom) flipXValue = (Random() < 0.5f);
   else if (flipX == FlipAlways) flipXValue = true;
@@ -754,10 +753,10 @@ bool VDecalDef::parse (VScriptParser *sc) {
     if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
     if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
 
-    if (sc->Check("solid")) { alpha = 1.0f; continue; }
+    if (sc->Check("solid")) { alpha = DecalFloatVal(1.0f); additive = false; continue; }
 
-    if (sc->Check("translucent")) { parseNumOrRandom(sc, &alpha); continue; }
-    if (sc->Check("add")) { parseNumOrRandom(sc, &addAlpha); continue; }
+    if (sc->Check("translucent")) { parseNumOrRandom(sc, &alpha); additive = false; continue; }
+    if (sc->Check("add")) { parseNumOrRandom(sc, &alpha); additive = true; continue; }
 
     if (sc->Check("fuzzy")) { fuzzy = true; continue; }
     if (sc->Check("fullbright")) { fullbright = true; continue; }

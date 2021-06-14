@@ -65,17 +65,19 @@ class VDecalAnim;
 struct decal_t {
   // flags bit values
   enum {
-    SlideFloor = 0x0001U, // curz: offset with floorz, slide with it
-    SlideCeil = 0x0002U, // curz: offset with ceilingz, slide with it
-    FlipX = 0x0010U,
-    FlipY = 0x0020U,
-    Fullbright = 0x0100U,
-    Fuzzy = 0x0200U,
-    SideDefOne = 0x0800U,
-    NoMidTex = 0x1000U, // don't render on middle texture
-    NoTopTex = 0x2000U, // don't render on top texture
-    NoBotTex = 0x4000U, // don't render on bottom texture
-    FromV2   = 0x8000U, // use `v2` vertex as base (for wall decals on partner segs)
+    SlideFloor = 0x00001U, // curz: offset with floorz, slide with it
+    SlideCeil  = 0x00002U, // curz: offset with ceilingz, slide with it
+    FlipX      = 0x00010U,
+    FlipY      = 0x00020U,
+    Fullbright = 0x00100U,
+    Fuzzy      = 0x00200U,
+    Additive   = 0x00400U,
+    // sides
+    SideDefOne = 0x00800U,
+    NoMidTex   = 0x01000U, // don't render on middle texture
+    NoTopTex   = 0x02000U, // don't render on top texture
+    NoBotTex   = 0x04000U, // don't render on bottom texture
+    FromV2     = 0x08000U, // use `v2` vertex as base (for wall decals on partner segs)
     // special decal types
     BloodSplat = 0x10000U,
     BootPrint  = 0x20000U,
@@ -122,7 +124,6 @@ struct decal_t {
   float scaleX, scaleY; // actual
   float origAlpha; // for animators
   float alpha; // decal alpha
-  float addAlpha; // alpha for additive translucency (not supported yet)
   VDecalAnim *animator; // decal animator (can be nullptr)
   decal_t *prevanimated; // so we can skip static decals
   decal_t *nextanimated; // so we can skip static decals
@@ -155,6 +156,7 @@ struct decal_t {
   float soffs, toffs;
   TVec v1, v2, v3, v4;
 
+  inline bool isAdditive () const noexcept { return (flags&Additive); }
   inline bool isPermanent () const noexcept { return (flags&Permanent); }
 
   // nore that floor/ceiling type should be correctly set for 3d floor subregions

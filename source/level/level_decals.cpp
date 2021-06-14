@@ -79,6 +79,26 @@ static VVA_OKUNUSED const char *lif2str (int flags) noexcept {
 
 //==========================================================================
 //
+//  CalcDecalAlpha
+//
+//==========================================================================
+static float CalcDecalAlpha (const VDecalDef *dec, float alpha) noexcept {
+  vassert(dec);
+  float dcalpha = dec->alpha.value;
+  if (alpha >= 0.0f) {
+    //GCon->Logf(NAME_Debug, "decal '%s': orig alpha=%g (forced alpha=%g)", *dec->name, dcalpha, alpha);
+    if (alpha < 1000.0f) dcalpha = alpha; else dcalpha *= alpha-1000.0f;
+    //GCon->Logf(NAME_Debug, "decal '%s': final alpha=%g", *dec->name, dcalpha);
+    //GCon->Logf(NAME_Debug, "decal '%s': final clamped alpha=%g", *dec->name, dcalpha);
+  }
+  if (dcalpha < 0.004f) return 0.0f;
+  dcalpha = min2(1.0f, dcalpha);
+  return dcalpha;
+}
+
+
+//==========================================================================
+//
 //  calcDecalSide
 //
 //==========================================================================
@@ -172,7 +192,8 @@ void VLevel::RemoveDecalAnimator (decal_t *dc) {
 decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalAnim *animator) {
   vassert(seg);
   vassert(dec);
-  alpha = clampval((alpha >= 0.0f ? alpha : dec->alpha.value), 0.0f, 1.0f);
+  //alpha = clampval((alpha >= 0.0f ? alpha : dec->alpha.value), 0.0f, 1.0f);
+  alpha = CalcDecalAlpha(dec, alpha);
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
   //decal->dectype = dec->name;
@@ -187,17 +208,19 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = alpha;
-  decal->addAlpha = dec->addAlpha.value;
   decal->flags =
     (dec->fullbright ? decal_t::Fullbright : 0u)|
     (dec->fuzzy ? decal_t::Fuzzy : 0u)|
     (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
-    (dec->bootPrint ? decal_t::BootPrint : 0u);
+    (dec->bootPrint ? decal_t::BootPrint : 0u)|
+    (dec->additive ? decal_t::Additive : 0u);
+
   decal->boottime = 0.0f; //dec->boottime.value;
   decal->bootanimator = NAME_None; //dec->bootanimator;
   decal->bootshade = -2;
   decal->boottranslation = -1;
   decal->bootalpha = -1.0f;
+
   decal->animator = (animator ? animator : dec->animator);
   //if (decal->animator) GCon->Logf(NAME_Debug, "setting animator for '%s': <%s> (%s : %d)", *dec->name, *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
@@ -205,6 +228,7 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   //if (decal->animator) GCon->Logf(NAME_Debug, "set animator for '%s': <%s> (%s : %d)", *dec->name, *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   seg->appendDecal(decal);
   if (decal->animator) AddAnimatedDecal(decal);
+
   return decal;
 }
 
@@ -463,8 +487,7 @@ static float CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha) {
 //
 //==========================================================================
 void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li,
-                             unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                             float angle, bool skipMarkCheck)
+                             DecalParams &params, bool skipMarkCheck)
 {
   // don't process linedef twice
   if (!skipMarkCheck) {
@@ -579,17 +602,17 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           const float fz = reg->efloor.GetPointZClamped(linepos);
           const float cz = reg->eceiling.GetPointZClamped(linepos);
           if (dcy0 < cz && dcy1 > fz) {
-            const float swalpha = (reg->extraline->special && VLevelInfo::IsSwitchTexture(extraside->MidTexture) ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
+            const float swalpha = (reg->extraline->special && VLevelInfo::IsSwitchTexture(extraside->MidTexture) ? CalcSwitchDecalAlpha(dec, params.alpha) : params.alpha);
             VDC_DLOG(NAME_Debug, " HIT solid region: fz=%g; cz=%g; orgz=%g; dcy0=%g; dcy1=%g", fz, cz, orgz, dcy0, dcy1);
             // create decal
-            decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
-            if (isFiniteF(angle)) decal->angle = AngleMod(angle);
-            decal->translation = translation;
-            if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
+            decal_t *decal = AllocSegDecal(seg, dec, swalpha, params.animator);
+            if (isFiniteF(params.angle)) decal->angle = AngleMod(params.angle);
+            decal->translation = params.translation;
+            if (params.shadeclr != -2) decal->shadeclr = decal->origshadeclr = params.shadeclr;
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
-            decal->flags |= flips|stvflag;
+            decal->flags |= params.orflags|stvflag;
             decal->flags |= /*disabledTextures*/0u;
             // slide with 3d floor floor
             decal->slidesec = sec3d;
@@ -598,7 +621,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
             decal->calculateBBox();
             if (doParnter) {
               // create decal on partner seg
-              decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
+              decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, params.animator);
               dcp->angle = decal->angle;
               dcp->translation = decal->translation;
               dcp->shadeclr = dcp->origshadeclr = decal->shadeclr;
@@ -697,14 +720,14 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
           } else if (fsec->floor.maxz >= bsec->floor.maxz) {
             // if front floor is higher than back floor, bottex cannot be visible
             allowBotTex = false;
-          } else if (!hasSliderAnimator(dec, animator) && dcy0 >= max2(ffloorZ, bfloorZ)) {
+          } else if (!hasSliderAnimator(dec, params.animator) && dcy0 >= max2(ffloorZ, bfloorZ)) {
             // if decal bottom is higher than highest floor, consider toptex invisible
             // (but don't do this for animated decals -- this may be sliding blood)
             allowBotTex = false;
           }
         } else {
           // one-sided: see the last coment above
-          if (!hasSliderAnimator(dec, animator) && dcy0 >= ffloorZ) allowBotTex = false;
+          if (!hasSliderAnimator(dec, params.animator) && dcy0 >= ffloorZ) allowBotTex = false;
         }
       }
 
@@ -813,17 +836,17 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
       VDC_DLOG(NAME_Debug, "  decaling seg #%d; offset=%g; length=%g", (int)(ptrdiff_t)(seg-Segs), seg->offset, seg->length);
 
-      const float swalpha = (onSwitch ? CalcSwitchDecalAlpha(dec, alpha) : alpha);
+      const float swalpha = (onSwitch ? CalcSwitchDecalAlpha(dec, params.alpha) : params.alpha);
 
       // create decal
-      decal_t *decal = AllocSegDecal(seg, dec, swalpha, animator);
-      if (isFiniteF(angle)) decal->angle = AngleMod(angle);
-      decal->translation = translation;
-      if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
+      decal_t *decal = AllocSegDecal(seg, dec, swalpha, params.animator);
+      if (isFiniteF(params.angle)) decal->angle = AngleMod(params.angle);
+      decal->translation = params.translation;
+      if (params.shadeclr != -2) decal->shadeclr = decal->origshadeclr = params.shadeclr;
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
-      decal->flags |= flips|stvflag;
+      decal->flags |= params.orflags|stvflag;
       decal->flags |= disabledTextures;
       decal->calculateBBox();
 
@@ -847,10 +870,10 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
       if (doParnter) {
         // create decal on partner seg
-        decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, animator);
+        decal_t *dcp = AllocSegDecal(seg->partner, dec, swalpha, params.animator);
         dcp->angle = decal->angle;
-        dcp->translation = translation;
-        if (shadeclr != -2) dcp->shadeclr = dcp->origshadeclr = shadeclr;
+        dcp->translation = decal->translation;
+        if (params.shadeclr != -2) dcp->shadeclr = dcp->origshadeclr = params.shadeclr;
         dcp->orgz = decal->orgz;
         dcp->curz = decal->curz;
         dcp->xdist = lineofs;
@@ -950,22 +973,22 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
         // we need to fix it for `v1`
         const float nofs = dlc->nline->dir.length2D()+dstxofs;
         VDC_DLOG(NAME_Debug, ":::v1f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, angle, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, params, true); // skip mark check
       } else {
         // reversed continuation
         const float nofs = -dcx0-twdt+txofs;
         VDC_DLOG(NAME_Debug, ":::v1b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, alpha, shadeclr, animator, angle, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, params, true); // skip mark check
       }
     } else {
       if (!dlc->isbackside) {
         const float nofs = dstxofs-linelen;
         VDC_DLOG(NAME_Debug, ":::v2f: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips, translation, shadeclr, alpha, animator, angle, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, params, true); // skip mark check
       } else {
         const float nofs = dlc->nline->dir.length2D()-(dcx1-linelen)+txofs;
         VDC_DLOG(NAME_Debug, ":::v2b: %d (nside=%d; argside=%d; dstxofs=%g; dcx=(%g : %g); twdt=%g; nofs=%g)", (int)(ptrdiff_t)(dlc->nline-&Lines[0]), dlc->nside, (dlc->nline->frontsector == fsec ? 0 : 1), dstxofs, dcx0, dcx1, twdt, nofs);
-        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, flips/*^decal_t::FlipX*/, translation, shadeclr, alpha, animator, angle, true); // skip mark check
+        PutDecalAtLine(org, nofs, dec, dlc->nside, dlc->nline, params, true); // skip mark check
       }
     }
   }
@@ -979,10 +1002,7 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 //  VLevel::AddOneDecal
 //
 //==========================================================================
-void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li,
-                          int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                          bool permanent, float angle, bool forceFlipX)
-{
+void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, DecalParams &params) {
   if (!dec || !li) return;
 
   if (dec->noWall) return;
@@ -994,9 +1014,12 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   VDC_DLOG(NAME_Debug, "DECAL: line #%d; side #%d", (int)(ptrdiff_t)(li-&Lines[0]), side);
 
+  // calculate it here, so lower decals will have the same angle too
+  params.angle = AngleMod(isFiniteF(params.angle) ? params.angle : dec->angleWall.value);
+
   if (dec->lowername != NAME_None) {
     //GCon->Logf(NAME_Debug, "adding lower decal '%s' for decal '%s' (level %d)", *dec->lowername, *dec->name, level);
-    AddDecal(org, dec->lowername, side, li, level+1, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
+    AddDecal(org, dec->lowername, side, li, level+1, params);
   }
 
   // generate decal values
@@ -1011,7 +1034,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   }
 
   // actually, we should check animator here, but meh...
-  if (!dec->animator && !animator && dec->alpha.value < 0.004f) {
+  if (!dec->animator && !params.animator && dec->alpha.value < 0.004f) {
     if (!baddecals.put(dec->name, true)) GCon->Logf(NAME_Warning, "Decal '%s' has zero alpha", *dec->name);
     return;
   }
@@ -1043,11 +1066,11 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   IncLineTouchCounter();
 
   // setup flips
-  unsigned flips =
+  params.orflags |=
     (dec->flipXValue ? decal_t::FlipX : 0u)|
     (dec->flipYValue ? decal_t::FlipY : 0u)|
-    (permanent ? decal_t::Permanent : 0u);
-  if (forceFlipX) flips ^= decal_t::FlipX;
+    (params.forcePermanent ? decal_t::Permanent : 0u);
+  if (params.forceFlipX) params.orflags ^= decal_t::FlipX;
 
   // calculate offset from line start
   const TVec &v1 = *li->v1;
@@ -1064,7 +1087,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   VDC_DLOG(NAME_Debug, "linelen=%g; dist=%g; lineofs=%g", (v2-v1).length2D(), dist, lineofs);
 
   connectedLines.resetNoDtor();
-  PutDecalAtLine(org, lineofs, dec, side, li, flips, translation, shadeclr, alpha, animator, angle, false); // don't skip mark check
+  PutDecalAtLine(org, lineofs, dec, side, li, params, false); // don't skip mark check
 }
 
 
@@ -1073,10 +1096,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 //  VLevel::AddDecal
 //
 //==========================================================================
-void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
-                       int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent,
-                       float angle, bool forceFlipX)
-{
+void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, DecalParams &params) {
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
@@ -1092,7 +1112,7 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
   if (dec) {
     org = li->landAlongNormal(org);
     //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);
-    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
+    AddOneDecal(level, org, dec, side, li, params);
   } else {
     if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
   }
@@ -1104,15 +1124,14 @@ void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level,
 //  VLevel::AddDecalById
 //
 //==========================================================================
-void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level,
-                           int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent)
-{
+void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, DecalParams &params) {
   if (!r_decals || !r_decals_wall) return;
   if (!li || id < 0) return; // just in case
   VDecalDef *dec = VDecalDef::getDecalById(id);
   if (dec) {
     org = li->landAlongNormal(org);
-    AddOneDecal(level, org, dec, side, li, translation, shadeclr, alpha, animator, true, INFINITY, false);
+    params.forcePermanent = true; // always
+    AddOneDecal(level, org, dec, side, li, params);
   }
 }
 
@@ -1256,38 +1275,28 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 //
 //==========================================================================
 void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
-                           VDecalDef *dec, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                           unsigned orflags, float angle)
+                           VDecalDef *dec, const DecalParams &params)
 {
   vassert(sub);
   vassert(eregidx >= 0);
   vassert(dec);
 
-  float dcalpha = dec->alpha.value;
-  if (alpha >= 0.0f) {
-    //GCon->Logf(NAME_Debug, "decal '%s': orig alpha=%g (forced alpha=%g)", *dec->name, dcalpha, alpha);
-    if (alpha < 1000.0f) dcalpha = alpha; else dcalpha *= alpha-1000.0f;
-    //GCon->Logf(NAME_Debug, "decal '%s': final alpha=%g", *dec->name, dcalpha);
-    if (dcalpha < 0.004f) return;
-    dcalpha = min2(1.0f, dcalpha);
-    //GCon->Logf(NAME_Debug, "decal '%s': final clamped alpha=%g", *dec->name, dcalpha);
-  }
+  const float dcalpha = CalcDecalAlpha(dec, params.alpha);
 
   decal_t *decal = new decal_t;
   memset((void *)decal, 0, sizeof(decal_t));
   //decal->dectype = dec->name;
   decal->proto = dec;
   decal->texture = dec->texid;
-  decal->translation = translation;
-  decal->shadeclr = decal->origshadeclr = dec->shadeclr;
-  if (shadeclr != -2) decal->shadeclr = decal->origshadeclr = shadeclr;
+  decal->translation = params.translation;
+  decal->shadeclr = decal->origshadeclr = (params.shadeclr != -2 ? params.shadeclr : dec->shadeclr);
   decal->slidesec = nullptr;
   decal->sub = sub;
   decal->eregindex = eregidx;
   decal->dcsurf = (asFloor ? decal_t::Floor : decal_t::Ceiling);
   decal->worldx = wx;
   decal->worldy = wy;
-  decal->angle = AngleMod(angle);
+  decal->angle = AngleMod(params.angle);
   //decal->orgz = org.z; // doesn't matter
   //!decal->height = height;
   //decal->curz = 0.0f; // doesn't matter
@@ -1296,13 +1305,13 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->scaleX = decal->origScaleX = dec->scaleX.value;
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = dcalpha;
-  decal->addAlpha = dec->addAlpha.value;
   decal->flags =
-    orflags|
+    params.orflags|
     (dec->fullbright ? decal_t::Fullbright : 0u)|
     (dec->fuzzy ? decal_t::Fuzzy : 0u)|
     (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
-    (dec->bootPrint ? decal_t::BootPrint : 0u);
+    (dec->bootPrint ? decal_t::BootPrint : 0u)|
+    (dec->additive ? decal_t::Additive : 0u);
 
   decal->boottime = dec->boottime.value;
   decal->bootanimator = dec->bootanimator;
@@ -1310,7 +1319,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->boottranslation = dec->boottranslation;
   decal->bootalpha = dec->bootalpha;
 
-  decal->animator = (animator ? animator : dec->animator);
+  decal->animator = (params.animator ? params.animator : dec->animator);
   //if (decal->animator) GCon->Logf(NAME_Debug, "anim: %s(%s) (%d)", *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
   if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
   //decal->animator = nullptr;
@@ -1329,9 +1338,7 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
 //  zero height means "take from decal texture"
 //
 //==========================================================================
-void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation, int shadeclr, float alpha,
-                           VDecalAnim *animator, float angle, bool forceFlipX)
-{
+void VLevel::AddFlatDecal (TVec org, VName dectype, float range, DecalParams &params) {
   if (!r_decals || !r_decals_flat) return;
   if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
 
@@ -1342,7 +1349,7 @@ void VLevel::AddFlatDecal (TVec org, VName dectype, float range, int translation
   }
 
   range = max2(2.0f, fabsf(range));
-  SpreadFlatDecalEx(org, range, dec, 0, translation, shadeclr, alpha, animator, angle, forceFlipX);
+  SpreadFlatDecalEx(org, range, dec, 0, params);
 }
 
 
@@ -1370,7 +1377,15 @@ IMPLEMENT_FUNCTION(VLevel, AddDecal) {
   VOptParamBool forceFlipX(false);
   vobjGetParamSelf(org, dectype, side, li, translation, shadeclr, alpha, animator, permanent, angle, forceFlipX);
   //if (!angle.specified) angle.value = INFINITY;
-  Self->AddDecal(org, dectype, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), permanent, angle, forceFlipX);
+  DecalParams params;
+  params.translation = translation.value;
+  params.shadeclr = shadeclr.value;
+  params.alpha = alpha.value;
+  params.animator = VDecalAnim::GetAnimatorByName(animator.value);
+  params.angle = angle.value;
+  params.forceFlipX = forceFlipX.value;
+  params.forcePermanent = permanent.value;
+  Self->AddDecal(org, dectype, side, li, 0, params);
 }
 
 //native final void AddDecalById (TVec org, int id, int side, line_t *li, optional int translation,
@@ -1385,12 +1400,20 @@ IMPLEMENT_FUNCTION(VLevel, AddDecalById) {
   VOptParamFloat alpha(-2.0f);
   VOptParamName animator(NAME_None);
   vobjGetParamSelf(org, id, side, li, translation, shadeclr, alpha, animator);
-  Self->AddDecalById(org, id, side, li, 0, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), true);
+  DecalParams params;
+  params.translation = translation.value;
+  params.shadeclr = shadeclr.value;
+  params.alpha = alpha.value;
+  params.animator = VDecalAnim::GetAnimatorByName(animator.value);
+  params.angle = INFINITY;
+  params.forceFlipX = false;
+  params.forcePermanent = true;
+  Self->AddDecalById(org, id, side, li, 0, params);
 }
 
 
 //native final void AddFlatDecal (TVec org, name dectype, float range, optional int translation, optional int shadeclr, optional float alpha,
-//                                optional name animator, optional float angle, optional bool forceFlipX);
+//                                optional name animator, optional float angle, optional bool forceFlipX, optional bool permanent);
 IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   TVec org;
   VName dectype;
@@ -1401,9 +1424,18 @@ IMPLEMENT_FUNCTION(VLevel, AddFlatDecal) {
   VOptParamName animator(NAME_None);
   VOptParamFloat angle(INFINITY);
   VOptParamBool forceFlipX(false);
-  vobjGetParamSelf(org, dectype, range, translation, shadeclr, alpha, animator, angle, forceFlipX);
+  VOptParamBool permanent(false);
+  vobjGetParamSelf(org, dectype, range, translation, shadeclr, alpha, animator, angle, forceFlipX, permanent);
   //if (!angle.specified) angle = INFINITY;
-  Self->AddFlatDecal(org, dectype, range, translation, shadeclr, alpha, VDecalAnim::GetAnimatorByName(animator.value), angle, forceFlipX);
+  DecalParams params;
+  params.translation = translation.value;
+  params.shadeclr = shadeclr.value;
+  params.alpha = alpha.value;
+  params.animator = VDecalAnim::GetAnimatorByName(animator.value);
+  params.angle = angle.value;
+  params.forceFlipX = forceFlipX.value;
+  params.forcePermanent = permanent.value;
+  Self->AddFlatDecal(org, dectype, range, params);
 }
 
 

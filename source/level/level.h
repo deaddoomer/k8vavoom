@@ -1205,13 +1205,34 @@ public:
   // currently called from renderer, therefore it is public
   void DestroyDecal (decal_t *dc); // this will also destroy decal and its animator!
 
+  struct DecalParams {
+    int translation;
+    int shadeclr; // -2: don't change
+    float alpha; // >0: override; >= 1000.0f -- mult by (alpha-1000.0f)
+    VDecalAnim *animator; // force if not `nullptr`
+    float angle; // force if finite
+    bool forceFlipX;
+    bool forcePermanent;
+    unsigned orflags; // will be bitwise-ored with decal flags
+
+    inline DecalParams () noexcept
+      : translation(0)
+      , shadeclr(-2)
+      , alpha(-2.0f)
+      , animator(nullptr)
+      , angle(INFINITY)
+      , forceFlipX(false)
+      , forcePermanent(false)
+      , orflags(0)
+    {}
+  };
+
   // used in some internal static functions. sigh.
   // if `alpha` >= 0: override decal alpha; >= 1000.0f -- mult by (alpha-1000.0f)
   // shadeclr==-2: don't change
   // alpha<0: don't change
   void NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
-                     VDecalDef *dec, int translation, int shadeclr, float alpha,
-                     VDecalAnim *animator, unsigned orflags, float angle);
+                     VDecalDef *dec, const DecalParams &params);
 
 public:
   enum {
@@ -1444,21 +1465,19 @@ private:
 
   void DestroyFlatDecal (decal_t *dc); // this will also destroy decal and its animator!
 
-  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                          float angle, bool forceFlipX);
+  void SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int level, DecalParams &params);
 
   // z coord matters!
-  void AddFlatDecal (TVec org, VName dectype, float range, int translation, int shadeclr, float alpha, VDecalAnim *animator,
-                     float angle, bool forceFlipX);
+  void AddFlatDecal (TVec org, VName dectype, float range, DecalParams &params);
 
-  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent, float angle, bool forceFlipX);
-  void AddDecalById (TVec org, int id, int side, line_t *li, int level, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent);
+  void AddDecal (TVec org, VName dectype, int side, line_t *li, int level, DecalParams &params);
+  void AddDecalById (TVec org, int id, int side, line_t *li, int level, DecalParams &params);
   // called by `AddDecal()`
   // if angle is not finite, don't override
-  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, int translation, int shadeclr, float alpha, VDecalAnim *animator, bool permanent, float angle, bool forceFlipX);
+  void AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t *li, DecalParams &params);
 
   // `flips` will be bitwise-ored with decal flags
-  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, unsigned flips, int translation, int shadeclr, float alpha, VDecalAnim *animator, float angle, bool skipMarkCheck);
+  void PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li, DecalParams &params, bool skipMarkCheck);
 
   void PostProcessForDecals ();
 
