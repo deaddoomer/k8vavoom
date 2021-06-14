@@ -20,7 +20,6 @@
 #include <string.h>
 #include <stdio.h>
 
-//#include "zdbsp.h"
 #include "nodebuild.h"
 #include "templates.h"
 

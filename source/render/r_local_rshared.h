@@ -26,6 +26,7 @@
 #ifndef VAVOOM_R_LOCAL_HEADER_RSHARED
 #define VAVOOM_R_LOCAL_HEADER_RSHARED
 
+#include "../client/cl_local.h"
 
 // wall quad vertex indicies
 enum {
@@ -34,6 +35,7 @@ enum {
   QUAD_V2_TOP    = 2,
   QUAD_V2_BOTTOM = 3,
 };
+
 
 
 // ////////////////////////////////////////////////////////////////////////// //

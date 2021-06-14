@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "screen.h"
 #include "client/cl_local.h"
 
 

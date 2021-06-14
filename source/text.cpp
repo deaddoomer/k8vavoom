@@ -24,10 +24,10 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
-#include "client/cl_local.h"
 #include "widgets/ui.h"
 #ifdef CLIENT
 # include "drawer.h"
+# include "screen.h"
 # include "net/network.h" /* sorry */
 #endif
 #include "text.h"

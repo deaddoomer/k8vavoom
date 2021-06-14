@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../client/cl_local.h"
+#include "../screen.h"
 #include "ui.h"
 
 

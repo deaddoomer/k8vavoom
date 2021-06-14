@@ -20,7 +20,6 @@
 
 #ifndef ZDBSP_DISABLE_SSE
 
-//#include "zdbsp.h"
 #include "nodebuild.h"
 #include <emmintrin.h>
 

@@ -30,7 +30,6 @@
 #include "../gamedefs.h"
 #include "../text.h"
 
-//#include "../bsp/zdbsp/xs_Float.h"
 #include "../bsp/zdbsp/nodebuild.h"
 
 

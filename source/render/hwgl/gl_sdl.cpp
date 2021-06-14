@@ -32,6 +32,7 @@
 # error "SDL2 required!"
 #endif
 
+#include "../../screen.h"
 #include "gl_local.h"
 #include "../../icondata/k8vavomicondata.c"
 #include "splashlogo.inc"

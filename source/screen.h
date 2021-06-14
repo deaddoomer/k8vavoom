@@ -24,14 +24,22 @@
 //**
 //**************************************************************************
 
-void SCR_Init ();
-void SCR_Update (bool fullUpdate=true);
-
-void SCR_SignalWipeStart ();
-
-
 extern int RealScreenWidth;
 extern int RealScreenHeight;
 
 extern int ScreenWidth;
 extern int ScreenHeight;
+
+extern int VirtualWidth;
+extern int VirtualHeight;
+
+extern float fScaleX;
+extern float fScaleY;
+
+
+void SCR_Init ();
+void SCR_Update (bool fullUpdate=true);
+
+void SCR_SignalWipeStart ();
+
+void SCR_SetVirtualScreen (int Width, int Height);

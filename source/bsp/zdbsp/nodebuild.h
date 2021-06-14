@@ -2,7 +2,6 @@ extern void ZDWarn (const char *format, ...) __attribute__((format(printf, 1, 2)
 extern void ZDProgress (int curr, int total); // total==-1: complete
 
 #include <math.h>
-//#include "../../libs/core/core.h"
 #include "doomdata.h"
 #include "workdata.h"
 #include "tarray.h"

@@ -26,8 +26,6 @@
 #ifndef CL_LOCAL_HEADER
 #define CL_LOCAL_HEADER
 
-#include "../iline.h"    //  Input line widget
-
 
 class VRootWidget;
 struct VModel;
@@ -199,17 +197,9 @@ void R_DrawModelFrame (const TVec &, float, VModel *, int, int, const char *, in
 
 VModel *Mod_FindName (VStr);
 
-void SCR_SetVirtualScreen (int, int);
-
 
 // ////////////////////////////////////////////////////////////////////////// //
 extern VClientGameBase *GClGame;
-
-extern int VirtualWidth;
-extern int VirtualHeight;
-
-extern float fScaleX;
-extern float fScaleY;
 
 extern bool UserInfoSent;
 

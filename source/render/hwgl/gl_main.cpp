@@ -34,6 +34,7 @@
 #include <float.h>
 #include <stdarg.h>
 
+#include "../../screen.h"
 #include "gl_local.h"
 
 #ifdef VV_SHADER_COMPILING_PROGRESS

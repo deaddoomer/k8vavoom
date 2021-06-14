@@ -5,8 +5,6 @@
 #pragma once
 #endif
 
-//#include "zdbsp.h"
-
 namespace ZDBSP {
 
 struct vertex_t

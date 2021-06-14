@@ -36,7 +36,6 @@
 # include <SDL2/SDL.h>
 #endif
 #if !defined(_WIN32) && !defined(__SWITCH__)
-//# include <execinfo.h>
 #elif defined(__SWITCH__)
 # include <switch.h>
 #endif

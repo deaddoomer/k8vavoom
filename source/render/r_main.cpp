@@ -27,8 +27,9 @@
 #include <float.h>
 
 #include "../gamedefs.h"
-#include "r_local.h"
 #include "../text.h"
+#include "../screen.h"
+#include "r_local.h"
 
 //#define VAVOOM_DEBUG_PORTAL_POOL
 

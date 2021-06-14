@@ -29,9 +29,10 @@
 # include <SDL2/SDL.h>
 #endif
 #include "gamedefs.h"
-#include "client/cl_local.h"
 #include "drawer.h"
+#include "screen.h"
 #include "text.h"
+#include "iline.h"
 
 #ifdef ANDROID
 #  include <android/log.h>

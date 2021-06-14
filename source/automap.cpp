@@ -29,6 +29,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #ifdef CLIENT
+# include "screen.h"
 # include "client/cl_local.h"
 # include "drawer.h"
 # include "widgets/ui.h"

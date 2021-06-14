@@ -30,9 +30,10 @@
 #include "../gamedefs.h"
 #include "../net/network.h" /* for server list */
 #include "../server/sv_local.h"
-#include "../client/cl_local.h"
 #include "../drawer.h"
 #ifdef CLIENT
+# include "../client/cl_local.h"
+# include "../screen.h"
 # include "../input.h"
 #endif
 
@@ -279,11 +280,21 @@ IMPLEMENT_FREE_FUNCTION(VObject, SetVirtualScreen) {
   #endif
 }
 
-IMPLEMENT_FREE_FUNCTION(VObject, GetVirtualWidth) { RET_INT(CVC_CALC_EXPR(VirtualWidth)); }
-IMPLEMENT_FREE_FUNCTION(VObject, GetVirtualHeight) { RET_INT(CVC_CALC_EXPR(VirtualHeight)); }
+IMPLEMENT_FREE_FUNCTION(VObject, GetVirtualWidth) {
+  RET_INT(CVC_CALC_EXPR(VirtualWidth));
+}
 
-IMPLEMENT_FREE_FUNCTION(VObject, GetRealScreenWidth) { RET_INT(CVC_CALC_EXPR(ScreenWidth)); }
-IMPLEMENT_FREE_FUNCTION(VObject, GetRealScreenHeight) { RET_INT(CVC_CALC_EXPR(ScreenHeight)); }
+IMPLEMENT_FREE_FUNCTION(VObject, GetVirtualHeight) {
+  RET_INT(CVC_CALC_EXPR(VirtualHeight));
+}
+
+IMPLEMENT_FREE_FUNCTION(VObject, GetRealScreenWidth) {
+  RET_INT(CVC_CALC_EXPR(ScreenWidth));
+}
+
+IMPLEMENT_FREE_FUNCTION(VObject, GetRealScreenHeight) {
+  RET_INT(CVC_CALC_EXPR(ScreenHeight));
+}
 
 
 IMPLEMENT_FREE_FUNCTION(VObject, R_RegisterPic) {
@@ -470,7 +481,11 @@ IMPLEMENT_FREE_FUNCTION(VObject, InstallModel) {
 IMPLEMENT_FREE_FUNCTION(VObject, R_DrawModelFrame) {
   TVec origin;
   float angle;
+  #ifdef CLIENT
   VModel *model;
+  #else
+  void *model;
+  #endif
   int nextframe;
   int frame;
   VStr skin;

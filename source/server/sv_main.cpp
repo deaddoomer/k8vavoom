@@ -26,9 +26,10 @@
 #include "../gamedefs.h"
 #include "../net/network.h"
 #include "sv_local.h"
-#include "../client/cl_local.h"
 #ifdef CLIENT
+# include "../screen.h"
 # include "../drawer.h"
+# include "../client/cl_local.h"
 #endif
 #include "../psim/p_decal.h"
 

@@ -27,6 +27,7 @@
 #include "gamedefs.h"
 #include "net/network.h"
 #ifdef CLIENT
+# include "screen.h"
 # include "client/cl_local.h"
 # include "widgets/ui.h"
 # include "input.h"

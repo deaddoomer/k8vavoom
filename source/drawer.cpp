@@ -29,6 +29,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "drawer.h"
+#include "screen.h"
 
 
 VCvarF gl_maxdist("gl_maxdist", "8192", "Max view distance (too big values will cause z-buffer issues).", CVAR_Archive);
