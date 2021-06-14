@@ -25,6 +25,11 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
+
+extern VCvarB r_decals;
+extern VCvarB r_decals_flat;
+
+
 // we're using portal floodfill to spread floor decals
 // this way it is easier to check for closed doors
 
@@ -349,4 +354,88 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   if (sub->sector->isAnyPObj()) return; // the thing that should not be
   IncSubTouchCounter();
   DecalFloodFill(&nfo, sub);
+}
+
+
+//==========================================================================
+//
+//  VLevel::NewFlatDecal
+//
+//==========================================================================
+void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
+                           VDecalDef *dec, const DecalParams &params)
+{
+  vassert(sub);
+  vassert(eregidx >= 0);
+  vassert(dec);
+
+  const float dcalpha = CalcDecalAlpha(dec, params.alpha);
+
+  decal_t *decal = new decal_t;
+  memset((void *)decal, 0, sizeof(decal_t));
+  //decal->dectype = dec->name;
+  decal->proto = dec;
+  decal->texture = dec->texid;
+  decal->translation = params.translation;
+  decal->shadeclr = decal->origshadeclr = (params.shadeclr != -2 ? params.shadeclr : dec->shadeclr);
+  decal->slidesec = nullptr;
+  decal->sub = sub;
+  decal->eregindex = eregidx;
+  decal->dcsurf = (asFloor ? decal_t::Floor : decal_t::Ceiling);
+  decal->worldx = wx;
+  decal->worldy = wy;
+  decal->angle = AngleMod(params.angle);
+  //decal->orgz = org.z; // doesn't matter
+  //!decal->height = height;
+  //decal->curz = 0.0f; // doesn't matter
+  //decal->xdist = 0.0f; // doesn't matter
+  //decal->ofsX = decal->ofsY = 0.0f;
+  decal->scaleX = decal->origScaleX = dec->scaleX.value;
+  decal->scaleY = decal->origScaleY = dec->scaleY.value;
+  decal->alpha = decal->origAlpha = dcalpha;
+  decal->flags =
+    params.orflags|
+    (dec->fullbright ? decal_t::Fullbright : 0u)|
+    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
+    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
+    (dec->bootPrint ? decal_t::BootPrint : 0u)|
+    (dec->additive ? decal_t::Additive : 0u);
+
+  decal->boottime = dec->boottime.value;
+  decal->bootanimator = dec->bootanimator;
+  decal->bootshade = dec->bootshade;
+  decal->boottranslation = dec->boottranslation;
+  decal->bootalpha = dec->bootalpha;
+
+  decal->animator = (params.animator ? params.animator : dec->animator);
+  //if (decal->animator) GCon->Logf(NAME_Debug, "anim: %s(%s) (%d)", *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
+  if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
+  //decal->animator = nullptr;
+  if (decal->animator) decal->animator = decal->animator->clone();
+
+  AppendDecalToSubsectorList(decal);
+}
+
+
+//==========================================================================
+//
+//  VLevel::AddFlatDecal
+//
+//  z coord matters!
+//  `height` is from `org.z`
+//  zero height means "take from decal texture"
+//
+//==========================================================================
+void VLevel::AddFlatDecal (TVec org, VName dectype, float range, DecalParams &params) {
+  if (!r_decals || !r_decals_flat) return;
+  if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
+
+  VDecalDef *dec = VDecalDef::getDecal(dectype);
+  if (!dec) {
+    if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
+    return;
+  }
+
+  range = max2(2.0f, fabsf(range));
+  SpreadFlatDecalEx(org, range, dec, 0, params);
 }

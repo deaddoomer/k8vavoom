@@ -290,6 +290,7 @@ set(VLEVEL_CLASS_SOURCES
   level/level_dbgexport.cpp
   level/level_decals.cpp
   level/level_decals_spread_flat.cpp
+  level/level_decals_spread_wall.cpp
   level/level_decals_bootcheck.cpp
   level/level_light.cpp
   level/level_miscapi.cpp

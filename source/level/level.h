@@ -1458,6 +1458,9 @@ private:
 
   void KillAllSubsectorDecals ();
 
+  static float CalcDecalAlpha (const VDecalDef *dec, const float alpha) noexcept;
+  static float CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha);
+
   // only for flat decals
   // decal must be fully initialised
   // decal animator may be set, but you SHOULD NOT manually add it to animator list (this method will do it for you)
