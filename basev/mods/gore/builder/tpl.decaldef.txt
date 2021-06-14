@@ -20,6 +20,8 @@ DECAL K8Gore_NewBloodSplat01${Color} {
     BootPrint K8Gore_BootPrint${Color}
     // how long this decal bootprint time should last, in seconds; no value means "default"
     //BootPrintTime random 4 8  // use one from bootprint
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -47,6 +49,8 @@ DECAL K8Gore_NewBloodSplat02${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -74,6 +78,8 @@ DECAL K8Gore_NewBloodSplat03${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -101,6 +107,8 @@ DECAL K8Gore_NewBloodSplat04${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -128,6 +136,8 @@ DECAL K8Gore_NewBloodSplat05${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -155,6 +165,8 @@ DECAL K8Gore_NewBloodSplat06${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -184,6 +196,8 @@ DECAL K8Gore_NewBloodSplat07${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -211,6 +225,8 @@ DECAL K8Gore_NewBloodSplat08${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -238,6 +254,8 @@ DECAL K8Gore_NewBloodSplat09${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -265,6 +283,8 @@ DECAL K8Gore_NewBloodSplat10${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -437,6 +457,8 @@ DECAL K8Gore_NewBloodSplatFade01${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -462,6 +484,8 @@ DECAL K8Gore_NewBloodSplatFade02${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -487,6 +511,8 @@ DECAL K8Gore_NewBloodSplatFade03${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -512,6 +538,8 @@ DECAL K8Gore_NewBloodSplatFade04${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -537,6 +565,8 @@ DECAL K8Gore_NewBloodSplatFade05${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -562,6 +592,8 @@ DECAL K8Gore_NewBloodSplatFade06${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -589,6 +621,8 @@ DECAL K8Gore_NewBloodSplatFade07${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -614,6 +648,8 @@ DECAL K8Gore_NewBloodSplatFade08${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -639,6 +675,8 @@ DECAL K8Gore_NewBloodSplatFade09${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -664,6 +702,8 @@ DECAL K8Gore_NewBloodSplatFade10${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -723,6 +763,8 @@ DECAL K8Gore_NewBloodSplatPers01${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -747,6 +789,8 @@ DECAL K8Gore_NewBloodSplatPers02${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -771,6 +815,8 @@ DECAL K8Gore_NewBloodSplatPers03${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -795,6 +841,8 @@ DECAL K8Gore_NewBloodSplatPers04${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -819,6 +867,8 @@ DECAL K8Gore_NewBloodSplatPers05${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -843,6 +893,8 @@ DECAL K8Gore_NewBloodSplatPers06${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -869,6 +921,8 @@ DECAL K8Gore_NewBloodSplatPers07${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -893,6 +947,8 @@ DECAL K8Gore_NewBloodSplatPers08${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -917,6 +973,8 @@ DECAL K8Gore_NewBloodSplatPers09${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
@@ -941,6 +999,8 @@ DECAL K8Gore_NewBloodSplatPers10${Color} {
     TypeBloodSplat
     //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
     BootPrint K8Gore_BootPrint${Color}
+    flatangle random 0 360
+    wallangle random 0 360
   }
 #ifndef BLUE
 # ifndef GREEN
