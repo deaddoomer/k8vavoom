@@ -109,9 +109,11 @@ static void InitTokenHashTable () noexcept {
   // hacks
   AddTokenToHashTable("nullptr", (unsigned)TK_Null, bkidx);
   AddTokenToHashTable("NULL", (unsigned)TK_Null, bkidx);
+/*
 #ifdef VC_LEXER_USE_TOKEN_HASHTABLE
   GLog.Logf(NAME_Debug, "%u buckets used (%u : %u)", bkidx-1, tkMinLen, tkMaxLen);
 #endif
+*/
 }
 
 
