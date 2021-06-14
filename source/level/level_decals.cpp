@@ -89,11 +89,29 @@ static float CalcDecalAlpha (const VDecalDef *dec, float alpha) noexcept {
     //GCon->Logf(NAME_Debug, "decal '%s': orig alpha=%g (forced alpha=%g)", *dec->name, dcalpha, alpha);
     if (alpha < 1000.0f) dcalpha = alpha; else dcalpha *= alpha-1000.0f;
     //GCon->Logf(NAME_Debug, "decal '%s': final alpha=%g", *dec->name, dcalpha);
-    //GCon->Logf(NAME_Debug, "decal '%s': final clamped alpha=%g", *dec->name, dcalpha);
   }
   if (dcalpha < 0.004f) return 0.0f;
-  dcalpha = min2(1.0f, dcalpha);
-  return dcalpha;
+  return min2(1.0f, dcalpha);
+}
+
+
+//==========================================================================
+//
+//  CalcSwitchDecalAlpha
+//
+//  switches should be more visible, so make decals almost transparent
+//
+//==========================================================================
+static float CalcSwitchDecalAlpha (const VDecalDef *dec, float ovralpha) {
+  if (!r_decal_switch_special.asBool()) return ovralpha;
+  vassert(dec);
+  const float alpha = CalcDecalAlpha(dec, ovralpha);
+  if (alpha <= 0.0f) return alpha;
+  // blood?
+  if (dec->bloodSplat) return clampval(min2(alpha, r_decal_switch_blood_alpha.asFloat()), 0.0f, 1.0f);
+  if (dec->bootPrint) return clampval(min2(alpha, r_decal_switch_boot_alpha.asFloat()), 0.0f, 1.0f);
+  // others
+  return clampval(min2(alpha, r_decal_switch_other_alpha.asFloat()), 0.0f, 1.0f);
 }
 
 
@@ -456,26 +474,6 @@ static inline bool hasSliderAnimator (const VDecalDef *dec, const VDecalAnim *an
   if (!anim) anim = dec->animator;
   if (!anim) return false;
   return (anim->hasTypeId(TDecAnimSlider));
-}
-
-
-//==========================================================================
-//
-//  CalcSwitchDecalAlpha
-//
-//  switches should be more visible, so make decals almost transparent
-//
-//==========================================================================
-static float CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha) {
-  if (!r_decal_switch_special.asBool()) return ovralpha;
-  vassert(dec);
-  float alpha = clampval(ovralpha >= 0.0f ? ovralpha : dec->alpha.value, 0.0f, 1.0f);
-  if (alpha <= 0.0f) return alpha;
-  // blood?
-  if (dec->bloodSplat) return clampval(min2(alpha, r_decal_switch_blood_alpha.asFloat()), 0.0f, 1.0f);
-  if (dec->bootPrint) return clampval(min2(alpha, r_decal_switch_boot_alpha.asFloat()), 0.0f, 1.0f);
-  // others
-  return clampval(min2(alpha, r_decal_switch_other_alpha.asFloat()), 0.0f, 1.0f);
 }
 
 
