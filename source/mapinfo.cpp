@@ -30,6 +30,7 @@
 #include "server/sv_local.h"
 #include "decorate/vc_decorate.h"
 #include "language.h"
+#include "filesys/files.h"
 
 
 static int cli_NoMapinfoPlrClasses = 0;

@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "../../libs/core/fsys/fsys_local.h"
 #include "../decorate/vc_decorate.h"
+#include "files.h"
 
 
 // from corelib, sorry!

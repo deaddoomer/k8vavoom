@@ -26,6 +26,7 @@
 #if !defined(VCC_STANDALONE_EXECUTOR)
 # include "gamedefs.h"
 # include "language.h"
+# include "filesys/files.h"
 #elif defined(VCC_STANDALONE_EXECUTOR)
 # include "../vccrun/vcc_run_vc.h"
 # include "../libs/vavoomc/vc_public.h"

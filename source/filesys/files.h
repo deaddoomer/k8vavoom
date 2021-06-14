@@ -135,17 +135,15 @@ struct PWadMapLump {
 extern TArray<PWadMapLump> fsys_PWadMaps; // sorted
 
 
-extern VCvarS game_name;
-
 extern GameOptions game_options;
 
-extern int cli_WAll;
+//extern int cli_WAll;
 extern int cli_NoMonsters;
 extern int cli_CompileAndExit;
 extern int cli_NoExternalDeh;
 extern int cli_GoreMod; // !=0: enabled
 
-extern VStr flWarningMessage;
+//extern VStr flWarningMessage;
 
 extern int flACSType; // FL_ACS_XXX
 extern VStr flForcePlayerClass;

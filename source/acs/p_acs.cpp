@@ -59,6 +59,7 @@
 #include "../psim/p_player.h"
 #include "../server/server.h"
 #include "../language.h"
+#include "../filesys/files.h"
 #ifdef CLIENT
 # include "../screen.h"
 # include "../text.h"

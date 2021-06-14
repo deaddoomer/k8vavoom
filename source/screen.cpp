@@ -35,6 +35,7 @@
 #include "psim/p_player.h"
 #include "server/server.h"
 #include "client/client.h"
+#include "filesys/files.h"
 
 
 extern int screenblocks;

@@ -33,6 +33,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
 #include "../psim/p_player.h"
+#include "../filesys/files.h"
 #ifdef CLIENT
 # include "../client/client.h"
 #endif

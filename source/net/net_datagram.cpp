@@ -103,6 +103,7 @@
 #include "../gamedefs.h"
 #include "../text.h"
 #include "../server/server.h"
+#include "../filesys/files.h"
 #ifdef CLIENT
 # include "../screen.h"
 #endif

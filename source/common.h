@@ -62,4 +62,9 @@ class VBasePlayer;
 struct VViewState;
 
 
+extern VCvarS game_name;
+extern int cli_WAll;
+extern VStr flWarningMessage;
+
+
 #endif

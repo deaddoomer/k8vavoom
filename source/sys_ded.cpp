@@ -43,6 +43,7 @@
 #endif
 
 #include "gamedefs.h"
+#include "filesys/files.h"
 
 #include <signal.h>
 #include <fcntl.h>

@@ -37,6 +37,7 @@
 #include "../psim/p_decal.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_player.h"
+#include "../filesys/files.h"
 
 
 VStream *VPackage::OpenFileStreamRO (VStr fname) { return FL_OpenFileRead(fname); }

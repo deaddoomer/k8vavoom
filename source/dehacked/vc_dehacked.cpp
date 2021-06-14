@@ -31,6 +31,7 @@
 #include "../psim/p_entity.h"
 #include "../language.h"
 #include "../mapinfo.h"
+#include "../filesys/files.h"
 #include "vc_dehacked.h"
 
 

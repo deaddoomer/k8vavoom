@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "../server/server.h"
 #include "../menu.h"
+#include "../filesys/files.h"
 #ifdef CLIENT
 # include "../client/client.h"
 #endif

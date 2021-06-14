@@ -30,6 +30,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
 #include "../psim/p_player.h"
+#include "../filesys/files.h"
 #include "../lockdefs.h"
 #include "server.h"
 #include "sv_local.h"

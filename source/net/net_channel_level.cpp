@@ -29,6 +29,7 @@
 #include "../psim/p_entity.h"
 #include "../psim/p_player.h"
 #include "../server/server.h"
+#include "../filesys/files.h"
 #ifdef CLIENT
 # include "../client/client.h"
 # include "../client/cl_local.h"

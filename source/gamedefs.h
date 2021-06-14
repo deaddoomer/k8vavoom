@@ -36,7 +36,6 @@
 #include "cmd.h"
 
 #include "scripts.h"
-#include "filesys/files.h"
 #include "textdefs.h"
 #include "psim/p_gameobject.h"
 #include "textures/r_tex_id.h"

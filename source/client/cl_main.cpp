@@ -33,6 +33,7 @@
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_player.h"
+#include "../filesys/files.h"
 #include "client.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"
