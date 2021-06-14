@@ -30,7 +30,22 @@
 #ifndef GAMEDEFS_HEADER
 #define GAMEDEFS_HEADER
 
-#include "gamecommon.h"
+#ifdef CLIENT
+# ifdef USE_GLAD
+#  include "glad.h"
+# else
+#  include <GL/gl.h>
+# endif
+#else
+# define GLuint  vuint32
+#endif
+
+#include "../libs/core/core.h"
+
+#include "gamedefs_build.h"
+#include "gamedefs_fwd.h"
+#include "misc.h"
+#include "../libs/vavoomc/vc_public.h"
 
 #include "console.h"
 #include "cmd.h"

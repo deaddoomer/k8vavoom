@@ -23,27 +23,61 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-//**  common header file
-//**************************************************************************
-#ifndef GAMECOMMON_HEADER
-#define GAMECOMMON_HEADER
+#ifndef VAVOOM_COMMON_TYPES_HEADER
+#define VAVOOM_COMMON_TYPES_HEADER
 
-#ifdef CLIENT
-# ifdef USE_GLAD
-#  include "glad.h"
-# else
-#  include <GL/gl.h>
-# endif
-#else
-# define GLuint  vuint32
-#endif
 
-#include "../libs/core/core.h"
+//==========================================================================
+//
+//  Forward declarations
+//
+//==========================================================================
+class VName;
+class VStr;
+class VStream;
 
-#include "build.h"
-#include "common.h"
-#include "misc.h"
-#include "system.h"
-#include "../libs/vavoomc/vc_public.h"
+class VMemberBase;
+class VPackage;
+class VField;
+class VMethod;
+class VState;
+class VConstant;
+class VStruct;
+class VClass;
+class VNetObjectsMapBase;
+class VNetObjectsMap;
+struct mobjinfo_t;
+
+class VObject;
+
+class VNTValueIOEx;
+
+
+class VLevel;
+class VThinker;
+class VEntity;
+class VPlayerReplicationInfo;
+
+class VBasePlayer;
+struct VViewState;
+
+struct particle_t;
+
+
+extern VCvarS game_name;
+extern int cli_WAll;
+extern VStr flWarningMessage;
+
+extern VCvarB developer;
+
+extern void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_EndGame (const char *message, ...);
+extern void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_Error (const char *error, ...);
+
+
+extern void __attribute__((noreturn)) __declspec(noreturn) Sys_Quit (const char *);
+extern void Sys_Shutdown ();
+
+extern char *Sys_ConsoleInput ();
+
 
 #endif

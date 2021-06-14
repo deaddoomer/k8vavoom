@@ -416,8 +416,8 @@ configure_file(
 #---------------------------------------
 set(CS_SHARED_SOURCES
   gitversion.h.in
-  build.h
-  common.h
+  gamedefs_build.h
+  gamedefs_fwd.h
   gamedefs.h
   cheats.cpp
   cmd.h
@@ -432,7 +432,6 @@ set(CS_SHARED_SOURCES
   text.h
   text.cpp
 
-  system.h
   host.h
   host.cpp
   infostr.h

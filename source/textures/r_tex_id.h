@@ -27,7 +27,7 @@
 #define VAVOOM_TEX_ID_HEADER
 
 #include "../../libs/core/core.h"
-#include "../common.h"
+#include "../gamedefs_fwd.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
