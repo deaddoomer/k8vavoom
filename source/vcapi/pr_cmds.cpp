@@ -32,6 +32,9 @@
 #include "../server/sv_local.h"
 #include "../client/cl_local.h"
 #include "../drawer.h"
+#ifdef CLIENT
+# include "../input.h"
+#endif
 
 
 VClass *SV_FindClassFromEditorId (int Id, int GameFilter);

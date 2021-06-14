@@ -36,7 +36,7 @@
 #include "language.h"
 #include "infostr.h"
 #include "filesys/files.h"
-#include "input.h"
+//#include "input.h"
 #include "video.h"
 #include "screen.h"
 #include "automap.h"

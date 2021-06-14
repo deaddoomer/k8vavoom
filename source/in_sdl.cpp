@@ -30,6 +30,7 @@
 #endif
 #include "gamedefs.h"
 #include "drawer.h"
+#include "input.h"
 #include "touch.h"
 #include "widgets/ui.h"
 

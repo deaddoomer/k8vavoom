@@ -29,7 +29,9 @@
 #ifdef CLIENT
 # include "client/cl_local.h"
 # include "widgets/ui.h"
+# include "input.h"
 #endif
+
 #include <time.h>
 #ifndef WIN32
 # include <fcntl.h>

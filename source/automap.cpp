@@ -32,6 +32,7 @@
 # include "client/cl_local.h"
 # include "drawer.h"
 # include "widgets/ui.h"
+# include "input.h"
 #endif
 
 // there is no need to do this anymore: OpenGL will do it for us
@@ -950,7 +951,9 @@ void AM_Stop () {
   stopped = true;
   am_active = false;
   memset((void *)&amkstate[0], 0, sizeof(amkstate));
+#ifdef CLIENT
   GInput->SetAutomapActive(false);
+#endif
 }
 
 
@@ -978,7 +981,9 @@ static void AM_Start () {
   ftom_zoommul = 1.0f;
   am_active = true;
   memset((void *)&amkstate[0], 0, sizeof(amkstate));
+#ifdef CLIENT
   GInput->SetAutomapActive(true);
+#endif
 }
 
 
@@ -2684,6 +2689,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
 static int AM_TranslateKeyEvent (event_t *ev, int *cmdtype) {
   *cmdtype = AM_BIND_NOTHING;
 
+#ifdef CLIENT
   bool kdown;
        if (ev->type == ev_keydown) kdown = true;
   else if (ev->type == ev_keyup) kdown = false;
@@ -2723,6 +2729,7 @@ static int AM_TranslateKeyEvent (event_t *ev, int *cmdtype) {
       }
     }
   }
+#endif
 
   return AM_PTYPE_NOTMINE;
 }

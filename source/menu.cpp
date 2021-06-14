@@ -29,6 +29,9 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#ifdef CLIENT
+# include "input.h"
+#endif
 #include "client/cl_local.h"
 #include "widgets/ui.h"
 
@@ -97,11 +100,13 @@ bool MN_Responder (event_t *ev) {
       (!cl || cls.demoplayback || GGameInfo->NetMode == NM_TitleMap))
   {
     bool doActivate = (ev->keycode < K_F1 || ev->keycode > K_F12);
+    #ifdef CLIENT
     if (doActivate) {
       VStr down, up;
       GInput->GetBinding(ev->keycode, down, up);
       if (down.ICmp("ToggleConsole") == 0) doActivate = false;
     }
+    #endif
     if (doActivate) {
       MN_ActivateMenu();
       return true;

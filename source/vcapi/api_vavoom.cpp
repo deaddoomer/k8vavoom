@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #ifdef CLIENT
 # include "../drawer.h"
+# include "../input.h"
 #endif
 #include "../psim/p_decal.h"
 

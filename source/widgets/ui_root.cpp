@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../client/cl_local.h"
+#include "../input.h"
 #include "ui.h"
 
 
