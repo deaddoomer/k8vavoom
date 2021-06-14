@@ -58,7 +58,7 @@ final void DebugCheckMidTex () {
   if (tr.didhit) {
     TVec fdorg = tr.hit;
     if (tr.line && tr.sec) {
-      SpawnDecal(tr.hit, 'K8BigScorchTest', tr.side, tr.line);
+      SpawnDecal(tr.hit, 'K8BigScorchTestRot', tr.side, tr.line);
       fdorg += tr.line.normal*2.0; // move slightly away from the wall
     }
     SpawnFlatDecal(fdorg, 'K8BigScorchTest', 2);
