@@ -25,7 +25,6 @@
 //**************************************************************************
 #include "../gamedefs.h"
 
-//#define VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
 //#define VAVOOM_DECALS_DEBUG
 
 #ifdef VAVOOM_DECALS_DEBUG
@@ -39,11 +38,6 @@ extern VCvarB r_decals;
 extern VCvarB r_decals_wall;
 
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
-
-TMapNC<VName, bool> VLevel::baddecals;
-TArray<int> VLevel::dcLineTouchMark;
-TArray<int> VLevel::dcSegTouchMark;
-int VLevel::dcLineTouchCounter = 0;
 
 
 //==========================================================================
@@ -781,49 +775,4 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   connectedLines.resetNoDtor();
   PutDecalAtLine(org, lineofs, dec, side, li, params, false); // don't skip mark check
-}
-
-
-//==========================================================================
-//
-//  VLevel::AddDecal
-//
-//==========================================================================
-void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, DecalParams &params) {
-  if (!r_decals || !r_decals_wall) return;
-  if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
-
-  //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g); trans=%d", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z, translation);
-
-#ifdef VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
-  //dectype = VName("k8TestDecal");
-  dectype = VName("k8TestDecal001");
-#endif
-  VDecalDef *dec = VDecalDef::getDecal(dectype);
-  //if (dec->animator) GCon->Logf(NAME_Debug, "   animator: <%s> (%s : %d)", *dec->animator->name, dec->animator->getTypeName(), (int)dec->animator->isEmpty());
-  //if (animator) GCon->Logf(NAME_Debug, "   forced animator: <%s> (%s : %d)", *animator->name, animator->getTypeName(), (int)animator->isEmpty());
-  if (dec) {
-    org = li->landAlongNormal(org);
-    //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);
-    AddOneDecal(level, org, dec, side, li, params);
-  } else {
-    if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
-  }
-}
-
-
-//==========================================================================
-//
-//  VLevel::AddDecalById
-//
-//==========================================================================
-void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, DecalParams &params) {
-  if (!r_decals || !r_decals_wall) return;
-  if (!li || id < 0) return; // just in case
-  VDecalDef *dec = VDecalDef::getDecalById(id);
-  if (dec) {
-    org = li->landAlongNormal(org);
-    params.forcePermanent = true; // always
-    AddOneDecal(level, org, dec, side, li, params);
-  }
 }

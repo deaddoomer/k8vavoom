@@ -52,9 +52,25 @@ VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals 
 VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
 
 
+TMapNC<VName, bool> VLevel::baddecals;
+TArray<int> VLevel::dcLineTouchMark;
+TArray<int> VLevel::dcSegTouchMark;
+int VLevel::dcLineTouchCounter = 0;
+
+
 // sorry for this static
 // it is used in decal cleanup code
 static TArray<decal_t *> dc2kill;
+
+
+//==========================================================================
+//
+//  decal_t::calculateBBox
+//
+//==========================================================================
+void decal_t::calculateBBox () noexcept {
+  return (void)CalculateTextureBBox(bbox2d, texture.id, worldx, worldy, angle, scaleX, scaleY);
+}
 
 
 //==========================================================================
@@ -110,6 +126,23 @@ void VLevel::IncLineTouchCounter () noexcept {
   for (auto &&v : dcLineTouchMark) v = 0;
   for (auto &&v : dcSegTouchMark) v = 0;
   dcLineTouchCounter = 1;
+}
+
+
+//==========================================================================
+//
+//  VLevel::IncSubTouchCounter
+//
+//==========================================================================
+void VLevel::IncSubTouchCounter () noexcept {
+  dcPobjTouchedReset = false;
+  if (dcSubTouchMark.length() == NumSubsectors) {
+    if (++dcSubTouchCounter != MAX_VINT32) return;
+  } else {
+    dcSubTouchMark.setLength(NumSubsectors);
+  }
+  for (auto &&v : dcSubTouchMark) v = 0;
+  dcSubTouchCounter = 1;
 }
 
 
@@ -446,6 +479,66 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
 
 //==========================================================================
 //
+//  VLevel::NewFlatDecal
+//
+//==========================================================================
+void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, const float wx, const float wy,
+                           VDecalDef *dec, const DecalParams &params)
+{
+  vassert(sub);
+  vassert(eregidx >= 0);
+  vassert(dec);
+
+  const float dcalpha = CalcDecalAlpha(dec, params.alpha);
+
+  decal_t *decal = new decal_t;
+  memset((void *)decal, 0, sizeof(decal_t));
+  //decal->dectype = dec->name;
+  decal->proto = dec;
+  decal->texture = dec->texid;
+  decal->translation = params.translation;
+  decal->shadeclr = decal->origshadeclr = (params.shadeclr != -2 ? params.shadeclr : dec->shadeclr);
+  decal->slidesec = nullptr;
+  decal->sub = sub;
+  decal->eregindex = eregidx;
+  decal->dcsurf = (asFloor ? decal_t::Floor : decal_t::Ceiling);
+  decal->worldx = wx;
+  decal->worldy = wy;
+  decal->angle = AngleMod(params.angle);
+  //decal->orgz = org.z; // doesn't matter
+  //!decal->height = height;
+  //decal->curz = 0.0f; // doesn't matter
+  //decal->xdist = 0.0f; // doesn't matter
+  //decal->ofsX = decal->ofsY = 0.0f;
+  decal->scaleX = decal->origScaleX = dec->scaleX.value;
+  decal->scaleY = decal->origScaleY = dec->scaleY.value;
+  decal->alpha = decal->origAlpha = dcalpha;
+  decal->flags =
+    params.orflags|
+    (dec->fullbright ? decal_t::Fullbright : 0u)|
+    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
+    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
+    (dec->bootPrint ? decal_t::BootPrint : 0u)|
+    (dec->additive ? decal_t::Additive : 0u);
+
+  decal->boottime = dec->boottime.value;
+  decal->bootanimator = dec->bootanimator;
+  decal->bootshade = dec->bootshade;
+  decal->boottranslation = dec->boottranslation;
+  decal->bootalpha = dec->bootalpha;
+
+  decal->animator = (params.animator ? params.animator : dec->animator);
+  //if (decal->animator) GCon->Logf(NAME_Debug, "anim: %s(%s) (%d)", *decal->animator->name, decal->animator->getTypeName(), (int)decal->animator->isEmpty());
+  if (decal->animator && decal->animator->isEmpty()) decal->animator = nullptr;
+  //decal->animator = nullptr;
+  if (decal->animator) decal->animator = decal->animator->clone();
+
+  AppendDecalToSubsectorList(decal);
+}
+
+
+//==========================================================================
+//
 //  VLevel::DestroyDecal
 //
 //  this will also destroy decal and its animator!
@@ -460,6 +553,71 @@ void VLevel::DestroyDecal (decal_t *dc) {
   } else {
     return DestroyFlatDecal(dc);
   }
+}
+
+
+//==========================================================================
+//
+//  VLevel::AddDecal
+//
+//==========================================================================
+void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, DecalParams &params) {
+  if (!r_decals || !r_decals_wall) return;
+  if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
+
+  //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g); trans=%d", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z, translation);
+
+  VDecalDef *dec = VDecalDef::getDecal(dectype);
+  //if (dec->animator) GCon->Logf(NAME_Debug, "   animator: <%s> (%s : %d)", *dec->animator->name, dec->animator->getTypeName(), (int)dec->animator->isEmpty());
+  //if (animator) GCon->Logf(NAME_Debug, "   forced animator: <%s> (%s : %d)", *animator->name, animator->getTypeName(), (int)animator->isEmpty());
+  if (dec) {
+    org = li->landAlongNormal(org);
+    //GCon->Logf(NAME_Debug, "DECAL '%s'; name is '%s', texid is %d; org=(%g,%g,%g)", *dectype, *dec->name, dec->texid, org.x, org.y, org.z);
+    AddOneDecal(level, org, dec, side, li, params);
+  } else {
+    if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::AddDecalById
+//
+//==========================================================================
+void VLevel::AddDecalById (TVec org, int id, int side, line_t *li, int level, DecalParams &params) {
+  if (!r_decals || !r_decals_wall) return;
+  if (!li || id < 0) return; // just in case
+  VDecalDef *dec = VDecalDef::getDecalById(id);
+  if (dec) {
+    org = li->landAlongNormal(org);
+    params.forcePermanent = true; // always
+    AddOneDecal(level, org, dec, side, li, params);
+  }
+}
+
+
+//==========================================================================
+//
+//  VLevel::AddFlatDecal
+//
+//  z coord matters!
+//  `height` is from `org.z`
+//  zero height means "take from decal texture"
+//
+//==========================================================================
+void VLevel::AddFlatDecal (TVec org, VName dectype, float range, DecalParams &params) {
+  if (!r_decals || !r_decals_flat) return;
+  if (dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
+
+  VDecalDef *dec = VDecalDef::getDecal(dectype);
+  if (!dec) {
+    if (!baddecals.put(dectype, true)) GCon->Logf(NAME_Warning, "NO DECAL: '%s'", *dectype);
+    return;
+  }
+
+  range = max2(2.0f, fabsf(range));
+  SpreadFlatDecalEx(org, range, dec, 0, params);
 }
 
 
