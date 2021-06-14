@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "lockdefs.h"
 #include "decorate/vc_decorate.h"
 
 

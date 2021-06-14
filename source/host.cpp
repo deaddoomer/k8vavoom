@@ -44,6 +44,7 @@
 #include "net/network.h"
 #include "decorate/vc_decorate.h"
 #include "language.h"
+#include "mapinfo.h"
 
 #include <time.h>
 #ifndef WIN32

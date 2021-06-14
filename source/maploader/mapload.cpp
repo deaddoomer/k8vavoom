@@ -34,6 +34,7 @@
 # include "../automap.h"
 #endif
 #include "../ntvalueioex.h"  /* VCheckedStream */
+#include "../mapinfo.h"
 
 
 static VCvarB dbg_show_map_hash("dbg_show_map_hash", false, "Show map hash?", CVAR_PreInit|CVAR_Archive);

@@ -26,6 +26,8 @@
 #ifndef VAVOOM_PSIM_WORLDINFO_HEADER
 #define VAVOOM_PSIM_WORLDINFO_HEADER
 
+#include "../mapinfo.h"
+
 
 class VAcsGlobal;
 

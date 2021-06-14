@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../mapinfo.h"
 #include "snd_local.h"
 
 #define VV_ALLOW_SFX_TRUNCATION

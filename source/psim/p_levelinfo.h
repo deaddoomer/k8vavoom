@@ -26,6 +26,7 @@
 #ifndef VAVOOM_PSIM_LEVELINFO_HEADER
 #define VAVOOM_PSIM_LEVELINFO_HEADER
 
+#include "../mapinfo.h"
 #include "p_thinker.h"
 
 

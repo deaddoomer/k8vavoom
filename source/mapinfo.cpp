@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "mapinfo.h"
 #include "psim/p_levelinfo.h"
 #include "server/server.h"
 #include "server/sv_local.h"
