@@ -30,6 +30,7 @@
 # include "drawer.h"
 # include "net/network.h" /* sorry */
 #endif
+#include "text.h"
 
 
 int NetLagChart[NETLAG_CHART_ITEMS] = {0};

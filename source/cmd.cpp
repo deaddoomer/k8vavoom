@@ -24,7 +24,9 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
-
+#ifdef CLIENT
+# include "text.h"
+#endif
 
 extern VCvarB sv_cheats;
 

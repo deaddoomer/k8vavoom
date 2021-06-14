@@ -34,6 +34,7 @@
 # include "widgets/ui.h"
 # include "input.h"
 #endif
+#include "text.h"
 
 // there is no need to do this anymore: OpenGL will do it for us
 //#define AM_DO_CLIPPING

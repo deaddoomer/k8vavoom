@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../text.h"
 #include "../bsp/ajbsp/bsp.h"
 
 //#define VV_AJBSP_USE_VERTEX_ROUNDOFF

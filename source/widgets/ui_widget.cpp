@@ -26,6 +26,7 @@
 #include "../gamedefs.h"
 #include "../client/cl_local.h"
 #include "../drawer.h"
+#include "../text.h"
 #include "ui.h"
 
 extern VCvarB gl_pic_filtering;

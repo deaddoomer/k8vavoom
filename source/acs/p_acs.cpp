@@ -55,6 +55,7 @@
 #include "../server/sv_local.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
+# include "../text.h"
 #endif
 #include "p_acs.h"
 

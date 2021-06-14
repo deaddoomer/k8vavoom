@@ -31,6 +31,7 @@
 #include "gamedefs.h"
 #include "client/cl_local.h"
 #include "drawer.h"
+#include "text.h"
 
 #ifdef ANDROID
 #  include <android/log.h>

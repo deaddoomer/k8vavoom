@@ -29,6 +29,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../text.h"
 
 
 static VCvarB dbg_show_map_hash("dbg_show_map_hash", false, "Show map hash?", CVAR_PreInit|CVAR_Archive);

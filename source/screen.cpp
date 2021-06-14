@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "drawer.h"
+#include "text.h"
 #include "touch.h"
 #include "widgets/ui.h"
 

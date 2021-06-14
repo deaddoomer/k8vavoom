@@ -23,56 +23,58 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-//**
-//**  Main game header file.
-//**
-//**************************************************************************
-#ifndef GAMEDEFS_HEADER
-#define GAMEDEFS_HEADER
 
-#include "gamecommon.h"
 
-#include "scripts.h"
-#include "language.h"
-#include "infostr.h"
-#include "filesys/files.h"
-//#include "input.h"
-//#include "video.h"
-#include "textdefs.h"
-#include "screen.h"
-#include "automap.h"
-#include "psim/p_gameobject.h"
-#include "textures/r_tex_id.h"
-#include "ntvalueioex.h"
-#include "level/level.h"
-//#include "level/beamclip.h"
-#include "mapinfo.h"
-#include "lockdefs.h"
-#include "host.h"
-#include "textures/r_tex_public.h"
-#include "render/r_public.h"
-//#include "text.h"
-#include "sound/sound.h"
-#include "menu.h"
-#include "console.h"
-#include "cmd.h"
-#include "sbar.h"
-#include "chat.h"
-#include "finale.h"
-#include "server/server.h"
-#include "server/sv_save.h"
-#include "qs_data.h"
-//#include "psim/p_decal.h"
-#include "psim/p_worldinfo.h"
-#include "psim/p_thinker.h"
-#include "psim/p_levelinfo.h"
-#include "psim/p_entity.h"
-#include "psim/p_playerreplicationinfo.h"
-#include "psim/p_player.h"
-#include "psim/p_gameinfo.h"
-#include "psim/p_world.h"
-#include "decorate/vc_decorate.h"
-#include "dehacked/vc_dehacked.h"
-#include "client/client.h"
+// horisontal alignement
+enum halign_e {
+  hleft,   //Left
+  hcenter, //Centered
+  hright,  //Right
+};
 
-#endif
+// vertical alignement
+enum valign_e {
+  vtop,    //Top
+  vcenter, //Center
+  vbottom, //Bottom
+};
+
+// text colors, these must match the constants used in ACS
+enum {
+  CR_UNDEFINED = -1,
+  CR_BRICK, //A
+  CR_TAN, //B
+  CR_GRAY, //C
+  CR_GREEN, //D
+  CR_BROWN, //E
+  CR_GOLD, //F
+  CR_RED, //G
+  CR_BLUE, //H
+  CR_ORANGE, //I
+  CR_WHITE, //J
+  CR_YELLOW, //K
+  CR_UNTRANSLATED, //L
+  CR_BLACK, //M
+  CR_LIGHTBLUE, //N
+  CR_CREAM, //O
+  CR_OLIVE, //P
+  CR_DARKGREEN, //Q
+  CR_DARKRED, //R
+  CR_DARKBROWN, //S
+  CR_PURPLE, //T
+  CR_DARKGRAY, //U
+  CR_CYAN, //V
+  CR_ICE, //W
+  CR_FIRE, //X
+  CR_SAPPHIRE, //Y
+  CR_TEAL, //Z
+  // special
+  CR_RED_ERROR,
+  CR_WARNING_YELLOW,
+  CR_DEBUG_GREEN,
+  CR_DEBUG_CYAN,
+  CR_INIT_CYAN,
+  CR_SLIDER_HI_KNOB,
+  // no more
+  NUM_TEXT_COLORS
+};

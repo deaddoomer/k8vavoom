@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../drawer.h"
+#include "../text.h"
 #include "../net/network.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"

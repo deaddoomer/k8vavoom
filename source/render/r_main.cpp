@@ -28,6 +28,7 @@
 
 #include "../gamedefs.h"
 #include "r_local.h"
+#include "../text.h"
 
 //#define VAVOOM_DEBUG_PORTAL_POOL
 

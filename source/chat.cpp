@@ -26,6 +26,7 @@
 #include "gamedefs.h"
 #include "iline.h"
 #include "input.h"
+#include "text.h"
 
 
 bool chatmodeon;

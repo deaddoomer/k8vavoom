@@ -31,6 +31,7 @@
 # include "widgets/ui.h"
 # include "input.h"
 # include "video.h"
+# include "text.h"
 #endif
 
 #include <time.h>
