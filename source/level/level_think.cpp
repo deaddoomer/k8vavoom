@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#include "../psim/p_levelinfo.h"
 #ifdef CLIENT
 # include "../client/cl_local.h"
 #endif

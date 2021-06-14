@@ -34,7 +34,9 @@
 #include "../gamedefs.h"
 #include "../net/network.h"
 #include "../client/cl_local.h" // for dlight_t
-#include "../psim/p_entity.h"
+#include "p_entity.h"
+#include "p_levelinfo.h"
+#include "p_world.h"
 
 
 static VClass *eexCls = nullptr;

@@ -25,7 +25,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
-#include "../psim/p_entity.h"
+#include "p_entity.h"
+#include "p_levelinfo.h"
 
 
 VCvarB compat_shorttex("compat_shorttex", false, "Compatibility: shorttex", 0);

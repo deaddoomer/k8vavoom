@@ -28,6 +28,7 @@
 
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#include "../psim/p_levelinfo.h"
 #include "../text.h"
 #include "../screen.h"
 #include "../automap.h"

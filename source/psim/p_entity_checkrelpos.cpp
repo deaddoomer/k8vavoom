@@ -28,7 +28,9 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../psim/p_entity.h"
+#include "p_entity.h"
+#include "p_levelinfo.h"
+#include "p_world.h"
 
 //#define VV_DBG_VERBOSE_REL_LINE_FC
 

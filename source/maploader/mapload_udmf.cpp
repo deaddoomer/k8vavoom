@@ -37,6 +37,7 @@ static int cli_WarnUnknownKeys = 1;
 
 // ////////////////////////////////////////////////////////////////////////// //
 #include "../gamedefs.h"
+#include "../psim/p_levelinfo.h"
 
 
 enum {

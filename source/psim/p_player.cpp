@@ -27,7 +27,8 @@
 #include "../net/network.h" /* for demos and RPC */
 #include "../server/sv_local.h"
 #include "../client/cl_local.h"
-#include "../psim/p_entity.h"
+#include "p_entity.h"
+#include "p_levelinfo.h"
 #ifdef CLIENT
 # include "../automap.h"
 #endif

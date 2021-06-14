@@ -28,7 +28,7 @@
 //
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../psim/p_entity.h"
+#include "p_entity.h"
 
 
 static VCvarB gm_vanilla_liquids("gm_vanilla_liquids", true, "Allow liquid sounds for Vanilla Doom?", CVAR_Archive);

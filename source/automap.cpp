@@ -35,6 +35,7 @@
 # include "widgets/ui.h"
 # include "input.h"
 # include "psim/p_entity.h"
+# include "psim/p_levelinfo.h"
 #endif
 #include "text.h"
 

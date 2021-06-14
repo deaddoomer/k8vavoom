@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "p_levelinfo.h"
 
 
 #define BUTTONTIME  (1.0f) /* 1 second */

@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_levelinfo.h"
 #include "r_local.h"
 
 
