@@ -41,6 +41,8 @@
 # include "../drawer.h"
 # include "../client/client.h"
 # include "../client/cl_local.h"
+#else
+# include "../render/r_public.h"
 #endif
 #include "../psim/p_decal.h"
 #include "../decorate/vc_decorate.h"

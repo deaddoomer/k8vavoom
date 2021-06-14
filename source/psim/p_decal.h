@@ -366,6 +366,159 @@ private:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+struct decal_t {
+  // flags bit values
+  enum {
+    SlideFloor = 0x00001U, // curz: offset with floorz, slide with it
+    SlideCeil  = 0x00002U, // curz: offset with ceilingz, slide with it
+    FlipX      = 0x00010U,
+    FlipY      = 0x00020U,
+    Fullbright = 0x00100U,
+    Fuzzy      = 0x00200U,
+    Additive   = 0x00400U,
+    // sides
+    SideDefOne = 0x00800U,
+    NoMidTex   = 0x01000U, // don't render on middle texture
+    NoTopTex   = 0x02000U, // don't render on top texture
+    NoBotTex   = 0x04000U, // don't render on bottom texture
+    FromV2     = 0x08000U, // use `v2` vertex as base (for wall decals on partner segs)
+    // special decal types
+    BloodSplat = 0x10000U,
+    BootPrint  = 0x20000U,
+    Permanent  = 0x40000U, // will not be removed by limiter
+  };
+
+  // dcsurf bit values
+  enum {
+    Wall = 0u,
+    Floor = 1u, // either base region floor, or 3d subregion floor
+    Ceiling = 2u, // either base region ceiling, or 3d subregion ceiling
+    // note that `3u` is invalid
+    FakeFlag = 4u,
+    SurfTypeMask = 0x03u,
+  };
+
+  decal_t *prev; // in seg/sreg/slidesec
+  decal_t *next; // in seg/sreg/slidesec
+  seg_t *seg; // this is non-null for wall decals
+  subregion_t *sreg; // this is non-null for floor/ceiling decals (only set if renderer is active)
+  vuint32 dcsurf; // decal type
+  sector_t *slidesec; // backsector for SlideXXX
+  subsector_t *sub; // owning subsector for floor/ceiling decal
+  int eregindex; // sector region index for floor/ceiling decal (only in VLevel list)
+  VDecalDef *proto; // prototype for this decal; was needed to recreate textures
+  float boottime; // how long it bootprints should be emited after stepping onto this? (copied from proto)
+  VName bootanimator; // NAME_None means "don't change"; 'none' means "reset"
+  int bootshade; // -2: use this decal shade
+  int boottranslation; // <0: use this decal translation
+  float bootalpha; // <0: use current decal alpha
+  VTextureID texture;
+  int translation;
+  int shadeclr; // -1: no shade
+  int origshadeclr; // for animators
+  unsigned flags;
+  // z and x positions has no image offset added
+  float worldx, worldy; // world coordinates for floor/ceiling decals
+  float angle; // decal rotation angle (around its center point)
+  float orgz; // original z position for wall decals
+  float curz; // z position (offset with floor/ceiling TexZ if not midtex, see `flags`)
+  float xdist; // offset from linedef start, in map units
+  float ofsX, ofsY; // for animators
+  float origScaleX, origScaleY; // for animators
+  float scaleX, scaleY; // actual
+  float origAlpha; // for animators
+  float alpha; // decal alpha
+  VDecalAnim *animator; // decal animator (can be nullptr)
+  decal_t *prevanimated; // so we can skip static decals
+  decal_t *nextanimated; // so we can skip static decals
+  // for flat decals
+  float bbox2d[4]; // 2d bounding box for the original (maximum) flat decal size
+  // in VLevel subsector decal list
+  decal_t *subprev;
+  decal_t *subnext;
+  // in renderer region decal list
+  decal_t *sregprev;
+  decal_t *sregnext;
+
+  /*
+  unsigned uid; // unique id, so we can process all clones
+  // linked list of all decals with the given uid
+  decal_t *uidprev;
+  decal_t *uidnext;
+  */
+
+  // cache
+  unsigned lastFlags;
+  float lastScaleX, lastScaleY;
+  float lastWorldX, lastWorldY;
+  float lastAngle;
+  float lastOfsX, lastOfsY;
+  float lastCurZ;
+  float lastPlaneDist, lastTexZ;
+  // calculated cached values
+  TVec saxis, taxis;
+  float soffs, toffs;
+  TVec v1, v2, v3, v4;
+
+  inline bool isAdditive () const noexcept { return (flags&Additive); }
+  inline bool isPermanent () const noexcept { return (flags&Permanent); }
+
+  // nore that floor/ceiling type should be correctly set for 3d floor subregions
+  // i.e. decal on top of 3d floor is ceiling decal
+
+  inline bool isWall () const noexcept { return (dcsurf == Wall); }
+  inline bool isNonWall () const noexcept { return ((dcsurf&SurfTypeMask) != Wall); }
+  inline bool isFloor () const noexcept { return ((dcsurf&SurfTypeMask) == Floor); }
+  inline bool isCeiling () const noexcept { return ((dcsurf&SurfTypeMask) == Ceiling); }
+  // for fake floor/ceiling? (not implemented yet)
+  inline bool isFake () const noexcept { return (dcsurf&FakeFlag); }
+
+  inline bool isFloorBloodSplat () const noexcept { return (((dcsurf&SurfTypeMask) == Floor) && (flags&BloodSplat)); }
+
+  // WARNING! call this ONLY for known non-wall decals!
+  // non-base regions has their floor and ceiling switched
+  // so floor decal for 3d floor region is actually ceiling decal, and vice versa
+  //inline bool isFloorEx () const noexcept { return (eregindex ? isCeiling() : isFloor()); }
+
+  // should be called after animator was set
+  // might be called by animation thinker too
+  void calculateBBox () noexcept;
+
+  inline bool needRecalc (const float pdist, const float tz) const noexcept {
+    return
+      lastFlags != flags ||
+      FASI(lastPlaneDist) != FASI(pdist) ||
+      FASI(lastTexZ) != tz ||
+      FASI(lastScaleX) != FASI(scaleX) ||
+      FASI(lastScaleY) != FASI(scaleY) ||
+      FASI(lastWorldX) != FASI(worldx) ||
+      FASI(lastWorldY) != FASI(worldy) ||
+      FASI(lastOfsX) != FASI(ofsX) ||
+      FASI(lastOfsY) != FASI(ofsY) ||
+      FASI(lastCurZ) != FASI(curz) ||
+      FASI(lastAngle) != FASI(angle);
+  }
+
+  // doesn't update axes and offsets
+  inline void updateCache (const float pdist, const float tz) noexcept {
+    lastFlags = flags;
+    lastPlaneDist = pdist;
+    lastTexZ = tz;
+    lastScaleX = scaleX;
+    lastScaleY = scaleY;
+    lastWorldX = worldx;
+    lastWorldY = worldy;
+    lastOfsX = ofsX;
+    lastOfsY = ofsY;
+    lastCurZ = curz;
+    lastAngle = angle;
+  }
+
+  inline void invalidateCache () noexcept { lastPlaneDist = FLT_MAX; } // arbitrary number
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // used to calculate decal bboxes
 // returns vertical spread height
 // zero means "no texture found or invalid arguments" (bbox2d is zeroed too)

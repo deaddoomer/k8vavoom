@@ -26,6 +26,10 @@
 #include "../gamedefs.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
+#include "p_decal.h"
+#ifdef CLIENT
+# include "../drawer.h"
+#endif
 
 
 // polyobj line start special
@@ -104,7 +108,9 @@ static void CollectPObjTouchingThingsRough (polyobj_t *po) {
 static bool pobjAddSubsector (VLevel *level, subsector_t *sub, void *udata) {
   polyobj_t *po = (polyobj_t *)udata;
   po->AddSubsector(sub);
+  #ifdef CLIENT
   if (level->Renderer) level->Renderer->InvalidateStaticLightmapsSubs(sub);
+  #endif
   //GCon->Logf(NAME_Debug, "linking pobj #%d (%g,%g)-(%g,%g) to subsector #%d", po->tag, po->bbox2d[BOX2D_MINX], po->bbox2d[BOX2D_MINY], po->bbox2d[BOX2D_MAXX], po->bbox2d[BOX2D_MAXY], (int)(ptrdiff_t)(sub-&level->Subsectors[0]));
   return true; // continue checking
 }
@@ -284,7 +290,9 @@ void polyobj_t::RemoveAllSubsectors () {
     part->nextsub = nullptr;
     part->nextpobj = freeparts;
     freeparts = part;
+    #ifdef CLIENT
     if (GClLevel && GClLevel->Renderer) GClLevel->Renderer->InvalidateStaticLightmapsSubs(sub);
+    #endif
   }
 }
 
@@ -1436,7 +1444,9 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   // `InitPolyBlockMap()` will call `LinkPolyobj()`, which will calcilate the bounding box
   // no need to notify renderer yet (or update subsector list), `InitPolyBlockMap()` will do it for us
 
+  #ifdef CLIENT
   if (Renderer) Renderer->InvalidatePObjLMaps(po);
+  #endif
 }
 
 
@@ -1947,6 +1957,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   }
 
   // notify renderer that this polyobject is moved
+  #ifdef CLIENT
   if (Renderer) {
     for (po = pofirst; po; po = po->polink) {
       Renderer->PObjModified(po);
@@ -1954,6 +1965,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       if (skipLink) break;
     }
   }
+  #endif
 
   return true;
 }
@@ -2153,6 +2165,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   }
 
   // notify renderer that this polyobject is moved
+  #ifdef CLIENT
   if (Renderer) {
     for (po = pofirst; po; po = po->polink) {
       Renderer->PObjModified(po);
@@ -2160,6 +2173,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       if (skipLink) break;
     }
   }
+  #endif
 
   return true;
 }

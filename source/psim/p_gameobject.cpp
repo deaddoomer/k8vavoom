@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "p_decal.h"
 
 
 IMPLEMENT_CLASS(V, GameObject)

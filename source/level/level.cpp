@@ -379,7 +379,9 @@ void VLevel::ClearReferences () {
   }
   // static lights will be cleaned in thinker remover
   // renderer
+  #ifdef CLIENT
   if (Renderer) Renderer->ClearReferences();
+  #endif
 }
 
 
@@ -546,10 +548,14 @@ void VLevel::Destroy () {
   }
 
   // free render data
+  #ifdef CLIENT
   if (Renderer) {
     delete Renderer;
     Renderer = nullptr;
   }
+  #else
+  vassert(!Renderer);
+  #endif
 
   if (PolyBlockMap) {
     for (int i = 0; i < BlockMapWidth*BlockMapHeight; ++i) {
@@ -1217,7 +1223,9 @@ IMPLEMENT_FUNCTION(VLevel, SetHeightSector) {
     vint32 &it = Self->FakeFCSectors.alloc();
     it = srcidx;
   }
+  #ifdef CLIENT
   if (Self->Renderer) Self->Renderer->SetupFakeFloors(Sector);
+  #endif
 }
 
 // native final int FindSectorFromTag (out sector_t *Sector, int tag, optional int start);

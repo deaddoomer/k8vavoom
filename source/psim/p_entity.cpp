@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../render/r_public.h"
 #include "../server/sv_local.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"

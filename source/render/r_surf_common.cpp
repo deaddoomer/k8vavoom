@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../text.h"
+#include "../psim/p_decal.h"
 #include "r_local.h"
 
 

@@ -61,6 +61,8 @@ class VPlayerReplicationInfo;
 class VBasePlayer;
 struct VViewState;
 
+struct particle_t;
+
 
 extern VCvarS game_name;
 extern int cli_WAll;

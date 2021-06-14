@@ -24,6 +24,8 @@
 //**
 //**************************************************************************
 #include "gl_local.h"
+#include "../../psim/p_decal.h"  /* decal_t */
+
 
 // main work is done by `VLevel->CleanupDecals()`
 extern VCvarI gl_bigdecal_limit;

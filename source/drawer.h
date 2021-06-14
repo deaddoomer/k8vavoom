@@ -26,6 +26,8 @@
 #ifndef DRAWER_HEADER
 #define DRAWER_HEADER
 
+#include "render/r_public.h"
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct surface_t;

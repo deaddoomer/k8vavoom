@@ -36,6 +36,7 @@
 #include "../psim/p_player.h"
 #include "../filesys/files.h"
 #ifdef CLIENT
+# include "../drawer.h"  /* VRenderLevelPublic */
 # include "../client/client.h"
 #endif
 #include "../qs_data.h"
@@ -2024,10 +2025,12 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
     }
   }
 
+  #ifdef CLIENT
   // perform full update, so lightmap cache will be valid
   if (!checkpoint && GLevel->Renderer && GLevel->Renderer->isNeedLightmapCache()) {
     GLevel->Renderer->FullWorldUpdate(true);
   }
+  #endif
 
   SV_SendBeforeSaveEvent(isAutosave, checkpoint);
 
@@ -2053,6 +2056,7 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
       #else
       enum { doPrecalc = false };
       #endif
+      #ifdef CLIENT
       if (!GLevel->Renderer || !GLevel->Renderer->isNeedLightmapCache() || !loader_cache_data || !doPrecalc) {
         // no rendered usually means that this is some kind of server (the thing that should not be, but...)
         Sys_FileDelete(ccfname);
@@ -2075,6 +2079,7 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
           GCon->Logf(NAME_Warning, "cannot create lightmap cache file '%s'", *ccfname);
         }
       }
+      #endif
     }
     SV_SendAfterSaveEvent(isAutosave, checkpoint);
   }

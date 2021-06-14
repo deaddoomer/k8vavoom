@@ -31,6 +31,7 @@
 #include "decorate/vc_decorate.h"
 #include "language.h"
 #include "filesys/files.h"
+#include "render/r_public.h"  /* R_HasNamedSkybox */
 
 
 static int cli_NoMapinfoPlrClasses = 0;

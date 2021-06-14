@@ -25,6 +25,10 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_decal.h"
+#ifdef CLIENT
+# include "../drawer.h"  /* VRenderLevelPublic */
+#endif
+
 
 //#define VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
 //#define VAVOOM_DECALS_DEBUG
@@ -359,7 +363,9 @@ void VLevel::DestroyFlatDecal (decal_t *dc) {
   vassert(NumSubsectors > 0);
   vassert(subsectorDecalList);
   // remove from renderer
+  #ifdef CLIENT
   if (dc->sreg && Renderer) Renderer->RemoveFlatDecal(dc);
+  #endif
   const int sidx = (int)(ptrdiff_t)(dc->sub-&Subsectors[0]);
   if (sidx < 0 || sidx >= NumSubsectors) return;
   // remove from subsector list
@@ -434,7 +440,9 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
   VDecalList *lst = &subsectorDecalList[(unsigned)(ptrdiff_t)(dc->sub-&Subsectors[0])];
   DLListAppendEx(dc, lst->head, lst->tail, subprev, subnext);
 
+  #ifdef CLIENT
   if (Renderer) Renderer->AppendFlatDecal(dc);
+  #endif
 
   // check subsector decals limit
   const int dclimit = gl_flatdecal_limit.asInt();

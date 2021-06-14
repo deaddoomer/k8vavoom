@@ -29,6 +29,7 @@
 // DO NOT REMOVE THIS CODE!
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../render/r_public.h"  /* R_IsAnySkyFlatPlane */
 
 
 static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", false, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive);

@@ -1614,6 +1614,16 @@ struct opening_t {
 };
 
 
+struct fakefloor_t {
+  sec_plane_t floorplane;
+  sec_plane_t ceilplane;
+  sec_params_t params;
+  enum {
+    FLAG_CreatedByLoader = 1u<<0,
+  };
+  vuint32 flags;
+};
+
 
 //==========================================================================
 //

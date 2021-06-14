@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../screen.h"
+#include "../render/r_public.h"
 #include "ui.h"
 
 

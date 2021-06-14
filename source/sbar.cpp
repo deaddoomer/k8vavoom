@@ -35,6 +35,7 @@
 #include "client/cl_local.h"
 #include "automap.h"
 #include "psim/p_player.h"
+#include "render/r_public.h"
 
 
 enum {

@@ -48,6 +48,9 @@
 #include "mapinfo.h"
 #include "filesys/files.h"
 
+// we need it to init some data even in the server
+#include "render/r_public.h"
+
 #include <time.h>
 #ifndef WIN32
 # include <fcntl.h>

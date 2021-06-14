@@ -32,6 +32,9 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#ifdef CLIENT
+# include "../drawer.h"
+#endif
 #include "../net/network.h"
 #include "../server/server.h"
 #include "../client/cl_local.h" // for dlight_t
@@ -96,7 +99,9 @@ void VThinker::Destroy () {
   // close any thinker channels
   if (XLevel) {
     if (XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
+    #ifdef CLIENT
     if (XLevel->Renderer) XLevel->Renderer->ThinkerDestroyed(this);
+    #endif
   }
   Super::Destroy();
 }
@@ -135,7 +140,9 @@ void VThinker::DestroyThinker () {
   // remove from network layer here, because GC is not called on each frame
   if (!IsGoingToDie() && XLevel) {
     if (XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
+    #ifdef CLIENT
     if (XLevel->Renderer) XLevel->Renderer->ThinkerDestroyed(this);
+    #endif
   }
   SetDelayedDestroy();
 }
@@ -147,9 +154,11 @@ void VThinker::DestroyThinker () {
 //
 //==========================================================================
 void VThinker::AddedToLevel () {
+  #ifdef CLIENT
   if (XLevel) {
     if (XLevel->Renderer) XLevel->Renderer->ThinkerAdded(this);
   }
+  #endif
 }
 
 
@@ -160,7 +169,9 @@ void VThinker::AddedToLevel () {
 //==========================================================================
 void VThinker::RemovedFromLevel () {
   if (XLevel) {
+    #ifdef CLIENT
     if (XLevel->Renderer) XLevel->Renderer->ThinkerDestroyed(this);
+    #endif
     if (XLevel->NetContext) XLevel->NetContext->ThinkerDestroyed(this);
   }
 }
@@ -474,8 +485,12 @@ IMPLEMENT_FUNCTION(VThinker, AllocDlight) {
   VOptParamInt lightid(-1);
   vobjGetParamSelf(Owner, lorg, radius, lightid);
   if (radius < 0) radius = 0;
-  if (!Self->XLevel || !Self->XLevel->Renderer) { RET_PTR(nullptr); return; } // for dedicated server
-  RET_PTR(Self->XLevel->Renderer->AllocDlight(Owner, lorg, radius, lightid));
+  #ifdef CLIENT
+    if (!Self->XLevel || !Self->XLevel->Renderer) { RET_PTR(nullptr); return; } // for dedicated server
+    RET_PTR(Self->XLevel->Renderer->AllocDlight(Owner, lorg, radius, lightid));
+  #else
+    RET_PTR(nullptr);
+  #endif
 }
 
 //native final bool ShiftDlightHeight (int lightid, float zdelta);
@@ -484,25 +499,33 @@ IMPLEMENT_FUNCTION(VThinker, ShiftDlightHeight) {
   float zdelta;
   vobjGetParamSelf(lightid, zdelta);
   if (!Self) { VObject::VMDumpCallStack(); Sys_Error("null self in VThinker::ShiftDlightOrigin"); }
-  if (!Self->XLevel || !Self->XLevel->Renderer) { RET_BOOL(false); return; }
-  dlight_t *dl = Self->XLevel->Renderer->FindDlightById(lightid);
-  if (dl) {
-    //GCon->Logf("fixing dlight with id %d, delta=%g", lightid, zdelta);
-    dl->origin.z += zdelta;
-    RET_BOOL(true);
-  } else {
+  #ifdef CLIENT
+    if (!Self->XLevel || !Self->XLevel->Renderer) { RET_BOOL(false); return; }
+    dlight_t *dl = Self->XLevel->Renderer->FindDlightById(lightid);
+    if (dl) {
+      //GCon->Logf("fixing dlight with id %d, delta=%g", lightid, zdelta);
+      dl->origin.z += zdelta;
+      RET_BOOL(true);
+    } else {
+      RET_BOOL(false);
+    }
+  #else
     RET_BOOL(false);
-  }
+  #endif
 }
 
 IMPLEMENT_FUNCTION(VThinker, NewParticle) {
   TVec porg;
   vobjGetParamSelf(porg);
+  #ifdef CLIENT
   if (GGameInfo->IsPaused() || !Self->XLevel || !Self->XLevel->Renderer) {
     RET_PTR(nullptr);
   } else {
     RET_PTR(Self->XLevel->Renderer->NewParticle(porg));
   }
+  #else
+  RET_PTR(nullptr);
+  #endif
 }
 
 IMPLEMENT_FUNCTION(VThinker, GetAmbientSound) {

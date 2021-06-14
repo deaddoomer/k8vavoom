@@ -52,6 +52,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../render/r_public.h"  /* R_FindTranslationByName */
 #include "../server/sv_local.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"

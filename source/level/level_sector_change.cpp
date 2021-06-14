@@ -25,6 +25,9 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
+#ifdef CLIENT
+# include "../drawer.h"  /* VRenderLevelPublic */
+#endif
 
 
 //**************************************************************************
@@ -94,7 +97,9 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
   if (!sector->isInnerPObj()) {
     CalcSecMinMaxs(sector);
     // notify renderer, so it may schedule adjacent surfaces for t-junction fixing
+    #ifdef CLIENT
     if (Renderer) Renderer->SectorModified(sector);
+    #endif
   }
 
   bool ret = false;

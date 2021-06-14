@@ -30,6 +30,8 @@
 # include "../input.h"
 # include "../automap.h"
 # include "../client/client.h"
+#else
+# include "../render/r_public.h"
 #endif
 #include "../language.h"
 #include "../infostr.h"
