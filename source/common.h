@@ -53,4 +53,8 @@ class VObject;
 class VNTValueIOEx;
 
 
+class VLevel;
+class VThinker;
+class VEntity;
+
 #endif

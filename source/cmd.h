@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_CMD_HEADER
+#define VAVOOM_CMD_HEADER
+
 
 #define CMD_FORWARD_TO_SERVER()  do { \
   if (Source == SRC_Command) { ForwardToServer(); return; } \
@@ -217,3 +220,6 @@ public:
 
 // main command buffer
 extern VCmdBuf GCmdBuf;
+
+
+#endif

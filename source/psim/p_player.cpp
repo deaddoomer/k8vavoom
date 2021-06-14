@@ -27,6 +27,9 @@
 #include "../net/network.h" /* for demos and RPC */
 #include "../server/sv_local.h"
 #include "../client/cl_local.h"
+#ifdef CLIENT
+# include "../automap.h"
+#endif
 
 //#define VV_SETSTATE_DEBUG
 

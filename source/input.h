@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_INPUT_HEADER
+#define VAVOOM_INPUT_HEADER
+
 
 // input device class, handles actual reading of the input
 class VInputDevice : public VInterface {
@@ -109,3 +112,6 @@ public:
 
 // global input handler
 extern VInputPublic *GInput;
+
+
+#endif

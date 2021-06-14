@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_GAMEINFO_HEADER
+#define VAVOOM_PSIM_GAMEINFO_HEADER
+
 
 // network mode
 enum {
@@ -156,3 +159,6 @@ public:
 
 
 extern VGameInfo *GGameInfo;
+
+
+#endif

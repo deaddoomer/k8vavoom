@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_PLAYERREPINFO_HEADER
+#define VAVOOM_PSIM_PLAYERREPINFO_HEADER
+
 
 class VPlayerReplicationInfo : public VThinker {
   DECLARE_CLASS(VPlayerReplicationInfo, VThinker, 0)
@@ -45,3 +48,6 @@ class VPlayerReplicationInfo : public VThinker {
   vint32 ItemCount;
   vint32 SecretCount;
 };
+
+
+#endif

@@ -30,6 +30,7 @@
 #include "cl_local.h"
 #include "../widgets/ui.h"
 #include "../server/sv_local.h"
+#include "../automap.h"
 
 #define VAVOOM_DEMO_VERSION  (1)
 

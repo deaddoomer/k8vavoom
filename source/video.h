@@ -23,6 +23,12 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_VIDEO_HEADER
+#define VAVOOM_VIDEO_HEADER
+
 
 void V_Init (bool showSplash);
 void V_Shutdown ();
+
+
+#endif

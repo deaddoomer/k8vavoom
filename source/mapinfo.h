@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_MAPINFO_HEADER
+#define VAVOOM_MAPINFO_HEADER
+
 
 struct VMapSpecialAction {
   VName TypeName; // class name
@@ -193,3 +196,6 @@ void P_SetParTime (VName, int);
 bool IsMapPresent (VName);
 
 void P_SetupMapinfoPlayerClasses ();
+
+
+#endif

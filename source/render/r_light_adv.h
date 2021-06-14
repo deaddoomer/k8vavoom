@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_RENDER_LIGHTADV_HEADER
+#define VAVOOM_RENDER_LIGHTADV_HEADER
+
+
 #include <limits.h>
 #include <float.h>
 
@@ -94,3 +98,6 @@ extern VCvarB dbg_adv_light_notrace_mark;
 extern VCvarB gl_dbg_wireframe;
 
 extern VCvarB dbg_adv_light_notrace_mark;
+
+
+#endif

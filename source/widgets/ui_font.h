@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_UIWIDGETS_FONT_HEADER
+#define VAVOOM_UIWIDGETS_FONT_HEADER
+
 
 struct VSplitLine {
   VStr Text;
@@ -117,3 +120,6 @@ public:
 private:
   static VFont *FindAndLoadFontFromLumpIdx (VStr AName, int LumpIdx);
 };
+
+
+#endif

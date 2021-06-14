@@ -27,6 +27,7 @@
 #ifdef CLIENT
 # include "../drawer.h"
 # include "../input.h"
+# include "../automap.h"
 #endif
 #include "../psim/p_decal.h"
 
@@ -633,7 +634,11 @@ IMPLEMENT_FREE_FUNCTION(VObject, SF2_GetHash) {
 
 //native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float plrangle, float alpha);
 IMPLEMENT_FREE_FUNCTION(VObject, AM_DrawAtWidget) {
+#ifdef CLIENT
   VWidget *w;
+#else
+  void *w;
+#endif
   float xc, yc, scale, angle, plrangle, alpha;
   vobjGetParam(w, xc, yc, scale, angle, plrangle, alpha);
 #ifdef CLIENT

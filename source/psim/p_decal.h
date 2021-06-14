@@ -23,6 +23,8 @@
 //**
 //**************************************************************************
 // decal, decalgroup, decal animator
+#ifndef VAVOOM_PSIM_DECAL_HEADER
+#define VAVOOM_PSIM_DECAL_HEADER
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -376,3 +378,6 @@ void ParseDecalDef (VScriptParser *sc);
 void ProcessDecalDefs ();
 
 extern VDecalAnim *DummyDecalAnimator; // used to set empty decal animator
+
+
+#endif

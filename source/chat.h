@@ -23,9 +23,15 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_CHAT_HEADER
+#define VAVOOM_CHAT_HEADER
+
 
 void CT_Init ();
 void CT_Drawer ();
 bool CT_Responder (event_t *ev);
 
 extern bool chatmodeon;
+
+
+#endif

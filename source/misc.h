@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_MISC_HEADER
+#define VAVOOM_MISC_HEADER
+
 //#define Random()  ((float)(rand() & 0x7fff) / (float)0x8000)
 //#define RandomFull()  ((float)(rand() & 0x7fff) / (float)0x7fff)
 
@@ -587,3 +590,6 @@ public:
 
 // ////////////////////////////////////////////////////////////////////////// //
 void ConDumpMatrix (const VMatrix4 &mat);
+
+
+#endif

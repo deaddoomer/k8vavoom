@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_LANGUAGE_HEADER
+#define VAVOOM_LANGUAGE_HEADER
+
 
 class VLanguage {
 private:
@@ -61,3 +64,6 @@ public:
 
 
 extern VLanguage GLanguage;
+
+
+#endif

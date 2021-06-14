@@ -23,9 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-// quicksave data
-
-class VEntity;
+//** quicksave data
+//**************************************************************************
+#ifndef VAVOOM_QSDATA_HEADER
+#define VAVOOM_QSDATA_HEADER
 
 
 enum QSPhase {
@@ -100,3 +101,6 @@ extern QSValue QS_GetValue (VEntity *ent, VStr name);
 
 // this is used in loader to build qs data
 extern void QS_EnterValue (const QSValue &val);
+
+
+#endif

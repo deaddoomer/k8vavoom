@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_MENU_HEADER
+#define VAVOOM_MENU_HEADER
+
 
 void MN_Init ();
 bool MN_Responder (event_t *ev);
@@ -30,3 +33,6 @@ void MN_ActivateMenu ();
 void MN_DeactivateMenu ();
 bool MN_Active ();
 void MN_CheckStartupWarning ();
+
+
+#endif

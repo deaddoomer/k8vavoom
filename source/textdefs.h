@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_TEXTDEFS_HEADER
+#define VAVOOM_TEXTDEFS_HEADER
 
 
 // horisontal alignement
@@ -78,3 +80,6 @@ enum {
   // no more
   NUM_TEXT_COLORS
 };
+
+
+#endif

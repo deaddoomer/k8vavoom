@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_DECORATE_HEADER
+#define VAVOOM_DECORATE_HEADER
+
 
 enum {
   GAME_Doom    = 0x01,
@@ -66,3 +69,6 @@ extern bool decorateSkipBDWClasses;
 
 // 0: no game defs, otherwise bitor of GAME_xxx
 extern vuint32 SC_ParseGameDef (VScriptParser *sc, bool allowAny=true);
+
+
+#endif

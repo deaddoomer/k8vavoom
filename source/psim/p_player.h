@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_PLAYER_HEADER
+#define VAVOOM_PSIM_PLAYER_HEADER
+
+
 class VNetConnection;
 class VClientGameBase;
 
@@ -620,3 +624,6 @@ public:
 
   void eventClientSetAutonomousProxy (bool value) { static VMethodProxy method("ClientSetAutonomousProxy"); vobjPutParamSelf(value); VMT_RET_VOID(method); }
 };
+
+
+#endif

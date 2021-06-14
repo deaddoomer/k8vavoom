@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SERVER_MAIN_HEADER
+#define VAVOOM_SERVER_MAIN_HEADER
+
+
 struct server_t {
   enum {
     IM_No,
@@ -78,3 +82,6 @@ extern server_static_t svs;
 extern int serverStartRenderFramesTic;
 
 extern double SV_GetFrameTimeConstant ();
+
+
+#endif

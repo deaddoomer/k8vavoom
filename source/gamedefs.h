@@ -37,7 +37,6 @@
 #include "infostr.h"
 #include "filesys/files.h"
 #include "textdefs.h"
-#include "automap.h"
 #include "psim/p_gameobject.h"
 #include "textures/r_tex_id.h"
 #include "ntvalueioex.h"

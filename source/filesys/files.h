@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_FILESYS_HEADER
+#define VAVOOM_FILESYS_HEADER
+
+
 struct ArgVarValue {
   VStr varname;
   VStr value;
@@ -155,3 +159,6 @@ void FL_GetNetWads (TArray<VStr> &list);
 
 // should be called after initing textures
 void FL_BuildRequiredWads ();
+
+
+#endif

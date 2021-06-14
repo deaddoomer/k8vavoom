@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_UIWIDGETS_WIDGET_HEADER
+#define VAVOOM_UIWIDGETS_WIDGET_HEADER
+
 
 struct VClipRect {
   // origin of the widget, in absolute coordinates
@@ -591,3 +594,6 @@ public:
 
   DECLARE_FUNCTION(GetWidgetAt)
 };
+
+
+#endif

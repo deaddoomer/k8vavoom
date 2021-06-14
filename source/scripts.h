@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SCRIPTS_HEADER
+#define VAVOOM_SCRIPTS_HEADER
+
 
 class VScriptParser;
 
@@ -182,3 +185,6 @@ public:
   inline bool IsAllowNumSign () const { return AllowNumSign; }
   inline void SetAllowNumSign (bool v) { AllowNumSign = v; }
 };
+
+
+#endif

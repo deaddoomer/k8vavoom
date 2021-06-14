@@ -23,8 +23,14 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SYSTEM_HEADER
+#define VAVOOM_SYSTEM_HEADER
+
 
 void __attribute__((noreturn)) __declspec(noreturn) Sys_Quit (const char *);
 void Sys_Shutdown ();
 
 char *Sys_ConsoleInput ();
+
+
+#endif

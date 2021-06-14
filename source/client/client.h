@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_CLIENT_MAIN_HEADER
+#define VAVOOM_CLIENT_MAIN_HEADER
+
 
 struct client_static_t {
   // personalization data sent to server
@@ -111,3 +114,6 @@ extern client_static_t cls;
 extern VBasePlayer *cl;
 
 extern float clWipeTimer;
+
+
+#endif

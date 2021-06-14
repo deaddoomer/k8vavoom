@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_UIWIDGETS_ROOT_HEADER
+#define VAVOOM_UIWIDGETS_ROOT_HEADER
+
+
 class VRootWidget : public VWidget {
   DECLARE_CLASS(VRootWidget, VWidget, 0)
   NO_DEFAULT_CONSTRUCTOR(VRootWidget)
@@ -102,3 +106,6 @@ public:
 };
 
 extern VRootWidget *GRoot;
+
+
+#endif

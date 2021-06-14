@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_THINKER_HEADER
+#define VAVOOM_PSIM_THINKER_HEADER
+
 
 enum {
   // no role assigned yet
@@ -187,3 +190,6 @@ public:
   inline T *operator -> () noexcept { return (T *)Th; }
   inline T *operator * () noexcept { return (T *)Th; }
 };
+
+
+#endif

@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_TRACE_INTERNAL_HEADER
+#define VAVOOM_PSIM_TRACE_INTERNAL_HEADER
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -76,3 +78,6 @@ struct InterceptionList {
     return res;
   }
 };
+
+
+#endif

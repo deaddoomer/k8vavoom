@@ -23,6 +23,10 @@
 //**
 //**************************************************************************
 // decal, decalgroup, decal animator
+#ifndef VAVOOM_PSIM_DECAL_PRIVATE_HEADER
+#define VAVOOM_PSIM_DECAL_PRIVATE_HEADER
+
+#include "p_decal.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -231,3 +235,6 @@ public:
   friend void ParseDecalDef (VScriptParser *sc);
   friend void ProcessDecalDefs ();
 };
+
+
+#endif

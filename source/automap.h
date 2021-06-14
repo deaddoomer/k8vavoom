@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_AUTOMAP_HEADER
+#define VAVOOM_AUTOMAP_HEADER
+
 
 void AM_Init ();
 bool AM_Responder (event_t *ev);
@@ -53,7 +56,9 @@ void AM_SetMarkXY (int index, float x, float y);
 void AM_ClearAutomap ();
 
 // this also remembers current map for marks
-class VLevel;
 void AM_ClearMarksIfMapChanged (VLevel *currmap);
 
 extern VCvarB am_always_update;
+
+
+#endif

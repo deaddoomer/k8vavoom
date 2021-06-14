@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_RENDER_PUBLIC_HEADER
+#define VAVOOM_RENDER_PUBLIC_HEADER
+
+
 struct particle_t;
 struct dlight_t;
 
@@ -481,4 +485,7 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_PURE vuint8 R_LookupRGB (const vint32 
 }
 #else
 #  error "choose RGB table size"
+#endif
+
+
 #endif

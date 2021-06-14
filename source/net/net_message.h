@@ -29,6 +29,9 @@
 //**    Handles byte ordering and avoids alignment errors
 //**
 //**************************************************************************
+#ifndef VAVOOM_NET_NETMESSAGE_HEADER
+#define VAVOOM_NET_NETMESSAGE_HEADER
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 class VChannel;
@@ -150,3 +153,6 @@ public:
 
   VStr toStringDbg () const noexcept;
 };
+
+
+#endif

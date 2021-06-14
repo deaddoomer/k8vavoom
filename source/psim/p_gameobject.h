@@ -28,6 +28,10 @@
 //**  used by play and refresh
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_GAMEOBJECT_HEADER
+#define VAVOOM_PSIM_GAMEOBJECT_HEADER
+
+
 #include "../textures/r_tex_id.h"
 
 class VRenderLevelPublic;
@@ -1674,3 +1678,6 @@ public:
   DECLARE_FUNCTION(CheckPassPlanes)
   DECLARE_FUNCTION(CheckPObjPassPlanes)
 };
+
+
+#endif

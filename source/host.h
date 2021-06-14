@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_HOST_HEADER
+#define VAVOOM_HOST_HEADER
+
 
 void Host_Init ();
 void Host_Shutdown ();
@@ -72,4 +75,7 @@ __inline__ __attribute__((unused,gnu_inline,always_inline)) static void host_deb
 __inline__ __attribute__((unused,gnu_inline,always_inline)) static void host_debug_break (void) { if (host_gdb_mode) host_debug_break_internal(); }
 #else
 __inline__ __attribute__((unused,gnu_inline,always_inline)) static void host_debug_break (void) {}
+#endif
+
+
 #endif

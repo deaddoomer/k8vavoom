@@ -203,4 +203,5 @@ extern VClientGameBase *GClGame;
 
 extern bool UserInfoSent;
 
+
 #endif

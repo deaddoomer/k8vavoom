@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_LEVELINFO_HEADER
+#define VAVOOM_PSIM_LEVELINFO_HEADER
+
+
 extern VCvarI compat_nopassover;
 extern VCvarI compat_notossdrops;
 extern VCvarI compat_limitpain;
@@ -375,3 +379,6 @@ public:
 
   #undef CREATE_COMPAT_GETTER
 };
+
+
+#endif

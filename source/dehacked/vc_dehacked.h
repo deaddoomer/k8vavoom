@@ -27,7 +27,13 @@
 //**  Dehacked patch parsing
 //**
 //**************************************************************************
+#ifndef VAVOOM_DEHACKED_HEADER
+#define VAVOOM_DEHACKED_HEADER
+
 
 void ProcessDehackedFiles ();
 bool IsDehReplacedSprite (VName spname);
 VName GetDehReplacedSprite (VName oldname);
+
+
+#endif

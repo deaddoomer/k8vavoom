@@ -23,7 +23,13 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_INFOSTR_HEADER
+#define VAVOOM_INFOSTR_HEADER
+
 
 VStr Info_ValueForKey (VStr s, VStr key);
 void Info_RemoveKey (VStr &s, VStr key);
 void Info_SetValueForKey (VStr &s, VStr key, VStr value);
+
+
+#endif

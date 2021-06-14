@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_VLEVEL_HEADER
+#define VAVOOM_VLEVEL_HEADER
+
 
 #define MAXPLAYERS  (8)
 
@@ -1850,3 +1853,6 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline=
 extern int dbgEntityTickTotal;
 extern int dbgEntityTickSimple;
 extern int dbgEntityTickNoTick;
+
+
+#endif

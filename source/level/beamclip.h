@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_BEAMPCLIPPER_HEADER
+#define VAVOOM_BEAMPCLIPPER_HEADER
+
+
 #define VAVOOM_CLIPPER_USE_FLOAT
 //#define VAVOOM_CLIPPER_USE_REAL_ANGLES
 #define VAVOOM_CLIPPER_USE_PSEUDO_INT
@@ -292,3 +296,6 @@ public:
   static bool IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum, const seg_t *seg, const TVec *lorg=nullptr, const float *lrad=nullptr) noexcept;
   static bool IsSegAClosedSomethingServer (VLevel *level, rep_sector_t *repsecs, const seg_t *seg) noexcept;
 };
+
+
+#endif

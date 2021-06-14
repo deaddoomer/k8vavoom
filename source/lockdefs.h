@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_LOCKDEFS_HEADER
+#define VAVOOM_LOCKDEFS_HEADER
+
+
 struct VLockGroup {
   TArray<VClass *> AnyKeyList;
 };
@@ -39,3 +43,6 @@ struct VLockDef {
 void InitLockDefs ();
 void ShutdownLockDefs ();
 VLockDef *GetLockDef (int Lock);
+
+
+#endif

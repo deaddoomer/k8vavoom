@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_CONSOLE_HEADER
+#define VAVOOM_CONSOLE_HEADER
+
 
 void C_Init ();
 bool C_Responder (event_t *);
@@ -43,3 +46,6 @@ void C_SplashActive (bool v);
 extern bool GConTTYLogForced;
 
 extern FOutputDevice *GCon;
+
+
+#endif

@@ -33,6 +33,7 @@
 # include "input.h"
 # include "video.h"
 # include "text.h"
+# include "automap.h"
 #endif
 
 #include <time.h>

@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SERVER_SAVE_HEADER
+#define VAVOOM_SERVER_SAVE_HEADER
+
 
 extern void SV_MapTeleport (VName MapName, int flags=0, int newskill=-1);
 extern void SV_InitBaseSlot ();
@@ -30,3 +33,6 @@ extern bool SV_GetSaveString (int Slot, VStr &Desc);
 extern void SV_GetSaveDateString (int Slot, VStr &datestr);
 extern void SV_AutoSaveOnLevelExit ();
 extern void SV_AutoSave (bool checkpoint);
+
+
+#endif

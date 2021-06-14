@@ -28,6 +28,7 @@
 #include "text.h"
 #include "touch.h"
 #include "widgets/ui.h"
+#include "automap.h"
 
 
 extern int screenblocks;

@@ -23,6 +23,10 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_TOUCH_HEADER
+#define VAVOOM_TOUCH_HEADER
+
+
 #if defined(ANDROID) || 0
 enum {
   TouchUp,
@@ -33,4 +37,7 @@ enum {
 void Touch_Draw ();
 void Touch_Event (int type, int finger, float x, float y, float dx, float dy, float pressure);
 void Touch_Update ();
+#endif
+
+
 #endif

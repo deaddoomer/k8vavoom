@@ -23,5 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_FINALE_HEADER
+#define VAVOOM_FINALE_HEADER
+
 
 bool F_Responder (event_t *ev);
+
+
+#endif

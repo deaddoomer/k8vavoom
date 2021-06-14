@@ -29,6 +29,7 @@
 #include "../gamedefs.h"
 #include "../text.h"
 #include "../screen.h"
+#include "../automap.h"
 #include "r_local.h"
 
 //#define VAVOOM_DEBUG_PORTAL_POOL

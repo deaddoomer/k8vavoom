@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SCREEN_HEADER
+#define VAVOOM_SCREEN_HEADER
+
 
 extern int RealScreenWidth;
 extern int RealScreenHeight;
@@ -43,3 +46,6 @@ void SCR_Update (bool fullUpdate=true);
 void SCR_SignalWipeStart ();
 
 void SCR_SetVirtualScreen (int Width, int Height);
+
+
+#endif

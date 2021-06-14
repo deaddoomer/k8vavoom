@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SBAR_HEADER
+#define VAVOOM_SBAR_HEADER
+
 
 // status bar height at bottom of screen
 //#define SB_REALHEIGHT ((int)(sb_height * fScaleY))
@@ -38,3 +41,6 @@ int SB_RealHeight ();
 
 
 extern int sb_height;
+
+
+#endif

@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_PSIM_WORLDINFO_HEADER
+#define VAVOOM_PSIM_WORLDINFO_HEADER
+
 
 class VAcsGlobal;
 
@@ -80,3 +83,6 @@ public:
   DECLARE_FUNCTION(SetACSWorldInt)
   DECLARE_FUNCTION(SetACSWorldFloat)
 };
+
+
+#endif

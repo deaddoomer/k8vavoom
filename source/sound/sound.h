@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_SOUND_MAIN_HEADER
+#define VAVOOM_SOUND_MAIN_HEADER
+
 
 enum seqtype_t {
   SEQ_Door,
@@ -248,3 +251,6 @@ int SF2_GetCount ();
 VStr SF2_GetName (int idx);
 // get soundfount hash to use with `FS_*()` API
 VStr SF2_GetHash (int idx);
+
+
+#endif

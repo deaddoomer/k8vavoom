@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_TEXTURE_PUBLIC_HEADER
+#define VAVOOM_TEXTURE_PUBLIC_HEADER
+
 
 // texture use types
 enum {
@@ -848,3 +851,6 @@ extern int gtxTop;
 extern int gtxBottom;
 extern int gtxFront;
 extern int gtxBack;
+
+
+#endif

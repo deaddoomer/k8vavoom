@@ -26,6 +26,9 @@
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
 #include "../psim/p_decal.h"
+#ifdef CLIENT
+# include "../automap.h"
+#endif
 
 
 //==========================================================================

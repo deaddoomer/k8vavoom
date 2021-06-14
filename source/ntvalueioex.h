@@ -26,6 +26,8 @@
 //**  extended NTValue-based I/O
 //**
 //**************************************************************************
+#ifndef VAVOOM_NTVALUEEX_HEADER
+#define VAVOOM_NTVALUEEX_HEADER
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -118,3 +120,6 @@ public:
 
   virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override;
 };
+
+
+#endif
