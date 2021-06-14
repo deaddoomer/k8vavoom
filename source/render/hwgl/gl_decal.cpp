@@ -341,12 +341,12 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         //saxis = TVec(seg->dir);
         saxis = TVec(ndir);
         taxis = TVec(0.0f, 0.0f, -1.0f);
-        #if 0
+        #if 1
         // this does one part of decal rotation
         // decal placement code is not ready for this yet, so it is disabled
         //float s = 1.0f, c = 1.0f;
-        //const float angle = -dc->angle;
-        const float angle = 37.0f;
+        const float angle = -dc->angle;
+        //const float angle = 37.0f;
         if (angle != 0.0f) {
           float s, c;
           msincos(angle, &s, &c);
@@ -370,6 +370,39 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         dc->v2 = TVec(v1.x, v1.y, dcz+thgt);
         dc->v3 = TVec(v2.x, v2.y, dcz+thgt);
         dc->v4 = TVec(v2.x, v2.y, dcz);
+
+        if (angle != 0.0f) {
+          /*
+          GCon->Logf(NAME_Debug, "000: v1=(%g,%g,%g); v2=(%g,%g,%g); v3=(%g,%g,%g); v4=(%g,%g,%g); angle=%g",
+            dc->v1.x, dc->v1.y, dc->v1.z,
+            dc->v2.x, dc->v2.y, dc->v2.z,
+            dc->v3.x, dc->v3.y, dc->v3.z,
+            dc->v4.x, dc->v4.y, dc->v4.z, angle);
+          */
+          const float xmin = min2(min2(min2(dc->v1.x, dc->v2.x), dc->v3.x), dc->v4.x);
+          const float xmax = max2(max2(max2(dc->v1.x, dc->v2.x), dc->v3.x), dc->v4.x);
+          const float ymin = min2(min2(min2(dc->v1.y, dc->v2.y), dc->v3.y), dc->v4.y);
+          const float ymax = max2(max2(max2(dc->v1.y, dc->v2.y), dc->v3.y), dc->v4.y);
+          const float zmin = min2(min2(min2(dc->v1.z, dc->v2.z), dc->v3.z), dc->v4.z);
+          const float zmax = max2(max2(max2(dc->v1.z, dc->v2.z), dc->v3.z), dc->v4.z);
+          TVec cc(xmin+(xmax-xmin)*0.5f, ymin+(ymax-ymin)*0.5f, zmin+(zmax-zmin)*0.5f);
+          VRotMatrix M(surf->plane.normal, angle);
+          dc->v1 = (dc->v1-cc)*M+cc;
+          dc->v2 = (dc->v2-cc)*M+cc;
+          dc->v3 = (dc->v3-cc)*M+cc;
+          dc->v4 = (dc->v4-cc)*M+cc;
+          TVec nv1 = (TVec(v1.x, v1.y, dcz)-cc)*M+cc;
+          soffs = -DotProduct(nv1, saxis); // horizontal
+          toffs = -DotProduct(nv1, taxis); // vertical
+          /*
+          GCon->Logf(NAME_Debug, "100: v1=(%g,%g,%g); v2=(%g,%g,%g); v3=(%g,%g,%g); v4=(%g,%g,%g)",
+            dc->v1.x, dc->v1.y, dc->v1.z,
+            dc->v2.x, dc->v2.y, dc->v2.z,
+            dc->v3.x, dc->v3.y, dc->v3.z,
+            dc->v4.x, dc->v4.y, dc->v4.z);
+          */
+        }
+        //void RotatePointAroundVector (TVec &dst, const TVec &dir, const TVec &point, float degrees) noexcept;
       } else {
         // floor/ceiling
         float s, c;
