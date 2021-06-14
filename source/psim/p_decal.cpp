@@ -791,6 +791,9 @@ bool VDecalDef::parse (VScriptParser *sc) {
           continue;
         }
 
+        if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
+        if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
+
         sc->Error(va("unknown k8vavoom decal keyword '%s'", *sc->String));
       }
       continue;
