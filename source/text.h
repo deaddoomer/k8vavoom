@@ -26,7 +26,20 @@
 #ifndef VAVOOM_TEXTDRAW_HEADER
 #define VAVOOM_TEXTDRAW_HEADER
 
-#include "textdefs.h"
+
+// horisontal alignement
+enum halign_e {
+  hleft,   //Left
+  hcenter, //Centered
+  hright,  //Right
+};
+
+// vertical alignement
+enum valign_e {
+  vtop,    //Top
+  vcenter, //Center
+  vbottom, //Bottom
+};
 
 
 class VFont;

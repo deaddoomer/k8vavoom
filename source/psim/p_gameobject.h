@@ -143,6 +143,48 @@ enum {
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// text colors, these must match the constants used in ACS
+enum {
+  CR_UNDEFINED = -1,
+  CR_BRICK, //A
+  CR_TAN, //B
+  CR_GRAY, //C
+  CR_GREEN, //D
+  CR_BROWN, //E
+  CR_GOLD, //F
+  CR_RED, //G
+  CR_BLUE, //H
+  CR_ORANGE, //I
+  CR_WHITE, //J
+  CR_YELLOW, //K
+  CR_UNTRANSLATED, //L
+  CR_BLACK, //M
+  CR_LIGHTBLUE, //N
+  CR_CREAM, //O
+  CR_OLIVE, //P
+  CR_DARKGREEN, //Q
+  CR_DARKRED, //R
+  CR_DARKBROWN, //S
+  CR_PURPLE, //T
+  CR_DARKGRAY, //U
+  CR_CYAN, //V
+  CR_ICE, //W
+  CR_FIRE, //X
+  CR_SAPPHIRE, //Y
+  CR_TEAL, //Z
+  // special
+  CR_RED_ERROR,
+  CR_WARNING_YELLOW,
+  CR_DEBUG_GREEN,
+  CR_DEBUG_CYAN,
+  CR_INIT_CYAN,
+  CR_SLIDER_HI_KNOB,
+  // no more
+  NUM_TEXT_COLORS
+};
+
+
 //==========================================================================
 //
 //  VSplashInfo

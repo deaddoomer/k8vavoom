@@ -26,7 +26,7 @@
 #ifndef VAVOOM_UIWIDGETS_WIDGET_HEADER
 #define VAVOOM_UIWIDGETS_WIDGET_HEADER
 
-#include "../textdefs.h"
+#include "../text.h"
 
 
 struct VClipRect {

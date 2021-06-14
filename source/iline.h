@@ -30,8 +30,6 @@
 #ifndef CL_ILINE_HEADER
 #define CL_ILINE_HEADER
 
-#include "textdefs.h"
-
 
 // input text line widget
 class TILine {
