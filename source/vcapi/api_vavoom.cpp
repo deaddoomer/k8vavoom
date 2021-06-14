@@ -28,6 +28,7 @@
 # include "../drawer.h"
 # include "../input.h"
 # include "../automap.h"
+# include "../client/client.h"
 #endif
 #include "../psim/p_decal.h"
 #include "../psim/p_entity.h"

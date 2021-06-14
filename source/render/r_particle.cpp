@@ -30,6 +30,7 @@
 #include "../gamedefs.h"
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_player.h"
+#include "../client/client.h"
 #include "r_local.h"
 
 

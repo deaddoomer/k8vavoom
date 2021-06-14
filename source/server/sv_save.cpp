@@ -33,6 +33,9 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
 #include "../psim/p_player.h"
+#ifdef CLIENT
+# include "../client/client.h"
+#endif
 #include "sv_local.h"
 
 #include <time.h>

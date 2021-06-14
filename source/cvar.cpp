@@ -26,6 +26,9 @@
 #include "gamedefs.h"
 #include "psim/p_player.h"
 #include "cvar.h"
+#ifdef CLIENT
+# include "client/client.h"
+#endif
 
 
 //==========================================================================

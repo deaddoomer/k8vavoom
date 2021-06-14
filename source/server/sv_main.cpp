@@ -34,6 +34,7 @@
 #ifdef CLIENT
 # include "../screen.h"
 # include "../drawer.h"
+# include "../client/client.h"
 # include "../client/cl_local.h"
 #endif
 #include "../psim/p_decal.h"

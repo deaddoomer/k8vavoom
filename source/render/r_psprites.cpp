@@ -36,6 +36,7 @@
 #include "../psim/p_entity.h"
 #include "../psim/p_player.h"
 #include "../screen.h"
+#include "../client/client.h"
 #include "r_local.h"
 
 

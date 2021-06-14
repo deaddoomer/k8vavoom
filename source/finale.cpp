@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "client/client.h"
 #include "client/cl_local.h"
 
 

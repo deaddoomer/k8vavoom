@@ -35,6 +35,7 @@
 # include "video.h"
 # include "text.h"
 # include "automap.h"
+# include "client/client.h"
 #endif
 #include "net/network.h"
 #include "decorate/vc_decorate.h"

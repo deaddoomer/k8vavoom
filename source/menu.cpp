@@ -32,6 +32,7 @@
 #ifdef CLIENT
 # include "input.h"
 #endif
+#include "client/client.h"
 #include "client/cl_local.h"
 #include "widgets/ui.h"
 

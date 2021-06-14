@@ -35,6 +35,7 @@
 #include "../gamedefs.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_player.h"
+#include "../client/client.h"
 #include "r_local.h"
 
 //#define VV_THING_COLLECTOR_STATS

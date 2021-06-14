@@ -57,6 +57,5 @@
 #include "server/sv_save.h"
 #include "qs_data.h"
 #include "psim/p_gameinfo.h"
-#include "client/client.h"
 
 #endif

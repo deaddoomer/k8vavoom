@@ -30,6 +30,7 @@
 #include "widgets/ui.h"
 #include "automap.h"
 #include "psim/p_player.h"
+#include "client/client.h"
 
 
 extern int screenblocks;

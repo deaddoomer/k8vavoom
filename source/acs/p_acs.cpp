@@ -60,6 +60,7 @@
 #ifdef CLIENT
 # include "../screen.h"
 # include "../text.h"
+# include "../client/client.h"
 #endif
 #include "p_acs.h"
 

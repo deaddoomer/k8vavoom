@@ -29,6 +29,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "screen.h"
+#include "client/client.h"
 #include "client/cl_local.h"
 #include "automap.h"
 #include "psim/p_player.h"

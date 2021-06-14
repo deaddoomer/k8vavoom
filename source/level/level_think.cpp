@@ -28,6 +28,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_player.h"
 #ifdef CLIENT
+# include "../client/client.h"
 # include "../client/cl_local.h"
 #endif
 #include "../psim/p_decal.h"

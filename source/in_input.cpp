@@ -34,6 +34,7 @@
 #include "input.h"
 #include "widgets/ui.h"
 #include "automap.h"
+#include "client/client.h"
 
 
 static VCvarB allow_vanilla_cheats("allow_vanilla_cheats", true, "Allow vanilla keyboard cheat codes?", CVAR_Archive);

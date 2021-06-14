@@ -27,6 +27,7 @@
 #include "psim/p_player.h"
 #ifdef CLIENT
 # include "text.h"
+# include "client/client.h"
 #endif
 
 extern VCvarB sv_cheats;

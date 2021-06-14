@@ -31,6 +31,7 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
 #include "../psim/p_player.h"
+#include "../client/client.h"
 #include "../text.h"
 #include "../screen.h"
 #include "../automap.h"

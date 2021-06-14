@@ -29,6 +29,7 @@
 # include "drawer.h"
 # include "screen.h"
 # include "net/network.h" /* sorry */
+# include "client/client.h"
 #endif
 #include "text.h"
 #include "psim/p_player.h"

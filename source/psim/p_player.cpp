@@ -32,6 +32,7 @@
 #include "p_player.h"
 #ifdef CLIENT
 # include "../automap.h"
+# include "../client/client.h"
 #endif
 
 //#define VV_SETSTATE_DEBUG

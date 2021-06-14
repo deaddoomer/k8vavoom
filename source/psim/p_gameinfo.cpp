@@ -24,6 +24,9 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#ifdef CLIENT
+# include "../client/client.h"
+#endif
 #include "p_player.h"
 
 
