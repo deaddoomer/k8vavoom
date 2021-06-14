@@ -344,16 +344,10 @@ void seg_t::removeDecal (decal_t *dc) noexcept {
 //
 //==========================================================================
 void seg_t::killAllDecals (VLevel *Level) noexcept {
-  decal_t *c = decalhead;
-  while (c) {
-    decal_t *dc = c;
-    c = c->next;
-    if (dc->animator) {
-      if (Level) Level->RemoveDecalAnimator(dc); else delete dc->animator;
-    }
-    delete dc;
-  }
-  decaltail = decalhead = nullptr;
+  vassert(Level);
+  while (decalhead) Level->DestroyDecal(decalhead); // this calls `removeDecal()`
+  vassert(!decalhead);
+  vassert(!decaltail);
 }
 
 

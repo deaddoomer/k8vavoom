@@ -27,6 +27,7 @@
 #ifdef CLIENT
 # include "../drawer.h"
 #endif
+#include "../psim/p_decal.h"
 
 
 VStream *VPackage::OpenFileStreamRO (VStr fname) { return FL_OpenFileRead(fname); }

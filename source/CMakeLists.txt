@@ -341,6 +341,7 @@ set(ACS_SOURCES
 
 set(PSIM_SOURCES
   psim/p_decal.h
+  psim/p_decal_private.h
   psim/p_decal.cpp
   psim/p_entity.h
   psim/p_entity.cpp

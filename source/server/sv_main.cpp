@@ -30,6 +30,7 @@
 #ifdef CLIENT
 # include "../drawer.h"
 #endif
+#include "../psim/p_decal.h"
 
 #ifndef CLIENT
 // this is for BDW mod, to have tracers

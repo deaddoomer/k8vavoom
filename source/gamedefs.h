@@ -61,7 +61,7 @@
 #include "server/server.h"
 #include "server/sv_save.h"
 #include "qs_data.h"
-#include "psim/p_decal.h"
+//#include "psim/p_decal.h"
 #include "psim/p_worldinfo.h"
 #include "psim/p_thinker.h"
 #include "psim/p_levelinfo.h"

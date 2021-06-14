@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_decal.h"
 
 //#define VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
 //#define VAVOOM_DECALS_DEBUG

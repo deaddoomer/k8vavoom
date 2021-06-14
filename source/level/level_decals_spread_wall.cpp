@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_decal.h"
 
 //#define VAVOOM_DECALS_DEBUG
 
@@ -723,10 +724,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
     return;
   }
 
-  const float oldvv = dec->angleWall.value;
-  dec->angleWall.value = params.angle;
-  dec->CalculateWallBBox(org.x, org.y);
-  dec->angleWall.value = oldvv;
+  dec->CalculateBBox(org.x, org.y, params.angle);
   //GCon->Logf(NAME_Debug, "decal '%s': scale=(%g:%g)", *dec->name, dec->scaleX.value, dec->scaleY.value);
 
   if (dec->spheight == 0.0f || dec->bbWidth() < 1.0f || dec->bbHeight() < 1.0f) {

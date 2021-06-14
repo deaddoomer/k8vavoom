@@ -24,6 +24,8 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../server/sv_local.h"
+#include "p_decal.h"
+#include "p_decal_private.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -553,29 +555,15 @@ void VDecalDef::genValues () noexcept {
 
 //==========================================================================
 //
-//  VDecalDef::CalculateFlatBBox
+//  VDecalDef::CalculateBBox
 //
 //  calculate decal bbox, return spreading height
 //
 //==========================================================================
-void VDecalDef::CalculateFlatBBox (const float worldx, const float worldy) noexcept {
+void VDecalDef::CalculateBBox (const float worldx, const float worldy, const float angle) noexcept {
   float sx, sy;
   genMaxScales(&sx, &sy);
-  spheight = CalculateTextureBBox(bbox2d, texid, worldx, worldy, angleFlat.value, sx, sy);
-}
-
-
-//==========================================================================
-//
-//  VDecalDef::CalculateWallBBox
-//
-//  calculate decal bbox, return spreading height
-//
-//==========================================================================
-void VDecalDef::CalculateWallBBox (const float worldx, const float worldy) noexcept {
-  float sx, sy;
-  genMaxScales(&sx, &sy);
-  spheight = CalculateTextureBBox(bbox2d, texid, worldx, worldy, angleWall.value, sx, sy);
+  spheight = CalculateTextureBBox(bbox2d, texid, worldx, worldy, angle, sx, sy);
 }
 
 

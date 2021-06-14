@@ -27,6 +27,7 @@
 #ifdef CLIENT
 # include "../client/cl_local.h"
 #endif
+#include "../psim/p_decal.h"
 
 
 extern VCvarB r_decals;

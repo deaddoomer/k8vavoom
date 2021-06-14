@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_decal.h"
 
 
 extern VCvarB r_decals;
@@ -284,10 +285,7 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
   VTexture *dtex = GTextureManager[tex];
   if (!dtex || dtex->Type == TEXTYPE_Null || dtex->GetWidth() < 1 || dtex->GetHeight() < 1) return;
 
-  const float oldvv = dec->angleFlat.value;
-  dec->angleFlat.value = params.angle;
-  dec->CalculateFlatBBox(org.x, org.y);
-  dec->angleFlat.value = oldvv;
+  dec->CalculateBBox(org.x, org.y, params.angle);
 
   /*
   GCon->Logf(NAME_Debug, "decal '%s': angle=%g; scale=(%g,%g); spheight=%g; bbsize=(%g,%g)", *dec->name, dec->angleFlat.value,
