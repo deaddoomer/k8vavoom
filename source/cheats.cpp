@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "server/server.h"
 #include "server/sv_local.h"
 #include "automap.h"
 #include "psim/p_entity.h"

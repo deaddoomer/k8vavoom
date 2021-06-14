@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "psim/p_levelinfo.h"
+#include "server/server.h"
 #include "server/sv_local.h"
 #include "decorate/vc_decorate.h"
 

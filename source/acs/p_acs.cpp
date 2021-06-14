@@ -57,12 +57,14 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_worldinfo.h"
 #include "../psim/p_player.h"
+#include "../server/server.h"
 #ifdef CLIENT
 # include "../screen.h"
 # include "../text.h"
 # include "../client/client.h"
 #endif
 #include "p_acs.h"
+
 
 //#define ACS_DUMP_EXECUTION
 #define ACS_ALLOW_ZERO_DIVIDE

@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../server/server.h"
 #include "net_local.h"
 
 

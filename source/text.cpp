@@ -33,6 +33,7 @@
 #endif
 #include "text.h"
 #include "psim/p_player.h"
+#include "server/server.h"
 
 
 int NetLagChart[NETLAG_CHART_ITEMS] = {0};

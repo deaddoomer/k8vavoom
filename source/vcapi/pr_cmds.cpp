@@ -30,6 +30,7 @@
 #include "../gamedefs.h"
 #include "../net/network.h" /* for server list */
 #include "../server/sv_local.h"
+#include "../server/sv_save.h"
 #include "../drawer.h"
 #include "../psim/p_entity.h"
 #ifdef CLIENT

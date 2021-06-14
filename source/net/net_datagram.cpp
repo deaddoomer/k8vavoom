@@ -102,6 +102,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../text.h"
+#include "../server/server.h"
 #ifdef CLIENT
 # include "../screen.h"
 #endif

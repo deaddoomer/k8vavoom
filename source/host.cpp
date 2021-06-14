@@ -27,6 +27,7 @@
 #include "gamedefs.h"
 #include "psim/p_player.h"
 #include "psim/p_entity.h"
+#include "server/server.h"
 #ifdef CLIENT
 # include "screen.h"
 # include "client/cl_local.h"

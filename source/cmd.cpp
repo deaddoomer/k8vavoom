@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "gamedefs.h"
 #include "psim/p_player.h"
+#include "server/server.h"
 #ifdef CLIENT
 # include "text.h"
 # include "client/client.h"

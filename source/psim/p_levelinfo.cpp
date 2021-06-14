@@ -24,7 +24,9 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../server/server.h"
 #include "../server/sv_local.h"
+#include "../server/sv_save.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_player.h"

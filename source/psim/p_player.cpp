@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../net/network.h" /* for demos and RPC */
+#include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../client/cl_local.h"
 #include "p_entity.h"

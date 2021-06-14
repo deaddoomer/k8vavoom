@@ -33,6 +33,7 @@
 #include "client.h"
 #include "cl_local.h"
 #include "../widgets/ui.h"
+#include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../automap.h"
 

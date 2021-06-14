@@ -37,7 +37,9 @@
 # include "../client/client.h"
 #endif
 #include "../qs_data.h"
+#include "server.h"
 #include "sv_local.h"
+#include "sv_save.h"
 
 #include <time.h>
 #include <sys/time.h>

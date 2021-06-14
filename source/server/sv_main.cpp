@@ -30,7 +30,9 @@
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"
 #include "../psim/p_player.h"
+#include "server.h"
 #include "sv_local.h"
+#include "sv_save.h"
 #ifdef CLIENT
 # include "../screen.h"
 # include "../drawer.h"

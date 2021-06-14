@@ -52,8 +52,6 @@
 #include "sbar.h"
 #include "chat.h"
 #include "finale.h"
-#include "server/server.h"
-#include "server/sv_save.h"
 #include "psim/p_gameinfo.h"
 
 #endif
