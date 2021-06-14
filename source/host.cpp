@@ -30,6 +30,7 @@
 # include "client/cl_local.h"
 # include "widgets/ui.h"
 # include "input.h"
+# include "video.h"
 #endif
 
 #include <time.h>
