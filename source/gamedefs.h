@@ -44,7 +44,7 @@
 #include "textures/r_tex_id.h"
 #include "ntvalueioex.h"
 #include "level/level.h"
-#include "level/beamclip.h"
+//#include "level/beamclip.h"
 #include "mapinfo.h"
 #include "lockdefs.h"
 #include "host.h"

@@ -26,6 +26,8 @@
 #ifndef VAVOOM_NETWORK_HEADER
 #define VAVOOM_NETWORK_HEADER
 
+#include "../level/beamclip.h"
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct VNetUtils {

@@ -31,6 +31,7 @@
 #define VAVOOM_RENDER_SHARED_H
 
 #include "../drawer.h"
+#include "../level/beamclip.h"
 
 //#define VV_DEBUG_LMAP_ALLOCATOR
 

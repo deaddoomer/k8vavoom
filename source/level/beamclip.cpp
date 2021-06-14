@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "beamclip.h"
 
 //#define XXX_CLIPPER_DUMP_ADDED_RANGES
 

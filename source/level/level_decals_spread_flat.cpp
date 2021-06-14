@@ -25,6 +25,7 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../psim/p_decal.h"
+#include "beamclip.h"
 
 
 extern VCvarB r_decals;
