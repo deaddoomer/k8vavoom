@@ -34,6 +34,7 @@
 #include "../gamedefs.h"
 #include "../net/network.h"
 #include "../client/cl_local.h" // for dlight_t
+#include "p_thinker.h"
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_world.h"

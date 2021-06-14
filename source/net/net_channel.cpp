@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_thinker.h"
 #include "network.h"
 #include "net_message.h"
 

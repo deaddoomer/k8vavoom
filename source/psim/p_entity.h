@@ -83,6 +83,8 @@
 #ifndef VAVOOM_PSIM_ENTITY_HEADER
 #define VAVOOM_PSIM_ENTITY_HEADER
 
+#include "p_thinker.h"
+
 
 #define DeclareMakeBlockMapCoords(xpos_,ypos_,radius_,xl_,yl_,xh_,yh_)  \
   const int xl_ = MapBlock((xpos_)-(radius_)-XLevel->BlockMapOrgX); \

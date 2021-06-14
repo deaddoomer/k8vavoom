@@ -26,6 +26,8 @@
 #ifndef VAVOOM_PSIM_LEVELINFO_HEADER
 #define VAVOOM_PSIM_LEVELINFO_HEADER
 
+#include "p_thinker.h"
+
 
 extern VCvarI compat_nopassover;
 extern VCvarI compat_notossdrops;

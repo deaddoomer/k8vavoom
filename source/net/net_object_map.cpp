@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../psim/p_thinker.h"
 #include "network.h"
 
 static VCvarB net_debug_name_io("net_debug_name_io", false, "Dump name i/o?");

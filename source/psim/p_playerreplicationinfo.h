@@ -26,6 +26,8 @@
 #ifndef VAVOOM_PSIM_PLAYERREPINFO_HEADER
 #define VAVOOM_PSIM_PLAYERREPINFO_HEADER
 
+#include "p_thinker.h"
+
 
 class VPlayerReplicationInfo : public VThinker {
   DECLARE_CLASS(VPlayerReplicationInfo, VThinker, 0)
