@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"  /* host_frametime */
 #include "p_entity.h"
 #include "p_levelinfo.h"
 #include "p_world.h"

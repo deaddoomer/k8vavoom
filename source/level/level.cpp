@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"
 #include "../server/sv_local.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"

@@ -27,6 +27,7 @@
 #include "psim/p_player.h"
 #include "server/server.h"
 #include "mapinfo.h"
+#include "host.h"
 #include "filesys/files.h"
 #ifdef CLIENT
 # include "text.h"

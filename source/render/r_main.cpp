@@ -27,6 +27,7 @@
 #include <float.h>
 
 #include "../gamedefs.h"
+#include "../host.h"  /* host_frametime */
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"
 #include "../psim/p_playerreplicationinfo.h"

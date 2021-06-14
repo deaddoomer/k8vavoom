@@ -33,6 +33,7 @@
 // is read from the demo file.
 //
 #include "../gamedefs.h"
+#include "../host.h"
 #include "../psim/p_player.h"
 #ifdef CLIENT
 # include "../client/client.h"

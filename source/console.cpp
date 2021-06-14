@@ -29,6 +29,7 @@
 # include <SDL2/SDL.h>
 #endif
 #include "gamedefs.h"
+#include "host.h"  /* host_frametime */
 #ifdef CLIENT
 # include "drawer.h"
 # include "screen.h"

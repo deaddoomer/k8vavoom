@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"  /* host_time */
 #include "../screen.h"
 #include "../drawer.h"
 #include "../text.h"

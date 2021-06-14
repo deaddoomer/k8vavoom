@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"
 #include "../net/network.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_worldinfo.h"

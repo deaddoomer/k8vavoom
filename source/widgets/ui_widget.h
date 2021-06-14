@@ -26,6 +26,8 @@
 #ifndef VAVOOM_UIWIDGETS_WIDGET_HEADER
 #define VAVOOM_UIWIDGETS_WIDGET_HEADER
 
+#include "../textdefs.h"
+
 
 struct VClipRect {
   // origin of the widget, in absolute coordinates

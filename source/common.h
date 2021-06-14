@@ -66,5 +66,10 @@ extern VCvarS game_name;
 extern int cli_WAll;
 extern VStr flWarningMessage;
 
+extern VCvarB developer;
+
+extern void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_EndGame (const char *message, ...);
+extern void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_Error (const char *error, ...);
+
 
 #endif

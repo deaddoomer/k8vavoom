@@ -41,6 +41,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"  /* host_frametime */
 #include "p_levelinfo.h"
 #include "p_player.h"
 #include "../server/server.h"

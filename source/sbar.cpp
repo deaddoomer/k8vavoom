@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "host.h"  /* host_frametime */
 #include "sbar.h"
 #include "screen.h"
 #include "client/client.h"

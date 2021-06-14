@@ -26,6 +26,8 @@
 #ifndef VAVOOM_TEXTDRAW_HEADER
 #define VAVOOM_TEXTDRAW_HEADER
 
+#include "textdefs.h"
+
 
 class VFont;
 

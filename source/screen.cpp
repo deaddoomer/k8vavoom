@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "gamedefs.h"
+#include "host.h"
 #include "drawer.h"
 #include "text.h"
 #include "touch.h"

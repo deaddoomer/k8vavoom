@@ -30,8 +30,6 @@
 void Host_Init ();
 void Host_Shutdown ();
 void Host_Frame ();
-void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_EndGame (const char *message, ...);
-void __attribute__((noreturn, format(printf, 1, 2))) __declspec(noreturn) Host_Error (const char *error, ...);
 const char *Host_GetCoreDump ();
 bool Host_StartTitleMap ();
 VStr Host_GetConfigDir ();
@@ -47,8 +45,6 @@ void Host_ResetSkipFrames ();
 
 // this does GC rougly twice per second (unless forced)
 void Host_CollectGarbage (bool forced=false);
-
-extern VCvarB developer;
 
 extern bool host_initialised;
 extern bool host_request_exit;

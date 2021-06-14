@@ -36,11 +36,8 @@
 #include "cmd.h"
 
 #include "scripts.h"
-#include "textdefs.h"
 #include "psim/p_gameobject.h"
-#include "textures/r_tex_id.h"
 #include "level/level.h"
-#include "host.h"
 #include "textures/r_tex_public.h"
 #include "render/r_public.h"
 #include "sound/sound.h"

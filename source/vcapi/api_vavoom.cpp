@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "../host.h"
 #ifdef CLIENT
 # include "../drawer.h"
 # include "../input.h"
@@ -34,6 +35,7 @@
 #include "../infostr.h"
 #include "../mapinfo.h"
 #include "../lockdefs.h"
+#include "../textdefs.h"
 #include "../psim/p_decal.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_player.h"
