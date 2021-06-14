@@ -206,6 +206,8 @@ void VEntity::SerialiseOther (VStream &Strm) {
         }
       }
     }
+    // dedicated server cannot load games anyway
+#ifdef CLIENT
     // create and fix blood translation for actor if necessary
     int bcolor = fldiBloodColor->GetInt(this);
     if (bcolor) {
@@ -219,6 +221,7 @@ void VEntity::SerialiseOther (VStream &Strm) {
         fldiBloodTranslation->SetInt(this, btrans);
       }
     }
+#endif
   }
 }
 
