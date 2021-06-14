@@ -24,5 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
+#include "p_playerreplicationinfo.h"
+
 
 IMPLEMENT_CLASS(V, PlayerReplicationInfo)

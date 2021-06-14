@@ -56,5 +56,7 @@ class VNTValueIOEx;
 class VLevel;
 class VThinker;
 class VEntity;
+class VPlayerReplicationInfo;
+
 
 #endif
