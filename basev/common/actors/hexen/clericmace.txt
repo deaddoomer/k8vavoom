@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 actor CWeapMace : ClericWeapon
 {
+  Game Hexen
   +BloodSplatter
   Weapon.SelectionOrder 3500
   Weapon.YAdjust -8

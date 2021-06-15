@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 actor FWeapFist : FighterWeapon
 {
+  Game Hexen
   +BloodSplatter
   Weapon.SelectionOrder 3400
   Weapon.BotCombatDist 48

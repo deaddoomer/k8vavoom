@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 actor StrifeWeapon : Weapon
 {
+  game Strife
   Weapon.Kickback 100
   states
   {
@@ -73,6 +74,7 @@ actor StrifeZap1
 //------------------------------------------------------------------------------
 actor PunchDagger : StrifeWeapon
 {
+  game Strife
   Weapon.SelectionOrder 3900
   +Weapon.NoAlert
   +Weapon.MeleeWeapon
@@ -154,6 +156,7 @@ actor StrifeCrossbow : StrifeWeapon 2001
 //------------------------------------------------------------------------------
 actor StrifeCrossbow2 : StrifeCrossbow
 {
+  game Strife
   Weapon.SisterWeapon "StrifeCrossbow"
   Weapon.SelectionOrder 2700
   Weapon.AmmoType1 "PoisonBolts"
@@ -407,6 +410,7 @@ actor StrifeGrenadeLauncher : StrifeWeapon 154
 //------------------------------------------------------------------------------
 actor StrifeGrenadeLauncher2 : StrifeGrenadeLauncher
 {
+  game Strife
   Weapon.SisterWeapon "StrifeGrenadeLauncher"
   Weapon.SelectionOrder 3200
   Weapon.AmmoType1 PhosphorusGrenadeRounds
@@ -627,6 +631,7 @@ actor Mauler : StrifeWeapon 2004
 //------------------------------------------------------------------------------
 actor Mauler2 : Mauler
 {
+  game Strife
   Weapon.SisterWeapon "Mauler"
   Weapon.SelectionOrder 3300
   Weapon.AmmoUse1 30

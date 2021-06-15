@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 actor MWeapWand : MageWeapon
 {
+  Game Hexen
   Weapon.SelectionOrder 3600
   Weapon.YAdjust 9
   Weapon.BotCombatDist 192

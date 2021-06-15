@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 actor Staff : HereticWeapon
 {
+  Game Heretic
   +ThruGhost
   Weapon.SelectionOrder 3800
   Weapon.SisterWeapon "StaffPowered"
@@ -32,6 +33,7 @@ actor Staff : HereticWeapon
 //------------------------------------------------------------------------------
 actor StaffPowered : Staff
 {
+  Game Heretic
   Weapon.SisterWeapon "Staff"
   +Weapon.Powered_Up
   +Weapon.Staff2_Kickback
@@ -137,6 +139,7 @@ actor Gauntlets : HereticWeapon 2005
 //------------------------------------------------------------------------------
 actor GauntletsPowered : Gauntlets
 {
+  Game Heretic
   Weapon.SisterWeapon "Gauntlets"
   +Weapon.Powered_Up
   states
@@ -192,6 +195,7 @@ actor GauntletPuff2 : GauntletPuff1
 //------------------------------------------------------------------------------
 actor GoldWand : HereticWeapon
 {
+  Game Heretic
   +BloodSplatter
   Weapon.SelectionOrder 2000
   Weapon.AmmoType1 "GoldWandAmmo"
@@ -226,6 +230,7 @@ actor GoldWand : HereticWeapon
 //------------------------------------------------------------------------------
 actor GoldWandPowered : GoldWand
 {
+  Game Heretic
   Weapon.AmmoGive 0
   Weapon.SisterWeapon "GoldWand"
   +Weapon.Powered_Up
@@ -355,6 +360,7 @@ actor Crossbow : HereticWeapon 2001
 //------------------------------------------------------------------------------
 actor CrossbowPowered : Crossbow
 {
+  Game Heretic
   Weapon.AmmoGive1 0
   Weapon.SisterWeapon "Crossbow"
   +Weapon.Powered_Up
@@ -498,6 +504,7 @@ actor Blaster : HereticWeapon 53
 //------------------------------------------------------------------------------
 actor BlasterPowered : Blaster
 {
+  Game Heretic
   Weapon.AmmoUse1 5
   Weapon.AmmoGive1 0
   Weapon.SisterWeapon "Blaster"
@@ -592,6 +599,7 @@ actor SkullRod : HereticWeapon 2004
 //------------------------------------------------------------------------------
 actor SkullRodPowered : SkullRod
 {
+  Game Heretic
   Weapon.AmmoUse1 5
   Weapon.AmmoGive1 0
   Weapon.SisterWeapon "SkullRod"
@@ -664,6 +672,7 @@ actor PhoenixPuff
 //------------------------------------------------------------------------------
 actor MacePowered : Mace
 {
+  Game Heretic
   Weapon.AmmoUse1 5
   Weapon.AmmoGive1 0
   Weapon.SisterWeapon "Mace"
