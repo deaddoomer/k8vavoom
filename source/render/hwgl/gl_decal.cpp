@@ -381,6 +381,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
             dc->v3.x, dc->v3.y, dc->v3.z,
             dc->v4.x, dc->v4.y, dc->v4.z, angle);
           */
+          #if 0
           const float xmin = min2(min2(min2(dc->v1.x, dc->v2.x), dc->v3.x), dc->v4.x);
           const float xmax = max2(max2(max2(dc->v1.x, dc->v2.x), dc->v3.x), dc->v4.x);
           const float ymin = min2(min2(min2(dc->v1.y, dc->v2.y), dc->v3.y), dc->v4.y);
@@ -388,6 +389,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           const float zmin = min2(min2(min2(dc->v1.z, dc->v2.z), dc->v3.z), dc->v4.z);
           const float zmax = max2(max2(max2(dc->v1.z, dc->v2.z), dc->v3.z), dc->v4.z);
           TVec cc(xmin+(xmax-xmin)*0.5f, ymin+(ymax-ymin)*0.5f, zmin+(zmax-zmin)*0.5f);
+          #else
+          // this does rotation around hotspot (i hope)
+          TVec cc = v1+ndir*txofs;
+          cc.z = dcz+thgt-tyofs;
+          #endif
           VRotMatrix M(surf->plane.normal, angle);
           dc->v1 = (dc->v1-cc)*M+cc;
           dc->v2 = (dc->v2-cc)*M+cc;
