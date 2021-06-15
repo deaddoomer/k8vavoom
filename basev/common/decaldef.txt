@@ -1642,4 +1642,5 @@ decal K8BigScorchTestRot {
   //randomflipy
   flatangle random 0 360
   wallangle random 0 360
+  //wallangle 36
 }

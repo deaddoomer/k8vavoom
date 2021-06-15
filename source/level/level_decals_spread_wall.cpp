@@ -173,7 +173,7 @@ static inline bool hasSliderAnimator (const VDecalDef *dec, const VDecalAnim *an
 //  `flips` will be bitwise-ored with decal flags
 //
 //==========================================================================
-void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int side, line_t *li,
+void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, int side, line_t *li,
                              DecalParams &params, bool skipMarkCheck)
 {
   // don't process linedef twice
@@ -181,8 +181,6 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
     if (IsLineTouched(li)) return;
     MarkLineTouched(li);
   }
-
-  const float orgz = org.z;
 
   // for offset
   VTexture *dtex = GTextureManager[dec->texid];
@@ -226,6 +224,42 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
   const unsigned stvflag = 0u; //(side ? decal_t::FromV2 : 0u);
 
   const side_t *sidedef = (li->sidenum[side] >= 0 ? &Sides[li->sidenum[side]] : nullptr);
+
+  TVec org = aorg;
+
+  #if 0
+  // if our side has no textures, but the other side has some, switch sides
+  if (sidedef && fsec && bsec &&
+      (sidedef->MidTexture <= 0 || GTextureManager(sidedef->MidTexture)->Type == TEXTYPE_Null) &&
+      (sidedef->TopTexture <= 0 || GTextureManager(sidedef->TopTexture)->Type == TEXTYPE_Null) &&
+      (sidedef->BottomTexture <= 0 || GTextureManager(sidedef->BottomTexture)->Type == TEXTYPE_Null))
+  {
+    sector_t *tmps = fsec;
+    fsec = bsec;
+    bsec =tmps;
+    side ^= 1;
+    sidedef = (li->sidenum[side] >= 0 ? &Sides[li->sidenum[side]] : nullptr);
+    //params.orflags ^= decal_t::FlipX;
+    //const float llen = ((*li->v2)-(*li->v1)).length2D();
+    //lineofs = llen-lineofs;
+    float ang = AngleMod(isFiniteF(params.angle) ? params.angle : dec->angleWall.value);
+    if (ang != 0.0f) {
+      //ang = AngleMod(-ang);
+      //params.angle = ang;
+      float s, c;
+      msincos(ang, &s, &c);
+      //taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+      //saxis = Normalise(CrossProduct(seg->normal, taxis));
+      //org.z -= c;
+      GCon->Logf(NAME_Debug, "decal '%s' at line #%d: size=(%g,%g); s=%g; c=%g", *dec->name, (int)(ptrdiff_t)(li-&Lines[0]), twdt, thgt, s, c);
+      //org.x += 4;
+      //org.z += 1;
+      //lineofs += twdt*s;
+      lineofs += 8;
+    }
+  }
+  #endif
+
   const TVec &v1 = *li->v1;
   const TVec &v2 = *li->v2;
   const float linelen = (v2-v1).length2D();
@@ -242,6 +276,8 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
     // out of bounds
     VDC_DLOG(NAME_Debug, "*** OOB: Decal '%s' at line #%d (side %d; fs=%d; bs=%d): linelen=%g; dcx0=%g; dcx1=%g", *dec->name, (int)(ptrdiff_t)(li-Lines), side, (int)(ptrdiff_t)(fsec-Sectors), (bsec ? (int)(ptrdiff_t)(bsec-Sectors) : -1), linelen, dcx0, dcx1);
   }
+
+  const float orgz = org.z;
 
   // calculate top and bottom texture bounds
   // decal flipping won't change decal offset
