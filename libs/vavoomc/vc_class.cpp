@@ -1737,6 +1737,7 @@ void VClass::Emit () {
         ParseError(GameExpr->Loc, "Integer constant expected");
       } else {
         GameFilter = GameExpr->GetIntConst();
+        //GLog.Logf(NAME_Debug, ":::%s: GameFilter=0x%08x", GetName(), (unsigned)GameFilter);
       }
     }
   }
@@ -1775,6 +1776,7 @@ void VClass::Emit () {
         if (id != 0) {
           /*mobjinfo_t *mi =*/ AllocScriptId(id, GameFilter, this);
           //if (mi) mi->Class = this;
+          //GLog.Logf(NAME_Debug, ":::%s: GameFilter=0x%08x; scriptid=%d", GetName(), (unsigned)GameFilter, id);
         }
         /*
         mobjinfo_t &mi = ec.Package->ScriptIds.Alloc();
@@ -1803,6 +1805,8 @@ void VClass::Emit () {
 
   // call `Emit()` for all structs
   for (auto &&st : Structs) st->Emit();
+
+  //GLog.Logf(NAME_Debug, ":::%s: GameFilter=0x%08x", GetName(), (unsigned)GameFilter);
 }
 
 
@@ -2487,6 +2491,16 @@ void VClass::CreateDefaults () {
     }
   }
   */
+
+  //HACK: set `GameFilter` field
+  if (GameExpr) {
+    vassert(GameExpr->IsResolved());
+    vassert(GameExpr->IsIntConst());
+    int GameFilter = GameExpr->GetIntConst();
+    if (GameFilter == 0) GameFilter = -1; //HACK: zero means "everything"
+    VField *gff = FindField("GameFilter");
+    if (gff && gff->Type.Type == TYPE_Int) gff->SetInt((VObject *)Defaults, GameFilter);
+  }
 
   // call default properties method
   if (DefaultProperties) {
