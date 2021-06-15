@@ -5966,6 +5966,18 @@ void CheatHelper_AllWeapons (bool full) {
     // check if it is valid
     if (!EntityEx.CheckSpawnGameFilter(WpnCls, Level.Game)) continue;
     if (!Weapon.IsUsableWeaponClass(WpnCls)) continue;
+    repl = class!Weapon(WpnCls.Replacee);
+    if (repl && repl != WpnCls) {
+      if (!EntityEx.CheckSpawnGameFilter(repl, Level.Game)) {
+        //printdebug("REJECTED '%C' (replacee: %C)", WpnCls, WpnCls.Replacee);
+        continue;
+      }
+      if (repl.default.SisterWeapon && !EntityEx.CheckSpawnGameFilter(repl.default.SisterWeapon.Class, Level.Game)) {
+        //printdebug("REJECTED '%C' (replacee: %C, sister: %C)", WpnCls, WpnCls.Replacee, repl.default.SisterWeapon.Class);
+        continue;
+      }
+    }
+    //printdebug("giving '%C' (replacee: %C)", WpnCls, WpnCls.Replacee);
     // check if already have it
     if (EntityEx(MO).FindInventory(WpnCls, disableReplacement:true)) continue;
     // check for slot 11
@@ -5985,7 +5997,9 @@ void CheatHelper_AllWeapons (bool full) {
     if (!Wpn.TryPickup(EntityEx(MO))) {
       Wpn.Destroy();
     } else {
-      print("CHEAT: got '%C'!", WpnCls);
+      if (WpnCls.Replacee && WpnCls.Replacee != WpnCls) print("CHEAT: got '%C' (replacee: '%C')!", WpnCls, WpnCls.Replacee);
+      else print("CHEAT: got '%C'!", WpnCls);
+      //printdebug("     : GameFilter=%08x : %08x", WpnCls.default.GameFilter, class!Weapon(WpnCls.Replacee).default.GameFilter);
       gotit = true;
     }
   }
@@ -6072,6 +6086,8 @@ void CheatHelper_AllAmmo (bool full, optional bool current) {
       // only direct descendants
       if (GetClassParent(Cls) != Ammo) continue;
       if (!EntityEx.CheckSpawnGameFilter(Cls, Level.Game)) continue;
+      class!Ammo repl = class!Ammo(Cls.Replacee);
+      if (repl && repl != Cls && !EntityEx.CheckSpawnGameFilter(repl, Level.Game)) continue;
       if (CheatHelper_GiveAmmoClass(class!Ammo(Cls))) gotit = true;
     }
   } else {

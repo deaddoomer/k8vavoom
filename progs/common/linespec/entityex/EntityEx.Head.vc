@@ -604,6 +604,8 @@ static bool CheckSpawnGameFilter (class cls, GameInfo gi) {
   if (!gi) return true;
   class!EntityEx e = class!EntityEx(cls);
   if (!e) return true;
+  if (!e.default.GameFilter) return true; // just in case: zero means "all games"
+  if (!gi.GameFilterFlag) return true; // game filter flag is not set: this should not happen, but...
   return !!(e.default.GameFilter&gi.GameFilterFlag);
 }
 
