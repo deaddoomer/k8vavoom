@@ -184,13 +184,19 @@ void VLevel::PutDecalAtLine (const TVec &org, float lineofs, VDecalDef *dec, int
 
   const float orgz = org.z;
 
+  // for offset
   VTexture *dtex = GTextureManager[dec->texid];
   //if (!dtex || dtex->Type == TEXTYPE_Null) return;
 
-  //GCon->Logf(NAME_Debug, "decal '%s' at linedef %d", *GTextureManager[tex]->Name, (int)(ptrdiff_t)(li-Lines));
+  //const float twdt = dtex->GetScaledWidthF()*dec->scaleX.value;
+  //const float thgt = dtex->GetScaledHeightF()*dec->scaleY.value;
 
-  const float twdt = dtex->GetScaledWidthF()*dec->scaleX.value;
-  const float thgt = dtex->GetScaledHeightF()*dec->scaleY.value;
+  //GCon->Logf(NAME_Debug, "decal '%s' at line #%d: size=(%g,%g) : (%g,%g)", *dec->name, (int)(ptrdiff_t)(li-&Lines[0]), twdt, thgt, dec->bbWidth(), dec->bbHeight());
+
+  const float twdt = dec->bbWidth();
+  const float thgt = dec->bbHeight();
+
+  if (twdt < 1.0f || thgt < 1.0f) return;
 
   sector_t *fsec;
   sector_t *bsec;
