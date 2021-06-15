@@ -833,7 +833,7 @@ override void SB_DrawFullscreenStats () {
         alist.sort(delegate int (const ref AmmoInfo a, const ref AmmoInfo b) {
           int d = a.wslot-b.wslot;
           if (d) return d;
-          return a.widx-b.widx;
+          return b.widx-a.widx;
         });
         SetFont('smallfont');
         //SetTextAlign(hleft, vtop);
