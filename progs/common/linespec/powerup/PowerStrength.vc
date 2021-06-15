@@ -110,7 +110,7 @@ override int GetBlend () {
     if (cs != lastBlendColorString) {
       lastBlendColorString = cs;
       BlendColor = (cs ? ParseColor(cs) : RGBA(255, 0, 0, 128));
-      BlendColor = (BlendColor&0xff_ff_ff)|0x80_00_00;
+      BlendColor = (BlendColor&0xff_ff_ff ? (BlendColor&0xff_ff_ff)|0x80_00_00 : 0);
     }
     if (BlendColor) {
       // slowly fade the berzerk out
@@ -130,6 +130,7 @@ defaultproperties {
   EffectTime = 1.0/35.0;
   BlendColor = RGBA(255, 0, 0, 128);
   bHubPower = true;
+  bWeakColormap = true;
   //bShowTimer = true;
   //PowerupTimerName = "Strength";
 }

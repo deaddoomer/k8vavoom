@@ -48,6 +48,7 @@ float Strength = float.nan; //k8:FIXME, i need a way to know if it is specified
 // this is used as `default`, no need to save
 transient bool bShowTimer = false;
 transient string PowerupTimerName;
+transient bool bWeakColormap = false;
 
 bool bSurvivesMapTeleport;
 bool bSurvivesHubTeleport; // not implemented yet
@@ -118,10 +119,10 @@ override bool HandlePickup (Inventory Item) {
     // only increase effect time
     if (Pow.bAdditiveTime) {
       EffectTime += Pow.EffectTime;
-      BlendColor = Pow.BlendColor;
+      if (Pow.BlendColor) BlendColor = Pow.BlendColor;
     } else if (EffectTime < Pow.EffectTime) {
       EffectTime = Pow.EffectTime;
-      BlendColor = Pow.BlendColor;
+      if (Pow.BlendColor) BlendColor = Pow.BlendColor;
     }
     Item.bPickupGood = true;
     return true;
@@ -240,6 +241,7 @@ override void DoEffect () {
     int bc = GetColormapOverride(out dontBlink);
     if (bc <= 0) {
       bc = BlendColor;
+      if (!bc) return;
       dontBlink = false;
     } else {
       if (!IsColomapOverrideActive()) {
@@ -251,12 +253,15 @@ override void DoEffect () {
     ubyte cmnum = TranslateColorToCMap(bc);
     if (cmnum) {
       if (dontBlink || EffectTime > PlayerEx::BLINKTHRESHOLD || (int(4.0*EffectTime)&1)) {
-        Owner.Player.FixedColormap = cmnum;
+        if (!bWeakColormap || Owner.Player.FixedColormap < PlayerEx::NUMCOLORMAPS) {
+          Owner.Player.FixedColormap = cmnum;
+        }
       } else {
-        if (Owner.Player.FixedColormap >= PlayerEx::NUMCOLORMAPS) Owner.Player.FixedColormap = 0;
+        //if (Owner.Player.FixedColormap >= PlayerEx::NUMCOLORMAPS) Owner.Player.FixedColormap = 0;
+        if (Owner.Player.FixedColormap == cmnum) Owner.Player.FixedColormap = 0;
       }
     } else {
-      if (Owner.Player.FixedColormap >= PlayerEx::NUMCOLORMAPS) Owner.Player.FixedColormap = 0;
+      //if (Owner.Player.FixedColormap >= PlayerEx::NUMCOLORMAPS) Owner.Player.FixedColormap = 0;
     }
   }
 }
@@ -271,6 +276,7 @@ void EndEffect () {
   if (Owner && Owner.Player) {
     bool dontBlink = false;
     int bc = GetColormapOverride(out dontBlink);
+    if (bc <= 0 && !BlendColor) return;
     ubyte cmap = TranslateColorToCMap(bc > 0 ? bc : BlendColor);
     if (Owner.Player.FixedColormap == cmap) Owner.Player.FixedColormap = 0;
   }
@@ -289,6 +295,8 @@ override int GetBlend () {
   int bc = GetColormapOverride(out dontBlink);
   if (bc > 0) {
     if (TranslateColorToCMap(bc) > 0) return 0;
+  } else {
+    if (!BlendColor) return 0;
   }
   if (TranslateColorToCMap(BlendColor) > 0) return 0;
   return BlendColor;
