@@ -3179,16 +3179,18 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   if (DoomEdNum > 0) {
     /*mobjinfo_t *nfo =*/ VClass::AllocMObjId(DoomEdNum, (GameFilter ? GameFilter : GAME_Any), Class);
     //if (nfo) nfo->Class = Class;
-    //GLog.Logf("DECORATE: DoomEdNum #%d assigned to '%s'", DoomEdNum, *Class->GetFullName());
+    //GLog.Logf("DECORATE: DoomEdNum #%d assigned to '%s' (GameFilter=0x%08x)", DoomEdNum, *Class->GetFullName(), (unsigned)GameFilter);
     //VMemberBase::StaticDumpMObjInfo();
   }
 
   if (SpawnNum > 0) {
     /*mobjinfo_t *nfo =*/ VClass::AllocScriptId(SpawnNum, (GameFilter ? GameFilter : GAME_Any), Class);
+    //GLog.Logf("DECORATE: SpawnNum #%d assigned to '%s' (GameFilter=0x%08x)", SpawnNum, *Class->GetFullName(), (unsigned)GameFilter);
     //if (nfo) nfo->Class = Class;
   }
 
   Class->SetFieldInt("GameFilter", (GameFilter ? GameFilter : -1));
+  //GLog.Logf("DECORATE: '%s' GameFilter set to 0x%08x)", *Class->GetFullName(), (unsigned)GameFilter);
 
   DoClassReplacement(ReplaceeClass, Class);
 
