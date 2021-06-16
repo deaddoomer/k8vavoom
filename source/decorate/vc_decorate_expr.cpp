@@ -344,9 +344,12 @@ static const MathOpHandler oplist[] = {
 //==========================================================================
 static VExpression *ParseConvertToUserVar (VScriptParser *sc, VClass *Class, VExpression *lhs) {
   if (!lhs || !lhs->IsDecorateSingleName()) return lhs;
+  // for locals, `VDecorateSingleName()` will resolve itself into The Right Thing
+  if (((VDecorateSingleName *)lhs)->localAccess) return lhs;
+  VStr vn = ((VDecorateSingleName *)lhs)->Name;
   // decorate uservar should resolve to the special thing
-  VExpression *e = new VDecorateUserVar(*((VDecorateSingleName *)lhs)->Name, lhs->Loc);
-  //!GCon->Logf(NAME_Debug, "%s: CVT: %s -> %s", *lhs->Loc.toStringNoCol(), *lhs->toString(), *e->toString());
+  VExpression *e = new VDecorateUserVar(*vn, lhs->Loc);
+  //GCon->Logf(NAME_Debug, "%s: CVT: `%s` -- %s -> %s", *lhs->Loc.toStringNoCol(), *vn, *lhs->toString(), *e->toString());
   delete lhs;
   return e;
 }
@@ -762,7 +765,7 @@ static VStatement *ParseFunCallAsStmt (VScriptParser *sc, VClass *Class, VState 
 
   if (inCodeBlock) {
     // if it starts with `user_`, it is an expression too
-    if (FuncName.startsWithCI("user_")) {
+    if (FuncName.startsWithCI("user_") || decoIsLocalName(FuncName)) {
       // this looks like an expression
       //GCon->Logf(NAME_Debug, "%s: USERSHIT! `%s`", *sc->GetLoc().toStringNoCol(), *sc->String);
       sc->UnGet(); // return it
@@ -927,6 +930,7 @@ static VStatement *ParseStatementDo (VScriptParser *sc, VClass *Class, VState *S
 //==========================================================================
 static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VState *State) {
   if (sc->Check("{")) {
+    DecoLocalsMarker lmark;
     VCompound *stmt = new VCompound(sc->GetLoc());
     while (!sc->Check("}")) {
       if (sc->Check(";")) continue;
@@ -941,6 +945,49 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
   if (sc->Check(";")) return nullptr;
 
   auto stloc = sc->GetLoc();
+
+  // local var
+  if (sc->Check("local")) {
+    VExpression *typeExpr = nullptr;
+         if (sc->Check("auto")) typeExpr = new VTypeExprSimple(TYPE_Automatic, stloc);
+    else if (sc->Check("int")) typeExpr = new VTypeExprSimple(TYPE_Int, stloc);
+    else if (sc->Check("bool")) typeExpr = new VTypeExprSimple(TYPE_Int, stloc); // bool is actualy int too
+    else if (sc->Check("float")) typeExpr = new VTypeExprSimple(TYPE_Float, stloc);
+    else if (sc->Check("string")) typeExpr = new VTypeExprSimple(TYPE_String, stloc);
+    else if (sc->Check("name")) typeExpr = new VTypeExprSimple(TYPE_Name, stloc);
+    else if (sc->Check("state")) typeExpr = new VTypeExprSimple(TYPE_State, stloc);
+    else {
+      //sc->Error("invalid local type");
+      // `auto` type
+      typeExpr = new VTypeExprSimple(TYPE_Automatic, stloc);
+    }
+
+    VLocalDecl *ldecl = new VLocalDecl(stloc);
+    do {
+      // parse name
+      const TLocation l = sc->GetLoc();
+      if (!sc->CheckIdentifier()) sc->Error("identifier expected");
+      if (sc->String.isEmpty()) sc->Error("identifier expected");
+      // check for valid name
+      if (sc->String.startsWithCI("user_")) sc->Error(va("invalid local name '%s' (cannot starts with 'user_')", *sc->String));
+      if (sc->String.startsWithCI("a_")) sc->Error(va("invalid local name '%s' (cannot starts with 'a_')", *sc->String));
+      VStr vname = sc->String;
+      // create local
+      VLocalEntry e;
+      e.TypeExpr = typeExpr->SyntaxCopy();
+      e.Name = VName(*sc->String, VName::AddLower);
+      e.Loc = l;
+      // initialisation
+      e.Value = nullptr;
+      if (sc->Check("=")) e.Value = ParseExpressionNoAssign(sc, Class);
+      ldecl->Vars.Append(e);
+      // append it here
+      if (!decoAddLocalName(vname)) sc->Error(va("duplicate local name '%s'", *vname));
+    } while (sc->Check(","));
+    delete typeExpr;
+    sc->Expect(";");
+    return new VLocalVarStatement(ldecl);
+  }
 
   // if
   if (sc->Check("if")) {
@@ -1098,6 +1145,7 @@ static VMethod *CreateStateActionCallWrapper (VExpression *expr, VClass *Class, 
 //
 //==========================================================================
 static void ParseActionBlock (VScriptParser *sc, VClass *Class, VState *State) {
+  DecoLocalsMarker lmark;
   bool oldicb = inCodeBlock;
   inCodeBlock = true;
   VCompound *stmt = new VCompound(sc->GetLoc());

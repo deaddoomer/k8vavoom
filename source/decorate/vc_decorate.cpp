@@ -651,6 +651,7 @@ static VMethod *FuncA_FreezeDeathChunks;
 static TArray<VFlagList> FlagList;
 
 static bool inCodeBlock = false;
+static TArray<VStr> codeBlockLocals;
 
 static int mainDecorateLump = -1;
 static bool thisIsBasePak = false;
@@ -671,10 +672,67 @@ TArray<VClass *> NumberLimitedClasses;
 
 //==========================================================================
 //
+//  decoMarkLocals
+//
+//==========================================================================
+static int decoMarkLocals () noexcept {
+  return codeBlockLocals.length();
+}
+
+
+//==========================================================================
+//
+//  decoReleaseLocals
+//
+//==========================================================================
+static void decoReleaseLocals (int mark) noexcept {
+  vassert(mark >= 0);
+  vassert(codeBlockLocals.length() >= mark);
+  codeBlockLocals.setLength(mark);
+}
+
+
+//==========================================================================
+//
+//  decoIsLocalName
+//
+//==========================================================================
+static bool decoIsLocalName (VStr id) noexcept {
+  for (VStr name : codeBlockLocals) if (id.strEquCI(name)) return true;
+  return false;
+}
+
+
+//==========================================================================
+//
+//  decoAddLocalName
+//
+//  returns `false` on error
+//
+//==========================================================================
+static bool decoAddLocalName (VStr id) noexcept {
+  if (id.isEmpty()) return false;
+  if (decoIsLocalName(id)) return false;
+  codeBlockLocals.append(id);
+  return true;
+}
+
+
+struct DecoLocalsMarker {
+  int mark;
+  DecoLocalsMarker (const DecoLocalsMarker &) = delete;
+  DecoLocalsMarker &operator = (const DecoLocalsMarker &) = delete;
+  inline DecoLocalsMarker () noexcept { mark = decoMarkLocals(); }
+  inline ~DecoLocalsMarker () noexcept { decoReleaseLocals(mark); mark = -1; }
+};
+
+
+//==========================================================================
+//
 //  FindPropLimitSub
 //
 //==========================================================================
-static int FindPropLimitSub (VClass *aclass) {
+static int FindPropLimitSub (VClass *aclass) noexcept {
   for (int f = 0; f < limitSubs.length(); ++f) {
     if (limitSubs[f].baseClass == aclass) return f;
   }
@@ -687,7 +745,7 @@ static int FindPropLimitSub (VClass *aclass) {
 //  NewPropLimitSubInt
 //
 //==========================================================================
-static void NewPropLimitSubInt (VClass *abaseClass, int amount) {
+static void NewPropLimitSubInt (VClass *abaseClass, int amount) noexcept {
   vassert(abaseClass);
   if (amount > 0) {
     int idx = FindPropLimitSub(abaseClass);

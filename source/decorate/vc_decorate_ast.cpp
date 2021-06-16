@@ -1139,6 +1139,14 @@ VDecorateSingleName::VDecorateSingleName (VStr AName, const TLocation &ALoc)
   : VExpression(ALoc)
   , Name(AName)
 {
+  // check for local
+  if (decoIsLocalName(AName)) {
+    localAccess = true;
+    //GCon->Logf(NAME_Debug, "%s: LOCAL: `%s`", *Loc.toStringNoCol(), *AName);
+  } else {
+    localAccess = false;
+    //GCon->Logf(NAME_Debug, "%s: USER: `%s`", *Loc.toStringNoCol(), *AName);
+  }
 }
 
 
@@ -1182,6 +1190,7 @@ void VDecorateSingleName::DoSyntaxCopyTo (VExpression *e) {
   VExpression::DoSyntaxCopyTo(e);
   auto res = (VDecorateSingleName *)e;
   res->Name = Name;
+  res->localAccess = localAccess;
 }
 
 
@@ -1191,6 +1200,13 @@ void VDecorateSingleName::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VDecorateSingleName::DoResolve (VEmitContext &ec) {
+  // local var?
+  if (localAccess) {
+    VExpression *e = new VSingleName(VName(*Name, VName::AddLower), Loc);
+    delete this;
+    return e->Resolve(ec);
+  }
+
   // route uservar
   if (VStr::startsWithCI(*Name, "user_")) {
     VExpression *e = new VDecorateUserVar(VName(*Name, VName::Add), Loc);

@@ -322,8 +322,10 @@ protected:
 class VDecorateSingleName : public VExpression {
 public:
   VStr Name;
+  //HACK: set to `true` if this is codeblock local access
+  bool localAccess;
 
-  VDecorateSingleName (VStr, const TLocation &);
+  VDecorateSingleName (VStr AName, const TLocation &ALoc);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
