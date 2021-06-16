@@ -659,7 +659,7 @@ protected:
 public:
   void DrawSurfaces (subsector_t *sub, sec_region_t *secregion, seg_t *seg, surface_t *InSurfs,
                      texinfo_t *texinfo, VEntity *SkyBox, int LightSourceSector, int SideLight,
-                     bool AbsSideLight, bool CheckSkyBoxAlways);
+                     bool AbsSideLight, bool CheckSkyBoxAlways, bool hasAlpha=false);
 
   void GetFlatSetToRender (subsector_t *sub, subregion_t *region, sec_surface_t *surfs[4]);
   void ChooseFlatSurfaces (sec_surface_t *&f0, sec_surface_t *&f1, sec_surface_t *flat0, sec_surface_t *flat1);
@@ -671,7 +671,7 @@ public:
   void RenderMirror (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg);
   void RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, seg_t *seg);
   void RenderSecFlatSurfaces (subsector_t *sub, sec_region_t *secregion, sec_surface_t *flat0, sec_surface_t *flat1, VEntity *SkyBox);
-  void RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox);
+  void RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, bool hasAlpha);
   void AddPolyObjToClipper (VViewClipper &clip, subsector_t *sub);
   void RenderPolyObj (subsector_t *sub);
   void RenderSubRegions (subsector_t *sub);

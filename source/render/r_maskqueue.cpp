@@ -1072,6 +1072,9 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           }
         }
         // check back, against non-wall surfaces
+        // flats are sorted from top to bottom (and rendered from bottom to top)
+        int lowestSFC = -1;
+        float lowestDist = +FLT_MAX;
         while (idx > 0) {
           --idx;
           --sfc;
@@ -1094,8 +1097,15 @@ void VRenderLevelShared::DrawTranslucentPolys () {
             GCon->Logf(NAME_Debug, "    distance to flat #%d is %g; norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
           }
           #endif
-          if (surf->plane.PointDistance(spr.origin) < 0.0f) break; // but *before* this
+          const float sdist = surf->plane.PointDistance(spr.origin);
+          if (sdist < 0.0f && sdist < lowestDist) {
+            lowestDist = sdist;
+            lowestSFC = idx;
+            continue;
+          }
         }
+        // insert before lowest sfc
+        if (lowestSFC >= 0) idx = lowestSFC;
         // move behind all sprites
         sfc = dls.DrawSurfListAlpha.ptr();
         while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;

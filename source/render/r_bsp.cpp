@@ -412,7 +412,7 @@ void VRenderLevelShared::CommonQueueSurface (surface_t *surf, SFCType type) {
 //==========================================================================
 void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion, seg_t *seg,
   surface_t *InSurfs, texinfo_t *texinfo, VEntity *SkyBox, int LightSourceSector, int SideLight,
-  bool AbsSideLight, bool CheckSkyBoxAlways)
+  bool AbsSideLight, bool CheckSkyBoxAlways, bool hasAlpha)
 {
   surface_t *surf = InSurfs; // this actually a list
   if (!surf) return;
@@ -686,7 +686,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     surf->glowFloorColor = glowFloorColor;
     surf->glowCeilingColor = glowCeilingColor;
 
-    if (isCommon) {
+    if (isCommon && !hasAlpha) {
       CommonQueueSurface(surf, SFCType::SFCT_World);
     } else if (surf->queueframe != currQueueFrame) {
       //surf->queueframe = currQueueFrame;
@@ -1047,7 +1047,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
 //  VRenderLevelShared::RenderSecSurface
 //
 //==========================================================================
-void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox) {
+void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, bool hasAlpha) {
   if (!ssurf) return;
   TSecPlaneRef plane(ssurf->esecplane);
 
@@ -1103,7 +1103,7 @@ void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secre
 
   if (!plane.splane->pic) return;
   //if (plane.splane->isCeiling()) GCon->Logf(NAME_Debug, "SFCTID: %d (sector #%d)", (int)plane.splane->pic, (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]));
-  DrawSurfaces(sub, secregion, nullptr, ssurf->surfs, &ssurf->texinfo, SkyBox, plane.splane->LightSourceSector, 0, false, true);
+  DrawSurfaces(sub, secregion, nullptr, ssurf->surfs, &ssurf->texinfo, SkyBox, plane.splane->LightSourceSector, 0, false/*abslight*/, true/*checkskybox*/, hasAlpha);
 }
 
 
@@ -1223,8 +1223,8 @@ static int sortRegionsCmp (const void *a, const void *b, void *) {
 
   const float r0dist = GetRegionDist(r0);
   const float r1dist = GetRegionDist(r1);
-  if (r0dist < r1dist) return -1;
-  if (r0dist > r1dist) return +1;
+  if (r0dist > r1dist) return -1;
+  if (r0dist < r1dist) return +1;
   return 0;
 }
 
@@ -1238,13 +1238,24 @@ static int sortRegionsCmp (const void *a, const void *b, void *) {
 //
 //==========================================================================
 void VRenderLevelShared::RenderSubRegions (subsector_t *sub) {
+  bool hasAlpha = false;
   sortedRegs.resetNoDtor();
-  for (subregion_t *reg = sub->regions; reg; reg = reg->next) sortedRegs.append(reg);
+  for (subregion_t *reg = sub->regions; reg; reg = reg->next) {
+    sortedRegs.append(reg);
+    if (!hasAlpha) {
+      hasAlpha =
+        (reg->realfloor && reg->realfloor->texinfo.Alpha < 1.0f) ||
+        (reg->realceil && reg->realceil->texinfo.Alpha < 1.0f) ||
+        (reg->fakefloor && reg->fakefloor->texinfo.Alpha < 1.0f) ||
+        (reg->fakeceil && reg->fakeceil->texinfo.Alpha < 1.0f);
+    }
+  }
 
-  if (r_ordered_subregions.asBool()) {
+  if (hasAlpha && r_ordered_subregions.asBool()) {
     timsort_r(sortedRegs.ptr(), sortedRegs.length(), sizeof(sortedRegs[0]), &sortRegionsCmp, nullptr);
   }
 
+  hasAlpha = false; // don't override
   for (auto &&region : sortedRegs) {
     vassert(region);
 
@@ -1252,11 +1263,11 @@ void VRenderLevelShared::RenderSubRegions (subsector_t *sub) {
     sec_surface_t *fsurf[4];
     GetFlatSetToRender(sub, region, fsurf);
 
-    if (fsurf[0]) RenderSecSurface(sub, secregion, fsurf[0], secregion->efloor.splane->SkyBox);
-    if (fsurf[1]) RenderSecSurface(sub, secregion, fsurf[1], secregion->efloor.splane->SkyBox);
+    if (fsurf[0]) RenderSecSurface(sub, secregion, fsurf[0], secregion->efloor.splane->SkyBox, hasAlpha);
+    if (fsurf[1]) RenderSecSurface(sub, secregion, fsurf[1], secregion->efloor.splane->SkyBox, hasAlpha);
 
-    if (fsurf[2]) RenderSecSurface(sub, secregion, fsurf[2], secregion->eceiling.splane->SkyBox);
-    if (fsurf[3]) RenderSecSurface(sub, secregion, fsurf[3], secregion->eceiling.splane->SkyBox);
+    if (fsurf[2]) RenderSecSurface(sub, secregion, fsurf[2], secregion->eceiling.splane->SkyBox, hasAlpha);
+    if (fsurf[3]) RenderSecSurface(sub, secregion, fsurf[3], secregion->eceiling.splane->SkyBox, hasAlpha);
   }
 }
 
