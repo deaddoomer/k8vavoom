@@ -130,10 +130,10 @@ Actor BDW_Rifle : Weapon Replaces Chaingun {
           if (GetCVarB("K8BDWOpt_RifleWarnLowAmmo")) {
             A_PlaySound("weapons/bdw_rifle/lowammo", CHAN_VOICE, 1.0);
           }
-          user_lowPauseCount = CountInv("BDW_RifleAmmo");
-               if (user_lowPauseCount > 4) user_lowPauseCount = 40;
-          else if (user_lowPauseCount > 2) user_lowPauseCount = 30;
-          else if (user_lowPauseCount > 0) user_lowPauseCount = 20;
+          local ammoCount = CountInv("BDW_RifleAmmo");
+               if (ammoCount > 4) user_lowPauseCount = 40;
+          else if (ammoCount > 2) user_lowPauseCount = 30;
+          else if (ammoCount > 0) user_lowPauseCount = 20;
           else user_lowPauseCount = 10;
         }
       }
