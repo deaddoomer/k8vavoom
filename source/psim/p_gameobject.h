@@ -763,7 +763,8 @@ struct TSecPlaneRef {
   inline float PointDistance (const TVec &p) const noexcept { return (!flipped ? DotProduct(p, splane->normal)-splane->dist : DotProductV2Neg(p, splane->normal)+splane->dist); }
 
   // valid only for horizontal planes!
-  inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
+  //inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
+  inline float GetRealDist () const noexcept { return ((!flipped ? splane->dist : -splane->dist)*splane->normal.z); }
 
   inline void Flip () noexcept { flipped = !flipped; }
 
