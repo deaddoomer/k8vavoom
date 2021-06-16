@@ -33,6 +33,8 @@
 #include "../client/client.h"
 #include "r_local.h"
 
+//#define VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+
 
 extern VCvarB r_chasecam;
 extern VCvarB r_brightmaps;
@@ -1037,7 +1039,22 @@ void VRenderLevelShared::DrawTranslucentPolys () {
         vassert(spr.type != TSP_Wall);
         const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
         const int count = dls.DrawSurfListAlpha.length();
-        //GCon->Logf(NAME_Debug, "  checking sprite at (%g,%g,%g)", spr.origin.x, spr.origin.y, spr.origin.z);
+        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+        const bool doDump =
+          spr.lump > 0 &&
+          VStr::startsWith(*GTextureManager.GetTextureName(spr.lump), "bal1");
+          /*
+          GTextureManager.GetTextureName(spr.lump) != "afrad0" &&
+          GTextureManager.GetTextureName(spr.lump) != "afraa0" &&
+          GTextureManager.GetTextureName(spr.lump) != "abula0" &&
+          GTextureManager.GetTextureName(spr.lump) != "soula0" &&
+          GTextureManager.GetTextureName(spr.lump) != "soulb0" &&
+          GTextureManager.GetTextureName(spr.lump) != "soulc0";
+          */
+        #endif
+        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+        if (doDump) GCon->Logf(NAME_Debug, " ++ checking sprite '%s' at (%g,%g,%g)", *GTextureManager.GetTextureName(spr.lump), spr.origin.x, spr.origin.y, spr.origin.z);
+        #endif
         int idx = 0; // insert before this
         for (; idx < count; ++idx, ++sfc) {
           if (sfc->type != TSP_Wall) continue;
@@ -1046,7 +1063,11 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           // is it a wall?
           if (surf->plane.normal.z == 0.0f) {
             // yes, check the distance
-            //GCon->Logf(NAME_Debug, "  distance to wall #%d is %g", idx, surf->plane.PointDistance(spr.origin));
+            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+            if (doDump) {
+              GCon->Logf(NAME_Debug, "    distance to wall #%d is %g; norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
+            }
+            #endif
             if (surf->plane.PointDistance(spr.origin) >= 0.0f) break;
           }
         }
@@ -1058,19 +1079,30 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           const surface_t *surf = sfc->surf;
           if (surf->plane.normal.z == 0.0f) {
             // insert after this
+            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+            if (doDump) {
+              GCon->Logf(NAME_Debug, "    insert after wall #%d (dist=%g); norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
+            }
+            #endif
             ++sfc;
             ++idx;
             break;
           }
           // check distance
-          //GCon->Logf(NAME_Debug, "  distance to flat #%d is %g", idx, surf->plane.PointDistance(spr.origin));
-          if (surf->plane.PointDistance(spr.origin) >= 0.0f) break; // but *before* this
+          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+          if (doDump) {
+            GCon->Logf(NAME_Debug, "    distance to flat #%d is %g; norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
+          }
+          #endif
+          if (surf->plane.PointDistance(spr.origin) < 0.0f) break; // but *before* this
         }
         // move behind all sprites
         sfc = dls.DrawSurfListAlpha.ptr();
         while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;
         vassert(idx >= 0 && idx <= count);
-        //GCon->Logf(NAME_Debug, "  final position: %d", idx);
+        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+        if (doDump) GCon->Logf(NAME_Debug, "    final position: %d", idx);
+        #endif
         // insert
         dls.DrawSurfListAlpha.insert(idx, spr);
       }
