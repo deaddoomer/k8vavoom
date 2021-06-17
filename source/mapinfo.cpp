@@ -1328,7 +1328,7 @@ static void FixSkyTexturesHack (VScriptParser *sc, VMapInfo *info) {
 //  ParseMapCommon
 //
 //==========================================================================
-static void ParseMapCommon (VScriptParser *sc, VMapInfo *info, bool &HexenMode) {
+static void ParseMapCommon (VScriptParser *sc, VMapInfo *info, bool &HexenMode, const VMapInfo &Default) {
   // build command map, if it is not built yet
   if (mcmap.length() == 0 && mclist) {
     for (MapInfoCommand *mcp = mclist; mcp; mcp = mcp->next) {
@@ -1342,6 +1342,21 @@ static void ParseMapCommon (VScriptParser *sc, VMapInfo *info, bool &HexenMode) 
   wasSky1Sky2 = 0u; // clear "was skyN" flag
 
   const bool newFormat = sc->Check("{");
+  // clear some more info for the new format (GZDoom compatibility)
+  if (newFormat) {
+    info->Cluster = Default.Cluster;
+    info->NextMap = Default.NextMap;
+    info->SecretMap = Default.SecretMap;
+    info->Sky1Texture = Default.Sky1Texture;
+    info->Sky2Texture = Default.Sky2Texture;
+    info->Sky1ScrollDelta = Default.Sky1ScrollDelta;
+    info->Sky2ScrollDelta = Default.Sky2ScrollDelta;
+    info->SkyBox = Default.SkyBox;
+    info->ExitPic = Default.ExitPic;
+    info->EnterPic = Default.EnterPic;
+    info->InterMusic = Default.InterMusic;
+  }
+
   //if (newFormat) sc->SetCMode(true);
   // process optional tokens
   for (;;) {
@@ -1764,7 +1779,7 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
 //  ParseMap
 //
 //==========================================================================
-static void ParseMap (VScriptParser *sc, bool &HexenMode, VMapInfo &Default, int milumpnum, bool umapinfo=false) {
+static void ParseMap (VScriptParser *sc, bool &HexenMode, const VMapInfo &Default, int milumpnum, bool umapinfo=false) {
   VMapInfo *info = nullptr;
   vuint32 savedFlags = 0;
 
@@ -1886,7 +1901,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, VMapInfo &Default, int
   info->MapinfoSourceLump = milumpnum;
 
   if (!umapinfo) {
-    ParseMapCommon(sc, info, HexenMode);
+    ParseMapCommon(sc, info, HexenMode, Default);
   } else {
     // copy special actions, they should be explicitly cleared
     info->Flags = savedFlags&(
@@ -2579,9 +2594,9 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
         ParseMap(sc, HexenMode, Default, milumpnum);
       } else if (sc->Check("defaultmap")) {
         SetMapDefaults(Default);
-        ParseMapCommon(sc, &Default, HexenMode);
+        ParseMapCommon(sc, &Default, HexenMode, Default);
       } else if (sc->Check("adddefaultmap")) {
-        ParseMapCommon(sc, &Default, HexenMode);
+        ParseMapCommon(sc, &Default, HexenMode, Default);
       } else if (sc->Check("clusterdef")) {
         ParseClusterDef(sc);
       } else if (sc->Check("cluster")) {
