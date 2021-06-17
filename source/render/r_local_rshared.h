@@ -956,9 +956,10 @@ public:
 
   void FixSpriteOffset (int fixAlgo, VEntity *thing, VTexture *Tex, const int TexHeight, const float scaleY, int &TexTOffset, int &origTOffset);
 
-  void QueueSpritePoly (const TVec *sv, int lump, const RenderStyleInfo &ri, int translation,
-                        const TVec &normal, float pdist, const TVec &saxis, const TVec &taxis,
-                        const TVec &texorg, int priority, const TVec &sprOrigin, vuint32 objid);
+  void QueueSpritePoly (VEntity *thing, const TVec *sv, int lump, const RenderStyleInfo &ri,
+                        int translation, const TVec &normal, float pdist, const TVec &saxis,
+                        const TVec &taxis, const TVec &texorg, int priority, const TVec &sprOrigin,
+                        vuint32 objid);
 
   void QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool onlyShadow=false); // this can modify `ri`!
   void QueueTranslucentAliasModel (VEntity *mobj, const RenderStyleInfo &ri, float TimeFrac);

@@ -188,9 +188,10 @@ void VRenderLevelShared::QueueTranslucentSurface (surface_t *surf, const RenderS
 //  VRenderLevelShared::QueueSpritePoly
 //
 //==========================================================================
-void VRenderLevelShared::QueueSpritePoly (const TVec *sv, int lump, const RenderStyleInfo &ri, int translation,
-                                          const TVec &normal, float pdist, const TVec &saxis, const TVec &taxis,
-                                          const TVec &texorg, int priority, const TVec &sprOrigin, vuint32 objid)
+void VRenderLevelShared::QueueSpritePoly (VEntity *thing, const TVec *sv, int lump, const RenderStyleInfo &ri,
+                                          int translation, const TVec &normal, float pdist, const TVec &saxis,
+                                          const TVec &taxis, const TVec &texorg, int priority, const TVec &sprOrigin,
+                                          vuint32 objid)
 {
   if (ri.alpha < 0.004f) return;
 
@@ -201,6 +202,7 @@ void VRenderLevelShared::QueueSpritePoly (const TVec *sv, int lump, const Render
   trans_sprite_t *spr = AllocTransSprite(ri);
   memcpy((void *)spr->Verts, sv, sizeof(TVec)*4);
   spr->dist = dist;
+  spr->ent = thing;
   spr->lump = lump;
   spr->normal = normal;
   spr->origin = sprOrigin;
@@ -208,7 +210,6 @@ void VRenderLevelShared::QueueSpritePoly (const TVec *sv, int lump, const Render
   spr->saxis = saxis;
   spr->taxis = taxis;
   spr->texorg = texorg;
-  spr->surf = nullptr;
   spr->translation = translation;
   spr->type = TSP_Sprite;
   spr->objid = objid;
@@ -234,7 +235,7 @@ void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const Render
   //trans_sprite_t &spr = trans_sprites[traspUsed++];
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
   trans_sprite_t *spr = AllocTransSprite(ri);
-  spr->Ent = mobj;
+  spr->ent = mobj;
   spr->rstyle = ri;
   spr->dist = dist;
   spr->origin = mobj->Origin;
@@ -706,7 +707,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
         (flip ? -sprright : sprright)/scaleX,
         -sprup/scaleY, (flip ? sv[2] : sv[1]));
       #else
-      QueueSpritePoly(sv, lump, ri, thing->Translation,
+      QueueSpritePoly(thing, sv, lump, ri, thing->Translation,
         -sprforward, DotProduct(sprorigin, -sprforward),
         (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
         (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
@@ -745,7 +746,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
           ri.flags = RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagNoDepthWrite;
           ri.stencilColor = 0xff000000u; // shadows are black-stenciled
           ri.translucency = RenderStyleInfo::Translucent;
-          QueueSpritePoly(sv, lump, ri, /*translation*/0,
+          QueueSpritePoly(thing, sv, lump, ri, /*translation*/0,
             -sprforward, DotProduct(sprorigin, -sprforward),
             (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
             (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
@@ -791,7 +792,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
           ri.stencilColor = 0xff000000u; // shadows are black-stenciled
           ri.translucency = RenderStyleInfo::Translucent;
           flip = !flip;
-          QueueSpritePoly(sv, lump, ri, /*translation*/0,
+          QueueSpritePoly(thing, sv, lump, ri, /*translation*/0,
             -sprforward, DotProduct(sprorigin, -sprforward),
             (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
             (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
@@ -972,11 +973,14 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
     case TSP_Model:
       // alias model
       TSDisablePOfs(transSprState);
-      DrawEntityModel(spr.Ent, spr.rstyle/*spr.light, spr.Fade, spr.Alpha, spr.Additive*/, spr.TimeFrac, RPASS_Normal);
+      DrawEntityModel(spr.ent, spr.rstyle/*spr.light, spr.Fade, spr.Alpha, spr.Additive*/, spr.TimeFrac, RPASS_Normal);
       break;
     default: Sys_Error("VRenderLevelShared::DrawTransSpr: invalid sprite type (%d)", spr.type);
   }
 }
+
+
+static TArray<int> lastSSurf; // sorry for this global
 
 
 //==========================================================================
@@ -1015,7 +1019,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
     i.e. the whole wall-ws-sprite sorting step can be omited if we have no translucent sprites
 
-    BSP INVARIANT: subsector walls are rendered before subsector flats
+    BSP INVARIANT: subsector walls are appended before subsector flats
 
     THING TO CHECK: polyobjects can get in there, don't try to sort with polyobject flats
    */
@@ -1035,77 +1039,129 @@ void VRenderLevelShared::DrawTranslucentPolys () {
       // ok, we have a complex case here: both translucent surfaces, and translucent sprites
       // insert sprites in surface list, and render the combined list
       //GCon->Logf(NAME_Debug, "*** %d translucent sprites, %d translucent walls", dls.DrawSpriListAlpha.length(), dls.DrawSurfListAlpha.length());
+
+      // build list of last subsector surface indicies
+      lastSSurf.resetNoDtor();
+      const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
+      const int sfccount = dls.DrawSurfListAlpha.length();
+      for (int idx = 0; idx < sfccount; ) {
+        if (sfc->type == TSP_Wall) {
+          const surface_t *surf = sfc->surf;
+          vassert(surf->subsector);
+          const subsector_t *ss = surf->subsector;
+          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+          const int startidx = idx;
+          #endif
+          for (++idx, ++sfc; idx < sfccount; ++idx, ++sfc) {
+            if (sfc->type != TSP_Wall) continue;
+            surf = sfc->surf;
+            vassert(surf->subsector);
+            if (surf->subsector != ss) break;
+          }
+          lastSSurf.append(idx-1);
+          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+          GCon->Logf(NAME_Debug, "::: subsector #%d: fist=%d, last=%d (total=%d)", (int)(ptrdiff_t)(ss-&Level->Subsectors[0]), startidx, idx-1, sfccount);
+          #endif
+        } else {
+          ++idx;
+          ++sfc;
+        }
+      }
+      const int lastSSCount = lastSSurf.length();
+      #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+      GCon->Logf(NAME_Debug, "::: %d subsector edges found", lastSSCount);
+      #endif
+
+      // insert sprites
       for (auto &&spr : dls.DrawSpriListAlpha) {
         vassert(spr.type != TSP_Wall);
-        const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
+        // just in case
+        if (!spr.ent || !spr.ent->SubSector) {
+          // wtf?!
+          dls.DrawSurfListAlpha.append(spr);
+          continue;
+        }
+        const subsector_t *spsub = spr.ent->SubSector;
         const int count = dls.DrawSurfListAlpha.length();
+        const TVec sorg0 = spr.origin;
+        const TVec sorg1 = sorg0+TVec(0.0f, 0.0f, max2(0.0f, spr.ent->Height));
         #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
         const bool doDump =
           spr.lump > 0 &&
           VStr::startsWith(*GTextureManager.GetTextureName(spr.lump), "bal1");
-          /*
-          GTextureManager.GetTextureName(spr.lump) != "afrad0" &&
-          GTextureManager.GetTextureName(spr.lump) != "afraa0" &&
-          GTextureManager.GetTextureName(spr.lump) != "abula0" &&
-          GTextureManager.GetTextureName(spr.lump) != "soula0" &&
-          GTextureManager.GetTextureName(spr.lump) != "soulb0" &&
-          GTextureManager.GetTextureName(spr.lump) != "soulc0";
-          */
         #endif
         #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-        if (doDump) GCon->Logf(NAME_Debug, " ++ checking sprite '%s' at (%g,%g,%g)", *GTextureManager.GetTextureName(spr.lump), spr.origin.x, spr.origin.y, spr.origin.z);
+        if (doDump) GCon->Logf(NAME_Debug, " ++ checking sprite '%s' at (%g,%g,%g)", *GTextureManager.GetTextureName(spr.lump), sorg0.x, sorg0.y, sorg0.z);
         #endif
-        int idx = 0; // insert before this
-        for (; idx < count; ++idx, ++sfc) {
-          if (sfc->type != TSP_Wall) continue;
-          const surface_t *surf = sfc->surf;
-          vassert(surf);
-          // is it a wall?
-          if (surf->plane.normal.z == 0.0f) {
-            // yes, check the distance
-            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-            if (doDump) {
-              GCon->Logf(NAME_Debug, "    distance to wall #%d is %g; norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
-            }
-            #endif
-            if (surf->plane.PointDistance(spr.origin) >= 0.0f) break;
-          }
+
+        // start from the last subsector surface
+        int lastSSIdx = 0;
+        int *ssp = lastSSurf.ptr();
+        for (; lastSSIdx < lastSSCount; ++lastSSIdx, ++ssp) {
+          sfc = dls.DrawSurfListAlpha.ptr()+(*ssp);
+          vassert(sfc->type == TSP_Wall);
+          if (sfc->surf->subsector == spsub) break;
         }
+        if (lastSSIdx >= lastSSCount) {
+          // not found, wtf?!
+          dls.DrawSurfListAlpha.append(spr);
+          continue;
+        }
+
         // check back, against non-wall surfaces
         // flats are sorted from top to bottom (and rendered from bottom to top)
+        int idx = lastSSurf[lastSSIdx];
+        /*const trans_sprite_t * */sfc = dls.DrawSurfListAlpha.ptr()+idx;
+        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+        if (doDump) {
+          GCon->Logf(NAME_Debug, "    checking back from surface #%d", idx);
+        }
+        #endif
         int lowestSFC = -1;
-        float lowestDist = +FLT_MAX;
+        float lowestDist = -FLT_MAX;
         while (idx > 0) {
-          --idx;
-          --sfc;
-          if (sfc->type != TSP_Wall) continue;
-          const surface_t *surf = sfc->surf;
-          if (surf->plane.normal.z == 0.0f) {
-            // insert after this
-            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-            if (doDump) {
-              GCon->Logf(NAME_Debug, "    insert after wall #%d (dist=%g); norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
-            }
-            #endif
-            ++sfc;
-            ++idx;
-            break;
-          }
-          // check distance
-          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-          if (doDump) {
-            GCon->Logf(NAME_Debug, "    distance to flat #%d is %g; norm=(%g,%g,%g)", idx, surf->plane.PointDistance(spr.origin), surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
-          }
-          #endif
-          const float sdist = surf->plane.PointDistance(spr.origin);
-          if (sdist < 0.0f && sdist < lowestDist) {
-            lowestDist = sdist;
-            lowestSFC = idx;
+          if (sfc->type != TSP_Wall) {
+            --idx;
+            --sfc;
             continue;
           }
+          const surface_t *surf = sfc->surf;
+          // if we moved out of the subsector, stop
+          if (surf->subsector != spsub) {
+            // insert after this if this is a wall, or before this if this is a flat
+            if (doDump) {
+              GCon->Logf(NAME_Debug, "    different subsector flat #%d norm=(%g,%g,%g)", idx, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
+            }
+            // a flat?
+            if (surf->plane.normal.z != 0.0f) {
+              // insert before this
+              --sfc;
+              --idx;
+            }
+            break;
+          }
+          vassert(surf->subsector);
+          // ignore walls (just in case)
+          if (surf->plane.normal.z != 0.0f) {
+            // check distance
+            // check sprite top for the floor, and bottom for the ceiling
+            const float sdist = surf->plane.PointDistance(surf->plane.normal.z > 0.0f ? sorg1 : sorg0);
+            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
+            if (doDump) {
+              GCon->Logf(NAME_Debug, "    distance to flat #%d is %g; lowestSFC=%d; lowestDist=%g; norm=(%g,%g,%g)", idx, sdist, lowestSFC, lowestDist, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
+            }
+            #endif
+            if (sdist < 0.0f && sdist > lowestDist) {
+              // insert after this
+              lowestDist = sdist;
+              lowestSFC = idx;
+            }
+          }
+          --idx;
+          --sfc;
         }
-        // insert before lowest sfc
-        if (lowestSFC >= 0) idx = lowestSFC;
+        // insert after idx
+        if (lowestSFC >= 0) idx = lowestSFC+1; // insert after this flat
         // move behind all sprites
         sfc = dls.DrawSurfListAlpha.ptr();
         while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;
@@ -1115,6 +1171,10 @@ void VRenderLevelShared::DrawTranslucentPolys () {
         #endif
         // insert
         dls.DrawSurfListAlpha.insert(idx, spr);
+        // fix subsector edges
+        for (; lastSSIdx < lastSSCount; ++lastSSIdx, ++ssp) {
+          if (*ssp >= idx) ++(*ssp);
+        }
       }
       // render in reverse order
       for (auto &&spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);

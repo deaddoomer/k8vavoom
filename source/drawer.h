@@ -195,8 +195,8 @@ public:
   struct trans_sprite_t {
     /*SurfVertex*/TVec Verts[4]; // only for sprites
     union {
-      surface_t *surf; // for masked polys and sprites
-      VEntity *Ent; // only for alias models
+      surface_t *surf; // for masked polys
+      VEntity *ent; // for sprites and alias models
     };
     int prio; // for things
     int lump; // basically, has any sense only for sprites, has no sense for alias models
