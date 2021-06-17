@@ -45,7 +45,10 @@ bool VRenderLevelShared::CopyPlaneIfValid (sec_plane_t *dest, const sec_plane_t 
     copy = true;
   }
 
-  if (copy) *(TPlane *)dest = *(TPlane *)source;
+  if (copy) {
+    *(TPlane *)dest = *(TPlane *)source;
+    //dest->Alpha = source->Alpha; // doesn't matter
+  }
 
   return copy;
 }
@@ -67,7 +70,7 @@ bool VRenderLevelShared::CopyPlaneIfValid (sec_plane_t *dest, const sec_plane_t 
 //  killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
 //  k8: this whole thing is a fuckin' mess. it should be rewritten.
-//  we can simply create fakes, and let the renderer to the rest (i think).
+//  we can simply create fakes, and let the renderer do the rest (i think).
 //
 //==========================================================================
 void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
@@ -85,6 +88,13 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
 
   const sector_t *hs = sector->heightsec;
   sector_t *viewhs = r_viewleaf->sector->heightsec;
+  /*debug
+  ff->floorplane = hs->floor;
+  ff->ceilplane = hs->ceiling;
+  return;
+  */
+
+  #if 1
   /*
   bool underwater = / *r_fakingunderwater ||* /
     //(viewhs && Drawer->vieworg.z <= viewhs->floor.GetPointZClamped(Drawer->vieworg));
@@ -98,6 +108,10 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
   ff->floorplane = sector->floor;
   ff->ceilplane = sector->ceiling;
   ff->params = sector->params;
+
+  //ff->SetSkipFloor(false);
+  //ff->SetSkipCeiling(false);
+
   /*
   if (!underwater && diffTex && (hs->SectorFlags&sector_t::SF_FakeFloorOnly)) {
     ff->floorplane = hs->floor;
@@ -267,6 +281,12 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
       }
     }
   }
+  #endif
+
+  /*
+  ff->floorplane.Alpha = 0.0f;
+  ff->ceilplane.Alpha = 0.0f;
+  */
 }
 
 

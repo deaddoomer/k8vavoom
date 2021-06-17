@@ -775,7 +775,7 @@ VRenderLevelShared::~VRenderLevelShared () {
     if (sector.fakefloors) {
       sector.eregions->params = &sector.params; // because it was changed by fake floor
       // delete if it is not a loader fix
-      if ((sector.fakefloors->flags&fakefloor_t::FLAG_CreatedByLoader) == 0) {
+      if (!sector.fakefloors->IsCreatedByLoader()) {
         delete sector.fakefloors;
         sector.fakefloors = nullptr;
       }

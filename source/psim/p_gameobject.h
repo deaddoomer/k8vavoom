@@ -1663,8 +1663,19 @@ struct fakefloor_t {
   sec_params_t params;
   enum {
     FLAG_CreatedByLoader = 1u<<0,
+    // not used
+    FLAG_SkipFloor = 1u<<1,
+    FLAG_SkipCeiling = 1u<<1,
   };
   vuint32 flags;
+
+  bool IsCreatedByLoader () const noexcept { return (flags&FLAG_CreatedByLoader); }
+  bool SkipFloor () const noexcept { return (flags&FLAG_SkipFloor); }
+  bool SkipCeiling () const noexcept { return (flags&FLAG_SkipCeiling); }
+
+  void SetCreatedByLoader () noexcept { flags |= FLAG_CreatedByLoader; }
+  void SetSkipFloor (const bool v) noexcept { if (v) flags |= FLAG_SkipFloor; else flags &= FLAG_SkipFloor; }
+  void SetSkipCeiling (const bool v) noexcept { if (v) flags |= FLAG_SkipCeiling; else flags &= FLAG_SkipCeiling; }
 };
 
 

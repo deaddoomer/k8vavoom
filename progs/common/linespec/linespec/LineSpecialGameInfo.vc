@@ -994,8 +994,10 @@ void MakeEDGEWater (VLevel InLevel, line_t *line) {
   sec.ceiling.minz = sec.floor.minz;
   sec.ceiling.maxz = sec.floor.maxz;
   sec.ceiling.normal = -sec.floor.normal;
+  /*
   sec.ceiling.dist = sec.floor.dist;
   sec.ceiling.dist += 1.0f;
+  */
 
   sec.bTransferSource = true;
   //if (line->arg2&1) sec.bAlwaysFakeHeights = true;//TODO
@@ -1012,7 +1014,7 @@ void MakeEDGEWater (VLevel InLevel, line_t *line) {
   sec.bFakeFloorOnly = true;
   //sec.bNoFakeLight = true;
   sec.floor.Alpha = fclamp(float(line->arg3)/100.0, 0.0f, 1.0f);
-  sec.ceiling.Alpha = fclamp(float(line->arg3)/100.0, 0.0f, 1.0f);
+  sec.ceiling.Alpha = sec.floor.Alpha;
   sector_t *ss2;
   for (int hidx = InLevel.FindSectorFromTag(out ss2, line->arg1); hidx >= 0; hidx = InLevel.FindSectorFromTag(out ss2, line->arg1, hidx)) {
     InLevel.SetHeightSector(ss2, sec);

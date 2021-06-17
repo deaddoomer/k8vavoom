@@ -158,43 +158,51 @@ void VRenderLevelShared::PrepareWorldRender (const refdef_t *rd, const VViewClip
 //  VRenderLevelShared::ChooseFlatSurfaces
 //
 //==========================================================================
-void VRenderLevelShared::ChooseFlatSurfaces (sec_surface_t *&f0, sec_surface_t *&f1, sec_surface_t *flat0, sec_surface_t *flat1) {
-  if (!flat0 || !flat1) {
-    if (flat0) {
-      vassert(!flat1);
-      f0 = flat0;
-      f1 = nullptr;
-    } else if (flat1) {
-      vassert(!flat0);
-      f0 = flat1;
-      f1 = nullptr;
-    } else {
-      vassert(!flat0);
-      vassert(!flat1);
-      f0 = f1 = nullptr;
-    }
+void VRenderLevelShared::ChooseFlatSurfaces (sec_surface_t *&destf0, sec_surface_t *&destf1, sec_surface_t *realflat, sec_surface_t *fakeflat) {
+  // most common case
+  if (!fakeflat) {
+    destf0 = realflat;
+    destf1 = nullptr;
+    //if (realflat) realflat->ResetUseAlpha();
     return;
   }
 
-  // check if flat1 is the same as flat0
-  if (flat0->esecplane.splane == flat1->esecplane.splane) {
-    f0 = flat1; // flat1 is fake, use it, because it may have different texture
-    f1 = nullptr;
+  // improbable case ;-)
+  if (!realflat) {
+    destf0 = fakeflat;
+    //if (fakeflat) fakeflat->ResetUseAlpha();
+    destf1 = nullptr;
     return;
   }
 
-  // not the same, check if on the same height
-  if (flat0->esecplane.GetNormal() == flat1->esecplane.GetNormal() &&
-      flat0->esecplane.GetDist() == flat1->esecplane.GetDist())
+  if ((realflat->esecplane.splane == fakeflat->esecplane.splane) || // check if fakeflat is the same as realflat
+      // or on the same height
+      (realflat->esecplane.GetNormal() == fakeflat->esecplane.GetNormal() &&
+       realflat->esecplane.GetDist() == fakeflat->esecplane.GetDist()))
   {
-    f0 = flat1; // flat1 is fake, use it, because it may have different texture
-    f1 = nullptr;
+    /*
+    // use fake flat for ceiling, and real flat for floor (this is for water)
+    if (realflat->esecplane.GetNormalZ() > 0.0f) {
+      // floor
+      destf0 = realflat;
+      //realflat->ResetUseAlpha();
+    } else {
+      // ceiling
+      destf0 = fakeflat;
+      //fakeflat->ResetUseAlpha();
+    }
+    //destf0 = fakeflat;
+    destf1 = nullptr;
     return;
+    */
+    // nope, prefer the real thing here
+    destf0 = realflat;
+    destf1 = nullptr;
+  } else {
+    // render both
+    destf0 = realflat;
+    destf1 = fakeflat;
   }
-
-  // render both
-  f0 = flat0;
-  f1 = flat1;
 }
 
 

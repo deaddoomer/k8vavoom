@@ -156,11 +156,30 @@ struct sec_surface_t {
   float XScale;
   float YScale;
   float Angle;
+  float Alpha; // not used
+  // this is used to override alpha with fake floor one
+  enum {
+    FlagUseAlpha = 1u<<0, // not implemented
+    // for fake floors and ceilings
+    FlagSkipMe = 1u<<1,
+  };
+  vuint32 Flags;
   surface_t *surfs;
 
   inline float PointDistance (const TVec &p) const noexcept { return esecplane.PointDistance(p); }
   inline float GetPointZ (const TVec &p) const noexcept { return esecplane.GetPointZ(p); }
   inline float GetRealDist () const noexcept { return esecplane.GetRealDist(); }
+
+  /*
+  inline bool UseAlpha () const noexcept { return (Flags&FlagUseAlpha); }
+  inline void SetUseAlpha () noexcept { Flags |= FlagUseAlpha; }
+  inline void ResetUseAlpha () noexcept { Flags &= ~FlagUseAlpha; }
+  inline float GetAlpha () const noexcept { return (Flags&FlagUseAlpha ? Alpha : texinfo.Alpha); }
+  */
+
+  inline bool SkipMe () const noexcept { return (Flags&FlagSkipMe); }
+  inline void SetSkipMe () noexcept { Flags |= FlagSkipMe; }
+  inline void ResetSkipMe () noexcept { Flags &= ~FlagSkipMe; }
 };
 
 

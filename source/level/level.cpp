@@ -1219,10 +1219,7 @@ IMPLEMENT_FUNCTION(VLevel, SetHeightSector) {
   // add to list
   bool found = false;
   for (int xidx = 0; xidx < Self->FakeFCSectors.length(); ++xidx) if (Self->FakeFCSectors[xidx] == srcidx) { found = true; break; }
-  if (!found) {
-    vint32 &it = Self->FakeFCSectors.alloc();
-    it = srcidx;
-  }
+  if (!found) Self->FakeFCSectors.append(srcidx);
   #ifdef CLIENT
   if (Self->Renderer) Self->Renderer->SetupFakeFloors(Sector);
   #endif

@@ -669,7 +669,9 @@ struct sec_surface_t {
   float XScale;
   float YScale;
   float Angle;
-  //bool bNoFaceCull;
+  float Alpha; // not used
+  bool bUseAlpha; // not used
+  bool bSkipMe; // for fake floors and ceilings
   surface_t *surfs;
 };
 
@@ -990,6 +992,8 @@ struct fakefloor_t {
   sec_plane_t ceilplane;
   sec_params_t params;
   bool bCreatedByLoader;
+  bool bSkipFloor;
+  bool bSkipCeiling;
 };
 
 

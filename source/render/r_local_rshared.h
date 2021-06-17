@@ -662,7 +662,7 @@ public:
                      bool AbsSideLight, bool CheckSkyBoxAlways, bool hasAlpha=false);
 
   void GetFlatSetToRender (subsector_t *sub, subregion_t *region, sec_surface_t *surfs[4]);
-  void ChooseFlatSurfaces (sec_surface_t *&f0, sec_surface_t *&f1, sec_surface_t *flat0, sec_surface_t *flat1);
+  void ChooseFlatSurfaces (sec_surface_t *&destf0, sec_surface_t *&destf1, sec_surface_t *realflat, sec_surface_t *fakeflat);
 
   // called by `RenderLine()`, to mark segs/lines/subsectors on the automap
   void RenderSegMarkMapped (subsector_t *sub, seg_t *seg);

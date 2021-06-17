@@ -50,8 +50,14 @@ void VRenderLevelShared::SetupFakeFloors (sector_t *sector) {
 
   if (!sector->fakefloors) sector->fakefloors = new fakefloor_t;
   memset((void *)sector->fakefloors, 0, sizeof(fakefloor_t));
-  sector->fakefloors->floorplane = sector->floor;
-  sector->fakefloors->ceilplane = sector->ceiling;
+  // this is required for correct alpha
+  if (sector->deepref) {
+    sector->fakefloors->floorplane = sector->deepref->floor;
+    sector->fakefloors->ceilplane = sector->deepref->ceiling;
+  } else {
+    sector->fakefloors->floorplane = sector->heightsec->floor;
+    sector->fakefloors->ceilplane = sector->heightsec->ceiling;
+  }
   sector->fakefloors->params = sector->params;
 
   sector->eregions->params = &sector->fakefloors->params;
