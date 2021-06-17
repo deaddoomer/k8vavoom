@@ -980,7 +980,13 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
 }
 
 
-static TArray<int> lastSSurf; // sorry for this global
+// sorry for globals
+// last surface of the subsector, index in `DrawSurfListAlpha`
+// subsector is determined by the surface
+static TArray<int> lastSSurf;
+// to avoid looping over `lastSSurf` each time, use this hash
+// value is index in `lastSSurf`
+static TMapNC<const subsector_t *, int> lastSSurfMap;
 
 
 //==========================================================================
@@ -1042,6 +1048,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
       // build list of last subsector surface indicies
       lastSSurf.resetNoDtor();
+      lastSSurfMap.reset();
       const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
       const int sfccount = dls.DrawSurfListAlpha.length();
       for (int idx = 0; idx < sfccount; ) {
@@ -1058,6 +1065,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
             vassert(surf->subsector);
             if (surf->subsector != ss) break;
           }
+          lastSSurfMap.put(ss, lastSSurf.length());
           lastSSurf.append(idx-1);
           #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
           GCon->Logf(NAME_Debug, "::: subsector #%d: fist=%d, last=%d (total=%d)", (int)(ptrdiff_t)(ss-&Level->Subsectors[0]), startidx, idx-1, sfccount);
@@ -1095,6 +1103,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
         #endif
 
         // start from the last subsector surface
+        #if 0
         int lastSSIdx = 0;
         int *ssp = lastSSurf.ptr();
         for (; lastSSIdx < lastSSCount; ++lastSSIdx, ++ssp) {
@@ -1107,6 +1116,23 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           dls.DrawSurfListAlpha.append(spr);
           continue;
         }
+        #else
+        auto lssp = lastSSurfMap.find(spsub);
+        if (!lssp) {
+          // no such subsector, append to the end of the list (but before all other sprites there)
+          int iidx = dls.DrawSurfListAlpha.length();
+          sfc = dls.DrawSurfListAlpha.ptr()+iidx-1;
+          while (iidx > 0) {
+            if (sfc->type == TSP_Wall) break;
+            --iidx;
+            --sfc;
+          }
+          dls.DrawSurfListAlpha.insert(iidx, spr);
+          continue;
+        }
+        int lastSSIdx = *lssp;
+        int *ssp = lastSSurf.ptr()+lastSSIdx;
+        #endif
 
         // check back, against non-wall surfaces
         // flats are sorted from top to bottom (and rendered from bottom to top)
@@ -1129,9 +1155,11 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           // if we moved out of the subsector, stop
           if (surf->subsector != spsub) {
             // insert after this if this is a wall, or before this if this is a flat
+            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
             if (doDump) {
               GCon->Logf(NAME_Debug, "    different subsector flat #%d norm=(%g,%g,%g)", idx, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
             }
+            #endif
             // a flat?
             if (surf->plane.normal.z != 0.0f) {
               // insert before this
