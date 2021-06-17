@@ -597,7 +597,7 @@ enum {
   LNSPEC_SectorSetFloorGlow = 277,
   LNSPEC_SectorSetCeilingGlow = 278,
 
-  LNSPEC_EDGEWater404 = 100_600,
+  LNSPEC_EDGEWater = 100_600,
 };
 
 

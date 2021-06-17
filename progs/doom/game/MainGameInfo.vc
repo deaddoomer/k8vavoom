@@ -596,29 +596,53 @@ void InitTranslationTables () {
   //354 = 0, Sector_CopyScroller(tag, 6)  // copy carrying floor scroller
 
   // eternity
-  SetLineTrans(386, LNSPEC_PlaneAlign, 1, 0, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(387, LNSPEC_PlaneAlign, 0, 1, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(388, LNSPEC_PlaneAlign, 1, 1, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(389, LNSPEC_PlaneAlign, 2, 0, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(390, LNSPEC_PlaneAlign, 0, 2, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(391, LNSPEC_PlaneAlign, 2, 2, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(392, LNSPEC_PlaneAlign, 2, 1, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(393, LNSPEC_PlaneAlign, 1, 2, 0, 0, 0, SPAC_Cross, false);
+  SetLineTrans(386, LNSPEC_PlaneAlign, 1, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(387, LNSPEC_PlaneAlign, 0, 1, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(388, LNSPEC_PlaneAlign, 1, 1, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(389, LNSPEC_PlaneAlign, 2, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(390, LNSPEC_PlaneAlign, 0, 2, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(391, LNSPEC_PlaneAlign, 2, 2, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(392, LNSPEC_PlaneAlign, 2, 1, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(393, LNSPEC_PlaneAlign, 1, 2, 0, 0, 0, 0/*SPAC_Cross*/, false);
 
   // 3DGE
-  SetLineTrans(409, LNSPEC_LineTranslucent, -1, 204, 0, 0, 0, SPAC_Cross, false); // 80%
-  SetLineTrans(410, LNSPEC_LineTranslucent, -1, 153, 0, 0, 0, SPAC_Cross, false); // 60%
-  SetLineTrans(411, LNSPEC_LineTranslucent, -1, 101, 0, 0, 0, SPAC_Cross, false); // 40%
-  SetLineTrans(412, LNSPEC_LineTranslucent, -1, 50, 0, 0, 0, SPAC_Cross, false); // 20%
+/*
+    [409] : EDGE Translucent Linedef (80%)
+    [410] : EDGE Translucent Linedef (60%)
+    [411] : EDGE Translucent Linedef (40%)
+    [412] : EDGE Translucent Linedef (20%)
+*/
+  SetLineTrans(409, LNSPEC_LineTranslucent, -1, 204, 0, 0, 0, 0/*SPAC_Cross*/, false); // 80%
+  SetLineTrans(410, LNSPEC_LineTranslucent, -1, 153, 0, 0, 0, 0/*SPAC_Cross*/, false); // 60%
+  SetLineTrans(411, LNSPEC_LineTranslucent, -1, 101, 0, 0, 0, 0/*SPAC_Cross*/, false); // 40%
+  SetLineTrans(412, LNSPEC_LineTranslucent, -1, 50, 0, 0, 0, 0/*SPAC_Cross*/, false); // 20%
 
-  SetLineTrans(422, LNSPEC_ScrollTextureRight, 64, 0, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(423, LNSPEC_ScrollTextureUp, 64, 0, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(424, LNSPEC_ScrollTextureDown, 64, 0, 0, 0, 0, SPAC_Cross, false);
-  SetLineTrans(425, LNSPEC_ScrollTextureBoth, 0, 64, 0, 0, 64, SPAC_Cross, false);
-  SetLineTrans(426, LNSPEC_ScrollTextureBoth, 0, 64, 0, 64, 0, SPAC_Cross, false);
-  SetLineTrans(427, LNSPEC_ScrollTextureBoth, 0, 0, 64, 0, 64, SPAC_Cross, false);
-  SetLineTrans(428, LNSPEC_ScrollTextureBoth, 0, 0, 64, 64, 0, SPAC_Cross, false);
+/*
+    [422] : EDGE SCROLL RIGHT
+    [423] : EDGE SCROLL UP
+    [424] : EDGE SCROLL DOWN
+    [425] : EDGE SCROLL LEFT AND UP
+    [426] : EDGE SCROLL LEFT AND DOWN
+    [427] : EDGE SCROLL RIGHT AND UP
+    [428] : EDGE SCROLL RIGHT AND DOWN
+    [429] : EDGE SCROLL FAST LOWER AND MIDDLE TEXTURE (WATERFALLS) (not implemented yet)
+*/
+  SetLineTrans(422, LNSPEC_ScrollTextureRight, 64, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(423, LNSPEC_ScrollTextureUp, 64, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(424, LNSPEC_ScrollTextureDown, 64, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(425, LNSPEC_ScrollTextureBoth, 0, 64, 0, 0, 64, 0/*SPAC_Cross*/, false);
+  SetLineTrans(426, LNSPEC_ScrollTextureBoth, 0, 64, 0, 64, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(427, LNSPEC_ScrollTextureBoth, 0, 0, 64, 0, 64, 0/*SPAC_Cross*/, false);
+  SetLineTrans(428, LNSPEC_ScrollTextureBoth, 0, 0, 64, 64, 0, 0/*SPAC_Cross*/, false);
 
+/*
+    [434] : EDGE S1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [435] : EDGE SR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [436] : EDGE W1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [437] : EDGE WR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [438] : EDGE G1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [439] : EDGE GR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+*/
   // k8: i'm not sure if SPAC flags are right here
   SetLineTrans(434, LNSPEC_FloorRaiseByValue, -1, 8, 2, 0, 0, SPAC_Use, false);
   SetLineTrans(435, LNSPEC_FloorRaiseByValue, -1, 8, 2, 0, 0, SPAC_Use, true); // repeated
@@ -658,27 +682,198 @@ void InitTranslationTables () {
     [407] : EDGE Liquid Extrafloor (20% Translucent)
     [408] : EDGE Liquid Extrafloor (Invisible)
   */
-  SetLineTrans(403, LNSPEC_EDGEWater404, -1, 12, 100, 0, 0, 0/*SPAC_Cross*/, false);
-  SetLineTrans(404, LNSPEC_EDGEWater404, -1, 12, 80, 0, 0, 0/*SPAC_Cross*/, false);
-  SetLineTrans(405, LNSPEC_EDGEWater404, -1, 12, 60+10, 0, 0, 0/*SPAC_Cross*/, false);
-  SetLineTrans(406, LNSPEC_EDGEWater404, -1, 12, 40+20, 0, 0, 0/*SPAC_Cross*/, false);
-  SetLineTrans(407, LNSPEC_EDGEWater404, -1, 12, 20+30, 0, 0, 0/*SPAC_Cross*/, false);
-  SetLineTrans(408, LNSPEC_EDGEWater404, -1, 12, 0, 0, 0, 0/*SPAC_Cross*/, false);
-  /*
-  //Set3DFloorTrans(403, 2, 2, 255);
-  //Set3DFloorTrans(404, 2, 2, 204);
-  SetLineTrans(404, LNSPEC_EDGEWater404, -1, 12, 0, 0, 0, 0/+SPAC_Cross+/, false);
+  SetLineTrans(403, LNSPEC_EDGEWater, -1, 12, 100, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(404, LNSPEC_EDGEWater, -1, 12, 80, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(405, LNSPEC_EDGEWater, -1, 12, 60+10, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(406, LNSPEC_EDGEWater, -1, 12, 40+20, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(407, LNSPEC_EDGEWater, -1, 12, 20+30, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(408, LNSPEC_EDGEWater, -1, 12, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  /* old and wrong
+  Set3DFloorTrans(403, 2, 2, 255);
+  Set3DFloorTrans(404, 2, 2, 204);
   Set3DFloorTrans(405, 2, 2, 153);
   Set3DFloorTrans(406, 2, 2, 102);
   Set3DFloorTrans(407, 2, 2, 51);
   Set3DFloorTrans(408, 2, 2, -666);
   */
 
+/*
+    [413] : EDGE Thin Extrafloor (Opaque)
+    [414] : EDGE Thin Extrafloor (80% Translucent)
+    [415] : EDGE Thin Extrafloor (60% Translucent)
+    [416] : EDGE Thin Extrafloor (40% Translucent)
+    [417] : EDGE Thin Extrafloor (20% Translucent)
+*/
+
   Set3DFloorTrans(413, 1, 8, 255);
   Set3DFloorTrans(414, 1, 8, 204);
   Set3DFloorTrans(415, 1, 8, 153);
   Set3DFloorTrans(416, 1, 8, 102);
   Set3DFloorTrans(417, 1, 8, 51);
+
+/* EDGE specials -- http://3dfxdev.net/edgewiki/index.php?title=Line_Types
+
+Thin Sliding Doors
+    [442] : EDGE Sliding door (LEFT), DR + MONSTERS
+    [443] : EDGE Sliding door (LEFT), DR
+    [444] : EDGE Sliding door (LEFT), DR + FAST
+    [445] : EDGE Sliding door (LEFT), D1
+
+    [446] : EDGE Sliding door (RIGHT), DR + MONSTERS
+    [447] : EDGE Sliding door (RIGHT), DR
+    [448] : EDGE Sliding door (RIGHT), DR + FAST
+    [449] : EDGE Sliding door (RIGHT), D1
+
+    [450] : EDGE Sliding door (CENTER), DR + MONSTERS
+    [451] : EDGE Sliding door (CENTER), DR
+    [452] : EDGE Sliding door (CENTER), DR + FAST
+    [453] : EDGE Sliding door (CENTER), D1
+
+Ladders
+    [470] : EDGE Ladder, 48 units high
+    [471] : EDGE Ladder, 80 units high
+    [472] : EDGE Ladder, 120 units high
+    [473] : EDGE Ladder, 160 units high
+    [474] : EDGE Ladder, 192 units high
+    [475] : EDGE Ladder, 256 units high
+    [476] : EDGE Ladder, 384 units high
+    [477] : EDGE Ladder, 512 units high
+    [478] : EDGE Ladder, 768 units high
+    [479] : EDGE Ladder, no limit
+
+Mirrors
+    [462] : EDGE Mirror (Plain)
+    [463] : EDGE Mirror (White)
+    [464] : EDGE Mirror (Blue)
+    [465] : EDGE Mirror (Red)
+    [466] : EDGE Mirror (Green)
+
+Portals
+    [480] : EDGE Portal (Dark 50%)
+    [481] : EDGE Portal (Light 30%)
+    [482] : EDGE Portal (Light 70%)
+    [483] : EDGE Portal (Blue 70%)
+    [484] : EDGE Portal (Green 70%)
+
+    [485] : EDGE Camera Portal (Plain)
+    [486] : EDGE Camera Portal (White)
+    [487] : EDGE Camera Portal (Cyan)
+    [488] : EDGE Camera Portal (Rusty)
+    [489] : EDGE Camera Portal (Green)
+
+Slopes
+    [567] : EDGE Detail Slope - FLOOR
+    [568] : EDGE Detail Slope - CEILING
+    [569] : EDGE Detail Slope - FLOOR+CEILING
+
+HUB Exits - WR
+    [501] : Hub Exit to MAP01 / E1M1
+    [502] : Hub Exit to MAP02 / E1M2
+    [503] : Hub Exit to MAP03 / E1M3
+    [504] : Hub Exit to MAP04 / E1M4
+    [505] : Hub Exit to MAP05 / E1M5
+    [506] : Hub Exit to MAP06 / E1M6
+    [507] : Hub Exit to MAP07 / E1M7
+    [508] : Hub Exit to MAP08 / E1M8
+    [509] : Hub Exit to MAP09 / E1M9
+
+    [510] : Hub Exit to MAP10
+    [511] : Hub Exit to MAP11 / E2M1
+    [512] : Hub Exit to MAP12 / E2M2
+    [513] : Hub Exit to MAP13 / E2M3
+    [514] : Hub Exit to MAP14 / E2M4
+    [515] : Hub Exit to MAP15 / E2M5
+    [516] : Hub Exit to MAP16 / E2M6
+    [517] : Hub Exit to MAP17 / E2M7
+    [518] : Hub Exit to MAP18 / E2M8
+    [519] : Hub Exit to MAP19 / E2M9
+
+    [520] : Hub Exit to MAP20
+    [521] : Hub Exit to MAP21 / E3M1
+    [522] : Hub Exit to MAP22 / E3M2
+    [523] : Hub Exit to MAP23 / E3M3
+    [524] : Hub Exit to MAP24 / E3M4
+    [525] : Hub Exit to MAP25 / E3M5
+    [526] : Hub Exit to MAP26 / E3M6
+    [527] : Hub Exit to MAP27 / E3M7
+    [528] : Hub Exit to MAP28 / E3M8
+    [529] : Hub Exit to MAP29 / E3M9
+
+    [530] : Hub Exit to MAP30
+    [531] : Hub Exit to MAP31 / E4M1
+    [532] : Hub Exit to MAP32 / E4M2
+    [533] : Hub Exit to MAP33 / E4M3
+    [534] : Hub Exit to MAP34 / E4M4
+    [535] : Hub Exit to MAP35 / E4M5
+    [536] : Hub Exit to MAP36 / E4M6
+    [537] : Hub Exit to MAP37 / E4M7
+    [538] : Hub Exit to MAP38 / E4M8
+    [539] : Hub Exit to MAP39 / E4M9
+
+Locked Doors
+    [490] : EDGE Green Key DOOR - DR
+    [491] : EDGE Green Key DOOR - D1
+    [492] : EDGE Green Key DOOR - SR
+    [493] : EDGE Green Key DOOR - S1
+    [494] : EDGE Green Key BLAZING DOOR - D1
+
+    [580] : EDGE Gold Key DOOR - DR
+    [581] : EDGE Gold Key DOOR - D1
+    [582] : EDGE Gold Key DOOR - SR
+    [583] : EDGE Gold Key DOOR - S1
+
+    [584] : EDGE Silver Key DOOR - DR
+    [585] : EDGE Silver Key DOOR - D1
+    [586] : EDGE Silver Key DOOR - SR
+    [587] : EDGE Silver Key DOOR - S1
+
+    [588] : EDGE Brass Key DOOR - DR
+    [589] : EDGE Brass Key DOOR - D1
+    [590] : EDGE Copper Key DOOR - DR
+    [591] : EDGE Copper Key DOOR - D1
+    [592] : EDGE Steel Key DOOR - DR
+    [593] : EDGE Steel Key DOOR - D1
+
+    [594] : EDGE Wooden Key DOOR - DR
+    [595] : EDGE Wooden Key DOOR - D1
+    [596] : EDGE Fire Key DOOR - DR
+    [597] : EDGE Fire Key DOOR - D1
+    [598] : EDGE Water Key DOOR - DR
+    [599] : EDGE Water Key DOOR - D1
+
+Flat Alignment
+    [800] : Align and rotate front sector's FLOOR
+    [801] : Align and rotate back sector's FLOOR
+    [802] : Align and rotate front sector's CEILING
+    [803] : Align and rotate back sector's CEILING
+    [804] : Align and rotate front sector's FLOOR+CEILING
+    [805] : Align and rotate back sector's FLOOR+CEILING
+
+    [810] : Align, scale and rotate front sector's FLOOR
+    [811] : Align, scale and rotate back sector's FLOOR
+    [812] : Align, scale and rotate front sector's CEILING
+    [813] : Align, scale and rotate back sector's CEILING
+    [814] : Align, scale and rotate front sector's FLOOR+CEILING
+    [815] : Align, scale and rotate back sector's FLOOR+CEILING
+
+    [820] : Scale front sector's FLOOR
+    [821] : Scale back sector's FLOOR
+    [822] : Scale front sector's CEILING
+    [823] : Scale back sector's CEILING
+    [824] : Scale front sector's FLOOR+CEILING
+    [825] : Scale back sector's FLOOR+CEILING
+
+LEGEND
+TRIGGER   MEANING
+D1  Manual, once only
+DR  Manual, repeatable
+S1  Switched, once only
+SR  Switched, repeatable
+W1  Walk over, once only
+WR  Walk over, repeatable
+G1  Gun-shot, once only
+GR  Gun-shot, repeatable
+*/
 }
 
 

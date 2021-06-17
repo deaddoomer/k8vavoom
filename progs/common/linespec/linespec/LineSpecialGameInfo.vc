@@ -1348,7 +1348,7 @@ override void SpawnWorld (VLevel InLevel) {
         MakeHeightSec(InLevel, line);
         line->special = 0;
         break;
-      case LNSPEC_EDGEWater404:
+      case LNSPEC_EDGEWater:
         //if (line->arg2) print("transferheights: flags=0x%02x", line->arg2);
         MakeEDGEWater(InLevel, line);
         line->special = 0;
