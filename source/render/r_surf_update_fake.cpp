@@ -101,8 +101,8 @@ void VRenderLevelShared::UpdateFakeFlats (sector_t *sector) {
     (hs && Drawer->vieworg.z <= hs->floor.GetPointZClamped(Drawer->vieworg));
   */
   //bool underwater = (viewhs && Drawer->vieworg.z <= viewhs->floor.GetPointZClamped(Drawer->vieworg));
-  bool underwater = (hs && Drawer->vieworg.z <= hs->floor.GetPointZClamped(Drawer->vieworg));
-  bool underwaterView = (viewhs && Drawer->vieworg.z <= viewhs->floor.GetPointZClamped(Drawer->vieworg));
+  bool underwater = (hs && Drawer->vieworg.z < hs->floor.GetPointZClamped(Drawer->vieworg)+1.0f);
+  bool underwaterView = (viewhs && Drawer->vieworg.z < viewhs->floor.GetPointZClamped(Drawer->vieworg)+1.0f);
   bool diffTex = !!(hs && hs->SectorFlags&sector_t::SF_ClipFakePlanes);
 
   ff->floorplane = sector->floor;
