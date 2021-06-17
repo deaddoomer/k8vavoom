@@ -642,15 +642,38 @@ void InitTranslationTables () {
   Set3DFloorTrans(306, 1, -666, -666);
   Set3DFloorTrans(332, 4, -666, -666);
   // 3DGE
+  /*
+    [400] : EDGE Thick Extrafloor
+    [401] : EDGE Thick Extrafloor (use upper texture)
+    [402] : EDGE Thick Extrafloor (use lower texture)
+  */
   Set3DFloorTrans(400, 1, 0, 255);
   Set3DFloorTrans(401, 1, 16, 255);
   Set3DFloorTrans(402, 1, 32, 255);
-  Set3DFloorTrans(403, 2, 2, 255);
-  Set3DFloorTrans(404, 2, 2, 204);
+  /*
+    [403] : EDGE Liquid Extrafloor (Opaque)
+    [404] : EDGE Liquid Extrafloor (80% Translucent)
+    [405] : EDGE Liquid Extrafloor (60% Translucent)
+    [406] : EDGE Liquid Extrafloor (40% Translucent)
+    [407] : EDGE Liquid Extrafloor (20% Translucent)
+    [408] : EDGE Liquid Extrafloor (Invisible)
+  */
+  SetLineTrans(403, LNSPEC_EDGEWater404, -1, 12, 100, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(404, LNSPEC_EDGEWater404, -1, 12, 80, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(405, LNSPEC_EDGEWater404, -1, 12, 60+10, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(406, LNSPEC_EDGEWater404, -1, 12, 40+20, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(407, LNSPEC_EDGEWater404, -1, 12, 20+30, 0, 0, 0/*SPAC_Cross*/, false);
+  SetLineTrans(408, LNSPEC_EDGEWater404, -1, 12, 0, 0, 0, 0/*SPAC_Cross*/, false);
+  /*
+  //Set3DFloorTrans(403, 2, 2, 255);
+  //Set3DFloorTrans(404, 2, 2, 204);
+  SetLineTrans(404, LNSPEC_EDGEWater404, -1, 12, 0, 0, 0, 0/+SPAC_Cross+/, false);
   Set3DFloorTrans(405, 2, 2, 153);
   Set3DFloorTrans(406, 2, 2, 102);
   Set3DFloorTrans(407, 2, 2, 51);
   Set3DFloorTrans(408, 2, 2, -666);
+  */
+
   Set3DFloorTrans(413, 1, 8, 255);
   Set3DFloorTrans(414, 1, 8, 204);
   Set3DFloorTrans(415, 1, 8, 153);

@@ -944,8 +944,8 @@ final void MakeContents (line_t *line) {
     sector_t *sec = line->frontsector;
     sec.params.contents = line->arg1;
 
-    sec.floor.Alpha = (100.0-float(line->arg2))/100.0;
-    sec.ceiling.Alpha = (100.0-float(line->arg2))/100.0;
+    sec.floor.Alpha = fclamp((100.0-float(line->arg2))/100.0, 0.0f, 1.0f);
+    sec.ceiling.Alpha = fclamp((100.0-float(line->arg2))/100.0, 0.0f, 1.0f);
 
     sec.ceiling.flags = line->arg3;
     sec.floor.flags = line->arg3;
@@ -973,7 +973,49 @@ void MakeHeightSec (VLevel InLevel, line_t *line) {
   sector_t *ss2;
   for (int hidx = InLevel.FindSectorFromTag(out ss2, line->arg1); hidx >= 0; hidx = InLevel.FindSectorFromTag(out ss2, line->arg1, hidx)) {
     //ss2.heightsec = sec; // done in `SetHeightSector`
-    InLevel.SetHeightSector(ss2, sec, line->arg2);
+    InLevel.SetHeightSector(ss2, sec/*, line->arg2*/);
+  }
+}
+
+
+//==========================================================================
+//
+//  MakeEDGEWater
+//
+//  arg1: tag
+//  arg2: doesn't matter
+//  arg3: opacity, in percents
+//
+//==========================================================================
+void MakeEDGEWater (VLevel InLevel, line_t *line) {
+  sector_t *sec = line->frontsector;
+
+  //sec.ceiling = sec.floor;
+  sec.ceiling.minz = sec.floor.minz;
+  sec.ceiling.maxz = sec.floor.maxz;
+  sec.ceiling.normal = -sec.floor.normal;
+  sec.ceiling.dist = sec.floor.dist;
+  sec.ceiling.dist += 1.0f;
+
+  sec.bTransferSource = true;
+  //if (line->arg2&1) sec.bAlwaysFakeHeights = true;//TODO
+  /*
+  if (line->arg2&2) sec.bFakeFloorOnly = true;
+  if (line->arg2&4) sec.bClipFakePlanes = true;
+  if (line->arg2&8) sec.bUnderWater = true;
+  if (line->arg2&16) sec.bIgnoreHeightSec = true;
+  if (line->arg2&32) sec.bNoFakeLight = true;
+  */
+  sec.bClipFakePlanes = true;
+  sec.bUnderWater = true;
+  //sec.bFakeCeilingOnly = true;
+  sec.bFakeFloorOnly = true;
+  //sec.bNoFakeLight = true;
+  sec.floor.Alpha = fclamp(float(line->arg3)/100.0, 0.0f, 1.0f);
+  sec.ceiling.Alpha = fclamp(float(line->arg3)/100.0, 0.0f, 1.0f);
+  sector_t *ss2;
+  for (int hidx = InLevel.FindSectorFromTag(out ss2, line->arg1); hidx >= 0; hidx = InLevel.FindSectorFromTag(out ss2, line->arg1, hidx)) {
+    InLevel.SetHeightSector(ss2, sec);
   }
 }
 
@@ -1304,6 +1346,11 @@ override void SpawnWorld (VLevel InLevel) {
       case LNSPEC_TransferHeights:
         //if (line->arg2) print("transferheights: flags=0x%02x", line->arg2);
         MakeHeightSec(InLevel, line);
+        line->special = 0;
+        break;
+      case LNSPEC_EDGEWater404:
+        //if (line->arg2) print("transferheights: flags=0x%02x", line->arg2);
+        MakeEDGEWater(InLevel, line);
         line->special = 0;
         break;
       case LNSPEC_StaticInit:

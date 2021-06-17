@@ -262,6 +262,8 @@ static final string LineSpecial2Str (int special) {
 
     case LNSPEC_SectorSetFloorGlow: return "SectorSetFloorGlow";
     case LNSPEC_SectorSetCeilingGlow: return "SectorSetCeilingGlow";
+
+    case LNSPEC_EDGEWater404: return "EDGEWater404";
   }
   return va("lsp#%d", special);
 }

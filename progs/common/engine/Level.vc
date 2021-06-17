@@ -310,7 +310,8 @@ native final void SwapPlanes (sector_t *s);
 
 native final void SetFloorLightSector (sector_t *Sector, sector_t *SrcSector);
 native final void SetCeilingLightSector (sector_t *Sector, sector_t *SrcSector);
-native final void SetHeightSector (sector_t *Sector, sector_t *SrcSector, int Flags);
+// returns `false` if failed to set
+native final bool SetHeightSector (sector_t *Sector, sector_t *SrcSector);
 
 // returns `-1` on end
 native final int FindSectorFromTag (out sector_t *Sector, int tag, optional int start);
