@@ -29,25 +29,27 @@
 
 class VLanguage {
 private:
-  struct VLangEntry;
+  struct VLangEntry {
+    vint32 PassNum;
+    VStr Value;
+  };
 
-  TMap<VName, VLangEntry> *table;
+  TMap<VName, VLangEntry> table;
 
   void FreeNonDehackedStrings ();
   void ParseLanguageScript (vint32 Lump, const char *InCode, bool ExactMatch, vint32 PassNum);
   VStr HandleEscapes (VStr Src);
 
 public:
-  VLanguage ();
-  ~VLanguage ();
+  VLanguage () noexcept;
+  ~VLanguage () noexcept;
 
-  void FreeData ();
   void LoadStrings (const char *LangId);
 
-  VStr Find (VName, bool *found=nullptr) const;
+  VStr Find (VName Key, bool *found=nullptr) const;
   VStr Find (const char *s, bool *found=nullptr) const;
 
-  VStr operator [] (VName) const;
+  VStr operator [] (VName Key) const;
   VStr operator [] (const char *s) const;
   VStr operator [] (const VStr &s) const;
 
@@ -57,8 +59,8 @@ public:
   bool HasTranslation (VName s) const;
   bool HasTranslation (const char *s) const;
 
-  VName GetStringId (VStr);
-  VName GetStringIdCI (VStr);
+  VName GetStringId (VStr Str);
+  VName GetStringIdCI (VStr Str);
   void ReplaceString (VName, VStr);
 };
 

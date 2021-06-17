@@ -28,13 +28,6 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-struct VLanguage::VLangEntry {
-  vint32 PassNum;
-  VStr Value;
-};
-
-
-// ////////////////////////////////////////////////////////////////////////// //
 VLanguage GLanguage;
 
 
@@ -43,7 +36,7 @@ VLanguage GLanguage;
 //  VLanguage::VLanguage
 //
 //==========================================================================
-VLanguage::VLanguage () : table(nullptr) {
+VLanguage::VLanguage () noexcept {
 }
 
 
@@ -52,19 +45,7 @@ VLanguage::VLanguage () : table(nullptr) {
 //  VLanguage::~VLanguage
 //
 //==========================================================================
-VLanguage::~VLanguage () {
-  FreeData();
-}
-
-
-//==========================================================================
-//
-//  VLanguage::FreeData
-//
-//==========================================================================
-void VLanguage::FreeData () {
-  delete table;
-  table = nullptr;
+VLanguage::~VLanguage () noexcept {
 }
 
 
@@ -74,9 +55,9 @@ void VLanguage::FreeData () {
 //
 //==========================================================================
 void VLanguage::FreeNonDehackedStrings () {
-  if (!table) return;
-  for (auto it = table->first(); it; ++it) {
-    if (it.getValue().PassNum != 0) it.removeCurrent();
+  auto it = table.first();
+  while (it) {
+    if (it.getValue().PassNum != 0) it.removeCurrent(); else ++it;
   }
 }
 
@@ -87,10 +68,7 @@ void VLanguage::FreeNonDehackedStrings () {
 //
 //==========================================================================
 void VLanguage::LoadStrings (const char *LangId) {
-  if (!table) table = new TMap<VName, VLangEntry>();
-
   FreeNonDehackedStrings();
-
   for (auto &&it : WadNSNameIterator(NAME_language, WADNS_Global)) {
     const int Lump = it.lump;
     int j = 1;
@@ -110,12 +88,10 @@ void VLanguage::LoadStrings (const char *LangId) {
 //
 //==========================================================================
 void VLanguage::ParseLanguageScript (vint32 Lump, const char *InCode, bool ExactMatch, vint32 PassNum) {
-  //fprintf(stderr, "LANG: <%s>\n", *W_LumpName(Lump));
-
   char Code[4];
   Code[0] = VStr::ToLower(InCode[0]);
-  Code[1] = VStr::ToLower(InCode[1]);
-  Code[2] = (ExactMatch ? VStr::ToLower(InCode[2]) : 0);
+  Code[1] = VStr::ToLower(InCode[0] ? InCode[1] : 0);
+  Code[2] = (ExactMatch && InCode[0] && InCode[1] ? VStr::ToLower(InCode[2]) : 0);
   Code[3] = 0;
 
   VScriptParser *sc = new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
@@ -221,19 +197,18 @@ void VLanguage::ParseLanguageScript (vint32 Lump, const char *InCode, bool Exact
       }
 
       // check for replacement
-      VLangEntry *Found = table->Find(Key);
+      VLangEntry *Found = table.Find(Key);
       if (!Found || Found->PassNum >= PassNum) {
         VLangEntry Entry;
         Entry.Value = Value;
         Entry.PassNum = PassNum;
-        table->Set(Key, Entry);
-        //fprintf(stderr, "  LNG<%s>=<%s>\n", *Key, *Value);
+        table.Set(Key, Entry);
         //GCon->Logf(NAME_Dev, "  [%s]=[%s]", *VStr(Key).quote(), *Value.quote());
       }
     }
   }
+
   delete sc;
-  sc = nullptr;
 }
 
 
@@ -274,7 +249,7 @@ VStr VLanguage::Find (VName Key, bool *found) const {
     if (found) *found = true;
     return VStr();
   }
-  VLangEntry *Found = table->Find(Key);
+  const VLangEntry *Found = table.Find(Key);
   if (Found) {
     if (found) *found = true;
     return Found->Value;
@@ -285,7 +260,7 @@ VStr VLanguage::Find (VName Key, bool *found) const {
       // found uppercase letter, try lowercase name
       VName loname = VName(*Key, VName::FindLower);
       if (loname != NAME_None) {
-        Found = table->Find(loname);
+        Found = table.Find(loname);
         if (Found) {
           if (found) *found = true;
           return Found->Value;
@@ -312,7 +287,7 @@ VStr VLanguage::Find (const char *s, bool *found) const {
   }
   VName loname = VName(s, VName::FindLower);
   if (loname != NAME_None) {
-    VLangEntry *Found = table->Find(loname);
+    const VLangEntry *Found = table.Find(loname);
     if (Found) {
       if (found) *found = true;
       return Found->Value;
@@ -395,8 +370,7 @@ bool VLanguage::HasTranslation (const char *s) const {
 //
 //==========================================================================
 VName VLanguage::GetStringId (VStr Str) {
-  if (!table) return NAME_None;
-  for (auto it = table->first(); it; ++it) {
+  for (auto it = table.first(); it; ++it) {
     if (it.getValue().Value == Str) return it.GetKey();
   }
   return NAME_None;
@@ -409,8 +383,7 @@ VName VLanguage::GetStringId (VStr Str) {
 //
 //==========================================================================
 VName VLanguage::GetStringIdCI (VStr Str) {
-  if (!table) return NAME_None;
-  for (auto it = table->first(); it; ++it) {
+  for (auto it = table.first(); it; ++it) {
     if (it.getValue().Value.strEquCI(Str)) return it.GetKey();
   }
   return NAME_None;
@@ -426,5 +399,5 @@ void VLanguage::ReplaceString (VName Key, VStr Value) {
   VLangEntry Entry;
   Entry.Value = Value;
   Entry.PassNum = 0;
-  table->Set(Key, Entry);
+  table.Set(Key, Entry);
 }
