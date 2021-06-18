@@ -1175,10 +1175,11 @@ IMPLEMENT_FUNCTION(VLevel, ChangeOneSectorInternal) {
 }
 
 IMPLEMENT_FUNCTION(VLevel, AddExtraFloor) {
-  P_GET_PTR(sector_t, dst);
-  P_GET_PTR(line_t, line);
-  P_GET_SELF;
-  Self->AddExtraFloor(line, dst);
+  line_t *line;
+  sector_t *dst;
+  bool isEDGE;
+  vobjGetParamSelf(line, dst, isEDGE);
+  if (dst && line && line->frontsector) Self->AddExtraFloor(line, dst, isEDGE);
 }
 
 IMPLEMENT_FUNCTION(VLevel, SwapPlanes) {

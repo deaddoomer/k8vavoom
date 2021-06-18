@@ -597,7 +597,9 @@ enum {
   LNSPEC_SectorSetFloorGlow = 277,
   LNSPEC_SectorSetCeilingGlow = 278,
 
+  // special EDGE actions
   LNSPEC_EDGEWater = 100_600,
+  LNSPEC_SectorSet3dThinFloorEDGE,
 };
 
 

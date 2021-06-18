@@ -665,6 +665,7 @@ void InitTranslationTables () {
   Set3DFloorTrans(305, 3, 2, -666);
   Set3DFloorTrans(306, 1, -666, -666);
   Set3DFloorTrans(332, 4, -666, -666);
+
   // 3DGE
   /*
     [400] : EDGE Thick Extrafloor
@@ -705,25 +706,38 @@ void InitTranslationTables () {
     [416] : EDGE Thin Extrafloor (40% Translucent)
     [417] : EDGE Thin Extrafloor (20% Translucent)
 */
-
-  Set3DFloorTrans(413, 1, 8, 255);
-  Set3DFloorTrans(414, 1, 8, 204);
-  Set3DFloorTrans(415, 1, 8, 153);
-  Set3DFloorTrans(416, 1, 8, 102);
-  Set3DFloorTrans(417, 1, 8, 51);
+  Set3DFloorTrans(413, 1, 8, 255, edge:true);
+  Set3DFloorTrans(414, 1, 8, 204, edge:true);
+  Set3DFloorTrans(415, 1, 8, 153, edge:true);
+  Set3DFloorTrans(416, 1, 8, 102, edge:true);
+  Set3DFloorTrans(417, 1, 8, 51, edge:true);
 
   // EDGE mirrors
+/*
+    [462] : EDGE Mirror (Plain)
+    [463] : EDGE Mirror (White)
+    [464] : EDGE Mirror (Blue)
+    [465] : EDGE Mirror (Red)
+    [466] : EDGE Mirror (Green)
+*/
   SetLineTrans(462, LNSPEC_LineMirror, -666, -666, -666, -666, -666, 0/*SPAC_Cross*/, false);
   SetLineTrans(463, LNSPEC_LineMirror, -666, -666, -666, -666, -666, 0/*SPAC_Cross*/, false);
+  SetLineTrans(464, LNSPEC_LineMirror, -666, -666, -666, -666, -666, 0/*SPAC_Cross*/, false);
+  SetLineTrans(465, LNSPEC_LineMirror, -666, -666, -666, -666, -666, 0/*SPAC_Cross*/, false);
+  SetLineTrans(466, LNSPEC_LineMirror, -666, -666, -666, -666, -666, 0/*SPAC_Cross*/, false);
 
   // EDGE slopes
+/*
+    [567] : EDGE Detail Slope - FLOOR
+    [568] : EDGE Detail Slope - CEILING
+    [569] : EDGE Detail Slope - FLOOR+CEILING
+*/
   SetLineTrans(567, LNSPEC_PlaneAlign, 1, 0, 0, 0, 0, 0/*SPAC_Cross*/, false);
   SetLineTrans(568, LNSPEC_PlaneAlign, 0, 1, 0, 0, 0, 0/*SPAC_Cross*/, false);
   SetLineTrans(569, LNSPEC_PlaneAlign, 1, 1, 0, 0, 0, 0/*SPAC_Cross*/, false);
 
 
 /* EDGE specials -- http://3dfxdev.net/edgewiki/index.php?title=Line_Types
-
 Thin Sliding Doors
     [442] : EDGE Sliding door (LEFT), DR + MONSTERS
     [443] : EDGE Sliding door (LEFT), DR
@@ -752,13 +766,6 @@ Ladders
     [478] : EDGE Ladder, 768 units high
     [479] : EDGE Ladder, no limit
 
-Mirrors
-    [462] : EDGE Mirror (Plain)
-    [463] : EDGE Mirror (White)
-    [464] : EDGE Mirror (Blue)
-    [465] : EDGE Mirror (Red)
-    [466] : EDGE Mirror (Green)
-
 Portals
     [480] : EDGE Portal (Dark 50%)
     [481] : EDGE Portal (Light 30%)
@@ -771,11 +778,6 @@ Portals
     [487] : EDGE Camera Portal (Cyan)
     [488] : EDGE Camera Portal (Rusty)
     [489] : EDGE Camera Portal (Green)
-
-Slopes
-    [567] : EDGE Detail Slope - FLOOR
-    [568] : EDGE Detail Slope - CEILING
-    [569] : EDGE Detail Slope - FLOOR+CEILING
 
 HUB Exits - WR
     [501] : Hub Exit to MAP01 / E1M1
@@ -892,10 +894,12 @@ GR  Gun-shot, repeatable
 //
 //  Set3DFloorTrans
 //
+//  arg5 is used for EDGE "thin floors"
+//
 //==========================================================================
-void Set3DFloorTrans (int oldspecial, int arg2, int arg3, int arg4) {
+void Set3DFloorTrans (int oldspecial, int arg2, int arg3, int arg4, optional bool edge) {
   spec_trans_t trs;
-  trs.special = LNSPEC_SectorSet3dFloor;
+  trs.special = (edge ? LNSPEC_SectorSet3dThinFloorEDGE : LNSPEC_SectorSet3dFloor);
   trs.arg2 = arg2;
   trs.arg3 = arg3;
   trs.arg4 = arg4;

@@ -304,7 +304,8 @@ native final bool ChangeSector (sector_t *sector, int crunch);
 // doesn't move things (so you *HAVE* to restore sector heights)
 native final void ChangeOneSectorInternal (sector_t *sector);
 // this is used to create ROR and various 3d structures
-native final void AddExtraFloor (line_t *line, sector_t *dst);
+// currently, `isEDGEThin` is purely for information, VC line translator forces sector height
+native final void AddExtraFloor (line_t *line, sector_t *dst, bool isEDGEThin);
 // swap sector's floor and ceiling, it's used by level converter to support EDGE and Legacy 3D floors
 native final void SwapPlanes (sector_t *s);
 
