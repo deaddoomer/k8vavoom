@@ -426,18 +426,16 @@ void TranslateLine (VLevel InLevel, line_t *line) {
 //
 //==========================================================================
 void TranslateSector (sector_t *sector) {
-  int special;
-  int high;
-
-  special = sector->special;
+  int special = sector->special;
   if (!special) return;
+
   if (special == 9) {
     sector->special = SECSPEC_SECRET_MASK;
     return;
   }
 
   // this supports phased lighting with specials 21-24 and wind specials 40-51
-  high = (special&0xfe0)<<3;
+  int high = (special&0xfe0)<<3;
   special &= 0x01f;
        if (special < 21) sector->special = high|(special+64);
   else if (special < 40) sector->special = high|(special-20);

@@ -159,10 +159,7 @@ void TranslateLine (VLevel InLevel, line_t *line) {
 //
 //==========================================================================
 void TranslateSector (sector_t *sector) {
-  int special;
-  int high;
-
-  special = sector->special;
+  int special = sector->special;
   if (!special) return;
 
   if (special == 9) {
@@ -170,7 +167,7 @@ void TranslateSector (sector_t *sector) {
     return;
   }
 
-  high = (special&0xfc0)<<3;
+  int high = (special&0xfc0)<<3;
   special &= 0x3f;
        if (special == 5) sector->special = high|SECSPEC_DamageLavaWimpy;
   else if (special == 6) sector->special = high|SECSPEC_DamageSludge;
