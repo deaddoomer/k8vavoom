@@ -471,6 +471,12 @@ IMPLEMENT_FREE_FUNCTION(VObject, W_LumpName) {
   RET_NAME(W_LumpName(lump));
 }
 
+// native static final string W_RealLumpName (int lump);
+IMPLEMENT_FREE_FUNCTION(VObject, W_RealLumpName) {
+  P_GET_INT(lump);
+  RET_STR(W_RealLumpName(lump));
+}
+
 // native static final string W_FullLumpName (int lump);
 IMPLEMENT_FREE_FUNCTION(VObject, W_FullLumpName) {
   P_GET_INT(lump);

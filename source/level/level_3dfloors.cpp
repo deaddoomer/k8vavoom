@@ -59,7 +59,7 @@ static VVA_OKUNUSED const char *getTexName (int txid) {
 //  k8vavoom
 //
 //==========================================================================
-void VLevel::AddExtraFloorSane (line_t *line, sector_t *dst, bool isEDGEThin) {
+void VLevel::AddExtraFloorSane (line_t *line, sector_t *dst) {
   const bool doDump = (cli_WAll || cli_WFloors3D || cli_WVavoom3D);
 
   sector_t *src = line->frontsector;
@@ -109,7 +109,7 @@ void VLevel::AddExtraFloorSane (line_t *line, sector_t *dst, bool isEDGEThin) {
 //  gozzo
 //
 //==========================================================================
-void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst, bool isEDGEThin) {
+void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst) {
   enum {
     Invalid,
     Solid,
@@ -211,6 +211,6 @@ void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst, bool isEDGEThin) 
 //  can return `nullptr`
 //
 //==========================================================================
-void VLevel::AddExtraFloor (line_t *line, sector_t *dst, bool isEDGEThin) {
-  return (line->arg2 == 0 ? AddExtraFloorSane(line, dst, isEDGEThin) : AddExtraFloorShitty(line, dst, isEDGEThin));
+void VLevel::AddExtraFloor (line_t *line, sector_t *dst) {
+  return (line->arg2 == 0 ? AddExtraFloorSane(line, dst) : AddExtraFloorShitty(line, dst));
 }

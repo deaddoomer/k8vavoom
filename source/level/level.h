@@ -953,7 +953,7 @@ public:
 
   void FixKnownMapErrors ();
 
-  void AddExtraFloor (line_t *line, sector_t *dst, bool isEDGEThin);
+  void AddExtraFloor (line_t *line, sector_t *dst);
 
   void CalcLine (line_t *line); // this calls `CalcLineCDPlanes()`
   void CalcLineCDPlanes (line_t *line);
@@ -965,8 +965,8 @@ public:
   vuint32 CalcEntityLight (VEntity *lowner, unsigned flags);
 
 private:
-  void AddExtraFloorSane (line_t *line, sector_t *dst, bool isEDGEThin); // k8vavoom
-  void AddExtraFloorShitty (line_t *line, sector_t *dst, bool isEDGEThin); // gozzo
+  void AddExtraFloorSane (line_t *line, sector_t *dst); // k8vavoom
+  void AddExtraFloorShitty (line_t *line, sector_t *dst); // gozzo
 
   void RegisterPolyObj (int poidx) noexcept; // NOT a tag!
 

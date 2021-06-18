@@ -722,8 +722,9 @@ native static final int W_IterateFile (int Prev, string Name);
 //WARNING! UNSAFE!
 // only use lump number from iterator here!
 native static final int W_LumpLength (int lump);
-native static final name W_LumpName (int lump);
-native static final string W_FullLumpName (int lump);
+native static final name W_LumpName (int lump); // max 8 chars
+native static final string W_RealLumpName (int lump); // full name with path, but without archive name
+native static final string W_FullLumpName (int lump); // full name with path, and with archive name
 native static final int W_LumpFile (int lump);
 
 native static final bool W_IsIWADLump (int lump);

@@ -1,0 +1,4831 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  1 = {
+    action = DoorRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  2 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  3 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  4 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  5 = {
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  6 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  7 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  8 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  9 = {
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  10 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  11 = {
+    action = ExitNormal;
+    arg1 = /*-1*/0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+ // -1 is bug
+  12 = {
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  13 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  14 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  15 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  16 = {
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  17 = {
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  18 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  19 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  20 = {
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  21 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  22 = {
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  23 = {
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  24 = {
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  25 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  26 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  27 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  28 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  29 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  30 = {
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  31 = {
+    action = DoorOpen;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  32 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  33 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  34 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  35 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  36 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  37 = {
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  38 = {
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  39 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+
+  40 = {
+    action = CeilingGeneric;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 8;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  41 = {
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  42 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  43 = {
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  44 = {
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  45 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  46 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  47 = {
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  48 = {
+    action = ScrollTextureLeft;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  49 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  50 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // -1 is bug
+  51 = {
+    action = ExitSecret;
+    arg1 = /*-1*/0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // -1 is bug
+  52 = {
+    action = ExitNormal;
+    arg1 = /*-1*/0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  53 = {
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  54 = {
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  55 = {
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  56 = {
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  57 = {
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  58 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  59 = {
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  60 = {
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  61 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  62 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  63 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  64 = {
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  65 = {
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  66 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  67 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  68 = {
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  69 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  70 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  71 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  72 = {
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  73 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  74 = {
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  75 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  76 = {
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  77 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  78 = {
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  79 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  80 = {
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  81 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  82 = {
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  83 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  84 = {
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  85 = {
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  86 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  87 = {
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  88 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  89 = {
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  90 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  91 = {
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  92 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  93 = {
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  94 = {
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  95 = {
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  96 = {
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  97 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  98 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  99 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  100 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  101 = {
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  102 = {
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  103 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  104 = {
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  105 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  106 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  107 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  108 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  109 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  110 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  111 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  112 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  113 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  114 = {
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  115 = {
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  116 = {
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  117 = {
+    action = DoorRaise;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  118 = {
+    action = DoorOpen;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  119 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  120 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  121 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  122 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  123 = {
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // -1 is bug
+  124 = {
+    action = ExitSecret;
+    arg1 = /*-1*/0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  125 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  126 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  127 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  128 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  129 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  130 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  131 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  132 = {
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  133 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  134 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  135 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  136 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  137 = {
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  138 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  139 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  140 = {
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  141 = {
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  142 = {
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  143 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  144 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  145 = {
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  146 = {
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  147 = {
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  148 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  149 = {
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  150 = {
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  151 = {
+    action = FloorAndCeilingLowerRaise;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  152 = {
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  153 = {
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  154 = {
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  155 = {
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  156 = {
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  157 = {
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  158 = {
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  159 = {
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  160 = {
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  161 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  162 = {
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  163 = {
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  164 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  165 = {
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //k8: gozzo says this
+  166 = {
+    action = FloorAndCeilingLowerRaise; // CeilingGeneric
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 1998; // 1
+    arg5 = 0; // 8
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  167 = {
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  168 = {
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  169 = {
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  170 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  171 = {
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  172 = {
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  173 = {
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  174 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  175 = {
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  176 = {
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  177 = {
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  178 = {
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  179 = {
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  180 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  181 = {
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  182 = {
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  183 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  184 = {
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  185 = {
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //k8: gozzo says this
+  186 = {
+    action = FloorAndCeilingLowerRaise; // CeilingGeneric
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 1998; // 1
+    arg5 = 0; // 8
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  187 = {
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  188 = {
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  189 = {
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  190 = {
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  191 = {
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  192 = {
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  193 = {
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  194 = {
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  195 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  196 = {
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  197 = {
+    action = ExitNormal;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  198 = {
+    action = ExitSecret;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  199 = {
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  200 = {
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  201 = {
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  202 = {
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  203 = {
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  204 = {
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  205 = {
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  206 = {
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  207 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  208 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  209 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+
+  210 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  211 = {
+    action = PlatToggle;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  212 = {
+    action = PlatToggle;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  213 = {
+    action = TransferFloorLight;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  214 = {
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  215 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  216 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  217 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  218 = {
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  219 = {
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  220 = {
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  221 = {
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  222 = {
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  223 = {
+    action = SectorSetFriction;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  224 = {
+    action = SectorSetWind;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  225 = {
+    action = SectorSetCurrent;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  226 = {
+    action = PointPushSetForce;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  227 = {
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  228 = {
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  229 = {
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  230 = {
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  231 = {
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  232 = {
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  233 = {
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  234 = {
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  235 = {
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  236 = {
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  237 = {
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  238 = {
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  239 = {
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  240 = {
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  241 = {
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  242 = {
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  243 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  244 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  245 = {
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  246 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  247 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  248 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  249 = {
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  250 = {
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  251 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  252 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  253 = {
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  254 = {
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  255 = {
+    action = ScrollTextureOffsets;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  256 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  257 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  258 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  259 = {
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // was 128, changed to better reflect BOOM default
+  260 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 168;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  261 = {
+    action = TransferCeilingLight;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  262 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  263 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  264 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  265 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  266 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  267 = {
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  268 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  269 = {
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  // Doom Legacy
+  // 270: fraggle script
+  //TODO: transfer sky is not fully implemented yet
+
+  // transfer sky (MBF?)
+  271 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // transfer sky (MBF?)
+  272 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 273..279: fraggle script
+
+  // clip fake planes, underwater
+  280 = {
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 281 is processed in 3d floor section
+
+  // light/fog color
+  282 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // no 283
+
+  284 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 128;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  285 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 192;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  286 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 48;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // additive
+  287 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 128;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  288 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 289 is processed in 3d floor section
+
+  // Doom Legacy water (processed below)
+  //SetLineTrans(301, SectorSet3dFloor, -1, 255, 1, 0, 0, Cross, false); // StaticInit
+
+  333 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // gravity
+  334 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // color
+  335 = {
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // damage
+  336 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  337 = {
+    action = LineHorizon;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  338 = {
+    action = FloorWaggle;
+    arg1 = origarg1;
+    arg2 = 24;
+    arg3 = 32;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  339 = {
+    action = FloorWaggle;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 32;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  340 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  341 = {
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  342 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  343 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  344 = {
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  345 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  346 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  347 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //348 = WALK, Autosave()
+  //349 = USE, Autosave()
+
+  // ZDoom line types
+  //TODO: not fully implemented yet
+  350 = {
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // just fake the floor
+  351 = {
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // just fake the floor and clip it too
+  //352 = 0, Sector_CopyScroller(tag, 1)  // copy ceiling scroller
+  //353 = 0, Sector_CopyScroller(tag, 2)  // copy floor scroller
+  //354 = 0, Sector_CopyScroller(tag, 6)  // copy carrying floor scroller
+
+  // eternity
+  386 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  387 = {
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  388 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  389 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  390 = {
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  391 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  392 = {
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  393 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //EDGE plane-copy
+  394 = { // Slope_FrontFloorToTaggedSlope
+    action = PlaneCopy;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
+  395 = { // Slope_FrontCeilingToTaggedSlope
+    action = PlaneCopy;
+    arg2 = origarg1;
+    arg1 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
+  396 = { // Slope_FrontFloorAndCeilingToTaggedSlope
+    action = PlaneCopy;
+    arg2 = unchanged;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
+  // 3DGE
+  /*
+    [409] : EDGE Translucent Linedef (80%)
+    [410] : EDGE Translucent Linedef (60%)
+    [411] : EDGE Translucent Linedef (40%)
+    [412] : EDGE Translucent Linedef (20%)
+  */
+  // 80%
+  409 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 204;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 60%
+  410 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 153;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 40%
+  411 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 101;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 20%
+  412 = {
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 50;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  /*
+    [422] : EDGE SCROLL RIGHT
+    [423] : EDGE SCROLL UP
+    [424] : EDGE SCROLL DOWN
+    [425] : EDGE SCROLL LEFT AND UP
+    [426] : EDGE SCROLL LEFT AND DOWN
+    [427] : EDGE SCROLL RIGHT AND UP
+    [428] : EDGE SCROLL RIGHT AND DOWN
+    [429] : EDGE SCROLL FAST LOWER AND MIDDLE TEXTURE (WATERFALLS) (not implemented yet)
+  */
+  422 = {
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  423 = {
+    action = ScrollTextureUp;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  424 = {
+    action = ScrollTextureDown;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  425 = {
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  426 = {
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  427 = {
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  428 = {
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  /*
+    [434] : EDGE S1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [435] : EDGE SR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [436] : EDGE W1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [437] : EDGE WR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [438] : EDGE G1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+    [439] : EDGE GR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
+  */
+  // k8: i'm not sure if SPAC flags are right here
+  434 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // repeated
+  435 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  436 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // repeated
+  437 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  438 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // repeated
+  439 = {
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // 3d floors
+  // https://zdoom.org/wiki/Sector_Set3dFloor
+  281 = {
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  289 = {
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  //
+  300 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  301 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  // not properly implemented yet
+  302 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 6;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+  303 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  304 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  305 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 2;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  306 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  332 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 4;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+
+  // 3DGE
+  /*
+    [400] : EDGE Thick Extrafloor
+    [401] : EDGE Thick Extrafloor (use upper texture)
+    [402] : EDGE Thick Extrafloor (use lower texture)
+  */
+  400 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  401 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 16;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  402 = {
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 32;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+
+  /*
+    [403] : EDGE Liquid Extrafloor (Opaque)
+    [404] : EDGE Liquid Extrafloor (80% Translucent)
+    [405] : EDGE Liquid Extrafloor (60% Translucent)
+    [406] : EDGE Liquid Extrafloor (40% Translucent)
+    [407] : EDGE Liquid Extrafloor (20% Translucent)
+    [408] : EDGE Liquid Extrafloor (Invisible)
+  */
+  403 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 100;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  404 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 80;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  405 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 70; //60+10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  406 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 60; //40+20;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  407 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 50; //20+30;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  408 = {
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  /* old and wrong
+  Set3DFloorTrans(403, 2, 2, 255);
+  Set3DFloorTrans(404, 2, 2, 204);
+  Set3DFloorTrans(405, 2, 2, 153);
+  Set3DFloorTrans(406, 2, 2, 102);
+  Set3DFloorTrans(407, 2, 2, 51);
+  Set3DFloorTrans(408, 2, 2, -666);
+  */
+
+  /*
+    [413] : EDGE Thin Extrafloor (Opaque)
+    [414] : EDGE Thin Extrafloor (80% Translucent)
+    [415] : EDGE Thin Extrafloor (60% Translucent)
+    [416] : EDGE Thin Extrafloor (40% Translucent)
+    [417] : EDGE Thin Extrafloor (20% Translucent)
+  */
+  413 = {
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  414 = {
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 204;
+    arg5 = unchanged;
+  }
+
+  415 = {
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 153;
+    arg5 = unchanged;
+  }
+
+  416 = {
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 102;
+    arg5 = unchanged;
+  }
+
+  417 = {
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 51;
+    arg5 = unchanged;
+  }
+
+  // EDGE mirrors
+  /*
+    [462] : EDGE Mirror (Plain)
+    [463] : EDGE Mirror (White)
+    [464] : EDGE Mirror (Blue)
+    [465] : EDGE Mirror (Red)
+    [466] : EDGE Mirror (Green)
+  */
+  462 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  463 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  464 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  465 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  466 = {
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // EDGE slopes
+  /*
+    [567] : EDGE Detail Slope - FLOOR
+    [568] : EDGE Detail Slope - CEILING
+    [569] : EDGE Detail Slope - FLOOR+CEILING
+  */
+  567 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  568 = {
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  569 = {
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+}
+
+
+/* other EDGE specials -- http://3dfxdev.net/edgewiki/index.php?title=Line_Types
+Thin Sliding Doors
+    [442] : EDGE Sliding door (LEFT), DR + MONSTERS
+    [443] : EDGE Sliding door (LEFT), DR
+    [444] : EDGE Sliding door (LEFT), DR + FAST
+    [445] : EDGE Sliding door (LEFT), D1
+
+    [446] : EDGE Sliding door (RIGHT), DR + MONSTERS
+    [447] : EDGE Sliding door (RIGHT), DR
+    [448] : EDGE Sliding door (RIGHT), DR + FAST
+    [449] : EDGE Sliding door (RIGHT), D1
+
+    [450] : EDGE Sliding door (CENTER), DR + MONSTERS
+    [451] : EDGE Sliding door (CENTER), DR
+    [452] : EDGE Sliding door (CENTER), DR + FAST
+    [453] : EDGE Sliding door (CENTER), D1
+
+Ladders
+    [470] : EDGE Ladder, 48 units high
+    [471] : EDGE Ladder, 80 units high
+    [472] : EDGE Ladder, 120 units high
+    [473] : EDGE Ladder, 160 units high
+    [474] : EDGE Ladder, 192 units high
+    [475] : EDGE Ladder, 256 units high
+    [476] : EDGE Ladder, 384 units high
+    [477] : EDGE Ladder, 512 units high
+    [478] : EDGE Ladder, 768 units high
+    [479] : EDGE Ladder, no limit
+
+Portals
+    [480] : EDGE Portal (Dark 50%)
+    [481] : EDGE Portal (Light 30%)
+    [482] : EDGE Portal (Light 70%)
+    [483] : EDGE Portal (Blue 70%)
+    [484] : EDGE Portal (Green 70%)
+
+    [485] : EDGE Camera Portal (Plain)
+    [486] : EDGE Camera Portal (White)
+    [487] : EDGE Camera Portal (Cyan)
+    [488] : EDGE Camera Portal (Rusty)
+    [489] : EDGE Camera Portal (Green)
+
+HUB Exits - WR
+    [501] : Hub Exit to MAP01 / E1M1
+    [502] : Hub Exit to MAP02 / E1M2
+    [503] : Hub Exit to MAP03 / E1M3
+    [504] : Hub Exit to MAP04 / E1M4
+    [505] : Hub Exit to MAP05 / E1M5
+    [506] : Hub Exit to MAP06 / E1M6
+    [507] : Hub Exit to MAP07 / E1M7
+    [508] : Hub Exit to MAP08 / E1M8
+    [509] : Hub Exit to MAP09 / E1M9
+
+    [510] : Hub Exit to MAP10
+    [511] : Hub Exit to MAP11 / E2M1
+    [512] : Hub Exit to MAP12 / E2M2
+    [513] : Hub Exit to MAP13 / E2M3
+    [514] : Hub Exit to MAP14 / E2M4
+    [515] : Hub Exit to MAP15 / E2M5
+    [516] : Hub Exit to MAP16 / E2M6
+    [517] : Hub Exit to MAP17 / E2M7
+    [518] : Hub Exit to MAP18 / E2M8
+    [519] : Hub Exit to MAP19 / E2M9
+
+    [520] : Hub Exit to MAP20
+    [521] : Hub Exit to MAP21 / E3M1
+    [522] : Hub Exit to MAP22 / E3M2
+    [523] : Hub Exit to MAP23 / E3M3
+    [524] : Hub Exit to MAP24 / E3M4
+    [525] : Hub Exit to MAP25 / E3M5
+    [526] : Hub Exit to MAP26 / E3M6
+    [527] : Hub Exit to MAP27 / E3M7
+    [528] : Hub Exit to MAP28 / E3M8
+    [529] : Hub Exit to MAP29 / E3M9
+
+    [530] : Hub Exit to MAP30
+    [531] : Hub Exit to MAP31 / E4M1
+    [532] : Hub Exit to MAP32 / E4M2
+    [533] : Hub Exit to MAP33 / E4M3
+    [534] : Hub Exit to MAP34 / E4M4
+    [535] : Hub Exit to MAP35 / E4M5
+    [536] : Hub Exit to MAP36 / E4M6
+    [537] : Hub Exit to MAP37 / E4M7
+    [538] : Hub Exit to MAP38 / E4M8
+    [539] : Hub Exit to MAP39 / E4M9
+
+Locked Doors
+    [490] : EDGE Green Key DOOR - DR
+    [491] : EDGE Green Key DOOR - D1
+    [492] : EDGE Green Key DOOR - SR
+    [493] : EDGE Green Key DOOR - S1
+    [494] : EDGE Green Key BLAZING DOOR - D1
+
+    [580] : EDGE Gold Key DOOR - DR
+    [581] : EDGE Gold Key DOOR - D1
+    [582] : EDGE Gold Key DOOR - SR
+    [583] : EDGE Gold Key DOOR - S1
+
+    [584] : EDGE Silver Key DOOR - DR
+    [585] : EDGE Silver Key DOOR - D1
+    [586] : EDGE Silver Key DOOR - SR
+    [587] : EDGE Silver Key DOOR - S1
+
+    [588] : EDGE Brass Key DOOR - DR
+    [589] : EDGE Brass Key DOOR - D1
+    [590] : EDGE Copper Key DOOR - DR
+    [591] : EDGE Copper Key DOOR - D1
+    [592] : EDGE Steel Key DOOR - DR
+    [593] : EDGE Steel Key DOOR - D1
+
+    [594] : EDGE Wooden Key DOOR - DR
+    [595] : EDGE Wooden Key DOOR - D1
+    [596] : EDGE Fire Key DOOR - DR
+    [597] : EDGE Fire Key DOOR - D1
+    [598] : EDGE Water Key DOOR - DR
+    [599] : EDGE Water Key DOOR - D1
+
+Flat Alignment
+    [800] : Align and rotate front sector's FLOOR
+    [801] : Align and rotate back sector's FLOOR
+    [802] : Align and rotate front sector's CEILING
+    [803] : Align and rotate back sector's CEILING
+    [804] : Align and rotate front sector's FLOOR+CEILING
+    [805] : Align and rotate back sector's FLOOR+CEILING
+
+    [810] : Align, scale and rotate front sector's FLOOR
+    [811] : Align, scale and rotate back sector's FLOOR
+    [812] : Align, scale and rotate front sector's CEILING
+    [813] : Align, scale and rotate back sector's CEILING
+    [814] : Align, scale and rotate front sector's FLOOR+CEILING
+    [815] : Align, scale and rotate back sector's FLOOR+CEILING
+
+    [820] : Scale front sector's FLOOR
+    [821] : Scale back sector's FLOOR
+    [822] : Scale front sector's CEILING
+    [823] : Scale back sector's CEILING
+    [824] : Scale front sector's FLOOR+CEILING
+    [825] : Scale back sector's FLOOR+CEILING
+
+LEGEND
+TRIGGER   MEANING
+D1  Manual, once only
+DR  Manual, repeatable
+S1  Switched, once only
+SR  Switched, repeatable
+W1  Walk over, once only
+WR  Walk over, repeatable
+G1  Gun-shot, once only
+GR  Gun-shot, repeatable
+*/

@@ -1,0 +1,143 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+#ifdef VV_LDEF_USE_OLD_TRANSLATION_CODE
+//#define VV_DUMP_LDEF_TRANSLATION_TABLE
+
+
+#ifdef VV_DUMP_LDEF_TRANSLATION_TABLE
+//==========================================================================
+//
+//  PrintSpac
+//
+//==========================================================================
+static final void PrintSpac (int spac) {
+  if (!spac) { printdebug("    spac = None;"); return; }
+
+  string sps;
+  if (spac&SPAC_Cross) { spac &= ~SPAC_Cross; if (sps.length) sps ~= "|"; sps ~= "Cross"; }
+  if (spac&SPAC_Use) { spac &= ~SPAC_Use; if (sps.length) sps ~= "|"; sps ~= "Use"; }
+  if (spac&SPAC_MCross) { spac &= ~SPAC_MCross; if (sps.length) sps ~= "|"; sps ~= "MCross"; }
+  if (spac&SPAC_Impact) { spac &= ~SPAC_Impact; if (sps.length) sps ~= "|"; sps ~= "Impact"; }
+  if (spac&SPAC_Push) { spac &= ~SPAC_Push; if (sps.length) sps ~= "|"; sps ~= "Push"; }
+  if (spac&SPAC_PCross) { spac &= ~SPAC_PCross; if (sps.length) sps ~= "|"; sps ~= "PCross"; }
+  if (spac&SPAC_UseThrough) { spac &= ~SPAC_UseThrough; if (sps.length) sps ~= "|"; sps ~= "UseThrough"; }
+  if (spac&SPAC_AnyCross) { spac &= ~SPAC_AnyCross; if (sps.length) sps ~= "|"; sps ~= "AnyCross"; }
+  if (spac&SPAC_MUse) { spac &= ~SPAC_MUse; if (sps.length) sps ~= "|"; sps ~= "MUse"; }
+  if (spac&SPAC_MPush) { spac &= ~SPAC_MPush; if (sps.length) sps ~= "|"; sps ~= "MPush"; }
+  if (spac&SPAC_UseBack) { spac &= ~SPAC_UseBack; if (sps.length) sps ~= "|"; sps ~= "UseBack"; }
+  printdebug("    spac = %s;", sps);
+}
+
+
+//==========================================================================
+//
+//  PrintArgN
+//
+//==========================================================================
+static final void PrintArgN (int n, int v) {
+  if (v == -n || v == -666) return; // unchanged
+  if (v < 0) {
+    printdebug("    arg%d = origarg%d;", n, -v);
+  } else {
+    printdebug("    arg%d = %d;", n, v);
+  }
+}
+#endif
+
+
+//==========================================================================
+//
+//  Set3DFloorTrans
+//
+//==========================================================================
+void Set3DFloorTrans (int oldspecial, int arg2, int arg3, int arg4, optional bool edge) {
+  #ifdef VV_DUMP_LDEF_TRANSLATION_TABLE
+  printdebug("  %d = {", oldspecial);
+  printdebug("    action = %s;", (edge ? "SectorSet3dThinFloorEDGE" : "SectorSet3dFloor"));
+  PrintArgN(2, arg2);
+  PrintArgN(3, arg3);
+  PrintArgN(4, arg4);
+  printdebug("  }");
+  printdebug(" ");
+  #endif
+
+  spec_trans_t trs;
+  trs.special = (edge ? LNSPEC_SectorSet3dThinFloorEDGE : LNSPEC_SectorSet3dFloor);
+  trs.arg1 = -666;
+  trs.arg2 = arg2;
+  trs.arg3 = arg3;
+  trs.arg4 = arg4;
+  trs.arg5 = -666;
+  trs.spac = 0;
+  trs.repeat = false;
+  trs.monst = false;
+  trs.not_destroy = false;
+  spec_trans_tab.put(oldspecial, trs);
+  //trans_3d_floors.put(oldspecial, trs);
+}
+
+
+//==========================================================================
+//
+//  SetLineTrans
+//
+//==========================================================================
+void SetLineTrans (int oldspecial, int special, int arg1, int arg2, int arg3,
+  int arg4, int arg5, int spac, int repeat, optional int monst,
+  optional int not_destroy)
+{
+  #ifdef VV_DUMP_LDEF_TRANSLATION_TABLE
+  printdebug("  %d = {", oldspecial);
+  printdebug("    action = %s;", LineSpecial2Str(special));
+  PrintArgN(1, arg1);
+  PrintArgN(2, arg2);
+  PrintArgN(3, arg3);
+  PrintArgN(4, arg4);
+  PrintArgN(5, arg5);
+  PrintSpac(spac);
+  if (repeat) printdebug("    repeat = true;");
+  if (monst) printdebug("    monsteractivate = true;");
+  if (not_destroy) printdebug("    keepdata = true;");
+  printdebug("  }");
+  printdebug(" ");
+  #endif
+
+  spec_trans_t trs;
+  trs.special = special;
+  trs.arg1 = arg1;
+  trs.arg2 = arg2;
+  trs.arg3 = arg3;
+  trs.arg4 = arg4;
+  trs.arg5 = arg5;
+  trs.spac = spac;
+  trs.repeat = repeat;
+  trs.monst = monst;
+  trs.not_destroy = not_destroy;
+  spec_trans_tab.put(oldspecial, trs);
+}
+
+
+#endif

@@ -876,7 +876,7 @@ final void SpawnExtraFloors (VLevel InLevel, line_t *line, bool isEDGE) {
   int tag = line->arg1+(line->arg1&8 ? 0 : line->arg5);
   foreach (auto j; 0..InLevel.Sectors.length) {
     if (IsSectorTagEqual(&InLevel.Sectors[j], tag)) {
-      InLevel.AddExtraFloor(line, &InLevel.Sectors[j], isEDGE);
+      InLevel.AddExtraFloor(line, &InLevel.Sectors[j]);
     }
   }
 }
