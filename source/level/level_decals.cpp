@@ -30,16 +30,6 @@
 #endif
 
 
-//#define VAVOOM_DECALS_DEBUG_REPLACE_PICTURE
-//#define VAVOOM_DECALS_DEBUG
-
-#ifdef VAVOOM_DECALS_DEBUG
-# define VDC_DLOG  GCon->Logf
-#else
-# define VDC_DLOG(...)  do {} while (0)
-#endif
-
-
 extern VCvarB r_decals;
 extern VCvarB r_decals_flat;
 extern VCvarB r_decals_wall;

@@ -43,6 +43,7 @@ extern VCvarB r_decals_wall;
 TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 
 
+
 //==========================================================================
 //
 //  calcDecalSide
@@ -260,6 +261,9 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
   }
   #endif
 
+  // side 1 will have decals flipped, so flip them to make it look right
+  const unsigned xflipside = (side ? decal_t::FlipX : 0u);
+
   const TVec &v1 = *li->v1;
   const TVec &v2 = *li->v2;
   const float linelen = (v2-v1).length2D();
@@ -341,7 +345,7 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
             decal->orgz = decal->curz = orgz;
             decal->xdist = lineofs;
             // setup misc flags
-            decal->flags |= params.orflags|stvflag;
+            decal->flags |= (params.orflags|stvflag)^xflipside;
             decal->flags |= /*disabledTextures*/0u;
             // slide with 3d floor floor
             decal->slidesec = sec3d;
@@ -575,7 +579,7 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
       decal->orgz = decal->curz = orgz;
       decal->xdist = lineofs;
       // setup misc flags
-      decal->flags |= params.orflags|stvflag;
+      decal->flags |= (params.orflags|stvflag)^xflipside;
       decal->flags |= disabledTextures;
       decal->calculateBBox();
 
@@ -813,7 +817,7 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
   else dist = 0.0f;
 
   const float lineofs = dist*(v2-v1).length2D();
-  VDC_DLOG(NAME_Debug, "linelen=%g; dist=%g; lineofs=%g", (v2-v1).length2D(), dist, lineofs);
+  VDC_DLOG(NAME_Debug, "  linelen=%g; dist=%g; lineofs=%g; flip=0x%04x", (v2-v1).length2D(), dist, lineofs, (unsigned)(params.orflags&(decal_t::FlipX|decal_t::FlipY)));
 
   connectedLines.resetNoDtor();
   PutDecalAtLine(org, lineofs, dec, side, li, params, false); // don't skip mark check
