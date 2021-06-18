@@ -241,7 +241,6 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
       SetupTwoSidedSkyWSurf(sub, seg, sp, r_floor, r_ceiling);
     }
 
-    // bottom wall
     dseg->bot = SurfCreatorGetPSPart();
     sp = dseg->bot;
     sp->basereg = curreg;

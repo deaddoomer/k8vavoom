@@ -1052,6 +1052,8 @@ struct sector_t {
   };
   vuint32 SectorFlags;
 
+  inline bool IsUnderwater () const noexcept { return (SectorFlags&SF_UnderWater); }
+
   // 0 = untraversed, 1,2 = sndlines -1
   vint32 soundtraversed;
 

@@ -336,14 +336,14 @@ int VLevel::PointContents (sector_t *sector, const TVec &p, bool dbgDump) {
   if (!sector) return 0;
 
   //dbgDump = true;
-  if (sector->heightsec && (sector->heightsec->SectorFlags&sector_t::SF_UnderWater) &&
+  if (sector->heightsec && sector->heightsec->IsUnderwater() &&
       p.z <= sector->heightsec->floor.GetPointZClamped(p))
   {
     if (dbgDump) GCon->Log(NAME_Debug, "SVP: case 0");
     return CONTENTS_BOOMWATER;
   }
 
-  if (sector->SectorFlags&sector_t::SF_UnderWater) {
+  if (sector->IsUnderwater()) {
     if (dbgDump) GCon->Log(NAME_Debug, "SVP: case 1");
     return CONTENTS_BOOMWATER;
   }

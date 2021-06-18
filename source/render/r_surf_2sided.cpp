@@ -143,7 +143,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
 
     {
       const sector_t *hsec = seg->backsector->heightsec;
-      if (hsec) {
+      if (hsec && !hsec->IsUnderwater()) {
         //k8: why did i used `min2` here?
         back_topz1 = min2(back_topz1, hsec->ceiling.GetPointZ(*seg->v1));
         back_topz2 = min2(back_topz2, hsec->ceiling.GetPointZ(*seg->v2));
@@ -203,7 +203,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && !seg->backsector->heightsec->IsUnderwater()) {
       // do not create outer top texture surface if our fake ceiling is higher than the surrounding ceiling
       // otherwise, make sure that it is not lower than the fake ceiling (simc)
       const sector_t *bsec = seg->backsector;
@@ -291,7 +291,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     float botz2 = r_floor.GetPointZ(*seg->v2);
     {
       const sector_t *hsec = seg->frontsector->heightsec;
-      if (hsec) {
+      if (hsec && !hsec->IsUnderwater()) {
         botz1 = min2(botz1, hsec->floor.GetPointZ(*seg->v1));
         botz2 = min2(botz2, hsec->floor.GetPointZ(*seg->v2));
       }
@@ -304,7 +304,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     // same height fix as above
     {
       const sector_t *hsec = seg->backsector->heightsec;
-      if (hsec) {
+      if (hsec && !hsec->IsUnderwater()) {
         //const sector_t *fsec = seg->frontsector;
         //if (hsec->floor.minz > fsec->floor.minz) bfloor = &hsec->floor;
         //if (hsec->ceiling.minz < fsec->ceiling.minz) bceiling = &hsec->ceiling;
@@ -405,7 +405,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
     bool createSurf = true;
 
     //FIXME: this is totally wrong with slopes!
-    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec) {
+    if (hackflag != surface_t::TF_TOPHACK && seg->backsector->heightsec && !seg->backsector->heightsec->IsUnderwater()) {
       // do not create outer bottom texture surface if our fake floor is lower than the surrounding floor
       // otherwise, make sure that it is not higher than the fake floor (simc)
       const sector_t *bsec = seg->backsector;
@@ -483,7 +483,7 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
     const sec_plane_t *bfloor = back_floor;
     const sec_plane_t *bceiling = back_ceiling;
 
-    if (seg->backsector->heightsec) {
+    if (seg->backsector->heightsec && !seg->backsector->heightsec->IsUnderwater()) {
       const sector_t *bsec = seg->backsector;
       const sector_t *fsec = seg->frontsector;
       const sector_t *hsec = bsec->heightsec;
