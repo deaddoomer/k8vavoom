@@ -150,16 +150,6 @@ void TranslateLine (VLevel InLevel, line_t *line) {
   int OldSpec = line->special;
   auto trsp = FindLDefSpecTransForSpecial(InLevel, OldSpec);
   PerformLDefSpecialTranslation(InLevel, OldSpec, trsp, line);
-
-  // fix spac
-  if (trsp && !IsLDef3DFloorSpecial(trsp)) {
-    line->SpacFlags = trsp.spac;
-    if (trsp.repeat) line->flags |= ML_REPEAT_SPECIAL;
-    if (trsp.monst) line->flags |= ML_MONSTERSCANACTIVATE;
-    if ((line->flags&ML_SECRET) && (line->SpacFlags&(SPAC_Use|SPAC_UseThrough)) != 0) line->flags &= ~ML_MONSTERSCANACTIVATE;
-    // check to see if we want thinkers destroyed or not
-    if (trsp.not_destroy) line->flags |= ML_KEEPDATA;
-  }
 }
 
 

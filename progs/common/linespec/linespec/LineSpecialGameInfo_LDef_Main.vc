@@ -154,6 +154,13 @@ void PerformLDefSpecialTranslation (VLevel InLevel, int OldSpec, spec_trans_t *t
     line->flags &= ~(ML_REPEAT_SPECIAL|ML_MONSTERSCANACTIVATE|ML_KEEPDATA);
   } else {
     line->SpacFlags = trsp.spac;
+    // set some flags
+    if (trsp.repeat) line->flags |= ML_REPEAT_SPECIAL;
+    if (trsp.monst) line->flags |= ML_MONSTERSCANACTIVATE;
+    // monsters cannot activate secrets
+    if ((line->flags&ML_SECRET) && (line->SpacFlags&(SPAC_Use|SPAC_UseThrough)) != 0) line->flags &= ~ML_MONSTERSCANACTIVATE;
+    // check to see if we want thinkers destroyed or not
+    if (trsp.not_destroy) line->flags |= ML_KEEPDATA;
   }
 }
 
