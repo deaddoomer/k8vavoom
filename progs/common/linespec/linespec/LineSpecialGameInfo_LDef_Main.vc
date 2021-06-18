@@ -1,0 +1,171 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+//#define VV_LDEF_USE_OLD_TRANSLATION_CODE
+
+#include "LineSpecialGameInfo_LDef_Parse.vc"
+#include "LineSpecialGameInfo_LDef_OldCode.vc"
+
+
+struct spec_trans_t {
+  int special;
+  // values:
+  //     -1: original arg1
+  //     -2: original arg2
+  //     -3: original arg3
+  //     -4: original arg4
+  //     -5: original arg5
+  //   -666: unchanged
+  //   positive: set to this
+  int arg1;
+  int arg2;
+  int arg3;
+  int arg4;
+  int arg5;
+  int spac;
+  int repeat; // ML_REPEAT_SPECIAL
+  int monst; // ML_MONSTERSCANACTIVATE
+  int not_destroy; // ML_KEEPDATA (don't destroy thinkers)
+};
+
+dictionary!(int, spec_trans_t) spec_trans_tab;
+// arg1 is ignored
+// key is old special
+//dictionary!(int, spec_trans_t) trans_3d_floors;
+
+
+
+//==========================================================================
+//
+//  InitTranslationTables
+//
+//==========================================================================
+void InitTranslationTables () {
+  #include "LineSpecialGameInfo_LDef_OldTable.vc"
+  ParseLDefTranslationScripts();
+  printmsg(PMSG.Init, "%d linedef special translations found", spec_trans_tab.length);
+}
+
+
+//==========================================================================
+//
+//  GetOldLineSpecialArg
+//
+//==========================================================================
+static final int GetOldLineSpecialArg (int n, int newval, const line_t *line) {
+  assert(n >= 1 && n <= 5);
+  if (newval == -666) newval = -n;
+  if (newval >= 0) return newval;
+  newval = -newval;
+  assert(newval >= 1 && newval <= 5);
+  assert(line);
+  switch (newval) {
+    case 1: return line->arg1;
+    case 2: return line->arg2;
+    case 3: return line->arg3;
+    case 4: return line->arg4;
+    case 5: return line->arg5;
+  }
+  assert(0);
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  GetOldLineSpecialArg
+//
+//==========================================================================
+spec_trans_t *FindLDefSpecTransForSpecial (VLevel InLevel, int OldSpec) {
+  return spec_trans_tab.find(OldSpec);
+}
+
+
+//==========================================================================
+//
+//  PerformLDefSpecialTranslation
+//
+//==========================================================================
+void PerformLDefSpecialTranslation (VLevel InLevel, int OldSpec, spec_trans_t *trsp, line_t *line) {
+  if (!trsp) {
+    line->special = 0;
+    line->arg1 = 0;
+    line->arg2 = 0;
+    line->arg3 = 0;
+    line->arg4 = 0;
+    line->arg5 = 0;
+    line->SpacFlags = 0;
+    line->flags &= ~(ML_REPEAT_SPECIAL|ML_MONSTERSCANACTIVATE|ML_KEEPDATA);
+
+    printwarn("TRANSLATION: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
+    if (GetCvarB('trans_debug_log')) {
+      print("=================================================");
+      print("***TRANS: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
+      print("%s items in translation table", spec_trans_tab.length);
+      for (auto idx = spec_trans_tab.firstIndex(); spec_trans_tab.isValidIndex(idx); idx = spec_trans_tab.nextIndex(idx)) {
+        auto key = spec_trans_tab.keyAtIndex(idx); // pointer to key
+        auto val = spec_trans_tab.valueAtIndex(idx); // pointer to value
+        print("  idx=%s; key=%s; value.special=%s", idx, key, val.special);
+      }
+    }
+    return;
+  }
+
+  // special
+  line->special = trsp.special;
+  // args
+  int newarg1 = GetOldLineSpecialArg(1, trsp.arg1, line);
+  int newarg2 = GetOldLineSpecialArg(2, trsp.arg2, line);
+  int newarg3 = GetOldLineSpecialArg(3, trsp.arg3, line);
+  int newarg4 = GetOldLineSpecialArg(4, trsp.arg4, line);
+  int newarg5 = GetOldLineSpecialArg(5, trsp.arg5, line);
+
+  line->arg1 = newarg1;
+  line->arg2 = newarg2;
+  line->arg3 = newarg3;
+  line->arg4 = newarg4;
+  line->arg5 = newarg5;
+
+  if (IsLDef3DFloorSpecial(trsp)) {
+    // 3d floor
+    line->SpacFlags = 0;
+    line->flags &= ~(ML_REPEAT_SPECIAL|ML_MONSTERSCANACTIVATE|ML_KEEPDATA);
+  } else {
+    line->SpacFlags = trsp.spac;
+  }
+}
+
+
+//==========================================================================
+//
+//  IsLDef3DFloorSpecial
+//
+//==========================================================================
+bool IsLDef3DFloorSpecial (spec_trans_t *trsp) {
+  if (!trsp) return false;
+  return
+    trsp.special == LNSPEC_SectorSet3dThinFloorEDGE ||
+    trsp.special == LNSPEC_SectorSet3dFloor;
+}

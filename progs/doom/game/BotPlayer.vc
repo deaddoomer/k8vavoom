@@ -84,7 +84,7 @@ override bool BotAimSpecial (float dist, bool right, float an) {
 override bool AttackSpecial () {
   if (player.ReadyWeapon.Class == Chaingun) {
     // double tap the chaingun for extreme accuracy
-    if (info.accuracy == bsk_supreme) {
+    if (info.accuracy == LineSpecialGameInfo::bsk_supreme) {
       if (t_fire) return true;
     }
   }

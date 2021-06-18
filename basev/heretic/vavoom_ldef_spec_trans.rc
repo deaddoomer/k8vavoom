@@ -1,0 +1,1027 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  1 = {
+    action = DoorRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+  }
+
+  2 = {
+    action = DoorOpen;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  3 = {
+    action = DoorClose;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  4 = {
+    action = DoorRaise;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    monsteractivate = true;
+  }
+
+  5 = {
+    action = FloorRaiseToLowestCeiling;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  6 = {
+    action = CeilingCrushAndRaiseA;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  7 = {
+    action = StairsBuildUpDoom;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  8 = {
+    action = StairsBuildUpDoom;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  9 = {
+    action = FloorDonut;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  10 = {
+    action = PlatDownWaitUpStayLip;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    monsteractivate = true;
+  }
+
+  11 = {
+    action = ExitNormal;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  12 = {
+    action = LightMaxNeighbor;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  13 = {
+    action = LightChangeToValue;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  14 = {
+    action = FloorRaiseByValueChangeTex;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  15 = {
+    action = FloorRaiseByValueChangeTex;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  16 = {
+    action = DoorCloseWaitOpen;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  17 = {
+    action = LightStrobeDoom;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  18 = {
+    action = FloorRaiseToNearest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  19 = {
+    action = FloorLowerToHighest;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  20 = {
+    action = FloorRaiseToNearestChange;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    keepdata = true;
+  }
+
+  21 = {
+    action = PlatDownWaitUpStayLip;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  22 = {
+    action = FloorRaiseToNearestChange;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    keepdata = true;
+  }
+
+  23 = {
+    action = FloorLowerToLowest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  24 = {
+    action = FloorRaiseToLowestCeiling;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+  }
+
+  25 = {
+    action = CeilingCrushAndRaiseA;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  26 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 2;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  27 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 3;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  28 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  29 = {
+    action = DoorRaise;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  30 = {
+    action = FloorRaiseByTexture;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  31 = {
+    action = DoorOpen;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  32 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 2;
+    arg5 = 0;
+    spac = Use;
+    monsteractivate = true;
+  }
+
+  33 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Use;
+    monsteractivate = true;
+  }
+
+  34 = {
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 3;
+    arg5 = 0;
+    spac = Use;
+    monsteractivate = true;
+  }
+
+  35 = {
+    action = LightChangeToValue;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  36 = {
+    action = FloorLowerToHighest;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  37 = {
+    action = FloorLowerToLowestChange;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  38 = {
+    action = FloorLowerToLowest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  39 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    monsteractivate = true;
+  }
+
+  40 = {
+    action = CeilingGeneric;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 8;
+    spac = Cross;
+  }
+
+  41 = {
+    action = CeilingLowerToFloor;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  42 = {
+    action = DoorClose;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  43 = {
+    action = CeilingLowerToFloor;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  44 = {
+    action = CeilingLowerAndCrush;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  45 = {
+    action = FloorLowerToHighest;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  46 = {
+    action = DoorOpen;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = true;
+  }
+
+  47 = {
+    action = FloorRaiseToNearestChange;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    keepdata = true;
+  }
+
+  48 = {
+    action = ScrollTextureLeft;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  49 = {
+    action = CeilingCrushAndRaiseA;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  50 = {
+    action = DoorClose;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  51 = {
+    action = ExitSecret;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  52 = {
+    action = ExitNormal;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  53 = {
+    action = PlatPerpetualRaiseLip;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  54 = {
+    action = PlatStop;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  55 = {
+    action = FloorRaiseAndCrush;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  56 = {
+    action = FloorRaiseAndCrush;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  57 = {
+    action = CeilingCrushStop;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  58 = {
+    action = FloorRaiseByValue;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  59 = {
+    action = FloorRaiseByValueChange;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  60 = {
+    action = FloorLowerToLowest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  61 = {
+    action = DoorOpen;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  62 = {
+    action = PlatDownWaitUpStayLip;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  63 = {
+    action = DoorRaise;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  64 = {
+    action = FloorRaiseToLowestCeiling;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  65 = {
+    action = FloorRaiseAndCrush;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  66 = {
+    action = FloorRaiseByValueChangeTex;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  67 = {
+    action = FloorRaiseByValueChangeTex;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  68 = {
+    action = FloorRaiseToNearestChange;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    keepdata = true;
+  }
+
+  69 = {
+    action = FloorRaiseToNearest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  70 = {
+    action = FloorLowerToHighest;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+  }
+
+  71 = {
+    action = FloorLowerToHighest;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  72 = {
+    action = CeilingLowerAndCrush;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  73 = {
+    action = CeilingCrushAndRaiseA;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  74 = {
+    action = CeilingCrushStop;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  75 = {
+    action = DoorClose;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  76 = {
+    action = DoorCloseWaitOpen;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  77 = {
+    action = CeilingCrushAndRaiseA;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  79 = {
+    action = LightChangeToValue;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  80 = {
+    action = LightMaxNeighbor;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  81 = {
+    action = LightChangeToValue;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  82 = {
+    action = FloorLowerToLowest;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  83 = {
+    action = FloorLowerToHighest;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  84 = {
+    action = FloorLowerToLowestChange;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  86 = {
+    action = DoorOpen;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  87 = {
+    action = PlatPerpetualRaiseLip;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  88 = {
+    action = PlatDownWaitUpStayLip;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+  }
+
+  89 = {
+    action = PlatStop;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  90 = {
+    action = DoorRaise;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  91 = {
+    action = FloorRaiseToLowestCeiling;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  92 = {
+    action = FloorRaiseByValue;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  93 = {
+    action = FloorRaiseByValueChange;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  94 = {
+    action = FloorRaiseAndCrush;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  95 = {
+    action = FloorRaiseToNearestChange;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    keepdata = true;
+  }
+
+  96 = {
+    action = FloorRaiseByTexture;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  97 = {
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+  }
+
+  98 = {
+    action = FloorLowerToHighest;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  99 = {
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  100 = {
+    action = DoorRaise;
+    arg2 = 48;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+  }
+
+  101 = {
+    action = FloorRaiseToLowestCeiling;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  102 = {
+    action = FloorLowerToHighest;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  103 = {
+    action = DoorOpen;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+
+  104 = {
+    action = LightMinNeighbor;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  105 = {
+    action = ExitSecret;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  106 = {
+    action = StairsBuildUpDoom;
+    arg2 = 8;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+  }
+
+  107 = {
+    action = StairsBuildUpDoom;
+    arg2 = 8;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+  }
+}

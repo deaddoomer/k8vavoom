@@ -2,6 +2,8 @@ configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 
 file(GLOB heretic_pak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.rc
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/*.lmp
   ${CMAKE_SOURCE_DIR}/progs/heretic/cgame/*.vc
   ${CMAKE_SOURCE_DIR}/progs/heretic/game/*.vc
   )
@@ -9,11 +11,6 @@ file(GLOB heretic_pak_SRC CONFIGURE_DEPENDS
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
-    graphics/croshai1.lmp
-    graphics/croshai2.lmp
-    graphics/croshai3.lmp
-    graphics/fonta30.lmp
-    graphics/fonta63.lmp
     palette.pcx
     basepak.ls.in
     ${heretic_pak_SRC}

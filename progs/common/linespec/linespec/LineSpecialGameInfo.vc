@@ -134,6 +134,78 @@ transient WSlotEntry kkWeaponSlots[MaxWeaponSlots];
 transient int kkWeaponSlotCopy[MaxWeaponSlots]; // if set to false, this slot was inited from keyconf
 
 
+enum {
+  bsk_verypoor,
+  bsk_poor,
+  bsk_low,
+  bsk_medium,
+  bsk_high,
+  bsk_excellent,
+  bsk_supreme
+};
+
+struct botinfo_t {
+  string Name;    // bot's name
+  int accuracy;   // accuracy with "instant" weapons (this includes "leading")
+  int intelect;   // accuracy with "missile" weapons (rocket launcher, etc.)
+  int evade;      // ability to dodge incoming missiles
+  int anticip;    // ability to anticipate "instant" shots
+  int reaction;   // overall reaction time (lower is "better")
+/*
+  int pisschance;   // chance the bot will get pissed when his threshold is reached
+  int threshold;    // how much it takes to frustrate/piss off the bot
+  int dangerlevel;  // when health is below this, we need some health
+  int wpfav;      // favorite weapon
+  int chatinfo;   // bot's chat strings
+  int chattime;   // how long it takes us to type a line
+  int chatty;     // how talkative the bot is
+  char *color;   // color (in form of a string)
+  char *gender;   // male/female/it :)
+  char *skin;     // skin
+  int railcolor;   // railgun trail color
+  bool revealed;    // hidden bots must be revealed
+*/
+  string userinfo;
+}
+
+
+//transient BotPlayer::botinfo_t botinfo[NUMTOTALBOTS];
+transient array!(botinfo_t) botinfo;
+transient int NUMBOTTYPES;
+transient int botskill;
+
+
+#include "LineSpecialGameInfo_LDef_Main.vc"
+
+
+//==========================================================================
+//
+//  AppendBotType
+//
+//==========================================================================
+void AppendBotType (string Name, int accuracy, int intelect, int evade,
+                    int anticip, int reaction, string userinfo)
+{
+  botinfo_t *nfo = botinfo.alloc();
+  nfo.Name = Name;
+  nfo.accuracy = accuracy;
+  nfo.intelect = intelect;
+  nfo.evade = evade;
+  nfo.anticip = anticip;
+  nfo.reaction = reaction;
+  nfo.userinfo = userinfo;
+}
+
+
+//==========================================================================
+//
+//  InitBotTypes
+//
+//==========================================================================
+void InitBotTypes () {
+}
+
+
 //==========================================================================
 //
 //  Init
@@ -342,6 +414,8 @@ override void Init () {
   foreach (ref auto b; kkWeaponSlotCopy) b = true;
 
   ::Init(); // parse cvarinfo and such
+  InitTranslationTables();
+  InitBotTypes();
 }
 
 

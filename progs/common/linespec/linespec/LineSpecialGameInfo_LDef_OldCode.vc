@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 #ifdef VV_LDEF_USE_OLD_TRANSLATION_CODE
-//#define VV_DUMP_LDEF_TRANSLATION_TABLE
+#define VV_DUMP_LDEF_TRANSLATION_TABLE
 
 
 #ifdef VV_DUMP_LDEF_TRANSLATION_TABLE

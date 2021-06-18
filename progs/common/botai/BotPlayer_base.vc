@@ -76,6 +76,7 @@ bool boptCheckWimpyWeapon = true;
   other various bot information thingamabobers.
 */
 
+#if 0
 enum {
   bsk_verypoor,
   bsk_poor,
@@ -109,6 +110,7 @@ struct botinfo_t {
 */
   string userinfo;
 };
+#endif
 
 /*
 struct chatline_t {
@@ -184,7 +186,7 @@ bool bAllRound;
 bool bNewItemIsWeapon;
 bool bNewItemIsPowerup;
 
-botinfo_t info; // aiming, name, perfection, yadda yadda
+LineSpecialGameInfo::botinfo_t info; // aiming, name, perfection, yadda yadda
 
 int angerlevel;
 
@@ -1337,8 +1339,8 @@ void BotAimProjectile (float dist, bool right, float an) {
 
   // projectile weapons
   switch (info.intelect) {
-    case bsk_verypoor:
-    case bsk_poor:
+    case LineSpecialGameInfo::bsk_verypoor:
+    case LineSpecialGameInfo::bsk_poor:
       if (MainGameInfo(player.Level.Game).botskill > 3 && Random() < 0.01) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       } else {
@@ -1346,7 +1348,7 @@ void BotAimProjectile (float dist, bool right, float an) {
         SetAngle(an);
       }
       break;
-    case bsk_low:
+    case LineSpecialGameInfo::bsk_low:
       if (MainGameInfo(player.Level.Game).botskill > 2 && Random() < 0.03) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       } else {
@@ -1354,14 +1356,14 @@ void BotAimProjectile (float dist, bool right, float an) {
         SetAngle(an);
       }
       break;
-    case bsk_medium:
+    case LineSpecialGameInfo::bsk_medium:
       if (MainGameInfo(player.Level.Game).botskill > 2 && Random() < 0.09) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       } else {
         if (right) SetAngle(an+Random()*20.0); else SetAngle(an-Random()*20.0);
       }
       break;
-    case bsk_high:
+    case LineSpecialGameInfo::bsk_high:
       if (MainGameInfo(player.Level.Game).botskill > 1 && Random() < 0.9) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       }
@@ -1369,14 +1371,14 @@ void BotAimProjectile (float dist, bool right, float an) {
         if (right) SetAngle(an+Random()*20.0); else SetAngle(an-Random()*20.0);
       }
       break;
-    case bsk_excellent:
+    case LineSpecialGameInfo::bsk_excellent:
       if (MainGameInfo(player.Level.Game).botskill > 1 && Random() < 0.3) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       } else {
         if (right) SetAngle(an+Random()*20.0); else SetAngle(an-Random()*20.0);
       }
       break;
-    case bsk_supreme:
+    case LineSpecialGameInfo::bsk_supreme:
       if (MainGameInfo(player.Level.Game).botskill > 0 && Random() < 0.1) {
         SetAngle(AngleTo(vector(px, py, enemy.Origin.z)));
       } else {
@@ -1399,32 +1401,35 @@ void BotAimProjectile (float dist, bool right, float an) {
 //==========================================================================
 void BotAimInstant (float dist, bool right, float an) {
   // [CW]
-  if (info.accuracy > bsk_verypoor && info.accuracy <= bsk_high && dist <= EntityEx::DEFAULT_MELEERANGE*2.0) {
+  if (info.accuracy > LineSpecialGameInfo::bsk_verypoor &&
+      info.accuracy <= LineSpecialGameInfo::bsk_high &&
+      dist <= EntityEx::DEFAULT_MELEERANGE*2.0)
+  {
     SetAngle(an);
     return;
   }
 
   //FIXME: Implement botskill, accuracy, and intelligence
   switch (info.accuracy) {
-    case bsk_verypoor:
+    case LineSpecialGameInfo::bsk_verypoor:
       if (right) SetAngle(an+Random()*60.0); else SetAngle(an-Random()*60.0);
       break;
-    case bsk_poor:
+    case LineSpecialGameInfo::bsk_poor:
       if (right) SetAngle(an+Random()*45.0); else SetAngle(an-Random()*45.0);
       break;
-    case bsk_low:
+    case LineSpecialGameInfo::bsk_low:
       if (right) SetAngle(an+Random()*30.0); else SetAngle(an-Random()*30.0);
       break;
-    case bsk_medium:
+    case LineSpecialGameInfo::bsk_medium:
       if (right) SetAngle(an+Random()*15.0); else SetAngle(an-Random()*15.0);
       break;
-    case bsk_high:
+    case LineSpecialGameInfo::bsk_high:
       SetAngle(an);
       break;
-    case bsk_excellent:
+    case LineSpecialGameInfo::bsk_excellent:
       SetAngle(AngleTo(enemy.Origin+enemy.Velocity*0.1));
       break;
-    case bsk_supreme://FIXME
+    case LineSpecialGameInfo::bsk_supreme://FIXME
       SetAngle(AngleTo(enemy.Origin+enemy.Velocity*0.1));
       break;
     default:
@@ -2034,22 +2039,22 @@ void Move (float deltaTime) {
     if (!sidemove) sidemove = SIDERUN;
 
     switch (info.anticip) {
-      case bsk_verypoor:
+      case LineSpecialGameInfo::bsk_verypoor:
         // deer caught in the headlights
         sidemove = 0.0;
         return;
 
-      case bsk_poor:
+      case LineSpecialGameInfo::bsk_poor:
         // always walk right
         sidemove = SIDEWALK;
         break;
 
-      case bsk_low:
+      case LineSpecialGameInfo::bsk_low:
         // always run right
         sidemove = SIDERUN;
         break;
 
-      case bsk_medium:
+      case LineSpecialGameInfo::bsk_medium:
         // just switch directions every couple seconds
         if (t_strafe) {
           t_strafe = fmax(0, t_strafe-deltaTime);
@@ -2060,12 +2065,12 @@ void Move (float deltaTime) {
         }
         break;
 
-      case bsk_high:
+      case LineSpecialGameInfo::bsk_high:
         // switch directions when we think our opponent will fire
         if (!t_shootcooldown) sidemove = -sidemove;
         break;
 
-      case bsk_excellent:
+      case LineSpecialGameInfo::bsk_excellent:
         // move in a somewhat random direction when we think our opponent will fire
         if (!t_shootcooldown) {
           sidemove = (Random() < 0.5 ? SIDERUN : -SIDERUN);
@@ -2073,7 +2078,7 @@ void Move (float deltaTime) {
         }
         break;
 
-      case bsk_supreme:
+      case LineSpecialGameInfo::bsk_supreme:
         // what a squirmy little fucker!
         if (!t_shootcooldown) {
           switch (P_Random()&3) {
@@ -2182,7 +2187,7 @@ bool AttackSpecial () {
   if (player.ReadyWeapon.Class == Chaingun)
   {
     // Double tap the chaingun for extreme accuracy
-    if (info.accuracy == bsk_supreme)
+    if (info.accuracy == LineSpecialGameInfo::bsk_supreme)
       if (t_fire)
         return true;
   }
@@ -2435,21 +2440,21 @@ void Turn () {
 
   // [BC] Don't act crazy while trying to aim
   switch (info.accuracy) {
-    case bsk_verypoor:
-    case bsk_poor:
-    case bsk_low:
+    case LineSpecialGameInfo::bsk_verypoor:
+    case LineSpecialGameInfo::bsk_poor:
+    case LineSpecialGameInfo::bsk_low:
       distance = fclamp(distance, -7.5, 7.5);
       break;
-    case bsk_medium:
+    case LineSpecialGameInfo::bsk_medium:
       distance = fclamp(distance, -15, 15);
       break;
-    case bsk_high:
+    case LineSpecialGameInfo::bsk_high:
       distance = fclamp(distance, -22.5, 22.5);
       break;
-    case bsk_excellent:
+    case LineSpecialGameInfo::bsk_excellent:
       distance = fclamp(distance, -30, 30);
       break;
-    case bsk_supreme:
+    case LineSpecialGameInfo::bsk_supreme:
       distance = fclamp(distance, -37.5, 37.5);
       break;
   }
@@ -2472,25 +2477,25 @@ void Pitch () {
   } else {
     if (!doHeadshots) {
       switch (info.intelect) {
-        case bsk_verypoor:
+        case LineSpecialGameInfo::bsk_verypoor:
           if (FRandomFull() < 0.2) { doHeadshots = true; hsdist = 256; }
           break;
-        case bsk_poor:
+        case LineSpecialGameInfo::bsk_poor:
           if (FRandomFull() < 0.3) { doHeadshots = true; hsdist = 256; }
           break;
-        case bsk_low:
+        case LineSpecialGameInfo::bsk_low:
           if (FRandomFull() < 0.4) { doHeadshots = true; hsdist = (P_Random()&1 ? 384 : 256); }
           break;
-        case bsk_medium:
+        case LineSpecialGameInfo::bsk_medium:
           if (FRandomFull() < 0.5) { doHeadshots = true; hsdist = (P_Random()&1 ? 384 : 256); }
           break;
-        case bsk_high:
+        case LineSpecialGameInfo::bsk_high:
           if (FRandomFull() < 0.6) { doHeadshots = true; hsdist = (P_Random()&1 ? 512 : 384); }
           break;
-        case bsk_excellent:
+        case LineSpecialGameInfo::bsk_excellent:
           if (FRandomFull() < 0.8) { doHeadshots = true; hsdist = (P_Random()&1 ? 512 : 384); }
           break;
-        case bsk_supreme:
+        case LineSpecialGameInfo::bsk_supreme:
           if (FRandomFull() < 0.9) { doHeadshots = true; hsdist = (P_Random()&1 ? 512 : 384); }
           break;
       }
@@ -2679,12 +2684,12 @@ void OnBeginPlay () {
 
   int botskill = 4;
   int bottype = 0;
-  botinfo_t *binfo;
+  LineSpecialGameInfo::botinfo_t *binfo;
 
   bool randomBot = true;
 
   if (player.PlayerName) {
-    foreach (auto i; 0..MainGameInfo::NUMTOTALBOTS) {
+    foreach (auto i; 0../*MainGameInfo::NUMTOTALBOTS*/MainGameInfo(player.Level.Game).botinfo.length) {
       if (stricmp(MainGameInfo(player.Level.Game).botinfo[i].Name, player.PlayerName) == 0) {
         bottype = i;
         randomBot = false;
@@ -2697,7 +2702,7 @@ void OnBeginPlay () {
     // if the user doesn't input a name, don't
     // spawn one of the "special" bots, only one of the
     // normal ones.
-    bottype = P_Random()%MainGameInfo::NUMBOTTYPES;
+    bottype = P_Random()%/*MainGameInfo::*/MainGameInfo(player.Level.Game).NUMBOTTYPES;
   }
 
   //print("bottype=%s; name='%s'", bottype, player.PlayerName);
@@ -2747,11 +2752,11 @@ void OnBeginPlay () {
 
   /*
   if (!player.Level.Game.deathmatch) {
-    info.accuracy = bsk_high;
-    info.intelect = bsk_high;
-    info.evade = bsk_high;
-    info.anticip = bsk_high;
-    info.reaction = bsk_high;
+    info.accuracy = LineSpecialGameInfo::bsk_high;
+    info.intelect = LineSpecialGameInfo::bsk_high;
+    info.evade = LineSpecialGameInfo::bsk_high;
+    info.anticip = LineSpecialGameInfo::bsk_high;
+    info.reaction = LineSpecialGameInfo::bsk_high;
   }
   */
 }

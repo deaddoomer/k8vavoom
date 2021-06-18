@@ -25,45 +25,14 @@
 //**************************************************************************
 class MainGameInfo : LineSpecialGameInfo;
 
-struct spec_trans_t {
-  int special;
-  // values:
-  //     -1: original arg1
-  //     -2: original arg2
-  //     -3: original arg3
-  //     -4: original arg4
-  //     -5: original arg5
-  //   -666: unchanged
-  //   positive: set to this
-  int arg1;
-  int arg2;
-  int arg3;
-  int arg4;
-  int arg5;
-  int spac;
-  int repeat; // ML_REPEAT_SPECIAL
-  int monst; // ML_MONSTERSCANACTIVATE
-  int not_destroy; // ML_KEEPDATA (don't destroy thinkers)
-};
+//enum { NUMTOTALBOTS = 12 };
+//enum { NUMBOTTYPES = 12 };
 
-dictionary!(int, spec_trans_t) spec_trans_tab;
-// arg1 is ignored
-// key is old special
-//dictionary!(int, spec_trans_t) trans_3d_floors;
-
-enum { NUMTOTALBOTS = 12 };
-enum { NUMBOTTYPES = 12 };
-
-BotPlayer::botinfo_t botinfo[NUMTOTALBOTS];
-int botskill;
+//BotPlayer::botinfo_t botinfo[NUMTOTALBOTS];
+//int botskill;
 
 int INITIAL_HEALTH;
 
-
-//#define VV_LDEF_USE_OLD_TRANSLATION_CODE
-
-#include "LDefTransParse.vc"
-#include "OldLDefTranslationCode.vc"
 
 
 //==========================================================================
@@ -73,8 +42,6 @@ int INITIAL_HEALTH;
 //==========================================================================
 override void Init () {
   ::Init();
-  InitTranslationTables();
-  InitBotTypes();
 
   //writeln("*******************************************");
   KBCheatClearAll();
@@ -117,169 +84,116 @@ override void InitNewGame (int skill) {
 //  InitBotTypes
 //
 //==========================================================================
-void InitBotTypes () {
-  SetBotType(0,
+override void InitBotTypes () {
+  AppendBotType(
     "bot1",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot1\\color\\green\\class\\0\\model\\doomguy"
   );
-  SetBotType(1,
+  AppendBotType(
     "bot2",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot2\\color\\black\\class\\0\\model\\doomguy"
   );
-  SetBotType(2,
+  AppendBotType(
     "bot3",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot3\\color\\white\\class\\0\\model\\doomguy"
   );
-  SetBotType(3,
+  AppendBotType(
     "bot4",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot4\\color\\brown\\class\\0\\model\\doomguy"
   );
-  SetBotType(4,
+  AppendBotType(
     "bot5",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot5\\color\\red\\class\\0\\model\\doomguy"
   );
-  SetBotType(5,
+  AppendBotType(
     "bot6",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot6\\color\\pink\\class\\0\\model\\doomguy"
   );
-  SetBotType(6,
+  AppendBotType(
     "bot7",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot7\\color\\blue\\class\\0\\model\\doomguy"
   );
-  SetBotType(7,
+  AppendBotType(
     "bot8",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot8\\color\\indigo\\class\\0\\model\\doomguy"
   );
-  SetBotType(8,
+  AppendBotType(
     "bot9",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot9\\color\\magenta\\class\\0\\model\\doomguy"
   );
-  SetBotType(9,
+  AppendBotType(
     "bot10",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot10\\color\\purple\\class\\0\\model\\doomguy"
   );
-  SetBotType(10,
+  AppendBotType(
     "bot11",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot11\\color\\orange\\class\\0\\model\\doomguy"
   );
-  SetBotType(11,
+  AppendBotType(
     "bot12",
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
-    BotPlayer::bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
+    bsk_medium,
     "\\Name\\bot12\\color\\yellow\\class\\0\\model\\doomguy"
   );
-}
-
-
-//==========================================================================
-//
-//  SetBotType
-//
-//==========================================================================
-void SetBotType (int i, string Name, int accuracy, int intelect, int evade,
-  int anticip, int reaction, string userinfo)
-{
-  botinfo[i].Name = Name;
-  botinfo[i].accuracy = accuracy;
-  botinfo[i].intelect = intelect;
-  botinfo[i].evade = evade;
-  botinfo[i].anticip = anticip;
-  botinfo[i].reaction = reaction;
-  botinfo[i].userinfo = userinfo;
-}
-
-
-//==========================================================================
-//
-//  InitTranslationTables
-//
-//==========================================================================
-void InitTranslationTables () {
-  #include "OldLDefTranslationTable.vc"
-  ParseLDefTranslationScripts();
-  printmsg(PMSG.Init, "%d linedef special translations found", spec_trans_tab.length);
-}
-
-
-//==========================================================================
-//
-//  GetOldLineSpecialArg
-//
-//==========================================================================
-static final int GetOldLineSpecialArg (int n, int newval, const line_t *line) {
-  assert(n >= 1 && n <= 5);
-  if (newval == -666) newval = -n;
-  if (newval >= 0) return newval;
-  newval = -newval;
-  assert(newval >= 1 && newval <= 5);
-  assert(line);
-  switch (newval) {
-    case 1: return line->arg1;
-    case 2: return line->arg2;
-    case 3: return line->arg3;
-    case 4: return line->arg4;
-    case 5: return line->arg5;
-  }
-  assert(0);
-  return 0;
+  NUMBOTTYPES = botinfo.length;
 }
 
 
@@ -306,7 +220,7 @@ void TranslateLine (VLevel InLevel, line_t *line) {
   // clear unknown flags
   line->flags &= 0x01ff;
 
-  // for BOOM compatibility all lines needs to have it's ID same as tag
+  // for BOOM compatibility all lines need to have its ID to be the same as the tag
   if (OldTag) line->lineTag = OldTag;
 
   if (!line->special) return;
@@ -456,18 +370,25 @@ void TranslateLine (VLevel InLevel, line_t *line) {
     return;
   }
 
-  /*
-  {
-    auto trs = trans_3d_floors.find(OldSpec);
-    if (trs) {
-      line->special = trs.special;
-      if (trs.arg2 != -666) line->arg2 = trs.arg2;
-      if (trs.arg3 != -666) line->arg3 = trs.arg3;
-      if (trs.arg4 != -666) line->arg4 = trs.arg4;
-      return;
+  auto trsp = FindLDefSpecTransForSpecial(InLevel, OldSpec);
+  PerformLDefSpecialTranslation(InLevel, OldSpec, trsp, line);
+
+  // fix spac
+  if (trsp && !IsLDef3DFloorSpecial(trsp)) {
+    // activation flags
+    if ((OldFlags&0x0200) != 0 && trsp.spac == SPAC_Use) {
+      line->SpacFlags = SPAC_UseThrough;
+    } else {
+      line->SpacFlags = trsp.spac;
     }
+    if (trsp.repeat) line->flags |= ML_REPEAT_SPECIAL;
+    if (trsp.monst) line->flags |= ML_MONSTERSCANACTIVATE;
+    if ((line->flags&ML_SECRET) && (line->SpacFlags&(SPAC_Use|SPAC_UseThrough)) != 0) line->flags &= ~ML_MONSTERSCANACTIVATE;
+    // check to see if we want thinkers destroyed or not
+    if (trsp.not_destroy) line->flags |= ML_KEEPDATA;
   }
 
+  /*
   switch (OldSpec) {
     //EDGE plane-copy
     case 394: // Slope_FrontFloorToTaggedSlope
@@ -501,63 +422,6 @@ void TranslateLine (VLevel InLevel, line_t *line) {
       return;
   }
   */
-
-  auto trsp = spec_trans_tab.find(OldSpec);
-  if (!trsp) {
-    line->special = 0;
-    line->arg1 = 0;
-    printwarn("TRANSLATION: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
-    if (GetCvarB('trans_debug_log')) {
-      print("=================================================");
-      print("***TRANS: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
-      print("%s items in translation table", spec_trans_tab.length);
-      for (auto idx = spec_trans_tab.firstIndex(); spec_trans_tab.isValidIndex(idx); idx = spec_trans_tab.nextIndex(idx)) {
-        auto key = spec_trans_tab.keyAtIndex(idx); // pointer to key
-        auto val = spec_trans_tab.valueAtIndex(idx); // pointer to value
-        print("  idx=%s; key=%s; value.special=%s", idx, key, val.special);
-      }
-    }
-    return;
-  }
-
-  // special
-  line->special = trsp.special;
-  // args
-  /*
-  line->arg1 = (trsp.arg1 == -1 ? OldTag : (trsp.arg1 == -666 ? line->arg1 : trsp.arg1));
-  line->arg2 = (trsp.arg2 == -1 ? OldTag : (trsp.arg2 == -666 ? line->arg2 : trsp.arg2));
-  line->arg3 = (trsp.arg3 == -1 ? OldTag : (trsp.arg3 == -666 ? line->arg3 : trsp.arg3));
-  line->arg4 = (trsp.arg4 == -1 ? OldTag : (trsp.arg4 == -666 ? line->arg4 : trsp.arg4));
-  line->arg5 = (trsp.arg5 == -1 ? OldTag : (trsp.arg5 == -666 ? line->arg5 : trsp.arg5));
-  */
-  int newarg1 = GetOldLineSpecialArg(1, trsp.arg1, line);
-  int newarg2 = GetOldLineSpecialArg(2, trsp.arg2, line);
-  int newarg3 = GetOldLineSpecialArg(3, trsp.arg3, line);
-  int newarg4 = GetOldLineSpecialArg(4, trsp.arg4, line);
-  int newarg5 = GetOldLineSpecialArg(5, trsp.arg5, line);
-
-  line->arg1 = newarg1;
-  line->arg2 = newarg2;
-  line->arg3 = newarg3;
-  line->arg4 = newarg4;
-  line->arg5 = newarg5;
-
-  if (trsp.special != LNSPEC_SectorSet3dThinFloorEDGE && trsp.special != LNSPEC_SectorSet3dFloor) {
-    // activation flags
-    if ((OldFlags&0x0200) != 0 && trsp.spac == SPAC_Use) {
-      line->SpacFlags = SPAC_UseThrough;
-    } else {
-      line->SpacFlags = trsp.spac;
-    }
-    if (trsp.repeat) line->flags |= ML_REPEAT_SPECIAL;
-    if (trsp.monst) line->flags |= ML_MONSTERSCANACTIVATE;
-    if ((line->flags&ML_SECRET) && (line->SpacFlags&(SPAC_Use|SPAC_UseThrough)) != 0) line->flags &= ~ML_MONSTERSCANACTIVATE;
-    // check to see if we want thinkers destroyed or not
-    if (trsp.not_destroy) line->flags |= ML_KEEPDATA;
-  } else {
-    line->SpacFlags = 0;
-    line->flags &= ~(ML_REPEAT_SPECIAL|ML_MONSTERSCANACTIVATE|ML_KEEPDATA);
-  }
 }
 
 
