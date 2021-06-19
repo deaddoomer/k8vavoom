@@ -116,6 +116,10 @@ void ParseLDefTranslations (ScriptsParser sc) {
       if (sc.Check("monsteractivate")) { trs.monst = ParseLDefBool(sc); wasOtherBool = true; continue; }
       if (sc.Check("keepdata")) { trs.not_destroy = ParseLDefBool(sc); wasOtherBool = true; continue; }
 
+      if (sc.Check("description")) { sc.Expect("="); sc.ExpectString(); sc.Expect(";"); continue; }
+      if (sc.Check("sourceport")) { sc.Expect("="); sc.ExpectString(); sc.Expect(";"); continue; }
+      if (sc.Check("comment")) { sc.Expect("="); sc.ExpectString(); sc.Expect(";"); continue; }
+
       sc.ScriptError("invalid linedef special property '%s'", sc.String);
     }
 
