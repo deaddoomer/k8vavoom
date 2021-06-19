@@ -251,8 +251,7 @@ override void Tick (float deltaTime) {
             break;
         }
       } else if (res == RES_CRUSHED) {
-        switch (Type)
-          {
+        switch (Type) {
           case DOOREV_Close: // don't go back up!
             break;
           default:
