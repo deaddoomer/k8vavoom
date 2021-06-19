@@ -1731,8 +1731,11 @@ override void ApplyFriction (float DeltaTime) {
     if (Friction > 0.0) fric /= Friction;
     // apply extra friction for player, so it won't slide
     if (bIsPlayer && Player && Player.MO == self && !Player.ForwardMove && !Player.SideMove && GetCvarB('player_extra_friction_enabled')) {
-      float efric = GetCvarF('player_extra_friction');
-      if (efric > 0.0) fric *= efric;
+      // check for conveyor belts
+      if (!PhysicsCheckScroller()) {
+        float efric = GetCvarF('player_extra_friction');
+        if (efric > 0.0) fric *= efric;
+      }
     }
     TVec vdiff = Velocity.xy*(fric*DeltaTime);
     if (Friction <= 0.0) vdiff = Velocity.xy; // stop right there, you criminal scum!
