@@ -204,7 +204,7 @@ override void InitBotTypes () {
 //  front sector is not set yet
 //
 //==========================================================================
-void TranslateLine (VLevel InLevel, line_t *line) {
+override void TranslateLine (VLevel InLevel, line_t *line) {
   int OldSpec = line->special;
   int OldTag = line->arg1;
   int OldFlags = line->flags;
@@ -425,7 +425,7 @@ void TranslateLine (VLevel InLevel, line_t *line) {
 //  TranslateSector
 //
 //==========================================================================
-void TranslateSector (sector_t *sector) {
+override void TranslateSector (VLevel InLevel, sector_t *sector) {
   int special = sector->special;
   if (!special) return;
 
@@ -448,7 +448,7 @@ void TranslateSector (sector_t *sector) {
 //  TranslateThing
 //
 //==========================================================================
-void TranslateThing (mthing_t *mthing) {
+override void TranslateThing (VLevel InLevel, mthing_t *mthing) {
   // translate the spawn flags to Hexen format
   int flags = mthing->options;
   if (flags&0x100) flags &= 0x1f; //k8: wtf is this?
@@ -476,22 +476,10 @@ void TranslateThing (mthing_t *mthing) {
 
 //==========================================================================
 //
-//  TranslateLevel
-//
-//==========================================================================
-override void TranslateLevel (VLevel InLevel) {
-  foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
-  foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(&InLevel.Sectors[i]);
-  foreach (auto i; 0..InLevel.Things.length) TranslateThing(&InLevel.Things[i]);
-}
-
-
-//==========================================================================
-//
 //  TranslateSpecialActions
 //
 //==========================================================================
-override void TranslateSpecialActions (LevelInfo Level) {
+override void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
   foreach (ref VMapSpecialAction sac; Level.SpecialActions) {
     int special = sac.Special;
     if (special >= 0) continue; // no translation needed

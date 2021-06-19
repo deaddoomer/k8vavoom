@@ -73,7 +73,7 @@ void VLevelInfo::PostCtor () {
 //  VLevelInfo::SetMapInfo
 //
 //==========================================================================
-void VLevelInfo::SetMapInfo (const VMapInfo &Info) {
+void VLevelInfo::SetMapInfo (VLevel *InLevel, const VMapInfo &Info) {
   const VClusterDef *CInfo = P_GetClusterDef(Info.Cluster);
 
   LevelName = Info.Name;
@@ -121,9 +121,9 @@ void VLevelInfo::SetMapInfo (const VMapInfo &Info) {
     for (auto &&sec : XLevel->allSectors()) sec.seqType = 0;
   }
 
-  GGameInfo->eventTranslateSpecialActions(this);
+  GGameInfo->eventTranslateSpecialActions(InLevel, this);
 
-  eventAfterSetMapInfo();
+  eventAfterSetMapInfo(InLevel);
 }
 
 

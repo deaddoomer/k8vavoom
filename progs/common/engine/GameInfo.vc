@@ -251,10 +251,42 @@ WorldInfo CreateWorldInfo () {
 
 //==========================================================================
 //
-//  TranslateLevel
+//  InitTranslationTables
+//
+//  prepares various translation tables
+//  called from `LineSpecialGameInfo::Init()`
 //
 //==========================================================================
-void TranslateLevel (VLevel InLevel) {
+void InitTranslationTables () {
+}
+
+
+//==========================================================================
+//
+//  TranslateLine
+//
+//  front sector is not set yet
+//
+//==========================================================================
+void TranslateLine (VLevel InLevel, line_t *line) {
+}
+
+
+//==========================================================================
+//
+//  TranslateSector
+//
+//==========================================================================
+void TranslateSector (VLevel InLevel, sector_t *sector) {
+}
+
+
+//==========================================================================
+//
+//  TranslateThing
+//
+//==========================================================================
+void TranslateThing (VLevel InLevel, mthing_t *mthing) {
 }
 
 
@@ -262,8 +294,23 @@ void TranslateLevel (VLevel InLevel) {
 //
 //  TranslateSpecialActions
 //
+//  called on map spawning
+//  `Level`, `Game`, `World` are already set
+//
 //==========================================================================
-void TranslateSpecialActions (LevelInfo Level) {
+void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
+}
+
+
+//==========================================================================
+//
+//  TranslateLevel
+//
+//==========================================================================
+void TranslateLevel (VLevel InLevel) {
+  foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
+  foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(InLevel, &InLevel.Sectors[i]);
+  foreach (auto i; 0..InLevel.Things.length) TranslateThing(InLevel, &InLevel.Things[i]);
 }
 
 

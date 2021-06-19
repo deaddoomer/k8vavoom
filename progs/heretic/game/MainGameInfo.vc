@@ -140,7 +140,7 @@ override void InitBotTypes () {
 //  TranslateLine
 //
 //==========================================================================
-void TranslateLine (VLevel InLevel, line_t *line) {
+override void TranslateLine (VLevel InLevel, line_t *line) {
   if (!line->special) return;
 
   // for BOOM compatibility all lines need to have its ID to be the same as the tag
@@ -158,7 +158,7 @@ void TranslateLine (VLevel InLevel, line_t *line) {
 //  TranslateSector
 //
 //==========================================================================
-void TranslateSector (sector_t *sector) {
+override void TranslateSector (VLevel InLevel, sector_t *sector) {
   int special = sector->special;
   if (!special) return;
 
@@ -184,7 +184,7 @@ void TranslateSector (sector_t *sector) {
 //  TranslateThing
 //
 //==========================================================================
-void TranslateThing (mthing_t *mthing) {
+override void TranslateThing (VLevel InLevel, mthing_t *mthing) {
   // translate the spawn flags to Hexen format
   int flags = mthing->options;
   mthing->options = (flags&0xf)|0x7e0;
@@ -194,22 +194,10 @@ void TranslateThing (mthing_t *mthing) {
 
 //==========================================================================
 //
-//  TranslateLevel
-//
-//==========================================================================
-override void TranslateLevel (VLevel InLevel) {
-  foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
-  foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(&InLevel.Sectors[i]);
-  foreach (auto i; 0..InLevel.Things.length) TranslateThing(&InLevel.Things[i]);
-}
-
-
-//==========================================================================
-//
 //  TranslateSpecialActions
 //
 //==========================================================================
-override void TranslateSpecialActions (LevelInfo Level) {
+override void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
   foreach (ref VMapSpecialAction sac; Level.SpecialActions) {
     if (sac.Special >= 0) continue; // no translation needed
     printerror("UMAPINFO BOSS ACTIONS AREN'T SUPPORTED FOR THIS GAME!");

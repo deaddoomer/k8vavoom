@@ -1666,7 +1666,7 @@ void SV_SpawnServer (const char *mapname, bool spawn_thinkers, bool titlemap) {
     GLevelInfo->Game = GGameInfo;
     GLevelInfo->World = GGameInfo->WorldInfo;
     GLevel->LevelInfo = GLevelInfo;
-    GLevelInfo->SetMapInfo(info);
+    GLevelInfo->SetMapInfo(GLevel, info);
 
     // spawn things
     for (int i = 0; i < GLevel->NumThings; ++i) GLevelInfo->eventSpawnMapThing(&GLevel->Things[i]);

@@ -61,6 +61,21 @@ void ParseLDefTranslationScripts () {
 
 //==========================================================================
 //
+//  CustomParseLDefTranslations
+//
+//  this is called *BEFORE* standard processing, so you
+//  may inject your own properties.
+//
+//  return `true` if you parsed the property.
+//
+//==========================================================================
+bool CustomParseLDefTranslations (ScriptsParser sc, ref spec_trans_t trs) {
+  return false;
+}
+
+
+//==========================================================================
+//
 //  ParseLDefTranslations
 //
 //  "linedef_specials_table" already eaten
@@ -97,6 +112,8 @@ void ParseLDefTranslations (ScriptsParser sc) {
     // parse properties
     while (!sc.Check("}")) {
       if (sc.AtEnd()) sc.ScriptError("unexpected end of file");
+
+      if (CustomParseLDefTranslations(sc, ref trs)) continue;
 
       // args
       if (sc.Check("arg1")) { ParseLDefArgN(sc, ref trs.arg1); continue; }

@@ -51,9 +51,6 @@ struct spec_trans_t {
 };
 
 dictionary!(int, spec_trans_t) spec_trans_tab;
-// arg1 is ignored
-// key is old special
-//dictionary!(int, spec_trans_t) trans_3d_floors;
 
 
 
@@ -62,7 +59,7 @@ dictionary!(int, spec_trans_t) spec_trans_tab;
 //  InitTranslationTables
 //
 //==========================================================================
-void InitTranslationTables () {
+override void InitTranslationTables () {
   #include "LineSpecialGameInfo_LDef_OldTable.vc"
   ParseLDefTranslationScripts();
   printmsg(PMSG.Init, "%d linedef special translations found", spec_trans_tab.length);
@@ -73,8 +70,10 @@ void InitTranslationTables () {
 //
 //  GetOldLineSpecialArg
 //
+//  used in line special translation
+//
 //==========================================================================
-static final int GetOldLineSpecialArg (int n, int newval, const line_t *line) {
+int GetOldLineSpecialArg (int n, int newval, const line_t *line) {
   assert(n >= 1 && n <= 5);
   if (newval == -666) newval = -n;
   if (newval >= 0) return newval;
@@ -95,7 +94,7 @@ static final int GetOldLineSpecialArg (int n, int newval, const line_t *line) {
 
 //==========================================================================
 //
-//  GetOldLineSpecialArg
+//  FindLDefSpecTransForSpecial
 //
 //==========================================================================
 spec_trans_t *FindLDefSpecTransForSpecial (VLevel InLevel, int OldSpec) {

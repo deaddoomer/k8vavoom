@@ -155,7 +155,7 @@ public:
   //VLevelInfo ();
   virtual void PostCtor () override;
 
-  void SetMapInfo (const VMapInfo &);
+  void SetMapInfo (VLevel *Level, const VMapInfo &);
 
   void SectorStartSound (const sector_t *Sector, int SoundId, int Channel, float Volume, float Attenuation);
   void SectorStopSound (const sector_t *sector, int channel);
@@ -365,7 +365,7 @@ public:
     VMT_RET_VOID(method);
   }
 
-  void eventAfterSetMapInfo () { static VMethodProxy method("AfterSetMapInfo"); vobjPutParamSelf(GLevel); VMT_RET_VOID(method); }
+  void eventAfterSetMapInfo (VLevel *Level) { static VMethodProxy method("AfterSetMapInfo"); vobjPutParamSelf(Level); VMT_RET_VOID(method); }
 
   #define CREATE_COMPAT_GETTER(name_,cvar_,flagvar_,flagname_) \
     VVA_CHECKRESULT inline bool name_ () const noexcept { \
