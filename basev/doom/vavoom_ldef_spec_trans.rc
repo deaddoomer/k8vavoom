@@ -6,6 +6,7 @@
 
 linedef_specials_table {
   1 = {
+    description = "Open Door (closes)";
     action = DoorRaise;
     arg1 = 0;
     arg2 = 16;
@@ -19,6 +20,7 @@ linedef_specials_table {
   }
 
   2 = {
+    description = "Walk Once - Open the Door";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -32,6 +34,7 @@ linedef_specials_table {
   }
 
   3 = {
+    description = "Walk Once - Close the door";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 16;
@@ -45,6 +48,7 @@ linedef_specials_table {
   }
 
   4 = {
+    description = "Walk Once - Raise the door (with close)";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 16;
@@ -58,6 +62,7 @@ linedef_specials_table {
   }
 
   5 = {
+    description = "Walk Once - Raise the floor to the next highest neighbour floor height";
     action = FloorRaiseToLowestCeiling;
     arg1 = origarg1;
     arg2 = 8;
@@ -71,6 +76,7 @@ linedef_specials_table {
   }
 
   6 = {
+    description = "Walk Once - Fast ceiling crush";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 16;
@@ -84,6 +90,7 @@ linedef_specials_table {
   }
 
   7 = {
+    description = "Build Stairs S1";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 2;
@@ -97,6 +104,7 @@ linedef_specials_table {
   }
 
   8 = {
+    description = "Walk once - Build stairs";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 2;
@@ -110,6 +118,7 @@ linedef_specials_table {
   }
 
   9 = {
+    description = "Donut S1";
     action = FloorDonut;
     arg1 = origarg1;
     arg2 = 4;
@@ -122,8 +131,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   10 = {
+    description = "Walk once - Platform down, wait, and then back up";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 32;
@@ -137,8 +146,9 @@ linedef_specials_table {
   }
 
   11 = {
+    description = "Exit Level S1";
     action = ExitNormal;
-    arg1 = /*-1*/0;
+    arg1 = /*-1*/0; // -1 is a bug
     arg2 = 0;
     arg3 = 0;
     arg4 = 0;
@@ -148,8 +158,9 @@ linedef_specials_table {
     monsteractivate = false;
     keepdata = false;
   }
- // -1 is bug
+
   12 = {
+    description = "Walk once - Lights to the level of brightest neighbour";
     action = LightMaxNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -163,6 +174,7 @@ linedef_specials_table {
   }
 
   13 = {
+    description = "Walk once - Lights to brightest (255)";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 255;
@@ -176,6 +188,7 @@ linedef_specials_table {
   }
 
   14 = {
+    description = "Raise Floor 32 And Change S1";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -189,6 +202,7 @@ linedef_specials_table {
   }
 
   15 = {
+    description = "Raise Floor 24 And Change S1";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -202,6 +216,7 @@ linedef_specials_table {
   }
 
   16 = {
+    description = "Walk once - Close Door 30 W1";
     action = DoorCloseWaitOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -215,6 +230,7 @@ linedef_specials_table {
   }
 
   17 = {
+    description = "Walk once - Start light strobing";
     action = LightStrobeDoom;
     arg1 = origarg1;
     arg2 = 5;
@@ -228,6 +244,7 @@ linedef_specials_table {
   }
 
   18 = {
+    description = "Raise Floor To Next S1";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -241,6 +258,7 @@ linedef_specials_table {
   }
 
   19 = {
+    description = "Walk once - Lower floor to the next lowest floor";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 8;
@@ -255,6 +273,7 @@ linedef_specials_table {
 
 
   20 = {
+    description = "Raise Floor To Next Highest And Change S1";
     action = FloorRaiseToNearestChange;
     arg1 = origarg1;
     arg2 = 4;
@@ -268,6 +287,7 @@ linedef_specials_table {
   }
 
   21 = {
+    description = "Plat Down Wait Up Stay S1";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 32;
@@ -281,6 +301,7 @@ linedef_specials_table {
   }
 
   22 = {
+    description = "Walk once - Raise to next highest floor";
     action = FloorRaiseToNearestChange;
     arg1 = origarg1;
     arg2 = 4;
@@ -294,6 +315,7 @@ linedef_specials_table {
   }
 
   23 = {
+    description = "Lower Floor To Lowest S1";
     action = FloorLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -307,6 +329,8 @@ linedef_specials_table {
   }
 
   24 = {
+    description = "Raise Floor G1";
+    comment = "Not single-sided in vanilla";
     action = FloorRaiseToLowestCeiling;
     arg1 = origarg1;
     arg2 = 8;
@@ -320,6 +344,7 @@ linedef_specials_table {
   }
 
   25 = {
+    description = "Walk once - Ceiling Crush And Raise W1";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 8;
@@ -333,6 +358,7 @@ linedef_specials_table {
   }
 
   26 = {
+    description = "Blue Door SR";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -346,6 +372,7 @@ linedef_specials_table {
   }
 
   27 = {
+    description = "Yellow Door SR";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -359,6 +386,7 @@ linedef_specials_table {
   }
 
   28 = {
+    description = "Red Door SR";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -372,6 +400,7 @@ linedef_specials_table {
   }
 
   29 = {
+    description = "Raise Door S1";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 16;
@@ -384,8 +413,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   30 = {
+    description = "Raise Floor To Texture";
     action = FloorRaiseByTexture;
     arg1 = origarg1;
     arg2 = 8;
@@ -399,6 +428,7 @@ linedef_specials_table {
   }
 
   31 = {
+    description = "Manual Door Open S1";
     action = DoorOpen;
     arg1 = 0;
     arg2 = 16;
@@ -412,6 +442,7 @@ linedef_specials_table {
   }
 
   32 = {
+    description = "Blue Door Open S1";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -425,6 +456,7 @@ linedef_specials_table {
   }
 
   33 = {
+    description = "Red Door Open S1";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -438,6 +470,7 @@ linedef_specials_table {
   }
 
   34 = {
+    description = "Yellow Door Open S1";
     action = DoorLockedRaise;
     arg1 = 0;
     arg2 = 16;
@@ -451,6 +484,7 @@ linedef_specials_table {
   }
 
   35 = {
+    description = "Lights 35";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 35;
@@ -464,6 +498,7 @@ linedef_specials_table {
   }
 
   36 = {
+    description = "Lower Floor (Turbo) W1";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 32;
@@ -477,6 +512,7 @@ linedef_specials_table {
   }
 
   37 = {
+    description = "Lower And Change W1";
     action = FloorLowerToLowestChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -490,6 +526,7 @@ linedef_specials_table {
   }
 
   38 = {
+    description = "Lower Floor To Lowest W1";
     action = FloorLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -503,6 +540,7 @@ linedef_specials_table {
   }
 
   39 = {
+    description = "Player and Monster Teleport - Walk Once";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -515,8 +553,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   40 = {
+    description = "Raise Ceiling Lower Floor W1";
     action = CeilingGeneric;
     arg1 = origarg1;
     arg2 = 8;
@@ -530,6 +568,7 @@ linedef_specials_table {
   }
 
   41 = {
+    description = "Lower Ceiling To Floor S1";
     action = CeilingLowerToFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -543,6 +582,7 @@ linedef_specials_table {
   }
 
   42 = {
+    description = "Close Door";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 16;
@@ -556,6 +596,7 @@ linedef_specials_table {
   }
 
   43 = {
+    description = "Lower ceiling the the floor";
     action = CeilingLowerToFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -569,6 +610,7 @@ linedef_specials_table {
   }
 
   44 = {
+    description = "Ceiling Crush W1";
     action = CeilingLowerAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -582,6 +624,7 @@ linedef_specials_table {
   }
 
   45 = {
+    description = "Lower floor to the next lowest surrounding floor";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 8;
@@ -595,6 +638,7 @@ linedef_specials_table {
   }
 
   46 = {
+    description = "Open Door GR";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -608,6 +652,7 @@ linedef_specials_table {
   }
 
   47 = {
+    description = "Raise Floor To Nearest And Change G1";
     action = FloorRaiseToNearestChange;
     arg1 = origarg1;
     arg2 = 4;
@@ -621,6 +666,7 @@ linedef_specials_table {
   }
 
   48 = {
+    description = "Scroll Left";
     action = ScrollTextureLeft;
     arg1 = 64;
     arg2 = 0;
@@ -634,6 +680,7 @@ linedef_specials_table {
   }
 
   49 = {
+    description = "Ceiling Crush And Raise S1";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 8;
@@ -646,8 +693,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   50 = {
+    description = "Close Door S1";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 16;
@@ -660,10 +707,10 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // -1 is bug
   51 = {
+    description = "Secret Exit S1";
     action = ExitSecret;
-    arg1 = /*-1*/0;
+    arg1 = /*-1*/0; // -1 is bug
     arg2 = 0;
     arg3 = 0;
     arg4 = 0;
@@ -674,10 +721,10 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // -1 is bug
   52 = {
+    description = "Exit W1";
     action = ExitNormal;
-    arg1 = /*-1*/0;
+    arg1 = /*-1*/0; // -1 is bug
     arg2 = 0;
     arg3 = 0;
     arg4 = 0;
@@ -689,6 +736,7 @@ linedef_specials_table {
   }
 
   53 = {
+    description = "Perpetual Raise W1";
     action = PlatPerpetualRaiseLip;
     arg1 = origarg1;
     arg2 = 8;
@@ -702,6 +750,7 @@ linedef_specials_table {
   }
 
   54 = {
+    description = "Platform Stop W1";
     action = PlatStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -715,6 +764,7 @@ linedef_specials_table {
   }
 
   55 = {
+    description = "Raise Floor Crush S1";
     action = FloorRaiseAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -728,6 +778,7 @@ linedef_specials_table {
   }
 
   56 = {
+    description = "Rause Floor Crush W1";
     action = FloorRaiseAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -741,6 +792,7 @@ linedef_specials_table {
   }
 
   57 = {
+    description = "Ceiling Crush Stop W1";
     action = CeilingCrushStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -754,6 +806,7 @@ linedef_specials_table {
   }
 
   58 = {
+    description = "Raise Floor 24";
     action = FloorRaiseByValue;
     arg1 = origarg1;
     arg2 = 8;
@@ -767,6 +820,7 @@ linedef_specials_table {
   }
 
   59 = {
+    description = "Raise Floor 24 And Change W1";
     action = FloorRaiseByValueChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -779,8 +833,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   60 = {
+    description = "Lower floor to the lowest surrounding floor";
     action = FloorLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -794,6 +848,7 @@ linedef_specials_table {
   }
 
   61 = {
+    description = "Open Door";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -807,6 +862,7 @@ linedef_specials_table {
   }
 
   62 = {
+    description = "Platform goes down, wait, then up and stay";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 32;
@@ -820,6 +876,7 @@ linedef_specials_table {
   }
 
   63 = {
+    description = "Raise the door (closes after pause)";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 16;
@@ -833,6 +890,7 @@ linedef_specials_table {
   }
 
   64 = {
+    description = "RAISE FLOOR TO CEILING SR";
     action = FloorRaiseToLowestCeiling;
     arg1 = origarg1;
     arg2 = 8;
@@ -846,6 +904,7 @@ linedef_specials_table {
   }
 
   65 = {
+    description = "RAISE FLOOR CRUSH SR";
     action = FloorRaiseAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -859,6 +918,7 @@ linedef_specials_table {
   }
 
   66 = {
+    description = "RAISE FLOOR 24 AND CHANGE SR";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -872,6 +932,7 @@ linedef_specials_table {
   }
 
   67 = {
+    description = "RAISE FLOOR 32 AND CHANGE SR";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -885,6 +946,7 @@ linedef_specials_table {
   }
 
   68 = {
+    description = "RAISE FLOOR TO NEAREST AND CHANGE SR";
     action = FloorRaiseToNearestChange;
     arg1 = origarg1;
     arg2 = 4;
@@ -898,6 +960,7 @@ linedef_specials_table {
   }
 
   69 = {
+    description = "RAISE FLOOR TO NEAREST SR";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -911,6 +974,7 @@ linedef_specials_table {
   }
 
   70 = {
+    description = "TURBO LOWER FLOOR SR";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 32;
@@ -924,6 +988,7 @@ linedef_specials_table {
   }
 
   71 = {
+    description = "TURBO LOWER FLOOR 71 S1";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 32;
@@ -937,6 +1002,7 @@ linedef_specials_table {
   }
 
   72 = {
+    description = "CEILING CRUSH WR";
     action = CeilingLowerAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -950,6 +1016,7 @@ linedef_specials_table {
   }
 
   73 = {
+    description = "CEILING CRUSH AND RAISE WR";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 8;
@@ -963,6 +1030,7 @@ linedef_specials_table {
   }
 
   74 = {
+    description = "CEILING CRUSH STOP WR";
     action = CeilingCrushStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -976,6 +1044,7 @@ linedef_specials_table {
   }
 
   75 = {
+    description = "CLOSE DOOR WR";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 16;
@@ -989,6 +1058,7 @@ linedef_specials_table {
   }
 
   76 = {
+    description = "CLOSE DOOR FOR 30 WR";
     action = DoorCloseWaitOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -1002,6 +1072,7 @@ linedef_specials_table {
   }
 
   77 = {
+    description = "FAST CRUSHING CEILING WR";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 16;
@@ -1015,6 +1086,8 @@ linedef_specials_table {
   }
 
   78 = {
+    description = "Transfer floor texture (NXP) SR (Boom)";
+    comment = "78 was documented in some editors as 'WR Lights to dimmest neighbor', but it actually does nothing since DOOM 1.666 (per the official DOOM specs).";
     action = FloorTransferNumeric;
     arg1 = origarg1;
     arg2 = 0;
@@ -1028,6 +1101,7 @@ linedef_specials_table {
   }
 
   79 = {
+    description = "LIGHTS DARK 35 WR";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 35;
@@ -1040,8 +1114,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   80 = {
+    description = "LIGHTS NEIGHBOUR WR";
     action = LightMaxNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -1055,6 +1129,7 @@ linedef_specials_table {
   }
 
   81 = {
+    description = "LIGHTS 255 WR";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 255;
@@ -1068,6 +1143,7 @@ linedef_specials_table {
   }
 
   82 = {
+    description = "LOWER FLOOR TO LOWEST WR";
     action = FloorLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -1081,6 +1157,7 @@ linedef_specials_table {
   }
 
   83 = {
+    description = "LOWER FLOOR WR";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 8;
@@ -1094,6 +1171,7 @@ linedef_specials_table {
   }
 
   84 = {
+    description = "LOWER AND CHANGE WR";
     action = FloorLowerToLowestChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -1107,6 +1185,8 @@ linedef_specials_table {
   }
 
   85 = {
+    description = "SCROLL RIGHT (Boom)";
+    comment = "linetype 85 is not used in DOOM or DOOM2 - it's a Heretic linetype, but BOOM uses it as something else.";
     action = ScrollTextureRight;
     arg1 = 64;
     arg2 = 0;
@@ -1120,6 +1200,7 @@ linedef_specials_table {
   }
 
   86 = {
+    description = "OPEN DOOR WR";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -1133,6 +1214,7 @@ linedef_specials_table {
   }
 
   87 = {
+    description = "PERPETUAL PLAT RAISE WR";
     action = PlatPerpetualRaiseLip;
     arg1 = origarg1;
     arg2 = 8;
@@ -1146,6 +1228,7 @@ linedef_specials_table {
   }
 
   88 = {
+    description = "PLAT DOWN WAIT UP STAY WR";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 32;
@@ -1159,6 +1242,7 @@ linedef_specials_table {
   }
 
   89 = {
+    description = "PLAT STOP WR";
     action = PlatStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -1171,8 +1255,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   90 = {
+    description = "RAISE DOOR WR";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 16;
@@ -1186,6 +1270,7 @@ linedef_specials_table {
   }
 
   91 = {
+    description = "RAISE FLOOR WR";
     action = FloorRaiseToLowestCeiling;
     arg1 = origarg1;
     arg2 = 8;
@@ -1199,6 +1284,7 @@ linedef_specials_table {
   }
 
   92 = {
+    description = "RAISE FLOOR 24 WR";
     action = FloorRaiseByValue;
     arg1 = origarg1;
     arg2 = 8;
@@ -1212,6 +1298,7 @@ linedef_specials_table {
   }
 
   93 = {
+    description = "RAISE FLOOR 24 AND CHANGE WR";
     action = FloorRaiseByValueChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -1225,6 +1312,7 @@ linedef_specials_table {
   }
 
   94 = {
+    description = "RAISE FLOOR CRUSH WR";
     action = FloorRaiseAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -1238,6 +1326,7 @@ linedef_specials_table {
   }
 
   95 = {
+    description = "RAISE FLOOR TO NEAREST AND CHANGE WR";
     action = FloorRaiseToNearestChange;
     arg1 = origarg1;
     arg2 = 4;
@@ -1251,6 +1340,7 @@ linedef_specials_table {
   }
 
   96 = {
+    description = "RAISE TO TEXTURE WR";
     action = FloorRaiseByTexture;
     arg1 = origarg1;
     arg2 = 8;
@@ -1264,6 +1354,7 @@ linedef_specials_table {
   }
 
   97 = {
+    description = "Player and Creature Teleport - WR";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -1277,6 +1368,7 @@ linedef_specials_table {
   }
 
   98 = {
+    description = "LOWER FLOOR TURBO WR";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 32;
@@ -1290,6 +1382,7 @@ linedef_specials_table {
   }
 
   99 = {
+    description = "BLAZE OPEN DOOR BLUE SR";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1302,8 +1395,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   100 = {
+    description = "BUILD STAIRS TURBO 16 W1";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 32;
@@ -1317,6 +1410,7 @@ linedef_specials_table {
   }
 
   101 = {
+    description = "RAISE FLOOR S1";
     action = FloorRaiseToLowestCeiling;
     arg1 = origarg1;
     arg2 = 8;
@@ -1330,6 +1424,7 @@ linedef_specials_table {
   }
 
   102 = {
+    description = "LOWER FLOOR TO SURROUNDING S1";
     action = FloorLowerToHighest;
     arg1 = origarg1;
     arg2 = 8;
@@ -1343,6 +1438,7 @@ linedef_specials_table {
   }
 
   103 = {
+    description = "OPEN DOOR S1";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -1356,6 +1452,7 @@ linedef_specials_table {
   }
 
   104 = {
+    description = "LIGHTS OFF W1";
     action = LightMinNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -1369,6 +1466,7 @@ linedef_specials_table {
   }
 
   105 = {
+    description = "BLAZING DOOR RAISE WR";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1382,6 +1480,7 @@ linedef_specials_table {
   }
 
   106 = {
+    description = "BLAZING DOOR OPEN WR";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 64;
@@ -1395,6 +1494,7 @@ linedef_specials_table {
   }
 
   107 = {
+    description = "BLAZING DOOR CLOSE WR";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 64;
@@ -1408,6 +1508,7 @@ linedef_specials_table {
   }
 
   108 = {
+    description = "BLAZING DOOR RAISE W1";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1421,6 +1522,7 @@ linedef_specials_table {
   }
 
   109 = {
+    description = "BLAZING DOOR OPEN W1";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 64;
@@ -1433,8 +1535,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   110 = {
+    description = "BLAZING DOOR CLOSE W1";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 64;
@@ -1448,6 +1550,7 @@ linedef_specials_table {
   }
 
   111 = {
+    description = "BLAZING DOOR RAISE S1";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1461,6 +1564,7 @@ linedef_specials_table {
   }
 
   112 = {
+    description = "BLAZING DOOR OPEN S1";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 64;
@@ -1474,6 +1578,7 @@ linedef_specials_table {
   }
 
   113 = {
+    description = "BLAZING DOOR CLOSE S1";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 64;
@@ -1487,6 +1592,7 @@ linedef_specials_table {
   }
 
   114 = {
+    description = "BLAZING DOOR RAISE SR";
     action = DoorRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1500,6 +1606,7 @@ linedef_specials_table {
   }
 
   115 = {
+    description = "BLAZING DOOR OPEN SR";
     action = DoorOpen;
     arg1 = origarg1;
     arg2 = 64;
@@ -1513,6 +1620,7 @@ linedef_specials_table {
   }
 
   116 = {
+    description = "BLAZING DOOR CLOSE SR";
     action = DoorClose;
     arg1 = origarg1;
     arg2 = 64;
@@ -1526,6 +1634,7 @@ linedef_specials_table {
   }
 
   117 = {
+    description = "BLAZING DOOR RAISE SR";
     action = DoorRaise;
     arg1 = 0;
     arg2 = 64;
@@ -1539,6 +1648,7 @@ linedef_specials_table {
   }
 
   118 = {
+    description = "BLAZING DOOR OPEN S1";
     action = DoorOpen;
     arg1 = 0;
     arg2 = 64;
@@ -1552,6 +1662,7 @@ linedef_specials_table {
   }
 
   119 = {
+    description = "RAISE FLOOR TO NEXT HIGHEST W1";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -1564,8 +1675,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   120 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY WR";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 64;
@@ -1579,6 +1690,7 @@ linedef_specials_table {
   }
 
   121 = {
+    description = "BLAZING PLAT DOWNWAITUPSTAY W1";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 64;
@@ -1592,6 +1704,7 @@ linedef_specials_table {
   }
 
   122 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY S1";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 64;
@@ -1605,6 +1718,7 @@ linedef_specials_table {
   }
 
   123 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY SR";
     action = PlatDownWaitUpStayLip;
     arg1 = origarg1;
     arg2 = 64;
@@ -1617,10 +1731,10 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // -1 is bug
   124 = {
+    description = "SECRET EXIT W1";
     action = ExitSecret;
-    arg1 = /*-1*/0;
+    arg1 = /*-1*/0; // -1 is bug
     arg2 = 0;
     arg3 = 0;
     arg4 = 0;
@@ -1632,6 +1746,7 @@ linedef_specials_table {
   }
 
   125 = {
+    description = "MONSTER TELEPORT W1";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -1645,6 +1760,7 @@ linedef_specials_table {
   }
 
   126 = {
+    description = "TELEPORT MONSTERS WR";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -1658,6 +1774,7 @@ linedef_specials_table {
   }
 
   127 = {
+    description = "BUILD STAIRS TURBO 16 S1";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 32;
@@ -1671,6 +1788,7 @@ linedef_specials_table {
   }
 
   128 = {
+    description = "RAISE TO NEAREST FLOOR WR";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -1684,6 +1802,7 @@ linedef_specials_table {
   }
 
   129 = {
+    description = "RAISE FLOOR TURBO WR";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -1697,6 +1816,7 @@ linedef_specials_table {
   }
 
   130 = {
+    description = "RAISE FLOOR TURBO W1";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -1710,6 +1830,7 @@ linedef_specials_table {
   }
 
   131 = {
+    description = "RAISE FLOOR TURBO S1";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -1723,6 +1844,7 @@ linedef_specials_table {
   }
 
   132 = {
+    description = "RAISE FLOOR TURBO SR";
     action = FloorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -1736,6 +1858,7 @@ linedef_specials_table {
   }
 
   133 = {
+    description = "BLAZING OPEN DOOR BLUE S1";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1749,6 +1872,7 @@ linedef_specials_table {
   }
 
   134 = {
+    description = "BLAZE OPEN DOOR RED SR";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1762,6 +1886,7 @@ linedef_specials_table {
   }
 
   135 = {
+    description = "BLAZING OPEN DOOR RED S1";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1775,6 +1900,7 @@ linedef_specials_table {
   }
 
   136 = {
+    description = "BLAZING DOOR OPEN YELLOW SR";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1788,6 +1914,7 @@ linedef_specials_table {
   }
 
   137 = {
+    description = "BLAZING OPEN DOOR YELLOW S1";
     action = DoorLockedRaise;
     arg1 = origarg1;
     arg2 = 64;
@@ -1801,6 +1928,7 @@ linedef_specials_table {
   }
 
   138 = {
+    description = "LIGHTS ON SR";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 255;
@@ -1814,6 +1942,7 @@ linedef_specials_table {
   }
 
   139 = {
+    description = "LIGHTS 35 SR";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 35;
@@ -1826,8 +1955,8 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   140 = {
+    description = "Raise the floor up by 512";
     action = FloorRaiseByValueTimes8;
     arg1 = origarg1;
     arg2 = 8;
@@ -1841,6 +1970,7 @@ linedef_specials_table {
   }
 
   141 = {
+    description = "SILENT CRUSHING CEILING W1";
     action = CeilingCrushAndRaiseSilentA;
     arg1 = origarg1;
     arg2 = 8;
@@ -1853,7 +1983,11 @@ linedef_specials_table {
     keepdata = false;
   }
 
+  // BOOM SPECIAL LINE TYPES BELOW
+
   142 = {
+    description = "Raise the floor up by 512 W1";
+    sourceport = "Boom";
     action = FloorRaiseByValueTimes8;
     arg1 = origarg1;
     arg2 = 8;
@@ -1867,6 +2001,8 @@ linedef_specials_table {
   }
 
   143 = {
+    description = "RAISE FLOOR 24 AND CHANGE W1";
+    sourceport = "Boom";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -1880,6 +2016,8 @@ linedef_specials_table {
   }
 
   144 = {
+    description = "RAISE FLOOR 32 AND CHANGE W1";
+    sourceport = "Boom";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -1893,6 +2031,8 @@ linedef_specials_table {
   }
 
   145 = {
+    description = "LOWER CEILING TO FLOOR W1";
+    sourceport = "Boom";
     action = CeilingLowerToFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -1906,6 +2046,8 @@ linedef_specials_table {
   }
 
   146 = {
+    description = "DONUT W1";
+    sourceport = "Boom";
     action = FloorDonut;
     arg1 = origarg1;
     arg2 = 4;
@@ -1919,6 +2061,8 @@ linedef_specials_table {
   }
 
   147 = {
+    description = "Raise the floor up by 512 WR";
+    sourceport = "Boom";
     action = FloorRaiseByValueTimes8;
     arg1 = origarg1;
     arg2 = 8;
@@ -1932,6 +2076,8 @@ linedef_specials_table {
   }
 
   148 = {
+    description = "RAISE FLOOR 24 AND CHANGE WR";
+    sourceport = "Boom";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -1945,6 +2091,8 @@ linedef_specials_table {
   }
 
   149 = {
+    description = "RAISE FLOOR 32 AND CHANGE WR";
+    sourceport = "Boom";
     action = FloorRaiseByValueChangeTex;
     arg1 = origarg1;
     arg2 = 4;
@@ -1957,8 +2105,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   150 = {
+    description = "SILENT CRUSHING CEILING WR";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseSilentA;
     arg1 = origarg1;
     arg2 = 8;
@@ -1972,6 +2121,8 @@ linedef_specials_table {
   }
 
   151 = {
+    description = "RAISE CEILING TO HEC WR";
+    sourceport = "Boom";
     action = FloorAndCeilingLowerRaise;
     arg1 = origarg1;
     arg2 = 8;
@@ -1985,6 +2136,8 @@ linedef_specials_table {
   }
 
   152 = {
+    description = "LOWER CEILING TO FLOOR WR";
+    sourceport = "Boom";
     action = CeilingLowerToFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -1998,6 +2151,8 @@ linedef_specials_table {
   }
 
   153 = {
+    description = "Transfer floor texture (TXP) W1";
+    sourceport = "Boom";
     action = FloorTransferTrigger;
     arg1 = origarg1;
     arg2 = 0;
@@ -2011,6 +2166,8 @@ linedef_specials_table {
   }
 
   154 = {
+    description = "Transfer floor texture (TXP) WR";
+    sourceport = "Boom";
     action = FloorTransferTrigger;
     arg1 = origarg1;
     arg2 = 0;
@@ -2024,6 +2181,8 @@ linedef_specials_table {
   }
 
   155 = {
+    description = "DONUT WR";
+    sourceport = "Boom";
     action = FloorDonut;
     arg1 = origarg1;
     arg2 = 4;
@@ -2037,6 +2196,8 @@ linedef_specials_table {
   }
 
   156 = {
+    description = "Start light strobing WR";
+    sourceport = "Boom";
     action = LightStrobeDoom;
     arg1 = origarg1;
     arg2 = 5;
@@ -2050,6 +2211,8 @@ linedef_specials_table {
   }
 
   157 = {
+    description = "Lights to dimmest neighbour WR";
+    sourceport = "Boom";
     action = LightMinNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -2063,6 +2226,8 @@ linedef_specials_table {
   }
 
   158 = {
+    description = "RAISE FLOOR TO TEXTURE S1";
+    sourceport = "Boom";
     action = FloorRaiseByTexture;
     arg1 = origarg1;
     arg2 = 8;
@@ -2076,6 +2241,8 @@ linedef_specials_table {
   }
 
   159 = {
+    description = "LOWER AND CHANGE S1";
+    sourceport = "Boom";
     action = FloorLowerToLowestChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -2088,8 +2255,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   160 = {
+    description = "RAISE FLOOR 24 AND CHANGE S1";
+    sourceport = "Boom";
     action = FloorRaiseByValueChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -2103,6 +2271,8 @@ linedef_specials_table {
   }
 
   161 = {
+    description = "RAISE FLOOR 24 S1";
+    sourceport = "Boom";
     action = FloorRaiseByValue;
     arg1 = origarg1;
     arg2 = 8;
@@ -2116,6 +2286,8 @@ linedef_specials_table {
   }
 
   162 = {
+    description = "PERPETUAL RAISE S1";
+    sourceport = "Boom";
     action = PlatPerpetualRaiseLip;
     arg1 = origarg1;
     arg2 = 8;
@@ -2129,6 +2301,8 @@ linedef_specials_table {
   }
 
   163 = {
+    description = "PLATFORM STOP S1";
+    sourceport = "Boom";
     action = PlatStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -2142,6 +2316,8 @@ linedef_specials_table {
   }
 
   164 = {
+    description = "Fast ceiling crush S1";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 16;
@@ -2155,6 +2331,8 @@ linedef_specials_table {
   }
 
   165 = {
+    description = "SILENT CRUSHING CEILING S1";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseSilentA;
     arg1 = origarg1;
     arg2 = 8;
@@ -2167,8 +2345,10 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  //k8: gozzo says this
   166 = {
+    description = "RAISE CEILING TO HEC S1";
+    sourceport = "Boom";
+    //k8: GZDoom says this
     action = FloorAndCeilingLowerRaise; // CeilingGeneric
     arg1 = origarg1;
     arg2 = 8;
@@ -2182,6 +2362,8 @@ linedef_specials_table {
   }
 
   167 = {
+    description = "CEILING LOWER TO FLOOR+8 S1";
+    sourceport = "Boom";
     action = CeilingLowerAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -2195,6 +2377,8 @@ linedef_specials_table {
   }
 
   168 = {
+    description = "CEILING CRUSH STOP S1";
+    sourceport = "Boom";
     action = CeilingCrushStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -2208,6 +2392,8 @@ linedef_specials_table {
   }
 
   169 = {
+    description = "Lights to brightest neighbour S1";
+    sourceport = "Boom";
     action = LightMaxNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -2220,8 +2406,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   170 = {
+    description = "LIGHTS 35 S1";
+    sourceport = "Boom";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 35;
@@ -2235,6 +2422,8 @@ linedef_specials_table {
   }
 
   171 = {
+    description = "LIGHTS 255 S1";
+    sourceport = "Boom";
     action = LightChangeToValue;
     arg1 = origarg1;
     arg2 = 255;
@@ -2248,6 +2437,8 @@ linedef_specials_table {
   }
 
   172 = {
+    description = "Start light strobing S1";
+    sourceport = "Boom";
     action = LightStrobeDoom;
     arg1 = origarg1;
     arg2 = 5;
@@ -2261,6 +2452,8 @@ linedef_specials_table {
   }
 
   173 = {
+    description = "Lights to dimmest neighbour S1";
+    sourceport = "Boom";
     action = LightMinNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -2274,6 +2467,8 @@ linedef_specials_table {
   }
 
   174 = {
+    description = "Player and Creature Teleport S1";
+    sourceport = "Boom";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -2287,6 +2482,8 @@ linedef_specials_table {
   }
 
   175 = {
+    description = "CLOSE DOOR 30 S1";
+    sourceport = "Boom";
     action = DoorCloseWaitOpen;
     arg1 = origarg1;
     arg2 = 8;
@@ -2300,6 +2497,8 @@ linedef_specials_table {
   }
 
   176 = {
+    description = "RAISE FLOOR TO TEXTURE SR";
+    sourceport = "Boom";
     action = FloorRaiseByTexture;
     arg1 = origarg1;
     arg2 = 8;
@@ -2313,6 +2512,8 @@ linedef_specials_table {
   }
 
   177 = {
+    description = "LOWER AND CHANGE SR";
+    sourceport = "Boom";
     action = FloorLowerToLowestChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -2326,6 +2527,8 @@ linedef_specials_table {
   }
 
   178 = {
+    description = "Raise the floor up by 512 SR";
+    sourceport = "Boom";
     action = FloorRaiseByValueTimes8;
     arg1 = origarg1;
     arg2 = 8;
@@ -2339,6 +2542,8 @@ linedef_specials_table {
   }
 
   179 = {
+    description = "RAISE FLOOR 24 AND CHANGE SR";
+    sourceport = "Boom";
     action = FloorRaiseByValueChange;
     arg1 = origarg1;
     arg2 = 8;
@@ -2352,6 +2557,8 @@ linedef_specials_table {
   }
 
   180 = {
+    description = "RAISE FLOOR 24 SR";
+    sourceport = "Boom";
     action = FloorRaiseByValue;
     arg1 = origarg1;
     arg2 = 8;
@@ -2365,6 +2572,8 @@ linedef_specials_table {
   }
 
   181 = {
+    description = "PERPETUAL RAISE SR";
+    sourceport = "Boom";
     action = PlatPerpetualRaiseLip;
     arg1 = origarg1;
     arg2 = 8;
@@ -2378,6 +2587,8 @@ linedef_specials_table {
   }
 
   182 = {
+    description = "PLATFORM STOP SR";
+    sourceport = "Boom";
     action = PlatStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -2391,6 +2602,8 @@ linedef_specials_table {
   }
 
   183 = {
+    description = "Fast ceiling crush SR";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 16;
@@ -2404,6 +2617,8 @@ linedef_specials_table {
   }
 
   184 = {
+    description = "CEILING CRUSH AND RAISE SR";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseA;
     arg1 = origarg1;
     arg2 = 8;
@@ -2417,6 +2632,8 @@ linedef_specials_table {
   }
 
   185 = {
+    description = "SILENT CRUSHING CEILING SR";
+    sourceport = "Boom";
     action = CeilingCrushAndRaiseSilentA;
     arg1 = origarg1;
     arg2 = 8;
@@ -2429,8 +2646,10 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  //k8: gozzo says this
   186 = {
+    description = "RAISE CEILING TO HEC SR";
+    sourceport = "Boom";
+    //k8: GZDoom says this
     action = FloorAndCeilingLowerRaise; // CeilingGeneric
     arg1 = origarg1;
     arg2 = 8;
@@ -2444,6 +2663,8 @@ linedef_specials_table {
   }
 
   187 = {
+    description = "CEILING LOWER TO FLOOR+8 SR";
+    sourceport = "Boom";
     action = CeilingLowerAndCrush;
     arg1 = origarg1;
     arg2 = 8;
@@ -2457,6 +2678,8 @@ linedef_specials_table {
   }
 
   188 = {
+    description = "CEILING CRUSH STOP SR";
+    sourceport = "Boom";
     action = CeilingCrushStop;
     arg1 = origarg1;
     arg2 = 0;
@@ -2470,6 +2693,8 @@ linedef_specials_table {
   }
 
   189 = {
+    description = "Transfer floor texture (TXP) S1";
+    sourceport = "Boom";
     action = FloorTransferTrigger;
     arg1 = origarg1;
     arg2 = 0;
@@ -2482,8 +2707,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   190 = {
+    description = "Transfer floor texture (TXP) SR";
+    sourceport = "Boom";
     action = FloorTransferTrigger;
     arg1 = origarg1;
     arg2 = 0;
@@ -2497,6 +2723,8 @@ linedef_specials_table {
   }
 
   191 = {
+    description = "DONUT SR";
+    sourceport = "Boom";
     action = FloorDonut;
     arg1 = origarg1;
     arg2 = 4;
@@ -2510,6 +2738,7 @@ linedef_specials_table {
   }
 
   192 = {
+    description = "Lights to brightest neighbour SR";
     action = LightMaxNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -2523,6 +2752,8 @@ linedef_specials_table {
   }
 
   193 = {
+    description = "Start light strobing SR";
+    sourceport = "Boom";
     action = LightStrobeDoom;
     arg1 = origarg1;
     arg2 = 5;
@@ -2536,6 +2767,8 @@ linedef_specials_table {
   }
 
   194 = {
+    description = "Lights to dimmest neighbour SR";
+    sourceport = "Boom";
     action = LightMinNeighbor;
     arg1 = origarg1;
     arg2 = 0;
@@ -2549,6 +2782,8 @@ linedef_specials_table {
   }
 
   195 = {
+    description = "Player and Creature Teleport SR";
+    sourceport = "Boom";
     action = Teleport;
     arg1 = 0;
     arg2 = origarg1;
@@ -2562,6 +2797,8 @@ linedef_specials_table {
   }
 
   196 = {
+    description = "CLOSE DOOR 30 SR";
+    sourceport = "Boom";
     action = DoorCloseWaitOpen;
     arg1 = origarg1;
     arg2 = 16;
@@ -2575,6 +2812,8 @@ linedef_specials_table {
   }
 
   197 = {
+    description = "EXIT LEVEL G1";
+    sourceport = "Boom";
     action = ExitNormal;
     arg1 = 0;
     arg2 = 0;
@@ -2588,6 +2827,8 @@ linedef_specials_table {
   }
 
   198 = {
+    description = "SECRET EXIT G1";
+    sourceport = "Boom";
     action = ExitSecret;
     arg1 = 0;
     arg2 = 0;
@@ -2601,6 +2842,8 @@ linedef_specials_table {
   }
 
   199 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR W1";
+    sourceport = "Boom";
     action = CeilingLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2614,6 +2857,8 @@ linedef_specials_table {
   }
 
   200 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR W1";
+    sourceport = "Boom";
     action = CeilingLowerToHighestFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -2627,6 +2872,8 @@ linedef_specials_table {
   }
 
   201 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR WR";
+    sourceport = "Boom";
     action = CeilingLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2640,6 +2887,8 @@ linedef_specials_table {
   }
 
   202 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR WR";
+    sourceport = "Boom";
     action = CeilingLowerToHighestFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -2653,6 +2902,8 @@ linedef_specials_table {
   }
 
   203 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR S1";
+    sourceport = "Boom";
     action = CeilingLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2666,6 +2917,8 @@ linedef_specials_table {
   }
 
   204 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR S1";
+    sourceport = "Boom";
     action = CeilingLowerToHighestFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -2679,6 +2932,8 @@ linedef_specials_table {
   }
 
   205 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR SR";
+    sourceport = "Boom";
     action = CeilingLowerToLowest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2692,6 +2947,8 @@ linedef_specials_table {
   }
 
   206 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR SR";
+    sourceport = "Boom";
     action = CeilingLowerToHighestFloor;
     arg1 = origarg1;
     arg2 = 8;
@@ -2705,6 +2962,8 @@ linedef_specials_table {
   }
 
   207 = {
+    description = "Silent Preserving Teleport W1";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -2718,6 +2977,8 @@ linedef_specials_table {
   }
 
   208 = {
+    description = "Silent Preserving Teleport WR";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -2731,6 +2992,8 @@ linedef_specials_table {
   }
 
   209 = {
+    description = "Silent Preserving Teleport S1";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -2743,8 +3006,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   210 = {
+    description = "Silent Preserving Teleport SR";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -2758,6 +3022,8 @@ linedef_specials_table {
   }
 
   211 = {
+    description = "PLATFORM INSTANT TOGGLE SR";
+    sourceport = "Boom";
     action = PlatToggle;
     arg1 = origarg1;
     arg2 = 0;
@@ -2771,6 +3037,8 @@ linedef_specials_table {
   }
 
   212 = {
+    description = "PLATFORM INSTANT TOGGLE WR";
+    sourceport = "Boom";
     action = PlatToggle;
     arg1 = origarg1;
     arg2 = 0;
@@ -2784,6 +3052,8 @@ linedef_specials_table {
   }
 
   213 = {
+    description = "Transfer lighting to tagged floor";
+    sourceport = "Boom";
     action = TransferFloorLight;
     arg1 = origarg1;
     arg2 = 0;
@@ -2797,6 +3067,8 @@ linedef_specials_table {
   }
 
   214 = {
+    description = "Scroll ceiling accelerate";
+    sourceport = "Boom";
     action = ScrollCeiling;
     arg1 = origarg1;
     arg2 = 6;
@@ -2810,6 +3082,8 @@ linedef_specials_table {
   }
 
   215 = {
+    description = "Scroll floor accelerate";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 6;
@@ -2823,6 +3097,8 @@ linedef_specials_table {
   }
 
   216 = {
+    description = "Push objects accelerate";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 6;
@@ -2836,6 +3112,8 @@ linedef_specials_table {
   }
 
   217 = {
+    description = "Scroll & Push accelerate";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 6;
@@ -2849,6 +3127,8 @@ linedef_specials_table {
   }
 
   218 = {
+    description = "Scroll wall accelerate";
+    sourceport = "Boom";
     action = ScrollTextureModel;
     arg1 = origarg1;
     arg2 = 2;
@@ -2862,6 +3142,8 @@ linedef_specials_table {
   }
 
   219 = {
+    description = "LOWER FLOOR TURBO W1";
+    sourceport = "Boom";
     action = FloorLowerToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2874,8 +3156,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   220 = {
+    description = "LOWER FLOOR TURBO WR";
+    sourceport = "Boom";
     action = FloorLowerToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2889,6 +3172,8 @@ linedef_specials_table {
   }
 
   221 = {
+    description = "LOWER FLOOR TURBO S1";
+    sourceport = "Boom";
     action = FloorLowerToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2902,6 +3187,8 @@ linedef_specials_table {
   }
 
   222 = {
+    description = "LOWER FLOOR TURBO SR";
+    sourceport = "Boom";
     action = FloorLowerToNearest;
     arg1 = origarg1;
     arg2 = 8;
@@ -2915,6 +3202,8 @@ linedef_specials_table {
   }
 
   223 = {
+    description = "Friction";
+    sourceport = "Boom";
     action = SectorSetFriction;
     arg1 = origarg1;
     arg2 = 0;
@@ -2928,6 +3217,8 @@ linedef_specials_table {
   }
 
   224 = {
+    description = "Set wind force";
+    sourceport = "Boom";
     action = SectorSetWind;
     arg1 = origarg1;
     arg2 = 0;
@@ -2941,6 +3232,8 @@ linedef_specials_table {
   }
 
   225 = {
+    description = "Set current force";
+    sourceport = "Boom";
     action = SectorSetCurrent;
     arg1 = origarg1;
     arg2 = 0;
@@ -2954,6 +3247,8 @@ linedef_specials_table {
   }
 
   226 = {
+    description = "Set point push/pull force";
+    sourceport = "Boom";
     action = PointPushSetForce;
     arg1 = origarg1;
     arg2 = 0;
@@ -2967,6 +3262,8 @@ linedef_specials_table {
   }
 
   227 = {
+    description = "Elevator to NEXT HIGHEST W1";
+    sourceport = "Boom";
     action = ElevatorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -2980,6 +3277,8 @@ linedef_specials_table {
   }
 
   228 = {
+    description = "Elevator to NEXT HIGHEST WR";
+    sourceport = "Boom";
     action = ElevatorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -2993,6 +3292,8 @@ linedef_specials_table {
   }
 
   229 = {
+    description = "Elevator to NEXT HIGHEST S1";
+    sourceport = "Boom";
     action = ElevatorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3006,6 +3307,8 @@ linedef_specials_table {
   }
 
   230 = {
+    description = "Elevator to NEXT HIGHEST SR";
+    sourceport = "Boom";
     action = ElevatorRaiseToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3019,6 +3322,8 @@ linedef_specials_table {
   }
 
   231 = {
+    description = "Elevator to NEXT LOWEST W1";
+    sourceport = "Boom";
     action = ElevatorLowerToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3032,6 +3337,8 @@ linedef_specials_table {
   }
 
   232 = {
+    description = "Elevator to NEXT LOWEST WR";
+    sourceport = "Boom";
     action = ElevatorLowerToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3045,6 +3352,8 @@ linedef_specials_table {
   }
 
   233 = {
+    description = "Elevator to NEXT LOWEST S1";
+    sourceport = "Boom";
     action = ElevatorLowerToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3058,6 +3367,8 @@ linedef_specials_table {
   }
 
   234 = {
+    description = "Elevator to NEXT LOWEST SR";
+    sourceport = "Boom";
     action = ElevatorLowerToNearest;
     arg1 = origarg1;
     arg2 = 32;
@@ -3071,6 +3382,8 @@ linedef_specials_table {
   }
 
   235 = {
+    description = "Elevator to TRIGGER HEIGHT W1";
+    sourceport = "Boom";
     action = ElevatorMoveToFloor;
     arg1 = origarg1;
     arg2 = 32;
@@ -3084,6 +3397,8 @@ linedef_specials_table {
   }
 
   236 = {
+    description = "Elevator to TRIGGER HEIGHT WR";
+    sourceport = "Boom";
     action = ElevatorMoveToFloor;
     arg1 = origarg1;
     arg2 = 32;
@@ -3097,6 +3412,8 @@ linedef_specials_table {
   }
 
   237 = {
+    description = "Elevator to TRIGGER HEIGHT S1";
+    sourceport = "Boom";
     action = ElevatorMoveToFloor;
     arg1 = origarg1;
     arg2 = 32;
@@ -3110,6 +3427,8 @@ linedef_specials_table {
   }
 
   238 = {
+    description = "Elevator to TRIGGER HEIGHT SR";
+    sourceport = "Boom";
     action = ElevatorMoveToFloor;
     arg1 = origarg1;
     arg2 = 32;
@@ -3123,6 +3442,8 @@ linedef_specials_table {
   }
 
   239 = {
+    description = "Transfer floor texture (NXP) W1";
+    sourceport = "Boom";
     action = FloorTransferNumeric;
     arg1 = origarg1;
     arg2 = 0;
@@ -3135,8 +3456,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   240 = {
+    description = "Transfer floor texture (NXP) WR";
+    sourceport = "Boom";
     action = FloorTransferNumeric;
     arg1 = origarg1;
     arg2 = 0;
@@ -3150,6 +3472,8 @@ linedef_specials_table {
   }
 
   241 = {
+    description = "Transfer floor texture (NXP) S1";
+    sourceport = "Boom";
     action = FloorTransferNumeric;
     arg1 = origarg1;
     arg2 = 0;
@@ -3163,6 +3487,8 @@ linedef_specials_table {
   }
 
   242 = {
+    description = "Deep water";
+    sourceport = "Boom";
     action = TransferHeights;
     arg1 = origarg1;
     arg2 = 0;
@@ -3176,6 +3502,8 @@ linedef_specials_table {
   }
 
   243 = {
+    description = "Silent Line Teleport W1";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3189,6 +3517,8 @@ linedef_specials_table {
   }
 
   244 = {
+    description = "Silent Line Teleport WR";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3202,6 +3532,8 @@ linedef_specials_table {
   }
 
   245 = {
+    description = "Scroll ceiling displacement";
+    sourceport = "Boom";
     action = ScrollCeiling;
     arg1 = origarg1;
     arg2 = 5;
@@ -3215,6 +3547,8 @@ linedef_specials_table {
   }
 
   246 = {
+    description = "Scroll floor displacement";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 5;
@@ -3228,6 +3562,8 @@ linedef_specials_table {
   }
 
   247 = {
+    description = "Push objects displacement";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 5;
@@ -3241,6 +3577,8 @@ linedef_specials_table {
   }
 
   248 = {
+    description = "Scroll & Push displacement";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 5;
@@ -3254,6 +3592,8 @@ linedef_specials_table {
   }
 
   249 = {
+    description = "Scroll wall displacement";
+    sourceport = "Boom";
     action = ScrollTextureModel;
     arg1 = origarg1;
     arg2 = 1;
@@ -3266,8 +3606,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-
   250 = {
+    description = "Scroll tagged ceiling";
+    sourceport = "Boom";
     action = ScrollCeiling;
     arg1 = origarg1;
     arg2 = 4;
@@ -3281,6 +3622,8 @@ linedef_specials_table {
   }
 
   251 = {
+    description = "Scroll tagged floor";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 4;
@@ -3294,6 +3637,8 @@ linedef_specials_table {
   }
 
   252 = {
+    description = "Carry objects on floor";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 4;
@@ -3307,6 +3652,8 @@ linedef_specials_table {
   }
 
   253 = {
+    description = "Scroll floor and carry objects";
+    sourceport = "Boom";
     action = ScrollFloor;
     arg1 = origarg1;
     arg2 = 4;
@@ -3320,6 +3667,8 @@ linedef_specials_table {
   }
 
   254 = {
+    description = "Scroll tagged wall";
+    sourceport = "Boom";
     action = ScrollTextureModel;
     arg1 = origarg1;
     arg2 = 0;
@@ -3333,6 +3682,8 @@ linedef_specials_table {
   }
 
   255 = {
+    description = "Scroll wall by sidedef offsets";
+    sourceport = "Boom";
     action = ScrollTextureOffsets;
     arg1 = 0;
     arg2 = 0;
@@ -3346,6 +3697,8 @@ linedef_specials_table {
   }
 
   256 = {
+    description = "BUILD STAIRS WR";
+    sourceport = "Boom";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 2;
@@ -3359,6 +3712,8 @@ linedef_specials_table {
   }
 
   257 = {
+    description = "BUILD STAIRS TURBO 16 WR";
+    sourceport = "Boom";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 32;
@@ -3372,6 +3727,8 @@ linedef_specials_table {
   }
 
   258 = {
+    description = "BUILD STAIRS SR";
+    sourceport = "Boom";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 2;
@@ -3385,6 +3742,8 @@ linedef_specials_table {
   }
 
   259 = {
+    description = "BUILD STAIRS TURBO 16 SR";
+    sourceport = "Boom";
     action = StairsBuildUpDoom;
     arg1 = origarg1;
     arg2 = 32;
@@ -3397,11 +3756,12 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // was 128, changed to better reflect BOOM default
   260 = {
+    description = "Make tagged lines translucent";
+    sourceport = "Boom";
     action = LineTranslucent;
     arg1 = origarg1;
-    arg2 = 168;
+    arg2 = 168; // was 128, changed to better reflect BOOM default
     arg3 = 0;
     arg4 = 0;
     arg5 = 0;
@@ -3412,6 +3772,8 @@ linedef_specials_table {
   }
 
   261 = {
+    description = "Transfer lighting to tagged ceiling";
+    sourceport = "Boom";
     action = TransferCeilingLight;
     arg1 = origarg1;
     arg2 = 0;
@@ -3425,6 +3787,8 @@ linedef_specials_table {
   }
 
   262 = {
+    description = "Silent Line Teleport Reverse W1";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3438,6 +3802,8 @@ linedef_specials_table {
   }
 
   263 = {
+    description = "Silent Line Teleport Reverse WR";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3451,6 +3817,8 @@ linedef_specials_table {
   }
 
   264 = {
+    description = "Monster Line Teleport W1 Reverse";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3464,6 +3832,8 @@ linedef_specials_table {
   }
 
   265 = {
+    description = "Monster Line Teleport WR Reverse";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3477,6 +3847,8 @@ linedef_specials_table {
   }
 
   266 = {
+    description = "Monster Line Teleport W1";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3490,6 +3862,8 @@ linedef_specials_table {
   }
 
   267 = {
+    description = "Monster Line Teleport WR";
+    sourceport = "Boom";
     action = TeleportLine;
     arg1 = origarg1;
     arg2 = origarg1;
@@ -3503,6 +3877,8 @@ linedef_specials_table {
   }
 
   268 = {
+    description = "Monster-only Silent Teleport W1";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -3516,6 +3892,8 @@ linedef_specials_table {
   }
 
   269 = {
+    description = "Monster-only Silent Teleport WR";
+    sourceport = "Boom";
     action = TeleportNoFog;
     arg1 = 0;
     arg2 = 0;
@@ -3530,11 +3908,12 @@ linedef_specials_table {
 
 
   // Doom Legacy
-  // 270: fraggle script
-  //TODO: transfer sky is not fully implemented yet
+  // 270: fraggle script / Eternity ExtraDataSpecial
 
-  // transfer sky (MBF?)
+  //TODO: transfer sky is not fully implemented yet
   271 = {
+    description = "Transfer tex to sector's sky";
+    sourceport = "MBF";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 255;
@@ -3547,8 +3926,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // transfer sky (MBF?)
   272 = {
+    description = "Transfer tex to sector's sky, flipped";
+    sourceport = "MBF";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 255;
@@ -3565,6 +3945,8 @@ linedef_specials_table {
 
   // clip fake planes, underwater
   280 = {
+    description = "Legacy '3D liquid floor'";
+    sourceport = "Legacy";
     action = TransferHeights;
     arg1 = origarg1;
     arg2 = 12;
@@ -3577,10 +3959,19 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // 281 is processed in 3d floor section
+  281 = {
+    description = "Legacy '3D floor'";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
 
-  // light/fog color
   282 = {
+    description = "Legacy '3D floor' (does not affect light properties below the '3D floor', uses master sector light properties instead)";
+    sourceport = "Legacy";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 1;
@@ -3596,6 +3987,8 @@ linedef_specials_table {
   // no 283
 
   284 = {
+    description = "Set Line Translucency to 50%";
+    sourceport = "Legacy";
     action = LineTranslucent;
     arg1 = origarg1;
     arg2 = 128;
@@ -3609,6 +4002,8 @@ linedef_specials_table {
   }
 
   285 = {
+    description = "Set Line Translucency to 25%";
+    sourceport = "Legacy";
     action = LineTranslucent;
     arg1 = origarg1;
     arg2 = 192;
@@ -3622,6 +4017,8 @@ linedef_specials_table {
   }
 
   286 = {
+    description = "Set Line Translucency to 80%";
+    sourceport = "Legacy";
     action = LineTranslucent;
     arg1 = origarg1;
     arg2 = 48;
@@ -3636,6 +4033,8 @@ linedef_specials_table {
 
   // additive
   287 = {
+    description = "Set Line Translucency to Additive 50%";
+    sourceport = "Legacy";
     action = LineTranslucent;
     arg1 = origarg1;
     arg2 = 128;
@@ -3649,6 +4048,8 @@ linedef_specials_table {
   }
 
   288 = {
+    description = "Set Line Translucency to 0%";
+    sourceport = "Legacy";
     action = LineTranslucent;
     arg1 = origarg1;
     arg2 = 255;
@@ -3661,12 +4062,117 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // 289 is processed in 3d floor section
+  289 = {
+    description = "Legacy water";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
 
-  // Doom Legacy water (processed below)
-  //SetLineTrans(301, SectorSet3dFloor, -1, 255, 1, 0, 0, Cross, false); // StaticInit
+  //290   Legacy -- Instant Lower Floor
+  //291   Legacy -- Instant Raise Ceiling
+
+  // mapped according to https://zdoom.org/wiki/Sector_Set3dFloor
+  300 = {
+    description = "Solid Translucent 3D Floor, Upper Texture is 50% Translucent";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  301 = {
+    description = "Translucent 3D Water";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  // not properly implemented yet
+  302 = {
+    description = "3D Fog";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 6;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  303 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  304 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  305 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 2;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  306 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  // 307..333: Eternity
+
+  // 3d floors
+  // https://zdoom.org/wiki/Sector_Set3dFloor
+
+  332 = {
+    description = "ZDoom 3D Floor";
+    sourceport = "ZDoom";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 4;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
 
   333 = {
+    description = "Static Init Gravity";
+    sourceport = "ZDoom";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 0;
@@ -3679,8 +4185,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // gravity
   334 = {
+    description = "Static Init Color";
+    sourceport = "ZDoom";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 1;
@@ -3693,8 +4200,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // color
   335 = {
+    description = "Static Init Damage";
+    sourceport = "ZDoom";
     action = StaticInit;
     arg1 = origarg1;
     arg2 = 2;
@@ -3707,8 +4215,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // damage
   336 = {
+    description = "Mirror";
+    sourceport = "ZDoom";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -3722,6 +4231,8 @@ linedef_specials_table {
   }
 
   337 = {
+    description = "Horizon";
+    sourceport = "ZDoom";
     action = LineHorizon;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -3735,6 +4246,8 @@ linedef_specials_table {
   }
 
   338 = {
+    description = "Waggle Floor W1";
+    sourceport = "ZDoom";
     action = FloorWaggle;
     arg1 = origarg1;
     arg2 = 24;
@@ -3748,6 +4261,8 @@ linedef_specials_table {
   }
 
   339 = {
+    description = "Waggle Floor W1";
+    sourceport = "ZDoom";
     action = FloorWaggle;
     arg1 = origarg1;
     arg2 = 12;
@@ -3761,6 +4276,8 @@ linedef_specials_table {
   }
 
   340 = {
+    description = "Slope Front Floor";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 0;
@@ -3774,6 +4291,8 @@ linedef_specials_table {
   }
 
   341 = {
+    description = "Slope Front Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 0;
     arg2 = 1;
@@ -3787,6 +4306,8 @@ linedef_specials_table {
   }
 
   342 = {
+    description = "Slope Front Floor And Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 1;
@@ -3800,6 +4321,8 @@ linedef_specials_table {
   }
 
   343 = {
+    description = "Slope Back Floor";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 0;
@@ -3813,6 +4336,8 @@ linedef_specials_table {
   }
 
   344 = {
+    description = "Slope Back Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 0;
     arg2 = 2;
@@ -3826,6 +4351,8 @@ linedef_specials_table {
   }
 
   345 = {
+    description = "Slope Back Floor And Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 2;
@@ -3839,6 +4366,8 @@ linedef_specials_table {
   }
 
   346 = {
+    description = "Slope Back Floor And Front Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 1;
@@ -3852,6 +4381,8 @@ linedef_specials_table {
   }
 
   347 = {
+    description = "Slope Front Floor And Back Ceiling";
+    sourceport = "ZDoom";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 2;
@@ -3864,12 +4395,13 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  //348 = WALK, Autosave()
-  //349 = USE, Autosave()
+  //348 = WALK, Autosave() -- ZDoom
+  //349 = USE, Autosave() -- ZDoom
 
-  // ZDoom line types
   //TODO: not fully implemented yet
   350 = {
+    description = "Fake Floor";
+    sourceport = "ZDoom";
     action = TransferHeights;
     arg1 = origarg1;
     arg2 = 2;
@@ -3882,8 +4414,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // just fake the floor
   351 = {
+    description = "Fake Floor With Clipping";
+    sourceport = "ZDoom";
     action = TransferHeights;
     arg1 = origarg1;
     arg2 = 6;
@@ -3896,13 +4429,14 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  // just fake the floor and clip it too
-  //352 = 0, Sector_CopyScroller(tag, 1)  // copy ceiling scroller
-  //353 = 0, Sector_CopyScroller(tag, 2)  // copy floor scroller
-  //354 = 0, Sector_CopyScroller(tag, 6)  // copy carrying floor scroller
+  //ZDoom: 352 = 0, Sector_CopyScroller(tag, 1)  // copy ceiling scroller
+  //ZDoom: 353 = 0, Sector_CopyScroller(tag, 2)  // copy floor scroller
+  //ZDoom: 354 = 0, Sector_CopyScroller(tag, 6)  // copy carrying floor scroller
 
   // eternity
   386 = {
+    description = "Slope Front Floor";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 0;
@@ -3916,6 +4450,8 @@ linedef_specials_table {
   }
 
   387 = {
+    description = "Slope Front Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 0;
     arg2 = 1;
@@ -3929,6 +4465,8 @@ linedef_specials_table {
   }
 
   388 = {
+    description = "Slope Front Floor And Front Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 1;
@@ -3942,6 +4480,8 @@ linedef_specials_table {
   }
 
   389 = {
+    description = "Slope Back Floor";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 0;
@@ -3955,6 +4495,8 @@ linedef_specials_table {
   }
 
   390 = {
+    description = "Slope Back Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 0;
     arg2 = 2;
@@ -3968,6 +4510,8 @@ linedef_specials_table {
   }
 
   391 = {
+    description = "Slope Back Floor And Back Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 2;
@@ -3981,6 +4525,8 @@ linedef_specials_table {
   }
 
   392 = {
+    description = "Slope Back Floor And Front Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 2;
     arg2 = 1;
@@ -3994,6 +4540,8 @@ linedef_specials_table {
   }
 
   393 = {
+    description = "Slope Front Floor And Back Ceiling";
+    sourceport = "Eternity";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 2;
@@ -4006,8 +4554,9 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  //EDGE plane-copy
-  394 = { // Slope_FrontFloorToTaggedSlope
+  394 = {
+    description = "Slope Front Floor To Tagged Slope";
+    sourceport = "Eternity";
     action = PlaneCopy;
     arg2 = 0;
     arg3 = 0;
@@ -4015,7 +4564,9 @@ linedef_specials_table {
     arg5 = 0;
   }
 
-  395 = { // Slope_FrontCeilingToTaggedSlope
+  395 = {
+    description = "Slope Front Ceiling To Tagged Slope";
+    sourceport = "Eternity";
     action = PlaneCopy;
     arg2 = origarg1;
     arg1 = 0;
@@ -4024,7 +4575,9 @@ linedef_specials_table {
     arg5 = 0;
   }
 
-  396 = { // Slope_FrontFloorAndCeilingToTaggedSlope
+  396 = {
+    description = "Slope Front Floor And Front Ceiling To Tagged Slope";
+    sourceport = "Eternity";
     action = PlaneCopy;
     arg2 = unchanged;
     arg3 = 0;
@@ -4032,359 +4585,11 @@ linedef_specials_table {
     arg5 = 0;
   }
 
-  // 3DGE
-  /*
-    [409] : EDGE Translucent Linedef (80%)
-    [410] : EDGE Translucent Linedef (60%)
-    [411] : EDGE Translucent Linedef (40%)
-    [412] : EDGE Translucent Linedef (20%)
-  */
-  // 80%
-  409 = {
-    action = LineTranslucent;
-    arg1 = origarg1;
-    arg2 = 204;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
 
-  // 60%
-  410 = {
-    action = LineTranslucent;
-    arg1 = origarg1;
-    arg2 = 153;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // 40%
-  411 = {
-    action = LineTranslucent;
-    arg1 = origarg1;
-    arg2 = 101;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // 20%
-  412 = {
-    action = LineTranslucent;
-    arg1 = origarg1;
-    arg2 = 50;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  /*
-    [422] : EDGE SCROLL RIGHT
-    [423] : EDGE SCROLL UP
-    [424] : EDGE SCROLL DOWN
-    [425] : EDGE SCROLL LEFT AND UP
-    [426] : EDGE SCROLL LEFT AND DOWN
-    [427] : EDGE SCROLL RIGHT AND UP
-    [428] : EDGE SCROLL RIGHT AND DOWN
-    [429] : EDGE SCROLL FAST LOWER AND MIDDLE TEXTURE (WATERFALLS) (not implemented yet)
-  */
-  422 = {
-    action = ScrollTextureRight;
-    arg1 = 64;
-    arg2 = 0;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  423 = {
-    action = ScrollTextureUp;
-    arg1 = 64;
-    arg2 = 0;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  424 = {
-    action = ScrollTextureDown;
-    arg1 = 64;
-    arg2 = 0;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  425 = {
-    action = ScrollTextureBoth;
-    arg1 = 0;
-    arg2 = 64;
-    arg3 = 0;
-    arg4 = 0;
-    arg5 = 64;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  426 = {
-    action = ScrollTextureBoth;
-    arg1 = 0;
-    arg2 = 64;
-    arg3 = 0;
-    arg4 = 64;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  427 = {
-    action = ScrollTextureBoth;
-    arg1 = 0;
-    arg2 = 0;
-    arg3 = 64;
-    arg4 = 0;
-    arg5 = 64;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  428 = {
-    action = ScrollTextureBoth;
-    arg1 = 0;
-    arg2 = 0;
-    arg3 = 64;
-    arg4 = 64;
-    arg5 = 0;
-    spac = None/*Cross*/;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  /*
-    [434] : EDGE S1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-    [435] : EDGE SR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-    [436] : EDGE W1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-    [437] : EDGE WR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-    [438] : EDGE G1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-    [439] : EDGE GR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)
-  */
-  // k8: i'm not sure if SPAC flags are right here
-  434 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Use;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // repeated
-  435 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Use;
-    repeat = true;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  436 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Cross;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // repeated
-  437 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Cross;
-    repeat = true;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  438 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Impact;
-    repeat = false;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // repeated
-  439 = {
-    action = FloorRaiseByValue;
-    arg1 = origarg1;
-    arg2 = 8;
-    arg3 = 2;
-    arg4 = 0;
-    arg5 = 0;
-    spac = Impact;
-    repeat = true;
-    monsteractivate = false;
-    keepdata = false;
-  }
-
-  // 3d floors
-  // https://zdoom.org/wiki/Sector_Set3dFloor
-  281 = {
-    action = SectorSet3dFloor;
-    arg2 = 1;
-    arg3 = 0;
-    arg4 = 255;
-    arg5 = unchanged;
-  }
-
-  289 = {
-    action = SectorSet3dFloor;
-    arg2 = 1;
-    arg3 = 1;
-    arg4 = 255;
-    arg5 = unchanged;
-  }
-
-  //
-  300 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 1;
-    arg3 = 1;
-    arg4 = 127;
-    arg5 = unchanged;
-  }
-
-  301 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 2;
-    arg3 = 2;
-    arg4 = 127;
-    arg5 = unchanged;
-  }
-
-  // not properly implemented yet
-  302 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 3;
-    arg3 = 6;
-    arg4 = 127;
-    arg5 = unchanged;
-  }
-  303 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 3;
-    arg3 = unchanged;
-    arg4 = unchanged;
-    arg5 = unchanged;
-  }
-
-  304 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 2;
-    arg3 = 2;
-    arg4 = 255;
-    arg5 = unchanged;
-  }
-
-  305 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 3;
-    arg3 = 2;
-    arg4 = unchanged;
-    arg5 = unchanged;
-  }
-
-  306 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 1;
-    arg3 = unchanged;
-    arg4 = unchanged;
-    arg5 = unchanged;
-  }
-
-  332 = {
-    action = SectorSet3dFloor;
-    arg1 = unchanged;
-    arg2 = 4;
-    arg3 = unchanged;
-    arg4 = unchanged;
-    arg5 = unchanged;
-  }
-
-
-  // 3DGE
-  /*
-    [400] : EDGE Thick Extrafloor
-    [401] : EDGE Thick Extrafloor (use upper texture)
-    [402] : EDGE Thick Extrafloor (use lower texture)
-  */
+  // EDGE
   400 = {
+    description = "Thick Extrafloor";
+    sourceport = "EDGE";
     action = SectorSet3dFloor;
     arg1 = unchanged;
     arg2 = 1;
@@ -4394,6 +4599,8 @@ linedef_specials_table {
   }
 
   401 = {
+    description = "Thick Extrafloor (use upper texture)";
+    sourceport = "EDGE";
     action = SectorSet3dFloor;
     arg1 = unchanged;
     arg2 = 1;
@@ -4403,6 +4610,8 @@ linedef_specials_table {
   }
 
   402 = {
+    description = "Thick Extrafloor (use lower texture)";
+    sourceport = "EDGE";
     action = SectorSet3dFloor;
     arg1 = unchanged;
     arg2 = 1;
@@ -4411,16 +4620,9 @@ linedef_specials_table {
     arg5 = unchanged;
   }
 
-
-  /*
-    [403] : EDGE Liquid Extrafloor (Opaque)
-    [404] : EDGE Liquid Extrafloor (80% Translucent)
-    [405] : EDGE Liquid Extrafloor (60% Translucent)
-    [406] : EDGE Liquid Extrafloor (40% Translucent)
-    [407] : EDGE Liquid Extrafloor (20% Translucent)
-    [408] : EDGE Liquid Extrafloor (Invisible)
-  */
   403 = {
+    description = "Liquid Extrafloor (Opaque)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4434,6 +4636,8 @@ linedef_specials_table {
   }
 
   404 = {
+    description = "Liquid Extrafloor (80% Translucent)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4447,6 +4651,8 @@ linedef_specials_table {
   }
 
   405 = {
+    description = "Liquid Extrafloor (60% Translucent)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4460,6 +4666,8 @@ linedef_specials_table {
   }
 
   406 = {
+    description = "Liquid Extrafloor (40% Translucent)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4473,6 +4681,8 @@ linedef_specials_table {
   }
 
   407 = {
+    description = "Liquid Extrafloor (20% Translucent)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4486,6 +4696,8 @@ linedef_specials_table {
   }
 
   408 = {
+    description = "Liquid Extrafloor (Invisible)";
+    sourceport = "EDGE";
     action = EDGEWater;
     arg1 = origarg1;
     arg2 = 12;
@@ -4498,23 +4710,69 @@ linedef_specials_table {
     keepdata = false;
   }
 
-  /* old and wrong
-  Set3DFloorTrans(403, 2, 2, 255);
-  Set3DFloorTrans(404, 2, 2, 204);
-  Set3DFloorTrans(405, 2, 2, 153);
-  Set3DFloorTrans(406, 2, 2, 102);
-  Set3DFloorTrans(407, 2, 2, 51);
-  Set3DFloorTrans(408, 2, 2, -666);
-  */
+  409 = {
+    description = "Translucent Line (80%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 204;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
 
-  /*
-    [413] : EDGE Thin Extrafloor (Opaque)
-    [414] : EDGE Thin Extrafloor (80% Translucent)
-    [415] : EDGE Thin Extrafloor (60% Translucent)
-    [416] : EDGE Thin Extrafloor (40% Translucent)
-    [417] : EDGE Thin Extrafloor (20% Translucent)
-  */
+  410 = {
+    description = "Translucent Line (60%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 153;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  411 = {
+    description = "Translucent Line (40%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 101;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  412 = {
+    description = "Translucent Line (20%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 50;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
   413 = {
+    description = "Thin Extrafloor (Opaque)";
+    sourceport = "EDGE";
     action = SectorSet3dThinFloorEDGE;
     arg1 = unchanged;
     arg2 = 1;
@@ -4524,6 +4782,8 @@ linedef_specials_table {
   }
 
   414 = {
+    description = "Thin Extrafloor (80% Translucent)";
+    sourceport = "EDGE";
     action = SectorSet3dThinFloorEDGE;
     arg1 = unchanged;
     arg2 = 1;
@@ -4533,6 +4793,8 @@ linedef_specials_table {
   }
 
   415 = {
+    description = "Thin Extrafloor (60% Translucent)";
+    sourceport = "EDGE";
     action = SectorSet3dThinFloorEDGE;
     arg1 = unchanged;
     arg2 = 1;
@@ -4542,6 +4804,8 @@ linedef_specials_table {
   }
 
   416 = {
+    description = "Thin Extrafloor (40% Translucent)";
+    sourceport = "EDGE";
     action = SectorSet3dThinFloorEDGE;
     arg1 = unchanged;
     arg2 = 1;
@@ -4551,6 +4815,8 @@ linedef_specials_table {
   }
 
   417 = {
+    description = "Thin Extrafloor (20% Translucent)";
+    sourceport = "EDGE";
     action = SectorSet3dThinFloorEDGE;
     arg1 = unchanged;
     arg2 = 1;
@@ -4559,15 +4825,210 @@ linedef_specials_table {
     arg5 = unchanged;
   }
 
+  422 = {
+    description = "SCROLL RIGHT";
+    sourceport = "EDGE";
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  423 = {
+    description = "SCROLL UP";
+    sourceport = "EDGE";
+    action = ScrollTextureUp;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  424 = {
+    description = "SCROLL DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureDown;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  425 = {
+    description = "SCROLL LEFT AND UP";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  426 = {
+    description = "SCROLL LEFT AND DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  427 = {
+    description = "SCROLL RIGHT AND UP";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  428 = {
+    description = "SCROLL RIGHT AND DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // [429] : EDGE SCROLL FAST LOWER AND MIDDLE TEXTURE (WATERFALLS) (not implemented yet)
+  // NOTE: TYPES 430-433 USE THE UPPER MASTER TEXTURE FOR THE SIDE TEXTURE OF THE EXTRAFLOOR!
+  //       THEY ARE ONLY GOOD FOR MAKING FALLS, OR EDGES OF RIVERS THAT FALLS OFF A LEDGE!
+
+  // k8: i'm not sure if SPAC flags are right here
+  434 = {
+    description = "EDGE S1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  435 = {
+    description = "EDGE SR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  436 = {
+    description = "EDGE W1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  437 = {
+    description = "EDGE WR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  438 = {
+    description = "EDGE G1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  439 = {
+    description = "EDGE GR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
   // EDGE mirrors
-  /*
-    [462] : EDGE Mirror (Plain)
-    [463] : EDGE Mirror (White)
-    [464] : EDGE Mirror (Blue)
-    [465] : EDGE Mirror (Red)
-    [466] : EDGE Mirror (Green)
-  */
   462 = {
+    description = "Mirror (Plain)";
+    sourceport = "EDGE";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -4581,6 +5042,8 @@ linedef_specials_table {
   }
 
   463 = {
+    description = "Mirror (White)";
+    sourceport = "EDGE";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -4594,6 +5057,8 @@ linedef_specials_table {
   }
 
   464 = {
+    description = "Mirror (Blue)";
+    sourceport = "EDGE";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -4607,6 +5072,8 @@ linedef_specials_table {
   }
 
   465 = {
+    description = "Mirror (Red)";
+    sourceport = "EDGE";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -4620,6 +5087,8 @@ linedef_specials_table {
   }
 
   466 = {
+    description = "Mirror (Green)";
+    sourceport = "EDGE";
     action = LineMirror;
     arg1 = unchanged;
     arg2 = unchanged;
@@ -4633,12 +5102,9 @@ linedef_specials_table {
   }
 
   // EDGE slopes
-  /*
-    [567] : EDGE Detail Slope - FLOOR
-    [568] : EDGE Detail Slope - CEILING
-    [569] : EDGE Detail Slope - FLOOR+CEILING
-  */
   567 = {
+    description = "Detail Slope - Floor";
+    sourceport = "EDGE";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 0;
@@ -4652,6 +5118,8 @@ linedef_specials_table {
   }
 
   568 = {
+    description = "Detail Slope - Ceiling";
+    sourceport = "EDGE";
     action = PlaneAlign;
     arg1 = 0;
     arg2 = 1;
@@ -4665,6 +5133,8 @@ linedef_specials_table {
   }
 
   569 = {
+    description = "Detail Slope - Floor And Ceiling";
+    sourceport = "EDGE";
     action = PlaneAlign;
     arg1 = 1;
     arg2 = 1;
