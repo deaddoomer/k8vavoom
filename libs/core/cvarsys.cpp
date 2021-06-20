@@ -391,30 +391,40 @@ void VCvar::SetType (CVType atype) {
 
 //==========================================================================
 //
-//  VCvar::Set
+//  VCvar::SetInt
 //
 //==========================================================================
-void VCvar::Set (int value) {
+void VCvar::SetInt (int value) {
   Set(VStr(value));
 }
 
 
 //==========================================================================
 //
-//  VCvar::Set
+//  VCvar::SetFloat
 //
 //==========================================================================
-void VCvar::Set (float value) {
+void VCvar::SetFloat (float value) {
   Set(VStr(value));
 }
 
 
 //==========================================================================
 //
-//  VCvar::Set
+//  VCvar::SetBool
 //
 //==========================================================================
-void VCvar::Set (VStr AValue) {
+void VCvar::SetBool (bool value) {
+  Set(VStr(value ? "1" : "0"));
+}
+
+
+//==========================================================================
+//
+//  VCvar::SetStr
+//
+//==========================================================================
+void VCvar::SetStr (VStr AValue) {
   if (Flags&CVAR_Latch) {
     LatchedString = AValue;
     return;
@@ -454,34 +464,45 @@ void VCvar::SetDefault (VStr value) {
 
 //==========================================================================
 //
-//  VCvar::SetShadow
+//  VCvar::SetShadowInt
 //
 //==========================================================================
-void VCvar::SetShadow (int value) {
+void VCvar::SetShadowInt (int value) {
   EnsureShadow();
-  shadowVar->Set(value);
+  shadowVar->SetInt(value);
 }
 
 
 //==========================================================================
 //
-//  VCvar::SetShadow
+//  VCvar::SetShadowFloat
 //
 //==========================================================================
-void VCvar::SetShadow (float value) {
+void VCvar::SetShadowFloat (float value) {
   EnsureShadow();
-  shadowVar->Set(value);
+  shadowVar->SetFloat(value);
 }
 
 
 //==========================================================================
 //
-//  VCvar::SetShadow
+//  VCvar::SetShadowStr
 //
 //==========================================================================
-void VCvar::SetShadow (VStr value) {
+void VCvar::SetShadowStr (VStr value) {
   EnsureShadow();
-  shadowVar->Set(value);
+  shadowVar->SetStr(value);
+}
+
+
+//==========================================================================
+//
+//  VCvar::SetShadowBool
+//
+//==========================================================================
+void VCvar::SetShadowBool (bool value) {
+  EnsureShadow();
+  shadowVar->SetBool(value);
 }
 
 

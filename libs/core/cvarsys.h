@@ -95,15 +95,26 @@ public:
   // this will coerce values, if necessary
   void SetType (CVType atype);
 
-  void Set (int value);
-  void Set (float value);
-  void Set (VStr value);
+  void SetInt (int value);
+  void SetFloat (float value);
+  void SetStr (VStr value);
+  void SetBool (bool value);
+
   void SetDefault (VStr value);
 
+  inline void Set (int value) { SetInt(value); }
+  inline void Set (float value) { SetFloat(value); }
+  inline void Set (VStr value) { SetStr(value); }
+
   // WARNING! shadowed userinfo/serverinfo cvars won't work as expected!
-  void SetShadow (int value);
-  void SetShadow (float value);
-  void SetShadow (VStr value);
+  void SetShadowInt (int value);
+  void SetShadowFloat (float value);
+  void SetShadowStr (VStr value);
+  void SetShadowBool (bool value);
+
+  inline void SetShadow (int value) { SetShadowInt(value); }
+  inline void SetShadow (float value) { SetShadowFloat(value); }
+  inline void SetShadow (VStr value) { SetShadowStr(value); }
 
   inline void SetReadOnly (bool v) noexcept { if (v) Flags |= CVAR_Rom; else Flags &= ~CVAR_Rom; }
 
