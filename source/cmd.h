@@ -79,6 +79,8 @@ private:
 
   static void rebuildAliasMap ();
 
+  static void ProcessSetCommand ();
+
 protected:
   static TArray<VStr> Args;
   static ECmdSource Source;

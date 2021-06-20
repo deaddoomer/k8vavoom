@@ -102,6 +102,7 @@ static int sortCmpVStrCI (const void *a, const void *b, void *udata) {
 //==========================================================================
 static bool isBoolTrueStr (VStr s) {
   if (s.isEmpty()) return false;
+  /*
   s = s.xstrip();
   if (s.isEmpty()) return false;
   if (s.strEquCI("false")) return false;
@@ -115,6 +116,8 @@ static bool isBoolTrueStr (VStr s) {
     if (s.convertInt(&n)) return (n != 0);
   }
   return true;
+  */
+  return VCvar::ParseBool(*s);
 }
 
 
@@ -848,6 +851,103 @@ int VCommand::GetCommandType (VStr cmd) {
 
 //==========================================================================
 //
+//  VCommand::ProcessSetCommand
+//
+//  "set [(type)] var value" (i.e. "set (int) myvar 0")
+//    (type) is:
+//      (int)
+//      (float)
+//      (bool)
+//      (string)
+//  default is "(string)"
+//
+//==========================================================================
+void VCommand::ProcessSetCommand () {
+  enum {
+    SST_Int,
+    SST_Float,
+    SST_Bool,
+    SST_Str,
+  };
+
+  if (Args.length() < 3 || Args.length() > 4) {
+    if (host_initialised) GCon->Log(NAME_Error, "'set' command usage: \"set [(type)] name value\"");
+    return;
+  }
+
+  int stype = SST_Str;
+  int nidx = 1;
+
+  if (Args.length() == 4) {
+    nidx = 2;
+         if (Args[1].strEquCI("(int)")) stype = SST_Int;
+    else if (Args[1].strEquCI("(float)")) stype = SST_Float;
+    else if (Args[1].strEquCI("(bool)")) stype = SST_Bool;
+    else if (Args[1].strEquCI("(string)")) stype = SST_Str;
+    else if (Args[1].strEquCI("(str)")) stype = SST_Str;
+    else {
+      if (host_initialised) GCon->Logf(NAME_Error, "invalid variable type `%s` in 'set'", *Args[1]);
+      return;
+    }
+  }
+
+  VStr vname = Args[nidx].xstrip();
+  VStr vvalue = Args[nidx+1];
+
+  if (vname.isEmpty()) {
+    if (host_initialised) GCon->Log(NAME_Error, "'set' expects variable name");
+    return;
+  }
+
+  float fv = 0.0f;
+  int iv = 0;
+  bool bv = false;
+
+  switch (stype) {
+    case SST_Int:
+      if (!vvalue.convertInt(&iv)) {
+        if (host_initialised) GCon->Logf(NAME_Error, "'set' expects int, but got `%s`", *vvalue);
+        return;
+      }
+      break;
+    case SST_Float:
+      if (!vvalue.convertFloat(&fv)) {
+        if (host_initialised) GCon->Logf(NAME_Error, "'set' expects float, but got `%s`", *vvalue);
+        return;
+      }
+      break;
+    case SST_Bool:
+      bv = isBoolTrueStr(vvalue);
+      break;
+    case SST_Str:
+      break;
+    default: Sys_Error("VCommand::ProcessSetCommand: wtf vconvert?!");
+  }
+
+  VCvar *cv = VCvar::FindVariable(*vname);
+  if (!cv) {
+    switch (stype) {
+      case SST_Int: cv = VCvar::CreateNewInt(VName(*vname), 0, "user-created variable", 0); break;
+      case SST_Float: cv = VCvar::CreateNewFloat(VName(*vname), 0.0f, "user-created variable", 0); break;
+      case SST_Bool: cv = VCvar::CreateNewBool(VName(*vname), false, "user-created variable", 0); break;
+      case SST_Str: cv = VCvar::CreateNewStr(VName(*vname), "", "user-created variable", 0); break;
+      default: Sys_Error("VCommand::ProcessSetCommand: wtf vcreate?!");
+    }
+  }
+  vassert(cv);
+
+  switch (stype) {
+    case SST_Int: cv->SetInt(iv); break;
+    case SST_Float: cv->SetFloat(fv); break;
+    case SST_Bool: cv->SetBool(bv); break;
+    case SST_Str: cv->SetStr(vvalue); break;
+    default: Sys_Error("VCommand::ProcessSetCommand: wtf vset?!");
+  }
+}
+
+
+//==========================================================================
+//
 //  VCommand::ExecuteString
 //
 //==========================================================================
@@ -930,6 +1030,11 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
     }
   }
 
+  if (ccmd.strEquCI("set")) {
+    ProcessSetCommand();
+    return;
+  }
+
   // check for command
   rebuildCommandCache();
 
@@ -994,7 +1099,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
 #ifndef CLIENT
   if (host_initialised)
 #endif
-    GCon->Logf("Unknown command '%s'", *ccmd);
+    GCon->Logf(NAME_Error, "Unknown command '%s'", *ccmd);
 }
 
 
