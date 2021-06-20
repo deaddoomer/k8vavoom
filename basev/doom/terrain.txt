@@ -90,19 +90,29 @@ terrain JustASoundVanilla modify {
     detectfloorflat "lava[0-9]"
     // for pwads with extra flats
     detectfloorflat "lava[0-9][0-9]"
+    // OTEX
+    detectfloorflat "olavac0[1-8]"
+    detectfloorflat "olavab01"
 
     // --- ACID ---
     detectfloorflat "nukage[0-9]"
     // for pwads with extra flats
     detectfloorflat "nukage[0-9][0-9]"
+    // OTEX
+    detectfloorflat "onukea0[1-8]"
 
     // --- SLIME ---
     detectfloorflat "slime0[0-8]"
+    // OTEX
+    detectfloorflat "opoopy0[1-8]"
+    detectfloorflat "osludg0[1-8]"
 
     // --- BLOOD ---
     detectfloorflat "blood[0-9]"
     // for pwads with extra flats
     detectfloorflat "blood[0-9][0-9]"
+    // OTEX
+    detectfloorflat "obloda0[1-8]"
 
     walkingsteptime   0.8
     walkingstepvolume 0.6
