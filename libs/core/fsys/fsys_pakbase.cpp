@@ -489,7 +489,16 @@ void VFileDirectory::buildLumpNames () {
       // set up lump name for WAD-like access
       VStr lumpName = fi.fileName.ExtractFileName().StripExtension();
 
-      if (fi.lumpNamespace == -1) {
+      // do not register ".rc" lumps in "k8vavoom" dir
+      if (fi.fileName.startsWithCI("k8vavoom/")) {
+        if (fi.fileName.endsWithCI(".rc") || lumpName.length() > 8) {
+          //GLog.Logf(NAME_Debug, "***+++*** IGNORED: <%s> (%s)", *fi.fileName, *lumpName);
+          fi.lumpNamespace = -1;
+          continue;
+        }
+      }
+
+      if (fi.lumpNamespace == -1 && !lumpName.isEmpty()) {
         // map some directories to WAD namespaces
         if (fi.fileName.IndexOf('/') == -1) {
           fi.lumpNamespace = WADNS_Global;
