@@ -1031,25 +1031,38 @@ int W_IterateFile (int Prev, VStr Name) {
 //==========================================================================
 int W_IterateDirectory (int Prev, VStr DirName, bool allowSubdirs) {
   MyThreadLocker glocker(&fsys_glock);
-  if (DirName.isEmpty()) return -1;
-  DirName = DirName.fixSlashes().AppendTrailingSlash();
-  const bool rootDir = (DirName == "/");
-  if (!rootDir) if (DirName.startsWith("/")) DirName.chopLeft(1);
+  if (DirName.isEmpty()) {
+    DirName = "/";
+  } else {
+    DirName = DirName.fixSlashes().AppendTrailingSlash();
+  }
+  bool rootDir = (DirName == "/" || DirName == "//");
+  bool onlyBase = false;
+  if (DirName.startsWith("/")) {
+    DirName.chopLeft(1);
+    if (DirName.startsWith("/")) {
+      onlyBase = true;
+      DirName.chopLeft(1);
+      if (DirName.isEmpty()) rootDir = true;
+    }
+  }
   if (Prev < 0) Prev = -1;
   int wi = FILE_INDEX(Prev+1);
   int li = LUMP_INDEX(Prev+1);
   //GLog.Logf(NAME_Debug, "W_IterateDirectory: Curr=%d; wi=%d/%d; li=%d; DirName=<%s> (rootDir=%d); allowSubdirs=%d", Prev+1, wi, getSPCount(), li, *DirName, (int)rootDir, (int)allowSubdirs);
   for (; wi < getSPCount(); ++wi, li = 0) {
+    if (onlyBase && !fsysSearchPaths[wi]->basepak) continue;
     for (;; ++li) {
       li = fsysSearchPaths[wi]->IterateNS(li, WADNS_AllFiles);
       if (li == -1) break;
       VStr fn = fsysSearchPaths[wi]->LumpFileName(li);
+      if (fn.isEmpty()) continue; // just in case
       //GLog.Logf(NAME_Debug, "  li=%d; fn=<%s> : %d", li, *fn, (int)fn.startsWithCI(DirName));
       if (rootDir) {
         if (!allowSubdirs && fn.indexOf('/') >= 0) continue;
       } else {
         if (!fn.startsWithCI(DirName)) continue;
-        if (!allowSubdirs && fn.indexOf('/', DirName.length()) > DirName.length()) continue;
+        if (!allowSubdirs && fn.indexOf('/', DirName.length()) >= 0) continue;
       }
       return MAKE_HANDLE(wi, li);
     }
