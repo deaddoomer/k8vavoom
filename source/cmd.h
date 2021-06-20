@@ -67,6 +67,9 @@ protected:
   static bool execLogInit;
 
 private:
+  // substiture "${1}" and such args; used for aliases
+  static VStr SubstituteArgs (VStr str);
+
   static VStr ExpandSigil (VStr str);
 
   // this also expands sigils

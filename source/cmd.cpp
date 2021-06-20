@@ -678,6 +678,59 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
 
 //==========================================================================
 //
+//  VCommand::SubstituteArgs
+//
+//  substiture "${1}" and such args; used for aliases
+//  use "${1q}" to insert properly quoted argument (WITHOUT quotation marks)
+//
+//==========================================================================
+VStr VCommand::SubstituteArgs (VStr str) {
+  if (str.isEmpty()) return VStr::EmptyString;
+  if (str.indexOf('$') < 0) return str;
+  const char *s = *str;
+  VStr res;
+  while (*s) {
+    const char ch = *s++;
+    if (ch == '$' && (*s != '(' || *s == '{')) {
+      const char *sstart = s-1;
+      const char ech = (*s == '{' ? '}' : ')');
+      ++s;
+      if (!s[0]) break;
+      const char *se = s;
+      while (*se && *se != ech) ++se;
+      if (se != s) {
+        VStr cvn(s, (int)(ptrdiff_t)(se-s));
+        cvn = cvn.xstrip();
+        if (cvn.length() && cvn[0] >= '0' && cvn[0] <= '9') {
+          int n = -1;
+          bool quoted = false;
+          if (cvn.length() > 1 && cvn[cvn.length()-1] == 'q') {
+            quoted = true;
+            cvn.chopRight(1);
+          }
+          if (cvn.convertInt(&n)) {
+            if (n >= 0 && n < Args.length()) { // overflow protection
+              if (quoted) res += Args[n].quote(); else res += Args[n];
+            }
+            s = se+(*se != 0);
+            continue;
+          }
+        }
+      }
+      if (*se) ++se;
+      res += VStr(sstart, (int)(ptrdiff_t)(se-sstart));
+      s = se;
+    } else {
+      res += ch;
+      if (ch == '\\' && *s) res += *s++;
+    }
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
 //  VCommand::ExpandSigil
 //
 //==========================================================================
@@ -720,7 +773,10 @@ void VCommand::TokeniseString (VStr str) {
   Args.reset();
   str.tokenize(Args);
   // expand sigils (except the command name)
-  for (int f = 1; f < Args.length(); ++f) Args[f] = ExpandSigil(Args[f]);
+  //HACK: for "alias" command, don't perform any expanding
+  if (!Args[0].strEquCI("alias")) {
+    for (int f = 1; f < Args.length(); ++f) Args[f] = ExpandSigil(Args[f]);
+  }
 }
 
 
@@ -864,14 +920,12 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   }
 
   // command defined with ALIAS
-  //FIXME: make it better (do not alloc new locased string)
   if (Args[0].length()) {
-    //VStr lcn = Args[0].toLowerCase();
-    auto idp = AliasMap.find(/*lcn*/Args[0]);
+    auto idp = AliasMap.find(Args[0]);
     if (idp) {
       VAlias &al = AliasList[*idp];
       GCmdBuf.Insert("\n");
-      GCmdBuf.Insert(al.CmdLine);
+      GCmdBuf.Insert(SubstituteArgs(al.CmdLine));
       return;
     }
   }
