@@ -718,6 +718,7 @@ enum EWadNamespace {
 
 native static final int W_IterateNS (int Prev, EWadNamespace NS);
 native static final int W_IterateFile (int Prev, string Name);
+native static final int W_IterateDirectory (int Prev, string Name, optional bool allowSubdirs/*=true*/);
 
 //WARNING! UNSAFE!
 // only use lump number from iterator here!
@@ -790,5 +791,28 @@ static final bool WadIterateFile_opIterNext (ref WadLumpIteratorInfoName it, out
   if (it.curr < 0) return false; // done
   lumpnum = it.curr;
   it.curr = W_IterateFile(it.curr, it.fname);
+  return true;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct WadDirIteratorInfoName {
+  string dirname;
+  int curr;
+  bool allowSubdirs;
+}
+
+static final bool WadIterateDirectory_opIterInit (out WadDirIteratorInfoName it, string dirname, optional bool allowSubdirs/*=true*/) {
+  if (!specified_allowSubdirs) allowSubdirs = true;
+  it.dirname = dirname;
+  it.allowSubdirs = allowSubdirs;
+  it.curr = W_IterateDirectory(-1, dirname, allowSubdirs);
+  return (it.curr >= 0);
+}
+
+static final bool WadIterateDirectory_opIterNext (ref WadDirIteratorInfoName it, out int lumpnum) {
+  if (it.curr < 0) return false; // done
+  lumpnum = it.curr;
+  it.curr = W_IterateDirectory(it.curr, it.dirname, it.allowSubdirs);
   return true;
 }

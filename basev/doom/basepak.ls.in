@@ -45,6 +45,8 @@ terrain.txt   @CMAKE_CURRENT_SOURCE_DIR@/terrain.txt
 
 vavoom_ldef_spec_trans.rc @CMAKE_CURRENT_SOURCE_DIR@/vavoom_ldef_spec_trans.rc
 
+//$recursedir k8vavoom/   @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom/
+
 // big font
 $load @CMAKE_CURRENT_SOURCE_DIR@/bigfont.pcx
 bigfont.lmp  fon2

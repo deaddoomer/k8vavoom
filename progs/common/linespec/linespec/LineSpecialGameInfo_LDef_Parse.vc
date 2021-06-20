@@ -29,6 +29,18 @@ static final ScriptsParser OpenParserFromLump (int lump) {
 //
 //==========================================================================
 void ParseLDefTranslationScripts () {
+  /*
+  printdebug("======================================");
+  foreach (int lump; WadIterateDirectory("/k8vavoom")) {
+    printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
+  }
+  printdebug("======================================");
+  foreach (int lump; WadIterateDirectory("/k8vavoom", allowSubdirs:false)) {
+    printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
+  }
+  printdebug("======================================");
+  */
+
   foreach (int lump; WadIterateNS(EWadNamespace.Global)) {
     //printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
     //continue;

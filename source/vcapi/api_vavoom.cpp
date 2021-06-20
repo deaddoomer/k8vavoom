@@ -440,23 +440,34 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsMapPresent) {
 }
 
 IMPLEMENT_FREE_FUNCTION(VObject, HasDecal) {
-  P_GET_NAME(name);
+  VName name;
+  vobjGetParam(name);
   RET_BOOL(VDecalDef::hasDecal(name));
 }
 
 
 // native static final int W_IterateNS (int Prev, EWadNamespace NS);
 IMPLEMENT_FREE_FUNCTION(VObject, W_IterateNS) {
-  P_GET_INT(wadns);
-  P_GET_INT(prev);
+  int prev, wadns;
+  vobjGetParam(prev, wadns);
   RET_INT(W_IterateNS(prev, EWadNamespace(wadns)));
 }
 
 // native static final int W_IterateFile (int Prev, string Name);
 IMPLEMENT_FREE_FUNCTION(VObject, W_IterateFile) {
-  P_GET_STR(name);
-  P_GET_INT(prev);
+  int prev;
+  VStr name;
+  vobjGetParam(prev, name);
   RET_INT(W_IterateFile(prev, name));
+}
+
+// native static final int W_IterateDirectory (int Prev, string Name, bool allowSubdirs=true);
+IMPLEMENT_FREE_FUNCTION(VObject, W_IterateDirectory) {
+  int prev;
+  VStr name;
+  VOptParamBool allowSubdirs(true);
+  vobjGetParam(prev, name, allowSubdirs);
+  RET_INT(W_IterateDirectory(prev, name, allowSubdirs));
 }
 
 // native static final int W_LumpLength (int lump);
