@@ -609,9 +609,9 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
   if (aidx > 1 && !endsWithBlank) --aidx; // nope, last arg
 
   // check for command
-  if (rebuildCache) rebuildCommandCache();
-  //VStr loname = args[0].toLowerCase();
-  auto cptr = locaseCache.find(/*loname*/args[0]);
+  rebuildCommandCache();
+
+  auto cptr = locaseCache.find(args[0]);
   if (cptr) {
     VCommand *cmd = *cptr;
     VStr ac = cmd->AutoCompleteArg(args, aidx);
@@ -812,10 +812,11 @@ void VCommand::TokeniseString (VStr str) {
 //
 //==========================================================================
 void VCommand::rebuildCommandCache () {
+  if (!rebuildCache) return;
+  rebuildCache = false;
   locaseCache.clear();
   for (VCommand *cmd = Cmds; cmd; cmd = cmd->Next) {
-    //VStr loname = VStr(cmd->Name).toLowerCase();
-    locaseCache.put(/*loname*/cmd->Name, cmd);
+    locaseCache.put(cmd->Name, cmd);
   }
 }
 
@@ -828,20 +829,17 @@ void VCommand::rebuildCommandCache () {
 int VCommand::GetCommandType (VStr cmd) {
   if (cmd.isEmpty()) return CT_UNKNOWN;
 
-  if (rebuildCache) rebuildCommandCache();
+  rebuildCommandCache();
 
-  //FIXME: make it better (do not alloc new locased string)
-  //VStr loname = cmd.toLowerCase();
-
-  auto cptr = locaseCache.find(/*loname*/cmd);
+  auto cptr = locaseCache.find(cmd);
   if (cptr) return CT_COMMAND;
 
   VBasePlayer *plr = findPlayer();
-  if (plr && plr->IsConCommand(/*loname*/cmd)) return CT_COMMAND;
+  if (plr && plr->IsConCommand(cmd)) return CT_COMMAND;
 
-  if (VCvar::HasVar(*cmd/* *loname*/)) return CT_CVAR;
+  if (VCvar::HasVar(*cmd)) return CT_CVAR;
 
-  auto idp = AliasMap.find(/*loname*/cmd);
+  auto idp = AliasMap.find(cmd);
   if (idp) return CT_ALIAS;
 
   return CT_UNKNOWN;
@@ -933,7 +931,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   }
 
   // check for command
-  if (rebuildCache) rebuildCommandCache();
+  rebuildCommandCache();
 
   auto cptr = locaseCache.find(ccmd);
   if (cptr) {
