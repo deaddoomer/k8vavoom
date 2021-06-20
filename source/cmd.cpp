@@ -82,13 +82,39 @@ static const char *KeyConfCommands[] = {
 };
 
 
-extern "C" {
-  static int sortCmpVStrCI (const void *a, const void *b, void *udata) {
-    if (a == b) return 0;
-    VStr *sa = (VStr *)a;
-    VStr *sb = (VStr *)b;
-    return sa->ICmp(*sb);
+//==========================================================================
+//
+//  sortCmpVStrCI
+//
+//==========================================================================
+static int sortCmpVStrCI (const void *a, const void *b, void *udata) {
+  if (a == b) return 0;
+  VStr *sa = (VStr *)a;
+  VStr *sb = (VStr *)b;
+  return sa->ICmp(*sb);
+}
+
+
+//==========================================================================
+//
+//  isBoolTrueStr
+//
+//==========================================================================
+static bool isBoolTrueStr (VStr s) {
+  if (s.isEmpty()) return false;
+  s = s.xstrip();
+  if (s.isEmpty()) return false;
+  if (s.strEquCI("false")) return false;
+  if (s.strEquCI("ona")) return false;
+  if (s.strEquCI("0")) return false;
+  if (s.indexOf('.') >= 0) {
+    float f = -1.0f;
+    if (s.convertFloat(&f)) return (f != 0.0f);
+  } else {
+    int n = -1;
+    if (s.convertInt(&n)) return (n != 0);
   }
+  return true;
 }
 
 
@@ -837,7 +863,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   //GCon->Logf(NAME_Debug, "+++ command argc=%d (<%s>)\n", Args.length(), *Acmd);
   //for (int f = 0; f < Args.length(); ++f) GCon->Logf(NAME_Debug, "  #%d: <%s>\n", f, *Args[f]);
 
-  if (!Args.length()) return;
+  if (Args.length() == 0) return;
 
   if (Args[0] == "__run_cli_commands__") {
     FL_ProcessPreInits(); // override configs
@@ -856,11 +882,46 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
     return;
   }
 
+  VStr ccmd = Args[0];
+
+  // conditionals
+  if (ccmd.length() >= 3 && ccmd[0] == '$' && VStr::tolower(ccmd[1]) == 'i' && VStr::tolower(ccmd[2]) == 'f') {
+    if (ccmd.strEquCI("$if") || ccmd.strEquCI("$ifnot")) {
+      if (Args.length() < 3) return;
+      const bool neg = (ccmd.length() > 3);
+      const bool bvtrue = (isBoolTrueStr(Args[1]) ? !neg : neg);
+      if (!bvtrue) return;
+      // remove condition command and expression
+      Args.removeAt(0);
+      Args.removeAt(0);
+    } else if (ccmd.strEquCI("$if_or") || ccmd.strEquCI("$ifnot_or")) {
+      if (Args.length() < 4) return;
+      const bool neg = (ccmd.length() > 6);
+      const bool bvtrue = (isBoolTrueStr(Args[1]) || isBoolTrueStr(Args[2]) ? !neg : neg);
+      if (!bvtrue) return;
+      // remove condition command and expressions
+      Args.removeAt(0);
+      Args.removeAt(0);
+      Args.removeAt(0);
+    } else if (ccmd.strEquCI("$if_and") || ccmd.strEquCI("$ifnot_and")) {
+      if (Args.length() < 4) return;
+      const bool neg = (ccmd.length() > 7);
+      const bool bvtrue = (isBoolTrueStr(Args[1]) && isBoolTrueStr(Args[2]) ? !neg : neg);
+      if (!bvtrue) return;
+      // remove condition command and expressions
+      Args.removeAt(0);
+      Args.removeAt(0);
+      Args.removeAt(0);
+    }
+    ccmd = Args[0];
+    if (ccmd.isEmpty()) return; // just in case
+  }
+
   if (ParsingKeyConf) {
     // verify that it's a valid keyconf command
     bool Found = false;
     for (unsigned i = 0; i < ARRAY_COUNT(KeyConfCommands); ++i) {
-      if (Args[0].strEquCI(KeyConfCommands[i])) {
+      if (ccmd.strEquCI(KeyConfCommands[i])) {
         Found = true;
         break;
       }
@@ -873,8 +934,8 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
 
   // check for command
   if (rebuildCache) rebuildCommandCache();
-  //VStr loname = Args[0].toLowerCase();
-  auto cptr = locaseCache.find(/*loname*/Args[0]);
+
+  auto cptr = locaseCache.find(ccmd);
   if (cptr) {
     if (cptr && !Player) Player = findPlayer(); // for local commands
     (*cptr)->Run();
@@ -884,18 +945,19 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   // check for player command
   if (Source == SRC_Command) {
     VBasePlayer *plr = findPlayer();
-    if (plr && plr->IsConCommand(Args[0])) {
+    if (plr && plr->IsConCommand(ccmd)) {
       ForwardToServer();
       return;
     }
-  } else if (Player && Player->IsConCommand(Args[0])) {
+  } else if (Player && Player->IsConCommand(ccmd)) {
     if (CheatAllowed(Player)) Player->ExecConCommand();
     return;
   }
 
   // Cvar
-  if (FL_HasPreInit(Args[0])) return;
-  // this hack allows to set cheating variables from command line or autoexec
+  if (FL_HasPreInit(ccmd)) return;
+
+  // this hack allows setting cheating variables from command line or autoexec
   {
     bool oldCheating = VCvar::GetCheating();
     bool cheatingChanged = false;
@@ -919,9 +981,9 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
     }
   }
 
-  // command defined with ALIAS
-  if (Args[0].length()) {
-    auto idp = AliasMap.find(Args[0]);
+  // check for command defined with ALIAS
+  if (!ccmd.isEmpty()) {
+    auto idp = AliasMap.find(ccmd);
     if (idp) {
       VAlias &al = AliasList[*idp];
       GCmdBuf.Insert("\n");
@@ -934,7 +996,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
 #ifndef CLIENT
   if (host_initialised)
 #endif
-    GCon->Logf("Unknown command '%s'", *Args[0]);
+    GCon->Logf("Unknown command '%s'", *ccmd);
 }
 
 
