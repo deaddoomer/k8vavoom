@@ -67,7 +67,10 @@ protected:
   static bool execLogInit;
 
 private:
-  static void TokeniseString (VStr);
+  static VStr ExpandSigil (VStr str);
+
+  // this also expands sigils
+  static void TokeniseString (VStr str);
 
   static void rebuildCommandCache ();
 

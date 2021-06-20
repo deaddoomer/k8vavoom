@@ -249,20 +249,18 @@ void VCommand::InsertCLICommands () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static int vapcmp (const void *aa, const void *bb, void *udata) {
-    const VCommand::VAlias *a = *(const VCommand::VAlias **)aa;
-    const VCommand::VAlias *b = *(const VCommand::VAlias **)bb;
-    if (a == b) return 0;
-    return a->Name.ICmp(b->Name);
-  }
+static int vapcmp (const void *aa, const void *bb, void *udata) {
+  const VCommand::VAlias *a = *(const VCommand::VAlias **)aa;
+  const VCommand::VAlias *b = *(const VCommand::VAlias **)bb;
+  if (a == b) return 0;
+  return a->Name.ICmp(b->Name);
+}
 
-  static int vstrptrcmpci (const void *aa, const void *bb, void *udata) {
-    const VStr *a = (const VStr *)aa;
-    const VStr *b = (const VStr *)bb;
-    if (a == b) return 0;
-    return a->ICmp(*b);
-  }
+static int vstrptrcmpci (const void *aa, const void *bb, void *udata) {
+  const VStr *a = (const VStr *)aa;
+  const VStr *b = (const VStr *)bb;
+  if (a == b) return 0;
+  return a->ICmp(*b);
 }
 
 
@@ -677,6 +675,41 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
 //
 //**************************************************************************
 
+
+//==========================================================================
+//
+//  VCommand::ExpandSigil
+//
+//==========================================================================
+VStr VCommand::ExpandSigil (VStr str) {
+  if (str.isEmpty()) return VStr::EmptyString;
+  if (str.indexOf('$') < 0) return str;
+  const char *s = *str;
+  VStr res;
+  while (*s) {
+    const char ch = *s++;
+    if (ch == '$' && (*s != '(' || *s == '{')) {
+      const char ech = (*s == '{' ? '}' : ')');
+      ++s;
+      if (!s[0]) break;
+      const char *se = s;
+      while (*se && *se != ech) ++se;
+      if (se != s) {
+        VStr cvn(s, (int)(ptrdiff_t)(se-s));
+        cvn = cvn.xstrip();
+        VCvar *cv = VCvar::FindVariable(*cvn);
+        if (cv) res += cv->asStr();
+      }
+      s = se+(*se != 0);
+    } else {
+      res += ch;
+      if (ch == '\\' && *s) res += *s++;
+    }
+  }
+  return res;
+}
+
+
 //==========================================================================
 //
 //  VCommand::TokeniseString
@@ -686,6 +719,8 @@ void VCommand::TokeniseString (VStr str) {
   Original = str;
   Args.reset();
   str.tokenize(Args);
+  // expand sigils (except the command name)
+  for (int f = 1; f < Args.length(); ++f) Args[f] = ExpandSigil(Args[f]);
 }
 
 
