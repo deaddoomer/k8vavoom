@@ -199,6 +199,7 @@ VStream *W_CreateLumpReaderName (VName Name, EWadNamespace NS = WADNS_Global);
 int W_StartIterationFromLumpFileNS (int File, EWadNamespace NS); // returns -1 if not found
 int W_IterateNS (int Prev, EWadNamespace NS);
 int W_IterateFile (int Prev, VStr Name);
+int W_IterateDirectory (int Prev, VStr DirName, bool allowSubdirs=true);
 
 // basically, returns number of mounted archives
 int W_NextMountFileId ();
