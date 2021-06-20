@@ -878,8 +878,10 @@ void VCommand::ForwardToServer () {
 //
 //==========================================================================
 int VCommand::CheckParm (const char *check) {
-  for (int i = 1; i < Args.length(); ++i) {
-    if (Args[i].ICmp(check) == 0) return i;
+  if (check && check[0]) {
+    for (int i = 1; i < Args.length(); ++i) {
+      if (Args[i].strEquCI(check)) return i;
+    }
   }
   return 0;
 }
@@ -918,7 +920,7 @@ VStr VCommand::GetArgV (int idx) {
 //
 //==========================================================================
 void VCmdBuf::Insert (const char *text) {
-  Buffer = VStr(text)+Buffer;
+  if (text && text[0]) Buffer = VStr(text)+Buffer;
 }
 
 
@@ -928,7 +930,7 @@ void VCmdBuf::Insert (const char *text) {
 //
 //==========================================================================
 void VCmdBuf::Insert (VStr text) {
-  Buffer = text+Buffer;
+  if (text.length()) Buffer = text+Buffer;
 }
 
 
@@ -938,7 +940,7 @@ void VCmdBuf::Insert (VStr text) {
 //
 //==========================================================================
 void VCmdBuf::Print (const char *data) {
-  Buffer += data;
+  if (data && data[0]) Buffer += data;
 }
 
 
@@ -948,7 +950,7 @@ void VCmdBuf::Print (const char *data) {
 //
 //==========================================================================
 void VCmdBuf::Print (VStr data) {
-  Buffer += data;
+  if (data.length()) Buffer += data;
 }
 
 
@@ -961,7 +963,7 @@ void VCmdBuf::Print (VStr data) {
 //==========================================================================
 bool VCmdBuf::checkWait () {
   if (!WaitEndTime) return false;
-  double currTime = Sys_Time();
+  const double currTime = Sys_Time();
   if (currTime >= WaitEndTime) {
     WaitEndTime = 0;
     return false;
@@ -976,44 +978,78 @@ bool VCmdBuf::checkWait () {
 //
 //==========================================================================
 void VCmdBuf::Exec () {
-  int len;
-  int quotes;
-  bool comment;
-  VStr ParsedCmd;
+  //GCon->Logf(NAME_Debug, "=============================\nEXECBUF: \"%s\"\n----------------", *Buffer.quote());
+  while (Buffer.length()) {
+    if (checkWait()) {
+      //GCon->Logf(NAME_Debug, "*** WAIT HIT! bufleft: \"%s\"", *Buffer.quote());
+      break;
+    }
 
-  do {
-    if (checkWait()) break;
+    int quotes = 0;
+    bool comment = false;
+    int len = 0;
+    int stpos = -1;
+    const int blen = Buffer.length();
+    const char *bs = *Buffer;
 
-    quotes = 0;
-    comment = false;
-    ParsedCmd.Clean();
-
-    for (len = 0; len < Buffer.length(); ++len) {
-      if (Buffer[len] == '\n') break;
+    for (; len < blen; ++len) {
+      const char ch = *bs++;
+      // EOL?
+      if (ch == '\n') {
+        if (stpos >= 0) break;
+        vassert(!quotes);
+        comment = false;
+        continue;
+      }
+      // in the comment?
       if (comment) continue;
-      if (Buffer[len] == ';' && !(quotes&1)) break;
-      if (Buffer[len] == '/' && Buffer[len+1] == '/' && !(quotes&1)) {
-        // comment, all till end is ignored
+      // inside the quotes?
+      if (quotes) {
+             if (ch == quotes) quotes = 0;
+        else if (ch == '\\') { ++bs; ++len; } // skip escaping (it is safe to not check `len` here)
+        continue;
+      }
+      // separator?
+      if (ch == ';') {
+        if (stpos >= 0) break;
+        continue;
+      }
+      // comment? (it is safe to check `*bs` here)
+      if (ch == '/' && *bs == '/') {
+        if (stpos >= 0) break; // comment will be skipped on the next iteration
         comment = true;
         continue;
       }
-      // screened char in string?
-      if ((quotes&1) && Buffer[len] == '\\' && Buffer.length()-len > 1 && (Buffer[len+1] == '"' || Buffer[len+1] == '\\')) {
-        ParsedCmd += Buffer[len++];
-      } else {
-        if (Buffer[len] == '\"') ++quotes;
-      }
-      ParsedCmd += Buffer[len];
+      // if non-blank char, mark string start
+      if ((vuint8)ch > ' ' && stpos < 0) stpos = len;
+      if (ch == '"' || ch == '\'') quotes = ch; // quoting
+      // tokenizer doesn't allow esaping outside of quotes
+      //else if (ch == '\\') { ++bs; ++len; } // skip escaping (it is safe to not check `len` here)
     }
 
-    if (len < Buffer.Length()) ++len; // skip seperator symbol
+    if (stpos < 0) {
+      // no non-blanks
+      if (len > 0) Buffer.chopLeft(len);
+      //GCon->Logf(NAME_Debug, "***   CHOPPED: \"%s\"", *Buffer.quote());
+      continue;
+    }
+    vassert(len);
 
-    Buffer = VStr(Buffer, len, Buffer.Length()-len);
+    VStr ParsedCmd(*Buffer+stpos, len-stpos);
+    Buffer.chopLeft(len);
 
+    //GCon->Logf(NAME_Debug, "***   CMD: \"%s\"", *ParsedCmd.quote());
+    //GCon->Logf(NAME_Debug, "***   chopped: \"%s\"", *Buffer.quote());
+    // safety net
+    const int prevlen = Buffer.length();
     VCommand::ExecuteString(ParsedCmd, VCommand::SRC_Command, nullptr);
 
     if (host_request_exit) return;
-  } while (len);
+
+    // check length
+    const int currlen = Buffer.length();
+    if (currlen > prevlen && currlen > 1024*1024*16) Sys_Error("console command buffer overflow (probably invalid alias or something)");
+  }
 }
 
 
