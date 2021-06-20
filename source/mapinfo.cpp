@@ -2499,7 +2499,9 @@ static void ParseGameInfo (VScriptParser *sc) {
       }
     } else {
       sc->ExpectString();
-      sc->Message(va("skipped gameinfo command '%s'", *sc->String));
+      if (!sc->String.strEquCI("CanIgnoreZScript")) {
+        sc->Message(va("skipped gameinfo command '%s'", *sc->String));
+      }
       sc->Expect("=");
       sc->ExpectString();
       while (sc->Check(",")) {
