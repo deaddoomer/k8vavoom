@@ -1,0 +1,38 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  //TODO: transfer sky is not fully implemented yet
+  271 = {
+    description = "Transfer tex to sector's sky";
+    sourceport = "MBF";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  272 = {
+    description = "Transfer tex to sector's sky, flipped";
+    sourceport = "MBF";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+}

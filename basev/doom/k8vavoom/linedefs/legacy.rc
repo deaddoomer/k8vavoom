@@ -1,0 +1,224 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // Doom Legacy
+  // 270: fraggle script / Eternity ExtraDataSpecial
+
+
+  // 273..279: fraggle script
+
+  // clip fake planes, underwater
+  280 = {
+    description = "Legacy '3D liquid floor'";
+    sourceport = "Legacy";
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  281 = {
+    description = "Legacy '3D floor'";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  282 = {
+    description = "Legacy '3D floor' (does not affect light properties below the '3D floor', uses master sector light properties instead)";
+    sourceport = "Legacy";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // no 283
+
+  284 = {
+    description = "Set Line Translucency to 50%";
+    sourceport = "Legacy";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 128;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  285 = {
+    description = "Set Line Translucency to 25%";
+    sourceport = "Legacy";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 192;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  286 = {
+    description = "Set Line Translucency to 80%";
+    sourceport = "Legacy";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 48;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // additive
+  287 = {
+    description = "Set Line Translucency to Additive 50%";
+    sourceport = "Legacy";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 128;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  288 = {
+    description = "Set Line Translucency to 0%";
+    sourceport = "Legacy";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  289 = {
+    description = "Legacy water";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  //290   Legacy -- Instant Lower Floor
+  //291   Legacy -- Instant Raise Ceiling
+
+  // mapped according to https://zdoom.org/wiki/Sector_Set3dFloor
+  300 = {
+    description = "Solid Translucent 3D Floor, Upper Texture is 50% Translucent";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 1;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  301 = {
+    description = "Translucent 3D Water";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  // not properly implemented yet
+  302 = {
+    description = "3D Fog";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 6;
+    arg4 = 127;
+    arg5 = unchanged;
+  }
+
+  303 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  304 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 2;
+    arg3 = 2;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  305 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 3;
+    arg3 = 2;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  306 = {
+    description = "Some Legacy 3D floor special";
+    sourceport = "Legacy";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+}

@@ -29,22 +29,11 @@ static final ScriptsParser OpenParserFromLump (int lump) {
 //
 //==========================================================================
 void ParseLDefTranslationScripts () {
-  /*
-  printdebug("======================================");
-  foreach (int lump; WadIterateDirectory("/k8vavoom")) {
-    printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
-  }
-  printdebug("======================================");
-  foreach (int lump; WadIterateDirectory("/k8vavoom", allowSubdirs:false)) {
-    printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
-  }
-  printdebug("======================================");
-  */
-
-  foreach (int lump; WadIterateNS(EWadNamespace.Global)) {
+  foreach (int lump; WadIterateDirectory("k8vavoom/linedefs/", allowSubdirs:true)) {
+    string fname = W_RealLumpName(lump);
+    if (!globmatch(fname, "*.rc", caseSensitive:false)) continue;
     //printdebug("<<<%s>>> : <<<%s>>>", W_RealLumpName(lump), W_FullLumpName(lump));
-    //continue;
-    if (!W_RealLumpName(lump).strEquCI("vavoom_ldef_spec_trans.rc")) continue;
+    //if (!W_RealLumpName(lump).strEquCI("vavoom_ldef_spec_trans.rc")) continue;
     printmsg(PMSG.Init, "parsing linedef special translation script '%s'", W_FullLumpName(lump));
     auto sc = OpenParserFromLump(lump);
     scope(exit) delete sc;

@@ -1,0 +1,162 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // 307..333: Eternity
+
+
+  // eternity
+  386 = {
+    description = "Slope Front Floor";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  387 = {
+    description = "Slope Front Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  388 = {
+    description = "Slope Front Floor And Front Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  389 = {
+    description = "Slope Back Floor";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  390 = {
+    description = "Slope Back Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  391 = {
+    description = "Slope Back Floor And Back Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  392 = {
+    description = "Slope Back Floor And Front Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  393 = {
+    description = "Slope Front Floor And Back Ceiling";
+    sourceport = "Eternity";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  394 = {
+    description = "Slope Front Floor To Tagged Slope";
+    sourceport = "Eternity";
+    action = PlaneCopy;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
+  395 = {
+    description = "Slope Front Ceiling To Tagged Slope";
+    sourceport = "Eternity";
+    action = PlaneCopy;
+    arg2 = origarg1;
+    arg1 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
+  396 = {
+    description = "Slope Front Floor And Front Ceiling To Tagged Slope";
+    sourceport = "Eternity";
+    action = PlaneCopy;
+    arg2 = unchanged;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+}

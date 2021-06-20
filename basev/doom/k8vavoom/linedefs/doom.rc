@@ -1,0 +1,1985 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  1 = {
+    description = "Open Door (closes)";
+    action = DoorRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  2 = {
+    description = "Walk Once - Open the Door";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  3 = {
+    description = "Walk Once - Close the door";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  4 = {
+    description = "Walk Once - Raise the door (with close)";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  5 = {
+    description = "Walk Once - Raise the floor to the next highest neighbour floor height";
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  6 = {
+    description = "Walk Once - Fast ceiling crush";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  7 = {
+    description = "Build Stairs S1";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  8 = {
+    description = "Walk once - Build stairs";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  9 = {
+    description = "Donut S1";
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  10 = {
+    description = "Walk once - Platform down, wait, and then back up";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  11 = {
+    description = "Exit Level S1";
+    action = ExitNormal;
+    arg1 = /*-1*/0; // -1 is a bug
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  12 = {
+    description = "Walk once - Lights to the level of brightest neighbour";
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  13 = {
+    description = "Walk once - Lights to brightest (255)";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  14 = {
+    description = "Raise Floor 32 And Change S1";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  15 = {
+    description = "Raise Floor 24 And Change S1";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  16 = {
+    description = "Walk once - Close Door 30 W1";
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  17 = {
+    description = "Walk once - Start light strobing";
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  18 = {
+    description = "Raise Floor To Next S1";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  19 = {
+    description = "Walk once - Lower floor to the next lowest floor";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+
+  20 = {
+    description = "Raise Floor To Next Highest And Change S1";
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  21 = {
+    description = "Plat Down Wait Up Stay S1";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  22 = {
+    description = "Walk once - Raise to next highest floor";
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  23 = {
+    description = "Lower Floor To Lowest S1";
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  24 = {
+    description = "Raise Floor G1";
+    comment = "Not single-sided in vanilla";
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  25 = {
+    description = "Walk once - Ceiling Crush And Raise W1";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  26 = {
+    description = "Blue Door SR";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  27 = {
+    description = "Yellow Door SR";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  28 = {
+    description = "Red Door SR";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  29 = {
+    description = "Raise Door S1";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  30 = {
+    description = "Raise Floor To Texture";
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  31 = {
+    description = "Manual Door Open S1";
+    action = DoorOpen;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  32 = {
+    description = "Blue Door Open S1";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  33 = {
+    description = "Red Door Open S1";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  34 = {
+    description = "Yellow Door Open S1";
+    action = DoorLockedRaise;
+    arg1 = 0;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  35 = {
+    description = "Lights 35";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  36 = {
+    description = "Lower Floor (Turbo) W1";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  37 = {
+    description = "Lower And Change W1";
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  38 = {
+    description = "Lower Floor To Lowest W1";
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  39 = {
+    description = "Player and Monster Teleport - Walk Once";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  40 = {
+    description = "Raise Ceiling Lower Floor W1";
+    action = CeilingGeneric;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 8;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  41 = {
+    description = "Lower Ceiling To Floor S1";
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  42 = {
+    description = "Close Door";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  43 = {
+    description = "Lower ceiling the the floor";
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  44 = {
+    description = "Ceiling Crush W1";
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  45 = {
+    description = "Lower floor to the next lowest surrounding floor";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  46 = {
+    description = "Open Door GR";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  47 = {
+    description = "Raise Floor To Nearest And Change G1";
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  48 = {
+    description = "Scroll Left";
+    action = ScrollTextureLeft;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  49 = {
+    description = "Ceiling Crush And Raise S1";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  50 = {
+    description = "Close Door S1";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  51 = {
+    description = "Secret Exit S1";
+    action = ExitSecret;
+    arg1 = /*-1*/0; // -1 is bug
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  52 = {
+    description = "Exit W1";
+    action = ExitNormal;
+    arg1 = /*-1*/0; // -1 is bug
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  53 = {
+    description = "Perpetual Raise W1";
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  54 = {
+    description = "Platform Stop W1";
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  55 = {
+    description = "Raise Floor Crush S1";
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  56 = {
+    description = "Rause Floor Crush W1";
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  57 = {
+    description = "Ceiling Crush Stop W1";
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  58 = {
+    description = "Raise Floor 24";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  59 = {
+    description = "Raise Floor 24 And Change W1";
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  60 = {
+    description = "Lower floor to the lowest surrounding floor";
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  61 = {
+    description = "Open Door";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  62 = {
+    description = "Platform goes down, wait, then up and stay";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  63 = {
+    description = "Raise the door (closes after pause)";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  64 = {
+    description = "RAISE FLOOR TO CEILING SR";
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  65 = {
+    description = "RAISE FLOOR CRUSH SR";
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  66 = {
+    description = "RAISE FLOOR 24 AND CHANGE SR";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  67 = {
+    description = "RAISE FLOOR 32 AND CHANGE SR";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  68 = {
+    description = "RAISE FLOOR TO NEAREST AND CHANGE SR";
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  69 = {
+    description = "RAISE FLOOR TO NEAREST SR";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  70 = {
+    description = "TURBO LOWER FLOOR SR";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  71 = {
+    description = "TURBO LOWER FLOOR 71 S1";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  72 = {
+    description = "CEILING CRUSH WR";
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  73 = {
+    description = "CEILING CRUSH AND RAISE WR";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  74 = {
+    description = "CEILING CRUSH STOP WR";
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  75 = {
+    description = "CLOSE DOOR WR";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  76 = {
+    description = "CLOSE DOOR FOR 30 WR";
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  77 = {
+    description = "FAST CRUSHING CEILING WR";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  78 = {
+    description = "Transfer floor texture (NXP) SR (Boom)";
+    comment = "78 was documented in some editors as 'WR Lights to dimmest neighbor', but it actually does nothing since DOOM 1.666 (per the official DOOM specs).";
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  79 = {
+    description = "LIGHTS DARK 35 WR";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  80 = {
+    description = "LIGHTS NEIGHBOUR WR";
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  81 = {
+    description = "LIGHTS 255 WR";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  82 = {
+    description = "LOWER FLOOR TO LOWEST WR";
+    action = FloorLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  83 = {
+    description = "LOWER FLOOR WR";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  84 = {
+    description = "LOWER AND CHANGE WR";
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  85 = {
+    description = "SCROLL RIGHT (Boom)";
+    comment = "linetype 85 is not used in DOOM or DOOM2 - it's a Heretic linetype, but BOOM uses it as something else.";
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  86 = {
+    description = "OPEN DOOR WR";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  87 = {
+    description = "PERPETUAL PLAT RAISE WR";
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  88 = {
+    description = "PLAT DOWN WAIT UP STAY WR";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  89 = {
+    description = "PLAT STOP WR";
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  90 = {
+    description = "RAISE DOOR WR";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  91 = {
+    description = "RAISE FLOOR WR";
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  92 = {
+    description = "RAISE FLOOR 24 WR";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  93 = {
+    description = "RAISE FLOOR 24 AND CHANGE WR";
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  94 = {
+    description = "RAISE FLOOR CRUSH WR";
+    action = FloorRaiseAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  95 = {
+    description = "RAISE FLOOR TO NEAREST AND CHANGE WR";
+    action = FloorRaiseToNearestChange;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  96 = {
+    description = "RAISE TO TEXTURE WR";
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  97 = {
+    description = "Player and Creature Teleport - WR";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  98 = {
+    description = "LOWER FLOOR TURBO WR";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 136;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  99 = {
+    description = "BLAZE OPEN DOOR BLUE SR";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  100 = {
+    description = "BUILD STAIRS TURBO 16 W1";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  101 = {
+    description = "RAISE FLOOR S1";
+    action = FloorRaiseToLowestCeiling;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  102 = {
+    description = "LOWER FLOOR TO SURROUNDING S1";
+    action = FloorLowerToHighest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 128;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  103 = {
+    description = "OPEN DOOR S1";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  104 = {
+    description = "LIGHTS OFF W1";
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  105 = {
+    description = "BLAZING DOOR RAISE WR";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  106 = {
+    description = "BLAZING DOOR OPEN WR";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  107 = {
+    description = "BLAZING DOOR CLOSE WR";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  108 = {
+    description = "BLAZING DOOR RAISE W1";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  109 = {
+    description = "BLAZING DOOR OPEN W1";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  110 = {
+    description = "BLAZING DOOR CLOSE W1";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  111 = {
+    description = "BLAZING DOOR RAISE S1";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  112 = {
+    description = "BLAZING DOOR OPEN S1";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  113 = {
+    description = "BLAZING DOOR CLOSE S1";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  114 = {
+    description = "BLAZING DOOR RAISE SR";
+    action = DoorRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  115 = {
+    description = "BLAZING DOOR OPEN SR";
+    action = DoorOpen;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  116 = {
+    description = "BLAZING DOOR CLOSE SR";
+    action = DoorClose;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  117 = {
+    description = "BLAZING DOOR RAISE SR";
+    action = DoorRaise;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 150;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  118 = {
+    description = "BLAZING DOOR OPEN S1";
+    action = DoorOpen;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  119 = {
+    description = "RAISE FLOOR TO NEXT HIGHEST W1";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  120 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY WR";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  121 = {
+    description = "BLAZING PLAT DOWNWAITUPSTAY W1";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  122 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY S1";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  123 = {
+    description = "BLAZING PLAT DOWN WAIT UP STAY SR";
+    action = PlatDownWaitUpStayLip;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  124 = {
+    description = "SECRET EXIT W1";
+    action = ExitSecret;
+    arg1 = /*-1*/0; // -1 is bug
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  125 = {
+    description = "MONSTER TELEPORT W1";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  126 = {
+    description = "TELEPORT MONSTERS WR";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  127 = {
+    description = "BUILD STAIRS TURBO 16 S1";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  128 = {
+    description = "RAISE TO NEAREST FLOOR WR";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  129 = {
+    description = "RAISE FLOOR TURBO WR";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  130 = {
+    description = "RAISE FLOOR TURBO W1";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  131 = {
+    description = "RAISE FLOOR TURBO S1";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  132 = {
+    description = "RAISE FLOOR TURBO SR";
+    action = FloorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  133 = {
+    description = "BLAZING OPEN DOOR BLUE S1";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 130; //2|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  134 = {
+    description = "BLAZE OPEN DOOR RED SR";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  135 = {
+    description = "BLAZING OPEN DOOR RED S1";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 129; //1|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  136 = {
+    description = "BLAZING DOOR OPEN YELLOW SR";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  137 = {
+    description = "BLAZING OPEN DOOR YELLOW S1";
+    action = DoorLockedRaise;
+    arg1 = origarg1;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 131; //3|128
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  138 = {
+    description = "LIGHTS ON SR";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  139 = {
+    description = "LIGHTS 35 SR";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  140 = {
+    description = "Raise the floor up by 512";
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  141 = {
+    description = "SILENT CRUSHING CEILING W1";
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+}

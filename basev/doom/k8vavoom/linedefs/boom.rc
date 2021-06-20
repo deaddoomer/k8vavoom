@@ -1,0 +1,1930 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // BOOM SPECIAL LINE TYPES BELOW
+
+  142 = {
+    description = "Raise the floor up by 512 W1";
+    sourceport = "Boom";
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  143 = {
+    description = "RAISE FLOOR 24 AND CHANGE W1";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  144 = {
+    description = "RAISE FLOOR 32 AND CHANGE W1";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  145 = {
+    description = "LOWER CEILING TO FLOOR W1";
+    sourceport = "Boom";
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  146 = {
+    description = "DONUT W1";
+    sourceport = "Boom";
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  147 = {
+    description = "Raise the floor up by 512 WR";
+    sourceport = "Boom";
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  148 = {
+    description = "RAISE FLOOR 24 AND CHANGE WR";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 3;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  149 = {
+    description = "RAISE FLOOR 32 AND CHANGE WR";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChangeTex;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  150 = {
+    description = "SILENT CRUSHING CEILING WR";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  151 = {
+    description = "RAISE CEILING TO HEC WR";
+    sourceport = "Boom";
+    action = FloorAndCeilingLowerRaise;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  152 = {
+    description = "LOWER CEILING TO FLOOR WR";
+    sourceport = "Boom";
+    action = CeilingLowerToFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  153 = {
+    description = "Transfer floor texture (TXP) W1";
+    sourceport = "Boom";
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  154 = {
+    description = "Transfer floor texture (TXP) WR";
+    sourceport = "Boom";
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  155 = {
+    description = "DONUT WR";
+    sourceport = "Boom";
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  156 = {
+    description = "Start light strobing WR";
+    sourceport = "Boom";
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  157 = {
+    description = "Lights to dimmest neighbour WR";
+    sourceport = "Boom";
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  158 = {
+    description = "RAISE FLOOR TO TEXTURE S1";
+    sourceport = "Boom";
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  159 = {
+    description = "LOWER AND CHANGE S1";
+    sourceport = "Boom";
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  160 = {
+    description = "RAISE FLOOR 24 AND CHANGE S1";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  161 = {
+    description = "RAISE FLOOR 24 S1";
+    sourceport = "Boom";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  162 = {
+    description = "PERPETUAL RAISE S1";
+    sourceport = "Boom";
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  163 = {
+    description = "PLATFORM STOP S1";
+    sourceport = "Boom";
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  164 = {
+    description = "Fast ceiling crush S1";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  165 = {
+    description = "SILENT CRUSHING CEILING S1";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  166 = {
+    description = "RAISE CEILING TO HEC S1";
+    sourceport = "Boom";
+    //k8: GZDoom says this
+    action = FloorAndCeilingLowerRaise; // CeilingGeneric
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 1998; // 1
+    arg5 = 0; // 8
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  167 = {
+    description = "CEILING LOWER TO FLOOR+8 S1";
+    sourceport = "Boom";
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  168 = {
+    description = "CEILING CRUSH STOP S1";
+    sourceport = "Boom";
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  169 = {
+    description = "Lights to brightest neighbour S1";
+    sourceport = "Boom";
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  170 = {
+    description = "LIGHTS 35 S1";
+    sourceport = "Boom";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 35;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  171 = {
+    description = "LIGHTS 255 S1";
+    sourceport = "Boom";
+    action = LightChangeToValue;
+    arg1 = origarg1;
+    arg2 = 255;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  172 = {
+    description = "Start light strobing S1";
+    sourceport = "Boom";
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  173 = {
+    description = "Lights to dimmest neighbour S1";
+    sourceport = "Boom";
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  174 = {
+    description = "Player and Creature Teleport S1";
+    sourceport = "Boom";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  175 = {
+    description = "CLOSE DOOR 30 S1";
+    sourceport = "Boom";
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  176 = {
+    description = "RAISE FLOOR TO TEXTURE SR";
+    sourceport = "Boom";
+    action = FloorRaiseByTexture;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  177 = {
+    description = "LOWER AND CHANGE SR";
+    sourceport = "Boom";
+    action = FloorLowerToLowestChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  178 = {
+    description = "Raise the floor up by 512 SR";
+    sourceport = "Boom";
+    action = FloorRaiseByValueTimes8;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  179 = {
+    description = "RAISE FLOOR 24 AND CHANGE SR";
+    sourceport = "Boom";
+    action = FloorRaiseByValueChange;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  180 = {
+    description = "RAISE FLOOR 24 SR";
+    sourceport = "Boom";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 24;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  181 = {
+    description = "PERPETUAL RAISE SR";
+    sourceport = "Boom";
+    action = PlatPerpetualRaiseLip;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 105;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  182 = {
+    description = "PLATFORM STOP SR";
+    sourceport = "Boom";
+    action = PlatStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  183 = {
+    description = "Fast ceiling crush SR";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 16;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  184 = {
+    description = "CEILING CRUSH AND RAISE SR";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  185 = {
+    description = "SILENT CRUSHING CEILING SR";
+    sourceport = "Boom";
+    action = CeilingCrushAndRaiseSilentA;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 10;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  186 = {
+    description = "RAISE CEILING TO HEC SR";
+    sourceport = "Boom";
+    //k8: GZDoom says this
+    action = FloorAndCeilingLowerRaise; // CeilingGeneric
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 8;
+    arg4 = 1998; // 1
+    arg5 = 0; // 8
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  187 = {
+    description = "CEILING LOWER TO FLOOR+8 SR";
+    sourceport = "Boom";
+    action = CeilingLowerAndCrush;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  188 = {
+    description = "CEILING CRUSH STOP SR";
+    sourceport = "Boom";
+    action = CeilingCrushStop;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  189 = {
+    description = "Transfer floor texture (TXP) S1";
+    sourceport = "Boom";
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  190 = {
+    description = "Transfer floor texture (TXP) SR";
+    sourceport = "Boom";
+    action = FloorTransferTrigger;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  191 = {
+    description = "DONUT SR";
+    sourceport = "Boom";
+    action = FloorDonut;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 4;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  192 = {
+    description = "Lights to brightest neighbour SR";
+    action = LightMaxNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  193 = {
+    description = "Start light strobing SR";
+    sourceport = "Boom";
+    action = LightStrobeDoom;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 35;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  194 = {
+    description = "Lights to dimmest neighbour SR";
+    sourceport = "Boom";
+    action = LightMinNeighbor;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  195 = {
+    description = "Player and Creature Teleport SR";
+    sourceport = "Boom";
+    action = Teleport;
+    arg1 = 0;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  196 = {
+    description = "CLOSE DOOR 30 SR";
+    sourceport = "Boom";
+    action = DoorCloseWaitOpen;
+    arg1 = origarg1;
+    arg2 = 16;
+    arg3 = 240;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  197 = {
+    description = "EXIT LEVEL G1";
+    sourceport = "Boom";
+    action = ExitNormal;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  198 = {
+    description = "SECRET EXIT G1";
+    sourceport = "Boom";
+    action = ExitSecret;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  199 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR W1";
+    sourceport = "Boom";
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  200 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR W1";
+    sourceport = "Boom";
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  201 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR WR";
+    sourceport = "Boom";
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  202 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR WR";
+    sourceport = "Boom";
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  203 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR S1";
+    sourceport = "Boom";
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  204 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR S1";
+    sourceport = "Boom";
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  205 = {
+    description = "LOWER CEILING TO LOWEST NEIGHBOUR SR";
+    sourceport = "Boom";
+    action = CeilingLowerToLowest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  206 = {
+    description = "LOWER CEILING TO HIGHEST FLOOR SR";
+    sourceport = "Boom";
+    action = CeilingLowerToHighestFloor;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  207 = {
+    description = "Silent Preserving Teleport W1";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  208 = {
+    description = "Silent Preserving Teleport WR";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  209 = {
+    description = "Silent Preserving Teleport S1";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  210 = {
+    description = "Silent Preserving Teleport SR";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  211 = {
+    description = "PLATFORM INSTANT TOGGLE SR";
+    sourceport = "Boom";
+    action = PlatToggle;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  212 = {
+    description = "PLATFORM INSTANT TOGGLE WR";
+    sourceport = "Boom";
+    action = PlatToggle;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  213 = {
+    description = "Transfer lighting to tagged floor";
+    sourceport = "Boom";
+    action = TransferFloorLight;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  214 = {
+    description = "Scroll ceiling accelerate";
+    sourceport = "Boom";
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  215 = {
+    description = "Scroll floor accelerate";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  216 = {
+    description = "Push objects accelerate";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  217 = {
+    description = "Scroll & Push accelerate";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  218 = {
+    description = "Scroll wall accelerate";
+    sourceport = "Boom";
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  219 = {
+    description = "LOWER FLOOR TURBO W1";
+    sourceport = "Boom";
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  220 = {
+    description = "LOWER FLOOR TURBO WR";
+    sourceport = "Boom";
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  221 = {
+    description = "LOWER FLOOR TURBO S1";
+    sourceport = "Boom";
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  222 = {
+    description = "LOWER FLOOR TURBO SR";
+    sourceport = "Boom";
+    action = FloorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  223 = {
+    description = "Friction";
+    sourceport = "Boom";
+    action = SectorSetFriction;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  224 = {
+    description = "Set wind force";
+    sourceport = "Boom";
+    action = SectorSetWind;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  225 = {
+    description = "Set current force";
+    sourceport = "Boom";
+    action = SectorSetCurrent;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  226 = {
+    description = "Set point push/pull force";
+    sourceport = "Boom";
+    action = PointPushSetForce;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 1;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  227 = {
+    description = "Elevator to NEXT HIGHEST W1";
+    sourceport = "Boom";
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  228 = {
+    description = "Elevator to NEXT HIGHEST WR";
+    sourceport = "Boom";
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  229 = {
+    description = "Elevator to NEXT HIGHEST S1";
+    sourceport = "Boom";
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  230 = {
+    description = "Elevator to NEXT HIGHEST SR";
+    sourceport = "Boom";
+    action = ElevatorRaiseToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  231 = {
+    description = "Elevator to NEXT LOWEST W1";
+    sourceport = "Boom";
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  232 = {
+    description = "Elevator to NEXT LOWEST WR";
+    sourceport = "Boom";
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  233 = {
+    description = "Elevator to NEXT LOWEST S1";
+    sourceport = "Boom";
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  234 = {
+    description = "Elevator to NEXT LOWEST SR";
+    sourceport = "Boom";
+    action = ElevatorLowerToNearest;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  235 = {
+    description = "Elevator to TRIGGER HEIGHT W1";
+    sourceport = "Boom";
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  236 = {
+    description = "Elevator to TRIGGER HEIGHT WR";
+    sourceport = "Boom";
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  237 = {
+    description = "Elevator to TRIGGER HEIGHT S1";
+    sourceport = "Boom";
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  238 = {
+    description = "Elevator to TRIGGER HEIGHT SR";
+    sourceport = "Boom";
+    action = ElevatorMoveToFloor;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  239 = {
+    description = "Transfer floor texture (NXP) W1";
+    sourceport = "Boom";
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  240 = {
+    description = "Transfer floor texture (NXP) WR";
+    sourceport = "Boom";
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  241 = {
+    description = "Transfer floor texture (NXP) S1";
+    sourceport = "Boom";
+    action = FloorTransferNumeric;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  242 = {
+    description = "Deep water";
+    sourceport = "Boom";
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  243 = {
+    description = "Silent Line Teleport W1";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  244 = {
+    description = "Silent Line Teleport WR";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  245 = {
+    description = "Scroll ceiling displacement";
+    sourceport = "Boom";
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  246 = {
+    description = "Scroll floor displacement";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  247 = {
+    description = "Push objects displacement";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  248 = {
+    description = "Scroll & Push displacement";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 5;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  249 = {
+    description = "Scroll wall displacement";
+    sourceport = "Boom";
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  250 = {
+    description = "Scroll tagged ceiling";
+    sourceport = "Boom";
+    action = ScrollCeiling;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  251 = {
+    description = "Scroll tagged floor";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  252 = {
+    description = "Carry objects on floor";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  253 = {
+    description = "Scroll floor and carry objects";
+    sourceport = "Boom";
+    action = ScrollFloor;
+    arg1 = origarg1;
+    arg2 = 4;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  254 = {
+    description = "Scroll tagged wall";
+    sourceport = "Boom";
+    action = ScrollTextureModel;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  255 = {
+    description = "Scroll wall by sidedef offsets";
+    sourceport = "Boom";
+    action = ScrollTextureOffsets;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  256 = {
+    description = "BUILD STAIRS WR";
+    sourceport = "Boom";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  257 = {
+    description = "BUILD STAIRS TURBO 16 WR";
+    sourceport = "Boom";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  258 = {
+    description = "BUILD STAIRS SR";
+    sourceport = "Boom";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 8;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  259 = {
+    description = "BUILD STAIRS TURBO 16 SR";
+    sourceport = "Boom";
+    action = StairsBuildUpDoom;
+    arg1 = origarg1;
+    arg2 = 32;
+    arg3 = 16;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  260 = {
+    description = "Make tagged lines translucent";
+    sourceport = "Boom";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 168; // was 128, changed to better reflect BOOM default
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  261 = {
+    description = "Transfer lighting to tagged ceiling";
+    sourceport = "Boom";
+    action = TransferCeilingLight;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  262 = {
+    description = "Silent Line Teleport Reverse W1";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  263 = {
+    description = "Silent Line Teleport Reverse WR";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = true;
+    keepdata = false;
+  }
+
+  264 = {
+    description = "Monster Line Teleport W1 Reverse";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  265 = {
+    description = "Monster Line Teleport WR Reverse";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  266 = {
+    description = "Monster Line Teleport W1";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  267 = {
+    description = "Monster Line Teleport WR";
+    sourceport = "Boom";
+    action = TeleportLine;
+    arg1 = origarg1;
+    arg2 = origarg1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  268 = {
+    description = "Monster-only Silent Teleport W1";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  269 = {
+    description = "Monster-only Silent Teleport WR";
+    sourceport = "Boom";
+    action = TeleportNoFog;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = origarg1;
+    arg4 = 0;
+    arg5 = 0;
+    spac = MCross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+}

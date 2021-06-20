@@ -43,9 +43,7 @@ gldefs.txt    @CMAKE_CURRENT_SOURCE_DIR@/gldefs.txt
 // terrain detection
 terrain.txt   @CMAKE_CURRENT_SOURCE_DIR@/terrain.txt
 
-vavoom_ldef_spec_trans.rc @CMAKE_CURRENT_SOURCE_DIR@/vavoom_ldef_spec_trans.rc
-
-//$recursedir k8vavoom/   @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom/
+$recursedirext|.rc| k8vavoom/linedefs/   @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom/linedefs
 
 // big font
 $load @CMAKE_CURRENT_SOURCE_DIR@/bigfont.pcx

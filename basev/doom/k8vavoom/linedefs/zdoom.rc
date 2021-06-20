@@ -1,0 +1,284 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // 3d floors
+  // https://zdoom.org/wiki/Sector_Set3dFloor
+
+  332 = {
+    description = "ZDoom 3D Floor";
+    sourceport = "ZDoom";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 4;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+  }
+
+  333 = {
+    description = "Static Init Gravity";
+    sourceport = "ZDoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  334 = {
+    description = "Static Init Color";
+    sourceport = "ZDoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  335 = {
+    description = "Static Init Damage";
+    sourceport = "ZDoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  336 = {
+    description = "Mirror";
+    sourceport = "ZDoom";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  337 = {
+    description = "Horizon";
+    sourceport = "ZDoom";
+    action = LineHorizon;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  338 = {
+    description = "Waggle Floor W1";
+    sourceport = "ZDoom";
+    action = FloorWaggle;
+    arg1 = origarg1;
+    arg2 = 24;
+    arg3 = 32;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  339 = {
+    description = "Waggle Floor W1";
+    sourceport = "ZDoom";
+    action = FloorWaggle;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 32;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  340 = {
+    description = "Slope Front Floor";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  341 = {
+    description = "Slope Front Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  342 = {
+    description = "Slope Front Floor And Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  343 = {
+    description = "Slope Back Floor";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  344 = {
+    description = "Slope Back Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  345 = {
+    description = "Slope Back Floor And Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  346 = {
+    description = "Slope Back Floor And Front Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 2;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  347 = {
+    description = "Slope Front Floor And Back Ceiling";
+    sourceport = "ZDoom";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //348 = WALK, Autosave() -- ZDoom
+  //349 = USE, Autosave() -- ZDoom
+
+  //TODO: not fully implemented yet
+  350 = {
+    description = "Fake Floor";
+    sourceport = "ZDoom";
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 2;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  351 = {
+    description = "Fake Floor With Clipping";
+    sourceport = "ZDoom";
+    action = TransferHeights;
+    arg1 = origarg1;
+    arg2 = 6;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  //ZDoom: 352 = 0, Sector_CopyScroller(tag, 1)  // copy ceiling scroller
+  //ZDoom: 353 = 0, Sector_CopyScroller(tag, 2)  // copy floor scroller
+  //ZDoom: 354 = 0, Sector_CopyScroller(tag, 6)  // copy carrying floor scroller
+}

@@ -1,0 +1,720 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // EDGE
+  400 = {
+    description = "Thick Extrafloor";
+    sourceport = "EDGE";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  401 = {
+    description = "Thick Extrafloor (use upper texture)";
+    sourceport = "EDGE";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 16;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  402 = {
+    description = "Thick Extrafloor (use lower texture)";
+    sourceport = "EDGE";
+    action = SectorSet3dFloor;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 32;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  403 = {
+    description = "Liquid Extrafloor (Opaque)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 100;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  404 = {
+    description = "Liquid Extrafloor (80% Translucent)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 80;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  405 = {
+    description = "Liquid Extrafloor (60% Translucent)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 70; //60+10;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  406 = {
+    description = "Liquid Extrafloor (40% Translucent)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 60; //40+20;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  407 = {
+    description = "Liquid Extrafloor (20% Translucent)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 50; //20+30;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  408 = {
+    description = "Liquid Extrafloor (Invisible)";
+    sourceport = "EDGE";
+    action = EDGEWater;
+    arg1 = origarg1;
+    arg2 = 12;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  409 = {
+    description = "Translucent Line (80%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 204;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  410 = {
+    description = "Translucent Line (60%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 153;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  411 = {
+    description = "Translucent Line (40%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 101;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  412 = {
+    description = "Translucent Line (20%)";
+    sourceport = "EDGE";
+    action = LineTranslucent;
+    arg1 = origarg1;
+    arg2 = 50;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  413 = {
+    description = "Thin Extrafloor (Opaque)";
+    sourceport = "EDGE";
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 255;
+    arg5 = unchanged;
+  }
+
+  414 = {
+    description = "Thin Extrafloor (80% Translucent)";
+    sourceport = "EDGE";
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 204;
+    arg5 = unchanged;
+  }
+
+  415 = {
+    description = "Thin Extrafloor (60% Translucent)";
+    sourceport = "EDGE";
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 153;
+    arg5 = unchanged;
+  }
+
+  416 = {
+    description = "Thin Extrafloor (40% Translucent)";
+    sourceport = "EDGE";
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 102;
+    arg5 = unchanged;
+  }
+
+  417 = {
+    description = "Thin Extrafloor (20% Translucent)";
+    sourceport = "EDGE";
+    action = SectorSet3dThinFloorEDGE;
+    arg1 = unchanged;
+    arg2 = 1;
+    arg3 = 8;
+    arg4 = 51;
+    arg5 = unchanged;
+  }
+
+  422 = {
+    description = "SCROLL RIGHT";
+    sourceport = "EDGE";
+    action = ScrollTextureRight;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  423 = {
+    description = "SCROLL UP";
+    sourceport = "EDGE";
+    action = ScrollTextureUp;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  424 = {
+    description = "SCROLL DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureDown;
+    arg1 = 64;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  425 = {
+    description = "SCROLL LEFT AND UP";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  426 = {
+    description = "SCROLL LEFT AND DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 64;
+    arg3 = 0;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  427 = {
+    description = "SCROLL RIGHT AND UP";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 0;
+    arg5 = 64;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  428 = {
+    description = "SCROLL RIGHT AND DOWN";
+    sourceport = "EDGE";
+    action = ScrollTextureBoth;
+    arg1 = 0;
+    arg2 = 0;
+    arg3 = 64;
+    arg4 = 64;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // [429] : EDGE SCROLL FAST LOWER AND MIDDLE TEXTURE (WATERFALLS) (not implemented yet)
+  // NOTE: TYPES 430-433 USE THE UPPER MASTER TEXTURE FOR THE SIDE TEXTURE OF THE EXTRAFLOOR!
+  //       THEY ARE ONLY GOOD FOR MAKING FALLS, OR EDGES OF RIVERS THAT FALLS OFF A LEDGE!
+
+  // k8: i'm not sure if SPAC flags are right here
+  434 = {
+    description = "EDGE S1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  435 = {
+    description = "EDGE SR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Use;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  436 = {
+    description = "EDGE W1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  437 = {
+    description = "EDGE WR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Cross;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  438 = {
+    description = "EDGE G1, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  439 = {
+    description = "EDGE GR, RAISE FLOOR 2 UNITS (USE FOR RTS ONHEIGHT EVENTS)";
+    sourceport = "EDGE";
+    action = FloorRaiseByValue;
+    arg1 = origarg1;
+    arg2 = 8;
+    arg3 = 2;
+    arg4 = 0;
+    arg5 = 0;
+    spac = Impact;
+    repeat = true;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // EDGE mirrors
+  462 = {
+    description = "Mirror (Plain)";
+    sourceport = "EDGE";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  463 = {
+    description = "Mirror (White)";
+    sourceport = "EDGE";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  464 = {
+    description = "Mirror (Blue)";
+    sourceport = "EDGE";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  465 = {
+    description = "Mirror (Red)";
+    sourceport = "EDGE";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  466 = {
+    description = "Mirror (Green)";
+    sourceport = "EDGE";
+    action = LineMirror;
+    arg1 = unchanged;
+    arg2 = unchanged;
+    arg3 = unchanged;
+    arg4 = unchanged;
+    arg5 = unchanged;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  // EDGE slopes
+  567 = {
+    description = "Detail Slope - Floor";
+    sourceport = "EDGE";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 0;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  568 = {
+    description = "Detail Slope - Ceiling";
+    sourceport = "EDGE";
+    action = PlaneAlign;
+    arg1 = 0;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+
+  569 = {
+    description = "Detail Slope - Floor And Ceiling";
+    sourceport = "EDGE";
+    action = PlaneAlign;
+    arg1 = 1;
+    arg2 = 1;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+    spac = None/*Cross*/;
+    repeat = false;
+    monsteractivate = false;
+    keepdata = false;
+  }
+}
+
+
+/* other EDGE specials -- http://3dfxdev.net/edgewiki/index.php?title=Line_Types
+Thin Sliding Doors
+    [442] : EDGE Sliding door (LEFT), DR + MONSTERS
+    [443] : EDGE Sliding door (LEFT), DR
+    [444] : EDGE Sliding door (LEFT), DR + FAST
+    [445] : EDGE Sliding door (LEFT), D1
+
+    [446] : EDGE Sliding door (RIGHT), DR + MONSTERS
+    [447] : EDGE Sliding door (RIGHT), DR
+    [448] : EDGE Sliding door (RIGHT), DR + FAST
+    [449] : EDGE Sliding door (RIGHT), D1
+
+    [450] : EDGE Sliding door (CENTER), DR + MONSTERS
+    [451] : EDGE Sliding door (CENTER), DR
+    [452] : EDGE Sliding door (CENTER), DR + FAST
+    [453] : EDGE Sliding door (CENTER), D1
+
+Ladders
+    [470] : EDGE Ladder, 48 units high
+    [471] : EDGE Ladder, 80 units high
+    [472] : EDGE Ladder, 120 units high
+    [473] : EDGE Ladder, 160 units high
+    [474] : EDGE Ladder, 192 units high
+    [475] : EDGE Ladder, 256 units high
+    [476] : EDGE Ladder, 384 units high
+    [477] : EDGE Ladder, 512 units high
+    [478] : EDGE Ladder, 768 units high
+    [479] : EDGE Ladder, no limit
+
+Portals
+    [480] : EDGE Portal (Dark 50%)
+    [481] : EDGE Portal (Light 30%)
+    [482] : EDGE Portal (Light 70%)
+    [483] : EDGE Portal (Blue 70%)
+    [484] : EDGE Portal (Green 70%)
+
+    [485] : EDGE Camera Portal (Plain)
+    [486] : EDGE Camera Portal (White)
+    [487] : EDGE Camera Portal (Cyan)
+    [488] : EDGE Camera Portal (Rusty)
+    [489] : EDGE Camera Portal (Green)
+
+HUB Exits - WR
+    [501] : Hub Exit to MAP01 / E1M1
+    [502] : Hub Exit to MAP02 / E1M2
+    [503] : Hub Exit to MAP03 / E1M3
+    [504] : Hub Exit to MAP04 / E1M4
+    [505] : Hub Exit to MAP05 / E1M5
+    [506] : Hub Exit to MAP06 / E1M6
+    [507] : Hub Exit to MAP07 / E1M7
+    [508] : Hub Exit to MAP08 / E1M8
+    [509] : Hub Exit to MAP09 / E1M9
+
+    [510] : Hub Exit to MAP10
+    [511] : Hub Exit to MAP11 / E2M1
+    [512] : Hub Exit to MAP12 / E2M2
+    [513] : Hub Exit to MAP13 / E2M3
+    [514] : Hub Exit to MAP14 / E2M4
+    [515] : Hub Exit to MAP15 / E2M5
+    [516] : Hub Exit to MAP16 / E2M6
+    [517] : Hub Exit to MAP17 / E2M7
+    [518] : Hub Exit to MAP18 / E2M8
+    [519] : Hub Exit to MAP19 / E2M9
+
+    [520] : Hub Exit to MAP20
+    [521] : Hub Exit to MAP21 / E3M1
+    [522] : Hub Exit to MAP22 / E3M2
+    [523] : Hub Exit to MAP23 / E3M3
+    [524] : Hub Exit to MAP24 / E3M4
+    [525] : Hub Exit to MAP25 / E3M5
+    [526] : Hub Exit to MAP26 / E3M6
+    [527] : Hub Exit to MAP27 / E3M7
+    [528] : Hub Exit to MAP28 / E3M8
+    [529] : Hub Exit to MAP29 / E3M9
+
+    [530] : Hub Exit to MAP30
+    [531] : Hub Exit to MAP31 / E4M1
+    [532] : Hub Exit to MAP32 / E4M2
+    [533] : Hub Exit to MAP33 / E4M3
+    [534] : Hub Exit to MAP34 / E4M4
+    [535] : Hub Exit to MAP35 / E4M5
+    [536] : Hub Exit to MAP36 / E4M6
+    [537] : Hub Exit to MAP37 / E4M7
+    [538] : Hub Exit to MAP38 / E4M8
+    [539] : Hub Exit to MAP39 / E4M9
+
+Locked Doors
+    [490] : EDGE Green Key DOOR - DR
+    [491] : EDGE Green Key DOOR - D1
+    [492] : EDGE Green Key DOOR - SR
+    [493] : EDGE Green Key DOOR - S1
+    [494] : EDGE Green Key BLAZING DOOR - D1
+
+    [580] : EDGE Gold Key DOOR - DR
+    [581] : EDGE Gold Key DOOR - D1
+    [582] : EDGE Gold Key DOOR - SR
+    [583] : EDGE Gold Key DOOR - S1
+
+    [584] : EDGE Silver Key DOOR - DR
+    [585] : EDGE Silver Key DOOR - D1
+    [586] : EDGE Silver Key DOOR - SR
+    [587] : EDGE Silver Key DOOR - S1
+
+    [588] : EDGE Brass Key DOOR - DR
+    [589] : EDGE Brass Key DOOR - D1
+    [590] : EDGE Copper Key DOOR - DR
+    [591] : EDGE Copper Key DOOR - D1
+    [592] : EDGE Steel Key DOOR - DR
+    [593] : EDGE Steel Key DOOR - D1
+
+    [594] : EDGE Wooden Key DOOR - DR
+    [595] : EDGE Wooden Key DOOR - D1
+    [596] : EDGE Fire Key DOOR - DR
+    [597] : EDGE Fire Key DOOR - D1
+    [598] : EDGE Water Key DOOR - DR
+    [599] : EDGE Water Key DOOR - D1
+
+Flat Alignment
+    [800] : Align and rotate front sector's FLOOR
+    [801] : Align and rotate back sector's FLOOR
+    [802] : Align and rotate front sector's CEILING
+    [803] : Align and rotate back sector's CEILING
+    [804] : Align and rotate front sector's FLOOR+CEILING
+    [805] : Align and rotate back sector's FLOOR+CEILING
+
+    [810] : Align, scale and rotate front sector's FLOOR
+    [811] : Align, scale and rotate back sector's FLOOR
+    [812] : Align, scale and rotate front sector's CEILING
+    [813] : Align, scale and rotate back sector's CEILING
+    [814] : Align, scale and rotate front sector's FLOOR+CEILING
+    [815] : Align, scale and rotate back sector's FLOOR+CEILING
+
+    [820] : Scale front sector's FLOOR
+    [821] : Scale back sector's FLOOR
+    [822] : Scale front sector's CEILING
+    [823] : Scale back sector's CEILING
+    [824] : Scale front sector's FLOOR+CEILING
+    [825] : Scale back sector's FLOOR+CEILING
+
+LEGEND
+TRIGGER   MEANING
+D1  Manual, once only
+DR  Manual, repeatable
+S1  Switched, once only
+SR  Switched, repeatable
+W1  Walk over, once only
+WR  Walk over, repeatable
+G1  Gun-shot, once only
+GR  Gun-shot, repeatable
+*/

@@ -7,7 +7,7 @@ configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 
 file(GLOB strife_pak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
-  ${CMAKE_CURRENT_SOURCE_DIR}/*.rc
+  ${CMAKE_CURRENT_SOURCE_DIR}/k8vavoom/linedefs/*.rc
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/*.lmp
   #${CMAKE_CURRENT_BINARY_DIR}/strfhelp.o
   ${CMAKE_SOURCE_DIR}/progs/strife/cgame/*.vc
