@@ -37,7 +37,7 @@ extern VCvarB r_decals_wall;
 static VCvarB r_decal_switch_special("r_decal_switch_special", true, "Make decals more translucent on switch textures?", CVAR_Archive);
 static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "Force this transparency for blood decals on switches.", CVAR_Archive);
 static VCvarF r_decal_switch_boot_alpha("r_decal_switch_boot_alpha", "0.36", "Force this transparency for boot decals on switches.", CVAR_Archive);
-static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.66", "Force this transparency for decals on switches.", CVAR_Archive);
+static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.56", "Force this transparency for decals on switches.", CVAR_Archive);
 
 // make renderer life somewhat easier by not allowing alot of decals
 // main work is done by `VLevel->CleanupSegDecals()`
@@ -94,10 +94,9 @@ float VLevel::CalcDecalAlpha (const VDecalDef *dec, const float alpha) noexcept 
 //
 //==========================================================================
 float VLevel::CalcSwitchDecalAlpha (const VDecalDef *dec, const float ovralpha) {
-  if (!r_decal_switch_special.asBool()) return ovralpha;
   vassert(dec);
   const float alpha = CalcDecalAlpha(dec, ovralpha);
-  if (alpha <= 0.0f) return alpha;
+  if (!r_decal_switch_special.asBool() || alpha <= 0.004f) return alpha;
   // blood?
   if (dec->bloodSplat) return clampval(min2(alpha, r_decal_switch_blood_alpha.asFloat()), 0.0f, 1.0f);
   if (dec->bootPrint) return clampval(min2(alpha, r_decal_switch_boot_alpha.asFloat()), 0.0f, 1.0f);
