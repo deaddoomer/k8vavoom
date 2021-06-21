@@ -1856,18 +1856,22 @@ static bool CheckAffectedMObjPositions (polyobj_t *pofirst=nullptr, bool skipLin
       VEntity *mobj = edata.mobj;
       if (!NeedPositionCheck(mobj)) continue;
       for (polyobj_t *po = pofirst; po; po = po->polink) {
-        TVec udir = CalcPolyUnstuckVector(po, mobj);
-        if (!udir.isValid()) return true; // oops, blocked
-        if (!udir.isZero2D()) {
-          #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-          GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), udir.x, udir.y, udir.z);
-          #endif
-          // need to move
-          //TODO: move any touching objects too
-          mobj->Origin += udir;
-          bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-          if (!ok) return false; //FIXME: blocked
-          edata.aflags |= AFF_MOVE;
+        if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+          // do nothing
+        } else {
+          TVec udir = CalcPolyUnstuckVector(po, mobj);
+          if (!udir.isValid()) return true; // oops, blocked
+          if (!udir.isZero2D()) {
+            #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
+            GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), udir.x, udir.y, udir.z);
+            #endif
+            // need to move
+            //TODO: move any touching objects too
+            mobj->Origin += udir;
+            bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+            if (!ok) return false; //FIXME: blocked
+            edata.aflags |= AFF_MOVE;
+          }
         }
         if (skipLink) break;
       }
@@ -2183,12 +2187,16 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         #if 1
         if (NeedPositionCheck(mobj)) {
           for (polyobj_t *xpp = pofirst; xpp; xpp = xpp->polink) {
-            for (auto &&lit : xpp->LineFirst()) {
-              const line_t *ld = lit.line();
-              if (!mobj->IsBlockingLine(ld)) continue;
-              if (!mobj->LineIntersects(ld)) continue;
-              edata.aflags |= AFF_STUCK;
-              break;
+            if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+              // do nothing
+            } else {
+              for (auto &&lit : xpp->LineFirst()) {
+                const line_t *ld = lit.line();
+                if (!mobj->IsBlockingLine(ld)) continue;
+                if (!mobj->LineIntersects(ld)) continue;
+                edata.aflags |= AFF_STUCK;
+                break;
+              }
             }
             if (skipLink) break;
             if (edata.aflags&AFF_STUCK) break;
