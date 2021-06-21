@@ -643,6 +643,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       Md2->AllowTransparency = ParseBool(SN, "allowtransparency", false);
 
       // process frames
+      // TODO: implement range support for frame declaration
       int curframeindex = 0;
       for (VXmlNode *FN = SN->FindChild("frame"); FN; FN = FN->FindNext(), ++curframeindex) {
         VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
