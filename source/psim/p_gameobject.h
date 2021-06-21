@@ -633,6 +633,7 @@ struct line_t : public TPlane {
 
   // returns `true` if the line hits the box
   // line is finite
+  //FIXME: do not check for equality here?
   inline bool Box2DHit (const float tmbox[4]) const noexcept {
     if (tmbox[BOX2D_RIGHT] <= bbox2d[BOX2D_LEFT] ||
         tmbox[BOX2D_LEFT] >= bbox2d[BOX2D_RIGHT] ||
