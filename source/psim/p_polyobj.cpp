@@ -1136,10 +1136,14 @@ void VLevel::InitPolyobjs () {
     polyobj_t *po0 = pofirst;
     polyobj_t *po1 = pofirst;
     bool dostep = false;
+    const bool is3d = pofirst->posector;
     while (po0) {
       po0 = po0->polink;
       if (dostep) po1 = po1->polink;
-      if (po0 && po0 == po1) Host_Error("pobj #%d has link loop", pofirst->tag);
+      if (po0) {
+        if (po0 == po1) Host_Error("pobj #%d chain has link loop", pofirst->tag);
+        if (!!(po0->posector) != is3d) Host_Error("do not link 3d and non-3d polyobjects (chain starts at pobj #%d, pobj #%d broke the rule)", pofirst->tag, po0->tag);
+      }
       dostep = !dostep;
     }
   }
