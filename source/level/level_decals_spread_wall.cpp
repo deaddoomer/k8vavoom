@@ -59,7 +59,7 @@ TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 static inline bool IsSpecialLine (const line_t *line, const int sidenum, const int texid) noexcept {
   // has special?
   if (!line || !line->special || texid <= 0) return false;
-  GCon->Logf("linespc=%d; spac=0x%04x; texid=%d (%d)", line->special, (unsigned)line->SpacFlags, texid, (int)VLevelInfo::IsSwitchTexture(texid));
+  //GCon->Logf("linespc=%d; spac=0x%04x; texid=%d (%d)", line->special, (unsigned)line->SpacFlags, texid, (int)VLevelInfo::IsSwitchTexture(texid));
   // can use?
   if ((line->SpacFlags&(SPAC_Use|SPAC_Impact|SPAC_Push|SPAC_UseThrough)) == 0) return false;
   // backside?
