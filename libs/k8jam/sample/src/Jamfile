@@ -1,12 +1,11 @@
 SubDir TOP src ;
 
-Main pngtest :
-  main_pngtest.cpp
+Main main :
+  main.cpp
 ;
-LinkLibraries pngtest :
+
+LinkLibraries main :
   libcore.a
-  #$(STATIC_LZMA_LIB)
-  #$(STATIC_ZLIB_LIB)
 ;
 
 
