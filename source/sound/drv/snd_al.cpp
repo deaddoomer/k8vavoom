@@ -153,13 +153,15 @@ bool VOpenALDevice::Init () {
   // connect to a device
   Device = alcOpenDevice(cli_AudioDeviceName);
   if (!Device) {
-    if (!cli_AudioDeviceName) cli_AudioDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-    GCon->Logf(NAME_Warning, "Couldn't open OpenAL device '%s'", cli_AudioDeviceName);
+    if (cli_AudioDeviceName) {
+      GCon->Logf(NAME_Warning, "Couldn't open OpenAL device '%s'", cli_AudioDeviceName);
+    } else {
+      GCon->Log(NAME_Warning, "Couldn't open OpenAL device");
+    }
     return false;
   }
 
-  if (!cli_AudioDeviceName) cli_AudioDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-  GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
+  if (cli_AudioDeviceName) GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
 
   if (!alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
     Sys_Error("OpenAL: 'ALC_EXT_thread_local_context' extension is not present.\n"
