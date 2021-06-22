@@ -41,6 +41,12 @@ VCvarF VOpenALDevice::max_distance("snd_max_distance", "8192", "OpenAL max dista
 static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", CVAR_Archive);
 
 
+const char *cli_AudioDeviceName = nullptr;
+
+/*static*/ bool cliRegister_openal_args =
+  VParsedArgs::RegisterStringOption("-audio-device", "set audio device", &cli_AudioDeviceName) ;
+
+
 //==========================================================================
 //
 //  alGetErrorString
@@ -132,12 +138,28 @@ bool VOpenALDevice::Init () {
   StrmSource = 0;
   StrmNumAvailableBuffers = 0;
 
+  #if 0
+  {
+    const char *lst = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
+    if (lst) {
+      while (*lst) {
+        GCon->Logf(NAME_Init, "available OpenAL device: '%s'", lst);
+        lst += strlen(lst)+1;
+      }
+    }
+  }
+  #endif
+
   // connect to a device
-  Device = alcOpenDevice(nullptr);
+  Device = alcOpenDevice(cli_AudioDeviceName);
   if (!Device) {
-    GCon->Log(NAME_Init, "Couldn't open OpenAL device");
+    if (!cli_AudioDeviceName) cli_AudioDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+    GCon->Logf(NAME_Warning, "Couldn't open OpenAL device '%s'", cli_AudioDeviceName);
     return false;
   }
+
+  if (!cli_AudioDeviceName) cli_AudioDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+  GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
 
   if (!alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
     Sys_Error("OpenAL: 'ALC_EXT_thread_local_context' extension is not present.\n"

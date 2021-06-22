@@ -2225,6 +2225,7 @@ void FL_InitOptions () {
   GArgs.AddFileOption("!1-autoloaddir");
   GArgs.AddFileOption("!1-deh");
   GArgs.AddFileOption("!1-vc-decorate-ignore-file");
+  GArgs.AddFileOption("!1-audio-device");
 
   FSYS_InitOptions(GParsedArgs);
 
