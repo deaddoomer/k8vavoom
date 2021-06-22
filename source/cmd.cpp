@@ -29,6 +29,7 @@
 #include "mapinfo.h"
 #include "host.h"
 #include "filesys/files.h"
+#include "sound/sound.h"
 #ifdef CLIENT
 # include "text.h"
 # include "client/client.h"
@@ -80,6 +81,8 @@ static const char *KeyConfCommands[] = {
   "addplayerclass",
   "clearplayerclasses"
 };
+
+static bool wasRunCliCommands = false;
 
 
 //==========================================================================
@@ -964,18 +967,23 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   if (Args.length() == 0) return;
 
   if (Args[0] == "__run_cli_commands__") {
-    FL_ProcessPreInits(); // override configs
-    FL_ClearPreInits();
-    if (!cliInserted) {
-      #ifdef CLIENT
-      if (!R_IsDrawerInited()) {
-        GCmdBuf.Insert("wait\n__run_cli_commands__\n");
-        return;
+    if (!wasRunCliCommands) {
+      wasRunCliCommands = true;
+      FL_ProcessPreInits(); // override configs
+      FL_ClearPreInits();
+      GSoundManager->InitThreads();
+      if (!cliInserted) {
+        #ifdef CLIENT
+        if (!R_IsDrawerInited()) {
+          wasRunCliCommands = false;
+          GCmdBuf.Insert("wait\n__run_cli_commands__\n");
+          return;
+        }
+        #endif
+        execLogInit = false;
+        cliInserted = true;
+        InsertCLICommands();
       }
-      #endif
-      execLogInit = false;
-      cliInserted = true;
-      InsertCLICommands();
     }
     return;
   }

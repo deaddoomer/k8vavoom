@@ -100,6 +100,7 @@ public:
   ~VSoundManager ();
 
   void Init ();
+  void InitThreads ();
   int GetSoundID (VName Name);
   int ResolveSound (int InSoundId);
   int ResolveEntitySound (VName ClassName, VName GenderName, VName SoundName);

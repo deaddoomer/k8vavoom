@@ -125,8 +125,6 @@ void VOpenALDevice::ClearError () {
 //
 //==========================================================================
 bool VOpenALDevice::Init () {
-  //ALenum E;
-
   Device = nullptr;
   Context = nullptr;
   Buffers = nullptr;
@@ -134,7 +132,7 @@ bool VOpenALDevice::Init () {
   StrmSource = 0;
   StrmNumAvailableBuffers = 0;
 
-  //  Connect to a device.
+  // connect to a device
   Device = alcOpenDevice(nullptr);
   if (!Device) {
     GCon->Log(NAME_Init, "Couldn't open OpenAL device");

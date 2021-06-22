@@ -40,7 +40,7 @@ enum { cli_DebugSound = 0 };
 static VCvarB snd_verbose_truncate("snd_verbose_truncate", false, "Show silence-truncated sounds?", CVAR_Archive);
 
 //k8: it seems to be weirdly unstable (at least under windoze). sigh.
-static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in background thread?", CVAR_Archive|CVAR_PreInit);
+static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", false, "Load sounds in background thread?", CVAR_Archive);
 
 
 #ifdef CLIENT
@@ -202,27 +202,34 @@ VSoundManager::~VSoundManager () {
   if (loaderThreadStarted) {
     GCon->Log("shutting down sound loader thread");
     {
-      if (developer) GCon->Log(NAME_Dev, "   ...getting lock...");
+      if (cli_DebugSoundMT) GCon->Log("   ...getting lock...");
       MyThreadLocker lock(&loaderLock);
-      if (developer) GCon->Log(NAME_Dev, "   ...setting variable...");
+      if (cli_DebugSoundMT) GCon->Log("   ...setting variable...");
       loaderDoQuit = 1;
-      if (developer) GCon->Log(NAME_Dev, "   ...relasing lock...");
+      if (cli_DebugSoundMT) GCon->Log("   ...relasing lock...");
     }
     // the signal will be delivered when the mutex is released
-    if (developer) GCon->Log(NAME_Dev, "   ...sending signal lock...");
+    if (cli_DebugSoundMT) GCon->Log("   ...sending signal lock...");
     mythread_cond_signal(&loaderCond);
-    if (developer) GCon->Log(NAME_Dev, "   ...joining threads...");
-    /*
-    for (;;) {
-      {
-        MyThreadLocker lock(&loaderLock);
-        if (loaderDoQuit == 2) break;
+    #if 1
+    for (int tno = 4; tno > 0; --tno) {
+      const double stt = -Sys_Time();
+      for (;;) {
+        {
+          MyThreadLocker lock(&loaderLock);
+          if (loaderDoQuit == 2) break;
+        }
+        Sys_Yield();
+        const double ctt = stt+Sys_Time();
+        if (ctt >= 1.0/1000.0*100.0) break;
       }
-      Sys_Yield();
     }
-    */
+    #else
+    //k8: for some reason, joining works only if any sound was loaded (i.e. any non-exit event processed)
+    if (cli_DebugSoundMT) GCon->Log("   ...joining threads...");
     mythread_join(loaderThread);
-    if (developer) GCon->Log(NAME_Dev, "   ...resetting threading flag...");
+    #endif
+    if (cli_DebugSoundMT) GCon->Log("   ...resetting threading flag...");
     loaderThreadStarted = false;
     GCon->Log("sound loader thread shut down.");
   }
@@ -315,7 +322,9 @@ static MYTHREAD_RET_TYPE soundStreamThread (void *adevobj) {
   if (sndThreadDebug) fprintf(stderr, "STRD: started...\n");
 
   for (;;) {
+    if (sndThreadDebug) fprintf(stderr, "STRD: waiting event...\n");
     mythread_cond_wait(&sman->loaderCond, &sman->loaderLock);
+    if (sndThreadDebug) fprintf(stderr, "STRD: got event... (quit=%d)\n", (int)sman->loaderDoQuit);
     // mutex is held again
     if (sman->loaderDoQuit) break;
     // check if we have something to do
@@ -362,6 +371,7 @@ static MYTHREAD_RET_TYPE soundStreamThread (void *adevobj) {
   }
 
   // mutex is held
+  if (sndThreadDebug) fprintf(stderr, "STRD: exiting...\n");
   sman->loaderDoQuit = 2;
   mythread_mutex_unlock(&sman->loaderLock);
   Z_ThreadDone();
@@ -428,8 +438,18 @@ void VSoundManager::Init () {
   queuedSounds.clear();
   queuedSoundsMap.clear();
   readySounds.clear();
-  // create stream player thread
-  if (snd_bgloading_sfx) {
+}
+
+
+//==========================================================================
+//
+//  VSoundManager::InitThreads
+//
+//==========================================================================
+void VSoundManager::InitThreads () {
+  //GCon->Logf(NAME_Init, "sound loader thread: %d", (int)snd_bgloading_sfx.asBool());
+  // create background sound loader thread
+  if (snd_bgloading_sfx.asBool()) {
     if (mythread_create(&loaderThread, &soundStreamThread, this)) {
       GCon->Logf(NAME_Warning, "cannot create sound streaming thread (this is harmless)");
       sndThreadDebug = false;
