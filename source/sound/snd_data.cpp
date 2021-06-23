@@ -447,6 +447,7 @@ void VSoundManager::Init () {
 //
 //==========================================================================
 void VSoundManager::InitThreads () {
+  if (loaderThreadStarted) return;
   //GCon->Logf(NAME_Init, "sound loader thread: %d", (int)snd_bgloading_sfx.asBool());
   // create background sound loader thread
   if (snd_bgloading_sfx.asBool()) {
@@ -1293,10 +1294,11 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     MyThreadLocker lock(&loaderLock);
     sfx = &S_sfx[sound_id];
     const int lst = sfx->GetLoadedState();
+    //GCon->Logf(NAME_Debug, "*** LoadSoundInternal: sound_id=%d; lst=%d", sound_id, lst);
     if (lst == sfxinfo_t::ST_Invalid) return false;
-    if (lst == sfxinfo_t::ST_Loading) Sys_Error("internal error is sound loader");
+    if (lst == sfxinfo_t::ST_Loading) Sys_Error("internal error is sound loader (0)");
     if (lst == sfxinfo_t::ST_Loaded) return true;
-    if (lst != sfxinfo_t::ST_NotLoaded) Sys_Error("internal error is sound loader");
+    if (lst != sfxinfo_t::ST_NotLoaded) Sys_Error("internal error is sound loader (1)");
     sfx->SetLoadedState(sfxinfo_t::ST_Loading);
   }
 
@@ -1384,6 +1386,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
 int VSoundManager::LoadSound (int sound_id) {
   if (sound_id < 1 || sound_id >= S_sfx.length()) return LS_Error;
 
+  //GCon->Logf(NAME_Debug, "*** LoadSound: threaded=%d; sound_id=%d; lst=%d", (int)loaderThreadStarted, sound_id, S_sfx[sound_id].GetLoadedState());
   if (!loaderThreadStarted) {
     // no streaming thread
     S_sfx[sound_id].lastUseTime = Sys_Time(); // for bg loader
