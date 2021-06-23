@@ -480,6 +480,7 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
   *peak_commit    = (size_t)info.PeakPagefileUsage;
   *page_faults    = (size_t)info.PageFaultCount;  
 */
+  *elapsed = 0;
   *utime = 0;
   *stime = 0;
   *current_rss    = 0;

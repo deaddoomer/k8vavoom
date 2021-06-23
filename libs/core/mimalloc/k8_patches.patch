@@ -151,7 +151,7 @@ index c0f09b5..2db2923 100644
    // MSVC: use data section magic for static libraries
    // See <https://www.codeguru.com/cpp/misc/misc/applicationcontrol/article.php/c6945/Running-Code-Before-and-After-Main.htm>
 diff --git a/src/os.c b/src/os.c
-index 8541523..aad88f1 100644
+index 8541523..96475f6 100644
 --- a/src/os.c
 +++ b/src/os.c
 @@ -144,6 +144,7 @@ static bool mi_win_enable_large_os_pages()
@@ -171,6 +171,15 @@ index 8541523..aad88f1 100644
  }
  
  void _mi_os_init(void) {
+@@ -507,7 +510,7 @@ static void* mi_os_get_aligned_hint(size_t try_alignment, size_t size)
+   return (void*)hint;
+ }
+ #else
+-static void* mi_os_get_aligned_hint(size_t try_alignment, size_t size) {
++static __attribute__((unused)) void* mi_os_get_aligned_hint(size_t try_alignment, size_t size) {
+   UNUSED(try_alignment); UNUSED(size);
+   return NULL;
+ }
 @@ -1125,6 +1128,7 @@ Support NUMA aware allocation
  -----------------------------------------------------------------------------*/
  #ifdef _WIN32  
@@ -225,7 +234,7 @@ index 255bede..33e3a0b 100644
  // Use (unofficial) RtlGenRandom
  #pragma comment (lib,"advapi32.lib")
 diff --git a/src/stats.c b/src/stats.c
-index c94fbde..a14fc7a 100644
+index c94fbde..43b41b1 100644
 --- a/src/stats.c
 +++ b/src/stats.c
 @@ -449,6 +449,7 @@ mi_msecs_t _mi_clock_end(mi_msecs_t start) {
@@ -248,11 +257,12 @@ index c94fbde..a14fc7a 100644
    *elapsed = _mi_clock_end(mi_process_start);
    FILETIME ct;
    FILETIME ut;
-@@ -477,6 +479,14 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
+@@ -477,6 +479,15 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
    *current_commit = (size_t)info.PagefileUsage;
    *peak_commit    = (size_t)info.PeakPagefileUsage;
    *page_faults    = (size_t)info.PageFaultCount;  
 +*/
++  *elapsed = 0;
 +  *utime = 0;
 +  *stime = 0;
 +  *current_rss    = 0;

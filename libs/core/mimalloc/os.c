@@ -510,7 +510,7 @@ static void* mi_os_get_aligned_hint(size_t try_alignment, size_t size)
   return (void*)hint;
 }
 #else
-static void* mi_os_get_aligned_hint(size_t try_alignment, size_t size) {
+static __attribute__((unused)) void* mi_os_get_aligned_hint(size_t try_alignment, size_t size) {
   UNUSED(try_alignment); UNUSED(size);
   return NULL;
 }
