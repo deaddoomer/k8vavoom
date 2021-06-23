@@ -98,6 +98,10 @@ static TCmdKeyUp  name ## Up_f("-" #name, Key ## name);
 
 class TKButton {
 protected:
+  // see below
+  static const float PressureTbl[8];
+
+protected:
   enum {
     BitDown = 1u<<0,
     BitJustDown = 1u<<1,
@@ -121,38 +125,40 @@ protected:
 public:
   TKButton ();
 
-  void KeyDown (const char *c);
-  void KeyUp (const char *c);
-  float KeyState ();
+  void KeyDown (const char *c) noexcept;
+  void KeyUp (const char *c) noexcept;
+  float KeyPressure () noexcept;
 
-  inline bool IsDown () const { return !!(state&BitDown); }
-  inline bool IsJustDown () const { return !!(state&BitJustDown); }
-  inline bool IsJustUp () const { return !!(state&BitJustUp); }
+  inline bool IsDown () const noexcept { return (state&BitDown); }
+  inline bool IsJustDown () const noexcept { return (state&BitJustDown); }
+  inline bool IsJustUp () const noexcept { return (state&BitJustUp); }
 
-  inline void Unpress () { state = 0; down.reset(); }
+  inline void Unpress () noexcept { state = 0; down.reset(); }
 
-  inline void ClearEdges () { state &= BitDown; }
-  inline void SetDown (bool flag) { if (flag) state |= BitDown; else state &= ~BitDown; }
-  inline void SetJustDown (bool flag) { if (flag) state |= BitJustDown; else state &= ~BitJustDown; }
-  inline void SetJustUp (bool flag) { if (flag) state |= BitJustUp; else state &= ~BitJustUp; }
+  inline void ClearEdges () noexcept { state &= BitDown; }
+  inline void SetDown (bool flag) noexcept { if (flag) state |= BitDown; else state &= ~BitDown; }
+  inline void SetJustDown (bool flag) noexcept { if (flag) state |= BitJustDown; else state &= ~BitJustDown; }
+  inline void SetJustUp (bool flag) noexcept { if (flag) state |= BitJustUp; else state &= ~BitJustUp; }
 };
 
 
 class TCmdKeyDown : public VCommand {
 public:
-  TCmdKeyDown (const char *AName, TKButton &AKey) : VCommand(AName), Key(AKey) {}
-  virtual void Run () override;
-
   TKButton &Key;
+
+public:
+  inline TCmdKeyDown (const char *AName, TKButton &AKey) noexcept : VCommand(AName), Key(AKey) {}
+  virtual void Run () override;
 };
 
 
 class TCmdKeyUp : public VCommand {
 public:
-  TCmdKeyUp (const char *AName, TKButton &AKey) : VCommand(AName), Key(AKey) {}
-  virtual void Run () override;
-
   TKButton &Key;
+
+public:
+  inline TCmdKeyUp (const char *AName, TKButton &AKey) noexcept : VCommand(AName), Key(AKey) {}
+  virtual void Run () override;
 };
 
 
@@ -173,6 +179,22 @@ enum {
   MODINPUT_FORWARDMOVE,
   MODINPUT_SIDEMOVE,
   MODINPUT_UPMOVE
+};
+
+
+// bit 0: "currently pressed"
+// bit 1: just pressed
+// bit 2: just released
+const float TKButton::PressureTbl[8] = {
+         // rph
+  0.0f,  // 000: up the entire frame
+  1.0f,  // 001: held the entire frame
+  0.0f,  // 010: Sys_Error() -- pressed, but not held, impossible
+  0.5f,  // 011: pressed and held this frame
+  0.0f,  // 100: released this frame
+  0.0f,  // 101: Sys_Error() -- released, but held, impossible
+  0.25f, // 110: pressed and released this frame
+  0.75f, // 111: released and re-pressed this frame
 };
 
 
@@ -203,7 +225,7 @@ static VCvarF cl_pitchdriftspeed("cl_pitchdriftspeed", "270", "Pitch drifting sp
 
 static VCvarF cl_anglespeedkey("cl_anglespeedkey", "1.5", "Fast turning multiplier.", CVAR_Archive);
 
-static VCvarB cl_deathroll_enabled("cl_deathroll_enabled", true, "Enable death roll?", CVAR_Archive);
+static VCvarB cl_deathroll_enabled("cl_deathroll_enabled", false, "Enable death roll?", CVAR_Archive);
 static VCvarF cl_deathroll_amount("cl_deathroll_amount", "75", "Deathroll amount.", CVAR_Archive);
 static VCvarF cl_deathroll_speed("cl_deathroll_speed", "80", "Deathroll speed.", CVAR_Archive);
 
@@ -311,7 +333,7 @@ TKButton::TKButton () {
 //  TKButton::KeyDown
 //
 //==========================================================================
-void TKButton::KeyDown (const char *c) {
+void TKButton::KeyDown (const char *c) noexcept {
   vint32 k = -1;
 
   if (c && c[0]) k = VStr::atoi(c); // otherwise, typed manually at the console for continuous down
@@ -337,7 +359,7 @@ void TKButton::KeyDown (const char *c) {
 //  TKButton::KeyUp
 //
 //==========================================================================
-void TKButton::KeyUp (const char *c) {
+void TKButton::KeyUp (const char *c) noexcept {
   if (!c || !c[0]) {
     // typed manually at the console, assume for unsticking, so clear all
     //down[0] = down[1] = 0;
@@ -368,27 +390,18 @@ void TKButton::KeyUp (const char *c) {
 
 //==========================================================================
 //
-//  TKButton::KeyState
+//  TKButton::KeyPressure
 //
-//  Returns 0.25 if a key was pressed and released during the frame,
-//  0.5 if it was pressed and held
-//  0 if held then released, and
-//  1.0 if held for the entire time
+//  returns:
+//   0.0  if not pressed, or released
+//   0.25 if the key was pressed and released during the frame
+//   0.5  if the key was pressed and held
+//   0.75 if the key was released and then pressed during this frame
+//   1.0  if the key was held for the entire time
 //
 //==========================================================================
-float TKButton::KeyState () {
-  /*static*/ const float newVal[8] = {
-    0.0f, // up the entire frame
-    1.0f, // held the entire frame
-    0.0f, // Sys_Error();
-    0.5f, // pressed and held this frame
-    0.0f, // released this frame
-    0.0f, // Sys_Error();
-    0.25f,// pressed and released this frame
-    0.75f // released and re-pressed this frame
-  };
-
-  const float val = newVal[state&7];
+float TKButton::KeyPressure () noexcept {
+  const float val = PressureTbl[state&7];
   ClearEdges();
   return val;
 }
@@ -562,12 +575,12 @@ bool VBasePlayer::IsJumpEnabled () const noexcept {
 //==========================================================================
 void VBasePlayer::AdjustAngles () {
   const bool isRunning = (IsRunEnabled() ? KeySpeed.IsDown() : false);
-  float speed = host_frametime*(isRunning ? cl_anglespeedkey : 1.0f);
+  const float speed = host_frametime*(isRunning ? cl_anglespeedkey : 1.0f);
 
-  bool mlookJustUp = KeyMouseLook.IsJustUp();
+  const bool mlookJustUp = KeyMouseLook.IsJustUp();
   bool mlookIsDown = KeyMouseLook.IsDown();
   bool klookAnyDown = KeyLookUp.IsDown() || KeyLookDown.IsDown();
-  bool klookJustUp = !klookAnyDown && (KeyLookUp.IsJustUp() || KeyLookDown.IsJustUp());
+  const bool klookJustUp = (!klookAnyDown && (KeyLookUp.IsJustUp() || KeyLookDown.IsJustUp()));
 
   if (lookspring_mouse) {
     if (!lookspring_keyboard) klookAnyDown = false;
@@ -581,8 +594,8 @@ void VBasePlayer::AdjustAngles () {
 
   // yaw
   if (!KeyStrafe.IsDown()) {
-    ViewAngles.yaw -= KeyRight.KeyState()*cl_yawspeed*speed;
-    ViewAngles.yaw += KeyLeft.KeyState()*cl_yawspeed*speed;
+    ViewAngles.yaw -= KeyRight.KeyPressure()*cl_yawspeed*speed;
+    ViewAngles.yaw += KeyLeft.KeyPressure()*cl_yawspeed*speed;
     // old code
     //if (joyxmove > 0) ViewAngles.yaw -= joy_yaw*speed;
     //if (joyxmove < 0) ViewAngles.yaw += joy_yaw*speed;
@@ -596,15 +609,15 @@ void VBasePlayer::AdjustAngles () {
   ViewAngles.yaw = AngleMod(ViewAngles.yaw);
 
   // pitch
-  float up = KeyLookUp.KeyState();
-  float down = KeyLookDown.KeyState();
+  const float up = KeyLookUp.KeyPressure();
+  const float down = KeyLookDown.KeyPressure();
   ViewAngles.pitch -= cl_pitchspeed*up*speed;
   ViewAngles.pitch += cl_pitchspeed*down*speed;
   if (up || down || KeyMouseLook.IsDown()) StopPitchDrift();
   if (mouse_look_vertical) {
     if ((mouse_look || KeyMouseLook.IsDown()) && !KeyStrafe.IsDown()) ViewAngles.pitch -= mousey*m_pitch;
     // added code
-    int stick = joy_axis_pitch.asInt();
+    const int stick = joy_axis_pitch.asInt();
     if (isValidStickIndex(stick) && joyymove[stick]) {
       float val = joyymove[stick]*joy_pitch*(joy_pitch_sensitivity.asFloat()/5.0f);
       if (invert_joystick) val = -val;
@@ -677,8 +690,8 @@ void VBasePlayer::HandleInput () {
 
   // let movement keys cancel each other out
   if (KeyStrafe.IsDown()) {
-    side += KeyRight.KeyState()*cl_sidespeed;
-    side -= KeyLeft.KeyState()*cl_sidespeed;
+    side += KeyRight.KeyPressure()*cl_sidespeed;
+    side -= KeyLeft.KeyPressure()*cl_sidespeed;
     // old code
     //if (joyxmove > 0) side += cl_sidespeed;
     //if (joyxmove < 0) side -= cl_sidespeed;
@@ -691,11 +704,11 @@ void VBasePlayer::HandleInput () {
     }
   }
 
-  forward += KeyForward.KeyState()*cl_forwardspeed;
-  forward -= KeyBackward.KeyState()*cl_backspeed;
+  forward += KeyForward.KeyPressure()*cl_forwardspeed;
+  forward -= KeyBackward.KeyPressure()*cl_backspeed;
 
-  side += KeyMoveRight.KeyState()*cl_sidespeed;
-  side -= KeyMoveLeft.KeyState()*cl_sidespeed;
+  side += KeyMoveRight.KeyPressure()*cl_sidespeed;
+  side -= KeyMoveLeft.KeyPressure()*cl_sidespeed;
 
   {
     // old code
@@ -709,8 +722,8 @@ void VBasePlayer::HandleInput () {
   }
 
   // fly up/down/drop keys
-  flyheight += KeyFlyUp.KeyState()*cl_flyspeed; // note that the actual flyheight will be twice this
-  flyheight -= KeyFlyDown.KeyState()*cl_flyspeed;
+  flyheight += KeyFlyUp.KeyPressure()*cl_flyspeed; // note that the actual flyheight will be twice this
+  flyheight -= KeyFlyDown.KeyPressure()*cl_flyspeed;
 
   if ((!mouse_look && !KeyMouseLook.IsDown()) || KeyStrafe.IsDown()) {
     forward += m_forward*mousey;
@@ -730,40 +743,40 @@ void VBasePlayer::HandleInput () {
   }
 
   flyheight = midval(flyheight, -127.0f, 127.0f);
-  if (KeyFlyCenter.KeyState()) flyheight = TOCENTRE;
+  if (KeyFlyCenter.KeyPressure()) flyheight = TOCENTRE;
 
   // buttons
   Buttons = 0;
 
-  if (KeyAttack.KeyState()) Buttons |= BT_ATTACK;
-  if (KeyUse.KeyState()) Buttons |= BT_USE;
-  if (KeyJump.KeyState()) Buttons |= BT_JUMP;
-  if (KeyCrouch.KeyState()) Buttons |= BT_CROUCH;
-  if (KeyAltAttack.KeyState()) Buttons |= BT_ALT_ATTACK;
-  if (KeyButton5.KeyState()) Buttons |= BT_BUTTON_5;
-  if (KeyButton6.KeyState()) Buttons |= BT_BUTTON_6;
-  if (KeyButton7.KeyState()) Buttons |= BT_BUTTON_7;
-  if (KeyButton8.KeyState()) Buttons |= BT_BUTTON_8;
+  if (KeyAttack.KeyPressure()) Buttons |= BT_ATTACK;
+  if (KeyUse.KeyPressure()) Buttons |= BT_USE;
+  if (KeyJump.KeyPressure()) Buttons |= BT_JUMP;
+  if (KeyCrouch.KeyPressure()) Buttons |= BT_CROUCH;
+  if (KeyAltAttack.KeyPressure()) Buttons |= BT_ALT_ATTACK;
+  if (KeyButton5.KeyPressure()) Buttons |= BT_BUTTON_5;
+  if (KeyButton6.KeyPressure()) Buttons |= BT_BUTTON_6;
+  if (KeyButton7.KeyPressure()) Buttons |= BT_BUTTON_7;
+  if (KeyButton8.KeyPressure()) Buttons |= BT_BUTTON_8;
 
-  if (KeyForward.KeyState()) Buttons |= BT_FORWARD;
-  if (KeyBackward.KeyState()) Buttons |= BT_BACKWARD;
-  if (KeyLeft.KeyState()) Buttons |= BT_LEFT;
-  if (KeyRight.KeyState()) Buttons |= BT_RIGHT;
-  if (KeyMoveLeft.KeyState()) Buttons |= BT_MOVELEFT;
-  if (KeyMoveRight.KeyState()) Buttons |= BT_MOVERIGHT;
-  if (KeyStrafe.KeyState()) Buttons |= BT_STRAFE;
-  if (KeySpeed.KeyState()) Buttons |= BT_SPEED;
-  if (KeyReload.KeyState()) Buttons |= BT_RELOAD;
-  if (KeyFlashlight.KeyState()) Buttons |= BT_FLASHLIGHT;
+  if (KeyForward.KeyPressure()) Buttons |= BT_FORWARD;
+  if (KeyBackward.KeyPressure()) Buttons |= BT_BACKWARD;
+  if (KeyLeft.KeyPressure()) Buttons |= BT_LEFT;
+  if (KeyRight.KeyPressure()) Buttons |= BT_RIGHT;
+  if (KeyMoveLeft.KeyPressure()) Buttons |= BT_MOVELEFT;
+  if (KeyMoveRight.KeyPressure()) Buttons |= BT_MOVERIGHT;
+  if (KeyStrafe.KeyPressure()) Buttons |= BT_STRAFE;
+  if (KeySpeed.KeyPressure()) Buttons |= BT_SPEED;
+  if (KeyReload.KeyPressure()) Buttons |= BT_RELOAD;
+  if (KeyFlashlight.KeyPressure()) Buttons |= BT_FLASHLIGHT;
 
-  if (KeySuperBullet.KeyState()) Buttons |= BT_SUPERBULLET;
-  if (KeyZoom.KeyState()) Buttons |= BT_ZOOM;
+  if (KeySuperBullet.KeyPressure()) Buttons |= BT_SUPERBULLET;
+  if (KeyZoom.KeyPressure()) Buttons |= BT_ZOOM;
   //GCon->Logf("VBasePlayer::HandleInput(%p): Buttons=0x%08x", this, Buttons);
 
   AcsCurrButtonsPressed |= Buttons;
   AcsCurrButtons = Buttons; // scripts can change `Buttons`, but not this
   //AcsButtons = Buttons; // this logic is handled by `SV_RunClients()`
-  //GCon->Logf("VBasePlayer::HandleInput(%p): %d; Buttons=0x%08x; OldButtons=0x%08x", this, (KeyJump.KeyState() ? 1 : 0), Buttons, OldButtons);
+  //GCon->Logf("VBasePlayer::HandleInput(%p): %d; Buttons=0x%08x; OldButtons=0x%08x", this, (KeyJump.KeyPressure() ? 1 : 0), Buttons, OldButtons);
 
   // impulse
   if (currImpulse) {
