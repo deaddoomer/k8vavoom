@@ -442,7 +442,7 @@ void VEntity::Tick (float deltaTime) {
         #endif
       }
     }
-    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
+    if (GLevelInfo && GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     if (eflagsex&EFEX_NoTickGravLT) {
       #ifdef CLIENT
       //GCon->Logf(NAME_Debug, "  : %s lifetime (lmt=%g)", GetClass()->GetName(), LastMoveTime-deltaTime);
@@ -505,7 +505,7 @@ void VEntity::Tick (float deltaTime) {
     VThinker::Tick(deltaTime);
   } else {
     ++dbgEntityTickSimple;
-    if (GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
+    if (GLevelInfo && GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
       const bool noFreeze = ((eflagsex&EFEX_IsEntityEx) && fldbNoTimeFreeze->GetBool(this));
       if (!noFreeze) return;
     }
