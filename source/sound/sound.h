@@ -100,7 +100,8 @@ public:
   ~VSoundManager ();
 
   void Init ();
-  void InitThreads ();
+  void InitThreads (); // safe to call anytime
+  void StopSoundLoaderThread (bool loadQueuedSounds=true); // safe to call anytime
   int GetSoundID (VName Name);
   int ResolveSound (int InSoundId);
   int ResolveEntitySound (VName ClassName, VName GenderName, VName SoundName);

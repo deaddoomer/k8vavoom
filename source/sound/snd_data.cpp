@@ -198,41 +198,7 @@ VSoundManager::VSoundManager ()
 //
 //==========================================================================
 VSoundManager::~VSoundManager () {
-  // wait for thread deinit
-  if (loaderThreadStarted) {
-    GCon->Log("shutting down sound loader thread");
-    {
-      if (cli_DebugSoundMT) GCon->Log("   ...getting lock...");
-      MyThreadLocker lock(&loaderLock);
-      if (cli_DebugSoundMT) GCon->Log("   ...setting variable...");
-      loaderDoQuit = 1;
-      if (cli_DebugSoundMT) GCon->Log("   ...relasing lock...");
-    }
-    // the signal will be delivered when the mutex is released
-    if (cli_DebugSoundMT) GCon->Log("   ...sending signal lock...");
-    mythread_cond_signal(&loaderCond);
-    #if 1
-    for (int tno = 4; tno > 0; --tno) {
-      const double stt = -Sys_Time();
-      for (;;) {
-        {
-          MyThreadLocker lock(&loaderLock);
-          if (loaderDoQuit == 2) break;
-        }
-        Sys_Yield();
-        const double ctt = stt+Sys_Time();
-        if (ctt >= 1.0/1000.0*100.0) break;
-      }
-    }
-    #else
-    //k8: for some reason, joining works only if any sound was loaded (i.e. any non-exit event processed)
-    if (cli_DebugSoundMT) GCon->Log("   ...joining threads...");
-    mythread_join(loaderThread);
-    #endif
-    if (cli_DebugSoundMT) GCon->Log("   ...resetting threading flag...");
-    loaderThreadStarted = false;
-    GCon->Log("sound loader thread shut down.");
-  }
+  StopSoundLoaderThread(false); // do not load queued sounds
 
   for (int i = 0; i < S_sfx.length(); ++i) {
     if (S_sfx[i].Data) {
@@ -311,10 +277,10 @@ static void releaseSfxData (VSoundManager *sman, int sound_id) {
 
 //==========================================================================
 //
-//  soundStreamThread
+//  soundLoaderThread
 //
 //==========================================================================
-static MYTHREAD_RET_TYPE soundStreamThread (void *adevobj) {
+static MYTHREAD_RET_TYPE soundLoaderThread (void *adevobj) {
   VSoundManager *sman = (VSoundManager *)adevobj;
 
   mythread_mutex_lock(&sman->loaderLock);
@@ -333,10 +299,10 @@ static MYTHREAD_RET_TYPE soundStreamThread (void *adevobj) {
       // k8: dunno, maybe take the last appended sound, as it will prolly
       //     the one that the game needs right now.
       //     drawback: older sounds will be delayed even more.
-      int sndid = sman->queuedSounds[0];
+      const int sndid = sman->queuedSounds[0];
       if (sndThreadDebug) fprintf(stderr, "STRD: trying to load sound #%d (uc=%d) (%s : %s)\n", sndid, sman->S_sfx[sndid].GetUseCount(), *sman->S_sfx[sndid].TagName, *W_FullLumpName(sman->S_sfx[sndid].LumpNum));
       mythread_mutex_unlock(&sman->loaderLock);
-      bool ok = sman->LoadSoundInternal(sndid);
+      const bool ok = sman->LoadSoundInternal(sndid);
       mythread_mutex_lock(&sman->loaderLock);
       sman->queuedSoundsMap.del(sndid);
       sman->queuedSounds.removeAt(0);
@@ -447,12 +413,17 @@ void VSoundManager::Init () {
 //
 //==========================================================================
 void VSoundManager::InitThreads () {
-  if (loaderThreadStarted) return;
+  if (loaderThreadStarted) {
+    if (!snd_bgloading_sfx.asBool()) StopSoundLoaderThread();
+    return;
+  }
   //GCon->Logf(NAME_Init, "sound loader thread: %d", (int)snd_bgloading_sfx.asBool());
   // create background sound loader thread
   if (snd_bgloading_sfx.asBool()) {
-    if (mythread_create(&loaderThread, &soundStreamThread, this)) {
-      GCon->Logf(NAME_Warning, "cannot create sound streaming thread (this is harmless)");
+    loaderIsIdle = false; // just in case
+    loaderDoQuit = 0; // just in case
+    if (mythread_create(&loaderThread, &soundLoaderThread, this)) {
+      GCon->Logf(NAME_Warning, "cannot create sound loader thread (this is harmless)");
       sndThreadDebug = false;
     } else {
       GCon->Log(NAME_Init, "starting sound loader thread");
@@ -470,6 +441,96 @@ void VSoundManager::InitThreads () {
     }
     GCon->Log(NAME_Init, "sound loader thread initialised.");
   }
+}
+
+
+//==========================================================================
+//
+//  VSoundManager::StopSoundLoaderThread
+//
+//==========================================================================
+void VSoundManager::StopSoundLoaderThread (bool loadQueuedSounds) {
+  if (!loaderThreadStarted) return;
+
+  // wait for thread deinit
+  GCon->Log("shutting down sound loader thread");
+  {
+    if (cli_DebugSoundMT) GCon->Log("   ...getting lock...");
+    MyThreadLocker lock(&loaderLock);
+    if (cli_DebugSoundMT) GCon->Log("   ...setting variable...");
+    loaderDoQuit = 1;
+    if (cli_DebugSoundMT) GCon->Log("   ...relasing lock...");
+  }
+  // the signal will be delivered when the mutex is released
+  if (cli_DebugSoundMT) GCon->Log("   ...sending signal lock...");
+  mythread_cond_signal(&loaderCond);
+  #if 1
+  for (int tno = 4; tno > 0; --tno) {
+    const double stt = -Sys_Time();
+    for (;;) {
+      {
+        MyThreadLocker lock(&loaderLock);
+        if (loaderDoQuit == 2) break;
+      }
+      Sys_Yield();
+      const double ctt = stt+Sys_Time();
+      if (ctt >= 1.0/1000.0*100.0) break;
+    }
+  }
+  #else
+  //k8: for some reason, joining works only if any sound was loaded (i.e. any non-exit event processed)
+  if (cli_DebugSoundMT) GCon->Log("   ...joining threads...");
+  mythread_join(loaderThread);
+  #endif
+  if (cli_DebugSoundMT) GCon->Log("   ...resetting threading flag...");
+  loaderIsIdle = false;
+  loaderThreadStarted = false;
+  loaderDoQuit = 0;
+  GCon->Log("sound loader thread shut down.");
+
+  if (!loadQueuedSounds) return;
+
+  mythread_mutex_lock(&loaderLock);
+  ProcessLoadedSounds();
+  readySounds.clear();
+  sndCheckUnload.clear();
+
+  // mark all queued sounds as "need to load"
+  while (queuedSounds.length() > 0) {
+    int sndid = queuedSounds[0];
+    queuedSoundsMap.del(sndid);
+    queuedSounds.removeAt(0);
+    sfxinfo_t *sfx = &S_sfx[sndid];
+    const int lst = sfx->GetLoadedState();
+    if (lst == sfxinfo_t::ST_Invalid) continue;
+    if (lst == sfxinfo_t::ST_Loading) continue;
+    if (lst == sfxinfo_t::ST_Loaded) continue;
+    if (lst != sfxinfo_t::ST_NotLoaded) Sys_Error("internal error is sound loader (3)");
+    GCon->Logf("added queued sound #%d (%s)", sndid, *sfx->TagName);
+    sfx->SetLoadedState(sfxinfo_t::ST_Loading);
+  }
+
+  for (int f = 1; f < S_sfx.length(); ++f) {
+    sfxinfo_t *sfx = &S_sfx[f];
+    const int lst = sfx->GetLoadedState();
+    if (lst != sfxinfo_t::ST_Loading) continue;
+    GCon->Logf("force-loading sound #%d (%s)", f, *sfx->TagName);
+    sfx->SetLoadedState(sfxinfo_t::ST_NotLoaded);
+    mythread_mutex_unlock(&loaderLock);
+    const bool ok = LoadSoundInternal(f);
+    if (ok) sfx->SetLoadedState(sfxinfo_t::ST_Loaded);
+    #ifdef CLIENT
+    if (GAudio) {
+      // this will call `DoneWithLump()`
+      GAudio->NotifySoundLoaded(f, ok);
+    } else
+    #endif
+    {
+      if (ok) DoneWithLump(f);
+    }
+    mythread_mutex_lock(&loaderLock);
+  }
+  mythread_mutex_unlock(&loaderLock);
 }
 
 
@@ -1180,8 +1241,11 @@ void VSoundManager::CleanupSounds () {
 //
 //==========================================================================
 void VSoundManager::Process () {
-  MyThreadLocker lock(&loaderLock);
-  ProcessLoadedSounds();
+  {
+    MyThreadLocker lock(&loaderLock);
+    ProcessLoadedSounds();
+  }
+  if (loaderThreadStarted != snd_bgloading_sfx.asBool()) InitThreads();
 }
 
 
