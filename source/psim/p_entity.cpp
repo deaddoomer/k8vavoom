@@ -442,6 +442,7 @@ void VEntity::Tick (float deltaTime) {
         #endif
       }
     }
+    // in MP games, there is no `GLevelInfo`
     if (GLevelInfo && GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     if (eflagsex&EFEX_NoTickGravLT) {
       #ifdef CLIENT
@@ -505,6 +506,7 @@ void VEntity::Tick (float deltaTime) {
     VThinker::Tick(deltaTime);
   } else {
     ++dbgEntityTickSimple;
+    // in MP games, there is no `GLevelInfo`
     if (GLevelInfo && GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) {
       const bool noFreeze = ((eflagsex&EFEX_IsEntityEx) && fldbNoTimeFreeze->GetBool(this));
       if (!noFreeze) return;
