@@ -113,6 +113,7 @@ menudef SoundOptions {
   // this doesn't work yet
   //CreateOnOffCvar("Swap stereo", 'snd_swap_stereo');
 
+
   header ""; // empty line
 
   option bool {
@@ -144,6 +145,26 @@ menudef SoundOptions {
     help =
       "This will amplify random pitching (0 will disable it completely).";
   }
+
+
+  header "Experimental Options";
+
+  option bool {
+    title = "Load Music In Background";
+    cvar = snd_bgloading_music;
+    help =
+      "Load music in background thread? This may reduce stuttering.",
+      "\c[WHITE]WARNING! This option is experimental, and may crash the engine!";
+  }
+
+  option bool {
+    title = "Load Sounds In Background";
+    cvar = snd_bgloading_sfx;
+    help =
+      "Load sound in background thread? This may reduce stuttering.",
+      "\c[WHITE]WARNING! This option is experimental, and may crash the engine!";
+  }
+
 
   header "";
 
