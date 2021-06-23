@@ -2147,21 +2147,24 @@ starCheck:
 //
 //==========================================================================
 void VStr::Tokenise (TArray <VStr> &args) const noexcept {
-  //args.reset();
-  if (length() == 0) return;
+  if (isEmpty()) return;
   const char *str = getCStr();
   while (*str) {
     // whitespace
-    if ((vuint8)*str <= ' ') { ++str; continue; }
-
+    const char ch = *str++;
+    if ((vuint8)ch <= ' ') continue;
     // string?
-    if (*str == '"' || *str == '\'') {
-      char qch = *str++;
+    if (ch == '"' || ch == '\'') {
       VStr ss;
-      int cc, d;
+      const char qch = ch;
+      const char *sstart = nullptr;
       while (*str && *str != qch) {
         if (str[0] == '\\' && str[1]) {
-          ++str;
+          if (sstart) {
+            ss.appendCStr(sstart, (int)(ptrdiff_t)(str-sstart));
+            sstart = nullptr;
+          }
+          ++str; // skip backslash
           switch (*str++) {
             case 't': ss += '\t'; break;
             case 'n': ss += '\n'; break;
@@ -2169,46 +2172,42 @@ void VStr::Tokenise (TArray <VStr> &args) const noexcept {
             case 'e': ss += '\x1b'; break;
             case 'c': ss += TEXT_COLOR_ESCAPE; break;
             case '\\': case '"': case '\'': ss += str[-1]; break;
-            case 'x':
-              cc = 0;
-              d = (*str ? VStr::digitInBase(*str, 16) : -1);
-              if (d >= 0) {
-                cc = d;
-                ++str;
-                d = (*str ? VStr::digitInBase(*str, 16) : -1);
-                if (d >= 0) { cc = cc*16+d; ++str; }
-                ss += (char)cc;
-              } else {
-                ss += str[-1];
-              }
-              break;
+            case 'x': case 'X':
+              {
+                int cc = 0;
+                int d = (*str ? VStr::digitInBase(*str, 16) : -1);
+                if (d >= 0) {
+                  cc = d;
+                  ++str;
+                  d = (*str ? VStr::digitInBase(*str, 16) : -1);
+                  if (d >= 0) { cc = cc*16+d; ++str; }
+                  //if (!cc) cc = ' '; // just in case
+                  ss += (char)cc;
+                } else {
+                  ss += str[-1];
+                }
+              } break;
             default: // ignore other quotes
-              //ss += '\\';
               ss += str[-1];
               break;
           }
         } else {
-          ss += *str++;
+          if (!sstart) sstart = str;
+          ++str;
         }
       }
+      if (sstart) ss.appendCStr(sstart, (int)(ptrdiff_t)(str-sstart));
       if (*str) { vassert(*str == qch); ++str; } // skip closing quote
-      //fprintf(stderr, "*#*<%s>\n", *ss);
       args.append(ss);
     } else {
       // simple arg
+      --str;
       const char *end = str;
       while ((vuint8)*end > ' ') ++end;
       args.append(VStr(str, (int)(ptrdiff_t)(end-str)));
-      //fprintf(stderr, "*:*<%s>\n", *args[args.length()-1]);
       str = end;
     }
   }
-  /*
-  {
-    fprintf(stderr, "<%s> : %d\n", getCStr(), args.length());
-    for (int f = 0; f < args.length(); ++f) fprintf(stderr, "  %d: <%s>\n", f, *args[f]);
-  }
-  */
 }
 
 
