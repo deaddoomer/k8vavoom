@@ -241,9 +241,10 @@ public:
         VStr s(instr, len);
         operator+=(s);
       } else {
-        int l = length();
+        const int l = length();
         resize(l+len);
-        memcpy(dataptr+l, instr, len+1);
+        memcpy(dataptr+l, instr, len);
+        dataptr[l+len] = 0;
       }
     }
     return *this;

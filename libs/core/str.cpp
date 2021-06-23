@@ -1315,8 +1315,8 @@ VVA_CHECKRESULT VStr VStr::xmlUnescape () const noexcept {
 // this translates "\\c" to `\c`
 VVA_CHECKRESULT VStr VStr::EvalEscapeSequences () const noexcept {
   VStr res;
-  const char *c = getData();
-  if (!c || !c[0]) return res;
+  const char *c = getCStr();
+  if (!c[0]) return res;
   int val;
   while (*c) {
     const char *slashp = strchr(c, '\\');
