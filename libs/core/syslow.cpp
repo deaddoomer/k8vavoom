@@ -241,7 +241,7 @@ VStr Sys_FindFileCI (VStr path, bool lastIsDir) {
     if (realpath.length() && !isPathDelimiter(realpath[realpath.length()-1])) realpath += CANON_PATH_DELIM;
     //VStr prevpath = realpath;
     //realpath += ppart;
-    const bool wantDir = (lastIsDir || path.length() != 0);
+    const bool wantDir = (lastIsDir || !path.isEmpty());
     // check "as-is"
     #ifndef SFFCI_FULL_SCAN
     VStr newpath = realpath+ppart;
@@ -264,20 +264,26 @@ VStr Sys_FindFileCI (VStr path, bool lastIsDir) {
     VStr ppExt = ppart.extractFileExtension();
     if (!ppExt.isEmpty() && ppExt != ".") {
       VStr ppBase = ppart.stripExtension();
-      for (int f = 0; f < 4; ++f) {
+      for (unsigned f = 0; f < 4; ++f) {
         npx = realpath;
         if (f&1) npx += ppBase.toUpperCase(); else npx += ppBase.toLowerCase();
         if (f&2) npx += ppExt.toUpperCase(); else npx += ppExt.toLowerCase();
         if (npx != newpath) {
           okname = (wantDir ? Sys_DirExists(npx) : Sys_FileExists(npx));
-          if (okname) { realpath = npx; continue; } // i found her!
+          if (okname) { realpath = npx; break; } // i found her!
         }
       }
+      if (okname) continue;
     }
     #endif
     // scan directory
     void *dh = Sys_OpenDir((realpath.length() ? realpath : VStr(".")), wantDir);
-    if (!dh) return VStr::EmptyString; // alas
+    if (!dh) {
+      #ifdef SFFCI_FULL_SCAN_DEBUG
+      GLog.Logf(NAME_Debug, "     CANNOT OPEN DIR <%s>", *(realpath.length() ? realpath : VStr(".")));
+      #endif
+      return VStr::EmptyString; // alas
+    }
     #ifdef SFFCI_FULL_SCAN
     VStr inexactName;
     vassert(inexactName.length() == 0);
@@ -374,22 +380,53 @@ struct DirInfo {
 };
 
 
+enum {
+  FT_Invalid,
+  FT_Dir,
+  FT_Regular,
+};
+
+
+//==========================================================================
+//
+//  GetFileType
+//
+//==========================================================================
+static int GetFileType (VStr filename) noexcept {
+  if (filename.isEmpty()) return FT_Invalid;
+  if (filename.strEqu(".") || filename.strEqu("..")) return FT_Dir;
+  #ifdef ANDROID
+  if (isApkPath(filename)) {
+    if (tryApkFile(filename)) return FT_Regular;
+    if (tryApkDir(filename)) return FT_Dir;
+  }
+  #endif
+  struct stat st;
+  if (stat(*filename, &st) == -1) return FT_Invalid;
+  if (S_ISREG(st.st_mode) != 0) return FT_Regular;
+  if (S_ISDIR(st.st_mode) != 0) return FT_Dir;
+  #if 0
+  // debug
+  VStr ss;
+  unsigned n = (unsigned)st.st_mode;
+  do {
+    const char ch = n%8+'0';
+    ss = VStr(ch)+ss;
+  } while ((n /= 8) != 0);
+  GLog.Logf(NAME_Debug, "***GetFileType: '%s' -> 0%s", *filename, *ss);
+  #endif
+  return FT_Invalid;
+}
+
+
 //==========================================================================
 //
 //  isRegularFile
 //
 //==========================================================================
 static bool isRegularFile (VStr filename) {
-//  GLog.Logf("isRegularFile(%s)", *filename);
-#ifdef ANDROID
-  if (isApkPath(filename)) {
-    return tryApkFile(filename);
-  }
-#endif
-  struct stat st;
-  if (filename.length() == 0) return false;
-  if (stat(*filename, &st) == -1) return false;
-  return (S_ISREG(st.st_mode) != 0);
+  const int ftp = GetFileType(filename);
+  return (ftp == FT_Regular);
 }
 
 
@@ -399,16 +436,8 @@ static bool isRegularFile (VStr filename) {
 //
 //==========================================================================
 static bool isDirectory (VStr filename) {
-//  GLog.Logf("isDirectory(%s)", *filename);
-#ifdef ANDROID
-  if (isApkPath(filename)) {
-    return tryApkDir(filename);
-  }
-#endif
-  struct stat st;
-  if (filename.length() == 0) return false;
-  if (stat(*filename, &st) == -1) return false;
-  return (S_ISDIR(st.st_mode) != 0);
+  const int ftp = GetFileType(filename);
+  return (ftp == FT_Dir);
 }
 
 
@@ -418,14 +447,33 @@ static bool isDirectory (VStr filename) {
 //
 //==========================================================================
 bool Sys_FileExists (VStr filename) {
-//  GLog.Logf("Sys_FileExists(%s)", *filename);
+  //GLog.Logf(NAME_Debug, "Sys_FileExists(%s)", *filename);
   if (filename.isEmpty()) return false;
-#ifdef ANDROID
+  #ifdef ANDROID
   if (isApkPath(filename)) {
     return tryApkFile(filename);
   }
-#endif
-  return access(*filename, R_OK) == 0 && isRegularFile(filename);
+  #endif
+  return (access(*filename, R_OK) == 0 && isRegularFile(filename));
+}
+
+
+//==========================================================================
+//
+//  Sys_DirExists
+//
+//==========================================================================
+bool Sys_DirExists (VStr path) {
+  //GLog.Logf(NAME_Debug, "Sys_DirExists(%s)", *path);
+  if (path.isEmpty()) return false;
+  path = path.removeTrailingSlash();
+  #ifdef ANDROID
+  if (isApkPath(path)) {
+    return tryApkDir(path);
+  }
+  #endif
+  //return (access(*path, /*R_OK*/F_OK) == 0 && isDirectory(path));
+  return isDirectory(path);
 }
 
 
@@ -435,10 +483,10 @@ bool Sys_FileExists (VStr filename) {
 //
 //==========================================================================
 void Sys_FileDelete (VStr filename) {
-//  GLog.Logf("Sys_FileDelete(%s)", *filename);
-#ifdef ANDROID
+  //GLog.Logf(NAME_Debug, "Sys_FileDelete(%s)", *filename);
+  #ifdef ANDROID
   if (isApkPath(filename)) return;
-#endif
+  #endif
   if (filename.length()) unlink(*filename);
 }
 
@@ -468,11 +516,11 @@ int Sys_FileTime (VStr path) {
 //
 //==========================================================================
 bool Sys_Touch (VStr path) {
-//  GLog.Logf("Sys_Touch(%s)", *path);
+  //GLog.Logf(NAME_Debug, "Sys_Touch(%s)", *path);
   if (path.isEmpty()) return -1;
-#ifdef ANDROID
+  #ifdef ANDROID
   if (isApkPath(path)) return 0;
-#endif
+  #endif
   utimbuf tv;
   tv.actime = tv.modtime = time(NULL);
   return (utime(*path, &tv) == 0);
@@ -495,11 +543,11 @@ int Sys_CurrFileTime () {
 //
 //==========================================================================
 bool Sys_CreateDirectory (VStr path) {
-//  GLog.Logf("Sys_CreateDirectory(%s)", *path);
+  //GLog.Logf(NAME_Debug, "Sys_CreateDirectory(%s)", *path);
   if (path.isEmpty()) return false;
-#ifdef ANDROID
+  #ifdef ANDROID
   if (isApkPath(path)) return false;
-#endif
+  #endif
   return (mkdir(*path, 0777) == 0);
 }
 
@@ -510,10 +558,10 @@ bool Sys_CreateDirectory (VStr path) {
 //
 //==========================================================================
 void *Sys_OpenDir (VStr path, bool wantDirs) {
-//  GLog.Logf("Sys_OpenDir(%s)", *path);
+  //GLog.Logf(NAME_Debug, "Sys_OpenDir(%s)", *path);
   if (path.isEmpty()) return nullptr;
   path = path.removeTrailingSlash();
-#ifdef ANDROID
+  #ifdef ANDROID
   getApkAssetManager();
   if (androidAssetManager != nullptr) {
     VStr s = getApkPath(path);
@@ -530,7 +578,7 @@ void *Sys_OpenDir (VStr path, bool wantDirs) {
       res->wantDirs = wantDirs;
     }
   }
-#endif
+  #endif
   DIR *dh = opendir(*path);
   if (!dh) return nullptr;
   auto res = (DirInfo *)Z_Malloc(sizeof(DirInfo));
@@ -551,10 +599,10 @@ void *Sys_OpenDir (VStr path, bool wantDirs) {
 //
 //==========================================================================
 VStr Sys_ReadDir (void *adir) {
-//  GLog.Logf("Sys_ReadDir");
+  //GLog.Logf(NAME_Debug, "Sys_ReadDir");
   if (!adir) return VStr();
   DirInfo *dh = (DirInfo *)adir;
-#ifdef ANDROID
+  #ifdef ANDROID
   // android library returns only list of files
   // make your own jni wrapper if you really need directories
   if (dh->adir != nullptr) {
@@ -569,18 +617,19 @@ VStr Sys_ReadDir (void *adir) {
     dh->path.clear();
     return VStr();
   }
-#endif
+  #endif
   if (!dh->dh) return VStr();
   for (;;) {
     struct dirent *de = readdir(dh->dh);
     if (!de) break;
     if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0) continue;
     VStr diskName = dh->path+de->d_name;
-    bool isRegFile = isRegularFile(diskName);
-    if (!isRegFile && !dh->wantDirs) continue; // skip directories
-    if (!isRegFile && !isDirectory(diskName)) continue; // something strange
+    const int ftype = GetFileType(diskName);
+    if (ftype == FT_Invalid) continue; // just in case
+    if (ftype == FT_Dir && !dh->wantDirs) continue; // skip directories
+    if (ftype != FT_Dir && ftype != FT_Regular) continue; // something strange
     VStr res = VStr(de->d_name);
-    if (!isRegFile) res += "/";
+    if (ftype == FT_Dir) res += "/";
     return res;
   }
   closedir(dh->dh);
@@ -596,36 +645,16 @@ VStr Sys_ReadDir (void *adir) {
 //
 //==========================================================================
 void Sys_CloseDir (void *adir) {
-//  GLog.Logf("Sys_CloseDir");
+  //GLog.Logf(NAME_Debug, "Sys_CloseDir");
   if (adir) {
     DirInfo *dh = (DirInfo *)adir;
-#ifdef ANDROID
+    #ifdef ANDROID
     if (dh->adir) AAssetDir_close(dh->adir);
-#endif
+    #endif
     if (dh->dh) closedir(dh->dh);
     dh->path.clear();
     Z_Free((void *)dh);
   }
-}
-
-
-//==========================================================================
-//
-//  Sys_DirExists
-//
-//==========================================================================
-bool Sys_DirExists (VStr path) {
-//  GLog.Logf("Sys_DirExists(%s)", *path);
-  if (path.isEmpty()) return false;
-  path = path.removeTrailingSlash();
-#ifdef ANDROID
-  if (isApkPath(path)) {
-    return tryApkDir(path);
-  }
-#endif
-  struct stat s;
-  if (stat(*path, &s) == -1) return false;
-  return !!S_ISDIR(s.st_mode);
 }
 
 
@@ -901,7 +930,25 @@ static bool isDirectory (VStr filename) {
 //
 //==========================================================================
 bool Sys_FileExists (VStr filename) {
-  return (!filename.isEmpty() && access(*filename, R_OK) == 0 && isRegularFile(filename));
+  //return (!filename.isEmpty() && access(*filename, R_OK) == 0 && isRegularFile(filename));
+  return isRegularFile(filename);
+}
+
+
+//==========================================================================
+//
+//  Sys_DirExists
+//
+//==========================================================================
+bool Sys_DirExists (VStr path) {
+  return isDirectory(filename);
+  /*
+  if (path.isEmpty()) return false;
+  path = path.removeTrailingSlash();
+  struct stat s;
+  if (stat(*path, &s) == -1) return false;
+  return !!(s.st_mode & S_IFDIR);
+  */
 }
 
 
@@ -1024,20 +1071,6 @@ void Sys_CloseDir (void *adir) {
     sd->path.clear();
     Z_Free(sd);
   }
-}
-
-
-//==========================================================================
-//
-//  Sys_DirExists
-//
-//==========================================================================
-bool Sys_DirExists (VStr path) {
-  if (path.isEmpty()) return false;
-  path = path.removeTrailingSlash();
-  struct stat s;
-  if (stat(*path, &s) == -1) return false;
-  return !!(s.st_mode & S_IFDIR);
 }
 
 
