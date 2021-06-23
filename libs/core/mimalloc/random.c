@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Copyright (c) 2019, Microsoft Research, Daan Leijen
+Copyright (c) 2019-2021, Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -115,7 +115,7 @@ static void chacha_init(mi_random_ctx_t* ctx, const uint8_t key[32], uint64_t no
 
 static void chacha_split(mi_random_ctx_t* ctx, uint64_t nonce, mi_random_ctx_t* ctx_new) {
   memset(ctx_new, 0, sizeof(*ctx_new));
-  memcpy(ctx_new->input, ctx->input, sizeof(ctx_new->input));
+  _mi_memcpy(ctx_new->input, ctx->input, sizeof(ctx_new->input));
   ctx_new->input[12] = 0;
   ctx_new->input[13] = 0;
   ctx_new->input[14] = (uint32_t)nonce;
@@ -155,14 +155,17 @@ uintptr_t _mi_random_next(mi_random_ctx_t* ctx) {
 
 /* ----------------------------------------------------------------------------
 To initialize a fresh random context we rely on the OS:
-- Windows     : BCryptGenRandom
+- Windows     : BCryptGenRandom (or RtlGenRandom)
 - osX,bsd,wasi: arc4random_buf
 - Linux       : getrandom,/dev/urandom
 If we cannot get good randomness, we fall back to weak randomness based on a timer and ASLR.
 -----------------------------------------------------------------------------*/
 
 #if defined(_WIN32)
+
+#if !defined(MI_USE_RTLGENRANDOM)
 /*k8: fuck off
+// We prefer BCryptGenRandom over RtlGenRandom
 #pragma comment (lib,"bcrypt.lib")
 #include <bcrypt.h>
 static bool os_random_buf(void* buf, size_t buf_len) {
@@ -173,18 +176,25 @@ static bool os_random_buf(void* buf, size_t buf_len) {
   // this will fall back to "weak random"
   return false;
 }
-/*
-#define SystemFunction036 NTAPI SystemFunction036
-#include <NTSecAPI.h>
-#undef SystemFunction036
-static bool os_random_buf(void* buf, size_t buf_len) {
-  RtlGenRandom(buf, (ULONG)buf_len);
-  return true;
+#else
+// Use (unofficial) RtlGenRandom
+#pragma comment (lib,"advapi32.lib")
+#define RtlGenRandom  SystemFunction036
+#ifdef __cplusplus
+extern "C" {
+#endif
+BOOLEAN NTAPI RtlGenRandom(PVOID RandomBuffer, ULONG RandomBufferLength);
+#ifdef __cplusplus
 }
-*/
+#endif
+static bool os_random_buf(void* buf, size_t buf_len) {
+  return (RtlGenRandom(buf, (ULONG)buf_len) != 0);
+}
+#endif
+
 #elif defined(ANDROID) || defined(XP_DARWIN) || defined(__APPLE__) || defined(__DragonFly__) || \
       defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
-      defined(__wasi__)
+      defined(__sun) || defined(__wasi__)
 #include <stdlib.h>
 static bool os_random_buf(void* buf, size_t buf_len) {
   arc4random_buf(buf, buf_len);
@@ -206,12 +216,12 @@ static bool os_random_buf(void* buf, size_t buf_len) {
   #ifndef GRND_NONBLOCK
   #define GRND_NONBLOCK (1)
   #endif
-  static volatile _Atomic(uintptr_t) no_getrandom; // = 0
-  if (mi_atomic_read(&no_getrandom)==0) {
+  static _Atomic(uintptr_t) no_getrandom; // = 0
+  if (mi_atomic_load_acquire(&no_getrandom)==0) {
     ssize_t ret = syscall(SYS_getrandom, buf, buf_len, GRND_NONBLOCK);
     if (ret >= 0) return (buf_len == (size_t)ret);
     if (ret != ENOSYS) return false;
-    mi_atomic_write(&no_getrandom,1); // don't call again, and fall back to /dev/urandom
+    mi_atomic_store_release(&no_getrandom, 1UL); // don't call again, and fall back to /dev/urandom
   }
 #endif
   int flags = O_RDONLY;
@@ -249,6 +259,7 @@ static bool os_random_buf(void* buf, size_t buf_len) {
 
 uintptr_t _os_random_weak(uintptr_t extra_seed) {
   uintptr_t x = (uintptr_t)&_os_random_weak ^ extra_seed; // ASLR makes the address random
+  
   #if defined(_WIN32)
     LARGE_INTEGER pcount;
     QueryPerformanceCounter(&pcount);

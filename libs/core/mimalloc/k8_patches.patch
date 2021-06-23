@@ -1,141 +1,37 @@
-diff -puEZBbw -r _pt/alloc-posix.c _curr/alloc-posix.c
---- _pt/alloc-posix.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/alloc-posix.c	2020-04-11 14:50:22.000000000 +0300
-@@ -111,7 +111,7 @@ mi_decl_restrict unsigned char* mi_mbsdu
- int mi_dupenv_s(char** buf, size_t* size, const char* name) mi_attr_noexcept {
-   if (buf==NULL || name==NULL) return EINVAL;
-   if (size != NULL) *size = 0;
--  #pragma warning(suppress:4996)
-+  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-   char* p = getenv(name);
-   if (p==NULL) {
-     *buf = NULL;
-@@ -132,7 +132,7 @@ int mi_wdupenv_s(unsigned short** buf, s
-   *buf = NULL;
-   return EINVAL;
- #else
--  #pragma warning(suppress:4996)
-+  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-   unsigned short* p = (unsigned short*)_wgetenv((const wchar_t*)name);
-   if (p==NULL) {
-     *buf = NULL;
-diff -puEZBbw -r _pt/alloc.c _curr/alloc.c
---- _pt/alloc.c	2020-04-11 14:49:18.000000000 +0300
-+++ _curr/alloc.c	2020-04-11 14:51:19.000000000 +0300
-@@ -11,9 +11,11 @@ terms of the MIT license. A copy of the
- #include <string.h>  // memset, memcpy, strlen
- #include <stdlib.h>  // malloc, exit
+diff --git a/include/mimalloc-new-delete.h b/include/mimalloc-new-delete.h
+index ba208f0..a09690a 100644
+--- a/include/mimalloc-new-delete.h
++++ b/include/mimalloc-new-delete.h
+@@ -20,7 +20,7 @@ terms of the MIT license. A copy of the license can be found in the file
+ // ---------------------------------------------------------------------------
+ #if defined(__cplusplus)
+   #include <new>
+-  #include <mimalloc.h>
++  #include "mimalloc.h"
  
-+/*k8: no overrides
- #define MI_IN_ALLOC_C
- #include "alloc-override.c"
- #undef MI_IN_ALLOC_C
-+*/
+   void operator delete(void* p) noexcept              { mi_free(p); };
+   void operator delete[](void* p) noexcept            { mi_free(p); };
+diff --git a/include/mimalloc-override.h b/include/mimalloc-override.h
+index 7d9f3e7..50022db 100644
+--- a/include/mimalloc-override.h
++++ b/include/mimalloc-override.h
+@@ -15,7 +15,7 @@ each source file in a project (but be careful when using external code to
+ not accidentally mix pointers from different allocators).
+ -----------------------------------------------------------------------------*/
  
- // ------------------------------------------------------
- // Allocation
-@@ -723,6 +725,8 @@ use a C compiler we cannot throw a `bad_
- but we call `exit` instead (i.e. not returning).
- -------------------------------------------------------*/
+-#include <mimalloc.h>
++#include "mimalloc.h"
  
-+#if 0
-+//k8: get lost, i'm not using overrides
- #ifdef __cplusplus
- #include <new>
- static bool mi_try_new_handler(bool nothrow) {
-@@ -833,3 +837,4 @@ void* mi_new_reallocn(void* p, size_t ne
-     return mi_new_realloc(p, total);
-   }
- }
-+#endif
-diff -puEZBbw -r _pt/init.c _curr/init.c
---- _pt/init.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/init.c	2020-04-11 15:22:00.000000000 +0300
-@@ -300,6 +300,14 @@ static void _mi_thread_done(mi_heap_t* d
-   #pragma message("define a way to call mi_thread_done when a thread is done")
- #endif
+ // Standard C allocation
+ #define malloc(n)               mi_malloc(n)
+diff --git a/include/mimalloc.h b/include/mimalloc.h
+index fe5aa8f..3cec483 100644
+--- a/include/mimalloc.h
++++ b/include/mimalloc.h
+@@ -10,6 +10,34 @@ terms of the MIT license. A copy of the license can be found in the file
  
-+//k8:mingw fix
-+#if defined(_WIN32) && !defined(MI_SHARED_LIB)
-+__declspec(dllimport) DWORD WINAPI FlsAlloc (PFLS_CALLBACK_FUNCTION lpCallback);
-+//__declspec(dllimport) PVOID WINAPI FlsGetValue (DWORD dwFlsIndex);
-+__declspec(dllimport) WINBOOL WINAPI FlsSetValue (DWORD dwFlsIndex, PVOID lpFlsData);
-+//__declspec(dllimport) WINBOOL WINAPI FlsFree (DWORD dwFlsIndex);
-+#endif
-+
- // Set up handlers so `mi_thread_done` is called automatically
- static void mi_process_setup_auto_thread_done(void) {
-   static bool tls_initialized = false; // fine if it races
-@@ -511,6 +519,12 @@ static void mi_process_done(void) {
-     return TRUE;
-   }
+ #define MI_MALLOC_VERSION 171   // major + 2 digits minor
  
-+#elif defined(__GNUC__) || defined(__clang__)
-+  // GCC,Clang: use the constructor attribute
-+  static void __attribute__((constructor)) _mi_process_init(void) {
-+    mi_process_load();
-+  }
-+
- #elif defined(__cplusplus)
-   // C++: use static initialization to detect process start
-   static bool _mi_process_init(void) {
-@@ -519,12 +533,6 @@ static void mi_process_done(void) {
-   }
-   static bool mi_initialized = _mi_process_init();
- 
--#elif defined(__GNUC__) || defined(__clang__)
--  // GCC,Clang: use the constructor attribute
--  static void __attribute__((constructor)) _mi_process_init(void) {
--    mi_process_load();
--  }
--
- #elif defined(_MSC_VER)
-   // MSVC: use data section magic for static libraries
-   // See <https://www.codeguru.com/cpp/misc/misc/applicationcontrol/article.php/c6945/Running-Code-Before-and-After-Main.htm>
-diff -puEZBbw -r _pt/mimalloc-internal.h _curr/mimalloc-internal.h
---- _pt/mimalloc-internal.h	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/mimalloc-internal.h	2020-04-11 14:50:16.000000000 +0300
-@@ -18,7 +18,7 @@ terms of the MIT license. A copy of the
- 
- #define MI_CACHE_LINE          64
- #if defined(_MSC_VER)
--#pragma warning(disable:4127)   // suppress constant conditional warning (due to MI_SECURE paths)
-+//k8:fuck you, m$vc:#pragma warning(disable:4127)   // suppress constant conditional warning (due to MI_SECURE paths)
- #define mi_decl_noinline        __declspec(noinline)
- #define mi_decl_thread          __declspec(thread)
- #define mi_decl_cache_align     __declspec(align(MI_CACHE_LINE))
-diff -puEZBbw -r _pt/mimalloc-types.h _curr/mimalloc-types.h
---- _pt/mimalloc-types.h	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/mimalloc-types.h	2020-04-11 15:07:16.000000000 +0300
-@@ -10,7 +10,7 @@ terms of the MIT license. A copy of the
- 
- #include <stddef.h>   // ptrdiff_t
- #include <stdint.h>   // uintptr_t, uint16_t, etc
--#include <mimalloc-atomic.h>  // _Atomic
-+#include "mimalloc-atomic.h"  // _Atomic
- 
- // Minimal alignment necessary. On most platforms 16 bytes are needed
- // due to SSE registers for example. This must be at least `MI_INTPTR_SIZE`
-@@ -22,6 +22,9 @@ terms of the MIT license. A copy of the
- 
- // Define NDEBUG in the release version to disable assertions.
- // #define NDEBUG
-+#ifndef NDEBUG
-+# define NDEBUG
-+#endif
- 
- // Define MI_STAT as 1 to maintain statistics; set it to 2 to have detailed statistics (but costs some performance).
- // #define MI_STAT 1
-diff -puEZBbw -r _pt/mimalloc.h _curr/mimalloc.h
---- _pt/mimalloc.h	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/mimalloc.h	2020-04-11 14:53:36.000000000 +0300
-@@ -10,6 +10,26 @@ terms of the MIT license. A copy of the
- 
- #define MI_MALLOC_VERSION 161   // major + 2 digits minor
- 
-+#if defined(_MSC_VER)
-+# error "k8: m$vc support in mi-malloc is intentionally broken."
-+#endif
 +
 +//k8: defaults
 +// just in case, it is not used
@@ -153,72 +49,112 @@ diff -puEZBbw -r _pt/mimalloc.h _curr/mimalloc.h
 +#endif
 +#define MI_DEBUG 0
 +
++#ifdef MI_MALLOC_OVERRIDE
++# undef MI_MALLOC_OVERRIDE
++#endif
++
++// just in case
++#ifdef MI_STAT
++# undef MI_STAT
++# define MI_STAT 0
++#endif
++
++
  // ------------------------------------------------------
  // Compiler specific attributes
  // ------------------------------------------------------
-diff -puEZBbw -r _pt/options.c _curr/options.c
---- _pt/options.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/options.c	2020-04-11 15:01:52.000000000 +0300
-@@ -57,7 +57,9 @@ static mi_option_desc_t options[_mi_opti
+diff --git a/src/alloc-override.c b/src/alloc-override.c
+index 6a87e7b..99f87e5 100644
+--- a/src/alloc-override.c
++++ b/src/alloc-override.c
+@@ -4,6 +4,8 @@ This is free software; you can redistribute it and/or modify it under the
+ terms of the MIT license. A copy of the license can be found in the file
+ "LICENSE" at the root of this distribution.
+ -----------------------------------------------------------------------------*/
++/*k8*/
++#if defined(MI_MALLOC_OVERRIDE) && MI_MALLOC_OVERRIDE
  
-   // the following options are experimental and not all combinations make sense.
-   { 1, UNINIT, MI_OPTION(eager_commit) },        // commit on demand
--  #if defined(_WIN32) || (MI_INTPTR_SIZE <= 4)   // and other OS's without overcommit?
-+  //k8: we're not "long-running", and we want it to be fast
-+  //#if defined(_WIN32) || (MI_INTPTR_SIZE <= 4)   // and other OS's without overcommit?
-+  #if 0
-   { 0, UNINIT, MI_OPTION(eager_region_commit) },
-   { 1, UNINIT, MI_OPTION(reset_decommits) },     // reset decommits memory
-   #else
-@@ -75,7 +77,9 @@ static mi_option_desc_t options[_mi_opti
- #else
-   { 1, UNINIT, MI_OPTION(eager_commit_delay) },  // the first N segments per thread are not eagerly committed
+ #if !defined(MI_IN_ALLOC_C)
+ #error "this file should be included from 'alloc.c' (so aliases can work)"
+@@ -220,3 +222,6 @@ void* aligned_alloc(size_t alignment, size_t size)   { return mi_aligned_alloc(a
  #endif
--  { 100, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
-+  //k8: bigger delay, why not?
-+  //{ 100, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
-+  { 3600, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
-   { 0,   UNINIT, MI_OPTION(use_numa_nodes) },    // 0 = use available numa nodes, otherwise use at most N nodes.
-   { 100, UNINIT, MI_OPTION(os_tag) },            // only apple specific for now but might serve more or less related purpose
-   { 16,  UNINIT, MI_OPTION(max_errors) }         // maximum errors that are output
-@@ -211,7 +215,7 @@ static void mi_out_buf_stderr(const char
  
- // Should be atomic but gives errors on many platforms as generally we cannot cast a function pointer to a uintptr_t.
- // For now, don't register output from multiple threads.
--#pragma warning(suppress:4180)
-+//k8:fuck you, m$vc:#pragma warning(suppress:4180)
- static mi_output_fun* volatile mi_out_default; // = NULL
- static volatile _Atomic(void*) mi_out_arg; // = NULL
+ #endif // MI_MALLOC_OVERRIDE && !_WIN32
++
++/*k8*/
++#endif
+diff --git a/src/alloc.c b/src/alloc.c
+index 8acff78..892ef1f 100644
+--- a/src/alloc.c
++++ b/src/alloc.c
+@@ -788,6 +788,9 @@ use a C compiler we cannot throw a `bad_alloc` exception
+ but we call `exit` instead (i.e. not returning).
+ -------------------------------------------------------*/
  
-@@ -376,13 +380,13 @@ void _mi_error_message(int err, const ch
- 
- static void mi_strlcpy(char* dest, const char* src, size_t dest_size) {
-   dest[0] = 0;
--  #pragma warning(suppress:4996)
-+  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-   strncpy(dest, src, dest_size - 1);
-   dest[dest_size - 1] = 0;
++//k8: get lost, i'm not using overrides
++#if defined(MI_MALLOC_OVERRIDE) && MI_MALLOC_OVERRIDE
++
+ #ifdef __cplusplus
+ #include <new>
+ static bool mi_try_new_handler(bool nothrow) {
+@@ -903,3 +906,6 @@ void* mi_new_reallocn(void* p, size_t newcount, size_t size) {
+     return mi_new_realloc(p, total);
+   }
  }
++
++#endif
++//k8: get lost, i'm not using overrides
+diff --git a/src/init.c b/src/init.c
+index c0f09b5..2db2923 100644
+--- a/src/init.c
++++ b/src/init.c
+@@ -138,6 +138,15 @@ bool _mi_process_is_initialized = false;  // set to `true` in `mi_process_init`.
+ mi_stats_t _mi_stats_main = { MI_STATS_NULL };
  
- static void mi_strlcat(char* dest, const char* src, size_t dest_size) {
--  #pragma warning(suppress:4996)
-+  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-   strncat(dest, src, dest_size - 1);
-   dest[dest_size - 1] = 0;
- }
-diff -puEZBbw -r _pt/os.c _curr/os.c
---- _pt/os.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/os.c	2020-04-19 10:51:04.000000000 +0300
-@@ -53,7 +53,7 @@ static void* mi_align_down_ptr(void* p,
- static size_t os_page_size = 4096;
  
- // minimal allocation granularity
--static size_t os_alloc_granularity = 4096;
-+static __attribute__((unused)) size_t os_alloc_granularity = 4096;
++//k8:mingw fix
++#if defined(_WIN32) && !defined(MI_SHARED_LIB)
++__declspec(dllimport) DWORD WINAPI FlsAlloc (PFLS_CALLBACK_FUNCTION lpCallback);
++//__declspec(dllimport) PVOID WINAPI FlsGetValue (DWORD dwFlsIndex);
++__declspec(dllimport) WINBOOL WINAPI FlsSetValue (DWORD dwFlsIndex, PVOID lpFlsData);
++//__declspec(dllimport) WINBOOL WINAPI FlsFree (DWORD dwFlsIndex);
++#endif
++
++
+ static void mi_heap_main_init(void) {
+   if (_mi_heap_main.cookie == 0) {
+     _mi_heap_main.thread_id = _mi_thread_id();
+@@ -547,6 +556,12 @@ static void mi_process_done(void) {
+     return TRUE;
+   }
  
- // if non-zero, use large page allocation
- static size_t large_os_page_size = 0;
-@@ -101,6 +101,7 @@ static bool mi_win_enable_large_os_pages
++#elif defined(__GNUC__) || defined(__clang__)
++  // GCC,Clang: use the constructor attribute
++  static void __attribute__((constructor)) _mi_process_init(void) {
++    mi_process_load();
++  }
++
+ #elif defined(__cplusplus)
+   // C++: use static initialization to detect process start
+   static bool _mi_process_init(void) {
+@@ -555,12 +570,6 @@ static void mi_process_done(void) {
+   }
+   static bool mi_initialized = _mi_process_init();
+ 
+-#elif defined(__GNUC__) || defined(__clang__)
+-  // GCC,Clang: use the constructor attribute
+-  static void __attribute__((constructor)) _mi_process_init(void) {
+-    mi_process_load();
+-  }
+-
+ #elif defined(_MSC_VER)
+   // MSVC: use data section magic for static libraries
+   // See <https://www.codeguru.com/cpp/misc/misc/applicationcontrol/article.php/c6945/Running-Code-Before-and-After-Main.htm>
+diff --git a/src/os.c b/src/os.c
+index 8541523..aad88f1 100644
+--- a/src/os.c
++++ b/src/os.c
+@@ -144,6 +144,7 @@ static bool mi_win_enable_large_os_pages()
  {
    if (large_os_page_size > 0) return true;
  
@@ -226,7 +162,7 @@ diff -puEZBbw -r _pt/os.c _curr/os.c
    // Try to see if large OS pages are supported
    // To use large pages on Windows, we first need access permission
    // Set "Lock pages in memory" permission in the group policy editor
-@@ -130,6 +131,8 @@ static bool mi_win_enable_large_os_pages
+@@ -173,6 +174,8 @@ static bool mi_win_enable_large_os_pages()
      _mi_warning_message("cannot enable large OS page support, error %lu\n", err);
    }
    return (ok!=0);
@@ -235,33 +171,17 @@ diff -puEZBbw -r _pt/os.c _curr/os.c
  }
  
  void _mi_os_init(void) {
-@@ -192,7 +195,7 @@ static bool mi_os_mem_free(void* addr, s
-   if (was_committed) _mi_stat_decrease(&stats->committed, size);
-   _mi_stat_decrease(&stats->reserved, size);
-   if (err) {
--    #pragma warning(suppress:4996)
-+    //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-     _mi_warning_message("munmap failed: %s, addr 0x%8li, size %lu\n", strerror(errno), (size_t)addr, size);
-     return false;
-   }
-@@ -201,7 +204,7 @@ static bool mi_os_mem_free(void* addr, s
-   }
- }
- 
--static void* mi_os_get_aligned_hint(size_t try_alignment, size_t size);
-+static __attribute__((unused)) void* mi_os_get_aligned_hint(size_t try_alignment, size_t size);
- 
- #ifdef _WIN32
- static void* mi_win_virtual_allocx(void* addr, size_t size, size_t try_alignment, DWORD flags) {
-@@ -1009,17 +1012,23 @@ Support NUMA aware allocation
+@@ -1125,6 +1128,7 @@ Support NUMA aware allocation
  -----------------------------------------------------------------------------*/
- #ifdef WIN32
+ #ifdef _WIN32  
  static size_t mi_os_numa_nodex() {
 +/*k8: fuck off
-   PROCESSOR_NUMBER pnum;
    USHORT numa_node = 0;
-   GetCurrentProcessorNumberEx(&pnum);
-   GetNumaProcessorNodeEx(&pnum,&numa_node);
+   if (pGetCurrentProcessorNumberEx != NULL && pGetNumaProcessorNodeEx != NULL) {
+     // Extended API is supported
+@@ -1142,9 +1146,12 @@ static size_t mi_os_numa_nodex() {
+     if (ok) numa_node = nnode;    
+   }
    return numa_node;
 +*/
 +  return 0;
@@ -271,20 +191,26 @@ diff -puEZBbw -r _pt/os.c _curr/os.c
 +/*k8: fuck off
    ULONG numa_max = 0;
    GetNumaHighestNodeNumber(&numa_max);
-   return (numa_max + 1);
+   // find the highest node number that has actual processors assigned to it. Issue #282
+@@ -1167,6 +1174,8 @@ static size_t mi_os_numa_node_countx(void) {
+     numa_max--;
+   }
+   return ((size_t)numa_max + 1);
 +*/
 +  return 1;
  }
  #elif defined(__linux__)
  #include <sys/syscall.h>  // getcpu
-diff -puEZBbw -r _pt/random.c _curr/random.c
---- _pt/random.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/random.c	2020-04-19 10:54:21.000000000 +0300
-@@ -162,11 +162,17 @@ If we cannot get good randomness, we fal
- -----------------------------------------------------------------------------*/
- 
+diff --git a/src/random.c b/src/random.c
+index 255bede..33e3a0b 100644
+--- a/src/random.c
++++ b/src/random.c
+@@ -164,12 +164,18 @@ If we cannot get good randomness, we fall back to weak randomness based on a tim
  #if defined(_WIN32)
+ 
+ #if !defined(MI_USE_RTLGENRANDOM)
 +/*k8: fuck off
+ // We prefer BCryptGenRandom over RtlGenRandom
  #pragma comment (lib,"bcrypt.lib")
  #include <bcrypt.h>
  static bool os_random_buf(void* buf, size_t buf_len) {
@@ -295,42 +221,45 @@ diff -puEZBbw -r _pt/random.c _curr/random.c
 +  // this will fall back to "weak random"
 +  return false;
 +}
- /*
- #define SystemFunction036 NTAPI SystemFunction036
- #include <NTSecAPI.h>
-diff -puEZBbw -r _pt/stats.c _curr/stats.c
---- _pt/stats.c	2020-04-11 14:38:24.000000000 +0300
-+++ _curr/stats.c	2020-04-11 15:06:33.000000000 +0300
-@@ -397,7 +397,7 @@ mi_msecs_t _mi_clock_end(mi_msecs_t star
+ #else
+ // Use (unofficial) RtlGenRandom
+ #pragma comment (lib,"advapi32.lib")
+diff --git a/src/stats.c b/src/stats.c
+index c94fbde..a14fc7a 100644
+--- a/src/stats.c
++++ b/src/stats.c
+@@ -449,6 +449,7 @@ mi_msecs_t _mi_clock_end(mi_msecs_t start) {
+ 
  #if defined(_WIN32)
  #include <windows.h>
++/*k8: fuck off
  #include <psapi.h>
--#pragma comment(lib,"psapi.lib")
-+/*k8:fuck you, m$vc:#pragma comment(lib,"psapi.lib")
+ #pragma comment(lib,"psapi.lib")
  
- static mi_msecs_t filetime_msecs(const FILETIME* ftime) {
-   ULARGE_INTEGER i;
-@@ -406,7 +406,9 @@ static mi_msecs_t filetime_msecs(const F
+@@ -459,9 +460,10 @@ static mi_msecs_t filetime_msecs(const FILETIME* ftime) {
    mi_msecs_t msecs = (i.QuadPart / 10000); // FILETIME is in 100 nano seconds
    return msecs;
  }
+-
 +*/
- static void mi_process_info(mi_msecs_t* utime, mi_msecs_t* stime, size_t* peak_rss, size_t* page_faults, size_t* page_reclaim, size_t* peak_commit) {
-+/*k8:fuck you, m$vc:
+ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msecs_t* stime, size_t* current_rss, size_t* peak_rss, size_t* current_commit, size_t* peak_commit, size_t* page_faults) 
+ {
++/*k8: fuck off
+   *elapsed = _mi_clock_end(mi_process_start);
    FILETIME ct;
    FILETIME ut;
-   FILETIME st;
-@@ -421,6 +423,13 @@ static void mi_process_info(mi_msecs_t*
-   *page_faults = (size_t)info.PageFaultCount;
-   *peak_commit = (size_t)info.PeakPagefileUsage;
-   *page_reclaim = 0;
+@@ -477,6 +479,14 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
+   *current_commit = (size_t)info.PagefileUsage;
+   *peak_commit    = (size_t)info.PeakPagefileUsage;
+   *page_faults    = (size_t)info.PageFaultCount;  
 +*/
 +  *utime = 0;
 +  *stime = 0;
-+  *peak_rss = (size_t)0;
-+  *page_faults = (size_t)0;
-+  *page_reclaim = 0;
-+  *peak_commit = (size_t)0;
++  *current_rss    = 0;
++  *peak_rss       = 0;
++  *current_commit = 0;
++  *peak_commit    = 0;
++  *page_faults    = 0;
  }
  
- #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
+ #elif defined(__unix__) || defined(__unix) || defined(unix) || defined(__APPLE__) || defined(__HAIKU__)

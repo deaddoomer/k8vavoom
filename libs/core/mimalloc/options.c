@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Copyright (c) 2018, Microsoft Research, Daan Leijen
+Copyright (c) 2018-2021, Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -14,7 +14,13 @@ terms of the MIT license. A copy of the license can be found in the file
 #include <ctype.h>  // toupper
 #include <stdarg.h>
 
-static uintptr_t mi_max_error_count = 16;  // stop outputting errors after this
+#ifdef _MSC_VER
+#pragma warning(disable:4996)   // strncpy, strncat
+#endif
+
+
+static uintptr_t mi_max_error_count   = 16; // stop outputting errors after this
+static uintptr_t mi_max_warning_count = 16; // stop outputting warnings after this
 
 static void mi_add_stderr_output();
 
@@ -51,15 +57,17 @@ typedef struct mi_option_desc_s {
 static mi_option_desc_t options[_mi_option_last] =
 {
   // stable options
-  { MI_DEBUG, UNINIT, MI_OPTION(show_errors) },
+#if MI_DEBUG || defined(MI_SHOW_ERRORS)
+  { 1, UNINIT, MI_OPTION(show_errors) },
+#else
+  { 0, UNINIT, MI_OPTION(show_errors) },
+#endif
   { 0, UNINIT, MI_OPTION(show_stats) },
   { 0, UNINIT, MI_OPTION(verbose) },
 
   // the following options are experimental and not all combinations make sense.
-  { 1, UNINIT, MI_OPTION(eager_commit) },        // commit on demand
-  //k8: we're not "long-running", and we want it to be fast
-  //#if defined(_WIN32) || (MI_INTPTR_SIZE <= 4)   // and other OS's without overcommit?
-  #if 0
+  { 1, UNINIT, MI_OPTION(eager_commit) },        // commit per segment directly (4MiB)  (but see also `eager_commit_delay`)
+  #if defined(_WIN32) || (MI_INTPTR_SIZE <= 4)   // and other OS's without overcommit?
   { 0, UNINIT, MI_OPTION(eager_region_commit) },
   { 1, UNINIT, MI_OPTION(reset_decommits) },     // reset decommits memory
   #else
@@ -67,7 +75,8 @@ static mi_option_desc_t options[_mi_option_last] =
   { 0, UNINIT, MI_OPTION(reset_decommits) },     // reset uses MADV_FREE/MADV_DONTNEED
   #endif
   { 0, UNINIT, MI_OPTION(large_os_pages) },      // use large OS pages, use only with eager commit to prevent fragmentation of VMA's
-  { 0, UNINIT, MI_OPTION(reserve_huge_os_pages) },
+  { 0, UNINIT, MI_OPTION(reserve_huge_os_pages) },  // per 1GiB huge pages
+  { 0, UNINIT, MI_OPTION(reserve_os_memory)     },
   { 0, UNINIT, MI_OPTION(segment_cache) },       // cache N segments per thread
   { 1, UNINIT, MI_OPTION(page_reset) },          // reset page memory on free
   { 0, UNINIT, MI_OPTION(abandoned_page_reset) },// reset free page memory when a thread terminates
@@ -75,14 +84,15 @@ static mi_option_desc_t options[_mi_option_last] =
 #if defined(__NetBSD__)
   { 0, UNINIT, MI_OPTION(eager_commit_delay) },  // the first N segments per thread are not eagerly committed
 #else
-  { 1, UNINIT, MI_OPTION(eager_commit_delay) },  // the first N segments per thread are not eagerly committed
+  { 1, UNINIT, MI_OPTION(eager_commit_delay) },  // the first N segments per thread are not eagerly committed (but per page in the segment on demand)
 #endif
-  //k8: bigger delay, why not?
-  //{ 100, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
-  { 3600, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
+  { 100, UNINIT, MI_OPTION(reset_delay) },       // reset delay in milli-seconds
   { 0,   UNINIT, MI_OPTION(use_numa_nodes) },    // 0 = use available numa nodes, otherwise use at most N nodes.
+  { 0,   UNINIT, MI_OPTION(limit_os_alloc) },    // 1 = do not use OS memory for allocation (but only reserved arenas)
   { 100, UNINIT, MI_OPTION(os_tag) },            // only apple specific for now but might serve more or less related purpose
-  { 16,  UNINIT, MI_OPTION(max_errors) }         // maximum errors that are output
+  { 16,  UNINIT, MI_OPTION(max_errors) },        // maximum errors that are output
+  { 16,  UNINIT, MI_OPTION(max_warnings) }       // maximum warnings that are output
+
 };
 
 static void mi_option_init(mi_option_desc_t* desc);
@@ -100,6 +110,7 @@ void _mi_options_init(void) {
     }
   }
   mi_max_error_count = mi_option_get(mi_option_max_errors);
+  mi_max_warning_count = mi_option_get(mi_option_max_warnings);
 }
 
 long mi_option_get(mi_option_t option) {
@@ -165,7 +176,7 @@ static void mi_out_stderr(const char* msg, void* arg) {
 // an output function is registered it is called immediately with
 // the output up to that point.
 #ifndef MI_MAX_DELAY_OUTPUT
-#define MI_MAX_DELAY_OUTPUT (32*1024)
+#define MI_MAX_DELAY_OUTPUT ((uintptr_t)(32*1024))
 #endif
 static char out_buf[MI_MAX_DELAY_OUTPUT+1];
 static _Atomic(uintptr_t) out_len;
@@ -173,23 +184,23 @@ static _Atomic(uintptr_t) out_len;
 static void mi_out_buf(const char* msg, void* arg) {
   UNUSED(arg);
   if (msg==NULL) return;
-  if (mi_atomic_read_relaxed(&out_len)>=MI_MAX_DELAY_OUTPUT) return;
+  if (mi_atomic_load_relaxed(&out_len)>=MI_MAX_DELAY_OUTPUT) return;
   size_t n = strlen(msg);
   if (n==0) return;
   // claim space
-  uintptr_t start = mi_atomic_add(&out_len, n);
+  uintptr_t start = mi_atomic_add_acq_rel(&out_len, n);
   if (start >= MI_MAX_DELAY_OUTPUT) return;
   // check bound
   if (start+n >= MI_MAX_DELAY_OUTPUT) {
     n = MI_MAX_DELAY_OUTPUT-start-1;
   }
-  memcpy(&out_buf[start], msg, n);
+  _mi_memcpy(&out_buf[start], msg, n);
 }
 
 static void mi_out_buf_flush(mi_output_fun* out, bool no_more_buf, void* arg) {
   if (out==NULL) return;
   // claim (if `no_more_buf == true`, no more output will be added after this point)
-  size_t count = mi_atomic_add(&out_len, (no_more_buf ? MI_MAX_DELAY_OUTPUT : 1));
+  size_t count = mi_atomic_add_acq_rel(&out_len, (no_more_buf ? MI_MAX_DELAY_OUTPUT : 1));
   // and output the current contents
   if (count>MI_MAX_DELAY_OUTPUT) count = MI_MAX_DELAY_OUTPUT;
   out_buf[count] = 0;
@@ -215,19 +226,18 @@ static void mi_out_buf_stderr(const char* msg, void* arg) {
 
 // Should be atomic but gives errors on many platforms as generally we cannot cast a function pointer to a uintptr_t.
 // For now, don't register output from multiple threads.
-//k8:fuck you, m$vc:#pragma warning(suppress:4180)
 static mi_output_fun* volatile mi_out_default; // = NULL
-static volatile _Atomic(void*) mi_out_arg; // = NULL
+static _Atomic(void*) mi_out_arg; // = NULL
 
 static mi_output_fun* mi_out_get_default(void** parg) {
-  if (parg != NULL) { *parg = mi_atomic_read_ptr(void,&mi_out_arg); }
+  if (parg != NULL) { *parg = mi_atomic_load_ptr_acquire(void,&mi_out_arg); }
   mi_output_fun* out = mi_out_default;
   return (out == NULL ? &mi_out_buf : out);
 }
 
 void mi_register_output(mi_output_fun* out, void* arg) mi_attr_noexcept {
   mi_out_default = (out == NULL ? &mi_out_stderr : out); // stop using the delayed output buffer
-  mi_atomic_write_ptr(void,&mi_out_arg, arg);
+  mi_atomic_store_ptr_release(void,&mi_out_arg, arg);
   if (out!=NULL) mi_out_buf_flush(out,true,arg);         // output all the delayed output now
 }
 
@@ -241,14 +251,15 @@ static void mi_add_stderr_output() {
 // --------------------------------------------------------
 // Messages, all end up calling `_mi_fputs`.
 // --------------------------------------------------------
-static volatile _Atomic(uintptr_t) error_count; // = 0;  // when MAX_ERROR_COUNT stop emitting errors and warnings
+static _Atomic(uintptr_t) error_count;   // = 0;  // when >= max_error_count stop emitting errors
+static _Atomic(uintptr_t) warning_count; // = 0;  // when >= max_warning_count stop emitting warnings
 
 // When overriding malloc, we may recurse into mi_vfprintf if an allocation
 // inside the C runtime causes another message.
 static mi_decl_thread bool recurse = false;
 
 static bool mi_recurse_enter(void) {
-  #ifdef MI_TLS_RECURSE_GUARD
+  #if defined(__APPLE__) || defined(MI_TLS_RECURSE_GUARD)
   if (_mi_preloading()) return true;
   #endif
   if (recurse) return false;
@@ -257,20 +268,24 @@ static bool mi_recurse_enter(void) {
 }
 
 static void mi_recurse_exit(void) {
-  #ifdef MI_TLS_RECURSE_GUARD
+  #if defined(__APPLE__) || defined(MI_TLS_RECURSE_GUARD)
   if (_mi_preloading()) return;
   #endif
   recurse = false;
 }
 
 void _mi_fputs(mi_output_fun* out, void* arg, const char* prefix, const char* message) {
-  if (!mi_recurse_enter()) return;
   if (out==NULL || (FILE*)out==stdout || (FILE*)out==stderr) { // TODO: use mi_out_stderr for stderr?
+    if (!mi_recurse_enter()) return;
     out = mi_out_get_default(&arg);
+    if (prefix != NULL) out(prefix, arg);
+    out(message, arg);
+    mi_recurse_exit();
   }
-  if (prefix != NULL) out(prefix,arg);
-  out(message,arg);
-  mi_recurse_exit();
+  else {
+    if (prefix != NULL) out(prefix, arg);
+    out(message, arg);
+  }
 }
 
 // Define our own limited `fprintf` that avoids memory allocation.
@@ -309,13 +324,13 @@ void _mi_verbose_message(const char* fmt, ...) {
 
 static void mi_show_error_message(const char* fmt, va_list args) {
   if (!mi_option_is_enabled(mi_option_show_errors) && !mi_option_is_enabled(mi_option_verbose)) return;
-  if (mi_atomic_increment(&error_count) > mi_max_error_count) return;
+  if (mi_atomic_increment_acq_rel(&error_count) > mi_max_error_count) return;
   mi_vfprintf(NULL, NULL, "mimalloc: error: ", fmt, args);
 }
 
 void _mi_warning_message(const char* fmt, ...) {
   if (!mi_option_is_enabled(mi_option_show_errors) && !mi_option_is_enabled(mi_option_verbose)) return;
-  if (mi_atomic_increment(&error_count) > mi_max_error_count) return;
+  if (mi_atomic_increment_acq_rel(&warning_count) > mi_max_warning_count) return;
   va_list args;
   va_start(args,fmt);
   mi_vfprintf(NULL, NULL, "mimalloc: warning: ", fmt, args);
@@ -335,7 +350,7 @@ void _mi_assert_fail(const char* assertion, const char* fname, unsigned line, co
 // --------------------------------------------------------
 
 static mi_error_fun* volatile  mi_error_handler; // = NULL
-static volatile _Atomic(void*) mi_error_arg;     // = NULL
+static _Atomic(void*) mi_error_arg;     // = NULL
 
 static void mi_error_default(int err) {
   UNUSED(err);
@@ -352,11 +367,16 @@ static void mi_error_default(int err) {
     abort();
   }
 #endif
+#if defined(MI_XMALLOC)
+  if (err==ENOMEM || err==EOVERFLOW) { // abort on memory allocation fails in xmalloc mode
+    abort();
+  }
+#endif
 }
 
 void mi_register_error(mi_error_fun* fun, void* arg) {
   mi_error_handler = fun;  // can be NULL
-  mi_atomic_write_ptr(void,&mi_error_arg, arg);
+  mi_atomic_store_ptr_release(void,&mi_error_arg, arg);
 }
 
 void _mi_error_message(int err, const char* fmt, ...) {
@@ -367,7 +387,7 @@ void _mi_error_message(int err, const char* fmt, ...) {
   va_end(args);
   // and call the error handler which may abort (or return normally)
   if (mi_error_handler != NULL) {
-    mi_error_handler(err, mi_atomic_read_ptr(void,&mi_error_arg));
+    mi_error_handler(err, mi_atomic_load_ptr_acquire(void,&mi_error_arg));
   }
   else {
     mi_error_default(err);
@@ -380,15 +400,21 @@ void _mi_error_message(int err, const char* fmt, ...) {
 
 static void mi_strlcpy(char* dest, const char* src, size_t dest_size) {
   dest[0] = 0;
-  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
   strncpy(dest, src, dest_size - 1);
   dest[dest_size - 1] = 0;
 }
 
 static void mi_strlcat(char* dest, const char* src, size_t dest_size) {
-  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
   strncat(dest, src, dest_size - 1);
   dest[dest_size - 1] = 0;
+}
+
+static inline int mi_strnicmp(const char* s, const char* t, size_t n) {
+  if (n==0) return 0;
+  for (; *s != 0 && *t != 0 && n > 0; s++, t++, n--) {
+    if (toupper(*s) != toupper(*t)) break;
+  }
+  return (n==0 ? 0 : *s - *t);
 }
 
 #if defined _WIN32
@@ -402,11 +428,45 @@ static bool mi_getenv(const char* name, char* result, size_t result_size) {
   size_t len = GetEnvironmentVariableA(name, result, (DWORD)result_size);
   return (len > 0 && len < result_size);
 }
-#else
+#elif !defined(MI_USE_ENVIRON) || (MI_USE_ENVIRON!=0)
+// On Posix systemsr use `environ` to acces environment variables 
+// even before the C runtime is initialized.
+#if defined(__APPLE__) && defined(__has_include) && __has_include(<crt_externs.h>)
+#include <crt_externs.h>
+static char** mi_get_environ(void) {
+  return (*_NSGetEnviron());
+}
+#else 
+extern char** environ;
+static char** mi_get_environ(void) {
+  return environ;
+}
+#endif
 static bool mi_getenv(const char* name, char* result, size_t result_size) {
+  if (name==NULL) return false;  
+  const size_t len = strlen(name);
+  if (len == 0) return false;  
+  char** env = mi_get_environ();
+  if (env == NULL) return false;
+  // compare up to 256 entries
+  for (int i = 0; i < 256 && env[i] != NULL; i++) {
+    const char* s = env[i];
+    if (mi_strnicmp(name, s, len) == 0 && s[len] == '=') { // case insensitive
+      // found it
+      mi_strlcpy(result, s + len + 1, result_size);
+      return true;
+    }
+  }
+  return false;
+}
+#else  
+// fallback: use standard C `getenv` but this cannot be used while initializing the C runtime
+static bool mi_getenv(const char* name, char* result, size_t result_size) {
+  // cannot call getenv() when still initializing the C runtime.
+  if (_mi_preloading()) return false;
   const char* s = getenv(name);
   if (s == NULL) {
-    // in unix environments we check the upper case name too.
+    // we check the upper case name too.
     char buf[64+1];
     size_t len = strlen(name);
     if (len >= sizeof(buf)) len = sizeof(buf) - 1;
@@ -425,11 +485,8 @@ static bool mi_getenv(const char* name, char* result, size_t result_size) {
   }
 }
 #endif
-static void mi_option_init(mi_option_desc_t* desc) {
-  #ifndef _WIN32
-  // cannot call getenv() when still initializing the C runtime.
-  if (_mi_preloading()) return;
-  #endif
+
+static void mi_option_init(mi_option_desc_t* desc) {  
   // Read option value from the environment
   char buf[64+1];
   mi_strlcpy(buf, "mimalloc_", sizeof(buf));
@@ -453,6 +510,14 @@ static void mi_option_init(mi_option_desc_t* desc) {
     else {
       char* end = buf;
       long value = strtol(buf, &end, 10);
+      if (desc->option == mi_option_reserve_os_memory) {
+        // this option is interpreted in KiB to prevent overflow of `long`
+        if (*end == 'K') { end++; }
+        else if (*end == 'M') { value *= KiB; end++; }
+        else if (*end == 'G') { value *= MiB; end++; }
+        else { value = (value + KiB - 1) / KiB; }
+        if (*end == 'B') { end++; }
+      }
       if (*end == 0) {
         desc->value = value;
         desc->init = INITIALIZED;
@@ -462,9 +527,9 @@ static void mi_option_init(mi_option_desc_t* desc) {
         desc->init = DEFAULTED;
       }
     }
+    mi_assert_internal(desc->init != UNINIT);
   }
-  else {
+  else if (!_mi_preloading()) {
     desc->init = DEFAULTED;
   }
-  mi_assert_internal(desc->init != UNINIT);
 }

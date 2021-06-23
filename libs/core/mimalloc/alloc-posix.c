@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Copyright (c) 2018,2019, Microsoft Research, Daan Leijen
+Copyright (c) 2018-2021, Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -17,8 +17,12 @@ terms of the MIT license. A copy of the license can be found in the file
 // ------------------------------------------------------
 
 #include <errno.h>
-#include <string.h>  // memcpy
+#include <string.h>  // memset
 #include <stdlib.h>  // getenv
+
+#ifdef _MSC_VER
+#pragma warning(disable:4996)  // getenv _wgetenv
+#endif
 
 #ifndef EINVAL
 #define EINVAL 22
@@ -99,7 +103,7 @@ mi_decl_restrict unsigned short* mi_wcsdup(const unsigned short* s) mi_attr_noex
   size_t size = (len+1)*sizeof(unsigned short);
   unsigned short* p = (unsigned short*)mi_malloc(size);
   if (p != NULL) {
-    memcpy(p,s,size);
+    _mi_memcpy(p,s,size);
   }
   return p;
 }
@@ -111,8 +115,7 @@ mi_decl_restrict unsigned char* mi_mbsdup(const unsigned char* s)  mi_attr_noexc
 int mi_dupenv_s(char** buf, size_t* size, const char* name) mi_attr_noexcept {
   if (buf==NULL || name==NULL) return EINVAL;
   if (size != NULL) *size = 0;
-  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-  char* p = getenv(name);
+  char* p = getenv(name);        // mscver warning 4996
   if (p==NULL) {
     *buf = NULL;
   }
@@ -132,8 +135,7 @@ int mi_wdupenv_s(unsigned short** buf, size_t* size, const unsigned short* name)
   *buf = NULL;
   return EINVAL;
 #else
-  //k8:fuck you, m$vc:#pragma warning(suppress:4996)
-  unsigned short* p = (unsigned short*)_wgetenv((const wchar_t*)name);
+  unsigned short* p = (unsigned short*)_wgetenv((const wchar_t*)name);  // msvc warning 4996
   if (p==NULL) {
     *buf = NULL;
   }
