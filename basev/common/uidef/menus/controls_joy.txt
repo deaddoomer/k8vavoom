@@ -49,6 +49,8 @@ menudef ControlsJoy {
   }
 
 
+  header "Sensitivities";
+
   option slider {
     title = "Rotation Sensitivity";
     cvar = joy_rotate_sensitivity;
@@ -79,5 +81,62 @@ menudef ControlsJoy {
     min = 1;
     max = 10;
     step = 0.2;
+  }
+
+
+  header "Dead Zones";
+
+  option slider {
+    title = "Left Stick X";
+    cvar = ctl_deadzone_leftstick_x;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Dead zone for the left stick (horizontal motion).";
+  }
+
+  option slider {
+    title = "Left Stick Y";
+    cvar = ctl_deadzone_leftstick_y;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Dead zone for the left stick (vertical motion).";
+  }
+
+  option slider {
+    title = "Right Stick X";
+    cvar = ctl_deadzone_rightstick_x;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Dead zone for the right stick (horizontal motion).";
+  }
+
+  option slider {
+    title = "Right Stick Y";
+    cvar = ctl_deadzone_rightstick_y;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Dead zone for the right stick (vertical motion).";
+  }
+
+  option slider {
+    title = "Left Trigger Edge";
+    cvar = ctl_trigger_left_edge;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Minimal level for the left trigger (triggers works as buttons).";
+  }
+
+  option slider {
+    title = "Right Trigger Edge";
+    cvar = ctl_trigger_right_edge;
+    min = 0;
+    max = 1;
+    step = 0.01;
+    help = "Minimal level for the right trigger (triggers works as buttons).";
   }
 }

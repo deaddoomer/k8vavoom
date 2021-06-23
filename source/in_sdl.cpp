@@ -149,6 +149,13 @@ static VCvarB ui_control_waiting("__ui_control_waiting", false, "Waiting for new
 static VCvarB m_nograb("m_nograb", false, "Do not grab mouse?", CVAR_Archive);
 static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
 
+static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive);
+static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive);
+static VCvarF ctl_deadzone_rightstick_x("ctl_deadzone_rightstick_x", "0.08", "Dead zone for right stick (horizontal motion) -- [0..1].", CVAR_Archive);
+static VCvarF ctl_deadzone_rightstick_y("ctl_deadzone_rightstick_y", "0.08", "Dead zone for right stick (vertical motion) -- [0..1].", CVAR_Archive);
+static VCvarF ctl_trigger_left_edge("ctl_trigger_left_edge", "0.8", "Minimal level for registering trigger A -- [0..1].", CVAR_Archive);
+static VCvarF ctl_trigger_right_edge("ctl_trigger_right_edge", "0.8", "Minimal level for registering trigger B -- [0..1].", CVAR_Archive);
+
 static inline bool IsUIMouse () noexcept { return (ui_mouse.asBool() || ui_mouse_forced.asBool()); }
 
 #ifdef VAVOOM_K8_DEVELOPER
@@ -481,6 +488,32 @@ VStr VSdlInputDevice::GetClipboardText () {
 
 //==========================================================================
 //
+//  calcStickTriggerValue
+//
+//==========================================================================
+static int calcStickTriggerValue (const int axis, int value) noexcept {
+  if (value == 0) return 0; // just in case
+  value = clampval(value, -32767, 32767);
+  float dead = 0.0f;
+  switch (axis) {
+    case SDL_CONTROLLER_AXIS_LEFTX: dead = ctl_deadzone_leftstick_x.asFloat(); break;
+    case SDL_CONTROLLER_AXIS_LEFTY: dead = ctl_deadzone_leftstick_y.asFloat(); break;
+    case SDL_CONTROLLER_AXIS_RIGHTX: dead = ctl_deadzone_rightstick_x.asFloat(); break;
+    case SDL_CONTROLLER_AXIS_RIGHTY: dead = ctl_deadzone_rightstick_y.asFloat(); break;
+    case SDL_CONTROLLER_AXIS_TRIGGERLEFT: dead = ctl_trigger_left_edge.asFloat(); break;
+    case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: dead = ctl_trigger_right_edge.asFloat(); break;
+    default: return 0;
+  }
+  if (dead >= 1.0f) return 0;
+  dead = min2(0.0f, dead);
+  const int minval = (int)(32767*dead);
+  if (abs(value) < minval) return 0;
+  return clampval(value*127/32767, -127, 127);
+}
+
+
+//==========================================================================
+//
 //  VSdlInputDevice::ReadInput
 //
 //  Reads input from the input devices.
@@ -608,7 +641,7 @@ void VSdlInputDevice::ReadInput () {
       // controllers
       case SDL_CONTROLLERAXISMOTION:
         if (controller && ev.caxis.which == jid) {
-          normal_value = clampval(ev.caxis.value*127/32767, -127, 127);
+          normal_value = calcStickTriggerValue(ev.caxis.axis, ev.caxis.value);
           #if 0
           const char *axisName = "<unknown>";
           switch (ev.caxis.axis) {
@@ -628,8 +661,8 @@ void VSdlInputDevice::ReadInput () {
             case SDL_CONTROLLER_AXIS_RIGHTX: joy_x[1] = normal_value; break;
             case SDL_CONTROLLER_AXIS_RIGHTY: joy_y[1] = normal_value; break;
             //HACK: consider both triggers as buttons for now
-            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: CtlTriggerButton(0, (normal_value >= 110)); break;
-            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: CtlTriggerButton(1, (normal_value >= 110)); break;
+            case SDL_CONTROLLER_AXIS_TRIGGERLEFT: CtlTriggerButton(0, (normal_value != 0)); break;
+            case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: CtlTriggerButton(1, (normal_value != 0)); break;
           }
         }
         break;
