@@ -55,7 +55,7 @@ VStr flForcePlayerClass = VStr::EmptyString;
 
 int fsys_warp_n0 = -1;
 int fsys_warp_n1 = -1;
-VStr fsys_warp_cmd;
+VStr fsys_warp_cmd = VStr::EmptyString;
 
 static bool fsys_onlyOneBaseFile = false;
 
@@ -2222,6 +2222,7 @@ void FL_InitOptions () {
   GArgs.AddFileOption("!1-iwaddir");
   GArgs.AddFileOption("!1-basedir");
   GArgs.AddFileOption("!1-savedir");
+  GArgs.AddFileOption("!1-configdir");
   GArgs.AddFileOption("!1-autoloaddir");
   GArgs.AddFileOption("!1-deh");
   GArgs.AddFileOption("!1-vc-decorate-ignore-file");
@@ -2462,9 +2463,11 @@ void FL_Init () {
 
   FL_RegisterModDetectors();
 
+  /* oops! they are already parsed here
   fsys_warp_n0 = -1;
   fsys_warp_n1 = -1;
   fsys_warp_cmd = VStr();
+  */
 
   // if it is set, than it was the latest
   if (cliGameCStr) cliGameMode = cliGameCStr;
