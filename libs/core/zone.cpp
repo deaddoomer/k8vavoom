@@ -53,7 +53,7 @@ static volatile uint32_t zMimallocAllowed = 0u;
 
 
 #ifdef VAVOOM_USE_MIMALLOC
-static bool xstrEquCI (const char *s0, const char *s1) noexcept {
+static __attribute__((unused)) bool xstrEquCI (const char *s0, const char *s1) noexcept {
   if (!s0) return !s1;
   if (!s1) return false;
   while (*s0 && ((uint8_t)*s0) <= 32) ++s0;
