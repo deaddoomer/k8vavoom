@@ -941,7 +941,7 @@ bool Sys_FileExists (VStr filename) {
 //
 //==========================================================================
 bool Sys_DirExists (VStr path) {
-  return isDirectory(filename);
+  return isDirectory(path);
   /*
   if (path.isEmpty()) return false;
   path = path.removeTrailingSlash();
