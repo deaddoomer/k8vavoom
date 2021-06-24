@@ -190,7 +190,7 @@ void VArgs::InsertFileArg (const char *filearg) {
         int ac = 0;
         if (fo[0] >= '0' && fo[0] <= '9') { ac = fo[0]-'0'; ++fo; }
         if (!fo[0]) continue;
-        if (strcmp(arg, fo) == 0) {
+        if (VStr::ICmp(arg, fo) == 0) {
           //fprintf(stderr, "!! ac=%d; <%s>\n", ac, fo);
           isOpt = true;
           inFile = false;
@@ -203,12 +203,12 @@ void VArgs::InsertFileArg (const char *filearg) {
           break;
         }
       } else {
-        if (strcmp(arg, fo) == 0) { isOpt = true; break; }
+        if (VStr::ICmp(arg, fo) == 0) { isOpt = true; break; }
       }
     }
     if (isOpt) continue;
     // file option?
-    if (strcmp(arg, filearg) == 0) { inFile = true; continue; }
+    if (VStr::ICmp(arg, filearg) == 0) { inFile = true; continue; }
     // other options
     if (arg[0] == '-') { inFile = false; continue; }
     // console commands
@@ -521,7 +521,7 @@ VParsedArgs::ArgInfo *VParsedArgs::allocArgInfo (const char *argname, const char
   ArgInfo *prev = nullptr;
   ArgInfo *curr = argInfoHead;
   while (curr) {
-    if (strcmp(curr->name, argname) == 0) Sys_Error("duplicate handler for '%s' CLI arg", argname);
+    if (VStr::ICmp(curr->name, argname) == 0) Sys_Error("duplicate handler for '%s' CLI arg", argname);
     prev = curr;
     curr = curr->next;
   }
@@ -546,7 +546,7 @@ VParsedArgs::ArgInfo *VParsedArgs::findNamedArgInfo (const char *argname) {
   if (argname[0] == '+') return argInfoCmdArg;
   if (argname[0] != '-') return nullptr;
   for (ArgInfo *ai = argInfoHead; ai; ai = ai->next) {
-    if (strcmp(argname, ai->name) == 0) return ai;
+    if (VStr::ICmp(argname, ai->name) == 0) return ai;
   }
   return nullptr;
 }
