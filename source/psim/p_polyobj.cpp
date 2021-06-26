@@ -1859,6 +1859,7 @@ static bool CheckAffectedMObjPositions (polyobj_t *pofirst=nullptr, bool skipLin
       }
       VEntity *mobj = edata.mobj;
       if (!NeedPositionCheck(mobj)) continue;
+      bool wasMove = false;
       for (polyobj_t *po = pofirst; po; po = po->polink) {
         if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
           // do nothing
@@ -1875,9 +1876,30 @@ static bool CheckAffectedMObjPositions (polyobj_t *pofirst=nullptr, bool skipLin
             bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
             if (!ok) return false; //FIXME: blocked
             edata.aflags |= AFF_MOVE;
+            wasMove = true;
           }
         }
         if (skipLink) break;
+      }
+      // check if we stuck
+      if (wasMove) {
+        for (polyobj_t *po = pofirst; po; po = po->polink) {
+          if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+            // do nothing
+          } else {
+            TVec udir = CalcPolyUnstuckVector(po, mobj);
+            if (!udir.isValid()) return true; // oops, blocked
+            if (!udir.isZero2D()) {
+              // still blocked
+              if (mobj->EntityFlags&VEntity::EF_Solid) {
+                if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return true; // blocked
+              } else {
+                mobj->Level->eventPolyCrushMobj(mobj, po);
+              }
+            }
+          }
+          if (skipLink) break;
+        }
       }
     }
   }
