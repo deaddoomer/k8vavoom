@@ -249,8 +249,8 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
   // find and remove common prefix
   if (canHasPrefix && pakdir.files.length() > 0) {
     VStr xpfx = pakdir.files[0].fileName;
-    int sli = xpfx.IndexOf('/');
-    if (sli > 0) {
+    const int sli = xpfx.IndexOf('/');
+    if (sli > 0 && !xpfx.startsWithCI("filter/")) {
       xpfx = VStr(xpfx, 0, sli+1); // extract prefix
       for (int i = 0; i < pakdir.files.length(); ++i) {
         if (!pakdir.files[i].fileName.StartsWith(xpfx)) { canHasPrefix = false; break; }
