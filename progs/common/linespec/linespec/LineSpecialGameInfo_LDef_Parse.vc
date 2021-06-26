@@ -180,6 +180,14 @@ void ParseLDefArgN (ScriptsParser sc, ref int arg) {
   else if (sc.Check("origarg4")) arg = -4;
   else if (sc.Check("origarg5")) arg = -5;
   else if (sc.Check("unchanged")) arg = -666;
+  // for StaticInit
+  else if (sc.Check("StaticCommand_Gravity")) arg = LNSPEC_StaticInit_Command_Gravity;
+  else if (sc.Check("StaticCommand_Color")) arg = LNSPEC_StaticInit_Command_Color;
+  else if (sc.Check("StaticCommand_Damage")) arg = LNSPEC_StaticInit_Command_Damage;
+  else if (sc.Check("StaticCommand_Link")) arg = LNSPEC_StaticInit_Command_Link;
+  else if (sc.Check("StaticCommand_Sky")) arg = LNSPEC_StaticInit_Command_Sky;
+  else if (sc.Check("StaticCommand_AlignFlat")) arg = LNSPEC_StaticInit_Command_AlignFlat;
+  // number
   else {
     sc.ExpectNumber();
     arg = sc.Number;

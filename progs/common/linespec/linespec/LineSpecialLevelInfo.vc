@@ -3386,8 +3386,12 @@ name ConvertSpecialDamageType (int mod) {
 //
 //  EV_LineAlignFloor
 //
+//  arg1: lineid
+//  arg2: side (0 is front, 1 is back)
+//
 //==========================================================================
 /*final*/ bool EV_LineAlignFloor (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  /*
   int Searcher = -1;
   bool Ret = false;
   for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
@@ -3415,6 +3419,8 @@ name ConvertSpecialDamageType (int mod) {
   }
 
   return Ret;
+  */
+  return XLevel.Do_LineAlignFlatCommon(lineact:nullptr, lineid:Arg1, side:Arg2, doFloor:true, doCeiling:false);
 }
 
 
@@ -3422,8 +3428,12 @@ name ConvertSpecialDamageType (int mod) {
 //
 //  EV_LineAlignCeiling
 //
+//  arg1: lineid
+//  arg2: side (0 is front, 1 is back)
+//
 //==========================================================================
 /*final*/ bool EV_LineAlignCeiling (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+  /*
   int Searcher = -1;
   bool Ret = false;
   for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
@@ -3451,6 +3461,8 @@ name ConvertSpecialDamageType (int mod) {
   }
 
   return Ret;
+  */
+  return XLevel.Do_LineAlignFlatCommon(lineact:nullptr, lineid:Arg1, side:Arg2, doFloor:false, doCeiling:true);
 }
 
 

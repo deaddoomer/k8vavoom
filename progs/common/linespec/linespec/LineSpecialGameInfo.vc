@@ -1176,14 +1176,14 @@ void StaticInit (VLevel InLevel, line_t *line) {
 
   //if (!line->arg1) return; // zero sector tag sux -- nope, Boom maps are actively using this
   switch (line->arg2) {
-    case 0:
+    case LNSPEC_StaticInit_Command_Gravity:
       Grav = Length((*line->v2)-(*line->v1))/100.0;
       for (int hidx = InLevel.FindSectorFromTag(out sec, line->arg1); hidx >= 0; hidx = InLevel.FindSectorFromTag(out sec, line->arg1, hidx)) {
         sec.Gravity = Grav;
       }
       break;
     /* this is processed in level setup
-    case 1:
+    case LNSPEC_StaticInit_Command_Color:
       // sets the light or fog color in a sector
       // an RRGGBB hex format color used as an upper texture name will set the light color; a lower texture will set the fog color
       print("StaticInit(1): upper=%s; lower=%s", InLevel.Sides[line.sidenum[0]].TopTexture, InLevel.Sides[line.sidenum[0]].BottomTexture);
@@ -1191,7 +1191,7 @@ void StaticInit (VLevel InLevel, line_t *line) {
       }
       break;
     */
-    case 2:
+    case LNSPEC_StaticInit_Command_Damage:
       Dmg = int(Length((*line->v2)-(*line->v1)));
       for (int hidx = InLevel.FindSectorFromTag(out sec, line->arg1); hidx >= 0; hidx = InLevel.FindSectorFromTag(out sec, line->arg1, hidx)) {
         sec.Damage = Dmg;
@@ -1200,8 +1200,8 @@ void StaticInit (VLevel InLevel, line_t *line) {
         sec.DamageLeaky = 0;
       }
       break;
-    //case 3: // defines a sector link with line IDs instead of tags, as in Eternity
-    case 255:
+    //case LNSPEC_StaticInit_Command_Link: // defines a sector link with line IDs instead of tags, as in Eternity
+    case LNSPEC_StaticInit_Command_Sky:
       // uses the line's upper texture as the sky in any tagged sectors (that is, the sky flat
       // will be replaced with that texture instead of the sky indicated in MAPINFO).
       // if flip is set to 1, the texture will be flipped, as is normal behavior for Doom skies.
@@ -1218,6 +1218,14 @@ void StaticInit (VLevel InLevel, line_t *line) {
           //sec.Sky = (InLevel.Sides[snum].TopTexture)|SKY_FROM_SIDE;
           sec.Sky = (line->sidenum[0]+1)|SKY_FROM_SIDE;
         }
+      }
+      break;
+    // arg1: lineid (0 for current line)
+    // arg3: side (0 is front, 1 is back)
+    // arg4: which flat (bit0: floor; bit1: ceiling)
+    case LNSPEC_StaticInit_Command_AlignFlat:
+      if (line->arg4&3) {
+        InLevel.Do_LineAlignFlatCommon(lineact:line, lineid:line->arg1, side:line->arg3, doFloor:!!(line->arg4&1), doCeiling:!!(line->arg4&2));
       }
       break;
   }
@@ -1259,7 +1267,8 @@ override void SpawnWorld (VLevel InLevel) {
           line->lineTag = line->arg5;
           break;
         case LNSPEC_StaticInit:
-          if (line->arg2 == 3) line->lineTag = line->arg1;
+          // set tag for sector link
+          if (line->arg2 == LNSPEC_StaticInit_Command_Link) line->lineTag = line->arg1;
           break;
       }
     }

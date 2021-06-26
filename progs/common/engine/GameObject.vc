@@ -602,6 +602,15 @@ enum {
   LNSPEC_SectorSet3dThinFloorEDGE,
 };
 
+enum {
+  LNSPEC_StaticInit_Command_Gravity = 0,
+  LNSPEC_StaticInit_Command_Color = 1,
+  LNSPEC_StaticInit_Command_Damage = 2,
+  LNSPEC_StaticInit_Command_Link = 3,
+  LNSPEC_StaticInit_Command_Sky = 255,
+  LNSPEC_StaticInit_Command_AlignFlat = 760,
+};
+
 
 //==========================================================================
 //

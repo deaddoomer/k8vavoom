@@ -435,15 +435,26 @@ native final static iterator AllActivePlayers (out BasePlayer Player);
 // this moved to C++ code to make sound propagation on huge maps faster
 native void doRecursiveSound (ref array!Entity elist, sector_t *sec, Entity soundtarget, float maxdist, const TVec sndorigin);
 
-// debug function
+//==========================================================================
+//
+//  calcSecIdx
+//
+//  debug
+//
+//==========================================================================
 final int calcSecIdx (sector_t *sec) {
   if (!sec) return -1;
   return sec-&Sectors[0];
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// called by the engine before each world tick
+//==========================================================================
+//
+//  UpdateCachedCVars
+//
+//  called by the engine before each world tick
+//
+//==========================================================================
 void UpdateCachedCVars () {
   int dh = GetCvarI('dbg_perfect_hatred');
   if (dh != LevelInfo.PerfectHatredMode) {
@@ -486,7 +497,13 @@ void OnMissileSpawned (Entity ent /*, Entity originator*/) {}
 // called after entity was removed from lists, and marked for deletion; `ent` is never `none`
 void OnEntityDying (Entity ent) {}
 
-// this is called after LevelInfo handler when the game is loaded (hub or savegame)
+//==========================================================================
+//
+//  AfterUnarchiveThinkers
+//
+//  this is called after LevelInfo handler when the game is loaded (hub or savegame)
+//
+//==========================================================================
 void AfterUnarchiveThinkers () {
   if (!GetCvarB('r_flip_corpses')) return;
   EntityEx ee;
@@ -508,8 +525,13 @@ native int LdrTexNumForName (string texname, int Type, optional bool CMap);
 #include "LevelMapFixer.vc"
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// useful for variuos limiters
+//==========================================================================
+//
+//  k8LimiterCleanup
+//
+//  useful for variuos limiters
+//
+//==========================================================================
 final void k8LimiterCleanup (class!Entity thc, int allowed, ref int counter, ref int deathCounter, optional bool debugmsg) {
   if (!thc) return;
   if (counter > allowed) {
@@ -549,6 +571,13 @@ final void k8LimiterCleanup (class!Entity thc, int allowed, ref int counter, ref
 }
 
 
+//==========================================================================
+//
+//  k8LimiterUnarchiveThinkers
+//
+//  useful for variuos limiters
+//
+//==========================================================================
 final void k8LimiterUnarchiveThinkers (class!Entity thc, int allowed, ref int counter, ref int deathCounter, optional bool debugmsg) {
   int oldcounter = counter;
   counter = 0;
@@ -602,13 +631,25 @@ final TVec GetSubsectorCenter (const subsector_t *sub) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+
+//==========================================================================
+//
+//  MapMarkerWithId
+//
+//==========================================================================
 MapMarkerInfo *MapMarkerWithId (int markerid) {
   return (markerid > 0 && markerid <= MapMarkers.length ? &MapMarkers[markerid-1] : nullptr);
 }
 
 
-// map markers
-// >0: success, id
+//==========================================================================
+//
+//  AddMapMarker
+//
+//  map markers
+//  >0: success, id
+//
+//==========================================================================
 int AddMapMarker () {
   MapMarkerInfo *nmk = nullptr;
   foreach (auto idx, ref MapMarkerInfo mk; MapMarkers) {
@@ -633,6 +674,11 @@ int AddMapMarker () {
 }
 
 
+//==========================================================================
+//
+//  RemoveMapMarker
+//
+//==========================================================================
 void RemoveMapMarker (int markerid) {
   if (markerid > 0 && markerid <= MapMarkers.length) {
     MapMarkers[markerid-1].id = -1; // special flag
@@ -655,6 +701,70 @@ final bool SectorsByTag_opIterInit (out SectorTagIterationInfo it, int tag) {
 final bool SectorsByTag_opIterNext (ref SectorTagIterationInfo it, out sector_t *sec) {
   it.index = FindSectorFromTag(out sec, it.tag, it.index);
   return (it.index >= 0);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+
+//==========================================================================
+//
+//  Do_LineAlignFlatByLine
+//
+//  lineid: 0 is current line
+//  side: 0 is front, 1 is back
+//
+//==========================================================================
+bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeiling) {
+  if (!line) return false;
+  sector_t *sec = (side ? line->backsector : line->frontsector);
+  if (!sec) return false;
+
+  TVec v1 = *line->v1;
+  float Angle = atan2(line->v2->y-v1.y, line->v2->x-v1.x);
+  float Norm = Angle-90.0;
+  float Dist = -(cos(Norm)*v1.x+sin(Norm)*v1.y);
+  if (side) {
+    Angle = AngleMod360(Angle+180.0);
+    Dist = -Dist;
+  }
+  //k8: why?
+  while (Dist < 0.0) Dist += 256.0;
+  while (Dist >= 256.0) Dist -= 256.0;
+
+  if (doFloor) {
+    sec->floor.BaseAngle = Angle;
+    sec->floor.BaseYOffs = Dist;
+  }
+  if (doCeiling) {
+    sec->ceiling.BaseAngle = Angle;
+    sec->ceiling.BaseYOffs = Dist;
+  }
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  Do_LineAlignFlatCommon
+//
+//  lineid: 0 is current line
+//  side: 0 is front, 1 is back
+//
+//==========================================================================
+bool Do_LineAlignFlatCommon (line_t *lineact, int lineid, int side, bool doFloor, bool doCeiling) {
+  if (lineid == 0 && lineact) {
+    return Do_LineAlignFlatByLine(lineact, side, doFloor, doCeiling);
+  } else {
+    int Searcher = -1;
+    bool res = false;
+    for (line_t *line = FindLine(lineid, &Searcher); line;
+         line = FindLine(lineid, &Searcher))
+    {
+      if (Do_LineAlignFlatByLine(line, side, doFloor, doCeiling)) res = true;
+    }
+    return res;
+  }
 }
 
 
