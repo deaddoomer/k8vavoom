@@ -11,7 +11,7 @@ linedef_specials_table {
     sourceport = "MBF";
     action = StaticInit;
     arg1 = origarg1;
-    arg2 = 255;
+    arg2 = StaticCommand_Sky;
     arg3 = 0;
     arg4 = 0;
     arg5 = 0;
@@ -26,7 +26,7 @@ linedef_specials_table {
     sourceport = "MBF";
     action = StaticInit;
     arg1 = origarg1;
-    arg2 = 255;
+    arg2 = StaticCommand_Sky;
     arg3 = 1;
     arg4 = 0;
     arg5 = 0;

@@ -37,20 +37,22 @@ linedef_specials_table {
     arg5 = unchanged;
   }
 
+  /*k8: wtf?!
   282 = {
     description = "Legacy '3D floor' (does not affect light properties below the '3D floor', uses master sector light properties instead)";
     sourceport = "Legacy";
     action = StaticInit;
     arg1 = origarg1;
-    arg2 = 1;
+    arg2 = StaticCommand_Color;
     arg3 = 0;
     arg4 = 0;
     arg5 = 0;
-    spac = None/*Cross*/;
+    spac = None; //Cross
     repeat = false;
     monsteractivate = false;
     keepdata = false;
   }
+  */
 
   // no 283
 

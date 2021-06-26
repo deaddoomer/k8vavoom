@@ -1,0 +1,96 @@
+/*
+  default value for all args: unchanged
+  default value for `spac` is 0 (None)
+  default value for all boolean properties is `false`
+*/
+
+linedef_specials_table {
+  // arg1: lineid (0: this line)
+  // arg2: side (0: front; 1: back)
+  // arg3: which flat (bitfield):
+  //         1: floor
+  //         2: ceiling
+  //         3: floor and ceiling
+  373 = {
+    description = "Static Align Flats";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = origarg2;
+    arg4 = origarg3;
+    arg5 = origarg4;
+  }
+
+  // arg1: lineid (0: this line)
+  374 = {
+    description = "Static Align Floor Front";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 1; // floor
+    arg5 = 0;
+  }
+
+  // arg1: lineid (0: this line)
+  375 = {
+    description = "Static Align Floor Back";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 1; // floor
+    arg5 = 0;
+  }
+
+  // arg1: lineid (0: this line)
+  376 = {
+    description = "Static Align Ceiling Front";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 2; // ceiling
+    arg5 = 0;
+  }
+
+  // arg1: lineid (0: this line)
+  377 = {
+    description = "Static Align Ceiling Back";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 2; // ceiling
+    arg5 = 0;
+  }
+
+  // arg1: lineid (0: this line)
+  378 = {
+    description = "Static Align Floor And Ceiling Front";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 3; // floor and ceiling
+    arg5 = 0;
+  }
+
+  // arg1: lineid (0: this line)
+  379 = {
+    description = "Static Align Floor And Ceiling Back";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 3; // floor and ceiling
+    arg5 = 0;
+  }
+}
