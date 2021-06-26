@@ -1268,7 +1268,12 @@ override void SpawnWorld (VLevel InLevel) {
           break;
         case LNSPEC_StaticInit:
           // set tag for sector link
-          if (line->arg2 == LNSPEC_StaticInit_Command_Link) line->lineTag = line->arg1;
+               if (line->arg2 == LNSPEC_StaticInit_Command_Link) line->lineTag = line->arg1;
+          else if (line->arg2 == LNSPEC_StaticInit_Command_SetTag) {
+            line->lineTag = line->arg1;
+            line->special = 0;
+            line->arg1 = 0;
+          }
           break;
       }
     }

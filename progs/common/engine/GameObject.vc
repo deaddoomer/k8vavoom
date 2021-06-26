@@ -609,6 +609,7 @@ enum {
   LNSPEC_StaticInit_Command_Link = 3,
   LNSPEC_StaticInit_Command_Sky = 255,
   LNSPEC_StaticInit_Command_AlignFlat = 760,
+  LNSPEC_StaticInit_Command_SetTag = 761,
 };
 
 

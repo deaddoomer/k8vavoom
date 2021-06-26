@@ -5,6 +5,18 @@
 */
 
 linedef_specials_table {
+  // arg1: newtag
+  372 = {
+    description = "Static Set Line Tag";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = origarg1;
+    arg2 = StaticCommand_SetTag;
+    arg3 = 0;
+    arg4 = 0;
+    arg5 = 0;
+  }
+
   // arg1: lineid (0: this line)
   // arg2: side (0: front; 1: back)
   // arg3: which flat (bitfield):
