@@ -752,6 +752,17 @@ final void DoSPosAttack () {
 final void SpawnFly (class!EntityEx SpawnType, name SpawnSound) {
   class!EntityEx type;
 
+  if (bIsPlayer) {
+    printerror("%C: broken code! using Soul Cube spawner on player. Are mod author fuckin' nuts?", self);
+    return;
+  }
+
+  if (!SpawnType || !Target) {
+    printerror("%C: broken code! using Soul Cube spawner on invalid Soul Cube! actor destroyed.", self);
+    Destroy();
+    return;
+  }
+
   if (--ReactionCount) return; // still flying
 
   // first spawn teleport fog
