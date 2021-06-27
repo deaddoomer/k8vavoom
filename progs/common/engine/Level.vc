@@ -714,30 +714,56 @@ final bool SectorsByTag_opIterNext (ref SectorTagIterationInfo it, out sector_t 
 //  side: 0 is front, 1 is back
 //
 //==========================================================================
-bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeiling) {
+bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeiling, optional float scale) {
   if (!line) return false;
   sector_t *sec = (side ? line->backsector : line->frontsector);
   if (!sec) return false;
 
-  TVec v1 = *line->v1;
-  float Angle = atan2(line->v2->y-v1.y, line->v2->x-v1.x);
-  float Norm = Angle-90.0;
-  float Dist = -(cos(Norm)*v1.x+sin(Norm)*v1.y);
-  if (side) {
-    Angle = AngleMod360(Angle+180.0);
-    Dist = -Dist;
-  }
-  //k8: why?
-  while (Dist < 0.0) Dist += 256.0;
-  while (Dist >= 256.0) Dist -= 256.0;
+  bool isEDGE = (specified_scale && scale);
 
-  if (doFloor) {
-    sec->floor.BaseAngle = Angle;
-    sec->floor.BaseYOffs = Dist;
-  }
-  if (doCeiling) {
-    sec->ceiling.BaseAngle = Angle;
-    sec->ceiling.BaseYOffs = Dist;
+  TVec v1 = *line->v1;
+  TVec v2 = *line->v2;
+
+  if (isEDGE) {
+    //EDGE
+    float angle = atan2(v1.y-v2.y, v1.x-v2.x);
+    float normAngle = angle+90.0;
+    float dist = -(cos(normAngle)*v2.x+sin(normAngle)*v2.y);
+
+    printdebug("flat align: line #%s, side=%s; floor=%B; ceiling=%B; scale=%s (%B); angle=%s; normAngle=%s; dist=%s (%s)", line-&Lines[0], side, doFloor, doCeiling, scale, specified_scale, angle, normAngle, dist, fmod(dist, 4096.0));
+
+    if (doFloor) {
+      sec->floor.BaseAngle = angle;
+      sec->floor.BaseYOffs = dist;
+    }
+    if (doCeiling) {
+      sec->ceiling.BaseAngle = angle;
+      sec->ceiling.BaseYOffs = dist;
+    }
+  } else {
+    // Line_Align
+    float angle = atan2(v2.y-v1.y, v2.x-v1.x);
+    float normAngle = angle-90.0;
+    float dist = -(cos(normAngle)*v1.x+sin(normAngle)*v1.y);
+    if (side) {
+      angle = AngleMod360(angle+180.0);
+      dist = -dist;
+    }
+    //k8: why?
+    /*
+    while (dist < 0.0) dist += 256.0;
+    while (dist >= 256.0) dist -= 256.0;
+    */
+    dist = fmod(dist, 4096.0);
+
+    if (doFloor) {
+      sec->floor.BaseAngle = -angle;
+      sec->floor.BaseYOffs = dist;
+    }
+    if (doCeiling) {
+      sec->ceiling.BaseAngle = angle;
+      sec->ceiling.BaseYOffs = dist;
+    }
   }
 
   return true;
@@ -752,16 +778,16 @@ bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeilin
 //  side: 0 is front, 1 is back
 //
 //==========================================================================
-bool Do_LineAlignFlatCommon (line_t *lineact, int lineid, int side, bool doFloor, bool doCeiling) {
+bool Do_LineAlignFlatCommon (line_t *lineact, int lineid, int side, bool doFloor, bool doCeiling, optional float scale) {
   if (lineid == 0 && lineact) {
-    return Do_LineAlignFlatByLine(lineact, side, doFloor, doCeiling);
+    return Do_LineAlignFlatByLine(lineact, side, doFloor, doCeiling, scale!optional);
   } else {
     int Searcher = -1;
     bool res = false;
     for (line_t *line = FindLine(lineid, &Searcher); line;
          line = FindLine(lineid, &Searcher))
     {
-      if (Do_LineAlignFlatByLine(line, side, doFloor, doCeiling)) res = true;
+      if (Do_LineAlignFlatByLine(line, side, doFloor, doCeiling, scale!optional)) res = true;
     }
     return res;
   }

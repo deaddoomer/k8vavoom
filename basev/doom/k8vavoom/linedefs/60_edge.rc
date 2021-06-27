@@ -567,6 +567,89 @@ linedef_specials_table {
   }
 }
 
+linedef_specials_table {
+  /*
+    [800] : Align and rotate front sector's FLOOR
+    [801] : Align and rotate back sector's FLOOR
+    [802] : Align and rotate front sector's CEILING
+    [803] : Align and rotate back sector's CEILING
+    [804] : Align and rotate front sector's FLOOR+CEILING
+    [805] : Align and rotate back sector's FLOOR+CEILING
+  */
+
+  // arg1: lineid (0: this line)
+  800 = {
+    description = "Static Align Floor Front";
+    sourceport = "EDGE";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 1; // floor
+    arg5 = 1; // EDGE flag
+  }
+
+  // arg1: lineid (0: this line)
+  801 = {
+    description = "Static Align Floor Back";
+    sourceport = "EDGE";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 1; // floor
+    arg5 = 1; // EDGE flag
+  }
+
+  // arg1: lineid (0: this line)
+  802 = {
+    description = "Static Align Ceiling Front";
+    sourceport = "EDGE";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 2; // ceiling
+    arg5 = 1; // EDGE flag
+  }
+
+  // arg1: lineid (0: this line)
+  803 = {
+    description = "Static Align Ceiling Back";
+    sourceport = "k8vavoom";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 2; // ceiling
+    arg5 = 1; // EDGE flag
+  }
+
+  // arg1: lineid (0: this line)
+  804 = {
+    description = "Static Align Floor And Ceiling Front";
+    sourceport = "EDGE";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 0; // side
+    arg4 = 3; // floor and ceiling
+    arg5 = 1; // EDGE flag
+  }
+
+  // arg1: lineid (0: this line)
+  805 = {
+    description = "Static Align Floor And Ceiling Back";
+    sourceport = "EDGE";
+    action = StaticInit;
+    arg1 = 0;
+    arg2 = StaticCommand_AlignFlat;
+    arg3 = 1; // side
+    arg4 = 3; // floor and ceiling
+    arg5 = 1; // EDGE flag
+  }
+}
+
 
 /* other EDGE specials -- http://3dfxdev.net/edgewiki/index.php?title=Line_Types
 Thin Sliding Doors

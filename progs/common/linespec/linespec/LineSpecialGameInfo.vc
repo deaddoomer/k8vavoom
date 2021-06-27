@@ -1225,7 +1225,7 @@ void StaticInit (VLevel InLevel, line_t *line) {
     // arg4: which flat (bit0: floor; bit1: ceiling)
     case LNSPEC_StaticInit_Command_AlignFlat:
       if (line->arg4&3) {
-        InLevel.Do_LineAlignFlatCommon(lineact:line, lineid:line->arg1, side:line->arg3, doFloor:!!(line->arg4&1), doCeiling:!!(line->arg4&2));
+        InLevel.Do_LineAlignFlatCommon(lineact:line, lineid:line->arg1, side:line->arg3, doFloor:!!(line->arg4&1), doCeiling:!!(line->arg4&2), line->arg5);
       }
       break;
   }
