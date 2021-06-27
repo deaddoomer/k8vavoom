@@ -206,22 +206,19 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
 inline float AngleMod (float angle) noexcept {
 #if 1
   angle = fmodf(angle, 360.0f);
-  while (angle < 0.0f) angle += 360.0f;
-  while (angle >= 360.0f) angle -= 360.0f;
+  if (angle < 0.0f) angle += 360.0f;
+  //if (angle >= 360.0f) angle -= 360.0f; //k8: this should not happen
 #else
-  angle = (360.0/65536)*((int)(angle*(65536/360.0))&65535);
+  angle = (float)((360.0/65536)*((int)((double)angle*(65536/360.0))&65535));
 #endif
   return angle;
 }
+#define AngleMod360 AngleMod
 
 // returns angle normalized to the range [-180 < angle <= 180]
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
 inline float AngleMod180 (float angle) noexcept {
-#if 1
   angle = AngleMod(angle);
-#else
-  angle = (360.0/65536)*((int)(angle*(65536/360.0))&65535);
-#endif
   if (angle > 180.0f) angle -= 360.0f;
   return angle;
 }
@@ -231,30 +228,25 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
 inline double AngleModD (double angle) noexcept {
 #if 1
   angle = fmod(angle, 360.0);
-  while (angle < 0.0) angle += 360.0;
-  while (angle >= 360.0) angle -= 360.0;
+  if (angle < 0.0) angle += 360.0;
+  //if (angle >= 360.0) angle -= 360.0; //k8: this should not happen
 #else
   angle = (360.0/65536)*((int)(angle*(65536/360.0))&65535);
 #endif
   return angle;
 }
+#define AngleMod360D AngleModD
 
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
 inline double AngleMod180D (double angle) noexcept {
-#if 1
-  angle = fmod(angle, 360.0);
-  while (angle < -180.0) angle += 360.0;
-  while (angle >= 180.0) angle -= 360.0;
-#else
-  angle += 180;
-  angle = (360.0/65536)*((int)(angle*(65536/360.0))&65535);
-  angle -= 180;
-#endif
+  angle = AngleModD(angle);
+  if (angle > 180.0) angle -= 360.0;
   return angle;
 }
 
+// returns difference in range [-180..180]
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
-VVA_ALWAYS_INLINE  float AngleDiff (float afrom, float ato) noexcept { return AngleMod(ato-afrom+180.0f)-180.0f; }
+VVA_ALWAYS_INLINE float AngleDiff (float afrom, float ato) noexcept { return AngleMod(ato-afrom+180.0f)-180.0f; }
 
 #ifdef NO_SINCOS
 
