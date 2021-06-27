@@ -1,0 +1,25 @@
+class Main : Object;
+
+
+void main () {
+  float a = 42;
+  float b = -42;
+
+  print("2 = %s", fmod(42, 5));
+  print("2 = %s", fmod(a, 5));
+
+  print("~0.4 = %s", fmod(42, 5.2));
+  print("~0.4 = %s", fmod(a, 5.2));
+
+  print("-2 = %s", fmod(-42, 5));
+  print("-2 = %s", fmod(b, 5));
+
+  print("~-0.4 = %s", fmod(-42, 5.2));
+  print("~-0.4 = %s", fmod(b, 5.2));
+
+  print("3 = %s", fmodpos(-42, 5));
+  print("3 = %s", fmodpos(b, 5));
+
+  print("~4.8 = %s", fmodpos(-42, 5.2));
+  print("~4.8 = %s", fmodpos(b, 5.2));
+}

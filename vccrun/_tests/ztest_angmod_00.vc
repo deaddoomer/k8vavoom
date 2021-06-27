@@ -1,0 +1,29 @@
+class Main : Object;
+
+
+void main () {
+  float a = 280;
+  float b = 362;
+  float c = -280;
+  float d = -362;
+
+  print("280 = %s", AngleMod360(280));
+  print("  2 = %s", AngleMod360(362));
+  print(" 80 = %s", AngleMod360(-280));
+  print("358 = %s", AngleMod360(-362));
+
+  print("280 = %s", AngleMod360(a));
+  print("  2 = %s", AngleMod360(b));
+  print(" 80 = %s", AngleMod360(c));
+  print("358 = %s", AngleMod360(d));
+
+  print("-80 = %s", AngleMod180(280));
+  print("  2 = %s", AngleMod180(362));
+  print(" 80 = %s", AngleMod180(-280));
+  print(" -2 = %s", AngleMod180(-362));
+
+  print("-80 = %s", AngleMod180(a));
+  print("  2 = %s", AngleMod180(b));
+  print(" 80 = %s", AngleMod180(c));
+  print(" -2 = %s", AngleMod180(d));
+}
