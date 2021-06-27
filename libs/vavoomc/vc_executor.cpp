@@ -2842,21 +2842,51 @@ func_loop:
 
       PR_VM_CASE(OPC_Builtin)
         switch (ReadU8(ip+1)) {
-          case OPC_Builtin_IntAbs: if (sp[-1].i < 0) sp[-1].i = -sp[-1].i; break;
-          case OPC_Builtin_FloatAbs: if (sp[-1].f < 0) sp[-1].f = -sp[-1].f; break;
+          case OPC_Builtin_IntAbs: if (sp[-1].i < 0.0f) sp[-1].i = -sp[-1].i; break;
+          case OPC_Builtin_FloatAbs: if (!isNaNF(sp[-1].f)) sp[-1].f = fabsf(sp[-1].f); break;
           case OPC_Builtin_IntSign: if (sp[-1].i < 0) sp[-1].i = -1; else if (sp[-1].i > 0) sp[-1].i = 1; break;
-          case OPC_Builtin_FloatSign: if (sp[-1].f < 0) sp[-1].f = -1; else if (sp[-1].f > 0) sp[-1].f = 1; else sp[-1].f = 0; break;
+          case OPC_Builtin_FloatSign: if (!isNaNF(sp[-1].f)) sp[-1].f = (sp[-1].f < 0.0f ? -1.0f : sp[-1].f > 0.0f ? +1.0f : 0.0f); break;
           case OPC_Builtin_IntMin: if (sp[-2].i > sp[-1].i) sp[-2].i = sp[-1].i; sp -= 1; break;
           case OPC_Builtin_IntMax: if (sp[-2].i < sp[-1].i) sp[-2].i = sp[-1].i; sp -= 1; break;
-          case OPC_Builtin_FloatMin: if (sp[-2].f > sp[-1].f) sp[-2].f = sp[-1].f; sp -= 1; break;
-          case OPC_Builtin_FloatMax: if (sp[-2].f < sp[-1].f) sp[-2].f = sp[-1].f; sp -= 1; break;
-          case OPC_Builtin_IntClamp: sp[-3].i = midval(sp[-2].i, sp[-3].i, sp[-1].i); sp -= 2; break;
-          case OPC_Builtin_FloatClamp: sp[-3].f = midval(sp[-2].f, sp[-3].f, sp[-1].f); sp -= 2; break;
+          case OPC_Builtin_FloatMin:
+            if (!isNaNF(sp[-1].f) && !isNaNF(sp[-2].f)) {
+              if (sp[-2].f > sp[-1].f) sp[-2].f = sp[-1].f;
+            } else {
+              if (!isNaNF(sp[-2].f)) sp[-2].f = sp[-1].f;
+            }
+            sp -= 1;
+            break;
+          case OPC_Builtin_FloatMax:
+            if (!isNaNF(sp[-1].f) && !isNaNF(sp[-2].f)) {
+              if (sp[-2].f < sp[-1].f) sp[-2].f = sp[-1].f;
+            } else {
+              if (!isNaNF(sp[-2].f)) sp[-2].f = sp[-1].f;
+            }
+            sp -= 1;
+            break;
+          case OPC_Builtin_IntClamp: sp[-3].i = clampval(sp[-3].i, sp[-2].i, sp[-1].i); sp -= 2; break;
+          case OPC_Builtin_FloatClamp: sp[-3].f = clampval(sp[-3].f, sp[-2].f, sp[-1].f); sp -= 2; break;
           case OPC_Builtin_FloatIsNaN: sp[-1].i = (isNaNF(sp[-1].f) ? 1 : 0); break;
           case OPC_Builtin_FloatIsInf: sp[-1].i = (isInfF(sp[-1].f) ? 1 : 0); break;
           case OPC_Builtin_FloatIsFinite: sp[-1].i = (isFiniteF(sp[-1].f) ? 1 : 0); break;
           case OPC_Builtin_DegToRad: sp[-1].f = DEG2RADF(sp[-1].f); break;
           case OPC_Builtin_RadToDeg: sp[-1].f = RAD2DEGF(sp[-1].f); break;
+          case OPC_Builtin_AngleMod360:
+            if (isFiniteF(sp[-1].f)) {
+              sp[-1].f = AngleMod(sp[-1].f);
+            } else {
+              VObject::VMDumpCallStack();
+              if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("got NAN"); else VPackage::InternalFatalError("got INF");
+            }
+            break;
+          case OPC_Builtin_AngleMod180:
+            if (isFiniteF(sp[-1].f)) {
+              sp[-1].f = AngleMod180(sp[-1].f);
+            } else {
+              VObject::VMDumpCallStack();
+              if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("got NAN"); else VPackage::InternalFatalError("got INF");
+            }
+            break;
           case OPC_Builtin_Sin: sp[-1].f = msin(sp[-1].f); break;
           case OPC_Builtin_Cos: sp[-1].f = mcos(sp[-1].f); break;
           case OPC_Builtin_Tan: sp[-1].f = mtan(sp[-1].f); break;
@@ -2864,8 +2894,16 @@ func_loop:
           case OPC_Builtin_ACos: sp[-1].f = macos(sp[-1].f); break;
           case OPC_Builtin_ATan: sp[-1].f = RAD2DEGF(atanf(sp[-1].f)); break;
           case OPC_Builtin_Sqrt: sp[-1].f = sqrtf(sp[-1].f); break;
-          case OPC_Builtin_ATan2: sp[-2].f = matan(sp[-2].f, sp[-1].f); --sp; break;
+          case OPC_Builtin_ATan2: sp[-2].f = matan(sp[-2].f, sp[-1].f); sp -= 1; break;
           case OPC_Builtin_SinCos: msincos(sp[-3].f, (float *)sp[-2].p, (float *)sp[-1].p); sp -= 3; break;
+          case OPC_Builtin_FMod: sp[-2].f = fmodf(sp[-2].f, sp[-1].f); sp -= 1; break;
+          case OPC_Builtin_FModPos:
+            sp[-2].f = fmodf(sp[-2].f, sp[-1].f);
+            if (isFiniteF(sp[-2].f) && isFiniteF(sp[-1].f)) {
+              while (sp[-2].f < 0.0f) sp[-2].f += fabsf(sp[-1].f);
+            }
+            sp -= 1;
+            break;
           case OPC_Builtin_VecLength:
             if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
             sp[-3].f = sqrtf(VSUM3(sp[-1].f*sp[-1].f, sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f));
@@ -2982,9 +3020,9 @@ func_loop:
               TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
               if (v.isValid()) {
                 if (isFiniteF(vmin) && isFiniteF(vmax)) {
-                  v.x = midval(vmin, v.x, vmax);
-                  v.y = midval(vmin, v.y, vmax);
-                  v.z = midval(vmin, v.z, vmax);
+                  v.x = clampval(v.x, vmin, vmax);
+                  v.y = clampval(v.y, vmin, vmax);
+                  v.z = clampval(v.z, vmin, vmax);
                 } else if (isFiniteF(vmin)) {
                   v.x = min2(vmin, v.x);
                   v.y = min2(vmin, v.y);
@@ -3020,9 +3058,9 @@ func_loop:
               TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
               if (v.isValid()) {
                 if (vmin.isValid() && vmax.isValid()) {
-                  v.x = midval(vmin.x, v.x, vmax.x);
-                  v.y = midval(vmin.y, v.y, vmax.y);
-                  v.z = midval(vmin.z, v.z, vmax.z);
+                  v.x = clampval(v.x, vmin.x, vmax.x);
+                  v.y = clampval(v.y, vmin.y, vmax.y);
+                  v.z = clampval(v.z, vmin.z, vmax.z);
                 } else if (vmin.isValid()) {
                   v.x = min2(vmin.x, v.x);
                   v.y = min2(vmin.y, v.y);

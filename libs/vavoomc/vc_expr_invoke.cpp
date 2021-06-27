@@ -2159,7 +2159,7 @@ bool VInvocation::CheckSimpleConstArgs (int argc, const int *types) const {
 VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
   if (!Func || Func->builtinOpc < 0) return this; // sanity check
   TVec v0(0, 0, 0), v1(0, 0, 0), v2(0, 0, 0);
-  float fv;
+  float fv, fv2, fvres;
   VExpression *e = nullptr;
   switch (Func->builtinOpc) {
     case OPC_Builtin_IntAbs:
@@ -2168,7 +2168,9 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       break;
     case OPC_Builtin_FloatAbs:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral((Args[0]->GetFloatConst() < 0 ? -Args[0]->GetFloatConst() : Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (isNaNF(fv)) return this;
+      e = new VFloatLiteral(fabsf(fv), Loc);
       break;
     case OPC_Builtin_IntSign:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Int})) return this;
@@ -2176,7 +2178,9 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       break;
     case OPC_Builtin_FloatSign:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral((Args[0]->GetFloatConst() < 0 ? -1.0f : Args[0]->GetFloatConst() > 0 ? 1.0f : 0.0f), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (isNaNF(fv)) return this;
+      e = new VFloatLiteral((fv < 0.0f ? -1.0f : fv > 0.0f ? 1.0f : 0.0f), Loc);
       break;
     case OPC_Builtin_IntMin:
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Int, TYPE_Int})) return this;
@@ -2188,25 +2192,38 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       break;
     case OPC_Builtin_FloatMin:
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
-      e = new VFloatLiteral((Args[0]->GetFloatConst() < Args[1]->GetFloatConst() ? Args[0]->GetFloatConst() : Args[1]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (isNaNF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (isNaNF(fv2)) return this;
+      e = new VFloatLiteral(min2(fv, fv2), Loc);
       break;
     case OPC_Builtin_FloatMax:
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
-      e = new VFloatLiteral((Args[0]->GetFloatConst() > Args[1]->GetFloatConst() ? Args[0]->GetFloatConst() : Args[1]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (isNaNF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (isNaNF(fv2)) return this;
+      e = new VFloatLiteral(max2(fv, fv2), Loc);
       break;
     case OPC_Builtin_IntClamp: // (val, min, max)
       if (!CheckSimpleConstArgs(3, (const int []){TYPE_Int, TYPE_Int, TYPE_Int})) return this;
-      e = new VIntLiteral(
-        (Args[0]->GetIntConst() < Args[1]->GetIntConst() ? Args[1]->GetIntConst() :
-         Args[0]->GetIntConst() > Args[2]->GetIntConst() ? Args[2]->GetIntConst() :
-         Args[0]->GetIntConst()), Loc);
+      {
+        const int v = Args[0]->GetIntConst();
+        const int low = Args[1]->GetIntConst();
+        const int high = Args[2]->GetIntConst();
+        e = new VIntLiteral(clampval(v, low, high), Loc);
+      }
       break;
     case OPC_Builtin_FloatClamp: // (val, min, max)
       if (!CheckSimpleConstArgs(3, (const int []){TYPE_Float, TYPE_Float, TYPE_Float})) return this;
-      e = new VFloatLiteral(
-        (Args[0]->GetFloatConst() < Args[1]->GetFloatConst() ? Args[1]->GetFloatConst() :
-         Args[0]->GetFloatConst() > Args[2]->GetFloatConst() ? Args[2]->GetFloatConst() :
-         Args[0]->GetFloatConst()), Loc);
+      {
+        const float v = Args[0]->GetIntConst();
+        const float low = Args[1]->GetIntConst();
+        const float high = Args[2]->GetIntConst();
+        if (isNaNF(v) || isNaNF(low) || isNaNF(high)) return this;
+        e = new VFloatLiteral(clampval(v, low, high), Loc);
+      }
       break;
     case OPC_Builtin_FloatIsNaN:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
@@ -2222,84 +2239,139 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       break;
     case OPC_Builtin_DegToRad:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(DEG2RADF(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(DEG2RADF(fv), Loc);
       break;
     case OPC_Builtin_RadToDeg:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(RAD2DEGF(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(RAD2DEGF(fv), Loc);
+      break;
+    case OPC_Builtin_AngleMod360:
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(AngleMod(fv), Loc);
+      break;
+    case OPC_Builtin_AngleMod180:
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(AngleMod180(fv), Loc);
       break;
     case OPC_Builtin_Sin:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(msin(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(msin(fv), Loc);
       break;
     case OPC_Builtin_Cos:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(mcos(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(mcos(fv), Loc);
       break;
     case OPC_Builtin_Tan:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(mtan(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(mtan(fv), Loc);
       break;
     case OPC_Builtin_ASin:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(masin(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(masin(fv), Loc);
       break;
     case OPC_Builtin_ACos:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(macos(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(macos(fv), Loc);
       break;
     case OPC_Builtin_ATan:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(RAD2DEGF(atanf(Args[0]->GetFloatConst())), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      fv = atanf(fv);
+      e = new VFloatLiteral(RAD2DEGF(fv), Loc);
       break;
     case OPC_Builtin_Sqrt:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(sqrtf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(sqrtf(fv), Loc);
       break;
     case OPC_Builtin_ATan2:
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
-      e = new VFloatLiteral(matan(Args[0]->GetFloatConst(), Args[1]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (!isFiniteF(fv2)) return this;
+      e = new VFloatLiteral(matan(fv, fv2), Loc);
+      break;
+    case OPC_Builtin_FMod:
+      if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (!isFiniteF(fv2)) return this;
+      e = new VFloatLiteral(fmodf(fv, fv2), Loc);
+      break;
+    case OPC_Builtin_FModPos:
+      if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (!isFiniteF(fv2)) return this;
+      fvres = fmodf(fv, fv2);
+      if (isFiniteF(fvres) && isFiniteF(fv) && isFiniteF(fv2)) {
+        while (fvres < 0.0f) fvres += fabsf(fv2);
+      }
+      e = new VFloatLiteral(fvres, Loc);
       break;
     case OPC_Builtin_VecLength:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.length();
-      if (!isFiniteF(fv)) fv = 0;
+      if (!isFiniteF(fv)) return this;
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecLengthSquared:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.lengthSquared();
-      if (!isFiniteF(fv)) fv = 0;
+      if (!isFiniteF(fv)) return this;
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecLength2D:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.length2D();
-      if (!isFiniteF(fv)) fv = 0;
+      if (!isFiniteF(fv)) return this;
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecLength2DSquared:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.length2DSquared();
-      if (!isFiniteF(fv)) fv = 0;
+      if (!isFiniteF(fv)) return this;
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecNormalize:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v0 = normalise(v0);
-      if (!v0.isValid()) v0 = TVec(0, 0, 0);
+      if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;
     case OPC_Builtin_VecNormalize2D:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v0 = normalise2D(v0);
-      if (!v0.isValid()) v0 = TVec(0, 0, 0);
+      if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;
     case OPC_Builtin_VecDot:
@@ -2337,27 +2409,39 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       break;
     case OPC_Builtin_RoundF2I:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VIntLiteral((int)roundf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VIntLiteral((int)roundf(fv), Loc);
       break;
     case OPC_Builtin_RoundF2F:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(roundf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(roundf(fv), Loc);
       break;
     case OPC_Builtin_TruncF2I:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VIntLiteral((int)truncf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VIntLiteral((int)truncf(fv), Loc);
       break;
     case OPC_Builtin_TruncF2F:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(truncf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(truncf(fv), Loc);
       break;
     case OPC_Builtin_FloatCeil:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(ceilf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(ceilf(fv), Loc);
       break;
     case OPC_Builtin_FloatFloor:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Float})) return this;
-      e = new VFloatLiteral(floorf(Args[0]->GetFloatConst()), Loc);
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      e = new VFloatLiteral(floorf(fv), Loc);
       break;
     // [-3]: a; [-2]: b, [-1]: delta
     case OPC_Builtin_FloatLerp:
@@ -2387,9 +2471,9 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
         const float vmin = Args[1]->GetFloatConst();
         const float vmax = Args[2]->GetFloatConst();
         if (isFiniteF(vmin) && isFiniteF(vmax)) {
-          v0.x = midval(vmin, v0.x, vmax);
-          v0.y = midval(vmin, v0.y, vmax);
-          v0.z = midval(vmin, v0.z, vmax);
+          v0.x = clampval(v0.x, vmin, vmax);
+          v0.y = clampval(v0.y, vmin, vmax);
+          v0.z = clampval(v0.z, vmin, vmax);
         } else if (isFiniteF(vmin)) {
           v0.x = min2(vmin, v0.x);
           v0.y = min2(vmin, v0.y);
@@ -2422,9 +2506,9 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       v2 = ((VVectorExpr *)Args[2])->GetConstValue();
       if (v0.isValid()) {
         if (v1.isValid() && v2.isValid()) {
-          v0.x = midval(v1.x, v0.x, v2.x);
-          v0.y = midval(v1.y, v0.y, v2.y);
-          v0.z = midval(v1.z, v0.z, v2.z);
+          v0.x = clampval(v0.x, v1.x, v2.x);
+          v0.y = clampval(v0.y, v1.y, v2.y);
+          v0.z = clampval(v0.z, v1.z, v2.z);
         } else if (v1.isValid()) {
           v0.x = min2(v1.x, v0.x);
           v0.y = min2(v1.y, v0.y);

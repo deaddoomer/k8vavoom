@@ -42,8 +42,8 @@
   DECLARE_FUNCTION(AssertError)
 
   // math functions
-  DECLARE_FUNCTION(AngleMod360)
-  DECLARE_FUNCTION(AngleMod180)
+  //DECLARE_FUNCTION(AngleMod360)
+  //DECLARE_FUNCTION(AngleMod180)
 
   DECLARE_FUNCTION(AngleVectors)
   DECLARE_FUNCTION(AngleVector)

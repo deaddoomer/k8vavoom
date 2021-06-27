@@ -174,6 +174,7 @@ IMPLEMENT_FUNCTION(VObject, AssertError) {
 //  Math functions
 //
 //**************************************************************************
+/*
 IMPLEMENT_FUNCTION(VObject, AngleMod360) {
   float an;
   vobjGetParam(an);
@@ -187,6 +188,7 @@ IMPLEMENT_FUNCTION(VObject, AngleMod180) {
   if (!isFiniteF(an)) { VObject::VMDumpCallStack(); if (isNaNF(an)) VPackage::InternalFatalError("got NAN"); else VPackage::InternalFatalError("got INF"); }
   RET_FLOAT(AngleMod180(an));
 }
+*/
 
 // native static final void AngleVectors (const TAVec angles, out TVec forward, optional out TVec right, optional out TVec up);
 IMPLEMENT_FUNCTION(VObject, AngleVectors) {

@@ -549,8 +549,8 @@ final static float slerp (float p1, float p2, float p3, float p4, float delta) {
 native static final float smoothstep (float edge0, float edge1, float x) [builtin FloatSmoothStep];
 native static final float smoothstepPerlin (float edge0, float edge1, float x) [builtin FloatSmoothStepPerlin];
 
-native static final float AngleMod360 (float angle); // normalises angle in range 0..360
-native static final float AngleMod180 (float angle); // normalises angle in range -180..180
+native static final float AngleMod360 (float angle) [builtin AngleMod360]; // normalises angle in range 0..360
+native static final float AngleMod180 (float angle) [builtin AngleMod180]; // normalises angle in range -180..180
 native static final float deg2rad (float angle) [builtin DegToRad]; // degrees --> radians
 native static final float rad2deg (float angle) [builtin RadToDeg]; // radians -> degrees
 native static final int abs (int val) [builtin IntAbs]; // absolute value
@@ -573,15 +573,19 @@ native static final int clamp (int Val, int Min, int Max) [builtin IntClamp]; //
 native static final float fclamp (float Val, float Min, float Max) [builtin FloatClamp]; // clamped value
 native static final TVec vfmin (const TVec v1, const float v) [builtin VectorMinF];
 native static final TVec vfmax (const TVec v1, const float v) [builtin VectorMaxF];
+native static final TVec vecfmin (const TVec v1, const float v) [builtin VectorMinF];
+native static final TVec vecfmax (const TVec v1, const float v) [builtin VectorMaxF];
 native static final TVec vecmin (const TVec v1, const TVec v2) [builtin VectorMinV];
 native static final TVec vecmax (const TVec v1, const TVec v2) [builtin VectorMaxV];
 native static final TVec vabs (const TVec v1) [builtin VectorAbs];
 native static final TVec vecabs (const TVec v1) [builtin VectorAbs];
 native static final TVec vclamp (const TVec v, const float Min, const float Max) [builtin VectorClampF]; // clamped value
 native static final TVec vfclamp (const TVec v, const float Min, const float Max) [builtin VectorClampF]; // clamped value
+native static final TVec vecfclamp (const TVec v, const float Min, const float Max) [builtin VectorClampF]; // clamped value
 native static final TVec vecclamp (const TVec v, const TVec vmin, const TVec vmax) [builtin VectorClampV]; // clamped value
 native static final TVec vclampscale (const TVec v, const float absmax) [builtin VectorClampScaleF]; // clamps with rescaling
 native static final TVec vfclampscale (const TVec v, const float absmax) [builtin VectorClampScaleF]; // clamps with rescaling
+native static final TVec vecfclampscale (const TVec v, const float absmax) [builtin VectorClampScaleF]; // clamps with rescaling
 native static final float sin (float angle) [builtin Sin]; // sine
 native static final float cos (float angle) [builtin Cos]; // cosine
 native static final void sincos (float angle, out float sin, out float cos) [builtin SinCos];
@@ -591,6 +595,8 @@ native static final float acos (float x) [builtin ACos]; // arccosine
 native static final float atan (float slope) [builtin ATan]; // arctangent
 native static final float atan2 (float y, float x) [builtin ATan2]; // arctangent
 native static final float sqrt (float x) [builtin Sqrt]; // square root
+native static final float fmod (float x, float y) [builtin FMod]; // x-n*y, for some integer n, such that the returned value has the same sign as x and a magnitude less than the magnitude of y
+native static final float fmodpos (float x, float y) [builtin FModPos]; // x-n*y, for some integer n, such that the returned value is always positive, and has a magnitude less than the magnitude of y
 native static final float length (const TVec vec) [builtin VecLength]; // vector length
 native static final float lengthSquared (const TVec vec) [builtin VecLengthSquared]; // vector length
 alias Length = length;

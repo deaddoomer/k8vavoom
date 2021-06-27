@@ -845,6 +845,8 @@ struct Instr {
           case OPC_Builtin_IntMax:
           case OPC_Builtin_FloatMin:
           case OPC_Builtin_FloatMax:
+          case OPC_Builtin_FMod:
+          case OPC_Builtin_FModPos:
             spdelta = -1;
             return;
           case OPC_Builtin_IntClamp:
@@ -880,6 +882,8 @@ struct Instr {
           case OPC_Builtin_ACos:
           case OPC_Builtin_ATan:
           case OPC_Builtin_Sqrt:
+          case OPC_Builtin_AngleMod360:
+          case OPC_Builtin_AngleMod180:
             return;
           case OPC_Builtin_ATan2:
             spdelta = -1;
