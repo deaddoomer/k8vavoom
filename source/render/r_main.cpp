@@ -165,7 +165,7 @@ static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false
 static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive);
 static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive);
 static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive);
-static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
+static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", true, "Precache sprite textures?", CVAR_Archive);
 static VCvarB r_precache_weapon_sprite_textures("r_precache_weapon_sprite_textures", true, "Precache weapon textures?", CVAR_Archive);
 static VCvarB r_precache_ammo_sprite_textures("r_precache_ammo_sprite_textures", true, "Precache ammo textures?", CVAR_Archive);
 static VCvarB r_precache_player_sprite_textures("r_precache_player_sprite_textures", false, "Precache player sprite textures?", CVAR_Archive);

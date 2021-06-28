@@ -88,6 +88,7 @@ extern VCvarB gl_regular_prefill_depth;
 extern VCvarB gl_regular_disable_overbright;
 
 extern VCvarI gl_release_ram_textures_mode;
+extern VCvarI gl_release_ram_textures_mode_sprite;
 extern VCvarB gl_crop_psprites;
 extern VCvarB gl_crop_sprites;
 

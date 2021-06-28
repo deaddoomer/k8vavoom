@@ -314,13 +314,32 @@ public:
     vuint32 ShadeColor;
     vint32 lastUseTime; // this is "game time", from `GLevel->TicTime`
 
+    inline VTransData () noexcept { memset((void *)this, 0, sizeof(*this)); }
+
     // call to wipe it -- not "properly clear", but wipe completely
-    inline void wipe () noexcept { memset((void *)this, 0, sizeof(VTransData)); }
+    //inline void wipe () noexcept { memset((void *)this, 0, sizeof(*this)); }
   };
 
   vuint32 DriverHandle;
   TArray<VTransData> DriverTranslated;
 
+  double gcLastUsedTime; // 0: don't GC; otherwise we are in GC list
+  VTexture *gcPrev;
+  VTexture *gcNext;
+
+  // started from the highest `gcLastUsedTime`
+  static VTexture *gcHead;
+  static VTexture *gcTail;
+
+public:
+  // `time` must never be less than the previous used time
+  void MarkGCUsed (const double time) noexcept;
+  void MarkGCUnused () noexcept;
+
+  // free unused texture pixels
+  static void GCStep (const double currtime);
+
+public:
   void ResetTranslations ();
   void ClearTranslations ();
 
@@ -358,6 +377,8 @@ protected:
   int precropWidth, precropHeight; // so we will be able to restore it in `ReleasePixels()`
 
 public:
+  inline bool HasPixels () const noexcept { return (Pixels || Pixels8Bit || Pixels8BitA); }
+
   inline bool isCropped () const noexcept { return alreadyCropped; }
   inline int CropOffsetX () const noexcept { return croppedOfsX; }
   inline int CropOffsetY () const noexcept { return croppedOfsY; }

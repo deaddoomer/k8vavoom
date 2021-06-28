@@ -138,6 +138,8 @@ VDrawer::VDrawer () noexcept
   , canRenderShadowmaps(false)
   , updateFrame(0)
   , needCrosshair(false)
+  , prevCrosshairPic(-1)
+  , CurrentTime(0.0)
   , RendLev(nullptr)
 {
   #ifdef CLIENT

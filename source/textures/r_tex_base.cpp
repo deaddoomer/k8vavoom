@@ -30,6 +30,9 @@
 //#define VV_VERY_VERBOSE_TEXTURE_LOADER
 static VCvarB dbg_verbose_texture_loader("dbg_verbose_texture_loader", false, "WERY verbose texture loader?", CVAR_PreInit);
 
+VTexture *VTexture::gcHead = nullptr;
+VTexture *VTexture::gcTail = nullptr;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 typedef VTexture *(*VTexCreateFunc) (VStream &, int);
@@ -138,6 +141,9 @@ VTexture::VTexture ()
   , lastUpdateFrame(0)
   , DriverHandle(0)
   , DriverTranslated()
+  , gcLastUsedTime(0.0)
+  , gcPrev(nullptr)
+  , gcNext(nullptr)
   , Pixels(nullptr)
   , Pixels8Bit(nullptr)
   , Pixels8BitA(nullptr)
@@ -161,6 +167,7 @@ VTexture::VTexture ()
 //
 //==========================================================================
 VTexture::~VTexture () {
+  MarkGCUnused();
   BrightmapBase = nullptr; // anyway
   ReleasePixels();
   // in case it is not from a pak
@@ -176,6 +183,77 @@ VTexture::~VTexture () {
   HiResTexture = nullptr;
   delete Brightmap;
   Brightmap = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VTexture::MarkGCUsed
+//
+//  `time` must never be less than the previous used time
+//
+//==========================================================================
+void VTexture::MarkGCUsed (const double time) noexcept {
+  if (time == 0.0 || SourceLump < 0 || !HasPixels()) return MarkGCUnused();
+  if (gcHead && gcHead->gcLastUsedTime > time) Sys_Error("invalid time value in `VTexture::MarkGCUsed()`");
+  if (gcHead != this) {
+    // remove from the list
+    MarkGCUnused();
+    // append to the top
+    gcNext = gcHead;
+    if (gcHead) gcHead->gcPrev = this; else gcTail = this;
+    gcNext = gcHead;
+    gcHead = this;
+  }
+  gcLastUsedTime = time;
+  //GCon->Logf(NAME_Debug, "VTexture::MarkGCUsed: added texture '%s'", *W_FullLumpName(SourceLump));
+}
+
+
+//==========================================================================
+//
+//  VTexture::MarkGCUnused
+//
+//==========================================================================
+void VTexture::MarkGCUnused () noexcept {
+  if (gcLastUsedTime == 0.0) {
+    assert(!gcPrev);
+    assert(!gcNext);
+    return;
+  }
+  if (gcPrev) gcPrev->gcNext = gcNext; else gcHead = gcHead->gcNext;
+  if (gcNext) gcNext->gcPrev = gcPrev; else gcTail = gcTail->gcPrev;
+  gcPrev = gcNext = nullptr;
+  gcLastUsedTime = 0.0;
+  //GCon->Logf(NAME_Debug, "VTexture::MarkGCUnused: released texture '%s'", *W_FullLumpName(SourceLump));
+}
+
+
+//==========================================================================
+//
+//  VTexture::GCStep
+//
+//  free unused texture pixels
+//
+//==========================================================================
+void VTexture::GCStep (const double currtime) {
+  if (currtime <= 0.0) return;
+  while (gcTail) {
+    VTexture *tx = gcTail;
+    const double diff = currtime-tx->gcLastUsedTime;
+    if (diff < 3.0) break;
+    GCon->Logf(NAME_Debug, "VTexture::GCStep: freeing pixels of texture '%s'", *W_FullLumpName(tx->SourceLump));
+    tx->ReleasePixels();
+    tx->MarkGCUnused();
+  }
+  #if 0
+  if (gcHead) {
+    GCon->Log(NAME_Debug, "=========== VTexture::GCStep list ===========");
+    for (VTexture *tx = gcHead; tx; tx = tx->gcNext) {
+      GCon->Logf(NAME_Debug, "VTexture::GCStep: delta=%g; texture '%s'", currtime-tx->gcLastUsedTime, *W_FullLumpName(tx->SourceLump));
+    }
+  }
+  #endif
 }
 
 
@@ -238,6 +316,7 @@ void VTexture::ReleasePixels () {
   if (SourceLump < 0) return; // this texture cannot be reloaded
   //GCon->Logf(NAME_Debug, "VTexture::ReleasePixels: '%s' (%d: %s)", *Name, SourceLump, *W_FullLumpName(SourceLump));
   if (InReleasingPixels()) return; // already released
+  MarkGCUnused();
   ReleasePixelsLock rlock(this);
   if (Pixels) { delete[] Pixels; Pixels = nullptr; }
   if (Pixels8Bit) { delete[] Pixels8Bit; Pixels8Bit = nullptr; }
@@ -471,7 +550,7 @@ void VTexture::ResetTranslations () {
 //
 //==========================================================================
 void VTexture::ClearTranslations () {
-  DriverTranslated.resetNoDtor();
+  ResetTranslations();
   DriverTranslated.clear();
 }
 

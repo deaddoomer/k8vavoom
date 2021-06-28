@@ -187,6 +187,7 @@ static double fps_start = 0.0;
 static double ms = 0.0;
 static int fps_frames = 0;
 static int show_fps = 0;
+static double lastTexGCTime = 0.0;
 
 VCvarB draw_lag("draw_lag", true, "Draw network lag value?", CVAR_Archive);
 
@@ -804,6 +805,12 @@ void SCR_Update (bool fullUpdate) {
 
   // page flip or blit buffer
   Drawer->Update();
+
+  // texture GC
+  if (Drawer->CurrentTime-lastTexGCTime >= 3.2) {
+    lastTexGCTime = Sys_Time();
+    VTexture::GCStep(lastTexGCTime);
+  }
 }
 
 

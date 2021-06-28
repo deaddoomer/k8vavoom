@@ -492,6 +492,10 @@ public:
   bool needCrosshair;
   int prevCrosshairPic;
 
+  // used in texture GC code
+  // update on each new frame
+  double CurrentTime;
+
 public:
   static void RegisterICB (void (*cb) (int phase));
 
@@ -533,7 +537,7 @@ public:
 
   inline void SetUpdateFrame (vuint32 n) noexcept { updateFrame = n; }
   inline vuint32 GetUpdateFrame () const noexcept { return updateFrame; }
-  inline void IncUpdateFrame () noexcept { if (++updateFrame == 0) updateFrame = 1; }
+  inline void IncUpdateFrame () noexcept { if (++updateFrame == 0) updateFrame = 1; CurrentTime = Sys_Time(); }
   void ResetTextureUpdateFrames () noexcept;
 
   // this should show some kind of splash screen

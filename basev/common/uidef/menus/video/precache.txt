@@ -117,8 +117,22 @@ menudef PrecacheVideoOptions {
       "faster uploading to GPU.",
       "If you're playing some PWADs with alot of textures, or using some",
       "hires texture pack, or just want to have more free RAM, you can",
-      "tell the engine when it should release RAM images.",
-      "\cGWARNING! This may *DRAMATICALLY* slow down level loading.",
-      "\cGAlso, this can cause stuttering (randomly freezing a game for a moment).";
+      "tell the engine when it should release RAM images.";
+  }
+
+  option enum {
+    title = "RAM Sprite Texture Image Releasing";
+    cvar = gl_release_ram_textures_mode_sprite;
+    list {
+      "Never",
+      "Map Unload",
+      "Immediate",
+    }
+    help =
+      "All loaded and decoded sprite texture images are kept in RAM, to allow",
+      "faster uploading to GPU.",
+      "If you're playing some mods with alot of texture translations",
+      "you can tell the engine to keep sprite textures (because they are required",
+      "to perform translations). Otherwise, there is no need to keep them in RAM.";
   }
 }

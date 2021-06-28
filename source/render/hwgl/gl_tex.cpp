@@ -382,7 +382,7 @@ bool VOpenGLDrawer::SetTextureLump (SetTexType ttype, VTexture *Tex, VTextureTra
         }
         // new translation (insert it at the top of the list, why not)
         VTexture::VTransData newtrans;
-        newtrans.wipe();
+        //newtrans.wipe();
         newtrans.Handle = 0;
         newtrans.Trans = Translation;
         newtrans.ColorMap = CMap;
@@ -525,14 +525,7 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        /*
-        if (ttype == SetTexType::TT_Decal) {
-          SrcTex->Shade(0xffffff); // shade to white
-        } else
-        */
-        {
-          SrcTex->Shade(0xff0000); // shade to red
-        }
+        SrcTex->Shade(0xff0000); // shade to red
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
@@ -546,14 +539,7 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        /*
-        if (ttype == SetTexType::TT_Decal) {
-          SrcTex->Shade(0xffffff); // shade to white
-        } else
-        */
-        {
-          SrcTex->Shade(0xff0000); // shade to red
-        }
+        SrcTex->Shade(0xff0000); // shade to red
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
@@ -566,14 +552,7 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
       if (ttype == SetTexType::TT_Decal || ttype == SetTexType::TT_BloodDecal) {
         SrcTex->ReleasePixels();
-        /*
-        if (ttype == SetTexType::TT_Decal) {
-          SrcTex->Shade(0xffffff); // shade to white
-        } else
-        */
-        {
-          SrcTex->Shade(0xff0000); // shade to red
-        }
+        SrcTex->Shade(0xff0000); // shade to red
         (void)SrcTex->GetPixels(); // shaded
         forceRelease = true;
       } else {
@@ -604,11 +583,23 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
     if (forceRelease) {
       SrcTex->ReleasePixels();
     } else if (!doCrop) {
-      if (SrcTex && !SrcTex->IsDynamicTexture() && (SrcTex->IsHugeTexture() || gl_release_ram_textures_mode.asInt() >= 2)) {
+      const int relmode =
+        ttype == TT_Sprite || ttype == TT_SpriteBrightmap /*||
+        ttype == TT_PSprite || ttype == TT_PSpriteBrightmap*/ ?
+          gl_release_ram_textures_mode_sprite.asInt() : gl_release_ram_textures_mode.asInt();
+      if (SrcTex && !SrcTex->IsDynamicTexture() && SrcTex->SourceLump >= 0 && (SrcTex->IsHugeTexture() || relmode >= 2)) {
         //if (SrcTex->IsHugeTexture()) GCon->Logf(NAME_Debug, "freeing \"huge\" texture '%s' (%s) (%dx%d)", *SrcTex->Name, *W_FullLumpName(SrcTex->SourceLump), SrcTex->Width, SrcTex->Height);
         SrcTex->ReleasePixels();
       }
     }
+  }
+
+  if (isCamTexture) {
+    Tex->MarkGCUnused();
+  } else if (ttype == TT_Common || ttype == TT_Sprite /*|| ttype == TT_PSprite*/) {
+    if (Tex->HasPixels()) Tex->MarkGCUsed(CurrentTime); else Tex->MarkGCUnused();
+  } else {
+    Tex->MarkGCUnused();
   }
 
   // set up texture wrapping
