@@ -1685,10 +1685,10 @@ vuint32 VRenderLevelShared::GetFade (sec_region_t *reg, bool isFloorCeiling) {
             Drawer->vieworg.z < reg->eceiling.GetPointZClamped(Drawer->vieworg) &&
             Drawer->vieworg.z > reg->efloor.GetPointZClamped(Drawer->vieworg))
         {
-          return reg->params->Fade;
+          return (vuint32)reg->params->Fade;
         }
       } else {
-        return reg->params->Fade;
+        return (vuint32)reg->params->Fade;
       }
     }
   }
@@ -1707,11 +1707,11 @@ vuint32 VRenderLevelShared::GetFade (sec_region_t *reg, bool isFloorCeiling) {
     }
   }
   */
-  if (Level->LevelInfo->OutsideFog && reg->eceiling.splane->pic == skyflatnum) return Level->LevelInfo->OutsideFog;
-  if (Level->LevelInfo->Fade) return Level->LevelInfo->Fade;
+  if (Level->LevelInfo->OutsideFog && reg->eceiling.splane->pic == skyflatnum) return (vuint32)Level->LevelInfo->OutsideFog;
+  if (Level->LevelInfo->Fade) return (vuint32)Level->LevelInfo->Fade;
   if (Level->LevelInfo->FadeTable == NAME_fogmap) return 0xff7f7f7fU;
-  if (r_fade_light) return FADE_LIGHT; // simulate light fading using dark fog
-  return 0;
+  if (r_fade_light) return (vuint32)FADE_LIGHT; // simulate light fading using dark fog
+  return (vuint32)0;
 }
 
 

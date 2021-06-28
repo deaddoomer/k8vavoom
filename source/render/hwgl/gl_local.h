@@ -949,7 +949,7 @@ protected:
   float tex_scale_x, tex_scale_y; // used in sky rendering
 
   int lastgamma;
-  int CurrentFade;
+  //int CurrentFade; // not used anymore
 
   bool hasNPOT;
   bool hasBoundsTest; // GL_EXT_depth_bounds_test
@@ -1260,7 +1260,8 @@ protected:
   bool CheckExtension (const char *ext);
   virtual void *GetExtFuncPtr (const char *name) = 0;
 
-  void SetFade (vuint32 NewFade);
+  // was used to render skies
+  //void SetFade (vuint32 NewFade);
 
   // returns 0 if generation is disabled, and atlas is not created
   void GenerateLightmapAtlasTextures ();

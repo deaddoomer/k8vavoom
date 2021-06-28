@@ -470,7 +470,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
 
   currentActiveShader = nullptr;
   lastgamma = 0;
-  CurrentFade = 0;
+  //CurrentFade = 0;
 
   useReverseZ = false;
   hasNPOT = false;

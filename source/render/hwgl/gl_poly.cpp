@@ -31,42 +31,40 @@ VCvarB gl_regular_disable_overbright("gl_regular_disable_overbright", false, "Di
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static inline int compareSurfaces (const surface_t *sa, const surface_t *sb) {
-    if (sa == sb) return 0;
-    const texinfo_t *ta = sa->texinfo;
-    const texinfo_t *tb = sb->texinfo;
-    // surfaces without textures should float up
-    if (!ta->Tex) {
-      return (!tb->Tex ? 0 : -1);
-    } else if (!tb->Tex) {
-      return 1;
+static inline int compareSurfaces (const surface_t *sa, const surface_t *sb) {
+  if (sa == sb) return 0;
+  const texinfo_t *ta = sa->texinfo;
+  const texinfo_t *tb = sb->texinfo;
+  // surfaces without textures should float up
+  if (!ta->Tex) {
+    return (!tb->Tex ? 0 : -1);
+  } else if (!tb->Tex) {
+    return 1;
+  }
+  // brightmapped textures comes last
+  if (r_brightmaps) {
+    if (ta->Tex->Brightmap) {
+      if (!tb->Tex->Brightmap) return 1;
+    } else if (tb->Tex->Brightmap) {
+      return -1;
     }
-    // brightmapped textures comes last
-    if (r_brightmaps) {
-      if (ta->Tex->Brightmap) {
-        if (!tb->Tex->Brightmap) return 1;
-      } else if (tb->Tex->Brightmap) {
-        return -1;
-      }
-    }
-    // sort by texture id (just use texture pointer)
-    if ((uintptr_t)ta->Tex < (uintptr_t)ta->Tex) return -1;
-    if ((uintptr_t)tb->Tex > (uintptr_t)tb->Tex) return 1;
-    // by light level/color
-    if (sa->Light < sb->Light) return -1;
-    if (sa->Light > sb->Light) return 1;
-    // and by colormap, why not?
-    return ((int)ta->ColorMap)-((int)tb->ColorMap);
   }
+  // sort by texture id (just use texture pointer)
+  if ((uintptr_t)ta->Tex < (uintptr_t)ta->Tex) return -1;
+  if ((uintptr_t)tb->Tex > (uintptr_t)tb->Tex) return 1;
+  // by light level/color
+  if (sa->Light < sb->Light) return -1;
+  if (sa->Light > sb->Light) return 1;
+  // and by colormap, why not?
+  return ((int)ta->ColorMap)-((int)tb->ColorMap);
+}
 
-  static int surfListItemCmp (const void *a, const void *b, void *udata) {
-    return compareSurfaces(((const VOpenGLDrawer::SurfListItem *)a)->surf, ((const VOpenGLDrawer::SurfListItem *)b)->surf);
-  }
+static int surfListItemCmp (const void *a, const void *b, void *udata) {
+  return compareSurfaces(((const VOpenGLDrawer::SurfListItem *)a)->surf, ((const VOpenGLDrawer::SurfListItem *)b)->surf);
+}
 
-  static int drawListItemCmp (const void *a, const void *b, void *udata) {
-    return compareSurfaces(*(const surface_t **)a, *(const surface_t **)b);
-  }
+static int drawListItemCmp (const void *a, const void *b, void *udata) {
+  return compareSurfaces(*(const surface_t **)a, *(const surface_t **)b);
 }
 
 
@@ -78,7 +76,7 @@ extern "C" {
 //
 //==========================================================================
 void VOpenGLDrawer::StartSkyPolygons () {
-  SetFade(0);
+  //SetFade(0);
   //glDisable(GL_CULL_FACE);
 }
 
@@ -91,7 +89,7 @@ void VOpenGLDrawer::StartSkyPolygons () {
 //
 //==========================================================================
 void VOpenGLDrawer::EndSkyPolygons () {
-  SetFade(0); // disable fog
+  //SetFade(0); // disable fog
   //glEnable(GL_CULL_FACE);
 }
 
@@ -108,10 +106,10 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
 {
   int sidx[4];
 
-  if (surf->count < 3) return;
+  if (!surf || surf->count < 3) return;
   if (!Texture1) Texture1 = Texture2; // the thing that should not happen, but...
 
-  SetFade(surf->Fade);
+  //SetFade(surf->Fade);
   sidx[0] = 0;
   sidx[1] = 1;
   sidx[2] = 2;
@@ -139,6 +137,7 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
     SurfDSky.SetTexture(0);
     SurfDSky.SetTexture2(1);
     SurfDSky.SetBrightness(r_sky_bright_factor);
+    SurfDSky.SetFogFade(surf->Fade, 1.0f);
     SurfDSky.UploadChangedUniforms();
 
     //glBegin(GL_POLYGON);
@@ -168,6 +167,7 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
     SurfSky.SetTexture(0);
     SurfSky.SetBrightness(r_sky_bright_factor);
     //SurfSky.SetTexSky(tex, offs1, 0, false);
+    SurfSky.SetFogFade(surf->Fade, 1.0f);
     SurfSky.UploadChangedUniforms();
 
     vboSky.ensureDataSize(surf->count);

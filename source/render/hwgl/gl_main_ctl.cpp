@@ -460,7 +460,10 @@ void VOpenGLDrawer::ReadBackScreen (int Width, int Height, rgba_t *Dest) {
 //
 //  VOpenGLDrawer::SetFade
 //
+//  used only to render skies
+//
 //==========================================================================
+/*
 void VOpenGLDrawer::SetFade (vuint32 NewFade) {
   if ((vuint32)CurrentFade == NewFade) return;
   if (NewFade) {
@@ -492,6 +495,7 @@ void VOpenGLDrawer::SetFade (vuint32 NewFade) {
   }
   CurrentFade = NewFade;
 }
+*/
 
 
 //==========================================================================
