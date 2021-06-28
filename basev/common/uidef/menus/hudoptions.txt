@@ -118,10 +118,18 @@ menudef HUDOptions {
   }
 
   option bool {
+    title = "Map Title";
+    cvar = draw_map_stats_title;
+    help =
+      "Draw map title when not on automap?",
+      "(When enabled with the global toggle above.)";
+  }
+
+  option bool {
     title = "Map Name";
     cvar = draw_map_stats_name;
     help =
-      "Draw kill statistics when not on automap?",
+      "Draw internal map name when not on automap?",
       "(When enabled with the global toggle above.)";
   }
 

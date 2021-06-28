@@ -254,7 +254,8 @@ static inline int getAMHeight () {
 static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
 static VCvarF draw_map_stats_alpha("draw_map_stats_alpha", "0.6", "Non-automap map stats opacity.", CVAR_Archive);
 static VCvarB draw_map_stats("draw_map_stats", false, "Draw map stats when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_name("draw_map_stats_name", false, "Draw map name when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_title("draw_map_stats_title", true, "Draw map title when not on automap?", CVAR_Archive);
+static VCvarB draw_map_stats_name("draw_map_stats_name", true, "Draw internal map name when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill stats when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_items("draw_map_stats_items", false, "Draw map item stats when not on automap?", CVAR_Archive);
 static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map secret stats when not on automap?", CVAR_Archive);
@@ -2168,7 +2169,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
 
   bool nameRendered = false;
   VStr lname = GClLevel->LevelInfo->GetLevelName().xstrip();
-  if (lname.length() && (asAutomap || draw_map_stats_name)) {
+  if (lname.length() && (asAutomap || draw_map_stats_title)) {
     size_t lbpos = 0;
     for (int f = 0; f < lname.length(); ++f) {
       char ch = lname[f];
@@ -2178,12 +2179,39 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
       lnamebuf[lbpos++] = ch;
     }
     lnamebuf[lbpos] = 0;
-    T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+    if (asAutomap) {
+      T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+    } else {
+      const bool hasInternalName = VStr::startsWithCI(lnamebuf, *GClLevel->MapName);
+      if (draw_map_stats_name) {
+        // need internal name
+        if (!hasInternalName) {
+          VStr ss = va("%s: %s", *GClLevel->MapName, lnamebuf);
+          T_DrawText(20, currY, *ss, CR_UNTRANSLATED, alpha);
+        } else {
+          T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+        }
+      } else {
+        // no internal name
+        if (!hasInternalName) {
+          T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+        } else {
+          VStr ss(lnamebuf+strlen(*GClLevel->MapName));
+          for (;;) {
+            ss = ss.xstrip();
+            if (ss.isEmpty()) break;
+            if (ss[0] != ':') break;
+            ss.chopLeft(1);
+          }
+          T_DrawText(20, currY, *ss, CR_UNTRANSLATED, alpha);
+        }
+      }
+    }
     currY -= T_FontHeight();
     nameRendered = true;
   }
 
-  if (drawMapName || (!asAutomap && !nameRendered && draw_map_stats_name)) {
+  if (drawMapName || (!asAutomap && !nameRendered && (draw_map_stats_title || draw_map_stats_name))) {
     lname = VStr(GClLevel->MapName);
     lname = lname.xstrip();
     T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), CR_UNTRANSLATED, alpha);
