@@ -111,6 +111,32 @@ const char *Host_GetCoreDump () noexcept {
 
 //==========================================================================
 //
+//  Suicide
+//
+//==========================================================================
+#ifdef WIN32
+static __attribute__((noreturn)) void Suicide () noexcept {
+  #if 0
+  HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE/*bInheritHandle*/, GetCurrentProcessId());
+  if (hProcess == NULL) {
+    MessageBox(NULL, "failed to open self, oops (don't mind it)", "k8vavoom Fatal Error", MB_OK);
+    ExitProcess(1); // alas
+  }
+
+  TerminateProcess(hProcess, 1);
+  CloseHandle(hProcess);
+  #else
+  TerminateProcess(GetCurrentProcess(), 1);
+  #endif
+
+  MessageBox(NULL, "failed to terminate self, oops (don't mind it)", "k8vavoom Fatal Error", MB_OK);
+  ExitProcess(1); // alas
+}
+#endif
+
+
+//==========================================================================
+//
 //  Sys_Error
 //
 //  Exits game and displays error message.
@@ -126,8 +152,10 @@ void Sys_Error (const char *error, ...) noexcept {
 
   if (SysErrorCB) SysErrorCB(buf);
 
+  GLog.WriteLine(NAME_Error, "Sys_Error: %s", buf);
 #if defined(WIN32)
   MessageBox(NULL, buf, "k8vavoom Fatal Error", MB_OK);
+  Suicide();
 #elif defined(ANDROID)
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "k8vavoom Fatal Error", buf, NULL);
   _Exit(1);
@@ -137,8 +165,8 @@ void Sys_Error (const char *error, ...) noexcept {
   fputs(buf, stderr);
   fputc('\n', stderr);
 */
-#endif
-  GLog.WriteLine(NAME_Error, "Sys_Error: %s", buf);
+#else
   //throw VavoomError(buf);
   abort(); // abort here, so we can drop back to gdb
+#endif
 }
