@@ -20,7 +20,7 @@ floor f_pwatr3 JustASound
 
 
 // strife cyan water
-bootprint StrifeWater modify {
+assign_bootprint StrifeWater {
   flat "f_watr0[1-3]"
   flat "f_vwatr[23]"
   flat "p_vwatr1"
@@ -28,6 +28,6 @@ bootprint StrifeWater modify {
 }
 
 // strife green mood
-bootprint StrifeMood modify {
+assign_bootprint StrifeMood {
   flat "f_pwatr[1-3]"
 }

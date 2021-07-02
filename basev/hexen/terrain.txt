@@ -9,7 +9,8 @@ terrain Lava
   damagetimemask  31
 
   k8vavoom {
-    bootprint  VanillaLava
+    /*bootprint  VanillaLava*/
+    bootprint  VanillaAnyLiquidDefault
   }
 }
 

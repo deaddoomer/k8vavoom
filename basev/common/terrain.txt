@@ -125,11 +125,12 @@ terrain JustASound
 // used in Vanilla Doom (extended by flats)
 terrain JustASoundVanilla
 {
-  splash  None
+  /*splash  None*/
+  splash    WaterSound
   liquid
   k8vavoom {
     playeronly
-    optout // can be turned off with "gm_vanilla_liquids" cvar
+    optout // can be turned off with "gm_optional_terrain" cvar
 
     walkingsteptime   0.8
     walkingstepvolume 0.6

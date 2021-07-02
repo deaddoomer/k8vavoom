@@ -5,13 +5,22 @@ terrain Lava
   footclip    10
   liquid
   k8vavoom {
-    bootprint  VanillaLava
+    /*bootprint  VanillaLava*/
+    bootprint  VanillaAnyLiquidDefault
   }
 }
 
 // Floor -> terrain mappings -----------------------------------------------
-floorglob "fltwawa[1-3]" Water
-floorglob "fltflww[1-3]" Water
-floorglob "fltlava[1-4]" Lava
-floorglob "flathuh[1-4]" Lava
-floorglob "fltslud[1-3]" Sludge
+assign_terrain Water {
+  flat "fltwawa[1-3]"
+  flat "fltflww[1-3]"
+}
+
+assign_terrain Lava {
+  flat "fltlava[1-4]"
+  flat "flathuh[1-4]"
+}
+
+assign_terrain Sludge {
+  flat "fltslud[1-3]"
+}
