@@ -1431,6 +1431,7 @@ void checkVCType (Type *tp) {
     if (tp->name == "TPlane") return; //FIXME: absent yet!
     if (tp->name == "WadLumpIteratorInfoNS") return;
     if (tp->name == "WadLumpIteratorInfoName") return;
+    if (tp->name == "WadDirIteratorInfoName") return;
     if (tp->name == "SectorTagIterationInfo") return;
     if (tp->srcfile.indexOf("/progs/common/uibase/") >= 0) return;
     if (tp->srcfile.indexOf("/progs/common/botai/") >= 0) return;
