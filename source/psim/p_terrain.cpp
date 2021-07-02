@@ -667,9 +667,20 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
     }
 
     if (sc->Check("shade")) {
-      sc->ExpectString();
-      vuint32 ppc = M_ParseColor(*sc->String);
-      bp->ShadeColor = ppc&0xffffff;
+      if (sc->Check("flatpic")) {
+        bp->ShadeColor = 0xed000000;
+        if (sc->Check("maxout")) {
+          sc->ExpectNumber();
+          bp->ShadeColor |= clampToByte(sc->Number);
+        } else {
+          // mult by 1.5
+          bp->ShadeColor |= 2;
+        }
+      } else {
+        sc->ExpectString();
+        vuint32 ppc = M_ParseColor(*sc->String);
+        bp->ShadeColor = ppc&0xffffff;
+      }
       continue;
     }
 

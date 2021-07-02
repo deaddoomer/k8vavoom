@@ -73,25 +73,6 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
       // check coords
       ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
       if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
-      #if 0
-      /*if (dc->eregindex != 0)*/ {
-        const bool pobj3d = sub->isInnerPObj();
-        // 3d floor decal, check Z coord
-        bool zok = false;
-        int eregidx = 0;
-        for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
-          if (eregidx == dc->eregindex) {
-            const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
-            if (fabsf(fz-org.z) <= 0.1f) {
-              zok = true;
-              //org.z = fz;
-            }
-            break;
-          }
-        }
-        if (!zok) continue;
-      }
-      #endif
       // it seems that we found it
       params.Translation = (dc->boottranslation >= 0 ? dc->boottranslation : dc->translation);
       params.Shade = (dc->bootshade != -2 ? dc->bootshade : dc->shadeclr);
@@ -108,32 +89,6 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
   }
 
   // no blood decal, try flat/terrain
-  #if 0
-  {
-    const bool pobj3d = sub->isInnerPObj();
-    int eregidx = 0;
-    for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
-      const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
-      if (fabsf(fz-org.z) <= 0.1f) {
-        // region found, detect terrain
-        sec_plane_t *splane = (eregidx || pobj3d ? reg->eceiling.splane : reg->efloor.splane);
-        if (splane) {
-          VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
-          if (bp) {
-            bp->genValues();
-            params.Translation = bp->Translation;
-            params.Shade = bp->ShadeColor;
-            params.Animator = bp->Animator;
-            params.Alpha = (bp->AlphaValue >= 0.0f ? min2(bp->AlphaValue, 1.0f) : RandomBetween(0.82f, 0.96f));
-            params.MarkTime = RandomBetween(bp->TimeMin, bp->TimeMax);
-            if (params.MarkTime < 0.0f) params.MarkTime = 0.0f;
-            return true;
-          }
-        }
-      }
-    }
-  }
-  #else
   {
     sec_plane_t *splane = (eregidx || pobj3d ? ourreg->eceiling.splane : ourreg->efloor.splane);
     if (splane) {
@@ -142,6 +97,17 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
         bp->genValues();
         params.Translation = bp->Translation;
         params.Shade = bp->ShadeColor;
+        // special value: low byte is maxval for average color
+        if ((bp->ShadeColor&0xff000000) == 0xed000000) {
+          VTexture *ftx = GTextureManager(splane->pic); // get animated texture
+          if (!ftx || ftx->Type == TEXTYPE_Null || ftx->Width < 1 || ftx->Height < 1) {
+            params.Translation = 0;
+            params.Shade = -1;
+            return false;
+          }
+          rgb_t avc = ftx->GetAverageColor(bp->ShadeColor&0xff);
+          params.Shade = (avc.r<<16)|(avc.g<<8)|avc.b;
+        }
         params.Animator = bp->Animator;
         params.Alpha = (bp->AlphaValue >= 0.0f ? min2(bp->AlphaValue, 1.0f) : RandomBetween(0.82f, 0.96f));
         params.MarkTime = RandomBetween(bp->TimeMin, bp->TimeMax);
@@ -150,7 +116,6 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
       }
     }
   }
-  #endif
 
   // oops
   return false;

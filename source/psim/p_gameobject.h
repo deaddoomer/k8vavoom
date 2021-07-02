@@ -228,7 +228,7 @@ struct VTerrainBootprint {
   float AlphaMax;
   float AlphaValue;
   vint32 Translation;
-  vint32 ShadeColor; // -2: don't change
+  vint32 ShadeColor; // -2: don't change; high byte == 0xed: low byte is value for `GetAverageColor()`
   VName Animator; // if not `NAME_None`, replace the animator
 
   void genValues () noexcept {
