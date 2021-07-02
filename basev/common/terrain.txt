@@ -149,6 +149,20 @@ terrain JustASoundVanilla
 //   bootprint Name modify { ... }
 // the following are modified in Doom/Hexen/etc. definitions
 
+bootprint VanillaAnyLiquidDefault {
+  time   default  // or: time minsecflt maxsecflt
+  // you can change:
+  //   shade
+  //   translucent
+  //   animator
+  // special animator name "none" means "remove any animator"
+  // special shade:
+  //   shade flatpic [maxout 0..255]
+  shade flatpic
+  translucent 0.6
+  animator LiquidBootPrintFader
+}
+
 bootprint VanillaWater {
   time   default  // or: time minsecflt maxsecflt
   // you can change:

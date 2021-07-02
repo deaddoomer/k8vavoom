@@ -3,13 +3,13 @@
 // overriden bootprint will delete the old one, unless you use
 //   bootprint Name modify { ... }
 
-bootprint VanillaWater modify {
+bootprint /*VanillaWater*/VanillaAnyLiquidDefault modify {
   flat   "fwater[0-9]"
   // for pwads with extra flats
   flat   "fwater[0-9][0-9]"
 }
 
-bootprint VanillaLava modify {
+bootprint /*VanillaLava*/VanillaAnyLiquidDefault modify {
   flat   "lava[0-9]"
   // for pwads with extra flats
   flat   "lava[0-9][0-9]"
@@ -18,7 +18,7 @@ bootprint VanillaLava modify {
   flat   "olavab01"
 }
 
-bootprint VanillaAcid modify {
+bootprint /*VanillaAcid*/VanillaAnyLiquidDefault modify {
   flat   "nukage[0-9]"
   // for pwads with extra flats
   flat   "nukage[0-9][0-9]"
@@ -26,7 +26,7 @@ bootprint VanillaAcid modify {
   flat   "onukea0[1-8]"
 }
 
-bootprint VanillaSlime modify {
+bootprint /*VanillaSlime*/VanillaAnyLiquidDefault modify {
   // other slimes are not slimes
   flat   "slime0[0-8]"
   // OTEX
@@ -34,7 +34,7 @@ bootprint VanillaSlime modify {
   flat   "osludg0[1-8]"
 }
 
-bootprint VanillaBlood modify {
+bootprint /*VanillaBlood*/VanillaAnyLiquidDefault modify {
   flat   "blood[0-9]"
   // for pwads with extra flats
   flat   "blood[0-9][0-9]"
@@ -56,6 +56,7 @@ bootprint VanillaYellowRocks modify {
 }
 
 
+/*
 bootprint OtexMagentaLiquid {
   time   default
   flat   "ogoopy0[1-8]"
@@ -75,6 +76,17 @@ bootprint OtexOliveLava {
   shade "ff 7f 00"
   translucent 0.8
   animator LiquidBootPrintFader
+}
+*/
+bootprint /*OtexMagentaLiquid*/VanillaAnyLiquidDefault modify {
+  flat   "ogoopy0[1-8]"
+}
+
+bootprint /*OtexOliveLava*/VanillaAnyLiquidDefault modify {
+  flat   "orockl11"
+  flat   "olavae0[1-8]"
+  flat   "olavaf0[1-9]"
+  flat   "olavaf10"
 }
 
 
