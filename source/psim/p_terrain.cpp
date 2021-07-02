@@ -894,6 +894,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
 
     // floor detection by globmask definition?
     if (sc->Check("floorglob")) {
+      GCon->Logf(NAME_Warning, "%s: \"floorglob\" is obsolete, please, use \"assign_terrain\" instead!", *loc.toStringNoCol());
       sc->ExpectString();
       VStr mask = sc->String.xstrip();
       sc->ExpectString();
