@@ -230,8 +230,16 @@ struct VTerrainBootprint {
   vint32 Translation;
   vint32 ShadeColor; // -2: don't change; high byte == 0xed: low byte is value for `GetAverageColor()`
   VName Animator; // if not `NAME_None`, replace the animator
+  enum {
+    Flag_Optional = 1u<<0,
+  };
+  vuint32 Flags;
 
-  void genValues () noexcept {
+  inline bool isOptional () const noexcept { return (Flags&Flag_Optional); }
+  inline void setOptional () noexcept { Flags |= Flag_Optional; }
+  inline void resetOptional () noexcept { Flags &= ~Flag_Optional; }
+
+  inline void genValues () noexcept {
     if (AlphaMin < 0.0f) {
       AlphaValue = -1.0f;
     } else {

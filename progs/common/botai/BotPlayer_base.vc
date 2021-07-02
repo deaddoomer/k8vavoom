@@ -76,7 +76,7 @@ bool boptCheckWimpyWeapon = true;
   other various bot information thingamabobers.
 */
 
-#if 0
+/+
 enum {
   bsk_verypoor,
   bsk_poor,
@@ -110,7 +110,8 @@ struct botinfo_t {
 */
   string userinfo;
 };
-#endif
++/
+
 
 /*
 struct chatline_t {

@@ -85,7 +85,7 @@ menudef GameplayOptions {
   }
 
 
-  header "Other Options";
+  header "Physics Options";
 
   option bool {
     title = "Optimise Physics Calculation";
@@ -100,6 +100,9 @@ menudef GameplayOptions {
       "restart a map to activate/deactivate this option.";
   }
 
+
+  header "Terrain And Bootprint Options";
+
   option bool {
     title = "Footstep Sound";
     cvar = gm_footsteps;
@@ -107,13 +110,36 @@ menudef GameplayOptions {
   }
 
   option bool {
-    title = "Vanilla Liquids";
-    cvar = gm_vanilla_liquids;
+    title = "Optional Terrain";
+    cvar = gm_optional_terrain;
     help =
       "Detect some liqiuds for Vanilla Doom?",
       "Some standard flats will emit a sound, and be detected as liquid terrain.";
   }
 
+  option bool {
+    title = "Decal Bootprints";
+    cvar = gm_decal_bootprints;
+    help = "Allow bootprints from floor decals?";
+  }
+
+  option bool {
+    title = "Terrain Bootprints";
+    cvar = gm_terrain_bootprints;
+    help = "Allow any terrain bootprints?";
+  }
+
+  option bool {
+    title = "Optional Terrain Bootprints";
+    cvar = gm_optional_bootprints;
+    help =
+      "Allow optional terrain bootprints?",
+      "Optional bootprints mostly used for Vanilla Doom liquids.",
+      "If you will turn off terrain decals above, this option will have no effect.";
+  }
+
+
+  header "Other Options";
 
   option bool {
     title = "Player Hit Kickback";

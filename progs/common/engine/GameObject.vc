@@ -1481,6 +1481,8 @@ struct VTerrainBootprint {
   int Translation;
   int ShadeColor; // -2: don't change
   name Animator; // if not empty, replace the animator
+  // flags
+  bool bOptional;
 };
 
 struct VTerrainInfo {

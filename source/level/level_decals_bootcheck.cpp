@@ -28,6 +28,11 @@
 #include "../psim/p_decal.h"
 
 
+static VCvarB gm_terrain_bootprints("gm_terrain_bootprints", true, "Allow terain bootprints?", CVAR_Archive);
+static VCvarB gm_decal_bootprints("gm_decal_bootprints", true, "Allow decal bootprints for Vanilla Doom?", CVAR_Archive);
+static VCvarB gm_optional_bootprints("gm_optional_bootprints", true, "Allow optional terrain bootprints (mostly used for vanilla liquids)?", CVAR_Archive);
+
+
 //==========================================================================
 //
 //  VLevel::CheckBootPrints
@@ -62,7 +67,7 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
   }
   if (!ourreg) return false; // nothing to do here
 
-  if (subsectorDecalList) {
+  if (subsectorDecalList && gm_decal_bootprints.asBool()) {
     // check if we are inside any blood decal
     constexpr float shrinkRatio = 0.84f;
     float dcbb2d[4];
@@ -89,11 +94,11 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
   }
 
   // no blood decal, try flat/terrain
-  {
+  if (gm_terrain_bootprints.asBool()) {
     sec_plane_t *splane = (eregidx || pobj3d ? ourreg->eceiling.splane : ourreg->efloor.splane);
     if (splane) {
       VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
-      if (bp) {
+      if (bp && (!bp->isOptional() || gm_optional_bootprints.asBool())) {
         bp->genValues();
         params.Translation = bp->Translation;
         params.Shade = bp->ShadeColor;

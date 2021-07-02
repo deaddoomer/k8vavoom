@@ -31,7 +31,7 @@
 #include "p_entity.h"
 
 
-static VCvarB gm_vanilla_liquids("gm_vanilla_liquids", true, "Allow liquid sounds for Vanilla Doom?", CVAR_Archive);
+static VCvarB gm_optional_terrain("gm_optional_terrain", true, "Allow liquid sounds for Vanilla Doom?", CVAR_Archive);
 
 
 struct VTerrainType {
@@ -598,6 +598,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
     bp->Translation = 0;
     bp->ShadeColor = -2;
     bp->Animator = NAME_None;
+    bp->Flags = 0;
   }
 
   if (GlobalDisableOverride) AddBootprintNoOverride(bp->OrigName);
@@ -663,6 +664,16 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
         // found texture
         TerrainBootprintMap.put(pic, bp);
       }
+      continue;
+    }
+
+    if (sc->Check("optional")) {
+      bp->setOptional();
+      continue;
+    }
+
+    if (sc->Check("required")) {
+      bp->resetOptional();
       continue;
     }
 
@@ -1055,7 +1066,7 @@ VTerrainInfo *SV_TerrainType (int pic, bool asPlayer) {
   auto pp = TerrainTypeMap.find(pic);
   VTerrainInfo *ter = (pp ? TerrainTypes[*pp].Info : nullptr);
   if (ter && !asPlayer && (ter->Flags&VTerrainInfo::F_PlayerOnly)) ter = nullptr;
-  if (ter && (ter->Flags&VTerrainInfo::F_OptOut) && !gm_vanilla_liquids.asBool()) ter = nullptr;
+  if (ter && (ter->Flags&VTerrainInfo::F_OptOut) && !gm_optional_terrain.asBool()) ter = nullptr;
   return (ter ? ter : &TerrainInfos[DefaultTerrainIndex]);
 }
 

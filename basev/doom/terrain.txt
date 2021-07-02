@@ -60,6 +60,7 @@ bootprint VanillaYellowRocks modify {
 bootprint OtexMagentaLiquid {
   time   default
   flat   "ogoopy0[1-8]"
+  optional
 
   shade "d3 03 c4"
   translucent 0.8
@@ -72,6 +73,7 @@ bootprint OtexOliveLava {
   flat   "olavae0[1-8]"
   flat   "olavaf0[1-9]"
   flat   "olavaf10"
+  optional
 
   shade "ff 7f 00"
   translucent 0.8

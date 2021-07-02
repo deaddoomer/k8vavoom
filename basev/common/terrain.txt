@@ -150,6 +150,7 @@ terrain JustASoundVanilla
 // the following are modified in Doom/Hexen/etc. definitions
 
 bootprint VanillaAnyLiquidDefault {
+  optional
   time   default  // or: time minsecflt maxsecflt
   // you can change:
   //   shade
@@ -164,6 +165,7 @@ bootprint VanillaAnyLiquidDefault {
 }
 
 bootprint VanillaWater {
+  optional
   time   default  // or: time minsecflt maxsecflt
   // you can change:
   //   shade
@@ -176,6 +178,7 @@ bootprint VanillaWater {
 }
 
 bootprint VanillaLava {
+  optional
   time   default
   shade "ff 3f 1f"
   translucent 0.6
@@ -183,6 +186,7 @@ bootprint VanillaLava {
 }
 
 bootprint VanillaAcid {
+  optional
   time   default
   shade "00 c0 00"
   translucent 0.6
@@ -190,6 +194,7 @@ bootprint VanillaAcid {
 }
 
 bootprint VanillaSlime {
+  optional
   time   default
   shade "5f 40 15"
   translucent 0.9
@@ -197,6 +202,7 @@ bootprint VanillaSlime {
 }
 
 bootprint VanillaBlood {
+  optional
   time   default
   shade "4f 00 00"
   translucent 0.6
@@ -205,6 +211,7 @@ bootprint VanillaBlood {
 
 // Doom rocks that look like they should make boots dirty
 bootprint VanillaRedRocks {
+  optional
   time   default
   shade "c0 00 00"
   translucent 0.8
@@ -212,6 +219,7 @@ bootprint VanillaRedRocks {
 }
 
 bootprint VanillaYellowRocks {
+  optional
   time   default
   shade "f1 a2 08"
   translucent 0.8
@@ -222,6 +230,7 @@ bootprint VanillaYellowRocks {
 // Strife
 // strife cyan water
 bootprint StrifeWater {
+  optional
   time   default
   shade "2c 71 7d"
   translucent 0.6
@@ -230,6 +239,7 @@ bootprint StrifeWater {
 
 // strife green mood
 bootprint StrifeMood {
+  optional
   time   default
   shade "40 48 18"
   //translucent 0.6
