@@ -3,13 +3,13 @@
 // overriden bootprint will delete the old one, unless you use
 //   bootprint Name modify { ... }
 
-bootprint /*VanillaWater*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*VanillaWater*/VanillaAnyLiquidDefault {
   flat   "fwater[0-9]"
   // for pwads with extra flats
   flat   "fwater[0-9][0-9]"
 }
 
-bootprint /*VanillaLava*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*VanillaLava*/VanillaAnyLiquidDefault {
   flat   "lava[0-9]"
   // for pwads with extra flats
   flat   "lava[0-9][0-9]"
@@ -18,7 +18,7 @@ bootprint /*VanillaLava*/VanillaAnyLiquidDefault modify {
   flat   "olavab01"
 }
 
-bootprint /*VanillaAcid*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*VanillaAcid*/VanillaAnyLiquidDefault {
   flat   "nukage[0-9]"
   // for pwads with extra flats
   flat   "nukage[0-9][0-9]"
@@ -26,7 +26,7 @@ bootprint /*VanillaAcid*/VanillaAnyLiquidDefault modify {
   flat   "onukea0[1-8]"
 }
 
-bootprint /*VanillaSlime*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*VanillaSlime*/VanillaAnyLiquidDefault {
   // other slimes are not slimes
   flat   "slime0[0-8]"
   // OTEX
@@ -34,7 +34,7 @@ bootprint /*VanillaSlime*/VanillaAnyLiquidDefault modify {
   flat   "osludg0[1-8]"
 }
 
-bootprint /*VanillaBlood*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*VanillaBlood*/VanillaAnyLiquidDefault {
   flat   "blood[0-9]"
   // for pwads with extra flats
   flat   "blood[0-9][0-9]"
@@ -42,12 +42,12 @@ bootprint /*VanillaBlood*/VanillaAnyLiquidDefault modify {
   flat   "obloda0[1-8]"
 }
 
-bootprint VanillaRedRocks modify {
+assign_bootprint VanillaRedRocks {
   flat   "rrock01"
   flat   "orockl12"
 }
 
-bootprint VanillaYellowRocks modify {
+assign_bootprint VanillaYellowRocks {
   flat   "rrock02"
   // OTEX
   flat   "orockl10"
@@ -80,11 +80,11 @@ bootprint OtexOliveLava {
   animator LiquidBootPrintFader
 }
 */
-bootprint /*OtexMagentaLiquid*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*OtexMagentaLiquid*/VanillaAnyLiquidDefault {
   flat   "ogoopy0[1-8]"
 }
 
-bootprint /*OtexOliveLava*/VanillaAnyLiquidDefault modify {
+assign_bootprint /*OtexOliveLava*/VanillaAnyLiquidDefault {
   flat   "orockl11"
   flat   "olavae0[1-8]"
   flat   "olavaf0[1-9]"
@@ -93,53 +93,37 @@ bootprint /*OtexOliveLava*/VanillaAnyLiquidDefault modify {
 
 
 
-terrain JustASoundVanilla modify {
-  k8vavoom {
-    // --- WATER ---
-    detectfloorflat "fwater[0-9]"
-    // for pwads with extra flats
-    detectfloorflat "fwater[0-9][0-9]"
+assign_terrain JustASoundVanilla {
+  // --- WATER ---
+  flat "fwater[0-9]"
+  // for pwads with extra flats
+  flat "fwater[0-9][0-9]"
 
-    // --- LAVA ---
-    detectfloorflat "lava[0-9]"
-    // for pwads with extra flats
-    detectfloorflat "lava[0-9][0-9]"
-    // OTEX
-    detectfloorflat "olavac0[1-8]"
-    detectfloorflat "olavab01"
+  // --- LAVA ---
+  flat "lava[0-9]"
+  // for pwads with extra flats
+  flat "lava[0-9][0-9]"
+  // OTEX
+  flat "olavac0[1-8]"
+  flat "olavab01"
 
-    // --- ACID ---
-    detectfloorflat "nukage[0-9]"
-    // for pwads with extra flats
-    detectfloorflat "nukage[0-9][0-9]"
-    // OTEX
-    detectfloorflat "onukea0[1-8]"
+  // --- ACID ---
+  flat "nukage[0-9]"
+  // for pwads with extra flats
+  flat "nukage[0-9][0-9]"
+  // OTEX
+  flat "onukea0[1-8]"
 
-    // --- SLIME ---
-    detectfloorflat "slime0[0-8]"
-    // OTEX
-    detectfloorflat "opoopy0[1-8]"
-    detectfloorflat "osludg0[1-8]"
+  // --- SLIME ---
+  flat "slime0[0-8]"
+  // OTEX
+  flat "opoopy0[1-8]"
+  flat "osludg0[1-8]"
 
-    // --- BLOOD ---
-    detectfloorflat "blood[0-9]"
-    // for pwads with extra flats
-    detectfloorflat "blood[0-9][0-9]"
-    // OTEX
-    detectfloorflat "obloda0[1-8]"
-
-    walkingsteptime   0.8
-    walkingstepvolume 0.6
-
-    runningsteptime    0.42
-    runningstepvolume  0.8
-
-    crouchingsteptime    1.2
-    crouchingstepvolume  0.4
-
-    //leftstepsound   world/watersplash
-    //rightstepsound  world/watersplash
-
-    allstepsound world/watersplash
-  }
+  // --- BLOOD ---
+  flat "blood[0-9]"
+  // for pwads with extra flats
+  flat "blood[0-9][0-9]"
+  // OTEX
+  flat "obloda0[1-8]"
 }

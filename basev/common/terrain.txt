@@ -131,14 +131,19 @@ terrain JustASoundVanilla
     playeronly
     optout // can be turned off with "gm_vanilla_liquids" cvar
 
-    alllandvolume  0.9
-    alllandsound   world/watersplash
+    walkingsteptime   0.8
+    walkingstepvolume 0.6
 
-    //landvolume  0.9
-    //landsound   world/watersplash
+    runningsteptime    0.42
+    runningstepvolume  0.8
 
-    //smalllandvolume  0.9
-    //smalllandsound   world/watersplash
+    crouchingsteptime    1.2
+    crouchingstepvolume  0.4
+
+    //leftstepsound   world/watersplash
+    //rightstepsound  world/watersplash
+
+    allstepsound world/watersplash
   }
 }
 
