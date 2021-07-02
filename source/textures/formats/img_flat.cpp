@@ -145,6 +145,9 @@ vuint8 *VFlatTexture::GetPixels () {
     }
   }
 
+  // cache average color for small images
+  if (Width > 0 && Height > 0 && Width <= 512 && Height <= 512) (void)GetAverageColor(0);
+
   ConvertPixelsToShaded();
   PrepareBrightmap();
   return Pixels;

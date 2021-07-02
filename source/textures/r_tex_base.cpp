@@ -136,6 +136,7 @@ VTexture::VTexture ()
   , glowing(0)
   , noHires(false)
   , hiresRepTex(false)
+  , avgcolor(0)
   , transFlags(TransValueUnknown)
   , lastTextureFiltering(-666)
   , lastUpdateFrame(0)
@@ -1162,31 +1163,74 @@ void VTexture::FreeShadedPixels (rgba_t *shadedPixels) {
 //
 //  VTexture::GetAverageColor
 //
+//  maxout==1: mult by 1.5
+//  maxout==2: mult by 2
+//  maxout==3: mult by 2.5
+//  maxout==4: mult by 3
+//  maxout==5: mult by 3.5
+//  maxout==6: mult by 4
+//
 //==========================================================================
 rgb_t VTexture::GetAverageColor (vuint32 maxout) {
-  if (Width < 1 || Height < 1) return rgb_t(255, 255, 255);
+  if (Width < 1 || Height < 1) return rgb_t(0, 0, 0);
 
   unsigned int r = 0, g = 0, b = 0;
-  (void)GetPixels();
-  ConvertPixelsToRGBA();
+  if (avgcolor) {
+    r = (avgcolor>>16)&0xff;
+    g = (avgcolor>>8)&0xff;
+    b = avgcolor&0xff;
+  } else {
+    #if 0
+    (void)GetPixels();
+    ConvertPixelsToRGBA();
 
-  const rgba_t *pic = (const rgba_t *)Pixels;
-  for (int f = Width*Height; f--; ++pic) {
-    r += pic->r;
-    g += pic->g;
-    b += pic->b;
+    const rgba_t *pic = (const rgba_t *)Pixels;
+    for (int f = Width*Height; f--; ++pic) {
+      r += pic->r;
+      g += pic->g;
+      b += pic->b;
+    }
+    #else
+    (void)GetPixels();
+    for (int y = 0; y < Height; ++y) {
+      for (int x = 0; x < Width; ++x) {
+        rgba_t c = getPixel(x, y);
+        if (c.a == 0) continue;
+        r += (unsigned)c.r*(unsigned)c.a/255u;
+        g += (unsigned)c.g*(unsigned)c.a/255u;
+        b += (unsigned)c.b*(unsigned)c.a/255u;
+      }
+    }
+    #endif
+
+    r /= (unsigned)(Width*Height);
+    g /= (unsigned)(Width*Height);
+    b /= (unsigned)(Width*Height);
+
+    avgcolor = 0xff000000|(clampToByte(r)<<16)|(clampToByte(g)<<8)|clampToByte(b);
   }
-
-  r /= (unsigned)(Width*Height);
-  g /= (unsigned)(Width*Height);
-  b /= (unsigned)(Width*Height);
 
   unsigned int maxv = max3(r, g, b);
 
   if (maxv && maxout) {
-    r = scaleUInt(r, maxout, maxv);
-    g = scaleUInt(g, maxout, maxv);
-    b = scaleUInt(b, maxout, maxv);
+    if (maxout >= 1 && maxout <= 6) {
+      float mt = 1.0f;
+      switch (maxout) {
+        case 1: mt = 1.5f; break;
+        case 2: mt = 2.0f; break;
+        case 3: mt = 2.5f; break;
+        case 4: mt = 3.0f; break;
+        case 5: mt = 3.5f; break;
+        case 6: mt = 4.0f; break;
+      }
+      r = (unsigned)((float)r*mt);
+      g = (unsigned)((float)g*mt);
+      b = (unsigned)((float)b*mt);
+    } else {
+      r = scaleUInt(r, maxout, maxv);
+      g = scaleUInt(g, maxout, maxv);
+      b = scaleUInt(b, maxout, maxv);
+    }
   }
 
   return rgb_t(clampToByte(r), clampToByte(g), clampToByte(b));

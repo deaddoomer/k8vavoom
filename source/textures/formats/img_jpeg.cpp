@@ -355,6 +355,9 @@ vuint8 *VJpegTexture::GetPixels () {
   // free memory
   //delete Strm;
 
+  // cache average color for small images
+  if (Width > 0 && Height > 0 && Width <= 512 && Height <= 512) (void)GetAverageColor(0);
+
   ConvertPixelsToShaded();
   PrepareBrightmap();
   return Pixels;
@@ -457,6 +460,9 @@ vuint8 *VJpegTexture::GetPixels () {
 
   // free memory
   stbi_image_free(data);
+
+  // cache average color for small images
+  if (Width > 0 && Height > 0 && Width <= 512 && Height <= 512) (void)GetAverageColor(0);
 
   ConvertPixelsToShaded();
   PrepareBrightmap();

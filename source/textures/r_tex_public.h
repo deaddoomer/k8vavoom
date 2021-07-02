@@ -247,6 +247,8 @@ public:
   bool noHires; // hires texture tried and not found
   bool hiresRepTex; // set for hires replacements
 
+  vuint32 avgcolor; // if high byte is 0: unknown yet
+
   enum {
     FlagTransparent     = 0x01u, // does texture have any non-solid pixels? set in `GetPixels()`
     FlagTranslucent     = 0x02u, // does texture have some non-integral alpha pixels? set in `GetPixels()`
