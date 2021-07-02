@@ -553,6 +553,39 @@ static void ParseTerrainTerrainDef (VScriptParser *sc, int tkw) {
 
 //==========================================================================
 //
+//  ProcessAssignBootprint
+//
+//==========================================================================
+static void ProcessAssignBootprint (VTerrainBootprint *bp, VStr mask) {
+  if (!bp) return;
+  if (mask.isEmpty()) return;
+  const int tcount = GTextureManager.GetNumTextures();
+  for (int pic = 1; pic < tcount; ++pic) {
+    VTexture *tx = GTextureManager.getIgnoreAnim(pic);
+    if (!tx) continue;
+    VName tn = tx->Name;
+    if (tn == NAME_None) continue;
+    bool goodtx = false;
+    switch (tx->Type) {
+      case TEXTYPE_Any: //FIXME: dunno
+      case TEXTYPE_WallPatch:
+      case TEXTYPE_Wall:
+      case TEXTYPE_Flat:
+      case TEXTYPE_Overload:
+        goodtx = true;
+        break;
+      default: break;
+    }
+    if (!goodtx) continue;
+    if (!VStr::globMatchCI(*tn, *mask)) continue;
+    // found texture
+    TerrainBootprintMap.put(pic, bp);
+  }
+}
+
+
+//==========================================================================
+//
 //  ParseTerrainBootPrintDef
 //
 //  "bootprint" is already eaten
@@ -640,30 +673,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
     if (sc->Check("flat")) {
       sc->ExpectString();
       VStr mask = sc->String.xstrip();
-      // sorry for this pasta
-      if (mask.isEmpty()) continue;
-      const int tcount = GTextureManager.GetNumTextures();
-      for (int pic = 1; pic < tcount; ++pic) {
-        VTexture *tx = GTextureManager.getIgnoreAnim(pic);
-        if (!tx) continue;
-        VName tn = tx->Name;
-        if (tn == NAME_None) continue;
-        bool goodtx = false;
-        switch (tx->Type) {
-          case TEXTYPE_Any: //FIXME: dunno
-          case TEXTYPE_WallPatch:
-          case TEXTYPE_Wall:
-          case TEXTYPE_Flat:
-          case TEXTYPE_Overload:
-            goodtx = true;
-            break;
-          default: break;
-        }
-        if (!goodtx) continue;
-        if (!VStr::globMatchCI(*tn, *mask)) continue;
-        // found texture
-        TerrainBootprintMap.put(pic, bp);
-      }
+      ProcessAssignBootprint(bp, mask);
       continue;
     }
 
@@ -885,10 +895,42 @@ static void ParseTerrainScript (VScriptParser *sc) {
     // floor detection by globmask definition?
     if (sc->Check("floorglob")) {
       sc->ExpectString();
-      VStr mask = sc->String;
+      VStr mask = sc->String.xstrip();
       sc->ExpectString();
       VStr tername = sc->String;
       ProcessFlatGlobMask(mask, *tername, sc->GetLoc().toStringNoCol());
+      continue;
+    }
+
+    // floor detection by globmask definition? (k8vavoom extension)
+    if (sc->Check("assign_terrain")) {
+      sc->ExpectString();
+      VStr tername = sc->String;
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->AtEnd()) sc->Error(va("unexpected end of file in \"assign_terrain\" (started at %s)", *loc.toStringNoCol()));
+        sc->Expect("flat");
+        sc->ExpectString();
+        VStr mask = sc->String.xstrip();
+        ProcessFlatGlobMask(mask, *tername, sc->GetLoc().toStringNoCol());
+      }
+      continue;
+    }
+
+    // floor detection by globmask definition? (k8vavoom extension)
+    if (sc->Check("assign_bootprint")) {
+      sc->ExpectString();
+      VStr tername = sc->String;
+      VTerrainBootprint *bp = FindBootprint(*tername, false);
+      vassert(bp); // invariant
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->AtEnd()) sc->Error(va("unexpected end of file in \"assign_terrain\" (started at %s)", *loc.toStringNoCol()));
+        sc->Expect("flat");
+        sc->ExpectString();
+        VStr mask = sc->String.xstrip();
+        ProcessAssignBootprint(bp, mask);
+      }
       continue;
     }
 
