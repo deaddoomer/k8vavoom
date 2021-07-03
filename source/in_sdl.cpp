@@ -164,6 +164,9 @@ static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_
 #ifdef VSDL_USEOLD_MACCEL
 static VCvarB ms_rel_accum("ms_rel_accum", false, "Accumulate relative motion before accelerating?", CVAR_Archive);
 
+static VCvarB ms_rel_keep_x("ms_rel_keep_x", false, "Keep divided part of the original horizontal delta?", CVAR_Archive);
+static VCvarB ms_rel_keep_y("ms_rel_keep_y", false, "Keep divided part of the original vertical delta?", CVAR_Archive);
+
 static VCvarI ms_rel_min_x("ms_rel_min_x", "6", "Minimum horizontal speed for relative acceleration.", CVAR_Archive);
 static VCvarI ms_rel_min_y("ms_rel_min_y", "6", "Minimum vertical speed for relative acceleration.", CVAR_Archive);
 
@@ -618,7 +621,7 @@ static int calcStickTriggerValue (const int axis, int value) noexcept {
 //    delta *= sens;
 //==========================================================================
 #ifdef VSDL_USEOLD_MACCEL
-static void AccelerateMouseDelta (int &delta, int min, float div, float mul) noexcept {
+static void AccelerateMouseDelta (int &delta, const int min, const float div, const float mul, const bool keep) noexcept {
   if (abs(delta) >= min) {
     if (!isFiniteF(div) || !isFiniteF(mul)) return;
     if (div <= 0.0f || mul <= 0.0f) return;
@@ -626,7 +629,7 @@ static void AccelerateMouseDelta (int &delta, int min, float div, float mul) noe
     #if 1
     const int dd = (int)((float)delta/div);
     delta = (int)((float)dd*mul);
-    delta += dd;
+    if (keep) delta += dd;
     #else
     delta = (int)((float)delta/div*mul);
     #endif
@@ -664,8 +667,8 @@ static void AccelerateMouseDelta (int &delta, float sens, float scale, float exp
 //==========================================================================
 static void AccelerateMouse (int &rel_x, int &rel_y) noexcept {
   #ifdef VSDL_USEOLD_MACCEL
-  if (rel_x) AccelerateMouseDelta(rel_x, ms_rel_min_x.asInt(), ms_rel_div_x.asFloat(), ms_rel_mul_x.asFloat());
-  if (rel_y) AccelerateMouseDelta(rel_y, ms_rel_min_y.asInt(), ms_rel_div_y.asFloat(), ms_rel_mul_y.asFloat());
+  if (rel_x) AccelerateMouseDelta(rel_x, ms_rel_min_x.asInt(), ms_rel_div_x.asFloat(), ms_rel_mul_x.asFloat(), ms_rel_keep_x.asBool());
+  if (rel_y) AccelerateMouseDelta(rel_y, ms_rel_min_y.asInt(), ms_rel_div_y.asFloat(), ms_rel_mul_y.asFloat(), ms_rel_keep_y.asBool());
   #else
   if (rel_x) AccelerateMouseDelta(rel_x, ms_rel_sens_x.asFloat(), ms_rel_scale_x.asFloat(), ms_rel_exp_x.asFloat(), ms_rel_max_x.asFloat());
   if (rel_y) AccelerateMouseDelta(rel_y, ms_rel_sens_y.asFloat(), ms_rel_scale_y.asFloat(), ms_rel_exp_y.asFloat(), ms_rel_max_y.asFloat());
