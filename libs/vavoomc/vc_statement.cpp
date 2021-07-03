@@ -494,7 +494,7 @@ VStatement *VAssertStatement::DoResolve (VEmitContext &ec) {
 
 //==========================================================================
 //
-//  VAssertStatement::DoDoEmit
+//  VAssertStatement::DoEmit
 //
 //==========================================================================
 void VAssertStatement::DoEmit (VEmitContext &ec) {

@@ -159,6 +159,7 @@ public: // shitplusplus is idiotic, hence the `public` here
   virtual void DoFixSwitch (VSwitch *aold, VSwitch *anew);
 
 public:
+  // implemented in "vc_expr_base.cpp"
   static void *operator new (size_t size);
   static void *operator new[] (size_t size);
   static void operator delete (void *p);
