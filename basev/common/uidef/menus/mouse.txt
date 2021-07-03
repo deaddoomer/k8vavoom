@@ -77,7 +77,15 @@ menudef MouseOptions {
   }
 
 
-  header "Mouse Processing";
+  header "Mouse Handling";
+
+  option bool {
+    title = "Grab Mouse";
+    cvar = m_grab;
+    help =
+      "Try to grab (own) mouse input?",
+      "\c[WHITE]If not sure, leave this 'ON'.";
+  }
 
   option bool {
     title = "Relative motion";
@@ -87,12 +95,13 @@ menudef MouseOptions {
       "Using relative motion may (or may not) make mouse more responsible.";
   }
 
-  option bool {
-    title = "Don't Grab Mouse";
-    cvar = m_nograb;
-    help =
-      "Do not try to grab (own) mouse input?",
-      "\c[WHITE]If not sure, leave this 'OFF'.";
+  option slider {
+    title = "Minimum Acceleration Speed";
+    cvar = ms_rel_min;
+    step = 1;
+    min = 0;
+    max = 128;
+    help = "Minimum mouse speed to activate acceleration in relative mode.";
   }
 
   option slider {

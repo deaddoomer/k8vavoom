@@ -79,7 +79,7 @@ private:
   bool uimouselast;
   bool curHidden;
 
-  bool currNoGrab;
+  bool currDoGrab;
   bool currRelative;
   bool relativeFailed;
 
@@ -155,12 +155,13 @@ static VCvarB ui_active("__ui_active", false, "Is UI active (used to stop mouse 
 static VCvarB ui_control_waiting("__ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", 0);
 
 static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
-static VCvarB m_nograb("m_nograb", false, "Do not grab mouse?", CVAR_Archive);
+static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive);
 static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);
 static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_Archive);
 
-static VCvarF ms_rel_div("ms_rel_div", "2.2", "Relative threshold divisor.", CVAR_Archive);
-static VCvarF ms_rel_mul("ms_rel_mul", "4", "Relative threshold multiplier.", CVAR_Archive);
+static VCvarI ms_rel_min("ms_rel_min", "8", "Minimum speed for relative acceleration.", CVAR_Archive);
+static VCvarF ms_rel_div("ms_rel_div", "3.6", "Relative threshold divisor.", CVAR_Archive);
+static VCvarF ms_rel_mul("ms_rel_mul", "6", "Relative threshold multiplier.", CVAR_Archive);
 
 static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive);
 static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive);
@@ -291,7 +292,7 @@ VSdlInputDevice::VSdlInputDevice ()
   , uiwasactive(false)
   , uimouselast(false)
   , curHidden(false)
-  , currNoGrab(false)
+  , currDoGrab(false)
   , currRelative(false)
   , relativeFailed(false)
   , mouse_oldx(0)
@@ -325,7 +326,7 @@ VSdlInputDevice::VSdlInputDevice ()
     SDL_EventState(SDL_MOUSEBUTTONUP,   SDL_IGNORE);
     mouse = false;
   } else {
-    currNoGrab = m_nograb.asBool();
+    currDoGrab = m_grab.asBool();
     currRelative = m_relative.asBool();
     if (currRelative) {
       if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
@@ -372,14 +373,18 @@ VSdlInputDevice::~VSdlInputDevice () {
 //
 //==========================================================================
 void VSdlInputDevice::OwnMouse () {
-  currNoGrab = m_nograb.asBool();
-  if (!currNoGrab) SDL_CaptureMouse(SDL_TRUE);
+  currDoGrab = m_grab.asBool();
+  if (currDoGrab) {
+    if (SDL_CaptureMouse(SDL_TRUE) != 0) GCon->Log(NAME_Debug, "SDL: cannot capture mouse."); else GCon->Log(NAME_Debug, "SDL: mouse captured.");
+  }
   currRelative = (!relativeFailed && m_relative.asBool());
   if (currRelative) {
     if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
-      GCon->Log(NAME_Debug, "SDL: cannot switch mouse to relative mode.");
+      GCon->Log(NAME_Warning, "SDL: cannot switch mouse to relative mode.");
       currRelative = false;
       relativeFailed = true;
+    } else {
+      GCon->Log(NAME_Debug, "SDL: switched mouse to relative mode.");
     }
   }
   // we don't need relative mouse motion in non-relative mode
@@ -400,7 +405,7 @@ void VSdlInputDevice::DisownMouse () {
   SDL_CaptureMouse(SDL_FALSE);
   SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
   firsttime = true;
-  currNoGrab = true;
+  currDoGrab = false;
   currRelative = false;
 }
 
@@ -640,23 +645,33 @@ void VSdlInputDevice::ReadInput () {
         break;
       case SDL_MOUSEMOTION:
         if (currRelative) {
+          #if 0
           const float reldiv = ms_rel_div.asFloat();
           const float relmul = ms_rel_mul.asFloat();
           int dx = ev.motion.xrel;
           int dy = -ev.motion.yrel;
           if (reldiv > 0.0f && relmul > 0.0f) {
-            int tmp;
-            tmp = (int)((float)dx/reldiv);
-            dx += (int)((float)tmp*relmul);
-            tmp = (int)((float)dy/reldiv);
-            dy += (int)((float)tmp*relmul);
+            if (abs(dx) >= ms_rel_min.asInt()) {
+              const int tmp = (int)((float)dx/reldiv);
+              dx += (int)((float)tmp*relmul);
+            }
+            if (abs(dy) >= ms_rel_min.asInt()) {
+              const int tmp = (int)((float)dy/reldiv);
+              dy += (int)((float)tmp*relmul);
+            }
           }
-          if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION: x=%d; y=%d; dx=%d; dy=%d\n", ev.motion.xrel, ev.motion.yrel, dx, -dy);
+          if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION: x=%d; y=%d; dx=%d; dy=%d\n", ev.motion.xrel, ev.motion.yrel, dx, dy);
+          #else
+          if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION: x=%d; y=%d\n", ev.motion.xrel, ev.motion.yrel);
+          #endif
           if (!firsttime) {
-            rel_x += dx;
-            rel_y += dy;
-            mouse_x = mouse_oldx = clampval(mouse_x+dx, 0, Drawer->getWidth()-1);
-            mouse_y = mouse_oldy = clampval(mouse_y+dy, 0, Drawer->getHeight()-1);
+            rel_x += ev.motion.xrel;
+            rel_y -= ev.motion.yrel;
+            // temp, for button events
+            if (Drawer) {
+              mouse_x = clampval(mouse_x+ev.motion.xrel, 0, Drawer->getWidth()-1);
+              mouse_y = clampval(mouse_y-ev.motion.yrel, 0, Drawer->getHeight()-1);
+            }
           } else {
             firsttime = false;
           }
@@ -900,11 +915,31 @@ void VSdlInputDevice::ReadInput () {
 
   // read mouse separately
   if (mouse && winactive && Drawer) {
+    #if 1
+    // not a typo
+    if (rel_x|rel_y) {
+      if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION-PF: rel_x=%d; rel_y=%d\n", rel_x, rel_y);
+      const float reldiv = ms_rel_div.asFloat();
+      const float relmul = ms_rel_mul.asFloat();
+      if (reldiv > 0.0f && relmul > 0.0f) {
+        if (abs(rel_x) >= ms_rel_min.asInt()) {
+          rel_x += (int)(((int)((float)rel_x/reldiv))*relmul);
+        }
+        if (abs(rel_y) >= ms_rel_min.asInt()) {
+          rel_y += (int)(((int)((float)rel_y/reldiv))*relmul);
+        }
+      }
+      if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION-FIN: new rel_x=%d; new rel_y=%d\n", rel_x, rel_y);
+      mouse_x = mouse_oldx = clampval(mouse_oldx+rel_x, 0, Drawer->getWidth()-1);
+      mouse_y = mouse_oldy = clampval(mouse_oldy+rel_y, 0, Drawer->getHeight()-1);
+    }
+    #endif
+
     bool currMouseInUI = (ui_active.asBool() || ui_freemouse.asBool());
     bool currMouseGrabbed = (ui_freemouse.asBool() ? false : IsUIMouse());
     if (!currMouseInUI) {
       if ((!relativeFailed && currRelative != m_relative.asBool()) ||
-          currNoGrab != m_nograb.asBool())
+          currDoGrab != m_grab.asBool())
       {
         GCon->Logf(NAME_Debug, "SDL: mouse mode changed, recapturing...");
         DisownMouse();
