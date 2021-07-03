@@ -533,6 +533,7 @@ void VDecalDef::genValues () noexcept {
     } else {
       bootanimator = bootprint->Animator;
       bootshade = (bootprint->ShadeColor >= 0 ? bootprint->ShadeColor : -2);
+      if ((bootprint->ShadeColor&0xff000000) == 0xed000000) bootshade = bootprint->ShadeColor; // required
       boottranslation = -2; //bootprint->Translation;
       //bootalpha = bootprint->Alpha;
       boottime = DecalFloatVal(bootprint->TimeMin, bootprint->TimeMax);

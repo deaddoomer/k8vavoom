@@ -694,9 +694,11 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
           sc->ExpectNumber();
           bp->ShadeColor |= clampToByte(sc->Number);
         } else {
-          // mult by 1.5
+          // mult by 2.0
           bp->ShadeColor |= 2;
         }
+      } else if (sc->Check("fromdecal")) {
+        bp->ShadeColor = -2;
       } else {
         sc->ExpectString();
         vuint32 ppc = M_ParseColor(*sc->String);

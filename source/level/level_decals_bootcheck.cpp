@@ -75,6 +75,7 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
       if (dc->boottime <= 0.0f) continue;
       if (!dc->isFloor()) continue;
       if (dc->eregindex != eregidx) continue;
+      if ((dc->bootshade&0xff000000) == 0xed000000) continue; // oops -- this is impossible for now
       // check coords
       ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
       if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
@@ -100,6 +101,7 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
       VTerrainBootprint *bp = SV_TerrainBootprint(splane->pic);
       if (bp && (!bp->isOptional() || gm_optional_bootprints.asBool())) {
         bp->genValues();
+        if (bp->ShadeColor == -2) return false; // oops
         params.Translation = bp->Translation;
         params.Shade = bp->ShadeColor;
         // special value: low byte is maxval for average color
