@@ -2,7 +2,8 @@
 bootprint K8Gore_BootPrint {
   time   4 8
   // do not change shade!
-  shade "50 00 00"
+  //shade "50 00 00"
+  shade fromdecal
   usesourcedecalalpha
   //translucent random 0.84 0.96
   animator K8GoreBloodPrint_FaderAnim
@@ -12,7 +13,8 @@ bootprint K8Gore_BootPrint {
 bootprint K8Gore_BootPrintTransient {
   time   4 8
   // do not change shade!
-  shade "4f 00 00"
+  //shade "4f 00 00"
+  shade fromdecal
   usesourcedecalalpha
   //translucent random 0.84 0.96
   animator K8GoreBloodPrint_FaderAnimTransient
