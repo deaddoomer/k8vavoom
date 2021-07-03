@@ -889,6 +889,45 @@ VStr Sys_GetUserName () {
 #endif
 
 
+typedef /*NTSYSAPI*/ NTSTATUS NTAPI (*RtlGetVersionFn)(/*IN OUT*/ PRTL_OSVERSIONINFOEXW lpVersionInformation);
+
+static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
+  RtlGetVersionFn gpi;
+  HMODULE libh = GetModuleHandleW(L"ntdll.dll");
+  if (!libh) return;
+  gpi = (RtlGetVersionFn)(void *)GetProcAddress(libh, "RtlGetVersion");
+  if (!gpi) return;
+  RTL_OSVERSIONINFOEXW ver;
+  memset((void *)&ver, 0, sizeof(ver));
+  ver.dwOSVersionInfoSize = sizeof(/*OSVERSIONINFOEXW*/ver);
+  if (gpi(&ver) != 0) return;
+  #if 0
+  static char buf[1024];
+  snprintf(buf, sizeof(buf), "ver: major=%u; minor=%u; build=%u; platform=%u; suite=0x%04x; product=0x%02x", (unsigned)ver.dwMajorVersion, (unsigned)ver.dwMinorVersion, (unsigned)ver.dwBuildNumber,
+    (unsigned)ver.dwPlatformId, (unsigned)ver.wSuiteMask, (unsigned)ver.wProductType);
+  MessageBox(NULL, buf, "k8vavoom", MB_OK);
+  //TerminateProcess(GetCurrentProcess(), 1);
+  #endif
+  if (ver.dwMajorVersion > 6 && ver.dwMajorVersion < 10) {
+    MessageBox(NULL, "Failed to determine your windows version. Cannot continue.", "k8vavoom windows version check", MB_OK);
+    TerminateProcess(GetCurrentProcess(), 1);
+    ExitProcess(1); // just in case
+  }
+  if (ver.dwMajorVersion > 10) {
+    MessageBox(NULL, "Sorry, but windows 11 and higher are not supported. Cannot continue.", "k8vavoom windows version check", MB_OK);
+    TerminateProcess(GetCurrentProcess(), 1);
+    ExitProcess(1); // just in case
+  }
+  if (ver.dwMajorVersion == 10) {
+    if (ver.dwMinorVersion > 0 || ver.dwBuildNumber >= 22000) {
+      MessageBox(NULL, "Sorry, but your windows version is not supported. Cannot continue.", "k8vavoom windows version check", MB_OK);
+      TerminateProcess(GetCurrentProcess(), 1);
+      ExitProcess(1); // just in case
+    }
+  }
+}
+
+
 struct ShitdozeDir {
   HANDLE dir_handle;
   WIN32_FIND_DATA dir_buf;

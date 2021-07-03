@@ -79,6 +79,10 @@ private:
   bool uimouselast;
   bool curHidden;
 
+  bool currNoGrab;
+  bool currRelative;
+  bool relativeFailed;
+
   int mouse_oldx;
   int mouse_oldy;
 
@@ -121,6 +125,9 @@ private:
   // must be called after `StartupJoystick()`
   void OpenJoystick (int jnum);
 
+  void OwnMouse ();
+  void DisownMouse ();
+
 public:
   bool bGotCloseRequest; // used in `CheckForEscape()`
 
@@ -146,8 +153,14 @@ VCvarB ui_mouse_forced("__ui_mouse_forced", false, "Forge-grab mouse for UI?", 0
 static VCvarB ui_mouse("ui_mouse", false, "Allow using mouse in UI?", CVAR_Archive);
 static VCvarB ui_active("__ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", 0);
 static VCvarB ui_control_waiting("__ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", 0);
-static VCvarB m_nograb("m_nograb", false, "Do not grab mouse?", CVAR_Archive);
+
 static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
+static VCvarB m_nograb("m_nograb", false, "Do not grab mouse?", CVAR_Archive);
+static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);
+static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_Archive);
+
+static VCvarF ms_rel_div("ms_rel_div", "2.2", "Relative threshold divisor.", CVAR_Archive);
+static VCvarF ms_rel_mul("ms_rel_mul", "4", "Relative threshold multiplier.", CVAR_Archive);
 
 static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive);
 static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive);
@@ -278,6 +291,9 @@ VSdlInputDevice::VSdlInputDevice ()
   , uiwasactive(false)
   , uimouselast(false)
   , curHidden(false)
+  , currNoGrab(false)
+  , currRelative(false)
+  , relativeFailed(false)
   , mouse_oldx(0)
   , mouse_oldy(0)
   , curmodflags(0)
@@ -309,13 +325,22 @@ VSdlInputDevice::VSdlInputDevice ()
     SDL_EventState(SDL_MOUSEBUTTONUP,   SDL_IGNORE);
     mouse = false;
   } else {
-    // ignore mouse motion events in any case...
-    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+    currNoGrab = m_nograb.asBool();
+    currRelative = m_relative.asBool();
+    if (currRelative) {
+      if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
+        currRelative = false;
+        relativeFailed = true;
+      }
+    }
+    // we don't need relative mouse motion in non-relative mode
+    SDL_EventState(SDL_MOUSEMOTION, (currRelative ? SDL_ENABLE : SDL_IGNORE));
     SDL_GetMouseState(&mouse_oldx, &mouse_oldy);
     if (Drawer) {
       Drawer->WarpMouseToWindowCenter();
       Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
     }
+    //SDL_SetRelativeMouseMode(SDL_TRUE);
   }
 
   // always off
@@ -335,8 +360,48 @@ VSdlInputDevice::VSdlInputDevice ()
 //==========================================================================
 VSdlInputDevice::~VSdlInputDevice () {
   CL_SetNetAbortCallback(nullptr, nullptr);
+  //SDL_SetRelativeMouseMode(SDL_FALSE);
   SDL_ShowCursor(1); // on
   ShutdownJoystick(true);
+}
+
+
+//==========================================================================
+//
+//  VSdlInputDevice::OwnMouse
+//
+//==========================================================================
+void VSdlInputDevice::OwnMouse () {
+  currNoGrab = m_nograb.asBool();
+  if (!currNoGrab) SDL_CaptureMouse(SDL_TRUE);
+  currRelative = (!relativeFailed && m_relative.asBool());
+  if (currRelative) {
+    if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
+      GCon->Log(NAME_Debug, "SDL: cannot switch mouse to relative mode.");
+      currRelative = false;
+      relativeFailed = true;
+    }
+  }
+  // we don't need relative mouse motion in non-relative mode
+  SDL_EventState(SDL_MOUSEMOTION, (currRelative ? SDL_ENABLE : SDL_IGNORE));
+  firsttime = true;
+  if (!currRelative && Drawer) Drawer->WarpMouseToWindowCenter();
+}
+
+
+//==========================================================================
+//
+//  VSdlInputDevice::DisownMouse
+//
+//==========================================================================
+void VSdlInputDevice::DisownMouse () {
+  // it is ok to release everything, why not
+  SDL_SetRelativeMouseMode(SDL_FALSE);
+  SDL_CaptureMouse(SDL_FALSE);
+  SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+  firsttime = true;
+  currNoGrab = true;
+  currRelative = false;
 }
 
 
@@ -428,8 +493,10 @@ void VSdlInputDevice::RegrabMouse () {
   if (mouse) {
     firsttime = true;
     if (Drawer) {
-      Drawer->WarpMouseToWindowCenter();
-      Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
+      if (relativeFailed || !m_relative.asBool()) {
+        Drawer->WarpMouseToWindowCenter();
+        Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
+      }
     } else {
       SDL_GetMouseState(&mouse_oldx, &mouse_oldy);
     }
@@ -522,9 +589,9 @@ static int calcStickTriggerValue (const int axis, int value) noexcept {
 void VSdlInputDevice::ReadInput () {
   SDL_Event ev;
   event_t vev;
-  //int rel_x = 0, rel_y = 0;
-  int mouse_x, mouse_y;
   int normal_value;
+  int mouse_x = mouse_oldx, mouse_y = mouse_oldy;
+  int rel_x = 0, rel_y = 0;
 
   SDL_PumpEvents();
   while (SDL_PollEvent(&ev)) {
@@ -571,15 +638,30 @@ void VSdlInputDevice::ReadInput () {
         if (curmodflags&(bCtrlLeft|bCtrlRight)) curmodflags |= bCtrl; else curmodflags &= ~bCtrl;
         if (curmodflags&(bAltLeft|bAltRight)) curmodflags |= bAlt; else curmodflags &= ~bAlt;
         break;
-      /*
       case SDL_MOUSEMOTION:
-        if (!m_oldmode) {
-          //fprintf(stderr, "MOTION: x=%d; y=%d\n", ev.motion.xrel, ev.motion.yrel);
-          rel_x += ev.motion.xrel;
-          rel_y += -ev.motion.yrel;
+        if (currRelative) {
+          const float reldiv = ms_rel_div.asFloat();
+          const float relmul = ms_rel_mul.asFloat();
+          int dx = ev.motion.xrel;
+          int dy = -ev.motion.yrel;
+          if (reldiv > 0.0f && relmul > 0.0f) {
+            int tmp;
+            tmp = (int)((float)dx/reldiv);
+            dx += (int)((float)tmp*relmul);
+            tmp = (int)((float)dy/reldiv);
+            dy += (int)((float)tmp*relmul);
+          }
+          if (m_dbg_motion.asBool()) GCon->Logf(NAME_Debug, "MOTION: x=%d; y=%d; dx=%d; dy=%d\n", ev.motion.xrel, ev.motion.yrel, dx, -dy);
+          if (!firsttime) {
+            rel_x += dx;
+            rel_y += dy;
+            mouse_x = mouse_oldx = clampval(mouse_x+dx, 0, Drawer->getWidth()-1);
+            mouse_y = mouse_oldy = clampval(mouse_y+dy, 0, Drawer->getHeight()-1);
+          } else {
+            firsttime = false;
+          }
         }
         break;
-      */
       case SDL_MOUSEBUTTONDOWN:
       case SDL_MOUSEBUTTONUP:
         vev.type = (ev.button.state == SDL_PRESSED ? ev_keydown : ev_keyup);
@@ -589,8 +671,15 @@ void VSdlInputDevice::ReadInput () {
         else if (ev.button.button == SDL_BUTTON_X1) vev.keycode = K_MOUSE4;
         else if (ev.button.button == SDL_BUTTON_X2) vev.keycode = K_MOUSE5;
         else break;
-        if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
-        if (IsUIMouse() || !ui_active || ui_control_waiting || ui_freemouse) VObject::PostEvent(vev);
+        if (IsUIMouse() || !ui_active || ui_control_waiting || ui_freemouse) {
+          if (currRelative) {
+            vev.x = mouse_x;
+            vev.y = mouse_y;
+          } else {
+            if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
+          }
+          VObject::PostEvent(vev);
+        }
         // now fix flags
              if (ev.button.button == SDL_BUTTON_LEFT) { if (ev.button.state == SDL_PRESSED) curmodflags |= bLMB; else curmodflags &= ~bLMB; }
         else if (ev.button.button == SDL_BUTTON_RIGHT) { if (ev.button.state == SDL_PRESSED) curmodflags |= bRMB; else curmodflags &= ~bRMB; }
@@ -601,8 +690,15 @@ void VSdlInputDevice::ReadInput () {
              if (ev.wheel.y > 0) vev.keycode = K_MWHEELUP;
         else if (ev.wheel.y < 0) vev.keycode = K_MWHEELDOWN;
         else break;
-        if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
-        if (IsUIMouse() || !ui_active || ui_control_waiting || ui_freemouse) VObject::PostEvent(vev);
+        if (IsUIMouse() || !ui_active || ui_control_waiting || ui_freemouse) {
+          if (currRelative) {
+            vev.x = mouse_x;
+            vev.y = mouse_y;
+          } else {
+            if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
+          }
+          VObject::PostEvent(vev);
+        }
         break;
       // joysticks
       case SDL_JOYAXISMOTION:
@@ -754,12 +850,11 @@ void VSdlInputDevice::ReadInput () {
               if (Drawer) {
                 if (!ui_freemouse && (!ui_active || IsUIMouse())) Drawer->WarpMouseToWindowCenter();
                 //SDL_GetMouseState(&mouse_oldx, &mouse_oldy);
-                Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
+                if (relativeFailed || !m_relative.asBool()) Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
               }
             }
-            firsttime = true;
             winactive = true;
-            if (!m_nograb) SDL_CaptureMouse(SDL_TRUE);
+            OwnMouse();
             if (cl) cl->ClearInput();
             if (in_focusgain_delay.asFloat() > 0) {
               kbdSuspended = true;
@@ -776,8 +871,7 @@ void VSdlInputDevice::ReadInput () {
             DoUnpress();
             vev.modflags = 0;
             winactive = false;
-            firsttime = true;
-            SDL_CaptureMouse(SDL_FALSE);
+            DisownMouse();
             if (cl) cl->ClearInput();
             kbdSuspended = false;
             hyperDown = false;
@@ -808,8 +902,17 @@ void VSdlInputDevice::ReadInput () {
   if (mouse && winactive && Drawer) {
     bool currMouseInUI = (ui_active.asBool() || ui_freemouse.asBool());
     bool currMouseGrabbed = (ui_freemouse.asBool() ? false : IsUIMouse());
+    if (!currMouseInUI) {
+      if ((!relativeFailed && currRelative != m_relative.asBool()) ||
+          currNoGrab != m_nograb.asBool())
+      {
+        GCon->Logf(NAME_Debug, "SDL: mouse mode changed, recapturing...");
+        DisownMouse();
+        OwnMouse();
+      }
+    }
     //SDL_GetMouseState(&mouse_x, &mouse_y);
-    Drawer->GetMousePosition(&mouse_x, &mouse_y);
+    if (!currRelative) Drawer->GetMousePosition(&mouse_x, &mouse_y);
     // check for UI activity changes
     if (currMouseInUI != uiwasactive) {
       // UI activity changed
@@ -817,12 +920,11 @@ void VSdlInputDevice::ReadInput () {
       uimouselast = currMouseGrabbed;
       if (!uiwasactive) {
         // ui deactivated
-        if (!m_nograb) SDL_CaptureMouse(SDL_TRUE);
-        firsttime = true;
+        OwnMouse();
         HideRealMouse();
       } else {
         // ui activted
-        SDL_CaptureMouse(SDL_FALSE);
+        DisownMouse();
         if (!uimouselast) {
           if (curHidden && ui_want_mouse_at_zero) SDL_WarpMouseGlobal(0, 0);
           ShowRealMouse();
@@ -847,16 +949,14 @@ void VSdlInputDevice::ReadInput () {
     if (gl_current_screen_fsmode == 0 && curHidden && currMouseInUI && !currMouseGrabbed) ShowRealMouse();
     // generate events
     if (!currMouseInUI || currMouseGrabbed) {
-      Drawer->WarpMouseToWindowCenter();
-      int dx = mouse_x-mouse_oldx;
-      int dy = mouse_oldy-mouse_y;
-      if (dx || dy) {
-        if (!firsttime) {
+      if (currRelative) {
+        // not a typo
+        if (rel_x|rel_y) {
           vev.clear();
           vev.modflags = curmodflags;
           vev.type = ev_mouse;
-          vev.dx = dx;
-          vev.dy = dy;
+          vev.dx = rel_x;
+          vev.dy = rel_y;
           VObject::PostEvent(vev);
 
           vev.clear();
@@ -866,20 +966,31 @@ void VSdlInputDevice::ReadInput () {
           vev.y = mouse_y;
           VObject::PostEvent(vev);
         }
-        firsttime = false;
-        Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
-        /*
-        mouse_oldx = ScreenWidth/2;
-        mouse_oldy = ScreenHeight/2;
-        */
+      } else {
+        // non-relative
+        Drawer->WarpMouseToWindowCenter();
+        int dx = mouse_x-mouse_oldx;
+        int dy = mouse_oldy-mouse_y;
+        if (dx || dy) {
+          if (!firsttime) {
+            vev.clear();
+            vev.modflags = curmodflags;
+            vev.type = ev_mouse;
+            vev.dx = dx;
+            vev.dy = dy;
+            VObject::PostEvent(vev);
+
+            vev.clear();
+            vev.modflags = curmodflags;
+            vev.type = ev_uimouse;
+            vev.x = mouse_x;
+            vev.y = mouse_y;
+            VObject::PostEvent(vev);
+          }
+          firsttime = false;
+          Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
+        }
       }
-      /*
-      else if (firsttime) {
-        Drawer->GetMousePosition(&mouse_oldx, &mouse_oldy);
-        mouse_x = mouse_oldx;
-        mouse_y = mouse_oldy;
-      }
-      */
     } else {
       mouse_oldx = mouse_x;
       mouse_oldy = mouse_y;
@@ -891,6 +1002,7 @@ void VSdlInputDevice::ReadInput () {
 #ifdef ANDROID
   Touch_Update();
 #endif
+
 }
 
 

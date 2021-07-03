@@ -3,6 +3,8 @@ menudef MouseOptions {
   //selector = MenuSelector_SmallRight;
   Title = "MOUSE OPTIONS";
 
+  header "Mouse Sensitivity";
+
   option slider {
     title = "Mouse X sensitivity";
     cvar = mouse_x_sensitivity;
@@ -18,6 +20,9 @@ menudef MouseOptions {
     min = 0;
     max = 10.0;
   }
+
+
+  header "Misc Options";
 
   option bool {
     title = "Mouse look";
@@ -43,7 +48,7 @@ menudef MouseOptions {
     title = "Mouse lookspring";
     cvar = lookspring_mouse;
     help =
-      "Vertical look will return to center when"
+      "Vertical look will return to center when",
       "you'll release mouse look key.";
   }
 
@@ -51,7 +56,7 @@ menudef MouseOptions {
     title = "Keyboard lookspring";
     cvar = lookspring_keyboard;
     help =
-      "Vertical look will return to center when"
+      "Vertical look will return to center when",
       "you'll release view up/down key.";
   }
 
@@ -60,11 +65,57 @@ menudef MouseOptions {
     cvar = lookstrafe;
   }
 
+
+  header "UI options";
+
   option bool {
     title = "Allow mouse in UI";
     cvar = ui_mouse;
     help =
-      "If this options turned off, the engine will"
+      "If this options turned off, the engine will",
       "release mouse capture when UI is active.";
+  }
+
+
+  header "Mouse Processing";
+
+  option bool {
+    title = "Relative motion";
+    cvar = m_relative;
+    help =
+      "Use relative mouse motion instead of mouse warping?",
+      "Using relative motion may (or may not) make mouse more responsible.";
+  }
+
+  option bool {
+    title = "Don't Grab Mouse";
+    cvar = m_nograb;
+    help =
+      "Do not try to grab (own) mouse input?",
+      "\c[WHITE]If not sure, leave this 'OFF'.";
+  }
+
+  option slider {
+    title = "Relative Divisor";
+    cvar = ms_rel_div;
+    step = 0.2;
+    min = 0;
+    max = 10.0;
+    help =
+      "In relative mode, mouse cursor acceleration is usually ignored.",
+      "This is used to emulate acceleration.",
+      "The formula is: \c[GOLD]delta += (int)((int)((float)delta/divisor)*multiplier)";
+  }
+
+  option slider {
+    title = "Relative Multiplier";
+    cvar = ms_rel_mul;
+    step = 0.2;
+    min = 0;
+    max = 10.0;
+    help =
+      "In relative mode, mouse cursor acceleration is usually ignored.",
+      "This is used to emulate acceleration.",
+      "The formula is: \c[GOLD]delta += (int)((int)((float)delta/divisor)*multiplier)";
   }
 }
