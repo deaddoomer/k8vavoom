@@ -88,11 +88,19 @@ menudef MouseOptions {
   }
 
   option bool {
-    title = "Relative motion";
+    title = "Relative Motion";
     cvar = m_relative;
     help =
       "Use relative mouse motion instead of mouse warping?",
       "Using relative motion may (or may not) make mouse more responsible.";
+  }
+
+  option bool {
+    title = "Accumulate Relative Motion";
+    cvar = ms_rel_accum;
+    help =
+      "Accumulate relative mouse motion before acceleration?",
+      "\c[WHITE]If not sure, leave this 'OFF'.";
   }
 
 

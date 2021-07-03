@@ -162,14 +162,16 @@ static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?"
 static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_Archive);
 
 #ifdef VSDL_USEOLD_MACCEL
-static VCvarI ms_rel_min_x("ms_rel_min_x", "6", "Minimum speed for relative acceleration.", CVAR_Archive);
-static VCvarI ms_rel_min_y("ms_rel_min_y", "6", "Minimum speed for relative acceleration.", CVAR_Archive);
+static VCvarB ms_rel_accum("ms_rel_accum", false, "Accumulate relative motion before accelerating?", CVAR_Archive);
 
-static VCvarF ms_rel_div_x("ms_rel_div_x", "3.6", "Relative threshold divisor.", CVAR_Archive);
-static VCvarF ms_rel_div_y("ms_rel_div_y", "3.6", "Relative threshold divisor.", CVAR_Archive);
+static VCvarI ms_rel_min_x("ms_rel_min_x", "6", "Minimum horizontal speed for relative acceleration.", CVAR_Archive);
+static VCvarI ms_rel_min_y("ms_rel_min_y", "6", "Minimum vertical speed for relative acceleration.", CVAR_Archive);
 
-static VCvarF ms_rel_mul_x("ms_rel_mul_x", "6", "Relative threshold multiplier.", CVAR_Archive);
-static VCvarF ms_rel_mul_y("ms_rel_mul_y", "6", "Relative threshold multiplier.", CVAR_Archive);
+static VCvarF ms_rel_div_x("ms_rel_div_x", "3.6", "Relative horizontal threshold divisor.", CVAR_Archive);
+static VCvarF ms_rel_div_y("ms_rel_div_y", "3.6", "Relative vertical threshold divisor.", CVAR_Archive);
+
+static VCvarF ms_rel_mul_x("ms_rel_mul_x", "6", "Relative horizontal threshold multiplier.", CVAR_Archive);
+static VCvarF ms_rel_mul_y("ms_rel_mul_y", "6", "Relative vertical threshold multiplier.", CVAR_Archive);
 #else
 // more-or-less what half-life 1 does:
 //   sens = min2(ms_rel_max, powf(delta, ms_rel_exp)*ms_rel_scale+ms_rel_sens);
@@ -734,11 +736,21 @@ void VSdlInputDevice::ReadInput () {
       case SDL_MOUSEMOTION:
         if (currRelative && winactive) {
           if (!firsttime) {
-            rel_x += ev.motion.xrel;
-            rel_y -= ev.motion.yrel;
-            acc_rel_x = rel_x;
-            acc_rel_y = rel_y;
-            AccelerateMouse(acc_rel_x, acc_rel_y);
+            int dx = +ev.motion.xrel;
+            int dy = -ev.motion.yrel;
+            if (ms_rel_accum.asBool()) {
+              rel_x += dx;
+              rel_y += dy;
+              acc_rel_x = rel_x;
+              acc_rel_y = rel_y;
+              AccelerateMouse(acc_rel_x, acc_rel_y);
+            } else {
+              AccelerateMouse(dx, dy);
+              rel_x += dx;
+              rel_y += dy;
+              acc_rel_x = rel_x;
+              acc_rel_y = rel_y;
+            }
             // temp, for button events
             if (Drawer) {
               mouse_x = clampval(mouse_oldx+acc_rel_x, 0, Drawer->getWidth()-1);
