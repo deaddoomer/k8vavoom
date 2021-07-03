@@ -1,0 +1,52 @@
+k8vavoom decaldef extensions, v0.91
+===================================
+
+decal definitions can contain k8vavoom extension block:
+
+  k8vavoom {
+    ...
+  }
+
+also, most numeric values can be specified as random. for example:
+
+  Scale random 0.22 0.37
+
+decal scale will be randomly selected. bounds are inclusive.
+
+
+
+extension block commands
+========================
+
+nowall
+  do not put this decal to walls
+
+noflat
+  do not put this decal to flats (floors and ceilings)
+
+TypeBloodSplat
+  this decal is a bloodsplat
+
+TypeNotBloodSplat
+  this decal is not a bloodsplat (default)
+
+TypeBloodprint
+  this decal is a bootprint
+
+TypeNotBloodprint
+  this decal is not a bootprint (default)
+
+Bootprint <bootprintname>
+  define bootprint for this decal. it is used when this decal is used as floor decal.
+  please, note that you cannot use bootprints with "shade flatpic" for this yet.
+
+FlatAngle <value>
+  angle (in degrees) for flat decals. default is random.
+
+
+
+notes
+=====
+
+decal type (bootsplat and bootprint) currently used to determine special decal alpha
+for switch textures.

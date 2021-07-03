@@ -168,6 +168,31 @@ shade <color>
   set decal shade (as in decaldef):
     shade "ff 00 ff"
 
+stade flatpic [maxout <byte>]
+  decal shade will be taken as average color of the floor texture.
+  note that this cannot be used for blood decal bootprints yet.
+  "maxout" will scale the average color up to the given value.
+  scaling is done by selecting maximum color component, and scaling others.
+  i.e. like this:
+    maxv = max(r, g, b);
+    r = r*maxout/maxv;
+    g = g*maxout/maxv;
+    b = b*maxout/maxv;
+  there are some special scaling values:
+    0: don't scale
+    1: multiply all color components by 1.5
+    2: multiply all color components by 2.0
+    3: multiply all color components by 2.5
+    4: multiply all color components by 3.0
+    5: multiply all color components by 3.5
+    6: multiply all color components by 4.0
+  default is 2 (i.e. multiply by 2.0).
+
+shade fromdecal
+  this is used for bootprints from floor decals.
+  currently no extended options are available.
+  this is default if no shade was specified.
+
 translucency <float>
   set decal translucency
 
@@ -190,6 +215,38 @@ there are some predefined animators you can use for various bootprint types.
 
 LiquidBootPrintFader
   this is default fadeoff animator for bootprints from liquids.
+
+
+
+bootprints from floor decals
+============================
+
+flat decal definition can contain k8vavoom block to specify bootprints for such decals:
+
+  k8vavoom {
+    BootPrint K8Gore_BootPrint
+  }
+
+
+
+assign flats to bootprints and to terrains
+==========================================
+
+it is possible to use special blocks to assign flats to bootprints:
+
+  assign_bootprint BootprintName {
+    ...
+  }
+
+and to terrains:
+
+  assign_bootprint TerrainName {
+    ...
+  }
+
+currently, the only supported command in such blocks is:
+
+  flat "globmask"
 
 
 
