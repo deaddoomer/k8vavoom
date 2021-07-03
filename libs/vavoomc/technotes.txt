@@ -156,3 +156,66 @@ some interesting methods:
 
   void EmitPushPointedCode (VFieldType type, VEmitContext &ec); // yeah, non-virtual
     called to emit address of a node (requested earlier with `RequestAddressOf()`.
+
+
+
+notes about statements
+======================
+
+statemets are basic building blocks of the program. statement can be simple (as expression
+statement, for example), or compound (like loop), that may contain list of "inner" statements.
+
+as some VavoomC types (like string) require destruction (and options construction for structs),
+each statement emits code in several stages (done in `Emit()`):
+
+first, `EmitCtor()` is called, to emit any required constructors.
+
+second, `DoEmit()` is called to emit statement body.
+
+then, `EmitDtor()` is called, with "proper leaving" flag, to emit destructors.
+
+and finally, `EmitFinalizer()` is called, with "proper leaving" flag, to emit post-scope finalizing.
+
+we need to differentiate between "in-scope destructors" and "scope finalizing", because `foreach`
+iterations, for example, creates hidden iterator objects that should not be destructed on each loop
+iteration, but only after the iteration is complete.
+
+"proper leaving" flag is used in `break`, `continue`, `return`, and other such statements which
+alters the normal control flow. such statements calls dtor/finalizer emitters with "abnormal leaving"
+flag.
+
+resolving/codegen also keeps a linked list of "upscopes". it is done automatically in `Resolve()` and
+`Emit()`. you can use `UpScope` field to traverse that list (but NEVER change that field manually!).
+
+please, note that technically, destructors can be called several times, because "break" inserts jump
+to break label, which is often put before calls to "proper" dtors, but it calls dtors for all
+upscope blocks, and for the main block too, with "improper leaving" flag. i.e. the code may look like
+this:
+
+    ctors
+  loopstart:
+    body
+  loopbreak:
+    dtors
+    finalizers
+
+and `break` in "body" will jump to "loopbreak". this is a questionable design on my side, and may be
+changed later. for now, it works because destructors will "clear" the corresponding locals, i.e. will
+set them to the state where it is safe to call the destructor again.
+
+but note that structs can define explicit destructors, and such destructors can be called on already
+cleared struct, so it's better to check for this case.
+
+most of the time it doesn't matter, though, because it is currently not possible to create a new local
+in a loop expression, and things like:
+
+  for (int a = 4...) ...
+
+will be rewritten by the parser to:
+
+  {
+    int a = 4;
+    for (...) ...
+  }
+
+i.e. new locals can be created only with new compounds.
