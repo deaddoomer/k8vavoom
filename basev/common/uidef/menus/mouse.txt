@@ -95,9 +95,12 @@ menudef MouseOptions {
       "Using relative motion may (or may not) make mouse more responsible.";
   }
 
+
+  header "Relative Mouse Acceleration (Horizontal)";
+
   option slider {
     title = "Minimum Acceleration Speed";
-    cvar = ms_rel_min;
+    cvar = ms_rel_min_x;
     step = 1;
     min = 0;
     max = 128;
@@ -106,7 +109,7 @@ menudef MouseOptions {
 
   option slider {
     title = "Relative Divisor";
-    cvar = ms_rel_div;
+    cvar = ms_rel_div_x;
     step = 0.2;
     min = 0;
     max = 10.0;
@@ -118,7 +121,43 @@ menudef MouseOptions {
 
   option slider {
     title = "Relative Multiplier";
-    cvar = ms_rel_mul;
+    cvar = ms_rel_mul_x;
+    step = 0.2;
+    min = 0;
+    max = 10.0;
+    help =
+      "In relative mode, mouse cursor acceleration is usually ignored.",
+      "This is used to emulate acceleration.",
+      "The formula is: \c[GOLD]delta += (int)((int)((float)delta/divisor)*multiplier)";
+  }
+
+
+  header "Relative Mouse Acceleration (Vertical)";
+
+  option slider {
+    title = "Minimum Acceleration Speed";
+    cvar = ms_rel_min_y;
+    step = 1;
+    min = 0;
+    max = 128;
+    help = "Minimum mouse speed to activate acceleration in relative mode.";
+  }
+
+  option slider {
+    title = "Relative Divisor";
+    cvar = ms_rel_div_y;
+    step = 0.2;
+    min = 0;
+    max = 10.0;
+    help =
+      "In relative mode, mouse cursor acceleration is usually ignored.",
+      "This is used to emulate acceleration.",
+      "The formula is: \c[GOLD]delta += (int)((int)((float)delta/divisor)*multiplier)";
+  }
+
+  option slider {
+    title = "Relative Multiplier";
+    cvar = ms_rel_mul_y;
     step = 0.2;
     min = 0;
     max = 10.0;
