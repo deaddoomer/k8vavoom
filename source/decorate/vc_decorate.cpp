@@ -1389,7 +1389,7 @@ static void ParseClass (VScriptParser *sc) {
   // get class name and find the class
   sc->ExpectString();
   VClass *Class = VClass::FindClass(*sc->String);
-  if (!Class) sc->Error("Class not found");
+  if (!Class) sc->Error(va("Class `%s` not found", *sc->String));
   // I don't care about parent class name because in k8vavoom it can be different
   sc->Expect("extends");
   sc->ExpectString();
