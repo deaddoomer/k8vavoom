@@ -281,6 +281,18 @@ static inline bool getDecorateDebug () { return !!cli_DecorateDebug; }
 static inline bool getIgnoreMoronicStateCommands () { return !!cli_DecorateMoronTolerant; }
 
 
+//==========================================================================
+//
+//  SkipSemicolonsToEOL
+//
+//==========================================================================
+static void SkipSemicolonsToEOL (VScriptParser *sc) {
+  while (!sc->Crossed) {
+    if (!sc->Check(";")) return;
+  }
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // this is workaround for mo...dders overriding the same class several times in
 // the same mod (yes, smoothdoom, i am talking about you).
@@ -1194,6 +1206,7 @@ static void ParseConst (VScriptParser *sc, VMemberBase *parent, bool changeMode)
     }
   }
   sc->Expect(";");
+  SkipSemicolonsToEOL(sc);
 
   if (changeMode) sc->SetCMode(false);
 }
@@ -1241,7 +1254,7 @@ static void ParseEnum (VScriptParser *sc, VMemberBase *parent, bool changeMode) 
       break;
     }
   }
-  sc->Check(";");
+  SkipSemicolonsToEOL(sc);
 
   if (changeMode) sc->SetCMode(false);
 }
@@ -1327,6 +1340,7 @@ static void ParseActionDef (VScriptParser *sc, VClass *Class) {
   sc->Expect("(");
   while (!sc->Check(")")) sc->ExpectString();
   sc->Expect(";");
+  SkipSemicolonsToEOL(sc);
 }
 
 
@@ -1351,6 +1365,7 @@ static void ParseActionAlias (VScriptParser *sc, VClass *Class) {
   A.Name = *newname.ToLower();
   A.Method = M;
   sc->Expect(";");
+  SkipSemicolonsToEOL(sc);
 }
 */
 
@@ -1375,6 +1390,7 @@ static void ParseFieldAlias (VScriptParser *sc, VClass *Class) {
   }
   Class->DecorateStateFieldTrans.put(VName(*newname.toLowerCase()), VName(*oldname));
   sc->Expect(";");
+  SkipSemicolonsToEOL(sc);
 }
 */
 
@@ -1593,6 +1609,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
   bool lastWasGoto = false;
 
   sc->Expect("{");
+  SkipSemicolonsToEOL(sc);
   // disable escape sequences in states
   sc->SetEscape(false);
   while (!sc->Check("}")) {
@@ -1609,6 +1626,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         }
       }
       if (Lump < 0) sc->Error(va("Lump %s not found", *sc->String));
+      SkipSemicolonsToEOL(sc);
       //ParseDecorate(new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
       //GCon->Logf(NAME_Debug, "*** state include: %s", *W_FullLumpName(Lump));
       VScriptParser *nsp = new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
@@ -1641,7 +1659,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       VStateLabelDef &Lbl = Class->StateLabelDefs.Alloc();
       Lbl.Loc = TmpLoc;
       Lbl.Name = TmpName;
-      if (!sc->Crossed && sc->Check(";")) {}
+      SkipSemicolonsToEOL(sc);
       LastDefinedLabel = TmpName;
       continue;
     }
@@ -1659,7 +1677,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         }
         if (lastWasGoto && LastState) {
           GLog.Logf(NAME_Error, "%s: `Goto` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
-          if (!sc->Crossed && sc->Check(";")) {}
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         lastWasGoto = true;
@@ -1710,7 +1728,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           }
           PrevState = nullptr; // new execution chain
         }
-        if (!sc->Crossed && sc->Check(";")) {}
+        SkipSemicolonsToEOL(sc);
         continue;
       } else {
         sc->Message(va("`%s` sprite name is not recommended!", *TmpName));
@@ -1724,7 +1742,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       } else {
         if (lastWasGoto && LastState) {
           GLog.Logf(NAME_Error, "%s: `Stop` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
-          if (!sc->Crossed && sc->Check(";")) {}
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         lastWasGoto = true;
@@ -1755,7 +1773,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
         vassert(NewLabelsStart == Class->StateLabelDefs.length());
         PrevState = nullptr; // new execution chain
-        if (!sc->Crossed && sc->Check(";")) {}
+        SkipSemicolonsToEOL(sc);
         continue;
       }
     }
@@ -1772,7 +1790,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
       vassert(NewLabelsStart == Class->StateLabelDefs.length());
       PrevState = nullptr; // new execution chain
-      if (!sc->Crossed && sc->Check(";")) {}
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
@@ -1783,7 +1801,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       } else {
         if (lastWasGoto && LastState) {
           GLog.Logf(NAME_Error, "%s: `Wait`/`Fail` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
-          if (!sc->Crossed && sc->Check(";")) {}
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         lastWasGoto = true;
@@ -1794,7 +1812,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           LastState->NextState = LastState;
         }
         PrevState = nullptr; // new execution chain
-        if (!sc->Crossed && sc->Check(";")) {}
+        SkipSemicolonsToEOL(sc);
         continue;
       }
     }
@@ -1806,7 +1824,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       } else {
         if (lastWasGoto && LastState) {
           GLog.Logf(NAME_Error, "%s: `Loop` follows `Goto`/`Stop`/`Loop`, ignored.", *TmpLoc.toStringNoCol());
-          if (!sc->Crossed && sc->Check(";")) {}
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         lastWasGoto = true;
@@ -1817,7 +1835,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
           LastState->NextState = LoopStart;
         }
         PrevState = nullptr; // new execution chain
-        if (!sc->Crossed && sc->Check(";")) {}
+        SkipSemicolonsToEOL(sc);
         continue;
       }
     }
@@ -1986,6 +2004,12 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         continue;
       }
 
+      if (sc->Check(";")) {
+        sc->UnGet();
+        sc->Crossed = false; // hack for `SkipSemicolonsToEOL()`
+        break;
+      }
+
       if (sc->Check("{")) {
         ParseActionBlock(sc, Class, State);
       } else {
@@ -2004,7 +2028,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       ParseActionBlock(sc, Class, State);
       wasAction = true;
     } else {
-      if (!sc->Crossed && sc->Check(";")) {}
+      SkipSemicolonsToEOL(sc);
     }
 
     // link previous state
@@ -2161,6 +2185,7 @@ static void ScanActorDefForUserVars (VScriptParser *sc, TArray<VDecorateUserVarD
   sc->CheckNumberWithSign();
   while (sc->Check(";")) {}
   sc->Expect("{");
+  SkipSemicolonsToEOL(sc);
 
   while (!sc->Check("}")) {
     if (sc->QuotedString) {
@@ -2215,6 +2240,7 @@ static void ScanActorDefForUserVars (VScriptParser *sc, TArray<VDecorateUserVarD
       break;
     }
     sc->Expect(";");
+    SkipSemicolonsToEOL(sc);
   }
 
   //if (uvars.length()) for (int f = 0; f < uvars.length(); ++f) GLog.Logf("DC: <%s>", *uvars[f]);
@@ -2432,21 +2458,24 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 
   while (sc->Check(";")) {}
   sc->Expect("{");
+  SkipSemicolonsToEOL(sc);
+
   while (!sc->Check("}")) {
     if (sc->Check("+")) {
       if (!ParseFlag(sc, Class, true, ClassFixups)) return;
-      //while (sc->Check(";")) {}
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
     if (sc->Check("-")) {
       if (!ParseFlag(sc, Class, false, ClassFixups)) return;
-      //while (sc->Check(";")) {}
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
     if (sc->Check("action")) {
       ParseActionDef(sc, Class);
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
@@ -2459,11 +2488,13 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 
     if (sc->Check("const")) {
       ParseConst(sc, Class, false); // don't touch scanner mode
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
     if (sc->Check("enum")) {
       ParseEnum(sc, Class, false); // don't touch scanner mode
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
@@ -2473,9 +2504,15 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 
     // skip uservars (they are already scanned)
     if (sc->String.ICmp("var") == 0) {
-      while (!sc->Check(";")) {
+      for (;;) {
         if (!sc->GetString()) break;
+        if (sc->String.strEqu(";")) {
+          sc->UnGet();
+          sc->Crossed = false; // hack for `SkipSemicolonsToEOL()`
+          break;
+        }
       }
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
@@ -3193,18 +3230,23 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
       }
       FoundProp = true;
     }
-    //while (sc->Check(";")) {}
-    if (FoundProp) continue;
+
+    if (FoundProp) {
+      SkipSemicolonsToEOL(sc);
+      continue;
+    }
 
     //k8: sorry for this
     if (Prop.strEquCI("limitwithsubcvar")) {
       sc->ExpectString();
       NewPropLimitSubCvar(Class, sc->String);
+      SkipSemicolonsToEOL(sc);
       continue;
     }
     if (Prop.strEquCI("limitwithsubint")) {
       sc->ExpectNumber();
       NewPropLimitSubInt(Class, sc->Number);
+      SkipSemicolonsToEOL(sc);
       continue;
     }
 
@@ -3752,21 +3794,25 @@ static void ParseDamageType (VScriptParser *sc) {
   if (sc->String.strEquCI("Normal")) sc->String = "None";
   VStr dfname = sc->String;
   sc->Expect("{");
+  SkipSemicolonsToEOL(sc);
   float factor = 1.0f;
   bool noarmor = false;
   bool replace = false;
   while (!sc->Check("}")) {
     if (sc->Check("NoArmor")) {
       noarmor = true;
+      SkipSemicolonsToEOL(sc);
       continue;
     }
     if (sc->Check("ReplaceFactor")) {
       replace = true;
+      SkipSemicolonsToEOL(sc);
       continue;
     }
     if (sc->Check("Factor")) {
       sc->ExpectFloat();
       factor = sc->Float;
+      SkipSemicolonsToEOL(sc);
       continue;
     }
     sc->Error(va("unknown DamageType field '%s'", *sc->String));
@@ -3836,12 +3882,14 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
     } else if (sc->Check("k8vavoom")) {
       // special k8vavoom section
       sc->Expect("{");
+      SkipSemicolonsToEOL(sc);
       while (!sc->Check("}")) {
         if (sc->Check("basepak")) {
           sc->Expect("=");
                if (sc->Check("true") || sc->Check("tan")) thisIsBasePak = true;
           else if (sc->Check("false") || sc->Check("ona")) thisIsBasePak = false;
           else sc->Error("boolean expected for k8vavoom command 'basepak'");
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         if (sc->Check("AllowBloodReplacement")) {
@@ -3849,6 +3897,7 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
                if (sc->Check("true") || sc->Check("tan")) bloodOverrideAllowed = true;
           else if (sc->Check("false") || sc->Check("ona")) bloodOverrideAllowed = false;
           else sc->Error("boolean expected for k8vavoom command 'AllowBloodReplacement'");
+          SkipSemicolonsToEOL(sc);
           continue;
         }
         if (sc->Check("GlobalDisableOverride")) { GlobalDisableOverride = true; continue; }
