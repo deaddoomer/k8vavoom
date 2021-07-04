@@ -41,6 +41,14 @@ menudef MiscOptions {
   }
 
   option bool {
+    title = "Firing Weapon Bobbing";
+    cvar = wp_fire_bobbing;
+    help =
+      "Allow weapon bobbing when firing?",
+      "This is purely visual, it doesn't affect accuracy.";
+  }
+
+  option bool {
     title = "Allow vanilla cheatcodes";
     cvar = allow_vanilla_cheats;
     help = "Turn this on to allow IDXXX cheatcodes from Vanilla DooM.";

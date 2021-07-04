@@ -1856,14 +1856,14 @@ void ProcessWeaponActions () {
 
   if (bWeaponAllowPrimaryFire && (Buttons&BT_ATTACK) && (!bAttackDown || !Wpn.bNoAutoFire) && Wpn.FindState('Fire')) {
     bAttackDown = true;
-    Wpn.bBobDisabled = true;
+    if (!GetCvarB('wp_fire_bobbing')) Wpn.bBobDisabled = true;
     if (FireWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
   }
 
   if (bWeaponAllowAltFire && (Buttons&BT_ALT_ATTACK) && (!bAltAttackDown || !Wpn.bNoAutoFire) && Wpn.FindState('AltFire')) {
     bAltAttackDown = true;
-    Wpn.bBobDisabled = true;
+    if (!GetCvarB('wp_fire_bobbing')) Wpn.bBobDisabled = true;
     if (AltFireWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
   }
