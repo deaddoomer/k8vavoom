@@ -84,6 +84,7 @@ menudef MouseOptions {
     cvar = m_grab;
     help =
       "Try to grab (own) mouse input?",
+      "Note that relative motion always grabs the mouse.",
       "\c[WHITE]If not sure, leave this 'ON'.";
   }
 
