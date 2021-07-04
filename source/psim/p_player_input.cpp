@@ -448,7 +448,7 @@ COMMAND(Impulse) {
 COMMAND(ToggleAlwaysRun) {
 #ifdef CLIENT
   if (MN_Active()) return;
-  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) {
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
     GCon->Log(NAME_Warning, "Cannot toggle autorun while not in game!");
     return;
   }

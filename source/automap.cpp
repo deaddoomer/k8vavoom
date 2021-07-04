@@ -2956,7 +2956,7 @@ COMMAND(Iddt) {
   //if (GGameInfo->NetMode == NM_None || GGameInfo->NetMode == NM_Client) return;
 #ifdef CLIENT
   if (MN_Active()) return;
-  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) return;
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) return;
   am_cheating = (am_cheating+1)%3;
 #endif
 }
@@ -2970,7 +2970,7 @@ COMMAND(Iddt) {
 COMMAND(toggle_automap) {
 #ifdef CLIENT
   if (MN_Active()) return;
-  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) {
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
     GCon->Log(NAME_Warning, "Cannot toggle automap while not in game!");
     return;
   }
