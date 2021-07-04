@@ -158,10 +158,11 @@ static VCvarB ui_mouse("ui_mouse", false, "Allow using mouse in UI?", CVAR_Archi
 static VCvarB ui_active("__ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", 0);
 static VCvarB ui_control_waiting("__ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", 0);
 
-static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
+static VCvarB m_dbg_cursor("__m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
+static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_PreInit);
+
 static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive);
 static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);
-static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_Archive);
 
 static VCvarI ms_rel_mode("ms_rel_mode", "1", "Relative acceleration mode (0: none; 1: hl-like).", CVAR_Archive);
 
