@@ -821,7 +821,7 @@ static VName ConvertStrToName8 (VScriptParser *sc, VStr str, bool onlyWarn=true,
 //
 //==========================================================================
 void VScriptParser::ExpectName8 () {
-  ExpectString();
+  if (!GetString()) Error("Short name expected");
   Name8 = ConvertStrToName8(this, String, false); // error
 }
 
@@ -832,18 +832,18 @@ void VScriptParser::ExpectName8 () {
 //
 //==========================================================================
 void VScriptParser::ExpectName8Warn () {
-  ExpectString();
+  if (!GetString()) Error("Short name expected");
   Name8 = ConvertStrToName8(this, String); // no error
 }
 
 
 //==========================================================================
 //
-//  VScriptParser::ExpectName8Warn
+//  VScriptParser::ExpectName8WarnOrFilePath
 //
 //==========================================================================
 bool VScriptParser::ExpectName8WarnOrFilePath () {
-  ExpectString();
+  if (!GetString()) Error("Short name or path expected");
   String = String.fixSlashes();
   // hack for "vile/1", etc.
   const int slpos = String.indexOf('/');
@@ -863,7 +863,7 @@ bool VScriptParser::ExpectName8WarnOrFilePath () {
 //
 //==========================================================================
 void VScriptParser::ExpectName8Def (VName def) {
-  ExpectString();
+  if (!GetString()) Error("Short name expected");
   Name8 = ConvertStrToName8(this, String, true, &def); // no error
 }
 
@@ -874,7 +874,7 @@ void VScriptParser::ExpectName8Def (VName def) {
 //
 //==========================================================================
 void VScriptParser::ExpectName () {
-  ExpectString();
+  if (!GetString()) Error("Name expected");
   Name = VName(*String, VName::AddLower);
 }
 
@@ -960,8 +960,8 @@ bool VScriptParser::CheckStartsWith (const char *str) {
 void VScriptParser::Expect (const char *name) {
   vassert(name);
   vassert(name[0]);
-  ExpectString();
-  if (String.ICmp(name)) Error(va("Bad syntax, \"%s\" expected", name));
+  if (!GetString()) Error(va("`%s` expected", name));
+  if (String.ICmp(name)) Error(va("Bad syntax, `%s` expected, got `%s`.", name, *String.quote()));
 }
 
 
@@ -1024,7 +1024,7 @@ bool VScriptParser::CheckIdentifier () {
 //
 //==========================================================================
 void VScriptParser::ExpectIdentifier () {
-  if (!CheckIdentifier()) Error(va("Identifier expected, got \"%s\".", *String));
+  if (!CheckIdentifier()) Error(va("Identifier expected, got `%s`.", *String.quote()));
 }
 
 
