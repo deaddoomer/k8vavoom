@@ -85,6 +85,7 @@ public:
     sector_t *levelSector; // for `DLTYPE_Sector`, or `nullptr`
     float levelScale; // scale for `DLTYPE_Sector` light, <0: attenuated
     vuint32 sectorLightLevel; // to detect changes
+    vuint32 flags; // dlight_t::XXX
     //TArray<polyobj_t *> touchedPolys;
   };
 
@@ -1051,7 +1052,7 @@ public:
   virtual void SetupFakeFloors (sector_t *) override;
 
   virtual void ResetStaticLights () override;
-  virtual void AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar) override;
+  virtual void AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar, const vuint32 flags) override;
   virtual void MoveStaticLightByOwner (vuint32 OwnerUId, const TVec &origin) override;
   virtual void RemoveStaticLightByOwner (vuint32 OwnerUId) override;
 

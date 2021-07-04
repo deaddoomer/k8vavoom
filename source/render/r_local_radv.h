@@ -172,7 +172,7 @@ protected:
 
   void RenderMobjsAmbient ();
   void RenderMobjsTextures ();
-  void RenderMobjsLight (VEntity *owner);
+  void RenderMobjsLight (VEntity *owner, vuint32 dlflags);
   void RenderMobjsShadow (VEntity *owner, vuint32 dlflags);
   void RenderMobjsShadowMap (VEntity *owner, const unsigned int facenum, vuint32 dlflags);
   void RenderMobjsFog ();

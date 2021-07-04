@@ -47,9 +47,15 @@ struct dlight_t {
   // flags
   vuint32 flags;
   enum {
-    PlayerLight  = 1u<<0, // set in alloc, player lights should survive
-    NoSelfShadow = 1u<<1,
-    NoShadow     = 1u<<2,
+    PlayerLight   = 1u<<0, // set in alloc, player lights should survive
+    NoSelfShadow  = 1u<<1,
+    NoShadow      = 1u<<2,
+    NoSelfLight   = 1u<<3,
+    NoActorLight  = 1u<<4,
+    NoActorShadow = 1u<<5,
+    Additive      = 1u<<6, // this does nothing
+    Subtractive   = 1u<<7, // this does nothing
+    Disabled      = 1u<<6,
   };
 };
 

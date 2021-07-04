@@ -132,7 +132,17 @@ struct LightEffectDef {
   // flags
   bool bNoSelfShadow;
   bool bNoShadow;
+  bool bNoSelfLight;
+  bool bNoActorLight; // this implies "no actor shadow"
+  bool bNoActorShadow;
+  bool bAdditive; // this does nothing
+  bool bSubtractive; // this does nothing
+  bool bDisabled;
 };
+
+
+// return flags as `LIGHTFLAG_xxx` bitset
+native static final int GetLightEffectLightFlags (const ref LightEffectDef lt);
 
 
 struct ParticleEffectDef {

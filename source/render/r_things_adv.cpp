@@ -215,6 +215,7 @@ void VRenderLevelShadowVolume::BuildMobjsInCurrLight (bool doShadows, bool colle
 void VRenderLevelShadowVolume::RenderMobjsShadow (VEntity *owner, vuint32 dlflags) {
   if (!r_draw_mobjs || !r_models || !r_model_shadows) return;
   if (!r_dbg_advthing_draw_shadow) return;
+  if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
   float TimeFrac;
   RenderStyleInfo ri;
   for (auto &&ent : mobjsInCurrLightModels) {
@@ -243,6 +244,7 @@ void VRenderLevelShadowVolume::RenderMobjsShadow (VEntity *owner, vuint32 dlflag
 void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsigned int facenum, vuint32 dlflags) {
   if (!r_draw_mobjs || !r_models || !r_model_shadows) return;
   if (!r_dbg_advthing_draw_shadow) return;
+  if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
   float TimeFrac;
   RenderStyleInfo ri;
   for (auto &&ent : mobjsInCurrLightModels) {
@@ -281,9 +283,10 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsig
 //  VRenderLevelShadowVolume::RenderMobjsLight
 //
 //==========================================================================
-void VRenderLevelShadowVolume::RenderMobjsLight (VEntity *owner) {
+void VRenderLevelShadowVolume::RenderMobjsLight (VEntity *owner, vuint32 dlflags) {
   if (!r_draw_mobjs || !r_models || !r_model_light) return;
   if (!r_dbg_advthing_draw_light) return;
+  if (dlflags&dlight_t::NoActorLight) return;
   float TimeFrac;
   RenderStyleInfo ri;
   if (useInCurrLightAsLight) {
@@ -419,17 +422,12 @@ void VRenderLevelShadowVolume::RenderMobjsFog () {
 //
 //==========================================================================
 void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner, const unsigned int facenum, int spShad, vuint32 dlflags) {
+  if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
   if (spShad < 1) return;
   //const bool doPlayer = r_shadowmap_spr_player.asBool();
 
   for (auto &&mo : mobjsInCurrLightSprites) {
-    if (mo == owner /*&& (dlflags&dlight_t::NoSelfShadow)*/) continue;
-    //GCon->Logf(NAME_Debug, "x00: thing:<%s>", mo->GetClass()->GetName());
-    //if (mo->NumRenderedShadows > r_max_model_shadows) continue; // limit maximum shadows for this Entity
-    //GCon->Logf(NAME_Debug, "x01: thing:<%s>", mo->GetClass()->GetName());
-    //!if (!IsShadowAllowedFor(mo)) continue;
-    //GCon->Logf(NAME_Debug, "x02: thing:<%s>", mo->GetClass()->GetName());
-    //if (!doPlayer && mo->IsPlayer()) continue;
+    if (mo == owner /*&& (dlflags&dlight_t::NoSelfShadow)*/) continue; // always
 
     bool renderShadow = true;
     const VEntity::EType tclass = mo->Classify();

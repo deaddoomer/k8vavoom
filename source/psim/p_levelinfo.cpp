@@ -391,42 +391,45 @@ void VLevelInfo::ChangeSky (VStr skytex1, VStr skytex2) {
 //  VLevelInfo natives
 //
 //==========================================================================
-// native final void AddStaticLight (Entity ent, TVec origin, float radius, optional TVec coneDirection, optional float coneAngle);
+// native final void AddStaticLight (Entity ent, TVec origin, float radius, optional TVec coneDirection, optional float coneAngle, optional int flags);
 IMPLEMENT_FUNCTION(VLevelInfo, AddStaticLight) {
   VLightParams lpar;
   VEntity *Ent;
   VOptParamVec ConeDir(TVec(0, 0, 0));
   VOptParamFloat ConeAngle(0);
-  vobjGetParamSelf(Ent, lpar.Origin, lpar.Radius, ConeDir, ConeAngle);
+  VOptParamInt Flags(0);
+  vobjGetParamSelf(Ent, lpar.Origin, lpar.Radius, ConeDir, ConeAngle, Flags);
   if (ConeDir.specified) lpar.coneDirection = ConeDir;
   if (ConeAngle.specified) lpar.coneAngle = ConeAngle;
   lpar.Color = 0xffffffffu;
-  Self->XLevel->AddStaticLightRGB(Ent, lpar);
+  Self->XLevel->AddStaticLightRGB(Ent, lpar, Flags);
 }
 
-// native final void AddStaticLightRGB (Entity ent, TVec origin, float radius, int color, optional TVec coneDirection, optional float coneAngle);
+// native final void AddStaticLightRGB (Entity ent, TVec origin, float radius, int color, optional TVec coneDirection, optional float coneAngle, optional int flags);
 IMPLEMENT_FUNCTION(VLevelInfo, AddStaticLightRGB) {
   VLightParams lpar;
   VEntity *Ent;
   VOptParamVec ConeDir(TVec(0, 0, 0));
   VOptParamFloat ConeAngle(0);
-  vobjGetParamSelf(Ent, lpar.Origin, lpar.Radius, lpar.Color, ConeDir, ConeAngle);
+  VOptParamInt Flags(0);
+  vobjGetParamSelf(Ent, lpar.Origin, lpar.Radius, lpar.Color, ConeDir, ConeAngle, Flags);
   if (ConeDir.specified) lpar.coneDirection = ConeDir;
   if (ConeAngle.specified) lpar.coneAngle = ConeAngle;
-  Self->XLevel->AddStaticLightRGB(Ent, lpar);
+  Self->XLevel->AddStaticLightRGB(Ent, lpar, Flags);
 }
 
-// native final void AddStaticLightRGBSector (Entity ent, TVec origin, sector_t *sector, float scale, int color, optional TVec coneDirection, optional float coneAngle);
+// native final void AddStaticLightRGBSector (Entity ent, TVec origin, sector_t *sector, float scale, int color, optional TVec coneDirection, optional float coneAngle, optional int flags);
 IMPLEMENT_FUNCTION(VLevelInfo, AddStaticLightRGBSector) {
   VLightParams lpar;
   VEntity *Ent;
   VOptParamVec ConeDir(TVec(0, 0, 0));
   VOptParamFloat ConeAngle(0);
-  vobjGetParamSelf(Ent, lpar.Origin, lpar.LevelSector, lpar.LevelScale, lpar.Color, ConeDir, ConeAngle);
+  VOptParamInt Flags(0);
+  vobjGetParamSelf(Ent, lpar.Origin, lpar.LevelSector, lpar.LevelScale, lpar.Color, ConeDir, ConeAngle, Flags);
   if (ConeDir.specified) lpar.coneDirection = ConeDir;
   if (ConeAngle.specified) lpar.coneAngle = ConeAngle;
   if (lpar.LevelSector) {
-    Self->XLevel->AddStaticLightRGB(Ent, lpar);
+    Self->XLevel->AddStaticLightRGB(Ent, lpar, Flags);
   }
 }
 

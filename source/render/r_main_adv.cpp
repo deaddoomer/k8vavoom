@@ -244,7 +244,9 @@ void VRenderLevelShadowVolume::RenderSceneStaticLights (const refdef_t *RD, cons
         if (ownpp) own = *ownpp; //else GCon->Logf(NAME_Debug, "stlight owner with uid %u not found", sli->stlight->ownerUId);
         */
       }
-      vuint32 flags = (own && R_EntModelNoSelfShadow(own) ? dlight_t::NoSelfShadow : 0);
+      //vuint32 flags = (own && R_EntModelNoSelfShadow(own) ? dlight_t::NoSelfShadow : 0);
+      vuint32 flags = sli->stlight->flags;
+      if (own && R_EntModelNoSelfShadow(own)) flags |= dlight_t::NoSelfShadow;
       //if (own) GCon->Logf("STLOWN: %s", *own->GetClass()->GetFullName());
       TVec lorg = sli->stlight->origin;
       lorg.z += sli->zofs;
@@ -336,13 +338,15 @@ void VRenderLevelShadowVolume::RenderSceneDynamicLights (const refdef_t *RD, con
         if (ownpp) own = *ownpp; //else GCon->Logf(NAME_Debug, "stlight owner with uid %u not found", sli->stlight->ownerUId);
         */
       }
-      if (own && R_EntModelNoSelfShadow(own)) dli->l->flags |= dlight_t::NoSelfShadow;
+      //if (own && R_EntModelNoSelfShadow(own)) dli->l->flags |= dlight_t::NoSelfShadow;
+      vuint32 flags = dli->l->flags;
+      if (own && R_EntModelNoSelfShadow(own)) flags |= dlight_t::NoSelfShadow;
       //TVec lorg = dli->l->origin;
       //lorg.z += dli->zofs;
       // always render player lights
       const bool forced = (own && own->IsPlayer());
       TVec lorg = dli->l->origin;
-      RenderLightShadows(own, dli->l->flags, RD, Range, lorg, (dbg_adv_force_dynamic_lights_radius > 0 ? dbg_adv_force_dynamic_lights_radius : dli->l->radius), dli->l->minlight, dli->l->color, dli->l->coneDirection, dli->l->coneAngle, forced);
+      RenderLightShadows(own, flags, RD, Range, lorg, (dbg_adv_force_dynamic_lights_radius > 0 ? dbg_adv_force_dynamic_lights_radius : dli->l->radius), dli->l->minlight, dli->l->color, dli->l->coneDirection, dli->l->coneAngle, forced);
     }
   }
 }

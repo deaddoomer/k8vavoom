@@ -847,9 +847,9 @@ void R_ShutdownData () {
 
   FreeSpriteData();
 
-  GLightEffectDefs.Clear();
+  GLightEffectDefs.clear();
   GLightEffectDefsMap.clear();
-  GParticleEffectDefs.Clear();
+  GParticleEffectDefs.clear();
   GParticleEffectDefsMap.clear();
 }
 
@@ -1150,7 +1150,9 @@ static VLightEffectDef *NewLightEffect (VStr Name, int LightType) {
   if (!L) {
     L = &GLightEffectDefs.Alloc();
     L->Name = VName(*Name, VName::AddLower);
-    GLightEffectDefsMap.put(Name, GLightEffectDefs.length()-1);
+    if (!Name.isEmpty()) {
+      GLightEffectDefsMap.put(Name, GLightEffectDefs.length()-1);
+    }
     L->setDefaultValues(LightType);
   }
   return L;
@@ -1163,9 +1165,10 @@ static VLightEffectDef *NewLightEffect (VStr Name, int LightType) {
 //
 //==========================================================================
 static void NewLightAlias (const VLightEffectDef *lt, VStr newname) {
-  if (!lt || newname.length() == 0) return;
+  if (!lt || newname.isEmpty()) return;
+  if (newname.strEquCI(*lt->Name)) return;
   auto ldip = GLightEffectDefsMap.find(*lt->Name);
-  vassert(ldip);
+  if (!ldip) return; // just in case
   GLightEffectDefsMap.put(newname, *ldip);
 }
 
@@ -1208,12 +1211,14 @@ static void NewParticleAlias (const VParticleEffectDef *pt, VStr newname) {
 static void ParseLightDef (VScriptParser *sc, int LightType) {
   const bool extend = sc->Check("extend");
   sc->ExpectString();
+  if (sc->String.isEmpty()) sc->Error("light name cannot be empty");
   if (extend && !R_FindLightEffect(sc->String)) sc->Error(va("Cannot extend unknown light '%s'", *sc->String));
   VLightEffectDef *L = NewLightEffect(sc->String, LightType);
   if (!extend) L->setDefaultValues(LightType);
   // parse light def
   sc->Expect("{");
   while (!sc->Check("}")) {
+    // color
     if (sc->Check("colour") || sc->Check("color")) {
       sc->ExpectFloat();
       float r = midval(0.0f, (float)sc->Float, 1.0f);
@@ -1221,31 +1226,45 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
       float g = midval(0.0f, (float)sc->Float, 1.0f);
       sc->ExpectFloat();
       float b = midval(0.0f, (float)sc->Float, 1.0f);
-      L->Color = ((int)(r*255)<<16)|((int)(g*255)<<8)|(int)(b*255)|0xff000000;
-    } else if (sc->Check("radius")) {
+      L->Color = ((int)(r*255.0f)<<16)|((int)(g*255.0f)<<8)|(int)(b*255.0f)|0xff000000;
+      continue;
+    }
+    // radius
+    if (sc->Check("radius")) {
       sc->ExpectFloat();
       L->Radius = sc->Float;
-    } else if (sc->Check("radius2")) {
+      continue;
+    }
+    // radius2
+    if (sc->Check("radius2")) {
       sc->ExpectFloat();
       L->Radius2 = sc->Float;
-    } else if (sc->Check("minlight")) {
+      continue;
+    }
+    // minlight
+    if (sc->Check("minlight")) {
       sc->ExpectFloat();
       L->MinLight = sc->Float;
-    } else if (sc->Check("noselfshadow")) {
-      L->SetNoSelfShadow(true);
-    } else if (sc->Check("noshadow")) {
-      L->SetNoShadow(true);
-    } else if (sc->Check("offset")) {
-      sc->ExpectFloat();
+      continue;
+    }
+    // offset
+    if (sc->Check("offset")) {
+      sc->ExpectFloatWithSign();
       L->Offset.x = sc->Float;
-      sc->ExpectFloat();
+      sc->ExpectFloatWithSign();
       L->Offset.y = sc->Float;
-      sc->ExpectFloat();
+      sc->ExpectFloatWithSign();
       L->Offset.z = sc->Float;
-    } else if (sc->Check("coneangle")) {
+      continue;
+    }
+    // ConeAngle
+    if (sc->Check("coneangle")) {
       sc->ExpectFloat();
       L->ConeAngle = clampval(sc->Float, 0.0f, 360.0f);
-    } else if (sc->Check("conedir")) {
+      continue;
+    }
+    // ConeDir
+    if (sc->Check("conedir")) {
       sc->ExpectFloat();
       L->ConeDir.x = sc->Float;
       sc->ExpectFloat();
@@ -1254,12 +1273,29 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
       L->ConeDir.z = sc->Float;
       L->ConeDir = L->ConeDir.Normalised();
       if (!L->ConeDir.isValid()) L->ConeDir = TVec(0, 0, 0);
-    } else if (sc->Check("alias")) {
-      sc->ExpectString();
-      NewLightAlias(L, sc->String);
-    } else {
-      sc->Error(va("Bad point light parameter (%s)", *sc->String));
+      continue;
     }
+    // alias
+    if (sc->Check("alias")) {
+      sc->ExpectString();
+      if (sc->String.isEmpty()) sc->Error("light alias cannot be empty");
+      NewLightAlias(L, sc->String);
+      continue;
+    }
+    // flags
+    if (sc->Check("noselfshadow")) { L->SetNoSelfShadow(true); continue; }
+    if (sc->Check("noshadow")) { L->SetNoShadow(true); continue; }
+    if (sc->Check("noselflight")) { L->SetNoSelfLight(true); continue; }
+    if (sc->Check("noactorlight")) { L->SetNoActorLight(true); continue; }
+    if (sc->Check("disabled")) { L->SetDisabled(true); continue; }
+    // inverse flags
+    if (sc->Check("selfshadow")) { L->SetNoSelfShadow(false); continue; }
+    if (sc->Check("shadow")) { L->SetNoShadow(false); continue; }
+    if (sc->Check("selflight")) { L->SetNoSelfLight(false); continue; }
+    if (sc->Check("actorlight")) { L->SetNoActorLight(false); continue; }
+    if (sc->Check("enabled")) { L->SetDisabled(false); continue; }
+    // oops
+    sc->Error(va("Bad k8vavoom point light parameter `%s`", *sc->String));
   }
 
   if (L->Type&DLTYPE_Spot) {
@@ -1277,7 +1313,9 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
 //
 //==========================================================================
 static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefactor) {
+  const TLocation lloc = sc->GetLoc();
   sc->ExpectString();
+  if (sc->String.isEmpty()) sc->Error("light name cannot be empty");
   VLightEffectDef *L = NewLightEffect(sc->String, LightType);
   L->setDefaultValues(LightType);
   L->SetNoSelfShadow(true); // by default
@@ -1285,6 +1323,7 @@ static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefa
   // parse light def
   sc->Expect("{");
   while (!sc->Check("}")) {
+    // color
     if (sc->Check("color") || sc->Check("colour")) {
       sc->ExpectFloat();
       float r = midval(0.0f, (float)sc->Float, 1.0f);
@@ -1292,67 +1331,114 @@ static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefa
       float g = midval(0.0f, (float)sc->Float, 1.0f);
       sc->ExpectFloat();
       float b = midval(0.0f, (float)sc->Float, 1.0f);
-      L->Color = ((int)(r*255)<<16)|((int)(g*255)<<8)|(int)(b*255)|0xff000000;
-    } else if (sc->Check("size")) {
+      L->Color = ((int)(r*255.0f)<<16)|((int)(g*255.0f)<<8)|(int)(b*255.0f)|0xff000000;
+      continue;
+    }
+    // size
+    if (sc->Check("size")) {
       sc->ExpectFloat();
       L->Radius = sc->Float;
-    } else if (sc->Check("secondarySize")) {
+      continue;
+    }
+    // secondarySize
+    if (sc->Check("secondarySize")) {
       sc->ExpectFloat();
       L->Radius2 = sc->Float;
-    } else if (sc->Check("offset")) {
+      continue;
+    }
+    // offset
+    if (sc->Check("offset")) {
       // GZDoom manages Z offset as Y offset
-      sc->ExpectFloat();
+      sc->ExpectFloatWithSign();
       L->Offset.x = sc->Float;
-      sc->ExpectFloat();
+      sc->ExpectFloatWithSign();
       L->Offset.z = sc->Float;
-      sc->ExpectFloat();
+      sc->ExpectFloatWithSign();
       L->Offset.y = sc->Float;
-    } else if (sc->Check("subtractive")) {
-      sc->ExpectNumber();
-      sc->Message(va("Subtractive light ('%s') is not supported yet.", *L->Name));
-    } else if (sc->Check("chance")) {
+      continue;
+    }
+    // chance
+    if (sc->Check("chance")) {
       sc->ExpectFloat();
       // negative means "special processing"
       L->Chance = -(clampval((float)sc->Float, 0.0f, 1.0f)+1.0f);
-    } else if (sc->Check("scale")) {
+      continue;
+    }
+    // scale
+    if (sc->Check("scale")) {
       sc->ExpectFloat();
       L->Scale = sc->Float;
-    } else if (sc->Check("interval")) {
+      continue;
+    }
+    // interval
+    if (sc->Check("interval")) {
       sc->ExpectFloat();
       L->Interval = sc->Float*35.0f;
-    } else if (sc->Check("additive")) {
+      continue;
+    }
+    // subtractive (not supported)
+    if (sc->Check("subtractive")) {
       sc->ExpectNumber();
-      sc->Message(va("Additive light ('%s') parameter not supported yet.", *L->Name));
-    } else if (sc->Check("halo")) {
+      L->SetSubtractive(!!sc->Number);
+      continue;
+    }
+    // additive
+    if (sc->Check("additive")) {
       sc->ExpectNumber();
-      sc->Message(va("Halo light ('%s') parameter not supported.", *L->Name));
-    } else if (sc->Check("dontlightself")) {
+      L->SetAdditive(!!sc->Number);
+      continue;
+    }
+    // halo (wtf?!)
+    if (sc->Check("halo")) {
       sc->ExpectNumber();
-      sc->Message(va("DontLightSelf light ('%s') parameter not supported.", *L->Name));
-    } else if (sc->Check("attenuate")) {
+      if (sc->Number) sc->Message(va("Halo parameter not supported for light '%s'.", *L->Name));
+      continue;
+    }
+    // DontLightSelf
+    if (sc->Check("dontlightself")) {
+      sc->ExpectNumber();
+      L->SetNoSelfLight(!!sc->Number);
+      continue;
+    }
+    // DontLightActors
+    if (sc->Check("dontlightactors")) {
+      sc->ExpectNumber();
+      L->SetNoActorLight(!!sc->Number);
+      continue;
+    }
+    // attenuate
+    if (sc->Check("attenuate")) {
       sc->ExpectNumber();
       if (sc->Number) {
         attenuated = true;
       } else {
         attenuated = false;
-        sc->Message(va("Non-attenuated light ('%s') will be attenuated anyway.", *L->Name));
+        sc->Message(va("Non-attenuated light '%s' will be attenuated anyway.", *L->Name));
       }
-    } else if (sc->Check("noselfshadow")) {
-      // k8vavoom extension
-      L->SetNoSelfShadow(true);
-    } else if (sc->Check("selfshadow")) {
-      // k8vavoom extension
-      L->SetNoSelfShadow(false);
-    } else if (sc->Check("noshadow")) {
-      // k8vavoom extension
-      L->SetNoShadow(true);
-    } else if (sc->Check("alias")) {
-      // k8vavoom extension
-      sc->ExpectString();
-      NewLightAlias(L, sc->String);
-    } else {
-      sc->Error(va("Bad gz light ('%s') parameter (%s)", *L->Name, *sc->String));
+      continue;
     }
+    // NoShadowMap
+    if (sc->Check("noshadowmap")) {
+      sc->ExpectNumber();
+      L->SetNoShadow(!!sc->Number);
+      continue;
+    }
+    // k8vavoom extensions
+    if (sc->Check("noselfshadow")) { L->SetNoSelfShadow(true); continue; }
+    if (sc->Check("noshadow")) { L->SetNoShadow(true); continue; }
+    if (sc->Check("k8disabled")) { L->SetDisabled(true); continue; }
+    // inverse flags
+    if (sc->Check("selfshadow")) { L->SetNoSelfShadow(false); continue; }
+    if (sc->Check("shadow")) { L->SetNoShadow(false); continue; }
+    if (sc->Check("k8enabled")) { L->SetDisabled(false); continue; }
+    // alias
+    if (sc->Check("alias")) {
+      sc->ExpectString();
+      if (sc->String.isEmpty()) sc->Error(va("light '%s' alias cannot be empty.", *L->Name));
+      NewLightAlias(L, sc->String);
+      continue;
+    }
+    sc->Error(va("Bad gz parameter `%s` for light '%s'", *sc->String, *L->Name));
   }
 
   //k8: it seems to work this way...
@@ -1385,6 +1471,9 @@ static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefa
 
   L->Radius = VLevelInfo::GZSizeToRadius(L->Radius, attenuated);
   L->Radius2 = VLevelInfo::GZSizeToRadius(L->Radius2, attenuated);
+
+  if (L->IsSubtractive()) GCon->Logf(NAME_Warning, "%s: light '%s' is subtractive, and will be ignored,", *lloc.toStringNoCol(), *L->Name);
+  if (L->IsAdditive()) GCon->Logf(NAME_Warning, "%s: light '%s' is additive, additiveness will be ignored.", *lloc.toStringNoCol(), *L->Name);
 }
 
 

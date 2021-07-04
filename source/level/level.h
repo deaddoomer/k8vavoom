@@ -151,9 +151,20 @@ struct rep_light_t {
   sector_t *LevelSector;
   float LevelScale;
   //int NextUIdIndex; // -1 or next light for this OwnerUId
+  //WARNING! keep in sync with `dlight_t`!
   enum {
-    LightChanged = 1u<<0,
-    LightActive  = 1u<<1,
+    PlayerLight   = 1u<<0,
+    NoSelfShadow  = 1u<<1,
+    NoShadow      = 1u<<2,
+    NoSelfLight   = 1u<<3,
+    NoActorLight  = 1u<<4,
+    NoActorShadow = 1u<<5,
+    Additive      = 1u<<6, // this does nothing
+    Subtractive   = 1u<<7, // this does nothing
+    Disabled      = 1u<<8,
+    // other
+    LightChanged = 1u<<9,
+    LightActive  = 1u<<10,
   };
   vuint32 Flags;
 
@@ -865,12 +876,12 @@ public:
   void ResetStaticLights ();
 
   // returns static light id
-  void AddStaticLightRGB (VEntity *Ent, const VLightParams &lpar);
+  void AddStaticLightRGB (VEntity *Ent, const VLightParams &lpar, const vuint32 flags);
   void MoveStaticLightByOwner (VEntity *Ent, const TVec &Origin);
   void RemoveStaticLightByOwner (VEntity *Ent);
 
   // returns static light id
-  void AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar);
+  void AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar, const vuint32 flags);
   void MoveStaticLightByOwner (vuint32 owneruid, const TVec &Origin);
   void RemoveStaticLightByOwner (vuint32 owneruid);
 

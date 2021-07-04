@@ -1532,6 +1532,19 @@ struct LockDef {
 };
 
 
+// WARNING! keep in sync with `dlight_t`!
+bitenum {
+  LIGHTFLAG_PLAYER_LIGHT_DONT_USE, // don't use!
+  LIGHTFLAG_NoSelfShadow,
+  LIGHTFLAG_NoShadow,
+  LIGHTFLAG_NoSelfLight,
+  LIGHTFLAG_NoActorLight,
+  LIGHTFLAG_NoActorShadow,
+  LIGHTFLAG_Additive,
+  LIGHTFLAG_Subtractive,
+  LIGHTFLAG_Disabled,
+}
+
 struct dlight_t {
   TVec origin;
   float radius;
@@ -1548,6 +1561,12 @@ struct dlight_t {
   bool bPlayerLight; // set in alloc, player lights should survive
   bool bNoSelfShadow;
   bool bNoShadow;
+  bool bNoSelfLight;
+  bool bNoActorLight;
+  bool bNoActorShadow;
+  bool bAdditive; // this does nothing
+  bool bSubtractive; // this does nothing
+  bool bDisabled;
 };
 
 

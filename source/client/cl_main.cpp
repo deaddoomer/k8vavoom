@@ -393,7 +393,7 @@ void CL_SetupStandaloneClient () {
   for (auto &&L : GClLevel->StaticLights) {
     if (L.IsActive()) {
       VLightParams lpar(L);
-      GClLevel->Renderer->AddStaticLightRGB(L.OwnerUId, lpar);
+      GClLevel->Renderer->AddStaticLightRGB(L.OwnerUId, lpar, L.Flags);
     }
   }
   GClLevel->Renderer->PreRender();
@@ -1083,7 +1083,7 @@ COMMAND(VidRendererRestart) {
   for (auto &&L : GClLevel->StaticLights) {
     if (L.IsActive()) {
       VLightParams lpar(L);
-      GClLevel->Renderer->AddStaticLightRGB(L.OwnerUId, lpar);
+      GClLevel->Renderer->AddStaticLightRGB(L.OwnerUId, lpar, L.Flags);
     }
   }
   GClLevel->Renderer->PreRender();

@@ -33,6 +33,7 @@
 #else
 # include "../render/r_public.h"
 #endif
+# include "../client/cl_local.h"  /* for dlight_t */
 #include "../language.h"
 #include "../infostr.h"
 #include "../mapinfo.h"
@@ -697,4 +698,38 @@ IMPLEMENT_FREE_FUNCTION(VObject, AM_GetPlayerPos) {
   *yc = 0.0f;
   *angle = 0.0f;
   RET_BOOL(false);
+}
+
+
+// native int dlight_t.GetFlags () const;
+/*
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, dlight_t, GetFlags) {
+  dlight_t *lt;
+  vobjGetParam(lt);
+  if (lt) {
+    RET_INT(lt->flags);
+  } else {
+    RET_INT(0);
+  }
+}
+*/
+
+
+// return flags as `LIGHTFLAG_xxx` bitset
+//native static final int GetLightEffectLightFlags (const ref LightEffectDef lt);
+IMPLEMENT_FREE_FUNCTION(VEntity, GetLightEffectLightFlags) {
+  VLightEffectDef *lt;
+  vobjGetParam(lt);
+  vuint32 res = 0;
+  if (lt) {
+    if (lt->IsNoSelfShadow()) res |= dlight_t::NoSelfShadow;
+    if (lt->IsNoShadow()) res |= dlight_t::NoShadow;
+    if (lt->IsNoSelfLight()) res |= dlight_t::NoSelfLight;
+    if (lt->IsNoActorLight()) res |= dlight_t::NoActorLight;
+    if (lt->IsNoActorShadow()) res |= dlight_t::NoActorShadow;
+    if (lt->IsAdditive()) res |= dlight_t::Additive;
+    if (lt->IsSubtractive()) res |= dlight_t::Subtractive;
+    if (lt->IsDisabled()) res |= dlight_t::Disabled;
+  }
+  RET_INT((vint32)res);
 }

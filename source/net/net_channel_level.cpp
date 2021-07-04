@@ -1523,6 +1523,14 @@ int VLevelChannel::UpdateStaticLight (VMessageOut &Msg, VBitStreamWriter &strm, 
     strm << STRM_INDEX_U(sidx) << L.LevelScale;
   }
 
+  vuint32 flags = L.Flags&~(rep_light_t::LightChanged|rep_light_t::LightActive);
+  if (flags) {
+    strm.WriteBit(true);
+    strm << STRM_INDEX_U(flags);
+  } else {
+    strm.WriteBit(false);
+  }
+
   if (!forced) L.Flags &= ~rep_light_t::LightChanged;
 
   return 1;
@@ -1557,6 +1565,12 @@ bool VLevelChannel::ParseStaticLight (VMessageIn &Msg) {
     if (snum >= (unsigned)Level->NumSectors) isSector = false;
   }
 
+  vuint32 flags = 0;
+  bool isFlags = Msg.ReadBit();
+  if (isFlags) {
+    Msg << STRM_INDEX_U(flags);
+  }
+
   if (Msg.IsError()) {
     GCon->Logf(NAME_DevNet, "%s: cannot read static light header", *GetDebugName());
     return false;
@@ -1571,7 +1585,7 @@ bool VLevelChannel::ParseStaticLight (VMessageIn &Msg) {
   lpar.LevelSector = (isSector ? &Level->Sectors[snum] : nullptr);
   lpar.LevelScale = sscale;
   #ifdef CLIENT
-  Level->AddStaticLightRGB(owneruid, lpar);
+  Level->AddStaticLightRGB(owneruid, lpar, flags);
   #endif
 
   return !Msg.IsError();

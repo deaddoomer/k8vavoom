@@ -69,6 +69,16 @@ struct rep_light_t {
   sector_t *LevelSector;
   float LevelScale;
   //int NextUIdIndex; // -1 or next light for this OwnerUId
+  //WARNING! keep in sync with `dlight_t`!
+  bool bPlayerLight; // set in alloc, player lights should survive
+  bool bNoSelfShadow;
+  bool bNoShadow;
+  bool bNoSelfLight;
+  bool bNoActorLight;
+  bool bNoActorShadow;
+  bool bAdditive; // this does nothing
+  bool bSubtractive; // this does nothing
+  bool bDisabled;
   bool bLightChanged;
   bool bLightActive;
 };

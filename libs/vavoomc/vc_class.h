@@ -162,18 +162,41 @@ struct VLightEffectDef {
   float ConeAngle;
   TVec ConeDir;
 
-  //vint32 NoSelfShadow; // this will become flags
   enum {
-    Flag_NoSelfShadow = 1u<<0,
-    Flag_NoShadow     = 1u<<1,
+    Flag_NoSelfShadow  = 1u<<0,
+    Flag_NoShadow      = 1u<<1,
+    Flag_NoSelfLight   = 1u<<2,
+    Flag_NoActorLight  = 1u<<3, // this implies "no actor shadow"
+    Flag_NoActorShadow = 1u<<4,
+    Flag_Additive      = 1u<<5, // this does nothing
+    Flag_Subtractive   = 1u<<6, // this does nothing
+    Flag_Disabled      = 1u<<7,
   };
   vint32 Flags; // this will become flags
+
+  inline bool IsDisabled () const noexcept { return !!(Flags&Flag_Disabled); }
+  inline void SetDisabled (bool v) noexcept { if (v) Flags |= Flag_Disabled; else Flags &= ~Flag_Disabled; }
 
   inline bool IsNoSelfShadow () const noexcept { return !!(Flags&Flag_NoSelfShadow); }
   inline void SetNoSelfShadow (bool v) noexcept { if (v) Flags |= Flag_NoSelfShadow; else Flags &= ~Flag_NoSelfShadow; }
 
   inline bool IsNoShadow () const noexcept { return !!(Flags&Flag_NoShadow); }
   inline void SetNoShadow (bool v) noexcept { if (v) Flags |= Flag_NoShadow; else Flags &= ~Flag_NoShadow; }
+
+  inline bool IsNoSelfLight () const noexcept { return !!(Flags&Flag_NoSelfLight); }
+  inline void SetNoSelfLight (bool v) noexcept { if (v) Flags |= Flag_NoSelfLight; else Flags &= ~Flag_NoSelfLight; }
+
+  inline bool IsNoActorLight () const noexcept { return !!(Flags&Flag_NoActorLight); }
+  inline void SetNoActorLight (bool v) noexcept { if (v) Flags |= Flag_NoActorLight; else Flags &= ~Flag_NoActorLight; }
+
+  inline bool IsNoActorShadow () const noexcept { return !!(Flags&Flag_NoActorShadow); }
+  inline void SetNoActorShadow (bool v) noexcept { if (v) Flags |= Flag_NoActorShadow; else Flags &= ~Flag_NoActorShadow; }
+
+  inline bool IsAdditive () const noexcept { return !!(Flags&Flag_Additive); }
+  inline void SetAdditive (bool v) noexcept { if (v) { Flags |= Flag_Additive; Flags &= ~Flag_Subtractive; } else Flags &= ~Flag_Additive; }
+
+  inline bool IsSubtractive () const noexcept { return !!(Flags&Flag_Subtractive); }
+  inline void SetSubtractive (bool v) noexcept { if (v) { Flags |= Flag_Subtractive; Flags &= ~Flag_Additive; } else Flags &= ~Flag_Subtractive; }
 
   // doesn't touch `Name`
   inline void setDefaultValues (int LightType) noexcept {

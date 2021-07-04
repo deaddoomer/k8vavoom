@@ -83,7 +83,7 @@ public:
   virtual void SectorModified (sector_t *sec) = 0; // this sector *may* be moved
 
   virtual void ResetStaticLights () = 0;
-  virtual void AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar) = 0;
+  virtual void AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar, const vuint32 flags) = 0;
   virtual void MoveStaticLightByOwner (vuint32 OwnerUId, const TVec &origin) = 0;
   virtual void RemoveStaticLightByOwner (vuint32 OwnerUId) = 0;
   virtual int GetNumberOfStaticLights () = 0;

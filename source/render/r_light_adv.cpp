@@ -375,7 +375,7 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
   Drawer->EndLightPass();
 
   Drawer->BeginModelsLightPass(CurrLightPos, CurrLightRadius, LightMin, Color, CurrLightSpot, CurrLightConeDir, CurrLightConeAngle, allowShadows);
-  RenderMobjsLight(ent);
+  RenderMobjsLight(ent, dlflags);
   Drawer->EndModelsLightPass();
 
   //if (hasScissor) Drawer->DebugRenderScreenRect(scoord[0], scoord[1], scoord[2], scoord[3], 0x7f007f00);

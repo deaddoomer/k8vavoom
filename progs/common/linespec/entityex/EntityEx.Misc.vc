@@ -1492,9 +1492,9 @@ void DetectStaticLightSpawn () {
   }
 
   if (!lt.ConeAngle || lt.ConeAngle >= 360 || !lt.ConeDir) {
-    Level.AddStaticLightRGB(ltowner, lorg, lt.Radius, lt.Color);
+    Level.AddStaticLightRGB(ltowner, lorg, lt.Radius, lt.Color, flags:lt.GetLightEffectLightFlags());
   } else {
-    Level.AddStaticLightRGB(ltowner, lorg, lt.Radius, lt.Color, lt.ConeDir, lt.ConeAngle);
+    Level.AddStaticLightRGB(ltowner, lorg, lt.Radius, lt.Color, lt.ConeDir, lt.ConeAngle, flags:lt.GetLightEffectLightFlags());
   }
 
   if (!ltowner) Destroy();
@@ -2375,6 +2375,7 @@ final void DoStateEffects (float DeltaTime) {
     // i think that it will be better to use ids, and allow unreplaced lights to decay
     foreach (auto i; 0..FXLights.length) {
       LightEffectDef *L = FXLights[i];
+      if (!L || L->bDisabled || L->bSubtractive) continue; // ignore disabled and invalid lights
       TVec lorg = Origin+Forward*L->Offset.x-Right*L->Offset.y+Up*L->Offset.z;
       // fix lights put into the floor or into the ceiling (why not?)
       if (/*!L->Offset.z &&*/ Sector) {
@@ -2473,8 +2474,15 @@ final void DoStateEffects (float DeltaTime) {
       }
       dl->color = L->Color;
       dl->minlight = L->MinLight;
+      // set light flags
       dl->bNoSelfShadow = L->bNoSelfShadow;
       dl->bNoShadow = L->bNoShadow;
+      dl->bNoSelfLight = L->bNoSelfLight;
+      dl->bNoActorLight = L->bNoActorLight;
+      dl->bNoActorShadow = L->bNoActorShadow;
+      dl->bAdditive = L->bAdditive;
+      //dl->bSubtractive = false; // L->bSubtractive; -- subtractive lights already rejected above
+      //dl->bDisabled = false; //L->bDisabled; -- disabled lights already rejected above
       dl->die = XLevel.Time+0.1;
       prev_rad = dl->radius;
     }

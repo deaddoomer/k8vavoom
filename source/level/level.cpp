@@ -689,7 +689,7 @@ void VLevel::ResetStaticLights () {
 //  VLevel::AddStaticLightRGB
 //
 //==========================================================================
-void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
+void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar, const vuint32 flags) {
   if (owneruid && !StaticLightsMap) StaticLightsMap = new TMapNC<vuint32, int>();
   const int idx = StaticLights.length();
   rep_light_t &L = StaticLights.alloc();
@@ -706,7 +706,7 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
     const float intensity = clampval(lpar.LevelSector->params.lightlevel*(fabsf(lpar.LevelScale)*0.125f), 0.0f, 255.0f);
     L.Radius = VLevelInfo::GZSizeToRadius(intensity, (lpar.LevelScale < 0.0f), 2.0f);
   }
-  L.Flags = rep_light_t::LightChanged|rep_light_t::LightActive;
+  L.Flags = flags|rep_light_t::LightChanged|rep_light_t::LightActive;
   if (owneruid) {
     vassert(StaticLightsMap);
     auto oidxp = StaticLightsMap->find(owneruid);
@@ -714,7 +714,7 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar) {
     StaticLightsMap->put(owneruid, idx);
   }
   #ifdef CLIENT
-  if (Renderer) Renderer->AddStaticLightRGB(owneruid, lpar);
+  if (Renderer) Renderer->AddStaticLightRGB(owneruid, lpar, flags);
   #endif
 }
 
@@ -770,8 +770,8 @@ void VLevel::RemoveStaticLightByOwner (vuint32 owneruid) {
 //  VLevel::AddStaticLightRGB
 //
 //==========================================================================
-void VLevel::AddStaticLightRGB (VEntity *Ent, const VLightParams &lpar) {
-  return AddStaticLightRGB((Ent ? Ent->/*GetUniqueId()*/ServerUId : 0u), lpar);
+void VLevel::AddStaticLightRGB (VEntity *Ent, const VLightParams &lpar, const vuint32 flags) {
+  return AddStaticLightRGB((Ent ? Ent->/*GetUniqueId()*/ServerUId : 0u), lpar, flags);
 }
 
 

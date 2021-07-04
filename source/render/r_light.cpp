@@ -292,7 +292,7 @@ void VRenderLevelShared::ResetStaticLights () {
 //  VRenderLevelShared::AddStaticLightRGB
 //
 //==========================================================================
-void VRenderLevelShared::AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar) {
+void VRenderLevelShared::AddStaticLightRGB (vuint32 OwnerUId, const VLightParams &lpar, const vuint32 flags) {
   staticLightsFiltered = false;
   light_t &L = Lights.Alloc();
   L.origin = lpar.Origin;
@@ -306,6 +306,7 @@ void VRenderLevelShared::AddStaticLightRGB (vuint32 OwnerUId, const VLightParams
   L.coneAngle = lpar.coneAngle;
   L.levelSector = lpar.LevelSector;
   L.levelScale = lpar.LevelScale;
+  L.flags = flags;
   if (lpar.LevelSector) {
     L.sectorLightLevel = lpar.LevelSector->params.lightlevel;
     const float intensity = clampval(L.sectorLightLevel*(fabsf(lpar.LevelScale)*0.125f), 0.0f, 255.0f);
@@ -948,16 +949,25 @@ for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
 void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags) {
   // fullight by owned lights
   if (!lowner || (flags&LP_IgnoreSelfLights)) return;
+  if (!r_static_lights.asBool()) return;
 
   auto stpp = StOwners.find(lowner->ServerUId);
   if (!stpp) return;
 
-  const TVec p = calcLightPoint(pt, height);
   const light_t *stl = &Lights[*stpp];
+  //GCon->Logf(NAME_Debug, "000: own static light for '%s' (%u): flags=0x%04x", lowner->GetClass()->GetName(), lowner->ServerUId, stl->flags);
+  if (stl->flags&(dlight_t::Disabled|dlight_t::Subtractive|dlight_t::NoActorLight|dlight_t::NoSelfLight)) return; // check "no self/actor light" flags
+  //GCon->Logf(NAME_Debug, "001: own static light for '%s' (%u): flags=0x%04x", lowner->GetClass()->GetName(), lowner->ServerUId, stl->flags);
+  /*
+  const TVec p = calcLightPoint(pt, height);
   const float distSq = (p-stl->origin).lengthSquared();
-  if (distSq < stl->radius*stl->radius) return; // too far away
+  if (distSq >= stl->radius*stl->radius) return; // too far away
+  GCon->Logf(NAME_Debug, "002: own static light for '%s' (%u): flags=0x%04x; dist=%g", lowner->GetClass()->GetName(), lowner->ServerUId, stl->flags, sqrtf(distSq));
+  */
 
-  float add = stl->radius-sqrtf(distSq);
+  //float add = stl->radius-sqrtf(distSq);
+  float add = stl->radius;
+  //GCon->Logf(NAME_Debug, "003: own static light for '%s' (%u): flags=0x%04x; add=%g", lowner->GetClass()->GetName(), lowner->ServerUId, stl->flags, add);
   if (add > 1.0f) {
     if (stl->coneAngle > 0.0f && stl->coneAngle < 360.0f) {
       const float attn = CheckLightPointCone(lowner, pt, radius, height, stl->origin, stl->coneDirection, stl->coneAngle);
@@ -980,12 +990,14 @@ void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, con
 void VRenderLevelShared::CalcEntityDynamicLightingFromOwned (VEntity *lowner, const TVec &pt, float radius, float height, float &l, float &lr, float &lg, float &lb, unsigned flags) {
   // fullight by owned lights
   if (!lowner || (flags&LP_IgnoreSelfLights)) return;
+  if (!r_dynamic_lights.asBool()) return;
 
   auto dlpp = dlowners.find(lowner->ServerUId);
   if (!dlpp) return;
 
-  const TVec p = calcLightPoint(pt, height);
   const dlight_t &dl = DLights[*dlpp];
+  if (dl.flags&(dlight_t::Disabled|dlight_t::Subtractive|dlight_t::NoActorLight|dlight_t::NoSelfLight)) return; // check "no self/actor light" flags
+  const TVec p = calcLightPoint(pt, height);
   const float distSq = (p-dl.origin).lengthSquared();
   if (distSq >= dl.radius*dl.radius) return; // too far away
   float add = (dl.radius-dl.minlight)-sqrtf(distSq);
@@ -1028,6 +1040,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
       // reject owned light, because they are processed by another method
       const dlight_t &dl = DLights[i];
       if (lowner && lowner->ServerUId == dl.ownerUId) continue;
+      if (dl.flags&(dlight_t::Disabled|dlight_t::Subtractive|dlight_t::NoActorLight)) continue; // check "no self/actor light" flags
       // special processing for API light queries
       if ((flags&LP_IgnoreSelfLights) && lowner && IsInInventory(lowner, dl.ownerUId)) continue;
       if (dl.type&DLTYPE_Subtractive) continue;
@@ -1085,6 +1098,7 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
       if (!stl->active) continue;
       // ignore owned lights, because they are processed in another method
       if (lowner && lowner->ServerUId == stl->ownerUId) continue;
+      if (stl->flags&(dlight_t::Disabled|dlight_t::Subtractive|dlight_t::NoActorLight)) continue; // check "no self/actor light" flags
       // check potential visibility
       const float distSq = (p-stl->origin).lengthSquared();
       if (distSq >= stl->radius*stl->radius) continue; // too far away
@@ -1244,6 +1258,10 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
 //==========================================================================
 //
 //  VRenderLevelShared::LightPoint
+//
+//  used to calculate lighting for objects
+//  can be used without `lowner` to calculate lighting in the given point:
+//  in this case, the lighting is assumed to be for non-actor
 //
 //==========================================================================
 vuint32 VRenderLevelShared::LightPoint (VEntity *lowner, const TVec p, float radius, float height, const subsector_t *psub, unsigned flags) {
