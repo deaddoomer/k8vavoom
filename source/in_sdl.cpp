@@ -569,18 +569,14 @@ bool VSdlInputDevice::HasClipboardText () {
 //==========================================================================
 VStr VSdlInputDevice::GetClipboardText () {
   char *text = SDL_GetClipboardText();
-  if (!text) return VStr::EmptyString;
-  VStr str;
-  for (const char *p = text; *p; ++p) {
-    char ch = *p;
-    if (ch <= 0 || ch > 127) {
-      ch = '?';
-    } else if (ch > 0 && ch < 32) {
-           if (ch == '\t') ch = ' ';
-      else if (ch != '\n') continue;
-    }
-    str += ch;
+  if (!text || !text[0]) return VStr::EmptyString;
+  for (char *p = text; *p; ++p) {
+    const char ch = *p;
+         if (ch <= 0 || ch > 127) *p = '?';
+    else if (ch == '\t' || ch == '\n') *p = ' ';
+    else if (ch > 0 && ch < 32) *p = ' ';
   }
+  VStr str(text);
   SDL_free(text);
   return str;
 }
