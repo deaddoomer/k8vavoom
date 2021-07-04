@@ -37,7 +37,6 @@
 #include "client/client.h"
 #include "filesys/files.h"
 
-#define VSDL_USEOLD_MACCEL
 
 // k8: joysticks have 16 buttons; no, really, you don't need more
 
@@ -84,6 +83,9 @@ private:
   bool currDoGrab; // should we grab the mouse? (cached "m_grab" value)
   bool currRelative; // should we use relative mode? (cached "m_relative" value)
   bool relativeFailed; // did setting relative mode failed at least once?
+
+  float hlRemX;
+  float hlRemY;
 
   int mouseLastX;
   int mouseLastY;
@@ -161,35 +163,15 @@ static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive);
 static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);
 static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_Archive);
 
-#ifdef VSDL_USEOLD_MACCEL
-static VCvarB ms_rel_accum("ms_rel_accum", false, "Accumulate relative motion before accelerating?", CVAR_Archive);
+static VCvarI ms_rel_mode("ms_rel_mode", "1", "Relative acceleration mode (0: none; 1: hl-like).", CVAR_Archive);
 
-static VCvarB ms_rel_keep_x("ms_rel_keep_x", false, "Keep divided part of the original horizontal delta?", CVAR_Archive);
-static VCvarB ms_rel_keep_y("ms_rel_keep_y", false, "Keep divided part of the original vertical delta?", CVAR_Archive);
+static VCvarF ms_rel_exponent("ms_rel_exponent", "1", "Relative acceletation distance exponent.", CVAR_Archive);
+static VCvarF ms_rel_senscap("ms_rel_senscap", "2.7", "Relative acceletation sensitivity cap.", CVAR_Archive);
+static VCvarF ms_rel_sensitivity("ms_rel_sensitivity", "0.8", "Relative acceletation sensitivity.", CVAR_Archive);
+static VCvarF ms_rel_sensscale("ms_rel_sensscale", "0.2", "Relative acceletation sensitivity scale.", CVAR_Archive);
 
-static VCvarI ms_rel_min_x("ms_rel_min_x", "6", "Minimum horizontal speed for relative acceleration.", CVAR_Archive);
-static VCvarI ms_rel_min_y("ms_rel_min_y", "6", "Minimum vertical speed for relative acceleration.", CVAR_Archive);
-
-static VCvarF ms_rel_div_x("ms_rel_div_x", "3.6", "Relative horizontal threshold divisor.", CVAR_Archive);
-static VCvarF ms_rel_div_y("ms_rel_div_y", "3.6", "Relative vertical threshold divisor.", CVAR_Archive);
-
-static VCvarF ms_rel_mul_x("ms_rel_mul_x", "6", "Relative horizontal threshold multiplier.", CVAR_Archive);
-static VCvarF ms_rel_mul_y("ms_rel_mul_y", "6", "Relative vertical threshold multiplier.", CVAR_Archive);
-#else
-// more-or-less what half-life 1 does:
-//   sens = min2(ms_rel_max, powf(delta, ms_rel_exp)*ms_rel_scale+ms_rel_sens);
-//   delta *= sens;
-static VCvarF ms_rel_sens_x("ms_rel_sens_x", "3", "Relative acceleration sensitivity.", CVAR_Archive);
-static VCvarF ms_rel_scale_x("ms_rel_scale_x", "0.04", "Relative acceleration scale.", CVAR_Archive);
-static VCvarF ms_rel_exp_x("ms_rel_exp_x", "1", "Relative acceleration exponent.", CVAR_Archive);
-static VCvarF ms_rel_max_x("ms_rel_max_x", "0", "Relative acceleration maximum value.", CVAR_Archive);
-
-static VCvarF ms_rel_sens_y("ms_rel_sens_y", "3", "Relative acceleration sensitivity.", CVAR_Archive);
-static VCvarF ms_rel_scale_y("ms_rel_scale_y", "0.04", "Relative acceleration scale.", CVAR_Archive);
-static VCvarF ms_rel_exp_y("ms_rel_exp_y", "1", "Relative acceleration exponent.", CVAR_Archive);
-static VCvarF ms_rel_max_y("ms_rel_max_y", "0", "Relative acceleration maximum value.", CVAR_Archive);
-#endif
-
+static VCvarB ms_rel_squaredist("ms_rel_squaredist", false, "Use squared distance for relative acceletation?", CVAR_Archive);
+static VCvarB ms_rel_expweird("ms_rel_expweird", false, "Use different exponent formula for relative acceleration?", CVAR_Archive);
 
 static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive);
 static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive);
@@ -323,6 +305,8 @@ VSdlInputDevice::VSdlInputDevice ()
   , currDoGrab(false)
   , currRelative(false)
   , relativeFailed(false)
+  , hlRemX(0.0f)
+  , hlRemY(0.0f)
   , mouseLastX(0)
   , mouseLastY(0)
   , curmodflags(0)
@@ -605,70 +589,6 @@ static int calcStickTriggerValue (const int axis, int value) noexcept {
 
 //==========================================================================
 //
-//  AccelerateMouseDelta
-//
-//  more-or-less what half-life 1 does:
-//    sens = min2(max, powf(delta, exp)*scale+sens);
-//    delta *= sens;
-//==========================================================================
-#ifdef VSDL_USEOLD_MACCEL
-static void AccelerateMouseDelta (int &delta, const int min, const float div, const float mul, const bool keep) noexcept {
-  if (abs(delta) >= min) {
-    if (!isFiniteF(div) || !isFiniteF(mul)) return;
-    if (div <= 0.0f || mul <= 0.0f) return;
-    const int olddelta = delta;
-    #if 1
-    const int dd = (int)((float)delta/div);
-    delta = (int)((float)dd*mul);
-    if (keep) delta += dd;
-    #else
-    delta = (int)((float)delta/div*mul);
-    #endif
-    if (!delta) delta = olddelta;
-  }
-}
-#else
-static void AccelerateMouseDelta (int &delta, float sens, float scale, float exp, float max) noexcept {
-  if (delta) {
-    if (!isFiniteF(sens)) sens = 3.0f;
-    if (!isFiniteF(scale)) sens = 0.04f;
-    if (!isFiniteF(exp)) exp = 1.0f;
-    if (!isFiniteF(max)) max = 0.0f;
-
-    sens = clampval(sens, 0.0f, 64.0f); // arbitrary limit
-    scale = clampval(scale, 0.0f, 8.0f); // arbitrary limit
-    exp = clampval(exp, 0.0f, 8.0f); // arbitrary limit
-    max = clampval(max, 0.0f, 512.0f); // arbitrary limit
-
-    float res = (exp > 0.0f ? powf((float)delta, exp) : (float)delta);
-    res *= scale;
-    res += sens;
-    if (max > 0.0f) res = min2(res, max);
-
-    delta = (int)((float)delta*res);
-  }
-}
-#endif
-
-
-//==========================================================================
-//
-//  AccelerateMouse
-//
-//==========================================================================
-static void AccelerateMouse (int &rel_x, int &rel_y) noexcept {
-  #ifdef VSDL_USEOLD_MACCEL
-  if (rel_x) AccelerateMouseDelta(rel_x, ms_rel_min_x.asInt(), ms_rel_div_x.asFloat(), ms_rel_mul_x.asFloat(), ms_rel_keep_x.asBool());
-  if (rel_y) AccelerateMouseDelta(rel_y, ms_rel_min_y.asInt(), ms_rel_div_y.asFloat(), ms_rel_mul_y.asFloat(), ms_rel_keep_y.asBool());
-  #else
-  if (rel_x) AccelerateMouseDelta(rel_x, ms_rel_sens_x.asFloat(), ms_rel_scale_x.asFloat(), ms_rel_exp_x.asFloat(), ms_rel_max_x.asFloat());
-  if (rel_y) AccelerateMouseDelta(rel_y, ms_rel_sens_y.asFloat(), ms_rel_scale_y.asFloat(), ms_rel_exp_y.asFloat(), ms_rel_max_y.asFloat());
-  #endif
-}
-
-
-//==========================================================================
-//
 //  VSdlInputDevice::ReadInput
 //
 //  Reads input from the input devices.
@@ -680,7 +600,7 @@ void VSdlInputDevice::ReadInput () {
   int normal_value;
   int mouseCurrX = mouseLastX, mouseCurrY = mouseLastY;
   int rel_x = 0, rel_y = 0;
-  int acc_rel_x = 0, acc_rel_y = 0;
+  bool firstDump = true;
 
   SDL_PumpEvents();
   while (SDL_PollEvent(&ev)) {
@@ -730,25 +650,60 @@ void VSdlInputDevice::ReadInput () {
       case SDL_MOUSEMOTION:
         if (currRelative && winactive) {
           if (!firsttime) {
+            // motion values
             int dx = +ev.motion.xrel;
             int dy = -ev.motion.yrel;
-            if (ms_rel_accum.asBool()) {
-              rel_x += dx;
-              rel_y += dy;
-              acc_rel_x = rel_x;
-              acc_rel_y = rel_y;
-              AccelerateMouse(acc_rel_x, acc_rel_y);
+            if (ms_rel_mode.asInt() > 0) {
+              float mx = (float)dx;
+              float my = (float)dy;
+              float effsens = 1.0f;
+
+              float movedist = mx*mx+my*my;
+              if (!ms_rel_squaredist.asBool()) movedist = sqrtf(movedist);
+
+              if (movedist > 0.0f) {
+                float dexp = ms_rel_exponent.asFloat();
+                if (!isFiniteF(dexp)) dexp = 0.0f;
+                if (dexp > 4.0f) dexp = 4.0f;
+                if (dexp > 0.0f) {
+                  if (ms_rel_expweird.asBool()) {
+                    const float expaccel = max2(0.0f, (dexp-1.0f)/2.0f);
+                    effsens = powf(movedist, expaccel)*ms_rel_sensitivity.asFloat();
+                  } else {
+                    effsens = powf(movedist, dexp)*ms_rel_sensscale.asFloat()+ms_rel_sensitivity.asFloat();
+                  }
+                }
+              }
+
+              float finsens = effsens;
+              if (ms_rel_senscap.asFloat() > 0.0f && finsens > ms_rel_senscap.asFloat()) finsens = ms_rel_senscap.asFloat();
+
+              if (m_dbg_motion.asBool()) {
+                if (firstDump) { firstDump = false; GCon->Log(NAME_Debug, "=== SDLMOTION ==="); }
+                GCon->Logf(NAME_Debug, "SDLMOTION: dx=%d; dy=%d; movedist=%g; finsens=%g (%g); sqdist=%d; weirdexp=%d; mx=%d; my=%d", dx, dy, movedist, finsens, effsens, (int)ms_rel_squaredist.asBool(), (int)ms_rel_expweird.asBool(), (int)floorf(mx*finsens+hlRemX), (int)floorf(my*finsens+hlRemY));
+              }
+
+              mx *= finsens;
+              my *= finsens;
+
+              // hold the remainder and pass it into the next round
+              mx += hlRemX;
+              my += hlRemY;
+
+              hlRemX = mx-floorf(mx);
+              hlRemY = my-floorf(my);
+
+              rel_x += (int)floorf(mx);
+              rel_y += (int)floorf(my);
             } else {
-              AccelerateMouse(dx, dy);
+              // no acceleration
               rel_x += dx;
               rel_y += dy;
-              acc_rel_x = rel_x;
-              acc_rel_y = rel_y;
             }
             // temp, for button events
             if (Drawer) {
-              mouseCurrX = clampval(mouseLastX+acc_rel_x, 0, Drawer->getWidth()-1);
-              mouseCurrY = clampval(mouseLastY+acc_rel_y, 0, Drawer->getHeight()-1);
+              mouseCurrX = clampval(mouseLastX+rel_x, 0, Drawer->getWidth()-1);
+              mouseCurrY = clampval(mouseLastY+rel_y, 0, Drawer->getHeight()-1);
             }
           } else {
             firsttime = false;
@@ -993,8 +948,6 @@ void VSdlInputDevice::ReadInput () {
 
   // read mouse separately
   if (mouse && winactive && Drawer) {
-    rel_x = acc_rel_x;
-    rel_y = acc_rel_y;
     #if 1
     // not a typo
     if (rel_x|rel_y) {
