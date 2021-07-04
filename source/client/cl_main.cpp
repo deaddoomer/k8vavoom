@@ -154,7 +154,14 @@ void CL_Shutdown () {
 //
 //==========================================================================
 void CL_DecayLights () {
-  if (GClLevel && GClLevel->Renderer) GClLevel->Renderer->DecayLights(host_frametime);
+  if (GClLevel && GClLevel->Renderer) {
+    if (!GGameInfo || !GGameInfo->IsPaused()) {
+      if (host_frametime > 0.0f) {
+        //static int cnt = 0; GCon->Logf(NAME_Debug, "decay lights(%d): %g", cnt++, host_frametime);
+        GClLevel->Renderer->DecayLights(host_frametime);
+      }
+    }
+  }
 }
 
 

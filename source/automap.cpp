@@ -43,6 +43,7 @@
 # include "lockdefs.h"
 #endif
 #include "text.h"
+#include "menu.h"
 
 // there is no need to do this anymore: OpenGL will do it for us
 //#define AM_DO_CLIPPING
@@ -2952,8 +2953,12 @@ bool AM_Responder (event_t *ev) {
 //
 //==========================================================================
 COMMAND(Iddt) {
-  if (GGameInfo->NetMode == NM_None || GGameInfo->NetMode == NM_Client) return;
+  //if (GGameInfo->NetMode == NM_None || GGameInfo->NetMode == NM_Client) return;
+#ifdef CLIENT
+  if (MN_Active()) return;
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) return;
   am_cheating = (am_cheating+1)%3;
+#endif
 }
 
 
@@ -2963,15 +2968,18 @@ COMMAND(Iddt) {
 //
 //==========================================================================
 COMMAND(toggle_automap) {
-  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
+#ifdef CLIENT
+  if (MN_Active()) return;
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) {
     GCon->Log(NAME_Warning, "Cannot toggle automap while not in game!");
     return;
   }
-#ifdef CLIENT
+/*k8: why?
   if (GGameInfo->IsPaused()) {
-    if (cl) cl->Printf("Cannot toggle autorun while the game is paused!"); else GCon->Log(NAME_Warning, "Cannot toggle autorun while the game is paused!");
+    if (cl) cl->Printf("Cannot toggle automap while the game is paused!"); else GCon->Log(NAME_Warning, "Cannot toggle automap while the game is paused!");
     return;
   }
-#endif
+*/
   am_active = !am_active;
+#endif
 }

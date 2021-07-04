@@ -49,6 +49,7 @@
 # include "../client/client.h"
 # include "../client/cl_local.h"
 #endif
+#include "../menu.h"
 
 
 extern VCvarB sv_ignore_nomlook;
@@ -446,14 +447,17 @@ COMMAND(Impulse) {
 //==========================================================================
 COMMAND(ToggleAlwaysRun) {
 #ifdef CLIENT
-  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
+  if (MN_Active()) return;
+  if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap || GGameInfo->IsInWipe()) {
     GCon->Log(NAME_Warning, "Cannot toggle autorun while not in game!");
     return;
   }
+  /*k8: why?
   if (GGameInfo->IsPaused()) {
     if (cl) cl->Printf("Cannot toggle autorun while the game is paused!"); else GCon->Log(NAME_Warning, "Cannot toggle autorun while the game is paused!");
     return;
   }
+  */
 #endif
   always_run = !always_run;
 #ifdef CLIENT
@@ -475,6 +479,7 @@ COMMAND(ToggleAlwaysRun) {
 COMMAND(Use) {
   if (Args.length() < 1) return;
 #ifdef CLIENT
+  if (MN_Active()) return;
   if (!cl || !GClGame || !GGameInfo || GClGame->InIntermission() || GGameInfo->NetMode <= NM_TitleMap) {
     if (cl) cl->Printf("Cannot use artifact while not in game!"); else GCon->Log(NAME_Warning, "Cannot use artifact while not in game!");
     return;
