@@ -140,7 +140,7 @@ static inline TVec calcLightPoint (const TVec &pt, float height) noexcept {
 bool VRenderLevelShared::CalcScreenLightDimensions (const TVec &LightPos, const float LightRadius, int *w, int *h) noexcept {
   if (w) *w = 0;
   if (h) *h = 0;
-  if (!isFiniteF(LightRadius) || LightRadius < 8.0f) return false;
+  if (!Drawer || !isFiniteF(LightRadius) || LightRadius < 8.0f) return false;
   // just in case
   if (!Drawer->vpmats.vport.isValid()) return false;
 
