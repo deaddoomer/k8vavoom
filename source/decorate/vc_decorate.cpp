@@ -1529,30 +1529,63 @@ static VStr RemapOldLabel (VStr name) {
 
 //==========================================================================
 //
+//  IsNonSpriteStringStart
+//
+//==========================================================================
+static inline bool IsNonSpriteStringStart (VStr s) noexcept {
+  return
+    s.isEmpty() ||
+    s.startsWith("}") ||
+    s.startsWith(":") ||
+    s.startsWith(".") ||
+    s.startsWith(";");
+}
+
+
+//==========================================================================
+//
+//  IsValidFrameName
+//
+//==========================================================================
+static bool IsValidFrameName (VStr str) noexcept {
+  if (str.isEmpty()) return false;
+  for (const char *s = *str; *s; ++s) {
+    const char ch = VStr::ToUpper(*s);
+    if (ch == '#') continue;
+    if (ch < 'A' || ch > '^') return false;
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
 //  CanBeSpriteNameWorker
 //
 //  called after the base sprite or command read
 //
 //==========================================================================
-static bool CanBeSpriteNameWorker (VScriptParser *sc, bool asGoto) {
+static bool CanBeSpriteNameWorker (VScriptParser *sc, bool asGoto) noexcept {
   // get argument
   if (!sc->GetString()) return false;
   //GCon->Logf(NAME_Debug, "asGoto=%d: <%s>", (int)asGoto, *sc->String.quote(true));
-  if (sc->String == "}" || sc->String.startsWith(":") || sc->String.startsWith(".")) return false;
+  if (IsNonSpriteStringStart(sc->String)) return false;
   if (sc->IsAtEol()) return false; // no frames -- not a sprite line
   if (!asGoto) {
-    // check for valid frame names
-    for (int f = 0; f < sc->String.length(); ++f) {
-      char FChar = VStr::ToUpper(sc->String[f]);
-      if (FChar == '#') continue;
-      if (FChar < 'A' || FChar > '^') return false;
-    }
+    // not a "goto"
+    if (!IsValidFrameName(sc->String)) return false;
     // there should be a duration
     if (!sc->GetString()) return false;
-    return !(sc->String == "}" || sc->String.startsWith(":") || sc->String.startsWith("."));
+    return !IsNonSpriteStringStart(sc->String);
   } else {
+    // "goto" check
+    // "goto +2", or something
+    if (sc->String.startsWith("+")) return false;
+    // there should be a duration
     if (!sc->GetString()) return false;
-    return !(sc->String == "}" || sc->String.startsWith(":") || sc->String.startsWith(".") || sc->String.startsWith("+"));
+    // "goto label+2"
+    if (sc->String.startsWith("+")) return false;
+    return !IsNonSpriteStringStart(sc->String);
   }
 }
 
