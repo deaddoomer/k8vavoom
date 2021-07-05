@@ -631,9 +631,10 @@ bool VInputPublic::PostKeyEvent (int key, int press, vuint32 modflags) {
 void VInput::ProcessEvents () {
   bool reachedBinding = false;
   bool wasEvent = false;
+  event_t ev;
   Device->ReadInput();
+  // use counter here, so newly posted events will be processed at the next invocation
   for (int count = VObject::CountQueuedEvents(); count > 0; --count) {
-    event_t ev;
     if (!VObject::GetEvent(&ev)) break;
     wasEvent = true;
 
