@@ -877,14 +877,15 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
 
   glGenTextures(1, &tonemapPalLUT);
   GLDRW_CHECK_ERROR("create tonemapPalLUT");
-  p_glObjectLabelVA(GL_TEXTURE, tonemapPalLUT, "Palette Tonemap LUT Texture");
   glBindTexture(GL_TEXTURE_2D, tonemapPalLUT);
+  p_glObjectLabelVA(GL_TEXTURE, tonemapPalLUT, "Palette Tonemap LUT Texture");
+  GLDRW_CHECK_ERROR("bind tonemapPalLUT");
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
-  GLDRW_CHECK_ERROR("bind tonemapPalLUT");
+  GLDRW_CHECK_ERROR("set tonemapPalLUT options");
   //glTexSubImage2D(GL_TEXTURE_2D, 0,  0, 0, 512, 512, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
   if (tonemapMode == 0) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
