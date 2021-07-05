@@ -688,48 +688,46 @@ public:
   inline void SetFieldObjectValue (VName fldname, VObject *Value) { Class->FindFieldChecked(fldname)->SetObjectValue(this, Value); }
 
 public:
-  // event queue API; as it is used both in k8vavoom and in vccrun, and with common `event_t` struct,
-  // there is no reason to not have it here
+  // event queue API; as it is used both in k8vavoom and in vccrun, and with
+  // common `event_t` struct, there is no reason to not have it here
+  //
+  // it is thread-safe
 
-  // returns `false` if queue is full
-  // add event to the bottom of the current queue
-  // it is unspecified if posted event will be processed in the current
-  // frame, or in the next one
-  static bool PostEvent (const event_t &ev);
+  // returns `false` if the queue is full
+  // add the event to the bottom of the queue
+  static bool PostEvent (const event_t &ev) noexcept;
 
-  // returns `false` if queue is full
-  // add event to the top of the current queue
-  // it is unspecified if posted event will be processed in the current
-  // frame, or in the next one
-  static bool InsertEvent (const event_t &ev);
+  // returns `false` if the queue is full
+  // add event to the top of the queue
+  static bool InsertEvent (const event_t &ev) noexcept;
 
-  // check if event queue has any unprocessed events
-  // returns number of events in queue or 0
-  // it is unspecified if unprocessed events will be processed in the current
-  // frame, or in the next one
-  static int CountQueuedEvents ();
+  // check if the queue has any unprocessed events
+  // returns number of events in the queue, or 0
+  static int CountQueuedEvents () noexcept;
 
-  // peek event from queue
-  // event with index 0 is the top one
-  // it is safe to call this with `nullptr`
-  static bool PeekEvent (int idx, event_t *ev);
+  // peek an event from the queue
+  // event with index 0 is the top one (i.e. first posted)
+  // it is safe to call this with `ev` set to `nullptr`
+  // returns `false` on invalid index (and `ev` is zeroed in this case)
+  static bool PeekEvent (int idx, event_t *ev) noexcept;
 
-  // get top event from queue
-  // returns `false` if there are no more events
-  // it is safe to call this with `nullptr` (in this case event will be removed)
-  static bool GetEvent (event_t *ev);
+  // get the top event from the queue
+  // returns `false` if there are no more events (and `ev` is zeroed in this case)
+  // it is safe to call this with `ev` set to `nullptr`
+  // (in this case the event will be dropped)
+  static bool GetEvent (event_t *ev) noexcept;
 
-  // returns maximum size of event queue
-  // note that event queue may be longer that the returned value
-  static int GetEventQueueSize ();
+  // returns maximum size of the queue
+  static int GetEventQueueSize () noexcept;
 
-  // invalid newsize values will be ignored
-  // if event queue currently contanis more than `newsize` events, the API is noop
-  // returns success flag
-  static bool SetEventQueueSize (int newsize);
+  // set new maximum size of the queue
+  // invalid newsize values (negative or zero) will be ignored
+  // if the queue currently contanis more than `newsize` events, the API is noop
+  // returns success flag (i.e. `true` when the queue was resized)
+  static bool SetEventQueueSize (int newsize) noexcept;
 
-  // unconditionally clears event queue
-  static void ClearEventQueue ();
+  // unconditionally clears the queue
+  static void ClearEventQueue () noexcept;
 
 public:
   // stack routines

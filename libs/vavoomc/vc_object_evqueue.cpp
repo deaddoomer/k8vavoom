@@ -30,15 +30,44 @@ static int eventFirst = 0; // first stored event
 // that is, new event will be posted at [head+1], and
 // to read events, get [tail] while (tail != head)
 
+static atomic_int queueSpinLock = 0;
+
+
+//==========================================================================
+//
+//  lockQueue
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE void lockQueue () noexcept {
+  while (atomic_cmp_xchg(&queueSpinLock, 0, 1) != 0) {}
+}
+
+
+//==========================================================================
+//
+//  unlockQueue
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE void unlockQueue () noexcept {
+  atomic_store(&queueSpinLock, 0);
+}
+
+
+struct QueueLocker {
+  VVA_ALWAYS_INLINE QueueLocker () noexcept { lockQueue(); }
+  VVA_ALWAYS_INLINE ~QueueLocker () noexcept { unlockQueue(); }
+  QueueLocker (const QueueLocker &) = delete;
+  QueueLocker &operator = (const QueueLocker &) = delete;
+};
+
 
 //==========================================================================
 //
 //  VObject::ClearEventQueue
 //
-//  unconditionally clears event queue
-//
 //==========================================================================
-void VObject::ClearEventQueue () {
+void VObject::ClearEventQueue () noexcept {
+  QueueLocker lock;
   eventLast = eventFirst = 0;
 }
 
@@ -47,13 +76,9 @@ void VObject::ClearEventQueue () {
 //
 //  VObject::CountQueuedEvents
 //
-//  check if event queue has any unprocessed events
-//  returns number of events in queue or 0
-//  it is unspecified if unprocessed events will be processed in the current
-//  frame, or in the next one
-//
 //==========================================================================
-int VObject::CountQueuedEvents () {
+int VObject::CountQueuedEvents () noexcept {
+  QueueLocker lock;
   return eventLast+(eventLast < eventFirst ? eventMax : 0)-eventFirst;
 }
 
@@ -62,11 +87,9 @@ int VObject::CountQueuedEvents () {
 //
 //  VObject::GetEventQueueSize
 //
-//  returns maximum size of event queue
-//  note that event queue may be longer that the returned value
-//
 //==========================================================================
-int VObject::GetEventQueueSize () {
+int VObject::GetEventQueueSize () noexcept {
+  QueueLocker lock;
   return eventMax;
 }
 
@@ -75,13 +98,15 @@ int VObject::GetEventQueueSize () {
 //
 //  VObject::SetEventQueueSize
 //
-//  invalid newsize values will be ignored
-//  if event queue currently contanis more than `newsize` events, the API is noop
-//  returns success flag
+//  set new maximum size of the queue
+//  invalid newsize values (negative or zero) will be ignored
+//  if the queue currently contanis more than `newsize` events, the API is noop
+//  returns success flag (i.e. `true` when the queue was resized)
 //
 //==========================================================================
-bool VObject::SetEventQueueSize (int newsize) {
+bool VObject::SetEventQueueSize (int newsize) noexcept {
   if (newsize < 1) return false; // oops
+  QueueLocker lock;
   if (newsize < CountQueuedEvents()) return false;
   // allocate new buffer, copy events
   event_t *newbuf = (event_t *)Z_Malloc(newsize*sizeof(event_t));
@@ -90,10 +115,12 @@ bool VObject::SetEventQueueSize (int newsize) {
     newbuf[npos++] = events[eventFirst++];
     eventFirst %= eventMax;
   }
+  vassert(npos <= newsize);
   Z_Free(events);
   events = newbuf;
   eventFirst = 0;
   eventLast = npos;
+  eventMax = newsize;
   return true;
 }
 
@@ -102,13 +129,9 @@ bool VObject::SetEventQueueSize (int newsize) {
 //
 //  VObject::PostEvent
 //
-//  returns `false` if queue is full
-//  add event to the bottom of the current queue
-//  it is unspecified if posted event will be processed in the current
-//  frame, or in the next one
-//
 //==========================================================================
-bool VObject::PostEvent (const event_t &ev) {
+bool VObject::PostEvent (const event_t &ev) noexcept {
+  QueueLocker lock;
   int nextFree = (eventLast+1)%eventMax;
   if (nextFree == eventFirst) return false; // queue overflow
   // if this is first ever event, allocate queue
@@ -123,13 +146,9 @@ bool VObject::PostEvent (const event_t &ev) {
 //
 //  VObject::InsertEvent
 //
-//  returns `false` if queue is full
-//  add event to the top of the current queue
-//  it is unspecified if posted event will be processed in the current
-//  frame, or in the next one
-//
 //==========================================================================
-bool VObject::InsertEvent (const event_t &ev) {
+bool VObject::InsertEvent (const event_t &ev) noexcept {
+  QueueLocker lock;
   int prevFirst = (eventFirst+eventMax-1)%eventMax;
   if (prevFirst == eventLast) return false; // queue overflow
   // if this is first ever event, allocate queue
@@ -144,14 +163,11 @@ bool VObject::InsertEvent (const event_t &ev) {
 //
 //  VObject::PeekEvent
 //
-//  peek event from queue
-//  event with index 0 is the top one
-//  it is safe to call this with `nullptr`
-//
 //==========================================================================
-bool VObject::PeekEvent (int idx, event_t *ev) {
+bool VObject::PeekEvent (int idx, event_t *ev) noexcept {
+  QueueLocker lock;
   if (idx < 0 || idx > CountQueuedEvents()) {
-    if (ev) memset((void *)ev, 0, sizeof(event_t));
+    if (ev) ev->clear();
     return false;
   }
   if (ev) *ev = events[(idx+eventFirst)%eventMax];
@@ -159,12 +175,15 @@ bool VObject::PeekEvent (int idx, event_t *ev) {
 }
 
 
-// get top event from queue
-// returns `false` if there are no more events
-// it is safe to call this with `nullptr` (in this case event will be removed)
-bool VObject::GetEvent (event_t *ev) {
+//==========================================================================
+//
+//  VObject::GetEvent
+//
+//==========================================================================
+bool VObject::GetEvent (event_t *ev) noexcept {
+  QueueLocker lock;
   if (eventFirst == eventLast) {
-    if (ev) memset((void *)ev, 0, sizeof(event_t));
+    if (ev) ev->clear();
     return false;
   }
   if (ev) *ev = events[eventFirst++];
