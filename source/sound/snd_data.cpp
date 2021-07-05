@@ -39,8 +39,8 @@ enum { cli_DebugSound = 0 };
 
 static VCvarB snd_verbose_truncate("snd_verbose_truncate", false, "Show silence-truncated sounds?", CVAR_Archive);
 
-//k8: it seems to be weirdly unstable (at least under windoze). sigh.
-static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", false, "Load sounds in background thread?", CVAR_Archive);
+//k8: it was weirdly unstable under windoze. seems to work ok now.
+static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in background thread?", CVAR_Archive);
 
 
 #ifdef CLIENT

@@ -231,8 +231,8 @@ static VCvarI snd_max_same_sounds("snd_max_same_sounds", "4", "Maximum number of
 VCvarI snd_midi_player("snd_midi_player", "3", "MIDI player type (0:none; 1:FluidSynth; 2:Timidity; 3:NukedOPL)", CVAR_Archive|CVAR_PreInit);
 VCvarI snd_module_player("snd_module_player", "1", "Module player type (0:none; 1:XMPLite)", CVAR_Archive);
 
-//k8: it seems to be weirdly unstable (at least under windoze). sigh.
-static VCvarB snd_bgloading_music("snd_bgloading_music", false, "Load music in the background thread?", CVAR_Archive|CVAR_PreInit);
+//k8: it was weirdly unstable under windoze. seems to work ok now.
+static VCvarB snd_bgloading_music("snd_bgloading_music", true, "Load music in the background thread?", CVAR_Archive|CVAR_PreInit);
 
 static VCvarS snd_random_midi_dir("snd_random_midi_dir", "", "Directory to load random midis from.", CVAR_Archive);
 static VCvarB snd_random_midi_rescan("snd_random_midi_rescan", false, "Force random midi dir rescan.", 0);
