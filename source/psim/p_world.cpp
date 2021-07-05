@@ -36,106 +36,6 @@
 //#define VV_DEBUG_TRAVERSER
 
 
-//==========================================================================
-//
-//  RayBoxIntersection2D
-//
-//  this is slow, but we won't test billions of things anyway
-//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
-//
-//==========================================================================
-static inline float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept {
-  float tmin = -INFINITY, tmax = INFINITY;
-
-  const float xc = c.x-org.x;
-  const float yc = c.y-org.y;
-
-  // x
-  if (dir.x != 0.0f) {
-    const float inv = 1.0f/dir.x;
-    const float t1 = (xc-rad)*inv;
-    const float t2 = (xc+rad)*inv;
-    tmin = max2(tmin, min2(t1, t2));
-    tmax = min2(tmax, max2(t1, t2));
-  } else {
-    if (fabsf(xc) > rad) return -1.0f;
-  }
-
-  // y
-  if (dir.y != 0.0f) {
-    const float inv = 1.0f/dir.y;
-    const float t1 = (yc-rad)*inv;
-    const float t2 = (yc+rad)*inv;
-    tmin = max2(tmin, min2(t1, t2));
-    tmax = min2(tmax, max2(t1, t2));
-  } else {
-    if (fabsf(yc) > rad) return -1.0f;
-  }
-
-  // `tmin` is "enter time", `tmax` is "exit time"
-  // if `tmin` is negative, we're started inside the box
-
-  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
-  return max2(0.0f, tmin);
-}
-
-
-//==========================================================================
-//
-//  RayBoxIntersection
-//
-//  this is slow, but we won't test billions of things anyway
-//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
-//
-//==========================================================================
-static inline float RayBoxIntersection (const TVec &c, const float rad, const float hgt, const TVec &org, const TVec &dir) noexcept {
-  float tmin = -INFINITY, tmax = INFINITY;
-
-  const float xc = c.x-org.x;
-  const float yc = c.y-org.y;
-  const float zbot = c.z-org.z;
-
-  // x
-  if (dir.x != 0.0f) {
-    const float inv = 1.0f/dir.x;
-    const float t1 = (xc-rad)*inv;
-    const float t2 = (xc+rad)*inv;
-    tmin = max2(tmin, min2(t1, t2));
-    tmax = min2(tmax, max2(t1, t2));
-  } else {
-    if (fabsf(xc) > rad) return -1.0f;
-  }
-
-  // y
-  if (dir.y != 0.0f) {
-    const float inv = 1.0f/dir.y;
-    const float t1 = (yc-rad)*inv;
-    const float t2 = (yc+rad)*inv;
-    tmin = max2(tmin, min2(t1, t2));
-    tmax = min2(tmax, max2(t1, t2));
-  } else {
-    if (fabsf(yc) > rad) return -1.0f;
-  }
-
-  // z
-  if (dir.z != 0.0f) {
-    const float inv = 1.0f/dir.z;
-    const float t1 = zbot*inv;
-    const float t2 = (zbot+hgt)*inv;
-    tmin = max2(tmin, min2(t1, t2));
-    tmax = min2(tmax, max2(t1, t2));
-  } else {
-    if (org.z < c.z || org.z > c.z+hgt) return -1.0f;
-  }
-
-  // `tmin` is "enter time", `tmax` is "exit time"
-  // if `tmin` is negative, we're started inside the box
-
-  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
-  return max2(0.0f, tmin);
-}
-
-
 
 //==========================================================================
 //
@@ -811,7 +711,7 @@ void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
             In.thing = ent;
           }
         } else {
-          const float rbfrac = RayBoxIntersection(ent->Origin, rad, ent->Height, trace_org3d, trace_dir3d);
+          const float rbfrac = RayBoxIntersection3D(ent->Origin, rad, ent->Height, trace_org3d, trace_dir3d);
           #ifdef VV_DEBUG_TRAVERSER
           GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) rbfrac=%g; max_frac=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), rbfrac, max_frac);
           #endif
