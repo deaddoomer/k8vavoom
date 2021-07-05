@@ -40,12 +40,20 @@ menudef MiscOptions {
       "This affects only rendering.";
   }
 
-  option bool {
+  option enum {
     title = "Firing Weapon Bobbing";
     cvar = wp_fire_bobbing;
+    list {
+      "Reset",
+      "Freeze",
+      "Bob",
+    }
     help =
       "Allow weapon bobbing when firing?",
-      "This is purely visual, it doesn't affect accuracy.";
+      "This is purely visual, it doesn't affect accuracy.",
+      "\c[WHITE]Reset\c-: reset to initial position.",
+      "\c[WHITE]Freeze\c-: freeze while firing, and then continue.",
+      "\c[WHITE]Bob\c-: keep bobbing.";
   }
 
   option bool {
