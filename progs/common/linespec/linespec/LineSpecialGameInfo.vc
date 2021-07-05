@@ -253,7 +253,7 @@ override void Init () {
   CreateCvarBool('r_bootprints', true, "Allow bootprints?", CVAR_ARCHIVE);
   CreateCvarBool('gm_footsteps', true, "Allow footsteps?", CVAR_ARCHIVE);
 
-  CreateCvarBool('wp_fire_bobbing', false, "Allow weapon bobbing when firing? (This is purely visual, it doesn't affect accuracy.)", CVAR_ARCHIVE);
+  CreateCvarInt('wp_fire_bobbing', 0, "Allow weapon bobbing when firing? (This is purely visual, it doesn't affect accuracy.)", CVAR_ARCHIVE);
 
   // debug headshots?
   CreateCvarBool('k8HSDebug', false, "Show headshots debug messages?", 0);

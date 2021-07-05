@@ -192,6 +192,8 @@ transient sector_t *lastViewOrgZSector;
 // meh, let it cheat a little
 transient int LastRegenTicTime = 0;
 
+// so it is independent from `XLevel.Time`
+transient float BobbingTime = 0;
 
 // used in `SetupSectorFlatDamage()` and friends
 struct SectorDamageInfo {
@@ -1684,6 +1686,21 @@ void SetPlayerRunState () {
 
 //==========================================================================
 //
+//  ResetReadyWeaponBobbing
+//
+//==========================================================================
+void ResetReadyWeaponBobbing () {
+  Weapon wpn = ReadyWeapon;
+  if (wpn) {
+    wpn.bBobDisabled = true;
+    wpn.bBobFrozen = false; // just in case
+    BobbingTime = 0; // start from the base
+  }
+}
+
+
+//==========================================================================
+//
 //  SetWeapon
 //
 //==========================================================================
@@ -1727,7 +1744,7 @@ void BringUpWeapon (optional bool instant, optional bool skipSound) {
   bAttackDown = true;
   bAltAttackDown = true;
   if (ReadyWeapon) {
-    ReadyWeapon.bBobDisabled = true;
+    ResetReadyWeaponBobbing();
     SetViewObject(ReadyWeapon);
     //dprint("MO=%C; RW=%C; upstate=%s", MO, ReadyWeapon, ReadyWeapon.GetUpState());
     //k8: old code did "up state" anyway; this seems to be wrong
@@ -1829,7 +1846,7 @@ void ProcessWeaponActions () {
       ResetWeaponReloadRefire();
       ResetWeaponActionFlags();
       if (ReadyWeapon) {
-        ReadyWeapon.bBobDisabled = true;
+        ResetReadyWeaponBobbing();
         SetViewObject(ReadyWeapon);
         SetViewState(PS_WEAPON, ReadyWeapon.GetDownState());
       } else if (PendingWeapon) {
@@ -1851,21 +1868,47 @@ void ProcessWeaponActions () {
 
   if (!bWeaponWasWeaponReady) return;
   bWeaponWasWeaponReady = false;
+  Wpn.bBobFrozen = false; // just in case
 
   bool oldNoBob = Wpn.bBobDisabled;
+  float oldBobTime = BobbingTime;
 
   if (bWeaponAllowPrimaryFire && (Buttons&BT_ATTACK) && (!bAttackDown || !Wpn.bNoAutoFire) && Wpn.FindState('Fire')) {
     bAttackDown = true;
-    if (!GetCvarB('wp_fire_bobbing')) Wpn.bBobDisabled = true;
+    switch (GetCvarI('wp_fire_bobbing')) {
+      case 0: // reset
+        Wpn.bBobDisabled = true;
+        Wpn.bBobFrozen = true;
+        BobbingTime = 0;
+        break;
+      case 1: // freeze
+        Wpn.bBobFrozen = true;
+        break;
+      //case 2: // bob: do nothing
+    }
     if (FireWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
+    Wpn.bBobFrozen = false;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowAltFire && (Buttons&BT_ALT_ATTACK) && (!bAltAttackDown || !Wpn.bNoAutoFire) && Wpn.FindState('AltFire')) {
     bAltAttackDown = true;
-    if (!GetCvarB('wp_fire_bobbing')) Wpn.bBobDisabled = true;
+    switch (GetCvarI('wp_fire_bobbing')) {
+      case 0: // reset
+        Wpn.bBobDisabled = true;
+        Wpn.bBobFrozen = true;
+        BobbingTime = 0;
+        break;
+      case 1: // freeze
+        Wpn.bBobFrozen = true;
+        break;
+      //case 2: // bob: do nothing
+    }
     if (AltFireWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
+    Wpn.bBobFrozen = false;
+    BobbingTime = oldBobTime;
   }
 
   // cannot fire
@@ -1875,43 +1918,55 @@ void ProcessWeaponActions () {
   if (bWeaponAllowReload && ((Buttons&BT_RELOAD) || bReloadQueued)) {
     // `bReloadQueued` will be reset by `ReloadWeapon()`
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (ReloadWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowZoom && (Buttons&BT_ZOOM) && !bZoomDown && Wpn.GetZoomState()) {
     bZoomDown = true;
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (ZoomWeapon()) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowUser1 && (Buttons&BT_BUTTON_5) && !bButton5Down && Wpn.FindState('User1')) {
     bButton5Down = true;
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (WeaponUserAction(1)) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowUser2 && (Buttons&BT_BUTTON_6) && !bButton6Down && Wpn.FindState('User2')) {
     bButton6Down = true;
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (WeaponUserAction(2)) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowUser3 && (Buttons&BT_BUTTON_7) && !bButton7Down && Wpn.FindState('User3')) {
     bButton7Down = true;
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (WeaponUserAction(3)) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 
   if (bWeaponAllowUser4 && (Buttons&BT_BUTTON_8) && !bButton8Down && Wpn.FindState('User4')) {
     bButton8Down = true;
     Wpn.bBobDisabled = true;
+    BobbingTime = 0;
     if (WeaponUserAction(4)) return;
     Wpn.bBobDisabled = oldNoBob;
+    BobbingTime = oldBobTime;
   }
 }
 
@@ -1954,9 +2009,13 @@ void MovePsprites (float deltaTime) {
         bWeaponAllowSwitch = true;
       }
     }
+  } else {
+    // disable bobbing
+    wpn = none;
   }
 
   if (MO && wpn && !wpn.bDontBob && !wpn.bBobDisabled) {
+    if (!wpn.bBobFrozen) BobbingTime = fmod(BobbingTime+deltaTime, 360);
     // bob the weapon based on movement speed
     float mvbobbob = fmin(GetCvarF('weaponbob'), 1.0);
     if (mvbobbob > 0) {
@@ -1980,7 +2039,7 @@ void MovePsprites (float deltaTime) {
       {
         wbob /= (3.0/mvbobbob)*35.0*35.0;
         if (wbob > MAXBOB) wbob = MAXBOB;
-        float angle = AngleMod360(180.0*MO.XLevel.Time);
+        float angle = AngleMod360(180.0*BobbingTime/*MO.XLevel.Time*/);
         newBobX = /*1.0+*/wbob*cos(angle); //k8: why it did `1.0+` here?
         if (angle >= 180.0) angle -= 180.0;
         newBobY = wbob*sin(angle);
@@ -4216,6 +4275,7 @@ void AddDefaultInventory () {
       } else if (Weapon(Item) && Weapon(Item).CheckAmmo(Weapon::FIRE_Either, AutoSwitch:false)) {
         SetWeapon(Weapon(Item));
         Weapon(Item).bBobDisabled = true;
+        Weapon(Item).bBobFrozen = false; // just in case
       }
     }
   }
@@ -4337,7 +4397,10 @@ override void PlayerExitMap (bool clusterChange) {
 
   if (MorphTime) {
     Weapon wpn = Weapon(Actor(MO).Tracer);
-    if (wpn) wpn.bBobDisabled = true;
+    if (wpn) {
+      wpn.bBobDisabled = true;
+      wpn.bBobFrozen = false; // just in case
+    }
     SetWeapon(wpn); // restore weapon
     MorphTime = 0.0;
   }
@@ -5461,6 +5524,7 @@ void ActivateMorphWeapon () {
   SetViewObject(ReadyWeapon);
   if (ReadyWeapon) {
     ReadyWeapon.bBobDisabled = true;
+    ReadyWeapon.bBobFrozen = false; // just in case
     SetViewState(PS_WEAPON, ReadyWeapon.GetReadyState());
   } else {
     SetViewState(PS_WEAPON, none);
@@ -5480,6 +5544,7 @@ void PostMorphWeapon (Weapon weapon) {
   SetViewObject(ReadyWeapon);
   if (ReadyWeapon) {
     ReadyWeapon.bBobDisabled = true;
+    ReadyWeapon.bBobFrozen = false; // just in case
     SetViewState(PS_WEAPON, ReadyWeapon.GetUpState());
   } else {
     SetViewState(PS_WEAPON, none);

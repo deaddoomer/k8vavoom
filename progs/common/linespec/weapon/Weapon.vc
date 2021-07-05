@@ -94,6 +94,10 @@ bool bBotFastShoot; // this is something like Plasma Gun, do not release trigger
 
 bool bBobDisabled; // set in `A_WeaponReady()`
 
+// this is used to freeze bobbing when firing
+// no need to save this
+transient bool bBobFrozen;
+
 // runtime in-inventory references
 Ammo Ammo1;
 Ammo Ammo2;
