@@ -427,3 +427,149 @@ void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept {
   right.normaliseInPlace();
   up = CrossProduct(right, forward);
 }
+
+
+
+//**************************************************************************
+//
+// ray-box intersection
+//
+//**************************************************************************
+
+#define RBI_FIRST()  do { \
+  /* we know `tmin` and `tmax` here for sure */ \
+  /*tmin = max2(tmin, min2(t1, t2));*/ \
+  /*tmax = min2(tmax, max2(t1, t2));*/ \
+  if (t1 < t2) { tmin = t1; tmax = t2; } else { tmin = t2; tmax = t1; } \
+  wasTM = true; \
+} while (0)
+
+
+#define RBI_NEXT()  do { \
+  /*tmin = max2(tmin, min2(t1, t2));*/ \
+  /*tmax = min2(tmax, max2(t1, t2));*/ \
+  if (wasTM) { \
+    if (t1 < t2) { \
+      if (tmin < t1) tmin = t1; \
+      if (tmax > t2) tmax = t2; \
+    } else { \
+      if (tmin < t2) tmin = t2; \
+      if (tmax > t1) tmax = t1; \
+    } \
+  } else { \
+    /* we know `tmin` and `tmax` here for sure */ \
+    if (t1 < t2) { tmin = t1; tmax = t2; } else { tmin = t2; tmax = t1; } \
+  } \
+} while (0)
+
+
+//==========================================================================
+//
+//  RayBoxIntersection2D
+//
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
+//
+//  `org` is ray origin
+//  `dir` is ray direction (not normalized! used to get ray endpoint)
+//
+//  `rad` should not be negative
+//
+//==========================================================================
+float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept {
+  float tmin = -INFINITY, tmax = INFINITY;
+
+  const float xc = c.x-org.x;
+  const float yc = c.y-org.y;
+
+  bool wasTM = false;
+
+  // x
+  if (dir.x != 0.0f) {
+    const float inv = 1.0f/dir.x;
+    const float t1 = (xc-rad)*inv;
+    const float t2 = (xc+rad)*inv;
+    RBI_FIRST();
+  } else {
+    if (fabsf(xc) > rad) return -1.0f;
+  }
+
+  // y
+  if (dir.y != 0.0f) {
+    const float inv = 1.0f/dir.y;
+    const float t1 = (yc-rad)*inv;
+    const float t2 = (yc+rad)*inv;
+    RBI_NEXT();
+  } else {
+    if (fabsf(yc) > rad) return -1.0f;
+  }
+
+  // `tmin` is "enter time", `tmax` is "exit time"
+  // if `tmin` is negative, we're started inside the box
+
+  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
+  return max2(0.0f, tmin);
+}
+
+
+//==========================================================================
+//
+//  RayBoxIntersection3D
+//
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
+//
+//  `org` is ray origin
+//  `dir` is ray direction (not normalized! used to get ray endpoint)
+//  `c.z` is box bottom; box top is `c.z+hgt`
+//
+//  `rad` should not be negative
+//  `hgt` should not be negative
+//
+//==========================================================================
+float RayBoxIntersection3D (const TVec &c, const float rad, const float hgt, const TVec &org, const TVec &dir) noexcept {
+  float tmin = -INFINITY, tmax = INFINITY;
+
+  const float xc = c.x-org.x;
+  const float yc = c.y-org.y;
+  const float zbot = c.z-org.z;
+
+  bool wasTM = false;
+
+  // x
+  if (dir.x != 0.0f) {
+    const float inv = 1.0f/dir.x;
+    const float t1 = (xc-rad)*inv;
+    const float t2 = (xc+rad)*inv;
+    RBI_FIRST();
+  } else {
+    if (fabsf(xc) > rad) return -1.0f;
+  }
+
+  // y
+  if (dir.y != 0.0f) {
+    const float inv = 1.0f/dir.y;
+    const float t1 = (yc-rad)*inv;
+    const float t2 = (yc+rad)*inv;
+    RBI_NEXT();
+    wasTM = true;
+  } else {
+    if (fabsf(yc) > rad) return -1.0f;
+  }
+
+  // z
+  if (dir.z != 0.0f) {
+    const float inv = 1.0f/dir.z;
+    const float t1 = zbot*inv;
+    const float t2 = (zbot+hgt)*inv;
+    RBI_NEXT();
+  } else {
+    if (org.z < c.z || org.z > c.z+hgt) return -1.0f;
+  }
+
+  // `tmin` is "enter time", `tmax` is "exit time"
+  // if `tmin` is negative, we're started inside the box
+
+  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
+  return max2(0.0f, tmin);
+}

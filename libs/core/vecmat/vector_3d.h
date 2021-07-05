@@ -458,3 +458,36 @@ static inline VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec
   const float r2 = c-a*t*t;
   return (r2 < radiusSq); // true if collides
 }
+
+
+//==========================================================================
+//
+//  RayBoxIntersection2D
+//
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
+//
+//  `org` is ray origin
+//  `dir` is ray direction (not normalized! used to get ray endpoint)
+//
+//  `rad` should not be negative
+//
+//==========================================================================
+float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept;
+
+//==========================================================================
+//
+//  RayBoxIntersection3D
+//
+//  this is slow, but we won't test billions of things anyway
+//  returns intersection time, `0.0f` for "inside", or `-1.0f` for outside
+//
+//  `org` is ray origin
+//  `dir` is ray direction (not normalized! used to get ray endpoint)
+//  `c.z` is box bottom; box top is `c.z+hgt`
+//
+//  `rad` should not be negative
+//  `hgt` should not be negative
+//
+//==========================================================================
+float RayBoxIntersection3D (const TVec &c, const float rad, const float hgt, const TVec &org, const TVec &dir) noexcept;
