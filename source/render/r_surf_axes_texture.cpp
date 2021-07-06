@@ -181,8 +181,15 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   // apply texture offsets from texture params
   //texinfo->soffs += sofssign*xofs*(TextureOffsetSScale(tex)/tparam->ScaleX); // horizontal
   //texinfo->toffs += tofssign*yofs*(TextureOffsetTScale(tex)/tparam->ScaleY); // vertical
+
+  // k8: wtf? seems that offsets need not to be scaled (thanks, Remilia!)
+  #if 0
   texinfo->soffs += xofs*TextureOffsetSScale(tex)/tparam->ScaleX; // horizontal
   texinfo->toffs += yofs*TextureOffsetTScale(tex)/tparam->ScaleY; // vertical
+  #else
+  texinfo->soffs += xofs*TextureOffsetSScale(tex); // horizontal
+  texinfo->toffs += yofs*TextureOffsetTScale(tex); // vertical
+  #endif
 
   #if 0
   // rotate around bottom left corner (doesn't work)
