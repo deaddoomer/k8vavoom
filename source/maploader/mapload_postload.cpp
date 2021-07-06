@@ -70,6 +70,7 @@ void VLevel::PostLoadNodes () {
 //  VLevel::PostLoadSegs
 //
 //  vertices, side, linedef and partner should be set
+//  MUST be called after `FinaliseLines()`
 //
 //==========================================================================
 void VLevel::PostLoadSegs () {

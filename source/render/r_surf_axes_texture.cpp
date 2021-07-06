@@ -99,7 +99,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if ((xflip || yflip) && (xbroken || ybroken)) angle = 0.0f;
 
   // there is no reason to rotate or flip lightmap texture
-  texinfo->saxisLM = seg->dir;
+  texinfo->saxisLM = seg->ndir;
   texinfo->taxisLM = TVec(0.0f, 0.0f, -1.0f);
 
   // calculate texture axes (this also does scaling)
@@ -108,13 +108,13 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   // positive `toffs` moves texture origin up
   if (angle == 0.0f) {
     // most common case
-    texinfo->saxis = seg->dir;
+    texinfo->saxis = seg->ndir;
     texinfo->taxis = TVec(0.0f, 0.0f, -1.0f);
   } else {
     float s, c;
     msincos(angle, &s, &c);
     // rotate seg direction
-    texinfo->taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+    texinfo->taxis = TVec(s*seg->ndir.x, s*seg->ndir.y, -c);
     texinfo->saxis = Normalise(CrossProduct(seg->normal, texinfo->taxis));
   }
   texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX;
@@ -142,28 +142,32 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
       // yeah, move TexZ
       //TexZ += yofs*(TextureOffsetTScale(tex)/tparam->ScaleY);
       // this seems to be what GZDoom does
+      #if 1
       TexZ += yofs/(TextureTScale(tex)/TextureOffsetTScale(tex)*tparam->ScaleY);
+      #else
+      TexZ += yofs/(TextureTScale(tex)/TextureOffsetTScale(tex));
+      #endif
       yofs = 0.0f;
     }
   }
 
   //texinfo->soffs = 0.0f;
   const TVec *v;
-  TVec dir;
+  TVec ndir;
   if (!xflip) {
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
-    dir = seg->dir;
+    ndir = seg->ndir;
   } else if (xflip && !xbroken) {
     // flipped
     v = (seg->side == 0 ? seg->linedef->v2 : seg->linedef->v1);
-    dir = -seg->dir;
+    ndir = -seg->ndir;
   } else {
     // flipped, broken gzdoom version
     // this starts texture mapping from the same vertex as normal version, but mirrors the texture (stupid bug promoted to feature, in typical ZDoom style)
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
-    dir = -seg->dir;
+    ndir = -seg->ndir;
   }
-  texinfo->soffs = -DotProduct(*v, dir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
+  texinfo->soffs = -DotProduct(*v, ndir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
@@ -187,15 +191,23 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   texinfo->soffs += xofs*TextureOffsetSScale(tex)/tparam->ScaleX; // horizontal
   texinfo->toffs += yofs*TextureOffsetTScale(tex)/tparam->ScaleY; // vertical
   #else
+    #if 1
   texinfo->soffs += xofs*TextureOffsetSScale(tex); // horizontal
   texinfo->toffs += yofs*TextureOffsetTScale(tex); // vertical
+    #else
+  {
+    TVec p(xofs*TextureOffsetSScale(tex)/tparam->ScaleX, yofs*TextureOffsetTScale(tex)/tparam->ScaleY);
+    texinfo->soffs -= DotProduct(texinfo->saxis, p);
+    texinfo->toffs -= DotProduct(texinfo->taxis, p);
+  }
+    #endif
   #endif
 
   #if 0
   // rotate around bottom left corner (doesn't work)
   if (angle) {
-    const float cx = v->x; //+seg->dir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
-    const float cy = v->y; //+seg->dir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
+    const float cx = v->x; //+seg->ndir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
+    const float cy = v->y; //+seg->ndir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
     TVec p(cx, cy);
     texinfo->soffs -= DotProduct(texinfo->saxis, p);
     texinfo->toffs -= DotProduct(texinfo->taxis, p);

@@ -507,7 +507,7 @@ struct seg_t : public TPlane {
 
   float offset;
   float length;
-  TVec dir; // precalced segment direction, so i don't have to do it again in surface creator; normalized
+  TVec ndir; // precalced segment direction, so i don't have to do it again in surface creator; normalized
 
   side_t *sidedef;
   line_t *linedef;

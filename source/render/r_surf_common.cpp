@@ -79,9 +79,10 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
 
   const side_t *sidedef = seg->sidedef;
 
+  //FIXME: use `SetupTextureAxesOffsetEx()` here!
   VTexture *MTex = seg->drawsegs->mid->texinfo.Tex;
-  seg->drawsegs->mid->texinfo.saxisLM = seg->dir;
-  seg->drawsegs->mid->texinfo.saxis = seg->dir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
+  seg->drawsegs->mid->texinfo.saxisLM = seg->ndir;
+  seg->drawsegs->mid->texinfo.saxis = seg->ndir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
   seg->drawsegs->mid->texinfo.soffs = -DotProduct(*seg->v1, seg->drawsegs->mid->texinfo.saxis)+
                                       seg->offset*(TextureSScale(MTex)*sidedef->Mid.ScaleX)+
                                       sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex)/sidedef->Mid.ScaleX;

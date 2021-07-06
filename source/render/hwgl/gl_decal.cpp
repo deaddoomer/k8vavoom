@@ -352,7 +352,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         if (angle != 0.0f) {
           float s, c;
           msincos(angle, &s, &c);
-          taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
+          taxis = TVec(s*seg->ndir.x, s*seg->ndir.y, -c);
           saxis = Normalise(CrossProduct(seg->normal, taxis));
         }
         #endif

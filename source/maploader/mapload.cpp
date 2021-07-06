@@ -543,7 +543,7 @@ load_again:
   HashSectors();
   HashLines();
   FinaliseLines();
-
+  // postload segs MUST be called after `FinaliseLines()`!
   PostLoadSegs();
   PostLoadSubsectors();
 

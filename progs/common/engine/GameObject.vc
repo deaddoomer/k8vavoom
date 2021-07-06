@@ -1132,7 +1132,7 @@ struct seg_t : TPlane {
 
   readonly float offset;
   readonly float length;
-  readonly TVec dir; // precalced segment direction, so i don't have to do it again in surface creator
+  readonly TVec ndir; // precalced segment direction, so i don't have to do it again in surface creator
 
   readonly side_t *sidedef;
   readonly line_t *linedef;

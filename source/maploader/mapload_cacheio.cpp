@@ -205,7 +205,7 @@ void VLevel::SaveCachedData (VStream *strm) {
     *arrstrm << v2num;
     *arrstrm << seg->offset;
     *arrstrm << seg->length;
-    *arrstrm << seg->dir;
+    *arrstrm << seg->ndir;
     vint32 sidedefnum = -1;
     if (seg->sidedef) sidedefnum = (vint32)(ptrdiff_t)(seg->sidedef-Sides);
     *arrstrm << sidedefnum;
@@ -377,7 +377,7 @@ bool VLevel::LoadCachedData (VStream *strm) {
     seg->v2 = Vertexes+v2num;
     *arrstrm << seg->offset;
     *arrstrm << seg->length;
-    *arrstrm << seg->dir;
+    *arrstrm << seg->ndir;
     vint32 sidedefnum = -1;
     *arrstrm << sidedefnum;
     seg->sidedef = (sidedefnum >= 0 ? Sides+sidedefnum : nullptr);

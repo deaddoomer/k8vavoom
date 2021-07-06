@@ -84,24 +84,38 @@ void VLevel::CalcSegLenOfs (seg_t *seg) {
 //
 //==========================================================================
 void VLevel::CalcSegPlaneDir (seg_t *seg) {
-  seg->Set2Points(*seg->v1, *seg->v2);
   bool valid = (isFiniteF(seg->length) && seg->length >= 0.0001f);
-  if (valid) {
+
+  // use line plane, if possible
+  const line_t *line = seg->linedef;
+  if (line) {
+    seg->normal = line->normal;
+    seg->dist = line->dist;
+    seg->ndir = line->ndir;
+    if (seg->side == 1) {
+      seg->FlipInPlace();
+      seg->ndir = -seg->ndir;
+    }
+  } else if (valid) {
+    seg->Set2Points(*seg->v1, *seg->v2);
     if (seg->v1->x == seg->v2->x) {
       // vertical
       if (seg->v1->y == seg->v2->y) {
         valid = false;
       } else {
-        seg->dir = TVec(0.0f, (seg->v1->y < seg->v2->y ? 1.0f : -1.0f), 0.0f);
+        seg->ndir = TVec(0.0f, (seg->v1->y < seg->v2->y ? 1.0f : -1.0f), 0.0f);
       }
     } else if (seg->v1->y == seg->v2->y) {
       // horizontal
-      seg->dir = TVec((seg->v1->x < seg->v2->x ? 1.0f : -1.0f), 0.0f, 0.0f);
+      seg->ndir = TVec((seg->v1->x < seg->v2->x ? 1.0f : -1.0f), 0.0f, 0.0f);
     } else {
-      seg->dir = ((*seg->v2)-(*seg->v1)).normalised2D();
+      // sloped
+      seg->ndir = ((*seg->v2)-(*seg->v1)).normalised2D();
     }
-    if (!seg->dir.isValid() || seg->dir.isZero2D()) valid = false;
   }
+
+  if (valid && (!seg->ndir.isValid() || seg->ndir.isZero2D())) valid = false;
+
   if (!valid) {
     GCon->Logf(NAME_Warning, "ZERO-LENGTH %sseg #%d (flags: 0x%04x)!", (seg->linedef ? "" : "mini"), (int)(ptrdiff_t)(seg-Segs), (unsigned)seg->flags);
     GCon->Logf(NAME_Warning, "  verts: (%g,%g,%g)-(%g,%g,%g)", seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
@@ -116,14 +130,13 @@ void VLevel::CalcSegPlaneDir (seg_t *seg) {
     if (seg->partner) GCon->Logf(NAME_Warning, "  partner: %d", (int)(ptrdiff_t)(seg->partner-Segs));
     if (seg->frontsub) GCon->Logf(NAME_Warning, "  frontsub: %d", (int)(ptrdiff_t)(seg->frontsub-Subsectors));
 
-    seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
     seg->flags |= SF_ZEROLEN;
     if (!isFiniteF(seg->offset)) seg->offset = 0.0f;
     seg->length = 0.0001f;
     // setup fake seg's plane params
     seg->normal = TVec(1.0f, 0.0f, 0.0f);
     seg->dist = 0.0f;
-    seg->dir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
+    seg->ndir = TVec(1.0f, 0.0f, 0.0f); // arbitrary
   } else {
     seg->flags &= ~SF_ZEROLEN;
   }
