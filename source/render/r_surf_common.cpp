@@ -78,63 +78,6 @@ void VRenderLevelShared::SegMoved (seg_t *seg) {
   if (!seg->drawsegs->mid) return; // no midsurf
 
   //k8: we'll invalidate distances, and updater will do the rest
-#if 0
-  const side_t *sidedef = seg->sidedef;
-  const line_t *linedef = seg->linedef;
-
-  VTexture *MTex = seg->drawsegs->mid->texinfo.Tex;
-  if (MTex && MTex->Type != TEXTYPE_Null) {
-    #if 0
-      //FIXME: use `SetupTextureAxesOffsetEx()` here!
-      seg->drawsegs->mid->texinfo.saxisLM = seg->ndir;
-      seg->drawsegs->mid->texinfo.saxis = seg->ndir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
-      seg->drawsegs->mid->texinfo.soffs = -DotProduct(*seg->v1, seg->drawsegs->mid->texinfo.saxis)+
-                                          seg->offset*(TextureSScale(MTex)*sidedef->Mid.ScaleX)+
-                                          sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex)/sidedef->Mid.ScaleX;
-    #else
-      texinfo_t *texinfo = &seg->drawsegs->mid->texinfo;
-      const float texh = MTex->GetScaledHeightF()/sidedef->Mid.ScaleY;
-      const polyobj_t *po = seg->pobj;
-      float zOrg; // texture bottom
-      if (po) {
-        if (po->Is3D()) {
-          // 3d polyobject
-          if (linedef->flags&ML_DONTPEGBOTTOM) {
-            // bottom of texture at bottom
-            zOrg = seg->pobj->pofloor.TexZ;
-          } else {
-            // top of texture at top
-            zOrg = seg->pobj->poceiling.TexZ-texh;
-          }
-          SetupTextureAxesOffsetMidPO(seg, texinfo, MTex, &sidedef->Mid, zOrg);
-        } else {
-          if (linedef->flags&ML_DONTPEGBOTTOM) {
-            // bottom of texture at bottom
-            TSecPlaneRef r_floor = sub->regions->floorplane;
-            zOrg = r_floor.splane->TexZ;
-          } else if (linedef->flags&ML_DONTPEGTOP) {
-            // top of texture at top of top region
-            zOrg = seg->frontsub->sector->ceiling.TexZ-texh;
-          } else {
-            // top of texture at top
-            TSecPlaneRef r_ceiling = sub->regions->ceilplane;
-            zOrg = r_ceiling.splane->TexZ-texh;
-          }
-          // do not use "Mid" here, because we should ignore midtexture wrapping (anyway)
-          SetupTextureAxesOffsetMid1S(seg, texinfo, MTex, &sidedef->Mid, zOrg);
-        }
-      } else {
-        //FIXME: this should not happen, only pobj segs can move for now!
-        //FIXME: use `SetupTextureAxesOffsetEx()` here!
-        seg->drawsegs->mid->texinfo.saxisLM = seg->ndir;
-        seg->drawsegs->mid->texinfo.saxis = seg->ndir*(TextureSScale(MTex)*sidedef->Mid.ScaleX);
-        seg->drawsegs->mid->texinfo.soffs = -DotProduct(*seg->v1, seg->drawsegs->mid->texinfo.saxis)+
-                                            seg->offset*(TextureSScale(MTex)*sidedef->Mid.ScaleX)+
-                                            sidedef->Mid.TextureOffset*TextureOffsetSScale(MTex)/sidedef->Mid.ScaleX;
-      }
-    #endif
-  }
-#endif
 
   // force update
   //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; sectors=%d:%d", seg->pobj->index, (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1), (seg->backsector ? (int)(ptrdiff_t)(seg->backsector-&Level->Sectors[0]) : -1));
