@@ -77,34 +77,47 @@ void VLevel::PostLoadSegs () {
   for (auto &&it : allSegsIdx()) {
     int i = it.index();
     seg_t *seg = it.value();
-    int dside = seg->side;
-    if (dside != 0 && dside != 1) Sys_Error("invalid seg #%d side (%d)", i, dside);
 
     if (seg->linedef) {
+      const int dside = seg->side;
+      if (dside != 0 && dside != 1) Sys_Error("invalid seg #%d side (%d)", i, dside);
+      const int oside = dside^1;
+
       line_t *ldef = seg->linedef;
 
       if (ldef->sidenum[dside] < 0 || ldef->sidenum[dside] >= NumSides) {
-        Host_Error("seg #%d, ldef=%d: invalid sidenum %d (%d) (max sidenum is %d)\n", i, (int)(ptrdiff_t)(ldef-Lines), dside, ldef->sidenum[dside], NumSides-1);
+        //Host_Error("seg #%d, ldef=%d: invalid sidenum %d (%d) (max sidenum is %d)", i, (int)(ptrdiff_t)(ldef-Lines), dside, ldef->sidenum[dside], NumSides-1);
+        Host_Error("%s seg #%d of linedef #%d references to non-existing sidedef #%d (max sidenum is %d)", (dside ? "back" : "front"), i, (int)(ptrdiff_t)(ldef-Lines), ldef->sidenum[oside], NumSides-1);
       }
 
       seg->sidedef = &Sides[ldef->sidenum[dside]];
       seg->frontsector = Sides[ldef->sidenum[dside]].Sector;
 
       if (ldef->flags&ML_TWOSIDED) {
-        if (ldef->sidenum[dside^1] < 0 || ldef->sidenum[dside^1] >= NumSides) Host_Error("another side of two-sided linedef is fucked");
-        seg->backsector = Sides[ldef->sidenum[dside^1]].Sector;
-      } else if (ldef->sidenum[dside^1] >= 0) {
-        if (ldef->sidenum[dside^1] >= NumSides) Host_Error("another side of blocking two-sided linedef is fucked");
-        seg->backsector = Sides[ldef->sidenum[dside^1]].Sector;
-        // not a two-sided, so clear backsector (just in case) -- nope
-        //destseg->backsector = nullptr;
+        // two-sided line
+        if (ldef->sidenum[oside] < 0 || ldef->sidenum[oside] >= NumSides) {
+          Host_Error("%s seg #%d of two-sided linedef #%d references to non-existing sidedef #%d (max sidenum is %d)", (oside ? "back" : "front"), i, (int)(ptrdiff_t)(ldef-Lines), ldef->sidenum[oside], NumSides-1);
+        }
+        seg->backsector = Sides[ldef->sidenum[oside]].Sector;
       } else {
+        // one-sided line
+        //NO, not this:if (dside == 1) Host_Error("one-sided linedef #%d has back side; looks like internal error in map loader!", (int)(ptrdiff_t)(ldef-Lines));
+        // clear backsector
         seg->backsector = nullptr;
-        ldef->flags &= ~ML_TWOSIDED; // just in case
+        // break partnership, if there is any
+        if (seg->partner) {
+          seg->partner->partner = nullptr;
+          seg->partner->backsector = nullptr;
+          seg->partner = nullptr;
+        }
       }
     } else {
       // minisegs should have front and back sectors set too, because why not?
       // but this will be fixed in `PostLoadSubsectors()`
+      if (seg->side != 0 && seg->side != 1) {
+        GCon->Logf(NAME_Warning, "MapLoader: miniseg #%d has invalid side (%d); fixed.", i, seg->side);
+        seg->side = 0;
+      }
     }
 
     CalcSegLenOfs(seg);

@@ -500,6 +500,10 @@ load_again:
     }
   }
 
+  // do it here, as it fixes bad two-sided lines and such
+  // we have to do it before building nodes
+  FinaliseLines();
+
   double Lines2Time = -Sys_Time();
   FixKnownMapErrors();
   bool forceNodeRebuildFromFixer = !!(LevelFlags&LF_ForceRebuildNodes);
@@ -542,7 +546,7 @@ load_again:
 
   HashSectors();
   HashLines();
-  FinaliseLines();
+  //FinaliseLines(); // done above
   // postload segs MUST be called after `FinaliseLines()`!
   PostLoadSegs();
   PostLoadSubsectors();

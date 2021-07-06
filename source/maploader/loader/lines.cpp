@@ -137,13 +137,31 @@ void VLevel::FinaliseLines () {
   for (int lleft = NumLines; lleft--; ++ldef) {
     // calculate line's plane, slopetype, etc
     CalcLine(ldef);
-    // setup side references
+    // setup front side reference
     ldef->frontside = (ldef->sidenum[0] >= 0 ? &Sides[ldef->sidenum[0]] : nullptr);
-    ldef->backside = (ldef->sidenum[1] >= 0 ? &Sides[ldef->sidenum[1]] : nullptr);
     vassert((ldef->sidenum[0] < 0 && !ldef->frontside) || (ldef->sidenum[0] >= 0 && ldef->frontside));
-    vassert((ldef->sidenum[1] < 0 && !ldef->backside) || (ldef->sidenum[1] >= 0 && ldef->backside));
+    // setup back side reference
+    if (ldef->flags&ML_TWOSIDED) {
+      // two-sided line
+      ldef->backside = (ldef->sidenum[1] >= 0 ? &Sides[ldef->sidenum[1]] : nullptr);
+      if (!ldef->backside) {
+        GCon->Logf(NAME_Error, "MapLoader: two-sided linedef #%d has no second side; turned to one-sided, expect map bugs!", (int)(ptrdiff_t)(ldef-&Lines[0]));
+        ldef->sidenum[1] = -1;
+        ldef->backside = nullptr;
+        ldef->flags &= ~ML_TWOSIDED;
+      } else {
+        vassert((ldef->sidenum[1] < 0 && !ldef->backside) || (ldef->sidenum[1] >= 0 && ldef->backside));
+      }
+    } else {
+      // one-sided line
+      if (ldef->sidenum[1] >= 0) {
+        GCon->Logf(NAME_Warning, "MapLoader: one-sided linedef #%d has second side; side removed.", (int)(ptrdiff_t)(ldef-&Lines[0]));
+        ldef->sidenum[1] = -1;
+      }
+      ldef->backside = nullptr;
+    }
     // setup sector references
-    ldef->frontsector = (ldef->frontside ? ldef->frontside->Sector : nullptr/*&Sectors[0]*//*just in case*/);
+    ldef->frontsector = (ldef->frontside ? ldef->frontside->Sector : nullptr);
     ldef->backsector = (ldef->backside ? ldef->backside->Sector : nullptr);
   }
 }
