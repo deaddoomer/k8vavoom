@@ -66,6 +66,7 @@ will look like platform floor for the player).
   <li><a href="#acs_Polyobj_MoveRotateEx">Polyobj_MoveRotateEx</a></li>
   <li><a href="#acs_Polyobj_MoveToRotateEx">Polyobj_MoveToRotateEx</a></li>
   <li><a href="#acs_Polyobj_MoveToSpotRotateEx">Polyobj_MoveToSpotRotateEx</a></li>
+  <li><a href="#acs_Polyobj_RotateEx">Polyobj_RotateEx</a></li>
   <li><a href="#acs_POBJ_FLAG_SIDE_CRUSH">POBJ_FLAG_SIDE_CRUSH</a></li>
 </ul>
 <a href="#limitations">Current Limitations</a><br>
@@ -300,6 +301,8 @@ be crushed (because it is considered as "blocking" one).
   -809:Polyobj_MoveToRotateEx(7),
   // bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags) -- this uses target height too
   -810:Polyobj_MoveToSpotRotateEx(5),
+  // bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags)
+  -811:Polyobj_RotateEx(4),
 </pre>
 <div class="content">
 <p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".</p>
@@ -325,6 +328,10 @@ be crushed (because it is considered as "blocking" one).
 #define POBJ_MOVE_INDROT    (1 << 2)
 /* use polyobject angle instead of `yawangle` in `Polyobj_MoveRotateEx()` */
 #define POBJ_MOVE_POANGLE   (1 << 3)
+/* used only in `Polyobj_RotateEx()`, to create rotating doors */
+#define POBJ_MOVE_MIRRORED  (1 << 4)
+/* used only in `Polyobj_RotateEx()`, to create perpetual rotation */
+#define POBJ_MOVE_PERPETUAL (1 << 5)
 </pre>
 <div class="content">
 
@@ -457,6 +464,19 @@ entity, that entity will be crushed. So use this flag with care. It is mostly us
 <p><b>NOTE</b>: In the future polyobject crushing detection may be improved, and new flag
 will be introduced for "proper" crushing platforms.
 </p>
+
+<br />
+
+<a id="acs_Polyobj_RotateEx"><b><u>Polyobj_RotateEx</u></b></a>
+<p>
+<code>bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags);</code>
+</p>
+<p>
+This rotates the polyobject by the specified angle.
+</p>
+<p>Speed is in map units per 1/8 of second.</p>
+<p>It is possible to use <code>`POBJ_MOVE_MIRRORED`</code> flag here to rotate "mirror" polyobject
+with negative angle.
 
 
 <hr>

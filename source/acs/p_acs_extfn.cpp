@@ -1269,7 +1269,8 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
     // Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags) -- this uses target height too
     case ACSF_Polyobj_MoveToSpotEx:
       if (argCount >= 4) {
-        return Level->eventAcsPolyMoveToSpotRotateEx(args[0], args[1], args[2], 0.0f/*deltaangle*/, args[3], Activator);
+        // use `NAN` here, to avoid rotation
+        return Level->eventAcsPolyMoveToSpotRotateEx(args[0], args[1], args[2], NAN/*deltaangle*/, args[3], Activator);
       }
       return 0;
 
@@ -1311,22 +1312,29 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
 
     // Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags)
     case ACSF_Polyobj_MoveRotateEx:
-      if (argCount >= 7) {
+      if (argCount >= 8) {
         return Level->eventAcsPolyMoveRotateEx(args[0], args[1], args[2], args[3], args[4], args[5], args[6]/65536.0f, args[7], Activator);
       }
       return 0;
 
     // Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, int deltaangle, int moveflags)
     case ACSF_Polyobj_MoveToRotateEx:
-      if (argCount >= 6) {
+      if (argCount >= 7) {
         return Level->eventAcsPolyMoveToRotateEx(args[0], args[1], args[2], args[3], args[4], args[5]/65536.0f, args[6], Activator);
       }
       return 0;
 
     // Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, int deltaangle, int moveflags) -- this uses target height too
     case ACSF_Polyobj_MoveToSpotRotateEx:
-      if (argCount >= 4) {
+      if (argCount >= 5) {
         return Level->eventAcsPolyMoveToSpotRotateEx(args[0], args[1], args[2], args[3]/65536.0f, args[4], Activator);
+      }
+      return 0;
+
+    // Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags)
+    case ACSF_Polyobj_RotateEx:
+      if (argCount >= 4) {
+        return Level->eventAcsPolyRotateEx(args[0], args[1], args[2]/65536.0f, args[3], Activator);
       }
       return 0;
 

@@ -306,19 +306,24 @@ public:
     VMT_RET_INT(method);
   }
 
-  int eventAcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, float deltaangle, int override, VEntity *Activator) {
+  int eventAcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, float deltaangle, int moveflags, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveRotateEx");
-    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, deltaangle, override, Activator);
+    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, deltaangle, moveflags, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int override, VEntity *Activator) {
+  int eventAcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int moveflags, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveToRotateEx");
-    vobjPutParamSelf(po, speed, x, y, z, deltaangle, override, Activator);
+    vobjPutParamSelf(po, speed, x, y, z, deltaangle, moveflags, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int override, VEntity *Activator) {
+  int eventAcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int moveflags, VEntity *Activator) {
     static VMethodProxy method("AcsPolyMoveToSpotRotateEx");
-    vobjPutParamSelf(po, speed, targettid, deltaangle, override, Activator);
+    vobjPutParamSelf(po, speed, targettid, deltaangle, moveflags, Activator);
+    VMT_RET_INT(method);
+  }
+  int eventAcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyRotateEx");
+    vobjPutParamSelf(po, speed, deltaangle, moveflags, Activator);
     VMT_RET_INT(method);
   }
 

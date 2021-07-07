@@ -204,6 +204,8 @@
   ACS_EXTFUNC(Polyobj_MoveToRotateEx) // implemented
   // bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags) -- this uses target height too
   ACS_EXTFUNC(Polyobj_MoveToSpotRotateEx) // implemented
+  // bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags)
+  ACS_EXTFUNC(Polyobj_RotateEx)
 
   // int CalcActorLight (int tid, int tidptr, int flags)
   ACS_EXTFUNC_NUM(CalcActorLight, 860) // implemented

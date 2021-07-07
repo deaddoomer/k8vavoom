@@ -81,6 +81,10 @@ bitenum {
   POBJ_MOVE_INDROT,
   /* use polyobject angle instead of `yawangle` in `Polyobj_MoveRotateEx()` */
   POBJ_MOVE_POANGLE,
+  /* used only in `Polyobj_RotateEx()`, to create rotating doors */
+  POBJ_MOVE_MIRRORED,
+  /* used only in `Polyobj_RotateEx()`, to create perpetual rotation */
+  POBJ_MOVE_PERPETUAL,
 }
 
 
@@ -2004,21 +2008,56 @@ override int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, floa
 //
 //==========================================================================
 override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int moveflags, Entity Activator) {
-  if (!speed || !targettid) return false;
+  if (!speed || !targettid) return 0;
   Entity ent = Level.FindMobjFromTID(targettid, none);
   if (!ent) return 0;
 
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
-  float pang = AngleMod360(poly.angle);
-  float sang = AngleMod360(ent.Angles.yaw);
-  if (pang != sang) {
-    float adiff = AngleDiff(pang, sang);
-    deltaangle += adiff;
+  if (deltaangle.isFinite) {
+    float pang = AngleMod360(poly.angle);
+    float sang = AngleMod360(ent.Angles.yaw);
+    if (pang != sang) {
+      float adiff = AngleDiff(pang, sang);
+      deltaangle += adiff;
+    }
+  } else {
+    deltaangle = 0;
   }
 
   return AcsPolyMoveToRotateEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, deltaangle, moveflags, Activator);
+}
+
+
+//==========================================================================
+//
+//  AcsPolyRotateEx
+//
+//==========================================================================
+override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags, Entity Activator) {
+  if (!speed || !deltaangle.isFinite || !deltaangle) return 0;
+
+  auto poly = XLevel.GetPolyobj(po);
+  if (!poly) return 0;
+
+  bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
+  bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
+  bool indrot = !!(moveflags&POBJ_MOVE_INDROT);
+  bool nomirror = !(moveflags&POBJ_MOVE_MIRRORED);
+  bool perpetual = !!(moveflags&POBJ_MOVE_PERPETUAL);
+
+  if (perpetual) {
+    // perpetual motion
+    deltaangle = -1.0;
+  } else {
+    if (deltaangle < 0.0) speed = -speed;
+    deltaangle = fabs(deltaangle);
+  }
+
+  //printdebug("AcsPolyRotateEx: po=%s; speed=%s; deltaangle=%s; forced=%B; nolink=%B; indrot=%B; nomirror=%B", po, speed, deltaangle, forced, nolink, indrot, nomirror);
+
+  return EV_RotatePolyEx(/*line*/nullptr, po, speed, deltaangle, forced, nolink, indrot, nomirror);
 }
 
 
@@ -2033,7 +2072,7 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
 {
   int polyNum = Arg1;
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
-  if (!poly) { printerror("EV_RotatePoly: invalid polyobj num %s", polyNum); return false; }
+  if (!poly) { printerror("EV_StopPoly: invalid polyobj num %s", polyNum); return false; }
   PolyobjThinker.ClearPolyobjThinkers(poly);
   PolyobjStopSequence(poly);
 
@@ -2041,7 +2080,7 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
   bool doStep = false;
   for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(/*polyNum*/mirror)) {
     poly = XLevel.GetPolyobj(mirror);
-    if (!poly) { printerror("EV_RotatePoly: invalid polyobj mirror num %s for pobj %s", mirror, polyNum); continue; }
+    if (!poly) { printerror("EV_StopPoly: invalid polyobj mirror num %s for pobj %s", mirror, polyNum); continue; }
     if (mirror == seen) {
       printdebug("EV_StopPoly: found mirror loop for pobj %s (this is harmless)", polyNum);
       break;
@@ -2062,11 +2101,28 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
 //
 //==========================================================================
 /*final*/ bool EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
-                              int Arg4, int Arg5, int direction, bool overRide,
-                              optional bool nolink, optional bool indrot)
+                              int Arg4, int Arg5, int direction, bool overRide)
+{
+  float angle = (byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
+  if (direction < 0) speed = -speed;
+  return EV_RotatePolyEx(line, polyNum, speed, angle, overRide);
+}
+
+
+//==========================================================================
+//
+//  EV_RotatePolyEx
+//
+//  `speed` is direction too
+//  negative deltaAngle means "perpetual motion"
+//
+//==========================================================================
+/*final*/ bool EV_RotatePolyEx (line_t *line, int polyNum, float speed, float deltaAngle,
+                                bool overRide, optional bool nolink, optional bool indrot,
+                                optional bool nomirror)
 {
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
-  if (!poly) { printerror("EV_RotatePoly: invalid polyobj num %d", polyNum); return false; }
+  if (!poly) { printerror("EV_RotatePolyEx: invalid polyobj num %d", polyNum); return false; }
 
   //printdebug("ROTATE POBJ #%d (speed=%s; byteAngle=%s; dir=%s)", polyNum, speed, byteAngle, direction);
   if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) {
@@ -2075,12 +2131,13 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
     return false;
   }
 
-  if (!specified_indrot) indrot = false; // just in case
+  // fix it for perpetual motion
+  if (deltaAngle < 0.0f) deltaAngle = -1.0;
 
   PolyobjRotator pe = SpawnThinker(PolyobjRotator);
   //pe.polyobj = polyNum;
-  pe.dist = (byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
-  pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
+  pe.dist = deltaAngle; //(byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
+  pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)/* *float(direction)*/ *90.0/64.0/8.0); // was AngleMod180
   pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
   pe.nolink = nolink;
   pe.bIndRot = indrot;
@@ -2090,40 +2147,44 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
   pe.AppendTo(poly);
   //poly->SpecialData = pe;
 
-  int seen = polyNum;
-  bool doStep = false;
-  for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
-    poly = XLevel.GetPolyobj(mirror);
-    if (!poly) {
-      printerror("EV_RotatePoly: invalid mirror polyobj num %s for pobj %s", mirror, polyNum);
-      break;
+  if (!nomirror) {
+    int seen = polyNum;
+    bool doStep = false;
+    float dirmul = 1.0;
+    for (int mirror = XLevel.GetPolyobjMirror(polyNum); mirror; mirror = XLevel.GetPolyobjMirror(mirror)) {
+      poly = XLevel.GetPolyobj(mirror);
+      if (!poly) {
+        printerror("EV_RotatePolyEx: invalid mirror polyobj num %s for pobj %s", mirror, polyNum);
+        break;
+      }
+      // is mirroring poly is already in motion?
+      if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) break;
+
+      // using override actions will never work this way, so force-stop it
+      // but let's not scare people ;-)
+      if (mirror == seen) {
+        printdebug("EV_RotatePolyEx: found mirror loop for pobj %s (this is harmless)", polyNum);
+        break;
+      }
+      if (doStep) seen = XLevel.GetPolyobjMirror(seen);
+      doStep = !doStep;
+
+      pe = SpawnThinker(PolyobjRotator);
+      //pe.polyobj = mirror;
+      pe.dist = deltaAngle; //(byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
+      dirmul = -dirmul;
+      pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(dirmul)*90.0/64.0/8.0); // was AngleMod180
+      pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
+      pe.nolink = nolink;
+      pe.bIndRot = indrot;
+      //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
+      PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
+
+      pe.AppendTo(poly);
+      //poly->SpecialData = pe;
     }
-    // is mirroring poly is already in motion?
-    if (!overRide && PolyobjThinker.IsPolyobjBusy(poly)) break;
-
-    // using override actions will never work this way, so force-stop it
-    // but let's not scare people ;-)
-    if (mirror == seen) {
-      printdebug("EV_RotatePoly: found mirror loop for pobj %s (this is harmless)", polyNum);
-      break;
-    }
-    if (doStep) seen = XLevel.GetPolyobjMirror(seen);
-    doStep = !doStep;
-
-    pe = SpawnThinker(PolyobjRotator);
-    //pe.polyobj = mirror;
-    pe.dist = (byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
-    direction = -direction;
-    pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
-    pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
-    pe.nolink = nolink;
-    pe.bIndRot = indrot;
-    //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
-    PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
-
-    pe.AppendTo(poly);
-    //poly->SpecialData = pe;
   }
+
   return true;
 }
 

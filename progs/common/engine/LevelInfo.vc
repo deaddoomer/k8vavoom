@@ -1352,7 +1352,7 @@ int AcsSpawnDecal (Entity ent, name decalname, TVec org, float dist, float angle
 //
 //==========================================================================
 int AcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist,
-                         int vspeed, int vdist, float deltaangle, int forced, Entity Activator)
+                         int vspeed, int vdist, float deltaangle, int moveflags, Entity Activator)
 {
   return 0;
 }
@@ -1363,7 +1363,7 @@ int AcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist,
 //  AcsPolyMoveToRotateEx
 //
 //==========================================================================
-int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int forced, Entity Activator) {
+int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int moveflags, Entity Activator) {
   return 0;
 }
 
@@ -1375,7 +1375,17 @@ int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaan
 //  this uses target height too
 //
 //==========================================================================
-int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int forced, Entity Activator) {
+int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int moveflags, Entity Activator) {
+  return 0;
+}
+
+
+//==========================================================================
+//
+//  AcsPolyRotateEx
+//
+//==========================================================================
+int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags, Entity Activator) {
   return 0;
 }
 
