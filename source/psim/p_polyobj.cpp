@@ -1956,7 +1956,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     IncrementValidCount();
     const int visCount = validcount;
     //GCon->Logf(NAME_Debug, "=== pobj #%d ===", pofirst->tag);
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       po->savedFloor = po->pofloor;
       po->savedCeiling = po->poceiling;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
@@ -1975,14 +1975,13 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         edata.LastMoveOrigin = mobj->LastMoveOrigin;
         edata.aflags = 0;
       }
-      if (skipLink) break;
     }
 
     // setup "affected" flags, calculate new z
     const bool verticalMoveUp = (verticalMove && z > 0.0f);
     for (auto &&edata : poAffectedEnitities) {
       VEntity *mobj = edata.mobj;
-      for (po = pofirst; po; po = po->polink) {
+      for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         const float oldz = mobj->Origin.z;
         const float pofz = po->poceiling.maxz;
         // fix "affected" flag
@@ -2016,7 +2015,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
 
   const bool dovmove = (z != 0.0f); // cannot use `verticalMove` here
   // unlink and move all linked polyobjects
-  for (po = pofirst; po; po = po->polink) {
+  for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
     UnlinkPolyobj(po);
     const TVec delta(po->startSpot.x+x, po->startSpot.y+y);
     const float an = AngleMod(po->angle);
@@ -2040,7 +2039,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     }
     UpdatePolySegs(po);
     if (dovmove) OffsetPolyobjFlats(po, z);
-    if (skipLink) break;
   }
 
   bool blocked = false;
@@ -2052,10 +2050,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   }
 
   if (!forcedMove && !blocked) {
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       blocked = PolyCheckMobjBlocked(po, false);
       if (blocked) break; // process all?
-      if (skipLink) break;
     }
   }
 
@@ -2063,13 +2060,12 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
 
   // if not blocked, relink polyobject temporarily, and check vertical hits
   if (!blocked && !forcedMove && pofirst->posector) {
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       LinkPolyobj(po);
-      if (skipLink) break;
     }
     linked = true;
     // check height-blocking objects
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       const float pz0 = po->pofloor.minz;
       const float pz1 = po->poceiling.maxz;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
@@ -2091,13 +2087,12 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         }
         if (blocked) break;
       }
-      if (skipLink || blocked) break;
+      if (blocked) break;
     }
     // if blocked, unlink back
     if (blocked) {
-      for (po = pofirst; po; po = po->polink) {
+      for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         UnlinkPolyobj(po);
-        if (skipLink) break;
       }
       linked = false;
     }
@@ -2107,7 +2102,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   if (blocked) {
     vassert(!linked);
     // undo polyobject movement, and link them back
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       if (flatsSaved) {
         po->pofloor = po->savedFloor;
         po->poceiling = po->savedCeiling;
@@ -2119,7 +2114,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       UpdatePolySegs(po);
       OffsetPolyobjFlats(po, 0.0f, true);
       LinkPolyobj(po);
-      if (skipLink) break;
     }
     // restore and relink all mobjs back
     for (auto &&edata : poAffectedEnitities) {
@@ -2134,7 +2128,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   }
 
   // succesfull move, fix startspot
-  for (po = pofirst; po; po = po->polink) {
+  for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
     po->startSpot.x += x;
     po->startSpot.y += y;
     po->startSpot.z += z;
@@ -2151,7 +2145,6 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         }
       }
     }
-    if (skipLink) break;
   }
 
   // relink all mobjs back
@@ -2166,10 +2159,9 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
   // notify renderer that this polyobject was moved
   #ifdef CLIENT
   if (Renderer) {
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       Renderer->PObjModified(po);
       Renderer->InvalidatePObjLMaps(po);
-      if (skipLink) break;
     }
   }
   #endif
@@ -2206,7 +2198,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   if (!forcedMove && pofirst->posector && (docarry || doangle)) {
     IncrementValidCount();
     const int visCount = validcount;
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       const float pz1 = po->poceiling.maxz;
       for (msecnode_t *n = po->posector->TouchingThingList; n; n = n->SNext) {
         VEntity *mobj = n->Thing;
@@ -2228,7 +2220,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         // check if it is initially stuck
         #if 1
         if (NeedPositionCheck(mobj)) {
-          for (polyobj_t *xpp = pofirst; xpp; xpp = xpp->polink) {
+          for (polyobj_t *xpp = pofirst; xpp; xpp = (skipLink ? nullptr : xpp->polink)) {
             if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
               // do nothing
             } else {
@@ -2240,7 +2232,6 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
                 break;
               }
             }
-            if (skipLink) break;
             if (edata.aflags&AFF_STUCK) break;
           }
         }
@@ -2278,7 +2269,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
 
   // rotate all polyobjects
   msincos(an, &s, &c);
-  for (po = pofirst; po; po = po->polink) {
+  for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
     /*if (IsForServer())*/ UnlinkPolyobj(po);
     const float ssx = po->startSpot.x;
     const float ssy = po->startSpot.y;
@@ -2300,7 +2291,6 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       (*vptr)->y = (tr_y*c+tr_x*s)+ssy;
     }
     UpdatePolySegs(po);
-    if (skipLink) break;
   }
 
   bool blocked = false;
@@ -2313,10 +2303,9 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       if (!blocked) blocked = !UnstuckFromRotatedPObj(pofirst, skipLink);
     }
     if (!blocked) {
-      for (po = pofirst; po; po = po->polink) {
+      for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         blocked = PolyCheckMobjBlocked(po, true);
         if (blocked) break; // process all?
-        if (skipLink) break;
       }
     }
   }
@@ -2324,7 +2313,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   // if we are blocked then restore the previous points
   if (blocked) {
     // restore points
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       if (flatsSaved) {
         po->pofloor = po->savedFloor;
         po->poceiling = po->savedCeiling;
@@ -2334,7 +2323,6 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
       UpdatePolySegs(po);
       LinkPolyobj(po);
-      if (skipLink) break;
     }
     // restore and relink all mobjs back
     for (auto &&edata : poAffectedEnitities) {
@@ -2349,7 +2337,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   }
 
   // not blocked, fix angles and floors
-  for (po = pofirst; po; po = po->polink) {
+  for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
     po->angle = an;
     if (flatsSaved) {
       po->pofloor.BaseAngle = AngleMod(po->pofloor.BaseAngle+angle);
@@ -2377,7 +2365,6 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         }
       }
     }
-    if (skipLink) break;
   }
 
   // relink things
@@ -2394,10 +2381,9 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   // notify renderer that this polyobject was moved
   #ifdef CLIENT
   if (Renderer) {
-    for (po = pofirst; po; po = po->polink) {
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       Renderer->PObjModified(po);
       Renderer->InvalidatePObjLMaps(po);
-      if (skipLink) break;
     }
   }
   #endif
