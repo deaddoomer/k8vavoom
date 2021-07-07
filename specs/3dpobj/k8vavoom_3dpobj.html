@@ -433,9 +433,11 @@ negative value means "rotate left".</p>
 This is 3D extension of <code>`Polyobj_MoveToSpot()`</code>.
 </p>
 <p>Speed is in map units per 1/8 of second.</p>
-<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+<p><code>`deltaangle`</code> specifies the additional angle change, in degrees. Polyobject will slowly rotate while moving, and when it
 will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
 negative value means "rotate left".</p>
+<p><b>PLEASE, NOTE</b> that polyobject will rotate to the spot thing angle <b>plus</b> <code>`deltaangle`</code>.
+Most of the time <code>`deltaangle`</code> will be zero.</p>
 
 <br />
 

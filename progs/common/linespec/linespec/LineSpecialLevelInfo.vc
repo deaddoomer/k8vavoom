@@ -2011,6 +2011,13 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
+  float pang = AngleMod360(poly.angle);
+  float sang = AngleMod360(ent.Angles.yaw);
+  if (pang != sang) {
+    float adiff = AngleDiff(pang, sang);
+    deltaangle += adiff;
+  }
+
   return AcsPolyMoveToRotateEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, deltaangle, moveflags, Activator);
 }
 
