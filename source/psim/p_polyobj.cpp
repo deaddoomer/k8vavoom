@@ -1769,6 +1769,79 @@ static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
 
 //==========================================================================
 //
+//  UnstuckFromRotatedPObj
+//
+//  returns `false` if movement was blocked
+//
+//==========================================================================
+static bool UnstuckFromRotatedPObj (polyobj_t *pofirst, bool skipLink) noexcept {
+  if (pofirst && !pofirst->posector) pofirst = nullptr; // don't do this for non-3d pobjs
+
+  // ok, it's not blocked; now try to unstuck
+  if (!pofirst) return true; // ok to move
+
+  if (poAffectedEnitities.length() == 0) return true; // still ok to move
+
+  tmtrace_t tmtrace;
+
+  // check each affected entity against all pobj lines
+  for (auto &&edata : poAffectedEnitities) {
+    // if it already was stuck, ignore it
+    if (edata.aflags&AFF_STUCK) {
+      #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
+      GCon->Logf(NAME_Debug, "mobj '%s' already stuck", edata.mobj->GetClass()->GetName());
+      #endif
+      continue;
+    }
+    VEntity *mobj = edata.mobj;
+    if (!NeedPositionCheck(mobj)) continue;
+    bool wasMove = false;
+    for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+      if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+        continue;
+      }
+      TVec udir = CalcPolyUnstuckVector(po, mobj);
+      if (!udir.isValid()) return false; // oops, blocked
+      if (!udir.isZero2D()) {
+        #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
+        GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), udir.x, udir.y, udir.z);
+        #endif
+        // need to move
+        //TODO: move any touching objects too
+        mobj->Origin += udir;
+        bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+        if (!ok) return false; //FIXME: blocked
+        edata.aflags |= AFF_MOVE;
+        wasMove = true;
+      }
+    }
+    // check if we stuck
+    if (wasMove) {
+      for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+        if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+          continue;
+        }
+        TVec udir = CalcPolyUnstuckVector(po, mobj);
+        if (!udir.isValid()) return false; // oops, blocked
+        if (!udir.isZero2D()) {
+          // still blocked
+          if (mobj->EntityFlags&VEntity::EF_Solid) {
+            if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
+          } else {
+            mobj->Level->eventPolyCrushMobj(mobj, po);
+          }
+        }
+      }
+    }
+  }
+
+  // ok to move
+  return true;
+}
+
+
+//==========================================================================
+//
 //  CheckAffectedMObjPositions
 //
 //  returns `true` if movement was blocked
@@ -1777,9 +1850,8 @@ static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
 //  (this is used for rotations)
 //
 //==========================================================================
-static bool CheckAffectedMObjPositions (polyobj_t *pofirst=nullptr, bool skipLink=false) noexcept {
+static bool CheckAffectedMObjPositions () noexcept {
   if (poAffectedEnitities.length() == 0) return false;
-  if (pofirst && !pofirst->posector) pofirst = nullptr; // don't do this for non-3d pobjs
 
   tmtrace_t tmtrace;
   for (auto &&edata : poAffectedEnitities) {
@@ -1846,62 +1918,6 @@ static bool CheckAffectedMObjPositions (polyobj_t *pofirst=nullptr, bool skipLin
     }
     // alas, blocked
     return true;
-  }
-
-  // ok, it's not blocked; now try to unstuck
-  if (pofirst) {
-    for (auto &&edata : poAffectedEnitities) {
-      if (edata.aflags&AFF_STUCK) {
-        #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-        GCon->Logf(NAME_Debug, "mobj '%s' already stuck", edata.mobj->GetClass()->GetName());
-        #endif
-        continue;
-      }
-      VEntity *mobj = edata.mobj;
-      if (!NeedPositionCheck(mobj)) continue;
-      bool wasMove = false;
-      for (polyobj_t *po = pofirst; po; po = po->polink) {
-        if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
-          // do nothing
-        } else {
-          TVec udir = CalcPolyUnstuckVector(po, mobj);
-          if (!udir.isValid()) return true; // oops, blocked
-          if (!udir.isZero2D()) {
-            #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-            GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), udir.x, udir.y, udir.z);
-            #endif
-            // need to move
-            //TODO: move any touching objects too
-            mobj->Origin += udir;
-            bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-            if (!ok) return false; //FIXME: blocked
-            edata.aflags |= AFF_MOVE;
-            wasMove = true;
-          }
-        }
-        if (skipLink) break;
-      }
-      // check if we stuck
-      if (wasMove) {
-        for (polyobj_t *po = pofirst; po; po = po->polink) {
-          if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
-            // do nothing
-          } else {
-            TVec udir = CalcPolyUnstuckVector(po, mobj);
-            if (!udir.isValid()) return true; // oops, blocked
-            if (!udir.isZero2D()) {
-              // still blocked
-              if (mobj->EntityFlags&VEntity::EF_Solid) {
-                if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return true; // blocked
-              } else {
-                mobj->Level->eventPolyCrushMobj(mobj, po);
-              }
-            }
-          }
-          if (skipLink) break;
-        }
-      }
-    }
   }
 
   // done, no blocks
@@ -2293,7 +2309,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     // now check if movement is blocked by any affected object
     // we have to do it after we unlinked all pobjs
     if (!forcedMove && pofirst->posector) {
-      blocked = CheckAffectedMObjPositions(pofirst, skipLink);
+      blocked = CheckAffectedMObjPositions();
+      if (!blocked) blocked = !UnstuckFromRotatedPObj(pofirst, skipLink);
     }
     if (!blocked) {
       for (po = pofirst; po; po = po->polink) {
