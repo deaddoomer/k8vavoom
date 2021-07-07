@@ -41,7 +41,6 @@
 static VCvarB dbg_pobj_disable("dbg_pobj_disable", false, "Disable most polyobject operations?", CVAR_PreInit);
 static VCvarB dbg_pobj_verbose("dbg_pobj_verbose", false, "Verbose polyobject spawner?", CVAR_PreInit);
 
-static VCvarB dbg_pobj_unstuck_old("__dbg_pobj_unstuck_old", false, "Use old 3d pobj unstuck code?", CVAR_PreInit);
 static VCvarB dbg_pobj_unstuck_verbose("__dbg_pobj_unstuck_verbose", false, "Verbose 3d pobj unstuck code?", CVAR_PreInit);
 
 
@@ -1658,133 +1657,6 @@ struct UnstuckInfo {
 
 //==========================================================================
 //
-//  UU_FIXIP
-//
-//==========================================================================
-static inline bool UU_FIXIP (const TVec &p, const TVec &orig2d, TVec &insidepoint, float &bestdist) {
-  const float pdist = (p-orig2d).length2DSquared();
-  if (/*pdist < sqdist &&*/ pdist < bestdist) {
-    bestdist = pdist;
-    insidepoint = p;
-    /*
-    #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-    GCon->Logf(NAME_Debug, "mobj '%s': new point; orig2d=(%g,%g); rad=%g; pdist=%g; p=(%g,%g)",
-      mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, pdist, insidepoint.x, insidepoint.y);
-    #endif
-    */
-    return true;
-  }
-  /*
-  GCon->Logf(NAME_Debug, "mobj '%s': ignore point; orig2d=(%g,%g); rad=%g (%g); pdist=%g; bestdist=%g; p=(%g,%g)",
-      mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, sqdist, pdist, bestdist, insidepoint.x, insidepoint.y);
-  */
-  return false;
-}
-
-
-//==========================================================================
-//
-//  CalcPolyUnstuckVectorOld
-//
-//  calculate horizontal "unstuck vector" (delta to move)
-//  for the given 3d polyobject
-//  returns `false` if cannot unstuck
-//
-//  this is totally wrong, but is still better than stucking
-//
-//==========================================================================
-static bool CalcPolyUnstuckVectorOld (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
-  uvlist.resetNoDtor();
-  //if (!po || !mobj || !po->posector) return false;
-
-  const float rad = mobj->Radius;
-  if (rad <= 0.0f || mobj->Height <= 0.0f) return true; // just in case
-
-  const TVec orig2d(mobj->Origin.x, mobj->Origin.y);
-  float bbox2d[4];
-  mobj->Create2DBox(bbox2d);
-  bbox2d[BOX2D_TOP] = orig2d.y+rad;
-  bbox2d[BOX2D_BOTTOM] = orig2d.y-rad;
-  bbox2d[BOX2D_RIGHT] = orig2d.x+rad;
-  bbox2d[BOX2D_LEFT] = orig2d.x-rad;
-
-  TVec insidepoint(+FLT_MAX, +FLT_MAX);
-  bool hasInsidePoint = false;
-  float bestdist = +FLT_MAX;
-  //const float sqdist = (rad+0.5f)*(rad+0.5f);
-
-  // find point inside a bbox that is nearest to the origin
-
-  for (auto &&lit : po->LineFirst()) {
-    const line_t *ld = lit.line();
-    if (!mobj->IsBlockingLine(ld)) continue;
-    if (!mobj->LineIntersects(ld)) continue;
-
-    // has intersection
-    //hasInsidePoint = true;
-    // easy case: is any vertex inside mobj bbox?
-
-    // if yes, choose the point that is closest to the origin
-    bool inBBox = false;
-    // v1
-    if (IsPointInside2DBBox(ld->v1->x, ld->v1->y, bbox2d)) {
-      inBBox = true;
-      if (UU_FIXIP(*ld->v1, orig2d, insidepoint, bestdist)) hasInsidePoint = true;
-    }
-    // v2
-    if (IsPointInside2DBBox(ld->v2->x, ld->v2->y, bbox2d)) {
-      inBBox = true;
-      if (UU_FIXIP(*ld->v2, orig2d, insidepoint, bestdist)) hasInsidePoint = true;
-    }
-
-    // if no vertex in the bbox, use point closest to the origin
-    if (!inBBox) {
-      //FIXME: is this right?
-      const float ldist = ld->PointDistance(orig2d);
-      const TVec np = orig2d-ld->normal*(ldist+(ldist > 0.0f ? +0.4f : -1.4f));
-      //const TVec np = orig2d-ld->normal*ldist;
-      if (UU_FIXIP(np, orig2d, insidepoint, bestdist)) hasInsidePoint = true;
-    }
-  }
-
-  if (!hasInsidePoint) return true;
-
-  // we have a point, calculate unstuck direction
-  // if nearest point is at the origin, cannot unstuck
-  const float dx = insidepoint.x-orig2d.x;
-  const float dy = insidepoint.y-orig2d.y;
-
-  if (dbg_pobj_unstuck_verbose.asBool()) {
-    GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck; orig2d=(%g,%g); rad=%g; ip=(%g,%g); dx=%g; dy=%g",
-      mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, insidepoint.x, insidepoint.y, dx, dy);
-  }
-
-  if (fabsf(dx) < 1.0f && fabsf(dy) < 1.0f) return false;
-
-  // we have a point closest to mobj origin (center)
-  // calculate unstuck vector
-  // calc unstuck vectors for corner, vertical and horizontal side, and choose the smaller one
-
-  // corner
-  TVec corner = TVec::ZeroVector;
-  corner.x = (dx < 0.0f ? orig2d.x-rad-0.5f : orig2d.x+rad+0.5f);
-  corner.y = (dy < 0.0f ? orig2d.y-rad-0.5f : orig2d.y+rad+0.5f);
-  TVec cvec = insidepoint-corner;
-
-  if (dbg_pobj_unstuck_verbose.asBool()) {
-    GCon->Logf(NAME_Debug, "mobj '%s':   cdist=%g; cvec=(%g,%g); corner=(%g,%g)", mobj->GetClass()->GetName(), cvec.length2D(), cvec.x, cvec.y, corner.x, corner.y);
-  }
-
-  if (cvec.isZero2D()) return false;
-  UnstuckInfo &nfo = uvlist.alloc();
-  nfo.uv = cvec;
-  nfo.fromWrongSide = false;
-  return true;
-}
-
-
-//==========================================================================
-//
 //  CalcPolyUnstuckVectorNew
 //
 //  calculate horizontal "unstuck vector" (delta to move)
@@ -1794,7 +1666,7 @@ static bool CalcPolyUnstuckVectorOld (TArray<UnstuckInfo> &uvlist, VLevel *Level
 //  this is wrong, but is still better than stucking
 //
 //==========================================================================
-static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
+static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
   uvlist.resetNoDtor();
   //if (!po || !mobj || !po->posector) return false;
 
@@ -1908,23 +1780,6 @@ static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level
 
   if (wasIntersect) return (uvlist.length() > 0);
   return true;
-}
-
-
-//==========================================================================
-//
-//  CalcPolyUnstuckVector
-//
-//  calculate horizontal "unstuck vector" (delta to move)
-//  for the given 3d polyobject
-//  returns `TVec::InvalidVector` if cannot unstuck
-//
-//  this is totally wrong, but is still better than stucking
-//
-//==========================================================================
-static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
-  if (dbg_pobj_unstuck_old.asBool()) return CalcPolyUnstuckVectorOld(uvlist, Level, po, mobj);
-  return CalcPolyUnstuckVectorNew(uvlist, Level, po, mobj);
 }
 
 
