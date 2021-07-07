@@ -925,6 +925,9 @@ public:
   bool MovePolyobj (int num, float x, float y, float z=0.0f, unsigned flags=0u); // tag (GetPolyobj)
   bool RotatePolyobj (int num, float angle, unsigned flags=0u); // tag (GetPolyobj)
 
+  // called from loader
+  void FixPolyobjCachedFlags (polyobj_t *po);
+
   // do not call directly!
   bool CheckBSPB2DBoxNode (int bspnum, const float bbox2d[4], bool (*cb) (VLevel *level, subsector_t *sub, void *udata), void *udata) noexcept;
   // return `false` from `cb` to stop checking

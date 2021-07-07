@@ -480,6 +480,27 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
 
 //==========================================================================
 //
+//  VLevel::FixPolyobjCachedFlags
+//
+//  called from loader
+//
+//==========================================================================
+void VLevel::FixPolyobjCachedFlags (polyobj_t *po) {
+  if (!po) return;
+  po->PolyFlags &= ~polyobj_t::PF_HasTopBlocking;
+  if (!po->posector) return; // non-3d pobjs has no cached flags
+  for (auto &&it : po->LineFirst()) {
+    line_t *ld = it.line();
+    if (ld->flags&ML_CLIP_MIDTEX) {
+      po->PolyFlags |= polyobj_t::PF_HasTopBlocking;
+      break;
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VLevel::Validate3DPolyobj
 //
 //  note that polyobject segs are not collected yet, only lines
@@ -488,6 +509,7 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
 void VLevel::Validate3DPolyobj (polyobj_t *po) {
   vassert(po->numlines >= 3);
 
+  po->PolyFlags &= ~polyobj_t::PF_HasTopBlocking;
   sector_t *sfront = po->lines[0]->frontsector;
   sector_t *sback = po->lines[0]->backsector;
   for (auto &&it : po->LineFirst()) {
@@ -538,6 +560,7 @@ void VLevel::Validate3DPolyobj (polyobj_t *po) {
       const float texh0 = TTex0->GetScaledHeightF()/s0->Top.ScaleY;
       const float texh1 = TTex1->GetScaledHeightF()/s1->Top.ScaleY;
       if (texh0 != texh1) Host_Error("invalid 3d pobj #%d configuration -- bad line #%d (blocking toptex has different sizes)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      po->PolyFlags |= polyobj_t::PF_HasTopBlocking;
     }
   }
 }
@@ -1984,6 +2007,10 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
         // reject only polyobjects that are above us
         // (otherwise we may miss blockig top texture)
         if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        // if pobj has no top-blocking textures, it can be skipped if we're above it
+        if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
+          if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        }
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
         if (dbg_pobj_unstuck_verbose.asBool()) {
           GCon->Logf(NAME_Debug, "mobj %s:%u, pobj %d, triesleft=%d: canUnstuck=%d; uvlist.length=%d", mobj->GetClass()->GetName(), mobj->GetUniqueId(), po->tag, trycount, (int)canUnstuck, uvlist.length());
@@ -2042,6 +2069,10 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
           // reject only polyobjects that are above us
           // (otherwise we may miss blockig top texture)
           if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+          // if pobj has no top-blocking textures, it can be skipped if we're above it
+          if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
+            if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+          }
           const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
           if (!canUnstuck && uvlist.length() > 0) {
             if (dbg_pobj_unstuck_verbose.asBool()) {
