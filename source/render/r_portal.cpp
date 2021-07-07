@@ -37,7 +37,11 @@
 extern VCvarB gl_dbg_wireframe;
 extern VCvarB clip_frustum;
 
-static VCvarB r_dbg_mirror_use_frustum("r_dbg_mirror_use_frustum", false, "Use frustum clipping for mirror portals? (DEBUG)", 0/*CVAR_Archive*/);
+static VCvarB r_dbg_mirror_use_frustum("r_dbg_mirror_use_frustum", false, "Use frustum clipping for mirror portals? (DEBUG)", CVAR_Archive);
+static VCvarB r_dbg_mirror_no_cliprange("r_dbg_mirror_no_cliprange", false, "Do not build narrowed cliprange for mirror portals? (DEBUG)", CVAR_Archive);
+
+static VCvarB r_dbg_stack_use_frustum("r_dbg_stack_use_frustum", false, "Use frustum clipping for stack portals? (DEBUG)", CVAR_Archive);
+static VCvarB r_dbg_stack_no_cliprange("r_dbg_stack_no_cliprange", false, "Do not build narrowed cliprange for stack portals? (DEBUG)", CVAR_Archive);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -543,7 +547,14 @@ void VSectorStackPortal::DrawContents () {
   refdef_t rd = RLev->refdef;
   // this range is used to clip away everything that is not "filled", hence "no revert" here
   // frustum doesn't matter, so don't bother initialising it too
-  VPortal::SetupRanges(rd, Range, false/*revert*/, false/*setfrustum*/);
+  if (r_dbg_stack_no_cliprange.asBool()) {
+    Range.ClearClipNodes(Drawer->vieworg, RLev->Level);
+    if (r_dbg_stack_use_frustum.asBool()) {
+      Range.ClipInitFrustumRange(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup, rd.fovx, rd.fovy);
+    }
+  } else {
+    SetupRanges(rd, Range, false/*revert*/, r_dbg_stack_use_frustum.asBool()/*setfrustum*/);
+  }
 
   RLev->ViewEnt = Viewport;
   VEntity *Mate = Viewport->GetSkyBoxMate();
@@ -620,7 +631,14 @@ void VMirrorPortal::DrawContents () {
 
   refdef_t rd = RLev->refdef;
   VViewClipper Range;
-  SetupRanges(rd, Range, true/*revert*/, r_dbg_mirror_use_frustum.asBool()/*setfrustum*/);
+  if (r_dbg_mirror_no_cliprange.asBool()) {
+    Range.ClearClipNodes(Drawer->vieworg, RLev->Level);
+    if (r_dbg_mirror_use_frustum.asBool()) {
+      Range.ClipInitFrustumRange(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup, rd.fovx, rd.fovy);
+    }
+  } else {
+    SetupRanges(rd, Range, true/*revert*/, r_dbg_mirror_use_frustum.asBool()/*setfrustum*/);
+  }
 
   {
     AutoSavedBspVis bspvisguard(RLev);

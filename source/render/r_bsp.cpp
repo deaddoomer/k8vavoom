@@ -1504,7 +1504,8 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
   if (Range) {
     ViewClip.ClipResetFrustumPlanes();
     ViewClip.SetFrustum(Range->GetFrustum());
-    ViewClip.ClipToRanges(*Range); // range contains a valid range, so we must clip away holes in it
+    //HACK: if the range is empty, don't clip with it
+    if (!Range->ClipIsEmpty()) ViewClip.ClipToRanges(*Range); // range contains a valid range, so we must clip away holes in it
   } else {
     ViewClip.ClipInitFrustumRange(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup, rd->fovx, rd->fovy);
   }
