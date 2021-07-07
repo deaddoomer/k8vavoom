@@ -57,26 +57,3 @@ void VRenderLevelLightmap::QueueWorldSurface (surface_t *surf) {
 
   QueueSimpleSurf(surf);
 }
-
-
-//==========================================================================
-//
-//  VRenderLevelLightmap::RenderCollectSurfaces
-//
-//  this does BSP traversing, and collect world surfaces into various
-//  lists to drive GPU rendering
-//
-//==========================================================================
-void VRenderLevelLightmap::RenderCollectSurfaces (const refdef_t *rd, const VViewClipper *Range) {
-  //GCon->Logf(NAME_Debug, "::: VRenderLevelLightmap::RenderCollectSurfaces ::: (%d)", currQueueFrame);
-
-  MiniStopTimer profPrep("PrepareWorldRender", prof_r_world_prepare.asBool());
-  PrepareWorldRender(rd, Range);
-  profPrep.stopAndReport();
-
-  MiniStopTimer profBSPCollect("RenderBspWorld", prof_r_bsp_collect.asBool());
-  RenderBspWorld(rd, Range);
-  profBSPCollect.stopAndReport();
-
-  ProcessCachedSurfaces();
-}

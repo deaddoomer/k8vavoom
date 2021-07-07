@@ -216,8 +216,6 @@ protected:
 
   // world BSP rendering
   virtual void QueueWorldSurface (surface_t *) override;
-  // this does BSP traversing, and collect world surfaces into various lists to drive GPU rendering
-  void RenderCollectSurfaces (const refdef_t *rd, const VViewClipper *Range);
 
   void RelightMap (bool recalcNow, bool onlyMarked);
 

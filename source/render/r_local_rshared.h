@@ -588,14 +588,17 @@ protected:
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
 
   virtual void QueueWorldSurface (surface_t *surf) = 0;
+  // this does BSP traversing, and collect world surfaces into various lists to drive GPU rendering
+  virtual void RenderCollectSurfaces (const refdef_t *rd, const VViewClipper *Range);
+
   virtual void FreeSurfCache (surfcache_t *&block);
   // this is called after surface queues built, so lightmap renderer can calculate new lightmaps
   // it is called right before starting world drawing
   virtual void ProcessCachedSurfaces ();
 
-  void PrepareWorldRender (const refdef_t *, const VViewClipper *);
+  virtual void PrepareWorldRender (const refdef_t *, const VViewClipper *);
   // this should be called after `RenderCollectSurfaces()`
-  void BuildVisibleObjectsList (bool doShadows);
+  virtual void BuildVisibleObjectsList (bool doShadows);
 
   // general
   static float CalcEffectiveFOV (float fov, const refdef_t &refdef);
@@ -679,8 +682,8 @@ public:
   void RenderSubsector (int num, bool onlyClip);
   void RenderBSPNode (int bspnum, const float *bbox, unsigned AClipflags, bool onlyClip);
   void RenderBSPTree ();
-  void RenderBspWorld (const refdef_t *rd, const VViewClipper *Range);
-  void RenderPortals ();
+  virtual void RenderBspWorld (const refdef_t *rd, const VViewClipper *Range);
+  virtual void RenderPortals ();
 
 public:
   void SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling);

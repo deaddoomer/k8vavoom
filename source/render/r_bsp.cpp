@@ -136,6 +136,27 @@ static inline bool IsStackedSectorPlane (const sec_plane_t &plane) {
 
 //==========================================================================
 //
+//  VRenderLevelShared::RenderCollectSurfaces
+//
+//  this does BSP traversing, and collect world surfaces into various
+//  lists to drive GPU rendering
+//
+//==========================================================================
+void VRenderLevelShared::RenderCollectSurfaces (const refdef_t *rd, const VViewClipper *Range) {
+  MiniStopTimer profPrep("PrepareWorldRender", prof_r_world_prepare.asBool());
+  PrepareWorldRender(rd, Range);
+  profPrep.stopAndReport();
+
+  MiniStopTimer profBSPCollect("RenderBspWorld", prof_r_bsp_collect.asBool());
+  RenderBspWorld(rd, Range);
+  profBSPCollect.stopAndReport();
+
+  ProcessCachedSurfaces();
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::PrepareWorldRender
 //
 //==========================================================================

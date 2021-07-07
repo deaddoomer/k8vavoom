@@ -37,6 +37,8 @@
 extern VCvarB gl_dbg_wireframe;
 extern VCvarB clip_frustum;
 
+static VCvarB r_dbg_mirror_use_frustum("r_dbg_mirror_use_frustum", false, "Use frustum clipping for mirror portals? (DEBUG)", 0/*CVAR_Archive*/);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // "autosave" struct to avoid some pasta
@@ -353,6 +355,7 @@ void VPortal::SetupRanges (const refdef_t &refdef, VViewClipper &Range, bool Rev
     } else {
       //k8: do we need to do this?
       #if 1
+      //if (Revert) continue; //???
       // floor/ceiling
       for (int j = 0; j < surf->count; ++j) {
         TVec v1, v2;
@@ -617,7 +620,7 @@ void VMirrorPortal::DrawContents () {
 
   refdef_t rd = RLev->refdef;
   VViewClipper Range;
-  SetupRanges(rd, Range, true/*revert*/, false/*setfrustum*/);
+  SetupRanges(rd, Range, true/*revert*/, r_dbg_mirror_use_frustum.asBool()/*setfrustum*/);
 
   {
     AutoSavedBspVis bspvisguard(RLev);
