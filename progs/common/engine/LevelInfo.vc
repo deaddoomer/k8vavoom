@@ -571,6 +571,16 @@ bool PolyBusy (int polyobj) {
 
 //==========================================================================
 //
+//  PolyAngle
+//
+//==========================================================================
+float PolyAngle (int polyobj) {
+  return -1;
+}
+
+
+//==========================================================================
+//
 //  ThingCount
 //
 //==========================================================================
@@ -1338,11 +1348,11 @@ int AcsSpawnDecal (Entity ent, name decalname, TVec org, float dist, float angle
 
 //==========================================================================
 //
-//  AcsPolyMoveEx
+//  AcsPolyMoveRotateEx
 //
 //==========================================================================
-int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
-                   int vspeed, int vdist, int forced, Entity Activator)
+int AcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist,
+                         int vspeed, int vdist, float deltaangle, int forced, Entity Activator)
 {
   return 0;
 }
@@ -1350,22 +1360,22 @@ int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
 
 //==========================================================================
 //
-//  AcsPolyMoveToEx
+//  AcsPolyMoveToRotateEx
 //
 //==========================================================================
-int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int forced, Entity Activator) {
+int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int forced, Entity Activator) {
   return 0;
 }
 
 
 //==========================================================================
 //
-//  AcsPolyMoveToSpotEx
+//  AcsPolyMoveToSpotRotateEx
 //
 //  this uses target height too
 //
 //==========================================================================
-int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int forced, Entity Activator) {
+int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int forced, Entity Activator) {
   return 0;
 }
 

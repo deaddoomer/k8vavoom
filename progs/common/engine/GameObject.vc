@@ -1209,6 +1209,7 @@ struct polyobj_t {
   TVec[] originalPts; // used as the base for the rotations
   TVec*[] segPtr; // all points we need to modify, to avoid looping over segs again and again
   TVec[] prevPts; // need to be here due to linked polyobjects
+  TVec origStartSpot; // saved starting spot
   sec_plane_t savedFloor;
   sec_plane_t savedCeiling;
   readonly native polyobjpart_t *parts; // list of all polyoject parts

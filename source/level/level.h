@@ -915,9 +915,11 @@ public:
   polyobj_t *GetPolyobj (int polyNum) noexcept; // actually, tag
   int GetPolyobjMirror (int poly); // tag again
 
+  //WARNING! keep in sync with ACS and "Level.vc"!
   enum {
-    POFLAG_FORCED = 1u<<0, // do not check position, do not carry objects
-    POFLAG_NOLINK = 1u<<1, // ignore linked polyobjects
+    POFLAG_FORCED  = 1u<<0, // do not check position, do not carry objects
+    POFLAG_NOLINK  = 1u<<1, // ignore linked polyobjects
+    POFLAG_INDROT  = 1u<<2, // for linked polyobjects, don't use master pobj center, but rotate each pobj around it's own center
   };
 
   bool MovePolyobj (int num, float x, float y, float z=0.0f, unsigned flags=0u); // tag (GetPolyobj)

@@ -77,6 +77,10 @@ const int POBJ_MOVE_NORMAL = 0;
 bitenum {
   POBJ_MOVE_OVERRIDE,
   POBJ_MOVE_NOLINK,
+  /* for linked polyobjects, don't use master pobj center, but rotate each pobj around it's own center */
+  POBJ_MOVE_INDROT,
+  /* use polyobject angle instead of `yawangle` in `Polyobj_MoveRotateEx()` */
+  POBJ_MOVE_POANGLE,
 }
 
 
@@ -1946,23 +1950,24 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //  vspeed can be negative
 //
 //==========================================================================
-override int AcsPolyMoveEx (int po, int hspeed, int yawangle, int dist,
-                            int vspeed, int vdist, int moveflags, Entity Activator)
+override int AcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist,
+                                  int vspeed, int vdist, float deltaangle, int moveflags, Entity Activator)
 {
   //printdebug("AcsPolyMoveEx: po=%s; hspeed=%s; yawangle=%s; dist=%s; vspeed=%s; vdist=%s; forced=%s", po, hspeed, yawangle, dist, vspeed, vdist, forced);
   bool forced = !!(moveflags&POBJ_MOVE_OVERRIDE);
   bool nolink = !!(moveflags&POBJ_MOVE_NOLINK);
   if (vdist < 0) vspeed = -abs(vspeed); // just in case, negative distance
-  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed, vdist:vdist, nolink:nolink);
+  return EV_MovePoly(nullptr, po, hspeed, yawangle, dist, 0, timesEight:false, overRide:forced, vspeed:vspeed,
+                     vdist:vdist, nolink:nolink, deltaangle:deltaangle, mvflags:moveflags);
 }
 
 
 //==========================================================================
 //
-//  AcsPolyMoveToEx
+//  AcsPolyMoveToRotateEx
 //
 //==========================================================================
-override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int moveflags, Entity Activator) {
+override int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int moveflags, Entity Activator) {
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
@@ -1986,18 +1991,19 @@ override int AcsPolyMoveToEx (int po, int speed, int x, int y, int z, int movefl
   VectorAngles(rel, out angles);
   // pass signed vertical distance here, and let `EV_MovePoly()` calculate vertical speed
   return EV_MovePoly(/*line*/nullptr, po, speed, 0, 0, 0, timesEight:false, overRide:forced,
-    floatAngle:angles.yaw, floatDist:dist, /*vspeed:vspeed,*/ floatVDist:vdist, nolink:nolink);
+                     floatAngle:angles.yaw, floatDist:dist, /*vspeed:vspeed,*/ floatVDist:vdist,
+                     nolink:nolink, deltaangle:deltaangle, mvflags:moveflags);
 }
 
 
 //==========================================================================
 //
-//  AcsPolyMoveToSpotEx
+//  AcsPolyMoveToSpotRotateEx
 //
 //  this uses target height too
 //
 //==========================================================================
-override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflags, Entity Activator) {
+override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int moveflags, Entity Activator) {
   if (!speed || !targettid) return false;
   Entity ent = Level.FindMobjFromTID(targettid, none);
   if (!ent) return 0;
@@ -2005,7 +2011,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
   auto poly = XLevel.GetPolyobj(po);
   if (!poly) return 0;
 
-  return AcsPolyMoveToEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, moveflags, Activator);
+  return AcsPolyMoveToRotateEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, deltaangle, moveflags, Activator);
 }
 
 
@@ -2050,7 +2056,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
 //==========================================================================
 /*final*/ bool EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
                               int Arg4, int Arg5, int direction, bool overRide,
-                              optional bool nolink)
+                              optional bool nolink, optional bool indrot)
 {
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
   if (!poly) { printerror("EV_RotatePoly: invalid polyobj num %d", polyNum); return false; }
@@ -2062,12 +2068,15 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
     return false;
   }
 
+  if (!specified_indrot) indrot = false; // just in case
+
   PolyobjRotator pe = SpawnThinker(PolyobjRotator);
   //pe.polyobj = polyNum;
   pe.dist = (byteAngle ? (byteAngle == 255 ? -1.0 : float(byteAngle)*(90.0/64.0)/*Angle*/) : 360.0);
   pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
   pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
   pe.nolink = nolink;
+  pe.bIndRot = indrot;
   //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
@@ -2101,6 +2110,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
     pe.speed = /*AngleClamp360Signed*/(32.0*float(speed)*float(direction)*90.0/64.0/8.0); // was AngleMod180
     pe.thrust_force = pe.speed/32.0*float(0x800)/90.0; //THRUST
     pe.nolink = nolink;
+    pe.bIndRot = indrot;
     //printdebug("  dist=%s; speed=%s; thrust_force=%s", pe.dist, pe.speed, pe.thrust_force);
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
@@ -2163,7 +2173,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
                             optional float floatAngle, optional float floatDist, optional float floatVDist,
                             //optional bool ignoreThings,
                             optional int vspeed, optional int vdist,
-                            optional bool nolink)
+                            optional bool nolink, optional float deltaangle,
+                            optional int mvflags)
 {
   int polyNum = Arg1;
   polyobj_t *poly = XLevel.GetPolyobj(polyNum);
@@ -2173,6 +2184,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
 
   // no z movement for non-3d pobjs
   if (!poly->posector) { vspeed = 0; floatVDist = 0; vdist = 0; }
+
+  if (!specified_deltaangle) deltaangle = 0; // just in case
 
   float realDist = (specified_floatDist ? floatDist : float(Arg4)*(timesEight ? 8.0 : 1.0));
   float realSpeed = float(Arg2)*4.0;
@@ -2228,7 +2241,8 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
 
   //printdebug("EV_MovePoly: po=%s; vspeed=%s; vdist=%s", polyNum, realVSpeed, realVDist);
 
-  PolyobjMover pe = SpawnThinker(PolyobjMover);
+  PolyobjMover pe;
+  if (deltaangle) pe = SpawnThinker(PolyobjMoverRotator); else pe = SpawnThinker(PolyobjMover);
   //pe.ignoreThings = ignoreThings;
   //pe.polyobj = polyNum;
   pe.dist = realDist;
@@ -2241,8 +2255,13 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
   if (!Arg2) an = 0;
   pe.angle = an;
   pe.nolink = nolink;
+  pe.bUsePobjAngleToMove = (specified_mvflags && !!(mvflags&POBJ_MOVE_POANGLE));
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
+  if (deltaangle) {
+    PolyobjMoverRotator(pe).deltaAngle = deltaangle;
+    PolyobjMoverRotator(pe).bIndRot = (specified_mvflags && !!(mvflags&POBJ_MOVE_INDROT));
+  }
   pe.AppendTo(poly);
   //poly->SpecialData = pe;
 
@@ -2265,7 +2284,7 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
     if (doStep) seen = XLevel.GetPolyobjMirror(seen);
     doStep = !doStep;
 
-    pe = SpawnThinker(PolyobjMover);
+    if (deltaangle) pe = SpawnThinker(PolyobjMoverRotator); else pe = SpawnThinker(PolyobjMover);
     //pe.polyobj = mirror;
     pe.dist = realDist;
     pe.speed = realSpeed;
@@ -2274,8 +2293,13 @@ override int AcsPolyMoveToSpotEx (int po, int speed, int targettid, int moveflag
     if (Arg2) an = AngleMod360(an+180.0); // reverse the angle
     pe.angle = an;
     pe.nolink = nolink;
+    pe.bUsePobjAngleToMove = (specified_mvflags && !!(mvflags&POBJ_MOVE_POANGLE));
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
+    if (deltaangle) {
+      PolyobjMoverRotator(pe).deltaAngle = deltaangle;
+      PolyobjMoverRotator(pe).bIndRot = (specified_mvflags && !!(mvflags&POBJ_MOVE_INDROT));
+    }
     pe.AppendTo(poly);
     //poly->SpecialData = pe;
   }
@@ -5457,6 +5481,17 @@ override void PolyCrushMobj (Entity Other, polyobj_t *po) {
 override bool PolyBusy (int polyobj) {
   polyobj_t *poly = XLevel.GetPolyobj(polyobj);
   return (poly && PolyobjThinker.IsPolyobjBusy(poly));
+}
+
+
+//==========================================================================
+//
+//  PolyAngle
+//
+//==========================================================================
+override float PolyAngle (int polyobj) {
+  polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+  return (poly ? poly->angle : -1.0f);
 }
 
 

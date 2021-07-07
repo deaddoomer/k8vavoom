@@ -191,11 +191,19 @@
   // GetPolyobjZ (int po)
   ACS_EXTFUNC(GetPolyobjZ) // implemented
   // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
-  ACS_EXTFUNC(Polyobj_GetFlagsEx)
+  ACS_EXTFUNC(Polyobj_GetFlagsEx) // implemented
   // int Polyobj_SetFlagsEx (int po, int flags, int oper) -- oper: 0 means "clear", 1 means "set", -1 means "replace"
-  ACS_EXTFUNC(Polyobj_SetFlagsEx)
+  ACS_EXTFUNC(Polyobj_SetFlagsEx) // implemented
   // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
-  ACS_EXTFUNC(Polyobj_IsBusy)
+  ACS_EXTFUNC(Polyobj_IsBusy) // implemented
+  // fixed Polyobj_GetAngle (int po) -- returns current pobj yaw angle, in degrees
+  ACS_EXTFUNC(Polyobj_GetAngle) // implemented
+  // bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags)
+  ACS_EXTFUNC(Polyobj_MoveRotateEx) // implemented
+  // bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags)
+  ACS_EXTFUNC(Polyobj_MoveToRotateEx) // implemented
+  // bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags) -- this uses target height too
+  ACS_EXTFUNC(Polyobj_MoveToSpotRotateEx) // implemented
 
   // int CalcActorLight (int tid, int tidptr, int flags)
   ACS_EXTFUNC_NUM(CalcActorLight, 860) // implemented

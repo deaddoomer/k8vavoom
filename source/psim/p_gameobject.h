@@ -1256,6 +1256,7 @@ public:
   vint32 segPtsCount; // number of elements in each `*Pts` array
   TVec *prevPts; // need to be here due to linked polyobjects
   vint32 prevPtsCount; // need to be here due to linked polyobjects
+  TVec origStartSpot; // saved starting spot
   sec_plane_t savedFloor;
   sec_plane_t savedCeiling;
   polyobjpart_t *parts; // list of all polyoject parts

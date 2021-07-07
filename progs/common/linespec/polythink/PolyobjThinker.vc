@@ -92,7 +92,7 @@ bool Accumulate (PolyobjThinker other) {
 //  AppendTo
 //
 //==========================================================================
-final void AppendTo (polyobj_t *po) {
+void AppendTo (polyobj_t *po) {
   if (!po) { Destroy(); return; }
   assert(polyobj == default.polyobj);
   //printdebug("adding pobj thinker `%C`(%s) from pobj #%d", self, UniqueId, po.tag);
@@ -121,7 +121,7 @@ final void AppendTo (polyobj_t *po) {
 //  RemoveFromThinkerChain
 //
 //==========================================================================
-final void RemoveFromThinkerChain () {
+void RemoveFromThinkerChain () {
   polyobj_t *po = XLevel.GetPolyobj(polyobj);
   if (!po) return;
   assert(po.tag == polyobj);

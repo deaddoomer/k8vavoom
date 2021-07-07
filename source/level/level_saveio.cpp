@@ -747,7 +747,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       if (Strm.IsLoading()) {
         if (polyFlags != 0xffffffffu) po->PolyFlags = polyFlags;
         MovePolyobj(po->tag, polyX-po->startSpot.x, polyY-po->startSpot.y, polyZ-po->startSpot.z, POFLAG_FORCED|POFLAG_NOLINK);
-        if (angle) RotatePolyobj(po->tag, angle, POFLAG_FORCED|POFLAG_NOLINK);
+        if (angle) RotatePolyobj(po->tag, angle, POFLAG_FORCED|POFLAG_NOLINK|POFLAG_INDROT);
       }
       vio.io(VName("SpecialData"), PolyObjs[i]->SpecialData);
     }

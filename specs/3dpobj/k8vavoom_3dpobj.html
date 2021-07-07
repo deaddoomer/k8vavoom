@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>3D Polyobject specification for k8vavoom engine, v0.99</title>
+<title>3D Polyobject specification for k8vavoom engine, v0.99.1</title>
 <style>
 .content {
   /*width: 42em;*/
@@ -62,6 +62,10 @@ will look like platform floor for the player).
   <li><a href="#acs_Polyobj_MoveToEx">Polyobj_MoveToEx</a></li>
   <li><a href="#acs_Polyobj_MoveToSpotEx">Polyobj_MoveToSpotEx</a></li>
   <li><a href="#acs_Polyobj_IsBusy">Polyobj_IsBusy</a></li>
+  <li><a href="#acs_Polyobj_GetAngle">Polyobj_GetAngle</a></li>
+  <li><a href="#acs_Polyobj_MoveRotateEx">Polyobj_MoveRotateEx</a></li>
+  <li><a href="#acs_Polyobj_MoveToRotateEx">Polyobj_MoveToRotateEx</a></li>
+  <li><a href="#acs_Polyobj_MoveToSpotRotateEx">Polyobj_MoveToSpotRotateEx</a></li>
   <li><a href="#acs_POBJ_FLAG_SIDE_CRUSH">POBJ_FLAG_SIDE_CRUSH</a></li>
 </ul>
 <a href="#limitations">Current Limitations</a><br>
@@ -278,7 +282,7 @@ be crushed (because it is considered as "blocking" one).
   -801:Polyobj_MoveToEx(6),
   // bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags) -- this uses target height too
   -802:Polyobj_MoveToSpotEx(4),
-  // float GetPolyobjZ (int po)
+  // fixed GetPolyobjZ (int po)
   -803:GetPolyobjZ(1),
   // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
   -804:Polyobj_GetFlagsEx(1),
@@ -286,6 +290,16 @@ be crushed (because it is considered as "blocking" one).
   -805:Polyobj_SetFlagsEx(3),
   // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
   -806:Polyobj_IsBusy(1),
+
+  // fixed Polyobj_GetAngle (int po) -- returns current pobj yaw angle, in degrees
+  -807:Polyobj_GetAngle(1),
+
+  // bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags)
+  -808:Polyobj_MoveRotateEx(8),
+  // bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags)
+  -809:Polyobj_MoveToRotateEx(7),
+  // bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags) -- this uses target height too
+  -810:Polyobj_MoveToSpotRotateEx(5),
 </pre>
 <div class="content">
 <p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".</p>
@@ -307,11 +321,16 @@ be crushed (because it is considered as "blocking" one).
 #define POBJ_MOVE_NORMAL    0
 #define POBJ_MOVE_OVERRIDE  (1 << 0)
 #define POBJ_MOVE_NOLINK    (1 << 1)
+/* for linked polyobjects, don't use master pobj center, but rotate each pobj around it's own center */
+#define POBJ_MOVE_INDROT    (1 << 2)
+/* use polyobject angle instead of `yawangle` in `Polyobj_MoveRotateEx()` */
+#define POBJ_MOVE_POANGLE   (1 << 3)
 </pre>
 <div class="content">
 
 <hr>
 <a id="acsapiexpl"></a><h1>ACS API Explanation</h1>
+
 <a id="acs_Polyobj_MoveEx"><b><u>Polyobj_MoveEx</u></b></a>
 <p>
 <code>bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags);</code>
@@ -362,6 +381,61 @@ Return values:
 </ul>
 Basically, any negative value means "no such polyobject", and any positive value means "it is busy".
 </p>
+
+<br />
+
+<a id="acs_Polyobj_GetAngle"><b><u>Polyobj_GetAngle</u></b></a>
+<p>
+<code>fixed Polyobj_GetAngle (int po);</code>
+</p>
+<p>
+This returns current polyobject yaw angle, in degrees, as fixed-point value (NOT INTEGER!).
+If <code>`po`</code> doesn't specify a valid polyobject, return value is negative.
+</p>
+
+<br />
+
+<a id="acs_Polyobj_MoveRotateEx"><b><u>Polyobj_MoveRotateEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags);</code>
+</p>
+<p>
+This is extension of 3D movement function. Note that <code>`vdist`</code> should always be positive, the
+actual direction is specified by <code>`vspeed`</code> (positive is up, negative is down).
+</p>
+<p>The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.</p>
+<p>Speed is in map units per 1/8 of second.</p>
+<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
+negative value means "rotate left".</p>
+
+<br />
+
+<a id="acs_Polyobj_MoveToRotateEx"><b><u>Polyobj_MoveToRotateEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags);</code>
+</p>
+<p>
+This moves the polyobject to the specified world coordinates.
+</p>
+<p>Speed is in map units per 1/8 of second.</p>
+<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
+negative value means "rotate left".</p>
+
+<br />
+
+<a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotRotateEx</u></b></a>
+<p>
+<code>bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags);</code>
+</p>
+<p>
+This is 3D extension of <code>`Polyobj_MoveToSpot()`</code>.
+</p>
+<p>Speed is in map units per 1/8 of second.</p>
+<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
+negative value means "rotate left".</p>
 
 <br />
 

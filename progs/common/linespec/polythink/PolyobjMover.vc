@@ -31,6 +31,7 @@ float angle;
 // vertical
 float vspeed; // sign matters!
 float vdist; // should be positive
+bool bUsePobjAngleToMove;
 
 
 //==========================================================================
@@ -50,7 +51,10 @@ override bool Accumulate (PolyobjThinker other) {
     }
   } else if (t.dist > 0 && t.vdist == 0.0) {
     // t is strictly horizontal, can we merge it?
-    if (dist == 0 || (angle == t.angle && speed == t.speed)) {
+    if (dist == 0 ||
+        (bUsePobjAngleToMove && t.bUsePobjAngleToMove) ||
+        (!bUsePobjAngleToMove && !t.bUsePobjAngleToMove && angle == t.angle && speed == t.speed))
+    {
       dist += t.dist;
       angle = t.angle;
       speed = t.speed;
@@ -98,8 +102,13 @@ override void Tick (float deltaTime) {
   float move = speed*deltaTime;
   float absMove = fabs(move);
   if (dist < absMove) move = dist*(move < 0.0 ? -1.0 : 1.0);
-  float xMove = move*cos(angle);
-  float yMove = move*sin(angle);
+  float dirangle = angle;
+  if (bUsePobjAngleToMove) {
+    polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+    if (poly) dirangle = AngleMod360(poly.angle);
+  }
+  float xMove = move*cos(dirangle);
+  float yMove = move*sin(dirangle);
   float zMove = vspeed*deltaTime;
   if (vdist < fabs(zMove)) zMove = vdist*(zMove < 0.0 ? -1.0 : 1.0);
   //printdebug("%C(%s): po=%s; vspeed=%s; vdist=%s; zMove=%s", self, UniqueId, polyobj, vspeed, vdist, zMove);

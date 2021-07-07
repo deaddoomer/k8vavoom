@@ -1,0 +1,200 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+class PolyobjMoverRotator : PolyobjMover;
+
+//#define VV_POLY_MOVEROTATE_DEBUG
+
+/* defined in `PolyobjMover`
+float speed;
+float dist;
+float angle;
+// vertical
+float vspeed; // sign matters!
+float vdist; // should be positive
+bool bUsePobjAngleToMove;
+*/
+bool bIndRot;
+float deltaAngle; // used in intialisation too
+float deltaAngleSpeed; // always positive; angle-per-second
+float deltaAngleFrac;
+
+
+//==========================================================================
+//
+//  AppendTo
+//
+//==========================================================================
+override void AppendTo (polyobj_t *po) {
+  ::AppendTo(po);
+  if (IsDestroyed) return; // merged with something
+  if (!vdist) vspeed = 0;
+  if (!dist) speed = 0;
+
+  if (deltaAngle) deltaAngle = fmod(deltaAngle, 360.0);
+  deltaAngleFrac = 0;
+  if (!deltaAngle) return;
+
+  float spmax;
+  if (vspeed && vdist) spmax = fabs(vdist)/fabs(vspeed);
+  if (speed && dist) spmax = fmax(spmax, fabs(dist)/fabs(speed));
+
+  deltaAngleSpeed = (spmax ? fabs(deltaAngle)/spmax : 0.0);
+
+  #ifdef VV_POLY_MOVEROTATE_DEBUG
+  printdebug("PolyobjMoverRotator:pobj #%d: deltaAngle=%s; deltaAngleSpeed=%s; spmax=%s; dist=%s; speed=%s; vdist=%s; vspeed=%s",
+    po->tag, deltaAngle, deltaAngleSpeed, spmax, dist, speed, vdist, vspeed);
+  #endif
+}
+
+
+//==========================================================================
+//
+//  Accumulate
+//
+//==========================================================================
+override bool Accumulate (PolyobjThinker other) {
+  return false; // cannot accumulate yet
+#if 0
+  PolyobjMover t = PolyobjMover(other);
+  if (!t) return false;
+  if (t.vdist > 0.0 && t.dist == 0.0) {
+    // t is strictly vertical, can we merge it?
+    if (vdist == 0 || vspeed == t.vspeed) {
+      vdist += t.vdist;
+      vspeed = t.vspeed;
+      return true;
+    }
+  } else if (t.dist > 0 && t.vdist == 0.0) {
+    // t is strictly horizontal, can we merge it?
+    if (dist == 0 || (angle == t.angle && speed == t.speed)) {
+      dist += t.dist;
+      angle = t.angle;
+      speed = t.speed;
+      return true;
+    }
+  } else {
+    // t is diagonal, can we merge?
+    /*
+    if ((vdist == 0 || vspeed == t.vspeed) &&
+        (dist == 0 || (angle == t.angle && speed == t.speed)))
+    {
+      dist += t.dist;
+      angle = t.angle;
+      speed = t.speed;
+      vdist += t.vdist;
+      vspeed = t.vspeed;
+      return true;
+    }
+    */
+  }
+  // cannot merge, override previous mover
+  speed = t.speed;
+  dist = t.dist;
+  angle = t.angle;
+  vspeed = t.vspeed;
+  vdist = t.vdist;
+  return true;
+#endif
+}
+
+
+//==========================================================================
+//
+//  Tick
+//
+//==========================================================================
+override void Tick (float deltaTime) {
+  // do we need to perform a rotation left from the previous tick?
+  if (deltaAngleFrac) {
+    assert(deltaAngle);
+    float arot = (deltaAngleSpeed ? deltaAngleSpeed*deltaAngleFrac : fabs(deltaAngle));
+    if (arot) {
+      arot = fmin(arot, fabs(deltaAngle));
+      if (deltaAngle < 0) arot = -arot;
+      if (!XLevel.RotatePolyobj(polyobj, arot, (nolink ? VLevel::POFLAG_NOLINK : 0))) {
+        // cannot finish rotation, don't move
+        return;
+      }
+      deltaAngle -= arot;
+    }
+    deltaAngleFrac = 0;
+  }
+
+  // move
+  if (speed || vspeed) {
+    float move = speed*deltaTime;
+    float absMove = fabs(move);
+    if (dist < absMove) move = dist*(move < 0.0 ? -1.0 : 1.0);
+    float dirangle = angle;
+    if (bUsePobjAngleToMove) {
+      polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+      if (poly) dirangle = AngleMod360(poly.angle);
+    }
+    float xMove = move*cos(dirangle);
+    float yMove = move*sin(dirangle);
+    float zMove = vspeed*deltaTime;
+    if (vdist < fabs(zMove)) zMove = vdist*(zMove < 0.0 ? -1.0 : 1.0);
+    //printdebug("%C(%s): po=%s; vspeed=%s; vdist=%s; zMove=%s", self, UniqueId, polyobj, vspeed, vdist, zMove);
+    if (XLevel.MovePolyobj(polyobj, xMove, yMove, zMove, (nolink ? VLevel::POFLAG_NOLINK : 0))) {
+      dist = fmax(0.0, dist-absMove);
+      vdist = fmax(0.0, vdist-fabs(zMove));
+      if (!dist && !vdist) {
+        speed = 0;
+        vspeed = 0;
+      }
+    }
+  }
+
+  // and rotate it
+  if (deltaAngle) {
+    float arot = (deltaAngleSpeed ? deltaAngleSpeed*deltaTime : fabs(deltaAngle));
+    if (arot) {
+      arot = fmin(arot, fabs(deltaAngle));
+      if (deltaAngle < 0) arot = -arot;
+      if (!XLevel.RotatePolyobj(polyobj, arot, (nolink ? VLevel::POFLAG_NOLINK : 0)|(bIndRot ? VLevel::POFLAG_INDROT : 0))) {
+        // cannot finish rotation, don't move
+        deltaAngleFrac = deltaTime;
+        return;
+      }
+      #ifdef VV_POLY_MOVEROTATE_DEBUG
+      printdebug("PolyobjMoverRotator:pobj #%d: deltaAngle=%s; deltaAngleSpeed=%s; arot=%s; newda=%s; done=%B; dist=%s; vdist=%s", polyobj, deltaAngle, deltaAngleSpeed, arot, deltaAngle+arot, (deltaAngle+arot == 0), dist, vdist);
+      #endif
+      deltaAngle -= arot;
+    }
+  }
+
+  // completion check
+  if (!speed && !vspeed && !deltaAngle) {
+    polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+    if (poly) PolyobjStopSequence(poly);
+    Destroy();
+    return;
+  }
+}
+
+
+defaultproperties {
+}

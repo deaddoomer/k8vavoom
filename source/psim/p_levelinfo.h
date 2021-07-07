@@ -251,6 +251,7 @@ public:
 
   bool eventTagBusy (int tag) { static VMethodProxy method("TagBusy"); vobjPutParamSelf(tag); VMT_RET_BOOL(method); }
   bool eventPolyBusy (int polyobj) { static VMethodProxy method("PolyBusy"); vobjPutParamSelf(polyobj); VMT_RET_BOOL(method); }
+  float eventPolyAngle (int polyobj) { static VMethodProxy method("PolyAngle"); vobjPutParamSelf(polyobj); VMT_RET_FLOAT(method); }
   int eventThingCount (int type, VName TypeName, int tid, int SectorTag) { static VMethodProxy method("ThingCount"); vobjPutParamSelf(type, TypeName, tid, SectorTag); VMT_RET_INT(method); }
   int eventExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
                                  int Arg4, int Arg5, line_t *Line, int Side, VEntity *A)
@@ -305,19 +306,19 @@ public:
     VMT_RET_INT(method);
   }
 
-  int eventAcsPolyMoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int override, VEntity *Activator) {
-    static VMethodProxy method("AcsPolyMoveEx");
-    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, override, Activator);
+  int eventAcsPolyMoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, float deltaangle, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveRotateEx");
+    vobjPutParamSelf(po, hspeed, yawangle, dist, vspeed, vdist, deltaangle, override, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToEx (int po, int speed, int x, int y, int z, int override, VEntity *Activator) {
-    static VMethodProxy method("AcsPolyMoveToEx");
-    vobjPutParamSelf(po, speed, x, y, z, override, Activator);
+  int eventAcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, float deltaangle, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveToRotateEx");
+    vobjPutParamSelf(po, speed, x, y, z, deltaangle, override, Activator);
     VMT_RET_INT(method);
   }
-  int eventAcsPolyMoveToSpotEx (int po, int speed, int targettid, int override, VEntity *Activator) {
-    static VMethodProxy method("AcsPolyMoveToSpotEx");
-    vobjPutParamSelf(po, speed, targettid, override, Activator);
+  int eventAcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float deltaangle, int override, VEntity *Activator) {
+    static VMethodProxy method("AcsPolyMoveToSpotRotateEx");
+    vobjPutParamSelf(po, speed, targettid, deltaangle, override, Activator);
     VMT_RET_INT(method);
   }
 

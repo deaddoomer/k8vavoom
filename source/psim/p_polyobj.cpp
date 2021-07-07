@@ -2379,6 +2379,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
 bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   const bool forcedMove = (flags&POFLAG_FORCED);
   const bool skipLink = (flags&POFLAG_NOLINK);
+  const bool indRot = (flags&POFLAG_INDROT);
 
   // get the polyobject
   polyobj_t *po = GetPolyobj(num);
@@ -2390,8 +2391,6 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   const bool doangle = (!forcedMove && pofirst->posector && !(po->PolyFlags&polyobj_t::PF_NoAngleChange));
   const bool flatsSaved = (!forcedMove && pofirst->posector);
 
-  // calculate the angle
-  const float an = AngleMod(po->angle+angle);
   float s, c;
 
   // collect objects we need to move/rotate
@@ -2416,7 +2415,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         edata.LastMoveOrigin = mobj->LastMoveOrigin;
         // we need to remember rotation point
         //FIXME: this will glitch with objects standing on some multipart platforms
-        edata.spot = po->startSpot; // mobj->Sector->ownpobj
+        edata.spot = (indRot ? po->startSpot : pofirst->startSpot); // mobj->Sector->ownpobj
         edata.aflags = 0;
         // check if it is initially stuck
         #if 1
@@ -2469,11 +2468,24 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
   }
 
   // rotate all polyobjects
-  msincos(an, &s, &c);
   for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
     /*if (IsForServer())*/ UnlinkPolyobj(po);
+    po->origStartSpot = po->startSpot;
+    if (!indRot && po != pofirst) {
+      // rotate this object's starting spot around the main object starting spot
+      msincos(angle, &s, &c);
+      const float sp_x = po->startSpot.x-pofirst->startSpot.x;
+      const float sp_y = po->startSpot.y-pofirst->startSpot.y;
+      // calculate the new X and Y values
+      const float nx = (sp_x*c-sp_y*s)+pofirst->startSpot.x;
+      const float ny = (sp_y*c+sp_x*s)+pofirst->startSpot.y;
+      po->startSpot.x = nx;
+      po->startSpot.y = ny;
+    }
     const float ssx = po->startSpot.x;
     const float ssy = po->startSpot.y;
+    const float an = AngleMod(po->angle+angle);
+    msincos(an, &s, &c);
     const TVec *origPts = po->originalPts;
     TVec *prevPts = po->prevPts;
     TVec **vptr = po->segPts;
@@ -2485,8 +2497,14 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       // save the previous point
       *prevPts = **vptr;
       // get the original X and Y values
-      const float tr_x = origPts->x;
-      const float tr_y = origPts->y;
+      float tr_x = origPts->x;
+      float tr_y = origPts->y;
+      /*
+      if (!indRot && po != pofirst) {
+        tr_x += po->startSpot.x-ssx;
+        tr_y += po->startSpot.y-ssy;
+      }
+      */
       // calculate the new X and Y values
       (*vptr)->x = (tr_x*c-tr_y*s)+ssx;
       (*vptr)->y = (tr_y*c+tr_x*s)+ssy;
@@ -2519,6 +2537,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         po->pofloor = po->savedFloor;
         po->poceiling = po->savedCeiling;
       }
+      po->startSpot = po->origStartSpot;
       TVec *prevPts = po->prevPts;
       TVec **vptr = po->segPts;
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
@@ -2537,9 +2556,24 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     return false;
   }
 
-  // not blocked, fix angles and floors
+  // not blocked, fix angles and floors, rotate decals
+  // also, fix starting spots for non-independent rotation
   for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-    po->angle = an;
+    /*
+    // fix start spots
+    if (!indRot && po != pofirst) {
+      // rotate this object's starting spot around the main object starting spot
+      msincos(angle, &s, &c);
+      const float tr_x = po->startSpot.x-pofirst->startSpot.x;
+      const float tr_y = po->startSpot.y-pofirst->startSpot.y;
+      // calculate the new X and Y values
+      const float nx = (tr_x*c-tr_y*s)+pofirst->startSpot.x;
+      const float ny = (tr_y*c+tr_x*s)+pofirst->startSpot.y;
+      po->startSpot.x = nx;
+      po->startSpot.y = ny;
+    }
+    */
+    po->angle = AngleMod(po->angle+angle);
     if (flatsSaved) {
       po->pofloor.BaseAngle = AngleMod(po->pofloor.BaseAngle+angle);
       po->poceiling.BaseAngle = AngleMod(po->poceiling.BaseAngle+angle);
@@ -2553,8 +2587,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         VDecalList *lst = &subsectorDecalList[psnum];
         if (!lst->head) continue;
         msincos(AngleMod(angle), &s, &c);
-        const float ssx = po->startSpot.x;
-        const float ssy = po->startSpot.y;
+        const float ssx = (indRot ? po->startSpot.x : pofirst->startSpot.x);
+        const float ssy = (indRot ? po->startSpot.y : pofirst->startSpot.y);
         for (decal_t *dc = lst->head; dc; dc = dc->subnext) {
           const float xc = dc->worldx-ssx;
           const float yc = dc->worldy-ssy;
