@@ -41,6 +41,9 @@
 static VCvarB dbg_pobj_disable("dbg_pobj_disable", false, "Disable most polyobject operations?", CVAR_PreInit);
 static VCvarB dbg_pobj_verbose("dbg_pobj_verbose", false, "Verbose polyobject spawner?", CVAR_PreInit);
 
+static VCvarB dbg_pobj_unstuck_old("__dbg_pobj_unstuck_old", false, "Use old 3d pobj unstuck code?", CVAR_PreInit);
+static VCvarB dbg_pobj_unstuck_verbose("__dbg_pobj_unstuck_verbose", false, "Verbose 3d pobj unstuck code?", CVAR_PreInit);
+
 
 enum {
   // this thing's height is z offset from the *inner* sector floor
@@ -1624,6 +1627,11 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 }
 
 
+struct UnstuckInfo {
+  TVec uv; // unstuck vector
+  bool fromWrongSide;
+};
+
 
 //==========================================================================
 //
@@ -1635,10 +1643,12 @@ static inline bool UU_FIXIP (const TVec &p, const TVec &orig2d, TVec &insidepoin
   if (/*pdist < sqdist &&*/ pdist < bestdist) {
     bestdist = pdist;
     insidepoint = p;
+    /*
     #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
     GCon->Logf(NAME_Debug, "mobj '%s': new point; orig2d=(%g,%g); rad=%g; pdist=%g; p=(%g,%g)",
       mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, pdist, insidepoint.x, insidepoint.y);
     #endif
+    */
     return true;
   }
   /*
@@ -1651,20 +1661,21 @@ static inline bool UU_FIXIP (const TVec &p, const TVec &orig2d, TVec &insidepoin
 
 //==========================================================================
 //
-//  CalcPolyUnstuckVector
+//  CalcPolyUnstuckVectorOld
 //
 //  calculate horizontal "unstuck vector" (delta to move)
 //  for the given 3d polyobject
-//  returns `TVec::InvalidVector` if cannot unstuck
+//  returns `false` if cannot unstuck
 //
 //  this is totally wrong, but is still better than stucking
 //
 //==========================================================================
-static TVec CalcPolyUnstuckVector (polyobj_t *po, VEntity *mobj) {
-  if (!po || !mobj || !po->posector) return TVec::ZeroVector;
+static bool CalcPolyUnstuckVectorOld (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
+  uvlist.resetNoDtor();
+  //if (!po || !mobj || !po->posector) return false;
 
   const float rad = mobj->Radius;
-  if (rad <= 0.0f) return TVec::ZeroVector; // just in case
+  if (rad <= 0.0f || mobj->Height <= 0.0f) return true; // just in case
 
   const TVec orig2d(mobj->Origin.x, mobj->Origin.y);
   float bbox2d[4];
@@ -1684,7 +1695,6 @@ static TVec CalcPolyUnstuckVector (polyobj_t *po, VEntity *mobj) {
   for (auto &&lit : po->LineFirst()) {
     const line_t *ld = lit.line();
     if (!mobj->IsBlockingLine(ld)) continue;
-
     if (!mobj->LineIntersects(ld)) continue;
 
     // has intersection
@@ -1714,19 +1724,19 @@ static TVec CalcPolyUnstuckVector (polyobj_t *po, VEntity *mobj) {
     }
   }
 
-  if (!hasInsidePoint) return TVec::ZeroVector;
+  if (!hasInsidePoint) return true;
 
   // we have a point, calculate unstuck direction
   // if nearest point is at the origin, cannot unstuck
   const float dx = insidepoint.x-orig2d.x;
   const float dy = insidepoint.y-orig2d.y;
 
-  #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-  GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck; orig2d=(%g,%g); rad=%g; ip=(%g,%g); dx=%g; dy=%g",
-    mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, insidepoint.x, insidepoint.y, dx, dy);
-  #endif
+  if (dbg_pobj_unstuck_verbose.asBool()) {
+    GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck; orig2d=(%g,%g); rad=%g; ip=(%g,%g); dx=%g; dy=%g",
+      mobj->GetClass()->GetName(), orig2d.x, orig2d.y, rad, insidepoint.x, insidepoint.y, dx, dy);
+  }
 
-  if (fabsf(dx) < 1.0f && fabsf(dy) < 1.0f) return TVec::InvalidVector;
+  if (fabsf(dx) < 1.0f && fabsf(dy) < 1.0f) return false;
 
   // we have a point closest to mobj origin (center)
   // calculate unstuck vector
@@ -1738,12 +1748,137 @@ static TVec CalcPolyUnstuckVector (polyobj_t *po, VEntity *mobj) {
   corner.y = (dy < 0.0f ? orig2d.y-rad-0.5f : orig2d.y+rad+0.5f);
   TVec cvec = insidepoint-corner;
 
-  #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-  GCon->Logf(NAME_Debug, "mobj '%s':   cdist=%g; cvec=(%g,%g); corner=(%g,%g)", mobj->GetClass()->GetName(), cvec.length2D(), cvec.x, cvec.y, corner.x, corner.y);
-  #endif
+  if (dbg_pobj_unstuck_verbose.asBool()) {
+    GCon->Logf(NAME_Debug, "mobj '%s':   cdist=%g; cvec=(%g,%g); corner=(%g,%g)", mobj->GetClass()->GetName(), cvec.length2D(), cvec.x, cvec.y, corner.x, corner.y);
+  }
 
-  if (cvec.isZero2D()) return TVec::InvalidVector;
-  return cvec;
+  if (cvec.isZero2D()) return false;
+  UnstuckInfo &nfo = uvlist.alloc();
+  nfo.uv = cvec;
+  nfo.fromWrongSide = false;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  CalcPolyUnstuckVectorNew
+//
+//  calculate horizontal "unstuck vector" (delta to move)
+//  for the given 3d polyobject
+//  returns `TVec::InvalidVector` if cannot unstuck
+//
+//  this is wrong, but is still better than stucking
+//
+//==========================================================================
+static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
+  uvlist.resetNoDtor();
+  //if (!po || !mobj || !po->posector) return false;
+
+  const float rad = mobj->Radius;
+  if (rad <= 0.0f || mobj->Height <= 0.0f) return true; // just in case
+  const float radext = rad+0.2f;
+
+  const TVec mobjOrigOrigin = mobj->Origin;
+  const TVec orig2d(mobjOrigOrigin.x, mobjOrigOrigin.y);
+  float bbox2d[4];
+  mobj->Create2DBox(bbox2d);
+  bbox2d[BOX2D_TOP] = orig2d.y+rad;
+  bbox2d[BOX2D_BOTTOM] = orig2d.y-rad;
+  bbox2d[BOX2D_RIGHT] = orig2d.x+rad;
+  bbox2d[BOX2D_LEFT] = orig2d.x-rad;
+
+  // if no "valid" sides to unstuck found, but has some "invalid" ones, try "invalid" sides
+  bool wasIntersect = false;
+
+  const float crmult[4][2] = {
+    { -1.0f, -1.0f }, // bottom-left
+    { +1.0f, -1.0f }, // bottom-right
+    { -1.0f, +1.0f }, // top-left
+    { +1.0f, +1.0f }, // top-right
+  };
+
+  for (auto &&lit : po->LineFirst()) {
+    const line_t *ld = lit.line();
+    if (!mobj->IsBlockingLine(ld)) continue;
+    if (!mobj->LineIntersects(ld)) continue;
+    wasIntersect = true;
+
+    const float orgsdist = ld->PointDistance(orig2d);
+
+    if (dbg_pobj_unstuck_verbose.asBool()) {
+      GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, orgsdist=%g",
+        mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), orgsdist);
+    }
+
+    const bool badSide = (orgsdist < 0.0f);
+
+    // check 4 corners, find the shortest "unstuck" distance
+    bool foundVector = false;
+    for (unsigned cridx = 0u; cridx < 4u; ++cridx) {
+      TVec corner = orig2d;
+      corner += TVec(radext*crmult[cridx][0], radext*crmult[cridx][1], 0.0f);
+      const float csdist = ld->PointDistance(corner);
+
+      if (csdist >= 0.0f) continue;
+      const TVec uv = ld->normal*(-csdist);
+
+      // check if we'll stuck in some other pobj line
+      {
+        mobj->Origin = mobjOrigOrigin+uv;
+        bool stuckOther = false;
+        for (auto &&lxx : po->LineFirst()) {
+          const line_t *lnx = lxx.line();
+          if (!mobj->IsBlockingLine(lnx)) continue;
+          if (!mobj->LineIntersects(lnx)) continue;
+          if (dbg_pobj_unstuck_verbose.asBool()) {
+            GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, corner %u; stuck in line #%d",
+              mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), cridx, (int)(ptrdiff_t)(lnx-&Level->Lines[0]));
+          }
+          stuckOther = true;
+          break;
+        }
+        mobj->Origin = mobjOrigOrigin;
+        if (stuckOther) continue; // alas
+      }
+
+      if (dbg_pobj_unstuck_verbose.asBool()) {
+        GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d; orig2d=(%g,%g); rad=%g (%g); cridx=%u; csdist=%g; uvec=(%g,%g); ulen=%g",
+          mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]),
+          orig2d.x, orig2d.y, rad, radext, cridx, csdist, uv.x, uv.y, uv.length2D());
+      }
+
+      // append to the list
+      foundVector = true;
+      {
+        UnstuckInfo &nfo = uvlist.alloc();
+        nfo.uv = uv;
+        nfo.fromWrongSide = badSide;
+      }
+    }
+
+    if (!foundVector) return false; // oops
+  }
+
+  if (wasIntersect) return (uvlist.length() > 0);
+  return true;
+}
+
+
+//==========================================================================
+//
+//  CalcPolyUnstuckVector
+//
+//  calculate horizontal "unstuck vector" (delta to move)
+//  for the given 3d polyobject
+//  returns `TVec::InvalidVector` if cannot unstuck
+//
+//  this is totally wrong, but is still better than stucking
+//
+//==========================================================================
+static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, polyobj_t *po, VEntity *mobj) {
+  if (dbg_pobj_unstuck_old.asBool()) return CalcPolyUnstuckVectorOld(uvlist, Level, po, mobj);
+  return CalcPolyUnstuckVectorNew(uvlist, Level, po, mobj);
 }
 
 
@@ -1769,12 +1904,34 @@ static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
 
 //==========================================================================
 //
+//  unstuckVectorCompare
+//
+//==========================================================================
+static int unstuckVectorCompare (const void *aa, const void *bb, void */*udata*/) {
+  if (aa == bb) return 0;
+  const UnstuckInfo *a = (const UnstuckInfo *)aa;
+  const UnstuckInfo *b = (const UnstuckInfo *)bb;
+  // "wrong sides" should be tried last
+  if (a->fromWrongSide != b->fromWrongSide) {
+    return (a->fromWrongSide ? -1 : +1);
+  }
+  // sort by length
+  const float alensq = a->uv.length2DSquared();
+  const float blensq = b->uv.length2DSquared();
+  if (alensq < blensq) return -1;
+  if (alensq > blensq) return +1;
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  UnstuckFromRotatedPObj
 //
 //  returns `false` if movement was blocked
 //
 //==========================================================================
-static bool UnstuckFromRotatedPObj (polyobj_t *pofirst, bool skipLink) noexcept {
+static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skipLink) noexcept {
   if (pofirst && !pofirst->posector) pofirst = nullptr; // don't do this for non-3d pobjs
 
   // ok, it's not blocked; now try to unstuck
@@ -1783,52 +1940,96 @@ static bool UnstuckFromRotatedPObj (polyobj_t *pofirst, bool skipLink) noexcept 
   if (poAffectedEnitities.length() == 0) return true; // still ok to move
 
   tmtrace_t tmtrace;
+  TArray<UnstuckInfo> uvlist;
 
   // check each affected entity against all pobj lines
   for (auto &&edata : poAffectedEnitities) {
     // if it already was stuck, ignore it
     if (edata.aflags&AFF_STUCK) {
-      #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-      GCon->Logf(NAME_Debug, "mobj '%s' already stuck", edata.mobj->GetClass()->GetName());
-      #endif
+      if (dbg_pobj_unstuck_verbose.asBool()) {
+        GCon->Logf(NAME_Debug, "mobj '%s' already stuck", edata.mobj->GetClass()->GetName());
+      }
       continue;
     }
     VEntity *mobj = edata.mobj;
-    if (!NeedPositionCheck(mobj)) continue;
-    bool wasMove = false;
-    for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-      if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
-        continue;
-      }
-      TVec udir = CalcPolyUnstuckVector(po, mobj);
-      if (!udir.isValid()) return false; // oops, blocked
-      if (!udir.isZero2D()) {
-        #ifdef VV_POBJ_DEBUG_ROTATION_UNTSTUCK
-        GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), udir.x, udir.y, udir.z);
-        #endif
-        // need to move
-        //TODO: move any touching objects too
-        mobj->Origin += udir;
-        bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-        if (!ok) return false; //FIXME: blocked
-        edata.aflags |= AFF_MOVE;
-        wasMove = true;
-      }
-    }
-    // check if we stuck
-    if (wasMove) {
+    if (!mobj || !NeedPositionCheck(mobj)) continue;
+    // try to unstuck 3 times
+    for (int trycount = 3; trycount > 0; --trycount) {
+      bool wasMove = false;
       for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+        if (!po || !po->posector) continue;
         if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
           continue;
         }
-        TVec udir = CalcPolyUnstuckVector(po, mobj);
-        if (!udir.isValid()) return false; // oops, blocked
-        if (!udir.isZero2D()) {
-          // still blocked
+        const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
+        if (dbg_pobj_unstuck_verbose.asBool()) {
+          GCon->Logf(NAME_Debug, "mobj %s:%u, pobj %d, triesleft=%d: canUnstuck=%d; uvlist.length=%d", mobj->GetClass()->GetName(), mobj->GetUniqueId(), po->tag, trycount, (int)canUnstuck, uvlist.length());
+        }
+        if (!canUnstuck) {
+          // oops, blocked
           if (mobj->EntityFlags&VEntity::EF_Solid) {
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
+            return (NeedPositionCheck(mobj) && mobj->Health > 0); // blocked if not crushed
+          }
+        }
+        if (uvlist.length() == 0) continue; // this pobj is ok
+        // sort unstuck vectors by distance
+        timsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
+        // try each unstuck vector
+        const TVec origOrigin = mobj->Origin;
+        //const unsigned origFlags = edata.aflags;
+        bool foundGoodUnstuck = false;
+        for (auto &&nfo : uvlist) {
+          const TVec uv = nfo.uv;
+          vassert(uv.isValid());
+          if (uv.isZero2D()) continue; // just in case
+          if (dbg_pobj_unstuck_verbose.asBool()) {
+            GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), uv.x, uv.y, uv.z);
+          }
+          // need to move
+          //TODO: move any touching objects too
+          mobj->Origin = origOrigin+uv;
+          bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+          if (ok) {
+            // not blocked, check other linked polyobjects
+            edata.aflags |= AFF_MOVE;
+            wasMove = true;
+            foundGoodUnstuck = true;
+            break;
+          }
+          // restore
+          mobj->Origin = origOrigin;
+          //edata.aflags = origFlags;
+        }
+        if (!foundGoodUnstuck) {
+          // totally stuck
+          if (mobj->EntityFlags&VEntity::EF_Solid) {
+            if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
+          } else {
+            mobj->Level->eventPolyCrushMobj(mobj, po);
+            return (NeedPositionCheck(mobj) && mobj->Health > 0); // blocked if not crushed
+          }
+        }
+      }
+      // check if we still stuck
+      if (wasMove) {
+        for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+          if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
+            continue;
+          }
+          const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
+          if (!canUnstuck && uvlist.length() > 0) {
+            if (dbg_pobj_unstuck_verbose.asBool()) {
+              GCon->Logf(NAME_Debug, "mobj '%s' STILL BLOCKED", edata.mobj->GetClass()->GetName());
+            }
+            // still blocked
+            if (mobj->EntityFlags&VEntity::EF_Solid) {
+              if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
+            } else {
+              mobj->Level->eventPolyCrushMobj(mobj, po);
+            }
           }
         }
       }
@@ -2224,8 +2425,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
             if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
               // do nothing
             } else {
-              for (auto &&lit : xpp->LineFirst()) {
-                const line_t *ld = lit.line();
+              for (auto &&lxx : xpp->LineFirst()) {
+                const line_t *ld = lxx.line();
                 if (!mobj->IsBlockingLine(ld)) continue;
                 if (!mobj->LineIntersects(ld)) continue;
                 edata.aflags |= AFF_STUCK;
@@ -2300,7 +2501,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     // we have to do it after we unlinked all pobjs
     if (!forcedMove && pofirst->posector) {
       blocked = CheckAffectedMObjPositions();
-      if (!blocked) blocked = !UnstuckFromRotatedPObj(pofirst, skipLink);
+      if (!blocked) blocked = !UnstuckFromRotatedPObj(this, pofirst, skipLink);
     }
     if (!blocked) {
       for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
