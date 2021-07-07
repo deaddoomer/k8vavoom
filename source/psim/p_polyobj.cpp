@@ -1790,6 +1790,10 @@ static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level
 
   // if no "valid" sides to unstuck found, but has some "invalid" ones, try "invalid" sides
   bool wasIntersect = false;
+  const float mobjz0 = mobj->Origin.z;
+  //const float mobjz1 = mobjz0+mobj->Height;
+  const float ptopz = po->poceiling.minz;
+  const bool checkTopTex = (mobjz0 >= ptopz);
 
   const float crmult[4][2] = {
     { -1.0f, -1.0f }, // bottom-left
@@ -1800,18 +1804,33 @@ static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level
 
   for (auto &&lit : po->LineFirst()) {
     const line_t *ld = lit.line();
-    if (!mobj->IsBlockingLine(ld)) continue;
-    if (!mobj->LineIntersects(ld)) continue;
+
+    // if we are above the polyobject, check for blocking top texture
+    if (checkTopTex) {
+      if ((ld->flags&ML_CLIP_MIDTEX) == 0) continue;
+      if (!mobj->IsBlocking3DPobjLineTop(ld)) continue;
+      if (!mobj->LineIntersects(ld)) continue;
+      // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
+      const side_t *tside = &Level->Sides[ld->sidenum[0]];
+      if (tside->TopTexture <= 0) continue; // wtf?!
+      VTexture *ttex = GTextureManager(tside->TopTexture);
+      if (!ttex || ttex->Type == TEXTYPE_Null) continue; // wtf?!
+      const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
+      if (mobjz0 >= ptopz+texh) continue; // didn't hit top texture
+    } else {
+      if (!mobj->IsBlockingLine(ld)) continue;
+      if (!mobj->LineIntersects(ld)) continue;
+    }
     wasIntersect = true;
 
     const float orgsdist = ld->PointDistance(orig2d);
 
     if (dbg_pobj_unstuck_verbose.asBool()) {
-      GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, orgsdist=%g",
-        mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), orgsdist);
+      GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, orgsdist=%g; checkTopTex=%d",
+        mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), orgsdist, (int)checkTopTex);
     }
 
-    const bool badSide = (orgsdist < 0.0f);
+    const bool badSide = (checkTopTex ? (orgsdist > 0.0f) : (orgsdist < 0.0f));
 
     // check 4 corners, find the shortest "unstuck" distance
     bool foundVector = false;
@@ -1820,7 +1839,11 @@ static bool CalcPolyUnstuckVectorNew (TArray<UnstuckInfo> &uvlist, VLevel *Level
       corner += TVec(radext*crmult[cridx][0], radext*crmult[cridx][1], 0.0f);
       const float csdist = ld->PointDistance(corner);
 
-      if (csdist >= 0.0f) continue;
+      if (checkTopTex) {
+        if (csdist <= 0.0f) continue;
+      } else {
+        if (csdist >= 0.0f) continue;
+      }
       const TVec uv = ld->normal*(-csdist);
 
       // check if we'll stuck in some other pobj line
@@ -1958,9 +1981,9 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
       bool wasMove = false;
       for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         if (!po || !po->posector) continue;
-        if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
-          continue;
-        }
+        // reject only polyobjects that are above us
+        // (otherwise we may miss blockig top texture)
+        if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
         if (dbg_pobj_unstuck_verbose.asBool()) {
           GCon->Logf(NAME_Debug, "mobj %s:%u, pobj %d, triesleft=%d: canUnstuck=%d; uvlist.length=%d", mobj->GetClass()->GetName(), mobj->GetUniqueId(), po->tag, trycount, (int)canUnstuck, uvlist.length());
@@ -2016,9 +2039,9 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
       // check if we still stuck
       if (wasMove) {
         for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-          if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
-            continue;
-          }
+          // reject only polyobjects that are above us
+          // (otherwise we may miss blockig top texture)
+          if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
           const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
           if (!canUnstuck && uvlist.length() > 0) {
             if (dbg_pobj_unstuck_verbose.asBool()) {
