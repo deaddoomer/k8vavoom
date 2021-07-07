@@ -1925,28 +1925,29 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
             return (NeedPositionCheck(mobj) && mobj->Health > 0); // blocked if not crushed
           }
         }
-      }
+      } // polyobject link loop
+
+      if (!wasMove) break; // wasn't moved, so no need to check for "still stuck"
+
       // check if we still stuck
-      if (wasMove) {
-        for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-          // reject only polyobjects that are above us
-          // (otherwise we may miss blockig top texture)
+      for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+        // reject only polyobjects that are above us
+        // (otherwise we may miss blockig top texture)
+        if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        // if pobj has no top-blocking textures, it can be skipped if we're above it
+        if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
           if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
-          // if pobj has no top-blocking textures, it can be skipped if we're above it
-          if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
-            if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+        }
+        const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
+        if (!canUnstuck && uvlist.length() > 0) {
+          if (dbg_pobj_unstuck_verbose.asBool()) {
+            GCon->Logf(NAME_Debug, "mobj '%s' STILL BLOCKED", edata.mobj->GetClass()->GetName());
           }
-          const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
-          if (!canUnstuck && uvlist.length() > 0) {
-            if (dbg_pobj_unstuck_verbose.asBool()) {
-              GCon->Logf(NAME_Debug, "mobj '%s' STILL BLOCKED", edata.mobj->GetClass()->GetName());
-            }
-            // still blocked
-            if (mobj->EntityFlags&VEntity::EF_Solid) {
-              if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
-            } else {
-              mobj->Level->eventPolyCrushMobj(mobj, po);
-            }
+          // still blocked
+          if (mobj->EntityFlags&VEntity::EF_Solid) {
+            if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
+          } else {
+            mobj->Level->eventPolyCrushMobj(mobj, po);
           }
         }
       }
