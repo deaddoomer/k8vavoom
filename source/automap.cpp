@@ -308,6 +308,8 @@ static VCvarS am_color_mark_blink("am_color_mark_blink", "df 5f 00", "Automap co
 static VCvarS am_color_player("am_color_player", "e6 e6 e6", "Automap color: player.", CVAR_Archive);
 static VCvarS am_color_miniseg("am_color_miniseg", "7f 00 7f", "Automap color: minisegs.", CVAR_Archive);
 
+static VCvarB dbg_am_no_player_arrow("__dbg_am_no_player_arrow", false, "Type of player arrow.", CVAR_PreInit);
+
 static VCvarI am_player_arrow("am_player_arrow", 0, "Type of player arrow.", CVAR_Archive);
 static VCvarB am_follow_player("am_follow_player", true, "Should automap follow player?", CVAR_Archive);
 static VCvarB am_rotate("am_rotate", false, "Should automap rotate?", CVAR_Archive);
@@ -1804,6 +1806,8 @@ static void AM_drawOnePlayer (float posx, float posy, float yaw, bool isMain) {
   const mline_t *player_arrow;
   float angle;
   int line_count;
+
+  if (dbg_am_no_player_arrow.asBool()) return;
 
   if (am_cheating) {
     player_arrow = player_arrow_ddt;
