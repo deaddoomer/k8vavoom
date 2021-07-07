@@ -1661,7 +1661,11 @@ struct UnstuckInfo {
 //
 //  calculate horizontal "unstuck vector" (delta to move)
 //  for the given 3d polyobject
-//  returns `TVec::InvalidVector` if cannot unstuck
+//
+//  returns `false` if stuck, and cannot unstuck
+//
+//  returns `true` if not stuck, or can unstuck
+//  in this case, check `uvlist.length()`, if it is zero, then we aren't stuck
 //
 //  this is wrong, but is still better than stucking
 //
@@ -1797,6 +1801,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
 //
 //==========================================================================
 static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
+  if (mobj->IsGoingToDie()) return false; // just in case
   if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) return false;
   if (mobj->Height < 1.0f || mobj->Radius < 1.0f) return false;
   return
@@ -1862,9 +1867,13 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
     }
     VEntity *mobj = edata.mobj;
     if (!mobj || !NeedPositionCheck(mobj)) continue;
+
+    bool doFinalCheck = true;
     // try to unstuck 3 times
     for (int trycount = 3; trycount > 0; --trycount) {
+      doFinalCheck = true;
       bool wasMove = false;
+
       for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         if (!po || !po->posector) continue;
         // reject only polyobjects that are above us
@@ -1874,25 +1883,31 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
         if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
           if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         }
+
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
         if (dbg_pobj_unstuck_verbose.asBool()) {
           GCon->Logf(NAME_Debug, "mobj %s:%u, pobj %d, triesleft=%d: canUnstuck=%d; uvlist.length=%d", mobj->GetClass()->GetName(), mobj->GetUniqueId(), po->tag, trycount, (int)canUnstuck, uvlist.length());
         }
+
         if (!canUnstuck) {
-          // oops, blocked
+          // oops, blocked, and can't unstuck, crush
           if (mobj->EntityFlags&VEntity::EF_Solid) {
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
-            return (NeedPositionCheck(mobj) && mobj->Health > 0); // blocked if not crushed
+            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
           }
+          wasMove = false; // get away, we're done with this mobj
+          break;
         }
-        if (uvlist.length() == 0) continue; // this pobj is ok
+
+        if (uvlist.length() == 0) continue; // not stuck in this pobj
+
         // sort unstuck vectors by distance
         timsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
+
         // try each unstuck vector
         const TVec origOrigin = mobj->Origin;
-        //const unsigned origFlags = edata.aflags;
         bool foundGoodUnstuck = false;
         for (auto &&nfo : uvlist) {
           const TVec uv = nfo.uv;
@@ -1914,22 +1929,33 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
           }
           // restore
           mobj->Origin = origOrigin;
-          //edata.aflags = origFlags;
         }
+
+        // if we can't find good unstucking move, crush
         if (!foundGoodUnstuck) {
           // totally stuck
           if (mobj->EntityFlags&VEntity::EF_Solid) {
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
-            return (NeedPositionCheck(mobj) && mobj->Health > 0); // blocked if not crushed
+            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
           }
+          wasMove = false; // get away, we're done with this mobj
+          break;
         }
       } // polyobject link loop
 
-      if (!wasMove) break; // wasn't moved, so no need to check for "still stuck"
+      if (!wasMove) {
+        // wasn't moved, so no need to check for "still stuck"
+        doFinalCheck = false;
+        break;
+      }
+    } // unstuck try loop
 
-      // check if we still stuck
+    // if we got here, it means that either unstucking is failed, or we're ok
+    // if `doFinalCheck` flag is set, we should be stuck
+    // check it again, just to be sure
+    if (doFinalCheck) {
       for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         // reject only polyobjects that are above us
         // (otherwise we may miss blockig top texture)
@@ -1939,7 +1965,8 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
           if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         }
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, Level, po, mobj);
-        if (!canUnstuck && uvlist.length() > 0) {
+        // if we can't find unstuck direction, or found at least one, it means that we're stuck
+        if (!canUnstuck || uvlist.length() > 0) {
           if (dbg_pobj_unstuck_verbose.asBool()) {
             GCon->Logf(NAME_Debug, "mobj '%s' STILL BLOCKED", edata.mobj->GetClass()->GetName());
           }
@@ -1948,6 +1975,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
+            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
           }
         }
       }
