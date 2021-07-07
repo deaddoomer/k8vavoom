@@ -1683,6 +1683,8 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
   bbox2d[BOX2D_RIGHT] = orig2d.x+rad;
   bbox2d[BOX2D_LEFT] = orig2d.x-rad;
 
+  int mobjIsInside = 0; // didn't checked yet; -1: outside; 1: inside
+
   // if no "valid" sides to unstuck found, but has some "invalid" ones, try "invalid" sides
   bool wasIntersect = false;
   const float mobjz0 = mobj->Origin.z;
@@ -1718,14 +1720,20 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
     }
     wasIntersect = true;
 
+    // check if we're inside (we need this to determine the right line side)
+    //FIXME: this may be wrong for huge angles, because after rotation the object could move from outside to inside, or vice versa
+    if (!mobjIsInside) {
+      mobjIsInside = (Level->Is2DPointInside3DPolyObj(po, mobjOrigOrigin.x, mobjOrigOrigin.y) ? 1 : -1);
+    }
+
     const float orgsdist = ld->PointDistance(orig2d);
 
     if (dbg_pobj_unstuck_verbose.asBool()) {
-      GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, orgsdist=%g; checkTopTex=%d",
-        mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), orgsdist, (int)checkTopTex);
+      GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, orgsdist=%g; checkTopTex=%d; inside=%d",
+        mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), orgsdist, (int)checkTopTex, mobjIsInside);
     }
 
-    const bool badSide = (checkTopTex ? (orgsdist > 0.0f) : (orgsdist < 0.0f));
+    const bool badSide = (mobjIsInside > 0 ? (checkTopTex ? (orgsdist > 0.0f) : (orgsdist < 0.0f)) : (orgsdist < 0.0f));
 
     // check 4 corners, find the shortest "unstuck" distance
     bool foundVector = false;
