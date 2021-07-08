@@ -547,8 +547,10 @@ static void ReadThing (int num) {
   bool gotHeight = false;
   bool gotSpawnCeiling = false;
   bool hasSomeDefine = false;
+
   VClass *Ent = EntClasses[num-1];
   while (ParseParam()) {
+    // id #
     if (VStr::strEquCI(String, "ID #")) {
       if (value) {
         // for info output
@@ -565,55 +567,94 @@ static void ReadThing (int num) {
       } else {
         VClass::RemoveMObjIdByClass(Ent, GGameInfo->GameFilterFlag);
       }
-    } else if (VStr::strEquCI(String, "Hit points")) {
+      continue;
+    }
+    // hit points
+    if (VStr::strEquCI(String, "Hit points")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("Health", value);
       Ent->SetFieldInt("GibsHealth", -value);
-    } else if (VStr::strEquCI(String, "Reaction time")) {
+      continue;
+    }
+    // reaction time
+    if (VStr::strEquCI(String, "Reaction time")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("ReactionCount", value);
-    } else if (VStr::strEquCI(String, "Missile damage")) {
+      continue;
+    }
+    // missile damage
+    if (VStr::strEquCI(String, "Missile damage")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("MissileDamage", value);
-    } else if (VStr::strEquCI(String, "Width")) {
+      continue;
+    }
+    // width
+    if (VStr::strEquCI(String, "Width")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("Radius", value/65536.0f);
       // also, reset render radius
       Ent->SetFieldFloat("RenderRadius", 0);
-    } else if (VStr::strEquCI(String, "Height")) {
+      continue;
+    }
+    // height
+    if (VStr::strEquCI(String, "Height")) {
       gotHeight = true; // height changed
       hasSomeDefine = true;
       Ent->SetFieldFloat("Height", value/65536.0f);
-    } else if (VStr::strEquCI(String, "Mass")) {
+      continue;
+    }
+    // mass
+    if (VStr::strEquCI(String, "Mass")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("Mass", (value == 0x7fffffff ? 99999.0f : value));
-    } else if (VStr::strEquCI(String, "Speed")) {
+      continue;
+    }
+    // speed
+    if (VStr::strEquCI(String, "Speed")) {
       hasSomeDefine = true;
       if (value < 100) {
         Ent->SetFieldFloat("Speed", 35.0f*value);
       } else {
         Ent->SetFieldFloat("Speed", 35.0f*value/65536.0f);
       }
-    } else if (VStr::strEquCI(String, "Pain chance")) {
+      continue;
+    }
+    // pain chance
+    if (VStr::strEquCI(String, "Pain chance")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("PainChance", value/256.0f);
-    } else if (VStr::strEquCI(String, "Translucency")) {
+      continue;
+    }
+    // translucency
+    if (VStr::strEquCI(String, "Translucency")) {
       //hasSomeDefine = true;
       Ent->SetFieldFloat("Alpha", value/65536.0f);
       Ent->SetFieldByte("RenderStyle", STYLE_Translucent);
-    } else if (VStr::strEquCI(String, "Alpha")) {
+      continue;
+    }
+    // alpha
+    if (VStr::strEquCI(String, "Alpha")) {
       //hasSomeDefine = true;
-      Ent->SetFieldFloat("Alpha", VStr::atof(ValueString, 1));
-    } else if (VStr::strEquCI(String, "Render Style")) {
+      Ent->SetFieldFloat("Alpha", clampval(VStr::atof(ValueString, 1), 0.0f, 1.0f));
+      continue;
+    }
+    // render style
+    if (VStr::strEquCI(String, "Render Style")) {
       //hasSomeDefine = true;
       Ent->SetFieldByte("RenderStyle", ParseRenderStyle());
-    } else if (VStr::strEquCI(String, "Scale")) {
+      continue;
+    }
+    // scale
+    if (VStr::strEquCI(String, "Scale")) {
       hasSomeDefine = true;
       float Scale = VStr::atof(ValueString, 1);
       Scale = midval(0.0001f, Scale, 256.0f);
       Ent->SetFieldFloat("ScaleX", Scale);
       Ent->SetFieldFloat("ScaleY", Scale);
-    } else if (VStr::strEquCI(String, "Bits")) {
+      continue;
+    }
+    // bitset
+    if (VStr::strEquCI(String, "Bits")) {
       hasSomeDefine = true;
       TArray<VStr> Flags;
       VStr Tmp(ValueString);
@@ -709,49 +750,69 @@ static void ReadThing (int num) {
         else if (Values[1]&0x20000000) Ent->SetFieldNameValue("DamageType", "Ice");
         if (Values[1]&0x00000004) Ent->SetFieldByte("BounceType", 1);
       }
+      continue;
     }
-    // States
-    else if (VStr::strEquCI(String, "Initial frame")) {
+
+    // states
+    // spawn frame
+    if (VStr::strEquCI(String, "Initial frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Spawn");
-    } else if (VStr::strEquCI(String, "First moving frame")) {
+      continue;
+    }
+    // see frame
+    if (VStr::strEquCI(String, "First moving frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "See");
-    } else if (VStr::strEquCI(String, "Close attack frame")) {
+      continue;
+    }
+    // melee attack frame
+    if (VStr::strEquCI(String, "Close attack frame")) {
       // don't change melee state for players
       hasSomeDefine = true;
       if (num != 1) DoThingState(Ent, "Melee");
-    } else if (VStr::strEquCI(String, "Far attack frame")) {
+      continue;
+    }
+    // missile attack frame
+    if (VStr::strEquCI(String, "Far attack frame")) {
       // don't change missile state for players
       hasSomeDefine = true;
       if (num != 1) DoThingState(Ent, "Missile");
-    } else if (VStr::strEquCI(String, "Injury frame")) {
+      continue;
+    }
+    // pain frame
+    if (VStr::strEquCI(String, "Injury frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Pain");
-    } else if (VStr::strEquCI(String, "Death frame")) {
+      continue;
+    }
+    // death frame
+    if (VStr::strEquCI(String, "Death frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Death");
-    } else if (VStr::strEquCI(String, "Exploding frame")) {
+      continue;
+    }
+    // xdeath frame
+    if (VStr::strEquCI(String, "Exploding frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "XDeath");
-    } else if (VStr::strEquCI(String, "Respawn frame")) {
+      continue;
+    }
+    // raise frame
+    if (VStr::strEquCI(String, "Respawn frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Raise");
+      continue;
     }
+
     // sounds
-    else if (VStr::strEquCI(String, "Alert sound")) {
-      DoThingSound(Ent, "SightSound");
-    } else if (VStr::strEquCI(String, "Action sound")) {
-      DoThingSound(Ent, "ActiveSound");
-    } else if (VStr::strEquCI(String, "Attack sound")) {
-      DoThingSound(Ent, "AttackSound");
-    } else if (VStr::strEquCI(String, "Pain sound")) {
-      DoThingSound(Ent, "PainSound");
-    } else if (VStr::strEquCI(String, "Death sound")) {
-      DoThingSound(Ent, "DeathSound");
-    } else {
-      Warning("Invalid mobj param '%s'", String);
-    }
+    if (VStr::strEquCI(String, "Alert sound")) { DoThingSound(Ent, "SightSound"); continue; }
+    if (VStr::strEquCI(String, "Action sound")) { DoThingSound(Ent, "ActiveSound"); continue; }
+    if (VStr::strEquCI(String, "Attack sound")) { DoThingSound(Ent, "AttackSound"); continue; }
+    if (VStr::strEquCI(String, "Pain sound")) { DoThingSound(Ent, "PainSound"); continue; }
+    if (VStr::strEquCI(String, "Death sound")) { DoThingSound(Ent, "DeathSound"); continue; }
+
+    Warning("Invalid mobj param '%s'", String);
   }
 
   // reset heights for things hanging from the ceiling that don't specify a new height
