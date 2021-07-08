@@ -364,14 +364,12 @@ final void SetSeeOrWanderState () {
     }
   }
 
-  if (!(flags&CHF_NODIRECTIONTURN)) {
-    // turn towards movement direction if not there yet
-    if (MoveDir < DI_NODIR) {
-      Angles.yaw = float(int(Angles.yaw/45.0))*45.0;
-      float delta = AngleMod180(Angles.yaw-float(MoveDir)*45.0);
-           if (delta > 0.0) Angles.yaw = AngleMod360(Angles.yaw-45.0);
-      else if (delta < 0.0) Angles.yaw = AngleMod360(Angles.yaw+45.0);
-    }
+  // turn towards movement direction if not there yet
+  if (!(flags&CHF_NODIRECTIONTURN) && MoveDir < DI_NODIR) {
+    Angles.yaw = float(int(Angles.yaw/45.0))*45.0;
+    float delta = AngleMod180(Angles.yaw-float(MoveDir)*45.0);
+         if (delta > 0.0) Angles.yaw = AngleMod360(Angles.yaw-45.0);
+    else if (delta < 0.0) Angles.yaw = AngleMod360(Angles.yaw+45.0);
   }
 
   if (flags&CHF_NORANDOMTURN) {
@@ -474,6 +472,9 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
     }
   }
 
+  // invariant
+  assert(Target);
+
   // do not attack twice in a row
   if (bJustAttacked) {
     bJustAttacked = false;
@@ -485,7 +486,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
     return;
   }
 
-  // don't attack if just moving toward goal
+  // don't attack if just moving towards a goal
   if (Target == Goal || (bChaseGoal && Goal)) {
     EntityEx SavedTarget = Target;
     Target = Goal;
