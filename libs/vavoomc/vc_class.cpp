@@ -430,22 +430,18 @@ void VClass::InitSpriteList () {
   GSpriteNames.Append("tnt1");
   GSpriteNames.Append("----");
   RebuildSpriteMap();
-  vassert(FindSprite("tnt1", false) == 0);
-  vassert(FindSprite("----", false) == 1);
+  vassert(FindSprite("tnt1") == 0);
+  vassert(FindSprite("----") == 1);
 }
 
 
 //==========================================================================
 //
-//  VClass::FindSprite
+//  VClass::FindSpriteInternal
 //
 //==========================================================================
-int VClass::FindSprite (VName Name, bool Append) {
-  /*
-  for (int i = 0; i < GSpriteNames.length(); ++i) {
-    if (GSpriteNames[i] == Name) return i;
-  }
-  */
+int VClass::FindSpriteInternal (VName Name, bool Append) {
+  //for (int i = 0; i < GSpriteNames.length(); ++i) if (GSpriteNames[i] == Name) return i; return -1;
   if (!Append) {
     Name = VName(*Name, VName::FindLower);
     if (Name == NAME_None) return -1;

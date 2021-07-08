@@ -432,6 +432,8 @@ private:
 
   static void RebuildSpriteMap ();
 
+  static int FindSpriteInternal (VName Name, bool Append);
+
 public:
   // property renames for various types
   // put here, because all methods belongs to classes
@@ -466,7 +468,8 @@ public:
   // systemwide functions
   static VClass *FindClass (const char *);
   static VClass *FindClassNoCase (const char *);
-  static int FindSprite (VName, bool = true);
+  static inline int FindSprite (VName Name) { return FindSpriteInternal(Name, false); }
+  static inline int FindAddSprite (VName Name) { return FindSpriteInternal(Name, true); }
   static void GetSpriteNames (TArray<FReplacedString> &);
   static void ReplaceSpriteNames (TArray<FReplacedString> &);
   static void StaticReinitStatesLookup ();

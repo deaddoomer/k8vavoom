@@ -466,7 +466,7 @@ void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const un
 
   int SpriteIndex = ent->GetEffectiveSpriteIndex();
   int FrameIndex = ent->GetEffectiveSpriteFrame();
-  if (ent->FixedSpriteName != NAME_None) SpriteIndex = VClass::FindSprite(ent->FixedSpriteName, false); // don't append
+  if (ent->FixedSpriteName != NAME_None) SpriteIndex = VClass::FindSprite(ent->FixedSpriteName); // don't append
 
   if ((unsigned)SpriteIndex >= (unsigned)sprites.length()) return;
 

@@ -2197,11 +2197,11 @@ void R_ParseEffectDefs () {
       SprName[2] = VStr::ToLower(SprDef.Sprite[2]);
       SprName[3] = VStr::ToLower(SprDef.Sprite[3]);
       SprName[4] = 0;
-      int SprIdx = VClass::FindSprite(SprName, false);
+      int SprIdx = VClass::FindSprite(SprName);
       if (SprIdx == -1) {
         VName repl = (cli_SprDehTransfer ? GetDehReplacedSprite(VName(SprName, VName::FindLower)) : NAME_None);
         if (repl != NAME_None) {
-          SprIdx = VClass::FindSprite(repl, false);
+          SprIdx = VClass::FindSprite(repl);
           if (SprIdx != -1) GCon->Logf(NAME_Debug, "Dehacked effect transfer from '%s' to '%s'", SprName, *repl);
         }
         if (SprIdx == -1) {

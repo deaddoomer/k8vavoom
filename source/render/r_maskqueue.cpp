@@ -381,7 +381,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
 
   int SpriteIndex = thing->GetEffectiveSpriteIndex();
   int FrameIndex = thing->GetEffectiveSpriteFrame();
-  if (thing->FixedSpriteName != NAME_None) SpriteIndex = VClass::FindSprite(thing->FixedSpriteName, false); // don't append
+  if (thing->FixedSpriteName != NAME_None) SpriteIndex = VClass::FindSprite(thing->FixedSpriteName); // don't append
 
   if ((unsigned)SpriteIndex >= (unsigned)sprites.length()) {
     #ifdef PARANOID

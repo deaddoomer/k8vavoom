@@ -995,7 +995,7 @@ static void ReadState (int num) {
         if (dbg_dehacked_dump_all || dbg_dehacked_frame_replaces) DHDebugLog("frame #%d; old sprite is '%s'(%d), new sprite is '%s' (%s)", num, *States[num]->SpriteName, States[num]->SpriteIndex, *Sprites[value], *States[num]->Loc.toStringNoCol());
         //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; prev sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
         States[num]->SpriteName = Sprites[value];
-        States[num]->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindSprite(Sprites[value]) : 1);
+        States[num]->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindAddSprite(Sprites[value]) : 1);
         //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; NEW sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
       }
       continue;

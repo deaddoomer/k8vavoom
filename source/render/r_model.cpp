@@ -547,7 +547,7 @@ static VState *FindClassStateByIndex (VClass *cls, int idx) {
 //==========================================================================
 static bool IsValidSpriteFrame (int lump, VName sprname, int sprframe, bool iwadonly, bool thiswadonly, bool prevvalid=true) {
   if (lump < 0) return true;
-  int sprindex = VClass::FindSprite(sprname, false); /* don't append */
+  int sprindex = VClass::FindSprite(sprname); /* don't append */
   if (sprindex <= 1) return prevvalid; // <0: not found; 0: tnt1; 1: ----
   if (!cli_IgnoreReplaced && IsDehReplacedSprite(sprname)) {
     //GCon->Logf(NAME_Debug, "model: ignore replaced sprite '%s'", *sprname);

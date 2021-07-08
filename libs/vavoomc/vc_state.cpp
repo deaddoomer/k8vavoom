@@ -81,7 +81,7 @@ VState::~VState () {
 //
 //==========================================================================
 void VState::PostLoad () {
-  SpriteIndex = (SpriteName != NAME_None ? VClass::FindSprite(SpriteName) : 1);
+  SpriteIndex = (SpriteName != NAME_None ? VClass::FindAddSprite(SpriteName) : 1);
   NetNext = Next;
 }
 
