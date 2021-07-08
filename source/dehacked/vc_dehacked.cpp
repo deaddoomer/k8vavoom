@@ -372,6 +372,9 @@ static __attribute__((format(printf, 1, 2))) void DHDebugLog (const char *fmt, .
 //
 //  GetLine
 //
+//  this trims leading and trailing spaces
+//  result is in `String` (modifyable)
+//
 //==========================================================================
 static bool GetLine () {
   do {
@@ -459,23 +462,39 @@ static VStr GetToken () {
 //
 //  ParseParam
 //
+//  on success return:
+//    `String` contains a key
+//    `ValueString` contains string value of a key
+//    `value` contians numeric value of a key
+//
 //==========================================================================
 static bool ParseParam () {
-  char *val;
-
   if (!GetLine()) return false;
 
-  val = strchr(String, '=');
+  char *val = strchr(String, '=');
   if (!val) return false;
 
   ValueString = val+1;
   while (*ValueString && *(vuint8 *)ValueString <= ' ') ++ValueString;
-  value = VStr::atoi(ValueString);
+  value = (*ValueString ? VStr::atoi(ValueString) : 0);
 
+  // strip trailing spaces from key name
   do {
     *val = 0;
     --val;
   } while (val >= String && *(vuint8 *)val <= ' ');
+
+  // remove double spaces in key name
+  char *dptr = String;
+  char *sptr = String;
+  while (*sptr) {
+    if (dptr != sptr) *dptr = *sptr;
+    ++dptr;
+    ++sptr;
+    // skip extra spaces
+    while (*sptr && (vuint8)sptr[-1] <= ' ' && (vuint8)sptr[0] <= ' ') ++sptr;
+  }
+  *dptr = 0;
 
   return true;
 }
