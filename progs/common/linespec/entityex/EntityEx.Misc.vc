@@ -2293,14 +2293,14 @@ override void ClientTick (float DeltaTime) {
 
   if (bDynamicLight) {
     // update dynamic lights
-    dlight_t *dl = AllocDlight(self, Origin, radius:fmax(0, fmax(prev_rad, DLightRadius)));
+    dlight_t *dl = AllocDlight(self, Origin, radius:fmax(0, fmax(DLightPrevRadius, DLightRadius)));
     if (dl) {
       //dl->origin = Origin;
-      dl->radius = (prev_rad <= DLightRadius ? prev_rad : (prev_rad-DLightRadius)*XLevel.Time);
+      dl->radius = (DLightPrevRadius <= DLightRadius ? DLightPrevRadius : (DLightPrevRadius-DLightRadius)*XLevel.Time);
       dl->radius += XLevel.Time*dl->decay;
       //if (dl->radius > DLightRadius) dl->radius = DLightRadius;
       dl->radius = fmin(dl->radius, DLightRadius);
-      prev_rad = dl->radius;
+      DLightPrevRadius = dl->radius;
       dl->color = DLightColor;
       dl->die = XLevel.Time+0.1;
     }
@@ -2388,7 +2388,7 @@ final void DoStateEffects (float DeltaTime) {
           if (lorg.z >= fcz1) lorg.z = fcz1-4; // why not?
         }
       }
-      dlight_t *dl = AllocDlight(self, lorg, radius:fmax(0, fmax(prev_rad, L->Radius)), lightid:i); // pass "light id" to allow replacing
+      dlight_t *dl = AllocDlight(self, lorg, radius:fmax(0, fmax(DLightPrevRadius, L->Radius)), lightid:i); // pass "light id" to allow replacing
       if (!dl) continue; // alas
       //if (self isa 'HacxLongCeilingLamp') printdebug("%C: type=%s", self, L->Type);
       if (L->Type&DynamicLight::DLTYPE_Spot) {
@@ -2405,7 +2405,7 @@ final void DoStateEffects (float DeltaTime) {
         //case DynamicLight::DLTYPE_Subtractive:
           //printdebug("%C: point light", self);
           dl->decay = /*XLevel.Time+*/300.0;
-          dl->radius = (prev_rad <= L->Radius ? prev_rad : (prev_rad-L->Radius)*XLevel.Time);
+          dl->radius = (DLightPrevRadius <= L->Radius ? DLightPrevRadius : (DLightPrevRadius-L->Radius)*XLevel.Time);
           dl->radius += /*XLevel.Time**/dl->decay;
           //printdebug("000:%C: point light; radius=%s", self, dl->radius);
           if (dl->radius > L->Radius) dl->radius = L->Radius;
@@ -2415,7 +2415,7 @@ final void DoStateEffects (float DeltaTime) {
         case DynamicLight::DLTYPE_MuzzleFlash:
           max = (L->Radius+Random()*(L->Radius2-L->Radius));
           dl->decay = /*XLevel.Time+*/80.0;
-          dl->radius = (prev_rad <= L->Radius ? prev_rad : (prev_rad-L->Radius)*XLevel.Time);
+          dl->radius = (DLightPrevRadius <= L->Radius ? DLightPrevRadius : (DLightPrevRadius-L->Radius)*XLevel.Time);
           dl->radius += /*XLevel.Time**/dl->decay;
           if (dl->radius > max) dl->radius = max;
           break;
@@ -2453,7 +2453,7 @@ final void DoStateEffects (float DeltaTime) {
           if (LightTime > L->Interval/360.0) {
             max = (L->Radius+FRandomFull()*(L->Radius2-L->Radius));
             dl->decay = /*XLevel.Time+*/80.0;
-            dl->radius = (prev_rad <= L->Radius ? prev_rad : /*(prev_rad-L->Radius)*XLevel.Time*/max);
+            dl->radius = (DLightPrevRadius <= L->Radius ? DLightPrevRadius : /*(DLightPrevRadius-L->Radius)*XLevel.Time*/max);
             dl->radius += /*XLevel.Time**/dl->decay;
             if (dl->radius > max) dl->radius = max;
             LightTime = 0.0;
@@ -2484,7 +2484,7 @@ final void DoStateEffects (float DeltaTime) {
       //dl->bSubtractive = false; // L->bSubtractive; -- subtractive lights already rejected above
       //dl->bDisabled = false; //L->bDisabled; -- disabled lights already rejected above
       dl->die = XLevel.Time+0.1;
-      prev_rad = dl->radius;
+      DLightPrevRadius = dl->radius;
     }
   }
 

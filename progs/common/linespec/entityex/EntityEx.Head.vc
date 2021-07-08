@@ -235,18 +235,18 @@ bool bSpectral; // can be killed only with Sigil
 bool bDamageInvulnerable; // these inflictors aren't foiled by invulnerability
 bool bSkullFlyInvulnerable; // invulnerable during skull fly attack
 bool bNoDamageThrust; // does not thrust target when damaging
-bool bConditionalFireDamage;
+bool bConditionalFireDamage; // use in Heretic for PhoenixFX1: if damagetype is fire, remeber it as fire if (Health > -50 && damage > 25)
 bool bNoExtremeDeath; // does never gib enemies
 bool bExtremeDeath; // always gibs enemies
 bool bLightning; // electrocutes victims
 bool bHowlVictims; // make victims play howl sound when damaged
-bool bNoGrudge;
+bool bNoGrudge; // `+QuickToRetaliate` decorate flag (always switch target, regardless of threshold)
 bool bNeverTarget; // never switch target to this actor
 bool bReallyNeverTarget; // never ever target this actor
 bool bNoTargetSwitch; // never switches target until current one is dead
 bool bNoGravKill; // doesn't set NoGravity to false when killed
-bool bFaster;
-bool bFastMelee;
+bool bFaster; // faster "See" states processing in "fast monsters" mode
+bool bFastMelee; // faster "Melee" states processing in "fast monsters" mode
 bool bStanding; // don't walk around
 bool bBoss; // mobj is a major boss
 bool bNonShootable; // mobj is totally non-shootable, but still considered solid
@@ -255,7 +255,7 @@ bool bRip; // missile rips through solid targets
 bool bPushable; // can be pushed by other moving mobjs
 bool bBloodlessImpact; // don't spawn blood when hitting a thing
 //bool bMonster; // moved to `Entity`
-bool bNoDeathmatch;
+bool bNoDeathmatch; // do not spawn this *map* *thing* in deathmatches (actually, spawn, and then immediately destroy)
 bool bTeleport; // don't cross lines or look at heights
 bool bSpawnFloat; // spawn random float z
 bool bNoMorph; // don't morph into chicken/pig
@@ -265,7 +265,7 @@ bool bNeutral; // neutral characters (peasants and beggars)
 bool bStandMustSeeTarget; // COUNTITEM 800000
 bool bInCombat; // actors in combat won't talk
 bool bFullVolActive; // play active sound at full volume
-bool bDehackedSpecial; // old style special handling
+bool bDehackedSpecial; // old style special (pickup) handling (on touch)
 //bool bUnknown2; // 8000000
 bool bPuffParticles; // puff spawns particles
 bool bExplodeParticles; // use particle explosion
@@ -436,10 +436,13 @@ int Threshold;
 int MoveDir; // 0-7
 int MoveCount; // when 0, select a new dir
 int StrafeCount; // killough 9/8/98: monster strafing
-int FastChaseStrafeCount;
+int FastChaseStrafeCount; // something for `FastChase` chasing flag (dunno)
 
+// "visibility change direction" for stealth monsters
 int VisDir;
 
+// radius damage will be multiplied by this (i.e. "radius damage factor")
+// usually 1.0, but is smaller for pig player, for example
 float RDFactor;
 
 // static light parameters
@@ -457,7 +460,7 @@ transient float LightConeAngle;
 int DLightColor;
 float DLightRadius;
 int ExplodeEffect;
-float prev_rad;
+float DLightPrevRadius;
 
 float MeleeRange;
 
@@ -513,14 +516,14 @@ array!DropItemInfo DropItemList;
 
 int SkillRespawnCount;
 
-// customiseable jump celocity
+// customisable jump celocity
 float JumpVelZ;
 float JumpTime;
 
 //float CrouchHeight;
 float crouchfactor = 1.0;
 
-// gozzo crap
+// some GZDoom extensions
 bool bUseKillScripts;
 bool bNoKillScripts;
 bool bDontCorpse;
@@ -535,6 +538,7 @@ int RipperLevel;
 int RipLevelMin;
 int RipLevelMax;
 
+// distance for friendly monster lookup, in 128-unit blocks; <=0 means "128"
 int FriendlySeeBlocks = -1;
 
 // temporary for physics z change due to stepping
