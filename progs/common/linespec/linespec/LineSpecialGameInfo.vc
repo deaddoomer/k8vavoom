@@ -30,7 +30,7 @@ const int MaxWeaponsInSlot = 8;
 
 
 // thing types that are handled durign set-up of a level
-const int
+enum {
   FLOOR_SLOPE_TYPE = 1500,
   CEILING_SLOPE_TYPE = 1501,
 
@@ -54,7 +54,8 @@ const int
   SET_FLOOR_SLOPE_TYPE = 9502,
   SET_CEILING_SLOPE_TYPE = 9503,
   COPY_FLOOR_PLANE_TYPE = 9510,
-  COPY_CEILING_PLANE_TYPE = 9511;
+  COPY_CEILING_PLANE_TYPE = 9511,
+}
 
 
 float[9] contents_alpha;
