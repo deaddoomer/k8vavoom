@@ -906,18 +906,49 @@ static void ReadThing (int num) {
 //  ReadSound
 //
 //==========================================================================
-static void ReadSound (int) {
+static void ReadSound (int num) {
+  // reject dehextra
+  if (num >= 500 && num <= 699) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (sound #%d)", num);
+  bool ignoreit = false;
+  if (num < 0 || num >= Sounds.length()) {
+    Warning("Bad sound index %d", num);
+    ignoreit = true;
+  }
   while (ParseParam()) {
-         if (VStr::strEquCI(String, "Offset")) {}     // lump name offset - can't handle
-    else if (VStr::strEquCI(String, "Zero/One")) {}   // singularity - removed
-    else if (VStr::strEquCI(String, "Value")) {}      // priority
-    else if (VStr::strEquCI(String, "Zero 1")) {}     // lump num - can't be set
-    else if (VStr::strEquCI(String, "Zero 2")) {}     // data pointer - can't be set
-    else if (VStr::strEquCI(String, "Zero 3")) {}     // usefulness - removed
-    else if (VStr::strEquCI(String, "Zero 4")) {}     // link - removed
-    else if (VStr::strEquCI(String, "Neg. One 1")) {} // link pitch - removed
-    else if (VStr::strEquCI(String, "Neg. One 2")) {} // link volume - removed
-    else Warning("Invalid sound param '%s'", String);
+    if (VStr::strEquCI(String, "Zero/One")) {
+      if (ignoreit) continue;
+      // singularity
+      if (!GSoundManager) continue;
+      const int sid = GSoundManager->GetSoundID(Sounds[num]);
+      if (sid) {
+        //GCon->Logf(NAME_Debug, "setting bSingularity for sound #%d (%s) to %d", num, *Sounds[num], (int)(!!value));
+        GSoundManager->SetSingularity(sid, !!value);
+      }
+      continue;
+    }
+
+    if (VStr::strEquCI(String, "Value")) {
+      // priority
+      if (ignoreit) continue;
+      // singularity
+      if (!GSoundManager) continue;
+      const int sid = GSoundManager->GetSoundID(Sounds[num]);
+      if (sid) {
+        //GCon->Logf(NAME_Debug, "setting priority for sound #%d (%s) to %d", num, *Sounds[num], value);
+        GSoundManager->SetPriority(sid, value);
+      }
+      continue;
+    }
+
+    if (VStr::strEquCI(String, "Offset")) { if (!ignoreit) Warning("cannot set lump name offset for sound #%d", num); continue; }  // lump name offset - can't handle
+    if (VStr::strEquCI(String, "Zero 1")) { if (!ignoreit) Warning("cannot set lump num for sound #%d", num); continue; }          // lump num - can't be set
+    if (VStr::strEquCI(String, "Zero 2")) { if (!ignoreit) Warning("cannot set data pointer for sound #%d", num); continue; }      // data pointer - can't be set
+    if (VStr::strEquCI(String, "Zero 3")) { if (!ignoreit) Warning("cannot set usefulness for sound #%d", num); continue; }        // usefulness - removed
+    if (VStr::strEquCI(String, "Zero 4")) { if (!ignoreit) Warning("cannot set link for sound #%d", num); continue; }              // link - removed
+    if (VStr::strEquCI(String, "Neg. One 1")) { if (!ignoreit) Warning("cannot set link pitch for sound #%d", num); continue; }    // link pitch - removed
+    if (VStr::strEquCI(String, "Neg. One 2")) { if (!ignoreit) Warning("cannot set link volume for sound #%d", num); continue; }   // link volume - removed
+
+    Warning("Invalid sound param '%s'", String);
   }
 }
 
