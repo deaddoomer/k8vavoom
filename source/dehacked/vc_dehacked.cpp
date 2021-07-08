@@ -484,7 +484,7 @@ static bool ParseParam () {
     --val;
   } while (val >= String && *(vuint8 *)val <= ' ');
 
-  // remove double spaces in key name
+  // remove double spaces from key name
   char *dptr = String;
   char *sptr = String;
   while (*sptr) {
@@ -564,9 +564,20 @@ static void DoThingState (VClass *Ent, const char *StateLabel) {
 //==========================================================================
 static void DoThingSound (VClass *Ent, const char *FieldName) {
   // if it's not a number, treat it like a sound defined in SNDINFO
-       if (ValueString[0] < '0' || ValueString[0] > '9') Ent->SetFieldNameValue(FieldName, ValueString);
-  else if (value < 0 || value >= Sounds.length()) Warning("Bad sound index %d for '%s'", value, (Ent ? Ent->GetName() : "<undefined>"));
-  else Ent->SetFieldNameValue(FieldName, Sounds[value]);
+  if (ValueString[0] < '0' || ValueString[0] > '9') {
+    Ent->SetFieldNameValue(FieldName, ValueString);
+    return;
+  }
+
+  // reject dehextra
+  if (value >= 500 && value <= 699) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (sound #%d) (%d)", value, Sounds.length());
+
+  if (value < 0 || value >= Sounds.length()) {
+    Warning("Bad sound index %d for '%s'", value, (Ent ? Ent->GetName() : "<undefined>"));
+    return;
+  }
+
+  Ent->SetFieldNameValue(FieldName, Sounds[value]);
 }
 
 
@@ -576,6 +587,9 @@ static void DoThingSound (VClass *Ent, const char *FieldName) {
 //
 //==========================================================================
 static void ReadThing (int num) {
+  // reject dehextra
+  if (num >= 150 && num <= 249) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (thing #%d) (%d)", num, EntClasses.length());
+
   if (num < 1 || num > EntClasses.length()) {
     Warning("Invalid thing num %d", num);
     while (ParseParam()) {}
@@ -858,7 +872,16 @@ static void ReadThing (int num) {
         VStr::strEquCI(String, "Fast speed") ||
         VStr::strEquCI(String, "Melee range"))
     {
-      DehFatal("MBF21 is not supported and will never be. Sorry.");
+      DehFatal("MBF21 thing extensions are not supported and will never be. Sorry.");
+    }
+
+    // reject dehextra
+    if (VStr::strEquCI(String, "Melee threshold") ||
+        VStr::strEquCI(String, "Max target range") ||
+        VStr::strEquCI(String, "Min missile chance") ||
+        VStr::strEquCI(String, "Missile chance multiplier"))
+    {
+      DehFatal("DEHEXTRA extensions are not supported and will never be. Sorry.");
     }
 
     Warning("Invalid mobj param '%s'", String);
@@ -905,6 +928,9 @@ static void ReadSound (int) {
 //
 //==========================================================================
 static void ReadState (int num) {
+  // reject dehextra
+  if (num >= 1089 && num <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (state #%d) (%d)", num, States.length());
+
   // check index
   if (num >= States.length() || num < 0) {
     Warning("Invalid state num %d", num);
@@ -930,6 +956,8 @@ static void ReadState (int num) {
     if (ignoreIt) continue;
     // sprite base
     if (VStr::strEquCI(String, "Sprite number")) {
+      // reject dehextra
+      if (value >= 145 && value <= 244) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (sprite #%d) (%d)", value, Sprites.length());
       if (value < 0 || value >= Sprites.length()) {
         Warning("Bad sprite index %d for frame #%d", value, num);
       } else {
@@ -979,7 +1007,7 @@ static void ReadState (int num) {
         VStr::strEquCI(String, "Args5") || VStr::strEquCI(String, "Args6") ||
         VStr::strEquCI(String, "Args7") || VStr::strEquCI(String, "Args8"))
     {
-      DehFatal("MBF21 is not supported and will never be. Sorry.");
+      DehFatal("MBF21 state extensions are not supported and will never be. Sorry.");
     }
 
     Warning("Invalid state param '%s'", String);
@@ -1180,7 +1208,7 @@ static void ReadWeapon (int num) {
 
     // reject mbf21
     if (VStr::strEquCI(String, "MBF21 Bits")) {
-      DehFatal("MBF21 is not supported and will never be. Sorry.");
+      DehFatal("MBF21 weapon extensions are not supported and will never be. Sorry.");
     }
 
     Warning("Invalid weapon param '%s' for weapon '%s'", String, (Weapon ? Weapon->GetName() : "<undefined>"));
@@ -1240,6 +1268,10 @@ static void ReadCodePtr (int) {
   while (ParseParam()) {
     if (VStr::NICmp(String, "Frame", 5) == 0 && (vuint8)String[5] <= ' ') {
       int Index = VStr::atoi(String+6);
+
+      // reject dehextra
+      if (Index >= 1089 && Index <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (frame #%d) (%d)", Index, States.length());
+
       if (Index < 0 || Index >= States.length()) {
         Warning("Bad frame index %d", Index);
         continue;
