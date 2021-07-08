@@ -694,7 +694,7 @@ void VEntity::SetInitialState (VState *InState) {
   if (InState) {
     UpdateDispFrameFrom(InState);
     StateTime = eventGetStateTime(InState, InState->Time);
-    if (StateTime > 0.0f) StateTime += 0.0002f; // delay it slightly, so spawner may do its business
+    if (StateTime > 0.0f) StateTime += 0.0002f; //k8: delay it slightly, so spawner may do its business
     // first state can be a goto; follow it
     if (DispSpriteName == NAME_None && InState->NextState && StateTime <= 0.0f) {
       UpdateDispFrameFrom(InState->NextState);
