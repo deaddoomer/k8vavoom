@@ -122,6 +122,11 @@ public:
   // call this when loading a new map
   void CleanupSounds ();
 
+  // doesn't warn
+  int GetSoundIDSlow (const char *Name);
+  void SetSingularity (int sound_id, bool singular);
+  void SetPriority (int sound_id, int priority);
+
 #if defined(VAVOOM_REVERB)
   VReverbInfo *FindEnvironment (int);
 #endif

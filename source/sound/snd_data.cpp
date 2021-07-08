@@ -1237,6 +1237,42 @@ void VSoundManager::CleanupSounds () {
 
 //==========================================================================
 //
+//  VSoundManager::SetSingularity
+//
+//==========================================================================
+void VSoundManager::SetSingularity (int sound_id, bool singular) {
+  if (sound_id < 1 || sound_id >= S_sfx.length()) return;
+  S_sfx[sound_id].bSingular = true;
+}
+
+
+//==========================================================================
+//
+//  VSoundManager::SetPriority
+//
+//==========================================================================
+void VSoundManager::SetPriority (int sound_id, int priority) {
+  if (sound_id < 1 || sound_id >= S_sfx.length()) return;
+  S_sfx[sound_id].Priority = priority;
+}
+
+
+//==========================================================================
+//
+//  VSoundManager::GetSoundIDSlow
+//
+//==========================================================================
+int VSoundManager::GetSoundIDSlow (const char *Name) {
+  if (!Name || !Name[0]) return 0;
+  for (int f = 1; f < S_sfx.length(); ++f) {
+    if (VStr::strEquCI(*S_sfx[f].TagName, Name)) return f;
+  }
+  return 0;
+}
+
+
+//==========================================================================
+//
 //  VSoundManager::Process
 //
 //==========================================================================
