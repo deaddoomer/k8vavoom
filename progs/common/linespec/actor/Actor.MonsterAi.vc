@@ -433,7 +433,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
 
   // turn towards movement direction if not there yet
   // killough 9/7/98: keep facing towards target if strafing or backing out
-  if (strafecount) {
+  if (StrafeCount) {
     A_FaceTarget();
   } else {
     if (!noDirectionTurn && MoveDir < DI_NODIR) {
@@ -588,7 +588,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
     }
   }
 
-  if (strafecount) --strafecount;
+  if (StrafeCount) --StrafeCount;
 
   // chase towards player
   if ((!FastChase || !FastChaseStrafeCount) && !DontMove) {

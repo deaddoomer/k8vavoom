@@ -871,7 +871,7 @@ final void NewChaseDirTo (TVec destination, optional EntityEx aTarget) {
 
   // killough 8/8/98: sometimes move away from target, keeping distance
   // Take advantage over an enemy without missiles, by keeping distance
-  strafecount = 0;
+  StrafeCount = 0;
 
   //FIXME:k8: this thing seems to do the reverse of what it should (mosters actually jumps the high dropoffs)
   // Try to move away from a dropoff
@@ -916,7 +916,7 @@ final void NewChaseDirTo (TVec destination, optional EntityEx aTarget) {
             dist < DEFAULT_MELEERANGE*3.0)))
       {
         // Back away from melee attacker
-        strafecount = P_Random()&15;
+        StrafeCount = P_Random()&15;
         deltax = -deltax;
         deltay = -deltay;
       }
@@ -924,9 +924,9 @@ final void NewChaseDirTo (TVec destination, optional EntityEx aTarget) {
   }
   DO_NewChaseDir(deltax, deltay);
 
-  // if strafing, set movecount to strafecount so that old Doom
+  // if strafing, set MoveCount to StrafeCount so that old Doom
   // logic still works the same, except in the strafing part
-  if (strafecount) MoveCount = strafecount;
+  if (StrafeCount) MoveCount = StrafeCount;
 }
 
 
