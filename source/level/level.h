@@ -113,6 +113,7 @@ struct rep_sector_t {
   float floor_YScale;
   float floor_Angle;
   float floor_BaseAngle;
+  float floor_BaseXOffs;
   float floor_BaseYOffs;
   float floor_PObjCX;
   float floor_PObjCY;
@@ -126,6 +127,7 @@ struct rep_sector_t {
   float ceil_YScale;
   float ceil_Angle;
   float ceil_BaseAngle;
+  float ceil_BaseXOffs;
   float ceil_BaseYOffs;
   float ceil_PObjCX;
   float ceil_PObjCY;

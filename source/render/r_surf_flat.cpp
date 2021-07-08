@@ -85,10 +85,19 @@ static inline bool IsZeroSkyFloorHack (const subsector_t *sub, const sec_region_
 //
 //  returns `true` if any offset was changed
 //
+//  FIXME: in "psim/p_trace_sightlight.cpp", `SightPassRegionPlaneTexture()`
+//         should somehow use this code
+//
 //==========================================================================
 static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef &spl, VTexture *Tex) {
-  float newsoffs = spl.splane->xoffs*(VRenderLevelShared::TextureSScale(Tex)*spl.splane->XScale);
+  //k8: should flat texture offsets be scaled? seems that wall texture offsets aren't.
+  #if 1
+  float newsoffs = (spl.splane->xoffs+spl.splane->BaseXOffs)*(VRenderLevelShared::TextureSScale(Tex)*spl.splane->XScale);
   float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(VRenderLevelShared::TextureTScale(Tex)*spl.splane->YScale);
+  #else
+  float newsoffs = (spl.splane->xoffs+spl.splane->BaseXOffs)*VRenderLevelShared::TextureSScale(Tex);
+  float newtoffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*VRenderLevelShared::TextureTScale(Tex);
+  #endif
 
   //k8: i think that this is not completely right
   if (spl.splane->flipFlags&SPF_FLIP_X) newsoffs = -newsoffs;
@@ -97,7 +106,7 @@ static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef
   const float cx = spl.splane->PObjCX;
   const float cy = spl.splane->PObjCY;
   if (cx || cy) {
-    TVec p(cx, cy);
+    const TVec p(cx, cy);
     newsoffs -= DotProduct(surf->texinfo.saxis, p);
     newtoffs -= DotProduct(surf->texinfo.taxis, p);
   }

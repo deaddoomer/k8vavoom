@@ -137,6 +137,7 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
   if (twdt < 1) return true; // just in case, not blocked
 
   //TODO: rotated textures
+  //FIXME: call render function for this!
 
   TVec saxis, taxis;
 
@@ -159,7 +160,8 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
 
   // /*bool offsChanged = */SurfRecalcFlatOffset(ssurf, spl, Tex);
 
-  float soffs = spl.splane->xoffs*(FTex->TextureSScale()*spl.splane->XScale);
+  //k8: should flat texture offsets be scaled? seems that wall texture offsets aren't.
+  float soffs = (spl.splane->xoffs+spl.splane->BaseXOffs)*(FTex->TextureSScale()*spl.splane->XScale);
   float toffs = (spl.splane->yoffs+spl.splane->BaseYOffs)*(FTex->TextureTScale()*spl.splane->YScale);
 
   //k8: i think that this is not completely right

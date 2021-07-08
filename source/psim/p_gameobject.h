@@ -684,6 +684,7 @@ struct sec_plane_t : public TPlane {
   float Angle;
 
   float BaseAngle;
+  float BaseXOffs;
   float BaseYOffs;
 
   // pobj offset

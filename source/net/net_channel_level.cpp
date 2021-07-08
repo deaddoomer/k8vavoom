@@ -828,6 +828,7 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
       RepSec->floor_YScale != Sec->floor.YScale ||
       mround(RepSec->floor_Angle) != mround(Sec->floor.Angle) ||
       mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle) ||
+      mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs) ||
       mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs) ||
       RepSec->floor_SkyBox != FloorSkyBox ||
       RepSec->floor_MirrorAlpha != Sec->floor.MirrorAlpha)
@@ -854,6 +855,8 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
     if (mround(RepSec->floor_Angle) != mround(Sec->floor.Angle)) strm << Sec->floor.Angle;
     strm.WriteBit(mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle));
     if (mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle)) strm << Sec->floor.BaseAngle;
+    strm.WriteBit(mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs));
+    if (mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs)) strm << Sec->floor.BaseXOffs;
     strm.WriteBit(mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs));
     if (mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs)) strm << Sec->floor.BaseYOffs;
     strm.WriteBit(RepSec->floor_SkyBox != FloorSkyBox);
@@ -868,6 +871,7 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
     RepSec->floor_YScale = Sec->floor.YScale;
     RepSec->floor_Angle = Sec->floor.Angle;
     RepSec->floor_BaseAngle = Sec->floor.BaseAngle;
+    RepSec->floor_BaseXOffs = Sec->floor.BaseXOffs;
     RepSec->floor_BaseYOffs = Sec->floor.BaseYOffs;
     RepSec->floor_SkyBox = FloorSkyBox;
     RepSec->floor_MirrorAlpha = Sec->floor.MirrorAlpha;
@@ -885,6 +889,7 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
       RepSec->ceil_YScale != Sec->ceiling.YScale ||
       mround(RepSec->ceil_Angle) != mround(Sec->ceiling.Angle) ||
       mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle) ||
+      mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs) ||
       mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs) ||
       RepSec->ceil_SkyBox != CeilSkyBox ||
       RepSec->ceil_MirrorAlpha != Sec->ceiling.MirrorAlpha)
@@ -911,6 +916,8 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
     if (mround(RepSec->ceil_Angle) != mround(Sec->ceiling.Angle)) strm << Sec->ceiling.Angle;
     strm.WriteBit(mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle));
     if (mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle)) strm << Sec->ceiling.BaseAngle;
+    strm.WriteBit(mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs));
+    if (mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs)) strm << Sec->ceiling.BaseXOffs;
     strm.WriteBit(mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs));
     if (mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs)) strm << Sec->ceiling.BaseYOffs;
     strm.WriteBit(RepSec->ceil_SkyBox != CeilSkyBox);
@@ -925,6 +932,7 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
     RepSec->ceil_YScale = Sec->ceiling.YScale;
     RepSec->ceil_Angle = Sec->ceiling.Angle;
     RepSec->ceil_BaseAngle = Sec->ceiling.BaseAngle;
+    RepSec->ceil_BaseXOffs = Sec->ceiling.BaseXOffs;
     RepSec->ceil_BaseYOffs = Sec->ceiling.BaseYOffs;
     RepSec->ceil_SkyBox = CeilSkyBox;
     RepSec->ceil_MirrorAlpha = Sec->ceiling.MirrorAlpha;
@@ -1100,6 +1108,7 @@ bool VLevelChannel::ParseSector (VMessageIn &Msg) {
     if (Msg.ReadBit()) Msg << Sec->ceiling.YScale;
     if (Msg.ReadBit()) Sec->ceiling.Angle = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->ceiling.BaseAngle = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->ceiling.BaseXOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->ceiling.BaseYOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Msg << Sec->ceiling.SkyBox;
     if (Msg.ReadBit()) Msg << Sec->ceiling.MirrorAlpha;
@@ -1115,6 +1124,7 @@ bool VLevelChannel::ParseSector (VMessageIn &Msg) {
     if (Msg.ReadBit()) Msg << Sec->floor.YScale;
     if (Msg.ReadBit()) Sec->floor.Angle = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->floor.BaseAngle = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->floor.BaseXOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->floor.BaseYOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Msg << Sec->floor.SkyBox;
     if (Msg.ReadBit()) Msg << Sec->floor.MirrorAlpha;

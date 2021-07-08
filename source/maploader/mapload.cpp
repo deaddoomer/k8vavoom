@@ -1107,6 +1107,7 @@ void VLevel::CreateRepBase () {
     B.floor_YScale = S.floor.YScale;
     B.floor_Angle = S.floor.Angle;
     B.floor_BaseAngle = S.floor.BaseAngle;
+    B.floor_BaseXOffs = S.floor.BaseXOffs;
     B.floor_BaseYOffs = S.floor.BaseYOffs;
     B.floor_SkyBox = nullptr;
     B.floor_MirrorAlpha = S.floor.MirrorAlpha;
@@ -1118,6 +1119,7 @@ void VLevel::CreateRepBase () {
     B.ceil_YScale = S.ceiling.YScale;
     B.ceil_Angle = S.ceiling.Angle;
     B.ceil_BaseAngle = S.ceiling.BaseAngle;
+    B.ceil_BaseXOffs = S.ceiling.BaseXOffs;
     B.ceil_BaseYOffs = S.ceiling.BaseYOffs;
     B.ceil_SkyBox = nullptr;
     B.ceil_MirrorAlpha = S.ceiling.MirrorAlpha;
