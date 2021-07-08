@@ -191,7 +191,7 @@ static const VDehFlag DehFlags[] = {
   { 1, "ICEDAMAGE", 0x20000000 },
   { 1, "SEEKERMISSILE", 0x40000000 },
   { 1, "REFLECTIVE", 0x80000000 },
-  //  Ignored flags
+  // ignored flags
   { 0, "SLIDE", 0 },
   { 0, "UNUSED2", 0 },
   { 0, "UNUSED3", 0 },
@@ -291,6 +291,24 @@ bool IsDehReplacedSprite (VName spname) {
 VName GetDehReplacedSprite (VName oldname) {
   auto rp = SpriteReplacements.find(oldname);
   return (rp ? *rp : NAME_None);
+}
+
+
+//==========================================================================
+//
+//  DehFatal
+//
+//==========================================================================
+static __attribute__((format(printf, 1, 2))) void DehFatal (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  char *res = vavarg(fmt, ap);
+  va_end(ap);
+  if (!dehFileName.isEmpty()) {
+    Sys_Error("DEHACKED FATAL ERROR: %s:%d: %s", *dehFileName, dehCurrLine, res);
+  } else {
+    Sys_Error("DEHACKED FATAL ERROR: %s", res);
+  }
 }
 
 
@@ -471,13 +489,13 @@ static bool ParseParam () {
 static void ParseFlag (VStr FlagName, int *Values, bool *Changed) {
   if (FlagName.Length() == 0) return;
   if (FlagName[0] >= '0' && FlagName[0] <= '9') {
-    // clear flags that were not used by Doom engine as well as SLIDE flag which desn't exist anymore
+    // clear flags that were not used by Doom engine as well as SLIDE flag which dosen't exist anymore
     Values[0] = VStr::atoi(*FlagName)&0x0fffdfff;
     Changed[0] = true;
     return;
   }
   for (size_t i = 0; i < ARRAY_COUNT(DehFlags); ++i) {
-    if (FlagName == DehFlags[i].Name) {
+    if (FlagName.strEquCI(DehFlags[i].Name)) {
       Values[DehFlags[i].Which] |= DehFlags[i].Mask;
       Changed[DehFlags[i].Which] = true;
       return;
@@ -526,7 +544,7 @@ static void DoThingState (VClass *Ent, const char *StateLabel) {
 //
 //==========================================================================
 static void DoThingSound (VClass *Ent, const char *FieldName) {
-  //  If it's not a number, treat it like a sound defined in SNDINFO
+  // if it's not a number, treat it like a sound defined in SNDINFO
        if (ValueString[0] < '0' || ValueString[0] > '9') Ent->SetFieldNameValue(FieldName, ValueString);
   else if (value < 0 || value >= Sounds.length()) Warning("Bad sound index %d for '%s'", value, (Ent ? Ent->GetName() : "<undefined>"));
   else Ent->SetFieldNameValue(FieldName, Sounds[value]);
@@ -812,6 +830,18 @@ static void ReadThing (int num) {
     if (VStr::strEquCI(String, "Pain sound")) { DoThingSound(Ent, "PainSound"); continue; }
     if (VStr::strEquCI(String, "Death sound")) { DoThingSound(Ent, "DeathSound"); continue; }
 
+    // reject mbf21
+    if (VStr::strEquCI(String, "Infighting group") ||
+        VStr::strEquCI(String, "Projectile group") ||
+        VStr::strEquCI(String, "Splash group") ||
+        VStr::strEquCI(String, "MBF21 Bits") ||
+        VStr::strEquCI(String, "Rip sound") ||
+        VStr::strEquCI(String, "Fast speed") ||
+        VStr::strEquCI(String, "Melee range"))
+    {
+      DehFatal("MBF21 is not supported and will never be. Sorry.");
+    }
+
     Warning("Invalid mobj param '%s'", String);
   }
 
@@ -836,15 +866,15 @@ static void ReadThing (int num) {
 //==========================================================================
 static void ReadSound (int) {
   while (ParseParam()) {
-         if (VStr::strEquCI(String, "Offset"));     // lump name offset - can't handle
-    else if (VStr::strEquCI(String, "Zero/One"));   // singularity - removed
-    else if (VStr::strEquCI(String, "Value"));      // priority
-    else if (VStr::strEquCI(String, "Zero 1"));     // lump num - can't be set
-    else if (VStr::strEquCI(String, "Zero 2"));     // data pointer - can't be set
-    else if (VStr::strEquCI(String, "Zero 3"));     // usefulness - removed
-    else if (VStr::strEquCI(String, "Zero 4"));     // link - removed
-    else if (VStr::strEquCI(String, "Neg. One 1")); // link pitch - removed
-    else if (VStr::strEquCI(String, "Neg. One 2")); // link volume - removed
+         if (VStr::strEquCI(String, "Offset")) {}     // lump name offset - can't handle
+    else if (VStr::strEquCI(String, "Zero/One")) {}   // singularity - removed
+    else if (VStr::strEquCI(String, "Value")) {}      // priority
+    else if (VStr::strEquCI(String, "Zero 1")) {}     // lump num - can't be set
+    else if (VStr::strEquCI(String, "Zero 2")) {}     // data pointer - can't be set
+    else if (VStr::strEquCI(String, "Zero 3")) {}     // usefulness - removed
+    else if (VStr::strEquCI(String, "Zero 4")) {}     // link - removed
+    else if (VStr::strEquCI(String, "Neg. One 1")) {} // link pitch - removed
+    else if (VStr::strEquCI(String, "Neg. One 2")) {} // link volume - removed
     else Warning("Invalid sound param '%s'", String);
   }
 }
@@ -879,6 +909,7 @@ static void ReadState (int num) {
   //TODO: do we need to set `EntClassTouched` here?
   while (ParseParam()) {
     if (ignoreIt) continue;
+    // sprite base
     if (VStr::strEquCI(String, "Sprite number")) {
       if (value < 0 || value >= Sprites.length()) {
         Warning("Bad sprite index %d for frame #%d", value, num);
@@ -889,15 +920,24 @@ static void ReadState (int num) {
         States[num]->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindSprite(Sprites[value]) : 1);
         //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; NEW sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
       }
-    } else if (VStr::strEquCI(String, "Sprite subnumber")) {
+      continue;
+    }
+    // sprite frame
+    if (VStr::strEquCI(String, "Sprite subnumber")) {
       if (value&0x8000) {
         value &= 0x7fff;
         value |= VState::FF_FULLBRIGHT;
       }
       States[num]->Frame = value;
-    } else if (VStr::strEquCI(String, "Duration")) {
+      continue;
+    }
+    // state duration
+    if (VStr::strEquCI(String, "Duration")) {
       States[num]->Time = (value < 0 ? value : value/35.0f);
-    } else if (VStr::strEquCI(String, "Next frame")) {
+      continue;
+    }
+    // next state
+    if (VStr::strEquCI(String, "Next frame")) {
       if (value >= States.length() || value < 0) {
         Warning("Invalid next state %d", value);
       } else {
@@ -907,15 +947,23 @@ static void ReadState (int num) {
           GCon->Logf(NAME_Debug, "DEH:%d: ReadState(%d):   next: class `%s`; stcps=%d; ofs=%d", dehCurrLine, num, sti->stclass->GetName(), sti->stcps, value-sti->stcps);
         }
       }
-    } else if (VStr::strEquCI(String, "Unknown 1")) {
-      States[num]->Misc1 = value;
-    } else if (VStr::strEquCI(String, "Unknown 2")) {
-      States[num]->Misc2 = value;
-    } else if (VStr::strEquCI(String, "Action pointer")) {
-      Warning("Tried to set action pointer.");
-    } else {
-      Warning("Invalid state param '%s'", String);
+      continue;
     }
+    if (VStr::strEquCI(String, "Unknown 1")) { States[num]->Misc1 = value; continue; }
+    if (VStr::strEquCI(String, "Unknown 2")) { States[num]->Misc2 = value; continue; }
+    if (VStr::strEquCI(String, "Action pointer")) { Warning("Tried to set action pointer."); continue; }
+
+    // reject mbf21
+    if (VStr::strEquCI(String, "MBF21 Bits") ||
+        VStr::strEquCI(String, "Args1") || VStr::strEquCI(String, "Args2") ||
+        VStr::strEquCI(String, "Args3") || VStr::strEquCI(String, "Args4") ||
+        VStr::strEquCI(String, "Args5") || VStr::strEquCI(String, "Args6") ||
+        VStr::strEquCI(String, "Args7") || VStr::strEquCI(String, "Args8"))
+    {
+      DehFatal("MBF21 is not supported and will never be. Sorry.");
+    }
+
+    Warning("Invalid state param '%s'", String);
   }
 }
 
@@ -1075,6 +1123,8 @@ static void ReadWeapon (int num) {
   VClass *Weapon = WeaponClasses[num];
   while (ParseParam()) {
     if (ignoreIt) continue;
+
+    // ammo type
     if (VStr::strEquCI(String, "Ammo type")) {
       VClass *ammo = (value >= 0 && value < AmmoClasses.length() ? AmmoClasses[value] : nullptr);
       if (ammo) {
@@ -1087,23 +1137,34 @@ static void ReadWeapon (int num) {
         Weapon->SetFieldClassValue("AmmoType1", nullptr);
         Weapon->SetFieldBool("bAmmoOptional", true);
       }
-    } else if (VStr::strEquCI(String, "Ammo use") || VStr::strEquCI(String, "Ammo per shot")) {
-      Weapon->SetFieldInt("AmmoUse1", value);
-    } else if (VStr::strEquCI(String, "Min Ammo")) {
-      // unused
-    } else if (VStr::strEquCI(String, "Deselect frame")) {
-      DoWeaponState(Weapon, "Select");
-    } else if (VStr::strEquCI(String, "Select frame")) {
-      DoWeaponState(Weapon, "Deselect");
-    } else if (VStr::strEquCI(String, "Bobbing frame")) {
-      DoWeaponState(Weapon, "Ready");
-    } else if (VStr::strEquCI(String, "Shooting frame")) {
-      DoWeaponState(Weapon, "Fire");
-    } else if (VStr::strEquCI(String, "Firing frame")) {
-      DoWeaponState(Weapon, "Flash");
-    } else {
-      Warning("Invalid weapon param '%s' for weapon '%s'", String, (Weapon ? Weapon->GetName() : "<undefined>"));
+      continue;
     }
+
+    // ammo use / ammo per shot
+    if (VStr::strEquCI(String, "Ammo use") || VStr::strEquCI(String, "Ammo per shot")) {
+      Weapon->SetFieldInt("AmmoUse1", value);
+      continue;
+    }
+
+    // min ammo
+    if (VStr::strEquCI(String, "Min Ammo")) {
+      // unused
+      continue;
+    }
+
+    // states
+    if (VStr::strEquCI(String, "Deselect frame")) { DoWeaponState(Weapon, "Deselect"); continue; } //k8: this was "Select", bug?
+    if (VStr::strEquCI(String, "Select frame")) { DoWeaponState(Weapon, "Select"); continue; } //k8: this was "Deselect", bug?
+    if (VStr::strEquCI(String, "Bobbing frame")) { DoWeaponState(Weapon, "Ready"); continue; }
+    if (VStr::strEquCI(String, "Shooting frame")) { DoWeaponState(Weapon, "Fire"); continue; }
+    if (VStr::strEquCI(String, "Firing frame")) { DoWeaponState(Weapon, "Flash"); continue; }
+
+    // reject mbf21
+    if (VStr::strEquCI(String, "MBF21 Bits")) {
+      DehFatal("MBF21 is not supported and will never be. Sorry.");
+    }
+
+    Warning("Invalid weapon param '%s' for weapon '%s'", String, (Weapon ? Weapon->GetName() : "<undefined>"));
   }
 }
 
@@ -1130,6 +1191,7 @@ static void ReadPointer (int num) {
 
   while (ParseParam()) {
     if (ignoreIt) continue;
+
     if (VStr::strEquCI(String, "Codep Frame")) {
       if (value < 0 || value >= States.length()) {
         Warning("Invalid source state %d", value);
@@ -1141,9 +1203,10 @@ static void ReadPointer (int num) {
         }
         CodePtrStates[num]->Function = StateActions[value];
       }
-    } else {
-      Warning("Invalid pointer param '%s'", String);
+      continue;
     }
+
+    Warning("Invalid pointer param '%s'", String);
   }
 }
 
@@ -1201,9 +1264,10 @@ static void ReadCodePtr (int) {
       }
 
       if (!found) Warning("Invalid code pointer '%s'", ValueString);
-    } else {
-      Warning("Invalid code pointer param '%s'", String);
+      continue;
     }
+
+    Warning("Invalid code pointer param '%s'", String);
   }
 }
 
@@ -1252,66 +1316,52 @@ static void DoPowerupColor (const char *ClassName) {
 //==========================================================================
 static void ReadMisc (int) {
   while (ParseParam()) {
-    if (VStr::strEquCI(String, "Initial Health")) {
-      GameInfoClass->SetFieldInt("INITIAL_HEALTH", value);
-    } else if (VStr::strEquCI(String, "Initial Bullets")) {
+    if (VStr::strEquCI(String, "Initial Health")) { GameInfoClass->SetFieldInt("INITIAL_HEALTH", value); continue; }
+    if (VStr::strEquCI(String, "Initial Bullets")) {
       TArray<VDropItemInfo>& List = *(TArray<VDropItemInfo>*)(DoomPlayerClass->Defaults+DoomPlayerClass->FindFieldChecked("DropItemList")->Ofs);
       for (int i = 0; i < List.length(); ++i) if (List[i].Type && List[i].Type->Name == "Clip") List[i].Amount = value;
-    } else if (VStr::strEquCI(String, "Max Health")) {
-      HealthBonusClass->SetFieldInt("MaxAmount", 2*value);
-    } else if (VStr::strEquCI(String, "Max Armor")) {
-      ArmorBonusClass->SetFieldInt("MaxSaveAmount", value);
-    } else if (VStr::strEquCI(String, "Green Armor Class")) {
+      continue;
+    }
+    if (VStr::strEquCI(String, "Max Health")) { HealthBonusClass->SetFieldInt("MaxAmount", 2*value); continue; }
+    if (VStr::strEquCI(String, "Max Armor")) { ArmorBonusClass->SetFieldInt("MaxSaveAmount", value); continue; }
+    if (VStr::strEquCI(String, "Green Armor Class")) {
       GreenArmorClass->SetFieldInt("SaveAmount", 100*value);
       GreenArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
-    } else if (VStr::strEquCI(String, "Blue Armor Class")) {
+      continue;
+    }
+    if (VStr::strEquCI(String, "Blue Armor Class")) {
       BlueArmorClass->SetFieldInt("SaveAmount", 100*value);
       BlueArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
-    } else if (VStr::strEquCI(String, "Max Soulsphere")) {
-      SoulsphereClass->SetFieldInt("MaxAmount", value);
-    } else if (VStr::strEquCI(String, "Soulsphere Health")) {
-      SoulsphereClass->SetFieldInt("Amount", value);
-    } else if (VStr::strEquCI(String, "Megasphere Health")) {
+      continue;
+    }
+    if (VStr::strEquCI(String, "Max Soulsphere")) { SoulsphereClass->SetFieldInt("MaxAmount", value); continue; }
+    if (VStr::strEquCI(String, "Soulsphere Health")) { SoulsphereClass->SetFieldInt("Amount", value); continue; }
+    if (VStr::strEquCI(String, "Megasphere Health")) {
       MegaHealthClass->SetFieldInt("Amount", value);
       MegaHealthClass->SetFieldInt("MaxAmount", value);
-    } else if (VStr::strEquCI(String, "God Mode Health")) {
-      GameInfoClass->SetFieldInt("GOD_HEALTH", value);
+      continue;
     }
-    else if (VStr::strEquCI(String, "IDFA Armor")) {} // cheat removed
-    else if (VStr::strEquCI(String, "IDFA Armor Class")) {} // cheat removed
-    else if (VStr::strEquCI(String, "IDKFA Armor")) {} // cheat removed
-    else if (VStr::strEquCI(String, "IDKFA Armor Class")) {} // cheat removed
-    else if (VStr::strEquCI(String, "BFG Cells/Shot")) {
-      BfgClass->SetFieldInt("AmmoUse1", value);
-    } else if (VStr::strEquCI(String, "Monsters Infight")) {
-      Infighting = value;
-    } else if (VStr::strEquCI(String, "Monsters Ignore Each Other")) {
-      Infighting = value ? -1 : 0;
-    } else if (VStr::strEquCI(String, "Powerup Color Invulnerability")) {
-      DoPowerupColor("PowerInvulnerable");
-    } else if (VStr::strEquCI(String, "Powerup Color Berserk")) {
-      DoPowerupColor("PowerStrength");
-    } else if (VStr::strEquCI(String, "Powerup Color Invisibility")) {
-      DoPowerupColor("PowerInvisibility");
-    } else if (VStr::strEquCI(String, "Powerup Color Radiation Suit")) {
-      DoPowerupColor("PowerIronFeet");
-    } else if (VStr::strEquCI(String, "Powerup Color Infrared")) {
-      DoPowerupColor("PowerLightAmp");
-    } else if (VStr::strEquCI(String, "Powerup Color Tome of Power")) {
-      DoPowerupColor("PowerWeaponLevel2");
-    } else if (VStr::strEquCI(String, "Powerup Color Wings of Wrath")) {
-      DoPowerupColor("PowerFlight");
-    } else if (VStr::strEquCI(String, "Powerup Color Speed")) {
-      DoPowerupColor("PowerSpeed");
-    } else if (VStr::strEquCI(String, "Powerup Color Minotaur")) {
-      DoPowerupColor("PowerMinotaur");
-    } else if (VStr::strEquCI(String, "Rocket Explosion Style")) {
-      GameInfoClass->SetFieldInt("DehExplosionStyle", ParseRenderStyle());
-    } else if (VStr::strEquCI(String, "Rocket Explosion Alpha")) {
-      GameInfoClass->SetFieldFloat("DehExplosionAlpha", VStr::atof(ValueString, 1));
-    } else {
-      Warning("Invalid misc '%s'", String);
-    }
+    if (VStr::strEquCI(String, "God Mode Health")) { GameInfoClass->SetFieldInt("GOD_HEALTH", value); continue; }
+    if (VStr::strEquCI(String, "IDFA Armor")) continue; // cheat removed
+    if (VStr::strEquCI(String, "IDFA Armor Class")) continue; // cheat removed
+    if (VStr::strEquCI(String, "IDKFA Armor")) continue; // cheat removed
+    if (VStr::strEquCI(String, "IDKFA Armor Class")) continue; // cheat removed
+    if (VStr::strEquCI(String, "BFG Cells/Shot")) { BfgClass->SetFieldInt("AmmoUse1", value); continue; }
+    if (VStr::strEquCI(String, "Monsters Infight")) { Infighting = value; continue; }
+    if (VStr::strEquCI(String, "Monsters Ignore Each Other")) { Infighting = (value ? -1 : 0); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Invulnerability")) { DoPowerupColor("PowerInvulnerable"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Berserk")) { DoPowerupColor("PowerStrength"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Invisibility")) { DoPowerupColor("PowerInvisibility"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Radiation Suit")) { DoPowerupColor("PowerIronFeet"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Infrared")) { DoPowerupColor("PowerLightAmp"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Tome of Power")) { DoPowerupColor("PowerWeaponLevel2"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Wings of Wrath")) { DoPowerupColor("PowerFlight"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Speed")) { DoPowerupColor("PowerSpeed"); continue; }
+    if (VStr::strEquCI(String, "Powerup Color Minotaur")) { DoPowerupColor("PowerMinotaur"); continue; }
+    if (VStr::strEquCI(String, "Rocket Explosion Style")) { GameInfoClass->SetFieldInt("DehExplosionStyle", ParseRenderStyle()); continue; }
+    if (VStr::strEquCI(String, "Rocket Explosion Alpha")) { GameInfoClass->SetFieldFloat("DehExplosionAlpha", VStr::atof(ValueString, 1)); continue; }
+
+    Warning("Invalid misc '%s'", String);
   }
 
   // 0xdd means "enable infighting"
@@ -1487,20 +1537,10 @@ static VStr ReplaceSpecialChars (VStr &In) {
       Ret += c;
     } else {
       switch (*pStr) {
-        case 'n':
-        case 'N':
-          Ret += '\n';
-          break;
-        case 't':
-        case 'T':
-          Ret += '\t';
-          break;
-        case 'r':
-        case 'R':
-          Ret += '\r';
-          break;
-        case 'x':
-        case 'X':
+        case 'n': case 'N': Ret += '\n'; break;
+        case 't': case 'T': Ret += '\t'; break;
+        case 'r': case 'R': Ret += '\r'; break;
+        case 'x': case 'X':
           c = 0;
           ++pStr;
           for (int i = 0; i < 2; ++i) {
@@ -1513,14 +1553,8 @@ static VStr ReplaceSpecialChars (VStr &In) {
           }
           Ret += c;
           break;
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
+        case '0': case '1': case '2': case '3':
+        case '4': case '5': case '6': case '7':
           c = 0;
           for (int i = 0; i < 3; ++i) {
             c <<= 3;
