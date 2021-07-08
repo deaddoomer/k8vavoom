@@ -85,6 +85,10 @@ bitenum {
   POBJ_MOVE_MIRRORED,
   /* used only in `Polyobj_RotateEx()`, to create perpetual rotation */
   POBJ_MOVE_PERPETUAL,
+  /* used only in `Polyobj_MoveToSpotEx()` and `Polyobj_MoveToSpotRotateEx()` */
+  /* when the pobj will arrive at the given map spot, it will try to use spot's `arg1` as TID for the next one */
+  //K8: NOT IMPLEMENTED YET, I'M STILL NOT SURE
+  //POBJ_MOVE_SPOT_FOLLOW,
 }
 
 
