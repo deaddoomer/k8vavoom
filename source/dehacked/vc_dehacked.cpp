@@ -494,13 +494,13 @@ static void ParseFlag (VStr FlagName, int *Values, bool *Changed) {
 //==========================================================================
 static int ParseRenderStyle () {
   int RenderStyle = STYLE_Normal;
-       if (!VStr::ICmp(ValueString, "STYLE_None")) RenderStyle = STYLE_None;
-  else if (!VStr::ICmp(ValueString, "STYLE_Normal")) RenderStyle = STYLE_Normal;
-  else if (!VStr::ICmp(ValueString, "STYLE_Fuzzy")) RenderStyle = STYLE_Fuzzy;
-  else if (!VStr::ICmp(ValueString, "STYLE_SoulTrans")) RenderStyle = STYLE_SoulTrans;
-  else if (!VStr::ICmp(ValueString, "STYLE_OptFuzzy")) RenderStyle = STYLE_OptFuzzy;
-  else if (!VStr::ICmp(ValueString, "STYLE_Translucent")) RenderStyle = STYLE_Translucent;
-  else if (!VStr::ICmp(ValueString, "STYLE_Add")) RenderStyle = STYLE_Add;
+       if (VStr::strEquCI(ValueString, "STYLE_None")) RenderStyle = STYLE_None;
+  else if (VStr::strEquCI(ValueString, "STYLE_Normal")) RenderStyle = STYLE_Normal;
+  else if (VStr::strEquCI(ValueString, "STYLE_Fuzzy")) RenderStyle = STYLE_Fuzzy;
+  else if (VStr::strEquCI(ValueString, "STYLE_SoulTrans")) RenderStyle = STYLE_SoulTrans;
+  else if (VStr::strEquCI(ValueString, "STYLE_OptFuzzy")) RenderStyle = STYLE_OptFuzzy;
+  else if (VStr::strEquCI(ValueString, "STYLE_Translucent")) RenderStyle = STYLE_Translucent;
+  else if (VStr::strEquCI(ValueString, "STYLE_Add")) RenderStyle = STYLE_Add;
   else Warning("Bad render style '%s'", ValueString);
   return RenderStyle;
 }
@@ -549,7 +549,7 @@ static void ReadThing (int num) {
   bool hasSomeDefine = false;
   VClass *Ent = EntClasses[num-1];
   while (ParseParam()) {
-    if (VStr::ICmp(String, "ID #") == 0) {
+    if (VStr::strEquCI(String, "ID #")) {
       if (value) {
         // for info output
         vint32 oldid = -1;
@@ -565,55 +565,55 @@ static void ReadThing (int num) {
       } else {
         VClass::RemoveMObjIdByClass(Ent, GGameInfo->GameFilterFlag);
       }
-    } else if (!VStr::ICmp(String, "Hit points")) {
+    } else if (VStr::strEquCI(String, "Hit points")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("Health", value);
       Ent->SetFieldInt("GibsHealth", -value);
-    } else if (!VStr::ICmp(String, "Reaction time")) {
+    } else if (VStr::strEquCI(String, "Reaction time")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("ReactionCount", value);
-    } else if (!VStr::ICmp(String, "Missile damage")) {
+    } else if (VStr::strEquCI(String, "Missile damage")) {
       hasSomeDefine = true;
       Ent->SetFieldInt("MissileDamage", value);
-    } else if (!VStr::ICmp(String, "Width")) {
+    } else if (VStr::strEquCI(String, "Width")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("Radius", value/65536.0f);
       // also, reset render radius
       Ent->SetFieldFloat("RenderRadius", 0);
-    } else if (!VStr::ICmp(String, "Height")) {
+    } else if (VStr::strEquCI(String, "Height")) {
       gotHeight = true; // height changed
       hasSomeDefine = true;
       Ent->SetFieldFloat("Height", value/65536.0f);
-    } else if (!VStr::ICmp(String, "Mass")) {
+    } else if (VStr::strEquCI(String, "Mass")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("Mass", (value == 0x7fffffff ? 99999.0f : value));
-    } else if (!VStr::ICmp(String, "Speed")) {
+    } else if (VStr::strEquCI(String, "Speed")) {
       hasSomeDefine = true;
       if (value < 100) {
         Ent->SetFieldFloat("Speed", 35.0f*value);
       } else {
         Ent->SetFieldFloat("Speed", 35.0f*value/65536.0f);
       }
-    } else if (!VStr::ICmp(String, "Pain chance")) {
+    } else if (VStr::strEquCI(String, "Pain chance")) {
       hasSomeDefine = true;
       Ent->SetFieldFloat("PainChance", value/256.0f);
-    } else if (!VStr::ICmp(String, "Translucency")) {
+    } else if (VStr::strEquCI(String, "Translucency")) {
       //hasSomeDefine = true;
       Ent->SetFieldFloat("Alpha", value/65536.0f);
       Ent->SetFieldByte("RenderStyle", STYLE_Translucent);
-    } else if (!VStr::ICmp(String, "Alpha")) {
+    } else if (VStr::strEquCI(String, "Alpha")) {
       //hasSomeDefine = true;
       Ent->SetFieldFloat("Alpha", VStr::atof(ValueString, 1));
-    } else if (!VStr::ICmp(String, "Render Style")) {
+    } else if (VStr::strEquCI(String, "Render Style")) {
       //hasSomeDefine = true;
       Ent->SetFieldByte("RenderStyle", ParseRenderStyle());
-    } else if (!VStr::ICmp(String, "Scale")) {
+    } else if (VStr::strEquCI(String, "Scale")) {
       hasSomeDefine = true;
       float Scale = VStr::atof(ValueString, 1);
       Scale = midval(0.0001f, Scale, 256.0f);
       Ent->SetFieldFloat("ScaleX", Scale);
       Ent->SetFieldFloat("ScaleY", Scale);
-    } else if (!VStr::ICmp(String, "Bits")) {
+    } else if (VStr::strEquCI(String, "Bits")) {
       hasSomeDefine = true;
       TArray<VStr> Flags;
       VStr Tmp(ValueString);
@@ -711,43 +711,43 @@ static void ReadThing (int num) {
       }
     }
     // States
-    else if (!VStr::ICmp(String, "Initial frame")) {
+    else if (VStr::strEquCI(String, "Initial frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Spawn");
-    } else if (!VStr::ICmp(String, "First moving frame")) {
+    } else if (VStr::strEquCI(String, "First moving frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "See");
-    } else if (!VStr::ICmp(String, "Close attack frame")) {
+    } else if (VStr::strEquCI(String, "Close attack frame")) {
       // don't change melee state for players
       hasSomeDefine = true;
       if (num != 1) DoThingState(Ent, "Melee");
-    } else if (!VStr::ICmp(String, "Far attack frame")) {
+    } else if (VStr::strEquCI(String, "Far attack frame")) {
       // don't change missile state for players
       hasSomeDefine = true;
       if (num != 1) DoThingState(Ent, "Missile");
-    } else if (!VStr::ICmp(String, "Injury frame")) {
+    } else if (VStr::strEquCI(String, "Injury frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Pain");
-    } else if (!VStr::ICmp(String, "Death frame")) {
+    } else if (VStr::strEquCI(String, "Death frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Death");
-    } else if (!VStr::ICmp(String, "Exploding frame")) {
+    } else if (VStr::strEquCI(String, "Exploding frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "XDeath");
-    } else if (!VStr::ICmp(String, "Respawn frame")) {
+    } else if (VStr::strEquCI(String, "Respawn frame")) {
       hasSomeDefine = true;
       DoThingState(Ent, "Raise");
     }
     // sounds
-    else if (!VStr::ICmp(String, "Alert sound")) {
+    else if (VStr::strEquCI(String, "Alert sound")) {
       DoThingSound(Ent, "SightSound");
-    } else if (!VStr::ICmp(String, "Action sound")) {
+    } else if (VStr::strEquCI(String, "Action sound")) {
       DoThingSound(Ent, "ActiveSound");
-    } else if (!VStr::ICmp(String, "Attack sound")) {
+    } else if (VStr::strEquCI(String, "Attack sound")) {
       DoThingSound(Ent, "AttackSound");
-    } else if (!VStr::ICmp(String, "Pain sound")) {
+    } else if (VStr::strEquCI(String, "Pain sound")) {
       DoThingSound(Ent, "PainSound");
-    } else if (!VStr::ICmp(String, "Death sound")) {
+    } else if (VStr::strEquCI(String, "Death sound")) {
       DoThingSound(Ent, "DeathSound");
     } else {
       Warning("Invalid mobj param '%s'", String);
@@ -775,15 +775,15 @@ static void ReadThing (int num) {
 //==========================================================================
 static void ReadSound (int) {
   while (ParseParam()) {
-         if (!VStr::ICmp(String, "Offset"));     // lump name offset - can't handle
-    else if (!VStr::ICmp(String, "Zero/One"));   // singularity - removed
-    else if (!VStr::ICmp(String, "Value"));      // priority
-    else if (!VStr::ICmp(String, "Zero 1"));     // lump num - can't be set
-    else if (!VStr::ICmp(String, "Zero 2"));     // data pointer - can't be set
-    else if (!VStr::ICmp(String, "Zero 3"));     // usefulness - removed
-    else if (!VStr::ICmp(String, "Zero 4"));     // link - removed
-    else if (!VStr::ICmp(String, "Neg. One 1")); // link pitch - removed
-    else if (!VStr::ICmp(String, "Neg. One 2")); // link volume - removed
+         if (VStr::strEquCI(String, "Offset"));     // lump name offset - can't handle
+    else if (VStr::strEquCI(String, "Zero/One"));   // singularity - removed
+    else if (VStr::strEquCI(String, "Value"));      // priority
+    else if (VStr::strEquCI(String, "Zero 1"));     // lump num - can't be set
+    else if (VStr::strEquCI(String, "Zero 2"));     // data pointer - can't be set
+    else if (VStr::strEquCI(String, "Zero 3"));     // usefulness - removed
+    else if (VStr::strEquCI(String, "Zero 4"));     // link - removed
+    else if (VStr::strEquCI(String, "Neg. One 1")); // link pitch - removed
+    else if (VStr::strEquCI(String, "Neg. One 2")); // link volume - removed
     else Warning("Invalid sound param '%s'", String);
   }
 }
@@ -818,7 +818,7 @@ static void ReadState (int num) {
   //TODO: do we need to set `EntClassTouched` here?
   while (ParseParam()) {
     if (ignoreIt) continue;
-    if (!VStr::ICmp(String, "Sprite number")) {
+    if (VStr::strEquCI(String, "Sprite number")) {
       if (value < 0 || value >= Sprites.length()) {
         Warning("Bad sprite index %d for frame #%d", value, num);
       } else {
@@ -828,15 +828,15 @@ static void ReadState (int num) {
         States[num]->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindSprite(Sprites[value]) : 1);
         //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; NEW sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
       }
-    } else if (!VStr::ICmp(String, "Sprite subnumber")) {
+    } else if (VStr::strEquCI(String, "Sprite subnumber")) {
       if (value&0x8000) {
         value &= 0x7fff;
         value |= VState::FF_FULLBRIGHT;
       }
       States[num]->Frame = value;
-    } else if (!VStr::ICmp(String, "Duration")) {
+    } else if (VStr::strEquCI(String, "Duration")) {
       States[num]->Time = (value < 0 ? value : value/35.0f);
-    } else if (!VStr::ICmp(String, "Next frame")) {
+    } else if (VStr::strEquCI(String, "Next frame")) {
       if (value >= States.length() || value < 0) {
         Warning("Invalid next state %d", value);
       } else {
@@ -846,11 +846,11 @@ static void ReadState (int num) {
           GCon->Logf(NAME_Debug, "DEH:%d: ReadState(%d):   next: class `%s`; stcps=%d; ofs=%d", dehCurrLine, num, sti->stclass->GetName(), sti->stcps, value-sti->stcps);
         }
       }
-    } else if (!VStr::ICmp(String, "Unknown 1")) {
+    } else if (VStr::strEquCI(String, "Unknown 1")) {
       States[num]->Misc1 = value;
-    } else if (!VStr::ICmp(String, "Unknown 2")) {
+    } else if (VStr::strEquCI(String, "Unknown 2")) {
       States[num]->Misc2 = value;
-    } else if (!VStr::ICmp(String, "Action pointer")) {
+    } else if (VStr::strEquCI(String, "Action pointer")) {
       Warning("Tried to set action pointer.");
     } else {
       Warning("Invalid state param '%s'", String);
@@ -866,7 +866,7 @@ static void ReadState (int num) {
 //==========================================================================
 static void ReadSpriteName (int) {
   while (ParseParam()) {
-    if (!VStr::ICmp(String, "Offset")) {} // can't handle
+    if (VStr::strEquCI(String, "Offset")) {} // can't handle
     else Warning("Invalid sprite name param '%s'", String);
   }
 }
@@ -912,8 +912,8 @@ static void ReadAmmo (int num) {
   int perVal = -1;
 
   while (ParseParam()) {
-         if (!VStr::ICmp(String, "Max ammo")) maxVal = value;
-    else if (!VStr::ICmp(String, "Per ammo")) perVal = value;
+         if (VStr::strEquCI(String, "Max ammo")) maxVal = value;
+    else if (VStr::strEquCI(String, "Per ammo")) perVal = value;
     else Warning("Invalid ammo param '%s'", String);
   }
 
@@ -1026,19 +1026,19 @@ static void ReadWeapon (int num) {
         Weapon->SetFieldClassValue("AmmoType1", nullptr);
         Weapon->SetFieldBool("bAmmoOptional", true);
       }
-    } else if (!VStr::ICmp(String, "Ammo use") || !VStr::ICmp(String, "Ammo per shot")) {
+    } else if (VStr::strEquCI(String, "Ammo use") || VStr::strEquCI(String, "Ammo per shot")) {
       Weapon->SetFieldInt("AmmoUse1", value);
-    } else if (!VStr::ICmp(String, "Min Ammo")) {
+    } else if (VStr::strEquCI(String, "Min Ammo")) {
       // unused
-    } else if (!VStr::ICmp(String, "Deselect frame")) {
+    } else if (VStr::strEquCI(String, "Deselect frame")) {
       DoWeaponState(Weapon, "Select");
-    } else if (!VStr::ICmp(String, "Select frame")) {
+    } else if (VStr::strEquCI(String, "Select frame")) {
       DoWeaponState(Weapon, "Deselect");
-    } else if (!VStr::ICmp(String, "Bobbing frame")) {
+    } else if (VStr::strEquCI(String, "Bobbing frame")) {
       DoWeaponState(Weapon, "Ready");
-    } else if (!VStr::ICmp(String, "Shooting frame")) {
+    } else if (VStr::strEquCI(String, "Shooting frame")) {
       DoWeaponState(Weapon, "Fire");
-    } else if (!VStr::ICmp(String, "Firing frame")) {
+    } else if (VStr::strEquCI(String, "Firing frame")) {
       DoWeaponState(Weapon, "Flash");
     } else {
       Warning("Invalid weapon param '%s' for weapon '%s'", String, (Weapon ? Weapon->GetName() : "<undefined>"));
@@ -1069,7 +1069,7 @@ static void ReadPointer (int num) {
 
   while (ParseParam()) {
     if (ignoreIt) continue;
-    if (!VStr::ICmp(String, "Codep Frame")) {
+    if (VStr::strEquCI(String, "Codep Frame")) {
       if (value < 0 || value >= States.length()) {
         Warning("Invalid source state %d", value);
       } else {
@@ -1095,7 +1095,7 @@ static void ReadPointer (int num) {
 static void ReadCodePtr (int) {
   // cannot use `DC_SetupStateMethod()` here, because creating new wrappers requires postloading
   while (ParseParam()) {
-    if (!VStr::NICmp(String, "Frame", 5) && (vuint8)String[5] <= ' ') {
+    if (VStr::NICmp(String, "Frame", 5) == 0 && (vuint8)String[5] <= ' ') {
       int Index = VStr::atoi(String+6);
       if (Index < 0 || Index >= States.length()) {
         Warning("Bad frame index %d", Index);
@@ -1191,62 +1191,62 @@ static void DoPowerupColor (const char *ClassName) {
 //==========================================================================
 static void ReadMisc (int) {
   while (ParseParam()) {
-    if (!VStr::ICmp(String, "Initial Health")) {
+    if (VStr::strEquCI(String, "Initial Health")) {
       GameInfoClass->SetFieldInt("INITIAL_HEALTH", value);
-    } else if (!VStr::ICmp(String, "Initial Bullets")) {
+    } else if (VStr::strEquCI(String, "Initial Bullets")) {
       TArray<VDropItemInfo>& List = *(TArray<VDropItemInfo>*)(DoomPlayerClass->Defaults+DoomPlayerClass->FindFieldChecked("DropItemList")->Ofs);
       for (int i = 0; i < List.length(); ++i) if (List[i].Type && List[i].Type->Name == "Clip") List[i].Amount = value;
-    } else if (!VStr::ICmp(String, "Max Health")) {
+    } else if (VStr::strEquCI(String, "Max Health")) {
       HealthBonusClass->SetFieldInt("MaxAmount", 2*value);
-    } else if (!VStr::ICmp(String, "Max Armor")) {
+    } else if (VStr::strEquCI(String, "Max Armor")) {
       ArmorBonusClass->SetFieldInt("MaxSaveAmount", value);
-    } else if (!VStr::ICmp(String, "Green Armor Class")) {
+    } else if (VStr::strEquCI(String, "Green Armor Class")) {
       GreenArmorClass->SetFieldInt("SaveAmount", 100*value);
       GreenArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
-    } else if (!VStr::ICmp(String, "Blue Armor Class")) {
+    } else if (VStr::strEquCI(String, "Blue Armor Class")) {
       BlueArmorClass->SetFieldInt("SaveAmount", 100*value);
       BlueArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
-    } else if (!VStr::ICmp(String, "Max Soulsphere")) {
+    } else if (VStr::strEquCI(String, "Max Soulsphere")) {
       SoulsphereClass->SetFieldInt("MaxAmount", value);
-    } else if (!VStr::ICmp(String, "Soulsphere Health")) {
+    } else if (VStr::strEquCI(String, "Soulsphere Health")) {
       SoulsphereClass->SetFieldInt("Amount", value);
-    } else if (!VStr::ICmp(String, "Megasphere Health")) {
+    } else if (VStr::strEquCI(String, "Megasphere Health")) {
       MegaHealthClass->SetFieldInt("Amount", value);
       MegaHealthClass->SetFieldInt("MaxAmount", value);
-    } else if (!VStr::ICmp(String, "God Mode Health")) {
+    } else if (VStr::strEquCI(String, "God Mode Health")) {
       GameInfoClass->SetFieldInt("GOD_HEALTH", value);
     }
-    else if (!VStr::ICmp(String, "IDFA Armor")) {} // cheat removed
-    else if (!VStr::ICmp(String, "IDFA Armor Class")) {} // cheat removed
-    else if (!VStr::ICmp(String, "IDKFA Armor")) {} // cheat removed
-    else if (!VStr::ICmp(String, "IDKFA Armor Class")) {} // cheat removed
-    else if (!VStr::ICmp(String, "BFG Cells/Shot")) {
+    else if (VStr::strEquCI(String, "IDFA Armor")) {} // cheat removed
+    else if (VStr::strEquCI(String, "IDFA Armor Class")) {} // cheat removed
+    else if (VStr::strEquCI(String, "IDKFA Armor")) {} // cheat removed
+    else if (VStr::strEquCI(String, "IDKFA Armor Class")) {} // cheat removed
+    else if (VStr::strEquCI(String, "BFG Cells/Shot")) {
       BfgClass->SetFieldInt("AmmoUse1", value);
-    } else if (!VStr::ICmp(String, "Monsters Infight")) {
+    } else if (VStr::strEquCI(String, "Monsters Infight")) {
       Infighting = value;
-    } else if (!VStr::ICmp(String, "Monsters Ignore Each Other")) {
+    } else if (VStr::strEquCI(String, "Monsters Ignore Each Other")) {
       Infighting = value ? -1 : 0;
-    } else if (!VStr::ICmp(String, "Powerup Color Invulnerability")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Invulnerability")) {
       DoPowerupColor("PowerInvulnerable");
-    } else if (!VStr::ICmp(String, "Powerup Color Berserk")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Berserk")) {
       DoPowerupColor("PowerStrength");
-    } else if (!VStr::ICmp(String, "Powerup Color Invisibility")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Invisibility")) {
       DoPowerupColor("PowerInvisibility");
-    } else if (!VStr::ICmp(String, "Powerup Color Radiation Suit")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Radiation Suit")) {
       DoPowerupColor("PowerIronFeet");
-    } else if (!VStr::ICmp(String, "Powerup Color Infrared")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Infrared")) {
       DoPowerupColor("PowerLightAmp");
-    } else if (!VStr::ICmp(String, "Powerup Color Tome of Power")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Tome of Power")) {
       DoPowerupColor("PowerWeaponLevel2");
-    } else if (!VStr::ICmp(String, "Powerup Color Wings of Wrath")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Wings of Wrath")) {
       DoPowerupColor("PowerFlight");
-    } else if (!VStr::ICmp(String, "Powerup Color Speed")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Speed")) {
       DoPowerupColor("PowerSpeed");
-    } else if (!VStr::ICmp(String, "Powerup Color Minotaur")) {
+    } else if (VStr::strEquCI(String, "Powerup Color Minotaur")) {
       DoPowerupColor("PowerMinotaur");
-    } else if (!VStr::ICmp(String, "Rocket Explosion Style")) {
+    } else if (VStr::strEquCI(String, "Rocket Explosion Style")) {
       GameInfoClass->SetFieldInt("DehExplosionStyle", ParseRenderStyle());
-    } else if (!VStr::ICmp(String, "Rocket Explosion Alpha")) {
+    } else if (VStr::strEquCI(String, "Rocket Explosion Alpha")) {
       GameInfoClass->SetFieldFloat("DehExplosionAlpha", VStr::atof(ValueString, 1));
     } else {
       Warning("Invalid misc '%s'", String);
@@ -1275,7 +1275,7 @@ static void ReadPars (int) {
     line.splitOnBlanks(cmda);
     //GLog.Logf(":::<%s>\n=== len: %d", *line, cmda.length()); for (int f = 0; f < cmda.length(); ++f) GLog.Logf("  %d: <%s>", f, *cmda[f]);
     if (cmda.length() < 1) return;
-    if (cmda[0].ICmp("par") != 0) return;
+    if (!cmda[0].strEquCI("par")) return;
     if (cmda.length() < 3 || cmda.length() > 4) {
       Warning("Bad par time");
       continue;
@@ -1539,8 +1539,8 @@ static void LoadDehackedFile (VStream *Strm, int sourceLump) {
     int DVer = -1;
     int PFmt = -1;
     while (ParseParam()) {
-           if (!VStr::ICmp(String, "Doom version")) DVer = value;
-      else if (!VStr::ICmp(String, "Patch format")) PFmt = value;
+           if (VStr::strEquCI(String, "Doom version")) DVer = value;
+      else if (VStr::strEquCI(String, "Patch format")) PFmt = value;
       // skip some WhackEd3 stuff
       else if (VStr::strEquCI(String, "Engine config") ||
                VStr::strEquCI(String, "Data WAD") ||
@@ -1567,20 +1567,20 @@ static void LoadDehackedFile (VStream *Strm, int sourceLump) {
     int i = 0;
     if (numStr) i = VStr::atoi(numStr);
 
-         if (!VStr::ICmp(Section, "Thing")) ReadThing(i);
-    else if (!VStr::ICmp(Section, "Sound")) ReadSound(i);
-    else if (!VStr::ICmp(Section, "Frame")) ReadState(i);
-    else if (!VStr::ICmp(Section, "Sprite")) ReadSpriteName(i);
-    else if (!VStr::ICmp(Section, "Ammo")) ReadAmmo(i);
-    else if (!VStr::ICmp(Section, "Weapon")) ReadWeapon(i);
-    else if (!VStr::ICmp(Section, "Pointer")) ReadPointer(i);
-    else if (!VStr::ICmp(Section, "Cheat")) ReadCheats(i);
-    else if (!VStr::ICmp(Section, "Misc")) ReadMisc(i);
-    else if (!VStr::ICmp(Section, "Text")) ReadText(i);
-    else if (!VStr::ICmp(Section, "[Strings]")) ReadStrings(i);
-    else if (!VStr::ICmp(Section, "[Pars]")) ReadPars(i);
-    else if (!VStr::ICmp(Section, "[CodePtr]")) ReadCodePtr(i);
-    else if (!VStr::ICmp(Section, "Include")) {
+         if (VStr::strEquCI(Section, "Thing")) ReadThing(i);
+    else if (VStr::strEquCI(Section, "Sound")) ReadSound(i);
+    else if (VStr::strEquCI(Section, "Frame")) ReadState(i);
+    else if (VStr::strEquCI(Section, "Sprite")) ReadSpriteName(i);
+    else if (VStr::strEquCI(Section, "Ammo")) ReadAmmo(i);
+    else if (VStr::strEquCI(Section, "Weapon")) ReadWeapon(i);
+    else if (VStr::strEquCI(Section, "Pointer")) ReadPointer(i);
+    else if (VStr::strEquCI(Section, "Cheat")) ReadCheats(i);
+    else if (VStr::strEquCI(Section, "Misc")) ReadMisc(i);
+    else if (VStr::strEquCI(Section, "Text")) ReadText(i);
+    else if (VStr::strEquCI(Section, "[Strings]")) ReadStrings(i);
+    else if (VStr::strEquCI(Section, "[Pars]")) ReadPars(i);
+    else if (VStr::strEquCI(Section, "[CodePtr]")) ReadCodePtr(i);
+    else if (VStr::strEquCI(Section, "Include")) {
       VStr LumpName = numStr;
       //int Lump = W_CheckNumForFileName(LumpName);
       int Lump = (sourceLump >= 0 ? W_CheckNumForFileNameInSameFileOrLower(W_LumpFile(sourceLump), LumpName) : W_CheckNumForFileName(LumpName));
