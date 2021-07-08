@@ -394,8 +394,6 @@ final void SetSeeOrWanderState () {
 //
 //  Actor has a melee attack, so it tries to close as fast as possible
 //
-//  FIXME: optional flags are not working
-//
 //==========================================================================
 void DoChase (bool FastChase, state AMeleeState, state AMissileState,
               bool NightmareFast, bool PlayActive, bool DontMove,
@@ -405,9 +403,6 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
   float delta;
   float dist;
   float ang;
-  float oldX;
-  float oldY;
-  int oldFloor;
 
   if (bInChase) return;
   bInChase = true;
@@ -443,7 +438,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
   if (strafecount) {
     A_FaceTarget();
   } else {
-    if (MoveDir < 8) {
+    if (!noDirectionTurn && MoveDir < DI_NODIR) {
       Angles.yaw = float(int(Angles.yaw/45.0))*45.0;
       delta = AngleMod180(Angles.yaw-float(MoveDir)*45.0);
            if (delta > 0.0) Angles.yaw = AngleMod360(Angles.yaw-45.0);
@@ -482,7 +477,11 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
   // do not attack twice in a row
   if (bJustAttacked) {
     bJustAttacked = false;
-    if (!IsFast() && !DontMove) NewChaseDir();
+    if (!IsFast() && !DontMove && !noPostAttackTurn && !stopIfBlocked) NewChaseDir();
+    // Because P_TryWalk would never be reached if the actor is stopped by a blocking object,
+    // need to make sure the movecount is reset, otherwise they will just keep attacking
+    // over and over again.
+    if (stopIfBlocked) MoveCount = P_Random()&15;
     return;
   }
 
@@ -592,10 +591,10 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
 
   // chase towards player
   if ((!FastChase || !FastChaseStrafeCount) && !DontMove) {
-    oldX = Origin.x;
-    oldY = Origin.y;
-    oldFloor = Sector->floor.pic;
+    TVec oldOrigin = Origin;
+    int oldFloor = Sector->floor.pic;
     //k8: dunno if this is right
+    /* old code
     bool tryMoveAgain = true;
          if (--MoveCount < 0) NewChaseDir();
     else if (!StepMove()) { tryMoveAgain = false; NewChaseDir(); }
@@ -604,8 +603,20 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
       TryMove(vector(oldX, oldY, Origin.z), AllowDropOff:false);
       NewChaseDir();
     }
+    */
+    if (--MoveCount < 0) {
+      if (!noRandomTurn) NewChaseDir(); else MoveCount = P_Random()&15;
+    } else {
+      if (!StepMove() && !stopIfBlocked) NewChaseDir();
+    }
+    // check if we can move to the new sector
+    if (bCantLeaveFloorpic && Sector->floor.pic != oldFloor) {
+      TryMove(oldOrigin, AllowDropOff:false);
+      if (!stopIfBlocked) NewChaseDir();
+    }
   } else if (DontMove && MoveCount > 0) {
-    MoveCount = 0;
+    //MoveCount = 0; //old code
+    --MoveCount;
   }
 
   // make active sound
@@ -675,7 +686,10 @@ final bool CheckForResurrect (bool UseVileStates) {
 //
 //==========================================================================
 [decorate] final void A_Chase () {
-  DoChase(false, MeleeState, MissileState, LineSpecialGameInfo(Level.Game).bNightmareFastChase, true, false);
+  DoChase(false, MeleeState, MissileState,
+    NightmareFast:LineSpecialGameInfo(Level.Game).bNightmareFastChase,
+    PlayActive:true,
+    DontMove:false);
 }
 
 
@@ -690,10 +704,16 @@ final bool CheckForResurrect (bool UseVileStates) {
   if (!specified_Flags) {
     DoChase(FastChase:false, MeleeState, MissileState, NightmareFast:LineSpecialGameInfo(Level.Game).bNightmareFastChase, PlayActive:true, DontMove:false);
   } else {
-    if ((Flags&8) && CheckForResurrect(false)) return;
-    DoChase(FastChase:!!(Flags&1), AMeleeState, AMissileState,
-            NightmareFast:!!(Flags&4), PlayActive:!(Flags&2), DontMove:!!(Flags&16),
-            noRandomTurn:!!(Flags&32), noDirectionTurn:!!(Flags&64), noPostAttackTurn:!!(Flags&128), stopIfBlocked:!!(Flags&256));
+    if ((Flags&CHF_RESURRECT) && CheckForResurrect(false)) return;
+    DoChase(
+      FastChase:!!(Flags&CHF_FASTCHASE), AMeleeState, AMissileState,
+      NightmareFast:!!(Flags&CHF_NIGHTMAREFAST),
+      PlayActive:!(Flags&CHF_NOPLAYACTIVE),
+      DontMove:!!(Flags&CHF_DONTMOVE),
+      noRandomTurn:!!(Flags&CHF_NORANDOMTURN),
+      noDirectionTurn:!!(Flags&CHF_NODIRECTIONTURN),
+      noPostAttackTurn:!!(Flags&CHF_NOPOSTATTACKTURN),
+      stopIfBlocked:!!(Flags&CHF_STOPIFBLOCKED));
   }
   /*
   if (specified_AMeleeState) {
