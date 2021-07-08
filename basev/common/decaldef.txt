@@ -1619,8 +1619,8 @@ decal k8TestDecal {
 
 
 decal K8BigScorchTest {
-  //pic BSMEAR1
-  Pic BSPK8X04
+  pic BSMEAR1
+  //Pic BSPK8X04
   shade "ff 7f 00"
   //shade "00 00 00"
   // x-scale 0.75
