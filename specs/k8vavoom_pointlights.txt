@@ -1,5 +1,5 @@
-k8vavoom extended attributes for point light things
-===================================================
+k8vavoom extended attributes for point light things, v0.90
+==========================================================
 
 A point light thing takes four arguments:
     1: Red value of the light
