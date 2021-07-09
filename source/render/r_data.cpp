@@ -1287,12 +1287,14 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
     if (sc->Check("noshadow")) { L->SetNoShadow(true); continue; }
     if (sc->Check("noselflight")) { L->SetNoSelfLight(true); continue; }
     if (sc->Check("noactorlight")) { L->SetNoActorLight(true); continue; }
+    if (sc->Check("nogeoclip")) { L->SetNoGeoClip(true); continue; }
     if (sc->Check("disabled")) { L->SetDisabled(true); continue; }
     // inverse flags
     if (sc->Check("selfshadow")) { L->SetNoSelfShadow(false); continue; }
     if (sc->Check("shadow")) { L->SetNoShadow(false); continue; }
     if (sc->Check("selflight")) { L->SetNoSelfLight(false); continue; }
     if (sc->Check("actorlight")) { L->SetNoActorLight(false); continue; }
+    if (sc->Check("geoclip")) { L->SetNoGeoClip(false); continue; }
     if (sc->Check("enabled")) { L->SetDisabled(false); continue; }
     // oops
     sc->Error(va("Bad k8vavoom point light parameter `%s`", *sc->String));
@@ -1304,6 +1306,17 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
       L->Type &= ~DLTYPE_Spot;
     }
   }
+}
+
+
+//==========================================================================
+//
+//  ParseOptionalBool
+//
+//==========================================================================
+static bool ParseOptionalBool (VScriptParser *sc, bool defval) {
+  if (!sc->CheckNumber()) return defval;
+  return (sc->Number != 0);
 }
 
 
@@ -1424,13 +1437,15 @@ static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefa
       continue;
     }
     // k8vavoom extensions
-    if (sc->Check("noselfshadow")) { L->SetNoSelfShadow(true); continue; }
-    if (sc->Check("noshadow")) { L->SetNoShadow(true); continue; }
-    if (sc->Check("k8disabled")) { L->SetDisabled(true); continue; }
+    if (sc->Check("noselfshadow")) { L->SetNoSelfShadow(ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("noshadow")) { L->SetNoShadow(ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("nogeoclip")) { L->SetNoGeoClip(ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("k8disabled")) { L->SetDisabled(ParseOptionalBool(sc, true)); continue; }
     // inverse flags
-    if (sc->Check("selfshadow")) { L->SetNoSelfShadow(false); continue; }
-    if (sc->Check("shadow")) { L->SetNoShadow(false); continue; }
-    if (sc->Check("k8enabled")) { L->SetDisabled(false); continue; }
+    if (sc->Check("selfshadow")) { L->SetNoSelfShadow(!ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("shadow")) { L->SetNoShadow(!ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("geoclip")) { L->SetNoGeoClip(!ParseOptionalBool(sc, true)); continue; }
+    if (sc->Check("k8enabled")) { L->SetDisabled(!ParseOptionalBool(sc, true)); continue; }
     // alias
     if (sc->Check("alias")) {
       sc->ExpectString();
