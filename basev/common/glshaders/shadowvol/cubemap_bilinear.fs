@@ -149,3 +149,4 @@
 
     // bilinear filtering
     shadowMul = mix(mix(valat, valhoriz, fX), mix(valvert, valdiag, fX), fY);
+    #define SHADOWMAPS_HAVE_SHADOWMUL

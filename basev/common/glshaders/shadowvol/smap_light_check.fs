@@ -88,6 +88,7 @@
       #else
       float shadowMul = daccum/DCOUNT;
       #endif
+      #define SHADOWMAPS_HAVE_SHADOWMUL
     #else
       // no blur
       #ifdef VV_SURFACE_LIGHTING
@@ -103,6 +104,9 @@
         #endif
         if (sldist < origDist) discard;
         #define shadowMul  1.0
+      #endif
+      #ifdef SHADOWMAPS_HAVE_SHADOWMUL
+      # undef SHADOWMAPS_HAVE_SHADOWMUL
       #endif
     #endif
   #endif
