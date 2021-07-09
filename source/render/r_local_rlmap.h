@@ -222,17 +222,17 @@ protected:
   // used to check surface visibility for non-shadowing static lights
   // we can collect surfaces for lighting and shadowing in one pass
   // don't forget to reset `shadowSurfaces` and `lightSurfaces`
-  int CheckRegLightSurfaces (const seg_t *seg, surface_t *InSurfs, texinfo_t *texinfo,
-                             VEntity *SkyBox, bool CheckSkyBoxAlways, const surface_t *sfcheck);
-  int CheckRegLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, const surface_t *sfcheck);
-  int CheckRegLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, const surface_t *sfcheck);
-  int CheckRegLightSubRegion (subsector_t *sub, const surface_t *sfcheck);
-  int CheckRegLightSubsector (int num, const surface_t *sfcheck);
-  int CheckRegLightBSPNode (int bspnum, const float *bbox, const surface_t *sfcheck);
+  void CheckRegLightSurfaces (const seg_t *seg, surface_t *InSurfs, texinfo_t *texinfo,
+                              VEntity *SkyBox, bool CheckSkyBoxAlways, TMapNC<surface_t *, bool> &litSurfaces);
+  void CheckRegLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, TMapNC<surface_t *, bool> &litSurfaces);
+  void CheckRegLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, TMapNC<surface_t *, bool> &litSurfaces);
+  void CheckRegLightSubRegion (subsector_t *sub, TMapNC<surface_t *, bool> &litSurfaces);
+  void CheckRegLightSubsector (int num, TMapNC<surface_t *, bool> &litSurfaces);
+  void CheckRegLightBSPNode (int bspnum, const float *bbox, TMapNC<surface_t *, bool> &litSurfaces);
 
   // collector entr point
   // `CurrLightPos` and `CurrLightRadius` should be set
-  bool CheckLightSurface (const surface_t *sfcheck);
+  void CollectRegLightSurfaces (TMapNC<surface_t *, bool> &litSurfaces);
 
 public:
   // this is fast and rough check

@@ -580,8 +580,6 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   const TVec lnormal = surf->GetNormal();
   //const TVec lorg = light->origin;
 
-  //FIXME: this is not exactly right, we need to collect possibly lit surfaces
-  //       otherwise the light may shine through the walls
   const bool doCastRay = !(light->flags&dlight_t::NoShadow);
 
   float attn = 1.0f;
@@ -820,12 +818,19 @@ void VRenderLevelLightmap::LightFace (surface_t *surf) {
           //FIXME: make this faster!
           const bool doCastRay = !(stl->flags&dlight_t::NoShadow);
           if (!doCastRay && !surf->subsector->isAnyPObj()) {
+            if (stl->radius <= 2.0f) continue;
             // check if this surface is visible
-            // `CurrLightPos` and `CurrLightRadius` should be set
-            CurrLightPos = stl->origin;
-            CurrLightRadius = stl->radius;
-            if (CurrLightRadius <= 2.0f) continue;
-            if (!CheckLightSurface(surf)) continue;
+            if (stl->litSurfacesValidFrame != updateWorldFrame) {
+              //GCon->Logf(NAME_Debug, "updating static light #%d (frm=%u)", it.getKey(), updateWorldFrame);
+              stl->litSurfacesValidFrame = updateWorldFrame;
+              // `CurrLightPos` and `CurrLightRadius` should be set
+              CurrLightPos = stl->origin;
+              CurrLightRadius = stl->radius;
+              stl->litSurfaces.reset();
+              CollectRegLightSurfaces(stl->litSurfaces);
+              //GCon->Logf(NAME_Debug, "updated static light #%d (frm=%u); %d surfaces found", it.getKey(), updateWorldFrame, stl->litSurfaces.length());
+            }
+            if (!stl->litSurfaces.has(surf)) continue;
           }
           SingleLightFace(lmi, stl, surf);
         }

@@ -80,6 +80,8 @@ public:
     // all subsectors touched by this static light
     // this is used to trigger static lightmap updates
     TArray<subsector_t *> touchedSubs;
+    TMapNC<surface_t *, bool> litSurfaces; // used in lightmapped renderer only
+    unsigned litSurfacesValidFrame; // use `updateWorldFrame` here
     unsigned invalidateFrame; // to avoid double-processing lights; using `currDLightFrame`
     unsigned dlightframe; // set to `currDLightFrame` if BSP renderer touched any subsector that is connected with this light
     sector_t *levelSector; // for `DLTYPE_Sector`, or `nullptr`
@@ -191,6 +193,7 @@ protected:
 
   // mark all updated subsectors with this; increment on each new frame
   vuint32 updateWorldFrame;
+  //vuint32 litSurfacesValidFrame; // used in lightmapper renderer, to check if collected lit surfaces are valid
 
   // those arrays are filled in `BuildVisibleObjectsList()`
   TArray<VEntity *> visibleObjects;
@@ -291,6 +294,12 @@ public:
       renderedSectors.append(secnum);
     }
   }
+
+  /*
+  inline void incLitSurfacesValidFrame () noexcept {
+    if ((++litSurfacesValidFrame) == 0) litSurfacesValidFrame = 1;
+  }
+  */
 
 private:
   VDirtyArea unusedDirty; // required to return reference to it

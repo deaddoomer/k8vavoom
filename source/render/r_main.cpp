@@ -648,7 +648,8 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , AllocatedSegParts(nullptr)
   , SubRegionInfo(nullptr)
   , inWorldCreation(false)
-  , updateWorldFrame(0)
+  , updateWorldFrame(1u) // let it be `1` for lightmapped lights
+  //, litSurfacesValidFrame(1u)
   , bspVisRadius(nullptr)
   , bspVisRadiusFrame(0)
   , NumSegParts(0)
@@ -963,6 +964,7 @@ void VRenderLevelShared::ResetUpdateWorldFrame () noexcept {
   for (auto &&it : Level->allSubsectors()) it.updateWorldFrame = 0;
   for (auto &&it : Level->allPolyobjects()) it->updateWorldFrame = 0;
   for (auto &&ld : Level->allLines()) ld.updateWorldFrame = 0;
+  for (auto &&lt : Lights) lt.litSurfacesValidFrame = 0;
   if (Level->NumLines) {
     if (tjLineMarkCheck) memset((void *)tjLineMarkCheck, 0, Level->NumLines*sizeof(tjLineMarkCheck[0]));
     if (tjLineMarkFix) memset((void *)tjLineMarkFix, 0, Level->NumLines*sizeof(tjLineMarkFix[0]));
