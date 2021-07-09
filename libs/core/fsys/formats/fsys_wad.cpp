@@ -89,7 +89,7 @@ VWadFile *VWadFile::Create (VStr FileName, bool FixVoices, VStream *InStream) {
     wad->archStream = FL_OpenSysFileRead(FileName);
     if (!wad->archStream) { delete wad; Sys_Error("Couldn't open \"%s\"", *FileName); }
   }
-  if (fsys_report_added_paks && !FileName.isEmpty()) GLog.Logf(NAME_Init, "Adding wad \"%s\"...", *FileName);
+  if (fsys_report_added_paks && !FileName.isEmpty()) GLog.Logf(fsys_report_added_paks_logtype, "Adding wad \"%s\"...", *FileName);
 
   // WAD file or homebrew levels?
   memset(&header, 0, sizeof(header));
@@ -164,7 +164,7 @@ VWadFile *VWadFile::CreateSingleLumpStream (VStream *strm, VStr FileName) {
   if (lname == NAME_None) lname = VName(*FileName.ExtractFileBaseName(), VName::AddLower8); // in case it starts with a dot
   if (lname == NAME_None) { delete strm; Sys_Error("cannot add single lump '%s' (invalid resulting lump name)", *FileName); }
 
-  if (fsys_report_added_paks) GLog.Logf(NAME_Init, "...adding file \"%s\" as a standalone lump '%s'.", *FileName, *lname);
+  if (fsys_report_added_paks) GLog.Logf(fsys_report_added_paks_logtype, "...adding file \"%s\" as a standalone lump '%s'.", *FileName, *lname);
 
   FileName = FileName.fixSlashes();
   while (!FileName.isEmpty() && FileName[0] == '/') FileName.chopLeft(1);

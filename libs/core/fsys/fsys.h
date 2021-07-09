@@ -57,6 +57,8 @@ VStream *FL_OpenFileReadBaseOnly (VStr Name, int *lump=nullptr);
 bool FL_IsSafeDiskFileName (VStr fname);
 
 
+extern EName fsys_report_added_paks_logtype;
+
 extern bool fsys_developer_debug;
 extern int fsys_IgnoreZScript;
 extern bool fsys_DisableBDW;
