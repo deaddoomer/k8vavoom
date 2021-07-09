@@ -775,6 +775,8 @@ if(ENABLE_CLIENT)
   # more specs
   install(FILES ${CMAKE_SOURCE_DIR}/specs/udmf_k8vavoom.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_terrain_bootprints.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_pointlights.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_decals.txt DESTINATION ${DSPECSDIR})
 
   if(ENABLE_WRAPPERS)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/k8vavoom
