@@ -179,6 +179,7 @@ protected:
   bool CurrLightInFrustum;
   bool CurrLightInFront;
   bool CurrLightCalcUnstuck; // set to `true` to calculate "unstuck" distance in `CalcLightVis()`
+  bool CurrLightNoGeoClip;
   TVec CurrLightUnstuckPos; // set in `CalcLightVis()` if `CurrLightCalcUnstuck` is `true`
   vuint32 CurrLightBit; // tag (bitor) subsectors with this in lightvis builder
 

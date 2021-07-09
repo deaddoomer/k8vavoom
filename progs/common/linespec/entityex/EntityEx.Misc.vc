@@ -2480,6 +2480,7 @@ final void DoStateEffects (float DeltaTime) {
       dl->bNoSelfLight = L->bNoSelfLight;
       dl->bNoActorLight = L->bNoActorLight;
       dl->bNoActorShadow = L->bNoActorShadow;
+      dl->bNoGeoClip = L->bNoGeoClip;
       dl->bAdditive = L->bAdditive;
       //dl->bSubtractive = false; // L->bSubtractive; -- subtractive lights already rejected above
       //dl->bDisabled = false; //L->bDisabled; -- disabled lights already rejected above

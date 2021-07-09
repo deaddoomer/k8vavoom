@@ -33,6 +33,8 @@
 
 extern VCvarB r_draw_pobj;
 
+#define IsGeoClip()  (!CurrLightNoGeoClip)
+
 
 //==========================================================================
 //
@@ -103,6 +105,7 @@ void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
   if (sub->isAnyPObj()) return;
 
   if (!LightClip.ClipLightCheckSubsector(sub, false)) {
+    if (!IsGeoClip()) return;
     return LightClip.ClipLightAddSubsectorSegs(sub, false);
   }
 
@@ -156,7 +159,7 @@ void VRenderLevelShared::CalcLightVisCheckSubsector (const unsigned subidx) {
     }
   }
 
-  LightClip.ClipLightAddSubsectorSegs(sub, false);
+  if (IsGeoClip()) LightClip.ClipLightAddSubsectorSegs(sub, false);
 
   if (CurrLightCalcUnstuck) return CalcLightVisUnstuckLightSubsector(sub);
 }
@@ -281,7 +284,7 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
 
   //bool skipShadowCheck = !r_light_opt_shadow;
 
-  doShadows = (radius >= 8.0f);
+  doShadows = (radius >= 8.0f && IsGeoClip());
 
   setupCurrentLight(org, radius, aconeDir, aconeAngle);
   //CurrLightPos = org;

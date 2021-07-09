@@ -55,7 +55,8 @@ struct dlight_t {
     NoActorShadow = 1u<<5,
     Additive      = 1u<<6, // this does nothing
     Subtractive   = 1u<<7, // this does nothing
-    Disabled      = 1u<<6,
+    Disabled      = 1u<<8,
+    NoGeoClip     = 1u<<9, // don't clip with map geometry, don't cast geometry shadows
   };
 };
 

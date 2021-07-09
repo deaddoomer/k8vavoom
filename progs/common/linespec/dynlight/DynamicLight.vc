@@ -58,6 +58,7 @@ bool Attenuated;
 //      0: no shadows
 //      1: no actor shadows
 //      2: no actor light
+//      3: don't clip with geometry
 //
 //==========================================================================
 protected int CalculateLightFlags (int arg5) {
@@ -65,12 +66,14 @@ protected int CalculateLightFlags (int arg5) {
   //return LIGHTFLAG_NoShadow|LIGHTFLAG_NoActorLight;
   //return LIGHTFLAG_NoActorShadow;
   //return LIGHTFLAG_NoActorLight;
+  //return LIGHTFLAG_NoGeoClip;
   // check two high bits (they should be set), and unused bits (they should not be set)
-  if ((arg5&0b11_111_000) != (arg5&0b11_000000)) return 0;
+  if ((arg5&0b11_110_000) != (arg5&0b11_000000)) return 0;
   int res = 0;
-  if (arg5&0b001) res |= LIGHTFLAG_NoShadow;
-  if (arg5&0b010) res |= LIGHTFLAG_NoActorShadow;
-  if (arg5&0b100) res |= LIGHTFLAG_NoActorLight;
+  if (arg5&0b0001) res |= LIGHTFLAG_NoShadow;
+  if (arg5&0b0010) res |= LIGHTFLAG_NoActorShadow;
+  if (arg5&0b0100) res |= LIGHTFLAG_NoActorLight;
+  if (arg5&0b1000) res |= LIGHTFLAG_NoGeoClip;
   return res;
 }
 

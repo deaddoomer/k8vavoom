@@ -31,7 +31,7 @@ extern VCvarB clip_advlight_regions;
 
 //==========================================================================
 //
-//  VRenderLevelLightmap::CollectLightShadowSurfaces
+//  VRenderLevelLightmap::CollectRegLightSurfaces
 //
 //==========================================================================
 void VRenderLevelLightmap::CollectRegLightSurfaces (TMapNC<surface_t *, bool> &litSurfaces) {
@@ -72,7 +72,6 @@ void VRenderLevelLightmap::CheckRegLightSurfaces (const seg_t *origseg, surface_
     return;
   }
 
-  bool hasSurface = false;
   for (surface_t *surf = InSurfs; surf; surf = surf->next) {
     if (surf->count < 3) continue;
     litSurfaces.put(surf, true);

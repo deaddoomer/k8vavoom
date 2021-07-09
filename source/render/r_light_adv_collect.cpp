@@ -44,12 +44,16 @@ enum {
 };
 
 
+#define IsGeoClip()  (!CurrLightNoGeoClip)
+
+
 //==========================================================================
 //
 //  VRenderLevelShadowVolume::CollectLightShadowSurfaces
 //
 //==========================================================================
 void VRenderLevelShadowVolume::CollectLightShadowSurfaces (bool doShadows) {
+  //CurrLightNoGeoClip = false; // debug
   LightClip.ClearClipNodes(CurrLightPos, Level, CurrLightRadius);
   LightShadowClip.ClearClipNodes(CurrLightPos, Level, CurrLightRadius);
   shadowSurfacesSolid.resetNoDtor();
@@ -247,10 +251,10 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, su
           if (!distInFront) continue; // light cannot see it
           surf->drawflags &= ~surface_t::DF_SMAP_FLIP;
         }
-        shadowSurfacesMasked.append(surf);
+        if (IsGeoClip()) shadowSurfacesMasked.append(surf);
       } else {
         // solid surfaces are one-sided
-        if (distInFront) shadowSurfacesSolid.append(surf);
+        if (distInFront && IsGeoClip()) shadowSurfacesSolid.append(surf);
       }
     }
   }
@@ -526,7 +530,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
       bbox[5] = sub->sector->ceiling.maxz;
       FixBBoxZ(bbox);
       if (!Drawer->viewfrustum.checkBox(bbox)) {
-        if (clip_shadow) LightShadowClip.ClipLightAddSubsectorSegs(sub, collectorShadowType);
+        if (clip_shadow && IsGeoClip()) LightShadowClip.ClipLightAddSubsectorSegs(sub, collectorShadowType);
         if ((ssflag &= ~FlagAsShadow) == 0) return;
       }
     }
@@ -535,13 +539,13 @@ void VRenderLevelShadowVolume::CollectAdvLightSubsector (int num, unsigned int s
     // this blocks view with polydoors
     if (ssflag) {
       CollectAdvLightPolyObj(sub, ssflag);
-      AddPolyObjToLightClipper(LightClip, sub, VViewClipper::AsLight);
-      if (clip_shadow) AddPolyObjToLightClipper(LightShadowClip, sub, collectorShadowType);
+      if (IsGeoClip()) AddPolyObjToLightClipper(LightClip, sub, VViewClipper::AsLight);
+      if (clip_shadow && IsGeoClip()) AddPolyObjToLightClipper(LightShadowClip, sub, collectorShadowType);
       CollectAdvLightSubRegion(sub, ssflag);
       // add subsector's segs to the clipper
       // clipping against mirror is done only for vertical mirror planes
-      if (ssflag&FlagAsLight) LightClip.ClipLightAddSubsectorSegs(sub, VViewClipper::AsLight);
-      if ((ssflag&FlagAsShadow) && clip_shadow) LightShadowClip.ClipLightAddSubsectorSegs(sub, collectorShadowType);
+      if ((ssflag&FlagAsLight) && IsGeoClip()) LightClip.ClipLightAddSubsectorSegs(sub, VViewClipper::AsLight);
+      if ((ssflag&FlagAsShadow) && clip_shadow && IsGeoClip()) LightShadowClip.ClipLightAddSubsectorSegs(sub, collectorShadowType);
     }
   }
 }

@@ -138,6 +138,7 @@ struct LightEffectDef {
   bool bAdditive; // this does nothing
   bool bSubtractive; // this does nothing
   bool bDisabled;
+  bool bNoGeoClip;
 };
 
 

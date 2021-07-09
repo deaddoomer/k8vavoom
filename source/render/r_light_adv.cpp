@@ -86,6 +86,7 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
 
   //TODO: we can reuse collected surfaces in next passes
   LitCalcBBox = true;
+  CurrLightNoGeoClip = (dlflags&dlight_t::NoGeoClip);
   CurrLightCalcUnstuck = (useShadowMaps && r_shadowmap_fix_light_dist);
   if (!CalcLightVis(Pos, Radius-LightMin, coneDir, coneAngle)) return;
 

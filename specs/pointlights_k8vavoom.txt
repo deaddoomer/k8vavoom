@@ -11,14 +11,16 @@ k8vavoom extension:
   5th argument is light flags.
   bits 7 and 6 should be always set to indicate that the flags are valid.
   other bits:
-    0: no shadows
+    0: no shadows (including actor shadows)
     1: no actor shadows
     2: no actor light
+    3: don't clip with geometry (this light won't cast geometry shadows, but may cast actor shadows)
 
-  please, note that bits 3-5 should NOT be set!
+  please, note that bits 4-5 should NOT be set!
 
   so, valid flag values are:
       0: normal light with proper shadows
+
     193: this light casts no shadows (but will still be clipped by map geometry)
     194: this light won't cast actor shadows
     195: the same as 193
@@ -26,3 +28,12 @@ k8vavoom extension:
     197: this light won't lit actors, and will cast no shadows
     198: this light won't lit actors, and won't cast actor shadows
     199: the same as 198
+
+    200: this light won't be clipped with the geometry, and won't cast any geometry shadows (but may cast actor shadows)
+    201: this light won't be clipped with the geometry, and won't cast any shadows
+    202: this light won't cast actor shadows, won't be clipped with the geometry, and won't cast any geometry shadows
+    203: the same as 201
+    204: this light won't lit actors, won't be clipped with the geometry, and won't cast any geometry shadows
+    205: this light won't lit actors, won't be clipped with the geometry, and won't cast any shadows
+    206: the same as 205
+    207: the same as 206

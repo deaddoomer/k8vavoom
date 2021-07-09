@@ -171,6 +171,7 @@ struct VLightEffectDef {
     Flag_Additive      = 1u<<5, // this does nothing
     Flag_Subtractive   = 1u<<6, // this does nothing
     Flag_Disabled      = 1u<<7,
+    Flag_NoGeoClip     = 1u<<8, // and no geometry shadows too
   };
   vint32 Flags; // this will become flags
 
@@ -197,6 +198,9 @@ struct VLightEffectDef {
 
   inline bool IsSubtractive () const noexcept { return !!(Flags&Flag_Subtractive); }
   inline void SetSubtractive (bool v) noexcept { if (v) { Flags |= Flag_Subtractive; Flags &= ~Flag_Additive; } else Flags &= ~Flag_Subtractive; }
+
+  inline bool IsNoGeoClip () const noexcept { return !!(Flags&Flag_NoGeoClip); }
+  inline void SetNoGeoClip (bool v) noexcept { if (v) Flags |= Flag_NoGeoClip; else Flags &= ~Flag_NoGeoClip; }
 
   // doesn't touch `Name`
   inline void setDefaultValues (int LightType) noexcept {

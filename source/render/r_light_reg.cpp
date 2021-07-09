@@ -580,7 +580,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   const TVec lnormal = surf->GetNormal();
   //const TVec lorg = light->origin;
 
-  const bool doCastRay = !(light->flags&dlight_t::NoShadow);
+  const bool doCastRay = !(light->flags&(dlight_t::NoShadow|dlight_t::NoGeoClip));
 
   float attn = 1.0f;
   for (int c = 0; c < lmi.numsurfpt; ++c, ++spt) {
@@ -815,22 +815,25 @@ void VRenderLevelLightmap::LightFace (surface_t *surf) {
         // for non-shadowing lights, collect really visible surfaces
         for (auto it : sli->touchedStatic.first()) {
           light_t *stl = &Lights[it.getKey()];
+          if (stl->radius <= 2.0f) continue;
           //FIXME: make this faster!
           const bool doCastRay = !(stl->flags&dlight_t::NoShadow);
           if (!doCastRay && !surf->subsector->isAnyPObj()) {
-            if (stl->radius <= 2.0f) continue;
             // check if this surface is visible
-            if (stl->litSurfacesValidFrame != updateWorldFrame) {
-              //GCon->Logf(NAME_Debug, "updating static light #%d (frm=%u)", it.getKey(), updateWorldFrame);
-              stl->litSurfacesValidFrame = updateWorldFrame;
-              // `CurrLightPos` and `CurrLightRadius` should be set
-              CurrLightPos = stl->origin;
-              CurrLightRadius = stl->radius;
-              stl->litSurfaces.reset();
-              CollectRegLightSurfaces(stl->litSurfaces);
-              //GCon->Logf(NAME_Debug, "updated static light #%d (frm=%u); %d surfaces found", it.getKey(), updateWorldFrame, stl->litSurfaces.length());
+            if ((stl->flags&dlight_t::NoGeoClip) == 0) {
+              if (stl->litSurfacesValidFrame != updateWorldFrame) {
+                //GCon->Logf(NAME_Debug, "updating static light #%d (frm=%u)", it.getKey(), updateWorldFrame);
+                stl->litSurfacesValidFrame = updateWorldFrame;
+                // `CurrLightPos` and `CurrLightRadius` should be set
+                CurrLightPos = stl->origin;
+                CurrLightRadius = stl->radius;
+                CurrLightNoGeoClip = false;
+                stl->litSurfaces.reset();
+                CollectRegLightSurfaces(stl->litSurfaces);
+                //GCon->Logf(NAME_Debug, "updated static light #%d (frm=%u); %d surfaces found", it.getKey(), updateWorldFrame, stl->litSurfaces.length());
+              }
+              if (!stl->litSurfaces.has(surf)) continue;
             }
-            if (!stl->litSurfaces.has(surf)) continue;
           }
           SingleLightFace(lmi, stl, surf);
         }
@@ -1040,7 +1043,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
     //const TVec surfOffs = surf->GetNormal()*4.0f; // don't land exactly on a surface
 
     //TODO: we can use clipper to check if destination subsector is occluded
-    bool needProperTrace = (doCheckTrace && xnfo > 0 && (dl.flags&dlight_t::NoShadow) == 0);
+    bool needProperTrace = (doCheckTrace && xnfo > 0 && (dl.flags&(dlight_t::NoShadow|dlight_t::NoGeoClip)) == 0);
 
     ++gf_dynlights_processed;
     if (needProperTrace) ++gf_dynlights_traced;

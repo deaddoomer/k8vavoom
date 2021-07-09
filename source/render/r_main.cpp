@@ -2410,6 +2410,7 @@ int VRenderLevelShared::GetNumberOfStaticLights () {
 //
 //==========================================================================
 void VRenderLevelShared::setupCurrentLight (const TVec &LightPos, const float Radius, const TVec &aconeDir, const float aconeAngle) noexcept {
+  //CurrLightNoGeoClip = false; nope, not here
   CurrLightSpot = false;
   CurrLightPos = LightPos;
   CurrLightRadius = Radius;

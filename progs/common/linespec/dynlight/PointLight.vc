@@ -39,6 +39,7 @@ k8vavoom extension:
     0: no shadows
     1: no actor shadows
     2: no actor light
+    3: no geometry clip (and no geometry shadows)
 */
 
 class PointLight : DynamicLight __mobjinfo__(9800);

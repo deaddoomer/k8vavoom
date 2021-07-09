@@ -730,6 +730,7 @@ IMPLEMENT_FREE_FUNCTION(VEntity, GetLightEffectLightFlags) {
     if (lt->IsAdditive()) res |= dlight_t::Additive;
     if (lt->IsSubtractive()) res |= dlight_t::Subtractive;
     if (lt->IsDisabled()) res |= dlight_t::Disabled;
+    if (lt->IsNoGeoClip()) res |= dlight_t::NoGeoClip;
   }
   RET_INT((vint32)res);
 }

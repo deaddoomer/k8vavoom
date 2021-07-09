@@ -1547,6 +1547,8 @@ bitenum {
   LIGHTFLAG_Additive,
   LIGHTFLAG_Subtractive,
   LIGHTFLAG_Disabled,
+  // do not clip this light with geometry; it will also won't cast any shadows
+  LIGHTFLAG_NoGeoClip,
 }
 
 struct dlight_t {
@@ -1571,6 +1573,7 @@ struct dlight_t {
   bool bAdditive; // this does nothing
   bool bSubtractive; // this does nothing
   bool bDisabled;
+  bool bNoGeoClip;
 };
 
 
