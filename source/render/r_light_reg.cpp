@@ -1237,7 +1237,7 @@ void VRenderLevelLightmap::InvalidateSubsectorLMaps (const TVec &org, float radi
 //  VRenderLevelLightmap::InvalidateBSPNodeLMaps
 //
 //==========================================================================
-void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox) {
+void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox, bool noGeoClip) {
  tailcall:
 #ifdef VV_CLIPPER_FULL_CHECK
   if (LightClip.ClipIsFull()) return;
@@ -1266,7 +1266,7 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
     } else {
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
+      InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side], noGeoClip);
       // possibly divide back space
       side ^= 1;
       //return InvalidateBSPNodeLMaps(org, radius, bsp->children[side], bsp->bbox[side]);
@@ -1278,7 +1278,7 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
     subsector_t *sub = &Level->Subsectors[BSPIDX_LEAF_SUBSECTOR(bspnum)];
     if (!LightClip.ClipLightCheckSubsector(sub, false)) return;
     InvalidateSubsectorLMaps(org, radius, BSPIDX_LEAF_SUBSECTOR(bspnum));
-    LightClip.ClipLightAddSubsectorSegs(sub, false);
+    if (!noGeoClip) LightClip.ClipLightAddSubsectorSegs(sub, false);
   }
 }
 
@@ -1288,13 +1288,13 @@ void VRenderLevelLightmap::InvalidateBSPNodeLMaps (const TVec &org, float radius
 //  VRenderLevelLightmap::InvalidateStaticLightmaps
 //
 //==========================================================================
-void VRenderLevelLightmap::InvalidateLightLMaps (const TVec &org, float radius) {
+void VRenderLevelLightmap::InvalidateLightLMaps (const TVec &org, float radius, bool noGeoClip) {
   if (Level->NumSubsectors < 2) {
     if (Level->NumSubsectors == 1) return InvalidateSubsectorLMaps(org, radius, 0);
   } else {
     const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
     LightClip.ClearClipNodes(org, Level, radius);
-    InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox);
+    InvalidateBSPNodeLMaps(org, radius, Level->NumNodes-1, bbox, noGeoClip);
   }
 }
 
@@ -1314,7 +1314,7 @@ example.
 //  FIXME:POBJ:
 //
 //==========================================================================
-void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight) {
+void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight, bool noGeoClip) {
   //FIXME: make this faster!
   if (radius < 2.0f) return;
   invalidateRelight = relight;
@@ -1329,7 +1329,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
     InvalidateSubsectorLMaps(org, radius, (int)(ptrdiff_t)(sub-Level->Subsectors));
   }
 #else
-  InvalidateLightLMaps(org, radius);
+  InvalidateLightLMaps(org, radius, noGeoClip);
 #endif
 }
 

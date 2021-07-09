@@ -340,11 +340,11 @@ void VRenderLevelShared::MoveStaticLightByOwner (vuint32 OwnerUId, const TVec &o
   }
   //GCon->Logf(NAME_Debug, "moving static light #%d (owner uid=%u)", *stp, sl.ownerUId);
   //if (sl.origin == origin) return;
-  if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, false);
+  if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, false, (sl.flags&dlight_t::NoGeoClip));
   sl.origin = origin;
   sl.leafnum = (int)(ptrdiff_t)(Level->PointInSubsector(sl.origin)-Level->Subsectors);
   CalcStaticLightTouchingSubs(*stp, sl);
-  if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, true);
+  if (sl.active && r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl.origin, sl.radius, true, (sl.flags&dlight_t::NoGeoClip));
 }
 
 
@@ -358,7 +358,7 @@ void VRenderLevelShared::RemoveStaticLightByIndex (int slidx) {
   light_t *sl = Lights.ptr()+slidx;
   //GCon->Logf(NAME_Debug, "removing static light #%d (owner uid=%u)", slidx, sl->ownerUId);
   if (sl->active) {
-    if (r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl->origin, sl->radius, false);
+    if (r_lmap_recalc_moved_static) InvalidateStaticLightmaps(sl->origin, sl->radius, false, (sl->flags&dlight_t::NoGeoClip));
     sl->active = false;
   }
   if (sl->ownerUId) {
@@ -388,7 +388,7 @@ void VRenderLevelShared::RemoveStaticLightByOwner (vuint32 OwnerUId) {
 //  VRenderLevelShared::InvalidateStaticLightmaps
 //
 //==========================================================================
-void VRenderLevelShared::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight) {
+void VRenderLevelShared::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight, bool noGeoClip) {
 }
 
 

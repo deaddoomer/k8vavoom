@@ -1034,7 +1034,7 @@ protected:
   // only polyobject itself
   virtual void InvalidatePObjLMaps (polyobj_t *po) override;
 
-  virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight);
+  virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight, bool noGeoClip);
 
 public:
   virtual particle_t *NewParticle (const TVec &porg) override;

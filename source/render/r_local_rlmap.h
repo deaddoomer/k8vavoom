@@ -143,8 +143,8 @@ protected:
   void InvalidateLineLMaps (const TVec &org, float radius, drawseg_t *dseg);
 
   void InvalidateSubsectorLMaps (const TVec &org, float radius, int num);
-  void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox);
-  void InvalidateLightLMaps (const TVec &org, float radius);
+  void InvalidateBSPNodeLMaps (const TVec &org, float radius, int bspnum, const float *bbox, bool noGeoClip);
+  void InvalidateLightLMaps (const TVec &org, float radius, bool noGeoClip);
 
 protected:
   void initLightChain ();
@@ -179,7 +179,7 @@ protected:
   void InvalidateStaticLightmapsLine (drawseg_t *dseg);
   void InvalidateStaticLightmapsSubsector (subsector_t *sub);
 
-  virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight) override;
+  virtual void InvalidateStaticLightmaps (const TVec &org, float radius, bool relight, bool noGeoClip) override;
 
   // general
   virtual void RenderScene (const refdef_t *, const VViewClipper *) override;
