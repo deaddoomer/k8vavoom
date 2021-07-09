@@ -49,6 +49,34 @@ bool Attenuated;
 
 //==========================================================================
 //
+//  CalculateLightFlags
+//
+//  k8vavoom extension:
+//    5th argument is light flags.
+//    bits 7 and 6 should be always set to indicate that the flags are valid.
+//    other bits:
+//      0: no shadows
+//      1: no actor shadows
+//      2: no actor light
+//
+//==========================================================================
+protected int CalculateLightFlags (int arg5) {
+  //return LIGHTFLAG_NoShadow;
+  //return LIGHTFLAG_NoShadow|LIGHTFLAG_NoActorLight;
+  //return LIGHTFLAG_NoActorShadow;
+  //return LIGHTFLAG_NoActorLight;
+  // check two high bits (they should be set), and unused bits (they should not be set)
+  if ((arg5&0b11_111_000) != (arg5&0b11_000000)) return 0;
+  int res = 0;
+  if (arg5&0b001) res |= LIGHTFLAG_NoShadow;
+  if (arg5&0b010) res |= LIGHTFLAG_NoActorShadow;
+  if (arg5&0b100) res |= LIGHTFLAG_NoActorLight;
+  return res;
+}
+
+
+//==========================================================================
+//
 //  OnMapSpawn
 //
 //==========================================================================
@@ -81,6 +109,7 @@ override void OnMapSpawn (mthing_t *mthing) {
   //printwarn("LIGHT: r=%d; g=%d; b=%d; intensuty=%d", Args[0], Args[1], Args[2], Args[3]);
   // use static light for placed point lights that cannot be deactivated
   if (ltype == DLTYPE_Point && mthing && !TID && !bDormant) {
+    int flags = CalculateLightFlags(mthing->args[5-1]);
     if (mthing->args[4-1] > 0) {
       //printdebug("*** adding static light for class %C (%d, %d, %d, %d)", self, mthing->args[1-1], mthing->args[2-1], mthing->args[3-1], mthing->args[4-1]);
       if (LightType&DLTYPE_Spot) {
@@ -97,20 +126,21 @@ override void OnMapSpawn (mthing_t *mthing) {
             ptclr = c2;
           }
         }
-        Level.AddStaticLightRGB(none, Origin, IntensityToRadius(float(mthing->args[4-1])), ptclr, dir, AngleMod360(max(mthing->args[2-1], mthing->args[3-1])));
+        Level.AddStaticLightRGB(none, Origin, IntensityToRadius(float(mthing->args[4-1])), ptclr, dir, AngleMod360(max(mthing->args[2-1], mthing->args[3-1])), flags:flags);
       } else if (mthing->args[1-1] == 255 && mthing->args[2-1] == 255 && mthing->args[3-1] == 255) {
         // static white light
-        Level.AddStaticLight(none, Origin, IntensityToRadius(float(mthing->args[4-1])));
+        Level.AddStaticLight(none, Origin, IntensityToRadius(float(mthing->args[4-1])), flags:flags);
       } else {
         // static colored light
-        Level.AddStaticLightRGB(none, Origin, IntensityToRadius(float(mthing->args[4-1])), RGB(mthing->args[1-1], mthing->args[2-1], mthing->args[3-1]));
+        Level.AddStaticLightRGB(none, Origin, IntensityToRadius(float(mthing->args[4-1])), RGB(mthing->args[1-1], mthing->args[2-1], mthing->args[3-1]), flags:flags);
       }
     }
     Destroy();
   } else if (LightType == DLTYPE_Sector && mthing && !TID && /*Level.XLevel.bConvertSectorLightsToStatic &&*/ Sector) {
+    int flags = CalculateLightFlags(mthing->args[5-1]);
     float Scale = float(Args[3]);
     if (Attenuated) Scale = -Scale;
-    Level.AddStaticLightRGBSector(none, Origin, Sector, Scale, RGB(mthing->args[1-1], mthing->args[2-1], mthing->args[3-1]));
+    Level.AddStaticLightRGBSector(none, Origin, Sector, Scale, RGB(mthing->args[1-1], mthing->args[2-1], mthing->args[3-1]), flags:flags);
     /*
     float Scale = float(Args[3])*0.125;
     if (!Scale) Scale = 1.0;

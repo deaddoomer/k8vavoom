@@ -25,6 +25,21 @@
 //**************************************************************************
 //TODO: additive and subtractive lights
 // attenuated lights illuminate surfaces depending on surface angle -- surfaces that are not facing the light will get progressively less illuminated
+/*
+A point light takes four arguments:
+    1: Red value of the light
+    2: Green value of the light
+    3: Blue value of the light
+    4: Intensity value of the light
+
+k8vavoom extension:
+  5th argument is light flags.
+  bits 7 and 6 should be always set to indicate that the flags are valid.
+  other bits:
+    0: no shadows
+    1: no actor shadows
+    2: no actor light
+*/
 
 class PointLight : DynamicLight __mobjinfo__(9800);
 defaultproperties {

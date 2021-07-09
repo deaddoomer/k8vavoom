@@ -254,6 +254,7 @@ native final bool CompatBoomScroll { get; } // compat_boomscroll
 native final bool CompatInvisibility { get; } // compat_invisibility
 
 // ////////////////////////////////////////////////////////////////////////// //
+// flags: LIGHTFLAG_XXX
 // static lights
 native final void AddStaticLight (Entity ent, TVec origin, float radius, optional TVec coneDirection, optional float coneAngle, optional int flags);
 native final void AddStaticLightRGB (Entity ent, TVec origin, float radius, int color, optional TVec coneDirection, optional float coneAngle, optional int flags);
