@@ -1,0 +1,28 @@
+k8vavoom extended attributes for point light things
+===================================================
+
+A point light thing takes four arguments:
+    1: Red value of the light
+    2: Green value of the light
+    3: Blue value of the light
+    4: Intensity value of the light
+
+k8vavoom extension:
+  5th argument is light flags.
+  bits 7 and 6 should be always set to indicate that the flags are valid.
+  other bits:
+    0: no shadows
+    1: no actor shadows
+    2: no actor light
+
+  please, note that bits 3-5 should NOT be set!
+
+  so, valid flag values are:
+      0: normal light with proper shadows
+    193: this light casts no shadows (but will still be clipped by map geometry)
+    194: this light won't cast actor shadows
+    195: the same as 193
+    196: this light won't lit actors
+    197: this light won't lit actors, and will cast no shadows
+    198: this light won't lit actors, and won't cast actor shadows
+    199: the same as 198
