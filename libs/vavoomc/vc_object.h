@@ -619,6 +619,12 @@ public:
   // WARNING! DO NOT PASS `true` FROM K8VAVOOM, OR EVERYTHING *WILL* BREAK!
   static void CollectGarbage (bool destroyDelayed=false);
 
+  // this can be called on map unloading, for example, to combat UniqueId overflow (somewhat)
+  // better to call this after calling `CollectGarbage()`, so "dying" objects won't prevent cleanups
+  static void MinimiseUniqueId () noexcept;
+  // can be used for statistics
+  static vuint32 GetCurrentUniqueId () noexcept;
+
   static int GetObjectsCount () noexcept;
   static VObject *GetIndexObject (int) noexcept;
 

@@ -644,6 +644,36 @@ void VObject::ClearReferences () {
 
 //==========================================================================
 //
+//  VObject::MinimiseUniqueId
+//
+//  this can be called on map unloading, for example,
+//  to combat UniqueId overflow (somewhat)
+//
+//==========================================================================
+void VObject::MinimiseUniqueId () noexcept {
+  // loop over all objects (INCLUDING dying ones), determine first free unique id
+  vuint32 maxuid = 0;
+  for (VObject *obj : GObjObjects) {
+    if (obj) maxuid = max2(maxuid, obj->UniqueId);
+  }
+  gLastUsedUniqueId = maxuid;
+}
+
+
+//==========================================================================
+//
+//  VObject::GetCurrentUniqueId
+//
+//  can be used for statistics
+//
+//==========================================================================
+vuint32 VObject::GetCurrentUniqueId () noexcept {
+  return gLastUsedUniqueId;
+}
+
+
+//==========================================================================
+//
 //  VObject::CollectGarbage
 //
 //==========================================================================
