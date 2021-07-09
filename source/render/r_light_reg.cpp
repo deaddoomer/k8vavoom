@@ -580,6 +580,10 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   const TVec lnormal = surf->GetNormal();
   //const TVec lorg = light->origin;
 
+  //FIXME: this is not exactly right, we need to collect possibly lit surfaces
+  //       otherwise the light may shine through the walls
+  const bool doCastRay = !(light->flags&dlight_t::NoShadow);
+
   float attn = 1.0f;
   for (int c = 0; c < lmi.numsurfpt; ++c, ++spt) {
     // check spotlight cone
@@ -593,9 +597,15 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     }
 
     float raydist;
-    if (!CastStaticRay(&raydist, srcsubsector, lorg+lnormal, surf->subsector, (*spt)+lnormal, squaredist, true)) { // allow texture check
-      // light ray is blocked
-      continue;
+    if (doCastRay) {
+      if (!CastStaticRay(&raydist, srcsubsector, lorg+lnormal, surf->subsector, (*spt)+lnormal, squaredist, true)) { // allow texture check
+        // light ray is blocked
+        continue;
+      }
+    } else {
+      raydist = (*spt-lorg).lengthSquared();
+      if (raydist >= squaredist) continue; // too far
+      raydist = (raydist > 1.0f ? sqrtf(raydist) : 1.0f);
     }
 
     TVec incoming = lorg-(*spt);
@@ -631,7 +641,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     }
   }
 
-  if (doMidFilter && wasAnyHit) {
+  if (doCastRay && doMidFilter && wasAnyHit) {
     //GCon->Logf("w=%d; h=%d; num=%d; cnt=%d", w, h, w*h, lmi.numsurfpt);
    again:
     const vuint8 *lht = lmtracer.lightmapHit;
@@ -803,9 +813,22 @@ void VRenderLevelLightmap::LightFace (surface_t *surf) {
     const int snum = (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]);
     if (snum >= 0 && snum < SubStaticLights.length()) {
       SubStaticLigtInfo *sli = SubStaticLights.ptr()+snum;
-      for (auto it : sli->touchedStatic.first()) {
-        light_t *stl = &Lights[it.getKey()];
-        SingleLightFace(lmi, stl, surf);
+      if (sli->touchedStatic.length()) {
+        // for non-shadowing lights, collect really visible surfaces
+        for (auto it : sli->touchedStatic.first()) {
+          light_t *stl = &Lights[it.getKey()];
+          //FIXME: make this faster!
+          const bool doCastRay = !(stl->flags&dlight_t::NoShadow);
+          if (!doCastRay && !surf->subsector->isAnyPObj()) {
+            // check if this surface is visible
+            // `CurrLightPos` and `CurrLightRadius` should be set
+            CurrLightPos = stl->origin;
+            CurrLightRadius = stl->radius;
+            if (CurrLightRadius <= 2.0f) continue;
+            if (!CheckLightSurface(surf)) continue;
+          }
+          SingleLightFace(lmi, stl, surf);
+        }
       }
     }
     #endif

@@ -28,8 +28,8 @@
 #define VV_SMAP_PAPERTHIN_FIX
 
 
-static VCvarB clip_shadow("clip_shadow", true, "Use clipper to drop unnecessary shadow surfaces?", CVAR_PreInit);
-static VCvarB clip_advlight_regions("clip_advlight_regions", false, "Clip (1D) light regions?", CVAR_PreInit);
+VCvarB clip_shadow("clip_shadow", true, "Use clipper to drop unnecessary shadow surfaces?", CVAR_PreInit);
+VCvarB clip_advlight_regions("clip_advlight_regions", false, "Clip (1D) light regions?", CVAR_PreInit);
 
 // this is because the other side has flipped texture, so if
 // the player stands behind it, the shadow is wrong

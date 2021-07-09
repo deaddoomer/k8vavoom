@@ -219,6 +219,21 @@ protected:
 
   void RelightMap (bool recalcNow, bool onlyMarked);
 
+  // used to check surface visibility for non-shadowing static lights
+  // we can collect surfaces for lighting and shadowing in one pass
+  // don't forget to reset `shadowSurfaces` and `lightSurfaces`
+  int CheckRegLightSurfaces (const seg_t *seg, surface_t *InSurfs, texinfo_t *texinfo,
+                             VEntity *SkyBox, bool CheckSkyBoxAlways, const surface_t *sfcheck);
+  int CheckRegLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, const surface_t *sfcheck);
+  int CheckRegLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, const surface_t *sfcheck);
+  int CheckRegLightSubRegion (subsector_t *sub, const surface_t *sfcheck);
+  int CheckRegLightSubsector (int num, const surface_t *sfcheck);
+  int CheckRegLightBSPNode (int bspnum, const float *bbox, const surface_t *sfcheck);
+
+  // collector entr point
+  // `CurrLightPos` and `CurrLightRadius` should be set
+  bool CheckLightSurface (const surface_t *sfcheck);
+
 public:
   // this is fast and rough check
   bool CanFaceBeStaticallyLit (surface_t *surf);

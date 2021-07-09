@@ -150,7 +150,7 @@ protected:
   void CollectAdvLightSubsector (int num, unsigned int ssflag);
   void CollectAdvLightBSPNode (int bspnum, const float *bbox, unsigned int ssflag);
 
-  // collector entr point
+  // collector entry point
   // `CurrLightPos` and `CurrLightRadius` should be set
   void CollectLightShadowSurfaces (bool doShadows);
 
