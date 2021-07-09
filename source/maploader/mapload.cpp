@@ -219,6 +219,7 @@ static bool hashLump (sha224_ctx *sha224ctx, MD5Context *md5ctx, int lumpnum) {
 //
 //==========================================================================
 void VLevel::LoadMap (VName AMapName) {
+  fsys_report_added_paks_logtype = NAME_Log; // it is time for this...
   AuxiliaryCloser auxCloser;
 
   bool killCache = loader_cache_ignore_one;
