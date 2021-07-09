@@ -151,9 +151,6 @@ protected:
   void MarkDead ();
   void MarkChildrenDead ();
 
-  // called by root widget in responder
-  static void CleanupWidgets ();
-
   inline bool CanBeFocused () const noexcept {
     return (!IsGoingToDie() && ((WidgetFlags&(WF_IsVisible|WF_IsEnabled|WF_IsFocusable)) == (WF_IsVisible|WF_IsEnabled|WF_IsFocusable)));
   }
@@ -240,6 +237,11 @@ public: // iterators
   WidgetIterator fromLastChild () const noexcept { return WidgetIterator(LastChildWidget, false); }
 
 public:
+  // called by root widget in responder
+  // DO NOT CALL MANUALLY!
+  static void CleanupWidgets ();
+
+
   virtual void PostCtor () override; // this is called after defaults were blit
 
   // destroys all child widgets

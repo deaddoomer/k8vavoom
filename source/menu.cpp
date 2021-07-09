@@ -50,7 +50,7 @@ void MN_Init () {
   GClGame->ClientFlags &= ~VClientGameBase::CF_LocalServer;
 #endif
   VRootWidget::StaticInit();
-  GClGame->eventRootWindowCreated();
+  if (GClGame) GClGame->eventRootWindowCreated();
 }
 
 
@@ -61,7 +61,7 @@ void MN_Init () {
 //==========================================================================
 void MN_ActivateMenu () {
   // intro might call this repeatedly
-  if (!MN_Active()) GClGame->eventSetMenu("Main");
+  if (!MN_Active() && GClGame) GClGame->eventSetMenu("Main");
 }
 
 
@@ -71,7 +71,10 @@ void MN_ActivateMenu () {
 //
 //==========================================================================
 void MN_DeactivateMenu () {
-  GClGame->eventDeactivateMenu();
+  if (GClGame) {
+    GClGame->eventDeactivateMenu();
+    VWidget::CleanupWidgets();
+  }
 }
 
 
@@ -95,6 +98,7 @@ void MN_CheckStartupWarning () {
 //
 //==========================================================================
 bool MN_Responder (event_t *ev) {
+  if (!GClGame) return false;
   if (GClGame->eventMessageBoxResponder(ev)) return true;
 
   // show menu?
@@ -125,7 +129,7 @@ bool MN_Responder (event_t *ev) {
 //
 //==========================================================================
 bool MN_Active () {
-  return (GClGame->eventMenuActive() || GClGame->eventMessageBoxActive());
+  return (GClGame ? (GClGame->eventMenuActive() || GClGame->eventMessageBoxActive()) : false);
 }
 
 
@@ -152,7 +156,7 @@ static VStr DoMenuCompletions (const TArray<VStr> &args, int aidx, int mode) {
 //
 //==========================================================================
 COMMAND_WITH_AC(SetMenu) {
-  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
+  if (GClGame) GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -172,7 +176,7 @@ COMMAND_AC(SetMenu) {
 //
 //==========================================================================
 COMMAND_WITH_AC(OpenMenu) {
-  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
+  if (GClGame) GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 
@@ -192,7 +196,7 @@ COMMAND_AC(OpenMenu) {
 //
 //==========================================================================
 COMMAND_WITH_AC(OpenGZMenu) {
-  GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
+  if (GClGame) GClGame->eventSetMenu(Args.length() > 1 ? *Args[1] : "");
 }
 
 

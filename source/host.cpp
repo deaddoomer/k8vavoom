@@ -247,7 +247,7 @@ static VVA_OKUNUSED void CountAllEntities () {
 //
 //==========================================================================
 // this does GC rougly twice per second (unless forced)
-void Host_CollectGarbage (bool forced) {
+void Host_CollectGarbage (bool forced, bool resetUniqueId) {
   const double ctt = Sys_Time();
   if (!forced) {
     float tout = host_gc_timeout.asFloat();
@@ -261,6 +261,27 @@ void Host_CollectGarbage (bool forced) {
   hostLastGCTime = ctt;
   VObject::CollectGarbage();
   //CountAllEntities();
+
+  // reset unique id if we're not in a game (titlemap is "in a game") too
+  if (!resetUniqueId) {
+    // if we have `GGameInfo`, it means that we have server mode
+    if (GGameInfo) {
+      if (GGameInfo->NetMode != NM_None) return;
+    }
+    #ifdef CLIENT
+    // for client: if we have a client, we're in game
+    else {
+      if (cl) return;
+    }
+    #endif
+  }
+  {
+    const vuint32 olduid = VObject::GetCurrentUniqueId();
+    VObject::MinimiseUniqueId();
+    const vuint32 newuid = VObject::GetCurrentUniqueId();
+    vassert(newuid <= olduid);
+    if (resetUniqueId && newuid < olduid) GCon->Logf(NAME_Warning, "new unique id is %u (shrinked by %u); don't worry, this is normal garbage collection cycle.", newuid, (unsigned)(olduid-newuid));
+  }
 }
 
 

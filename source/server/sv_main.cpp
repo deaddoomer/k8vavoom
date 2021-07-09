@@ -40,6 +40,7 @@
 #ifdef CLIENT
 # include "../screen.h"
 # include "../drawer.h"
+# include "../menu.h"
 # include "../client/client.h"
 # include "../client/cl_local.h"
 #else
@@ -520,7 +521,7 @@ void SV_Clear () {
 
     GLevel->ConditionalDestroy();
     GLevel = nullptr;
-    Host_CollectGarbage(true);
+    //Host_CollectGarbage(true); // later
   }
   memset(&sv, 0, sizeof(sv));
   #ifdef CLIENT
@@ -529,6 +530,7 @@ void SV_Clear () {
   // make sure all sounds are stopped
   GAudio->StopAllSound();
   #endif
+  Host_CollectGarbage(true, true); // force-collect garbage, and set new unique id
 }
 
 
@@ -1817,7 +1819,15 @@ void SV_DropClient (VBasePlayer *Player, bool crash) {
 //
 //==========================================================================
 void SV_ShutdownGame () {
-  if (GGameInfo->NetMode == NM_None) return;
+  #ifdef CLIENT
+  // so we could minimize uniqueid
+  MN_DeactivateMenu();
+  #endif
+
+  if (GGameInfo->NetMode == NM_None) {
+    Host_CollectGarbage(true, true); // force-collect garbage, and set new unique id
+    return;
+  }
 
   #ifdef CLIENT
   if (GGameInfo->Flags&VGameInfo::GIF_Paused) {
@@ -1908,6 +1918,8 @@ void SV_ShutdownGame () {
   SV_InitBaseSlot();
 
   GGameInfo->NetMode = NM_None;
+
+  Host_CollectGarbage(true, true); // force-collect garbage, and set new unique id
 }
 
 

@@ -44,7 +44,7 @@ bool Host_IsDangerousTimeout ();
 void Host_ResetSkipFrames ();
 
 // this does GC rougly twice per second (unless forced)
-void Host_CollectGarbage (bool forced=false);
+void Host_CollectGarbage (bool forced=false, bool resetUniqueId=false);
 
 extern bool host_initialised;
 extern bool host_request_exit;

@@ -334,7 +334,7 @@ void CL_EstablishConnection (const char *host) {
   cls.signon = 0;
   ClientLastKeepAliveTime = Sys_Time();
 
-  MN_DeactivateMenu();
+  //MN_DeactivateMenu();
 }
 
 
@@ -345,6 +345,10 @@ void CL_EstablishConnection (const char *host) {
 //==========================================================================
 void CL_SetupLocalPlayer () {
   if (GGameInfo->NetMode == NM_DedicatedServer) return;
+
+  // so we could minimize uniqueid
+  MN_DeactivateMenu();
+  Host_CollectGarbage(true, true); // force-collect garbage, and set new unique id
 
   VBasePlayer *Player = GPlayersBase[0];
   SV_ConnectClient(Player);
@@ -361,7 +365,7 @@ void CL_SetupLocalPlayer () {
   // but the map may be aloready loaded
   cls.signon = 0;
 
-  MN_DeactivateMenu();
+  //MN_DeactivateMenu();
 
   CL_SetupStandaloneClient();
 }
