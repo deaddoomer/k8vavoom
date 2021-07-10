@@ -1,0 +1,34 @@
+// MT_FLY
+// Hexen DoomEd num: 112
+actor LittleFly 18999 {
+  //game Hexen
+  Health 1000
+  ReactionTime 0
+  SeeSound none
+  AttackSound none
+  PainSound none
+  DeathSound none
+  PainChance 0
+  Speed 6
+  Radius 5
+  Height 5
+  Mass 2
+  Damage 0
+  ActiveSound "FlyBuzz"
+  //+DropOff
+  +NoGravity
+  +NoBlockmap
+  +CanPass
+
+  states {
+  Spawn:
+    AFLY A 20 A_FlyCheck(true) //k8: it will be invisible if the speed is zero
+    Loop
+  See:
+    AFLY ABCD 3 A_FlyMove
+    Loop
+  Death:
+    TNT1 A 0
+    Stop
+  }
+}

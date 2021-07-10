@@ -1,0 +1,179 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+
+//==========================================================================
+//
+//  FlyFindCorpse
+//
+//==========================================================================
+protected EntityEx FlyFindCorpse (ref array!(sector_t *) checked, sector_t *sec, int recurselimit) {
+  if (!sec) return none;
+
+  EntityEx body = none;
+  //sec.validcount = validcount;
+  checked[$] = sec;
+
+  // Search the current sector
+  for (Entity ent = sec.ThingList; ent; ent = ent.SNext) {
+    if (ent == self) continue;
+    if (!ent.bCorpse) continue;
+    EntityEx ee = EntityEx(ent);
+    if (!ee) continue;
+    if (!CanSee(ee)) continue;
+    body = ee;
+    if (P_Random() < 128) continue; // ~50% chance to try to pick a different corpse
+    return body;
+  }
+
+  if (--recurselimit <= 0 || (body && P_Random() < 128)) return body;
+
+  // try neighboring sectors
+  foreach (sector_t *other; sec.nbsecs) {
+    if (!other) continue;
+    bool found = false;
+    foreach (sector_t *ss; checked) if (ss == other) { found = true; break; }
+    if (found) continue;
+    body = FlyFindCorpse(ref checked, other, recurselimit);
+    if (body) break;
+  }
+
+  return body;
+}
+
+
+//==========================================================================
+//
+//  A_FlyCheck
+//
+//==========================================================================
+[decorate] final void A_FlyCheck (optional bool hideIfNotMoving) {
+  if (!BaseSector) return;
+
+  //k8: it may be invisible if the speed is zero
+  if (hideIfNotMoving) {
+    if (Velocity) {
+      if (bInvisible) {
+        bInvisible = false;
+        LinkToWorld(); // relink
+      }
+    } else {
+      if (!bInvisible) {
+        bInvisible = true;
+        LinkToWorld(); // relink
+      }
+    }
+  }
+
+  array!(sector_t *) checked;
+  EntityEx body = FlyFindCorpse(ref checked, BaseSector, 24);
+
+  if (body) {
+    Target = body;
+    SetState(SeeState);
+  }
+
+  /*
+  thinker_t *tcap = thinkercap.next;
+
+  // skip random number of thinkers
+  for (int i = P_Random()%50; i > 0; --i) tcap = tcap->next;
+
+  for (thinker_t *t = tcap->next; t != tcap; t = t->next) {
+    if (t->function != P_MobjThinker) continue; // Not a mobj thinker
+    mobj_t *mobj = (mobj_t *)t;
+    if (mobj == actor || mobj == actor->target || !(mobj->flags&MF_CORPSE)) continue;
+    if (i++ > 100) break;
+    if (P_CheckSight(actor, mobj)) {
+      actor->target = mobj;
+      //P_SetMobjState(actor, S_FLY2);
+      SetState(SeeState);
+      return;
+    }
+  }
+  */
+}
+
+
+//==========================================================================
+//
+//  A_FlyMove
+//
+//==========================================================================
+[decorate] final void A_FlyMove () {
+  if (!Target || !Target.bCorpse || P_Random() < 5) {
+    SetInitialState(IdleState); // don't call state function
+    return;
+  }
+
+  ++Args[0];
+  // slowly change the direction
+  /*
+  actor->angle = R_PointToAngle2(actor->x, actor->y, target->x, target->y);
+  angle = actor->angle >> ANGLETOFINESHIFT;
+  x = actor->x + FixedMul(6*FRACUNIT,finecosine[angle]);
+  y = actor->y + FixedMul(6*FRACUNIT,finesine[angle]);
+  if (!P_TryMove(actor, x, y)) {
+    //P_SetMobjStateNF(actor, S_FLY1);
+    SetInitialState(IdleState); // don't call state function
+    return;
+  }
+  */
+
+  float angle = atan2(Origin.y-Target.Origin.y, Origin.x-Target.Origin.x);
+  float s, c;
+  sincos(angle, out s, out c);
+  TVec newpos = Origin;
+  newpos.x += 6*c;
+  newpos.y += 6*s;
+
+  if (!TryMove(newpos, AllowDropOff:false)) {
+    //P_SetMobjStateNF(actor, S_FLY1);
+    SetInitialState(IdleState); // don't call state function
+    return;
+  }
+
+  if (Args[0]&2) {
+    Velocity.x += (P_Random()-128)/512.0;
+    Velocity.y += (P_Random()-128)/512.0;
+    //k8: limit it a little
+    Velocity.x = fclamp(Velocity.x, -Speed, Speed);
+    Velocity.y = fclamp(Velocity.y, -Speed, Speed);
+  }
+
+  int r = P_Random();
+  //z = r << 10;
+  float z = r/512.0;
+  if (Target.Origin.z+5 < Origin.z) {
+    Velocity.z = (r > 150 ? -z : z);
+  } else {
+    Velocity.z = z;
+  }
+
+  if (ActiveSound && P_Random() < 40) {
+    //S_StartSound(actor, actor->info->activesound);
+    A_PlaySound(ActiveSound, CHAN_VOICE, 0.5f, false, ATTN_STATIC);
+  }
+}

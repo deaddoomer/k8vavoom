@@ -42,4 +42,5 @@
 #include "Actor.Hexen.vc"
 #include "Actor.HexenWeapons.vc"
 #include "Actor.Strife.vc"
+#include "Actor.RavenFly.vc"
 #include "Actor.States.vc"
