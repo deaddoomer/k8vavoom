@@ -3,4 +3,14 @@
 // so this section tells k8vavoom that it is going to parse "base" actors, and hack should not apply
 k8vavoom { basepak = tan }
 
-#include "actors/all.txt"
+#include "constants.txt"
+// we don't need this anymore
+//#include "nativeclasses.txt"
+
+#include "shared/all.txt"
+#include "doom/all.txt"
+#include "raven/all.txt"
+#include "heretic/all.txt"
+#include "hexen/all.txt"
+#include "strife/all.txt"
+#include "chex/all.txt"

@@ -1,0 +1,7 @@
+#include "chexmonsters.txt"
+#include "chexkeys.txt"
+#include "chexammo.txt"
+#include "chexweapons.txt"
+#include "chexitems.txt"
+#include "chexdecorations.txt"
+#include "chexplayer.txt"
