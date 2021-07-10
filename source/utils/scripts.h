@@ -92,8 +92,11 @@ private:
   bool Escape;
   bool AllowNumSign;
 
+public:
+  int SourceLump; // usually -1
+
 private:
-  VScriptParser () {}
+  inline VScriptParser () : SourceLump(-1) {}
 
   // advances current position
   // if `changeFlags` is `true`, changes `Crossed` and `Line`
@@ -114,8 +117,12 @@ public:
   VV_DISABLE_COPY(VScriptParser)
 
   // deletes `Strm`
-  VScriptParser (VStr name, VStream *Strm);
-  VScriptParser (VStr name, const char *atext);
+  VScriptParser (VStr name, VStream *Strm, int aSourceLump=-1);
+  VScriptParser (VStr name, const char *atext, int aSourceLump=-1);
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+  static VScriptParser *NewWithLump (int Lump);
+#endif
 
   ~VScriptParser ();
 

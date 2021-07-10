@@ -59,6 +59,8 @@ class VScriptsParser : public VObject {
   DECLARE_FUNCTION(get_Float)
   DECLARE_FUNCTION(get_Crossed)
   DECLARE_FUNCTION(get_Quoted)
+  DECLARE_FUNCTION(get_SourceLump)
+  DECLARE_FUNCTION(set_SourceLump)
   DECLARE_FUNCTION(IsText)
   DECLARE_FUNCTION(IsAtEol)
   DECLARE_FUNCTION(IsCMode)
@@ -217,7 +219,7 @@ void VScriptSavedPos::restoreTo (VScriptParser &par) const {
 //  VScriptParser::VScriptParser
 //
 //==========================================================================
-VScriptParser::VScriptParser (VStr name, VStream *Strm)
+VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
   : Line(1)
   , TokLine(1)
   , End(false)
@@ -229,6 +231,7 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm)
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
+  , SourceLump(aSourceLump)
 {
   if (!Strm) {
     ScriptSize = 1;
@@ -268,7 +271,7 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm)
 //  VScriptParser::VScriptParser
 //
 //==========================================================================
-VScriptParser::VScriptParser (VStr name, const char *atext)
+VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump)
   : Line(1)
   , TokLine(1)
   , End(false)
@@ -280,6 +283,7 @@ VScriptParser::VScriptParser (VStr name, const char *atext)
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
+  , SourceLump(aSourceLump)
 {
   if (atext && atext[0]) {
     ScriptSize = (int)strlen(atext);
@@ -300,6 +304,17 @@ VScriptParser::VScriptParser (VStr name, const char *atext)
 
   // skip garbage some editors add in the begining of UTF-8 files
   if (*(const vuint8 *)ScriptPtr == 0xef && *(const vuint8 *)(ScriptPtr+1) == 0xbb && *(const vuint8 *)(ScriptPtr+2) == 0xbf) ScriptPtr += 3;
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::NewWithLump
+//
+//==========================================================================
+VScriptParser *VScriptParser::NewWithLump (int Lump) {
+  if (Lump < 0) return nullptr;
+  return new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump), Lump);
 }
 
 
@@ -346,6 +361,7 @@ VScriptParser *VScriptParser::clone () const {
   res->ScriptName = ScriptName;
   res->ScriptSize = ScriptSize;
   res->SrcIdx = SrcIdx;
+  res->SourceLump = SourceLump;
   //res->AlreadyGot = AlreadyGot;
   res->CMode = CMode;
   res->Escape = Escape;
@@ -1552,6 +1568,19 @@ IMPLEMENT_FUNCTION(VScriptsParser, get_Quoted) {
   vobjGetParamSelf();
   Self->CheckInterface();
   RET_BOOL(Self->Int->QuotedString);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_SourceLump) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->SourceLump);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_SourceLump) {
+  vuint32 value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SourceLump = value;
 }
 
 IMPLEMENT_FUNCTION(VScriptsParser, IsText) {

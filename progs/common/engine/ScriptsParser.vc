@@ -54,6 +54,7 @@ native final int Number { get; }
 native final float Float { get; }
 native final bool Crossed { get; }
 native final bool Quoted { get; }
+native final int SourceLump { get; set; }
 
 #ifndef VCC_STANDALONE_EXECUTOR
 native final void OpenLumpName (name Name);
