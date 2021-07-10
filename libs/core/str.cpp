@@ -249,7 +249,7 @@ VStr &VStr::operator += (double v) noexcept { char buf[DoubleBufSize]; (void)d2s
 
 // ////////////////////////////////////////////////////////////////////////// //
 VStr &VStr::utf8Append (vuint32 code) noexcept {
-  if (code > 0x10FFFF) return operator+=('?');
+  if (code > 0x10FFFF || !isValidCodepoint((int)code)) return operator+=('?');
   if (code <= 0x7f) return operator+=((char)(code&0xff));
   if (code <= 0x7FF) {
     operator+=((char)(0xC0|(code>>6)));
@@ -276,15 +276,15 @@ VVA_CHECKRESULT bool VStr::isUtf8Valid () const noexcept {
   int pos = 0;
   const char *data = getData();
   while (pos < slen) {
-    int len = utf8CodeLen(data[pos]);
+    int len = CalcUtf8CharByteSize(data[pos]);
+    if (!len) return true;
     if (len < 1) return false; // invalid sequence start
     if (pos+len-1 > slen) return false; // out of chars in string
     --len;
     ++pos;
     // check other sequence bytes
-    while (len > 0) {
-      if ((data[pos]&0xC0) != 0x80) return false;
-      --len;
+    while (len-- > 0) {
+      if (!IsValidUtf8Continuation(data[pos])) return false;
       ++pos;
     }
   }
@@ -1722,23 +1722,43 @@ VVA_CHECKRESULT bool VStr::IsAbsolutePath () const noexcept {
 VVA_CHECKRESULT int VStr::Utf8Length (const char *s, int len) noexcept {
   if (len < 0) len = (s && s[0] ? (int)strlen(s) : 0);
   int count = 0;
-  while (len-- > 0) if (((*s++)&0xc0) != 0x80) ++count;
+  while (len--) {
+    const vuint8 b = (vuint8)*s++;
+    if (!b) break;
+    ++count;
+    const int btlen = CalcUtf8CharByteSize((char)b);
+    if (btlen < 2) continue;
+    size_t clen = (size_t)(btlen-1); // extra bytes
+    do {
+      if (!len || !s[0]) return count;
+      if (!IsValidUtf8Continuation(*s)) break;
+      --len;
+      ++s;
+    } while (--clen);
+  }
   return count;
 }
 
 
 VVA_CHECKRESULT size_t VStr::ByteLengthForUtf8 (const char *s, size_t N) noexcept {
-  if (s && s[0]) {
+  if (s) {
     size_t count = 0;
-    const char *c;
-    for (c = s; *c; ++c) {
-      if ((*c&0xc0) != 0x80) {
-        if (count == N) return c-s;
+    while (N--) {
+      const vuint8 b = (vuint8)*s++;
+      if (!b) break;
+      ++count;
+      const int btlen = CalcUtf8CharByteSize((char)b);
+      if (btlen < 2) continue;
+      size_t clen = (size_t)(btlen-1); // extra bytes
+      do {
+        if (!N || !s[0]) return count;
+        if (!IsValidUtf8Continuation(*s)) break;
+        --N;
         ++count;
-      }
+        ++s;
+      } while (--clen);
     }
-    vassert(N == count);
-    return c-s;
+    return count;
   } else {
     return 0;
   }
@@ -1746,39 +1766,40 @@ VVA_CHECKRESULT size_t VStr::ByteLengthForUtf8 (const char *s, size_t N) noexcep
 
 
 VVA_CHECKRESULT int VStr::Utf8GetChar (const char *&s) noexcept {
-  if ((vuint8)*s < 128) return *s++;
-  int cnt, val;
-  if ((*s&0xe0) == 0xc0) {
-    val = *s&0x1f;
-    cnt = 1;
-  } else if ((*s&0xf0) == 0xe0) {
-    val = *s&0x0f;
-    cnt = 2;
-  } else if ((*s&0xf8) == 0xf0) {
-    val = *s&0x07;
-    cnt = 3;
-  } else {
-    //Sys_Error("Not a valid UTF-8");
-    ++s;
-    return '?';
+  if (!s || !s[0]) return 0;
+
+  const vuint8 b = (vuint8)*s++;
+  if (b < 128) return b;
+
+  int cnt = CalcUtf8CharByteSize((char)b);
+  if (cnt < 0) return '?'; // invalid utf-8
+
+  int val;
+  switch (cnt) {
+    case 1: return b;
+    case 2: val = b&0x1f; break;
+    case 3: val = b&0x0f; break;
+    case 4: val = b&0x07; break;
+    default: return '?'; // somewhing is very wrong
   }
-  ++s;
+  --cnt;
 
   do {
-    if ((*s&0xc0) != 0x80) {
-      //Sys_Error("Not a valid UTF-8");
-      return '?';
-    }
+    if (!IsValidUtf8Continuation(*s)) return '?'; // invald UTF-8
     val = (val<<6)|(*s&0x3f);
     ++s;
   } while (--cnt);
 
+  if (val == 0) val = ' '; // just in case
+
+  if (!isValidCodepoint(val)) val = '?';
   return val;
 }
 
 
 VVA_CHECKRESULT VStr VStr::FromUtf8Char (int c) noexcept {
   char res[8];
+  if (!isValidCodepoint(c)) return VStr("?");
   if (c < 0x80) {
     res[0] = c;
     res[1] = 0;

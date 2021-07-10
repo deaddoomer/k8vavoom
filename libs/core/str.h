@@ -501,10 +501,29 @@ public:
 
   static VVA_CHECKRESULT inline int Length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
   static VVA_CHECKRESULT inline int length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
+
+  // calculates length of the following utf-8 sequence from its first char, or -1 for invalid first char
+  // zero char means zero length
+  static VVA_CHECKRESULT inline int CalcUtf8CharByteSize (const char ch) noexcept {
+    if (!ch) return 0;
+    if ((vuint8)ch < 128) return 1;
+    if (((vuint8)ch&0xe0) == 0xc0) return 2;
+    if (((vuint8)ch&0xf0) == 0xe0) return 3;
+    if (((vuint8)ch&0xf8) == 0xe8) return 4;
+    // overlongs are not supported
+    //if (((vuint8)ch&0xfc) == 0xf8) return 5;
+    //if (((vuint8)ch&0xfe) == 0xfc) return 6;
+    return -1; // invalid utf-8
+  }
+
+  static VVA_CHECKRESULT inline bool IsValidUtf8Continuation (const char ch) noexcept { return (((vuint8)ch&0xc0) == 0x80); }
+
+  static VVA_CHECKRESULT inline bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
+
   static VVA_CHECKRESULT int Utf8Length (const char *s, int len=-1) noexcept;
   static VVA_CHECKRESULT inline int utf8Length (const char *s, int len=-1) noexcept { return (int)Utf8Length(s, len); }
-  static VVA_CHECKRESULT size_t ByteLengthForUtf8 (const char *, size_t) noexcept;
-  // get utf8 char; advances pointer, returns '?' on invalid char
+  static VVA_CHECKRESULT size_t ByteLengthForUtf8 (const char *s, size_t N) noexcept; // `N` must be valid!
+  // get utf8 char; advances pointer, returns '?' on invalid char, or 0 on string end
   static VVA_CHECKRESULT int Utf8GetChar (const char *&s) noexcept;
   static VVA_CHECKRESULT VStr FromUtf8Char (int) noexcept;
 
@@ -737,6 +756,7 @@ public:
   }
 
   // returns length of the following utf-8 sequence from its first char, or -1 for invalid first char
+  /*
   static VVA_CHECKRESULT inline VVA_PURE int utf8CodeLen (char ch) noexcept {
     if ((vuint8)ch < 0x80) return 1;
     if ((ch&0xFE) == 0xFC) return 6;
@@ -746,6 +766,7 @@ public:
     if ((ch&0xE0) == 0xC0) return 2;
     return -1; // invalid
   }
+  */
 
   static VVA_CHECKRESULT inline bool isPathDelimiter (const char ch) noexcept {
     #ifdef _WIN32
@@ -795,6 +816,8 @@ public:
     Reject = 12,
   };
 
+  static VVA_CHECKRESULT inline bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
+
 protected:
   vuint32 state;
 
@@ -802,7 +825,7 @@ public:
   vuint32 codepoint; // decoded codepoint (valid only when decoder is in "complete" state)
 
 public:
-  VUtf8DecoderFast () noexcept : state(Accept), codepoint(0) {}
+  inline VUtf8DecoderFast () noexcept : state(Accept), codepoint(0) {}
 
   inline void reset () noexcept { state = Accept; codepoint = 0; }
 
