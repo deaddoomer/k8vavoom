@@ -1,6 +1,6 @@
 // MT_FLY
 // Hexen DoomEd num: 112
-actor LittleFly 18999 {
+actor LittleFly 18669 {
   //game Hexen
   Health 1000
   ReactionTime 0
