@@ -117,7 +117,7 @@ public:
   static VFont *GetFont (VStr AName, VStr LumpName);
   static VFont *GetFont (VStr AName);
   static int ParseColorEscape (const char *&, int, int, VStr *escstr=nullptr);
-  static int FindTextColor (const char *Name);
+  static int FindTextColor (const char *Name, int defval=CR_UNTRANSLATED);
 
   // generates lump name from font name
   // names in the format of 'name:path' will be split on ':'

@@ -920,6 +920,8 @@ void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
 }
 
 
+static_assert(NUM_TEXT_COLORS >= 26);
+
 //==========================================================================
 //
 //  VFont::ParseColorEscape
@@ -931,39 +933,53 @@ void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
 //
 //==========================================================================
 int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor, VStr *escstr) {
+  if (!pColor || !pColor[0]) {
+    if (escstr) escstr->clear();
+    return CR_UNDEFINED;
+  }
+
   if (escstr) (*escstr) = VStr((char)TEXT_COLOR_ESCAPE);
 
-  const char *Chr = pColor;
-  int Col = *Chr++;
+  int Col = *pColor++;
 
-  if (Col >= 'A' && Col <= 'Z') Col = Col-'A'+'a';
+  if (Col >= 'a' && Col <= 'z') Col = Col-'a'+'A';
 
-  if (Col >= 'a' && Col < 'a'+NUM_TEXT_COLORS) {
+  if (Col == '[') {
+    // named colors
+    char nbuf[32];
+    size_t nbpos = 0;
+    for (;;) {
+      const char ch = *pColor++;
+      if (!ch) { --pColor; break; }
+      if (ch == ']') break;
+      if (nbpos < sizeof(nbuf)-1) nbuf[nbpos++] = ch;
+    }
+    nbuf[nbpos] = 0;
+    Col = FindTextColor(nbuf, CR_UNDEFINED);
+    if (escstr) {
+      if (Col != CR_UNDEFINED) {
+        (*escstr) += '[';
+        (*escstr) += VStr(nbuf);
+        (*escstr) += ']';
+      } else {
+        escstr->clear();
+      }
+    }
+  } else if (Col >= 'A' && Col <= 'Z' /*Col < 'A'+NUM_TEXT_COLORS*/) {
     if (escstr) (*escstr) += (char)Col;
-    Col -= 'a'; // standard colors, lower case
+    Col -= 'A'; // standard colors
   } else if (Col == '-') {
     if (escstr) (*escstr) += '-';
     Col = NormalColor; // normal color
   } else if (Col == '+') {
     if (escstr) (*escstr) += '+';
     Col = BoldColor; // bold color
-  } else if (Col == '[') {
-    // named colors
-    if (escstr) (*escstr) += '[';
-    VStr CName;
-    while (*Chr && *Chr != ']') CName += *Chr++;
-    if (escstr) (*escstr) += CName;
-    if (*Chr == ']') ++Chr;
-    if (escstr) (*escstr) += ']';
-    Col = FindTextColor(*CName);
   } else {
-    /*if (!Col)*/ --Chr;
+    --pColor;
     Col = CR_UNDEFINED;
     if (escstr) escstr->clear();
   }
 
-  // set pointer after the color definition
-  pColor = Chr;
   return Col;
 }
 
@@ -973,12 +989,12 @@ int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor
 //  VFont::FindTextColor
 //
 //==========================================================================
-int VFont::FindTextColor (const char *Name) {
-  if (!Name || !Name[0]) return CR_UNTRANSLATED;
+int VFont::FindTextColor (const char *Name, int defval) {
+  if (!Name || !Name[0]) return defval;
   for (auto &&it : TextColorLookup) {
     if (VStr::strEquCI(*it.Name, Name)) return it.Index;
   }
-  return CR_UNTRANSLATED;
+  return defval;
 }
 
 
