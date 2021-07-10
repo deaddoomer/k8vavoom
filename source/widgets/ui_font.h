@@ -80,7 +80,7 @@ protected:
 protected:
   static void ParseTextColors ();
   static void ParseFontDefs ();
-  static void MarkUsedColors (VTexture *, bool *);
+  static void MarkUsedColors (VTexture *Tex, bool *Used);
 
 public:
   VFont ();
@@ -89,11 +89,20 @@ public:
 
   inline VName GetFontName () const noexcept { return Name; }
 
-  VTexture *GetChar (int, int *, int);
-  int GetCharWidth (int);
-  int StringWidth (VStr);
-  int TextWidth (VStr);
-  int TextHeight (VStr);
+  // can return `nullptr` (pWidth is space width in this case)
+  // `pWidth` can be `nullptr`
+  // color is color translation (CR_XXX); -1 means "untranslated"
+  VTexture *GetChar (int Chr, int *pWidth, int Color=-1);
+  int GetCharWidth (int Chr);
+
+  // doesn't properly process newlines (but ignores color escapes)
+  // this properly processes Utf8 chars
+  int StringWidth (VStr String);
+
+  // properly processes newlines and color escapes
+  int TextWidth (VStr String);
+  int TextHeight (VStr String);
+
   int SplitText (VStr, TArray<VSplitLine>&, int, bool trimRight=true);
   VStr SplitTextWithNewlines (VStr Text, int MaxWidth, bool trimRight=true);
 
@@ -108,7 +117,7 @@ public:
   static VFont *GetFont (VStr AName, VStr LumpName);
   static VFont *GetFont (VStr AName);
   static int ParseColorEscape (const char *&, int, int, VStr *escstr=nullptr);
-  static int FindTextColor (VName);
+  static int FindTextColor (const char *Name);
 
   // generates lump name from font name
   // names in the format of 'name:path' will be split on ':'

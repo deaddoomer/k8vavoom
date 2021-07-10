@@ -844,7 +844,7 @@ void VFont::BuildCharMap () {
 
 //==========================================================================
 //
-//  VFont::GetChar
+//  VFont::FindChar
 //
 //==========================================================================
 int VFont::FindChar (int Chr) {
@@ -876,7 +876,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
     Chr = VStr::ToUpper(Chr);
     Idx = FindChar(Chr);
     if (Idx < 0) {
-      *pWidth = SpaceWidth;
+      if (pWidth) *pWidth = SpaceWidth;
       return nullptr;
     }
   }
@@ -885,7 +885,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
   VTexture *Tex = Chars[Idx].Textures ? Chars[Idx].Textures[Color] :
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
-  *pWidth = Tex->GetScaledWidthI();
+  if (pWidth) *pWidth = (Tex ? Tex->GetScaledWidthI() : SpaceWidth);
   return Tex;
 }
 
@@ -913,6 +913,7 @@ int VFont::GetCharWidth (int Chr) {
 //
 //==========================================================================
 void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
+  if (!Tex || Tex->Format == TEXFMT_RGBA) return; // wtf?
   const vuint8 *Pixels = Tex->GetPixels8();
   int Count = Tex->GetWidth()*Tex->GetHeight();
   for (int i = 0; i < Count; ++i) Used[Pixels[i]] = true;
@@ -954,7 +955,7 @@ int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor
     if (escstr) (*escstr) += CName;
     if (*Chr == ']') ++Chr;
     if (escstr) (*escstr) += ']';
-    Col = FindTextColor(*CName.ToLower());
+    Col = FindTextColor(*CName);
   } else {
     /*if (!Col)*/ --Chr;
     Col = CR_UNDEFINED;
@@ -972,9 +973,10 @@ int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor
 //  VFont::FindTextColor
 //
 //==========================================================================
-int VFont::FindTextColor (VName Name) {
-  for (int i = 0; i < TextColorLookup.length(); ++i) {
-    if (TextColorLookup[i].Name == Name) return TextColorLookup[i].Index;
+int VFont::FindTextColor (const char *Name) {
+  if (!Name || !Name[0]) return CR_UNTRANSLATED;
+  for (auto &&it : TextColorLookup) {
+    if (VStr::strEquCI(*it.Name, Name)) return it.Index;
   }
   return CR_UNTRANSLATED;
 }
@@ -987,14 +989,18 @@ int VFont::FindTextColor (VName Name) {
 //==========================================================================
 int VFont::StringWidth (VStr String) {
   int w = 0;
-  for (const char *SPtr = *String; *SPtr; ) {
-    int c = VStr::Utf8GetChar(SPtr);
-    // check for color escape
-    if (c == TEXT_COLOR_ESCAPE) {
-      ParseColorEscape(SPtr, CR_UNDEFINED, CR_UNDEFINED);
-      continue;
+  if (!String.isEmpty()) {
+    const char *SPtr = *String;
+    for (;;) {
+      const int c = VStr::Utf8GetChar(SPtr);
+      if (!c) break;
+      // check for color escape
+      if (c == TEXT_COLOR_ESCAPE) {
+        ParseColorEscape(SPtr, CR_UNDEFINED, CR_UNDEFINED);
+      } else {
+        w += GetCharWidth(c)+GetKerning();
+      }
     }
-    w += GetCharWidth(c)+GetKerning();
   }
   return w;
 }

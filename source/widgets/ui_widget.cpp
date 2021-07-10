@@ -2666,7 +2666,7 @@ IMPLEMENT_FUNCTION(VWidget, set_CursorY) {
 IMPLEMENT_FUNCTION(VWidget, FindTextColor) {
   VStr Name;
   vobjGetParam(Name);
-  RET_INT(VFont::FindTextColor(*Name.ToLower()));
+  RET_INT(VFont::FindTextColor(*Name));
 }
 
 IMPLEMENT_FUNCTION(VWidget, TranslateXY) {
