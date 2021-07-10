@@ -1611,6 +1611,59 @@ static TArray<VScriptParser *> ParseStatesStack;
 
 //==========================================================================
 //
+//  FindIncludeLump
+//
+//==========================================================================
+static int FindRelativeIncludeLump (int srclump, VStr fname) {
+  //GCon->Logf(NAME_Debug, "FindRelativeIncludeLump: fname=<%s>; srclump=%d (%s)", *fname, srclump, *W_RealLumpName(srclump));
+
+  if (fname.isEmpty()) return -1;
+  if (srclump < 0 || fname.startsWith("/")) return -1;
+
+  VStr fn = W_RealLumpName(srclump);
+  if (fn.indexOf('/') < 0) return -1;
+  fn = fn.ExtractFilePath();
+  if (!fn.isEmpty()) fname = fn.appendPath(fname);
+  //GCon->Logf(NAME_Debug, "  ...trying <%s>", *fname);
+
+  return /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(srclump, fname);
+}
+
+
+//==========================================================================
+//
+//  FindIncludeLump
+//
+//==========================================================================
+static int FindIncludeLump (int srclump, VStr fname) {
+  if (fname.isEmpty()) return -1;
+  int Lump = /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(srclump, fname);
+  if (Lump >= 0) return Lump;
+
+  // for base packs, try local include first
+  if (thisIsBasePak) {
+    Lump = FindRelativeIncludeLump(srclump, fname);
+    if (Lump >= 0) return Lump;
+  }
+
+  // check WAD lump only if it's no longer than 8 characters and has no path separator
+  if (fname.length() <= 8 && fname.indexOf('/') < 0) {
+    if (srclump < 0) {
+      Lump = W_CheckNumForName(VName(*fname, VName::AddLower8));
+    } else {
+      Lump = W_CheckNumForNameInFile(VName(*fname, VName::AddLower8), W_LumpFile(srclump));
+    }
+  }
+
+  // for non-base packs, try local include last
+  if (!thisIsBasePak) Lump = FindRelativeIncludeLump(srclump, fname);
+
+  return Lump;
+}
+
+
+//==========================================================================
+//
 //  ClearStatesStack
 //
 //==========================================================================
@@ -1649,20 +1702,11 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     if (sc->Check("stateinclude")) {
       if (ParseStatesStack.length() > 32) sc->Error("too many state includes");
       sc->ExpectString();
-      int Lump = /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(mainDecorateLump, sc->String);
-      // check WAD lump only if it's no longer than 8 characters and has no path separator
-      if (Lump < 0 && sc->String.Length() <= 8 && sc->String.IndexOf('/') < 0) {
-        if (mainDecorateLump < 0) {
-          Lump = W_CheckNumForName(VName(*sc->String, VName::AddLower8));
-        } else {
-          Lump = W_CheckNumForNameInFile(VName(*sc->String, VName::AddLower8), W_LumpFile(mainDecorateLump));
-        }
-      }
-      if (Lump < 0) sc->Error(va("Lump %s not found", *sc->String));
+      int Lump = FindIncludeLump(sc->SourceLump, sc->String);
+      if (Lump < 0) sc->Error(va("Include lump \"%s\" not found", *sc->String.quote()));
       SkipSemicolonsToEOL(sc);
-      //ParseDecorate(new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
       //GCon->Logf(NAME_Debug, "*** state include: %s", *W_FullLumpName(Lump));
-      VScriptParser *nsp = new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
+      VScriptParser *nsp = VScriptParser::NewWithLump(Lump);
       dcTotalSourceSize += nsp->GetScriptSize();
       ParseStatesStack.append(sc);
       sc = nsp;
@@ -3883,20 +3927,25 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
       sc->SkipLine();
       continue;
     }
-    if (sc->Check("#include")) {
+
+    bool isInclude = false;
+    if (sc->Check("#")) {
+      if (!sc->Check("include")) sc->Error(va("invalid decorate command '#%s'", *sc->String));
+      isInclude = true;
+    } else if (sc->Check("#include")) {
+      isInclude = true;
+    }
+
+    if (isInclude) {
       sc->ExpectString();
-      int Lump = /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(mainDecorateLump, sc->String);
-      // check WAD lump only if it's no longer than 8 characters and has no path separator
-      if (Lump < 0 && sc->String.Length() <= 8 && sc->String.IndexOf('/') < 0) {
-        if (mainDecorateLump < 0) {
-          Lump = W_CheckNumForName(VName(*sc->String, VName::AddLower8));
-        } else {
-          Lump = W_CheckNumForNameInFile(VName(*sc->String, VName::AddLower8), W_LumpFile(mainDecorateLump));
-        }
-      }
-      if (Lump < 0) sc->Error(va("Lump %s not found", *sc->String));
-      ParseDecorate(new VScriptParser(/*sc->String*/W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
-    } else if (sc->Check("const")) {
+      int Lump = FindIncludeLump(sc->SourceLump, sc->String);
+      if (Lump < 0) sc->Error(va("Include lump \"%s\" not found", *sc->String.quote()));
+      SkipSemicolonsToEOL(sc);
+      ParseDecorate(VScriptParser::NewWithLump(Lump), ClassFixups, newWSlots);
+      continue;
+    }
+
+    if (sc->Check("const")) {
       ParseConst(sc, DecPkg);
     } else if (sc->Check("enum")) {
       ParseEnum(sc, DecPkg);
@@ -4053,6 +4102,7 @@ void ProcessDecorateScripts () {
     VStream *Strm = W_CreateLumpReaderNum(Lump);
     vassert(Strm);
     VScriptParser *sc = new VScriptParser(W_FullLumpName(Lump), Strm);
+    sc->SourceLump = Lump;
     while (sc->GetString()) {
       if (sc->String.length() == 0) continue;
       IgnoredDecorateActions.put(sc->String, true);
@@ -4179,7 +4229,7 @@ void ProcessDecorateScripts () {
     thisIsBasePak = false;
     bloodOverrideAllowed = false;
     GlobalDisableOverride = false;
-    ParseDecorate(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassFixups, newWSlots);
+    ParseDecorate(VScriptParser::NewWithLump(Lump), ClassFixups, newWSlots);
     thisIsBasePak = false; // reset it
     mainDecorateLump = -1;
   }
