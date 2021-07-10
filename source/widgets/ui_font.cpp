@@ -84,8 +84,22 @@ private:
   rgba_t *Palette;
 
 public:
-  VFontChar (VTexture *, rgba_t *);
+  VFontChar (VTexture *ATex, rgba_t *APalette);
   virtual ~VFontChar () override;
+  virtual vuint8 *GetPixels () override;
+  virtual rgba_t *GetPalette () override;
+  virtual VTexture *GetHighResolutionTexture () override;
+};
+
+class VByteFontChar : public VTexture {
+private:
+  vuint8 *BytePixels;
+  rgba_t *Palette;
+
+public:
+  // will own `aBytePixels`
+  VByteFontChar (vuint8 *aBytePixels, int aWidth, int aHeight, int xofs, int yofs, rgba_t *APalette);
+  virtual ~VByteFontChar () override;
   virtual vuint8 *GetPixels () override;
   virtual rgba_t *GetPalette () override;
   virtual VTexture *GetHighResolutionTexture () override;
@@ -101,12 +115,14 @@ private:
   int MaxCol;
 
 public:
-  VFontChar2 (int, int, int, int, rgba_t *, int);
+  VFontChar2 (int ALumpNum, int AFilePos, int CharW, int CharH, rgba_t *APalette, int AMaxCol);
   virtual ~VFontChar2 () override;
   virtual vuint8 *GetPixels () override;
   virtual rgba_t *GetPalette () override;
 };
 
+
+#include "ui_pcf_parse.cpp"
 
 // ////////////////////////////////////////////////////////////////////////// //
 VFont *SmallFont = nullptr;
@@ -1545,6 +1561,85 @@ VTexture *VFontChar::GetHighResolutionTexture () {
     if (Tex) HiResTexture = new VFontChar(Tex, Palette);
   }
   return HiResTexture;
+}
+
+
+//==========================================================================
+//
+//  VByteFontChar::VByteFontChar
+//
+//  will own `aBytePixels`
+//
+//==========================================================================
+VByteFontChar::VByteFontChar (vuint8 *aBytePixels, int aWidth, int aHeight, int xofs, int yofs, rgba_t *APalette)
+  : BytePixels(aBytePixels)
+  , Palette(APalette)
+{
+  if (aWidth < 1) aWidth = 1;
+  if (aHeight < 1) aHeight = 1;
+  if (aWidth > 1024 || aHeight > 1024) {
+    Z_Free(BytePixels);
+    BytePixels = nullptr;
+    aWidth = 1;
+    aHeight = 1;
+  }
+  if (!BytePixels) BytePixels = (vuint8 *)Z_Calloc(aWidth*aHeight);
+
+  Type = TEXTYPE_FontChar;
+  mFormat = mOrigFormat = TEXFMT_8Pal;
+#ifdef VAVOOM_NAME_FONT_TEXTURES
+  Name = VName(va("\x7f_fontchar_%d ", vfontcharTxCount++));
+#else
+  Name = NAME_None;
+#endif
+  Width = aWidth;
+  Height = aHeight;
+  SOffset = xofs;
+  TOffset = yofs;
+  SScale = 1.0f;
+  TScale = 1.0f;
+}
+
+
+//==========================================================================
+//
+//  VByteFontChar::~VByteFontChar
+//
+//==========================================================================
+VByteFontChar::~VByteFontChar () {
+  Z_Free(BytePixels);
+  BytePixels = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VByteFontChar::GetPixels
+//
+//==========================================================================
+vuint8 *VByteFontChar::GetPixels () {
+  shadeColor = -1;
+  return BytePixels;
+}
+
+
+//==========================================================================
+//
+//  VByteFontChar::GetPalette
+//
+//==========================================================================
+rgba_t *VByteFontChar::GetPalette () {
+  return Palette;
+}
+
+
+//==========================================================================
+//
+//  VByteFontChar::GetHighResolutionTexture
+//
+//==========================================================================
+VTexture *VByteFontChar::GetHighResolutionTexture () {
+  return nullptr;
 }
 
 
