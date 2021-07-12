@@ -331,6 +331,7 @@ VFileDirectory::VFileDirectory (VPakFileBase *aowner, bool aaszip)
 //
 //==========================================================================
 VFileDirectory::~VFileDirectory () {
+  clear();
 }
 
 
@@ -340,7 +341,7 @@ VFileDirectory::~VFileDirectory () {
 //
 //==========================================================================
 const VStr VFileDirectory::getArchiveName () const {
-  return (owner ? owner->PakFileName : VStr::EmptyString);
+  return (owner ? owner->PakFileName.cloneUniqueMT() : VStr::EmptyString);
 }
 
 
@@ -352,6 +353,7 @@ const VStr VFileDirectory::getArchiveName () const {
 void VFileDirectory::append (const VPakFileInfo &fi) {
   if (files.length() >= 65520) Sys_Error("Archive \"%s\" contains too many files", *getArchiveName());
   files.append(fi);
+  //GLog.Logf(NAME_Debug, "VFileDirectory::append:<%s>: <%s>", (owner ? *owner->PakFileName : ""), *fi.fileNameIntr);
 }
 
 
@@ -360,10 +362,14 @@ void VFileDirectory::append (const VPakFileInfo &fi) {
 //  VFileDirectory::appendAndRegister
 //
 //==========================================================================
+/*
 int VFileDirectory::appendAndRegister (const VPakFileInfo &fi) {
+  if (files.length() >= 65520) Sys_Error("Archive \"%s\" contains too many files", *getArchiveName());
   // link lumps
   int f = files.length();
   files.append(fi);
+  GLog.Logf(NAME_Debug, "VFileDirectory::append:<%s>: <%s>", (owner ? *owner->PakFileName : ""), *fi.fileNameIntr);
+
   VPakFileInfo &nfo = files[f];
   VName lmp = nfo.lumpName;
   nfo.nextLump = -1; // just in case
@@ -381,14 +387,17 @@ int VFileDirectory::appendAndRegister (const VPakFileInfo &fi) {
     }
     lumpmap.put(lmp, f);
   }
-  if (nfo.fileName.length()) {
+
+  if (nfo.fileNameIntr.length()) {
     // put files into hashmap
-    auto pfp = filemap.find(nfo.fileName);
+    auto pfp = filemap.find(nfo.fileNameIntr);
     if (pfp) nfo.prevFile = *pfp;
-    filemap.put(nfo.fileName, f);
+    filemap.put(nfo.fileNameIntr, f);
   }
+
   return f;
 }
+*/
 
 
 //==========================================================================
@@ -435,11 +444,11 @@ void VFileDirectory::buildLumpNames () {
 
   // build "files to remove" list from filters
   for (auto &&fi : files) {
-    VStr fn = fi.fileName;
+    VStr fn(fi.fileNameIntr);
     if (!fn.startsWith("filter/")) continue;
     if (owner) owner->hadfilters = true;
     if (!FL_CheckFilterName(fn)) continue;
-    //GLog.Logf(NAME_Debug, "FILTER FILE: <%s> -> <%s>", *fi.fileName, *fn);
+    //GLog.Logf(NAME_Debug, "FILTER FILE: <%s> -> <%s>", *fi.fileNameIntr, *fn);
     // special extensions ".hide" and ".remove" will hide the file
     (void)IsHideRemoveFilterFileName(fn);
     // put everything in "hide map", becase the corresponding files will be hard-replaced
@@ -449,50 +458,50 @@ void VFileDirectory::buildLumpNames () {
   // we need index too, so let's do it without iterator
   for (int i = 0; i < files.length(); ++i) {
     VPakFileInfo &fi = files[i];
-    fi.fileName = fi.fileName.toLowerCase(); // just in case
+    if (!fi.fileNameIntr.isLowerCase()) fi.SetFileName(fi.fileNameIntr.toLowerCase()); // just in case
 
     if (fi.lumpName != NAME_None) {
       if (!VStr::isLowerCase(*fi.lumpName)) {
         GLog.Logf(NAME_Warning, "Archive \"%s\" contains non-lowercase lump name '%s'", *getArchiveName(), *fi.lumpName);
       }
     } else {
-      if (fi.fileName.isEmpty() || fi.fileName.endsWith("/")) continue;
+      if (fi.fileNameIntr.isEmpty() || fi.fileNameIntr.endsWith("/")) continue;
 
       // filtering
-      if (fi.fileName.startsWith("filter/")) {
-        VStr fn = fi.fileName;
+      if (fi.fileNameIntr.startsWith("filter/")) {
+        VStr fn(fi.fileNameIntr);
         if (!FL_CheckFilterName(fn)) {
-          //GLog.Logf(NAME_Init, "FILTER CHECK: dropped '%s'", *fi.fileName);
+          //GLog.Logf(NAME_Init, "FILTER CHECK: dropped '%s'", *fi.fileNameIntr);
           // hide this file
-          fi.fileName.clear(); // hide this file
+          fi.ClearFileName(); // hide this file
           continue;
         }
         #if 0
         else {
-          GLog.Logf(NAME_Init, "FILTER CHECK: '%s' -> '%s'", *fi.fileName, *fn);
+          GLog.Logf(NAME_Init, "FILTER CHECK: '%s' -> '%s'", *fi.fileNameIntr, *fn);
         }
         #endif
         // special extensions ".hide" and ".remove" will hide the file
         if (IsHideRemoveFilterFileName(fn)) {
-          fi.fileName.clear(); // hide this file
+          fi.ClearFileName(); // hide this file
           continue;
         }
-        fi.fileName = fn;
+        fi.SetFileName(fn);
       } else {
         // check "deletion map"
-        if (fnamedelmap.has(fi.fileName)) {
-          fi.fileName.clear(); // hide this file
+        if (fnamedelmap.has(fi.fileNameIntr)) {
+          fi.ClearFileName(); // hide this file
           continue;
         }
       }
 
       // set up lump name for WAD-like access
-      VStr lumpName = fi.fileName.ExtractFileName().StripExtension();
+      VStr lumpName(fi.fileNameIntr.ExtractFileName().StripExtension());
 
       // do not register ".rc" lumps in "k8vavoom" dir
-      if (fi.fileName.startsWithCI("k8vavoom/")) {
-        if (fi.fileName.endsWithCI(".rc") || lumpName.length() > 8) {
-          //GLog.Logf(NAME_Debug, "***+++*** IGNORED: <%s> (%s)", *fi.fileName, *lumpName);
+      if (fi.fileNameIntr.startsWithCI("k8vavoom/")) {
+        if (fi.fileNameIntr.endsWithCI(".rc") || lumpName.length() > 8) {
+          //GLog.Logf(NAME_Debug, "***+++*** IGNORED: <%s> (%s)", *fi.fileNameIntr, *lumpName);
           fi.lumpNamespace = -1;
           continue;
         }
@@ -500,12 +509,12 @@ void VFileDirectory::buildLumpNames () {
 
       if (fi.lumpNamespace == -1 && !lumpName.isEmpty()) {
         // map some directories to WAD namespaces
-        if (fi.fileName.IndexOf('/') == -1) {
+        if (fi.fileNameIntr.IndexOf('/') == -1) {
           fi.lumpNamespace = WADNS_Global;
         } else {
           fi.lumpNamespace = -1;
           for (const VPK3ResDirInfo *di = PK3ResourceDirs; di->pfx; ++di) {
-            if (fi.fileName.StartsWith(di->pfx)) {
+            if (fi.fileNameIntr.StartsWith(di->pfx)) {
               fi.lumpNamespace = di->wadns;
               break;
             }
@@ -515,32 +524,32 @@ void VFileDirectory::buildLumpNames () {
 
       // anything from other directories won't be accessed as lump
       if (fi.lumpNamespace == -1) {
-        lumpName = VStr();
+        lumpName.clear();
       } else {
         // hide wad files, 'cause they may conflict with normal files
         // wads will be correctly added by a separate function
-        if (VFS_ShouldIgnoreExt(fi.fileName)) {
+        if (VFS_ShouldIgnoreExt(fi.fileNameIntr)) {
           fi.lumpNamespace = -1;
-          lumpName = VStr();
+          lumpName.clear();
         }
       }
 
       // hide "sprofs" lumps?
       if (fsys_hide_sprofs && fi.lumpNamespace == WADNS_Global && lumpName.strEqu("sprofs")) {
         fi.lumpNamespace = -1;
-        lumpName = VStr();
+        lumpName.clear();
       }
 
       if ((fsys_skipSounds && fi.lumpNamespace == WADNS_Sounds) ||
           (fsys_skipSprites && fi.lumpNamespace == WADNS_Sprites))
       {
         fi.lumpNamespace = -1;
-        lumpName = VStr();
+        lumpName.clear();
       }
 
       if (fsys_skipDehacked && lumpName.strEqu("dehacked")) {
         fi.lumpNamespace = -1;
-        lumpName = VStr();
+        lumpName.clear();
       }
 
       // for sprites \ is a valid frame character, but is not allowed to
@@ -549,7 +558,7 @@ void VFileDirectory::buildLumpNames () {
         lumpName = lumpName.Replace("^", "\\");
       }
 
-      //GLog.Logf(NAME_Debug, "ZIP <%s> mapped to <%s> (%d)", *fi.fileName, *lumpName, (int)fi.lumpNamespace);
+      //GLog.Logf(NAME_Debug, "ZIP <%s> mapped to <%s> (%d)", *fi.fileNameIntr, *lumpName, (int)fi.lumpNamespace);
 
       // final lump name
       if (!lumpName.isEmpty()) {
@@ -701,29 +710,29 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
         files[*lsidp].nextLump = f; // link to the next one
         *lsidp = f; // update index
         if (doReports && !aszip && !IsDupLumpAllowed(lmp)) {
-          if (!dupsReported.put(fi.fileName, true)) {
-            GLog.Logf(NAME_Warning, "duplicate lump \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
-            GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+          if (!dupsReported.put(fi.fileNameIntr, true)) {
+            GLog.Logf(NAME_Warning, "duplicate lump \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
+            GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
           }
         }
       }
     }
 
     // register file
-    if (fi.fileName.length()) {
-      if (doReports && aszip && filemap.has(fi.fileName)) {
-        if (!dupsReported.put(fi.fileName, true)) {
-          GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileName, *getArchiveName());
-          GLog.Logf(NAME_Warning, "THIS IS FUCKIN' WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+    if (fi.fileNameIntr.length()) {
+      if (doReports && aszip && filemap.has(fi.fileNameIntr)) {
+        if (!dupsReported.put(fi.fileNameIntr, true)) {
+          GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
+          GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
         }
       }
 
       // put files into hashmap
-      auto pfp = filemap.find(fi.fileName);
+      auto pfp = filemap.find(fi.fileNameIntr);
       if (pfp) fi.prevFile = *pfp;
-      filemap.put(fi.fileName, f);
+      filemap.put(fi.fileNameIntr, f);
     }
-    //if (fsys_dev_dump_paks) GLog.Logf(NAME_Debug, "%s: %s", *PakFileName, *Files[f].fileName);
+    //if (fsys_dev_dump_paks) GLog.Logf(NAME_Debug, "%s: %s", *PakFileName, *Files[f].fileNameIntr);
   }
 
   int modid = (pak && !fsys_detected_mod ? callModDetectors(this, pak, seenZScriptLump) : 0);
@@ -748,7 +757,7 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
     GLog.Logf("======== PAK: %s ========", *getArchiveName());
     for (int f = 0; f < files.length(); ++f) {
       VPakFileInfo &fi = files[f];
-      GLog.Logf("  %d: file=<%s>; lump=<%s>; ns=%d; size=%d; ofs=%d", f, *fi.fileName, *fi.lumpName, fi.lumpNamespace, fi.filesize, fi.pakdataofs);
+      GLog.Logf("  %d: file=<%s>; lump=<%s>; ns=%d; size=%d; ofs=%d", f, *fi.fileNameIntr, *fi.lumpName, fi.lumpNamespace, fi.filesize, fi.pakdataofs);
     }
   }
 }
@@ -1047,7 +1056,7 @@ void VPakFileBase::Close () {
 //==========================================================================
 int VPakFileBase::CheckNumForName (VName lumpName, EWadNamespace NS, bool wantFirst) {
   int res = (wantFirst ? pakdir.findFirstLump(lumpName, NS) : pakdir.findLastLump(lumpName, NS));
-  //GLog.Logf("CheckNumForName:<%s>: ns=%d; first=%d; res=%d; name=<%s> (%s)", *PakFileName, NS, (int)wantFirst, res, *pakdir.normalizeLumpName(lumpName), *lumpName);
+  //GLog.Logf(NAME_Debug, "CheckNumForName:<%s>: ns=%d; first=%d; res=%d; name=<%s> (%s)", *PakFileName, NS, (int)wantFirst, res, *pakdir.normalizeLumpName(lumpName), *lumpName);
   return res;
 }
 
@@ -1057,8 +1066,8 @@ int VPakFileBase::CheckNumForName (VName lumpName, EWadNamespace NS, bool wantFi
 //  VPakFileBase::CheckNumForFileName
 //
 //==========================================================================
-int VPakFileBase::CheckNumForFileName (VStr fileName) {
-  return pakdir.findFile(fileName);
+int VPakFileBase::CheckNumForFileName (VStr aFileName) {
+  return pakdir.findFile(aFileName);
 }
 
 
@@ -1082,25 +1091,25 @@ int VPakFileBase::FindACSObject (VStr fname) {
     if (fi.lumpNamespace != WADNS_ACSLibrary) continue;
     if (fi.lumpName != ln) continue;
     if (fi.filesize >= 0 && fi.filesize < 12) continue; // why not? (it is <0 for disk mounts, so check them anyway)
-    if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: fi='%s', lump='%s', ns=%d (%d)", *fi.fileName, *fi.lumpName, fi.lumpNamespace, WADNS_ACSLibrary);
-    const VStr fn = fi.fileName.ExtractFileBaseName().StripExtension();
+    if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: fi='%s', lump='%s', ns=%d (%d)", *fi.fileNameIntr, *fi.lumpName, fi.lumpNamespace, WADNS_ACSLibrary);
+    const VStr fn(fi.fileNameIntr.ExtractFileBaseName().StripExtension());
     if (fn.ICmp(afn) == 0) {
       // exact match
-      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: %s", *fi.fileName);
+      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: %s", *fi.fileNameIntr);
       memset(sign, 0, 4);
       ReadFromLump(f, sign, 0, 4);
       if (memcmp(sign, "ACS", 3) != 0) continue;
       if (sign[3] != 0 && sign[3] != 'E' && sign[3] != 'e') continue;
-      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: %s -- HIT!", *fi.fileName);
+      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS0: %s -- HIT!", *fi.fileNameIntr);
       return f;
     }
     if (rough < 0 || (fn.length() >= afn.length() && prevlen > fn.length())) {
-      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS1: %s", *fi.fileName);
+      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS1: %s", *fi.fileNameIntr);
       memset(sign, 0, 4);
       ReadFromLump(f, sign, 0, 4);
       if (memcmp(sign, "ACS", 3) != 0) continue;
       if (sign[3] != 0 && sign[3] != 'E' && sign[3] != 'e') continue;
-      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS1: %s -- HIT!", *fi.fileName);
+      if (fsys_developer_debug) GLog.Logf(NAME_Dev, "*** ACS1: %s -- HIT!", *fi.fileNameIntr);
       rough = f;
       prevlen = fn.length();
     }
@@ -1120,23 +1129,23 @@ void VPakFileBase::ReadFromLump (int Lump, void *Dest, int Pos, int Size) {
   vassert(Size >= 0);
   if (Size == 0) return;
   VStream *Strm = CreateLumpReaderNum(Lump);
-  if (!Strm) Sys_Error("error reading lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileName);
+  if (!Strm) Sys_Error("error reading lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
   // special case: unpacked size is unknown, cache it
   int fsize = pakdir.files[Lump].filesize;
   if (fsize == -1) {
     fsize = Strm->TotalSize();
-    if (Strm->IsError()) Sys_Error("error getting lump '%s:%s' size", *GetPrefix(), *pakdir.files[Lump].fileName);
+    if (Strm->IsError()) Sys_Error("error getting lump '%s:%s' size", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
     UpdateLumpLength(Lump, fsize);
   }
   if (fsize < 0 || Pos >= fsize || fsize-Pos < Size) {
     delete Strm;
-    Sys_Error("error reading lump '%s:%s' (out of data)", *GetPrefix(), *pakdir.files[Lump].fileName);
+    Sys_Error("error reading lump '%s:%s' (out of data)", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
   }
   Strm->Seek(Pos);
   Strm->Serialise(Dest, Size);
   bool wasError = Strm->IsError();
   delete Strm;
-  if (wasError) Sys_Error("error reading lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileName);
+  if (wasError) Sys_Error("error reading lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
 }
 
 
@@ -1150,11 +1159,11 @@ int VPakFileBase::LumpLength (int Lump) {
   // special case: unpacked size is unknown, read and cache it
   if (pakdir.files[Lump].filesize == -1) {
     VStream *Strm = CreateLumpReaderNum(Lump);
-    if (!Strm) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileName);
+    if (!Strm) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
     int fsize = Strm->TotalSize();
     bool wasError = Strm->IsError();
     delete Strm;
-    if (wasError || /*pakdir.files[Lump].filesize*/fsize < 0) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileName);
+    if (wasError || /*pakdir.files[Lump].filesize*/fsize < 0) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
     UpdateLumpLength(Lump, fsize);
     return fsize;
   }
@@ -1180,7 +1189,7 @@ VName VPakFileBase::LumpName (int Lump) {
 //==========================================================================
 VStr VPakFileBase::LumpFileName (int Lump) {
   if (Lump < 0 || Lump >= pakdir.files.length()) return VStr();
-  return pakdir.files[Lump].fileName;
+  return pakdir.files[Lump].fileNameIntr;
 }
 
 
@@ -1203,14 +1212,14 @@ void VPakFileBase::ListWadFiles (TArray<VStr> &list) {
   TMap<VStr, bool> hits;
   for (int i = 0; i < pakdir.files.length(); ++i) {
     const VPakFileInfo &fi = pakdir.files[i];
-    if (fi.fileName.length() < 5) continue;
+    if (fi.fileNameIntr.length() < 5) continue;
     // only .wad files
-    if (!fi.fileName.EndsWith(".wad")) continue;
+    if (!fi.fileNameIntr.EndsWith(".wad")) continue;
     // don't add WAD files in subdirectories
-    if (fi.fileName.IndexOf('/') != -1) continue;
-    if (hits.has(fi.fileName)) continue;
-    hits.put(fi.fileName, true);
-    list.Append(fi.fileName);
+    if (fi.fileNameIntr.IndexOf('/') != -1) continue;
+    if (hits.has(fi.fileNameIntr)) continue;
+    hits.put(fi.fileNameIntr, true);
+    list.Append(fi.fileNameIntr);
   }
 }
 
@@ -1224,14 +1233,14 @@ void VPakFileBase::ListPk3Files (TArray<VStr> &list) {
   TMap<VStr, bool> hits;
   for (int i = 0; i < pakdir.files.length(); ++i) {
     const VPakFileInfo &fi = pakdir.files[i];
-    if (fi.fileName.length() < 5) continue;
+    if (fi.fileNameIntr.length() < 5) continue;
     // only .pk3 files
-    if (!fi.fileName.EndsWith(".pk3")) continue;
+    if (!fi.fileNameIntr.EndsWith(".pk3")) continue;
     // don't add pk3 files in subdirectories
-    if (fi.fileName.IndexOf('/') != -1) continue;
-    if (hits.has(fi.fileName)) continue;
-    hits.put(fi.fileName, true);
-    list.Append(fi.fileName);
+    if (fi.fileNameIntr.IndexOf('/') != -1) continue;
+    if (hits.has(fi.fileNameIntr)) continue;
+    hits.put(fi.fileNameIntr, true);
+    list.Append(fi.fileNameIntr);
   }
 }
 

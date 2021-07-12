@@ -84,7 +84,7 @@ void VDFWadFile::OpenArchive (VStream *fstream) {
     }
 
     VPakFileInfo fi;
-    fi.fileName = curpath+VStr(namebuf);
+    fi.SetFileName(curpath+VStr(namebuf));
     fi.pakdataofs = pkofs;
     fi.packedsize = pksize;
     fi.filesize = -1;
@@ -106,6 +106,6 @@ VStream *VDFWadFile::CreateLumpReaderNum (int Lump) {
   vassert(Lump < pakdir.files.length());
   const VPakFileInfo &fi = pakdir.files[Lump];
   // this is mt-protected
-  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileName, archStream, fi.pakdataofs, fi.filesize, &rdlock);
+  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileNameIntr, archStream, fi.pakdataofs, fi.filesize, &rdlock);
   return S;
 }

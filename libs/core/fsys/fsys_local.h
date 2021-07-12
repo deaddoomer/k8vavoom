@@ -114,7 +114,7 @@ public:
 // information about a file in the zipfile
 // also used for "pakdir", and "wad"
 struct VPakFileInfo {
-  VStr fileName; // name of the file (i.e. full name, lowercased)
+  VStr fileNameIntr; // name of the file (i.e. full name, lowercased)
   VName lumpName;
   /*EWadNamespace*/int lumpNamespace;
   int nextLump; // next lump with the same name (forward order)
@@ -129,10 +129,13 @@ struct VPakFileInfo {
   vuint16 filenamesize; // filename length
   vuint32 pakdataofs; // relative offset of local header
   // for dirpaks
-  VStr diskName;
+  VStr diskNameIntr;
 
-  VPakFileInfo ()
-    : fileName()
+  // so our strings will have rc at least 2
+  VStr strCopy0, strCopy1;
+
+  inline VPakFileInfo () noexcept
+    : fileNameIntr()
     , lumpName(NAME_None)
     , lumpNamespace(-1)
     , nextLump(-1)
@@ -144,9 +147,19 @@ struct VPakFileInfo {
     , filesize(0)
     , filenamesize(0)
     , pakdataofs(0)
-    , diskName()
+    , diskNameIntr()
+    , strCopy0()
+    , strCopy1()
   {
   }
+
+  inline VStr GetFileName () const noexcept { return fileNameIntr; }
+  inline VStr GetDiskName () const noexcept { return diskNameIntr; }
+
+  inline void SetFileName (VStr s) noexcept { fileNameIntr = s; strCopy0 = fileNameIntr; }
+  inline void SetDiskName (VStr s) noexcept { diskNameIntr = s; strCopy1 = diskNameIntr; }
+
+  inline void ClearFileName () noexcept { fileNameIntr.clear(); strCopy0.clear(); }
 };
 
 
@@ -175,7 +188,7 @@ public:
 
   void append (const VPakFileInfo &fi);
 
-  int appendAndRegister (const VPakFileInfo &fi);
+  //int appendAndRegister (const VPakFileInfo &fi);
 
   // won't touch entries with `lumpName != NAME_None`
   void buildLumpNames ();

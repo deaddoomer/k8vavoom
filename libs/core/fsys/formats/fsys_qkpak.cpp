@@ -99,7 +99,7 @@ void VQuakePakFile::OpenArchive (VStream *fstream, int signtype) {
     if (zfname.length() == 0 || zfname.endsWith("/")) continue; // something strange
 
     VPakFileInfo fi;
-    fi.fileName = zfname;
+    fi.SetFileName(zfname);
     fi.pakdataofs = ofs;
     fi.filesize = size;
     pakdir.append(fi);
@@ -120,6 +120,6 @@ VStream *VQuakePakFile::CreateLumpReaderNum (int Lump) {
   vassert(Lump < pakdir.files.length());
   const VPakFileInfo &fi = pakdir.files[Lump];
   // this is mt-protected
-  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileName, archStream, fi.pakdataofs, fi.filesize, &rdlock);
+  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileNameIntr, archStream, fi.pakdataofs, fi.filesize, &rdlock);
   return S;
 }

@@ -221,19 +221,19 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     }
 
     if (addIt) {
-      file_info.fileName = zfname;
+      file_info.SetFileName(zfname);
 
-      if (canHasPrefix && file_info.fileName.IndexOf('/') == -1) canHasPrefix = false;
+      if (canHasPrefix && file_info.fileNameIntr.IndexOf('/') == -1) canHasPrefix = false;
 
       // ignore "dehacked.txt" included in some idarchive zips with "dehacked.exe"
       if (isPK3 || !zfname.strEquCI("dehacked.txt")) {
         if (canHasPrefix) {
           for (const VPK3ResDirInfo *di = PK3ResourceDirs; di->pfx; ++di) {
-            if (file_info.fileName.StartsWith(di->pfx)) { canHasPrefix = false; break; }
+            if (file_info.fileNameIntr.StartsWith(di->pfx)) { canHasPrefix = false; break; }
           }
           if (canHasPrefix) {
             for (const char **dn = moreresdirs; *dn; ++dn) {
-              if (file_info.fileName.StartsWith(*dn)) { canHasPrefix = false; break; }
+              if (file_info.fileNameIntr.StartsWith(*dn)) { canHasPrefix = false; break; }
             }
           }
         }
@@ -248,18 +248,18 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
 
   // find and remove common prefix
   if (canHasPrefix && pakdir.files.length() > 0) {
-    VStr xpfx = pakdir.files[0].fileName;
+    VStr xpfx = pakdir.files[0].fileNameIntr;
     const int sli = xpfx.IndexOf('/');
     if (sli > 0 && !xpfx.startsWithCI("filter/")) {
       xpfx = VStr(xpfx, 0, sli+1); // extract prefix
       for (int i = 0; i < pakdir.files.length(); ++i) {
-        if (!pakdir.files[i].fileName.StartsWith(xpfx)) { canHasPrefix = false; break; }
+        if (!pakdir.files[i].fileNameIntr.StartsWith(xpfx)) { canHasPrefix = false; break; }
       }
       if (canHasPrefix) {
         // remove prefix
         //GLog.Logf("*** ARK: <%s>:<%s> pfx=<%s>", *PakFileName, *PakFileName.ExtractFileExtension(), *xpfx);
         for (int i = 0; i < pakdir.files.length(); ++i) {
-          pakdir.files[i].fileName = VStr(pakdir.files[i].fileName, sli+1, pakdir.files[i].fileName.length()-sli-1);
+          pakdir.files[i].SetFileName(VStr(pakdir.files[i].fileNameIntr, sli+1, pakdir.files[i].fileNameIntr.length()-sli-1));
           //printf("new: <%s>\n", *Files[i].Name);
         }
       }
@@ -329,5 +329,5 @@ vuint32 VZipFile::SearchCentralDir (VStream *strm) {
 VStream *VZipFile::CreateLumpReaderNum (int Lump) {
   vassert(Lump >= 0);
   vassert(Lump < pakdir.files.length());
-  return new VZipFileReader(PakFileName+":"+pakdir.files[Lump].fileName, archStream, BytesBeforeZipFile, pakdir.files[Lump], &rdlock);
+  return new VZipFileReader(PakFileName+":"+pakdir.files[Lump].fileNameIntr, archStream, BytesBeforeZipFile, pakdir.files[Lump], &rdlock);
 }

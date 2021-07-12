@@ -286,7 +286,7 @@ VZipFileReader::~VZipFileReader() {
 //
 //==========================================================================
 VStr VZipFileReader::GetName () const {
-  return fname.cloneUnique();
+  return fname.cloneUniqueMT();
 }
 
 

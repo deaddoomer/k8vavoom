@@ -279,7 +279,7 @@ VZLibStreamReader::~VZLibStreamReader () {
 //
 //==========================================================================
 VStr VZLibStreamReader::GetName () const {
-  return mFileName.cloneUnique();
+  return mFileName.cloneUniqueMT();
 }
 
 

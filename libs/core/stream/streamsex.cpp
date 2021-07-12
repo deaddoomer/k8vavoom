@@ -144,7 +144,7 @@ void VAndroidFileStreamRO::SetError () {
 //
 //==========================================================================
 VStr VAndroidFileStreamRO::GetName () const {
-  return myName.cloneUnique();
+  return myName.cloneUniqueMT();
 }
 
 
@@ -268,7 +268,7 @@ VMemoryStreamRO::VMemoryStreamRO (VStr strmName, const void *adata, int adataSiz
   , Pos(0)
   , DataSize(adataSize)
   , FreeData(takeOwnership)
-  , StreamName(strmName)
+  , StreamName(strmName.cloneUniqueMT())
 {
   vassert(adataSize >= 0);
   vassert(adataSize == 0 || (adataSize > 0 && adata));
@@ -332,7 +332,7 @@ void VMemoryStreamRO::Setup (VStr strmName, const void *adata, int adataSize, bo
   vassert(adataSize >= 0);
   vassert(adataSize == 0 || (adataSize > 0 && adata));
   vassert(StreamName.length() == 0);
-  StreamName = strmName;
+  StreamName = strmName.cloneUniqueMT();
   Data = (const vuint8 *)adata;
   DataSize = adataSize;
   FreeData = takeOwnership;
@@ -352,7 +352,7 @@ void VMemoryStreamRO::Setup (VStr strmName, VStream *strm) {
   vassert(DataSize == 0);
   vassert(!bError);
   vassert(StreamName.length() == 0);
-  StreamName = strmName;
+  StreamName = strmName.cloneUniqueMT();
   if (strm) {
     vassert(strm->IsLoading());
     int tsz = strm->TotalSize();
@@ -446,7 +446,7 @@ int VMemoryStreamRO::TotalSize () {
 //
 //==========================================================================
 VStr VMemoryStreamRO::GetName () const {
-  return StreamName.cloneUnique();
+  return StreamName.cloneUniqueMT();
 }
 
 
@@ -637,7 +637,7 @@ int VMemoryStream::TotalSize () {
 //
 //==========================================================================
 VStr VMemoryStream::GetName () const {
-  return StreamName.cloneUnique();
+  return StreamName.cloneUniqueMT();
 }
 
 
@@ -650,7 +650,7 @@ VStr VMemoryStream::GetName () const {
 VArrayStream::VArrayStream (VStr strmName, TArray<vuint8>& InArray)
   : Array(InArray)
   , Pos(0)
-  , StreamName(strmName)
+  , StreamName(strmName.cloneUniqueMT())
 {
   bLoading = true;
 }
@@ -741,7 +741,7 @@ int VArrayStream::TotalSize () {
 //
 //==========================================================================
 VStr VArrayStream::GetName () const {
-  return StreamName.cloneUnique();
+  return StreamName.cloneUniqueMT();
 }
 
 
@@ -758,7 +758,7 @@ VPagedMemoryStream::VPagedMemoryStream (VStr strmName)
   , curr(nullptr)
   , pos(0)
   , size(0)
-  , StreamName(strmName)
+  , StreamName(strmName.cloneUniqueMT())
 {
   bLoading = false;
 }
@@ -797,7 +797,7 @@ bool VPagedMemoryStream::Close () {
 //
 //==========================================================================
 VStr VPagedMemoryStream::GetName () const {
-  return StreamName.cloneUnique();
+  return StreamName.cloneUniqueMT();
 }
 
 
@@ -1009,7 +1009,7 @@ void VStdFileStreamBase::SetError () {
 //
 //==========================================================================
 VStr VStdFileStreamBase::GetName () const {
-  return mName.cloneUnique();
+  return mName.cloneUniqueMT();
 }
 
 
@@ -1195,7 +1195,7 @@ bool VPartialStreamRO::Close () {
 //==========================================================================
 VStr VPartialStreamRO::GetName () const {
   if (!closed) {
-    if (!myname.isEmpty()) return myname.cloneUnique();
+    if (!myname.isEmpty()) return myname.cloneUniqueMT();
     if (srcStream) {
       MyThreadLocker locker(lockptr);
       return srcStream->GetName();

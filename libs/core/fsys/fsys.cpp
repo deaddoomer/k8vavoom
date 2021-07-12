@@ -227,7 +227,7 @@ bool FL_CheckFilterName (VStr &fname) {
   //GLog.Logf(NAME_Debug, "001: CHECKFILTER: <%s>", *fname);
   // this prevents reading archives without filtering, but meh
   // special filter for our engine
-  if (fname.startsWith("filter/engine_k8vavoom/")) fname = "filter/"+fname.mid(23, fname.length());
+  if (fname.startsWith("filter/engine_k8vavoom/")) fname = "filter/"+fname.leftskip(23);
   //GLog.Logf(NAME_Debug, "002: CHECKFILTER: <%s>", *fname);
   // allow "any" and "anything" for all games
   // "any"
@@ -310,7 +310,7 @@ VStream *FL_OpenFileReadBaseOnly_NoLock (VStr Name, int *lump) {
 VStream *FL_OpenFileRead_NoLock (VStr Name, int *lump) {
   if (!Name.isEmpty()) {
     if (Name.length() >= 2 && Name[0] == '/' && Name[1] == '/') {
-      return FL_OpenFileReadBaseOnly_NoLock(Name.mid(2, Name.length()), lump);
+      return FL_OpenFileReadBaseOnly_NoLock(Name.leftskip(2), lump);
     } else {
       for (int i = fsysSearchPaths.length()-1; i >= 0; --i) {
         VStream *Strm = fsysSearchPaths[i]->OpenFileRead(Name, lump);
@@ -366,14 +366,18 @@ void FL_CreatePath (VStr Path) {
   if (Path.isEmpty() || Path == ".") return;
   TArray<VStr> spp;
   Path.SplitPath(spp);
-  if (spp.length() == 0 || (spp.length() == 1 && spp[0] == "/")) return;
-  if (spp.length() > 0) {
-    VStr newpath;
-    for (int pos = 0; pos < spp.length(); ++pos) {
-      if (newpath.length() && newpath[newpath.length()-1] != '/') newpath += "/";
-      newpath += spp[pos];
-      if (!Sys_DirExists(newpath)) Sys_CreateDirectory(newpath);
-    }
+  if (spp.length() == 0) return;
+  const bool isAbsolute = VStr::IsSplittedPathAbsolute(spp);
+  if (isAbsolute && spp.length() == 1) return;
+  VStr newpath;
+  for (int pos = 0; pos < spp.length(); ++pos) {
+    if (pos == 0 && isAbsolute) { newpath += spp[0]; continue; }
+    #ifdef _WIN32
+    if (pos == 1 && newpath.endsWith(":")) {} else
+    #endif
+    if (newpath.length() && newpath[newpath.length()-1] != '/') newpath += "/";
+    newpath += spp[pos];
+    if (!Sys_DirExists(newpath)) Sys_CreateDirectory(newpath);
   }
 }
 

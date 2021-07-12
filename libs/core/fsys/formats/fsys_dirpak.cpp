@@ -113,8 +113,8 @@ void VDirPakFile::ScanDirectory (VStr relpath, int depth) {
       pakdir.filemap.put(loname, pakdir.files.length());
       VPakFileInfo fe;
       fe.filesize = -1; // unknown yet
-      fe.fileName = loname;
-      fe.diskName = diskname;
+      fe.SetFileName(loname);
+      fe.SetDiskName(diskname);
       vassert(fe.lumpName == NAME_None);
       vassert(fe.lumpNamespace == -1);
       // fe.lumpNamespace = ns;
@@ -151,8 +151,8 @@ VStream *VDirPakFile::OpenFileRead (VStr fname, int *plump) {
   int lump = CheckNumForFileName(fname);
   if (plump) *plump = lump;
   if (lump < 0) return nullptr;
-  VStr tmpname = PakFileName.appendPath(pakdir.files[lump].diskName);
-  VStream *strm = CreateDiskStreamRead(tmpname, pakdir.files[lump].diskName);
+  VStr tmpname = PakFileName.appendPath(pakdir.files[lump].diskNameIntr);
+  VStream *strm = CreateDiskStreamRead(tmpname, pakdir.files[lump].diskNameIntr);
   /* nope
   // update file size
   if (strm && pakdir.files[lump].filesize < 0) {
@@ -172,8 +172,8 @@ VStream *VDirPakFile::OpenFileRead (VStr fname, int *plump) {
 VStream *VDirPakFile::CreateLumpReaderNum (int lump) {
   vassert(lump >= 0);
   vassert(lump < pakdir.files.length());
-  VStr tmpname = PakFileName.appendPath(pakdir.files[lump].diskName);
-  VStream *strm = CreateDiskStreamRead(tmpname, pakdir.files[lump].diskName);
+  VStr tmpname = PakFileName.appendPath(pakdir.files[lump].diskNameIntr);
+  VStream *strm = CreateDiskStreamRead(tmpname, pakdir.files[lump].diskNameIntr);
   /* nope
   // update file size
   if (strm && pakdir.files[lump].filesize < 0) {

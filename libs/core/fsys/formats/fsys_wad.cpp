@@ -132,7 +132,7 @@ VWadFile *VWadFile::Create (VStr FileName, bool FixVoices, VStream *InStream) {
       fi.pakdataofs = ofs;
       fi.filesize = size;
       fi.lumpNamespace = WADNS_Global;
-      fi.fileName = VStr(fi.lumpName);
+      fi.SetFileName(VStr(fi.lumpName));
       wad->pakdir.append(fi);
     }
   }
@@ -180,7 +180,7 @@ VWadFile *VWadFile::CreateSingleLumpStream (VStream *strm, VStr FileName) {
   fi.pakdataofs = 0;
   fi.filesize = wad->archStream->TotalSize();
   fi.lumpNamespace = WADNS_Global;
-  fi.fileName = FileName.toLowerCase();
+  fi.SetFileName(FileName.toLowerCase());
   wad->pakdir.append(fi);
   wad->pakdir.buildNameMaps();
 
@@ -382,10 +382,10 @@ VStream *VWadFile::CreateLumpReaderNum (int lump) {
   }
 
   // create stream
-  VStream *S = new VMemoryStream(GetPrefix()+":"+fi.fileName, ptr, fi.filesize, true);
+  VStream *S = new VMemoryStream(GetPrefix()+":"+fi.fileNameIntr, ptr, fi.filesize, true);
 #else
   // this is mt-protected
-  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileName, archStream, fi.pakdataofs, fi.filesize, &rdlock);
+  VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileNameIntr, archStream, fi.pakdataofs, fi.filesize, &rdlock);
 #endif
 
   //GLog.Logf("WAD<%s>: lump=%d; name=<%s>; size=(%d:%d); ofs=0x%08x", *PakFileName, lump, *fi.lumpName, fi.filesize, S->TotalSize(), fi.pakdataofs);
