@@ -1161,10 +1161,10 @@ static void ParseConst (VScriptParser *sc, VMemberBase *parent, bool changeMode)
   bool isInt = false;
        if (sc->Check("int")) isInt = true;
   else if (sc->Check("float")) isInt = false;
-  else sc->Error(va("%s: expected 'int' or 'float'", *sc->GetLoc().toStringNoCol()));
+  else sc->Error(va("%s: expected 'int' or 'float'", *sc->GetVCLoc().toStringNoCol()));
   //sc->Expect("int");
   sc->ExpectString();
-  TLocation Loc = sc->GetLoc();
+  TLocation Loc = sc->GetVCLoc();
   VStr Name = sc->String.ToLower();
   sc->Expect("=");
 
@@ -1182,9 +1182,9 @@ static void ParseConst (VScriptParser *sc, VMemberBase *parent, bool changeMode)
                if (Expr->GetFloatConst() < -0x3fffffff) Val = -0x3fffffff;
           else if (Expr->GetFloatConst() > 0x3fffffff) Val = 0x3fffffff;
           else Val = (int)Expr->GetFloatConst();
-          if (!vcWarningsSilenced) GCon->Logf(NAME_Warning, "%s: some mo...dder cannot put a proper float type to a constant `%s`; %g truncated to %d", *sc->GetLoc().toStringNoCol(), *Name, Expr->GetFloatConst(), Val);
+          if (!vcWarningsSilenced) GCon->Logf(NAME_Warning, "%s: some mo...dder cannot put a proper float type to a constant `%s`; %g truncated to %d", *sc->GetVCLoc().toStringNoCol(), *Name, Expr->GetFloatConst(), Val);
         } else {
-          if (!Expr->IsIntConst()) sc->Error(va("%s: expected integer literal", *sc->GetLoc().toStringNoCol()));
+          if (!Expr->IsIntConst()) sc->Error(va("%s: expected integer literal", *sc->GetVCLoc().toStringNoCol()));
           Val = Expr->GetIntConst();
         }
         //GCon->Logf("*** INT CONST '%s' is %d", *Name, Val);
@@ -1194,7 +1194,7 @@ static void ParseConst (VScriptParser *sc, VMemberBase *parent, bool changeMode)
         C->Type = TYPE_Int;
         C->Value = Val;
       } else {
-        if (!Expr->IsFloatConst() && !Expr->IsIntConst()) sc->Error(va("%s: expected float literal", *sc->GetLoc().toStringNoCol()));
+        if (!Expr->IsFloatConst() && !Expr->IsIntConst()) sc->Error(va("%s: expected float literal", *sc->GetVCLoc().toStringNoCol()));
         float Val = (Expr->IsFloatConst() ? Expr->GetFloatConst() : (float)Expr->GetIntConst());
         //GCon->Logf("*** FLOAT CONST '%s' is %g", *Name, Val);
         delete Expr;
@@ -1229,7 +1229,7 @@ static void ParseEnum (VScriptParser *sc, VMemberBase *parent, bool changeMode) 
   int currValue = 0;
   while (!sc->Check("}")) {
     sc->ExpectIdentifier();
-    TLocation Loc = sc->GetLoc();
+    TLocation Loc = sc->GetVCLoc();
     VStr Name = sc->String.ToLower();
     VExpression *eval;
     if (sc->Check("=")) {
@@ -1237,7 +1237,7 @@ static void ParseEnum (VScriptParser *sc, VMemberBase *parent, bool changeMode) 
       if (eval) {
         VEmitContext ec(parent);
         eval = eval->Resolve(ec);
-        if (eval && !eval->IsIntConst()) sc->Error(va("%s: expected integer literal", *sc->GetLoc().toStringNoCol()));
+        if (eval && !eval->IsIntConst()) sc->Error(va("%s: expected integer literal", *sc->GetVCLoc().toStringNoCol()));
         if (eval) {
           currValue = eval->GetIntConst();
           delete eval;
@@ -1438,7 +1438,7 @@ static VStr BuildFlagName (VStr ClassFilter, VStr Flag) {
 //
 //==========================================================================
 static bool ParseFlag (VScriptParser *sc, VClass *Class, bool Value, TArray<VClassFixup> &ClassFixups) {
-  auto floc = sc->GetLoc(); // for warnings
+  auto floc = sc->GetVCLoc(); // for warnings
   // get full name of the flag
   sc->ExpectIdentifier();
   VStr ClassFilter;
@@ -1614,51 +1614,9 @@ static TArray<VScriptParser *> ParseStatesStack;
 //  FindIncludeLump
 //
 //==========================================================================
-static int FindRelativeIncludeLump (int srclump, VStr fname) {
-  //GCon->Logf(NAME_Debug, "FindRelativeIncludeLump: fname=<%s>; srclump=%d (%s)", *fname, srclump, *W_RealLumpName(srclump));
-
-  if (fname.isEmpty()) return -1;
-  if (srclump < 0 || fname.startsWith("/")) return -1;
-
-  VStr fn = W_RealLumpName(srclump);
-  if (fn.indexOf('/') < 0) return -1;
-  fn = fn.ExtractFilePath();
-  if (!fn.isEmpty()) fname = fn.appendPath(fname);
-  //GCon->Logf(NAME_Debug, "  ...trying <%s>", *fname);
-
-  return /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(srclump, fname);
-}
-
-
-//==========================================================================
-//
-//  FindIncludeLump
-//
-//==========================================================================
-static int FindIncludeLump (int srclump, VStr fname) {
-  if (fname.isEmpty()) return -1;
-  int Lump = /*W_CheckNumForFileName*/W_CheckNumForFileNameInSameFile(srclump, fname);
-  if (Lump >= 0) return Lump;
-
+static inline int FindIncludeLump (int srclump, VStr fname) noexcept {
   // for base packs, try local include first
-  if (thisIsBasePak) {
-    Lump = FindRelativeIncludeLump(srclump, fname);
-    if (Lump >= 0) return Lump;
-  }
-
-  // check WAD lump only if it's no longer than 8 characters and has no path separator
-  if (fname.length() <= 8 && fname.indexOf('/') < 0) {
-    if (srclump < 0) {
-      Lump = W_CheckNumForName(VName(*fname, VName::AddLower8));
-    } else {
-      Lump = W_CheckNumForNameInFile(VName(*fname, VName::AddLower8), W_LumpFile(srclump));
-    }
-  }
-
-  // for non-base packs, try local include last
-  if (!thisIsBasePak) Lump = FindRelativeIncludeLump(srclump, fname);
-
-  return Lump;
+  return VScriptParser::FindIncludeLumpEx(srclump, fname, thisIsBasePak);
 }
 
 
@@ -1726,7 +1684,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     }
     sc->UnGet();
 
-    TLocation TmpLoc = sc->GetLoc();
+    TLocation TmpLoc = sc->GetVCLoc();
     VStr TmpName = ParseStateString(sc);
 
     // check for label
@@ -2000,14 +1958,14 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         State->Time = float(sc->Number)/35.0f;
       }
     }
-    //fprintf(stderr, "**0:%s: <%s> (%d)\n", *sc->GetLoc().toStringNoCol(), *sc->String, (sc->Crossed ? 1 : 0));
+    //fprintf(stderr, "**0:%s: <%s> (%d)\n", *sc->GetVCLoc().toStringNoCol(), *sc->String, (sc->Crossed ? 1 : 0));
 
     // parse state action
     bool wasAction = false;
     for (;;) {
       if (!sc->GetString()) break;
       if (sc->Crossed) { sc->UnGet(); break; }
-      //fprintf(stderr, "**1:%s: <%s>\n", *sc->GetLoc().toStringNoCol(), *sc->String);
+      //fprintf(stderr, "**1:%s: <%s>\n", *sc->GetVCLoc().toStringNoCol(), *sc->String);
       sc->UnGet();
 
       // simulate "nodelay" by inserting one dummy state if necessary
@@ -2099,7 +2057,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
     if (sc->Check("{")) {
       if (wasAction) {
-        sc->Error(va("%s: duplicate complex state actions in DECORATE aren't supported", *sc->GetLoc().toStringNoCol()));
+        sc->Error(va("%s: duplicate complex state actions in DECORATE aren't supported", *sc->GetVCLoc().toStringNoCol()));
         return false;
       }
       ParseActionBlock(sc, Class, State);
@@ -2140,7 +2098,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (keepSpriteBase) frm |= VState::FF_KEEPSPRITE;
 
       // create a new state
-      VState *s2 = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
+      VState *s2 = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
       States.Append(s2);
       s2->SpriteName = State->SpriteName;
       s2->Frame = frm;
@@ -2208,7 +2166,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 //
 //==========================================================================
 static void ParseParentState (VScriptParser *sc, VClass *Class, const char *LblName) {
-  TLocation TmpLoc = sc->GetLoc();
+  TLocation TmpLoc = sc->GetVCLoc();
   VState *State = nullptr;
   // if there's a string token on next line, it gets eaten: is this a bug?
   if (sc->GetString() && !sc->Crossed) {
@@ -2289,22 +2247,22 @@ static void ScanActorDefForUserVars (VScriptParser *sc, TArray<VDecorateUserVarD
          if (sc->String.ICmp("int") == 0) vtype = VFieldType(TYPE_Int);
     else if (sc->String.ICmp("bool") == 0) vtype = VFieldType(TYPE_Int);
     else if (sc->String.ICmp("float") == 0) vtype = VFieldType(TYPE_Float);
-    else sc->Error(va("%s: user variables in DECORATE must be `int`", *sc->GetLoc().toStringNoCol()));
+    else sc->Error(va("%s: user variables in DECORATE must be `int`", *sc->GetVCLoc().toStringNoCol()));
 
     for (;;) {
-      auto fnloc = sc->GetLoc(); // for error messages
+      auto fnloc = sc->GetVCLoc(); // for error messages
       sc->ExpectIdentifier();
       VName fldname = VName(*sc->String, VName::AddLower);
       VStr uvname = VStr(fldname);
-      if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name '%s' in DECORATE must start with `user_`", *sc->String, *sc->GetLoc().toStringNoCol()));
+      if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name '%s' in DECORATE must start with `user_`", *sc->String, *sc->GetVCLoc().toStringNoCol()));
       for (int f = 0; f < uvars.length(); ++f) {
-        if (fldname == uvars[f].name) sc->Error(va("%s: duplicate DECORATE user variable `%s`", *sc->GetLoc().toStringNoCol(), *sc->String));
+        if (fldname == uvars[f].name) sc->Error(va("%s: duplicate DECORATE user variable `%s`", *sc->GetVCLoc().toStringNoCol(), *sc->String));
       }
       uvname = sc->String;
       VFieldType realtype = vtype;
       if (sc->Check("[")) {
         sc->ExpectNumber();
-        if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("%s: duplicate DECORATE user array `%s` has invalid size %d", *sc->GetLoc().toStringNoCol(), *uvname, sc->Number));
+        if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("%s: duplicate DECORATE user array `%s` has invalid size %d", *sc->GetVCLoc().toStringNoCol(), *uvname, sc->Number));
         sc->Expect("]");
         realtype = realtype.MakeArrayType(sc->Number, fnloc);
       }
@@ -2344,7 +2302,7 @@ static bool isBDWActorClassName (VStr cname) {
 static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TArray<VWeaponSlotFixups> &newWSlots) {
   // actor options
   bool optionalActor = false;
-  auto cstloc = sc->GetLoc();
+  auto cstloc = sc->GetVCLoc();
 
   bool bloodTranslationSet = false;
   vuint32 bloodColor = 0;
@@ -2457,7 +2415,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
   }
 
   if (getDecorateDebug()) sc->DebugMessage(va("Creating derived class `%s` from `%s`", *NameStr, ParentClass->GetName()));
-  VClass *Class = ParentClass->CreateDerivedClass(*NameStr, DecPkg, uvars, sc->GetLoc());
+  VClass *Class = ParentClass->CreateDerivedClass(*NameStr, DecPkg, uvars, sc->GetVCLoc());
   uvars.clear(); // we don't need it anymore
   DecPkg->ParsedClasses.Append(Class);
 
@@ -2576,7 +2534,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     }
 
     // get full name of the property
-    auto prloc = sc->GetLoc(); // for error messages
+    auto prloc = sc->GetVCLoc(); // for error messages
     sc->ExpectIdentifier();
 
     // skip uservars (they are already scanned)
@@ -2773,7 +2731,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           } else {
             sc->ExpectString();
             if (sc->String.length() != 0) sc->Error("'spawnid' should be a number!");
-            if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: 'spawnid' should be a number, not an empty string! FIX YOUR BROKEN CODE!", *sc->GetLoc().toStringNoCol());
+            if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: 'spawnid' should be a number, not an empty string! FIX YOUR BROKEN CODE!", *sc->GetVCLoc().toStringNoCol());
             SpawnNum = 0;
           }
           break;
@@ -2813,7 +2771,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           break;
         case PROP_DamageFactor:
           {
-            auto loc = sc->GetLoc();
+            auto loc = sc->GetVCLoc();
 
             VName DamageType = /*NAME_None*/VName("None");
             // Check if we only have a number instead of a string, since
@@ -2856,21 +2814,21 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           if (sc->Check("(")) {
             VExpression *Expr = ParseExpression(sc, Class);
             if (!Expr) {
-              ParseError(sc->GetLoc(), "Damage expression expected");
+              ParseError(sc->GetVCLoc(), "Damage expression expected");
             } else {
               Expr = new VScalarToInt(Expr); // not resolved
-              VMethod *M = new VMethod("GetMissileDamage", Class, sc->GetLoc());
+              VMethod *M = new VMethod("GetMissileDamage", Class, sc->GetVCLoc());
               M->Flags = FUNC_Override;
-              M->ReturnTypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetLoc());
+              M->ReturnTypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetVCLoc());
               M->ReturnType = TYPE_Int;
               M->NumParams = 2;
               M->Params[0].Name = "Mask";
-              M->Params[0].Loc = sc->GetLoc();
-              M->Params[0].TypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetLoc());
+              M->Params[0].Loc = sc->GetVCLoc();
+              M->Params[0].TypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetVCLoc());
               M->Params[1].Name = "Add";
-              M->Params[1].Loc = sc->GetLoc();
-              M->Params[1].TypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetLoc());
-              M->Statement = new VReturn(Expr, sc->GetLoc());
+              M->Params[1].Loc = sc->GetVCLoc();
+              M->Params[1].TypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetVCLoc());
+              M->Statement = new VReturn(Expr, sc->GetVCLoc());
               Class->AddMethod(M);
               M->Define();
             }
@@ -3259,7 +3217,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             sc->ExpectNumber();
             int sidx = sc->Number;
             if (!VWeaponSlotFixups::isValidSlot(sidx)) {
-              GLog.Logf(NAME_Warning, "%s: invalid weapon slot number %d", *sc->GetLoc().toStringNoCol(), sidx);
+              GLog.Logf(NAME_Warning, "%s: invalid weapon slot number %d", *sc->GetVCLoc().toStringNoCol(), sidx);
               while (sc->Check(",")) sc->ExpectString();
             } else {
               VWeaponSlotFixups &wst = allocWeaponSlotsFor(newWSlots, Class);
@@ -3447,7 +3405,7 @@ static void ParseOldDecStates (VScriptParser *sc, TArray<VState *> &States, VCla
         sc->Error("Frames must be A-Z, [, \\, or ]");
       } else {
         GotState = true;
-        VState *State = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
+        VState *State = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
         States.Append(State);
         State->Frame = cc-'A';
         State->Time = float(Duration)/35.0f;
@@ -3480,8 +3438,8 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
   TArray<VDecorateUserVarDef> uvars;
 
   VClass *Class = Type == OLDDEC_Pickup ?
-    FakeInventoryClass->CreateDerivedClass(ClassName, DecPkg, uvars, sc->GetLoc()) :
-    ActorClass->CreateDerivedClass(ClassName, DecPkg, uvars, sc->GetLoc());
+    FakeInventoryClass->CreateDerivedClass(ClassName, DecPkg, uvars, sc->GetVCLoc()) :
+    ActorClass->CreateDerivedClass(ClassName, DecPkg, uvars, sc->GetVCLoc());
   DecPkg->ParsedClasses.Append(Class);
 
   if (Type == OLDDEC_Breakable) Class->SetFieldBool("bShootable", true);
@@ -3571,7 +3529,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       ParseOldDecStates(sc, States, Class);
 
       // make a copy of the last state for A_FreezeDeathChunks
-      VState *State = new VState(va("S_%d", States.length()), Class, sc->GetLoc());
+      VState *State = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
       States.Append(State);
       State->Frame = States[States.length()-2]->Frame;
 
@@ -3865,7 +3823,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
 //
 //==========================================================================
 static void ParseDamageType (VScriptParser *sc) {
-  //if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: 'DamageType' in decorate is not implemented yet!", *sc->GetLoc().toStringNoCol());
+  //if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: 'DamageType' in decorate is not implemented yet!", *sc->GetVCLoc().toStringNoCol());
   //sc->SkipBracketed();
   sc->ExpectString(); // name
   if (sc->String.strEquCI("Normal")) sc->String = "None";

@@ -107,21 +107,21 @@ static vuint32 cnumterm[256/32]; // c-like number terminator
 static vuint32 ncidterm[256/32]; // non-c-like identifier terminator
 
 struct CharClassifier {
-  static inline bool isCIdTerm (char ch) { return !!(cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static inline bool isCNumTerm (char ch) { return !!(cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static inline bool isNCIdTerm (char ch) { return !!(ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static inline bool isCIdTerm (char ch) noexcept { return !!(cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static inline bool isCNumTerm (char ch) noexcept { return !!(cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static inline bool isNCIdTerm (char ch) noexcept { return !!(ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
 
-  static inline void setCharBit (vuint32 *set, char ch) { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
+  static inline void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
 
-  static inline bool isDigit (char ch) { return (ch >= '0' && ch <= '9'); }
+  static inline bool isDigit (char ch) noexcept { return (ch >= '0' && ch <= '9'); }
 
-  static inline bool isNumStart (const char *s, bool allowNumSign) {
+  static inline bool isNumStart (const char *s, bool allowNumSign) noexcept {
     if (allowNumSign) if (*s == '+' || *s == '-') ++s;
     if (*s == '.') ++s;
     return isDigit(*s);
   }
 
-  CharClassifier () {
+  CharClassifier () noexcept {
     /*static*/ const char *cIdTerm = "`~!#$%^&*(){}[]/=\\?-+|;:<>,\"'"; // was with '@'
     /*static*/ const char *ncIdTerm = "{}|=,;\"'";
     memset(cidterm, 0, sizeof(cidterm));
@@ -162,7 +162,7 @@ CharClassifier charClassifierInit;
 //  VScriptSavedPos::saveFrom
 //
 //==========================================================================
-void VScriptSavedPos::saveFrom (const VScriptParser &par) {
+void VScriptSavedPos::saveFrom (const VScriptParser &par) noexcept {
   Line = par.Line;
   TokLine = par.TokLine;
   String = par.String;
@@ -191,7 +191,7 @@ void VScriptSavedPos::saveFrom (const VScriptParser &par) {
 //  VScriptSavedPos::restoreTo
 //
 //==========================================================================
-void VScriptSavedPos::restoreTo (VScriptParser &par) const {
+void VScriptSavedPos::restoreTo (VScriptParser &par) const noexcept {
   par.Line = Line;
   par.TokLine = TokLine;
   par.String = String;
@@ -225,9 +225,8 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
   , End(false)
   , Crossed(false)
   , QuotedString(false)
-  , ScriptName(name)
+  , ScriptName(name.cloneUniqueMT())
   , SrcIdx(-1)
-  //, AlreadyGot(false)
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
@@ -271,15 +270,14 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
 //  VScriptParser::VScriptParser
 //
 //==========================================================================
-VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump)
+VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump) noexcept
   : Line(1)
   , TokLine(1)
   , End(false)
   , Crossed(false)
   , QuotedString(false)
-  , ScriptName(name)
+  , ScriptName(name.cloneUniqueMT())
   , SrcIdx(-1)
-  //, AlreadyGot(false)
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
@@ -307,6 +305,7 @@ VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump)
 }
 
 
+#if !defined(VCC_STANDALONE_EXECUTOR)
 //==========================================================================
 //
 //  VScriptParser::NewWithLump
@@ -314,8 +313,11 @@ VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump)
 //==========================================================================
 VScriptParser *VScriptParser::NewWithLump (int Lump) {
   if (Lump < 0) return nullptr;
-  return new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump), Lump);
+  VStream *st = W_CreateLumpReaderNum(Lump);
+  if (!st) return nullptr;
+  return new VScriptParser(W_FullLumpName(Lump), st, Lump);
 }
+#endif
 
 
 //==========================================================================
@@ -323,9 +325,10 @@ VScriptParser *VScriptParser::NewWithLump (int Lump) {
 //  VScriptParser::~VScriptParser
 //
 //==========================================================================
-VScriptParser::~VScriptParser () {
+VScriptParser::~VScriptParser () noexcept {
   delete[] ScriptBuffer;
   ScriptBuffer = nullptr;
+  ScriptName.clear();
 }
 
 
@@ -334,7 +337,7 @@ VScriptParser::~VScriptParser () {
 //  VScriptParser::clone
 //
 //==========================================================================
-VScriptParser *VScriptParser::clone () const {
+VScriptParser *VScriptParser::clone () const noexcept {
   VScriptParser *res = new VScriptParser();
 
   res->ScriptBuffer = new char[ScriptSize+1];
@@ -358,14 +361,12 @@ VScriptParser *VScriptParser::clone () const {
   res->Number = Number;
   res->Float = Float;
 
-  res->ScriptName = ScriptName;
+  res->ScriptName = ScriptName.cloneUniqueMT();
   res->ScriptSize = ScriptSize;
-  res->SrcIdx = SrcIdx;
-  res->SourceLump = SourceLump;
-  //res->AlreadyGot = AlreadyGot;
   res->CMode = CMode;
   res->Escape = Escape;
   res->AllowNumSign = AllowNumSign;
+  res->SourceLump = SourceLump;
 
   return res;
 }
@@ -376,7 +377,7 @@ VScriptParser *VScriptParser::clone () const {
 // VScriptParser::IsText
 //
 //==========================================================================
-bool VScriptParser::IsText () {
+bool VScriptParser::IsText () noexcept {
   int i = 0;
   while (i < ScriptSize) {
     vuint8 ch = *(const vuint8 *)(ScriptBuffer+(i++));
@@ -407,7 +408,7 @@ bool VScriptParser::IsText () {
 //  VScriptParser::AtEnd
 //
 //==========================================================================
-bool VScriptParser::AtEnd () {
+bool VScriptParser::AtEnd () noexcept {
   if (GetString()) {
     //fprintf(stderr, "<%s>\n", *String);
     UnGet();
@@ -422,7 +423,7 @@ bool VScriptParser::AtEnd () {
 //  VScriptParser::IsAtEol
 //
 //==========================================================================
-bool VScriptParser::IsAtEol () {
+bool VScriptParser::IsAtEol () noexcept {
   int commentLevel = 0;
   for (const char *s = ScriptPtr; s < ScriptEndPtr; ++s) {
     const vuint8 ch = *(const vuint8 *)s;
@@ -475,7 +476,7 @@ bool VScriptParser::IsAtEol () {
 //  this is moved out of `SkipBlanks()`, so i can use it in `SkipLine()`
 //
 //==========================================================================
-void VScriptParser::SkipComments (bool changeFlags) {
+void VScriptParser::SkipComments (bool changeFlags) noexcept {
   while (ScriptPtr < ScriptEndPtr) {
     const char c0 = *ScriptPtr;
     const char c1 = (ScriptPtr+1 < ScriptEndPtr ? ScriptPtr[1] : 0);
@@ -528,7 +529,7 @@ void VScriptParser::SkipComments (bool changeFlags) {
 //  VScriptParser::SkipBlanks
 //
 //==========================================================================
-void VScriptParser::SkipBlanks (bool changeFlags) {
+void VScriptParser::SkipBlanks (bool changeFlags) noexcept {
   while (ScriptPtr < ScriptEndPtr) {
     SkipComments(changeFlags);
     if (*(const vuint8 *)ScriptPtr <= ' ') {
@@ -550,7 +551,7 @@ void VScriptParser::SkipBlanks (bool changeFlags) {
 //  VScriptParser::PeekChar
 //
 //==========================================================================
-char VScriptParser::PeekOrSkipChar (bool doSkip) {
+char VScriptParser::PeekOrSkipChar (bool doSkip) noexcept {
   char res = 0;
   char *oldSPtr = ScriptPtr;
   int oldLine = Line;
@@ -576,7 +577,7 @@ char VScriptParser::PeekOrSkipChar (bool doSkip) {
 //  VScriptParser::GetString
 //
 //==========================================================================
-bool VScriptParser::GetString () {
+bool VScriptParser::GetString () noexcept {
   TokStartPtr = ScriptPtr;
   TokStartLine = Line;
 
@@ -722,7 +723,7 @@ bool VScriptParser::GetString () {
 //  VScriptParser::SkipLine
 //
 //==========================================================================
-void VScriptParser::SkipLine () {
+void VScriptParser::SkipLine () noexcept {
   Crossed = false;
   QuotedString = false;
   while (ScriptPtr < ScriptEndPtr) {
@@ -789,14 +790,14 @@ void VScriptParser::ExpectLoneChar () {
 //  ConvertStrToName8
 //
 //==========================================================================
-static VName ConvertStrToName8 (VScriptParser *sc, VStr str, bool onlyWarn=true, VName *defval=nullptr) {
+static VName ConvertStrToName8 (VScriptParser *sc, VStr str, bool onlyWarn=true, VName *defval=nullptr) noexcept {
 #if !defined(VCC_STANDALONE_EXECUTOR)
   // translate "$name" strings
   if (str.length() > 1 && str[0] == '$') {
     VStr qs = str.mid(1, str.length()-1).toLowerCase();
     if (GLanguage.HasTranslation(*qs)) {
       qs = *GLanguage[*qs];
-      if (dbg_show_name_remap) GCon->Logf("**** <%s>=<%s>\n", *str, *qs);
+      if (dbg_show_name_remap) GCon->Logf(NAME_Debug, "**** <%s>=<%s>\n", *str, *qs);
       str = qs;
     }
   }
@@ -938,7 +939,7 @@ vuint32 VScriptParser::ExpectColor () {
 //  VScriptParser::Check
 //
 //==========================================================================
-bool VScriptParser::Check (const char *str) {
+bool VScriptParser::Check (const char *str) noexcept {
   vassert(str);
   vassert(str[0]);
   if (GetString()) {
@@ -954,7 +955,7 @@ bool VScriptParser::Check (const char *str) {
 //  VScriptParser::CheckStartsWith
 //
 //==========================================================================
-bool VScriptParser::CheckStartsWith (const char *str) {
+bool VScriptParser::CheckStartsWith (const char *str) noexcept {
   vassert(str);
   vassert(str[0]);
   if (GetString()) {
@@ -986,7 +987,7 @@ void VScriptParser::Expect (const char *name) {
 //  VScriptParser::CheckQuotedString
 //
 //==========================================================================
-bool VScriptParser::CheckQuotedString () {
+bool VScriptParser::CheckQuotedString () noexcept {
   if (!GetString()) return false;
   if (!QuotedString) {
     UnGet();
@@ -1001,7 +1002,7 @@ bool VScriptParser::CheckQuotedString () {
 //  VScriptParser::CheckIdentifier
 //
 //==========================================================================
-bool VScriptParser::CheckIdentifier () {
+bool VScriptParser::CheckIdentifier () noexcept {
   if (!GetString()) return false;
 
   // quoted strings are not valid identifiers
@@ -1049,7 +1050,7 @@ void VScriptParser::ExpectIdentifier () {
 //  NormalizeFuckedGozzoNumber
 //
 //==========================================================================
-static VStr NormalizeFuckedGozzoNumber (VStr String) {
+static VStr NormalizeFuckedGozzoNumber (VStr String) noexcept {
   VStr str = String;
   while (str.length() && (vuint8)str[0] <= ' ') str.chopLeft(1);
   if (str.length() && strchr("lfLF", str[str.length()-1])) str.chopRight(1);
@@ -1062,7 +1063,7 @@ static VStr NormalizeFuckedGozzoNumber (VStr String) {
 //  VScriptParser::CheckNumber
 //
 //==========================================================================
-bool VScriptParser::CheckNumber () {
+bool VScriptParser::CheckNumber () noexcept {
   if (GetString()) {
     VStr str = NormalizeFuckedGozzoNumber(String);
     if (str.length() > 0) {
@@ -1117,7 +1118,7 @@ void VScriptParser::ExpectNumber (bool allowFloat, bool truncFloat) {
 //  VScriptParser::CheckNumberWithSign
 //
 //==========================================================================
-bool VScriptParser::CheckNumberWithSign () {
+bool VScriptParser::CheckNumberWithSign () noexcept {
   char *savedPtr = TokStartPtr;
   int savedLine = TokStartLine;
   bool neg = Check("-");
@@ -1157,7 +1158,7 @@ void VScriptParser::ExpectNumberWithSign () {
 //  VScriptParser::CheckFloat
 //
 //==========================================================================
-bool VScriptParser::CheckFloat () {
+bool VScriptParser::CheckFloat () noexcept {
   if (GetString()) {
     VStr str = NormalizeFuckedGozzoNumber(String);
     if (str.length() > 0) {
@@ -1230,7 +1231,7 @@ void VScriptParser::ExpectFloat () {
 //  VScriptParser::CheckFloatWithSign
 //
 //==========================================================================
-bool VScriptParser::CheckFloatWithSign () {
+bool VScriptParser::CheckFloatWithSign () noexcept {
   char *savedPtr = TokStartPtr;
   int savedLine = TokStartLine;
   bool neg = Check("-");
@@ -1270,7 +1271,7 @@ void VScriptParser::ExpectFloatWithSign () {
 //  VScriptParser::ResetQuoted
 //
 //==========================================================================
-void VScriptParser::ResetQuoted () {
+void VScriptParser::ResetQuoted () noexcept {
   /*if (TokStartPtr != ScriptPtr)*/ QuotedString = false;
 }
 
@@ -1280,7 +1281,7 @@ void VScriptParser::ResetQuoted () {
 //  VScriptParser::ResetCrossed
 //
 //==========================================================================
-void VScriptParser::ResetCrossed () {
+void VScriptParser::ResetCrossed () noexcept {
   /*if (TokStartPtr != ScriptPtr)*/ Crossed = false;
 }
 
@@ -1292,7 +1293,7 @@ void VScriptParser::ResetCrossed () {
 //  Assumes there is a valid string in sc_String.
 //
 //==========================================================================
-void VScriptParser::UnGet () {
+void VScriptParser::UnGet () noexcept {
   //AlreadyGot = true;
   ScriptPtr = TokStartPtr;
   Line = TokStartLine;
@@ -1305,7 +1306,7 @@ void VScriptParser::UnGet () {
 //  VScriptParser::SkipBracketed
 //
 //==========================================================================
-void VScriptParser::SkipBracketed (bool bracketEaten) {
+void VScriptParser::SkipBracketed (bool bracketEaten) noexcept {
   if (!bracketEaten) {
     for (;;) {
       ResetQuoted();
@@ -1403,13 +1404,70 @@ void VScriptParser::HostError (const char *message) {
 
 //==========================================================================
 //
-//  VScriptParser::GetLoc
+//  VScriptParser::GetVCLoc
 //
 //==========================================================================
-TLocation VScriptParser::GetLoc () {
+TLocation VScriptParser::GetVCLoc () const noexcept {
   if (SrcIdx == -1) SrcIdx = TLocation::AddSourceFile(ScriptName);
   return TLocation(SrcIdx, TokLine, 1);
 }
+
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+//==========================================================================
+//
+//  VScriptParser::FindIncludeLump
+//
+//==========================================================================
+int VScriptParser::FindRelativeIncludeLump (int srclump, VStr fname) noexcept {
+  if (fname.isEmpty()) return -1;
+  if (srclump < 0 || fname[0] == '/') return -1;
+
+  VStr fn = W_RealLumpName(srclump);
+  if (fn.indexOf('/') < 0) return -1;
+  fn = fn.ExtractFilePath();
+  fname = fn.appendPath(fname);
+
+  return W_CheckNumForFileNameInSameFile(srclump, fname);
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::FindIncludeLumpEx
+//
+//==========================================================================
+int VScriptParser::FindIncludeLumpEx (int srclump, VStr fname, bool relativeFirst) noexcept {
+  if (fname.isEmpty()) return -1;
+
+  int Lump = W_CheckNumForFileNameInSameFile(srclump, fname);
+  if (Lump >= 0) return Lump;
+
+  fname = fname.fixSlashes();
+
+  if (relativeFirst) {
+    Lump = FindRelativeIncludeLump(srclump, fname);
+    if (Lump >= 0) return Lump;
+  }
+
+  // check WAD lump only if it's no longer than 8 characters and has no path separator
+  if (fname.indexOf('/') < 0) {
+    VStr noext = fname.stripExtension();
+    if (!noext.isEmpty() && noext.length() <= 8) {
+      VName nn(*fname, VName::FindLower8);
+      if (nn != NAME_None) {
+        Lump = (srclump < 0 ? W_CheckNumForName(nn) : W_CheckNumForNameInFile(nn, W_LumpFile(srclump)));
+        if (Lump >= 0) return Lump;
+      }
+    }
+  }
+
+  // for non-base packs, try local include last
+  if (!relativeFirst) Lump = FindRelativeIncludeLump(srclump, fname);
+
+  return Lump;
+}
+#endif
 
 
 

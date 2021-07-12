@@ -1397,7 +1397,7 @@ void VAudio::PlaySong (const char *Song, bool Loop, bool allowRandom) {
   VStr ss(Song);
   while (ss.length() && ss[0] == '\x01') ss.chopLeft(1);
   if (allowRandom) ss = SelectRandomSong(ss);
-  selectedSongName = ss.cloneUnique();
+  selectedSongName = ss.cloneUniqueMT();
 
   if (snd_bgloading_music) {
     StreamMusicPlayer->LoadAndPlay(*selectedSongName, Loop);

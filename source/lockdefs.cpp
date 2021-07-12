@@ -49,7 +49,7 @@ static void ParseLockDefs (VScriptParser *sc) {
     }
 
     if (sc->Check("Lock")) {
-      auto loc = sc->GetLoc();
+      const VTextLocation loc = sc->GetLoc();
       // lock number
       sc->ExpectNumber();
       const int Lock = sc->Number;

@@ -571,7 +571,7 @@ void VSoundManager::ParseSndinfo (VScriptParser *sc, int fileid) {
   bool insideIf = false;
 
   while (!sc->AtEnd()) {
-    auto loc = sc->GetLoc();
+    const VTextLocation loc = sc->GetLoc();
     if (sc->Check("$archivepath")) {
       // $archivepath <directory>
       // ignored
@@ -854,7 +854,7 @@ void VSoundManager::ParseSndinfo (VScriptParser *sc, int fileid) {
       sc->ExpectString();
       if (!sc->IsAtEol()) sc->ExpectString(); // optional parameter
     } else {
-      TLocation sloc = sc->GetLoc();
+      const VTextLocation sloc = sc->GetLoc();
       // new sound
       sc->ExpectString();
       if (sc->String.length() && **sc->String == '$') sc->Error(va("Unknown command (%s)", *sc->String));

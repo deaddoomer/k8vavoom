@@ -56,10 +56,10 @@ public:
 
 
 public:
-  VScriptSavedPos (const VScriptParser &par) { saveFrom(par); }
+  inline VScriptSavedPos (const VScriptParser &par) noexcept { saveFrom(par); }
 
-  void saveFrom (const VScriptParser &par);
-  void restoreTo (VScriptParser &par) const;
+  void saveFrom (const VScriptParser &par) noexcept;
+  void restoreTo (VScriptParser &par) const noexcept;
 };
 
 
@@ -80,14 +80,13 @@ public:
 
 private:
   VStr ScriptName;
+  mutable int SrcIdx;
   char *ScriptBuffer;
   char *ScriptPtr;
   char *ScriptEndPtr;
   char *TokStartPtr;
   int TokStartLine;
   int ScriptSize;
-  int SrcIdx;
-  //bool AlreadyGot;
   bool CMode;
   bool Escape;
   bool AllowNumSign;
@@ -96,49 +95,52 @@ public:
   int SourceLump; // usually -1
 
 private:
-  inline VScriptParser () : SourceLump(-1) {}
+  inline VScriptParser () noexcept : SrcIdx(-1), SourceLump(-1) {}
 
   // advances current position
   // if `changeFlags` is `true`, changes `Crossed` and `Line`
-  void SkipComments (bool changeFlags);
-  void SkipBlanks (bool changeFlags);
+  void SkipComments (bool changeFlags) noexcept;
+  void SkipBlanks (bool changeFlags) noexcept;
 
   // slow! returns 0 on EOF
-  char PeekOrSkipChar (bool doSkip);
+  char PeekOrSkipChar (bool doSkip) noexcept;
 
 public:
   // it also saves current modes
-  inline VScriptSavedPos SavePos () const { return VScriptSavedPos(*this); }
+  inline VScriptSavedPos SavePos () const noexcept { return VScriptSavedPos(*this); }
 
   // it also restores saved modes
-  inline void RestorePos (const VScriptSavedPos &pos) { pos.restoreTo(*this); }
+  inline void RestorePos (const VScriptSavedPos &pos) noexcept { pos.restoreTo(*this); }
 
 public:
   VV_DISABLE_COPY(VScriptParser)
 
   // deletes `Strm`
   VScriptParser (VStr name, VStream *Strm, int aSourceLump=-1);
-  VScriptParser (VStr name, const char *atext, int aSourceLump=-1);
+  VScriptParser (VStr name, const char *atext, int aSourceLump=-1) noexcept;
 
 #if !defined(VCC_STANDALONE_EXECUTOR)
+  // this sets `SourceLump`
+  // can return `nullptr` for invalid lump
   static VScriptParser *NewWithLump (int Lump);
 #endif
 
-  ~VScriptParser ();
+  ~VScriptParser () noexcept;
 
-  VScriptParser *clone () const;
+  VScriptParser *clone () const noexcept;
 
   inline int GetScriptSize () const noexcept { return ScriptSize; }
 
-  bool IsText ();
-  bool IsAtEol ();
-  inline void SetCMode (bool val) { CMode = val; }
-  inline void SetEscape (bool val) { Escape = val; }
-  bool AtEnd ();
-  bool GetString ();
+  bool IsText () noexcept;
+  bool IsAtEol () noexcept;
+  inline void SetCMode (bool val) noexcept { CMode = val; }
+  inline void SetEscape (bool val) noexcept { Escape = val; }
+  bool AtEnd () noexcept;
+  bool GetString () noexcept;
 #if !defined(VCC_STANDALONE_EXECUTOR)
   vuint32 ExpectColor (); // returns parsed color, either in string form, or r,g,b triplet
 #endif
+
   void ExpectString ();
   void ExpectLoneChar (); // in `String`
   void ExpectName8 ();
@@ -150,24 +152,29 @@ public:
   void ExpectName8Def (VName def);
   void ExpectName ();
   void ExpectIdentifier ();
-  bool Check (const char *str);
-  bool CheckStartsWith (const char *str);
-  void Expect (const char *name);
-  bool CheckQuotedString ();
-  bool CheckIdentifier ();
-  bool CheckNumber ();
   void ExpectNumber (bool allowFloat=false, bool truncFloat=true);
-  bool CheckNumberWithSign ();
   void ExpectNumberWithSign ();
-  bool CheckFloat ();
   void ExpectFloat ();
-  bool CheckFloatWithSign ();
   void ExpectFloatWithSign ();
-  void ResetQuoted ();
-  void ResetCrossed ();
-  void UnGet ();
-  void SkipBracketed (bool bracketEaten=false);
-  void SkipLine ();
+  void Expect (const char *name);
+
+  bool Check (const char *str) noexcept;
+  bool CheckStartsWith (const char *str) noexcept;
+  bool CheckQuotedString () noexcept;
+  bool CheckIdentifier () noexcept;
+  bool CheckNumber () noexcept;
+  bool CheckNumberWithSign () noexcept;
+  bool CheckFloat () noexcept;
+  bool CheckFloatWithSign () noexcept;
+
+  void ResetQuoted () noexcept;
+  void ResetCrossed () noexcept;
+
+  void UnGet () noexcept;
+
+  void SkipBracketed (bool bracketEaten=false) noexcept;
+  void SkipLine () noexcept;
+
   void Message (const char *message);
   void DebugMessage (const char *message);
   void MessageErr (const char *message);
@@ -178,19 +185,32 @@ public:
 
   // slow! returns 0 on EOF
   // doesn't affect flags
-  inline char PeekChar () { return PeekOrSkipChar(false); }
+  inline char PeekChar () noexcept { return PeekOrSkipChar(false); }
   // affects flags
-  inline char SkipChar () { return PeekOrSkipChar(true); }
+  inline char SkipChar () noexcept { return PeekOrSkipChar(true); }
 
-  TLocation GetLoc ();
+  inline VTextLocation GetLoc () const noexcept { return VTextLocation(ScriptName, TokLine, 1); }
 
-  inline VStr GetScriptName () const { return ScriptName.cloneUnique(); }
-  inline bool IsCMode () const { return CMode; }
-  inline bool IsEscape () const { return Escape; }
+  TLocation GetVCLoc () const noexcept;
+
+  inline VStr GetScriptName () const noexcept { return ScriptName.cloneUniqueMT(); }
+  inline bool IsCMode () const noexcept { return CMode; }
+  inline bool IsEscape () const noexcept { return Escape; }
 
   // for C mode
-  inline bool IsAllowNumSign () const { return AllowNumSign; }
-  inline void SetAllowNumSign (bool v) { AllowNumSign = v; }
+  inline bool IsAllowNumSign () const noexcept { return AllowNumSign; }
+  inline void SetAllowNumSign (bool v) noexcept { AllowNumSign = v; }
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+  // the following will try to find an include in the same file as `srclump`
+  static VVA_CHECKRESULT int FindRelativeIncludeLump (int srclump, VStr fname) noexcept;
+  static VVA_CHECKRESULT int FindIncludeLumpEx (int srclump, VStr fname, bool relativeFirst) noexcept;
+
+  // try relative include last
+  static inline VVA_CHECKRESULT int FindIncludeLumpRelLast (int srclump, VStr fname) noexcept { return FindIncludeLumpEx(srclump, fname, false); }
+  // try relative include first
+  static inline VVA_CHECKRESULT int FindIncludeLumpRelFirst (int srclump, VStr fname) noexcept { return FindIncludeLumpEx(srclump, fname, true); }
+#endif
 };
 
 

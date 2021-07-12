@@ -2073,7 +2073,7 @@ void VTextureManager::ParseTextureTextLump (int lump, bool asHiRes) {
     }
 
     int ttype = TEXTYPE_Null;
-    const TLocation loc = sc->GetLoc();
+    const VTextLocation loc = sc->GetLoc();
 
          if (sc->Check("walltexture")) ttype = TEXTYPE_Wall;
     else if (sc->Check("flat")) ttype = TEXTYPE_Flat;

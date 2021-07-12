@@ -1326,7 +1326,7 @@ static bool ParseOptionalBool (VScriptParser *sc, bool defval) {
 //
 //==========================================================================
 static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefactor) {
-  const TLocation lloc = sc->GetLoc();
+  const VTextLocation lloc = sc->GetLoc();
   sc->ExpectString();
   if (sc->String.isEmpty()) sc->Error("light name cannot be empty");
   VLightEffectDef *L = NewLightEffect(sc->String, LightType);

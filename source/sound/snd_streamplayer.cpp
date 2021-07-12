@@ -228,7 +228,7 @@ MYTHREAD_RET_TYPE VStreamMusicPlayerWorker::streamPlayerThread (void *adevobj) {
           strm->SoundDevice->SetStreamVolume(strm->stpNewVolume);
           {
             VStreamMusicPlayer::DataLocker dlock(strm);
-            lastLoadedSongName = strm->CurrSong.cloneUnique();
+            lastLoadedSongName = strm->CurrSong.cloneUniqueMT();
           }
           break;
         case VStreamMusicPlayer::STP_Restart: // start playing current stream
@@ -303,7 +303,7 @@ MYTHREAD_RET_TYPE VStreamMusicPlayerWorker::streamPlayerThread (void *adevobj) {
         wasPlaying = false;
       }
       lastSongWasLooped = doLoop;
-      lastLoadedSongName = newSongName.cloneUnique();
+      lastLoadedSongName = newSongName.cloneUniqueMT();
       bool success = false;
       // load a new song
       if (!newSongName.isEmpty() && GAudio) {
@@ -323,7 +323,7 @@ MYTHREAD_RET_TYPE VStreamMusicPlayerWorker::streamPlayerThread (void *adevobj) {
             strm->Codec = codec;
             {
               VStreamMusicPlayer::DataLocker dlock(strm);
-              strm->CurrSong = newSongName.cloneUnique();
+              strm->CurrSong = newSongName.cloneUniqueMT();
               strm->CurrLoop = doLoop;
             }
             strm->Stopping = false;

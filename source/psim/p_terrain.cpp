@@ -796,7 +796,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
   bool insideIf = false;
   int tkw;
   while (!sc->AtEnd()) {
-    auto loc = sc->GetLoc();
+    const VTextLocation loc = sc->GetLoc();
 
     // splash definition?
     if (sc->Check("splash")) {

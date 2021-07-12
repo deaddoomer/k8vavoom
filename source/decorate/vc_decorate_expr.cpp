@@ -37,12 +37,12 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
 //==========================================================================
 static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, VStr FuncName) {
   if (FuncName.strEquCI("A_SetUserVar") || FuncName.strEquCI("A_SetUserVarFloat")) {
-    auto stloc = sc->GetLoc();
+    auto stloc = sc->GetVCLoc();
     sc->Expect("(");
     sc->ExpectString();
     VStr varName = sc->String;
     VStr uvname = sc->String.toLowerCase();
-    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetLoc().toStringNoCol()));
+    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
     sc->Expect(",");
     VExpression *val = ParseExpressionNoAssign(sc, Class);
     sc->Expect(")");
@@ -50,12 +50,12 @@ static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, 
     VExpression *dest = new VDecorateUserVar(VName(*varName), stloc);
     return new VAssignment(VAssignment::Assign, dest, val, stloc);
   } else if (FuncName.strEquCI("A_SetUserArray") || FuncName.strEquCI("A_SetUserArrayFloat")) {
-    auto stloc = sc->GetLoc();
+    auto stloc = sc->GetVCLoc();
     sc->Expect("(");
     sc->ExpectString();
     VStr varName = sc->String;
     VStr uvname = sc->String.toLowerCase();
-    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetLoc().toStringNoCol()));
+    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
     sc->Expect(",");
     // index
     VExpression *idx = ParseExpressionNoAssign(sc, Class);
@@ -90,12 +90,12 @@ static VStatement *CheckParseSetUserVarStmt (VScriptParser *sc, VClass *Class, V
 //
 //==========================================================================
 static VExpression *ParseAJump (VScriptParser *sc, VClass *Class, VState *State) {
-  VDecorateAJump *jexpr = new VDecorateAJump(sc->GetLoc()); //FIXME: MEMLEAK!
+  VDecorateAJump *jexpr = new VDecorateAJump(sc->GetVCLoc()); //FIXME: MEMLEAK!
   jexpr->CallerState = State;
   sc->Expect("(");
   VExpression *prob = ParseExpressionNoAssign(sc, Class);
   if (!prob) {
-    ParseError(sc->GetLoc(), "`A_Jump` oops (0)!");
+    ParseError(sc->GetVCLoc(), "`A_Jump` oops (0)!");
     sc->Expect(")");
     return jexpr;
   }
@@ -104,7 +104,7 @@ static VExpression *ParseAJump (VScriptParser *sc, VClass *Class, VState *State)
     do {
       VExpression *arg = ParseExpressionNoAssign(sc, Class);
       if (!arg) {
-        ParseError(sc->GetLoc(), "`A_Jump` oops (1)!");
+        ParseError(sc->GetVCLoc(), "`A_Jump` oops (1)!");
         sc->Expect(")");
         return jexpr;
       }
@@ -124,15 +124,15 @@ static VExpression *ParseAJump (VScriptParser *sc, VClass *Class, VState *State)
 //
 //==========================================================================
 static VExpression *ParseRandomPick (VScriptParser *sc, VClass *Class, bool asFloat) {
-  VDecorateRndPick *pk = new VDecorateRndPick(asFloat, sc->GetLoc()); //FIXME: MEMLEAK!
+  VDecorateRndPick *pk = new VDecorateRndPick(asFloat, sc->GetVCLoc()); //FIXME: MEMLEAK!
   if (sc->Check(")")) {
-    ParseError(sc->GetLoc(), "`%srandompick` expects some arguments!", (asFloat ? "f" : ""));
+    ParseError(sc->GetVCLoc(), "`%srandompick` expects some arguments!", (asFloat ? "f" : ""));
     return pk;
   }
   do {
     VExpression *num = ParseExpressionNoAssign(sc, Class);
     if (!num) {
-      ParseError(sc->GetLoc(), "`%srandompick` oops!", (asFloat ? "f" : ""));
+      ParseError(sc->GetVCLoc(), "`%srandompick` oops!", (asFloat ? "f" : ""));
       sc->Expect(")");
       return pk;
     }
@@ -172,7 +172,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
               !VStr::strEquCI(*FuncName, "randompick") &&
               !VStr::strEquCI(*FuncName, "decorate_randompick"))
           {
-            ParseError(sc->GetLoc(), "Too many arguments to `%s`", *FuncName);
+            ParseError(sc->GetVCLoc(), "Too many arguments to `%s`", *FuncName);
           }
         } else {
           ++NumArgs;
@@ -198,11 +198,11 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
           } else {
             // add missing arguments
             while (NumArgs < 5) {
-              Args[NumArgs] = new VIntLiteral(0, sc->GetLoc());
+              Args[NumArgs] = new VIntLiteral(0, sc->GetVCLoc());
               ++NumArgs;
             }
             // add action special number argument
-            Args[5] = new VIntLiteral(LineSpecialInfos[i].Number, sc->GetLoc());
+            Args[5] = new VIntLiteral(LineSpecialInfos[i].Number, sc->GetVCLoc());
             ++NumArgs;
           }
           break;
@@ -216,7 +216,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
   }
 
   if (!Func) {
-    //GCon->Logf(NAME_Debug, "***8:<%s> %s", *FuncName, *sc->GetLoc().toStringNoCol());
+    //GCon->Logf(NAME_Debug, "***8:<%s> %s", *FuncName, *sc->GetVCLoc().toStringNoCol());
   } else {
     if (NumArgs > Func->NumParams &&
         (VStr::strEquCI(*FuncName, "A_Jump") ||
@@ -225,7 +225,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
          VStr::strEquCI(*FuncName, "frandompick") ||
          VStr::strEquCI(*FuncName, "decorate_frandompick")))
     {
-      ParseWarning(sc->GetLoc(), "Too many arguments to `%s` (%d -- are you nuts?!)", *FuncName, totalCount);
+      ParseWarning(sc->GetVCLoc(), "Too many arguments to `%s` (%d -- are you nuts?!)", *FuncName, totalCount);
       for (int f = Func->NumParams; f < NumArgs; ++f) { delete Args[f]; Args[f] = nullptr; }
       NumArgs = Func->NumParams;
     }
@@ -268,7 +268,7 @@ static VExpression *ParseMethodCall (VScriptParser *sc, VClass *Class, VStr Name
   VMethod *Func = ParseFunCallWithName(sc, Name, Class, NumArgs, Args, parenEaten, &inIgnoreList); // got paren
   if (!inIgnoreList) return new VDecorateInvocation((Func ? Func->GetVName() : VName(*Name, VName::AddLower)), Loc, NumArgs, Args);
   // this is ignored method, return zero integer literal instead
-  return new VIntLiteral(0, sc->GetLoc());
+  return new VIntLiteral(0, sc->GetVCLoc());
 }
 
 
@@ -375,7 +375,7 @@ static VExpression *ParsePostfixIncDec (VScriptParser *sc, VClass *Class, VExpre
   VExpression *op1 = lhs->SyntaxCopy();
   VExpression *op2 = new VIntLiteral(opc, lhs->Loc);
   VExpression *val = new VBinary(VBinary::Add, op1, op2, lhs->Loc);
-  VExpression *ass = new VAssignment(VAssignment::Assign, lhs->SyntaxCopy(), val, sc->GetLoc());
+  VExpression *ass = new VAssignment(VAssignment::Assign, lhs->SyntaxCopy(), val, sc->GetVCLoc());
 
   // build resulting operator
   return new VCommaExprRetOp0(lhs, ass, lhs->Loc);
@@ -422,28 +422,28 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     // check for quoted strings first, since these could also have numbers...
     if (sc->CheckQuotedString()) {
       int Val = DecPkg->FindString(*sc->String);
-      return new VStringLiteral(sc->String, Val, sc->GetLoc());
+      return new VStringLiteral(sc->String, Val, sc->GetVCLoc());
     }
 
     // integer?
     if (sc->CheckNumber()) {
       vint32 Val = sc->Number;
-      return new VIntLiteral(Val, sc->GetLoc());
+      return new VIntLiteral(Val, sc->GetVCLoc());
     }
 
     // float?
     if (sc->CheckFloat()) {
       float Val = sc->Float;
-      return new VFloatLiteral(Val, sc->GetLoc());
+      return new VFloatLiteral(Val, sc->GetVCLoc());
     }
 
     // booleans?
-    if (sc->Check("false")) return new VIntLiteral(0, sc->GetLoc());
-    if (sc->Check("true")) return new VIntLiteral(1, sc->GetLoc());
+    if (sc->Check("false")) return new VIntLiteral(0, sc->GetVCLoc());
+    if (sc->Check("true")) return new VIntLiteral(1, sc->GetVCLoc());
 
     // subexpression?
     if (sc->Check("(")) {
-      const TLocation l = sc->GetLoc();
+      const TLocation l = sc->GetVCLoc();
       VExpression *op = ParseExpressionGeneral(sc, Class, PRIO_NO_ASSIGN);
       if (!op) ParseError(l, "Expression expected");
       sc->Expect(")");
@@ -452,12 +452,12 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
 
     // identifier?
     if (sc->CheckIdentifier()) {
-      const TLocation l = sc->GetLoc();
+      const TLocation l = sc->GetVCLoc();
       VStr Name = sc->String;
       // args[idx] are special
       if (Name.strEquCI("args")) {
         if (sc->Check("[")) {
-          const TLocation lidx = sc->GetLoc();
+          const TLocation lidx = sc->GetVCLoc();
           Name = VStr("GetArg");
           VExpression *Args[1];
           Args[0] = ParseExpressionGeneral(sc, Class, PRIO_NO_ASSIGN);
@@ -486,7 +486,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
       if (sc->String.length() > 2 && sc->String[1] == '_' && VStr::toupper(sc->String[0]) == 'A') {
         return ParseMethodCall(sc, Class, Name, l, false); // paren not eaten
       }
-      //GCon->Logf(NAME_Debug, "%s: PRIO0! (cb=%d) ID=`%s`", *sc->GetLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *Name);
+      //GCon->Logf(NAME_Debug, "%s: PRIO0! (cb=%d) ID=`%s`", *sc->GetVCLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *Name);
       return new VDecorateSingleName(Name, l);
     }
 
@@ -517,15 +517,15 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     // get token, this is slightly faster
     if (!sc->GetString()) { sc->Error("expression expected"); return nullptr; } // no more code, wtf?
     VStr token = sc->String;
-    //GCon->Logf(NAME_Debug, "%s: PRIO2! (cb=%d) %s", *sc->GetLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *token);
+    //GCon->Logf(NAME_Debug, "%s: PRIO2! (cb=%d) %s", *sc->GetVCLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *token);
     // quoted crap
     if (sc->QuotedString && token == "-") {
-      return new VDecorateSingleName(sc->String, sc->GetLoc());
+      return new VDecorateSingleName(sc->String, sc->GetVCLoc());
     }
     // prefix increment
     if (inCodeBlock) {
       if (token.strEqu("++") || token.strEqu("--")) {
-        const TLocation l = sc->GetLoc();
+        const TLocation l = sc->GetVCLoc();
         VExpression *lhs = ParseExpressionGeneral(sc, Class, prio); // rassoc
         if (!lhs) return nullptr;
         lhs = ParseConvertToUserVar(sc, Class, lhs);
@@ -540,7 +540,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
       if (mop->prio != prio) continue;
       if (token.strEqu(mop->op)) {
         vassert(mop->type == MOP_Unary);
-        const TLocation l = sc->GetLoc();
+        const TLocation l = sc->GetVCLoc();
         VExpression *lhs = ParseExpressionGeneral(sc, Class, prio); // rassoc
         if (!lhs) return nullptr;
         //GCon->Logf(NAME_Debug, "%s: UNARY! %s", *lhs->Loc.toStringNoCol(), *lhs->toString());
@@ -558,7 +558,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     sc->UnGet(); // return token back
     // not found, try higher priority
     VExpression *lhs = ParseExpressionGeneral(sc, Class, prio-1);
-    //GCon->Logf(NAME_Debug, "%s: PRIO2, NOUNARY! (cb=%d) ID=`%s`; lhs=<%s>", *sc->GetLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *token, *lhs->toString());
+    //GCon->Logf(NAME_Debug, "%s: PRIO2, NOUNARY! (cb=%d) ID=`%s`; lhs=<%s>", *sc->GetVCLoc().toStringNoCol(), (inCodeBlock ? 1 : 0), *token, *lhs->toString());
     if (lhs && inCodeBlock) lhs = ParsePostfixIncDec(sc, Class, lhs);
     return lhs;
   }
@@ -568,7 +568,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     VExpression *cond = ParseExpressionGeneral(sc, Class, prio-1);
     if (!cond) return nullptr;
     if (sc->Check("?")) {
-      const TLocation l = sc->GetLoc();
+      const TLocation l = sc->GetVCLoc();
       VExpression *op1 = ParseExpressionGeneral(sc, Class, prio); // rassoc
       if (!op1) { delete cond; return nullptr; }
       sc->Expect(":");
@@ -587,7 +587,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     // get token, this is slightly faster
     if (!sc->GetString()) break; // no more code
     VStr token = sc->String;
-    //const TLocation tokloc = sc->GetLoc();
+    //const TLocation tokloc = sc->GetVCLoc();
     //VStr origToken = token;
     // hacks for some dumbfucks
     if (!inCodeBlock) {
@@ -595,13 +595,13 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         int lcls = ClassifyLogicalExpression(lhs);
         switch (lcls) {
           case LHS_LOGICAL:
-            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is logical)!", *sc->GetLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
             break;
           case LHS_COMPARISON:
-            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is comparison)!", *sc->GetLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
             break;
           default:
-            if (prio == 10 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `|` to combine constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `|` to combine constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
             token = "|";
             break;
         }
@@ -609,18 +609,18 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         int lcls = ClassifyLogicalExpression(lhs);
         switch (lcls) {
           case LHS_LOGICAL:
-            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is logical)!", *sc->GetLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
             break;
           case LHS_COMPARISON:
-            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is comparison)!", *sc->GetLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
             break;
           default:
-            if (prio == 8 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `&` to mask constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `&` to mask constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
             token = "&";
             break;
         }
       } else if (token.strEqu("=")) {
-        if (prio == 7 && !vcWarningsSilenced) GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetLoc().toStringNoCol());
+        if (prio == 7 && !vcWarningsSilenced) GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
         token = "==";
       }
     }
@@ -636,7 +636,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
       break;
     }
     // get rhs
-    const TLocation l = sc->GetLoc();
+    const TLocation l = sc->GetVCLoc();
     VExpression *rhs = ParseExpressionGeneral(sc, Class, prio-1); // use `prio` for rassoc, and immediately return (see above)
     if (!rhs) { delete lhs; return nullptr; } // some error
     switch (mop->type) {
@@ -681,7 +681,7 @@ static VExpression *ParseExpression (VScriptParser *sc, VClass *Class) {
 
   // easy case?
   if (sc->Check("=")) {
-    const TLocation l = sc->GetLoc();
+    const TLocation l = sc->GetVCLoc();
     //!GCon->Logf(NAME_Debug, "ASSIGN(%s): %s", *sc->String, *lhs->toString());
     lhs = ParseConvertToUserVar(sc, Class, lhs);
     VExpression *rhs = ParseExpression(sc, Class); // rassoc
@@ -702,7 +702,7 @@ static VExpression *ParseExpression (VScriptParser *sc, VClass *Class) {
     else if (sc->Check(">>>=")) opc = VBinary::URShift;
     else return lhs;
     //!GCon->Logf(NAME_Debug, "ASSIGN(%s): %s", *sc->String, *lhs->toString());
-    const TLocation l = sc->GetLoc();
+    const TLocation l = sc->GetVCLoc();
     lhs = ParseConvertToUserVar(sc, Class, lhs);
     // get new value
     VExpression *rhs = ParseExpression(sc, Class); // rassoc
@@ -744,7 +744,7 @@ static VExpression *ParseCreateDropResult (VExpression *expr) {
 //==========================================================================
 static VStatement *ParseFunCallAsStmt (VScriptParser *sc, VClass *Class, VState *State) {
   // get function name and parse arguments
-  //auto actionLoc = sc->GetLoc();
+  //auto actionLoc = sc->GetVCLoc();
   VExpression *Args[VMethod::MAX_PARAMS+1];
   int NumArgs = 0;
 
@@ -759,7 +759,7 @@ static VStatement *ParseFunCallAsStmt (VScriptParser *sc, VClass *Class, VState 
 
   sc->ExpectIdentifier();
   VStr FuncName = sc->String;
-  auto stloc = sc->GetLoc();
+  auto stloc = sc->GetVCLoc();
 
   //GCon->Logf(NAME_Debug, "%s: %s", *stloc.toStringNoCol(), *FuncName);
 
@@ -767,7 +767,7 @@ static VStatement *ParseFunCallAsStmt (VScriptParser *sc, VClass *Class, VState 
     // if it starts with `user_`, it is an expression too
     if (FuncName.startsWithCI("user_") || decoIsLocalName(FuncName)) {
       // this looks like an expression
-      //GCon->Logf(NAME_Debug, "%s: USERSHIT! `%s`", *sc->GetLoc().toStringNoCol(), *sc->String);
+      //GCon->Logf(NAME_Debug, "%s: USERSHIT! `%s`", *sc->GetVCLoc().toStringNoCol(), *sc->String);
       sc->UnGet(); // return it
       VExpression *expr = ParseExpression(sc, Class);
       return new VExpressionStatement(ParseCreateDropResult(expr));
@@ -821,7 +821,7 @@ static void CheckUnsafeStatement (VScriptParser *sc, const char *msg) {
 static VStatement *ParseStatementFor (VScriptParser *sc, VClass *Class, VState *State) {
   CheckUnsafeStatement(sc, "`for` is not allowed");
 
-  auto stloc = sc->GetLoc();
+  auto stloc = sc->GetVCLoc();
 
   sc->Expect("(");
 
@@ -888,7 +888,7 @@ static VStatement *ParseStatementFor (VScriptParser *sc, VClass *Class, VState *
 static VStatement *ParseStatementWhile (VScriptParser *sc, VClass *Class, VState *State) {
   CheckUnsafeStatement(sc, "`while` is not allowed");
 
-  auto stloc = sc->GetLoc();
+  auto stloc = sc->GetVCLoc();
 
   sc->Expect("(");
   VExpression *cond = ParseExpression(sc, Class);
@@ -909,7 +909,7 @@ static VStatement *ParseStatementWhile (VScriptParser *sc, VClass *Class, VState
 static VStatement *ParseStatementDo (VScriptParser *sc, VClass *Class, VState *State) {
   CheckUnsafeStatement(sc, "`do` is not allowed");
 
-  auto stloc = sc->GetLoc();
+  auto stloc = sc->GetVCLoc();
 
   VStatement *body = ParseActionStatement(sc, Class, State);
 
@@ -931,7 +931,7 @@ static VStatement *ParseStatementDo (VScriptParser *sc, VClass *Class, VState *S
 static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VState *State) {
   if (sc->Check("{")) {
     DecoLocalsMarker lmark;
-    VCompound *stmt = new VCompound(sc->GetLoc());
+    VCompound *stmt = new VCompound(sc->GetVCLoc());
     while (!sc->Check("}")) {
       if (sc->Check(";")) continue;
       VStatement *st;
@@ -944,7 +944,7 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
 
   if (sc->Check(";")) return nullptr;
 
-  auto stloc = sc->GetLoc();
+  auto stloc = sc->GetVCLoc();
 
   // local var
   if (sc->Check("local")) {
@@ -965,7 +965,7 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
     VLocalDecl *ldecl = new VLocalDecl(stloc);
     do {
       // parse name
-      const TLocation l = sc->GetLoc();
+      const TLocation l = sc->GetVCLoc();
       if (!sc->CheckIdentifier()) sc->Error("identifier expected");
       if (sc->String.isEmpty()) sc->Error("identifier expected");
       // check for valid name
@@ -997,7 +997,7 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
     if (!cond) sc->Error("invalid `if` expression");
     VStatement *ts = ParseActionStatement(sc, Class, State);
     if (!ts) sc->Error("invalid `if` true branch");
-    auto elseloc = sc->GetLoc();
+    auto elseloc = sc->GetVCLoc();
     if (sc->Check("else")) {
       VStatement *fs = ParseActionStatement(sc, Class, State);
       if (fs) return new VIf(cond, ts, fs, stloc, elseloc, false);
@@ -1090,7 +1090,7 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
   if (sc->Check("while")) return ParseStatementWhile(sc, Class, State);
   if (sc->Check("do")) return ParseStatementDo(sc, Class, State);
 
-  //GCon->Logf(NAME_Debug, "%s: %s", *sc->GetLoc().toStringNoCol(), *sc->String);
+  //GCon->Logf(NAME_Debug, "%s: %s", *sc->GetVCLoc().toStringNoCol(), *sc->String);
   VStatement *res = ParseFunCallAsStmt(sc, Class, State);
   sc->Expect(";");
   if (!res) sc->Error("invalid action statement");
@@ -1148,7 +1148,7 @@ static void ParseActionBlock (VScriptParser *sc, VClass *Class, VState *State) {
   DecoLocalsMarker lmark;
   bool oldicb = inCodeBlock;
   inCodeBlock = true;
-  VCompound *stmt = new VCompound(sc->GetLoc());
+  VCompound *stmt = new VCompound(sc->GetVCLoc());
   while (!sc->Check("}")) {
     VStatement *st = ParseActionStatement(sc, Class, State);
     if (!st) continue;
@@ -1158,7 +1158,7 @@ static void ParseActionBlock (VScriptParser *sc, VClass *Class, VState *State) {
 
   State->FunctionName = NAME_None;
   if (stmt->Statements.length()) {
-    VMethod *M = CreateStateActionCallWrapperStmt(stmt, Class, State, sc->GetLoc());
+    VMethod *M = CreateStateActionCallWrapperStmt(stmt, Class, State, sc->GetVCLoc());
     State->Function = M;
   } else {
     delete stmt;
@@ -1180,17 +1180,17 @@ static void ParseActionCall (VScriptParser *sc, VClass *Class, VState *State) {
 
   VExpression *Args[VMethod::MAX_PARAMS+1];
   int NumArgs = 0;
-  auto actionLoc = sc->GetLoc();
+  auto actionLoc = sc->GetVCLoc();
   VStr FuncName = sc->String;
   VMethod *Func = nullptr;
 
   VStatement *suvst = CheckParseSetUserVarStmt(sc, Class, FuncName);
   if (suvst) {
-    Func = CreateStateActionCallWrapperStmt(suvst, Class, State, sc->GetLoc());
+    Func = CreateStateActionCallWrapperStmt(suvst, Class, State, sc->GetVCLoc());
   } else if (VStr::strEquCI(*FuncName, "A_Jump")) {
     // `A_Jump` action always need a wrapper
     VExpression *jexpr = ParseAJump(sc, Class, State);
-    Func = CreateStateActionCallWrapper(jexpr, Class, State, sc->GetLoc());
+    Func = CreateStateActionCallWrapper(jexpr, Class, State, sc->GetVCLoc());
   } else {
     bool inIgnoreList = false;
     Func = ParseFunCallWithName(sc, FuncName, Class, NumArgs, Args, false, &inIgnoreList); // no paren
@@ -1212,9 +1212,9 @@ static void ParseActionCall (VScriptParser *sc, VClass *Class, VState *State) {
       State->FunctionName = NAME_None;
     } else if (NumArgs || Func->Name == NAME_None || !Func->IsGoodStateMethod()) {
       // call with arguments, or need a wrapper
-      VDecorateInvocation *Expr = new VDecorateInvocation(Func, *FuncName, sc->GetLoc(), NumArgs, Args);
+      VDecorateInvocation *Expr = new VDecorateInvocation(Func, *FuncName, sc->GetVCLoc(), NumArgs, Args);
       Expr->CallerState = State;
-      Func = CreateStateActionCallWrapper(ParseCreateDropResult(Expr), Class, State, sc->GetLoc());
+      Func = CreateStateActionCallWrapper(ParseCreateDropResult(Expr), Class, State, sc->GetVCLoc());
     } else {
       // no need to create any wrappers
       //GCon->Logf(NAME_Debug, "*** %s: func=`%s` (%s) (params=%d; args=%d; final=%d; static=%d)", Class->GetName(), Func->GetName(), *FuncName, Func->NumParams, NumArgs, (Func->Flags&FUNC_Final ? 1 : 0), (Func->Flags&FUNC_Static ? 1 : 0));
@@ -1249,9 +1249,9 @@ static void SetupOldStyleFunction (VScriptParser *sc, VClass *Class, VState *Sta
 
   if (Func->Name == NAME_None || !Func->IsGoodStateMethod()) {
     // need to create invocation
-    VDecorateInvocation *Expr = new VDecorateInvocation(Func, Func->Name, sc->GetLoc(), 0, nullptr);
+    VDecorateInvocation *Expr = new VDecorateInvocation(Func, Func->Name, sc->GetVCLoc(), 0, nullptr);
     Expr->CallerState = State;
-    Func = CreateStateActionCallWrapper(ParseCreateDropResult(Expr), Class, State, sc->GetLoc());
+    Func = CreateStateActionCallWrapper(ParseCreateDropResult(Expr), Class, State, sc->GetVCLoc());
   } else {
     //GCon->Logf(NAME_Debug, "*** %s: func=`%s` (%s) (params=%d; args=%d; final=%d; static=%d)", Class->GetName(), Func->GetName(), *FuncName, Func->NumParams, NumArgs, (Func->Flags&FUNC_Final ? 1 : 0), (Func->Flags&FUNC_Static ? 1 : 0));
     State->FunctionName = Func->Name;

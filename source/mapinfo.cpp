@@ -163,8 +163,10 @@ static bool ExpectBool (const char *optname, VScriptParser *sc) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 VName P_TranslateMap (int map);
-static void ParseMapInfo (VScriptParser *sc, int milumpnum);
-static void ParseUMapinfo (VScriptParser *sc, int milumpnum);
+// `sc->SourceLump` must be set
+static void ParseMapInfo (VScriptParser *sc);
+// `sc->SourceLump` must be set
+static void ParseUMapinfo (VScriptParser *sc);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -184,7 +186,7 @@ VVA_OKUNUSED __attribute__((format(printf, 2, 3))) static void miWarning (VScrip
 }
 
 
-VVA_OKUNUSED __attribute__((format(printf, 2, 3))) static void miWarning (const TLocation &loc, const char *fmt, ...) {
+VVA_OKUNUSED __attribute__((format(printf, 2, 3))) static void miWarning (const VTextLocation &loc, const char *fmt, ...) {
   va_list argptr;
   va_start(argptr, fmt);
   vsnprintf(miWarningBuf, sizeof(miWarningBuf), fmt, argptr);
@@ -525,8 +527,10 @@ static int loadSkyTexture (VScriptParser *sc, VName name, bool silent=false) {
 //
 //==========================================================================
 static void LoadMapInfoLump (int Lump, bool doFixups=true) {
-  GCon->Logf(NAME_Init, "mapinfo file: '%s'", *W_FullLumpName(Lump));
-  ParseMapInfo(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), Lump);
+  GCon->Logf(NAME_Init, "mapinfo file: \"%s\"", *W_FullLumpName(Lump).quote());
+  VScriptParser *sc = VScriptParser::NewWithLump(Lump);
+  if (!sc) Sys_Error("cannot load lump #%d: \"%s\"", Lump, *W_FullLumpName(Lump).quote());
+  ParseMapInfo(sc);
   if (doFixups) {
     processNumFixups("DoomEdNum", true, DoomEdNumFixups);
     processNumFixups("SpawnNum", false, SpawnNumFixups);
@@ -580,8 +584,10 @@ static void LoadAllMapInfoLumpsInFile (int miLump, int zmiLump, int vmiLump) {
 //==========================================================================
 static void LoadUmapinfoLump (int lump) {
   if (lump < 0) return;
-  GCon->Logf(NAME_Init, "umapinfo file: '%s'", *W_FullLumpName(lump));
-  ParseUMapinfo(new VScriptParser(W_FullLumpName(lump), W_CreateLumpReaderNum(lump)), lump);
+  GCon->Logf(NAME_Init, "umapinfo file: \"%s\"", *W_FullLumpName(lump).quote());
+  VScriptParser *sc = VScriptParser::NewWithLump(lump);
+  if (!sc) Sys_Error("cannot load lump #%d: \"%s\"", lump, *W_FullLumpName(lump).quote());
+  ParseUMapinfo(sc);
 }
 
 
@@ -890,7 +896,7 @@ MAPINFOCMD(secretnext) {
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(sky1) {
   wasSky1Sky2 |= WSK_WAS_SKY1;
-  auto loc = sc->GetLoc();
+  const VTextLocation loc = sc->GetLoc();
   if (newFormat) sc->Expect("=");
   sc->ExpectName();
   //info->Sky1Texture = GTextureManager.NumForName(sc->Name, TEXTYPE_Wall, false);
@@ -960,7 +966,7 @@ MAPINFOCMD(sky2) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(skybox) {
-  auto loc = sc->GetLoc();
+  const VTextLocation loc = sc->GetLoc();
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
   info->Sky1ScrollDelta = 0;
@@ -1529,7 +1535,7 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
 
   sc->Expect("{");
   for (;;) {
-    const TLocation loc = sc->GetLoc();
+    const VTextLocation loc = sc->GetLoc();
 
     if (sc->Check("}")) break;
     if (sc->AtEnd()) break;
@@ -1779,7 +1785,7 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
 //  ParseMap
 //
 //==========================================================================
-static void ParseMap (VScriptParser *sc, bool &HexenMode, const VMapInfo &Default, int milumpnum, bool umapinfo=false) {
+static void ParseMap (VScriptParser *sc, bool &HexenMode, const VMapInfo &Default, bool umapinfo=false) {
   VMapInfo *info = nullptr;
   vuint32 savedFlags = 0;
 
@@ -1898,7 +1904,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, const VMapInfo &Defaul
     info->LevelNum = (mn[1]-'1')*10+(mn[3]-'0');
   }
 
-  info->MapinfoSourceLump = milumpnum;
+  info->MapinfoSourceLump = sc->SourceLump;
 
   if (!umapinfo) {
     ParseMapCommon(sc, info, HexenMode, Default);
@@ -1918,7 +1924,7 @@ static void ParseMap (VScriptParser *sc, bool &HexenMode, const VMapInfo &Defaul
     ParseMapUMapinfo(sc, info);
   }
 
-  info->MapinfoSourceLump = milumpnum;
+  info->MapinfoSourceLump = sc->SourceLump;
 
   // avoid duplicate levelnums, later one takes precedance
   if (info->LevelNum) {
@@ -2013,7 +2019,7 @@ static void ParseClusterDef (VScriptParser *sc) {
       sc->ExpectNumber();
       //CDef->CDId = sc->Number;
     } else if (sc->Check("name")) {
-      auto loc = sc->GetLoc();
+      const VTextLocation loc = sc->GetLoc();
       if (newFormat) sc->Expect("=");
       if (sc->Check("lookup")) {
         if (newFormat) sc->Expect(",");
@@ -2023,7 +2029,7 @@ static void ParseClusterDef (VScriptParser *sc) {
     } else {
       if (newFormat) {
         if (!sc->Check("}")) {
-          auto loc = sc->GetLoc();
+          const VTextLocation loc = sc->GetLoc();
           sc->ExpectString();
           VStr cmd = sc->String;
           //fprintf(stderr, "!!!!!!\n");
@@ -2057,7 +2063,7 @@ static void ParseClusterDef (VScriptParser *sc) {
 //  ParseEpisodeDef
 //
 //==========================================================================
-static void ParseEpisodeDef (VScriptParser *sc, int milumpnum) {
+static void ParseEpisodeDef (VScriptParser *sc) {
   VEpisodeDef *EDef = nullptr;
   int EIdx = 0;
   sc->ExpectName();
@@ -2088,7 +2094,7 @@ static void ParseEpisodeDef (VScriptParser *sc, int milumpnum) {
   EDef->PicName = NAME_None;
   EDef->Flags = 0;
   EDef->Key = VStr();
-  EDef->MapinfoSourceLump = milumpnum;
+  EDef->MapinfoSourceLump = sc->SourceLump;
 
   if (sc->Check("teaser")) {
     sc->ExpectName();
@@ -2578,8 +2584,10 @@ static void ParseDamageType (VScriptParser *sc) {
 //
 //  ParseMapInfo
 //
+//  `sc->SourceLump` must be set
+//
 //==========================================================================
-static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
+static void ParseMapInfo (VScriptParser *sc) {
   const unsigned int MaxStack = 64;
   bool HexenMode = false;
   VScriptParser *scstack[MaxStack];
@@ -2593,7 +2601,7 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
   for (;;) {
     while (!sc->AtEnd()) {
       if (sc->Check("map")) {
-        ParseMap(sc, HexenMode, Default, milumpnum);
+        ParseMap(sc, HexenMode, Default);
       } else if (sc->Check("defaultmap")) {
         SetMapDefaults(Default);
         ParseMapCommon(sc, &Default, HexenMode, Default);
@@ -2604,7 +2612,7 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
       } else if (sc->Check("cluster")) {
         ParseClusterDef(sc);
       } else if (sc->Check("episode")) {
-        ParseEpisodeDef(sc, milumpnum);
+        ParseEpisodeDef(sc);
       } else if (sc->Check("clearepisodes")) {
         // clear episodes and clusterdefs
         EpisodeDefs.Clear();
@@ -2615,19 +2623,19 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
         SkillDefs.Clear();
       } else if (sc->Check("include")) {
         sc->ExpectString();
-        int lmp = W_CheckNumForFileName(sc->String);
+        //int lmp = W_CheckNumForFileName(sc->String);
+        int lmp = VScriptParser::FindIncludeLumpRelLast(sc->SourceLump, sc->String);
         if (lmp >= 0) {
           if (scsp >= MaxStack) {
-            sc->Error(va("mapinfo include nesting too deep"));
+            sc->Error("mapinfo include nesting too deep");
             error = true;
             break;
           }
-          GCon->Logf(NAME_Init, "Including '%s'", *sc->String);
+          GCon->Logf(NAME_Init, "Including \"%s\"...", *sc->String.quote());
           scstack[scsp++] = sc;
-          sc = new VScriptParser(/**sc->String*/W_FullLumpName(lmp), W_CreateLumpReaderNum(lmp));
-          //ParseMapInfo(new VScriptParser(*sc->String, W_CreateLumpReaderNum(lmp)));
+          sc = VScriptParser::NewWithLump(lmp);
         } else {
-          sc->Error(va("mapinfo include '%s' not found", *sc->String));
+          sc->Error(va("mapinfo include \"%s\" not found", *sc->String.quote()));
           error = true;
           break;
         }
@@ -2688,7 +2696,7 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
           int special = 0;
           int args[5] = {0, 0, 0, 0, 0};
           if (sc->Check(",")) {
-            auto loc = sc->GetLoc();
+            const VTextLocation loc = sc->GetLoc();
             bool doit = true;
             if (sc->Check("noskillflags")) { flags |= mobjinfo_t::FlagNoSkill; doit = sc->Check(","); }
             if (doit) {
@@ -2748,14 +2756,14 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
         VStr cmdname = sc->String;
         sc->ExpectString();
         if (sc->Check("{")) {
-          GCon->Logf(NAME_Warning, "Unimplemented MAPINFO command '%s'", *cmdname);
+          GCon->Logf(NAME_Warning, "Unimplemented MAPINFO command \"%s\"", *cmdname.quote());
           sc->SkipBracketed(true); // bracket eaten
         } else if (!sc->String.strEquCI("}")) { // some mappers cannot into mapinfo
           sc->Error(va("Invalid command '%s'", *sc->String));
           error = true;
           break;
         } else {
-          sc->Message(va("Some mapper cannot into proper mapinfo (stray '%s')", *sc->String));
+          sc->Message(va("Some mapper cannot into proper mapinfo (stray \"%s\")", *sc->String.quote()));
         }
       }
     }
@@ -2764,12 +2772,11 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
       break;
     }
     if (scsp == 0) break;
-    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSourceFile());
+    GCon->Logf(NAME_Init, "Finished included \"%s\"", *sc->GetLoc().GetSourceFile().quote());
     delete sc;
     sc = scstack[--scsp];
   }
   delete sc;
-  sc = nullptr;
 }
 
 
@@ -2777,8 +2784,10 @@ static void ParseMapInfo (VScriptParser *sc, int milumpnum) {
 //
 //  ParseUMapinfo
 //
+//  `sc->SourceLump` must be set
+//
 //==========================================================================
-static void ParseUMapinfo (VScriptParser *sc, int milumpnum) {
+static void ParseUMapinfo (VScriptParser *sc) {
   // set up default map info
   VMapInfo Default;
   SetMapDefaults(Default);
@@ -2786,7 +2795,7 @@ static void ParseUMapinfo (VScriptParser *sc, int milumpnum) {
 
   while (!sc->AtEnd()) {
     if (sc->Check("map")) {
-      ParseMap(sc, HexenMode, Default, milumpnum, true);
+      ParseMap(sc, HexenMode, Default, true);
     } else {
       sc->Error(va("Unknown UMAPINFO key '%s'", *sc->String));
     }

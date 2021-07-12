@@ -1385,6 +1385,8 @@ static void AddGameDir (VStr basedir, VStr dir) {
   if (bdx.length() == 0) bdx = "./";
   bdx = bdx.appendPath(dir);
 
+  //GCon->Logf(NAME_Debug, "*** adding game dir \"%s\"", *bdx.quote());
+
   if (!Sys_DirExists(bdx)) return;
 
   fsys_hide_sprofs = modNoBaseSprOfs;
@@ -1511,20 +1513,14 @@ static void AddGameDir (VStr dir) {
 static VStr FindMainWad (VStr MainWad) {
   if (MainWad.length() == 0) return VStr();
 
-  //GLog.Logf(NAME_Debug, "trying to find iwad '%s'", *MainWad);
-
   // if we have path separators, try relative path first
-  bool hasSep = false;
-  for (const char *s = *MainWad; *s; ++s) {
 #ifdef _WIN32
-    if (*s == '/' || *s == '\\') { hasSep = true; break; }
+  const bool hasSep = (strchr(*MainWad, '\\') || strchr(*MainWad, '/') || (MainWad.length() >= 2 && MainWad[1] == ':'));
 #else
-    if (*s == '/') { hasSep = true; break; }
+  const bool hasSep = !!strchr(*MainWad, '/');
 #endif
-  }
-#ifdef _WIN32
-  if (!hasSep && MainWad.length() >= 2 && MainWad[1] == ':') hasSep = true;
-#endif
+
+  //GLog.Logf(NAME_Debug, "trying to find iwad \"%s\" (hasSep=%d)", *MainWad.quote(), (int)hasSep);
 
   if (hasSep) {
     VStr nwadfname = Sys_FindFileCI(MainWad);
@@ -1536,7 +1532,7 @@ static VStr FindMainWad (VStr MainWad) {
     //GLog.Logf(NAME_Debug, "  looking for iwad '%s/%s'", *dir, *MainWad);
     VStr wadfname = Sys_FindFileCI(dir+"/"+MainWad);
     if (wadfname.length() != 0) {
-      //GLog.Logf(NAME_Debug, "    FOUND iwad '%s/%s'!", *dir, *MainWad);
+      //GLog.Logf(NAME_Debug, "    FOUND iwad \"%s/%s\"!", *dir, *MainWad);
       return wadfname;
     }
   }

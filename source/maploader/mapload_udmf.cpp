@@ -251,7 +251,7 @@ void VUdmfParser::keyWarning (int wtype) {
 //==========================================================================
 void VUdmfParser::ParseKey () {
   // get key and value
-  KeyLoc = sc.GetLoc();
+  KeyLoc = sc.GetVCLoc();
   sc.ExpectString();
   Key = sc.String;
   sc.Expect("=");
@@ -416,9 +416,7 @@ void VUdmfParser::ParseMoreIds (TArray<vint32> &idlist) {
   TArray<VStr> list;
   idstr.SplitOnBlanks(list);
   for (int f = 0; f < list.length(); ++f) {
-    VStr s = list[f];
-    while (s.length() && (vuint8)s[0] <= ' ') s.chopLeft(1);
-    while (s.length() && (vuint8)s[s.length()-1] <= ' ') s.chopRight(1);
+    VStr s = list[f].xstrip();
     if (s.length() == 0) continue;
     int n = VStr::atoi(*s);
     if (!n || n == -1) continue;
@@ -507,7 +505,7 @@ void VUdmfParser::Parse (VLevel *Level, const VMapInfo &MInfo) {
     else if (sc.Check("sidedef")) ParseSideDef();
     else if (sc.Check("thing")) ParseThing();
     else {
-      VStr slocstr = sc.GetLoc().toStringNoCol();
+      VStr slocstr = sc.GetVCLoc().toStringNoCol();
       if (!sc.GetString()) break;
       VStr kn = sc.String;
       GCon->Logf(NAME_Error, "%s:UDMF ignoring wtfidontknow '%s'", *slocstr, *kn);
@@ -533,7 +531,7 @@ void VUdmfParser::ParseVertex () {
   VParsedVertex &v = ParsedVertexes.Alloc();
   memset((void *)&v, 0, sizeof(VParsedVertex));
   v.index = ParsedVertexes.length()-1;
-  v.loc = sc.GetLoc();
+  v.loc = sc.GetVCLoc();
 
   sc.Expect("{");
   while (!sc.Check("}")) {
@@ -759,7 +757,7 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   VParsedLine &L = ParsedLines.Alloc();
   memset((void *)&L, 0, sizeof(VParsedLine));
   L.index = ParsedLines.length()-1;
-  L.loc = sc.GetLoc();
+  L.loc = sc.GetVCLoc();
   L.V1Index = -1;
   L.V2Index = -1;
   L.L.locknumber = 0;
@@ -928,7 +926,7 @@ void VUdmfParser::ParseSideDef () {
   VParsedSide &S = ParsedSides.Alloc();
   memset((void *)&S, 0, sizeof(VParsedSide));
   S.index = ParsedSides.length()-1;
-  S.loc = sc.GetLoc();
+  S.loc = sc.GetVCLoc();
   S.TopTexture = "-";
   S.MidTexture = "-";
   S.BotTexture = "-";
