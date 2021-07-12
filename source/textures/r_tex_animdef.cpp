@@ -438,11 +438,11 @@ static void BuildTextureRange (int wadfile, VName nfirst, VName nlast, int txtyp
 void P_InitAnimated () {
   AnimDef_t ad;
 
-  int animlump = W_CheckNumForName(NAME_animated);
+  const int animlump = W_CheckNumForName(NAME_animated);
   if (animlump < 0) return;
   GCon->Logf(NAME_Init, "loading Boom animated lump from '%s'", *W_FullLumpName(animlump));
 
-  VStream *lumpstream = W_CreateLumpReaderName(NAME_animated);
+  VStream *lumpstream = W_CreateLumpReaderNum(animlump);
   VCheckedStream Strm(lumpstream);
   while (Strm.TotalSize()-Strm.Tell() >= 23) {
     //int pic1, pic2;
@@ -1148,7 +1148,7 @@ void R_InitFTAnims () {
   // process all animdefs lumps
   for (auto &&it : WadNSNameIterator(NAME_animdefs, WADNS_Global)) {
     GCon->Logf(NAME_Init, "parsing ANIMDEF from '%s'", *it.getFullName());
-    ParseFTAnims(W_LumpFile(it.lump), new VScriptParser(it.getFullName(), W_CreateLumpReaderNum(it.lump)));
+    ParseFTAnims(W_LumpFile(it.lump), VScriptParser::NewWithLump(it.lump));
   }
 
   // read Boom's animated lump if present

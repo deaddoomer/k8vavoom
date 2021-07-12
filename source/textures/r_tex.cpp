@@ -1976,7 +1976,7 @@ void VTextureManager::AddHiResTextures () {
 //==========================================================================
 void VTextureManager::ParseTextureTextLump (int lump, bool asHiRes) {
   GCon->Logf(NAME_Init, "parsing %stextures script \"%s\"", (asHiRes ? "hires " : ""), *W_FullLumpName(lump));
-  VScriptParser *sc = new VScriptParser(W_FullLumpName(lump), W_CreateLumpReaderNum(lump));
+  VScriptParser *sc = VScriptParser::NewWithLump(lump);
   while (!sc->AtEnd()) {
     if (sc->Check("remap")) {
       // new (possibly hires) texture
@@ -2307,7 +2307,7 @@ void VTextureManager::LoadSpriteOffsets () {
 
   for (auto &&it : WadNSNameIterator(VName("sprofs"), WADNS_Global)) {
     int fixed = 0, skipped = 0;
-    auto sc = new VScriptParser(W_FullLumpName(it.lump), W_CreateLumpReaderNum(it.lump));
+    VScriptParser *sc = VScriptParser::NewWithLump(it.lump);
     GCon->Logf(NAME_Init, "loading SPROFS lump (%s)", *W_FullLumpName(it.lump));
     sc->SetEscape(false);
     sc->SetCMode(true);

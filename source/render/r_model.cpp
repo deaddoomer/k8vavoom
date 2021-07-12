@@ -1032,7 +1032,7 @@ static void ParseGZModelDefs () {
     GCon->Logf(NAME_Init, "parsing GZDoom ModelDef script \"%s\"", *W_FullLumpName(Lump));
     // parse modeldef
     TArray<IncStackItem> includeStack;
-    auto sc = new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
+    VScriptParser *sc = VScriptParser::NewWithLump(Lump);
     sc->SetEscape(false);
     int currentLump = Lump;
     for (;;) {
@@ -1098,7 +1098,7 @@ static void ParseGZModelDefs () {
           si.sc = sc;
           si.lump = ilmp;
           includeStack.append(si);
-          sc = new VScriptParser(W_FullLumpName(ilmp), W_CreateLumpReaderNum(ilmp));
+          sc = VScriptParser::NewWithLump(ilmp);
           sc->SetEscape(false);
           currentLump = ilmp;
           continue;

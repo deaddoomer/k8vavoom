@@ -372,7 +372,7 @@ void VSoundManager::Init () {
     // reset current pitch change for each sndinfo file
     // `-1` means "apply default pitch"
     CurrentChangePitch = -1;
-    ParseSndinfo(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), W_LumpFile(Lump));
+    ParseSndinfo(VScriptParser::NewWithLump(Lump), W_LumpFile(Lump));
     // and reset it afterwards
     CurrentChangePitch = -1;
   }
@@ -383,7 +383,7 @@ void VSoundManager::Init () {
   memset(SeqTrans, -1, sizeof(SeqTrans));
   for (auto &&it : WadNSNameIterator(NAME_sndseq, WADNS_Global)) {
     const int Lump = it.lump;
-    ParseSequenceScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+    ParseSequenceScript(VScriptParser::NewWithLump(Lump));
   }
 
 #if defined(VAVOOM_REVERB)
@@ -391,7 +391,7 @@ void VSoundManager::Init () {
   Environments = nullptr;
   for (auto &&it : WadNSNameIterator(NAME_reverbs, WADNS_Global)) {
     const int Lump = it.lump;
-    ParseReverbs(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+    ParseReverbs(VScriptParser::NewWithLump(Lump));
   }
 #endif
 

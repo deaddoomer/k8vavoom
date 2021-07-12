@@ -312,9 +312,9 @@ VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump) noe
 //
 //==========================================================================
 VScriptParser *VScriptParser::NewWithLump (int Lump) {
-  if (Lump < 0) return nullptr;
+  if (Lump < 0) return new VScriptParser("{nullfile}", "");
   VStream *st = W_CreateLumpReaderNum(Lump);
-  if (!st) return nullptr;
+  if (!st) return new VScriptParser("{nullfile}", "");
   return new VScriptParser(W_FullLumpName(Lump), st, Lump);
 }
 #endif
@@ -328,7 +328,6 @@ VScriptParser *VScriptParser::NewWithLump (int Lump) {
 VScriptParser::~VScriptParser () noexcept {
   delete[] ScriptBuffer;
   ScriptBuffer = nullptr;
-  ScriptName.clear();
 }
 
 
@@ -1416,7 +1415,7 @@ TLocation VScriptParser::GetVCLoc () const noexcept {
 #if !defined(VCC_STANDALONE_EXECUTOR)
 //==========================================================================
 //
-//  VScriptParser::FindIncludeLump
+//  VScriptParser::FindRelativeIncludeLump
 //
 //==========================================================================
 int VScriptParser::FindRelativeIncludeLump (int srclump, VStr fname) noexcept {
@@ -1434,24 +1433,24 @@ int VScriptParser::FindRelativeIncludeLump (int srclump, VStr fname) noexcept {
 
 //==========================================================================
 //
-//  VScriptParser::FindIncludeLumpEx
+//  VScriptParser::FindIncludeLump
 //
 //==========================================================================
-int VScriptParser::FindIncludeLumpEx (int srclump, VStr fname, bool relativeFirst) noexcept {
+int VScriptParser::FindIncludeLump (int srclump, VStr fname) noexcept {
   if (fname.isEmpty()) return -1;
+  //GLog.Logf(NAME_Debug, "***FindIncludeLumpEx: srclump=%d; fname='%s' (srcfname='%s')", srclump, *fname, *W_FullLumpName(srclump));
 
-  int Lump = W_CheckNumForFileNameInSameFile(srclump, fname);
+  int Lump = (srclump >= 0 ? W_CheckNumForFileNameInSameFile(srclump, fname) : W_CheckNumForFileName(fname));
   if (Lump >= 0) return Lump;
 
   fname = fname.fixSlashes();
+  //GLog.Logf(NAME_Debug, "   fname='%s'", *fname);
 
-  if (relativeFirst) {
-    Lump = FindRelativeIncludeLump(srclump, fname);
-    if (Lump >= 0) return Lump;
-  }
+  Lump = FindRelativeIncludeLump(srclump, fname);
+  if (Lump >= 0) return Lump;
 
   // check WAD lump only if it's no longer than 8 characters and has no path separator
-  if (fname.indexOf('/') < 0) {
+  if ((srclump == -1 || W_IsWADLump(srclump)) && fname.indexOf('/') < 0) {
     VStr noext = fname.stripExtension();
     if (!noext.isEmpty() && noext.length() <= 8) {
       VName nn(*fname, VName::FindLower8);
@@ -1461,9 +1460,6 @@ int VScriptParser::FindIncludeLumpEx (int srclump, VStr fname, bool relativeFirs
       }
     }
   }
-
-  // for non-base packs, try local include last
-  if (!relativeFirst) Lump = FindRelativeIncludeLump(srclump, fname);
 
   return Lump;
 }
@@ -1514,7 +1510,9 @@ IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpName) {
     delete Self->Int;
     Self->Int = nullptr;
   }
-  Self->Int = new VScriptParser(*Name, W_CreateLumpReaderName(Name));
+  int Lump = W_GetNumForName(Name);
+  if (Lump < 0) Sys_Error("cannot open non-existing lump '%s'", *Name);
+  Self->Int = VScriptParser::NewWithLump(Lump);
 }
 
 IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpIndex) {
@@ -1525,7 +1523,9 @@ IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpIndex) {
     Self->Int = nullptr;
   }
   if (lump < 0) Sys_Error("cannot open non-existing lump");
-  Self->Int = new VScriptParser(W_FullLumpName(lump), W_CreateLumpReaderNum(lump));
+  VStream *st = W_CreateLumpReaderNum(lump);
+  if (!st) Sys_Error("cannot open non-existing lump");
+  Self->Int = new VScriptParser(W_FullLumpName(lump), st, lump);
 }
 #endif
 
@@ -1563,7 +1563,7 @@ IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpFullName) {
     int num = W_GetNumForFileName(Name);
     //int num = W_IterateFile(-1, *Name);
     if (num < 0) Sys_Error("file '%s' not found", *Name);
-    Self->Int = new VScriptParser(*Name, W_CreateLumpReaderNum(num));
+    Self->Int = VScriptParser::NewWithLump(num);
   }
 #elif defined(VCC_STANDALONE_EXECUTOR)
   if (Self->Int) {

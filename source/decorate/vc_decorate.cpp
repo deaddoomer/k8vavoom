@@ -1616,7 +1616,7 @@ static TArray<VScriptParser *> ParseStatesStack;
 //==========================================================================
 static inline int FindIncludeLump (int srclump, VStr fname) noexcept {
   // for base packs, try local include first
-  return VScriptParser::FindIncludeLumpEx(srclump, fname, thisIsBasePak);
+  return VScriptParser::FindIncludeLump(srclump, fname/*, thisIsBasePak*/);
 }
 
 
@@ -1661,7 +1661,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (ParseStatesStack.length() > 32) sc->Error("too many state includes");
       sc->ExpectString();
       int Lump = FindIncludeLump(sc->SourceLump, sc->String);
-      if (Lump < 0) sc->Error(va("Include lump \"%s\" not found", *sc->String.quote()));
+      if (Lump < 0) sc->Error(va("State include lump '%s' not found", *sc->String));
       SkipSemicolonsToEOL(sc);
       //GCon->Logf(NAME_Debug, "*** state include: %s", *W_FullLumpName(Lump));
       VScriptParser *nsp = VScriptParser::NewWithLump(Lump);
@@ -2373,7 +2373,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     ParentClass = VClass::FindClassNoCase(*ParentStr);
     if (ParentClass == nullptr || ParentClass->MemberType != MEMBER_Class) {
       if (optionalActor) {
-        sc->DebugMessage(va("Skipping optional actor `%s`", *NameStr));
+        GCon->Logf(NAME_Init, "%s: Skipping optional actor `%s` (this is not a bug!)", *sc->GetLoc().toStringNoCol(), *NameStr);
         ParentClass = nullptr; // just in case
       } else if (CheckParentErrorHacks(sc, NameStr, ParentStr)) {
         ParentClass = nullptr; // ignore it
@@ -3959,8 +3959,9 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
 //
 //==========================================================================
 void ReadLineSpecialInfos () {
-  VStream *Strm = FL_OpenFileRead("line_specials.txt");
-  vassert(Strm);
+  //VStream *Strm = FL_OpenFileRead("line_specials.txt");
+  VStream *Strm = FL_OpenFileReadBaseOnly("line_specials.txt");
+  if (!Strm) Sys_Error("'line_specials.txt' is required to parse decorate code");
   VScriptParser *sc = new VScriptParser("line_specials.txt", Strm);
   while (!sc->AtEnd()) {
     VLineSpecInfo &I = LineSpecialInfos.Alloc();
@@ -3970,7 +3971,6 @@ void ReadLineSpecialInfos () {
     I.Name = sc->String.ToLower();
   }
   delete sc;
-  sc = nullptr;
 }
 
 
@@ -4057,16 +4057,12 @@ void ProcessDecorateScripts () {
 
   for (int Lump = W_IterateFile(-1, "decorate_ignore.txt"); Lump != -1; Lump = W_IterateFile(Lump, "decorate_ignore.txt")) {
     GLog.Logf(NAME_Init, "Parsing DECORATE ignore file '%s'", *W_FullLumpName(Lump));
-    VStream *Strm = W_CreateLumpReaderNum(Lump);
-    vassert(Strm);
-    VScriptParser *sc = new VScriptParser(W_FullLumpName(Lump), Strm);
-    sc->SourceLump = Lump;
+    VScriptParser *sc = VScriptParser::NewWithLump(Lump);
     while (sc->GetString()) {
       if (sc->String.length() == 0) continue;
       IgnoredDecorateActions.put(sc->String, true);
     }
     delete sc;
-    delete Strm;
   }
 
   for (auto &&fname : cli_DecorateIgnoreFiles) {
@@ -4080,7 +4076,6 @@ void ProcessDecorateScripts () {
           IgnoredDecorateActions.put(sc->String, true);
         }
         delete sc;
-        delete Strm;
       }
     }
   }
@@ -4092,6 +4087,7 @@ void ProcessDecorateScripts () {
     vassert(Strm);
     VXmlDocument *Doc = new VXmlDocument();
     Doc->Parse(*Strm, "vavoom_decorate_defs.xml");
+    Strm->Close();
     delete Strm;
     ParseDecorateDef(*Doc);
     delete Doc;

@@ -197,9 +197,8 @@ int R_ProcessPalette (rgba_t pal[256], bool forceOpacity) {
 //
 //==========================================================================
 static void InitPalette () {
-  if (W_CheckNumForName(NAME_playpal) == -1) {
-    Sys_Error("Palette lump not found. Did you forgot to specify path to IWAD file?");
-  }
+  const int pplump = W_CheckNumForName(NAME_playpal);
+  if (pplump == -1) Sys_Error("Palette lump not found. Did you forgot to specify path to IWAD file?");
   // We use color 0 as transparent color, so we must find an alternate
   // index for black color. In Doom, Heretic and Strife there is another
   // black color, in Hexen it's almost black.
@@ -213,7 +212,7 @@ static void InitPalette () {
   // that color 255 is normal color, now there shouldn't be any problems.
   //
   // k8: color 0 is not guaranteed to be black; map it to the actual palette color instead
-  VStream *lumpstream = W_CreateLumpReaderName(NAME_playpal);
+  VStream *lumpstream = W_CreateLumpReaderNum(pplump);
   VCheckedStream Strm(lumpstream, true); // load to memory
   // load it
   rgba_t *pal = r_palette;
@@ -322,24 +321,33 @@ static void InitRgbTable () {
 static void InitTranslationTables () {
   GCon->Log(NAME_Init, "building texture translations tables");
   {
-    int tlump = W_GetNumForName(NAME_translat);
-    GCon->Logf(NAME_Init, "using translation table from '%s'", *W_FullLumpName(tlump));
-    VStream *lumpstream = W_CreateLumpReaderName(NAME_translat);
-    VCheckedStream Strm(lumpstream, true); // load to memory
-    NumTranslationTables = Strm.TotalSize()/256;
-    TranslationTables = new VTextureTranslation*[NumTranslationTables];
-    for (int j = 0; j < NumTranslationTables; ++j) {
-      VTextureTranslation *Trans = new VTextureTranslation;
-      TranslationTables[j] = Trans;
-      Strm.Serialise(Trans->Table, 256);
-      // make sure that 0 always maps to 0
-      Trans->Table[0] = 0;
-      Trans->Palette[0] = r_palette[0];
-      for (int i = 1; i < 256; ++i) {
-        // make sure that normal colors doesn't map to color 0
-        if (Trans->Table[i] == 0) Trans->Table[i] = r_black_color;
-        Trans->Palette[i] = r_palette[Trans->Table[i]];
+    //int tlump = W_CheckNumForName(NAME_translat);
+    int tlump = W_FindFirstLumpOccurence(NAME_translat, WADNS_Global);
+    if (tlump >= 0) {
+      GCon->Logf(NAME_Init, "using translation table from '%s'", *W_FullLumpName(tlump));
+      VStream *lumpstream = W_CreateLumpReaderNum(tlump);
+      VCheckedStream Strm(lumpstream, true); // load to memory
+      NumTranslationTables = Strm.TotalSize()/256;
+      if (NumTranslationTables > 0 && Strm.TotalSize()%256 == 0) {
+        TranslationTables = new VTextureTranslation*[NumTranslationTables];
+        for (int j = 0; j < NumTranslationTables; ++j) {
+          VTextureTranslation *Trans = new VTextureTranslation;
+          TranslationTables[j] = Trans;
+          Strm.Serialise(Trans->Table, 256);
+          // make sure that 0 always maps to 0
+          Trans->Table[0] = 0;
+          Trans->Palette[0] = r_palette[0];
+          for (int i = 1; i < 256; ++i) {
+            // make sure that normal colors doesn't map to color 0
+            if (Trans->Table[i] == 0) Trans->Table[i] = r_black_color;
+            Trans->Palette[i] = r_palette[Trans->Table[i]];
+          }
+        }
+      } else {
+        Sys_Error("translation table file '%s' is corrupted", *W_FullLumpName(tlump));
       }
+    } else {
+      Sys_Error("Cannot find default translation tables! Did you forgot to properly setup base paks?");
     }
   }
 
@@ -793,7 +801,7 @@ bool R_AreSpritesPresent (int Index) {
 static void InitNamedTranslations () {
   for (auto &&it : WadNSNameIterator("trnslate", WADNS_Global)) {
     GCon->Logf(NAME_Init, "parsing named translation table '%s'", *it.getFullName());
-    auto sc = new VScriptParser(it.getFullName(), W_CreateLumpReaderNum(it.lump));
+    VScriptParser *sc = VScriptParser::NewWithLump(it.lump);
     while (sc->GetString()) {
       VStr name = sc->String;
       if (name.isEmpty()) Sys_Error("%s: empty translation name", *sc->GetLoc().toStringNoCol());
@@ -1626,20 +1634,23 @@ static void ParseClassEffects (VScriptParser *sc, TArray<VTempClassEffects> &Cla
 //
 //==========================================================================
 static void ParseEffectDefs (VScriptParser *sc, TArray<VTempClassEffects> &ClassDefs) {
-  if (developer) GCon->Logf(NAME_Dev, "parsing k8vavoom effect definitions '%s'", *sc->GetScriptName());
   while (!sc->AtEnd()) {
-    if (sc->Check("#include")) {
+    bool isInclude = false;
+    if (sc->Check("#")) {
+      isInclude = sc->Check("include");
+      if (!isInclude) sc->Error(va("invalid gldefs directive '#%s'", *sc->String));
+    } else {
+      isInclude = sc->Check("#include");
+    }
+    if (isInclude) {
       sc->ExpectString();
-      int Lump = W_CheckNumForFileName(sc->String);
-      // check WAD lump only if it's no longer than 8 characters and has no path separator
-      if (Lump < 0 && sc->String.Length() <= 8 && sc->String.IndexOf('/') < 0) {
-        Lump = W_CheckNumForName(VName(*sc->String, VName::AddLower8));
-      }
+      int Lump = VScriptParser::FindIncludeLump(sc->SourceLump, sc->String);
       if (Lump < 0) sc->Error(va("Lump '%s' not found", *sc->String));
-      ParseEffectDefs(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassDefs);
+      GCon->Logf(NAME_Init, "including k8vavoom effect definitions '%s' ('%s')...", *sc->String, *W_FullLumpName(Lump));
+      ParseEffectDefs(VScriptParser::NewWithLump(Lump), ClassDefs);
       continue;
     }
-    else if (sc->Check("pointlight")) ParseLightDef(sc, DLTYPE_Point);
+         if (sc->Check("pointlight")) ParseLightDef(sc, DLTYPE_Point);
     else if (sc->Check("spotlight")) ParseLightDef(sc, DLTYPE_Point|DLTYPE_Spot);
     else if (sc->Check("muzzleflashlight")) ParseLightDef(sc, DLTYPE_MuzzleFlash);
     else if (sc->Check("particleeffect")) ParseParticleEffect(sc);
@@ -1656,7 +1667,7 @@ static void ParseEffectDefs (VScriptParser *sc, TArray<VTempClassEffects> &Class
 //  ParseBrightmap
 //
 //==========================================================================
-static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
+static void ParseBrightmap (VScriptParser *sc) {
   int ttype = TEXTYPE_Any;
        if (sc->Check("flat")) ttype = TEXTYPE_Flat;
   else if (sc->Check("sprite")) ttype = TEXTYPE_Sprite;
@@ -1752,7 +1763,7 @@ static void ParseBrightmap (int SrcLump, VScriptParser *sc) {
       if (bmap.indexOf('/') < 0 && bmap.indexOf('.') < 0) {
         for (unsigned nsidx = 0; lookns[nsidx] != WADNS_ZipSpecial; ++nsidx) {
           for (int Lump = W_IterateNS(-1, lookns[nsidx]); Lump >= 0; Lump = W_IterateNS(Lump, lookns[nsidx])) {
-            if (W_LumpFile(Lump) > W_LumpFile(SrcLump)) break;
+            if (W_LumpFile(Lump) > W_LumpFile(sc->SourceLump)) break;
             if (Lump <= lmp) continue;
             if (bmap.ICmp(*W_LumpName(Lump)) == 0) lmp = Lump;
           }
@@ -2039,10 +2050,8 @@ static bool ParseIncludeCondition (VScriptParser *sc) {
   if (count == 0) return true;
 
   switch (cond) {
-    case IFANYWAD:
-      return (foundcount > 0);
-    case IFNOTWADS:
-      return (foundcount == 0);
+    case IFANYWAD: return (foundcount > 0);
+    case IFNOTWADS: return (foundcount == 0);
     default: Sys_Error("oops!");
   }
 
@@ -2055,40 +2064,41 @@ static bool ParseIncludeCondition (VScriptParser *sc) {
 //  ParseGZDoomEffectDefs
 //
 //==========================================================================
-static void ParseGZDoomEffectDefs (int SrcLump, VScriptParser *sc, TArray<VTempClassEffects> &ClassDefs) {
+static void ParseGZDoomEffectDefs (VScriptParser *sc, TArray<VTempClassEffects> &ClassDefs) {
   // for old mods (before Apr 2018) it should be `0.667f` (see https://forum.zdoom.org/viewtopic.php?t=60280 )
   // sadly, there is no way to autodetect it, so let's use what GZDoom is using now
   float lightsizefactor = 1.0; // for attenuated lights
-  if (developer) GCon->Logf(NAME_Dev, "parsing GZDoom light definitions '%s'", *sc->GetScriptName());
   while (!sc->AtEnd()) {
-    if (sc->Check("#include")) {
+    bool isInclude = false;
+    if (sc->Check("#")) {
+      isInclude = sc->Check("include");
+      if (!isInclude) sc->Error(va("invalid gldefs directive '#%s'", *sc->String));
+    } else {
+      isInclude = sc->Check("#include");
+    }
+    if (isInclude) {
       sc->ExpectString();
       VStr incfile = sc->String.fixSlashes();
       // parse optional condition
       bool doit = ParseIncludeCondition(sc);
       if (doit) {
-        int Lump = W_CheckNumForFileName(incfile);
-        // check WAD lump only if it's no longer than 8 characters and has no path separator
-        if (Lump < 0 && incfile.Length() <= 8 && incfile.IndexOf('/') < 0) {
-          VName nn = VName(*incfile, VName::FindLower8);
-          if (nn != NAME_None) Lump = W_CheckNumForName(nn);
-        }
+        int Lump = VScriptParser::FindIncludeLump(sc->SourceLump, incfile);
         if (Lump < 0) sc->Error(va("Lump '%s' not found", *incfile));
-        //GCon->Logf(NAME_Debug, "including '%s' (%s)", *incfile, *W_FullLumpName(Lump));
-        ParseGZDoomEffectDefs(Lump, new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassDefs);
+        GCon->Logf(NAME_Init, "including GZDoom definitions from '%s' ('%s')...", *incfile, *W_FullLumpName(Lump));
+        ParseGZDoomEffectDefs(VScriptParser::NewWithLump(Lump), ClassDefs);
       } else {
         GCon->Logf(NAME_Init, "gldefs include file '%s' skipped due to condition", *incfile);
       }
       continue;
     }
-    else if (sc->Check("pointlight")) ParseGZLightDef(sc, DLTYPE_Point, lightsizefactor);
+         if (sc->Check("pointlight")) ParseGZLightDef(sc, DLTYPE_Point, lightsizefactor);
     else if (sc->Check("pulselight")) ParseGZLightDef(sc, DLTYPE_Pulse, lightsizefactor);
     else if (sc->Check("flickerlight")) ParseGZLightDef(sc, DLTYPE_Flicker, lightsizefactor);
     else if (sc->Check("flickerlight2")) ParseGZLightDef(sc, DLTYPE_FlickerRandom, lightsizefactor);
     else if (sc->Check("sectorlight")) ParseGZLightDef(sc, DLTYPE_Sector, lightsizefactor);
     else if (sc->Check("object")) ParseClassEffects(sc, ClassDefs);
     else if (sc->Check("skybox")) R_ParseGLDefSkyBoxesScript(sc);
-    else if (sc->Check("brightmap")) ParseBrightmap(SrcLump, sc);
+    else if (sc->Check("brightmap")) ParseBrightmap(sc);
     else if (sc->Check("glow")) ParseGlow(sc);
     else if (sc->Check("hardwareshader")) { sc->Message("Shaders are not supported"); sc->SkipBracketed(); }
     else if (sc->Check("lightsizefactor")) { sc->ExpectFloat(); lightsizefactor = clampval((float)sc->Float, 0.0f, 4.0f); }
@@ -2122,7 +2132,7 @@ void R_ParseEffectDefs () {
     VName lname = W_LumpName(Lump);
     if (lname == NAME_vfxdefs) {
       GCon->Logf(NAME_Init, "Parsing k8vavoom effect definitions '%s'", *W_FullLumpName(Lump));
-      ParseEffectDefs(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)), ClassDefs);
+      ParseEffectDefs(VScriptParser::NewWithLump(Lump), ClassDefs);
       continue;
     }
     if (lname == NAME_gldefs ||
@@ -2135,7 +2145,7 @@ void R_ParseEffectDefs () {
 
   for (auto &&lmpidx : gldefslist) {
     GCon->Logf(NAME_Init, "Parsing GZDoom light definitions '%s'", *W_FullLumpName(lmpidx));
-    ParseGZDoomEffectDefs(lmpidx, new VScriptParser(W_FullLumpName(lmpidx), W_CreateLumpReaderNum(lmpidx)), ClassDefs);
+    ParseGZDoomEffectDefs(VScriptParser::NewWithLump(lmpidx), ClassDefs);
   }
 
   // build known effects list, so we can properly apply replacements

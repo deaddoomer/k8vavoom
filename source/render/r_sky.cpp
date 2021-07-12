@@ -155,10 +155,10 @@ void R_InitSkyBoxes () {
   for (int Lump = W_IterateNS(-1, WADNS_Global); Lump >= 0; Lump = W_IterateNS(Lump, WADNS_Global)) {
     if (W_LumpName(Lump) == NAME_skyboxes) {
       GCon->Logf(NAME_Init, "parsing skybox script '%s'", *W_FullLumpName(Lump));
-      ParseSkyBoxesScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+      ParseSkyBoxesScript(VScriptParser::NewWithLump(Lump));
     } else  if (skb != NAME_None && W_LumpName(Lump) == skb) {
       GCon->Logf(NAME_Init, "parsing gz skybox script '%s'", *W_FullLumpName(Lump));
-      VScriptParser *sc = new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump));
+      VScriptParser *sc = VScriptParser::NewWithLump(Lump);
       for (;;) {
         if (!sc->GetString()) break;
         sc->UnGet();

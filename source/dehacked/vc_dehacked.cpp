@@ -1764,9 +1764,9 @@ static void LoadDehackedFile (VStream *Strm, int sourceLump) {
       // check WAD lump only if it's no longer than 8 characters and has no path separator
       if (Lump < 0 && LumpName.IndexOf('/') < 0) {
         VStr newName = LumpName.stripExtension();
-        if (newName.Length() <= 8 && VName(*newName, VName::FindLower8) != NAME_None) {
+        if (!newName.isEmpty() && newName.length() <= 8) {
           VName nn = VName(*newName, VName::FindLower8);
-          Lump = (sourceLump >= 0 ? W_CheckNumForNameInFileOrLower(nn, W_LumpFile(sourceLump)) : W_CheckNumForName(nn));
+          if (nn != NAME_None) Lump = (sourceLump >= 0 ? W_CheckNumForNameInFileOrLower(nn, W_LumpFile(sourceLump)) : W_CheckNumForName(nn));
         }
       }
       if (Lump < 0) {
@@ -1801,7 +1801,7 @@ static void LoadDehackedFile (VStream *Strm, int sourceLump) {
 static void LoadDehackedDefinitions () {
   // open dehinfo script
   VStream *Strm = FL_OpenFileReadBaseOnly("dehinfo.txt");
-  if (!Strm) Sys_Error("dehinfo.txt is required to parse dehacked patches");
+  if (!Strm) Sys_Error("'dehinfo.txt' is required to parse dehacked patches");
 
   GCon->Logf(NAME_Init, "loading dehacked definitions from '%s'", *Strm->GetName());
   VScriptParser *sc = new VScriptParser("dehinfo.txt", Strm);
@@ -1980,7 +1980,6 @@ static void LoadDehackedDefinitions () {
   ArmorBonusClass = VClass::FindClass("ArmorBonus");
 
   delete sc;
-  sc = nullptr;
 
   // get lists of strings to replace
   GSoundManager->GetSoundLumpNames(SfxNames);

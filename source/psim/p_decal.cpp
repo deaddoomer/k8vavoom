@@ -2139,16 +2139,16 @@ void ParseDecalDef (VScriptParser *sc) {
     while (!sc->AtEnd()) {
       if (sc->Check("include")) {
         sc->ExpectString();
-        int lmp = W_CheckNumForFileName(sc->String);
+        int lmp = VScriptParser::FindIncludeLump(sc->SourceLump, sc->String);
         if (lmp >= 0) {
           if (scsp >= MaxStack) {
             sc->Error(va("decal include nesting too deep"));
             error = true;
             break;
           }
-          GCon->Logf(NAME_Init, "Including '%s'", *sc->String);
+          GCon->Logf(NAME_Init, "Including '%s'...", *sc->String);
           scstack[scsp++] = sc;
-          sc = new VScriptParser(/**sc->String*/W_FullLumpName(lmp), W_CreateLumpReaderNum(lmp));
+          sc = VScriptParser::NewWithLump(lmp);
         } else {
           sc->Error(va("decal include '%s' not found", *sc->String));
           error = true;
@@ -2333,8 +2333,8 @@ void ProcessDecalDefs () {
   for (auto &&it : WadNSNameIterator(NAME_decaldef, WADNS_Global)) {
     GlobalDisableOverride = false;
     const int Lump = it.lump;
-    GCon->Logf(NAME_Init, "Parsing decal definition script '%s'", *W_FullLumpName(Lump));
-    ParseDecalDef(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+    GCon->Logf(NAME_Init, "Parsing decal definition script '%s'...", *W_FullLumpName(Lump));
+    ParseDecalDef(VScriptParser::NewWithLump(Lump));
   }
 
   for (auto it = VDecalGroup::listHead; it; it = it->next) it->fixup();

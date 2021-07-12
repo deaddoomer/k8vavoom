@@ -204,12 +204,7 @@ public:
 #if !defined(VCC_STANDALONE_EXECUTOR)
   // the following will try to find an include in the same file as `srclump`
   static VVA_CHECKRESULT int FindRelativeIncludeLump (int srclump, VStr fname) noexcept;
-  static VVA_CHECKRESULT int FindIncludeLumpEx (int srclump, VStr fname, bool relativeFirst) noexcept;
-
-  // try relative include last
-  static inline VVA_CHECKRESULT int FindIncludeLumpRelLast (int srclump, VStr fname) noexcept { return FindIncludeLumpEx(srclump, fname, false); }
-  // try relative include first
-  static inline VVA_CHECKRESULT int FindIncludeLumpRelFirst (int srclump, VStr fname) noexcept { return FindIncludeLumpEx(srclump, fname, true); }
+  static VVA_CHECKRESULT int FindIncludeLump (int srclump, VStr fname) noexcept;
 #endif
 };
 

@@ -1033,12 +1033,12 @@ void P_InitTerrainTypes () {
   for (auto &&it : WadNSNameIterator(NAME_terrain, WADNS_Global)) {
     const int Lump = it.lump;
     GlobalDisableOverride = false;
-    ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+    ParseTerrainScript(VScriptParser::NewWithLump(Lump));
   }
   for (auto &&it : WadNSNameIterator(NAME_vterrain, WADNS_Global)) {
     const int Lump = it.lump;
     GlobalDisableOverride = false;
-    ParseTerrainScript(new VScriptParser(W_FullLumpName(Lump), W_CreateLumpReaderNum(Lump)));
+    ParseTerrainScript(VScriptParser::NewWithLump(Lump));
   }
   GCon->Logf(NAME_Init, "got %d terrain definition%s", TerrainInfos.length(), (TerrainInfos.length() != 1 ? "s" : ""));
 

@@ -256,7 +256,7 @@ void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions
     const int ScLump = it.lump;
     //vcmodCurrFile = W_LumpFile(ScLump);
     vcmodCurrFileLump = ScLump;
-    VScriptParser *sc = new VScriptParser(W_FullLumpName(ScLump), W_CreateLumpReaderNum(ScLump));
+    VScriptParser *sc = VScriptParser::NewWithLump(ScLump);
     GCon->Logf(NAME_Init, "parsing Vavoom C mod list from '%s'", *W_FullLumpName(ScLump));
     while (!sc->AtEnd()) {
       sc->ExpectString();

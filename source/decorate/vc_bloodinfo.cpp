@@ -250,7 +250,7 @@ static void ParseKnownBloodFile (VScriptParser *sc) {
 static void LoadKnownBlood () {
   for (auto &&it : WadFileIterator("vavoom_known_blood.rc")) {
     GLog.Logf(NAME_Init, "Parsing known blood script '%s'", *it.getFullName());
-    ParseKnownBloodFile(new VScriptParser(it.getFullName(), W_CreateLumpReaderNum(it.lump)));
+    ParseKnownBloodFile(VScriptParser::NewWithLump(it.lump));
   }
 }
 

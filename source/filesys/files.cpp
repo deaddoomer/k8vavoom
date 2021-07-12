@@ -1046,7 +1046,7 @@ static void performPWadScan () {
   // try "GAMEINFO" first
   auto gilump = W_CheckNumForName("gameinfo");
   if (gilump >= 0/*!!! W_IsAuxLump(gilump)*/) {
-    VScriptParser *gsc = new VScriptParser(W_FullLumpName(gilump), W_CreateLumpReaderNum(gilump));
+    VScriptParser *gsc = VScriptParser::NewWithLump(gilump);
     gsc->SetCMode(true);
     while (gsc->GetString()) {
       if (gsc->QuotedString) continue; // just in case

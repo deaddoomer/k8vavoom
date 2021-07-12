@@ -36,8 +36,8 @@
 //==========================================================================
 void VLevel::LoadLoadACS (int lacsLump, int XMapLump) {
   if (lacsLump < 0) return;
-  GCon->Logf("Loading ACS libraries from '%s'", *W_FullLumpName(lacsLump));
-  VScriptParser *sc = new VScriptParser(W_FullLumpName(lacsLump), W_CreateLumpReaderNum(lacsLump));
+  GCon->Logf("Loading ACS libraries from '%s'...", *W_FullLumpName(lacsLump));
+  VScriptParser *sc = VScriptParser::NewWithLump(lacsLump);
   while (!sc->AtEnd()) {
     sc->ExpectString();
     int AcsLump = W_FindACSObjectInFile(sc->String, W_LumpFile(lacsLump));

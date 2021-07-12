@@ -527,9 +527,9 @@ static int loadSkyTexture (VScriptParser *sc, VName name, bool silent=false) {
 //
 //==========================================================================
 static void LoadMapInfoLump (int Lump, bool doFixups=true) {
-  GCon->Logf(NAME_Init, "mapinfo file: \"%s\"", *W_FullLumpName(Lump).quote());
+  GCon->Logf(NAME_Init, "mapinfo file: '%s'", *W_FullLumpName(Lump));
   VScriptParser *sc = VScriptParser::NewWithLump(Lump);
-  if (!sc) Sys_Error("cannot load lump #%d: \"%s\"", Lump, *W_FullLumpName(Lump).quote());
+  if (!sc) Sys_Error("cannot load lump #%d: '%s'", Lump, *W_FullLumpName(Lump));
   ParseMapInfo(sc);
   if (doFixups) {
     processNumFixups("DoomEdNum", true, DoomEdNumFixups);
@@ -584,9 +584,9 @@ static void LoadAllMapInfoLumpsInFile (int miLump, int zmiLump, int vmiLump) {
 //==========================================================================
 static void LoadUmapinfoLump (int lump) {
   if (lump < 0) return;
-  GCon->Logf(NAME_Init, "umapinfo file: \"%s\"", *W_FullLumpName(lump).quote());
+  GCon->Logf(NAME_Init, "umapinfo file: '%s'", *W_FullLumpName(lump));
   VScriptParser *sc = VScriptParser::NewWithLump(lump);
-  if (!sc) Sys_Error("cannot load lump #%d: \"%s\"", lump, *W_FullLumpName(lump).quote());
+  if (!sc) Sys_Error("cannot load lump #%d: '%s'", lump, *W_FullLumpName(lump));
   ParseUMapinfo(sc);
 }
 
@@ -2624,18 +2624,18 @@ static void ParseMapInfo (VScriptParser *sc) {
       } else if (sc->Check("include")) {
         sc->ExpectString();
         //int lmp = W_CheckNumForFileName(sc->String);
-        int lmp = VScriptParser::FindIncludeLumpRelLast(sc->SourceLump, sc->String);
+        int lmp = VScriptParser::FindIncludeLump(sc->SourceLump, sc->String);
         if (lmp >= 0) {
           if (scsp >= MaxStack) {
             sc->Error("mapinfo include nesting too deep");
             error = true;
             break;
           }
-          GCon->Logf(NAME_Init, "Including \"%s\"...", *sc->String.quote());
+          GCon->Logf(NAME_Init, "Including '%s'...", *sc->String);
           scstack[scsp++] = sc;
           sc = VScriptParser::NewWithLump(lmp);
         } else {
-          sc->Error(va("mapinfo include \"%s\" not found", *sc->String.quote()));
+          sc->Error(va("mapinfo include '%s' not found", *sc->String));
           error = true;
           break;
         }
@@ -2772,7 +2772,7 @@ static void ParseMapInfo (VScriptParser *sc) {
       break;
     }
     if (scsp == 0) break;
-    GCon->Logf(NAME_Init, "Finished included \"%s\"", *sc->GetLoc().GetSourceFile().quote());
+    GCon->Logf(NAME_Init, "Finished included '%s'", *sc->GetLoc().GetSourceFile());
     delete sc;
     sc = scstack[--scsp];
   }
