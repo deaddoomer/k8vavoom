@@ -34,10 +34,6 @@ private:
   VStr FileName;
 
 public:
-  static int AddSourceFile (VStr SName) noexcept;
-  static void ClearSourceFiles () noexcept;
-
-public:
   inline VTextLocation () noexcept : Line(0), Col(0), FileName() {}
   inline VTextLocation (VStr fname, int ALine, int ACol) noexcept : Line(ALine > 0 ? ALine : 0), Col(ACol > 0 ? ACol : 0), FileName(fname) {}
 
