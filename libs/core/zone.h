@@ -65,8 +65,17 @@ __attribute__((noreturn)) void Z_Exit (int exitcode) VV_ZONE_NOEXCEPT;
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
 void *Z_Malloc (size_t size) VV_ZONE_NOEXCEPT;
 
+__attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
+void *Z_MallocNoClear (size_t size) VV_ZONE_NOEXCEPT;
+
+__attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
+void *Z_MallocNoClearNoFail (size_t size) VV_ZONE_NOEXCEPT;
+
 __attribute__((alloc_size(2)))
 void *Z_Realloc (void *ptr, size_t size) VV_ZONE_NOEXCEPT;
+
+__attribute__((alloc_size(2)))
+void *Z_ReallocNoFail (void *ptr, size_t size) VV_ZONE_NOEXCEPT;
 
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
 void *Z_Calloc (size_t size) VV_ZONE_NOEXCEPT;

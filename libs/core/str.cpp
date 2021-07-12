@@ -62,7 +62,56 @@
 #endif
 
 
+#define VSTR_DOUBLE_GROW_LIMIT  1024
+#define VSTR_THIRD_GROW_LIMIT   0x100000 /*1MB*/
+
+
+//==========================================================================
+//
+//  vstrCalcGrowStoreSizeSizeT
+//
+//==========================================================================
+static size_t vstrCalcGrowStoreSizeSizeT (size_t newlen) noexcept {
+  size_t newsz = (size_t)newlen;
+  if (newsz < 64u) return (newsz|0x3fu)+1u+63u;
+  if (newsz < VSTR_DOUBLE_GROW_LIMIT) return (newsz+(newsz>>1))|0x3fu;
+  if (newsz < VSTR_THIRD_GROW_LIMIT) return (newsz+newsz/3u)|0x3fu;
+  if (newsz < 0x40000000u) return newsz+32768u;
+  Sys_Error("out of memory for VStr storage");
+  abort();
+}
+
+
+//==========================================================================
+//
+//  vstrCalcInitialStoreSizeSizeT
+//
+//  always overallocate a little
+//
+//==========================================================================
+static size_t vstrCalcInitialStoreSizeSizeT (size_t newlen) noexcept {
+  if (newlen >= 0x40000000u) Sys_Error("out of memory for VStr storage");
+  size_t newsz = (size_t)newlen;
+  return (newsz < 64u ? (newsz|0x0fu) : (newsz|0x3fu));
+}
+
+
+//==========================================================================
+//
+//  vstrCalcInitialStoreSizeInt
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE int vstrCalcInitialStoreSizeInt (int newlen) noexcept {
+  return (int)vstrCalcInitialStoreSizeSizeT((size_t)newlen);
+}
+
+
 #ifdef VCORE_USE_STRTODEX
+//==========================================================================
+//
+//  strtofEx
+//
+//==========================================================================
 static bool strtofEx (float *resptr, const char *s) noexcept {
   if (!s || !s[0]) return false;
   char *end;
@@ -160,25 +209,47 @@ int VStr::float2str (char *buf, float v) noexcept { return f2s_buffered(v, buf);
 int VStr::double2str (char *buf, double v) noexcept { return d2s_buffered(v, buf); }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::VStr
+//
+//==========================================================================
 VStr::VStr (int v) noexcept : dataptr(nullptr) {
   char buf[64];
   int len = (int)snprintf(buf, sizeof(buf), "%d", v);
   setContent(buf, len);
 }
 
+
+//==========================================================================
+//
+//  VStr::VStr
+//
+//==========================================================================
 VStr::VStr (unsigned v) noexcept : dataptr(nullptr) {
   char buf[64];
   int len = (int)snprintf(buf, sizeof(buf), "%u", v);
   setContent(buf, len);
 }
 
+
+//==========================================================================
+//
+//  VStr::VStr
+//
+//==========================================================================
 VStr::VStr (float v) noexcept : dataptr(nullptr) {
   char buf[FloatBufSize];
   int len = f2s_buffered(v, buf);
   setContent(buf, len);
 }
 
+
+//==========================================================================
+//
+//  VStr::VStr
+//
+//==========================================================================
 VStr::VStr (double v) noexcept : dataptr(nullptr) {
   char buf[DoubleBufSize];
   int len = d2s_buffered(v, buf);
@@ -186,14 +257,20 @@ VStr::VStr (double v) noexcept : dataptr(nullptr) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// serialisation operator
+//==========================================================================
+//
+//  VStr::Serialise
+//
+//  serialisation operator
+//
+//==========================================================================
 VStream &VStr::Serialise (VStream &Strm) {
   vint32 len = length();
   Strm << STRM_INDEX(len);
   vassert(len >= 0);
   if (Strm.IsLoading()) {
-    if (Strm.IsError() || len < 0 || len > 1024*1024) { // arbitrary limit
+    // reading
+    if (Strm.IsError() || len < 0 || len > 32*1024*1024) { // arbitrary limit
       clear();
       Strm.SetError();
       return Strm;
@@ -220,6 +297,7 @@ VStream &VStr::Serialise (VStream &Strm) {
       }
     }
   } else {
+    // writing
     if (len) Strm.Serialise(getData(), len);
     // always write terminating zero
     vuint8 b = 0;
@@ -229,7 +307,13 @@ VStream &VStr::Serialise (VStream &Strm) {
 }
 
 
-// serialisation operator
+//==========================================================================
+//
+//  VStr::Serialise
+//
+//  serialisation operator
+//
+//==========================================================================
 VStream &VStr::Serialise (VStream &Strm) const {
   vassert(!Strm.IsLoading());
   vint32 len = length();
@@ -247,7 +331,11 @@ VStr &VStr::operator += (float v) noexcept { char buf[FloatBufSize]; (void)f2s_b
 VStr &VStr::operator += (double v) noexcept { char buf[DoubleBufSize]; (void)d2s_buffered(v, buf); return operator+=(buf); }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::utf8Append
+//
+//==========================================================================
 VStr &VStr::utf8Append (vuint32 code) noexcept {
   if (code > 0x10FFFF || !isValidCodepoint((int)code)) return operator+=('?');
   if (code <= 0x7f) return operator+=((char)(code&0xff));
@@ -270,32 +358,58 @@ VStr &VStr::utf8Append (vuint32 code) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::isUtf8Valid
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::isUtf8Valid () const noexcept {
   int slen = length();
   if (slen < 1) return true;
   int pos = 0;
   const char *data = getData();
   while (pos < slen) {
-    int len = CalcUtf8CharByteSize(data[pos]);
-    if (!len) return true;
-    if (len < 1) return false; // invalid sequence start
-    if (pos+len-1 > slen) return false; // out of chars in string
-    --len;
-    ++pos;
+    int uclen = CalcUtf8CharByteSize(data[pos++]);
+    if (!uclen) return true;
+    if (uclen < 1) return false; // invalid sequence start
+    if (pos+uclen-1 > slen) return false; // out of chars in string
     // check other sequence bytes
-    while (len-- > 0) {
-      if (!IsValidUtf8Continuation(data[pos])) return false;
-      ++pos;
-    }
+    while (--uclen) if (!IsValidUtf8Continuation(data[pos++])) return false;
   }
   return true;
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::isUtf8Valid
+//
+//==========================================================================
+VVA_CHECKRESULT bool VStr::isUtf8Valid (const char *s) noexcept {
+  if (!s) return true;
+  while (*s) {
+    int uclen = CalcUtf8CharByteSize(*s++);
+    if (!uclen) return true;
+    if (uclen < 1) return false; // invalid sequence start
+    // check other sequence bytes
+    while (--uclen) if (!IsValidUtf8Continuation(*s++)) return false;
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VStr::toLowerCase1251
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::toLowerCase1251 () const noexcept {
-  int slen = length();
+  const int slen = length();
   if (slen < 1) return VStr();
+  if (atomicIsUnique()) {
+    for (int c = 0; c < slen; ++c) dataptr[c] = locase1251(dataptr[c]);
+    return VStr(*this);
+  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (locase1251(data[f]) != data[f]) {
@@ -309,9 +423,18 @@ VVA_CHECKRESULT VStr VStr::toLowerCase1251 () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::toUpperCase1251
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::toUpperCase1251 () const noexcept {
-  int slen = length();
+  const int slen = length();
   if (slen < 1) return VStr();
+  if (atomicIsUnique()) {
+    for (int c = 0; c < slen; ++c) dataptr[c] = upcase1251(dataptr[c]);
+    return VStr(*this);
+  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (upcase1251(data[f]) != data[f]) {
@@ -325,10 +448,18 @@ VVA_CHECKRESULT VStr VStr::toUpperCase1251 () const noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::toLowerCaseKOI
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::toLowerCaseKOI () const noexcept {
-  int slen = length();
+  const int slen = length();
   if (slen < 1) return VStr();
+  if (atomicIsUnique()) {
+    for (int c = 0; c < slen; ++c) dataptr[c] = locaseKOI(dataptr[c]);
+    return VStr(*this);
+  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (locaseKOI(data[f]) != data[f]) {
@@ -342,9 +473,18 @@ VVA_CHECKRESULT VStr VStr::toLowerCaseKOI () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::toUpperCaseKOI
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::toUpperCaseKOI () const noexcept {
-  int slen = length();
+  const int slen = length();
   if (slen < 1) return VStr();
+  if (atomicIsUnique()) {
+    for (int c = 0; c < slen; ++c) dataptr[c] = upcaseKOI(dataptr[c]);
+    return VStr(*this);
+  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (upcaseKOI(data[f]) != data[f]) {
@@ -358,7 +498,11 @@ VVA_CHECKRESULT VStr VStr::toUpperCaseKOI () const noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::ICmp
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::ICmp (const char *s0, const char *s1) noexcept {
   if (!s0) s0 = "";
   if (!s1) s1 = "";
@@ -375,6 +519,11 @@ VVA_CHECKRESULT int VStr::ICmp (const char *s0, const char *s1) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::NICmp
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::NICmp (const char *s0, const char *s1, size_t max) noexcept {
   if (max == 0) return 0;
   if (!s0) s0 = "";
@@ -392,7 +541,11 @@ VVA_CHECKRESULT int VStr::NICmp (const char *s0, const char *s1, size_t max) noe
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::utf2win
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::utf2win () const noexcept {
   // check if we should do anything at all
   int len = length();
@@ -410,6 +563,11 @@ VVA_CHECKRESULT VStr VStr::utf2win () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::win2utf
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::win2utf () const noexcept {
   // check if we should do anything at all
   int len = length();
@@ -429,7 +587,11 @@ VVA_CHECKRESULT VStr VStr::win2utf () const noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::utf2koi
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::utf2koi () const noexcept {
   // check if we should do anything at all
   int len = length();
@@ -447,6 +609,11 @@ VVA_CHECKRESULT VStr VStr::utf2koi () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::koi2utf
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::koi2utf () const noexcept {
   // check if we should do anything at all
   int len = length();
@@ -466,7 +633,11 @@ VVA_CHECKRESULT VStr VStr::koi2utf () const noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::fnameEqu1251CI
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::fnameEqu1251CI (const char *s) const noexcept {
   size_t slen = (size_t)length();
   if (!s || !s[0]) return (slen == 0);
@@ -487,24 +658,43 @@ VVA_CHECKRESULT bool VStr::fnameEqu1251CI (const char *s) const noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::mid
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::mid (int start, int len) const noexcept {
-  int mylen = length();
+  const int mylen = length();
   if (mylen == 0) return VStr();
   if (len <= 0 || start >= mylen) return VStr();
   if (start < 0) {
-    if (start+len <= 0) return VStr();
-    len += start;
+    start = -start;
+    if (start < 0) return VStr();
+    if (start >= len) return VStr(); // too far
+    len -= start;
     start = 0;
   }
-  if (start+len > mylen) {
-    if ((len = mylen-start) < 1) return VStr();
+  if (mylen-start < len) {
+    len = mylen-start;
+    if (len < 1) return VStr();
   }
   if (start == 0 && len == mylen) return VStr(*this);
+/*
+  // hack for unique strings (we can do it in-place)
+  if (start == 0 && atomicIsUnique()) {
+    resize(len);
+    return VStr(*this);
+  }
+*/
   return VStr(getData()+start, len);
 }
 
 
+//==========================================================================
+//
+//  VStr::left
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::left (int len) const noexcept {
   if (len < 1) return VStr();
   if (len >= length()) return VStr(*this);
@@ -512,6 +702,11 @@ VVA_CHECKRESULT VStr VStr::left (int len) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::right
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::right (int len) const noexcept {
   if (len < 1) return VStr();
   if (len >= length()) return VStr(*this);
@@ -519,6 +714,35 @@ VVA_CHECKRESULT VStr VStr::right (int len) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::leftskip
+//
+//==========================================================================
+VVA_CHECKRESULT VStr VStr::leftskip (int skiplen) const noexcept {
+  if (skiplen < 1) return VStr(*this);
+  if (skiplen >= length()) return VStr();
+  return mid(skiplen, length());
+}
+
+
+//==========================================================================
+//
+//  VStr::rightskip
+//
+//==========================================================================
+VVA_CHECKRESULT VStr VStr::rightskip (int skiplen) const noexcept {
+  if (skiplen < 1) return VStr(*this);
+  if (skiplen >= length()) return VStr();
+  return mid(0, length()-skiplen);
+}
+
+
+//==========================================================================
+//
+//  VStr::chopLeft
+//
+//==========================================================================
 void VStr::chopLeft (int len) noexcept {
   if (len < 1) return;
   if (len >= length()) { clear(); return; }
@@ -528,6 +752,11 @@ void VStr::chopLeft (int len) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::chopRight
+//
+//==========================================================================
 void VStr::chopRight (int len) noexcept {
   if (len < 1) return;
   if (len >= length()) { clear(); return; }
@@ -535,7 +764,11 @@ void VStr::chopRight (int len) noexcept {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VStr::makeImmutable
+//
+//==========================================================================
 void VStr::makeImmutable () noexcept {
   if (!dataptr) return; // nothing to do
   if (!atomicIsImmutable()) {
@@ -545,23 +778,79 @@ void VStr::makeImmutable () noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::makeImmutableRetSelf
+//
+//==========================================================================
 VStr &VStr::makeImmutableRetSelf () noexcept {
   makeImmutable();
   return *this;
 }
 
 
+//==========================================================================
+//
+//  VStr::cloneUnique
+//
+//  this will create an unique copy of the string,
+//  which (copy) can be used in other threads
+//
+//==========================================================================
+VVA_CHECKRESULT VStr VStr::cloneUnique () const noexcept {
+  if (!dataptr) return VStr();
+  int len = length();
+  vassert(len > 0);
+  VStr res;
+  res.setLength(len, 0); // fill with zeroes, why not?
+  memcpy(res.dataptr, dataptr, len);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VStr::cloneUniqueMT
+//
+//  this will create an unique copy of the string,
+//  which (copy) can be used in other threads
+//
+//  doesn't clone immutable strings, though
+//
+//==========================================================================
+VVA_CHECKRESULT VStr VStr::cloneUniqueMT () const noexcept {
+  if (!dataptr) return VStr();
+  if (atomicIsImmutable()) return *this;
+  const int len = length();
+  vassert(len > 0);
+  VStr res;
+  res.setLength(len, 0); // fill with zeroes, why not?
+  memcpy(res.dataptr, dataptr, len);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VStr::makeMutable
+//
+//==========================================================================
 void VStr::makeMutable () noexcept {
-  if (!dataptr || atomicIsUnique() == 1) return; // nothing to do
+  if (!dataptr) return;
+  if (atomicIsUnique()) return; // nothing to do
   // allocate new string
   Store *oldstore = store();
   const char *olddata = dataptr;
   size_t olen = (size_t)oldstore->length;
-  size_t newsz = olen+64; // overallocate a little
-  Store *newdata = (Store *)Z_Malloc(sizeof(Store)+newsz+1);
-  if (!newdata) Sys_Error("Out of memory");
-  newdata->length = (int)olen;
-  newdata->alloted = (int)newsz;
+  size_t newsz = vstrCalcInitialStoreSizeSizeT(olen);
+  Store *newdata = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+newsz+1u);
+  if (!newdata) {
+    newsz = olen;
+    newdata = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+newsz+1u);
+    if (!newdata) Sys_Error("Out of memory for VStr");
+  }
+  newdata->length = (vint32)olen;
+  newdata->alloted = (vint32)newsz;
   newdata->rc = 1;
   dataptr = ((char *)newdata)+sizeof(Store);
   // copy old data
@@ -571,11 +860,16 @@ void VStr::makeMutable () noexcept {
     (void)__atomic_sub_fetch(&oldstore->rc, 1, __ATOMIC_SEQ_CST);
   }
 #ifdef VAVOOM_TEST_VSTR
-  fprintf(stderr, "VStr: makeMutable: old=%p(%d); new=%p(%d)\n", oldstore+1, oldstore->rc, dataptr, newdata->rc);
+  GLog.Logf(NAME_Debug, "VStr: makeMutable: old=%p(%d); new=%p(%d)", oldstore+1, oldstore->rc, dataptr, newdata->rc);
 #endif
 }
 
 
+//==========================================================================
+//
+//  VStr::resize
+//
+//==========================================================================
 void VStr::resize (int newlen) noexcept {
   // free string?
   if (newlen <= 0) {
@@ -583,7 +877,7 @@ void VStr::resize (int newlen) noexcept {
     return;
   }
 
-  int oldlen = length();
+  const int oldlen = length();
 
   if (newlen == oldlen) {
     // same length, make string unique (just in case)
@@ -593,11 +887,15 @@ void VStr::resize (int newlen) noexcept {
 
   // new allocation?
   if (!dataptr) {
-    size_t newsz = (size_t)(newlen+64);
-    Store *ns = (Store *)Z_Malloc(sizeof(Store)+newsz+1);
-    if (!ns) Sys_Error("Out of memory");
+    size_t newsz = vstrCalcInitialStoreSizeSizeT((size_t)newlen);
+    Store *ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+newsz+1u);
+    if (!ns) {
+      newsz = (size_t)newlen;
+      ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+newsz+1u);
+      if (!ns) Sys_Error("Out of memory for VStr");
+    }
     ns->length = newlen;
-    ns->alloted = newsz;
+    ns->alloted = (vint32)newsz;
     ns->rc = 1;
     #ifdef VAVOOM_TEST_VSTR
     fprintf(stderr, "VStr: realloced(new): old=%p(%d); new=%p(%d)\n", dataptr, 0, ns+1, ns->rc);
@@ -608,75 +906,64 @@ void VStr::resize (int newlen) noexcept {
   }
 
   // unique?
-  if (atomicIsUnique() == 1) {
+  if (atomicIsUnique()) {
     // do in-place reallocs
     if (newlen < oldlen) {
       // shrink
       if (newlen < store()->alloted/2) {
         // realloc
-        store()->alloted = newlen+64;
-        Store *ns = (Store *)Z_Realloc(store(), sizeof(Store)+(size_t)store()->alloted+1);
-        if (!ns) Sys_Error("Out of memory");
+        store()->alloted = vstrCalcInitialStoreSizeInt(newlen);
+        Store *ns = (Store *)Z_ReallocNoFail(store(), sizeof(Store)+(size_t)store()->alloted+1u);
+        if (!ns) {
+          store()->alloted = newlen;
+          ns = (Store *)Z_ReallocNoFail(store(), sizeof(Store)+(size_t)store()->alloted+1u);
+          if (!ns) Sys_Error("Out of memory for VStr");
+        }
         #ifdef VAVOOM_TEST_VSTR
         fprintf(stderr, "VStr: realloced(shrink): old=%p(%d); new=%p(%d)\n", dataptr, store()->rc, ns+1, ns->rc);
         #endif
         dataptr = ((char *)ns)+sizeof(Store);
       }
-    } else {
-      // grow
-      if (newlen > store()->alloted) {
-        // need more room
-        size_t newsz = (size_t)(newlen+(newlen < 0x0fffffff ? newlen/2 : 0));
-        Store *ns = (Store *)Z_Realloc(store(), sizeof(Store)+newsz+1);
-        if (!ns) {
-          // try exact
-          ns = (Store *)Z_Realloc(store(), sizeof(Store)+(size_t)newlen+1);
-          if (!ns) Sys_Error("Out of memory");
-          newsz = (size_t)newlen;
-        }
-        ns->alloted = newsz;
-        #ifdef VAVOOM_TEST_VSTR
-        fprintf(stderr, "VStr: realloced(grow): old=%p(%d); new=%p(%d)\n", dataptr, store()->rc, ns+1, ns->rc);
-        #endif
-        dataptr = ((char *)ns)+sizeof(Store);
+    } else if (newlen > store()->alloted) {
+      // need more room, grow
+      size_t newsz = vstrCalcGrowStoreSizeSizeT((size_t)newlen);
+      Store *ns = (Store *)Z_ReallocNoFail(store(), sizeof(Store)+newsz+1u);
+      if (!ns) {
+        // try exact
+        newsz = (size_t)newlen;
+        ns = (Store *)Z_ReallocNoFail(store(), sizeof(Store)+newsz+1u);
+        if (!ns) Sys_Error("Out of memory for VStr");
       }
+      ns->alloted = (vuint32)newsz;
+      #ifdef VAVOOM_TEST_VSTR
+      fprintf(stderr, "VStr: realloced(grow): old=%p(%d); new=%p(%d)\n", dataptr, store()->rc, ns+1, ns->rc);
+      #endif
+      dataptr = ((char *)ns)+sizeof(Store);
     }
     store()->length = newlen;
   } else {
     // not unique, have to allocate new data
-    int alloclen;
-
-    if (newlen < oldlen) {
-      // shrink
-      alloclen = newlen+64;
-    } else {
-      // grow
-      alloclen = newlen+(newlen < 0x0fffffff ? newlen/2 : 0);
-    }
+    int alloclen = vstrCalcInitialStoreSizeInt(newlen);
 
     // allocate new storage
-    Store *ns = (Store *)Z_Malloc(sizeof(Store)+alloclen+1);
+    Store *ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+(size_t)alloclen+1u);
     if (!ns) {
       // try exact
-      ns = (Store *)Z_Malloc(sizeof(Store)+(size_t)newlen+1);
-      if (!ns) Sys_Error("Out of memory");
       alloclen = newlen;
+      ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+(size_t)alloclen+1u);
+      if (!ns) Sys_Error("Out of memory for VStr");
     }
 
     // copy data
-    if (newlen > oldlen) {
-      memcpy(((char *)ns)+sizeof(Store), dataptr, oldlen+1);
-    } else {
-      memcpy(((char *)ns)+sizeof(Store), dataptr, newlen+1);
-    }
+    int copylen = (newlen < oldlen ? newlen : oldlen);
+    if (copylen) memcpy(((char *)ns)+sizeof(Store), dataptr, (size_t)copylen);
     // setup info
     ns->length = newlen;
     ns->alloted = alloclen;
     ns->rc = 1;
     // decrement old rc
-    //if (store()->rc > 0) --store()->rc;
     if (!atomicIsImmutable()) {
-      int nrc = atomicDecRC();
+      const int nrc = atomicDecRC();
       vassert(nrc > 0);
     }
     #ifdef VAVOOM_TEST_VSTR
@@ -686,17 +973,26 @@ void VStr::resize (int newlen) noexcept {
     dataptr = ((char *)ns)+sizeof(Store);
   }
 
-  // some functions expects this
+  // most code expects this
   dataptr[newlen] = 0;
 }
 
 
+//==========================================================================
+//
+//  VStr::setContent
+//
+//==========================================================================
 void VStr::setContent (const char *s, int len) noexcept {
   if (s && s[0]) {
     if (len < 0) len = (int)strlen(s);
-    size_t newsz = len+64;
-    Store *ns = (Store *)Z_Malloc(sizeof(Store)+(size_t)newsz+1);
-    if (!ns) Sys_Error("Out of memory");
+    size_t newsz = vstrCalcInitialStoreSizeSizeT((size_t)len);
+    Store *ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+(size_t)newsz+1u);
+    if (!ns) {
+      newsz = (size_t)len;
+      ns = (Store *)Z_MallocNoClearNoFail(sizeof(Store)+(size_t)newsz+1u);
+      if (!ns) Sys_Error("Out of memory for VStr");
+    }
     ns->length = len;
     ns->alloted = (int)newsz;
     ns->rc = 1;
@@ -715,6 +1011,11 @@ void VStr::setContent (const char *s, int len) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::setNameContent
+//
+//==========================================================================
 void VStr::setNameContent (const VName InName) noexcept {
   clear();
   if (!VName::IsInitialised()) {
@@ -726,111 +1027,180 @@ void VStr::setNameContent (const VName InName) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::StartsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::StartsWith (const char *s) const noexcept {
   if (!s || !s[0]) return false;
-  int l = length(s);
+  const int l = length(s);
   if (l > length()) return false;
-  return (memcmp(getData(), s, l) == 0);
+  return (memcmp(getData(), s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::StartsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::StartsWith (const VStr &s) const noexcept {
-  int l = s.length();
+  const int l = s.length();
   if (l == 0 || l > length()) return false;
-  return (memcmp(getData(), *s, l) == 0);
+  return (memcmp(getData(), *s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::EndsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::EndsWith (const char *s) const noexcept {
   if (!s || !s[0]) return false;
-  int l = Length(s);
+  const int l = Length(s);
   if (l > length()) return false;
-  return (memcmp(getData()+length()-l, s, l) == 0);
+  return (memcmp(getData()+length()-l, s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::EndsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::EndsWith (const VStr &s) const noexcept {
-  int l = s.length();
+  const int l = s.length();
   if (l == 0 || l > length()) return false;
-  return (memcmp(getData()+length()-l, *s, l) == 0);
+  return (memcmp(getData()+length()-l, *s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::startsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::startsWithNoCase (const char *s) const noexcept {
   if (!s || !s[0]) return false;
-  int l = length(s);
+  const int l = length(s);
   if (l > length()) return false;
-  return (NICmp(getData(), s, l) == 0);
+  return (NICmp(getData(), s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::startsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::startsWithNoCase (const VStr &s) const noexcept {
-  int l = s.length();
+  const int l = s.length();
   if (l == 0 || l > length()) return false;
-  return (NICmp(getData(), *s, l) == 0);
+  return (NICmp(getData(), *s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::endsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::endsWithNoCase (const char *s) const noexcept {
   if (!s || !s[0]) return false;
-  int l = Length(s);
+  const int l = Length(s);
   if (l > length()) return false;
-  return (NICmp(getData()+length()-l, s, l) == 0);
+  return (NICmp(getData()+length()-l, s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::endsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::endsWithNoCase (const VStr &s) const noexcept {
-  int l = s.length();
+  const int l = s.length();
   if (l == 0 || l > length()) return false;
-  return (NICmp(getData()+length()-l, *s, l) == 0);
+  return (NICmp(getData()+length()-l, *s, (size_t)l) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::startsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::startsWith (const char *str, const char *part) noexcept {
   if (!str || !str[0]) return false;
   if (!part || !part[0]) return false;
-  int slen = VStr::length(str);
-  int plen = VStr::length(part);
+  const int slen = VStr::length(str);
+  const int plen = VStr::length(part);
   if (plen > slen) return false;
-  return (memcmp(str, part, plen) == 0);
+  return (memcmp(str, part, (size_t)plen) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::endsWith
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::endsWith (const char *str, const char *part) noexcept {
   if (!str || !str[0]) return false;
   if (!part || !part[0]) return false;
-  int slen = VStr::length(str);
-  int plen = VStr::length(part);
+  const int slen = VStr::length(str);
+  const int plen = VStr::length(part);
   if (plen > slen) return false;
-  return (memcmp(str+slen-plen, part, plen) == 0);
+  return (memcmp(str+slen-plen, part, (size_t)plen) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::startsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::startsWithNoCase (const char *str, const char *part) noexcept {
   if (!str || !str[0]) return false;
   if (!part || !part[0]) return false;
-  int slen = VStr::length(str);
-  int plen = VStr::length(part);
+  const int slen = VStr::length(str);
+  const int plen = VStr::length(part);
   if (plen > slen) return false;
-  return (NICmp(str, part, plen) == 0);
+  return (NICmp(str, part, (size_t)plen) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::endsWithNoCase
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::endsWithNoCase (const char *str, const char *part) noexcept {
   if (!str || !str[0]) return false;
   if (!part || !part[0]) return false;
-  int slen = VStr::length(str);
-  int plen = VStr::length(part);
+  const int slen = VStr::length(str);
+  const int plen = VStr::length(part);
   if (plen > slen) return false;
-  return (NICmp(str+slen-plen, part, plen) == 0);
+  return (NICmp(str+slen-plen, part, (size_t)plen) == 0);
 }
 
 
+//==========================================================================
+//
+//  VStr::ToLower
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ToLower () const noexcept {
   if (!dataptr) return VStr();
+  const int l = length();
+  if (!l) return VStr();
+  if (atomicIsUnique()) {
+    for (int i = 0; i < l; ++i) if (dataptr[i] >= 'A' && dataptr[i] <= 'Z') dataptr[i] += 32; // poor man's tolower()
+    return VStr(*this);
+  }
   bool hasWork = false;
-  int l = length();
-  if (!l) return VStr(*this);
   const char *data = getData();
   for (int i = 0; i < l; ++i) if (data[i] >= 'A' && data[i] <= 'Z') { hasWork = true; break; }
   if (hasWork) {
@@ -844,12 +1214,21 @@ VVA_CHECKRESULT VStr VStr::ToLower () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::ToUpper
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ToUpper () const noexcept {
   const char *data = getData();
   if (!data) return VStr();
-  bool hasWork = false;
   int l = length();
-  if (!l) return VStr(*this);
+  if (!l) return VStr();
+  if (atomicIsUnique()) {
+    for (int i = 0; i < l; ++i) if (dataptr[i] >= 'a' && dataptr[i] <= 'z') dataptr[i] -= 32; // poor man's toupper()
+    return VStr(*this);
+  }
+  bool hasWork = false;
   for (int i = 0; i < l; ++i) if (data[i] >= 'a' && data[i] <= 'z') { hasWork = true; break; }
   if (hasWork) {
     VStr res(*this);
@@ -862,6 +1241,32 @@ VVA_CHECKRESULT VStr VStr::ToUpper () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::isLowerCase
+//
+//==========================================================================
+VVA_CHECKRESULT bool VStr::isLowerCase () const noexcept {
+  const char *dp = getData();
+  return VStr::isLowerCase(dp);
+}
+
+
+//==========================================================================
+//
+//  VStr::isLowerCase
+//
+//==========================================================================
+VVA_CHECKRESULT bool VStr::isLowerCase (const char *s) noexcept {
+  if (!s) return true;
+  while (*s) {
+    if (*s >= 'A' && *s <= 'Z') return false;
+    ++s;
+  }
+  return true;
+}
+
+
 #define NORM_STPOS()  do { \
   if (stpos < 0) { \
     if (stpos == MIN_VINT32) stpos = 0; else stpos += l; \
@@ -871,6 +1276,11 @@ VVA_CHECKRESULT VStr VStr::ToUpper () const noexcept {
 } while (0)
 
 
+//==========================================================================
+//
+//  k8memmem
+//
+//==========================================================================
 static inline VVA_CHECKRESULT const char *k8memmem (const char *hay, size_t haylen, const char *need, size_t needlen) noexcept {
   if (haylen < needlen || needlen == 0) return nullptr;
   haylen -= needlen;
@@ -883,6 +1293,11 @@ static inline VVA_CHECKRESULT const char *k8memmem (const char *hay, size_t hayl
 }
 
 
+//==========================================================================
+//
+//  k8memrmem
+//
+//==========================================================================
 static inline VVA_CHECKRESULT const char *k8memrmem (const char *hay, size_t haylen, const char *need, size_t needlen) noexcept {
   if (haylen < needlen || needlen == 0) return nullptr;
   haylen -= needlen;
@@ -896,6 +1311,11 @@ static inline VVA_CHECKRESULT const char *k8memrmem (const char *hay, size_t hay
 }
 
 
+//==========================================================================
+//
+//  VStr::IndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::IndexOf (char c, int stpos) const noexcept {
   const char *data = getData();
   if (data && length()) {
@@ -909,6 +1329,11 @@ VVA_CHECKRESULT int VStr::IndexOf (char c, int stpos) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::IndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::IndexOf (const char *s, int stpos) const noexcept {
   if (!s || !s[0]) return -1;
   int sl = int(Length(s));
@@ -928,6 +1353,11 @@ VVA_CHECKRESULT int VStr::IndexOf (const char *s, int stpos) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::IndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::IndexOf (const VStr &s, int stpos) const noexcept {
   int sl = int(s.length());
   if (!sl) return -1;
@@ -947,12 +1377,17 @@ VVA_CHECKRESULT int VStr::IndexOf (const VStr &s, int stpos) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::LastIndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::LastIndexOf (char c, int stpos) const noexcept {
   const char *data = getData();
   if (data && length()) {
     int l = int(length());
     NORM_STPOS();
-#if !defined(WIN32) && !defined(NO_MEMRCHR)
+#if !defined(_WIN32) && !defined(NO_MEMRCHR)
     const char *pos = (const char *)memrchr(data+stpos, c, l-stpos);
     return (pos ? (int)(pos-data) : -1);
 #else
@@ -966,6 +1401,11 @@ VVA_CHECKRESULT int VStr::LastIndexOf (char c, int stpos) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::LastIndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::LastIndexOf (const char *s, int stpos) const noexcept {
   if (!s || !s[0]) return -1;
   int sl = int(Length(s));
@@ -985,6 +1425,11 @@ VVA_CHECKRESULT int VStr::LastIndexOf (const char *s, int stpos) const noexcept 
 }
 
 
+//==========================================================================
+//
+//  VStr::LastIndexOf
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::LastIndexOf (const VStr &s, int stpos) const noexcept {
   int sl = int(s.length());
   if (!sl) return -1;
@@ -1006,14 +1451,21 @@ VVA_CHECKRESULT int VStr::LastIndexOf (const VStr &s, int stpos) const noexcept 
 }
 
 
+//==========================================================================
+//
+//  VStr::Replace
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::Replace (const char *Search, const char *Replacement) const noexcept {
   if (length() == 0) return VStr(); // nothing to replace in an empty string
+  if (!Search || !Search[0]) return VStr(*this);
+  if (!Replacement) Replacement = "";
 
   size_t SLen = Length(Search);
   size_t RLen = Length(Replacement);
   if (!SLen) return VStr(*this); // nothing to search for
 
-  VStr res = VStr(*this);
+  VStr res(*this);
   size_t i = 0;
   while ((size_t)res.length() >= SLen && i <= (size_t)res.length()-SLen) {
     if (NCmp(res.getData()+i, Search, SLen) == 0) {
@@ -1036,36 +1488,11 @@ VVA_CHECKRESULT VStr VStr::Replace (const char *Search, const char *Replacement)
 }
 
 
-VVA_CHECKRESULT VStr VStr::Replace (VStr Search, VStr Replacement) const noexcept {
-  if (length() == 0) return VStr(); // nothing to replace in an empty string
-
-  size_t SLen = Search.length();
-  size_t RLen = Replacement.length();
-  if (!SLen) return VStr(*this); // nothing to search for
-
-  VStr res(*this);
-  size_t i = 0;
-  while ((size_t)res.length() >= SLen && i <= (size_t)res.length()-SLen) {
-    if (NCmp(res.getData()+i, *Search, SLen) == 0) {
-      // if search and replace strings are of the same size,
-      // we can just copy the data and avoid memory allocations
-      if (SLen == RLen) {
-        res.makeMutable();
-        memcpy(res.dataptr+i, *Replacement, RLen);
-      } else {
-        //FIXME: optimize this!
-        res = VStr(res, 0, int(i))+Replacement+VStr(res, int(i+SLen), int(res.length()-i-SLen));
-      }
-      i += RLen;
-    } else {
-      ++i;
-    }
-  }
-
-  return res;
-}
-
-
+//==========================================================================
+//
+//  VStr::Utf8Substring
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::Utf8Substring (int start, int len) const noexcept {
   vassert(start >= 0);
   vassert(start <= (int)Utf8Length());
@@ -1078,48 +1505,58 @@ VVA_CHECKRESULT VStr VStr::Utf8Substring (int start, int len) const noexcept {
 }
 
 
-void VStr::Split (char c, TArray<VStr> &A) const noexcept {
+//==========================================================================
+//
+//  VStr::Split
+//
+//==========================================================================
+void VStr::Split (char c, TArray<VStr> &A, bool keepEmpty) const noexcept {
   A.Clear();
   const char *data = getData();
   if (!data) return;
+  if (!c) { A.Append(*this); return; }
   int start = 0;
-  int len = int(length());
+  const int len = length();
   for (int i = 0; i <= len; ++i) {
     if (i == len || data[i] == c) {
-      if (start != i) A.Append(VStr(*this, start, i-start));
+      if (keepEmpty || start != i) A.Append(VStr(*this, start, i-start));
       start = i+1;
     }
   }
 }
 
 
-void VStr::Split (const char *chars, TArray<VStr> &A) const noexcept {
+//==========================================================================
+//
+//  VStr::Split
+//
+//==========================================================================
+void VStr::Split (const char *chars, TArray<VStr> &A, bool keepEmpty) const noexcept {
   A.Clear();
   const char *data = getData();
   if (!data) return;
+  if (!chars) { A.Append(*this); return; }
   int start = 0;
-  int len = int(length());
+  const int len = length();
   for (int i = 0; i <= len; ++i) {
-    bool DoSplit = (i == len);
-    if (!DoSplit) {
-      for (const char *pChar = chars; !DoSplit && *pChar; ++pChar) {
-        DoSplit = (data[i] == *pChar);
-        if (DoSplit) break;
-      }
-    }
-    if (DoSplit) {
-      if (start != i) A.Append(VStr(*this, start, i-start));
+    if (i == len || strchr(chars, data[i])) {
+      if (keepEmpty || start != i) A.Append(VStr(*this, start, i-start));
       start = i+1;
     }
   }
 }
 
 
+//==========================================================================
+//
+//  VStr::SplitOnBlanks
+//
+//==========================================================================
 void VStr::SplitOnBlanks (TArray<VStr> &A, bool doQuotedStrings) const noexcept {
   A.Clear();
   const char *data = getData();
   if (!data) return;
-  int len = int(length());
+  int len = length();
   int pos = 0;
   while (pos < len) {
     vuint8 ch = (vuint8)data[pos++];
@@ -1140,8 +1577,23 @@ void VStr::SplitOnBlanks (TArray<VStr> &A, bool doQuotedStrings) const noexcept 
 }
 
 
-// split string to path components; first component can be '/', others has no slashes
-void VStr::SplitPath (TArray<VStr>& arr) const noexcept {
+//==========================================================================
+//
+//  VStr::SplitPath
+//
+//  split string to path components
+//
+//  first returned component can be '/'.
+//  for shitdoze, first returned component can be:
+//    "/"
+//    "x:"
+//    "x:/"
+//    "//unc"
+//
+//  others has no slashes
+//
+//==========================================================================
+void VStr::SplitPath (TArray<VStr> &arr) const noexcept {
   arr.Clear();
   const char *data = getData();
   if (!data) return;
@@ -1159,16 +1611,31 @@ void VStr::SplitPath (TArray<VStr>& arr) const noexcept {
     pos = epos+1;
   }
 #else
-  if (data[0] == '/' || data[0] == '\\') {
+  if (IsPathSeparatorCharStrict(data[0])) {
     arr.Append(VStr("/"));
-  } else if (data[1] == ':' && (data[2] == '/' || data[2] == '\\')) {
-    arr.Append(mid(0, 3));
+    pos = 1;
+  } else if (data[1] == ':') {
+    if (IsPathSeparatorCharStrict(data[2])) {
+      arr.Append(mid(0, 3));
+      pos = 3;
+    } else if (!data[2]) {
+      arr.append(*this);
+      return;
+    } else {
+      arr.Append(left(2));
+      pos = 2;
+    }
+  } else if (IsPathSeparatorCharStrict(data[0]) && IsPathSeparatorCharStrict(data[1])) {
+    // unc path
+    if (!data[2]) { arr.Append(VStr("/")); return; }
+    VStr res("//");
     pos = 3;
+    while (pos < len && !IsPathSeparatorCharStrict(data[pos])) res += data[pos++];
   }
   while (pos < len) {
-    if (data[pos] == '/' || data[pos] == '\\') { ++pos; continue; }
+    if (IsPathSeparatorCharStrict(data[pos])) { ++pos; continue; }
     int epos = pos+1;
-    while (epos < len && data[epos] != '/' && data[epos] != '\\') ++epos;
+    while (epos < len && !IsPathSeparatorCharStrict(data[epos])) ++epos;
     arr.Append(mid(pos, epos-pos));
     pos = epos+1;
   }
@@ -1176,74 +1643,98 @@ void VStr::SplitPath (TArray<VStr>& arr) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::IsSplittedPathAbsolute
+//
+//==========================================================================
+bool VStr::IsSplittedPathAbsolute (const TArray<VStr> &spp) noexcept {
+  if (spp.length() == 0) return false;
+  // check for absolute pathes
+#if !defined(_WIN32)
+  return (spp[0] == "/");
+#else
+  VStr fsp = spp[0];
+  if (fsp == "/") return true;
+  if (fsp.length() >= 2 && fsp[1] == ':') return true;
+  return false;
+#endif
+}
+
+
+//==========================================================================
+//
+//  VStr::trimRight
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::trimRight () const noexcept {
   const char *s = getCStr();
-  int len = length();
+  const int len = length();
   int pos = len;
   while (pos > 0 && (vuint8)(s[pos-1]) <= ' ') --pos;
-  if (pos == 0) return EmptyString;
+  if (pos == 0) return VStr();
   if (pos == len) return VStr(*this);
   return left(pos);
 }
 
 
+//==========================================================================
+//
+//  VStr::trimLeft
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::trimLeft () const noexcept {
   const char *s = getCStr();
-  int pos = 0, len = length();
+  const int len = length();
+  int pos = 0;
   while (pos < len && (vuint8)(s[pos]) <= ' ') ++pos;
-  if (pos == len) return EmptyString;
+  if (pos == len) return VStr();
   if (pos == 0) return VStr(*this);
   return mid(pos, len);
 }
 
 
+//==========================================================================
+//
+//  VStr::trimAll
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::trimAll () const noexcept {
   const char *s = getCStr();
-  int len = length();
+  const int len = length();
   int lc = 0, rc = len;
   while (lc < len && (vuint8)(s[lc]) <= ' ') ++lc;
   while (rc > lc && (vuint8)(s[rc-1]) <= ' ') --rc;
   if (lc == 0 && rc == len) return VStr(*this);
-  if (lc == rc) return EmptyString;
+  if (lc == rc) return VStr();
   return mid(lc, rc-lc);
 }
 
 
-VVA_CHECKRESULT bool VStr::IsValidUtf8 () const noexcept {
-  const char *data = getData();
-  if (!data) return true;
-  for (const char *c = data; *c;) {
-    if ((*c&0x80) == 0) {
-      ++c;
-    } else if ((*c&0xe0) == 0xc0) {
-      if ((c[1]&0xc0) != 0x80) return false;
-      c += 2;
-    } else if ((*c&0xf0) == 0xe0) {
-      if ((c[1]&0xc0) != 0x80 || (c[2]&0xc0) != 0x80) return false;
-      c += 3;
-    } else if ((*c&0xf8) == 0xf0) {
-      if ((c[1]&0xc0) != 0x80 || (c[2]&0xc0) != 0x80 || (c[3]&0xc0) != 0x80) return false;
-      c += 4;
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-
+//==========================================================================
+//
+//  VStr::Latin1ToUtf8
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::Latin1ToUtf8 () const noexcept {
   const char *data = getData();
+  if (!data) return VStr();
   VStr res;
   for (int i = 0; i < length(); ++i) res += FromUtf8Char((vuint8)data[i]);
   return res;
 }
 
 
-//FIXME: make this faster
+//==========================================================================
+//
+//  VStr::xmlEscape
+//
+//  FIXME: make this faster
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::xmlEscape () const noexcept {
   const char *c = getData();
-  if (!c || !c[0]) return EmptyString;
+  if (!c || !c[0]) return VStr();
   for (const char *s = c; *s; ++s) {
     switch (*s) {
       case '&':
@@ -1273,13 +1764,20 @@ VVA_CHECKRESULT VStr VStr::xmlEscape () const noexcept {
 }
 
 
-//FIXME: make this faster
+//==========================================================================
+//
+//  VStr::xmlUnescape
+//
+//  FIXME: make this faster
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::xmlUnescape () const noexcept {
-  VStr res;
   const char *c = getData();
-  if (!c || !c[0]) return res;
+  if (!c || !c[0]) return VStr();
+  if (!strchr(c, '&')) return VStr(*this);
+  VStr res;
   while (*c) {
-    if (c[0] == ';') {
+    if (c[0] == '&') {
       if (c[1] == 'a' && c[2] == 'm' && c[3] == 'p' && c[4] == ';') {
         res += '&';
         c += 5;
@@ -1312,11 +1810,18 @@ VVA_CHECKRESULT VStr VStr::xmlUnescape () const noexcept {
 }
 
 
-// this translates "\\c" to `\c`
+//==========================================================================
+//
+//  VStr::EvalEscapeSequences
+//
+//  this translates "\\c" to `\c`
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::EvalEscapeSequences () const noexcept {
-  VStr res;
   const char *c = getCStr();
-  if (!c[0]) return res;
+  if (!c[0]) return VStr();
+  if (!strchr(c, '\\')) return VStr(*this);
+  VStr res;
   int val;
   while (*c) {
     const char *slashp = strchr(c, '\\');
@@ -1427,6 +1932,11 @@ VVA_CHECKRESULT VStr VStr::EvalEscapeSequences () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::MustBeSanitized
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::MustBeSanitized () const noexcept {
   int len = (int)length();
   if (len < 1) return false;
@@ -1442,6 +1952,11 @@ VVA_CHECKRESULT bool VStr::MustBeSanitized () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::MustBeSanitized
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::MustBeSanitized (const char *str) noexcept {
   if (!str || !str[0]) return false;
   for (const vuint8 *s = (const vuint8 *)str; *s; ++s) {
@@ -1453,6 +1968,11 @@ VVA_CHECKRESULT bool VStr::MustBeSanitized (const char *str) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::RemoveColors
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::RemoveColors () const noexcept {
   const char *data = getData();
   if (!data) return VStr();
@@ -1507,49 +2027,52 @@ VVA_CHECKRESULT VStr VStr::RemoveColors () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::ExtractFilePath
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ExtractFilePath () const noexcept {
   if (!length()) return VStr();
   const char *src = getData()+length();
-#if !defined(_WIN32)
-  while (src != getData() && src[-1] != '/') --src;
-#else
-  while (src != getData() && src[-1] != '/' && src[-1] != '\\') --src;
-#endif
+  while (src != getData() && !IsPathSeparatorChar(src[-1])) --src;
   return VStr(*this, 0, src-getData());
 }
 
 
+//==========================================================================
+//
+//  VStr::ExtractFileName
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ExtractFileName () const noexcept {
   if (!length()) return VStr();
   const char *data = getData();
   const char *src = data+length();
-#if !defined(_WIN32)
-  while (src != data && src[-1] != '/') --src;
-#else
-  while (src != data && src[-1] != '/' && src[-1] != '\\') --src;
-#endif
+  while (src != data && !IsPathSeparatorChar(src[-1])) --src;
   return VStr(src);
 }
 
 
+//==========================================================================
+//
+//  VStr::ExtractFileBase
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ExtractFileBase (bool doSysError) const noexcept {
   int i = length();
   if (i == 0) return VStr();
 
   const char *data = getData();
-#if !defined(_WIN32)
   // back up until a \ or the start
-  while (i && data[i-1] != '/') --i;
-#else
-  while (i && data[i-1] != '/' && data[i-1] != '\\' && data[i-1] != ':') --i;
-#endif
+  while (i && !IsPathSeparatorChar(data[i-1])) --i;
 
   // copy up to eight characters
   int start = i;
   int length = 0;
   while (data[i] && data[i] != '.') {
     if (++length == 9) {
-      if (doSysError) Sys_Error("Filename base of %s >8 chars", data);
+      if (doSysError) Sys_Error("Filename base of \"%s\" >8 chars", data);
       break;
     }
     ++i;
@@ -1558,22 +2081,30 @@ VVA_CHECKRESULT VStr VStr::ExtractFileBase (bool doSysError) const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::ExtractFileBaseName
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ExtractFileBaseName () const noexcept {
   int i = length();
   if (i == 0) return VStr();
 
   const char *data = getData();
-#if !defined(_WIN32)
   // back up until a \ or the start
-  while (i && data[i-1] != '/') --i;
-#else
-  while (i && data[i-1] != '/' && data[i-1] != '\\' && data[i-1] != ':') --i;
-#endif
+  while (i && !IsPathSeparatorChar(data[i-1])) --i;
 
   return VStr(*this, i, length()-i);
 }
 
 
+//==========================================================================
+//
+//  VStr::ExtractFileExtension
+//
+//  with a dot
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::ExtractFileExtension () const noexcept {
   if (!length()) return VStr();
   const char *data = getData();
@@ -1581,17 +2112,18 @@ VVA_CHECKRESULT VStr VStr::ExtractFileExtension () const noexcept {
   while (src != data) {
     char ch = src[-1];
     if (ch == '.') return VStr(src-1);
-#if !defined(_WIN32)
-    if (ch == '/') return VStr();
-#else
-    if (ch == '/' || ch == '\\') return VStr();
-#endif
+    if (IsPathSeparatorChar(ch)) return VStr();
     --src;
   }
   return VStr();
 }
 
 
+//==========================================================================
+//
+//  VStr::StripExtension
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::StripExtension () const noexcept {
   if (!length()) return VStr();
   const char *data = getData();
@@ -1599,32 +2131,33 @@ VVA_CHECKRESULT VStr VStr::StripExtension () const noexcept {
   while (src != data) {
     char ch = src[-1];
     if (ch == '.') return VStr(*this, 0, src-data-1);
-#if !defined(_WIN32)
-    if (ch == '/') break;
-#else
-    if (ch == '/' || ch == '\\') break;
-#endif
+    if (IsPathSeparatorChar(ch)) break;
     --src;
   }
   return VStr(*this);
 }
 
 
+//==========================================================================
+//
+//  VStr::DefaultPath
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::DefaultPath (VStr basepath) const noexcept {
   if (!length()) return basepath;
-  const char *data = getData();
-#if !defined(_WIN32)
-  if (data && data[0] == '/') return *this; // absolute path location
-#else
-  if (data && data[0] == '/') return *this; // absolute path location
-  if (data && data[0] == '\\') return *this; // absolute path location
-  if (data && data[1] == ':' && (data[2] == '/' || data[2] == '\\')) return *this; // absolute path location
-#endif
-  return basepath+(*this);
+  if (IsAbsolutePath()) return VStr(*this);
+  return basepath.AppendPath(*this);
 }
 
 
-// if path doesn't have a .EXT, append extension (extension should include the leading dot)
+//==========================================================================
+//
+//  VStr::DefaultExtension
+//
+//  if path doesn't have a .EXT, append extension
+//  (extension should include the leading dot)
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::DefaultExtension (VStr extension) const noexcept {
   if (!length()) return extension;
   const char *data = getData();
@@ -1632,26 +2165,41 @@ VVA_CHECKRESULT VStr VStr::DefaultExtension (VStr extension) const noexcept {
   while (src != data) {
     char ch = src[-1];
     if (ch == '.') return VStr(*this);
-#if !defined(_WIN32)
-    if (ch == '/') break;
-#else
-    if (ch == '/' || ch == '\\') break;
-#endif
+    if (IsPathSeparatorChar(ch)) break;
     --src;
   }
   return VStr(*this)+extension;
 }
 
 
+//==========================================================================
+//
+//  VStr::FixFileSlashes
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::FixFileSlashes () const noexcept {
   if (!length()) return VStr();
+  if (atomicIsUnique()) {
+    char *c = dataptr;
+    while (*c) {
+      c = (char *)strchr(c, '\\');
+      if (!c) break;
+      *c = '/';
+      ++c;
+    }
+    return VStr(*this);
+  }
   const char *data = getData();
-  bool hasWork = false;
-  for (const char *c = data; *c; ++c) if (*c == '\\') { hasWork = true; break; }
-  if (hasWork) {
+  if (strchr(data, '\\')) {
     VStr res(*this);
     res.makeMutable();
-    for (char *c = res.dataptr; *c; ++c) if (*c == '\\') *c = '/';
+    char *c = res.dataptr;
+    while (*c) {
+      c = (char *)strchr(c, '\\');
+      if (!c) break;
+      *c = '/';
+      ++c;
+    }
     return res;
   } else {
     return VStr(*this);
@@ -1659,66 +2207,88 @@ VVA_CHECKRESULT VStr VStr::FixFileSlashes () const noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::AppendTrailingSlash
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::AppendTrailingSlash () const noexcept {
-  VStr res(*this);
   const int slen = length();
-  if (slen < 1) return res;
+  if (slen < 1) return VStr(*this);
   const char *data = getData();
-#ifdef _WIN32
-  if (slen == 2 && data[1] == ':') return res; // disk name only, safe
-  if (data[slen-1] == '/' || data[slen-1] == '\\') return res;
+#if !defined(_WIN32)
+  if (data[slen-1] == '/') return VStr(*this);
 #else
-  if (data[slen-1] == '/') return res;
+  if (slen == 2 && data[1] == ':') return VStr(*this); // disk name only, safe
+  if (IsPathSeparatorChar(data[slen-1])) return VStr(*this);
 #endif
+  VStr res(*this);
   res += '/';
   return res;
 }
 
 
+//==========================================================================
+//
+//  VStr::RemoveTrailingSlash
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::RemoveTrailingSlash () const noexcept {
-  VStr path(*this);
-  if (path.isEmpty()) return path;
-#ifdef _WIN32
-  if (path.length() > 2 && path[1] == ':') {
-    // with disk name
-    while (path.length() > 3 && (path.endsWith("/") || path.endsWith("\\"))) path.chopRight(1);
-  } else {
-    while (path.length() > 1 && (path.endsWith("/") || path.endsWith("\\"))) path.chopRight(1);
-  }
+  const int len = length();
+  if (len < 2) return VStr(*this);
+  const char *data = getData();
+#if !defined(_WIN32)
+  if (data[len-1] != '/') return VStr(*this);
+  int newlen = len-1;
+  while (newlen > 0 && data[newlen-1] == '/') --newlen;
+  if (newlen) return VStr(data, newlen);
+  return VStr("/");
 #else
-  while (path.length() > 1 && path.endsWith("/")) path.chopRight(1);
+  if (!IsPathSeparatorCharStrict(data[len-1])) return VStr(*this);
+  if (len == 3 && data[1] == ':') return VStr(*this); // oops, "x:\"
+  VStr path(*this);
+  path.chopRight(1);
+  return path.RemoveTrailingSlash();
 #endif
-  return path;
 }
 
 
+//==========================================================================
+//
+//  VStr::AppendPath
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::AppendPath (const VStr &path) const noexcept {
+  if (path.isEmpty()) return VStr(*this);
+  if (isEmpty()) return path;
   VStr res(*this);
-  if (path.length()) {
-#ifdef _WIN32
-    if (res.length() && path[0] != '/' && path[0] != '\\') res = res.AppendTrailingSlash();
-#else
-    if (res.length() && path[0] != '/') res = res.AppendTrailingSlash();
-#endif
-    res += path;
-  }
+  if (!IsPathSeparatorCharStrict(path[0]) && !IsPathSeparatorCharStrict(res[res.length()-1])) res += "/";
+  res += path;
   return res;
 }
 
 
+//==========================================================================
+//
+//  VStr::IsAbsolutePath
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::IsAbsolutePath () const noexcept {
   if (length() < 1) return false;
   const char *data = getData();
-#ifdef _WIN32
-  if (data[0] == '/' || data[0] == '\\') return true;
+  if (IsPathSeparatorCharStrict(data[0])) return true;
+#if defined(_WIN32)
   if (length() > 1 && data[1] == ':') return true;
-#else
-  if (data[0] == '/') return true;
 #endif
   return false;
 }
 
 
+//==========================================================================
+//
+//  VStr::Utf8Length
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::Utf8Length (const char *s, int len) noexcept {
   if (len < 0) len = (s && s[0] ? (int)strlen(s) : 0);
   int count = 0;
@@ -1740,6 +2310,11 @@ VVA_CHECKRESULT int VStr::Utf8Length (const char *s, int len) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::ByteLengthForUtf8
+//
+//==========================================================================
 VVA_CHECKRESULT size_t VStr::ByteLengthForUtf8 (const char *s, size_t N) noexcept {
   if (s) {
     size_t count = 0;
@@ -1765,6 +2340,11 @@ VVA_CHECKRESULT size_t VStr::ByteLengthForUtf8 (const char *s, size_t N) noexcep
 }
 
 
+//==========================================================================
+//
+//  VStr::Utf8GetChar
+//
+//==========================================================================
 VVA_CHECKRESULT int VStr::Utf8GetChar (const char *&s) noexcept {
   if (!s || !s[0]) return 0;
 
@@ -1797,6 +2377,11 @@ VVA_CHECKRESULT int VStr::Utf8GetChar (const char *&s) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::FromUtf8Char
+//
+//==========================================================================
 VVA_CHECKRESULT VStr VStr::FromUtf8Char (int c) noexcept {
   char res[8];
   if (!isValidCodepoint(c)) return VStr("?");
@@ -1823,6 +2408,11 @@ VVA_CHECKRESULT VStr VStr::FromUtf8Char (int c) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VStr::needQuoting
+//
+//==========================================================================
 VVA_CHECKRESULT bool VStr::needQuoting () const noexcept {
   int len = length();
   const char *data = getData();
@@ -1834,9 +2424,15 @@ VVA_CHECKRESULT bool VStr::needQuoting () const noexcept {
 }
 
 
-VVA_CHECKRESULT VStr VStr::quote (bool addQCh) const noexcept {
+//==========================================================================
+//
+//  VStr::quote
+//
+//==========================================================================
+VVA_CHECKRESULT VStr VStr::quote (bool addQCh, bool forceQCh) const noexcept {
   int len = length();
   char hexb[6];
+  if (forceQCh) addQCh = true;
   const char *data = getData();
   for (int f = 0; f < len; ++f) {
     vuint8 ch = (vuint8)data[f];
@@ -1871,6 +2467,12 @@ VVA_CHECKRESULT VStr VStr::quote (bool addQCh) const noexcept {
       if (addQCh) res += '"';
       return res;
     }
+  }
+  if (forceQCh) {
+    VStr qs("\"");
+    qs += *this;
+    qs += "\"";
+    return qs;
   }
   return VStr(*this);
 }
@@ -2014,13 +2616,13 @@ bool VStr::convertFloat (const char *s, float *outv, const float *defval) noexce
     if (!dcs || !dcs[0] || strcmp(dcs, ".") == 0) {
       dpconvinited = 0;
       /*
-      dpointstr = (char *)Z_Malloc(2);
+      dpointstr = (char *)Z_MallocNoClear(2);
       dpointstr[0] = '.';
       dpointstr[1] = 0;
       */
     } else {
       dpconvinited = 1;
-      dpointstr = (char *)Z_Malloc(strlen(dcs)+1);
+      dpointstr = (char *)Z_MallocNoClear(strlen(dcs)+1);
       memcpy(dpointstr, dcs, strlen(dcs)+1);
       //fprintf(stderr, "*** <%s> ***\n", dpointstr);
     }
@@ -2038,7 +2640,7 @@ bool VStr::convertFloat (const char *s, float *outv, const float *defval) noexce
       }
     }
     if (hasDPoint) {
-      char *newstr = (char *)Z_Malloc(newlen+8);
+      char *newstr = (char *)Z_MallocNoClear(newlen+8);
       char *dest = newstr;
       for (const char *tmp = s; *tmp; ++tmp) {
         if (*tmp == '.') {
@@ -2048,6 +2650,7 @@ bool VStr::convertFloat (const char *s, float *outv, const float *defval) noexce
           *dest++ = *tmp;
         }
       }
+      *dest = 0;
       // do conversion
       char *end = nullptr;
       float res = strtof(newstr, &end);
@@ -2277,12 +2880,12 @@ int VStr::findNextCommand (int stpos, bool skipLeadingSpaces) const noexcept {
 VVA_CHECKRESULT bool VStr::isSafeDiskFileName () const noexcept {
   if (length() == 0) return false;
   const char *s = getCStr();
-  if (isPathDelimiter(s[0])) return false;
+  if (IsPathSeparatorChar(s[0])) return false;
   for (; *s; ++s) {
-#ifdef _WIN32
+    #if defined(_WIN32)
     if (*s == ':') return false;
-#endif
-    if (isPathDelimiter(*s)) {
+    #endif
+    if (IsPathSeparatorCharStrict(*s)) {
       // don't allow any dot-starting pathes
       if (s[1] == '.' || !s[1]) return false;
     }
@@ -2389,7 +2992,7 @@ struct VaBuffer {
     size = ((size+1)|0x1fff)+1;
     if (size <= bufsize) return;
     if (size > 1024*1024*2) Sys_Error("`va` buffer too big");
-    char *newbuf = (char *)(alloced ? Z_Realloc(buf, size) : Z_Malloc(size));
+    char *newbuf = (char *)(alloced ? Z_ReallocNoFail(buf, size) : Z_MallocNoClearNoFail(size));
     if (!newbuf) Sys_Error("out of memory for `va` buffer");
     buf = newbuf;
     bufsize = size;

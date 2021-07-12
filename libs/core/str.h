@@ -48,9 +48,11 @@ extern const char *secs2timestr (const double secs) noexcept;
 // ////////////////////////////////////////////////////////////////////////// //
 // WARNING! this cannot be bigger than one pointer, or VM will break!
 // WARNING! this is NOT MT-SAFE! if you want to use it from multiple threads,
-//          make sure to `cloneUnique()` it, and pass to each thread its own VStr!
+//          make sure to `cloneUniqueMT()` it, and pass to each thread its own VStr!
+//          but note that immutable strings *are* MT-safe.
 class VStr {
 public:
+  //HACK: multithreaded locking is done by orring setting `rc` with 0x80000000 (which makes the string immutable, btw)
   struct __attribute__((packed)) Store {
     vint32 length;
     vint32 alloted;
@@ -64,31 +66,33 @@ public:
   char *dataptr; // string, 0-terminated (0 is not in length); can be null
 
 protected:
-  VVA_CHECKRESULT inline Store *store () noexcept { return (dataptr ? (Store *)(dataptr-sizeof(Store)) : nullptr); }
-  VVA_CHECKRESULT inline Store *store () const noexcept { return (dataptr ? (Store *)(dataptr-sizeof(Store)) : nullptr); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE Store *store () noexcept { return (dataptr ? (Store *)(dataptr-sizeof(Store)) : nullptr); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE Store *store () const noexcept { return (dataptr ? (Store *)(dataptr-sizeof(Store)) : nullptr); }
 
   // should be called only when storage is available
-  VVA_CHECKRESULT inline int atomicGetRC () const noexcept { return __atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int atomicGetRC () const noexcept { return __atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST); }
   // should be called only when storage is available
-  inline void atomicSetRC (int newval) noexcept { __atomic_store_n(&((Store *)(dataptr-sizeof(Store)))->rc, newval, __ATOMIC_SEQ_CST); }
+  VVA_ALWAYS_INLINE void atomicSetRC (int newval) noexcept { __atomic_store_n(&((Store *)(dataptr-sizeof(Store)))->rc, newval, __ATOMIC_SEQ_CST); }
   // should be called only when storage is available
-  VVA_CHECKRESULT inline bool atomicIsImmutable () const noexcept { return (__atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST) < 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool atomicIsImmutable () const noexcept { return (__atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST) < 0); }
   // should be called only when storage is available
   // immutable strings aren't unique
-  VVA_CHECKRESULT inline bool atomicIsUnique () const noexcept { return (__atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST) == 1); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool atomicIsUnique () const noexcept { return (__atomic_load_n(&((const Store *)(dataptr-sizeof(Store)))->rc, __ATOMIC_SEQ_CST) == 1); }
   // should be called only when storage is available
   // returns new value
   // WARNING: will happily modify immutable RC!
-  inline void atomicIncRC () const noexcept { (void)__atomic_add_fetch(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
+  VVA_ALWAYS_INLINE void atomicIncRC () const noexcept { (void)__atomic_add_fetch(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
+  VVA_ALWAYS_INLINE int atomicIncRCRetOld () const noexcept { return __atomic_fetch_add(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
   // should be called only when storage is available
   // returns new value
   // WARNING: will happily modify immutable RC!
-  inline int atomicDecRC () const noexcept { return __atomic_sub_fetch(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
+  VVA_ALWAYS_INLINE int atomicDecRC () const noexcept { return __atomic_sub_fetch(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
+  VVA_ALWAYS_INLINE void atomicDecRCVoid () const noexcept { (void)__atomic_sub_fetch(&((Store *)(dataptr-sizeof(Store)))->rc, 1, __ATOMIC_SEQ_CST); }
 
-  VVA_CHECKRESULT inline char *getData () noexcept { return dataptr; }
-  VVA_CHECKRESULT inline const char *getData () const noexcept { return dataptr; }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE char *getData () noexcept { return dataptr; }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE const char *getData () const noexcept { return dataptr; }
 
-  inline void incref () const noexcept { if (dataptr && !atomicIsImmutable()) atomicIncRC(); }
+  VVA_ALWAYS_INLINE void incref () const noexcept { if (dataptr && !atomicIsImmutable()) atomicIncRC(); }
 
   // WARNING! may free `data` contents!
   // this also clears `data`
@@ -106,9 +110,9 @@ protected:
     }
   }
 
-  VVA_CHECKRESULT inline bool isMyData (const char *buf, int len) const noexcept { return (dataptr && buf && (uintptr_t)buf < (uintptr_t)dataptr+length() && (uintptr_t)buf+len >= (uintptr_t)dataptr); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isMyData (const char *buf, int len) const noexcept { return (dataptr && buf && (uintptr_t)buf < (uintptr_t)dataptr+length() && (uintptr_t)buf+len >= (uintptr_t)dataptr); }
 
-  inline void assign (const VStr &instr) noexcept {
+  VVA_ALWAYS_INLINE void assign (const VStr &instr) noexcept {
     if (&instr != this) {
       if (instr.dataptr) {
         if (instr.dataptr != dataptr) {
@@ -125,12 +129,11 @@ protected:
   void makeMutable () noexcept; // and unique
   void resize (int newlen) noexcept; // always makes string unique; also, always sets [length] to 0; clears string on `newlen == 0`
   void setContent (const char *s, int len=-1) noexcept;
-
   void setNameContent (const VName InName) noexcept;
 
 public:
-  // debul
-  inline int dbgGetRef () const noexcept { return (dataptr ? atomicGetRC() : 0); }
+  // debug
+  VVA_ALWAYS_INLINE int dbgGetRef () const noexcept { return (dataptr ? atomicGetRC() : 0); }
 
 public:
   // some utilities
@@ -154,33 +157,29 @@ public:
   static int double2str (char *buf, double v) noexcept; // 0-terminated
 
 public:
-  VStr (ENoInit) noexcept {}
-  VStr () noexcept : dataptr(nullptr) {}
-  VStr (const VStr &instr) noexcept : dataptr(nullptr) { dataptr = instr.dataptr; incref(); }
-  VStr (const char *instr, int len=-1) noexcept : dataptr(nullptr) { setContent(instr, len); }
-  VStr (const VStr &instr, int start, int len) noexcept : dataptr(nullptr) { assign(instr.mid(start, len)); }
+  inline VStr (ENoInit) noexcept {}
+  inline VStr () noexcept : dataptr(nullptr) {}
+  inline VStr (const VStr &instr) noexcept : dataptr(instr.dataptr) { incref(); }
+  inline VStr (const char *instr, int len=-1) noexcept : dataptr(nullptr) { setContent(instr, len); }
+  inline VStr (const VStr &instr, int start, int len) noexcept : dataptr(nullptr) { assign(instr.mid(start, len)); }
 
-  explicit VStr (const VName InName) noexcept : dataptr(nullptr) { setNameContent(InName); }
+  explicit inline VStr (const VName InName) noexcept : dataptr(nullptr) { setNameContent(InName); }
 
-  explicit VStr (char v) noexcept : dataptr(nullptr) { setContent(&v, 1); }
-  explicit VStr (bool v) noexcept : dataptr(nullptr) { setContent(v ? "true" : "false"); }
+  explicit inline VStr (char v) noexcept : dataptr(nullptr) { setContent(&v, 1); }
+  explicit inline VStr (bool v) noexcept : dataptr(nullptr) { setContent(v ? "true" : "false"); }
   explicit VStr (int v) noexcept;
   explicit VStr (unsigned v) noexcept;
   explicit VStr (float v) noexcept;
   explicit VStr (double v) noexcept;
 
-  ~VStr () noexcept { clear(); }
+  inline ~VStr () noexcept { clear(); }
 
   // this will create an unique copy of the string, which (copy) can be used in other threads
-  VVA_CHECKRESULT inline VStr cloneUnique () const noexcept {
-    if (!dataptr) return VStr();
-    int len = length();
-    vassert(len > 0);
-    VStr res;
-    res.setLength(len, 0); // fill with zeroes, why not?
-    memcpy(res.dataptr, dataptr, len);
-    return res;
-  }
+  VVA_CHECKRESULT VStr cloneUnique () const noexcept;
+
+  // this will create an unique copy of the string, which (copy) can be used in other threads
+  // doesn't clone immutable strings, though
+  VVA_CHECKRESULT VStr cloneUniqueMT () const noexcept;
 
   void makeImmutable () noexcept;
   VVA_CHECKRESULT VStr &makeImmutableRetSelf () noexcept;
@@ -224,9 +223,14 @@ public:
   VVA_CHECKRESULT inline bool IsNotEmpty () const noexcept { return (length() != 0); }
   VVA_CHECKRESULT inline bool isNotEmpty () const noexcept { return (length() != 0); }
 
+  // if start is negative, `len` will be adjusted!
   VVA_CHECKRESULT VStr mid (int start, int len) const noexcept;
   VVA_CHECKRESULT VStr left (int len) const noexcept;
   VVA_CHECKRESULT VStr right (int len) const noexcept;
+
+  VVA_CHECKRESULT VStr leftskip (int skiplen) const noexcept;
+  VVA_CHECKRESULT VStr rightskip (int skiplen) const noexcept;
+
   void chopLeft (int len) noexcept;
   void chopRight (int len) noexcept;
 
@@ -238,6 +242,7 @@ public:
     if (len < 0) len = (int)(instr && instr[0] ? strlen(instr) : 0);
     if (len) {
       if (isMyData(instr, len)) {
+        // need to copy it
         VStr s(instr, len);
         operator+=(s);
       } else {
@@ -254,9 +259,9 @@ public:
   inline VStr &operator += (const char *instr) noexcept { return appendCStr(instr, -1); }
 
   VStr &operator += (const VStr &instr) noexcept {
-    int inl = instr.length();
+    const int inl = instr.length();
     if (inl) {
-      int l = length();
+      const int l = length();
       if (l) {
         VStr s(instr); // this is cheap
         resize(l+inl);
@@ -269,7 +274,7 @@ public:
   }
 
   inline VStr &operator += (char inchr) noexcept {
-    int l = length();
+    const int l = length();
     resize(l+1);
     dataptr[l] = inchr;
     return *this;
@@ -380,22 +385,8 @@ public:
   VVA_CHECKRESULT inline VStr toLowerCase () const noexcept { return ToLower(); }
   VVA_CHECKRESULT inline VStr toUpperCase () const noexcept { return ToUpper(); }
 
-  VVA_CHECKRESULT inline bool isLowerCase () const noexcept {
-    const char *dp = getData();
-    for (int f = length()-1; f >= 0; --f, ++dp) {
-      if (*dp >= 'A' && *dp <= 'Z') return false;
-    }
-    return true;
-  }
-
-  VVA_CHECKRESULT inline static bool isLowerCase (const char *s) noexcept {
-    if (!s) return true;
-    while (*s) {
-      if (*s >= 'A' && *s <= 'Z') return false;
-      ++s;
-    }
-    return true;
-  }
+  VVA_CHECKRESULT bool isLowerCase () const noexcept;
+  VVA_CHECKRESULT static bool isLowerCase (const char *s) noexcept;
 
   VVA_CHECKRESULT int IndexOf (char pch, int stpos=0) const noexcept;
   VVA_CHECKRESULT int IndexOf (const char *ps, int stpos=0) const noexcept;
@@ -411,31 +402,41 @@ public:
   VVA_CHECKRESULT inline int lastIndexOf (const char *v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
   VVA_CHECKRESULT inline int lastIndexOf (const VStr &v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
 
-  VVA_CHECKRESULT VStr Replace (const char *, const char *) const noexcept;
-  VVA_CHECKRESULT VStr Replace (VStr, VStr) const noexcept;
+  VVA_CHECKRESULT VStr Replace (const char *Search, const char *Replacement) const noexcept;
+  VVA_CHECKRESULT inline VStr Replace (VStr Search, VStr Replacement) const noexcept { return Replace(*Search, *Replacement); }
 
   VVA_CHECKRESULT inline VStr replace (const char *s0, const char *s1) const noexcept { return Replace(s0, s1); }
-  VVA_CHECKRESULT inline VStr replace (const VStr &s0, const VStr &s1) const noexcept { return Replace(s0, s1); }
+  VVA_CHECKRESULT inline VStr replace (const VStr &s0, const VStr &s1) const noexcept { return Replace(*s0, *s1); }
 
   VVA_CHECKRESULT VStr Utf8Substring (int start, int len) const noexcept;
   VVA_CHECKRESULT inline VStr utf8Substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
   VVA_CHECKRESULT inline VStr utf8substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
 
-  void Split (char, TArray<VStr> &) const noexcept;
-  void Split (const char *, TArray<VStr> &) const noexcept;
-  void SplitOnBlanks (TArray<VStr> &, bool doQuotedStrings=false) const noexcept;
+  // split on char `c`
+  // if `keepEmpty` is `true`, keep empty components
+  // all slpitters will clear the array
+  void Split (char c, TArray<VStr> &A, bool keepEmpty=false) const noexcept;
+  void Split (const char *chars, TArray<VStr> &A, bool keepEmpty=false) const noexcept;
+  void SplitOnBlanks (TArray<VStr> &A, bool doQuotedStrings=false) const noexcept;
 
-  inline void split (char c, TArray<VStr> &a) const noexcept { Split(c, a); }
-  inline void split (const char *s, TArray<VStr> &a) const noexcept { Split(s, a); }
-  inline void splitOnBlanks (TArray<VStr> &a, bool doQuotedStrings=false) const noexcept { SplitOnBlanks(a, doQuotedStrings); }
+  inline void split (char c, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(c, a, keepEmpty); }
+  inline void split (const char *s, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(s, a, keepEmpty); }
+  inline void splitOnBlanks (TArray<VStr> &a, bool doQuotedStrings=false) const noexcept { return SplitOnBlanks(a, doQuotedStrings); }
 
   // split string to path components; first component can be '/', others has no slashes
-  void SplitPath (TArray<VStr> &) const noexcept;
-  inline void splitPath (TArray<VStr> &a) const noexcept { SplitPath(a); }
+  void SplitPath (TArray<VStr> &arr) const noexcept;
+  inline void splitPath (TArray<VStr> &arr) const noexcept { return SplitPath(arr); }
 
-  VVA_CHECKRESULT bool IsValidUtf8 () const noexcept;
-  VVA_CHECKRESULT inline bool isValidUtf8 () const noexcept { return IsValidUtf8(); }
+  static bool IsSplittedPathAbsolute (const TArray<VStr> &spp) noexcept;
+
+  VVA_CHECKRESULT static bool isUtf8Valid (const char *s) noexcept;
   VVA_CHECKRESULT bool isUtf8Valid () const noexcept;
+
+  VVA_CHECKRESULT inline static bool IsUtf8Valid (const char *s) noexcept { return isUtf8Valid(s); }
+  VVA_CHECKRESULT inline bool IsUtf8Valid () const noexcept { return isUtf8Valid(); }
+
+  VVA_CHECKRESULT inline bool IsValidUtf8 () const noexcept { return isUtf8Valid(); }
+  VVA_CHECKRESULT inline bool isValidUtf8 () const noexcept { return isUtf8Valid(); }
 
   VVA_CHECKRESULT VStr Latin1ToUtf8 () const noexcept;
 
@@ -444,8 +445,11 @@ public:
   VStream &Serialise (VStream &Strm) const;
 
   // if `addQCh` is `true`, add '"' if something was quoted
-  VVA_CHECKRESULT VStr quote (bool addQCh=false) const noexcept;
+  // if `forceQCh` is `true`, always add '"'
+  VVA_CHECKRESULT VStr quote (bool addQCh=false, bool forceQCh=false) const noexcept;
   VVA_CHECKRESULT bool needQuoting () const noexcept;
+
+  inline VVA_CHECKRESULT VStr forceQuote () const noexcept { return quote(true, true); } // always adds quotes
 
   VVA_CHECKRESULT VStr xmlEscape () const noexcept;
   VVA_CHECKRESULT VStr xmlUnescape () const noexcept;
@@ -495,6 +499,22 @@ public:
 
   VVA_CHECKRESULT bool IsAbsolutePath () const noexcept;
   VVA_CHECKRESULT inline bool isAbsolutePath () const noexcept { return IsAbsolutePath(); }
+
+  VVA_CHECKRESULT static VVA_ALWAYS_INLINE bool IsPathSeparatorChar (const char ch) noexcept {
+    #if !defined(_WIN32)
+    return (ch == '/');
+    #else
+    return (ch == '/' || ch == '\\' || ch == ':');
+    #endif
+  }
+
+  VVA_CHECKRESULT static VVA_ALWAYS_INLINE bool IsPathSeparatorCharStrict (const char ch) noexcept {
+    #if !defined(_WIN32)
+    return (ch == '/');
+    #else
+    return (ch == '/' || ch == '\\');
+    #endif
+  }
 
   // reject absolute names, names with ".", and names with "..", and names ends with path delimiter
   VVA_CHECKRESULT bool isSafeDiskFileName () const noexcept;
@@ -768,6 +788,7 @@ public:
   }
   */
 
+  /*
   static VVA_CHECKRESULT inline bool isPathDelimiter (const char ch) noexcept {
     #ifdef _WIN32
       return (ch == '/' || ch == '\\' || ch == ':');
@@ -777,6 +798,7 @@ public:
   }
 
   static VVA_CHECKRESULT inline bool IsPathDelimiter (const char ch) noexcept { return isPathDelimiter(ch); }
+  */
 
   static VVA_CHECKRESULT bool isSafeDiskFileName (const VStr &fname) noexcept { return fname.isSafeDiskFileName(); }
 

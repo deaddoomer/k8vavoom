@@ -72,7 +72,6 @@ static __attribute__((unused)) bool xstrEquCI (const char *s0, const char *s1) n
 
 
 static inline bool zIsMimallocAllowed () noexcept {
-#ifndef _WIN32
   uint32_t v = 0u; // value to compare
   if (__atomic_compare_exchange_n(&zMimallocAllowed, &v, 666u, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
     // `zMimallocAllowed` was zero (now 666u), need to init
@@ -82,7 +81,8 @@ static inline bool zIsMimallocAllowed () noexcept {
       if (xstrEquCI(ee, "0") ||
           xstrEquCI(ee, "ona") ||
           xstrEquCI(ee, "off") ||
-          xstrEquCI(ee, "no"))
+          xstrEquCI(ee, "no") ||
+          xstrEquCI(ee, "false"))
       {
         fprintf(stderr, "ZONE WARNING: MIMALLOC DISABLED!\n");
         v = 69u;
@@ -94,12 +94,10 @@ static inline bool zIsMimallocAllowed () noexcept {
     if (v == 666u) {
       // currently initializing, wait
       while (__atomic_load_n(&zMimallocAllowed, __ATOMIC_SEQ_CST) == 666u) {}
+      v = __atomic_load_n(&zMimallocAllowed, __ATOMIC_SEQ_CST);
     }
   }
   return (v == 1u);
-#else
-  return true;
-#endif
 }
 #endif
 
@@ -153,17 +151,55 @@ void *Z_Malloc (size_t size) noexcept {
 }
 
 
+__attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
+void *Z_MallocNoClear (size_t size) noexcept {
+#ifdef VAVOOM_CORE_COUNT_ALLOCS
+  ++zone_malloc_call_count;
+#endif
+  size += !size;
+  void *res = malloc_fn(size);
+  if (!res) Sys_Error("out of memory for %u bytes!", (unsigned int)size);
+  return res;
+}
+
+
+__attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
+void *Z_MallocNoClearNoFail (size_t size) noexcept {
+#ifdef VAVOOM_CORE_COUNT_ALLOCS
+  ++zone_malloc_call_count;
+#endif
+  size += !size;
+  return malloc_fn(size);
+}
+
+
 __attribute__((alloc_size(2))) void *Z_Realloc (void *ptr, size_t size) noexcept {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_realloc_call_count;
 #endif
 #ifdef VAVOOM_USE_MIMALLOC
-  if (size == 0 && !isZManActive()) return nullptr; // don't bother
+  if (size == 0 && !isZManActive()) return nullptr; // don't bother freeing it
 #endif
   if (size) {
     void *res = realloc_fn(ptr, size);
     if (!res) Sys_Error("out of memory for %u bytes!", (unsigned int)size);
     return res;
+  } else {
+    if (ptr) free_fn(ptr);
+    return nullptr;
+  }
+}
+
+
+__attribute__((alloc_size(2))) void *Z_ReallocNoFail (void *ptr, size_t size) noexcept {
+#ifdef VAVOOM_CORE_COUNT_ALLOCS
+  ++zone_realloc_call_count;
+#endif
+#ifdef VAVOOM_USE_MIMALLOC
+  if (size == 0 && !isZManActive()) return nullptr; // don't bother freeing it
+#endif
+  if (size) {
+    return realloc_fn(ptr, size);
   } else {
     if (ptr) free_fn(ptr);
     return nullptr;
@@ -190,7 +226,7 @@ void *Z_Calloc (size_t size) noexcept {
 
 
 void Z_Free (void *ptr) noexcept {
-  if (!isZManActive()) return; // shitdoze hack
+  if (!isZManActive()) return; // don't bother
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_free_call_count;
 #endif
