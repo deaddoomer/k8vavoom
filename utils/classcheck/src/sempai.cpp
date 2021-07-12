@@ -282,6 +282,8 @@ void SemParser::skipToken () {
       if (ch != '_' && !VStr::isAlphaAscii(ch) && VStr::digitInBase(ch, 10) < 0) break;
       token += getChar();
     }
+    //HACK!
+    if (token == "mutable") return skipToken();
     return;
   }
 
