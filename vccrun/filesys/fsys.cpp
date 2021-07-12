@@ -715,12 +715,12 @@ int fsysAppendPak (VStr fname, int pakid) {
 // this will take ownership of `strm` (or kill it on error)
 // returns pack id or 0
 int fsysAppendPak (VStream *strm, VStr apfx) {
-  if (!strm) return false;
+  if (!strm) return 0;
   fsysInit();
   MyThreadLocker paklocker(&paklock);
 
   // it MUST append packs to the end of the list, so `fsysRemovePaksFrom()` will work properly
-  if (openPakCount >= MaxOpenPaks) { delete strm; Sys_Error("too many pak files"); }
+  if (openPakCount >= MaxOpenPaks) { VStream::Destroy(strm); Sys_Error("too many pak files"); }
 
   //fprintf(stderr, "trying <%s> : pfx=<%s>\n", *strm->GetName(), *apfx);
   for (FSysDriverCreator *cur = creators; cur; cur = cur->next) {
@@ -739,7 +739,7 @@ int fsysAppendPak (VStream *strm, VStr apfx) {
     //fprintf(stderr, " +++ %d\n", (int)(strm->IsError()));
   }
 
-  delete strm;
+  VStream::Destroy(strm);
   return 0;
 }
 

@@ -555,8 +555,7 @@ VAudioCodec *VFluidAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int
     return nullptr;
   }
   // ok, we pwned it
-  InStrm->Close();
-  delete InStrm;
+  VStream::Destroy(InStrm);
 
   // create codec
   return new VFluidAudioCodec(mdata);

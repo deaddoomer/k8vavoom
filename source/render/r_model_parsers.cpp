@@ -54,8 +54,7 @@ bool GZModelDefEx::IsModelFileExists (VStr mdpath) {
   VStream *strm = FL_OpenFileRead(mdpath);
   if (!strm) return false;
   bool okfmt = VMeshModel::IsKnownModelFormat(strm);
-  strm->Close();
-  delete strm;
+  VStream::Destroy(strm);
   return okfmt;
 }
 
@@ -132,12 +131,12 @@ bool VMeshModel::LoadMD2Frames (VStr mdpath, TArray<VStr> &names) {
   TArray<vuint8> data;
   data.setLength(strm->TotalSize());
   if (data.length() < 4) {
-    delete strm;
+    VStream::Destroy(strm);
     return false;
   }
   strm->Serialise(data.ptr(), data.length());
   bool wasError = strm->IsError();
-  delete strm;
+  VStream::Destroy(strm);
   if (wasError) return false;
 
   // is this MD2 model?
@@ -715,7 +714,7 @@ void VMeshModel::LoadFromWad () {
   vuint8 *Data = (vuint8 *)Z_Malloc(DataSize);
   Strm->Serialise(Data, DataSize);
   bool wasError = Strm->IsError();
-  delete Strm;
+  VStream::Destroy(Strm);
   if (wasError) Sys_Error("Error loading model data '%s'", *Name);
 
   LoadFromData(Data, DataSize);

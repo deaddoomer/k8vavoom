@@ -657,8 +657,7 @@ void GZModelDef::checkModelSanity () {
             if (!strm) {
               GLog.WriteLine(NAME_Warning, "alias model '%s' not found for class '%s'", *mfn, *className);
             } else {
-              strm->Close();
-              delete strm;
+              VStream::Destroy(strm);
               GLog.WriteLine(NAME_Warning, "cannot parse alias model '%s' not found for class '%s'", *mfn, *className);
             }
             models[mdlindex].reported = true;

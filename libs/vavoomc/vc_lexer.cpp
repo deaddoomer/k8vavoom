@@ -342,13 +342,11 @@ void VLexer::PushSource (VStream *Strm, VStr FileName) {
 
   // read the file
   int FileSize = Strm->TotalSize();
-  if (Strm->IsError() || FileSize < 0) { delete Strm; VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
+  if (Strm->IsError() || FileSize < 0) { VStream::Destroy(Strm); VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
   NewSrc->FileStart = new char[FileSize+1];
   Strm->Serialise(NewSrc->FileStart, FileSize);
-  if (Strm->IsError() || FileSize < 0) { delete Strm; VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
-  Strm->Close();
-  if (Strm->IsError() || FileSize < 0) { delete Strm; VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
-  delete Strm;
+  if (Strm->IsError() || FileSize < 0) { VStream::Destroy(Strm); VCFatalError("VC: Couldn't read '%s'", *FileName); return; }
+  VStream::Destroy(Strm);
 
   totalSize += FileSize;
 

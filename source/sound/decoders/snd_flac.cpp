@@ -133,7 +133,7 @@ void VFlacSampleLoader::Load (sfxinfo_t &Sfx, VStream &Stream) {
   if (!Strm->SampleRate) {
     Z_Free(Strm->Data);
     Sfx.Data = nullptr;
-    delete Strm;
+    VStream::Destroy(Strm);
     return;
   }
   if (!Strm->ProcessAll()) {
@@ -141,7 +141,7 @@ void VFlacSampleLoader::Load (sfxinfo_t &Sfx, VStream &Stream) {
       GCon->Logf("Failed to process FLAC file");
       Z_Free(Strm->Data);
       Sfx.Data = nullptr;
-      delete Strm;
+      VStream::Destroy(Strm);
       return;
     }
   }
@@ -149,7 +149,7 @@ void VFlacSampleLoader::Load (sfxinfo_t &Sfx, VStream &Stream) {
   Sfx.SampleBits = Strm->SampleBits;
   Sfx.DataSize = Strm->DataSize;
   Sfx.Data = Strm->Data;
-  delete Strm;
+  VStream::Destroy(Strm);
 }
 
 
@@ -342,8 +342,7 @@ VFlacAudioCodec::VFlacAudioCodec (FStream *InStream)
 //
 //==========================================================================
 VFlacAudioCodec::~VFlacAudioCodec () {
-  delete Stream;
-  Stream = nullptr;
+  VStream::Destroy(Stream);
 }
 
 
@@ -435,9 +434,7 @@ VFlacAudioCodec::FStream::~FStream () {
   if (PoolSize > 0 && SamplePool[0] != nullptr) {
     Z_Free(SamplePool[0]);
     SamplePool[0] = nullptr;
-    Strm->Close();
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
   }
 }
 
@@ -610,7 +607,7 @@ VAudioCodec *VFlacAudioCodec::Create (VStream *InStream, const vuint8 sign[], in
   if (sign[0] != 'f' || sign[1] != 'L' || sign[2] != 'a' || sign[3] != 'C') return nullptr;
   FStream *Strm = new FStream(InStream);
   if (!Strm->SampleRate) {
-    delete Strm;
+    VStream::Destroy(Strm);
     return nullptr;
   }
   return new VFlacAudioCodec(Strm);

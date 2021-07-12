@@ -432,7 +432,7 @@ void WritePCX (VStr FileName, void *data, int width, int height, int bpp, bool b
     }
   }
 
-  delete Strm;
+  VStream::Destroy(Strm);
 }
 #endif
 

@@ -1111,16 +1111,14 @@ void VSdlInputDevice::LoadControllerMappings (VStream *st) {
   int size = st->TotalSize();
   if (size <= 0 || size > 1024*1024*32) {
     if (size) GCon->Logf(NAME_Error, "cannot load controller mappings from '%s' (bad file size)", *stname);
-    st->Close();
-    delete st;
+    VStream::Destroy(st);
     return;
   }
 
   char *buf = new char[(unsigned)(size+1)];
   st->Serialise(buf, size);
   const bool wasErr = st->IsError();
-  st->Close();
-  delete st;
+  VStream::Destroy(st);
   if (wasErr) {
     GCon->Logf(NAME_Error, "cannot read controller mappings from '%s'", *stname);
     delete[] buf;

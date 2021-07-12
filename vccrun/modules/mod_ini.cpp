@@ -145,7 +145,7 @@ bool VIniFile::load (const VStr &fname) {
   VStream *st = fsysOpenFile(fname);
   if (!st) return false;
   auto res = loadFrom(*st);
-  delete st;
+  VStream::Destroy(st);
   return res;
 }
 
@@ -159,8 +159,13 @@ bool VIniFile::write (VStream &strm, const VStr &s) {
 
 bool VIniFile::writeln (VStream &strm, const VStr &s) {
   if (!write(strm, s)) return false;
+#if defined(_WIN32)
+  const char *eol = "\r\n";
+  strm.Serialize(eol, 2);
+#else
   char eol = '\n';
   strm.Serialize(&eol, 1);
+#endif
   return !strm.IsError();
 }
 
@@ -170,9 +175,9 @@ bool VIniFile::save (const VStr &fname) const {
   if (!st) return false;
   for (int f = 0; f < items.length(); ++f) {
     if (items[f].path.length() == 0) {
-      if (!write(*st, items[f].key)) { delete st; return false; }
-      if (!write(*st, "=")) { delete st; return false; }
-      if (!writeln(*st, items[f].value)) { delete st; return false; }
+      if (!write(*st, items[f].key)) { VStream::Destroy(st); return false; }
+      if (!write(*st, "=")) { VStream::Destroy(st); return false; }
+      if (!writeln(*st, items[f].value)) { VStream::Destroy(st); return false; }
     }
   }
   VStr currPath;
@@ -180,15 +185,15 @@ bool VIniFile::save (const VStr &fname) const {
     if (items[f].path.length() == 0) continue;
     if (!items[f].path.equ1251CI(currPath)) {
       currPath = items[f].path;
-      if (!write(*st, "[")) { delete st; return false; }
-      if (!write(*st, currPath)) { delete st; return false; }
-      if (!writeln(*st, "]")) { delete st; return false; }
+      if (!write(*st, "[")) { VStream::Destroy(st); return false; }
+      if (!write(*st, currPath)) { VStream::Destroy(st); return false; }
+      if (!writeln(*st, "]")) { VStream::Destroy(st); return false; }
     }
-    if (!write(*st, items[f].key)) { delete st; return false; }
-    if (!write(*st, "=")) { delete st; return false; }
-    if (!writeln(*st, items[f].value)) { delete st; return false; }
+    if (!write(*st, items[f].key)) { VStream::Destroy(st); return false; }
+    if (!write(*st, "=")) { VStream::Destroy(st); return false; }
+    if (!writeln(*st, items[f].value)) { VStream::Destroy(st); return false; }
   }
-  delete st;
+  VStream::Destroy(st);
   return true;
 }
 

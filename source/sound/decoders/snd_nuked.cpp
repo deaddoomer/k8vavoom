@@ -83,16 +83,14 @@ void VNukedOPLAudioCodec::loadGenMIDI () {
   if (!strm) return;
   int size = strm->TotalSize();
   if (size < 8 || size > 65536 || strm->IsError()) {
-    strm->Close();
-    delete strm;
+    VStream::Destroy(strm);
     GCon->Log(NAME_Warning, "\"genmidi\" has invalid size, OPL synthesis disabled.");
     return;
   }
   genmidi.setLength(size);
   strm->Serialise(genmidi.ptr(), size);
   bool err = strm->IsError();
-  strm->Close();
-  delete strm;
+  VStream::Destroy(strm);
   if (err) {
     genmidi.clear();
     GCon->Log(NAME_Warning, "cannot load \"genmidi\", OPL synthesis disabled.");
@@ -225,8 +223,7 @@ VAudioCodec *VNukedOPLAudioCodec::Create (VStream *InStrm, const vuint8 sign[], 
   }
 
   // delete stream
-  InStrm->Close();
-  delete InStrm;
+  VStream::Destroy(InStrm);
 
   // return codec
   return codec;

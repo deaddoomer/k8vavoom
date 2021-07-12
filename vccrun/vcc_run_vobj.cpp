@@ -214,7 +214,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, appSaveOptions) {
       if (!lha) {
         delete rds;
         delete wrs;
-        delete strm;
+        VStream::Destroy(strm);
         RET_BOOL(false);
         return;
       }
@@ -222,18 +222,18 @@ IMPLEMENT_FREE_FUNCTION(VObject, appSaveOptions) {
       libha_free(lha);
       delete rds;
       delete wrs;
-      delete strm;
+      VStream::Destroy(strm);
       RET_BOOL(herr == LIBHA_ERR_OK);
     } else {
       delete wrs;
-      delete strm;
+      VStream::Destroy(strm);
       RET_BOOL(false);
     }
   } else {
     ObjectSaver saver(*strm, svmap);
     bool res = saver.saveAll();
     bool err = saver.IsError();
-    delete strm;
+    VStream::Destroy(strm);
     RET_BOOL(res && !err);
   }
 #else
@@ -267,7 +267,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, appLoadOptions) {
     auto xbuf = new vuint8[sz];
     strm->Serialise(xbuf, sz);
     bool rerr = strm->IsError();
-    delete strm;
+    VStream::Destroy(strm);
     if (rerr) {
       delete xbuf;
       RET_REF(nullptr);
@@ -313,27 +313,27 @@ IMPLEMENT_FREE_FUNCTION(VObject, appLoadOptions) {
     strm->Seek(0);
     ObjectLoader ldr(*strm, cls);
     if (!ldr.loadAll()) {
-      delete strm;
+      VStream::Destroy(strm);
       ldr.clear();
       RET_REF(nullptr);
       return;
     }
-    delete strm;
+    VStream::Destroy(strm);
     RET_REF(ldr.objarr[1]); // 0 is `none`
   } else {
     // wutafuck?
-    delete strm;
+    VStream::Destroy(strm);
     RET_REF(nullptr);
   }
 #else
   ObjectLoader ldr(*strm, cls);
   if (!ldr.loadAll()) {
-    delete strm;
+    VStream::Destroy(strm);
     ldr.clear();
     RET_REF(nullptr);
     return;
   }
-  delete strm;
+  VStream::Destroy(strm);
   //fprintf(stderr, "%p\n", ldr.objarr[1]);
   RET_REF(ldr.objarr[1]); // 0 is `none`
 #endif

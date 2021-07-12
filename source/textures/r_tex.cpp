@@ -2506,7 +2506,7 @@ COMMAND_WITH_AC(ExportTexture) {
   }
 
   tx->WriteToPNG(strm);
-  delete strm;
+  VStream::Destroy(strm);
 
   GCon->Logf("Exported texture '%s' of type '%s' to '%s'", *tx->Name, VTexture::TexTypeToStr(tx->Type), *fname);
   GCon->Logf("Texture info: %dx%d; scale:(%g,%g); offset:(%d,%d)", tx->Width, tx->Height, tx->SScale, tx->TScale, tx->SOffset, tx->TOffset);

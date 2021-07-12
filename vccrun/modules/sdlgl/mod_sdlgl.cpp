@@ -1262,7 +1262,7 @@ VOpenGLTexture *VOpenGLTexture::Load (const VStr &fname) {
   VStream *st = fsysOpenFile(rname);
   if (!st) return nullptr;
   VImage *img = VImage::loadFrom(st);
-  delete st;
+  VStream::Destroy(st);
   if (!img) return nullptr;
   VOpenGLTexture *res = new VOpenGLTexture(img, rname);
   txLoaded.put(rname, res);
@@ -1706,8 +1706,7 @@ IMPLEMENT_FUNCTION(VGLTexture, saveAsPNG) {
     VStream *st = fsysOpenDiskFileWrite(fname);
     if (!st) return;
     Self->tex->img->saveAsPNG(st);
-    st->Close();
-    delete st;
+    VStream::Destroy(st);
   }
 }
 

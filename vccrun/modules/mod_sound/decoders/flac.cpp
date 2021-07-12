@@ -421,9 +421,7 @@ VFlacAudioCodec::FStream::~FStream () {
   if (PoolSize > 0 && SamplePool[0] != nullptr) {
     Z_Free(SamplePool[0]);
     SamplePool[0] = nullptr;
-    Strm->Close();
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
   }
 }
 
@@ -601,7 +599,6 @@ VAudioCodec *VFlacAudioCodec::Create (VStream *InStream) {
   FStream *Strm = new FStream(InStream);
   if (!Strm->SampleRate) {
     delete Strm;
-    Strm = nullptr;
     return nullptr;
   }
   return new VFlacAudioCodec(Strm);

@@ -1701,7 +1701,7 @@ static void LoadDehackedFile (VStream *Strm, int sourceLump) {
   Patch = new char[Strm->TotalSize()+1];
   Strm->Serialise(Patch, Strm->TotalSize());
   Patch[Strm->TotalSize()] = 0;
-  delete Strm;
+  VStream::Destroy(Strm);
   Strm = nullptr;
   PatchPtr = Patch;
 

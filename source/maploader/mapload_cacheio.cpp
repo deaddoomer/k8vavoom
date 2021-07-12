@@ -108,9 +108,11 @@ static void doPlaneIO (VStream *strm, TPlane *n) {
 //
 //  VLevel::SaveCachedData
 //
+//  returns success
+//
 //==========================================================================
-void VLevel::SaveCachedData (VStream *strm) {
-  if (!strm) return;
+bool VLevel::SaveCachedData (VStream *strm) {
+  vassert(strm);
 
   NET_SendNetworkHeartbeat(true); // forced
 
@@ -245,13 +247,17 @@ void VLevel::SaveCachedData (VStream *strm) {
     arrstrm->Serialize(BlockMapLump, BlockMapLumpSize*4);
   }
 
-  arrstrm->Close();
+  bool err = arrstrm->IsError();
+  if (!arrstrm->Close()) err = true;
   delete arrstrm;
 
   NET_SendNetworkHeartbeat(true); // forced
   strm->Flush();
+  if (strm->IsError()) err = true;
 
   NET_SendNetworkHeartbeat();
+
+  return !err;
 }
 
 

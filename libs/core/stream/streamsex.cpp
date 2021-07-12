@@ -93,7 +93,7 @@ public:
   virtual void Seek (int pos) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
   virtual void Serialise (void *buf, int len) override;
 };
 

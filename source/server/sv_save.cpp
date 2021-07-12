@@ -565,8 +565,7 @@ static void UpdateSaveDirWadList () {
       //GCon->Logf(NAME_Debug, "  wad=<%s>", *wadname);
       res->writef("%s\n", *wadname);
     }
-    res->Close();
-    delete res;
+    VStream::Destroy(res);
   }
 }
 
@@ -947,8 +946,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
   if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) /*&& VStr::Cmp(VersionText, SAVE_VERSION_TEXT_NO_DATE)*/) {
     saveFileBase.clear();
     // bad version
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     Strm = nullptr;
     GCon->Logf(NAME_Error, "Savegame #%d is from incompatible version", Slot);
     return false;
@@ -961,8 +959,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     if (!SkipExtData(Strm) || Strm->IsError()) {
       saveFileBase.clear();
       // bad file
-      Strm->Close();
-      delete Strm;
+      VStream::Destroy(Strm);
       Strm = nullptr;
       GCon->Logf(NAME_Error, "Savegame #%d is corrupted", Slot);
       return false;
@@ -976,8 +973,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
 
   if (wcount < 1 || wcount > 8192) {
     saveFileBase.clear();
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     Strm = nullptr;
     GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
     return false;
@@ -986,8 +982,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
   if (!dbg_save_ignore_wadlist) {
     if (wcount != wadlist.length()) {
       saveFileBase.clear();
-      Strm->Close();
-      delete Strm;
+      VStream::Destroy(Strm);
       Strm = nullptr;
       GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
       return false;
@@ -1000,8 +995,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     if (!dbg_save_ignore_wadlist) {
       if (s != wadlist[f]) {
         saveFileBase.clear();
-        Strm->Close();
-        delete Strm;
+        VStream::Destroy(Strm);
         Strm = nullptr;
         GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
         return false;
@@ -1053,8 +1047,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
             continue;
           }
           GCon->Logf(NAME_Warning, "Invalid savegame #%d extra segment (%u)", Slot, seg);
-          Strm->Close();
-          delete Strm;
+          VStream::Destroy(Strm);
           saveFileBase.clear();
           return false;
         }
@@ -1064,8 +1057,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
 
   bool err = Strm->IsError();
 
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 
   Host_ResetSkipFrames();
 
@@ -1237,7 +1229,7 @@ bool SV_GetSaveString (int Slot, VStr &Desc) {
       }
     }
     if (!goodSave) Desc = "*"+Desc;
-    delete Strm;
+    VStream::Destroy(Strm);
     return /*true*/goodSave;
   } else {
     Desc = EMPTYSTRING;
@@ -1265,7 +1257,7 @@ void SV_GetSaveDateString (int Slot, VStr &datestr) {
       datestr = LoadDateStrExtData(Strm);
       if (datestr.length() == 0) datestr = "UNKNOWN";
     }
-    delete Strm;
+    VStream::Destroy(Strm);
   } else {
     datestr = "UNKNOWN";
   }
@@ -1287,13 +1279,13 @@ static bool SV_GetSaveDateTVal (int Slot, TTimeVal *tv) {
     memset(VersionText, 0, sizeof(VersionText));
     Strm->Serialise(VersionText, SAVE_VERSION_TEXT_LENGTH);
     //fprintf(stderr, "OPENED slot #%d\n", Slot);
-    if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) != 0) { delete Strm; return false; }
+    if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) != 0) { VStream::Destroy(Strm); return false; }
     //fprintf(stderr, "  slot #%d has valid version\n", Slot);
     VStr Desc;
     *Strm << Desc;
     //fprintf(stderr, "  slot #%d description: [%s]\n", Slot, *Desc);
-    if (!LoadDateTValExtData(Strm, tv)) { delete Strm; return false; }
-    delete Strm;
+    if (!LoadDateTValExtData(Strm, tv)) { VStream::Destroy(Strm); return false; }
+    VStream::Destroy(Strm);
     return true;
   } else {
     return false;
@@ -1740,10 +1732,10 @@ static void SV_SaveMap (bool savePlayers) {
     ArrStrm->BeginWrite();
     VZLibStreamWriter *ZipStrm = new VZLibStreamWriter(ArrStrm, (int)save_compression_level);
     ZipStrm->Serialise(Buf.Ptr(), Buf.length());
-    const bool wasErr = ZipStrm->IsError();
-    ZipStrm->Close();
-    ArrStrm->Close();
+    bool wasErr = ZipStrm->IsError();
+    if (!ZipStrm->Close()) wasErr = true;
     delete ZipStrm;
+    ArrStrm->Close();
     delete ArrStrm;
     if (wasErr) Host_Error("error compressing savegame data");
   }
@@ -1963,13 +1955,12 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
     if (Map->Data.length()) memcpy(DecompressedData.ptr(), Map->Data.ptr(), Map->Data.length());
   } else {
     VArrayStream *ArrStrm = new VArrayStream("<savemap:mapdata>", Map->Data);
-    VZLibStreamReader *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
+    /*VZLibStreamReader*/VStream *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
     DecompressedData.SetNum(Map->DecompressedSize);
     ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
     const bool wasErr = ZipStrm->IsError();
-    ZipStrm->Close();
+    VStream::Destroy(ZipStrm);
     ArrStrm->Close();
-    delete ZipStrm;
     delete ArrStrm;
     if (wasErr) Host_Error("error decompressing savegame data");
   }
@@ -1992,7 +1983,6 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
   // free save buffer
   Loader->Close();
   delete Loader;
-  Loader = nullptr;
 
   Host_ResetSkipFrames();
 

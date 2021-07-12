@@ -94,10 +94,7 @@ VVorbisAudioCodec::VVorbisAudioCodec (VStream *AStrm, bool AFreeStream)
 VVorbisAudioCodec::~VVorbisAudioCodec () {
   if (InitLevel > 0) {
     Cleanup();
-    if (FreeStream) {
-      Strm->Close();
-      delete Strm;
-    }
+    if (FreeStream) VStream::Destroy(Strm);
     Strm = nullptr;
   }
   ogg_sync_clear(&oy);

@@ -930,7 +930,7 @@ VPakFileBase::VPakFileBase (VStr apakfilename, bool aaszip)
 VPakFileBase::~VPakFileBase () {
   Close();
   // just in case
-  if (archStream) { archStream->Close(); delete archStream; archStream = nullptr; }
+  if (archStream) VStream::Destroy(archStream);
   deinitLock();
 }
 
@@ -1044,7 +1044,7 @@ bool VPakFileBase::FileExists (VStr fname, int *lump) {
 //==========================================================================
 void VPakFileBase::Close () {
   pakdir.clear();
-  if (archStream) { archStream->Close(); delete archStream; archStream = nullptr; }
+  if (archStream) VStream::Destroy(archStream);
   deinitLock();
 }
 
@@ -1138,13 +1138,13 @@ void VPakFileBase::ReadFromLump (int Lump, void *Dest, int Pos, int Size) {
     UpdateLumpLength(Lump, fsize);
   }
   if (fsize < 0 || Pos >= fsize || fsize-Pos < Size) {
-    delete Strm;
+    VStream::Destroy(Strm);
     Sys_Error("error reading lump '%s:%s' (out of data)", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
   }
   Strm->Seek(Pos);
   Strm->Serialise(Dest, Size);
   bool wasError = Strm->IsError();
-  delete Strm;
+  VStream::Destroy(Strm);
   if (wasError) Sys_Error("error reading lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
 }
 
@@ -1162,7 +1162,7 @@ int VPakFileBase::LumpLength (int Lump) {
     if (!Strm) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
     int fsize = Strm->TotalSize();
     bool wasError = Strm->IsError();
-    delete Strm;
+    VStream::Destroy(Strm);
     if (wasError || /*pakdir.files[Lump].filesize*/fsize < 0) Sys_Error("cannot get length for lump '%s:%s'", *GetPrefix(), *pakdir.files[Lump].fileNameIntr);
     UpdateLumpLength(Lump, fsize);
     return fsize;
@@ -1264,14 +1264,14 @@ VStr VPakFileBase::CalculateMD5 (int lumpidx) {
     strm->Serialise(buf, rd);
     if (strm->IsError()) {
       delete[] buf;
-      delete strm;
+      VStream::Destroy(strm);
       return VStr::EmptyString;
     }
     left -= rd;
     md5ctx.Update(buf, (unsigned)rd);
   }
   delete[] buf;
-  delete strm;
+  VStream::Destroy(strm);
   vuint8 md5digest[MD5Context::DIGEST_SIZE];
   md5ctx.Final(md5digest);
   return VStr::buf2hex(md5digest, MD5Context::DIGEST_SIZE);

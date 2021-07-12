@@ -311,7 +311,7 @@ bool VSoundManager::LoadSound (int sound_id, const VStr &filename) {
         break;
       }
     }
-    delete Strm;
+    VStream::Destroy(Strm);
     if (!S_sfx[sound_id].data) {
       fprintf(stderr, "WARNING: Failed to load sound '%s' from file '%s'\n", *S_sfx[sound_id].tagName, *filename);
       return false;
@@ -1306,8 +1306,7 @@ bool VAudioPublic::PlayMusic (const VStr &filename, bool Loop) {
   if (!Strm) return false;
 
   if (Strm->TotalSize() < 4) {
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
     return false;
   }
 
@@ -1323,8 +1322,7 @@ bool VAudioPublic::PlayMusic (const VStr &filename, bool Loop) {
     MidStrm->BeginWrite();
     VQMus2Mid Conv;
     int MidLength = Conv.Run(*Strm, *MidStrm);
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
     if (!MidLength)
     {
       delete MidStrm;
@@ -1353,8 +1351,7 @@ bool VAudioPublic::PlayMusic (const VStr &filename, bool Loop) {
     StreamPlaying = true;
     return true;
   } else {
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
     return false;
   }
 }

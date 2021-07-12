@@ -786,8 +786,8 @@ VAcsObject::VAcsObject (VAcsLevel *ALevel, int Lump) : Functions(), Level(ALevel
     vassert(datasize >= (int)sizeof(VAcsHeader));
     Data = new vuint8[datasize];
     Strm->Serialise(Data, Strm->TotalSize());
-    if (Strm->IsError() && datasize) memset(Data, 0, datasize);
-    delete Strm;
+    if (Strm->IsError()) { VStream::Destroy(Strm); Host_Error("cannot read behavior lump '%s'", *W_FullLumpName(Lump)); }
+    VStream::Destroy(Strm);
     header = (VAcsHeader *)Data;
   }
 

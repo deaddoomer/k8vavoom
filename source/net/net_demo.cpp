@@ -75,8 +75,7 @@ VDemoPlaybackNetConnection::VDemoPlaybackNetConnection (VNetContext *AContext, V
 //
 //==========================================================================
 VDemoPlaybackNetConnection::~VDemoPlaybackNetConnection () {
-  delete Strm;
-  Strm = nullptr;
+  VStream::Destroy(Strm);
 #ifdef CLIENT
   cls.demoplayback = false;
 #endif

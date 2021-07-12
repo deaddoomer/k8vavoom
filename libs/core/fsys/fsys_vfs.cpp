@@ -315,7 +315,7 @@ bool W_AddDiskFileOptional (VStr FileName, bool FixVoices) {
   bool doomWad = false;
 
   if (!Wad) {
-    if (strm->IsError()) { delete strm; return false; }
+    if (strm->IsError()) { VStream::Destroy(strm); return false; }
     //GLog.Logf(NAME_Debug, "OPTDISKFILE: cannot detect format for '%s'...", *FileName);
     Wad = VWadFile::CreateSingleLumpStream(strm, FileName);
   } else {
@@ -1108,7 +1108,7 @@ VStr W_LoadTextLump (VName name) {
     GLog.Logf(NAME_Warning, "cannot load text lump '%s'", *name);
     return VStr::EmptyString;
   }
-  delete Strm;
+  VStream::Destroy(Strm);
 
   buf[msgSize] = 0; // append terminator
   VStr Ret = buf;
@@ -1133,8 +1133,8 @@ void W_LoadLumpIntoArrayIdx (int Lump, TArray<vuint8> &Array) {
   vassert(Strm);
   Array.SetNum(Strm->TotalSize());
   Strm->Serialise(Array.Ptr(), Strm->TotalSize());
-  if (Strm->IsError()) { delete Strm; Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
-  delete Strm;
+  if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
+  VStream::Destroy(Strm);
 }
 
 
@@ -1150,8 +1150,8 @@ void W_LoadLumpIntoArray (VName LumpName, TArray<vuint8> &Array) {
   vassert(Strm);
   Array.SetNum(Strm->TotalSize());
   Strm->Serialise(Array.Ptr(), Strm->TotalSize());
-  if (Strm->IsError()) { delete Strm; Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
-  delete Strm;
+  if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
+  VStream::Destroy(Strm);
 }
 
 

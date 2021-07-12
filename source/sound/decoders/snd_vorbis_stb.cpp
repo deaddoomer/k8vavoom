@@ -123,10 +123,7 @@ VVorbisAudioCodec::VVorbisAudioCodec (VStream *AStrm, bool AFreeStream)
 //==========================================================================
 VVorbisAudioCodec::~VVorbisAudioCodec () {
   Cleanup();
-  if (inited && FreeStream && Strm) {
-    Strm->Close();
-    delete Strm;
-  }
+  if (inited && FreeStream && Strm) VStream::Destroy(Strm);
   Strm = nullptr;
   if (inbuf) Z_Free(inbuf);
   if (outbuf) Z_Free(outbuf);

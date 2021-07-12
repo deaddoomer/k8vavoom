@@ -180,10 +180,10 @@ vuint8 *VPngTexture::GetPixels () {
 
   delete png;
 
-  //if (Strm->IsError()) { delete Strm; Sys_Error("Can't open PNG file '%s'", *Name); }
+  //if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("Can't open PNG file '%s'", *Name); }
 
   // free memory
-  //delete Strm;
+  //VStream::Destroy(Strm);
 
   // cache average color for small images
   if (transFlags == TransValueSolid && Width > 0 && Height > 0 && Width <= 512 && Height <= 512) (void)GetAverageColor(0);
@@ -235,9 +235,7 @@ void WritePNG(VStr FileName, const void *Data, int Width, int Height, int Bpp, b
   png_write_end(png_ptr, nullptr);
   png_destroy_write_struct(&png_ptr, &info_ptr);
 
-  Strm->Close();
-  delete Strm;
-  //Strm = nullptr;
+  VStream::Destroy(Strm);
 
 #else
 
@@ -264,8 +262,7 @@ void WritePNG(VStr FileName, const void *Data, int Width, int Height, int Bpp, b
     GCon->Log(NAME_Error, "Error writing png");
   }
 
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 
 #endif
 }

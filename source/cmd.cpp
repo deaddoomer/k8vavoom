@@ -346,8 +346,7 @@ void VCommand::LoadKeyconfLump (int Lump) {
   buf.setLength(Strm->TotalSize(), 0);
   Strm->Serialize(buf.getMutableCStr(), buf.length());
   if (Strm->IsError()) buf.clear();
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 
   GCon->Logf(NAME_Init, "loading keyconf from '%s'...", *W_FullLumpName(Lump));
 
@@ -1507,17 +1506,17 @@ COMMAND(Exec) {
   //GCon->Logf("Executing '%s'", *Args[1]);
 
   int flsize = Strm->TotalSize();
-  if (flsize == 0) { delete Strm; return; }
+  if (flsize == 0) { VStream::Destroy(Strm); return; }
 
   char *buf = new char[flsize+2];
   Strm->Serialise(buf, flsize);
   if (Strm->IsError()) {
-    delete Strm;
+    VStream::Destroy(Strm);
     delete[] buf;
     GCon->Logf(NAME_Warning, "Error reading '%s'!", *Args[1]);
     return;
   }
-  delete Strm;
+  VStream::Destroy(Strm);
 
   if (buf[flsize-1] != '\n') buf[flsize++] = '\n';
   buf[flsize] = 0;

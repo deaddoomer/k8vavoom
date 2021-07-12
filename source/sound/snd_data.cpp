@@ -1430,8 +1430,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     arr.setLength(strmsize);
     Strm->Serialise(arr.ptr(), strmsize);
     const bool err = Strm->IsError();
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     if (err) {
       ms->Close();
       delete ms;
@@ -1457,8 +1456,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     }
   }
 
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 
   if (!sfx->Data) {
     //soundsWarned.put(*S_sfx[sound_id].TagName);

@@ -734,9 +734,9 @@ bool VRenderLevelLightmap::loadLightmaps (VStream *strm) {
     return false;
   }
   lmcacheUnknownSurfaceCount = 0;
-  VZLibStreamReader *zipstrm = new VZLibStreamReader(true, strm, VZLibStreamReader::UNKNOWN_SIZE, VZLibStreamReader::UNKNOWN_SIZE/*Map->DecompressedSize*/);
+  /*VZLibStreamReader*/VStream *zipstrm = new VZLibStreamReader(true, strm, VZLibStreamReader::UNKNOWN_SIZE, VZLibStreamReader::UNKNOWN_SIZE/*Map->DecompressedSize*/);
   bool ok = loadLightmapsInternal(zipstrm);
-  zipstrm->Close();
+  VStream::Destroy(zipstrm);
   if (!ok && !lmcacheUnknownSurfaceCount) lmcacheUnknownSurfaceCount = CountAllSurfaces();
   if (ok && lmcacheUnknownSurfaceCount > 0 && lmcacheUnknownSurfaceCount == CountAllSurfaces()) ok = false; // totally wrong
   return ok;
@@ -878,8 +878,7 @@ void VRenderLevelLightmap::PreRender () {
       if (lmc) {
         recalcLight = !loadLightmaps(lmc);
         if (lmc->IsError()) recalcLight = true;
-        lmc->Close();
-        delete lmc;
+        VStream::Destroy(lmc);
         if (recalcLight) {
           Sys_FileDelete(ccfname);
         } else {

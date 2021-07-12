@@ -109,10 +109,7 @@ VMp3AudioCodec::VMp3AudioCodec (VStream *AStrm, bool AFreeStream)
 VMp3AudioCodec::~VMp3AudioCodec () {
   if (Initialised) {
     // close file only if decoder has been initialised succesfully.
-    if (FreeStream) {
-      Strm->Close();
-      delete Strm;
-    }
+    if (FreeStream) VStream::Destroy(Strm);
     Strm = nullptr;
   }
   // clear structs used by libmad

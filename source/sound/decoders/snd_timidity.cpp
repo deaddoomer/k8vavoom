@@ -382,8 +382,7 @@ VAudioCodec *VTimidityAudioCodec::Create (VStream *InStrm, const vuint8 sign[], 
     //Timidity_Close(); // not needed anymore
     return nullptr;
   }
-  InStrm->Close();
-  delete InStrm;
+  VStream::Destroy(InStrm);
 
   // create codec
   return new VTimidityAudioCodec(Song);

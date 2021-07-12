@@ -889,6 +889,11 @@ void VZLibStreamWriter::Seek (int pos) {
 }
 
 
+//==========================================================================
+//
+//  VZLibStreamWriter::Flush
+//
+//==========================================================================
 void VZLibStreamWriter::Flush () {
   if (!initialised || !dstStream || dstStream->IsError()) SetError();
   if (bError) return;
@@ -911,6 +916,11 @@ void VZLibStreamWriter::Flush () {
 }
 
 
+//==========================================================================
+//
+//  VZLibStreamWriter::Close
+//
+//==========================================================================
 bool VZLibStreamWriter::Close () {
   if (initialised) {
     if (!bError) {

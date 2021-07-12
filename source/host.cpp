@@ -1058,7 +1058,7 @@ void Host_Quit () {
         Len = Strm->TotalSize();
       }
       Strm->Serialise(EndText, Len);
-      delete Strm;
+      VStream::Destroy(Strm);
       GotEndText = true;
     }
 #ifndef _WIN32

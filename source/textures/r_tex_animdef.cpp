@@ -246,23 +246,23 @@ static void ParseTXXLump (int lump) {
   // texture count
   vuint32 tcount;
   *strm << tcount;
-  if (tcount == 0 || tcount > 65535) { delete strm; return; }
+  if (tcount == 0 || tcount > 65535) { VStream::Destroy(strm); return; }
   // texture offsets
   TArray<vuint32> offsets;
   offsets.setLength((int)tcount);
   for (auto &&ofs : offsets) *strm << ofs;
-  if (strm->IsError()) { delete strm; return; }
+  if (strm->IsError()) { VStream::Destroy(strm); return; }
   // read texture names
   for (auto &&ofs : offsets) {
     if (ofs >= (vuint32)strm->TotalSize()) continue;
     strm->Seek((int)ofs);
     char namebuf[9];
     strm->Serialise(namebuf, 8);
-    if (strm->IsError()) { delete strm; return; }
+    if (strm->IsError()) { VStream::Destroy(strm); return; }
     namebuf[8] = 0;
     txxnames.append(VName(namebuf, VName::AddLower), W_LumpFile(lump));
   }
-  delete strm;
+  VStream::Destroy(strm);
 }
 
 

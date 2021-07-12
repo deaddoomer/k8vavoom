@@ -360,7 +360,7 @@ VCheckedStream::VCheckedStream (VStream *ASrcStream) : srcStream(ASrcStream), us
 //==========================================================================
 void VCheckedStream::openStreamAndCopy (VStream *st, bool doCopy) {
   if (!st) { if (useSysError) Sys_Error("source stream is null"); else Host_Error("source stream is null"); }
-  if (!st->IsLoading()) { st->Close(); delete st; if (useSysError) Sys_Error("source stream must be for reading"); else Host_Error("source stream must be for reading"); }
+  if (!st->IsLoading()) { VStream::Destroy(st); if (useSysError) Sys_Error("source stream must be for reading"); else Host_Error("source stream must be for reading"); }
   const int ssize = st->TotalSize();
   if (!doCopy || ssize <= 0 || ssize > 1024*1024*64) {
     // direct
@@ -373,8 +373,7 @@ void VCheckedStream::openStreamAndCopy (VStream *st, bool doCopy) {
     arr.setLength(ssize);
     st->Serialise(arr.ptr(), ssize);
     const bool err = st->IsError();
-    st->Close();
-    delete st;
+    VStream::Destroy(st);
     srcStream = ms;
     ms->BeginRead();
     bError = err;
@@ -442,9 +441,7 @@ void VCheckedStream::checkError () const {
   if (bError) {
     if (srcStream) {
       VStr name = srcStream->GetName();
-      srcStream->Close();
-      delete srcStream;
-      srcStream = nullptr;
+      VStream::Destroy(srcStream);
       if (useSysError) Sys_Error("error %s '%s'", (bLoading ? "loading from" : "writing to"), *name);
       else Host_Error("error %s '%s'", (bLoading ? "loading from" : "writing to"), *name);
     } else {
@@ -463,9 +460,7 @@ void VCheckedStream::checkError () const {
 bool VCheckedStream::Close () {
   if (srcStream) {
     checkError();
-    srcStream->Close();
-    delete srcStream;
-    srcStream = nullptr;
+    VStream::Destroy(srcStream);
   }
   return true;
 }

@@ -986,7 +986,7 @@ VModel *Mod_FindName (VStr name) {
   if (!Strm) Sys_Error("Couldn't load `%s` (Mod_FindName)", *mod->Name);
   if (mdl_verbose_loading > 1) GCon->Logf(NAME_Init, "parsing model script '%s'", *mod->Name);
   ParseModelScript(lump, mod, *Strm);
-  delete Strm;
+  VStream::Destroy(Strm);
 
   return mod;
 }
@@ -1136,7 +1136,7 @@ static void ParseGZModelDefs () {
     // parse xml
     VStream *Strm = new VMemoryStreamRO(mdl->className, xml.getCStr(), xml.length());
     ParseModelScript(-1, mod, *Strm, true); // gzdoom flag
-    delete Strm;
+    VStream::Destroy(Strm);
     // this is not strictly safe, but meh
     delete mdl;
   }

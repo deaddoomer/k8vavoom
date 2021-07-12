@@ -247,11 +247,10 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
       ScriptBuffer[ScriptSize] = 0;
       if (Strm->IsError()) { delete ScriptBuffer; Host_Error("cannot read definition file '%s:%s'", *name, *Strm->GetName()); }
     } catch (...) {
-      Strm->Close();
-      delete Strm;
+      VStream::Destroy(Strm);
       throw;
     }
-    delete Strm;
+    VStream::Destroy(Strm);
   }
 
   ScriptPtr = ScriptBuffer;
@@ -1549,7 +1548,7 @@ IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpFullName) {
         st->Serialise(s.getMutableCStr(), s.length());
         ok = !st->IsError();
       }
-      delete st;
+      VStream::Destroy(st);
       if (!ok) Sys_Error("cannot read file '%s'", *Name);
       Self->Int = new VScriptParser(*Name, *s);
       return;
@@ -1579,7 +1578,7 @@ IMPLEMENT_FUNCTION(VScriptsParser, OpenLumpFullName) {
     st->Serialise(s.getMutableCStr(), s.length());
     ok = !st->IsError();
   }
-  delete st;
+  VStream::Destroy(st);
   if (!ok) Sys_Error("cannot read file '%s'", *Name);
   Self->Int = new VScriptParser(*Name, *s);
 #else

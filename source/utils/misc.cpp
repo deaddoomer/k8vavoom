@@ -126,7 +126,7 @@ vuint32 M_LookupColorName (const char *Name) {
     Buf[sz] = '\n';
     Buf[sz+1] = 0;
     if (Strm->IsError()) Buf[0] = 0;
-    delete Strm;
+    VStream::Destroy(Strm);
 
     // parse it
     vuint8 *pBuf = (vuint8 *)Buf;

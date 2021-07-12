@@ -162,7 +162,7 @@ VWadFile *VWadFile::CreateSingleLumpStream (VStream *strm, VStr FileName) {
 
   VName lname = VName(*FileName.ExtractFileBase(false), VName::AddLower8); // do not fail on long names
   if (lname == NAME_None) lname = VName(*FileName.ExtractFileBaseName(), VName::AddLower8); // in case it starts with a dot
-  if (lname == NAME_None) { delete strm; Sys_Error("cannot add single lump '%s' (invalid resulting lump name)", *FileName); }
+  if (lname == NAME_None) { VStream::Destroy(strm); Sys_Error("cannot add single lump '%s' (invalid resulting lump name)", *FileName); }
 
   if (fsys_report_added_paks) GLog.Logf(fsys_report_added_paks_logtype, "...adding file \"%s\" as a standalone lump '%s'.", *FileName, *lname);
 

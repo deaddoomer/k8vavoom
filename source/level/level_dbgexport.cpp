@@ -410,13 +410,13 @@ COMMAND(DebugExportLevel) {
 
   try {
     GLevel->DebugSaveLevel(*strm);
-    delete strm;
+    VStream::Destroy(strm);
     GCon->Logf("Level exported to '%s'", *fname);
   } catch (DebugExportError &werr) {
-    delete strm;
+    VStream::Destroy(strm);
     GCon->Logf(NAME_Error, "Cannot write level to '%s'", *fname);
   } catch (...) {
-    delete strm;
+    VStream::Destroy(strm);
     throw;
   }
 }

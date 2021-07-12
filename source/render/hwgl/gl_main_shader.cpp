@@ -288,7 +288,7 @@ static VStr readTextFile (VStr fname) {
   VStr res;
   res.setLength(size, 0);
   strm->Serialise(res.GetMutableCharPointer(0), size);
-  delete strm;
+  VStream::Destroy(strm);
   return res;
 }
 

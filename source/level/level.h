@@ -966,8 +966,8 @@ public:
   inline bool IsForServer () const { return !!(LevelFlags&LF_ForServer); }
   inline bool IsForClient () const { return !(LevelFlags&LF_ForServer); }
 
-  void SaveCachedData (VStream *strm);
-  bool LoadCachedData (VStream *strm);
+  bool SaveCachedData (VStream *strm); // returns success
+  bool LoadCachedData (VStream *strm); // returns success
   void ClearAllMapData (); // call this if cache is corrupted
 
   void FixKnownMapErrors ();

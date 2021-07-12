@@ -340,17 +340,15 @@ void VTextParser::PushSource (VStream *Strm, VStr FileName) {
 
     // read the file
     FileSize = Strm->TotalSize();
-    if (Strm->IsError() || FileSize < 0) { delete Strm; Strm = nullptr; FatalError(VTextLocation(), va("VC: Couldn't read '%s'", *FileName)); return; }
+    if (Strm->IsError() || FileSize < 0) { VStream::Destroy(Strm); FatalError(VTextLocation(), va("VC: Couldn't read '%s'", *FileName)); return; }
     NewSrc->FileStart = new char[FileSize+1];
     Strm->Serialise(NewSrc->FileStart, FileSize);
-    if (Strm->IsError() || FileSize < 0) { delete Strm; Strm = nullptr; FatalError(VTextLocation(), va("VC: Couldn't read '%s'", *FileName)); return; }
-    Strm->Close();
-    if (Strm->IsError() || FileSize < 0) { delete Strm; Strm = nullptr; FatalError(VTextLocation(), va("VC: Couldn't read '%s'", *FileName)); return; }
+    if (Strm->IsError() || FileSize < 0) { VStream::Destroy(Strm); FatalError(VTextLocation(), va("VC: Couldn't read '%s'", *FileName)); return; }
   } catch (...) {
-    delete Strm;
+    VStream::Destroy(Strm);
     throw;
   }
-  delete Strm;
+  VStream::Destroy(Strm);
 
   NewSrc->FileStart[FileSize] = 0; // this is not really required, but let's make the whole buffer initialized
   NewSrc->FileEnd = NewSrc->FileStart+FileSize;
@@ -1158,8 +1156,7 @@ void VTextParser::ProcessInclude () {
 
   // a new-line is expected at the end of preprocessor directive
   if (!SkipCurrentLine()) {
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     FatalError(Location, "`#include`: no extra arguments allowed");
   }
 

@@ -353,7 +353,7 @@ vuint8 *VJpegTexture::GetPixels () {
   //TODO: check for errors
 
   // free memory
-  //delete Strm;
+  //VStream::Destroy(Strm);
 
   // cache average color for small images
   if (Width > 0 && Height > 0 && Width <= 512 && Height <= 512) (void)GetAverageColor(0);
@@ -424,7 +424,7 @@ vuint8 *VJpegTexture::GetPixels () {
   nfo.strmSize = Strm.TotalSize();
   nfo.strmPos = 0;
   if (Strm.IsError()) {
-    //delete Strm;
+    //VStream::Destroy(Strm);
     Sys_Error("error reading jpeg texture from '%s'", *W_FullLumpName(SourceLump));
   }
 
@@ -432,10 +432,10 @@ vuint8 *VJpegTexture::GetPixels () {
   vuint8 *data = (vuint8 *)stbi_load_from_callbacks(&stbcbacks, (void *)&nfo, &imgwidth, &imgheight, &imgchans, 4); // request RGBA
   if (Strm.IsError()) {
     if (data) stbi_image_free(data);
-    //delete Strm;
+    //VStream::Destroy(Strm);
     Sys_Error("error reading jpeg texture from '%s'", *W_FullLumpName(SourceLump));
   }
-  //delete Strm;
+  //VStream::Destroy(Strm);
 
   if (!data) Sys_Error("cannot load jpeg texture from '%s'", *W_FullLumpName(SourceLump));
 
@@ -587,8 +587,7 @@ void WriteJPG (VStr FileName, const void *Data, int Width, int Height, int Bpp, 
 
   // finish with the image
   jpeg_destroy_compress(&cinfo);
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 }
 # endif /* VAVOOM_USE_LIBJPG */
 
@@ -656,8 +655,7 @@ void WriteJPG (VStr FileName, const void *Data, int Width, int Height, int Bpp, 
   //stbi_flip_vertically_on_write(Bot2top ? 1 : 0);
   int res = stbi_write_jpg_to_func(&stbWriter, (void *)Strm, Width, Height, 3, imgdata.ptr(), clampval(jpeg_quality.asInt(), 1, 100));
   if (res && Strm->IsError()) res = 0;
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
 
   if (!res) GCon->Logf(NAME_Error, "error writing '%s'", *FileName);
 }

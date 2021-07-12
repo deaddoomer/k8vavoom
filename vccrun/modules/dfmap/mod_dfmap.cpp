@@ -741,7 +741,7 @@ bool VDFMap::load (const VStr &fname) {
     if (!st) return false;
   }
   auto res = loadFrom(*st);
-  delete st;
+  VStream::Destroy(st);
   return res;
 }
 

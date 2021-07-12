@@ -82,7 +82,7 @@ public:
   virtual void Seek (int) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
 
   inline void BeginRead () { bLoading = true; }
   inline void BeginWrite () { bLoading = false; }
@@ -144,7 +144,7 @@ public:
   virtual void Seek (int) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
 
   inline void BeginRead () { bLoading = true; pos = 0; curr = first; }
   inline void BeginWrite () { bLoading = true; pos = 0; curr = first; }
@@ -180,7 +180,7 @@ public:
   virtual int Tell () override;
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
   virtual void Serialise (void *buf, int len) override;
 };
 
@@ -248,7 +248,7 @@ public:
   virtual bool AtEnd () override;
   virtual void Flush () override;
   // won't free stream
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
 
   // interface functions for objects and classes streams
   virtual void io (VName &) override;

@@ -203,7 +203,7 @@ static bool hashLump (sha224_ctx *sha224ctx, MD5Context *md5ctx, int lumpnum) {
     int rd = left;
     if (rd > (int)sizeof(buf)) rd = (int)sizeof(buf);
     st.Serialise(buf, rd);
-    if (st.IsError()) { delete strm; return false; }
+    if (st.IsError()) { VStream::Destroy(strm); return false; }
     if (sha224ctx) sha224_update(sha224ctx, buf, rd);
     if (md5ctx) md5ctx->Update(buf, (unsigned)rd);
     //if (xxhash) XXH32_update(xxhash, buf, (unsigned)rd);
@@ -442,7 +442,7 @@ load_again:
     } else {
       VStream *strm = FL_OpenSysFileRead(cacheFileName);
       hasCacheFile = !!strm;
-      delete strm;
+      VStream::Destroy(strm);
     }
   }
 
@@ -519,12 +519,12 @@ load_again:
     cachedDataLoaded = LoadCachedData(strm);
     if (!cachedDataLoaded) {
       GCon->Logf("cache data is obsolete or in invalid format");
-      delete strm;
+      VStream::Destroy(strm);
       Sys_FileDelete(cacheFileName);
       ClearAllMapData();
       goto load_again;
     }
-    delete strm;
+    VStream::Destroy(strm);
     if (cachedDataLoaded) {
       forceNodeRebuildFromFixer = false; //k8: is this right?
       NeedNodesBuild = false;
@@ -595,8 +595,13 @@ load_again:
   // update cache
   if (loader_cache_data && saveCachedData && sha224valid && TotalTime+Sys_Time() > loader_cache_time_limit) {
     VStream *strm = FL_OpenSysFileWrite(cacheFileName);
-    SaveCachedData(strm);
-    delete strm;
+    if (strm) {
+      bool err = !SaveCachedData(strm);
+      if (strm->IsError()) err = true;
+      if (!strm->Close()) err = true;
+      delete strm;
+      if (err) Sys_FileDelete(cacheFileName);
+    }
   }
   doCacheCleanup();
 

@@ -138,10 +138,7 @@ VOpusAudioCodec::~VOpusAudioCodec () {
   if (opus) { op_free(opus); opus = nullptr; }
   if (InitLevel > 0) {
     Cleanup();
-    if (FreeStream) {
-      Strm->Close();
-      delete Strm;
-    }
+    if (FreeStream) VStream::Destroy(Strm);
     Strm = nullptr;
   }
 }

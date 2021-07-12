@@ -778,7 +778,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
   Strm->Serialise(magic, 4);
   magic[4] = 0;
   if (VStr::Cmp(magic, "VDEM")) {
-    delete Strm;
+    VStream::Destroy(Strm);
     GCon->Logf("ERROR: '%s' is not a k8vavoom demo.", *name);
     return;
   }
@@ -786,7 +786,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
   vuint32 ver = -1;
   *Strm << ver;
   if (ver != VAVOOM_DEMO_VERSION) {
-    delete Strm;
+    VStream::Destroy(Strm);
     GCon->Logf("ERROR: '%s' has invalid version.", *name);
     return;
   }
@@ -796,7 +796,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
   int dmwadlen = -1;
   *Strm << STRM_INDEX(dmwadlen);
   if (dmwadlen != wadlen) {
-    delete Strm;
+    VStream::Destroy(Strm);
     GCon->Logf("ERROR: '%s' was recorded with differrent mod set.", *name);
     return;
   }
@@ -804,7 +804,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
     VStr s;
     *Strm << s;
     if (s != wadlist[f]) {
-      delete Strm;
+      VStream::Destroy(Strm);
       GCon->Logf("ERROR: '%s' was recorded with differrent mod set.", *name);
       return;
     }
@@ -837,9 +837,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
 //==========================================================================
 void CL_StopRecording () {
   // finish up
-  if (cls.demofile) cls.demofile->Close();
-  delete cls.demofile;
-  cls.demofile = nullptr;
+  VStream::Destroy(cls.demofile);
   cls.demorecording = false;
   if (GDemoRecordingContext) {
     delete GDemoRecordingContext;

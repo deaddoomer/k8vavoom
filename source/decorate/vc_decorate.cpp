@@ -4087,8 +4087,7 @@ void ProcessDecorateScripts () {
     vassert(Strm);
     VXmlDocument *Doc = new VXmlDocument();
     Doc->Parse(*Strm, "vavoom_decorate_defs.xml");
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     ParseDecorateDef(*Doc);
     delete Doc;
   }

@@ -108,10 +108,7 @@ VMP3AudioCodec::VMP3AudioCodec (VStream *AStrm, bool AFreeStream)
 //==========================================================================
 VMP3AudioCodec::~VMP3AudioCodec () {
   Cleanup();
-  if (inited && FreeStream && Strm) {
-    Strm->Close();
-    delete Strm;
-  }
+  if (inited && FreeStream && Strm) VStream::Destroy(Strm);
   Strm = nullptr;
 }
 

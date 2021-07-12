@@ -548,7 +548,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, FS_FileExists) {
   VStr diskName = FL_GetUserDataDir(false)+"/"+fname;
   VStream *st = FL_OpenSysFileRead(*diskName);
   RET_BOOL(!!st);
-  delete st;
+  VStream::Destroy(st);
 }
 
 // native static final string FS_ReadFileContents (string fname);
@@ -564,7 +564,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, FS_ReadFileContents) {
     st->Serialise(s.getMutableCStr(), s.length());
     if (st->IsError()) s.clear();
   }
-  delete st;
+  VStream::Destroy(st);
   RET_STR(s);
 }
 
@@ -578,7 +578,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, FS_WriteFileContents) {
   if (!st) { RET_BOOL(false); return; }
   if (contents.length()) st->Serialise(*contents, contents.length());
   bool ok = !st->IsError();
-  delete st;
+  VStream::Destroy(st);
   RET_BOOL(ok);
 }
 

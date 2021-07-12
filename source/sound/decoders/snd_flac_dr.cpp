@@ -106,10 +106,7 @@ VFlacAudioCodec::VFlacAudioCodec (VStream *AStrm, bool AFreeStream)
 //==========================================================================
 VFlacAudioCodec::~VFlacAudioCodec () {
   Cleanup();
-  if (inited && FreeStream && Strm) {
-    Strm->Close();
-    delete Strm;
-  }
+  if (inited && FreeStream && Strm) VStream::Destroy(Strm);
   Strm = nullptr;
 }
 

@@ -272,8 +272,7 @@ static void scanMidiDir (VStr path, int level) {
       char sign[4];
       fi->Serialise(sign, 4);
       const bool err = fi->IsError();
-      fi->Close();
-      delete fi;
+      VStream::Destroy(fi);
       if (err) continue;
       if (memcmp(sign, "MThd", 4) == 0 || memcmp(sign, "MUS\x1a", 4) == 0) {
         fn = VStr("\x01")+fn;
@@ -1292,7 +1291,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   diskStream = nullptr;
   if (Strm->TotalSize() < 4) {
     GCon->Logf(NAME_Warning, "Lump '%s' for song \"%s\" is too small (%d)", *songName, Song, Strm->TotalSize());
-    delete Strm;
+    VStream::Destroy(Strm);
     return nullptr;
   }
 
@@ -1304,8 +1303,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     arr.setLength(strmsize);
     Strm->Serialise(arr.ptr(), strmsize);
     const bool err = Strm->IsError();
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     if (err) {
       ms->Close();
       delete ms;
@@ -1322,8 +1320,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   Strm->Serialise(sign, 4);
   if (Strm->IsError()) {
     GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     return nullptr;
   }
 
@@ -1336,8 +1333,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     MidStrm->BeginWrite();
     VQMus2Mid Conv;
     int MidLength = Conv.Run(*Strm, *MidStrm);
-    Strm->Close();
-    delete Strm;
+    VStream::Destroy(Strm);
     if (!MidLength) {
       delete MidStrm;
       return nullptr;
@@ -1348,8 +1344,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     Strm->Serialise(sign, 4);
     if (Strm->IsError()) {
       GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
-      Strm->Close();
-      delete Strm;
+      VStream::Destroy(Strm);
       return nullptr;
     }
     GCon->Logf("converted MUS '%s' to MIDI", *songName);
@@ -1364,8 +1359,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
     Strm->Seek(0);
     if (Strm->IsError()) {
       GCon->Logf(NAME_Error, "error loading song '%s'", *songName);
-      Strm->Close();
-      delete Strm;
+      VStream::Destroy(Strm);
       return nullptr;
     }
     Codec = Desc->Creator(Strm, sign, 4);
@@ -1380,8 +1374,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   }
 
   GCon->Logf(NAME_Warning, "couldn't find codec for song '%s'", *songName);
-  Strm->Close();
-  delete Strm;
+  VStream::Destroy(Strm);
   return nullptr;
 }
 

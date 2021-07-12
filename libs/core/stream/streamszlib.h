@@ -110,7 +110,7 @@ public:
   virtual int Tell () override;
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
 };
 
 
@@ -147,7 +147,7 @@ public:
   virtual void Serialise (void *Data, int Length) override;
   virtual void Seek (int) override;
   virtual void Flush () override;
-  virtual bool Close () override;
+  virtual bool Close () override; // returns `false` on error
 };
 
 

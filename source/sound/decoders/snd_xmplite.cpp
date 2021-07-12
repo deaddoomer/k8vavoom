@@ -109,10 +109,7 @@ VXMPAudioCodec::VXMPAudioCodec (VStream *AStrm, bool AFreeStream)
 VXMPAudioCodec::~VXMPAudioCodec () {
   Cleanup();
   if (InitLevel > 0) {
-    if (FreeStream) {
-      Strm->Close();
-      delete Strm;
-    }
+    if (FreeStream) VStream::Destroy(Strm);
     Strm = nullptr;
   }
   unloadModuleData();

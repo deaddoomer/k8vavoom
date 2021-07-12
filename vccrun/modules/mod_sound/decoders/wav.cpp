@@ -194,9 +194,7 @@ VWavAudioCodec::VWavAudioCodec (VStream *InStrm)
 //==========================================================================
 VWavAudioCodec::~VWavAudioCodec () {
   if (SamplesLeft != -1) {
-    Strm->Close();
-    delete Strm;
-    Strm = nullptr;
+    VStream::Destroy(Strm);
   }
 }
 
