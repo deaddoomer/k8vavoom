@@ -142,7 +142,7 @@ public:
   virtual int TotalSize ();
   virtual bool AtEnd ();
   virtual void Flush ();
-  virtual bool Close ();
+  virtual bool Close (); // returns `false` on error
 
   // interface functions for objects and classes streams
   virtual void io (VName &);
@@ -160,6 +160,8 @@ public:
 
   void writef (const char *text, ...) __attribute__((format(printf, 2, 3)));
   void vawritef (const char *text, va_list ap);
+
+  static inline void Destroy (VStream *&s) { if (s) { s->Close(); delete s; s = nullptr; } }
 };
 
 // stream serialisation operators
