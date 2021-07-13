@@ -1352,6 +1352,20 @@ IMPLEMENT_FUNCTION(VLevel, GetUDMFSideFloat) {
   RET_BOOL(!!val);
 }
 
+// native final int GetNextValidCount ();
+IMPLEMENT_FUNCTION(VLevel, GetNextValidCount) {
+  vobjGetParamSelf();
+  Self->IncrementValidCount();
+  RET_INT(validcount);
+}
+
+// native final int GetNextVisitedCount ();
+IMPLEMENT_FUNCTION(VLevel, GetNextVisitedCount) {
+  vobjGetParamSelf();
+  const vint32 vc = Self->nextVisitedCount();
+  RET_INT(vc);
+}
+
 
 #ifdef SERVER
 //==========================================================================

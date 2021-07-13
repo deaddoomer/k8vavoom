@@ -1790,6 +1790,9 @@ private:
   DECLARE_FUNCTION(LineOpenings)
 
   DECLARE_FUNCTION(GetMidTexturePosition)
+
+  DECLARE_FUNCTION(GetNextValidCount)
+  DECLARE_FUNCTION(GetNextVisitedCount)
 };
 
 

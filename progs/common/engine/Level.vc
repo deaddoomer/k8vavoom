@@ -277,6 +277,12 @@ native final bool GetUDMFSectorFloat (int id, name keyname, out float res);
 native final bool GetUDMFSideInt (int sidenum, int id, name keyname, out int res);
 native final bool GetUDMFSideFloat (int sidenum, int id, name keyname, out float res);
 
+// used for various `validcount` fields: in `sector_t`, `line_t`, `polyobj_t`
+native final int GetNextValidCount ();
+
+// this is used ONLY for `msecnode_t::Visited`
+native final int GetNextVisitedCount ();
+
 
 struct linetrace_t {
   TVec Start;

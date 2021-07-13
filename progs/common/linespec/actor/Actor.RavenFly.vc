@@ -29,12 +29,11 @@
 //  FlyFindCorpse
 //
 //==========================================================================
-protected EntityEx FlyFindCorpse (ref array!(sector_t *) checked, sector_t *sec, int recurselimit) {
+protected EntityEx FlyFindCorpse (int vcount, sector_t *sec, int recurselimit) {
   if (!sec) return none;
+  sec.validcount = vcount;
 
   EntityEx body = none;
-  //sec.validcount = validcount;
-  checked[$] = sec;
 
   // Search the current sector
   for (Entity ent = sec.ThingList; ent; ent = ent.SNext) {
@@ -53,10 +52,8 @@ protected EntityEx FlyFindCorpse (ref array!(sector_t *) checked, sector_t *sec,
   // try neighboring sectors
   foreach (sector_t *other; sec.nbsecs) {
     if (!other) continue;
-    bool found = false;
-    foreach (sector_t *ss; checked) if (ss == other) { found = true; break; }
-    if (found) continue;
-    body = FlyFindCorpse(ref checked, other, recurselimit);
+    if (other.validcount == vcount) continue;
+    body = FlyFindCorpse(vcount, other, recurselimit);
     if (body) break;
   }
 
@@ -87,8 +84,7 @@ protected EntityEx FlyFindCorpse (ref array!(sector_t *) checked, sector_t *sec,
     }
   }
 
-  array!(sector_t *) checked;
-  EntityEx body = FlyFindCorpse(ref checked, BaseSector, 24);
+  EntityEx body = FlyFindCorpse(XLevel.GetNextValidCount(), BaseSector, 24);
 
   if (body) {
     Target = body;
