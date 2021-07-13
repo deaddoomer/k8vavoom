@@ -70,6 +70,8 @@ static VCvarB cl_autonomous_proxy("cl_autonomous_proxy", false, "Is our client a
 
 static VCvarB d_attraction_mode("d_attraction_mode", false, "Allow demo playback (won't work with non-k8vavoom demos)?", CVAR_Archive);
 
+static VCvarB dbg_always_mark_map("__dbg_always_mark_map", false, "Always mark lines on automap?", 0/*CVAR_Archive*/);
+
 extern VCvarB r_wipe_enabled;
 
 IMPLEMENT_CLASS(V, ClientGameBase);
@@ -844,6 +846,20 @@ void CL_StopRecording () {
     GDemoRecordingContext = nullptr;
   }
   GCon->Log("Completed demo");
+}
+
+
+//==========================================================================
+//
+//  NeedMapMarking
+//
+//==========================================================================
+bool CL_NeedAutomapUpdates () noexcept {
+  return
+    dbg_always_mark_map.asBool() ||
+    (cl && cl->MO == cl->Camera &&
+     GGameInfo && GGameInfo->NetMode > NM_TitleMap &&
+     GGameInfo->NetMode != NM_DedicatedServer);
 }
 
 

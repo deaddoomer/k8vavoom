@@ -109,6 +109,8 @@ int CL_GetNumberOfChannels ();
 
 bool CL_IsDangerousTimeout ();
 
+bool CL_NeedAutomapUpdates () noexcept;
+
 
 extern client_static_t cls;
 extern VBasePlayer *cl;

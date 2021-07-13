@@ -34,6 +34,7 @@
 #include "../automap.h"
 #include "../psim/p_entity.h"
 #include "../psim/p_levelinfo.h"
+#include "../client/client.h"
 #include "r_local.h"
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)
@@ -950,6 +951,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
 
   if (!linedef) {
     // miniseg, perform automap duties
+    if (!CL_NeedAutomapUpdates()) return;
     if (seg->flags&SF_MAPPED) return;
     if (sub->miscFlags&subsector_t::SSMF_Rendered) return;
     if (sub->numlines < 1) return;
@@ -1043,7 +1045,7 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   */
 
   // automap
-  RenderSegMarkMapped(sub, seg);
+  if (CL_NeedAutomapUpdates()) RenderSegMarkMapped(sub, seg);
 
   const side_t *sidedef = seg->sidedef;
 
