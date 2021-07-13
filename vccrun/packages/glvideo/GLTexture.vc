@@ -27,13 +27,26 @@ class GLTexture : Object /*abstract*/ native;
 private readonly void *__tex;
 readonly int id; // internal texture id
 
+enum {
+  TT_Auto, // do analysis
+  TT_Opaque,
+  TT_OneBitAlpha,
+  TT_Translucent,
+  TT_Transparent,
+}
 
-native final static GLTexture Load (string fname);
+native final static GLTexture Load (string fname, optional bool doSmoothing/*=true*/);
 native final static GLTexture GetById (int id);
 native override void Destroy ();
 
 native final int width ();
 native final int height ();
+
+native final bool needSmoothing { get; set; }
+
+// TT_xxx
+native final int textureType { get; set; }
+native final int textureRealType { get; set; } // after analysis
 
 // that is:
 //  isTransparent==true: no need to draw anything
@@ -60,11 +73,15 @@ native final void blitWithLightmap (const ref TexQuad t0, GLTexture lmap, const 
 
 
 // `txname` can be used in `Load()`
-native final static GLTexture CreateEmpty (int wdt, int hgt, optional name txname);
+native final static GLTexture CreateEmpty (int wdt, int hgt, optional name txname, optional bool doSmoothing/*=true*/);
 native final void setPixel (int x, int y, int argb); // aarrggbb; a==0 is completely opaque
 native final int getPixel (int x, int y); // aarrggbb; a==0 is completely opaque
 native final void smoothEdges (); // this is done automatically in `upload()`, so there is no reason to call it manually
 native final void upload ();
+
+native final void fillRect (int x, int y, int w, int h, int argb);
+native final void hline (int x, int y, int len, int argb);
+native final void vline (int x, int y, int len, int argb);
 
 // should be explicitly enabled
 native final void saveAsPNG (string fname);

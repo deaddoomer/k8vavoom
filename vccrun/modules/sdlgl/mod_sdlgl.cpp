@@ -1138,19 +1138,10 @@ static bool texUpload (VOpenGLTexture *tx) {
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tx->img->width, tx->img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr); // this creates texture
 
-  if (!tx->img->isTrueColor) {
-    VImage *tc = new VImage(VImage::ImageType::IT_RGBA, tx->img->width, tx->img->height);
-    for (int y = 0; y < tx->img->height; ++y) {
-      for (int x = 0; x < tx->img->width; ++x) {
-        tc->setPixel(x, y, tx->img->getPixel(x, y));
-      }
-    }
-    delete tx->img;
-    tx->img = tc;
-    tc->smoothEdges();
-  }
+  tx->convertToTrueColor();
+
   //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tc->width, tc->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tc->pixels);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0/*x*/, 0/*y*/, tx->img->width, tx->img->height, GL_RGBA, GL_UNSIGNED_BYTE, tx->img->pixels); // this updates texture
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0/*x*/, 0/*y*/, tx->img->width, tx->img->height, GL_RGBA, GL_UNSIGNED_BYTE, tx->img->pixels); // this updates the texture
 
   return true;
 }
@@ -1193,14 +1184,14 @@ static void uploadAllTextures () {
 //  VOpenGLTexture::VOpenGLTexture
 //
 //==========================================================================
-VOpenGLTexture::VOpenGLTexture (VImage *aimg, VStr apath)
+VOpenGLTexture::VOpenGLTexture (VImage *aimg, VStr apath, bool doSmoothing)
   : rc(1)
   , mPath(apath)
   , img(aimg)
   , tid(0)
-  , mTransparent(false)
-  , mOpaque(false)
-  , mOneBitAlpha(false)
+  , type(TT_Auto)
+  , realType(TT_Auto)
+  , needSmoothing(doSmoothing)
   , prev(nullptr)
   , next(nullptr)
 {
@@ -1217,14 +1208,14 @@ VOpenGLTexture::VOpenGLTexture (VImage *aimg, VStr apath)
 //  dimensions must be valid!
 //
 //==========================================================================
-VOpenGLTexture::VOpenGLTexture (int awdt, int ahgt)
+VOpenGLTexture::VOpenGLTexture (int awdt, int ahgt, bool doSmoothing)
   : rc(1)
   , mPath()
   , img(nullptr)
   , tid(0)
-  , mTransparent(false)
-  , mOpaque(false)
-  , mOneBitAlpha(false)
+  , type(TT_Auto)
+  , realType(TT_Auto)
+  , needSmoothing(doSmoothing)
   , prev(nullptr)
   , next(nullptr)
 {
@@ -1292,34 +1283,68 @@ void VOpenGLTexture::registerMe () noexcept {
 
 //==========================================================================
 //
+//  VOpenGLTexture::reanalyzeImage
+//
+//==========================================================================
+void VOpenGLTexture::reanalyzeImage () noexcept {
+  const bool oldNSM = needSmoothing;
+  needSmoothing = false;
+  analyzeImage();
+  needSmoothing = oldNSM;
+}
+
+
+//==========================================================================
+//
 //  VOpenGLTexture::analyzeImage
 //
 //==========================================================================
 void VOpenGLTexture::analyzeImage () noexcept {
   if (img) {
-    img->smoothEdges();
-    mTransparent = true;
-    mOpaque = true;
-    mOneBitAlpha = true;
+    if (needSmoothing) img->smoothEdges();
+    if (type != TT_Auto) { realType = type; return; }
+    bool hasAlpha0 = false;
+    bool hasAlpha255 = false;
     for (int y = 0; y < img->height; ++y) {
       for (int x = 0; x < img->width; ++x) {
         VImage::RGBA pix = img->getPixel(x, y);
-        if (pix.a != 0 && pix.a != 255) {
-          mOneBitAlpha = false;
-          mTransparent = false;
-          mOpaque = false;
-          break; // no need to analyze more
-        } else {
-               if (pix.a != 0) mTransparent = false;
-          else if (pix.a != 255) mOpaque = false;
+             if (pix.a == 0) hasAlpha0 = true;
+        else if (pix.a == 255) hasAlpha255 = true;
+        else {
+          realType = TT_Translucent;
+          return; // we're done
         }
       }
     }
+    realType =
+      hasAlpha0 ?
+        (hasAlpha255 ? TT_OneBitAlpha : TT_Transparent) :
+        (hasAlpha255 ? TT_Opaque : TT_Transparent);
   } else {
-    mTransparent = false;
-    mOpaque = false;
-    mOneBitAlpha = false;
+    realType = TT_Transparent;
   }
+}
+
+
+//==========================================================================
+//
+//  VOpenGLTexture::convertToTrueColor
+//
+//==========================================================================
+void VOpenGLTexture::convertToTrueColor () {
+  if (!img || img->isTrueColor) return;
+
+  VImage *tc = new VImage(VImage::ImageType::IT_RGBA, img->width, img->height);
+  for (int y = 0; y < img->height; ++y) {
+    for (int x = 0; x < img->width; ++x) {
+      tc->setPixel(x, y, img->getPixel(x, y));
+    }
+  }
+
+  delete img;
+  img = tc;
+
+  if (needSmoothing) img->smoothEdges();
 }
 
 
@@ -1346,7 +1371,7 @@ void VOpenGLTexture::update () {
 //  VOpenGLTexture::Load
 //
 //==========================================================================
-VOpenGLTexture *VOpenGLTexture::Load (VStr fname) {
+VOpenGLTexture *VOpenGLTexture::Load (VStr fname, bool doSmoothing) {
   if (fname.length() > 0) {
     VOpenGLTexture **loaded = txLoaded.find(fname);
     if (loaded) { (*loaded)->addRef(); return *loaded; }
@@ -1360,7 +1385,7 @@ VOpenGLTexture *VOpenGLTexture::Load (VStr fname) {
   VImage *img = VImage::loadFrom(st);
   VStream::Destroy(st);
   if (!img) return nullptr;
-  VOpenGLTexture *res = new VOpenGLTexture(img, rname);
+  VOpenGLTexture *res = new VOpenGLTexture(img, rname, doSmoothing);
   txLoaded.put(rname, res);
   //GLog.Logf(NAME_Debug, "TXLOADED: '%s' rc=%d, (%p)", *res->mPath, res->rc, res);
   return res;
@@ -1372,7 +1397,7 @@ VOpenGLTexture *VOpenGLTexture::Load (VStr fname) {
 //  VOpenGLTexture::CreateEmpty
 //
 //==========================================================================
-VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt) {
+VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt, bool doSmoothing) {
   VStr sname;
   if (txname != NAME_None) {
     sname = VStr(txname);
@@ -1386,7 +1411,7 @@ VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt) {
     }
   }
   if (wdt < 1 || hgt < 1 || wdt > 32768 || hgt > 32768) return nullptr;
-  VOpenGLTexture *res = new VOpenGLTexture(wdt, hgt);
+  VOpenGLTexture *res = new VOpenGLTexture(wdt, hgt, doSmoothing);
   if (sname.length() > 0) txLoaded.put(sname, res); //else txLoadedUnnamed.append(res);
   //GLog.Logf(NAME_Debug, "TXLOADED: '%s' rc=%d, (%p)", *res->mPath, res->rc, res);
   return res;
@@ -1410,7 +1435,7 @@ void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0
   VGLVideo::forceGLTexFilter();
 
   if (VGLVideo::getBlendMode() == VGLVideo::BlendNormal) {
-    if (mOpaque && VGLVideo::isFullyOpaque()) {
+    if (realType == TT_Opaque && VGLVideo::isFullyOpaque()) {
       glDisable(GL_BLEND);
     } else {
       glEnable(GL_BLEND);
@@ -1461,7 +1486,7 @@ void VOpenGLTexture::blitExtRep (int dx0, int dy0, int dx1, int dy1, int x0, int
   VGLVideo::forceGLTexFilter();
 
   if (VGLVideo::getBlendMode() == VGLVideo::BlendNormal) {
-    if (mOpaque && VGLVideo::isFullyOpaque()) {
+    if (realType == TT_Opaque && VGLVideo::isFullyOpaque()) {
       glDisable(GL_BLEND);
     } else {
       glEnable(GL_BLEND);
@@ -1520,7 +1545,7 @@ void VOpenGLTexture::blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQua
   }
 
   if (VGLVideo::getBlendMode() == VGLVideo::BlendNormal) {
-    if (mOpaque && VGLVideo::isFullyOpaque()) {
+    if (realType == TT_Opaque && VGLVideo::isFullyOpaque()) {
       glDisable(GL_BLEND);
     } else {
       glEnable(GL_BLEND);
@@ -1575,7 +1600,7 @@ void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const n
   VGLVideo::forceGLTexFilter();
 
   if (VGLVideo::getBlendMode() == VGLVideo::BlendNormal) {
-    if (mOpaque && VGLVideo::isFullyOpaque()) {
+    if (realType == TT_Opaque && VGLVideo::isFullyOpaque()) {
       glDisable(GL_BLEND);
     } else {
       glEnable(GL_BLEND);
@@ -1683,11 +1708,12 @@ IMPLEMENT_FUNCTION(VGLTexture, Destroy) {
 }
 
 
-//native final static GLTexture Load (string fname);
+//native final static GLTexture Load (string fname, optional bool doSmoothing/*=true*/);
 IMPLEMENT_FUNCTION(VGLTexture, Load) {
   VStr fname;
-  vobjGetParam(fname);
-  VOpenGLTexture *tex = VOpenGLTexture::Load(fname);
+  VOptParamBool doSmoothing(true);
+  vobjGetParam(fname, doSmoothing);
+  VOpenGLTexture *tex = VOpenGLTexture::Load(fname, doSmoothing);
   if (tex) {
     VGLTexture *ifile = SpawnWithReplace<VGLTexture>();
     ifile->tex = tex;
@@ -1739,6 +1765,53 @@ IMPLEMENT_FUNCTION(VGLTexture, isOneBitAlpha) {
 }
 
 
+IMPLEMENT_FUNCTION(VGLTexture, get_textureType) {
+  vobjGetParamSelf();
+  RET_INT(Self && Self->tex ? Self->tex->type : VOpenGLTexture::TT_Auto);
+}
+
+IMPLEMENT_FUNCTION(VGLTexture, set_textureType) {
+  int ttype;
+  vobjGetParamSelf(ttype);
+  if (Self && Self->tex) {
+    if (ttype < 0 || ttype > VOpenGLTexture::TT_Transparent) ttype = VOpenGLTexture::TT_Auto;
+    if (Self->tex->type != (unsigned)ttype) {
+      Self->tex->type = (unsigned)ttype;
+      Self->tex->reanalyzeImage();
+    }
+  }
+}
+
+IMPLEMENT_FUNCTION(VGLTexture, get_textureRealType) {
+  vobjGetParamSelf();
+  RET_INT(Self && Self->tex ? Self->tex->realType : VOpenGLTexture::TT_Auto);
+}
+
+IMPLEMENT_FUNCTION(VGLTexture, set_textureRealType) {
+  int ttype;
+  vobjGetParamSelf(ttype);
+  if (Self && Self->tex) {
+    if (ttype < 0 || ttype > VOpenGLTexture::TT_Transparent) ttype = VOpenGLTexture::TT_Auto;
+    if (Self->tex->realType != (unsigned)ttype) {
+      if (ttype == VOpenGLTexture::TT_Auto) Self->tex->type = VOpenGLTexture::TT_Auto;
+      Self->tex->type = (unsigned)ttype;
+      Self->tex->reanalyzeImage();
+    }
+  }
+}
+
+IMPLEMENT_FUNCTION(VGLTexture, get_needSmoothing) {
+  vobjGetParamSelf();
+  RET_INT(Self && Self->tex ? Self->tex->needSmoothing : true);
+}
+
+IMPLEMENT_FUNCTION(VGLTexture, set_needSmoothing) {
+  bool v;
+  vobjGetParamSelf(v);
+  if (Self && Self->tex) Self->tex->needSmoothing = v;
+}
+
+
 // void blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0, optional int x1, optional int y1, optional float angle);
 IMPLEMENT_FUNCTION(VGLTexture, blitExt) {
   int dx0, dy0, dx1, dy1;
@@ -1778,13 +1851,14 @@ IMPLEMENT_FUNCTION(VGLTexture, blitWithLightmap) {
 }
 
 
-// native final static GLTexture CreateEmpty (int wdt, int hgt, optional name txname);
+// native final static GLTexture CreateEmpty (int wdt, int hgt, optional name txname, optional bool doSmoothing/*=true*/);
 IMPLEMENT_FUNCTION(VGLTexture, CreateEmpty) {
   int wdt, hgt;
+  VOptParamBool doSmoothing(true);
   VOptParamName txname(NAME_None);
-  vobjGetParam(wdt, hgt, txname);
+  vobjGetParam(wdt, hgt, txname, doSmoothing);
   if (wdt < 1 || hgt < 1 || wdt > 32768 || hgt > 32768) { RET_REF(nullptr); return; }
-  VOpenGLTexture *tex = VOpenGLTexture::CreateEmpty(txname, wdt, hgt);
+  VOpenGLTexture *tex = VOpenGLTexture::CreateEmpty(txname, wdt, hgt, doSmoothing);
   if (tex) {
     VGLTexture *ifile = SpawnWithReplace<VGLTexture>();
     ifile->tex = tex;
@@ -1850,6 +1924,113 @@ IMPLEMENT_FUNCTION(VGLTexture, saveAsPNG) {
     if (!st) return;
     Self->tex->img->saveAsPNG(st);
     VStream::Destroy(st);
+  }
+}
+
+
+//native final void fillRect (int x, int y, int w, int h, int argb);
+IMPLEMENT_FUNCTION(VGLTexture, fillRect) {
+  int x, y, w, h;
+  vuint32 argb;
+  vobjGetParamSelf(x, y, w, h, argb);
+  if (w < 1 || h < 1) return;
+  if (x < 0) {
+    w += x;
+    if (w <= 0) return;
+    x = 0;
+  }
+  if (y < 0) {
+    h += y;
+    if (h <= 0) return;
+    y = 0;
+  }
+  if (Self && Self->tex) {
+    VOpenGLTexture *tx = Self->tex;
+    if (!tx->img) return;
+    const int iw = tx->width;
+    const int ih = tx->height;
+    if (x >= iw || y >= ih) return;
+    if (w > iw) w = iw;
+    if (h > ih) h = ih;
+    w = min2(w, iw-x);
+    h = min2(h, ih-y);
+    tx->convertToTrueColor();
+    const VImage::RGBA clr(argb);
+    const unsigned pitch = tx->img->getPitch();
+    const unsigned linesize = (unsigned)iw*pitch;
+    //GLog.Logf(NAME_Debug, "x=%d; y=%d; w=%d; h=%d; pitch=%u; linesize=%u; argb=0x%08x (%02x %02x %02x %02x)", x, y, w, h, pitch, linesize, argb, clr.a, clr.r, clr.g, clr.b);
+    vuint8 *px = tx->img->writeablePixels;
+    px += (unsigned)x*pitch+((unsigned)y*linesize);
+    // fill the first line
+    VImage::RGBA *d = (VImage::RGBA *)px;
+    while (w--) *d++ = clr;
+    // copy lines
+    while (--h) {
+      memcpy(px+linesize, px, linesize);
+      px += linesize;
+    }
+  }
+}
+
+
+//native final void hline (int x, int y, int len, int argb);
+IMPLEMENT_FUNCTION(VGLTexture, hline) {
+  int x, y, len;
+  vuint32 argb;
+  vobjGetParamSelf(x, y, len, argb);
+  if (len < 1 || y < 0) return;
+  if (x < 0) {
+    len += x;
+    if (len <= 0) return;
+    x = 0;
+  }
+  if (Self && Self->tex) {
+    VOpenGLTexture *tx = Self->tex;
+    if (!tx->img) return;
+    const int iw = tx->width;
+    const int ih = tx->height;
+    if (x >= iw || y >= ih) return;
+    if (len > iw) len = iw;
+    len = min2(len, iw-x);
+    if (x+len > iw) len = iw-x;
+    tx->convertToTrueColor();
+    const VImage::RGBA clr(argb);
+    VImage::RGBA *d = (VImage::RGBA *)tx->img->getWriteablePixels();
+    d += (unsigned)x+((unsigned)y*(unsigned)iw);
+    // fill the line
+    while (len--) *d++ = clr;
+  }
+}
+
+
+//native final void vline (int x, int y, int len, int argb);
+IMPLEMENT_FUNCTION(VGLTexture, vline) {
+  int x, y, len;
+  vuint32 argb;
+  vobjGetParamSelf(x, y, len, argb);
+  if (len < 1 || x < 0) return;
+  if (y < 0) {
+    len += y;
+    if (len <= 0) return;
+    y = 0;
+  }
+  if (Self && Self->tex) {
+    VOpenGLTexture *tx = Self->tex;
+    if (!tx->img) return;
+    const int iw = tx->width;
+    const int ih = tx->height;
+    if (x >= iw || y >= ih) return;
+    if (len > ih) len = ih;
+    len = min2(len, ih-y);
+    tx->convertToTrueColor();
+    const VImage::RGBA clr(argb);
+    VImage::RGBA *d = (VImage::RGBA *)tx->img->getWriteablePixels();
+    d += (unsigned)x+((unsigned)y*(unsigned)iw);
+    // fill the line
+    while (len--) {
+      *d = clr;
+      d += iw;
+    }
   }
 }
 

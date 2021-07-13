@@ -426,26 +426,38 @@ public:
   inline int getRC () const noexcept { return rc; }
 
 public:
+  enum {
+    TT_Auto, // do analysis
+    TT_Opaque, // no alpha
+    TT_OneBitAlpha, // only 0 and 255 alpha
+    TT_Translucent, // has alpha different from 0 and from 255
+    TT_Transparent, // all pixels has alpha of 0
+  };
+
+public:
   VImage *img;
   GLuint tid; // !0: texture loaded
-  bool mTransparent; // fully
-  bool mOpaque; // fully
-  bool mOneBitAlpha; // this means that the only alpha values are 255 or 0
+  unsigned type; // TT_xxx
+  unsigned realType; // TT_xxx, after analysis
+  bool needSmoothing; // default is true
   VOpenGLTexture *prev;
   VOpenGLTexture *next;
 
-  inline bool getTransparent () const noexcept { return mTransparent; }
-  inline bool getOpaque () const noexcept { return mOpaque; }
-  inline bool get1BitAlpha () const noexcept { return mOneBitAlpha; }
+  inline bool getTransparent () const noexcept { return (realType == TT_Transparent); }
+  inline bool getOpaque () const noexcept { return (realType == TT_Opaque); }
+  inline bool get1BitAlpha () const noexcept { return (realType == TT_OneBitAlpha); }
+
+  inline unsigned getType () const noexcept { return type; }
+  inline unsigned getRealType () const noexcept { return realType; }
 
 private:
   void registerMe () noexcept;
   void analyzeImage () noexcept;
 
-  VOpenGLTexture (int awdt, int ahgt); // dimensions must be valid!
+  VOpenGLTexture (int awdt, int ahgt, bool doSmoothing=true); // dimensions must be valid!
 
 public:
-  VOpenGLTexture (VImage *aimg, VStr apath);
+  VOpenGLTexture (VImage *aimg, VStr apath, bool doSmoothing=true);
   ~VOpenGLTexture (); // don't call this manually!
 
   VVA_ALWAYS_INLINE void addRef () const noexcept { ++rc; }
@@ -453,10 +465,14 @@ public:
   //WARNING: can delete `this`!
   VVA_ALWAYS_INLINE void release () noexcept { if (--rc == 0) delete this; }
 
+  void convertToTrueColor ();
+
   void update ();
 
-  static VOpenGLTexture *Load (VStr fname);
-  static VOpenGLTexture *CreateEmpty (VName txname, int wdt, int hgt);
+  void reanalyzeImage () noexcept;
+
+  static VOpenGLTexture *Load (VStr fname, bool doSmoothing=true);
+  static VOpenGLTexture *CreateEmpty (VName txname, int wdt, int hgt, bool doSmoothing=true);
 
   inline int getWidth () const noexcept { return (img ? img->width : 0); }
   inline int getHeight () const noexcept { return (img ? img->height : 0); }
@@ -525,7 +541,19 @@ public:
   DECLARE_FUNCTION(upload) // native final static void upload ();
   DECLARE_FUNCTION(smoothEdges) // native final void smoothEdges (); // call after manual texture building
 
+  DECLARE_FUNCTION(get_textureType);
+  DECLARE_FUNCTION(set_textureType);
+  DECLARE_FUNCTION(get_textureRealType);
+  DECLARE_FUNCTION(set_textureRealType);
+
+  DECLARE_FUNCTION(get_needSmoothing);
+  DECLARE_FUNCTION(set_needSmoothing);
+
   DECLARE_FUNCTION(saveAsPNG)
+
+  DECLARE_FUNCTION(fillRect)
+  DECLARE_FUNCTION(hline)
+  DECLARE_FUNCTION(vline)
 
   friend class VFont;
 };

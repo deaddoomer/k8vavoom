@@ -44,8 +44,14 @@ struct ImagoLoader {
 static ImagoLoader *loaders = nullptr;
 
 
-// `ext` may, or may not include dot
-void ImagoRegisterLoader (const char *fmtext, const char *fmtdesc, VImageLoaderFn ldr, int prio) {
+//==========================================================================
+//
+//  ImagoRegisterLoader
+//
+//  `ext` may, or may not include dot
+//
+//==========================================================================
+void ImagoRegisterLoader (const char *fmtext, const char *fmtdesc, VImageLoaderFn ldr, int prio) noexcept {
   VStr ext, desc;
 
   if (!ldr) return;
@@ -75,8 +81,12 @@ void ImagoRegisterLoader (const char *fmtext, const char *fmtdesc, VImageLoaderF
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-VImage::VImage (ImageType atype, int awidth, int aheight) {
+//==========================================================================
+//
+//  VImage::VImage
+//
+//==========================================================================
+VImage::VImage (ImageType atype, int awidth, int aheight) noexcept {
   if (awidth < 1 || aheight < 1) awidth = aheight = 0;
 
   mFormat = atype;
@@ -94,13 +104,23 @@ VImage::VImage (ImageType atype, int awidth, int aheight) {
 }
 
 
-VImage::~VImage () {
+//==========================================================================
+//
+//  VImage::~VImage
+//
+//==========================================================================
+VImage::~VImage () noexcept {
   delete mPixels;
   mPixels = nullptr;
 }
 
 
-vuint8 VImage::appendColor (const VImage::RGBA &col) {
+//==========================================================================
+//
+//  VImage::appendColor
+//
+//==========================================================================
+vuint8 VImage::appendColor (const VImage::RGBA &col) noexcept {
   int bestn = 0, bestdist = 0x7fffffff;
   for (int f = 0; f < mPalUsed; ++f) {
     if (mPalette[f] == col) return (vuint8)f;
@@ -115,7 +135,12 @@ vuint8 VImage::appendColor (const VImage::RGBA &col) {
 }
 
 
-VImage::RGBA VImage::getPixel (int x, int y) const {
+//==========================================================================
+//
+//  VImage::getPixel
+//
+//==========================================================================
+VImage::RGBA VImage::getPixel (const int x, const int y) const noexcept {
   if (x < 0 || y < 0 || x >= mWidth || y >= mHeight || !mPixels) return VImage::RGBA(0, 0, 0, 0);
 
   const vuint8 *data = mPixels;
@@ -137,7 +162,12 @@ VImage::RGBA VImage::getPixel (int x, int y) const {
 }
 
 
-void VImage::setPixel (int x, int y, const RGBA &col) {
+//==========================================================================
+//
+//  VImage::setPixel
+//
+//==========================================================================
+void VImage::setPixel (const int x, const int y, const RGBA &col) noexcept {
   if (x < 0 || y < 0 || x >= mWidth || y >= mHeight || !mPixels) return;
 
   vuint8 *data = mPixels;
@@ -157,8 +187,14 @@ void VImage::setPixel (int x, int y, const RGBA &col) {
 }
 
 
-// has any sense only for paletted images
-void VImage::setBytePixel (int x, int y, vuint8 b) {
+//==========================================================================
+//
+//  VImage::setBytePixel
+//
+//  has any sense only for paletted images
+//
+//==========================================================================
+void VImage::setBytePixel (const int x, const int y, vuint8 b) noexcept {
   if (x < 0 || y < 0 || x >= mWidth || y >= mHeight || !mPixels || mFormat != IT_Pal) return;
 
   vuint8 *data = mPixels+y*mWidth+x;
@@ -166,7 +202,12 @@ void VImage::setBytePixel (int x, int y, vuint8 b) {
 }
 
 
-void VImage::checkerFill () {
+//==========================================================================
+//
+//  VImage::checkerFill
+//
+//==========================================================================
+void VImage::checkerFill () noexcept {
   if (!mPixels || width < 1 || height < 1) return;
   for (int y = 0; y < mHeight; ++y) {
     for (int x = 0; x < mWidth; ++x) {
@@ -177,7 +218,12 @@ void VImage::checkerFill () {
 }
 
 
-void VImage::setPalette (const RGBA *pal, int colnum) {
+//==========================================================================
+//
+//  VImage::setPalette
+//
+//==========================================================================
+void VImage::setPalette (const RGBA *pal, int colnum) noexcept {
   memset((void *)mPalette, 0, sizeof(mPalette));
   if (pal) {
     if (colnum > 256) colnum = 256;
@@ -197,7 +243,12 @@ void VImage::setPalette (const RGBA *pal, int colnum) {
 #define CHKPIX(ofs) (l1[ofs].isOpaque() ? (l1[0] = RGBA(l1[ofs].r, l1[ofs].g, l1[ofs].b, 0), trans = true) : false)
 #define CHKPIXV(ofs) ((void)CHKPIX(ofs))
 
-void VImage::smoothEdges () {
+//==========================================================================
+//
+//  VImage::smoothEdges
+//
+//==========================================================================
+void VImage::smoothEdges () noexcept {
   if (mWidth <= 1 || mHeight <= 1 || mFormat != IT_RGBA) return;
 
   RGBA *l1 = (VImage::RGBA *)mPixels;
@@ -253,17 +304,22 @@ void VImage::smoothEdges () {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// load image from stream; return `nullptr` on error
-VImage *VImage::loadFrom (VStream *strm, const VStr &name) {
+//==========================================================================
+//
+//  VImage::loadFrom
+//
+//  load image from stream; return `nullptr` on error
+//
+//==========================================================================
+VImage *VImage::loadFrom (VStream *strm, VStr name) {
   if (!strm) return nullptr;
   for (ImagoLoader *it = loaders; it; it = it->next) {
     strm->Seek(0);
     //fprintf(stderr, ":: trying <%s>\n", *it->ext);
     VImage *res = it->ldr(strm);
     if (res) {
-      res->name = name;
-      res->type = it->ext;
+      res->setName(name);
+      res->setType(it->ext);
       return res;
     }
   }
@@ -271,6 +327,11 @@ VImage *VImage::loadFrom (VStream *strm, const VStr &name) {
 }
 
 
+//==========================================================================
+//
+//  VImage::saveAsPNG
+//
+//==========================================================================
 bool VImage::saveAsPNG (VStream *strm) {
   if (!strm) return false;
   TArray<vuint8> tmprgb;
