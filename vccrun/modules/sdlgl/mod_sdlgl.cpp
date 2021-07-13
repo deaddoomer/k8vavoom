@@ -94,13 +94,13 @@ static glBlendEquationFn glBlendEquationFunc = nullptr;
 #endif
 */
 
-#ifndef _WIN32
+//#ifndef _WIN32
 typedef void (APIENTRY *glMultiTexCoord2fARB_t) (GLenum, GLfloat, GLfloat);
 static glMultiTexCoord2fARB_t p_glMultiTexCoord2fARB = nullptr;
 
 typedef void (APIENTRY *glActiveTextureARB_t) (GLenum);
 static glActiveTextureARB_t p_glActiveTextureARB = nullptr;
-#endif
+//#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -149,11 +149,11 @@ public:
     int descent;
     vuint32 attrs;
 
-    CharMetrics () : leftSidedBearing(0), rightSideBearing(0), width(0), ascent(0), descent(0), attrs(0) {}
+    inline CharMetrics () noexcept : leftSidedBearing(0), rightSideBearing(0), width(0), ascent(0), descent(0), attrs(0) {}
 
-    void clear () { leftSidedBearing = rightSideBearing = width = ascent = descent = 0; attrs = 0; }
+    inline void clear () noexcept { leftSidedBearing = rightSideBearing = width = ascent = descent = 0; attrs = 0; }
 
-    inline bool operator == (const CharMetrics &ci) const {
+    inline bool operator == (const CharMetrics &ci) const noexcept {
       return
         leftSidedBearing == ci.leftSidedBearing &&
         rightSideBearing == ci.rightSideBearing &&
@@ -162,6 +162,8 @@ public:
         descent == ci.descent &&
         attrs == ci.attrs;
     }
+
+    inline bool operator != (const CharMetrics &ci) const noexcept { return !(operator==(ci)); }
 
     /*
     string toString () const {
@@ -177,7 +179,7 @@ public:
     vuint32 size; // In bytes
     vuint32 offset; // from start of file
 
-    inline bool isTypeCorrect () const {
+    inline bool isTypeCorrect () const noexcept {
       if (type == 0) return false;
       if (type&((~1)<<8)) return false;
       bool was1 = false;
@@ -207,12 +209,13 @@ public:
     vuint32 codepoint;
     CharMetrics metrics;
     CharMetrics inkmetrics;
-    vuint8* bitmap; // may be greater than necessary; shared between all glyphs; don't destroy
+    vuint8 *bitmap; // may be greater than necessary; shared between all glyphs; don't destroy
     vuint32 bmpfmt;
     //VStr name; // may be absent
 
-    Glyph () : codepoint(0), metrics(), inkmetrics(), bitmap(nullptr), bmpfmt(0) {}
-    Glyph (const Glyph &g) : codepoint(0), metrics(), inkmetrics(), bitmap(nullptr), bmpfmt(0) {
+    inline Glyph () noexcept : codepoint(0), metrics(), inkmetrics(), bitmap(nullptr), bmpfmt(0) {}
+
+    inline Glyph (const Glyph &g) noexcept : codepoint(0), metrics(), inkmetrics(), bitmap(nullptr), bmpfmt(0) {
       //index = g.index;
       codepoint = g.codepoint;
       metrics = g.metrics;
@@ -222,7 +225,7 @@ public:
       //name = g.name;
     }
 
-    void clear () {
+    inline void clear () noexcept {
       //index = 0;
       codepoint = 0;
       metrics.clear();
@@ -232,7 +235,7 @@ public:
       //name.clear();
     }
 
-    void operator = (const Glyph &g) {
+    inline void operator = (const Glyph &g) noexcept {
       if (&g != this) {
         //index = g.index;
         codepoint = g.codepoint;
@@ -244,57 +247,13 @@ public:
       }
     }
 
-    inline int bmpWidth () const { return (metrics.width > 0 ? metrics.width : 0); }
-    inline int bmpHeight () const { return (metrics.ascent+metrics.descent > 0 ? metrics.ascent+metrics.descent : 0); }
+    inline int bmpWidth () const noexcept { return (metrics.width > 0 ? metrics.width : 0); }
+    inline int bmpHeight () const noexcept { return (metrics.ascent+metrics.descent > 0 ? metrics.ascent+metrics.descent : 0); }
 
-    /*
-    void dumpMetrics () const nothrow @trusted {
-      conwriteln(
-          "left bearing : ", metrics.leftSidedBearing,
-        "\nright bearing: ", metrics.rightSideBearing,
-        "\nwidth        : ", metrics.width,
-        "\nascent       : ", metrics.ascent,
-        "\ndescent      : ", metrics.descent,
-        "\nattrs        : ", metrics.attrs,
-      );
-      if (inkmetrics != metrics) {
-        conwriteln(
-            "ink left bearing : ", inkmetrics.leftSidedBearing,
-          "\nink right bearing: ", inkmetrics.rightSideBearing,
-          "\nink width        : ", inkmetrics.width,
-          "\nink ascent       : ", inkmetrics.ascent,
-          "\nink descent      : ", inkmetrics.descent,
-          "\nink attrs        : ", inkmetrics.attrs,
-        );
-      }
-    }
+    void dumpMetrics () const noexcept;
+    void dumpBitmapFormat () const noexcept;
 
-    void dumpBitmapFormat () const nothrow @trusted {
-      conwriteln("bitmap width (in pixels) : ", bmpwidth);
-      conwriteln("bitmap height (in pixels): ", bmpheight);
-      conwriteln("bitmap element size      : ", 1<<(bmpfmt&3), " bytes");
-      conwriteln("byte order               : ", (bmpfmt&4 ? "M" : "L"), "SByte first");
-      conwriteln("bit order                : ", (bmpfmt&8 ? "M" : "L"), "SBit first");
-    }
-    */
-
-    bool getPixel (int x, int y) const {
-      int hgt = metrics.ascent+metrics.descent;
-      if (x < 0 || y < 0 || x >= metrics.width || y >= hgt) return false;
-      /* the byte order (format&4 => LSByte first)*/
-      /* the bit order (format&8 => LSBit first) */
-      /* how each row in each glyph's bitmap is padded (format&3) */
-      /*  0=>bytes, 1=>shorts, 2=>ints */
-      /* what the bits are stored in (bytes, shorts, ints) (format>>4)&3 */
-      /*  0=>bytes, 1=>shorts, 2=>ints */
-      const vuint32 bytesPerItem = 1<<(bmpfmt&3);
-      const vuint32 bytesWidth = metrics.width/8+(metrics.width%8 ? 1 : 0);
-      const vuint32 bytesPerLine = ((bytesWidth/bytesPerItem)+(bytesWidth%bytesPerItem ? 1 : 0))*bytesPerItem;
-      const vuint32 ofs = y*bytesPerLine+x/(bytesPerItem*8)+(bmpfmt&4 ? (x/8%bytesPerItem) : 1-(x/8%bytesPerItem));
-      //!!!if (ofs >= bitmap.length) return false;
-      const vuint8 mask = (vuint8)(bmpfmt&8 ? 0x80>>(x%8) : 0x01<<(x%8));
-      return ((bitmap[ofs]&mask) != 0);
-    }
+    bool getPixel (int x, int y) const noexcept;
   };
 
 public:
@@ -321,54 +280,20 @@ public:
   int maxOverlap;
 
 private:
-  void clearInternal () {
-    glyphs.clear();
-    defaultchar = 0;
-    delete[] bitmaps;
-    bitmaps = nullptr;
-    bitmapsSize = 0;
-    minbounds.clear();
-    maxbounds.clear();
-    inkminbounds.clear();
-    inkmaxbounds.clear();
-    noOverlap = false;
-    constantMetrics = false;
-    terminalFont = false;
-    constantWidth = false;
-    inkInside = false;
-    inkMetrics = false;
-    drawDirectionLTR = false;
-    padding = 0;
-    fntAscent = 0;
-    fntDescent = 0;
-    maxOverlap = 0;
-  }
+  void clearInternal () noexcept;
 
 public:
-  PcfFont () : glyphs(), bitmaps(nullptr), bitmapsSize(0) { clearInternal(); }
+  inline PcfFont () noexcept : glyphs(), bitmaps(nullptr), bitmapsSize(0) { clearInternal(); }
 
-  ~PcfFont () { clear(); }
+  inline ~PcfFont () noexcept { clear(); }
 
-  inline bool isValid () const { return (glyphs.length() > 0); }
+  inline bool isValid () const noexcept { return (glyphs.length() > 0); }
 
-  inline int height () const { return fntAscent+fntDescent; }
+  inline int height () const noexcept { return fntAscent+fntDescent; }
 
-  VOpenGLTexture *createGlyphTexture (int gidx) {
-    Glyph &gl = glyphs[gidx];
-    //!fprintf(stderr, "glyph #%d (ch=%u); wdt=%d; hgt=%d\n", gidx, gl.codepoint, gl.bmpWidth(), gl.bmpHeight());
-    if (gl.bmpWidth() < 1 || gl.bmpHeight() < 1) return nullptr;
-    VOpenGLTexture *tex = VOpenGLTexture::CreateEmpty(NAME_None, gl.bmpWidth(), gl.bmpHeight());
-    for (int dy = 0; dy < gl.bmpHeight(); ++dy) {
-      //!fprintf(stderr, "  ");
-      for (int dx = 0; dx < gl.bmpWidth(); ++dx) {
-        bool pix = gl.getPixel(dx, dy);
-        //!fprintf(stderr, "%c", (pix ? '#' : '.'));
-        tex->img->setPixel(dx, dy, (pix ? VImage::RGBA(255, 255, 255, 255) : VImage::RGBA(0, 0, 0, 0)));
-      }
-      //!fprintf(stderr, "\n");
-    }
-    return tex;
-  }
+  inline void clear () noexcept { clearInternal(); }
+
+  VOpenGLTexture *createGlyphTexture (int gidx) noexcept;
 
   // return width
   /*
@@ -408,17 +333,124 @@ public:
   }
   */
 
-  void clear () {
-    clearInternal();
+  bool load (VStream &fl) noexcept;
+};
+
+
+//==========================================================================
+//
+//  PcfFont::Glyph::getPixel
+//
+//==========================================================================
+bool PcfFont::Glyph::getPixel (int x, int y) const noexcept {
+  int hgt = metrics.ascent+metrics.descent;
+  if (x < 0 || y < 0 || x >= metrics.width || y >= hgt) return false;
+  /* the byte order (format&4 => LSByte first)*/
+  /* the bit order (format&8 => LSBit first) */
+  /* how each row in each glyph's bitmap is padded (format&3) */
+  /*  0=>bytes, 1=>shorts, 2=>ints */
+  /* what the bits are stored in (bytes, shorts, ints) (format>>4)&3 */
+  /*  0=>bytes, 1=>shorts, 2=>ints */
+  const vuint32 bytesPerItem = 1<<(bmpfmt&3);
+  const vuint32 bytesWidth = metrics.width/8+(metrics.width%8 ? 1 : 0);
+  const vuint32 bytesPerLine = ((bytesWidth/bytesPerItem)+(bytesWidth%bytesPerItem ? 1 : 0))*bytesPerItem;
+  const vuint32 ofs = y*bytesPerLine+x/(bytesPerItem*8)+(bmpfmt&4 ? (x/8%bytesPerItem) : 1-(x/8%bytesPerItem));
+  //!!!if (ofs >= bitmap.length) return false;
+  const vuint8 mask = (vuint8)(bmpfmt&8 ? 0x80>>(x%8) : 0x01<<(x%8));
+  return ((bitmap[ofs]&mask) != 0);
+}
+
+
+//==========================================================================
+//
+//  PcfFont::Glyph::dumpMetrics
+//
+//==========================================================================
+void PcfFont::Glyph::dumpMetrics () const noexcept {
+  GLog.Logf(NAME_Debug, "left bearing : %d", metrics.leftSidedBearing);
+  GLog.Logf(NAME_Debug, "right bearing: %d", metrics.rightSideBearing);
+  GLog.Logf(NAME_Debug, "width        : %d", metrics.width);
+  GLog.Logf(NAME_Debug, "ascent       : %d", metrics.ascent);
+  GLog.Logf(NAME_Debug, "descent      : %d", metrics.descent);
+  GLog.Logf(NAME_Debug, "attrs        : 0x%08x", metrics.attrs);
+  if (inkmetrics != metrics) {
+    GLog.Logf(NAME_Debug, "ink left bearing : %d", inkmetrics.leftSidedBearing);
+    GLog.Logf(NAME_Debug, "ink right bearing: %d", inkmetrics.rightSideBearing);
+    GLog.Logf(NAME_Debug, "ink width        : %d", inkmetrics.width);
+    GLog.Logf(NAME_Debug, "ink ascent       : %d", inkmetrics.ascent);
+    GLog.Logf(NAME_Debug, "ink descent      : %d", inkmetrics.descent);
+    GLog.Logf(NAME_Debug, "ink attrs        : 0x%08x", inkmetrics.attrs);
   }
+}
 
-  bool load (VStream &fl) {
-    clear();
 
-    vuint32 bmpfmt = 0;
-    bool bebyte = false;
-    bool bebit = false;
-    vuint32 curfmt;
+//==========================================================================
+//
+//  PcfFont::Glyph::dumpBitmapFormat
+//
+//==========================================================================
+void PcfFont::Glyph::dumpBitmapFormat () const noexcept {
+  const vuint32 bytesPerItem = 1<<(bmpfmt&3);
+  const vuint32 bytesWidth = metrics.width/8+(metrics.width%8 ? 1 : 0);
+  const vuint32 bytesPerLine = ((bytesWidth/bytesPerItem)+(bytesWidth%bytesPerItem ? 1 : 0))*bytesPerItem;
+  GLog.Logf(NAME_Debug, "bitmap width (in pixels) : %u", bytesPerLine*8);
+  GLog.Logf(NAME_Debug, "bitmap element size      : %d bytes", 1<<(bmpfmt&3));
+  GLog.Logf(NAME_Debug, "byte order               : %cSByte first", (bmpfmt&4 ? 'M' : 'L'));
+  GLog.Logf(NAME_Debug, "bit order                : %cSBit first", (bmpfmt&8 ? 'M' : 'L'));
+}
+
+
+//==========================================================================
+//
+//  PcfFont::clearInternal
+//
+//==========================================================================
+void PcfFont::clearInternal () noexcept {
+  glyphs.clear();
+  defaultchar = 0;
+  delete[] bitmaps;
+  bitmaps = nullptr;
+  bitmapsSize = 0;
+  minbounds.clear();
+  maxbounds.clear();
+  inkminbounds.clear();
+  inkmaxbounds.clear();
+  noOverlap = false;
+  constantMetrics = false;
+  terminalFont = false;
+  constantWidth = false;
+  inkInside = false;
+  inkMetrics = false;
+  drawDirectionLTR = false;
+  padding = 0;
+  fntAscent = 0;
+  fntDescent = 0;
+  maxOverlap = 0;
+}
+
+
+//==========================================================================
+//
+//  PcfFont::createGlyphTexture
+//
+//==========================================================================
+VOpenGLTexture *PcfFont::createGlyphTexture (int gidx) noexcept {
+  Glyph &gl = glyphs[gidx];
+  //!GLog.Logf(NAME_Debug, "glyph #%d (ch=%u); wdt=%d; hgt=%d", gidx, gl.codepoint, gl.bmpWidth(), gl.bmpHeight());
+  if (gl.bmpWidth() < 1 || gl.bmpHeight() < 1) return nullptr;
+  VOpenGLTexture *tex = VOpenGLTexture::CreateEmpty(NAME_None, gl.bmpWidth(), gl.bmpHeight());
+  for (int dy = 0; dy < gl.bmpHeight(); ++dy) {
+    //!fprintf(stderr, "  ");
+    for (int dx = 0; dx < gl.bmpWidth(); ++dx) {
+      bool pix = gl.getPixel(dx, dy);
+      //!fprintf(stderr, "%c", (pix ? '#' : '.'));
+      tex->img->setPixel(dx, dy, (pix ? VImage::RGBA(255, 255, 255, 255) : VImage::RGBA(0, 0, 0, 0)));
+    }
+    //!fprintf(stderr, "\n");
+  }
+  return tex;
+}
+
 
 #define resetFormat()  do { bebyte = false; bebit = false; } while (0)
 
@@ -481,424 +513,437 @@ public:
   dest = (tmpb != 0); \
 } while (0)
 
-    char sign[4];
-    auto fstart = fl.Tell();
-    fl.Serialise(sign, 4);
-    if (memcmp(sign, "\x01" "fcp", 4) != 0) return false;
-    vuint32 tablecount;
-    readInt(vuint32, tablecount);
-    //version(pcf_debug) conwriteln("tables: ", tablecount);
-    if (tablecount == 0 || tablecount > 128) return false;
 
-    // load TOC
-    TocEntry tables[128];
-    memset(tables, 0, sizeof(tables));
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      readInt(vuint32, tbl.type);
-      readInt(vuint32, tbl.format);
-      readInt(vuint32, tbl.size);
-      readInt(vuint32, tbl.offset);
-      if (!tbl.isTypeCorrect()) return false;
-      //conwriteln("table #", tidx, " is '", tbl.typeName, "'");
-    }
+//==========================================================================
+//
+//  PcfFont::load
+//
+//==========================================================================
+bool PcfFont::load (VStream &fl) noexcept {
+  clear();
 
-    // load properties
-    /*
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_PROPERTIES) {
-        if (props !is null) throw new Exception("more than one property table in PCF");
-        fl.seek(fstart+tbl.offset);
-        auto fmt = fl.readNum!vuint32;
-        assert(fmt == tbl.format);
-        setupFormat(tbl);
-        version(pcf_debug) conwriteln("property table format: ", fmt);
-        auto count = readInt!vuint32;
-        version(pcf_debug) conwriteln(count, " properties");
-        if (count > int.max/16) throw new Exception("string table too big");
-        static struct Prp { vuint32 nofs; vuint8 strflag; vuint32 value; }
-        Prp[] fprops;
-        foreach (; 0..count) {
-          fprops.arrAppend(Prp());
-          fprops[$-1].nofs = readInt!vuint32;
-          fprops[$-1].strflag = readInt!vuint8;
-          fprops[$-1].value = readInt!vuint32;
-        }
-        while ((fl.tell-fstart)&3) fl.readNum!vuint8;
-        vuint32 stblsize = readInt!vuint32;
-        if (stblsize > int.max/16) throw new Exception("string table too big");
-        char[] stbl;
-        scope(exit) delete stbl;
-        stbl.length = stblsize;
-        if (stbl.length) fl.rawReadExact(stbl);
-        // build property table
-        foreach (const ref prp; fprops) {
-          vuint32 nend = prp.nofs;
-          if (nend >= stbl.length || stbl.ptr[nend] == 0) throw new Exception("invalid property name offset");
+  vuint32 bmpfmt = 0;
+  bool bebyte = false;
+  bool bebit = false;
+  vuint32 curfmt;
+
+  char sign[4];
+  auto fstart = fl.Tell();
+  fl.Serialise(sign, 4);
+  if (memcmp(sign, "\x01" "fcp", 4) != 0) return false;
+  vuint32 tablecount;
+  readInt(vuint32, tablecount);
+  //version(pcf_debug) conwriteln("tables: ", tablecount);
+  if (tablecount == 0 || tablecount > 128) return false;
+
+  // load TOC
+  TocEntry tables[128];
+  memset(tables, 0, sizeof(tables));
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    readInt(vuint32, tbl.type);
+    readInt(vuint32, tbl.format);
+    readInt(vuint32, tbl.size);
+    readInt(vuint32, tbl.offset);
+    if (!tbl.isTypeCorrect()) return false;
+    //conwriteln("table #", tidx, " is '", tbl.typeName, "'");
+  }
+
+  // load properties
+  /*
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_PROPERTIES) {
+      if (props !is null) throw new Exception("more than one property table in PCF");
+      fl.seek(fstart+tbl.offset);
+      auto fmt = fl.readNum!vuint32;
+      assert(fmt == tbl.format);
+      setupFormat(tbl);
+      version(pcf_debug) conwriteln("property table format: ", fmt);
+      auto count = readInt!vuint32;
+      version(pcf_debug) conwriteln(count, " properties");
+      if (count > int.max/16) throw new Exception("string table too big");
+      static struct Prp { vuint32 nofs; vuint8 strflag; vuint32 value; }
+      Prp[] fprops;
+      foreach (; 0..count) {
+        fprops.arrAppend(Prp());
+        fprops[$-1].nofs = readInt!vuint32;
+        fprops[$-1].strflag = readInt!vuint8;
+        fprops[$-1].value = readInt!vuint32;
+      }
+      while ((fl.tell-fstart)&3) fl.readNum!vuint8;
+      vuint32 stblsize = readInt!vuint32;
+      if (stblsize > int.max/16) throw new Exception("string table too big");
+      char[] stbl;
+      scope(exit) delete stbl;
+      stbl.length = stblsize;
+      if (stbl.length) fl.rawReadExact(stbl);
+      // build property table
+      foreach (const ref prp; fprops) {
+        vuint32 nend = prp.nofs;
+        if (nend >= stbl.length || stbl.ptr[nend] == 0) throw new Exception("invalid property name offset");
+        while (nend < stbl.length && stbl.ptr[nend]) ++nend;
+        VStr pname = stbl[prp.nofs..nend].idup;
+        if (prp.strflag) {
+          nend = prp.value;
+          if (nend >= stbl.length) throw new Exception("invalid property value offset");
           while (nend < stbl.length && stbl.ptr[nend]) ++nend;
-          VStr pname = stbl[prp.nofs..nend].idup;
-          if (prp.strflag) {
-            nend = prp.value;
-            if (nend >= stbl.length) throw new Exception("invalid property value offset");
-            while (nend < stbl.length && stbl.ptr[nend]) ++nend;
-            VStr pval = stbl[prp.value..nend].idup;
-            version(pcf_debug) conwriteln("  STR property '", pname, "' is '", pval, "'");
-            props[pname] = Prop(pname, pval, 0);
-          } else {
-            version(pcf_debug) conwriteln("  INT property '", pname, "' is ", prp.value);
-            props[pname] = Prop(pname, null, prp.value);
-          }
-        }
-      }
-    }
-    //if (props is null) throw new Exception("no property table in PCF");
-    */
-
-    //vuint32[] gboffsets; // glyph bitmap offsets
-    //scope(exit) delete gboffsets;
-    TArray<vuint32> gboffsets;
-
-    // load bitmap table
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_BITMAPS) {
-        if (bitmaps) return false;
-        fl.Seek(fstart+tbl.offset);
-        resetFormat();
-        vuint32 fmt;
-        readInt(vuint32, fmt);
-        if (fmt != tbl.format) return false;
-        setupFormat(tbl);
-        bmpfmt = tbl.format;
-        vuint32 count;
-        readInt(vuint32, count);
-        if (count == 0) return false;
-        if (count > 0x00ffffff) return false;
-        gboffsets.SetNum((int)count);
-        for (int oidx = 0; oidx < (int)count; ++oidx) {
-          vuint32 v;
-          readInt(vuint32, v);
-          gboffsets[oidx] = v;
-        }
-        vuint32 sizes[4];
-        readInt(vuint32, sizes[0]);
-        readInt(vuint32, sizes[1]);
-        readInt(vuint32, sizes[2]);
-        readInt(vuint32, sizes[3]);
-        vuint32 realsize = sizes[bmpfmt&3];
-        if (realsize == 0) return 0;
-        if (realsize > 0x00ffffff) return 0;
-        bitmaps = new vuint8[realsize];
-        bitmapsSize = realsize;
-        fl.Serialise(bitmaps, realsize);
-        if (fl.IsError()) return false;
-        //bitmaps.length = realsize;
-        //bitmaps.gcMarkHeadAnchor;
-        //fl.rawReadExact(bitmaps);
-        //version(pcf_debug) conwriteln(realsize, " bytes of bitmap data for ", count, " glyphs");
-        /*!!!
-        foreach (immutable idx, immutable v; gboffsets) {
-          if (v >= bitmaps.length) { import std.format : format; throw new Exception("invalid bitmap data offset (0x%08x) for glyph #%d in PCF".format(v, idx)); }
-        }
-        */
-      }
-    }
-    if (!bitmaps) return false;
-
-    // load encoding table, fill glyph table
-    glyphs.SetNum(gboffsets.length());
-    //immutable int bytesPerItem = 1<<(bmpfmt&3);
-    for (int idx = 0; idx < glyphs.length(); ++idx) {
-      Glyph &gl = glyphs[idx];
-      //gl.index = (vuint32)idx;
-      //uint realofs = gboffsets[idx]*bytesPerItem;
-      //if (realofs >= bitmaps.length) throw new Exception("invalid glyph bitmap offset in PCF");
-      vuint32 realofs = gboffsets[idx];
-      gl.bitmap = bitmaps+realofs;
-      gl.bmpfmt = bmpfmt;
-    }
-
-    bool encodingsFound = false;
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_BDF_ENCODINGS) {
-        if (encodingsFound) return false;
-        encodingsFound = true;
-        fl.Seek(fstart+tbl.offset);
-        resetFormat();
-        vuint32 fmt;
-        readInt(vuint32, fmt);
-        if (fmt != tbl.format) return false;
-        setupFormat(tbl);
-        vuint16 mincb2; readInt(vuint16, mincb2);
-        vuint16 maxcb2; readInt(vuint16, maxcb2);
-        vuint16 minb1; readInt(vuint16, minb1);
-        vuint16 maxb1; readInt(vuint16, maxb1);
-        readInt(vuint16, defaultchar);
-        if (minb1 == 0 && minb1 == maxb1) {
-          // single-byte encoding
-          for (vuint32 ci = mincb2; ci <= maxcb2; ++ci) {
-            //immutable dchar dch = cast(dchar)ci;
-            vuint32 gidx; readInt(vuint16, gidx);
-            if (gidx != 0xffff) {
-              if (gidx >= (vuint32)gboffsets.length()) return false;
-              //glyphc2i[dch] = gidx;
-              glyphs[gidx].codepoint = ci;
-            }
-          }
+          VStr pval = stbl[prp.value..nend].idup;
+          version(pcf_debug) conwriteln("  STR property '", pname, "' is '", pval, "'");
+          props[pname] = Prop(pname, pval, 0);
         } else {
-          // multi-byte encoding
-          for (vuint32 hibyte = minb1; hibyte <= maxb1; ++hibyte) {
-            for (vuint32 lobyte = mincb2; lobyte <= maxcb2; ++lobyte) {
-              //immutable dchar dch = cast(dchar)((hibyte<<8)|lobyte);
-              vuint32 gidx; readInt(vuint16, gidx);
-              if (gidx != 0xffff) {
-                if (gidx >= (vuint32)gboffsets.length()) return false;
-                //glyphc2i[dch] = gidx;
-                glyphs[gidx].codepoint = ((hibyte<<8)|lobyte);
-              }
-            }
-          }
-        }
-        /*
-        version(pcf_debug) {{
-          import std.algorithm : sort;
-          conwriteln(glyphc2i.length, " glyphs in font");
-          //foreach (dchar dch; glyphc2i.values.sort) conwritefln!"  \\u%04X"(cast(uint)dch);
-        }}
-        */
-      }
-    }
-    if (!encodingsFound) return false;
-
-    // load metrics
-    bool metricsFound = false;
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_METRICS) {
-        if (metricsFound) return false;
-        metricsFound = true;
-        fl.Seek(fstart+tbl.offset);
-        resetFormat();
-        vuint32 fmt;
-        readInt(vuint32, fmt);
-        if (fmt != tbl.format) return false;
-        setupFormat(tbl);
-        vuint32 count;
-        if ((curfmt&~0xffU) == PCF_DEFAULT_FORMAT) {
-          //conwriteln("metrics aren't compressed");
-          readInt(vuint32, count);
-        } else if ((curfmt&~0xffU) == PCF_COMPRESSED_METRICS) {
-          //conwriteln("metrics are compressed");
-          readInt(vuint16, count);
-        } else {
-          return false;
-        }
-        if (count < (vuint32)glyphs.length()) return false;
-        for (int gidx = 0; gidx < glyphs.length(); ++gidx) {
-          Glyph &gl = glyphs[gidx];
-          readMetrics(gl.metrics);
-          gl.inkmetrics = gl.metrics;
+          version(pcf_debug) conwriteln("  INT property '", pname, "' is ", prp.value);
+          props[pname] = Prop(pname, null, prp.value);
         }
       }
     }
-    if (!metricsFound) return false;
+  }
+  //if (props is null) throw new Exception("no property table in PCF");
+  */
 
-    // load ink metrics (if any)
-    metricsFound = false;
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_INK_METRICS) {
-        if (metricsFound) return false;
-        metricsFound = true;
-        fl.Seek(fstart+tbl.offset);
-        resetFormat();
-        vuint32 fmt;
-        readInt(vuint32, fmt);
-        if (fmt != tbl.format) return false;
-        setupFormat(tbl);
-        vuint32 count;
-        if ((curfmt&~0xffU) == PCF_DEFAULT_FORMAT) {
-          //conwriteln("ink metrics aren't compressed");
-          readInt(vuint32, count);
-        } else if ((curfmt&~0xffU) == PCF_COMPRESSED_METRICS) {
-          //conwriteln("ink metrics are compressed");
-          readInt(vuint16, count);
-        } else {
-          return false;
-        }
-        if (count > (vuint32)glyphs.length()) count = (vuint32)glyphs.length();
-        for (int gidx = 0; gidx < glyphs.length(); ++gidx) {
-          Glyph &gl = glyphs[gidx];
-          readMetrics(gl.inkmetrics);
-        }
-      }
-    }
-    //version(pcf_debug) conwriteln("ink metrics found: ", metricsFound);
+  //vuint32[] gboffsets; // glyph bitmap offsets
+  //scope(exit) delete gboffsets;
+  TArray<vuint32> gboffsets;
 
-    // load glyph names (if any)
-    /*
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (tbl.type == PCF_GLYPH_NAMES) {
-        fl.seek(fstart+tbl.offset);
-        auto fmt = fl.readNum!vuint32;
-        assert(fmt == tbl.format);
-        setupFormat(tbl);
-        vuint32 count = readInt!vuint32;
-        if (count == 0) break;
-        if (count > int.max/16) break;
-        auto nofs = new vuint32[](count);
-        scope(exit) delete nofs;
-        foreach (ref v; nofs) v = readInt!vuint32;
-        vuint32 stblsize = readInt!vuint32;
-        if (stblsize > int.max/16) break;
-        auto stbl = new char[](stblsize);
-        scope(exit) delete stbl;
-        fl.rawReadExact(stbl);
-        if (count > glyphs.length) count = cast(vuint32)glyphs.length;
-        foreach (ref gl; glyphs[0..count]) {
-          vuint32 stofs = nofs[gl.index];
-          if (stofs >= stbl.length) break;
-          vuint32 eofs = stofs;
-          while (eofs < stbl.length && stbl.ptr[eofs]) ++eofs;
-          if (eofs > stofs) gl.name = stbl[stofs..eofs].idup;
-        }
-      }
-    }
-    */
-
-    /* not needed
-    //int mFontHeight = 0;
-    mFontMinWidth = int.max;
-    mFontMaxWidth = 0;
-    foreach (const ref gl; glyphs) {
-      if (mFontMinWidth > gl.inkmetrics.width) mFontMinWidth = gl.inkmetrics.width;
-      if (mFontMaxWidth < gl.inkmetrics.width) mFontMaxWidth = gl.inkmetrics.width;
-      //int hgt = gl.inkmetrics.ascent+gl.inkmetrics.descent;
-      //if (mFontHeight < hgt) mFontHeight = hgt;
-    }
-    if (mFontMinWidth < 0) mFontMinWidth = 0;
-    if (mFontMaxWidth < 0) mFontMaxWidth = 0;
-    */
-
-    // load accelerators
-    int accelTbl = -1;
-    for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
-      TocEntry &tbl = tables[tidx];
-      if (accelTbl < 0 && (tbl.type == PCF_ACCELERATORS || tbl.type == PCF_BDF_ACCELERATORS)) {
-        accelTbl = (int)tidx;
-        if (tbl.type == PCF_BDF_ACCELERATORS) break;
-      }
-    }
-
-    if (accelTbl >= 0) {
-      CharMetrics minbounds, maxbounds;
-      CharMetrics inkminbounds, inkmaxbounds;
-      TocEntry &tbl = tables[accelTbl];
+  // load bitmap table
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_BITMAPS) {
+      if (bitmaps) return false;
       fl.Seek(fstart+tbl.offset);
       resetFormat();
       vuint32 fmt;
       readInt(vuint32, fmt);
       if (fmt != tbl.format) return false;
       setupFormat(tbl);
-      // load font parameters
-      readBool(noOverlap);
-      readBool(constantMetrics);
-      readBool(terminalFont);
-      readBool(constantWidth);
-      readBool(inkInside);
-      readBool(inkMetrics);
-      readBool(drawDirectionLTR);
-      readInt(vuint8, padding);
-      readInt(vint32, fntAscent);
-      readInt(vint32, fntDescent);
-      readInt(vint32, maxOverlap);
-      readInt(vint16, minbounds.leftSidedBearing);
-      readInt(vint16, minbounds.rightSideBearing);
-      readInt(vint16, minbounds.width);
-      readInt(vint16, minbounds.ascent);
-      readInt(vint16, minbounds.descent);
-      readInt(vuint16, minbounds.attrs);
-      readInt(vint16, maxbounds.leftSidedBearing);
-      readInt(vint16, maxbounds.rightSideBearing);
-      readInt(vint16, maxbounds.width);
-      readInt(vint16, maxbounds.ascent);
-      readInt(vint16, maxbounds.descent);
-      readInt(vuint16, maxbounds.attrs);
-      if ((curfmt&~0xff) == PCF_ACCEL_W_INKBOUNDS) {
-        readInt(vint16, inkminbounds.leftSidedBearing);
-        readInt(vint16, inkminbounds.rightSideBearing);
-        readInt(vint16, inkminbounds.width);
-        readInt(vint16, inkminbounds.ascent);
-        readInt(vint16, inkminbounds.descent);
-        readInt(vuint16, inkminbounds.attrs);
-        readInt(vint16, inkmaxbounds.leftSidedBearing);
-        readInt(vint16, inkmaxbounds.rightSideBearing);
-        readInt(vint16, inkmaxbounds.width);
-        readInt(vint16, inkmaxbounds.ascent);
-        readInt(vint16, inkmaxbounds.descent);
-        readInt(vuint16, inkmaxbounds.attrs);
-      } else {
-        inkminbounds = minbounds;
-        inkmaxbounds = maxbounds;
+      bmpfmt = tbl.format;
+      vuint32 count;
+      readInt(vuint32, count);
+      if (count == 0) return false;
+      if (count > 0x00ffffff) return false;
+      gboffsets.SetNum((int)count);
+      for (int oidx = 0; oidx < (int)count; ++oidx) {
+        vuint32 v;
+        readInt(vuint32, v);
+        gboffsets[oidx] = v;
       }
-      /*
-      version(pcf_debug) {
-        conwriteln("noOverlap       : ", noOverlap);
-        conwriteln("constantMetrics : ", constantMetrics);
-        conwriteln("terminalFont    : ", terminalFont);
-        conwriteln("constantWidth   : ", constantWidth);
-        conwriteln("inkInside       : ", inkInside);
-        conwriteln("inkMetrics      : ", inkMetrics);
-        conwriteln("drawDirectionLTR: ", drawDirectionLTR);
-        conwriteln("padding         : ", padding);
-        conwriteln("fntAscent       : ", fntAscent);
-        conwriteln("fntDescent      : ", fntDescent);
-        conwriteln("maxOverlap      : ", maxOverlap);
-        conwriteln("minbounds       : ", minbounds);
-        conwriteln("maxbounds       : ", maxbounds);
-        conwriteln("ink_minbounds   : ", inkminbounds);
-        conwriteln("ink_maxbounds   : ", inkmaxbounds);
+      vuint32 sizes[4];
+      readInt(vuint32, sizes[0]);
+      readInt(vuint32, sizes[1]);
+      readInt(vuint32, sizes[2]);
+      readInt(vuint32, sizes[3]);
+      vuint32 realsize = sizes[bmpfmt&3];
+      if (realsize == 0) return 0;
+      if (realsize > 0x00ffffff) return 0;
+      bitmaps = new vuint8[realsize];
+      bitmapsSize = realsize;
+      fl.Serialise(bitmaps, realsize);
+      if (fl.IsError()) return false;
+      //bitmaps.length = realsize;
+      //bitmaps.gcMarkHeadAnchor;
+      //fl.rawReadExact(bitmaps);
+      //version(pcf_debug) conwriteln(realsize, " bytes of bitmap data for ", count, " glyphs");
+      /*!!!
+      foreach (immutable idx, immutable v; gboffsets) {
+        if (v >= bitmaps.length) { import std.format : format; throw new Exception("invalid bitmap data offset (0x%08x) for glyph #%d in PCF".format(v, idx)); }
       }
       */
-    } else {
-      //throw new Exception("no accelerator info found in PCF");
-      return false;
     }
+  }
+  if (!bitmaps) return false;
 
-    /*
-    version(pcf_debug) {
-      //conwriteln("min width: ", mFontMinWidth);
-      //conwriteln("max width: ", mFontMaxWidth);
-      //conwriteln("height   : ", mFontHeight);
-      version(pcf_debug_dump_bitmaps) {
-        foreach (const ref gl; glyphs) {
-          conwritefln!"=== glyph #%u (\\u%04X) %dx%d==="(gl.index, cast(vuint32)gl.codepoint, gl.bmpwidth, gl.bmpheight);
-          if (gl.name.length) conwriteln("NAME: ", gl.name);
-          conwritefln!"bitmap offset: 0x%08x"(gboffsets[gl.index]);
-          gl.dumpMetrics();
-          gl.dumpBitmapFormat();
-          foreach (immutable int y; 0..gl.bmpheight) {
-            conwrite("  ");
-            foreach (immutable int x; 0..gl.bmpwidth) {
-              if (gl.getPixel(x, y)) conwrite("##"); else conwrite("..");
+  // load encoding table, fill glyph table
+  glyphs.SetNum(gboffsets.length());
+  //immutable int bytesPerItem = 1<<(bmpfmt&3);
+  for (int idx = 0; idx < glyphs.length(); ++idx) {
+    Glyph &gl = glyphs[idx];
+    //gl.index = (vuint32)idx;
+    //uint realofs = gboffsets[idx]*bytesPerItem;
+    //if (realofs >= bitmaps.length) throw new Exception("invalid glyph bitmap offset in PCF");
+    vuint32 realofs = gboffsets[idx];
+    gl.bitmap = bitmaps+realofs;
+    gl.bmpfmt = bmpfmt;
+  }
+
+  bool encodingsFound = false;
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_BDF_ENCODINGS) {
+      if (encodingsFound) return false;
+      encodingsFound = true;
+      fl.Seek(fstart+tbl.offset);
+      resetFormat();
+      vuint32 fmt;
+      readInt(vuint32, fmt);
+      if (fmt != tbl.format) return false;
+      setupFormat(tbl);
+      vuint16 mincb2; readInt(vuint16, mincb2);
+      vuint16 maxcb2; readInt(vuint16, maxcb2);
+      vuint16 minb1; readInt(vuint16, minb1);
+      vuint16 maxb1; readInt(vuint16, maxb1);
+      readInt(vuint16, defaultchar);
+      if (minb1 == 0 && minb1 == maxb1) {
+        // single-byte encoding
+        for (vuint32 ci = mincb2; ci <= maxcb2; ++ci) {
+          //immutable dchar dch = cast(dchar)ci;
+          vuint32 gidx; readInt(vuint16, gidx);
+          if (gidx != 0xffff) {
+            if (gidx >= (vuint32)gboffsets.length()) return false;
+            //glyphc2i[dch] = gidx;
+            glyphs[gidx].codepoint = ci;
+          }
+        }
+      } else {
+        // multi-byte encoding
+        for (vuint32 hibyte = minb1; hibyte <= maxb1; ++hibyte) {
+          for (vuint32 lobyte = mincb2; lobyte <= maxcb2; ++lobyte) {
+            //immutable dchar dch = cast(dchar)((hibyte<<8)|lobyte);
+            vuint32 gidx; readInt(vuint16, gidx);
+            if (gidx != 0xffff) {
+              if (gidx >= (vuint32)gboffsets.length()) return false;
+              //glyphc2i[dch] = gidx;
+              glyphs[gidx].codepoint = ((hibyte<<8)|lobyte);
             }
-            conwriteln;
           }
         }
       }
+      /*
+      version(pcf_debug) {{
+        import std.algorithm : sort;
+        conwriteln(glyphc2i.length, " glyphs in font");
+        //foreach (dchar dch; glyphc2i.values.sort) conwritefln!"  \\u%04X"(cast(uint)dch);
+      }}
+      */
+    }
+  }
+  if (!encodingsFound) return false;
+
+  // load metrics
+  bool metricsFound = false;
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_METRICS) {
+      if (metricsFound) return false;
+      metricsFound = true;
+      fl.Seek(fstart+tbl.offset);
+      resetFormat();
+      vuint32 fmt;
+      readInt(vuint32, fmt);
+      if (fmt != tbl.format) return false;
+      setupFormat(tbl);
+      vuint32 count;
+      if ((curfmt&~0xffU) == PCF_DEFAULT_FORMAT) {
+        //conwriteln("metrics aren't compressed");
+        readInt(vuint32, count);
+      } else if ((curfmt&~0xffU) == PCF_COMPRESSED_METRICS) {
+        //conwriteln("metrics are compressed");
+        readInt(vuint16, count);
+      } else {
+        return false;
+      }
+      if (count < (vuint32)glyphs.length()) return false;
+      for (int gidx = 0; gidx < glyphs.length(); ++gidx) {
+        Glyph &gl = glyphs[gidx];
+        readMetrics(gl.metrics);
+        gl.inkmetrics = gl.metrics;
+      }
+    }
+  }
+  if (!metricsFound) return false;
+
+  // load ink metrics (if any)
+  metricsFound = false;
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_INK_METRICS) {
+      if (metricsFound) return false;
+      metricsFound = true;
+      fl.Seek(fstart+tbl.offset);
+      resetFormat();
+      vuint32 fmt;
+      readInt(vuint32, fmt);
+      if (fmt != tbl.format) return false;
+      setupFormat(tbl);
+      vuint32 count;
+      if ((curfmt&~0xffU) == PCF_DEFAULT_FORMAT) {
+        //conwriteln("ink metrics aren't compressed");
+        readInt(vuint32, count);
+      } else if ((curfmt&~0xffU) == PCF_COMPRESSED_METRICS) {
+        //conwriteln("ink metrics are compressed");
+        readInt(vuint16, count);
+      } else {
+        return false;
+      }
+      if (count > (vuint32)glyphs.length()) count = (vuint32)glyphs.length();
+      for (int gidx = 0; gidx < glyphs.length(); ++gidx) {
+        Glyph &gl = glyphs[gidx];
+        readMetrics(gl.inkmetrics);
+      }
+    }
+  }
+  //version(pcf_debug) conwriteln("ink metrics found: ", metricsFound);
+
+  // load glyph names (if any)
+  /*
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (tbl.type == PCF_GLYPH_NAMES) {
+      fl.seek(fstart+tbl.offset);
+      auto fmt = fl.readNum!vuint32;
+      assert(fmt == tbl.format);
+      setupFormat(tbl);
+      vuint32 count = readInt!vuint32;
+      if (count == 0) break;
+      if (count > int.max/16) break;
+      auto nofs = new vuint32[](count);
+      scope(exit) delete nofs;
+      foreach (ref v; nofs) v = readInt!vuint32;
+      vuint32 stblsize = readInt!vuint32;
+      if (stblsize > int.max/16) break;
+      auto stbl = new char[](stblsize);
+      scope(exit) delete stbl;
+      fl.rawReadExact(stbl);
+      if (count > glyphs.length) count = cast(vuint32)glyphs.length;
+      foreach (ref gl; glyphs[0..count]) {
+        vuint32 stofs = nofs[gl.index];
+        if (stofs >= stbl.length) break;
+        vuint32 eofs = stofs;
+        while (eofs < stbl.length && stbl.ptr[eofs]) ++eofs;
+        if (eofs > stofs) gl.name = stbl[stofs..eofs].idup;
+      }
+    }
+  }
+  */
+
+  /* not needed
+  //int mFontHeight = 0;
+  mFontMinWidth = int.max;
+  mFontMaxWidth = 0;
+  foreach (const ref gl; glyphs) {
+    if (mFontMinWidth > gl.inkmetrics.width) mFontMinWidth = gl.inkmetrics.width;
+    if (mFontMaxWidth < gl.inkmetrics.width) mFontMaxWidth = gl.inkmetrics.width;
+    //int hgt = gl.inkmetrics.ascent+gl.inkmetrics.descent;
+    //if (mFontHeight < hgt) mFontHeight = hgt;
+  }
+  if (mFontMinWidth < 0) mFontMinWidth = 0;
+  if (mFontMaxWidth < 0) mFontMaxWidth = 0;
+  */
+
+  // load accelerators
+  int accelTbl = -1;
+  for (unsigned tidx = 0; tidx < tablecount; ++tidx) {
+    TocEntry &tbl = tables[tidx];
+    if (accelTbl < 0 && (tbl.type == PCF_ACCELERATORS || tbl.type == PCF_BDF_ACCELERATORS)) {
+      accelTbl = (int)tidx;
+      if (tbl.type == PCF_BDF_ACCELERATORS) break;
+    }
+  }
+
+  if (accelTbl >= 0) {
+    CharMetrics minbounds, maxbounds;
+    CharMetrics inkminbounds, inkmaxbounds;
+    TocEntry &tbl = tables[accelTbl];
+    fl.Seek(fstart+tbl.offset);
+    resetFormat();
+    vuint32 fmt;
+    readInt(vuint32, fmt);
+    if (fmt != tbl.format) return false;
+    setupFormat(tbl);
+    // load font parameters
+    readBool(noOverlap);
+    readBool(constantMetrics);
+    readBool(terminalFont);
+    readBool(constantWidth);
+    readBool(inkInside);
+    readBool(inkMetrics);
+    readBool(drawDirectionLTR);
+    readInt(vuint8, padding);
+    readInt(vint32, fntAscent);
+    readInt(vint32, fntDescent);
+    readInt(vint32, maxOverlap);
+    readInt(vint16, minbounds.leftSidedBearing);
+    readInt(vint16, minbounds.rightSideBearing);
+    readInt(vint16, minbounds.width);
+    readInt(vint16, minbounds.ascent);
+    readInt(vint16, minbounds.descent);
+    readInt(vuint16, minbounds.attrs);
+    readInt(vint16, maxbounds.leftSidedBearing);
+    readInt(vint16, maxbounds.rightSideBearing);
+    readInt(vint16, maxbounds.width);
+    readInt(vint16, maxbounds.ascent);
+    readInt(vint16, maxbounds.descent);
+    readInt(vuint16, maxbounds.attrs);
+    if ((curfmt&~0xff) == PCF_ACCEL_W_INKBOUNDS) {
+      readInt(vint16, inkminbounds.leftSidedBearing);
+      readInt(vint16, inkminbounds.rightSideBearing);
+      readInt(vint16, inkminbounds.width);
+      readInt(vint16, inkminbounds.ascent);
+      readInt(vint16, inkminbounds.descent);
+      readInt(vuint16, inkminbounds.attrs);
+      readInt(vint16, inkmaxbounds.leftSidedBearing);
+      readInt(vint16, inkmaxbounds.rightSideBearing);
+      readInt(vint16, inkmaxbounds.width);
+      readInt(vint16, inkmaxbounds.ascent);
+      readInt(vint16, inkmaxbounds.descent);
+      readInt(vuint16, inkmaxbounds.attrs);
+    } else {
+      inkminbounds = minbounds;
+      inkmaxbounds = maxbounds;
+    }
+    /*
+    version(pcf_debug) {
+      conwriteln("noOverlap       : ", noOverlap);
+      conwriteln("constantMetrics : ", constantMetrics);
+      conwriteln("terminalFont    : ", terminalFont);
+      conwriteln("constantWidth   : ", constantWidth);
+      conwriteln("inkInside       : ", inkInside);
+      conwriteln("inkMetrics      : ", inkMetrics);
+      conwriteln("drawDirectionLTR: ", drawDirectionLTR);
+      conwriteln("padding         : ", padding);
+      conwriteln("fntAscent       : ", fntAscent);
+      conwriteln("fntDescent      : ", fntDescent);
+      conwriteln("maxOverlap      : ", maxOverlap);
+      conwriteln("minbounds       : ", minbounds);
+      conwriteln("maxbounds       : ", maxbounds);
+      conwriteln("ink_minbounds   : ", inkminbounds);
+      conwriteln("ink_maxbounds   : ", inkmaxbounds);
     }
     */
+  } else {
+    //throw new Exception("no accelerator info found in PCF");
+    return false;
+  }
+
+  /*
+  version(pcf_debug) {
+    //conwriteln("min width: ", mFontMinWidth);
+    //conwriteln("max width: ", mFontMaxWidth);
+    //conwriteln("height   : ", mFontHeight);
+    version(pcf_debug_dump_bitmaps) {
+      foreach (const ref gl; glyphs) {
+        conwritefln!"=== glyph #%u (\\u%04X) %dx%d==="(gl.index, cast(vuint32)gl.codepoint, gl.bmpwidth, gl.bmpheight);
+        if (gl.name.length) conwriteln("NAME: ", gl.name);
+        conwritefln!"bitmap offset: 0x%08x"(gboffsets[gl.index]);
+        gl.dumpMetrics();
+        gl.dumpBitmapFormat();
+        foreach (immutable int y; 0..gl.bmpheight) {
+          conwrite("  ");
+          foreach (immutable int x; 0..gl.bmpwidth) {
+            if (gl.getPixel(x, y)) conwrite("##"); else conwrite("..");
+          }
+          conwriteln;
+        }
+      }
+    }
+  }
+  */
+  return true;
+}
+
 #undef readBool
 #undef readMetrics
 #undef readInt
 #undef setupFormat
-    return true;
-  }
-};
-
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct ScissorRect {
@@ -970,8 +1015,12 @@ IMPLEMENT_FREE_FUNCTION(VObject, GetTickCount) {
 static vuint32 curmodflags = 0;
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-static int sdl2TranslateKey (SDL_Scancode scan) {
+//==========================================================================
+//
+//  sdl2TranslateKey
+//
+//==========================================================================
+static int sdl2TranslateKey (SDL_Scancode scan) noexcept {
   if (scan >= SDL_SCANCODE_A && scan <= SDL_SCANCODE_Z) return (int)(scan-SDL_SCANCODE_A+'a');
   if (scan >= SDL_SCANCODE_1 && scan <= SDL_SCANCODE_9) return (int)(scan-SDL_SCANCODE_1+'1');
 
@@ -1064,7 +1113,11 @@ static int sdl2TranslateKey (SDL_Scancode scan) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  texUpload
+//
+//==========================================================================
 static bool texUpload (VOpenGLTexture *tx) {
   if (!tx) return false;
   if (!tx->img) { tx->tid = 0; return false; }
@@ -1074,7 +1127,7 @@ static bool texUpload (VOpenGLTexture *tx) {
   glGenTextures(1, &tx->tid);
   if (tx->tid == 0) return false;
 
-  //fprintf(stderr, "uploading texture '%s'\n", *tx->getPath());
+  //GLog.Logf(NAME_Debug, "uploading texture '%s'", *tx->getPath());
 
   glBindTexture(GL_TEXTURE_2D, tx->tid);
   /*
@@ -1103,7 +1156,12 @@ static bool texUpload (VOpenGLTexture *tx) {
 }
 
 
-void unloadAllTextures () {
+//==========================================================================
+//
+//  unloadAllTextures
+//
+//==========================================================================
+static void unloadAllTextures () {
   if (!hw_glctx) return;
   glBindTexture(GL_TEXTURE_2D, 0);
   for (VOpenGLTexture *tx = txHead; tx; tx = tx->next) {
@@ -1112,14 +1170,30 @@ void unloadAllTextures () {
 }
 
 
-void uploadAllTextures () {
+//==========================================================================
+//
+//  uploadAllTextures
+//
+//==========================================================================
+static void uploadAllTextures () {
   if (!hw_glctx) return;
   for (VOpenGLTexture *tx = txHead; tx; tx = tx->next) texUpload(tx);
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-VOpenGLTexture::VOpenGLTexture (VImage *aimg, const VStr &apath)
+
+//**************************************************************************
+//
+// VOpenGLTexture
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  VOpenGLTexture::VOpenGLTexture
+//
+//==========================================================================
+VOpenGLTexture::VOpenGLTexture (VImage *aimg, VStr apath)
   : rc(1)
   , mPath(apath)
   , img(aimg)
@@ -1136,7 +1210,13 @@ VOpenGLTexture::VOpenGLTexture (VImage *aimg, const VStr &apath)
 }
 
 
-// dimensions must be valid!
+//==========================================================================
+//
+//  VOpenGLTexture::VOpenGLTexture
+//
+//  dimensions must be valid!
+//
+//==========================================================================
 VOpenGLTexture::VOpenGLTexture (int awdt, int ahgt)
   : rc(1)
   , mPath()
@@ -1160,6 +1240,11 @@ VOpenGLTexture::VOpenGLTexture (int awdt, int ahgt)
 }
 
 
+//==========================================================================
+//
+//  VOpenGLTexture::~VOpenGLTexture
+//
+//==========================================================================
 VOpenGLTexture::~VOpenGLTexture () {
   if (hw_glctx && tid) {
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1191,7 +1276,12 @@ VOpenGLTexture::~VOpenGLTexture () {
 }
 
 
-void VOpenGLTexture::registerMe () {
+//==========================================================================
+//
+//  VOpenGLTexture::registerMe
+//
+//==========================================================================
+void VOpenGLTexture::registerMe () noexcept {
   if (prev || next) return;
   if (txHead == this) return;
   prev = txTail;
@@ -1200,7 +1290,12 @@ void VOpenGLTexture::registerMe () {
 }
 
 
-void VOpenGLTexture::analyzeImage () {
+//==========================================================================
+//
+//  VOpenGLTexture::analyzeImage
+//
+//==========================================================================
+void VOpenGLTexture::analyzeImage () noexcept {
   if (img) {
     img->smoothEdges();
     mTransparent = true;
@@ -1228,17 +1323,13 @@ void VOpenGLTexture::analyzeImage () {
 }
 
 
-void VOpenGLTexture::addRef () {
-  ++rc;
-}
-
-
-void VOpenGLTexture::release () {
-  if (--rc == 0) delete this;
-}
-
-
-//FIXME: optimize this!
+//==========================================================================
+//
+//  VOpenGLTexture::update
+//
+//  FIXME: optimize this!
+//
+//==========================================================================
 void VOpenGLTexture::update () {
   if (hw_glctx && tid) {
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1250,7 +1341,12 @@ void VOpenGLTexture::update () {
 }
 
 
-VOpenGLTexture *VOpenGLTexture::Load (const VStr &fname) {
+//==========================================================================
+//
+//  VOpenGLTexture::Load
+//
+//==========================================================================
+VOpenGLTexture *VOpenGLTexture::Load (VStr fname) {
   if (fname.length() > 0) {
     VOpenGLTexture **loaded = txLoaded.find(fname);
     if (loaded) { (*loaded)->addRef(); return *loaded; }
@@ -1266,11 +1362,16 @@ VOpenGLTexture *VOpenGLTexture::Load (const VStr &fname) {
   if (!img) return nullptr;
   VOpenGLTexture *res = new VOpenGLTexture(img, rname);
   txLoaded.put(rname, res);
-  //fprintf(stderr, "TXLOADED: '%s' rc=%d, (%p)\n", *res->mPath, res->rc, res);
+  //GLog.Logf(NAME_Debug, "TXLOADED: '%s' rc=%d, (%p)", *res->mPath, res->rc, res);
   return res;
 }
 
 
+//==========================================================================
+//
+//  VOpenGLTexture::CreateEmpty
+//
+//==========================================================================
 VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt) {
   VStr sname;
   if (txname != NAME_None) {
@@ -1287,12 +1388,17 @@ VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt) {
   if (wdt < 1 || hgt < 1 || wdt > 32768 || hgt > 32768) return nullptr;
   VOpenGLTexture *res = new VOpenGLTexture(wdt, hgt);
   if (sname.length() > 0) txLoaded.put(sname, res); //else txLoadedUnnamed.append(res);
-  //fprintf(stderr, "TXLOADED: '%s' rc=%d, (%p)\n", *res->mPath, res->rc, res);
+  //GLog.Logf(NAME_Debug, "TXLOADED: '%s' rc=%d, (%p)", *res->mPath, res->rc, res);
   return res;
 }
 
 
-void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1, float angle) const {
+//==========================================================================
+//
+//  VOpenGLTexture::blitExt
+//
+//==========================================================================
+void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1, float angle) const noexcept {
   if (!tid /*|| VGLVideo::isFullyTransparent() || mTransparent*/) return;
   if (x1 < 0) x1 = img->width;
   if (y1 < 0) y1 = img->height;
@@ -1338,7 +1444,12 @@ void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0
 }
 
 
-void VOpenGLTexture::blitExtRep (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1) const {
+//==========================================================================
+//
+//  VOpenGLTexture::blitExtRep
+//
+//==========================================================================
+void VOpenGLTexture::blitExtRep (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1) const noexcept {
   if (!tid /*|| VGLVideo::isFullyTransparent() || mTransparent*/) return;
   if (x1 < 0) x1 = img->width;
   if (y1 < 0) y1 = img->height;
@@ -1377,8 +1488,13 @@ struct TexQuad {
 }
 */
 
-void VOpenGLTexture::blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQuad *t1) const {
-#ifndef _WIN32
+//==========================================================================
+//
+//  VOpenGLTexture::blitWithLightmap
+//
+//==========================================================================
+void VOpenGLTexture::blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQuad *t1) const noexcept {
+//#ifndef _WIN32
   if (tid) {
     // bind normal texture
     p_glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -1438,11 +1554,16 @@ void VOpenGLTexture::blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQua
   }
   // default value
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-#endif
+//#endif
 }
 
 
-void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const {
+//==========================================================================
+//
+//  VOpenGLTexture::blitAt
+//
+//==========================================================================
+void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const noexcept {
   if (!tid /*|| VGLVideo::isFullyTransparent() || scale <= 0 || mTransparent*/) return;
   int w = img->width;
   int h = img->height;
@@ -1494,7 +1615,12 @@ static int vcGLFreeIdsUsed = 0;
 static int vcGLLastUsedId = 0;
 
 
-static int vcGLAllocId (VGLTexture *obj) {
+//==========================================================================
+//
+//  vcGLAllocId
+//
+//==========================================================================
+static int vcGLAllocId (VGLTexture *obj) noexcept {
   int res;
   if (vcGLFreeIdsUsed > 0) {
     res = vcGLFreeIds[--vcGLFreeIdsUsed];
@@ -1507,7 +1633,12 @@ static int vcGLAllocId (VGLTexture *obj) {
 }
 
 
-static void vcGLFreeId (int id) {
+//==========================================================================
+//
+//  vcGLFreeId
+//
+//==========================================================================
+static void vcGLFreeId (int id) noexcept {
   if (id < 1 || id > vcGLLastUsedId) return;
   vcGLTexMap.remove(id);
   if (vcGLFreeIdsUsed == vcGLFreeIds.length()) {
@@ -1519,14 +1650,26 @@ static void vcGLFreeId (int id) {
 }
 
 
+
+//**************************************************************************
+//
+// VGLTexture
+//
+//**************************************************************************
+
 IMPLEMENT_CLASS(V, GLTexture);
 
 
+//==========================================================================
+//
+//  VGLTexture::Destroy
+//
+//==========================================================================
 void VGLTexture::Destroy () {
   vcGLFreeId(id);
-  //fprintf(stderr, "destroying texture object %p\n", this);
+  //GLog.Logf(NAME_Debug, "destroying texture object %p", this);
   if (tex) {
-    //fprintf(stderr, "  releasing texture '%s'... rc=%d, (%p)\n", *tex->getPath(), tex->getRC(), tex);
+    //GLog.Logf(NAME_Debug, "  releasing texture '%s'... rc=%d, (%p)", *tex->getPath(), tex->getRC(), tex);
     tex->release();
     tex = nullptr;
   }
@@ -1549,7 +1692,7 @@ IMPLEMENT_FUNCTION(VGLTexture, Load) {
     VGLTexture *ifile = SpawnWithReplace<VGLTexture>();
     ifile->tex = tex;
     ifile->id = vcGLAllocId(ifile);
-    //fprintf(stderr, "created texture object %p (%p)\n", ifile, ifile->tex);
+    //GLog.Logf(NAME_Debug, "created texture object %p (%p)", ifile, ifile->tex);
     RET_REF((VObject *)ifile);
   } else {
     RET_REF(nullptr);
@@ -1646,7 +1789,7 @@ IMPLEMENT_FUNCTION(VGLTexture, CreateEmpty) {
     VGLTexture *ifile = SpawnWithReplace<VGLTexture>();
     ifile->tex = tex;
     ifile->id = vcGLAllocId(ifile);
-    //fprintf(stderr, "created texture object %p (%p)\n", ifile, ifile->tex);
+    //GLog.Logf(NAME_Debug, "created texture object %p (%p)", ifile, ifile->tex);
     RET_REF((VObject *)ifile);
   } else {
     RET_REF(nullptr);
@@ -1732,6 +1875,7 @@ int VGLVideo::stencilBits = 0;
 int VGLVideo::alphaTestFunc = VGLVideo::STC_Always;
 float VGLVideo::alphaFuncVal = 0.0f;
 bool VGLVideo::in3dmode = false;
+bool VGLVideo::dbgDumpOpenGLInfo = false;
 
 
 struct TimerInfo {
@@ -1745,8 +1889,14 @@ static TMapNC<int, TimerInfo> timerMap; // key: timer id; value: timer info
 static int timerLastUsedId = 0;
 
 
-// doesn't insert anything in `timerMap`!
-static int timerAllocId () {
+//==========================================================================
+//
+//  timerAllocId
+//
+//  doesn't insert anything in `timerMap`!
+//
+//==========================================================================
+static int timerAllocId () noexcept {
   int res = 0;
   if (timerLastUsedId == 0) timerLastUsedId = 1;
   if (timerLastUsedId < 0x7ffffff && timerMap.has(timerLastUsedId)) ++timerLastUsedId;
@@ -1759,8 +1909,14 @@ static int timerAllocId () {
 }
 
 
-// removes element from `timerMap`!
-static void timerFreeId (int id) {
+//==========================================================================
+//
+//  timerFreeId
+//
+//  removes element from `timerMap`!
+//
+//==========================================================================
+static void timerFreeId (int id) noexcept {
   if (id <= 0) return;
   TimerInfo *ti = timerMap.get(id);
   if (ti) {
@@ -1773,7 +1929,12 @@ static void timerFreeId (int id) {
 }
 
 
-static Uint32 sdlTimerCallback (Uint32 interval, void *param) {
+//==========================================================================
+//
+//  sdlTimerCallback
+//
+//==========================================================================
+static Uint32 sdlTimerCallback (Uint32 interval, void *param) noexcept {
   SDL_Event event;
   SDL_UserEvent userevent;
 
@@ -1781,7 +1942,7 @@ static Uint32 sdlTimerCallback (Uint32 interval, void *param) {
 
   TimerInfo *ti = timerMap.get(id);
   if (ti) {
-    //fprintf(stderr, "timer cb: id=%d\n", id);
+    //GLog.Logf(NAME_Debug, "timer cb: id=%d", id);
     userevent.type = SDL_USEREVENT;
     userevent.code = 1;
     userevent.data1 = (void *)(intptr_t)ti->id;
@@ -1798,10 +1959,16 @@ static Uint32 sdlTimerCallback (Uint32 interval, void *param) {
 }
 
 
-// returns timer id or 0
-// if id <= 0, creates new unique timer id
-// if interval is < 1, returns with error and won't create timer
-int VGLVideo::CreateTimerWithId (int id, int intervalms, bool oneShot) {
+//==========================================================================
+//
+//  VGLVideo::CreateTimerWithId
+//
+//  returns timer id or 0
+//  if id <= 0, creates new unique timer id
+//  if interval is < 1, returns with error and won't create timer
+//
+//==========================================================================
+int VGLVideo::CreateTimerWithId (int id, int intervalms, bool oneShot) noexcept {
   if (intervalms < 1) return 0;
   if (id <= 0) {
     // get new id
@@ -1810,16 +1977,19 @@ int VGLVideo::CreateTimerWithId (int id, int intervalms, bool oneShot) {
     if (timerMap.has(id)) return 0;
   }
 
+  vassert(sdlTimerInited);
+  /*
   if (!sdlTimerInited) {
     sdlTimerInited = true;
     if (SDL_InitSubSystem(SDL_INIT_TIMER|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(TIMER): %s\n", SDL_GetError());
   }
+  */
 
-  //fprintf(stderr, "id=%d; interval=%d; one=%d\n", id, intervalms, (int)oneShot);
+  //GLog.Logf(NAME_Debug, "id=%d; interval=%d; one=%d", id, intervalms, (int)oneShot);
   TimerInfo ti;
   ti.sdlid = SDL_AddTimer(intervalms, &sdlTimerCallback, (void *)(intptr_t)id);
   if (ti.sdlid == 0) {
-    fprintf(stderr, "CANNOT create timer: id=%d; interval=%d; one=%d\n", id, intervalms, (int)oneShot);
+    GLog.Logf(NAME_Error, "CANNOT create timer: id=%d; interval=%d; one=%d", id, intervalms, (int)oneShot);
     timerFreeId(id);
     return 0;
   }
@@ -1831,34 +2001,62 @@ int VGLVideo::CreateTimerWithId (int id, int intervalms, bool oneShot) {
 }
 
 
-// `true`: deleted, `false`: no such timer
-bool VGLVideo::DeleteTimer (int id) {
+//==========================================================================
+//
+//  VGLVideo::DeleteTimer
+//
+//  `true`: deleted, `false`: no such timer
+//
+//==========================================================================
+bool VGLVideo::DeleteTimer (int id) noexcept {
   if (id <= 0 || !timerMap.has(id)) return false;
   timerFreeId(id);
   return true;
 }
 
 
-bool VGLVideo::IsTimerExists (int id) {
+//==========================================================================
+//
+//  VGLVideo::IsTimerExists
+//
+//==========================================================================
+bool VGLVideo::IsTimerExists (int id) noexcept {
   return (id > 0 && timerMap.has(id));
 }
 
 
-bool VGLVideo::IsTimerOneShot (int id) {
+//==========================================================================
+//
+//  VGLVideo::IsTimerOneShot
+//
+//==========================================================================
+bool VGLVideo::IsTimerOneShot (int id) noexcept {
   TimerInfo *ti = timerMap.get(id);
   return (ti && ti->oneShot);
 }
 
 
-// 0: no such timer
-int VGLVideo::GetTimerInterval (int id) {
+//==========================================================================
+//
+//  VGLVideo::GetTimerInterval
+//
+//  0: no such timer
+//
+//==========================================================================
+int VGLVideo::GetTimerInterval (int id) noexcept {
   TimerInfo *ti = timerMap.get(id);
   return (ti ? ti->interval : 0);
 }
 
 
-// returns success flag; won't do anything if interval is < 1
-bool VGLVideo::SetTimerInterval (int id, int intervalms) {
+//==========================================================================
+//
+//  VGLVideo::SetTimerInterval
+//
+//  returns success flag; won't do anything if interval is < 1
+//
+//==========================================================================
+bool VGLVideo::SetTimerInterval (int id, int intervalms) noexcept {
   if (intervalms < 1) return false;
   TimerInfo *ti = timerMap.get(id);
   if (ti) {
@@ -1869,8 +2067,12 @@ bool VGLVideo::SetTimerInterval (int id, int intervalms) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-static void ShutdownJoystick (bool closesubsys) {
+//==========================================================================
+//
+//  ShutdownJoystick
+//
+//==========================================================================
+static void ShutdownJoystick (bool closesubsys) noexcept{
   if (!sdlJoystickInited) return;
   //if (haptic) { SDL_HapticClose(haptic); haptic = nullptr; }
   if (joystick) { SDL_JoystickClose(joystick); joystick = nullptr; }
@@ -1961,7 +2163,12 @@ static void OpenJoystick (int jnum) {
 
 #include "ctldb.c"
 
-static void StartupJoystick () {
+//==========================================================================
+//
+//  StartupJoystick
+//
+//==========================================================================
+static void StartupJoystick () noexcept {
   ShutdownJoystick(true);
 
   // load user controller mappings
@@ -2029,7 +2236,12 @@ enum {
 */
 
 
-static GLenum convertStencilOp (int op) {
+//==========================================================================
+//
+//  convertStencilOp
+//
+//==========================================================================
+static GLenum convertStencilOp (const int op) noexcept {
   switch (op) {
     case VGLVideo::STC_Keep: return GL_KEEP;
     case VGLVideo::STC_Zero: return GL_ZERO;
@@ -2045,7 +2257,12 @@ static GLenum convertStencilOp (int op) {
 }
 
 
-static GLenum convertStencilFunc (int op) {
+//==========================================================================
+//
+//  convertStencilFunc
+//
+//==========================================================================
+static GLenum convertStencilFunc (const int op) noexcept {
   switch (op) {
     case VGLVideo::STC_Never: return GL_NEVER;
     case VGLVideo::STC_Less: return GL_LESS;
@@ -2061,7 +2278,12 @@ static GLenum convertStencilFunc (int op) {
 }
 
 
-static GLenum convertBlendFunc (int op) {
+//==========================================================================
+//
+//  convertBlendFunc
+//
+//==========================================================================
+static GLenum convertBlendFunc (const int op) noexcept {
   switch (op) {
     case VGLVideo::BlendFunc_Add: return GL_FUNC_ADD;
     case VGLVideo::BlendFunc_Sub: return GL_FUNC_SUBTRACT;
@@ -2074,8 +2296,12 @@ static GLenum convertBlendFunc (int op) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VGLVideo::forceAlphaFunc () {
+//==========================================================================
+//
+//  VGLVideo::forceAlphaFunc
+//
+//==========================================================================
+void VGLVideo::forceAlphaFunc () noexcept {
   if (mInited) {
     auto fn = convertStencilFunc(alphaTestFunc);
     if (fn == GL_ALWAYS) {
@@ -2087,28 +2313,176 @@ void VGLVideo::forceAlphaFunc () {
   }
 }
 
-void VGLVideo::forceBlendFunc () {
+//==========================================================================
+//
+//  VGLVideo::forceBlendFunc
+//
+//==========================================================================
+void VGLVideo::forceBlendFunc () noexcept {
   if (mInited) glBlendEquationFunc(convertBlendFunc(mBlendFunc));
 }
 
 
-bool VGLVideo::canInit () {
+//==========================================================================
+//
+//  VGLVideo::forceGLTexFilter
+//
+//==========================================================================
+void VGLVideo::forceGLTexFilter () noexcept {
+  if (mInited) {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (texFiltering ? GL_LINEAR : GL_NEAREST));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (texFiltering ? GL_LINEAR : GL_NEAREST));
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::forceColorMask
+//
+//==========================================================================
+void VGLVideo::forceColorMask () noexcept {
+  if (mInited) {
+    glColorMask(
+      (colorMask&CMask_Red ? GL_TRUE : GL_FALSE),
+      (colorMask&CMask_Green ? GL_TRUE : GL_FALSE),
+      (colorMask&CMask_Blue ? GL_TRUE : GL_FALSE),
+      (colorMask&CMask_Alpha ? GL_TRUE : GL_FALSE));
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::setupBlending
+//
+//==========================================================================
+bool VGLVideo::setupBlending () noexcept {
+  if (!mInited) return false;
+  if (mBlendMode == BlendNone) {
+    glDisable(GL_BLEND);
+    return true;
+  } else if (mBlendMode == BlendNormal) {
+    if ((colorARGB&0xff000000u) == 0) {
+      // opaque
+      glDisable(GL_BLEND);
+      return true;
+    } else {
+      // either alpha, or completely transparent
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      return ((colorARGB&0xff000000u) != 0xff000000u);
+    }
+  } else {
+    glEnable(GL_BLEND);
+         if (mBlendMode == BlendBlend) glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    else if (mBlendMode == BlendFilter) glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+    else if (mBlendMode == BlendInvert) glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+    else if (mBlendMode == BlendParticle) glBlendFunc(GL_DST_COLOR, GL_ZERO);
+    else if (mBlendMode == BlendHighlight) glBlendFunc(GL_DST_COLOR, GL_ONE);
+    else if (mBlendMode == BlendDstMulDstAlpha) glBlendFunc(GL_ZERO, GL_DST_ALPHA);
+    else if (mBlendMode == InvModulate) glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+    else if (mBlendMode == Premult) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    return ((colorARGB&0xff000000u) != 0xff000000u);
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::realizeZFunc
+//
+//==========================================================================
+void VGLVideo::realizeZFunc () noexcept {
+  if (mInited) {
+    switch (depthFunc) {
+      case ZFunc_Never: glDepthFunc(GL_NEVER); break;
+      case ZFunc_Always: glDepthFunc(GL_ALWAYS); break;
+      case ZFunc_Equal: glDepthFunc(GL_EQUAL); break;
+      case ZFunc_NotEqual: glDepthFunc(GL_NOTEQUAL); break;
+      case ZFunc_Less: glDepthFunc(GL_LESS); break;
+      case ZFunc_LessEqual: glDepthFunc(GL_LEQUAL); break;
+      case ZFunc_Greater: glDepthFunc(GL_GREATER); break;
+      case ZFunc_GreaterEqual: glDepthFunc(GL_GEQUAL); break;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::realiseGLColor
+//
+//==========================================================================
+void VGLVideo::realiseGLColor () noexcept {
+  if (mInited) {
+    glColor4f(
+      ((colorARGB>>16)&0xff)/255.0f,
+      ((colorARGB>>8)&0xff)/255.0f,
+      (colorARGB&0xff)/255.0f,
+      1.0f-(((colorARGB>>24)&0xff)/255.0f)
+    );
+    setupBlending();
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::canInit
+//
+//==========================================================================
+bool VGLVideo::canInit () noexcept {
   return true;
 }
 
 
-bool VGLVideo::hasOpenGL () {
+//==========================================================================
+//
+//  VGLVideo::hasOpenGL
+//
+//==========================================================================
+bool VGLVideo::hasOpenGL () noexcept {
   return true;
 }
 
 
-bool VGLVideo::isInitialized () { return mInited; }
-int VGLVideo::getWidth () { return mWidth; }
-int VGLVideo::getHeight () { return mHeight; }
+//==========================================================================
+//
+//  VGLVideo::isInitialized
+//
+//==========================================================================
+bool VGLVideo::isInitialized () noexcept {
+  return mInited;
+}
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VGLVideo::close () {
+//==========================================================================
+//
+//  VGLVideo::getWidth
+//
+//==========================================================================
+int VGLVideo::getWidth () noexcept {
+  return mWidth;
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::getHeight
+//
+//==========================================================================
+int VGLVideo::getHeight () noexcept {
+  return mHeight;
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::close
+//
+//==========================================================================
+void VGLVideo::close () noexcept {
   if (mInited) {
     if (hw_glctx) {
       if (hw_window) {
@@ -2136,15 +2510,13 @@ void VGLVideo::close () {
 }
 
 
-//k8: no, i really don't know why i have to repeat this twice,
-//    but at the first try i'll get no stencil buffer for some reason
-//    (and no rgba framebuffer too)
-void VGLVideo::fuckfucksdl () {
-  if (mInited) return;
-
-  mPreInitWasDone = true;
-
-  //k8: require OpenGL 2.1, sorry; non-shader renderer was removed anyway
+//==========================================================================
+//
+//  sdlSetGLAttrs
+//
+//==========================================================================
+static void sdlSetGLAttrs () noexcept {
+  // require OpenGL 2.1
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
@@ -2156,13 +2528,29 @@ void VGLVideo::fuckfucksdl () {
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::fuckfucksdl
+//
+//  k8: no, i really don't know why i have to repeat this twice,
+//  but at the first try i'll get no stencil buffer for some reason
+//  (and no rgba framebuffer too)
+//
+//==========================================================================
+void VGLVideo::fuckfucksdl () noexcept {
+  if (mInited) return;
+
+  mPreInitWasDone = true;
+
+  sdlSetGLAttrs();
 
   hw_window = SDL_CreateWindow("VaVoom C runner hidden SDL fucker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     640, 480, SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN);
   if (!hw_window) {
-#ifndef WIN32
-    fprintf(stderr, "ALAS: cannot create SDL2 window.\n");
-#endif
+    GLog.Log(NAME_Error, "ALAS: cannot create SDL2 window.");
     return;
   }
 
@@ -2170,9 +2558,7 @@ void VGLVideo::fuckfucksdl () {
   if (!hw_glctx) {
     SDL_DestroyWindow(hw_window);
     hw_window = nullptr;
-#ifndef WIN32
-    fprintf(stderr, "ALAS: cannot create SDL2 OpenGL context.\n");
-#endif
+    GLog.Log(NAME_Error, "ALAS: cannot create SDL2 OpenGL context.");
     return;
   }
 
@@ -2187,7 +2573,12 @@ void VGLVideo::fuckfucksdl () {
 }
 
 
-bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen) {
+//==========================================================================
+//
+//  VGLVideo::open
+//
+//==========================================================================
+bool VGLVideo::open (VStr winname, int width, int height, int fullscreen) {
   if (width < 1 || height < 1) {
     width = 800;
     height = 600;
@@ -2195,7 +2586,8 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
 
   if (!sdlVideoInited) {
     sdlVideoInited = true;
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(VIDEO): %s\n", SDL_GetError());
+    sdlTimerInited = true;
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_TIMER|SDL_INIT_EVENTS) < 0) Sys_Error("SDL_InitSubSystem(VIDEO): %s\n", SDL_GetError());
     if (!sdlJoystickInited) StartupJoystick(); // why not?
   }
 
@@ -2206,18 +2598,7 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   Uint32 flags = SDL_WINDOW_OPENGL;
   if (fullscreen) flags |= (fullscreen == 1 ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
 
-  //k8: require OpenGL 2.1, sorry; non-shader renderer was removed anyway
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  //SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, r_vsync);
-  SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  sdlSetGLAttrs();
 
   int si = swapInterval;
   if (si < 0) si = -1; else if (si > 0) si = 1;
@@ -2227,9 +2608,7 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
 
   hw_window = SDL_CreateWindow((winname.length() ? *winname : "Untitled"), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
   if (!hw_window) {
-#ifndef WIN32
-    fprintf(stderr, "ALAS: cannot create SDL2 window.\n");
-#endif
+    GLog.Log(NAME_Error, "ALAS: cannot create SDL2 window.");
     return false;
   }
 
@@ -2237,9 +2616,7 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   if (!hw_glctx) {
     SDL_DestroyWindow(hw_window);
     hw_window = nullptr;
-#ifndef WIN32
-    fprintf(stderr, "ALAS: cannot create SDL2 OpenGL context.\n");
-#endif
+    GLog.Log(NAME_Error, "ALAS: cannot create SDL2 OpenGL context.");
     return false;
   }
 
@@ -2249,25 +2626,23 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   int stb = -1;
   SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &stb);
   stencilBits = (stb < 1 ? 0 : stb);
-  //if (stb < 1) fprintf(stderr, "WARNING: no stencil buffer available!");
+  //if (stb < 1) GLog.Log(NAME_Warning, "WARNING: no stencil buffer available!");
   //if (flags&SDL_WINDOW_HIDDEN) SDL_ShowWindow(hw_window);
 
-#if 0 //!defined(WIN32)
-  {
+  if (dbgDumpOpenGLInfo) {
     int ghi, glo;
     SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &ghi);
     SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glo);
-    fprintf(stderr, "OpenGL version: %d.%d\n", ghi, glo);
+    GLog.Logf(NAME_Debug, "OpenGL version: %d.%d", ghi, glo);
 
     int ltmp = 666;
-    SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &ltmp); fprintf(stderr, "STENCIL BUFFER BITS: %d\n", ltmp);
-    SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &ltmp); fprintf(stderr, "RED BITS: %d\n", ltmp);
-    SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &ltmp); fprintf(stderr, "GREEN BITS: %d\n", ltmp);
-    SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &ltmp); fprintf(stderr, "BLUE BITS: %d\n", ltmp);
-    SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, &ltmp); fprintf(stderr, "ALPHA BITS: %d\n", ltmp);
-    SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &ltmp); fprintf(stderr, "DEPTH BITS: %d\n", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &ltmp); GLog.Logf(NAME_Debug, "STENCIL BUFFER BITS: %d", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &ltmp); GLog.Logf(NAME_Debug, "RED BITS: %d", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &ltmp); GLog.Logf(NAME_Debug, "GREEN BITS: %d", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &ltmp); GLog.Logf(NAME_Debug, "BLUE BITS: %d", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, &ltmp); GLog.Logf(NAME_Debug, "ALPHA BITS: %d", ltmp);
+    SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &ltmp); GLog.Logf(NAME_Debug, "DEPTH BITS: %d", ltmp);
   }
-#endif
 
   //SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, r_vsync);
   if (si < 0) si = -1; else if (si > 0) si = 1;
@@ -2325,7 +2700,7 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   } else {
     int sx0 = (realw-width)/2;
     int sy0 = (realh-height)/2;
-    fprintf(stderr, "size:(%d,%d); real:(%d,%d); sofs:(%d,%d)\n", width, height, realw, realh, sx0, sy0);
+    GLog.Logf(NAME_Debug, "size:(%d,%d); real:(%d,%d); sofs:(%d,%d)", width, height, realw, realh, sx0, sy0);
     //glOrtho(-sx0, realw-sx0, sy0+realh, sy0, -zNear, -zFar);
     //glOrtho(-sx0, width-sx0, height, 0, -zNear, -zFar);
     //glOrtho(0, width, height, 0, -zNear, -zFar);
@@ -2353,15 +2728,15 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
   //glDrawBuffer(directMode ? GL_FRONT : GL_BACK);
 
   glBlendEquationFunc = (/*PFNGLBLENDEQUATIONPROC*/glBlendEquationFn)SDL_GL_GetProcAddress("glBlendEquation");
-  if (!glBlendEquationFunc) abort();
+  if (!glBlendEquationFunc) Sys_Error("`glBlendEquation` not found");
 
-#ifndef _WIN32
+//#ifndef _WIN32
   p_glMultiTexCoord2fARB = (glMultiTexCoord2fARB_t)SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
-  if (!p_glMultiTexCoord2fARB) abort();
+  if (!p_glMultiTexCoord2fARB) Sys_Error("`glMultiTexCoord2fARB` not found");
 
   p_glActiveTextureARB = (glActiveTextureARB_t)SDL_GL_GetProcAddress("glActiveTextureARB");
-  if (!p_glActiveTextureARB) abort();
-#endif
+  if (!p_glActiveTextureARB) Sys_Error("`glActiveTextureARB` not found");
+//#endif
 
   clear();
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -2380,7 +2755,12 @@ bool VGLVideo::open (const VStr &winname, int width, int height, int fullscreen)
 }
 
 
-void VGLVideo::clear (int rgb) {
+//==========================================================================
+//
+//  VGLVideo::clear
+//
+//==========================================================================
+void VGLVideo::clear (int rgb) noexcept {
   if (!mInited) return;
 
   glClearColor(((rgb>>16)&0xff)/255.0f, ((rgb>>8)&0xff)/255.0f, (rgb&0xff)/255.0f, 0.0);
@@ -2399,6 +2779,11 @@ VMethod *VGLVideo::onEventVC = nullptr;
 VMethod *VGLVideo::onNewFrameVC = nullptr;
 
 
+//==========================================================================
+//
+//  VGLVideo::initMethods
+//
+//==========================================================================
 void VGLVideo::initMethods () {
   onDrawVC = nullptr;
   onEventVC = nullptr;
@@ -2421,10 +2806,10 @@ void VGLVideo::initMethods () {
         mmain->ParamTypes[0].Type == TYPE_Struct &&
         mmain->ParamTypes[0].Struct->Name == "event_t")))
   {
-    //fprintf(stderr, "onevent found\n");
+    //GLog.Logf(NAME_Debug, "onevent found");
     onEventVC = mmain;
   } else {
-    //fprintf(stderr, ":: (%d) %s\n", mmain->ParamFlags[0], *mmain->ParamTypes[0].GetName());
+    //GLog.Logf(NAME_Debug, ":: (%d) %s", mmain->ParamFlags[0], *mmain->ParamTypes[0].GetName());
     //abort();
   }
 
@@ -2435,6 +2820,11 @@ void VGLVideo::initMethods () {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::onDraw
+//
+//==========================================================================
 void VGLVideo::onDraw () {
   doRefresh = false;
   if (!hw_glctx || !onDrawVC) return;
@@ -2444,6 +2834,11 @@ void VGLVideo::onDraw () {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::onEvent
+//
+//==========================================================================
 void VGLVideo::onEvent (event_t &evt) {
   if (!hw_glctx || !onEventVC) return;
   if ((onEventVC->Flags&FUNC_Static) == 0) P_PASS_REF((VObject *)mainObject);
@@ -2452,6 +2847,11 @@ void VGLVideo::onEvent (event_t &evt) {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::onNewFrame
+//
+//==========================================================================
 void VGLVideo::onNewFrame () {
   if (!hw_glctx || !onNewFrameVC) return;
   if ((onNewFrameVC->Flags&FUNC_Static) == 0) P_PASS_REF((VObject *)mainObject);
@@ -2464,12 +2864,22 @@ int VGLVideo::currFrameTime = 0;
 int VGLVideo::prevFrameTime = 0;
 
 
-int VGLVideo::getFrameTime () {
+//==========================================================================
+//
+//  VGLVideo::getFrameTime
+//
+//==========================================================================
+int VGLVideo::getFrameTime () noexcept {
   return currFrameTime;
 }
 
 
-void VGLVideo::setFrameTime (int newft) {
+//==========================================================================
+//
+//  VGLVideo::setFrameTime
+//
+//==========================================================================
+void VGLVideo::setFrameTime (int newft) noexcept {
   if (newft < 0) newft = 0;
   if (currFrameTime == newft) return;
   prevFrameTime = 0;
@@ -2477,6 +2887,11 @@ void VGLVideo::setFrameTime (int newft) {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::doFrameBusiness
+//
+//==========================================================================
 bool VGLVideo::doFrameBusiness (SDL_Event &ev) {
   if (currFrameTime <= 0) {
     SDL_WaitEvent(&ev);
@@ -2484,7 +2899,7 @@ bool VGLVideo::doFrameBusiness (SDL_Event &ev) {
   }
 
   int cticks = SDL_GetTicks();
-  if (cticks < 0) { fprintf(stderr, "Tick overflow!"); abort(); }
+  if (cticks < 0) Sys_Error("Tick overflow!");
 
   if (prevFrameTime == 0) {
     prevFrameTime = cticks;
@@ -2498,7 +2913,7 @@ bool VGLVideo::doFrameBusiness (SDL_Event &ev) {
     cticks = SDL_GetTicks();
   }
 
-  //fprintf(stderr, "pt=%d; nt=%d; ct=%d\n", prevFrameTime, prevFrameTime+currFrameTime, cticks);
+  //GLog.Logf(NAME_Debug, "pt=%d; nt=%d; ct=%d", prevFrameTime, prevFrameTime+currFrameTime, cticks);
   while (prevFrameTime+currFrameTime <= cticks) {
     prevFrameTime += currFrameTime;
     onNewFrame();
@@ -2508,7 +2923,11 @@ bool VGLVideo::doFrameBusiness (SDL_Event &ev) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VGLVideo::getMousePosition
+//
+//==========================================================================
 void VGLVideo::getMousePosition (int *mx, int *my) {
   if (mInited) {
     //SDL_GetMouseState(xp, yp); //k8: alas, this returns until a mouse has been moved
@@ -2527,7 +2946,11 @@ void VGLVideo::getMousePosition (int *mx, int *my) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+//==========================================================================
+//
+//  VGLVideo::dispatchEvents
+//
+//==========================================================================
 void VGLVideo::dispatchEvents () {
   for (int ecount = VObject::CountQueuedEvents(); ecount > 0; --ecount) {
     event_t ev;
@@ -2543,7 +2966,7 @@ void VGLVideo::dispatchEvents () {
       dev = dsevids[0];
       dsevids.removeAt(0);
     }
-    //fprintf(stderr, "DISPATCHING\n");
+    //GLog.Logf(NAME_Debug, "DISPATCHING");
     event_t ev;
     memset((void *)&ev, 0, sizeof(ev));
     ev.type = ev_socket;
@@ -2552,13 +2975,17 @@ void VGLVideo::dispatchEvents () {
     ev.data3 = dev.data;
     onEvent(ev);
     if (dev.wantAck) sockmodAckEvent(dev.code, dev.sid, dev.data, !!(ev.flags&EFlag_Eaten), !!(ev.flags&EFlag_Cancelled));
-    //fprintf(stderr, "DISPATCHED\n");
+    //GLog.Logf(NAME_Debug, "DISPATCHED");
   }
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-static bool PostKeyEvent (int key, int press, vuint32 modflags) {
+//==========================================================================
+//
+//  PostKeyEvent
+//
+//==========================================================================
+static bool PostKeyEvent (int key, int press, vuint32 modflags) noexcept {
   if (!key) return true; // always succeed
   event_t ev;
   ev.clear();
@@ -2569,7 +2996,12 @@ static bool PostKeyEvent (int key, int press, vuint32 modflags) {
 }
 
 
-static void PostJoyMotionEvent (int axisidx) {
+//==========================================================================
+//
+//  PostJoyMotionEvent
+//
+//==========================================================================
+static void PostJoyMotionEvent (int axisidx) noexcept {
   if (axisidx >= 0 && axisidx <= 1) {
     event_t event;
     event.clear();
@@ -2583,7 +3015,12 @@ static void PostJoyMotionEvent (int axisidx) {
 }
 
 
-static void CtlTriggerButton (int idx, bool down) {
+//==========================================================================
+//
+//  CtlTriggerButton
+//
+//==========================================================================
+static void CtlTriggerButton (int idx, bool down) noexcept {
   if (idx < 0 || idx > 1) return;
   const unsigned mask = 1u<<idx;
   if (down) {
@@ -2602,6 +3039,11 @@ static void CtlTriggerButton (int idx, bool down) {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::runEventLoop
+//
+//==========================================================================
 void VGLVideo::runEventLoop () {
   int mx, my;
 
@@ -2876,7 +3318,7 @@ void VGLVideo::runEventLoop () {
           VObject::PostEvent(evt);
           break;
         case SDL_USEREVENT:
-          //fprintf(stderr, "SDL: userevent, code=%d\n", ev.user.code);
+          //GLog.Logf(NAME_Debug, "SDL: userevent, code=%d", ev.user.code);
           if (ev.user.code == 1) {
             TimerInfo *ti = timerMap.get((int)(intptr_t)ev.user.data1);
             if (ti) {
@@ -2913,7 +3355,7 @@ void VGLVideo::runEventLoop () {
       if (currTick-lastCollect >= 3) {
         lastCollect = currTick;
         VObject::CollectGarbage(); // why not?
-        //fprintf(stderr, "objc=%d\n", VObject::GetObjectsCount());
+        //GLog.Logf(NAME_Debug, "objc=%d", VObject::GetObjectsCount());
       }
     }
   }
@@ -2927,13 +3369,23 @@ int VGLVideo::mBlendFunc = BlendFunc_Add;
 VFont *VGLVideo::currFont = nullptr;
 
 
-void VGLVideo::setFont (VName fontname) {
+//==========================================================================
+//
+//  VGLVideo::setFont
+//
+//==========================================================================
+void VGLVideo::setFont (VName fontname) noexcept {
   if (currFont && currFont->getName() == fontname) return;
   currFont = VFont::findFont(fontname);
 }
 
 
-void VGLVideo::drawTextAt (int x, int y, const VStr &text) {
+//==========================================================================
+//
+//  VGLVideo::drawTextAt
+//
+//==========================================================================
+void VGLVideo::drawTextAt (int x, int y, VStr text) {
   if (!currFont /*|| isFullyTransparent()*/ || text.isEmpty()) return;
   if (!mInited) return;
 
@@ -2958,14 +3410,14 @@ void VGLVideo::drawTextAt (int x, int y, const VStr &text) {
     if (ch == '\n') { x = sx; y += currFont->getHeight(); continue; }
     auto fc = currFont->getChar(ch);
     if (!fc) {
-      //fprintf(stderr, "NO CHAR #%d\n", ch);
+      //GLog.Logf(NAME_Debug, "NO CHAR #%d", ch);
       continue;
     }
     // draw char
     if (!currFont->singleTexture) {
       glBindTexture(GL_TEXTURE_2D, fc->tex->tid);
       glBegin(GL_QUADS);
-      //fprintf(stderr, "rebound texture (tid=%u) for char %d\n", fc->tex->tid, ch);
+      //GLog.Logf(NAME_Debug, "rebound texture (tid=%u) for char %d", fc->tex->tid, ch);
     }
     int xofs = fc->leftbear;
     glTexCoord2f(fc->tx0, fc->ty0); glVertex3f(x+xofs, y+fc->topofs, z);
@@ -2981,7 +3433,12 @@ void VGLVideo::drawTextAt (int x, int y, const VStr &text) {
 }
 
 
-void VGLVideo::drawTextAtTexture (VOpenGLTexture *tx, int x, int y, const VStr &text, const vuint32 color) {
+//==========================================================================
+//
+//  VGLVideo::drawTextAtTexture
+//
+//==========================================================================
+void VGLVideo::drawTextAtTexture (VOpenGLTexture *tx, int x, int y, VStr text, const vuint32 color) {
   if (!currFont /*|| isFullyTransparent()*/ || text.isEmpty() || !tx || tx->width < 1 || tx->height < 1) return;
   //if (!mInited) return;
 
@@ -2999,7 +3456,7 @@ void VGLVideo::drawTextAtTexture (VOpenGLTexture *tx, int x, int y, const VStr &
     if (ch == '\n') { x = sx; y += currFont->getHeight(); continue; }
     auto fc = currFont->getChar(ch);
     if (!fc) {
-      //fprintf(stderr, "NO CHAR #%d\n", ch);
+      //GLog.Logf(NAME_Debug, "NO CHAR #%d", ch);
       continue;
     }
     // draw char
@@ -3034,7 +3491,7 @@ void VGLVideo::drawTextAtTexture (VOpenGLTexture *tx, int x, int y, const VStr &
 // ////////////////////////////////////////////////////////////////////////// //
 class VideoAutoInit {
 public:
-  VideoAutoInit() {
+  VideoAutoInit () noexcept {
     mythread_mutex_init(&sockLock);
     sockmodPostEventCB = &VGLVideo::postSocketEvent;
   }
@@ -3042,8 +3499,12 @@ public:
 static VideoAutoInit videoAutoInit;
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VGLVideo::sendPing () {
+//==========================================================================
+//
+//  VGLVideo::sendPing
+//
+//==========================================================================
+void VGLVideo::sendPing () noexcept {
   if (!mInited) return;
 
   SDL_Event event;
@@ -3059,8 +3520,12 @@ void VGLVideo::sendPing () {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-void VGLVideo::postSocketEvent (int code, int sockid, int data, bool wantAck) {
+//==========================================================================
+//
+//  VGLVideo::postSocketEvent
+//
+//==========================================================================
+void VGLVideo::postSocketEvent (int code, int sockid, int data, bool wantAck) noexcept {
   // put it into saved queue, and ping dispatcher
   bool doSendPing = false;
   {
@@ -3095,8 +3560,11 @@ IMPLEMENT_FUNCTION(VGLVideo, isMouseCursorVisible) { RET_BOOL(mInited ? SDL_Show
 IMPLEMENT_FUNCTION(VGLVideo, hideMouseCursor) { if (mInited) SDL_ShowCursor(SDL_DISABLE); }
 IMPLEMENT_FUNCTION(VGLVideo, showMouseCursor) { if (mInited) SDL_ShowCursor(SDL_ENABLE); }
 
-IMPLEMENT_FUNCTION(VGLVideo, get_frameTime) { RET_BOOL(VGLVideo::getFrameTime()); }
+IMPLEMENT_FUNCTION(VGLVideo, get_frameTime) { RET_INT(VGLVideo::getFrameTime()); }
 IMPLEMENT_FUNCTION(VGLVideo, set_frameTime) { int newft; vobjGetParam(newft); VGLVideo::setFrameTime(newft); VGLVideo::sendPing(); }
+
+IMPLEMENT_FUNCTION(VGLVideo, get_dbgDumpOpenGLInfo) { RET_BOOL(VGLVideo::dbgDumpOpenGLInfo); }
+IMPLEMENT_FUNCTION(VGLVideo, set_dbgDumpOpenGLInfo) { bool v; vobjGetParam(v); VGLVideo::dbgDumpOpenGLInfo = v; }
 
 // native final static bool openScreen (string winname, int width, int height, optional int fullscreen);
 IMPLEMENT_FUNCTION(VGLVideo, openScreen) {
@@ -3120,7 +3588,7 @@ IMPLEMENT_FUNCTION(VGLVideo, getRealWindowSize) {
   if (mInited) {
     //SDL_GetWindowSize(hw_window, w, h);
     SDL_GL_GetDrawableSize(hw_window, w, h);
-    //fprintf(stderr, "w=%d; h=%d\n", *w, *h);
+    //GLog.Logf(NAME_Debug, "w=%d; h=%d", *w, *h);
   }
 }
 
@@ -3703,7 +4171,7 @@ IMPLEMENT_FUNCTION(VGLVideo, set_stencil) {
     stencilEnabled = v;
     if (mInited) {
       if (v) glEnable(GL_STENCIL_TEST); else glDisable(GL_STENCIL_TEST);
-      //fprintf(stderr, "stencil test: %d\n", (v ? 1 : 0));
+      //GLog.Logf(NAME_Debug, "stencil test: %d", (v ? 1 : 0));
     }
   }
 }
@@ -3805,7 +4273,7 @@ IMPLEMENT_FUNCTION(VGLVideo, loadFontDF) {
   VStr fnameIni;
   VStr fnameTexture;
   vobjGetParam(fname, fnameIni, fnameTexture);
-  //fprintf(stderr, "fname=<%s>; ini=<%s>; tx=<%s>\n", *fname, *fnameIni, *fnameTexture);
+  //GLog.Logf(NAME_Debug, "fname=<%s>; ini=<%s>; tx=<%s>", *fname, *fnameIni, *fnameTexture);
   if (VFont::findFont(fname)) return;
   VFont::LoadDF(fname, fnameIni, fnameTexture);
 }
@@ -4029,7 +4497,7 @@ static VStr readLine (VStream *strm, bool allTrim=true) {
 }
 
 
-static VStr getKey (const VStr &s) {
+static VStr getKey (VStr s) {
   int epos = s.indexOf('=');
   if (epos < 0) return s;
   VStr res = s.left(epos);
@@ -4038,7 +4506,7 @@ static VStr getKey (const VStr &s) {
 }
 
 
-static VStr getValue (const VStr &s) {
+static VStr getValue (VStr s) {
   int epos = s.indexOf('=');
   if (epos < 0) return VStr();
   VStr res = s;
@@ -4049,7 +4517,7 @@ static VStr getValue (const VStr &s) {
 }
 
 
-static int getIntValue (const VStr &s) {
+static int getIntValue (VStr s) {
   VStr v = getValue(s);
   if (v.isEmpty()) return 0;
   bool neg = v.startsWith("-");
@@ -4074,7 +4542,7 @@ VFont *VFont::fontList;
 //  VFont::findFont
 //
 //==========================================================================
-VFont *VFont::findFont (VName name) {
+VFont *VFont::findFont (VName name) noexcept {
   for (VFont *cur = fontList; cur; cur = cur->next) if (cur->name == name) return cur;
   return nullptr;
 }
@@ -4127,13 +4595,13 @@ VFont::~VFont() {
 //  VFont::LoadDF
 //
 //==========================================================================
-VFont *VFont::LoadDF (VName aname, const VStr &fnameIni, const VStr &fnameTexture) {
+VFont *VFont::LoadDF (VName aname, VStr fnameIni, VStr fnameTexture) {
   VOpenGLTexture *tex = VOpenGLTexture::Load(fnameTexture);
   if (!tex) Sys_Error(va("cannot load font '%s' (texture not found)", *aname));
 
   auto inif = fsysOpenFileAnyExt(fnameIni);
   if (!inif) { tex->release(); tex = nullptr; Sys_Error(va("cannot load font '%s' (description not found)", *aname)); }
-  //fprintf(stderr, "*** %d %d %d %d\n", (int)inif->AtEnd(), (int)inif->IsError(), inif->TotalSize(), inif->Tell());
+  //GLog.Logf(NAME_Debug, "*** %d %d %d %d", (int)inif->AtEnd(), (int)inif->IsError(), inif->TotalSize(), inif->Tell());
 
   VStr currSection;
 
@@ -4149,7 +4617,7 @@ VFont *VFont::LoadDF (VName aname, const VStr &fnameIni, const VStr &fnameTextur
     if (line[0] == '[') { currSection = line; continue; }
     // fontmap?
     auto key = getKey(line);
-    //fprintf(stderr, "line:<%s>; key:<%s>; intval=%d\n", *line, *key, getIntValue(line));
+    //GLog.Logf(NAME_Debug, "line:<%s>; key:<%s>; intval=%d", *line, *key, getIntValue(line));
     if (currSection.equ1251CI("[FontMap]")) {
       if (key.equ1251CI("CharWidth")) { cwdt = getIntValue(line); continue; }
       if (key.equ1251CI("CharHeight")) { chgt = getIntValue(line); continue; }
@@ -4169,7 +4637,7 @@ VFont *VFont::LoadDF (VName aname, const VStr &fnameIni, const VStr &fnameTextur
     }
     if (cidx >= 0 && cidx < 256) {
       int w = getIntValue(line);
-      //fprintf(stderr, "cidx=%d; w=%d\n", cidx, w);
+      //GLog.Logf(NAME_Debug, "cidx=%d; w=%d", cidx, w);
       if (w < 0) w = 0;
       xwidth[cidx] = w;
     }
@@ -4231,7 +4699,7 @@ VFont *VFont::LoadDF (VName aname, const VStr &fnameIni, const VStr &fnameTextur
 //  VFont::LoadPCF
 //
 //==========================================================================
-VFont *VFont::LoadPCF (VName aname, const VStr &filename) {
+VFont *VFont::LoadPCF (VName aname, VStr filename) {
 /*
   static const vuint16 cp12512Uni[128] = {
     0x0402,0x0403,0x201A,0x0453,0x201E,0x2026,0x2020,0x2021,0x20AC,0x2030,0x0409,0x2039,0x040A,0x040C,0x040B,0x040F,
@@ -4275,7 +4743,7 @@ VFont *VFont::LoadPCF (VName aname, const VStr &filename) {
       chidx = (int)gl.codepoint;
     }
     if (chidx < 0) continue; // unused glyph
-    //fprintf(stderr, "gidx=%d; codepoint=%u; chidx=%d\n", gidx, gl.codepoint, chidx);
+    //GLog.Logf(NAME_Debug, "gidx=%d; codepoint=%u; chidx=%d", gidx, gl.codepoint, chidx);
     FontChar &fc = fnt->chars[chidx];
     if (fc.ch >= 0) continue; // duplicate glyph
 
@@ -4329,8 +4797,8 @@ VFont *VFont::LoadPCF (VName aname, const VStr &filename) {
 //  VFont::GetChar
 //
 //==========================================================================
-const VFont::FontChar *VFont::getChar (int ch) const {
-  //fprintf(stderr, "GET CHAR #%d (%d); internal:%d\n", ch, chars.length(), chars[ch].ch);
+const VFont::FontChar *VFont::getChar (int ch) const noexcept {
+  //GLog.Logf(NAME_Debug, "GET CHAR #%d (%d); internal:%d", ch, chars.length(), chars[ch].ch);
   if (ch < 0) return nullptr;
   if (ch < 0 || ch >= chars.length()) {
     ch = VStr::upcase1251(ch);
@@ -4345,7 +4813,7 @@ const VFont::FontChar *VFont::getChar (int ch) const {
 //  VFont::charWidth
 //
 //==========================================================================
-int VFont::charWidth (int ch) const {
+int VFont::charWidth (int ch) const noexcept {
   auto fc = getChar(ch);
   return (fc ? fc->width : 0);
 }
@@ -4356,7 +4824,7 @@ int VFont::charWidth (int ch) const {
 //  VFont::textWidth
 //
 //==========================================================================
-int VFont::textWidth (const VStr &s) const {
+int VFont::textWidth (VStr s) const noexcept {
   int res = 0, curwdt = 0;
   for (int f = 0; f < s.length(); ++f) {
     vuint8 ch = vuint8(s[f]);
@@ -4378,7 +4846,7 @@ int VFont::textWidth (const VStr &s) const {
 //  VFont::textHeight
 //
 //==========================================================================
-int VFont::textHeight (const VStr &s) const {
+int VFont::textHeight (VStr s) const noexcept {
   int res = fontHeight;
   for (int f = 0; f < s.length(); ++f) if (s[f] == '\n') res += fontHeight;
   return res;

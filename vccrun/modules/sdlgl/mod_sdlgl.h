@@ -156,101 +156,28 @@ private:
   static bool in3dmode;
   friend class VOpenGLTexture;
 
+  static bool dbgDumpOpenGLInfo;
+
 public:
   static float currZFloat;
 
-  static inline void forceGLTexFilter () {
-    if (mInited) {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (texFiltering ? GL_LINEAR : GL_NEAREST));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (texFiltering ? GL_LINEAR : GL_NEAREST));
-    }
-  }
+  static void forceGLTexFilter () noexcept;
 
 private:
-  static inline void forceColorMask () {
-    if (mInited) {
-      glColorMask(
-        (colorMask&CMask_Red ? GL_TRUE : GL_FALSE),
-        (colorMask&CMask_Green ? GL_TRUE : GL_FALSE),
-        (colorMask&CMask_Blue ? GL_TRUE : GL_FALSE),
-        (colorMask&CMask_Alpha ? GL_TRUE : GL_FALSE));
-    }
-  }
+  static void forceColorMask () noexcept;
 
-  static void forceAlphaFunc ();
-  static void forceBlendFunc ();
+  static void forceAlphaFunc () noexcept;
+  static void forceBlendFunc () noexcept;
 
-  static inline bool getTexFiltering () {
-    return texFiltering;
-  }
+  static inline bool getTexFiltering () noexcept { return texFiltering; }
 
-  static inline void setTexFiltering (bool filterit) {
-    //if (texFiltering == filterit) return;
-    texFiltering = filterit;
-    /*
-    if (mInited) {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (filterit ? GL_LINEAR : GL_NEAREST));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (filterit ? GL_LINEAR : GL_NEAREST));
-    }
-    */
-  }
+  static inline void setTexFiltering (bool filterit) noexcept { texFiltering = filterit; }
 
-  static inline void realizeZFunc () {
-    if (mInited) {
-      switch (depthFunc) {
-        case ZFunc_Never: glDepthFunc(GL_NEVER); break;
-        case ZFunc_Always: glDepthFunc(GL_ALWAYS); break;
-        case ZFunc_Equal: glDepthFunc(GL_EQUAL); break;
-        case ZFunc_NotEqual: glDepthFunc(GL_NOTEQUAL); break;
-        case ZFunc_Less: glDepthFunc(GL_LESS); break;
-        case ZFunc_LessEqual: glDepthFunc(GL_LEQUAL); break;
-        case ZFunc_Greater: glDepthFunc(GL_GREATER); break;
-        case ZFunc_GreaterEqual: glDepthFunc(GL_GEQUAL); break;
-      }
-    }
-  }
-
-  static inline void realiseGLColor () {
-    if (mInited) {
-      glColor4f(
-        ((colorARGB>>16)&0xff)/255.0f,
-        ((colorARGB>>8)&0xff)/255.0f,
-        (colorARGB&0xff)/255.0f,
-        1.0f-(((colorARGB>>24)&0xff)/255.0f)
-      );
-      setupBlending();
-    }
-  }
+  static void realizeZFunc () noexcept;
+  static void realiseGLColor () noexcept;
 
   // returns `true` if drawing will have any effect
-  static inline bool setupBlending () {
-    if (mBlendMode == BlendNone) {
-      glDisable(GL_BLEND);
-      return true;
-    } else if (mBlendMode == BlendNormal) {
-      if ((colorARGB&0xff000000u) == 0) {
-        // opaque
-        glDisable(GL_BLEND);
-        return true;
-      } else {
-        // either alpha, or completely transparent
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        return ((colorARGB&0xff000000u) != 0xff000000u);
-      }
-    } else {
-      glEnable(GL_BLEND);
-           if (mBlendMode == BlendBlend) glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-      else if (mBlendMode == BlendFilter) glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-      else if (mBlendMode == BlendInvert) glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
-      else if (mBlendMode == BlendParticle) glBlendFunc(GL_DST_COLOR, GL_ZERO);
-      else if (mBlendMode == BlendHighlight) glBlendFunc(GL_DST_COLOR, GL_ONE);
-      else if (mBlendMode == BlendDstMulDstAlpha) glBlendFunc(GL_ZERO, GL_DST_ALPHA);
-      else if (mBlendMode == InvModulate) glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-      else if (mBlendMode == Premult) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-      return ((colorARGB&0xff000000u) != 0xff000000u);
-    }
-  }
+  static bool setupBlending () noexcept;
 
 private:
   static void initMethods ();
@@ -262,25 +189,25 @@ private:
   static bool doFrameBusiness (SDL_Event &ev);
 
 public:
-  static bool canInit ();
-  static bool hasOpenGL ();
-  static bool isInitialized ();
-  static int getWidth ();
-  static int getHeight ();
+  static bool canInit () noexcept;
+  static bool hasOpenGL () noexcept;
+  static bool isInitialized () noexcept;
+  static int getWidth () noexcept;
+  static int getHeight () noexcept;
 
-  static void fuckfucksdl ();
+  static void fuckfucksdl () noexcept;
 
   static void getMousePosition (int *mx, int *my);
 
-  static bool open (const VStr &winname, int width, int height, int fullscreen);
-  static void close ();
+  static bool open (VStr winname, int width, int height, int fullscreen);
+  static void close () noexcept;
 
-  static void clear (int rgb=0);
+  static void clear (int rgb=0) noexcept;
 
   static void dispatchEvents ();
   static void runEventLoop ();
 
-  static void setFont (VName fontname);
+  static void setFont (VName fontname) noexcept;
 
   static inline void setColor (vuint32 clr) { if (colorARGB != clr) { colorARGB = clr; realiseGLColor(); } }
   static inline vuint32 getColor () { return colorARGB; }
@@ -291,26 +218,26 @@ public:
   static inline bool isFullyOpaque () { return ((colorARGB&0xff000000) == 0); }
   static inline bool isFullyTransparent () { return ((colorARGB&0xff000000) == 0xff000000); }
 
-  static void drawTextAt (int x, int y, const VStr &text);
+  static void drawTextAt (int x, int y, VStr text);
   // if clr high byte is ignored; 0 means "default color"
-  static void drawTextAtTexture (VOpenGLTexture *tx, int x, int y, const VStr &text, const vuint32 clr=0);
+  static void drawTextAtTexture (VOpenGLTexture *tx, int x, int y, VStr text, const vuint32 clr=0);
 
   // returns timer id or 0
   // if id <= 0, creates new unique timer id
   // if interval is < 1, returns with error and won't create timer
-  static int CreateTimerWithId (int id, int intervalms, bool oneshot=false);
-  static bool DeleteTimer (int id); // `true`: deleted, `false`: no such timer
-  static bool IsTimerExists (int id);
-  static bool IsTimerOneShot (int id);
-  static int GetTimerInterval (int id); // 0: no such timer
+  static int CreateTimerWithId (int id, int intervalms, bool oneshot=false) noexcept;
+  static bool DeleteTimer (int id) noexcept; // `true`: deleted, `false`: no such timer
+  static bool IsTimerExists (int id) noexcept;
+  static bool IsTimerOneShot (int id) noexcept;
+  static int GetTimerInterval (int id) noexcept; // 0: no such timer
   // returns success flag; won't do anything if interval is < 1
-  static bool SetTimerInterval (int id, int intervalms);
+  static bool SetTimerInterval (int id, int intervalms) noexcept;
 
-  static void sendPing ();
-  static void postSocketEvent (int code, int sockid, int data, bool wantAck);
+  static void sendPing () noexcept;
+  static void postSocketEvent (int code, int sockid, int data, bool wantAck) noexcept;
 
-  static int getFrameTime ();
-  static void setFrameTime (int newft);
+  static int getFrameTime () noexcept;
+  static void setFrameTime (int newft) noexcept;
 
   // static
   //DECLARE_FUNCTION(performPreInit)
@@ -343,6 +270,9 @@ public:
   DECLARE_FUNCTION(forceSwap)
 
   DECLARE_FUNCTION(glHasExtension)
+
+  DECLARE_FUNCTION(get_dbgDumpOpenGLInfo)
+  DECLARE_FUNCTION(set_dbgDumpOpenGLInfo)
 
   DECLARE_FUNCTION(get_glHasNPOT)
 
@@ -483,7 +413,7 @@ public:
 // refcounted object
 class VOpenGLTexture {
 private:
-  int rc;
+  mutable int rc;
   VStr mPath;
 
 public:
@@ -492,8 +422,8 @@ public:
     float tx0, ty0, tx1, ty1;
   };
 
-  const VStr &getPath () const { return mPath; }
-  int getRC () const { return rc; }
+  inline VStr getPath () const noexcept { return mPath; }
+  inline int getRC () const noexcept { return rc; }
 
 public:
   VImage *img;
@@ -504,32 +434,34 @@ public:
   VOpenGLTexture *prev;
   VOpenGLTexture *next;
 
-  bool getTransparent () const { return mTransparent; }
-  bool getOpaque () const { return mOpaque; }
-  bool get1BitAlpha () const { return mOneBitAlpha; }
+  inline bool getTransparent () const noexcept { return mTransparent; }
+  inline bool getOpaque () const noexcept { return mOpaque; }
+  inline bool get1BitAlpha () const noexcept { return mOneBitAlpha; }
 
 private:
-  void registerMe ();
-  void analyzeImage ();
+  void registerMe () noexcept;
+  void analyzeImage () noexcept;
 
   VOpenGLTexture (int awdt, int ahgt); // dimensions must be valid!
 
 public:
-  VOpenGLTexture (VImage *aimg, const VStr &apath);
+  VOpenGLTexture (VImage *aimg, VStr apath);
   ~VOpenGLTexture (); // don't call this manually!
 
-  void addRef ();
-  void release (); //WARNING: can delete `this`!
+  VVA_ALWAYS_INLINE void addRef () const noexcept { ++rc; }
+
+  //WARNING: can delete `this`!
+  VVA_ALWAYS_INLINE void release () noexcept { if (--rc == 0) delete this; }
 
   void update ();
 
-  static VOpenGLTexture *Load (const VStr &fname);
+  static VOpenGLTexture *Load (VStr fname);
   static VOpenGLTexture *CreateEmpty (VName txname, int wdt, int hgt);
 
-  inline int getWidth () const { return (img ? img->width : 0); }
-  inline int getHeight () const { return (img ? img->height : 0); }
+  inline int getWidth () const noexcept { return (img ? img->width : 0); }
+  inline int getHeight () const noexcept { return (img ? img->height : 0); }
 
-  PropertyRO<const VStr &, VOpenGLTexture> path {this, &VOpenGLTexture::getPath};
+  PropertyRO<VStr, VOpenGLTexture> path {this, &VOpenGLTexture::getPath};
   PropertyRO<int, VOpenGLTexture> width {this, &VOpenGLTexture::getWidth};
   PropertyRO<int, VOpenGLTexture> height {this, &VOpenGLTexture::getHeight};
 
@@ -544,13 +476,13 @@ public:
   PropertyRO<bool, VOpenGLTexture> isOneBitAlpha {this, &VOpenGLTexture::get1BitAlpha};
 
   // angle is in degrees
-  void blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1, float angle) const;
-  void blitAt (int dx0, int dy0, float scale=1, float angle=0) const;
+  void blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1, float angle) const noexcept;
+  void blitAt (int dx0, int dy0, float scale=1, float angle=0) const noexcept;
 
   // this uses integer texture coords
-  void blitExtRep (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1) const;
+  void blitExtRep (int dx0, int dy0, int dx1, int dy1, int x0, int y0, int x1, int y1) const noexcept;
 
-  void blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQuad *t1) const;
+  void blitWithLightmap (TexQuad *t0, VOpenGLTexture *lmap, TexQuad *t1) const noexcept;
 };
 
 
@@ -617,7 +549,7 @@ public:
     float tx1, ty1; // texture coordinates, [0..1) -- cached for convenience
     VOpenGLTexture *tex; // don't destroy this!
 
-    FontChar () : ch(-1), width(0), height(0), tex(nullptr) {}
+    inline FontChar () noexcept : ch(-1), width(0), height(0), tex(nullptr) {}
   };
 
 public:
@@ -636,29 +568,29 @@ protected:
   VFont (); // this inits nothing, and intended to be used in `LoadXXX()`
 
 public:
-  //VFont (VName aname, const VStr &fnameIni, const VStr &fnameTexture);
+  //VFont (VName aname, VStr fnameIni, VStr fnameTexture);
   ~VFont ();
 
-  static VFont *LoadDF (VName aname, const VStr &fnameIni, const VStr &fnameTexture);
-  static VFont *LoadPCF (VName aname, const VStr &filename);
+  static VFont *LoadDF (VName aname, VStr fnameIni, VStr fnameTexture);
+  static VFont *LoadPCF (VName aname, VStr filename);
 
-  const FontChar *getChar (vint32 ch) const;
-  vint32 charWidth (vint32 ch) const;
-  vint32 textWidth (const VStr &s) const;
-  vint32 textHeight (const VStr &s) const;
+  const FontChar *getChar (vint32 ch) const noexcept;
+  vint32 charWidth (vint32 ch) const noexcept;
+  vint32 textWidth (VStr s) const noexcept;
+  vint32 textHeight (VStr s) const noexcept;
   // will clear lines; returns maximum text width
-  //int splitTextWidth (const VStr &text, TArray<VSplitLine> &lines, int maxWidth) const;
+  //int splitTextWidth (VStr text, TArray<VSplitLine> &lines, int maxWidth) const;
 
-  inline VName getName () const { return name; }
-  inline vint32 getSpaceWidth () const { return spaceWidth; }
-  inline vint32 getHeight () const { return fontHeight; }
-  inline vint32 getMinWidth () const { return minWidth; }
-  inline vint32 getMaxWidth () const { return maxWidth; }
-  inline vint32 getAvgWidth () const { return avgWidth; }
-  inline const VOpenGLTexture *getTexture () const { return tex; }
+  inline VName getName () const noexcept { return name; }
+  inline vint32 getSpaceWidth () const noexcept { return spaceWidth; }
+  inline vint32 getHeight () const noexcept { return fontHeight; }
+  inline vint32 getMinWidth () const noexcept { return minWidth; }
+  inline vint32 getMaxWidth () const noexcept { return maxWidth; }
+  inline vint32 getAvgWidth () const noexcept { return avgWidth; }
+  inline const VOpenGLTexture *getTexture () const noexcept { return tex; }
 
 public:
-  static VFont *findFont (VName name);
+  static VFont *findFont (VName name) noexcept;
 };
 
 

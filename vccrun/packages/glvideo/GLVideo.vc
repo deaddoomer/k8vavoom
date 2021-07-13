@@ -75,7 +75,9 @@ native final static bool glHasExtension (string extname);
 
 //native final static int getFrameTime ();
 //native final static void setFrameTime (int newframetime); // in msecs
-native final static bool frameTime { get; set; }
+native final static int frameTime { get; set; }
+
+native final static bool dbgDumpOpenGLInfo { get; set; }
 
 native final static bool openScreen (string winname, int width, int height, optional int fullscreen);
 native final static void closeScreen ();
@@ -152,7 +154,7 @@ enum AlphaFunc {
 native final static ZFunc depthFunc { get; set; }
 
 // current z value, in range of [0..65535]
-// values closer to z takes priority
+// values closer to 0 takes priority
 native final static int currZ { get; set; }
 
 
