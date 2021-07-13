@@ -27,7 +27,7 @@ rm $DECORATE_DEST $DECAL_DEST 2>/dev/null
 # WARNING! level death notifier will not be called for overlimit entity!
 echo 'Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" +NoTeleport }' >>$DECORATE_DEST
 echo 'Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" +NoTeleport }' >>$DECORATE_DEST
-echo "k8VaVoom { AllowBloodReplacement = true }" >>$DECORATE_DEST
+echo "k8vavoom { AllowBloodReplacement = true }" >>$DECORATE_DEST
 # this is required to create blood translations for colored blood option
 # no need too, because we can create blood translations on the fly now
 #echo "Actor K8Gore_BloodTranslationGreen { BloodColor \"00 40 00\" }" >>$DECORATE_DEST

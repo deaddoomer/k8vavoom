@@ -72,11 +72,13 @@ menudef GoreModMenu {
       "when monster is killed by headshot or instakill?";
   }
 
+  /*
   option bool {
     title = "HeadKill Blood Pool";
     cvar = k8HSHeadKillBloodPool;
     help = "Spawn blood pool object when monster is killed by headshot or instakill?";
   }
+  */
 
   option slider {
     title = "Blood Spray Amount";
