@@ -25,6 +25,8 @@
 //**************************************************************************
 //  BLOOD UTILITIES
 //**************************************************************************
+//#define VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
+
 
 const float BloodHeightMult = 0.65;
 
@@ -437,7 +439,9 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
   if (GetCvarB('dbg_blood_disable_entities')) return;
 
   name bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient', 'Blood');
-  name poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool', '');
+  #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
+  poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool', '');
+  #endif
   //print("bloodtype: %C/%C", self.BloodType, GetClassReplacee(self.BloodType));
 
   if (self.BloodType) {
@@ -447,12 +451,12 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
       bloodClassName = 'BloodGreen';
       bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient_Green', bloodClassName);
       //mistClassName = 'K8Gore_BloodmistSmallGreen';
-      poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Green', poolClassName);
+      //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Green', poolClassName);
     } else if (brname == 'BloodBlue') {
       bloodClassName = 'BloodBlue';
       bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient_Blue', bloodClassName);
       //mistClassName = 'K8Gore_BloodmistSmallBlue';
-      poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Blue', poolClassName);
+      //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Blue', poolClassName);
     }
   }
 
@@ -492,12 +496,13 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
     }
   }
 
+  #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
   if (spawnBloodPool && GetCvarB('k8HSHeadKillBloodPool')) {
     //poolClassName = 'SmallBloodPool';
     class!Actor poolClass = class!Actor(FindClass(poolClassName));
     if (poolClass) poolClass = class!Actor(GetClassReplacement(bloodClass));
     if (poolClass) {
-      //print("***SPAWNING BLOOD POOL: '%C'", poolClass);
+      //printdebug("***SPAWNING BLOOD POOL: '%C'", poolClass);
       EntityEx bld = EntityEx(Level.Spawn(poolClass, Origin));
       if (bld) {
         bld.CopyBloodTranslations(self, copyNormalTranslation:true);
@@ -505,6 +510,7 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
       }
     }
   }
+  #endif
 }
 
 
