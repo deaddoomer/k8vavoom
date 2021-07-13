@@ -1,0 +1,313 @@
+import 'GLVideo';
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class CameraInfo : Object;
+
+GLTexture heightMap;
+
+// position on the map
+float x = 512;
+float y = 800;
+
+// camera height
+float height = 78;
+
+// camera direction
+float angle = 0;
+
+// horizon position (look up and down)
+float horizon = 128;
+
+// render distance
+float distance = 450;
+
+
+final void normalizeCamera () {
+  x = fmodpos(x, heightMap.width);
+  y = fmodpos(y, heightMap.height);
+  angle = AngleMod360(angle);
+  int ix = cast(int)x;
+  int iy = cast(int)y;
+  int wdtmask = heightMap.width-1;
+  int hgtmask = heightMap.height-1;
+  int alt = 0;
+  for (int dy = -4; dy <= 4; ++dy) {
+    for (int dx = -4; dx <= 4; ++dx) {
+      alt = max(alt, heightMap.getPixel((ix+dx)&wdtmask, (iy+dy)&hgtmask)&0xff);
+    }
+  }
+  height = fmax(height, alt+6);
+}
+
+
+final void moveCameraByDeltaAngle (float dang, float delta) {
+  dang = AngleMod360(angle+dang);
+  float s, c;
+  sincos(dang, out s, out c);
+  x -= delta*s;
+  y -= delta*c;
+  normalizeCamera();
+}
+
+
+final void turnCameraByAngle (float dang) {
+  angle = AngleMod360(angle+dang);
+  normalizeCamera();
+}
+
+
+final void moveCameraUpDown (float deltaup) {
+  height += deltaup;
+  normalizeCamera();
+}
+
+
+final void lookCameraUpDown (float updelta) {
+  horizon = fclamp(horizon+updelta, -256, 256*2);
+}
+
+
+final void setDefaultHorizon () {
+  horizon = default.horizon;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class Main : Object;
+
+const int SCR_WIDTH = 640;
+const int SCR_HEIGHT = 480;
+
+GLTexture colorMap;
+GLTexture heightMap;
+GLTexture framebuf;
+
+CameraInfo Camera;
+int fogcolor = 0xff_00_1f_2f;
+
+
+bool leftPressed, rightPressed;
+bool fwdPressed, backPressed;
+bool upPressed, downPressed;
+bool lookupPressed, lookdownPressed;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct RenderInfo {
+  array!int hiddeny;
+}
+
+RenderInfo rinf;
+
+
+final void SetupHeightFieldRenderer (ref RenderInfo ri) {
+  if (ri.hiddeny.length != SCR_WIDTH) ri.hiddeny.length = SCR_WIDTH;
+  foreach (ref int v; ri.hiddeny) v = SCR_HEIGHT;
+}
+
+
+final void RenderHeightField (CameraInfo camera, ref RenderInfo ri) {
+  int wdtmask = heightMap.width-1;
+  int hgtmask = heightMap.height-1;
+
+  float sinang, cosang;
+  sincos(camera.angle, out sinang, out cosang);
+
+  SetupHeightFieldRenderer(ref ri);
+
+  float deltaz = 1.0f;
+  float invWidth = 1.0f/SCR_WIDTH;
+
+  // draw from front to back
+  for (float z = 1.0; z < camera.distance; z += deltaz) {
+    // 90 degree field of view
+    float plx = -cosang*z-sinang*z;
+    float ply =  sinang*z-cosang*z;
+    float prx =  cosang*z-sinang*z;
+    float pry = -sinang*z-cosang*z;
+
+    float dx = (prx-plx)*invWidth;
+    float dy = (pry-ply)*invWidth;
+    plx += camera.x;
+    ply += camera.y;
+    float invz = 240.0/z; // 240 is how high the highest point is
+    foreach (int sx; 0..SCR_WIDTH) {
+      int mapy = cast(int)ply&wdtmask;
+      int mapx = cast(int)plx&hgtmask;
+      int alt = heightMap.getPixel(mapx, mapy)&0xff;
+      int heightonscreen = cast(int)((camera.height-alt)*invz+camera.horizon);
+      int yh = ri.hiddeny[sx];
+      if (heightonscreen < yh) {
+        int cc = colorMap.getPixel(mapx, mapy);
+        float clrweight = (camera.distance-z)/camera.distance;
+        float fogweight = 1.0-clrweight;
+        int r = min(255, cast(int)(((cc>>16)&0xff)*clrweight+((fogcolor>>16)&0xff)*fogweight));
+        int g = min(255, cast(int)(((cc>>8)&0xff)*clrweight+((fogcolor>>8)&0xff)*fogweight));
+        int b = min(255, cast(int)((cc&0xff)*clrweight+(fogcolor&0xff)*fogweight));
+        cc = (cc&0xff_00_00_00)|(r<<16)|(g<<8)|b;
+        framebuf.vline(sx, heightonscreen, yh-heightonscreen, cc);
+        ri.hiddeny[sx] = heightonscreen;
+      }
+      plx += dx;
+      ply += dy;
+    }
+    deltaz += 0.005;
+  }
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called when vccrun need to refresh/redraw the screen
+void onDraw () {
+  GLVideo.depthTest = false;
+  GLVideo.glSetup2D();
+  GLVideo.glSetColor(1, 1, 1);
+
+  GLVideo.clearScreen();
+
+  GLVideo.color = 0xff_ff_ff;
+  framebuf.fillRect(0, 0, SCR_WIDTH, SCR_HEIGHT, fogcolor);
+
+  RenderHeightField(Camera, ref rinf);
+
+  framebuf.upload();
+  framebuf.blitAt(0, 0);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called on each event
+void onEvent (ref event_t evt) {
+  if (evt.type == ev_closequery) { GLVideo.requestQuit(); writeln("exiting (", evt.data1, ")"); return; }
+  if (evt.type == ev_keyup && ((evt.keycode == K_q && evt.bCtrl) || evt.keycode == K_ESCAPE)) {
+    // call this to stop event loop
+    GLVideo.requestQuit();
+    return;
+  }
+
+  if (evt.type == ev_keydown || evt.type == ev_keyup) {
+    switch (evt.keycode) {
+      case K_LEFTARROW:
+      case K_PAD4:
+      case K_BUTTON_DPAD_LEFT:
+        leftPressed = (evt.type == ev_keydown);
+        break;
+
+      case K_RIGHTARROW:
+      case K_PAD6:
+      case K_BUTTON_DPAD_RIGHT:
+        rightPressed = (evt.type == ev_keydown);
+        break;
+
+      case K_UPARROW:
+      case K_PAD8:
+      case K_BUTTON_DPAD_UP:
+        fwdPressed = (evt.type == ev_keydown);
+        break;
+
+      case K_DOWNARROW:
+      case K_PAD2:
+      case K_BUTTON_DPAD_DOWN:
+        backPressed = (evt.type == ev_keydown);
+        break;
+
+      case K_q:
+      case K_PAD7:
+        upPressed = (evt.type == ev_keydown);
+        break;
+      case K_z:
+      case K_PAD1:
+        downPressed = (evt.type == ev_keydown);
+        break;
+
+      case K_PAGEUP:
+      case K_PAD9:
+        lookupPressed = (evt.type == ev_keydown);
+        break;
+      case K_PAGEDOWN:
+      case K_PAD3:
+        lookdownPressed = (evt.type == ev_keydown);
+        break;
+    }
+
+    if (evt.type == ev_keydown) {
+      switch (evt.keycode) {
+        case K_PADMINUS: Camera.distance = fmax(Camera.distance-10, 1); break;
+        case K_PADPLUS: Camera.distance = fmin(Camera.distance+10, 1024); break;
+        case K_PAD5: Camera.setDefaultHorizon(); break;
+        case K_i:
+          print("pos=(%s,%s); angle=%s; height=%s; horizon=%s; distance=%s", Camera.x, Camera.y, Camera.angle, Camera.height, Camera.horizon, Camera.distance);
+          break;
+      }
+    }
+  }
+
+  if (evt.type == ev_joystick) {
+    print("jidx=%d; dx=%d; dy=%d", evt.joyidx, evt.dx, evt.dy);
+  }
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// this is called on each new frame (kind of timer)
+void onNewFrame () {
+  // do frame logic
+  if (leftPressed) Camera.turnCameraByAngle(6);
+  if (rightPressed) Camera.turnCameraByAngle(-6);
+  if (fwdPressed) Camera.moveCameraByDeltaAngle(0, 2);
+  if (backPressed) Camera.moveCameraByDeltaAngle(0, -2);
+
+  if (upPressed) Camera.moveCameraUpDown(4);
+  if (downPressed) Camera.moveCameraUpDown(-4);
+
+  if (lookupPressed) Camera.lookCameraUpDown(8);
+  if (lookdownPressed) Camera.lookCameraUpDown(-8);
+
+  // request screen refresh
+  // do not call `onDraw()` manuslly, use this API instead!
+  GLVideo.requestRefresh();
+}
+
+
+void main () {
+  print("loading world color map...");
+  colorMap = GLTexture.Load("C1W.png", doSmoothing:false);
+  print("color map size: %dx%d", colorMap.width, colorMap.height);
+  assert(colorMap.width == 1024);
+  assert(colorMap.height == 1024);
+
+  print("loading world height map...");
+  heightMap = GLTexture.Load("D1.png", doSmoothing:false);
+  print("height map size: %dx%d", heightMap.width, heightMap.height);
+  assert(colorMap.width == heightMap.width);
+  assert(colorMap.height == heightMap.height);
+
+  print("creating framebuffer texture...");
+  framebuf = GLTexture.CreateEmpty(SCR_WIDTH, SCR_HEIGHT, doSmoothing:false);
+  framebuf.textureType = GLTexture::TT_Opaque;
+
+  scope(exit) {
+    delete framebuf;
+    delete heightMap;
+    delete colorMap;
+  }
+
+  Camera = SpawnObject(CameraInfo);
+  scope(exit) delete Camera;
+  Camera.heightMap = heightMap;
+  Camera.normalizeCamera();
+
+  // milliseconds in one frame
+  // `onNewFrame()` will be called with roughly this interval
+  GLVideo.frameTime = int(1000/30); // 30 FPS
+
+  GLVideo.depthTest = false;
+  GLVideo.blendMode = GLVideo::BlendMode.None;
+
+  GLVideo.openScreen("VoxelSpace Demo", SCR_WIDTH, SCR_HEIGHT);
+  scope(exit) GLVideo.closeScreen();
+  //GLVideo.swapInterval = 0; // turn off VSync
+  GLVideo.swapInterval = 1; // turn on VSync
+  GLVideo.runEventLoop();
+}
