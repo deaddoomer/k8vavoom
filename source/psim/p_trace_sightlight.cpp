@@ -184,8 +184,10 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
 //
 //  SightPlaneNeedCheck
 //
+//  returns `true` if plane need to be checked
+//
 //==========================================================================
-static inline bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
+static VVA_ALWAYS_INLINE bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
   if (!trace.lightCheck) return true; // always check 3d floors
   // light checks
   /*if (trace.lightCheck && trace.flatTextureCheck)*/ {
@@ -193,6 +195,27 @@ static inline bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRe
   }
   // only solid textures can block light
   return GTextureManager.IsSightBlocking(spl.splane->pic);
+}
+
+
+//==========================================================================
+//
+//  CheckPlaneFlags
+//
+//  returns `true` if plane need to be checked
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE bool CheckPlaneFlags (SightTraceInfo &trace, const TSecPlaneRef &spl, unsigned regflags, unsigned flagmask) noexcept {
+  if (!trace.lightCheck) {
+    // 3d floor sight check
+    unsigned pflags = spl.splane->flags;
+    // for non-solid regions, invert flags
+    if (regflags&sec_region_t::RF_NonSolid) pflags ^= (SPF_NOBLOCKING|SPF_NOBLOCKSIGHT|SPF_NOBLOCKSHOOT);
+    return !(pflags&flagmask);
+  } else {
+    // light check: skip checking non-solid regions
+    return !(regflags&sec_region_t::RF_NonSolid);
+  }
 }
 
 
@@ -250,10 +273,10 @@ static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const floa
   //if (sector->eregions->next) GCon->Logf(NAME_Debug, "checking 3d regions of sector #%d", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
 
   for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
-    if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
+    if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual/*|sec_region_t::RF_NonSolid*/)) continue;
     if ((reg->regflags&sec_region_t::RF_SkipFloorSurf) == 0) {
       //GCon->Logf(NAME_Debug, "check region of sector #%d (floor)", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
-      if ((reg->efloor.splane->flags&flagmask) == 0) {
+      if (CheckPlaneFlags(trace, reg->efloor, reg->regflags, flagmask)) {
         //GCon->Log(NAME_Debug, "  ...mask ok");
         if (SightPlaneNeedCheck(trace, reg->efloor)) {
           //GCon->Log(NAME_Debug, "  ...need check");
@@ -264,7 +287,7 @@ static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const floa
     }
     if ((reg->regflags&sec_region_t::RF_SkipCeilSurf) == 0) {
       //GCon->Logf(NAME_Debug, "check region of sector #%d (ceiling)", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
-      if ((reg->eceiling.splane->flags&flagmask) == 0) {
+      if (CheckPlaneFlags(trace, reg->eceiling, reg->regflags, flagmask)) {
         //GCon->Log(NAME_Debug, "  ...mask ok");
         if (SightPlaneNeedCheck(trace, reg->eceiling)) {
           //GCon->Log(NAME_Debug, "  ...need check");
