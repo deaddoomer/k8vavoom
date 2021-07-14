@@ -187,11 +187,12 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
 //==========================================================================
 static inline bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
   if (!trace.lightCheck) return true; // always check 3d floors
-  if (GTextureManager.IsSightBlocking(spl.splane->pic)) return true; // blocked
-  if (trace.lightCheck && trace.flatTextureCheck) {
-    if ((spl.splane->flags&SPF_ADDITIVE) || spl.splane->Alpha < 1.0f) return false; // cannot block
+  // light checks
+  /*if (trace.lightCheck && trace.flatTextureCheck)*/ {
+    if ((spl.splane->flags&SPF_ADDITIVE) || spl.splane->Alpha < 1.0f) return false; // cannot block light
   }
-  return true;
+  // only solid textures can block light
+  return GTextureManager.IsSightBlocking(spl.splane->pic);
 }
 
 
