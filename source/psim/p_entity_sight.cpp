@@ -80,8 +80,8 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
   // same subsector? obviously visible
   // this is not true for base sectors, though
   if (SubSector == Other->SubSector) {
-    // if we have some 3d pobjs at this subsector, do not early exit
-    if (!SubSector->Has3DPObjs()) return true;
+    // if we have some 3d pobjs or 3d floors at this subsector, do not early exit
+    if (!SubSector->Has3DPObjs() && !SubSector->sector->HasAnyExtraFloors()) return true;
     // check for the same polyobject
     if (SubSector->isInnerPObj()) {
       // two entities can have some 3d pobj subsector only if they're on or inside a pobj

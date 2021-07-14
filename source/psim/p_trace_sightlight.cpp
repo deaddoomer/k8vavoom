@@ -83,18 +83,7 @@ struct SightTraceInfo {
 
   SightTraceInfo () = delete;
 
-  inline SightTraceInfo (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) noexcept
-    /*
-    : LineBlockMask(0)
-    , PlaneNoBlockFlags(0)
-    , lightCheck(false)
-    , flatTextureCheck(false)
-    , wallTextureCheck(false)
-    , collectIntercepts(false)
-    , wasBlocked(false)
-    , Hit1S(false)
-    */
-  {
+  inline SightTraceInfo (VLevel *alevel, const TVec &org, const TVec &dest, const subsector_t *sstart, const subsector_t *send) noexcept {
     memset((void *)this, 0, sizeof(SightTraceInfo));
     Level = alevel;
     Start = org;
@@ -197,7 +186,8 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
 //
 //==========================================================================
 static inline bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
-  if (GTextureManager.IsSightBlocking(spl.splane->pic)) return false; // blocked
+  if (!trace.lightCheck) return true; // always check 3d floors
+  if (GTextureManager.IsSightBlocking(spl.splane->pic)) return true; // blocked
   if (trace.lightCheck && trace.flatTextureCheck) {
     if ((spl.splane->flags&SPF_ADDITIVE) || spl.splane->Alpha < 1.0f) return false; // cannot block
   }
@@ -223,6 +213,8 @@ static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const floa
   // sanity checks, just in case
   if (!sector || sector->isAnyPObj()) return true;
   if (frac0 >= frac1) return true;
+
+  //if (sector->eregions->next) GCon->Logf(NAME_Debug, "checking planes of sector #%d", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
 
   const TVec p0 = trace.Start;
   const TVec p1 = trace.End;
@@ -254,19 +246,27 @@ static bool SightPassPlanes (SightTraceInfo &trace, sector_t *sector, const floa
     CheckPlaneHitInTime(sector->ceiling);
   }
 
+  //if (sector->eregions->next) GCon->Logf(NAME_Debug, "checking 3d regions of sector #%d", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
+
   for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
     if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
     if ((reg->regflags&sec_region_t::RF_SkipFloorSurf) == 0) {
+      //GCon->Logf(NAME_Debug, "check region of sector #%d (floor)", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
       if ((reg->efloor.splane->flags&flagmask) == 0) {
+        //GCon->Log(NAME_Debug, "  ...mask ok");
         if (SightPlaneNeedCheck(trace, reg->efloor)) {
+          //GCon->Log(NAME_Debug, "  ...need check");
           const float ft = reg->efloor.IntersectionTime(p0, p1);
           if (ft > frac0 && ft < frac1 && !SightPassRegionPlaneTexture(trace, reg, reg->efloor, ft)) return false;
         }
       }
     }
     if ((reg->regflags&sec_region_t::RF_SkipCeilSurf) == 0) {
+      //GCon->Logf(NAME_Debug, "check region of sector #%d (ceiling)", (int)(ptrdiff_t)(sector-&trace.Level->Sectors[0]));
       if ((reg->eceiling.splane->flags&flagmask) == 0) {
+        //GCon->Log(NAME_Debug, "  ...mask ok");
         if (SightPlaneNeedCheck(trace, reg->eceiling)) {
+          //GCon->Log(NAME_Debug, "  ...need check");
           const float ft = reg->eceiling.IntersectionTime(p0, p1);
           if (ft > frac0 && ft < frac1 && !SightPassRegionPlaneTexture(trace, reg, reg->eceiling, ft)) return false;
         }
@@ -952,6 +952,8 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
     ML_BLOCKSIGHT|
     (ignoreBlockAll ? 0 : ML_BLOCKEVERYTHING)|
     (trace.PlaneNoBlockFlags&SPF_NOBLOCKSHOOT ? ML_BLOCKHITSCAN : 0u);
+
+  //GCon->Logf(NAME_Debug, "checking sight, ssec #%d, esec #%d", (int)(ptrdiff_t)(trace.StartSubSector->sector-&trace.Level->Sectors[0]), (int)(ptrdiff_t)(trace.EndSubSector->sector-&trace.Level->Sectors[0]));
 
   if (trace.StartSubSector == trace.EndSubSector) {
     // same subsector, still may need to check 3d pobj/3d floors
