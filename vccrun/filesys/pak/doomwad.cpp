@@ -24,7 +24,7 @@
 
 
 // /////////////////////////////////////////////////////////////////////////// /
-class VDFWadFile : public FSysDriverBase {
+class VDoomWadFile : public FSysDriverBase {
 private:
   struct FileInfo {
     VStr name;
@@ -47,8 +47,8 @@ protected:
   virtual VStream *openWithIndex (int idx) override;
 
 public:
-  VDFWadFile (VStream* fstream, VStr aname=VStr("<memory>")); // takes ownership on success
-  virtual ~VDFWadFile () override;
+  VDoomWadFile (VStream *fstream, VStr aname=VStr("<memory>")); // takes ownership on success
+  virtual ~VDoomWadFile () override;
 
   inline bool isOpened () const { return (fileStream != nullptr); }
 };
@@ -56,7 +56,7 @@ public:
 
 // /////////////////////////////////////////////////////////////////////////// /
 // takes ownership
-VDFWadFile::VDFWadFile (VStream *fstream, VStr aname)
+VDoomWadFile::VDoomWadFile (VStream *fstream, VStr aname)
   : FSysDriverBase()
   , fileStream(nullptr)
   , files(nullptr)
@@ -64,83 +64,77 @@ VDFWadFile::VDFWadFile (VStream *fstream, VStr aname)
 {
   if (fstream) {
     fileStream = fstream;
-         if (!openArchive()) fileStream = nullptr;
-    else if (fstream->IsError()) fileStream = nullptr;
+    const bool err = (!openArchive() || fstream->IsError());
+    if (err) {
+      fileStream = nullptr;
+      fileCount = 0;
+      delete[] fileStream;
+      fileStream = nullptr;
+    }
   }
 }
 
 
-VDFWadFile::~VDFWadFile () {
+VDoomWadFile::~VDoomWadFile () {
   delete[] files;
   delete fileStream;
 }
 
 
-VStr VDFWadFile::getNameByIndex (int idx) const {
+VStr VDoomWadFile::getNameByIndex (int idx) const {
   if (idx < 0 || idx >= fileCount) return VStr::EmptyString;
   return files[idx].name;
 }
 
 
-int VDFWadFile::getNameCount () const {
+int VDoomWadFile::getNameCount () const {
   return fileCount;
 }
 
 
-bool VDFWadFile::openArchive () {
-  char sign[6];
-  fileStream->Serialize(sign, 6);
-  if (memcmp(sign, "DFWAD\x01", 6) != 0) return false;
+bool VDoomWadFile::openArchive () {
+  //GLog.Logf(NAME_Debug, "DOOMWAD: checking '%s'...", *fileStream->GetName());
 
-  vuint16 count;
+  char sign[4];
+  fileStream->Serialize(sign, 4);
+  if (fileStream->IsError()) return false;
+  if (memcmp(sign, "IWAD", 4) != 0 && memcmp(sign, "PWAD", 4) != 0) return false;
+
+  vuint32 count;
   *fileStream << count;
   if (fileStream->IsError()) return false;
-  fileCount = count;
   if (count == 0) return true;
 
-  files = new FileInfo[fileCount];
+  vuint32 dirofs;
+  *fileStream << dirofs;
+  if (fileStream->IsError()) return false;
 
-  VStr curpath = VStr();
+  fileStream->Seek(dirofs);
+  if (fileStream->IsError()) return false;
 
-  for (int i = 0; i < fileCount; ++i) {
-    files[i].name = VStr();
+  //GLog.Logf(NAME_Debug, "DOOMWAD: count=%u; dirofs=0x%08x", count, dirofs);
 
-    char nbuf[17];
-    fileStream->Serialize(nbuf, 16);
-    for (int f = 0; f < 16; ++f) if (nbuf[f] == '/') nbuf[f] = '_';
-    nbuf[16] = 0;
+  files = new FileInfo[count];
 
-    vuint32 pkofs, pksize;
-    *fileStream << pkofs << pksize;
-
-    if (pkofs == 0 && pksize == 0) {
-      curpath = VStr(nbuf).toLowerCase1251();
-      if (curpath.length() && !curpath.endsWith("/")) curpath += "/";
-      continue;
+  fileCount = 0;
+  while (count--) {
+    vuint32 ofs, size;
+    char name[9];
+    *fileStream << ofs;
+    if (fileStream->IsError()) return false;
+    *fileStream << size;
+    if (fileStream->IsError()) return false;
+    fileStream->Serialize(name, 8);
+    if (fileStream->IsError()) return false;
+    name[8] = 0;
+    if (name[0]) {
+      if (ofs >= 0x1fffffffu || size >= 0x1fffffffu) return false;
+      for (char *s = name; *s; ++s) if (*s >= 'A' && *s <= 'Z') s[0] += 32; // poor man's tolower
+      files[fileCount].name = VStr(name);
+      files[fileCount].pksize = size;
+      files[fileCount].pkofs = ofs;
+      ++fileCount;
     }
-
-    files[i].name = curpath+VStr(nbuf).toLowerCase1251(); // 1251
-    files[i].pksize = pksize;
-    files[i].pkofs = pkofs;
-    //fprintf(stderr, "DFWAD: <%s>\n", *files[i].name);
-  }
-
-  // remove empty names
-  {
-    int spos = 0, dpos = 0;
-    while (spos < fileCount) {
-      if (files[spos].name.length() == 0) {
-        ++spos;
-      } else {
-        if (spos != dpos) {
-          files[dpos] = files[spos];
-        }
-        ++spos;
-        ++dpos;
-      }
-    }
-    for (int f = dpos; f < fileCount; ++f) files[f].name.clear();
-    fileCount = dpos;
   }
 
   buildNameHashTable();
@@ -149,25 +143,23 @@ bool VDFWadFile::openArchive () {
 }
 
 
-VStream *VDFWadFile::openWithIndex (int idx) {
+VStream *VDoomWadFile::openWithIndex (int idx) {
   if (idx < 0 || idx >= fileCount) return nullptr;
   fileStream->Seek(files[idx].pkofs);
-  return new VZLibStreamReader(true, files[idx].name, fileStream, files[idx].pksize);
+  return new VPartialStreamRO(fileStream, (int)files[idx].pkofs, (int)files[idx].pksize);
 }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static FSysDriverBase *dfwadLoader (VStream *strm) {
+static FSysDriverBase *doomwadLoader (VStream *strm) {
   if (!strm) return nullptr;
-  //fprintf(stderr, "*** trying <%s> as dfwad...\n", *strm->GetName());
-  auto res = new VDFWadFile(strm);
+  auto res = new VDoomWadFile(strm);
   if (!res->isOpened()) { delete res; res = nullptr; }
   return res;
 }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void fsys_Register_DFWAD () {
-  //fprintf(stderr, "registering DFWAD loader...\n");
-  FSysRegisterDriver(&dfwadLoader, "dfwad", 6666);
+void fsys_Register_DOOMWAD () {
+  FSysRegisterDriver(&doomwadLoader, "pwad", 6696);
 }

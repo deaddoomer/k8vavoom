@@ -168,13 +168,14 @@ static int openPakCount = 0;
 struct FSysDriverCreator {
   FSysOpenPakFn ldr;
   int prio;
+  char *drvname;
   FSysDriverCreator *next;
 };
 
 static FSysDriverCreator *creators = nullptr;
 
 
-void FSysRegisterDriver (FSysOpenPakFn ldr, int prio) {
+void FSysRegisterDriver (FSysOpenPakFn ldr, const char *drvname, int prio) {
   if (!ldr) return;
 
   FSysDriverCreator *prev = nullptr, *cur = creators;
@@ -183,10 +184,16 @@ void FSysRegisterDriver (FSysOpenPakFn ldr, int prio) {
     cur = cur->next;
   }
 
+  if (!drvname || !drvname[0]) drvname = "unnamed";
+
+  //GLog.Logf(NAME_Debug, "registering loader '%s' (prio=%d)", drvname, prio);
+
   auto it = new FSysDriverCreator;
   it->ldr = ldr;
   it->prio = prio;
   it->next = cur;
+  it->drvname = (char *)Z_Calloc((int)strlen(drvname)+1);
+  strcpy(it->drvname, drvname);
 
   if (prev) prev->next = it; else creators = it;
 }
@@ -646,6 +653,7 @@ static void fsysInitInternal (bool addBaseDir) {
   if (addBaseDir && openPakCount == 0) {
     fsys_Register_ZIP();
     fsys_Register_DFWAD();
+    fsys_Register_DOOMWAD();
          if (fsysBaseDir.length() == 0) fsysBaseDir = VStr("./");
     else if (!fsysBaseDir.endsWith("/")) fsysBaseDir += "/"; // fuck you, shitdoze
     openPaks[0] = new FSysDriverDisk(fsysBaseDir);
@@ -722,21 +730,21 @@ int fsysAppendPak (VStream *strm, VStr apfx) {
   // it MUST append packs to the end of the list, so `fsysRemovePaksFrom()` will work properly
   if (openPakCount >= MaxOpenPaks) { VStream::Destroy(strm); Sys_Error("too many pak files"); }
 
-  //fprintf(stderr, "trying <%s> : pfx=<%s>\n", *strm->GetName(), *apfx);
+  //GLog.Logf(NAME_Debug, "trying <%s> : pfx=<%s>", *strm->GetName(), *apfx);
   for (FSysDriverCreator *cur = creators; cur; cur = cur->next) {
     strm->Seek(0);
     if (strm->IsError()) break;
-    //fprintf(stderr, " !!! %d\n", strm->TotalSize());
+    //GLog.Logf(NAME_Debug, " !!! %d (%s)", strm->TotalSize(), cur->drvname);
     auto drv = cur->ldr(strm);
     //if (strm->IsError()) { delete drv; break; }
     if (drv) {
-      //fprintf(stderr, "  :: <%s>\n", *strm->GetName());
+      //GLog.Logf(NAME_Debug, "  :: <%s> is '%s'", *strm->GetName(), cur->drvname);
       drv->setPrefix(apfx);
       drv->setFilePath(strm->GetName());
       openPaks[openPakCount++] = drv;
       return openPakCount;
     }
-    //fprintf(stderr, " +++ %d\n", (int)(strm->IsError()));
+    //GLog.Logf(NAME_Debug, " +++ %d", (int)(strm->IsError()));
   }
 
   VStream::Destroy(strm);

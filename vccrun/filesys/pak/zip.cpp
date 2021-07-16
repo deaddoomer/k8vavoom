@@ -419,5 +419,5 @@ static FSysDriverBase *zipLoader (VStream *strm) {
 // ////////////////////////////////////////////////////////////////////////// //
 void fsys_Register_ZIP () {
   //fprintf(stderr, "registering ZIP loader...\n");
-  FSysRegisterDriver(&zipLoader);
+  FSysRegisterDriver(&zipLoader, "zip");
 }

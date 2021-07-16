@@ -63,6 +63,7 @@ if (ENABLE_VCCRUN)
     filesys/fsys.cpp
     filesys/pak/zip.cpp
     filesys/pak/dfwad.cpp
+    filesys/pak/doomwad.cpp
   )
 
   if(VCCRUN_HAXPAK)

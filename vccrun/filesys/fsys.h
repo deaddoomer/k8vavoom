@@ -180,7 +180,7 @@ public:
 typedef FSysDriverBase* (*FSysOpenPakFn) (VStream *);
 
 // loaders with higher priority will be tried first
-void FSysRegisterDriver (FSysOpenPakFn ldr, int prio=1000);
+void FSysRegisterDriver (FSysOpenPakFn ldr, const char *drvname, int prio=1000);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -392,6 +392,7 @@ VStr fsysForEachPakFile (bool (*dg) (VStr fname));
 // ////////////////////////////////////////////////////////////////////////// //
 void fsys_Register_ZIP ();
 void fsys_Register_DFWAD ();
+void fsys_Register_DOOMWAD ();
 
 
 #endif
