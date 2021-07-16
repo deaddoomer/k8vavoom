@@ -33,9 +33,12 @@ private:
   int Col;
   VStr FileName;
 
+private:
+  void SetFileName (VStr fname) noexcept;
+
 public:
   inline VTextLocation () noexcept : Line(0), Col(0), FileName() {}
-  inline VTextLocation (VStr fname, int ALine, int ACol) noexcept : Line(ALine > 0 ? ALine : 0), Col(ACol > 0 ? ACol : 0), FileName(fname) {}
+  inline VTextLocation (VStr fname, int ALine, int ACol) noexcept : Line(ALine > 0 ? ALine : 0), Col(ACol > 0 ? ACol : 0), FileName() { SetFileName(fname); }
 
   inline int GetLine () const noexcept { return Line; }
   inline void SetLine (int ALine) noexcept { Line = ALine; }
@@ -44,7 +47,7 @@ public:
   inline void SetCol (int ACol) noexcept { Col = ACol; }
 
   inline VStr GetSourceFile () const noexcept { return FileName; }
-  inline void SetSourceFile (VStr fname) noexcept { FileName = fname; }
+  inline void SetSourceFile (VStr fname) noexcept { SetFileName(fname); }
 
   inline VStr GetSourceFileStr () const noexcept { return (FileName.isEmpty() ? VStr::EmptyString : FileName+":"); }
 
@@ -59,6 +62,10 @@ public:
 
   inline void ConsumeChars (int count) noexcept { Col += count; }
   inline void NewLine () noexcept { ++Line; Col = 1; }
+
+public:
+  static int GetFileNameCount () noexcept;
+  static void ResetFileNames () noexcept;
 };
 
 
@@ -104,6 +111,8 @@ private:
     bool IncLineNumber;
     TArray<int> IfStates;
     bool Skipping;
+    bool EDGEMode; // ignore underscores? (default: false)
+    bool SignedNumbers; // default: false
   };
 
   bool sourceOpen;
@@ -143,8 +152,8 @@ private:
   void ProcessElse ();
   void ProcessEndIf ();
   void ProcessInclude ();
-  void PushSource (VStr FileName);
-  void PushSource (VStream *Strm, VStr FileName); // takes ownership
+  void PushSource (VStr FileName, bool asEDGE=false);
+  void PushSource (VStream *Strm, VStr FileName, bool asEDGE=false); // takes ownership
   void PopSource ();
   void ProcessNumberToken ();
   void ProcessChar ();
@@ -182,10 +191,12 @@ public:
   VTextLocation Location; // of the current token
   VTextLocation CurrChLocation; // of the current char (currCh)
 
-  static inline bool isAlpha (const char ch) noexcept { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
-  static inline bool isDigit (const char ch) noexcept { return (ch >= '0' && ch <= '9'); }
-  static inline bool isIdChar (const char ch) noexcept { return (ch == '_' || ch == '$' || isAlpha(ch)); }
-  static inline bool isIdDigit (const char ch) noexcept { return (isIdChar(ch) || isDigit(ch)); }
+  static VVA_ALWAYS_INLINE bool isAlpha (const char ch) noexcept { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
+  static VVA_ALWAYS_INLINE bool isDigit (const char ch) noexcept { return (ch >= '0' && ch <= '9'); }
+  static VVA_ALWAYS_INLINE bool isIdChar (const char ch) noexcept { return (ch == '_' || ch == '$' || isAlpha(ch)); }
+  static VVA_ALWAYS_INLINE bool isIdDigit (const char ch) noexcept { return (isIdChar(ch) || isDigit(ch)); }
+
+  VVA_ALWAYS_INLINE bool isBlankChar (const char ch) const noexcept { return ((vuint8)ch <= ' ' || (ch == '_' && src && src->EDGEMode)); }
 
 public:
   // virtual file system callback (can be empty, and is empty by default)
@@ -208,8 +219,8 @@ private:
   void ExpectIdInternal (const char *s, bool caseSens);
 
 public:
-  VTextParser (VStream *st) noexcept;
-  VTextParser () noexcept; // will own the stream
+  VTextParser (VStream *st, bool asEDGE=false) noexcept; // will own the stream
+  VTextParser () noexcept;
   virtual ~VTextParser ();
 
   inline bool IsEOF () const noexcept { return (Token == TK_EOF); }
@@ -227,6 +238,12 @@ public:
     }
     return "fuck";
   }
+
+  inline bool IsEDGEMode () const noexcept { return (src ? src->EDGEMode : false); }
+  inline void SetEDGEMode (const bool v) noexcept { if (src) src->EDGEMode = v; }
+
+  inline bool IsSignedNumbers () const noexcept { return (src ? src->SignedNumbers : false); }
+  inline void SetSignedNumbers (const bool v) noexcept { if (src) src->SignedNumbers = v; }
 
   // returns `nullptr` if file not found
   // by default it tries to call `dgOpenFile()`, if it is specified
@@ -258,8 +275,8 @@ public:
   inline int IncludeCount () const noexcept { return includePath.length(); }
   inline VStr IncludeAt (int idx) const noexcept { return (idx >= 0 && idx < includePath.length() ? includePath[idx] : VStr::EmptyString); }
 
-  void OpenSource (VStr FileName);
-  void OpenSource (VStream *astream, VStr FileName); // takes stream ownership
+  void OpenSource (VStr FileName, bool asEDGE=false);
+  void OpenSource (VStream *astream, VStr FileName, bool asEDGE=false); // takes stream ownership
 
   // return next non-blank non-comment char
   // most of the time this will be `currCh`, but not always
@@ -267,13 +284,16 @@ public:
 
   void NextToken ();
 
+  // returns `true` if current token is a sign, and next non-blank char is a decimal digit
+  bool IsPossibleSignedNumber () const noexcept;
+
   inline void ExpectId (const char *s) { ExpectIdInternal(s, true); }
   inline void ExpectIdCI (const char *s) { ExpectIdInternal(s, false); }
   void ExpectDelim (const char *s);
 
   VStr ExpectId ();
-  VStr ExpectString ();
-  VStr ExpectName ();
+  VStr ExpectString (); // double-quoted string
+  VStr ExpectName (); // single-quoted string
 
   int ExpectInt ();
   int ExpectSignedInt ();

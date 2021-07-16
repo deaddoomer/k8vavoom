@@ -26,6 +26,127 @@
 #include "core.h"
 
 
+#define MAP_SIZE  (1024u)
+#define MAP_MASK  (MAP_SIZE-1u)
+
+struct FileNameItem {
+  VStr fname;
+  vuint32 hash;
+  FileNameItem *next; // 0: end of bucket
+};
+
+static FileNameItem *fileNameBuckets[MAP_SIZE];
+static unsigned fileNameCount = 0;
+
+//   0: not inited
+// 666: initalizing
+//   1: locked
+//   2: unlocked
+static atomic_int bucketsInited = 0;
+
+
+struct BucketLock {
+  VV_DISABLE_COPY(BucketLock)
+
+  VVA_ALWAYS_INLINE BucketLock () noexcept {
+    atomic_int v = atomic_cmp_xchg(&bucketsInited, 0, 666);
+    if (!v) {
+      // init
+      fileNameCount = 0;
+      for (unsigned f = 0; f < MAP_SIZE; ++f) fileNameBuckets[f] = nullptr;
+      atomic_store(&bucketsInited, 1); // locked
+      return;
+    }
+    while (v != 1) v = atomic_cmp_xchg(&bucketsInited, 2, 1);
+  }
+
+  VVA_ALWAYS_INLINE ~BucketLock () noexcept {
+    atomic_store(&bucketsInited, 2);
+  }
+};
+
+
+//==========================================================================
+//
+//  ResetFileNamesInternal
+//
+//==========================================================================
+static void ResetFileNamesInternal () noexcept {
+  if (fileNameCount) {
+    fileNameCount = 0;
+    for (unsigned f = 0; f < MAP_SIZE; ++f) {
+      FileNameItem *n = fileNameBuckets[f];
+      while (n) {
+        FileNameItem *c = n;
+        n = n->next;
+        delete c;
+      }
+      fileNameBuckets[f] = nullptr;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VTextLocation::GetFileNameCount
+//
+//==========================================================================
+int VTextLocation::GetFileNameCount () noexcept {
+  BucketLock lock;
+  return (int)fileNameCount;
+}
+
+
+//==========================================================================
+//
+//  VTextLocation::ResetFileNames
+//
+//==========================================================================
+void VTextLocation::ResetFileNames () noexcept {
+  BucketLock lock;
+  ResetFileNamesInternal();
+}
+
+
+//==========================================================================
+//
+//  VTextLocation::SetFileName
+//
+//==========================================================================
+void VTextLocation::SetFileName (VStr fname) noexcept {
+  if (fname.isEmpty()) { FileName.clear(); return; }
+  BucketLock lock;
+  vuint32 hash = joaatHashBuf(*fname, (size_t)fname.length());
+  unsigned bnum = hash&MAP_MASK;
+  FileNameItem *p = nullptr;
+  FileNameItem *c = fileNameBuckets[bnum];
+  while (c) {
+    if (c->hash == hash && c->fname == fname) {
+      // move to the top
+      if (p) {
+        p->next = c->next;
+        c->next = fileNameBuckets[bnum];
+        fileNameBuckets[bnum] = c;
+      }
+      FileName = c->fname;
+      return;
+    }
+    p = c;
+    c = c->next;
+  }
+  if (fileNameCount >= MAP_SIZE*3) ResetFileNamesInternal();
+  // not found, add new
+  c = new FileNameItem;
+  c->fname = fname;
+  c->hash = hash;
+  c->next = fileNameBuckets[bnum];
+  fileNameBuckets[bnum] = c;
+  FileName = c->fname;
+  ++fileNameCount;
+}
+
+
 //==========================================================================
 //
 //  VTextLocation::toString
@@ -93,6 +214,7 @@ VStr VTextLocation::toStringShort () const noexcept {
 }
 
 
+
 //==========================================================================
 //
 //  VTextParser::initParser
@@ -126,10 +248,13 @@ VTextParser::VTextParser () noexcept {
 //  VTextParser::VTextParser
 //
 //==========================================================================
-VTextParser::VTextParser (VStream *st) noexcept {
+VTextParser::VTextParser (VStream *st, bool asEDGE) noexcept {
   initParser();
-
-  if (st) PushSource(st, st->GetName());
+  if (st) {
+    PushSource(st, st->GetName(), asEDGE);
+    sourceOpen = true;
+  }
+  clearToken();
 }
 
 
@@ -273,9 +398,9 @@ VStream *VTextParser::doOpenFile (VStr filename) {
 //  VTextParser::OpenSource
 //
 //==========================================================================
-void VTextParser::OpenSource (VStr FileName) {
+void VTextParser::OpenSource (VStr FileName, bool asEDGE) {
   // read file and prepare for compilation
-  PushSource(FileName);
+  PushSource(FileName, asEDGE);
   sourceOpen = true;
   clearToken();
 }
@@ -286,9 +411,9 @@ void VTextParser::OpenSource (VStr FileName) {
 //  VTextParser::OpenSource
 //
 //==========================================================================
-void VTextParser::OpenSource (VStream *astream, VStr FileName) {
+void VTextParser::OpenSource (VStream *astream, VStr FileName, bool asEDGE) {
   // read file and prepare for compilation
-  PushSource(astream, FileName);
+  PushSource(astream, FileName, asEDGE);
   sourceOpen = true;
   clearToken();
 }
@@ -299,10 +424,10 @@ void VTextParser::OpenSource (VStream *astream, VStr FileName) {
 //  VTextParser::PushSource
 //
 //==========================================================================
-void VTextParser::PushSource (VStr FileName) {
+void VTextParser::PushSource (VStr FileName, bool asEDGE) {
   VStream *strm = doOpenFile(FileName);
   if (!strm) FatalError(Location, va("cannot open file '%s'", *FileName));
-  PushSource(strm, FileName);
+  PushSource(strm, FileName, asEDGE);
 }
 
 
@@ -311,7 +436,7 @@ void VTextParser::PushSource (VStr FileName) {
 //  VTextParser::PushSource
 //
 //==========================================================================
-void VTextParser::PushSource (VStream *Strm, VStr FileName) {
+void VTextParser::PushSource (VStream *Strm, VStr FileName, bool asEDGE) {
   if (!Strm) FatalError(Location, va("no stream provided for file '%s'", *FileName));
   if (FileName.isEmpty()) FileName = Strm->GetName();
 
@@ -354,6 +479,8 @@ void VTextParser::PushSource (VStream *Strm, VStr FileName) {
   NewSrc->FileEnd = NewSrc->FileStart+FileSize;
   NewSrc->FilePtr = NewSrc->FileStart;
   NewSrc->FileText = NewSrc->FileStart;
+  NewSrc->EDGEMode = asEDGE;
+  NewSrc->SignedNumbers = false;
 
   // skip garbage some editors add in the begining of UTF-8 files (BOM)
   if (FileSize >= 3 && (vuint8)NewSrc->FilePtr[0] == 0xef && (vuint8)NewSrc->FilePtr[1] == 0xbb && (vuint8)NewSrc->FilePtr[2] == 0xbf) {
@@ -576,7 +703,7 @@ bool VTextParser::SkipWhitespaceAndComments () {
     const int cmt = SkipComment();
     if (cmt) { wasNL = (wasNL || cmt > 0); continue; }
     wasNL = (wasNL || currCh == EOL_CHARACTER);
-    if ((vuint8)currCh > ' ') break;
+    if (!isBlankChar(currCh)) break;
     NextChr();
   }
   return wasNL;
@@ -593,7 +720,7 @@ char VTextParser::peekNextNonBlankChar () const noexcept {
   if (fpos > src->FileStart) --fpos; // unget last char
   while (fpos < src->FileEnd) {
     char ch = *fpos++;
-    if ((vuint8)ch <= ' ') continue;
+    if (isBlankChar(ch)) continue;
     // comment?
     if (ch == '/' && fpos < src->FileEnd) {
       ch = *fpos++;
@@ -645,7 +772,7 @@ char VTextParser::peekNextNonBlankChar () const noexcept {
 //==========================================================================
 bool VTextParser::SkipCurrentLine () {
   if (currCh == EOL_CHARACTER || currCh == EOF_CHARACTER) return true;
-  bool noBadChars = true;
+  bool seenBadChars = false;
   while (currCh != EOF_CHARACTER) {
     if (currCh == EOL_CHARACTER) break;
     const int cmt = SkipComment();
@@ -653,10 +780,10 @@ bool VTextParser::SkipCurrentLine () {
       if (cmt > 0) break;
       continue;
     }
-    noBadChars = (noBadChars || ((vuint8)currCh > ' '));
+    seenBadChars = (seenBadChars || !isBlankChar(currCh));
     NextChr();
   }
-  return noBadChars;
+  return !seenBadChars;
 }
 
 
@@ -667,7 +794,7 @@ bool VTextParser::SkipCurrentLine () {
 //==========================================================================
 void VTextParser::ProcessPreprocessor () {
   NextChr(); // skip '#'
-  while (currCh != EOF_CHARACTER && currCh != EOL_CHARACTER && (vuint8)currCh <= ' ') NextChr();
+  while (currCh != EOF_CHARACTER && currCh != EOL_CHARACTER && isBlankChar(currCh)) NextChr();
 
   if (currCh == EOL_CHARACTER || currCh == EOF_CHARACTER) {
     if (src->Skipping) {
@@ -1425,7 +1552,7 @@ void VTextParser::ProcessLetterToken () {
   Token = TK_Id;
   TokenStr.clear();
   while (isIdDigit(currCh)) {
-    TokenStr += currCh;
+    if (currCh != '_' || !src->EDGEMode) TokenStr += currCh;
     NextChr();
   }
 }
@@ -1439,6 +1566,18 @@ void VTextParser::ProcessLetterToken () {
 void VTextParser::ProcessSpecialToken () {
   const char ch = currCh;
   TokenStr.clear();
+  if ((ch == '+' || ch == '-') && src->SignedNumbers && isDigit(peekNextNonBlankChar())) {
+    const bool neg = (ch == '-');
+    NextChr(); // skip sign char
+    (void)SkipWhitespaceAndComments();
+    ProcessNumberToken();
+    vassert(Token == TK_Int || Token == TK_Float);
+    if (neg) {
+      TokenInt = -TokenInt;
+      TokenFloat = -TokenFloat;
+    }
+    return;
+  }
   Token = TK_Delim;
   TokenStr += currCh;
   NextChr();
@@ -1594,7 +1733,7 @@ bool VTextParser::skipBlanksFrom (int &cpos) const {
   for (;;) {
     vuint8 ch = peekChar(cpos);
     if (!ch) break; // EOS
-    if (ch <= ' ') { ++cpos; continue; }
+    if (isBlankChar(ch)) { ++cpos; continue; }
     if (ch != '/') return true; // not a comment
     ch = peekChar(cpos+1);
     // block comment?
@@ -1722,6 +1861,19 @@ int VTextParser::ExpectInt () {
   const int res = TokenInt;
   NextToken();
   return res;
+}
+
+
+//==========================================================================
+//
+//  VTextParser::IsPossibleSignedNumber
+//
+//==========================================================================
+bool VTextParser::IsPossibleSignedNumber () const noexcept {
+  if (Token != TK_Delim) return false;
+  if (TokenStr != "+" && TokenStr != "-") return false;
+  const char ch = peekNextNonBlankChar();
+  return isDigit(ch);
 }
 
 
