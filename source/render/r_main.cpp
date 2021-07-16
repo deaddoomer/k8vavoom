@@ -69,6 +69,12 @@ static VCvarB r_tonemap_psprites("r_tonemap_psprites", true, "Apply tonemap afte
 
 static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", 0);
 
+static VCvarF r_hack_aspect_scale("r_hack_aspect_scale", "1.2", "Aspect ratio scale. As my aspect code is FUBARed, you can use this to make things look right.", CVAR_Archive);
+static float prev_r_hack_aspect_scale = 0.0f;
+
+static VCvarF r_hack_psprite_yofs("r_hack_psprite_yofs", "0", "PSprite offset for non-standard ration scales. Positive is down.", CVAR_Archive);
+static float prev_r_hack_psprite_yofs = 0.0f;
+
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
@@ -231,14 +237,14 @@ static float CalcAspect (int aspectRatio, int scrwdt, int scrhgt, int *aspHoriz=
   if (aspectRatio < 0 || aspectRatio >= (int)ASPECT_COUNT) aspectRatio = 0;
   if (aspHoriz) *aspHoriz = AspectList[aspectRatio].horiz;
   if (aspVert) *aspVert = AspectList[aspectRatio].vert;
-  if (aspectRatio == 0) return 1.2f*VDrawer::GetWindowAspect();
+  if (aspectRatio == 0) return r_hack_aspect_scale.asFloat()*VDrawer::GetWindowAspect();
   #if 0
-  return ((float)scrhgt*(float)AspectList[aspectRatio].horiz)/((float)scrwdt*(float)AspectList[aspectRatio].vert)*1.2f*VDrawer::GetWindowAspect();
+  return ((float)scrhgt*(float)AspectList[aspectRatio].horiz)/((float)scrwdt*(float)AspectList[aspectRatio].vert)*r_hack_aspect_scale.asFloat()*VDrawer::GetWindowAspect();
   #else
   const int sh = min2(scrhgt, scrwdt);
   const int sw = max2(scrhgt, scrwdt);
-  return ((float)sh*(float)AspectList[aspectRatio].horiz)/((float)sw*(float)AspectList[aspectRatio].vert)*1.2f*VDrawer::GetWindowAspect();
-  //return (200.0f*(float)AspectList[aspectRatio].vert)/(320.0f*(float)AspectList[aspectRatio].horiz)*1.2f*VDrawer::GetWindowAspect();
+  return ((float)sh*(float)AspectList[aspectRatio].horiz)/((float)sw*(float)AspectList[aspectRatio].vert)*r_hack_aspect_scale.asFloat()*VDrawer::GetWindowAspect();
+  //return (200.0f*(float)AspectList[aspectRatio].vert)/(320.0f*(float)AspectList[aspectRatio].horiz)*r_hack_aspect_scale.asFloat()*VDrawer::GetWindowAspect();
   #endif
 }
 
@@ -1132,8 +1138,13 @@ void VRenderLevelShared::SetupRefdefWithFOV (refdef_t *refdef, float fov) {
 //
 //==========================================================================
 void VRenderLevelShared::ExecuteSetViewSize () {
+       if (r_hack_aspect_scale.asFloat() < 0.02f) r_hack_aspect_scale = 0.02f;
+  else if (r_hack_aspect_scale.asFloat() > 64.0f) r_hack_aspect_scale = 64.0f;
+
   set_resolution_needed = false;
   prev_r_dbg_proj_aspect = r_dbg_proj_aspect.asBool();
+  prev_r_hack_aspect_scale = r_hack_aspect_scale.asFloat();
+  prev_r_hack_psprite_yofs = r_hack_psprite_yofs.asFloat();
 
   // sanitise screen size
   if (allow_small_screen_size) {
@@ -1209,10 +1220,25 @@ void VRenderLevelShared::ExecuteSetViewSize () {
     if (ScreenHeight+64 > ScreenWidth) {
       //PSpriteOfsAspect = ((4.0f/3.0f)/baseAspect)*97.5f;
       //PSpriteOfsAspect = baseAspect*100.0f;
-      //PSpriteOfsAspect = (float)ScreenHeight/(float)ScreenWidth/1.2f*baseAspect*97.5f;
+      //PSpriteOfsAspect = (float)ScreenHeight/(float)ScreenWidth/r_hack_aspect_scale.asFloat()*baseAspect*97.5f;
       PSpriteOfsAspect = (float)ScreenHeight/(float)ScreenWidth*97.5f;
       //PSpriteOfsAspect = baseAspect*97.5f;
       GCon->Logf(NAME_Debug, "*** baseAspect=%f; taller=%d; psofs=%f", baseAspect, (int)IsAspectTallerThanWide(baseAspect), PSpriteOfsAspect);
+    }
+    // 0.91: 24
+    // 0.986: 14
+    // 1: 12.2
+    // 1.2: 0
+    // 2: -42.2
+    //PSpriteOfsAspect -= 42.2f;
+    if (fabsf(r_hack_aspect_scale.asFloat()-1.2f) > 0.001f) {
+      GCon->Logf(NAME_Debug, "!!! baseAspect=%f; IsAspectTallerThanWide=%d; PSpriteOfsAspect=%f", baseAspect, IsAspectTallerThanWide(baseAspect), PSpriteOfsAspect);
+      PSpriteOfsAspect -= (r_hack_aspect_scale.asFloat()-1.2f)*(97.5f/2.0f)*baseAspect;
+      GCon->Logf(NAME_Debug, "!!!   fixed PSpriteOfsAspect=%f", PSpriteOfsAspect);
+    }
+    if (r_hack_psprite_yofs.asFloat()) {
+      PSpriteOfsAspect += r_hack_psprite_yofs.asFloat();
+      GCon->Logf(NAME_Debug, "!!!   final PSpriteOfsAspect=%f", PSpriteOfsAspect);
     }
   } else {
     PSpriteOfsAspect = 0.0f;
@@ -1297,7 +1323,9 @@ void VRenderLevelShared::SetupFrame () {
       set_resolution_needed || old_fov != fov_main || cl_fov >= 1 ||
       r_aspect_ratio != prev_aspect_ratio ||
       r_vertical_fov != prev_vertical_fov_flag ||
-      r_dbg_proj_aspect.asBool() != prev_r_dbg_proj_aspect)
+      r_dbg_proj_aspect.asBool() != prev_r_dbg_proj_aspect ||
+      r_hack_aspect_scale.asFloat() != prev_r_hack_aspect_scale ||
+      r_hack_psprite_yofs.asFloat() != prev_r_hack_psprite_yofs)
   {
     ExecuteSetViewSize();
   }
