@@ -323,32 +323,32 @@ override void SpawnSpecials () {
       case LNSPEC_ScrollTextureLeft:
         SpawnWallScroller(line, 1, 0);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollTextureRight:
         SpawnWallScroller(line, -1, 0);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollTextureUp:
         SpawnWallScroller(line, 0, 1);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollTextureDown:
         SpawnWallScroller(line, 0, -1);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollTextureBoth:
         SpawnTextureBothScroller(line);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollTextureModel:
         SpawnScrollTextureModel(line);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_ScrollFloor:
         SpawnScrollFloor(line);
@@ -363,7 +363,7 @@ override void SpawnSpecials () {
       case LNSPEC_ScrollTextureOffsets:
         SpawnWallOffsetsScroller(line);
         line.special = 0;
-        line.flags |= ML_NODECAL;
+        //line.flags |= ML_NODECAL;
         break;
       case LNSPEC_TransferWallLight:
         SpawnTransferWallLight(line);
@@ -2798,6 +2798,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   Scroller Scroll = SpawnThinker(Scroller);
   if (Scroll && !Scroll.IsDestroyed) {
     Scroll.InitWall(Line, XDir, YDir);
+    if (!Scroll.IsDestroyed) Line.flags |= ML_NODECAL;
   }
 }
 
@@ -2812,6 +2813,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   Scroller Scroll = SpawnThinker(Scroller);
   if (Scroll && !Scroll.IsDestroyed) {
     Scroll.InitWallOffsets(Line);
+    if (!Scroll.IsDestroyed) Line.flags |= ML_NODECAL;
   }
 }
 
@@ -2826,6 +2828,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   Scroller Scroll = SpawnThinker(Scroller);
   if (Scroll && !Scroll.IsDestroyed) {
     Scroll.InitTextureBoth(Line, float(Line->arg2-Line->arg3)/64.0, float(Line->arg5-Line->arg4)/64.0, 0, 7);
+    if (!Scroll.IsDestroyed) Line.flags |= ML_NODECAL;
   }
 }
 
@@ -2899,6 +2902,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
       Scroller Scroll = SpawnThinker(Scroller);
       if (Scroll && !Scroll.IsDestroyed) {
         Scroll.InitTextureModel(Other, Line);
+        if (!Scroll.IsDestroyed) Line.flags |= ML_NODECAL;
       }
     }
   }
@@ -2964,22 +2968,22 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
     array!Scroller FoundScrollers;
     foreach AllThinkers(Scroller, Scroll) {
       if (Scroll.Type != Scroller::SCROLLEV_Side) continue;
-      //  Check if line has a correct tag.
+      // check if line has a correct tag
       if (!IsLineTagEqual(Scroll.AffecteeSrcLine, LineId)) continue;
-      //  Check if it's the correct side.
+      // check if it's the correct side
       if (Scroll.AffecteeSrcLine->sidenum[WhichSide] != Scroll.Affectee) continue;
-      //  Check if it's scrolling the same wall parts
+      // check if it's scrolling the same wall parts
       if (Scroll.SideParts != Where) continue;
-      //  Found it.
+      // found it
       Scroll.AdjustTextureBoth(XSpeed, YSpeed);
-      FoundScrollers[FoundScrollers.length] = Scroll;
+      FoundScrollers[$] = Scroll;
     }
 
     int Searcher = -1;
     for (line_t *Other = XLevel.FindLine(LineId, &Searcher); Other;
          Other = XLevel.FindLine(LineId, &Searcher))
     {
-      // check if this line already has scroller
+      // check if this line already has a scroller
       int i;
       for (i = 0; i < FoundScrollers.length; ++i) {
         if (FoundScrollers[i].Affectee == Other->sidenum[WhichSide]) break;
@@ -2989,6 +2993,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
         Scroll = SpawnThinker(Scroller);
         if (Scroll && !Scroll.IsDestroyed) {
           Scroll.InitTextureBoth(Other, XSpeed, YSpeed, WhichSide, Where);
+          if (!Scroll.IsDestroyed) Other.flags |= ML_NODECAL;
         }
       }
     }
