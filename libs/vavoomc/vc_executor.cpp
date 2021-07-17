@@ -2899,11 +2899,10 @@ func_loop:
           case OPC_Builtin_FMod: sp[-2].f = fmodf(sp[-2].f, sp[-1].f); sp -= 1; break;
           case OPC_Builtin_FModPos:
             sp[-2].f = fmodf(sp[-2].f, sp[-1].f);
-            if (isFiniteF(sp[-2].f) && isFiniteF(sp[-1].f)) {
-              while (sp[-2].f < 0.0f) sp[-2].f += fabsf(sp[-1].f);
-            }
+            if (isFiniteF(sp[-2].f) && isFiniteF(sp[-1].f) && sp[-2].f < 0.0f) sp[-2].f += fabsf(sp[-1].f);
             sp -= 1;
             break;
+          case OPC_Builtin_FPow: sp[-2].f = powf(sp[-2].f, sp[-1].f); sp -= 1; break;
           case OPC_Builtin_VecLength:
             if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
             sp[-3].f = sqrtf(VSUM3(sp[-1].f*sp[-1].f, sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f));

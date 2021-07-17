@@ -2317,19 +2317,30 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       fv = Args[0]->GetFloatConst();
       if (!isFiniteF(fv)) return this;
       fv2 = Args[1]->GetFloatConst();
-      if (!isFiniteF(fv2)) return this;
-      e = new VFloatLiteral(fmodf(fv, fv2), Loc);
+      if (!isFiniteF(fv2) || fv2 == 0.0f) return this;
+      fvres = fmodf(fv, fv2);
+      if (!isFiniteF(fvres)) return this;
+      e = new VFloatLiteral(fvres, Loc);
       break;
     case OPC_Builtin_FModPos:
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
       fv = Args[0]->GetFloatConst();
       if (!isFiniteF(fv)) return this;
       fv2 = Args[1]->GetFloatConst();
-      if (!isFiniteF(fv2)) return this;
+      if (!isFiniteF(fv2) || fv2 == 0.0f) return this;
       fvres = fmodf(fv, fv2);
-      if (isFiniteF(fvres) && isFiniteF(fv) && isFiniteF(fv2)) {
-        while (fvres < 0.0f) fvres += fabsf(fv2);
-      }
+      if (!isFiniteF(fvres)) return this;
+      if (fvres < 0.0f) fvres += fabsf(fv2);
+      e = new VFloatLiteral(fvres, Loc);
+      break;
+    case OPC_Builtin_FPow:
+      if (!CheckSimpleConstArgs(2, (const int []){TYPE_Float, TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst();
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst();
+      if (!isFiniteF(fv2) || fv2 == 0.0f) return this;
+      fvres = powf(fv, fv2);
+      if (!isFiniteF(fvres)) return this;
       e = new VFloatLiteral(fvres, Loc);
       break;
     case OPC_Builtin_VecLength:

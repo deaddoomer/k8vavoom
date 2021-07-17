@@ -599,6 +599,7 @@ native static final float fmod (float x, float y) [builtin FMod]; // x-n*y, for 
 native static final float fmodpos (float x, float y) [builtin FModPos]; // x-n*y, for some integer n, such that the returned value is always positive, and has a magnitude less than the magnitude of y
 native static final float length (const TVec vec) [builtin VecLength]; // vector length
 native static final float lengthSquared (const TVec vec) [builtin VecLengthSquared]; // vector length
+native static final float fpow (float x, float y) [builtin FPow];
 alias Length = length;
 alias LengthSquared = lengthSquared;
 // vector length without z component
