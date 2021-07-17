@@ -885,7 +885,7 @@ int VFont::FindChar (int Chr) {
 //  VFont::GetChar
 //
 //==========================================================================
-VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
+VTexture *VFont::GetChar (int Chr, CharRect *rect, int *pWidth, int Color) {
   int Idx = FindChar(Chr);
   if (Idx < 0) {
     // try upper-case letter
@@ -893,6 +893,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
     Idx = FindChar(Chr);
     if (Idx < 0) {
       if (pWidth) *pWidth = SpaceWidth;
+      if (rect) rect->clear();
       return nullptr;
     }
   }
@@ -902,6 +903,7 @@ VTexture *VFont::GetChar (int Chr, int *pWidth, int Color) {
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
   if (pWidth) *pWidth = (Tex ? Tex->GetScaledWidthI() : SpaceWidth);
+  if (rect) { rect->x0 = rect->y0 = 0.0f; rect->x1 = rect->y1 = 1.0f; }
   return Tex;
 }
 

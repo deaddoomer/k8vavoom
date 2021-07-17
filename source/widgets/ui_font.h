@@ -83,6 +83,17 @@ protected:
   static void MarkUsedColors (VTexture *Tex, bool *Used);
 
 public:
+  // x1 and y1 should be greater than x0 and y0
+  struct CharRect {
+    float x0, y0, x1, y1;
+
+    inline CharRect () noexcept { x0 = y0 = x1 = y1 = 0.0f; }
+
+    void inline clear () noexcept { x0 = y0 = x1 = y1 = 0.0f; }
+    bool isValid () const noexcept { return (x0 < x1 && y0 < y1); }
+  };
+
+public:
   VFont ();
   VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex, int ASpaceWidth);
   ~VFont ();
@@ -92,7 +103,7 @@ public:
   // can return `nullptr` (pWidth is space width in this case)
   // `pWidth` can be `nullptr`
   // color is color translation (CR_XXX); -1 means "untranslated"
-  VTexture *GetChar (int Chr, int *pWidth, int Color=-1);
+  VTexture *GetChar (int Chr, CharRect *rect, int *pWidth, int Color=-1);
   int GetCharWidth (int Chr);
 
   // doesn't properly process newlines (but ignores color escapes)

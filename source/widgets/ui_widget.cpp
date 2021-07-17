@@ -1040,7 +1040,7 @@ void VWidget::DrawPicScaled (int X, int Y, int Handle, float scaleX, float scale
 //
 //==========================================================================
 void VWidget::DrawPicScaled (int X, int Y, VTexture *Tex, float scaleX, float scaleY, float Alpha, int Trans) {
-  if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
+  if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null) return;
 
   X -= (int)((float)Tex->GetScaledSOffsetI()*scaleX);
   Y -= (int)((float)Tex->GetScaledTOffsetI()*scaleY);
@@ -1064,7 +1064,7 @@ void VWidget::DrawPicScaled (int X, int Y, VTexture *Tex, float scaleX, float sc
 //
 //==========================================================================
 void VWidget::DrawPicScaledIgnoreOffset (int X, int Y, int Handle, float scaleX, float scaleY, float Alpha, int Trans) {
-  if (Alpha <= 0.0f) return;
+  if (Alpha < 0.004f) return;
   VTexture *Tex = GTextureManager(Handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
 
@@ -1088,7 +1088,7 @@ void VWidget::DrawPicScaledIgnoreOffset (int X, int Y, int Handle, float scaleX,
 //
 //==========================================================================
 void VWidget::DrawPic (int X, int Y, VTexture *Tex, float Alpha, int Trans) {
-  if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
+  if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null) return;
 
   X -= Tex->GetScaledSOffsetI();
   Y -= Tex->GetScaledTOffsetI();
@@ -1112,7 +1112,7 @@ void VWidget::DrawPic (int X, int Y, VTexture *Tex, float Alpha, int Trans) {
 //
 //==========================================================================
 void VWidget::DrawPicPart (float x, float y, float pwdt, float phgt, int handle, float alpha) {
-  if (handle < 0 || alpha <= 0 || pwdt <= 0 || phgt <= 0 || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
+  if (handle < 0 || alpha < 0.004f || pwdt <= 0.0f || phgt <= 0.0f || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
   x -= Tex->GetScaledSOffsetF();
@@ -1137,19 +1137,28 @@ void VWidget::DrawPicPart (float x, float y, float pwdt, float phgt, int handle,
 //
 //==========================================================================
 void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha) {
-  if (handle < 0 || alpha <= 0 || tx1 <= tx0 || ty1 <= ty0) return;
+  if (handle < 0 || alpha < 0.004f || tx1 <= tx0 || ty1 <= ty0) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
   x -= Tex->GetScaledSOffsetF();
   y -= Tex->GetScaledTOffsetF();
-  float X1 = x+Tex->GetScaledWidthF()*tx0;
-  float Y1 = y+Tex->GetScaledHeightF()*ty0;
-  float X2 = x+Tex->GetScaledWidthF()*tx1;
-  float Y2 = y+Tex->GetScaledHeightF()*ty1;
-  float S1 = Tex->GetWidth()*tx0;
-  float T1 = Tex->GetHeight()*ty0;
-  float S2 = Tex->GetWidth()*tx1;
-  float T2 = Tex->GetHeight()*ty1;
+
+  const float tws = Tex->GetScaledWidthF();
+  const float ths = Tex->GetScaledHeightF();
+  if (tws < 1.0f || ths < 1.0f) return;
+
+  const float tw = Tex->GetWidth();
+  const float th = Tex->GetHeight();
+  if (tw < 1.0f || th < 1.0f) return;
+
+  float X1 = x+tws*tx0;
+  float Y1 = y+ths*ty0;
+  float X2 = x+tws*tx1;
+  float Y2 = y+ths*ty1;
+  float S1 = tw*tx0;
+  float T1 = th*ty0;
+  float S2 = tw*tx1;
+  float T2 = th*ty1;
   if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
     Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, nullptr, alpha);
   }
@@ -1161,19 +1170,28 @@ void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, 
 //  VWidget::DrawCharPic
 //
 //==========================================================================
-void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, float Alpha, bool shadowed) {
-  if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
+void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, float Alpha, bool shadowed) {
+  if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null || !rect.isValid()) return;
 
   X -= Tex->GetScaledSOffsetI();
   Y -= Tex->GetScaledTOffsetI();
-  float X1 = X;
-  float Y1 = Y;
-  float X2 = X+Tex->GetScaledWidthI();
-  float Y2 = Y+Tex->GetScaledHeightI();
-  float S1 = 0;
-  float T1 = 0;
-  float S2 = Tex->GetWidth();
-  float T2 = Tex->GetHeight();
+
+  const float tws = Tex->GetScaledWidthF();
+  const float ths = Tex->GetScaledHeightF();
+  if (tws < 1.0f || ths < 1.0f) return;
+
+  const float tw = Tex->GetWidth();
+  const float th = Tex->GetHeight();
+  if (tw < 1.0f || th < 1.0f) return;
+
+  float X1 = X+tws*rect.x0;
+  float Y1 = Y+ths*rect.y0;
+  float X2 = X+tws*rect.x1;
+  float Y2 = Y+ths*rect.y1;
+  float S1 = tw*rect.x0;
+  float T1 = th*rect.y0;
+  float S2 = tw*rect.x1;
+  float T2 = th*rect.y1;
   /*
   GCon->Logf(NAME_Debug,"%s:  000: x1=%g; y1=%g; x2=%g; y2=%g; s1=%g; t1=%g; s2=%g; t3=%g", *Tex->Name, X1, Y1, X2, Y2, S1, T1, S2, T2);
   GCon->Logf(NAME_Debug, "   clip: scale=(%g,%g); org=(%g,%g); clip=(%g,%g)-(%g,%g)", ClipRect.ScaleX, ClipRect.ScaleY, ClipRect.OriginX, ClipRect.OriginY,
@@ -1357,6 +1375,7 @@ void VWidget::FillRectWithFlatRepeatHandle (int X, int Y, int Width, int Height,
 //
 //==========================================================================
 void VWidget::FillRect (int X, int Y, int Width, int Height, int color, float alpha) {
+  if (alpha < 0.004f || Width < 1 || Height < 1) return;
   float X1 = X;
   float Y1 = Y;
   float X2 = X+Width;
@@ -1373,6 +1392,7 @@ void VWidget::FillRect (int X, int Y, int Width, int Height, int color, float al
 //
 //==========================================================================
 void VWidget::FillRectF (float X1, float Y1, float Width, float Height, int color, float alpha) {
+  if (alpha < 0.004f || Width <= 0.0f || Height <= 0.0f) return;
   float X2 = X1+Width;
   float Y2 = Y1+Height;
   if (TransferAndClipRect(X1, Y1, X2, Y2)) {
@@ -1419,7 +1439,7 @@ void VWidget::ShadeRectF (float X1, float Y1, float Width, float Height, float S
 //
 //==========================================================================
 void VWidget::DrawRect (int X, int Y, int Width, int Height, int color, float alpha) {
-  if (Width < 1 || Height < 1 || alpha <= 0.0f) return;
+  if (Width < 1 || Height < 1 || alpha < 0.004f) return;
   float X1 = X;
   float Y1 = Y;
   float X2 = X+Width;
@@ -1436,7 +1456,7 @@ void VWidget::DrawRect (int X, int Y, int Width, int Height, int color, float al
 //
 //==========================================================================
 void VWidget::DrawRectF (float X, float Y, float Width, float Height, int color, float alpha) {
-  if (Width <= 0.0f || Height <= 0.0f || alpha <= 0.0f) return;
+  if (Width <= 0.0f || Height <= 0.0f || alpha < 0.004f) return;
   float X1 = X;
   float Y1 = Y;
   float X2 = X+Width;
@@ -1453,6 +1473,7 @@ void VWidget::DrawRectF (float X, float Y, float Width, float Height, int color,
 //
 //==========================================================================
 void VWidget::DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alpha) {
+  if (alpha < 0.004f) return;
   float X1 = aX0;
   float Y1 = aY0;
   float X2 = aX1;
@@ -1469,6 +1490,7 @@ void VWidget::DrawLine (int aX0, int aY0, int aX1, int aY1, int color, float alp
 //
 //==========================================================================
 void VWidget::DrawLineF (float X1, float Y1, float X2, float Y2, int color, float alpha) {
+  if (alpha < 0.004f) return;
   if (TransferAndClipLine(X1, Y1, X2, Y2)) {
     Drawer->DrawLine((int)roundf(X1), (int)roundf(Y1), (int)roundf(X2), (int)roundf(Y2), color, alpha);
   }
@@ -1556,6 +1578,7 @@ void VWidget::DrawString (int x, int y, VStr String, int NormalColor, int BoldCo
 
   bool oldflt = gl_pic_filtering;
   gl_pic_filtering = gl_font_filtering;
+  VFont::CharRect rect;
 
   for (const char *SPtr = *String; *SPtr; ) {
     int c = VStr::Utf8GetChar(SPtr);
@@ -1567,9 +1590,9 @@ void VWidget::DrawString (int x, int y, VStr String, int NormalColor, int BoldCo
     }
 
     int w;
-    VTexture *Tex = Font->GetChar(c, &w, Color);
-    if (Tex) {
-      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex); else DrawCharPic(cx, cy, Tex, Alpha);
+    VTexture *Tex = Font->GetChar(c, &rect, &w, Color);
+    if (Tex && rect.isValid()) {
+      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex, rect); else DrawCharPic(cx, cy, Tex, rect, Alpha);
     }
     cx += w+Kerning;
   }
@@ -1716,11 +1739,14 @@ void VWidget::DrawCursor (int cursorColor) {
 //
 //==========================================================================
 void VWidget::DrawCursorAt (int x, int y, int cursorChar, int cursorColor) {
-  if ((int)(host_time*4)&1) {
+  if (Font && ((int)(host_time*4)&1)) {
     int w;
     bool oldflt = gl_pic_filtering;
     gl_pic_filtering = gl_font_filtering;
-    DrawPic(x, y, Font->GetChar(cursorChar, &w, cursorColor/*CR_UNTRANSLATED*/));
+    VFont::CharRect rect;
+    VTexture *Tex = Font->GetChar(cursorChar, &rect, &w, cursorColor/*CR_UNTRANSLATED*/);
+    //DrawPic(x, y, Tex, rect);
+    DrawCharPic(x, y, Tex, rect, 1.0f, false);
     gl_pic_filtering = oldflt;
   }
 }
@@ -1780,7 +1806,7 @@ static void UntranslateCoords (const VClipRect &ClipRect, float &x, float &y) {
 //
 //==========================================================================
 void VWidget::DrawHex (float x0, float y0, float w, float h, vuint32 color, float alpha) {
-  if (alpha <= 0.0f || w <= 0.0f || h <= 0.0f) return;
+  if (alpha < 0.004f || w <= 0.0f || h <= 0.0f) return;
   w *= ClipRect.ScaleX;
   h *= ClipRect.ScaleY;
   TranslateCoords(ClipRect, x0, y0);
@@ -1794,7 +1820,7 @@ void VWidget::DrawHex (float x0, float y0, float w, float h, vuint32 color, floa
 //
 //==========================================================================
 void VWidget::FillHex (float x0, float y0, float w, float h, vuint32 color, float alpha) {
-  if (alpha <= 0.0f || w <= 0.0f || h <= 0.0f) return;
+  if (alpha < 0.004f || w <= 0.0f || h <= 0.0f) return;
   w *= ClipRect.ScaleX;
   h *= ClipRect.ScaleY;
   TranslateCoords(ClipRect, x0, y0);

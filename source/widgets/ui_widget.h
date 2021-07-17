@@ -198,8 +198,8 @@ protected:
   bool SetupScissor ();
 
 protected:
-  void DrawCharPic (int X, int Y, VTexture *Tex, float Alpha=1.0f, bool shadowed=false);
-  inline void DrawCharPicShadowed (int X, int Y, VTexture *Tex) { DrawCharPic(X, Y, Tex, 1.0f, true); }
+  void DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, float Alpha=1.0f, bool shadowed=false);
+  inline void DrawCharPicShadowed (int X, int Y, VTexture *Tex, const VFont::CharRect &rect) { DrawCharPic(X, Y, Tex, rect, 1.0f, true); }
 
   // to self, then to children
   // ignores cancel/consume, will prevent event modification
