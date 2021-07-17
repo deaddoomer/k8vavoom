@@ -137,6 +137,7 @@ protected:
   int CurrentSky2Texture;
   bool CurrentDoubleSky;
   bool CurrentLightning;
+  bool SkyWasInited;
   VSky BaseSky;
 
   // world render variables

@@ -160,7 +160,7 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
       glVertex(surf->verts[i].vec());
     }
     glEnd();
-  } else if (Texture1) {
+  } else if (Texture1 && Texture1->Type != TEXTYPE_Null) {
     SetCommonTexture(Texture1, CMap);
 
     SurfSky.Activate();

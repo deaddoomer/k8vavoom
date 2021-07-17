@@ -584,7 +584,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
         for (auto &&sks : SideSkies) if (sks->SideTex == Tex && sks->SideFlip == Flip) { Sky = sks; break; }
         if (!Sky) {
           Sky = new VSky;
-          Sky->Init(Tex, Tex, 0, 0, false, !!(Level->LevelInfo->LevelInfoFlags&VLevelInfo::LIF_ForceNoSkyStretch), Flip, false);
+          Sky->Init(Tex, Tex, 0, 0, false, !!(Level->LevelInfo->LevelInfoFlags&VLevelInfo::LIF_ForceNoSkyStretch), Flip, false/*Lightning*/, false/*keepOffset*/);
           SideSkies.Append(Sky);
         }
       }

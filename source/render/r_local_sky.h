@@ -40,11 +40,23 @@ public:
   int SideTex;
   bool bIsSkyBox;
   bool SideFlip;
+  bool WasOldSky;
+  bool WasOldFlip;
 
-  void InitOldSky (int, int, float, float, bool, bool, bool);
-  void InitSkyBox (VName, VName);
-  void Init (int, int, float, float, bool, bool, bool, bool);
-  void Draw (int);
+private:
+  void ClearSkyT (const bool keepOffset) noexcept;
+
+public:
+  void InitOldSky (int Sky1Texture, int Sky2Texture,
+                   float Sky1ScrollDelta, float Sky2ScrollDelta,
+                   bool DoubleSky, bool ForceNoSkyStretch, bool Flip,
+                   bool keepOffset);
+  void InitSkyBox (VName Name1, VName Name2, bool keepOffset);
+  void Init (int Sky1Texture, int Sky2Texture,
+             float Sky1ScrollDelta, float Sky2ScrollDelta,
+             bool DoubleSky, bool ForceNoSkyStretch, bool Flip, bool Lightning,
+             bool keepOffset);
+  void Draw (int ColorMap);
 };
 
 

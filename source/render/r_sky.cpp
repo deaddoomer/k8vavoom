@@ -196,6 +196,30 @@ void R_FreeSkyboxData () {
 }
 
 
+//==========================================================================
+//
+//  VSky::ClearSkyT
+//
+//==========================================================================
+void VSky::ClearSkyT (const bool keepOffset) noexcept {
+  GCon->Logf(NAME_Debug, "keepOffset=%d", (int)keepOffset);
+  float ofs1[HDIVS*VDIVS];
+  float ofs2[HDIVS*VDIVS];
+  if (keepOffset) {
+    for (unsigned f = 0; f < HDIVS*VDIVS; ++f) {
+      ofs1[f] = sky[f].columnOffset1;
+      ofs2[f] = sky[f].columnOffset2;
+    }
+  }
+  memset((void *)sky, 0, sizeof(sky));
+  if (keepOffset) {
+    for (unsigned f = 0; f < HDIVS*VDIVS; ++f) {
+      sky[f].columnOffset1 = ofs1[f];
+      sky[f].columnOffset2 = ofs2[f];
+    }
+  }
+}
+
 
 //==========================================================================
 //
@@ -204,9 +228,11 @@ void R_FreeSkyboxData () {
 //==========================================================================
 void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
                        float Sky1ScrollDelta, float Sky2ScrollDelta,
-                       bool DoubleSky, bool ForceNoSkyStretch, bool Flip)
+                       bool DoubleSky, bool ForceNoSkyStretch, bool Flip,
+                       bool keepOffset)
 {
-  memset((void *)sky, 0, sizeof(sky));
+  ClearSkyT(keepOffset);
+
   bIsSkyBox = false;
 
   int skyheight = GTextureManager[Sky1Texture]->GetScaledHeightI();
@@ -261,15 +287,19 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
       s.texinfo.soffs = -DotProduct(s.surf.verts[j < VDIVS/2 ? 0 : 1].vec(), s.texinfo.saxis);
       s.texinfo.toffs = skyh;
 
-      s.columnOffset1 = s.columnOffset2 = -i*(1024/HDIVS)+128;
+      if (!WasOldSky) {
+        s.columnOffset1 = s.columnOffset2 = -i*(1024/HDIVS)+128;
+      }
 
       float mins, maxs;
 
       if (Flip) {
         s.texinfo.saxis = -s.texinfo.saxis;
         s.texinfo.soffs = -s.texinfo.soffs;
-        s.columnOffset1 = -s.columnOffset1;
-        s.columnOffset2 = -s.columnOffset2;
+        if (!WasOldSky || !WasOldFlip) {
+          s.columnOffset1 = -s.columnOffset1;
+          s.columnOffset2 = -s.columnOffset2;
+        }
 
         mins = DotProduct(surfverts[j < VDIVS/2 ? 3 : 2].vec(), s.texinfo.saxis)+s.texinfo.soffs;
         maxs = DotProduct(surfverts[j < VDIVS/2 ? 0 : 1].vec(), s.texinfo.saxis)+s.texinfo.soffs;
@@ -304,7 +334,9 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
       sky[j].scrollDelta2 = Sky1ScrollDelta;
     } else {
       sky[j].texture1 = Sky1Texture;
+      sky[j].texture2 = 0;
       sky[j].scrollDelta1 = Sky1ScrollDelta;
+      sky[j].scrollDelta2 = 0.0f;
     }
     sky[j].surf.plane = sky[j].plane;
     sky[j].surf.texinfo = &sky[j].texinfo;
@@ -313,8 +345,11 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
   }
 
   // precache textures
-  Drawer->PrecacheTexture(GTextureManager[Sky1Texture]);
-  Drawer->PrecacheTexture(GTextureManager[Sky2Texture]);
+  if (Sky1Texture > 0) Drawer->PrecacheTexture(GTextureManager[Sky1Texture]);
+  if (Sky2Texture > 0) Drawer->PrecacheTexture(GTextureManager[Sky2Texture]);
+
+  WasOldSky = true;
+  WasOldFlip = Flip;
 }
 
 
@@ -323,7 +358,7 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
 //  VSky::InitSkyBox
 //
 //==========================================================================
-void VSky::InitSkyBox (VName Name1, VName Name2) {
+void VSky::InitSkyBox (VName Name1, VName Name2, bool keepOffset) {
   int num = CheckSkyboxNumForName(Name1);
   if (num == -1) Host_Error("No skybox '%s'", *Name1);
   skyboxinfo_t &s1info = skyboxinfo[num];
@@ -334,7 +369,7 @@ void VSky::InitSkyBox (VName Name1, VName Name2) {
   }
   //skyboxinfo_t &s2info = skyboxinfo[num];
 
-  memset((void *)sky, 0, sizeof(sky));
+  ClearSkyT(keepOffset);
 
   sky[0].plane.Set(TVec(-1, 0, 0), -128);
   sky[0].texinfo.saxis = TVec(0, -1.0f, 0);
@@ -416,6 +451,7 @@ void VSky::InitSkyBox (VName Name1, VName Name2) {
   NumSkySurfs = 6;
   for (int j = 0; j < 6; ++j) {
     sky[j].texture1 = s1info.surfs[j].texture;
+    sky[j].texture2 = 0;
     sky[j].surf.plane = sky[j].plane;
     sky[j].surf.texinfo = &sky[j].texinfo;
     sky[j].surf.count = 4;
@@ -437,6 +473,9 @@ void VSky::InitSkyBox (VName Name1, VName Name2) {
     sky[j].texinfo.toffs *= STex->GetHeight()/256.0f;
   }
   bIsSkyBox = true;
+
+  WasOldSky = false;
+  WasOldFlip = false;
 }
 
 
@@ -447,8 +486,11 @@ void VSky::InitSkyBox (VName Name1, VName Name2) {
 //==========================================================================
 void VSky::Init (int Sky1Texture, int Sky2Texture,
                  float Sky1ScrollDelta, float Sky2ScrollDelta,
-                 bool DoubleSky, bool ForceNoSkyStretch, bool Flip, bool Lightning)
+                 bool DoubleSky, bool ForceNoSkyStretch, bool Flip, bool Lightning,
+                 bool keepOffset)
 {
+  if (!keepOffset) WasOldSky = WasOldFlip = false;
+
   int Num1 = -1;
   int Num2 = -1;
   // it is better to have checkers than to segfault
@@ -468,9 +510,9 @@ void VSky::Init (int Sky1Texture, int Sky2Texture,
   }
   if (Num1 != -1 && Num2 != -1) {
     GCon->Logf("VSky:Init: creating skybox (%s:%s)", *Name1, *Name2);
-    InitSkyBox(Name1, Name2);
+    InitSkyBox(Name1, Name2, keepOffset);
   } else {
-    InitOldSky(Sky1Texture, Sky2Texture, Sky1ScrollDelta, Sky2ScrollDelta, DoubleSky, ForceNoSkyStretch, Flip);
+    InitOldSky(Sky1Texture, Sky2Texture, Sky1ScrollDelta, Sky2ScrollDelta, DoubleSky, ForceNoSkyStretch, Flip, keepOffset);
   }
   SideTex = Sky1Texture;
   SideFlip = Flip;
@@ -519,15 +561,16 @@ void VRenderLevelShared::InitSky () {
 
   if (Level->LevelInfo->SkyBox != NAME_None) {
     //GCon->Logf(NAME_Debug, "InitSky:skybox");
-    BaseSky.InitSkyBox(Level->LevelInfo->SkyBox, NAME_None);
+    BaseSky.InitSkyBox(Level->LevelInfo->SkyBox, NAME_None, SkyWasInited);
   } else {
     //GCon->Logf(NAME_Debug, "InitSky:normsky; skt=(%d:%d) <%s>", CurrentSky1Texture, CurrentSky2Texture, *GTextureManager[CurrentSky1Texture]->Name);
     BaseSky.Init(CurrentSky1Texture, CurrentSky2Texture,
-                 Level->LevelInfo->Sky1ScrollDelta,
-                 Level->LevelInfo->Sky2ScrollDelta, CurrentDoubleSky,
-                 !!(Level->LevelInfo->LevelInfoFlags&VLevelInfo::LIF_ForceNoSkyStretch),
-                 true, CurrentLightning);
+                 Level->LevelInfo->Sky1ScrollDelta, Level->LevelInfo->Sky2ScrollDelta,
+                 CurrentDoubleSky, !!(Level->LevelInfo->LevelInfoFlags&VLevelInfo::LIF_ForceNoSkyStretch),
+                 true/*flip*/, CurrentLightning, SkyWasInited);
   }
+
+  SkyWasInited = true;
 }
 
 
@@ -542,7 +585,9 @@ void VRenderLevelShared::AnimateSky (float frametime) {
     // update sky column offsets
     for (int i = 0; i < BaseSky.NumSkySurfs; ++i) {
       BaseSky.sky[i].columnOffset1 += BaseSky.sky[i].scrollDelta1*frametime;
+      BaseSky.sky[i].columnOffset1 = fmodf(BaseSky.sky[i].columnOffset1, 32768.0f);
       BaseSky.sky[i].columnOffset2 += BaseSky.sky[i].scrollDelta2*frametime;
+      BaseSky.sky[i].columnOffset2 = fmodf(BaseSky.sky[i].columnOffset2, 32768.0f);
     }
   }
 }
