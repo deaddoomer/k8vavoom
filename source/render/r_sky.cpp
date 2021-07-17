@@ -202,7 +202,7 @@ void R_FreeSkyboxData () {
 //
 //==========================================================================
 void VSky::ClearSkyT (const bool keepOffset) noexcept {
-  GCon->Logf(NAME_Debug, "keepOffset=%d", (int)keepOffset);
+  //GCon->Logf(NAME_Debug, "keepOffset=%d", (int)keepOffset);
   float ofs1[HDIVS*VDIVS];
   float ofs2[HDIVS*VDIVS];
   if (keepOffset) {
