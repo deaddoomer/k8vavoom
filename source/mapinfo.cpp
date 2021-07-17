@@ -1179,6 +1179,8 @@ MAPINFOCMD(specialaction) {
   A.TypeName = *sc->String.ToLower();
   sc->Expect(",");
   sc->ExpectString();
+  A.Special = FindLineSpecialByName(sc->String);
+  /*
   A.Special = 0;
   for (int i = 0; i < LineSpecialInfos.length(); ++i) {
     if (!LineSpecialInfos[i].Name.ICmp(sc->String)) {
@@ -1186,6 +1188,7 @@ MAPINFOCMD(specialaction) {
       break;
     }
   }
+  */
   if (!A.Special) miWarning(sc, "Unknown action special '%s'", *sc->String);
   memset(A.Args, 0, sizeof(A.Args));
   for (int i = 0; i < 5 && sc->Check(","); ++i) {
@@ -2719,12 +2722,15 @@ static void ParseMapInfo (VScriptParser *sc) {
               if (argn > 5) GCon->Logf(NAME_Warning, "MAPINFO:%s: too many arguments (%d) to special '%s'", *loc.toStringNoCol(), argn, *spcname);
               // find special number
               if (special == 0) {
+                /*
                 for (int sdx = 0; sdx < LineSpecialInfos.length(); ++sdx) {
                   if (LineSpecialInfos[sdx].Name.ICmp(spcname) == 0) {
                     special = LineSpecialInfos[sdx].Number;
                     break;
                   }
                 }
+                */
+                special = FindLineSpecialByName(spcname);
               }
               if (!special) {
                 flags &= ~mobjinfo_t::FlagSpecial;

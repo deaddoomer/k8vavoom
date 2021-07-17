@@ -629,7 +629,9 @@ struct VFlagList {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-TArray<VLineSpecInfo> LineSpecialInfos;
+//TArray<VLineSpecInfo> LineSpecialInfos;
+static TMap<VStrCI, int> LineSpecialMapByName;
+static TMap<int, VStr> LineSpecialMapByNumber;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -3961,16 +3963,76 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
 void ReadLineSpecialInfos () {
   //VStream *Strm = FL_OpenFileRead("line_specials.txt");
   VStream *Strm = FL_OpenFileReadBaseOnly("line_specials.txt");
-  if (!Strm) Sys_Error("'line_specials.txt' is required to parse decorate code");
+  if (!Strm) Sys_Error("'line_specials.txt' is required");
   VScriptParser *sc = new VScriptParser("line_specials.txt", Strm);
   while (!sc->AtEnd()) {
-    VLineSpecInfo &I = LineSpecialInfos.Alloc();
+    //VLineSpecInfo &I = LineSpecialInfos.Alloc();
     sc->ExpectNumber();
-    I.Number = sc->Number;
+    //I.Number = sc->Number;
+    const int num = sc->Number;
     sc->ExpectString();
-    I.Name = sc->String.ToLower();
+    //I.Name = sc->String.ToLower();
+    const VStr name = sc->String.xstrip();
+    if (!num || name.isEmpty()) {
+      sc->Message("invalid line special");
+      continue;
+    }
+    // register
+    if (LineSpecialMapByName.put(name, num)) sc->Messagef("duplicate line special (%d : %s)", num, *name);
+    LineSpecialMapByNumber.put(num, name);
   }
   delete sc;
+
+  int lump = -1;
+  for (;;) {
+    lump = W_IterateDirectory(lump, "k8vavoom/", false/*allowSubdirs*/);
+    if (lump < 0) break;
+    if (!W_RealLumpName(lump).strEquCI("k8vavoom/line_specials.rc")) continue;
+    sc = VScriptParser::NewWithLump(lump);
+    while (!sc->AtEnd()) {
+      //VLineSpecInfo &I = LineSpecialInfos.Alloc();
+      sc->ExpectNumber();
+      //I.Number = sc->Number;
+      const int num = sc->Number;
+      sc->ExpectString();
+      //I.Name = sc->String.ToLower();
+      const VStr name = sc->String.xstrip();
+      if (!num || name.isEmpty()) {
+        sc->Message("invalid line special");
+        continue;
+      }
+      // register
+      LineSpecialMapByName.put(name, num);
+      LineSpecialMapByNumber.put(num, name);
+    }
+    delete sc;
+  }
+
+  GCon->Logf(NAME_Init, "loaded %d line special names.", LineSpecialMapByName.length());
+}
+
+
+//==========================================================================
+//
+//  FindLineSpecialByName
+//
+//==========================================================================
+int FindLineSpecialByName (VStr s) {
+  if (s.isEmpty()) return 0;
+  auto it = LineSpecialMapByName.find(s);
+  return (it ? *it : 0);
+}
+
+
+//==========================================================================
+//
+//  FindLineSpecialNameByNumber
+//
+//==========================================================================
+VStr FindLineSpecialNameByNumber (int num) {
+  if (num <= 0) return VStr();
+  auto it = LineSpecialMapByNumber.find(num);
+  return (it ? *it : VStr());
 }
 
 
@@ -4379,7 +4441,8 @@ void ProcessDecorateScripts () {
 //==========================================================================
 void ShutdownDecorate () {
   FlagList.Clear();
-  LineSpecialInfos.Clear();
+  LineSpecialMapByNumber.clear();
+  LineSpecialMapByName.clear();
 }
 
 

@@ -43,6 +43,7 @@
 #include "../psim/p_player.h"
 #include "../filesys/files.h"
 #include "../sound/sound.h"
+#include "../decorate/vc_decorate.h"
 
 
 VStream *VPackage::OpenFileStreamRO (VStr fname) { return FL_OpenFileRead(fname); }
@@ -733,4 +734,19 @@ IMPLEMENT_FREE_FUNCTION(VEntity, GetLightEffectLightFlags) {
     if (lt->IsNoGeoClip()) res |= dlight_t::NoGeoClip;
   }
   RET_INT((vint32)res);
+}
+
+
+//native static final int FindLineSpecialByName (string s);
+IMPLEMENT_FREE_FUNCTION(VObject, FindLineSpecialByName) {
+  VStr s;
+  vobjGetParam(s);
+  RET_INT(FindLineSpecialByName(s));
+}
+
+//native static final string FindLineSpecialNameByNumber (int num);
+IMPLEMENT_FREE_FUNCTION(VObject, FindLineSpecialNameByNumber) {
+  int num;
+  vobjGetParam(num);
+  RET_STR(FindLineSpecialNameByNumber(num));
 }

@@ -678,6 +678,11 @@ native static final GameObject::VTerrainBootprint *TerrainBootprint (int pic); /
 native static final GameObject::VSplashInfo *GetSplashInfo (name Name); // can return `nullptr`
 native static final GameObject::VTerrainInfo *GetTerrainInfo (name Name); // can return `nullptr`
 
+// returns 0 if not found
+native static final int FindLineSpecialByName (string s);
+// returns empty string if not found
+native static final string FindLineSpecialNameByNumber (int num);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 

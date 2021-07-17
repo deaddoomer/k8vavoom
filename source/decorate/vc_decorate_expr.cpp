@@ -190,22 +190,20 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     // find the state action method: first check action specials, then state actions
     // hack: `ACS_ExecuteWithResult` has its own method, but it still should be in line specials
     if (!FuncName.strEquCI("ACS_ExecuteWithResult")) {
-      for (int i = 0; i < LineSpecialInfos.length(); ++i) {
-        if (LineSpecialInfos[i].Name == FuncNameLower) {
-          Func = Class->FindMethodChecked("A_ExecActionSpecial");
-          if (NumArgs > 5) {
-            sc->Error(va("Too many arguments to translated action special `%s`", *FuncName));
-          } else {
-            // add missing arguments
-            while (NumArgs < 5) {
-              Args[NumArgs] = new VIntLiteral(0, sc->GetVCLoc());
-              ++NumArgs;
-            }
-            // add action special number argument
-            Args[5] = new VIntLiteral(LineSpecialInfos[i].Number, sc->GetVCLoc());
+      int spcn = FindLineSpecialByName(FuncName);
+      if (spcn) {
+        Func = Class->FindMethodChecked("A_ExecActionSpecial");
+        if (NumArgs > 5) {
+          sc->Error(va("Too many arguments to translated action special `%s`", *FuncName));
+        } else {
+          // add missing arguments
+          while (NumArgs < 5) {
+            Args[NumArgs] = new VIntLiteral(0, sc->GetVCLoc());
             ++NumArgs;
           }
-          break;
+          // add action special number argument
+          Args[5] = new VIntLiteral(spcn, sc->GetVCLoc());
+          ++NumArgs;
         }
       }
     }

@@ -40,17 +40,23 @@ enum {
 enum { MAX_DECORATE_TRANSLATIONS = 0xffff };
 enum { MAX_BLOOD_TRANSLATIONS = 0xffff };
 
+/*
 struct VLineSpecInfo {
   VStr Name;
   int Number;
 };
+*/
 
 void ReadLineSpecialInfos ();
 void ProcessDecorateScripts ();
 void ShutdownDecorate ();
 void CompilerReportMemory ();
 
-extern TArray<VLineSpecInfo> LineSpecialInfos;
+//extern TArray<VLineSpecInfo> LineSpecialInfos;
+// returns 0 if not found
+extern int FindLineSpecialByName (VStr s);
+// returns empty string if not found
+extern VStr FindLineSpecialNameByNumber (int num);
 
 // list of all classes that need to be limited in some way
 extern TArray<VClass *> NumberLimitedClasses;
