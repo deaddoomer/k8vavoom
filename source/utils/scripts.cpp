@@ -61,6 +61,15 @@ class VScriptsParser : public VObject {
   DECLARE_FUNCTION(get_Quoted)
   DECLARE_FUNCTION(get_SourceLump)
   DECLARE_FUNCTION(set_SourceLump)
+  DECLARE_FUNCTION(get_Escape)
+  DECLARE_FUNCTION(set_Escape)
+  DECLARE_FUNCTION(get_CMode)
+  DECLARE_FUNCTION(set_CMode)
+  DECLARE_FUNCTION(get_AllowNumSign)
+  DECLARE_FUNCTION(set_AllowNumSign)
+  DECLARE_FUNCTION(get_EDGEMode)
+  DECLARE_FUNCTION(set_EDGEMode)
+  DECLARE_FUNCTION(get_EndOfText)
   DECLARE_FUNCTION(IsText)
   DECLARE_FUNCTION(IsAtEol)
   DECLARE_FUNCTION(IsCMode)
@@ -92,28 +101,36 @@ class VScriptsParser : public VObject {
   DECLARE_FUNCTION(SkipLine)
   DECLARE_FUNCTION(FileName)
   DECLARE_FUNCTION(CurrLine)
+  DECLARE_FUNCTION(TokenLine)
   DECLARE_FUNCTION(ScriptError)
   DECLARE_FUNCTION(ScriptMessage)
 
   DECLARE_FUNCTION(SavePos)
   DECLARE_FUNCTION(RestorePos)
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+  DECLARE_FUNCTION(FindRelativeIncludeLump)
+  DECLARE_FUNCTION(FindIncludeLump)
+#endif
 };
 
 IMPLEMENT_CLASS(V, ScriptsParser)
 
 
-static vuint32 cidterm[256/32]; // c-like identifier terminator
-static vuint32 cnumterm[256/32]; // c-like number terminator
-static vuint32 ncidterm[256/32]; // non-c-like identifier terminator
+static uint32_t c2spec[256/32]; // c-like two-chars specials
+static uint32_t cidterm[256/32]; // c-like identifier terminator
+static uint32_t cnumterm[256/32]; // c-like number terminator
+static uint32_t ncidterm[256/32]; // non-c-like identifier terminator
 
 struct CharClassifier {
-  static inline bool isCIdTerm (char ch) noexcept { return !!(cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static inline bool isCNumTerm (char ch) noexcept { return !!(cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static inline bool isNCIdTerm (char ch) noexcept { return !!(ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_ALWAYS_INLINE bool isC2Spec (char ch) noexcept { return (c2spec[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_ALWAYS_INLINE bool isCIdTerm (char ch) noexcept { return (cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_ALWAYS_INLINE bool isCNumTerm (char ch) noexcept { return (cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_ALWAYS_INLINE bool isNCIdTerm (char ch) noexcept { return (ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
 
-  static inline void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
+  static VVA_ALWAYS_INLINE void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
 
-  static inline bool isDigit (char ch) noexcept { return (ch >= '0' && ch <= '9'); }
+  static VVA_ALWAYS_INLINE bool isDigit (char ch) noexcept { return (ch >= '0' && ch <= '9'); }
 
   static inline bool isNumStart (const char *s, bool allowNumSign) noexcept {
     if (allowNumSign) if (*s == '+' || *s == '-') ++s;
@@ -124,9 +141,14 @@ struct CharClassifier {
   CharClassifier () noexcept {
     /*static*/ const char *cIdTerm = "`~!#$%^&*(){}[]/=\\?-+|;:<>,\"'"; // was with '@'
     /*static*/ const char *ncIdTerm = "{}|=,;\"'";
+    /*static*/ const char *c2specStr = "=!<>+-*/%&|^~";
+    memset(c2spec, 0, sizeof(cidterm));
     memset(cidterm, 0, sizeof(cidterm));
     memset(cnumterm, 0, sizeof(cnumterm));
     memset(ncidterm, 0, sizeof(ncidterm));
+    for (const char *s = c2specStr; *s; ++s) {
+      setCharBit(c2spec, *s);
+    }
     for (const char *s = cIdTerm; *s; ++s) {
       setCharBit(cidterm, *s);
       setCharBit(cnumterm, *s);
@@ -178,6 +200,7 @@ void VScriptSavedPos::saveFrom (const VScriptParser &par) noexcept {
     (par.CMode ? Flag_CMode : 0u)|
     (par.Escape ? Flag_Escape : 0u)|
     (par.AllowNumSign ? Flag_AllowNumSign : 0u)|
+    (par.EDGEMode ? Flag_EDGEMode : 0u)|
     //
     (par.End ? Flag_End : 0u)|
     (par.Crossed ? Flag_Crossed : 0u)|
@@ -207,6 +230,7 @@ void VScriptSavedPos::restoreTo (VScriptParser &par) const noexcept {
   par.CMode = !!(flags&Flag_CMode);
   par.Escape = !!(flags&Flag_Escape);
   par.AllowNumSign = !!(flags&Flag_AllowNumSign);
+  par.EDGEMode = !!(flags&Flag_EDGEMode);
   par.End = !!(flags&Flag_End);
   par.Crossed = !!(flags&Flag_Crossed);
   par.QuotedString = !!(flags&Flag_QuotedString);
@@ -230,6 +254,7 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
+  , EDGEMode(false)
   , SourceLump(aSourceLump)
 {
   if (!Strm) {
@@ -280,6 +305,7 @@ VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump) noe
   , CMode(false)
   , Escape(true)
   , AllowNumSign(false)
+  , EDGEMode(false)
   , SourceLump(aSourceLump)
 {
   if (atext && atext[0]) {
@@ -364,6 +390,7 @@ VScriptParser *VScriptParser::clone () const noexcept {
   res->CMode = CMode;
   res->Escape = Escape;
   res->AllowNumSign = AllowNumSign;
+  res->EDGEMode = EDGEMode;
   res->SourceLump = SourceLump;
 
   return res;
@@ -572,6 +599,218 @@ char VScriptParser::PeekOrSkipChar (bool doSkip) noexcept {
 
 //==========================================================================
 //
+//  VScriptParser::ParseQuotedString
+//
+//  starting quite is eaten
+//
+//==========================================================================
+void VScriptParser::ParseQuotedString (const char qch) noexcept {
+  while (ScriptPtr < ScriptEndPtr) {
+    char ch = *ScriptPtr++;
+    // quote char?
+    if (ch == qch) {
+      if (!CMode) break;
+      // double quote is string continuation in c mode
+      if (*ScriptPtr != qch) break;
+      // check next char
+      if ((vuint8)ScriptPtr[1] < ' ') break;
+      ++ScriptPtr; // skip quote char
+      continue;
+    }
+    // newline?
+    if (ch == '\n' || ch == '\r') {
+      // convert from DOS format to UNIX format
+      if (ch == '\r' && *ScriptPtr == '\n') ++ScriptPtr;
+      ch = '\n';
+      if (CMode) {
+        /*if (String.length() == 0)*/ Error("Unterminated string constant");
+      } else {
+        String += ch;
+      }
+      ++Line;
+      Crossed = true;
+      continue;
+    }
+    // escape?
+    if (Escape && ch == '\\' && ScriptPtr[0]) {
+      const char c1 = *ScriptPtr++;
+      // continuation?
+      if (c1 == '\n' || c1 == '\r') {
+        ++Line;
+        Crossed = true;
+        if (c1 == '\r' && *ScriptPtr == '\n') ++ScriptPtr;
+        continue;
+      }
+      if (CMode) {
+        // c-mode escape
+        bool okescape = true;
+        switch (c1) {
+          case 'r': ch = '\r'; break;
+          case 'n': ch = '\n'; break;
+          case 'c': case 'C': ch = TEXT_COLOR_ESCAPE; break;
+          case 'e': ch = '\x1b'; break;
+          case '\t': ch = '\t'; break;
+          case '"': case '\'': case ' ': case '\\': case '`': ch = c1; break;
+          case 'x':
+            if (VStr::digitInBase(*ScriptPtr, 16) < 0) {
+              okescape = false;
+            } else {
+              int n0 = VStr::digitInBase(*ScriptPtr++, 16);
+              int n1 = VStr::digitInBase(*ScriptPtr, 16);
+              if (n1 >= 0) { n0 = n0*16+n1; ++ScriptPtr; }
+              if (!n0) n0 = 32;
+              ch = n0;
+            }
+            break;
+          default: okescape = false; break;
+        }
+        String += ch;
+        if (!okescape) String += c1;
+      } else {
+        // non-c-mode escape
+        bool okescape = true;
+        switch (c1) {
+          case 'r': ch = '\r'; break;
+          case 'n': ch = '\n'; break;
+          case 'c': case 'C': ch = TEXT_COLOR_ESCAPE; break;
+          case '\\': case '\"': case '\'': case '`': ch = c1; break;
+          default: okescape = false; break;
+        }
+        String += ch;
+        if (!okescape) {
+          String += c1;
+        } else {
+          // escaped eol and eol == one eol
+          if (ch == '\r' || ch == '\n') {
+            if (*ScriptPtr == '\n') {
+              ++Line;
+              Crossed = true;
+              ++ScriptPtr;
+            } else if (*ScriptPtr == '\r' && ScriptPtr[1] == '\n') {
+              ++Line;
+              Crossed = true;
+              ScriptPtr += 2;
+            }
+          }
+        }
+      }
+      continue;
+    }
+    // normal char
+    String += ch;
+  }
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::ParseCMode
+//
+//==========================================================================
+void VScriptParser::ParseCMode () noexcept {
+  // special double-character eq-token?
+  if (ScriptPtr[1] == '=' && CharClassifier::isC2Spec(ScriptPtr[0])) {
+    String += *ScriptPtr++;
+    String += *ScriptPtr++;
+    return;
+  }
+
+  // special double-character token?
+  if ((ScriptPtr[0] == '&' && ScriptPtr[1] == '&') ||
+      (ScriptPtr[0] == '|' && ScriptPtr[1] == '|') ||
+      (ScriptPtr[0] == '<' && ScriptPtr[1] == '<') ||
+      (ScriptPtr[0] == '>' && ScriptPtr[1] == '>') ||
+      (ScriptPtr[0] == ':' && ScriptPtr[1] == ':') ||
+      (ScriptPtr[0] == '+' && ScriptPtr[1] == '+') ||
+      (ScriptPtr[0] == '-' && ScriptPtr[1] == '-'))
+  {
+    if (ScriptPtr[0] == '>' && ScriptPtr[1] == '>' && ScriptPtr[2] == '>') String += *ScriptPtr++; // for `>>>`
+    String += *ScriptPtr++;
+    String += *ScriptPtr++;
+    return;
+  }
+
+  // number?
+  if (CharClassifier::isNumStart(ScriptPtr, AllowNumSign)) {
+    if (ScriptPtr[0] == '+' || ScriptPtr[0] == '-') String += *ScriptPtr++;
+    if (ScriptPtr[0] == '.') { String += "0."; ++ScriptPtr; }
+    while (ScriptPtr < ScriptEndPtr) {
+      const char ch = *ScriptPtr++;
+      if (ch == '_') continue;
+      if (CharClassifier::isCNumTerm(ch)) { --ScriptPtr; break; }
+      String += ch;
+    }
+    //fprintf(stderr, "<%s> (%d)\n", *String, CharClassifier::isCNumTerm('e'));
+    if (String.length() > 1 && (ScriptPtr[-1] == 'e' || ScriptPtr[-1] == 'E') &&
+        (ScriptPtr[0] == '+' || ScriptPtr[0] == '-' || CharClassifier::isDigit(*ScriptPtr)))
+    {
+      if (!CharClassifier::isDigit(*ScriptPtr)) String += *ScriptPtr++;
+      while (ScriptPtr < ScriptEndPtr) {
+        const char ch = *ScriptPtr++;
+        if (ch == '_') continue;
+        if (!CharClassifier::isDigit(*ScriptPtr)) { --ScriptPtr; break; }
+        String += ch;
+      }
+    }
+    return;
+  }
+
+  // special single-character token?
+  if (CharClassifier::isCIdTerm(*ScriptPtr)) {
+    String += *ScriptPtr++;
+    return;
+  }
+
+  // normal identifier
+  while (ScriptPtr < ScriptEndPtr) {
+    const char ch = *ScriptPtr++;
+    // eh... allow single quote inside an identifier
+    if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isCIdTerm(ScriptPtr[0])) {
+      String += ch;
+      continue;
+    }
+    if (CharClassifier::isCIdTerm(ch)) { --ScriptPtr; break; }
+    if (ch != '_' || !EDGEMode) String += ch;
+  }
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::ParseNonCMode
+//
+//==========================================================================
+void VScriptParser::ParseNonCMode () noexcept {
+  // special single-character tokens
+  if (CharClassifier::isNCIdTerm(*ScriptPtr)) {
+    String += *ScriptPtr++;
+    return;
+  }
+
+  // normal identifier
+  while (ScriptPtr < ScriptEndPtr) {
+    const char ch = *ScriptPtr++;
+    // eh... allow single quote inside an identifier
+    if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isNCIdTerm(ScriptPtr[0])) {
+      String += ch;
+      continue;
+    }
+    if (CharClassifier::isNCIdTerm(ch)) { --ScriptPtr; break; }
+    // check for comments
+    if (ch == '/') {
+      const char c1 = *ScriptPtr;
+      if (c1 == '/' || c1 == '*' || c1 == '+') {
+        --ScriptPtr;
+        break;
+      }
+    }
+    if (ch != '_' || !EDGEMode) String += ch;
+  }
+}
+
+
+//==========================================================================
+//
 //  VScriptParser::GetString
 //
 //==========================================================================
@@ -583,6 +822,7 @@ bool VScriptParser::GetString () noexcept {
   QuotedString = false;
 
   SkipBlanks(true); // change flags
+
   // check for end of script
   if (ScriptPtr >= ScriptEndPtr) {
     TokStartPtr = ScriptEndPtr;
@@ -594,124 +834,18 @@ bool VScriptParser::GetString () noexcept {
   TokLine = Line;
 
   String.Clean();
+
   if (*ScriptPtr == '\"' || *ScriptPtr == '\'') {
     // quoted string
     const char qch = *ScriptPtr++;
     QuotedString = true;
-    while (ScriptPtr < ScriptEndPtr) {
-      char ch = *ScriptPtr++;
-      if (ch == qch) break;
-      bool realNL = true;
-      if (ch == '\r' && *ScriptPtr == '\n') {
-        // convert from DOS format to UNIX format
-        ch = '\n';
-        ++ScriptPtr;
-      } else if (Escape && ch == '\\') {
-        const char c1 = *ScriptPtr;
-        if (c1 == '\\' || c1 == '\"' || c1 == '\'' || c1 == '\r' || c1 == '\n' || c1 == 'r' || c1 == 'n' || c1 == 'c' || c1 == 'C') {
-          ch = c1;
-          switch (ch) {
-            case 'r': ch = '\r'; realNL = false; break;
-            case 'n': ch = '\n'; realNL = false; break;
-            case 'c': case 'C': ch = TEXT_COLOR_ESCAPE; break;
-          }
-          ++ScriptPtr;
-          if (ch == '\r') {
-            realNL = false;
-            ch = '\n';
-            if (*ScriptPtr == '\n') ++ScriptPtr; // convert from DOS format to UNIX format
-          }
-        }
-      }
-      if (realNL && ch == '\n') {
-        if (CMode) {
-          if (!Escape || String.length() == 0 /*|| String[String.length()-1] != '\\'*/) {
-            Error("Unterminated string constant");
-          } else {
-            // remove the \ character
-            //String.chopRight(1);
-          }
-        }
-        ++Line;
-        Crossed = true;
-      }
-      String += ch;
-    }
+    ParseQuotedString(qch);
   } else if (CMode) {
-    if (ScriptPtr[1] == '=' && strchr("=!<>+-*/%&|^~", ScriptPtr[0])) {
-      // special double-character token
-      String += *ScriptPtr++;
-      String += *ScriptPtr++;
-    } else if ((ScriptPtr[0] == '&' && ScriptPtr[1] == '&') ||
-               (ScriptPtr[0] == '|' && ScriptPtr[1] == '|') ||
-               (ScriptPtr[0] == '<' && ScriptPtr[1] == '<') ||
-               (ScriptPtr[0] == '>' && ScriptPtr[1] == '>') ||
-               (ScriptPtr[0] == ':' && ScriptPtr[1] == ':') ||
-               (ScriptPtr[0] == '+' && ScriptPtr[1] == '+') ||
-               (ScriptPtr[0] == '-' && ScriptPtr[1] == '-'))
-    {
-      // special double-character token
-      if (ScriptPtr[0] == '>' && ScriptPtr[1] == '>' && ScriptPtr[2] == '>') String += *ScriptPtr++; // for `>>>`
-      String += *ScriptPtr++;
-      String += *ScriptPtr++;
-    } else if (CharClassifier::isNumStart(ScriptPtr, AllowNumSign)) {
-      // number
-      if (ScriptPtr[0] == '+' || ScriptPtr[0] == '-') String += *ScriptPtr++;
-      if (ScriptPtr[0] == '.') { String += "0."; ++ScriptPtr; }
-      while (ScriptPtr < ScriptEndPtr) {
-        const char ch = *ScriptPtr++;
-        if (CharClassifier::isCNumTerm(ch)) { --ScriptPtr; break; }
-        String += ch;
-      }
-      //fprintf(stderr, "<%s> (%d)\n", *String, CharClassifier::isCNumTerm('e'));
-      if (String.length() > 1 && (ScriptPtr[-1] == 'e' || ScriptPtr[-1] == 'E') &&
-          (ScriptPtr[0] == '+' || ScriptPtr[0] == '-' || CharClassifier::isDigit(*ScriptPtr)))
-      {
-        if (!CharClassifier::isDigit(*ScriptPtr)) String += *ScriptPtr++;
-        while (ScriptPtr < ScriptEndPtr && CharClassifier::isDigit(*ScriptPtr)) String += *ScriptPtr++;
-      }
-    } else if (CharClassifier::isCIdTerm(*ScriptPtr)) {
-      // special single-character token
-      String += *ScriptPtr++;
-    } else {
-      // normal string
-      while (ScriptPtr < ScriptEndPtr) {
-        const char ch = *ScriptPtr++;
-        // eh...
-        if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isCIdTerm(ScriptPtr[0])) {
-          String += ch;
-          continue;
-        }
-        if (CharClassifier::isCIdTerm(ch)) { --ScriptPtr; break; }
-        String += ch;
-      }
-    }
+    ParseCMode();
   } else {
-    // special single-character tokens
-    if (CharClassifier::isNCIdTerm(*ScriptPtr)) {
-      String += *ScriptPtr++;
-    } else {
-      // normal string
-      while (ScriptPtr < ScriptEndPtr) {
-        const char ch = *ScriptPtr++;
-        // eh...
-        if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isNCIdTerm(ScriptPtr[0])) {
-          String += ch;
-          continue;
-        }
-        if (CharClassifier::isNCIdTerm(ch)) { --ScriptPtr; break; }
-        // check for comments
-        if (ch == '/') {
-          const char c1 = *ScriptPtr;
-          if (c1 == '/' || c1 == '*' || c1 == '+') {
-            --ScriptPtr;
-            break;
-          }
-        }
-        String += ch;
-      }
-    }
+    ParseNonCMode();
   }
+
   return true;
 }
 
@@ -1288,7 +1422,7 @@ void VScriptParser::ResetCrossed () noexcept {
 //
 //  VScriptParser::UnGet
 //
-//  Assumes there is a valid string in sc_String.
+//  Assumes that `GetString()` was called at least once
 //
 //==========================================================================
 void VScriptParser::UnGet () noexcept {
@@ -1396,6 +1530,78 @@ void VScriptParser::Error (const char *message) {
 void VScriptParser::HostError (const char *message) {
   const char *Msg = (message ? message : "Bad syntax.");
   Host_Error("Script error at %s:%d: %s", *ScriptName, TokLine, Msg);
+}
+#endif
+
+
+//==========================================================================
+//
+//  VScriptParser::Messagef
+//
+//==========================================================================
+__attribute__((format(printf, 2, 3))) void VScriptParser::Messagef (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  const char *s = vavarg(fmt, ap);
+  va_end(ap);
+  Message(s);
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::DebugMessagef
+//
+//==========================================================================
+__attribute__((format(printf, 2, 3))) void VScriptParser::DebugMessagef (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  const char *s = vavarg(fmt, ap);
+  va_end(ap);
+  DebugMessage(s);
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::MessageErrf
+//
+//==========================================================================
+__attribute__((format(printf, 2, 3))) void VScriptParser::MessageErrf (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  const char *s = vavarg(fmt, ap);
+  va_end(ap);
+  MessageErr(s);
+}
+
+
+//==========================================================================
+//
+//  VScriptParser::Errorf
+//
+//==========================================================================
+__attribute__((format(printf, 2, 3))) void VScriptParser::Errorf (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  const char *s = vavarg(fmt, ap);
+  va_end(ap);
+  Error(s);
+}
+
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+//==========================================================================
+//
+//  VScriptParser::HostErrorf
+//
+//==========================================================================
+__attribute__((format(printf, 2, 3))) void VScriptParser::HostErrorf (const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  const char *s = vavarg(fmt, ap);
+  va_end(ap);
+  HostError(s);
 }
 #endif
 
@@ -1640,6 +1846,64 @@ IMPLEMENT_FUNCTION(VScriptsParser, set_SourceLump) {
   Self->Int->SourceLump = value;
 }
 
+IMPLEMENT_FUNCTION(VScriptsParser, get_Escape) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsEscape());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_Escape) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetEscape(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_CMode) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsCMode());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_CMode) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetCMode(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_AllowNumSign) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsAllowNumSign());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_AllowNumSign) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetAllowNumSign(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_EDGEMode) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsEDGEMode());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_EDGEMode) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetEDGEMode(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_EndOfText) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->End);
+}
+
 IMPLEMENT_FUNCTION(VScriptsParser, IsText) {
   vobjGetParamSelf();
   Self->CheckInterface();
@@ -1824,6 +2088,12 @@ IMPLEMENT_FUNCTION(VScriptsParser, FileName) {
 IMPLEMENT_FUNCTION(VScriptsParser, CurrLine) {
   vobjGetParamSelf();
   Self->CheckInterface();
+  RET_INT(Self->Int->Line);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, TokenLine) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
   RET_INT(Self->Int->TokLine);
 }
 
@@ -1854,3 +2124,21 @@ IMPLEMENT_FUNCTION(VScriptsParser, RestorePos) {
   Self->CheckInterface();
   if (pos) Self->Int->RestorePos(*pos);
 }
+
+#if !defined(VCC_STANDALONE_EXECUTOR)
+//static native final int FindRelativeIncludeLump (int srclump, string fname);
+IMPLEMENT_FUNCTION(VScriptsParser, FindRelativeIncludeLump) {
+  int srclump;
+  VStr fname;
+  vobjGetParamSelf(srclump, fname);
+  RET_INT(VScriptParser::FindRelativeIncludeLump(srclump, fname));
+}
+
+//static native final int FindIncludeLump (int srclump, string fname);
+IMPLEMENT_FUNCTION(VScriptsParser, FindIncludeLump) {
+  int srclump;
+  VStr fname;
+  vobjGetParamSelf(srclump, fname);
+  RET_INT(VScriptParser::FindIncludeLump(srclump, fname));
+}
+#endif

@@ -47,10 +47,11 @@ public:
     Flag_CMode = 1u<<0,
     Flag_Escape = 1u<<1,
     Flag_AllowNumSign = 1u<<2,
+    Flag_EDGEMode = 1u<<3,
     //
-    Flag_End = 1u<<3,
-    Flag_Crossed = 1u<<4,
-    Flag_QuotedString = 1u<<5,
+    Flag_End = 1u<<4,
+    Flag_Crossed = 1u<<5,
+    Flag_QuotedString = 1u<<6,
   };
   vuint32 flags;
 
@@ -63,20 +64,51 @@ public:
 };
 
 
+/*
+ defaults:
+   CMode: false
+   Escape: true
+   AllowNumSign: true
+
+  `AllowNumSign` has any effect only for c-mode, non-c mode doesn't differentiate between numbers and ids
+
+  if `CMode` is `false`:
+    ';' marks single-line comment
+    allowed newlines in quoted string
+    identifiers can include single-quote char (but cannot start or end with it, and no double SQ),
+    and other special chars except and ` {}|=,;" ` (excluding back quotes)
+
+  if `CMode` is `true`:
+    identifiers cannot include `@`, `.`, and other non-alpha chars (including `$`), but
+    can include single-quote char (yet cannot start or end with it, and no double SQ).
+    special non-alpha identifiers includes c-like tokens, a-la `==` or `>>>`
+
+  `Escape` allows escape processing inside quoted strings.
+  non-c escape set is very limited:
+    \r
+    \n
+    \c (color escape)
+  in c mode, some more escapes are allowed, including:
+    \e (\x1b)
+    \xNN -- hex char code, 0 will be converted to space
+*/
 class VScriptParser {
   friend struct VScriptSavedPos;
 
 public:
   int Line;
   int TokLine;
+  // set if `GetString()` reached EOT without reading anything
   bool End;
+  // set if `GetString()` moved to the new line, reset otherwise
   bool Crossed;
+  // set if `GetString()` got quoted string
   bool QuotedString;
   VStr String;
   VName Name8;
   VName Name;
   int Number;
-  /*double*/float Float;
+  float Float;
 
 private:
   VStr ScriptName;
@@ -90,6 +122,7 @@ private:
   bool CMode;
   bool Escape;
   bool AllowNumSign;
+  bool EDGEMode; // ignore underscores in indentifiers?
 
 public:
   int SourceLump; // usually -1
@@ -104,6 +137,11 @@ private:
 
   // slow! returns 0 on EOF
   char PeekOrSkipChar (bool doSkip) noexcept;
+
+  void ParseQuotedString (const char qch) noexcept;
+
+  void ParseCMode () noexcept;
+  void ParseNonCMode () noexcept;
 
 public:
   // it also saves current modes
@@ -133,8 +171,17 @@ public:
 
   bool IsText () noexcept;
   bool IsAtEol () noexcept;
+
+  inline bool IsCMode () const noexcept { return CMode; }
   inline void SetCMode (bool val) noexcept { CMode = val; }
+  inline bool IsEscape () const noexcept { return Escape; }
   inline void SetEscape (bool val) noexcept { Escape = val; }
+  inline bool IsEDGEMode () const noexcept { return EDGEMode; }
+  inline void SetEDGEMode (bool val) noexcept { EDGEMode = val; }
+  // for C mode
+  inline bool IsAllowNumSign () const noexcept { return AllowNumSign; }
+  inline void SetAllowNumSign (bool v) noexcept { AllowNumSign = v; }
+
   bool AtEnd () noexcept;
   bool GetString () noexcept;
 #if !defined(VCC_STANDALONE_EXECUTOR)
@@ -183,6 +230,14 @@ public:
   void HostError (const char *message);
 #endif
 
+  void Messagef (const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+  void DebugMessagef (const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+  void MessageErrf (const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+  void Errorf (const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#if !defined(VCC_STANDALONE_EXECUTOR)
+  void HostErrorf (const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
+
   // slow! returns 0 on EOF
   // doesn't affect flags
   inline char PeekChar () noexcept { return PeekOrSkipChar(false); }
@@ -194,16 +249,13 @@ public:
   TLocation GetVCLoc () const noexcept;
 
   inline VStr GetScriptName () const noexcept { return ScriptName.cloneUniqueMT(); }
-  inline bool IsCMode () const noexcept { return CMode; }
-  inline bool IsEscape () const noexcept { return Escape; }
-
-  // for C mode
-  inline bool IsAllowNumSign () const noexcept { return AllowNumSign; }
-  inline void SetAllowNumSign (bool v) noexcept { AllowNumSign = v; }
 
 #if !defined(VCC_STANDALONE_EXECUTOR)
   // the following will try to find an include in the same file as `srclump`
+  // negative result means "file not found"
+  // worker
   static VVA_CHECKRESULT int FindRelativeIncludeLump (int srclump, VStr fname) noexcept;
+  // main API
   static VVA_CHECKRESULT int FindIncludeLump (int srclump, VStr fname) noexcept;
 #endif
 };

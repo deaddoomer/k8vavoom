@@ -25,6 +25,35 @@
 //**************************************************************************
 class ScriptsParser : Object native;
 
+/*
+ defaults:
+   CMode: false
+   Escape: true
+   AllowNumSign: true
+
+  `AllowNumSign` has any effect only for c-mode, non-c mode doesn't differentiate between numbers and ids
+
+  if `CMode` is `false`:
+    ';' marks single-line comment
+    allowed newlines in quoted string
+    identifiers can include single-quote char (but cannot start or end with it, and no double SQ),
+    and other special chars except and ` {}|=,;" ` (excluding back quotes)
+
+  if `CMode` is `true`:
+    identifiers cannot include `@`, `.`, and other non-alpha chars (including `$`), but
+    can include single-quote char (yet cannot start or end with it, and no double SQ).
+    special non-alpha identifiers includes c-like tokens, a-la `==` or `>>>`
+
+  `Escape` allows escape processing inside quoted strings.
+  non-c escape set is very limited:
+    \r
+    \n
+    \c (color escape)
+  in c mode, some more escapes are allowed, including:
+    \e (\x1b)
+    \xNN -- hex char code, 0 will be converted to space
+*/
+
 struct ScriptSavedPos {
   int Line;
   int TokLine;
@@ -41,6 +70,7 @@ struct ScriptSavedPos {
   bool CMode;
   bool Escape;
   bool AllowNumSign;
+  bool EDGEMode;
 
   bool End;
   bool Crossed;
@@ -52,9 +82,15 @@ native private readonly void *Internal;
 native final string String { get; }
 native final int Number { get; }
 native final float Float { get; }
-native final bool Crossed { get; }
-native final bool Quoted { get; }
+native final bool Crossed { get; } // set if `GetString()` moved to the new line, reset otherwise
+native final bool Quoted { get; } // set if `GetString()` got quoted string
+native final bool EndOfText { get; } // set if `GetString()` reached EOT without reading anything
 native final int SourceLump { get; set; }
+
+native final bool Escape { get; set; } // process escapes in quoted strings?
+native final bool CMode { get; set; }
+native final bool AllowNumSign { get; set; } // has meaning only for c-mode
+native final bool EDGEMode { get; set; } // ignore underscores in indentifiers?
 
 #ifndef VCC_STANDALONE_EXECUTOR
 native final void OpenLumpName (name Name);
@@ -92,12 +128,25 @@ native final void SkipBracketed (optional bool bracketEaten/*=false*/);
 native final void SkipLine ();
 native final void UnGet ();
 native final string FileName ();
+
+native final int TokenLine ();
 native final int CurrLine ();
+
+// at the token line
 native final void ScriptError (string Text, ...) [printf,1];
 native final void ScriptMessage (string Text, ...) [printf,1];
 
 native final void SavePos (out ScriptSavedPos pos);
 native final void RestorePos (const ref ScriptSavedPos pos);
+
+#ifndef VCC_STANDALONE_EXECUTOR
+// the following will try to find an include in the same file as `srclump`
+// negative result means "file not found"
+// worker
+static native final int FindRelativeIncludeLump (int srclump, string fname);
+// main API
+static native final int FindIncludeLump (int srclump, string fname);
+#endif
 
 
 defaultproperties {
