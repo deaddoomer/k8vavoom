@@ -350,7 +350,7 @@ void VFontBitmapBase::ReadFONxChar (VStream &Strm, VName AName, int LumpNum, int
 
 //**************************************************************************
 //
-// VFont
+// VFont Statics
 //
 //**************************************************************************
 
@@ -704,7 +704,7 @@ void VFont::ParseFontDefs () {
 
       if (FontName != NAME_None) {
         if (FontType == 1) {
-          GCon->Logf(NAME_Init, "creating font '%s'", *FontName);
+          GCon->Logf(NAME_Init, "creating font '%s'...", *FontName);
           auto fnt = new VFont(FontName, Template, First, Count, Start, SpaceWidth);
           if (fnt->GetFontName() == NAME_None) {
             GCon->Logf(NAME_Error, "FONT: cannot create font '%s'!", *FontName);
@@ -799,6 +799,7 @@ VFont *VFont::FindAndLoadFontFromLumpIdx (VStr AName, int LumpIdx) {
   { // so the stream will be destroyed automatically
     VStream *lumpstream = W_CreateLumpReaderNum(LumpIdx);
     VCheckedStream Strm(lumpstream);
+    if (Strm.TotalSize() < 8) return nullptr;
     Strm.Serialise(Hdr, 4);
   }
   if (Hdr[0] == 'F' && Hdr[1] == 'O' && Hdr[2] == 'N') {
@@ -859,6 +860,13 @@ VFont *VFont::GetFont (VStr AName) {
 }
 
 
+
+//**************************************************************************
+//
+// VFont
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VFont::VFont
@@ -882,6 +890,8 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
   Translation = nullptr;
   bool ColorsUsed[256];
   memset(ColorsUsed, 0, sizeof(ColorsUsed));
+
+  const bool allowCFonLower = FormatStr.startsWithCI("stcfn");
 
   bool wasAnyChar = false;
 
@@ -911,11 +921,31 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
       }
     }
 
+    // try lowercased ("cfontXXX")
+    bool iscfont = false;
+    if (!knownTexture && Lump < 0 && allowCFonLower && i >= 'a' && i <= 'z') {
+      char tb[64];
+      snprintf(tb, sizeof(tb), "%s", *LumpName);
+      if (strlen(tb) > 5) {
+        tb[0] = 'c';
+        tb[1] = 'f';
+        tb[2] = 'o';
+        tb[3] = 'n';
+        tb[4] = 't';
+        VName ln2(tb, VName::FindLower8);
+        if (ln2 != NAME_None) {
+          Lump = W_CheckNumForName(ln2, WADNS_Graphics);
+          if (Lump >= 0) LumpName = ln2;
+          iscfont = true;
+        }
+      }
+    }
+
     //GCon->Logf(NAME_Debug, "  char %d (%c): lump=%d (%s)", Char, (Char >= 32 && Char < 127 ? Char : '?'), Lump, (Lump >= 0 ? *W_FullLumpName(Lump) : "<oops>"));
 
     // in Doom, stcfn121 is actually a '|' and not 'y' and many wad
     // authors provide it as such, so put it in correct location
-    if (LumpName == "stcfn121" &&
+    if (!iscfont && LumpName == "stcfn121" &&
         (W_CheckNumForName("stcfn120", WADNS_Graphics) == -1 ||
          W_CheckNumForName("stcfn122", WADNS_Graphics) == -1))
     {
