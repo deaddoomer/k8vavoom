@@ -138,6 +138,19 @@ static int vfontcharTxCount = 0;
 static_assert(NUM_TEXT_COLORS >= 26);
 
 
+//==========================================================================
+//
+//  GenFontTextureName
+//
+//==========================================================================
+static inline VName GenFontTextureName () noexcept {
+  #ifdef VAVOOM_NAME_FONT_TEXTURES
+  return VName(va("\x7f_fontchar2_%d ", vfontcharTxCount++));
+  #else
+  return NAME_None;
+  #endif
+}
+
 
 //==========================================================================
 //
@@ -211,12 +224,7 @@ VFontBitmapBase::~VFontBitmapBase () {
 //
 //==========================================================================
 VTexAtlas8bit *VFontBitmapBase::allocAtlas (rgba_t *APalette, int awdt, int ahgt) {
-  #ifdef VAVOOM_NAME_FONT_TEXTURES
-  VName AtlasName = VName(va("\x7f_fontchar2_%d ", vfontcharTxCount++));
-  #else
-  VName AtlasName = NAME_None;
-  #endif
-  VTexAtlas8bit *currAtlas = new VTexAtlas8bit(AtlasName, APalette, awdt, ahgt);
+  VTexAtlas8bit *currAtlas = new VTexAtlas8bit(GenFontTextureName(), APalette, awdt, ahgt);
   atlaslist.append(currAtlas);
   // currently all render drivers expect all textures to be registered in texture manager
   GTextureManager.AddTexture(currAtlas);
@@ -230,12 +238,7 @@ VTexAtlas8bit *VFontBitmapBase::allocAtlas (rgba_t *APalette, int awdt, int ahgt
 //
 //==========================================================================
 VTexAtlas8bit *VFontBitmapBase::allocTranslated (rgba_t *APalette, VTexAtlas8bit *currAtlas) {
-  #ifdef VAVOOM_NAME_FONT_TEXTURES
-  VName AtlasName = VName(va("\x7f_fontchar2_%d ", vfontcharTxCount++));
-  #else
-  VName AtlasName = NAME_None;
-  #endif
-  VTexAtlas8bit *res = currAtlas->Clone(AtlasName, APalette);
+  VTexAtlas8bit *res = currAtlas->Clone(GenFontTextureName(), APalette);
   tratlaslist.append(res);
   // currently all render drivers expect all textures to be registered in texture manager
   GTextureManager.AddTexture(res);
