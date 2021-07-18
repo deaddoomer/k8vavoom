@@ -363,13 +363,9 @@ void VFontBitmapBase::ReadFONxChar (VStream &Strm, VName AName, int LumpNum, int
   FChar.Char = Chr;
   FChar.TexNum = -1;
   FChar.BaseTex = currAtlas;
-  rc.x += 1;
-  rc.y += 1;
-  rc.w -= 2;
-  rc.h -= 2;
-  VTexAtlas8bit::FRect frc = currAtlas->convertRect(rc);
-  FChar.Rect = CharRect(frc);
-  //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g) : (%g,%g)-(%g,%g)", frc.x0, frc.y0, frc.x1, frc.y1, FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
+  rc.shrinkBy(1);
+  FChar.Rect = CharRect(currAtlas->convertRect(rc));
+  //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g)", FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
   FChar.Width = CharWidth;
   FChar.Height = CharHeight;
 }
