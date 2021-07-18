@@ -41,12 +41,42 @@ void VOpenGLDrawer::DrawPic (float x1, float y1, float x2, float y2,
   float s1, float t1, float s2, float t2, VTexture *Tex,
   VTextureTranslation *Trans, float Alpha)
 {
-  if (!Tex || Alpha <= 0.0f || Tex->Type == TEXTYPE_Null) return;
+  if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null) return;
   SetPic(Tex, Trans, CM_Default);
   DrawSimple.Activate();
   DrawSimple.SetTexture(0);
   DrawSimple.SetAlpha(Alpha);
   DrawSimple.UploadChangedUniforms();
+  //GLEnableBlend();
+  //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied
+  glBegin(GL_QUADS);
+    glTexCoord2f(s1*tex_iw, t1*tex_ih); glVertex2f(x1, y1);
+    glTexCoord2f(s2*tex_iw, t1*tex_ih); glVertex2f(x2, y1);
+    glTexCoord2f(s2*tex_iw, t2*tex_ih); glVertex2f(x2, y2);
+    glTexCoord2f(s1*tex_iw, t2*tex_ih); glVertex2f(x1, y2);
+  glEnd();
+  //GLDisableBlend();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::DrawPicRecolored
+//
+//  recolor picture using intensity
+//
+//==========================================================================
+void VOpenGLDrawer::DrawPicRecolored (float x1, float y1, float x2, float y2,
+  float s1, float t1, float s2, float t2, VTexture *Tex,
+  int rgbcolor, float Alpha)
+{
+  if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null) return;
+  SetPic(Tex, nullptr, CM_Default);
+  DrawSimpleRecolor.Activate();
+  DrawSimpleRecolor.SetTexture(0);
+  DrawSimpleRecolor.SetLight(((rgbcolor>>16)&0xff)/255.0f, ((rgbcolor>>8)&0xff)/255.0f, (rgbcolor&0xff)/255.0f, 1.0f);
+  DrawSimpleRecolor.SetAlpha(Alpha);
+  DrawSimpleRecolor.UploadChangedUniforms();
   //GLEnableBlend();
   //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied
   glBegin(GL_QUADS);

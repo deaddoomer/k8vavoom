@@ -198,8 +198,9 @@ protected:
   bool SetupScissor ();
 
 protected:
-  void DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, float Alpha=1.0f, bool shadowed=false);
-  inline void DrawCharPicShadowed (int X, int Y, VTexture *Tex, const VFont::CharRect &rect) { DrawCharPic(X, Y, Tex, rect, 1.0f, true); }
+  // if `rgbcolor` is negative, use `rgbcolor&0xffffff` as RGB
+  void DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, int rgbcolor, float Alpha=1.0f, bool shadowed=false);
+  inline void DrawCharPicShadowed (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, int rgbcolor) { DrawCharPic(X, Y, Tex, rect, rgbcolor, 1.0f, true); }
 
   // to self, then to children
   // ignores cancel/consume, will prevent event modification

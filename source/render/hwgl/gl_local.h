@@ -648,6 +648,10 @@ public:
   virtual void DrawPic (float x1, float y1, float x2, float y2,
                         float s1, float t1, float s2, float t2,
                         VTexture *Tex, VTextureTranslation *Trans, float Alpha) override;
+  // recolor picture using intensity
+  virtual void DrawPicRecolored (float x1, float y1, float x2, float y2,
+                                 float s1, float t1, float s2, float t2,
+                                 VTexture *Tex, int rgbcolor, float Alpha) override;
   virtual void DrawPicShadow (float x1, float y1, float x2, float y2,
                               float s1, float t1, float s2, float t2,
                               VTexture *Tex, float shade) override;

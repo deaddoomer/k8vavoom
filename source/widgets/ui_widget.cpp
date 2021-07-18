@@ -1169,8 +1169,10 @@ void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, 
 //
 //  VWidget::DrawCharPic
 //
+//  if `rgbcolor` is negative, use `rgbcolor&0xffffff` as RGB
+//
 //==========================================================================
-void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, float Alpha, bool shadowed) {
+void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &rect, int rgbcolor, float Alpha, bool shadowed) {
   if (!Tex || Alpha < 0.004f || Tex->Type == TEXTYPE_Null || !rect.isValid()) return;
 
   X -= Tex->GetScaledSOffsetI();
@@ -1206,7 +1208,11 @@ void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &r
   if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
     //GCon->Logf(NAME_Debug,"%s:  001: x1=%g; y1=%g; x2=%g; y2=%g; s1=%g; t1=%g; s2=%g; t3=%g", *Tex->Name, X1, Y1, X2, Y2, S1, T1, S2, T2);
     if (shadowed) Drawer->DrawPicShadow(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, 0.625f*Alpha);
-    Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, nullptr, Alpha);
+    if (rgbcolor < 0) {
+      Drawer->DrawPicRecolored(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, rgbcolor, Alpha);
+    } else {
+      Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, nullptr, Alpha);
+    }
   }
 }
 
@@ -1598,7 +1604,7 @@ void VWidget::DrawString (int x, int y, VStr String, int NormalColor, int BoldCo
     int w;
     VTexture *Tex = Font->GetChar(c, &rect, &w, Color);
     if (Tex && rect.isValid()) {
-      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex, rect); else DrawCharPic(cx, cy, Tex, rect, Alpha);
+      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex, rect, Color); else DrawCharPic(cx, cy, Tex, rect, Color, Alpha);
     }
     cx += w+Kerning;
   }
@@ -1752,7 +1758,7 @@ void VWidget::DrawCursorAt (int x, int y, int cursorChar, int cursorColor) {
     VFont::CharRect rect;
     VTexture *Tex = Font->GetChar(cursorChar, &rect, &w, cursorColor/*CR_UNTRANSLATED*/);
     //DrawPic(x, y, Tex, rect);
-    DrawCharPic(x, y, Tex, rect, 1.0f, false);
+    DrawCharPic(x, y, Tex, rect, cursorColor, 1.0f, false);
     gl_pic_filtering = oldflt;
   }
 }

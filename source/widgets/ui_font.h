@@ -139,7 +139,9 @@ public:
   static VFont *FindFont (VStr AName);
   static VFont *GetFont (VStr AName, VStr LumpName);
   static VFont *GetFont (VStr AName);
+  // returns color translation index, or negative value for RGB color (use `&0xffffff` to get RGB)
   static int ParseColorEscape (const char *&, int, int, VStr *escstr=nullptr);
+  // returns color translation index, or negative value for RGB color (use `&0xffffff` to get RGB)
   static int FindTextColor (const char *Name, int defval=CR_UNTRANSLATED);
 
   // generates lump name from font name

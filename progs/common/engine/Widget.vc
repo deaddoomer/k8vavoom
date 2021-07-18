@@ -326,7 +326,7 @@ native final void SetCursorPos (int cx, int cy);
 native final int CursorX { get; set; }
 native final int CursorY { get; set; }
 
-// returns color ID for specified name
+// returns color ID for specified name, or negative value for RGB color (use `&0xffffff` to get RGB)
 native static final int FindTextColor (string Name);
 
 // "hex hive" for color selector

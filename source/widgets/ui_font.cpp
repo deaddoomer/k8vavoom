@@ -1226,6 +1226,8 @@ void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
 //
 //  if `escstr` is not `nullptr`, put escate into it (including escape char)
 //
+//  returns negative for RGB (see `VWidget::DrawCharPic()`)
+//
 //==========================================================================
 int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor, VStr *escstr) {
   if (!pColor || !pColor[0]) {
@@ -1286,6 +1288,14 @@ int VFont::ParseColorEscape (const char *&pColor, int NormalColor, int BoldColor
 //==========================================================================
 int VFont::FindTextColor (const char *Name, int defval) {
   if (!Name || !Name[0]) return defval;
+  // "normal" color name
+  if (Name[1] && (Name[0] == '!' || Name[0] == '#')) {
+    if (Name[0] == '!') ++Name;
+    vuint32 cc = M_ParseColor(Name, true/*retZeroIfInvalid*/);
+    if (cc) { vassert(cc&0xff000000u); return (int)cc; }
+    return defval; // translation name cannot start with '!' or '#'
+  }
+  // translation names
   for (auto &&it : TextColorLookup) {
     if (VStr::strEquCI(*it.Name, Name)) return it.Index;
   }
