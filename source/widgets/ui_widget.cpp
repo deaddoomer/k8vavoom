@@ -1186,10 +1186,14 @@ void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &r
   const float th = Tex->GetHeight();
   if (tw < 1.0f || th < 1.0f) return;
 
-  float X1 = X+tws*rect.x0;
-  float Y1 = Y+ths*rect.y0;
-  float X2 = X+tws*rect.x1;
-  float Y2 = Y+ths*rect.y1;
+  const float fwdt = (rect.x1-rect.x0)*tws;
+  const float fhgt = (rect.y1-rect.y0)*ths;
+  if (fwdt < 1.0f || fhgt < 1.0f) return;
+
+  float X1 = X;
+  float Y1 = Y;
+  float X2 = X+fwdt;
+  float Y2 = Y+fhgt;
   float S1 = tw*rect.x0;
   float T1 = th*rect.y0;
   float S2 = tw*rect.x1;

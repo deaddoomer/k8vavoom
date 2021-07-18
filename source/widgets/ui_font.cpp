@@ -59,8 +59,24 @@ public:
   VSpecialFont (VName AName, const TArray<int> &CharIndexes, const TArray<VName> &CharLumps, const bool *NoTranslate, int ASpaceWidth);
 };
 
+// font in bitmap format
+class VFontBitmapBase : public VFont {
+protected:
+  TArray<VTexture *> atlaslist;
+  TArray<VTexture *> tratlaslist;
+
+protected:
+  VTexAtlas8bit *allocAtlas (rgba_t *APalette, int awdt=1024, int ahgt=1024);
+  VTexAtlas8bit *allocTranslated (rgba_t *APalette, VTexAtlas8bit *currAtlas);
+  void CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nextToUpdate);
+
+public:
+  VFontBitmapBase ();
+  virtual ~VFontBitmapBase () override;
+};
+
 // font in FON1 format
-class VFon1Font : public VFont {
+class VFon1Font : public VFontBitmapBase {
 public:
   VFon1Font (VName, int);
 };
@@ -132,6 +148,87 @@ TMap<VStrCI, VFont *> VFont::FontMap;
 
 static TArray<VTextColorDef> TextColors;
 static TArray<VColTransMap> TextColorLookup;
+#ifdef VAVOOM_NAME_FONT_TEXTURES
+static int vfontcharTxCount = 0;
+#endif
+
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::VFontBitmapBase
+//
+//==========================================================================
+VFontBitmapBase::VFontBitmapBase () {
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::~VFontBitmapBase
+//
+//==========================================================================
+VFontBitmapBase::~VFontBitmapBase () {
+  //for (auto &&a : atlaslist) delete a;
+  for (auto &&cc : Chars) cc.Textures = nullptr; //FIXME: memleak!
+  Chars.Clear();
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::allocAtlas
+//
+//==========================================================================
+VTexAtlas8bit *VFontBitmapBase::allocAtlas (rgba_t *APalette, int awdt, int ahgt) {
+  #ifdef VAVOOM_NAME_FONT_TEXTURES
+  VName AtlasName = VName(va("\x7f_fontchar2_%d ", vfontcharTxCount++));
+  #else
+  VName AtlasName = NAME_None;
+  #endif
+  VTexAtlas8bit *currAtlas = new VTexAtlas8bit(AtlasName, APalette, awdt, ahgt);
+  atlaslist.append(currAtlas);
+  // currently all render drivers expect all textures to be registered in texture manager
+  GTextureManager.AddTexture(currAtlas);
+  return currAtlas;
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::allocTranslated
+//
+//==========================================================================
+VTexAtlas8bit *VFontBitmapBase::allocTranslated (rgba_t *APalette, VTexAtlas8bit *currAtlas) {
+  #ifdef VAVOOM_NAME_FONT_TEXTURES
+  VName AtlasName = VName(va("\x7f_fontchar2_%d ", vfontcharTxCount++));
+  #else
+  VName AtlasName = NAME_None;
+  #endif
+  VTexAtlas8bit *res = currAtlas->Clone(AtlasName, APalette);
+  tratlaslist.append(res);
+  // currently all render drivers expect all textures to be registered in texture manager
+  GTextureManager.AddTexture(res);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::CreateTranslatedAtlases
+//
+//  create translated atlases, from `nextToUpdate` FChar
+//
+//==========================================================================
+void VFontBitmapBase::CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nextToUpdate) {
+  for (int f = nextToUpdate; f < Chars.length(); ++f) {
+    Chars[f].Textures = new VTexture*[TextColors.length()];
+  }
+  for (int j = 0; j < TextColors.length(); ++j) {
+    VTexture *tt = (j == CR_UNTRANSLATED ? currAtlas : allocTranslated(Translation+j*256, currAtlas));
+    for (int f = nextToUpdate; f < Chars.length(); ++f) Chars[f].Textures[j] = tt;
+  }
+}
 
 
 //==========================================================================
@@ -714,9 +811,13 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
 
         // calculate height of font character and adjust font height as needed
         int Height = Tex->GetScaledHeightI();
+        FChar.Width = Tex->GetScaledWidthI();
+        FChar.Height = Height;
+
         int TOffs = Tex->GetScaledTOffsetI();
         Height += abs(TOffs);
         if (FontHeight < Height) FontHeight = Height;
+
 
         // update first and last characters
         if (FirstChar == -1 || FirstChar > Char) FirstChar = Char;
@@ -747,7 +848,7 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
   if (ASpaceWidth < 0) {
     int NIdx = FindChar('N');
     if (NIdx >= 0) {
-      SpaceWidth = max2(1, (Chars[NIdx].GetWidth()+1)/2);
+      SpaceWidth = max2(1, (Chars[NIdx].Width+1)/2);
     } else {
       SpaceWidth = 4;
     }
@@ -896,7 +997,7 @@ VTexture *VFont::GetChar (int Chr, CharRect *rect, int *pWidth, int Color) {
   VTexture *Tex = Chars[Idx].Textures ? Chars[Idx].Textures[Color] :
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
-  if (pWidth) *pWidth = Chars[Idx].GetWidth(SpaceWidth);
+  if (pWidth) *pWidth = Chars[Idx].Width;
   if (rect) *rect = Chars[Idx].Rect;
   return Tex;
 }
@@ -915,7 +1016,7 @@ int VFont::GetCharWidth (int Chr) {
     Idx = FindChar(Chr);
     if (Idx < 0) return SpaceWidth;
   }
-  return Chars[Idx].GetWidth();
+  return Chars[Idx].Width;
 }
 
 
@@ -1213,6 +1314,9 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
 
       // calculate height of font character and adjust font height as needed
       int Height = Tex->GetScaledHeightI();
+      FChar.Width = Tex->GetScaledWidthI();
+      FChar.Height = Height;
+
       int TOffs = Tex->GetScaledTOffsetI();
       Height += abs(TOffs);
       if (FontHeight < Height) FontHeight = Height;
@@ -1234,7 +1338,7 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
   if (ASpaceWidth < 0) {
     int NIdx = FindChar('N');
     if (NIdx >= 0) {
-      SpaceWidth = max2(1, (Chars[NIdx].GetWidth()+1)/2);
+      SpaceWidth = max2(1, (Chars[NIdx].Width+1)/2);
     } else {
       SpaceWidth = 4;
     }
@@ -1270,7 +1374,9 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
 //  VFon1Font::VFon1Font
 //
 //==========================================================================
-VFon1Font::VFon1Font (VName AName, int LumpNum) {
+VFon1Font::VFon1Font (VName AName, int LumpNum) :
+  VFontBitmapBase()
+{
   RegisterFont(this, AName);
 
   VStream *lumpstream = W_CreateLumpReaderNum(LumpNum);
@@ -1282,6 +1388,16 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) {
   Strm << w << h;
   SpaceWidth = w;
   FontHeight = h;
+
+  if (SpaceWidth == 0 || FontHeight == 0) Sys_Error("font '%s' at '%s' has zero dimensions", *AName, *W_FullLumpName(LumpNum));
+  if (SpaceWidth > 4096-2 || FontHeight > 4096-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
+
+  int asize = 2;
+  while (asize*asize < ((SpaceWidth+2)*(FontHeight+2))*256) {
+    if (asize == 4096) break;
+    asize *= 2;
+  }
+  GCon->Logf(NAME_Debug, "atlas size for font '%s' from '%s' is %dx%d", *AName, *W_FullLumpName(LumpNum), asize, asize);
 
   FirstChar = 0;
   LastChar = 255;
@@ -1307,35 +1423,65 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) {
 
   BuildTranslations(ColorsUsed, Pal, true, false);
 
+  VTexAtlas8bit *currAtlas = allocAtlas(Translation, asize, asize);
+  int nextToUpdate = 0;
+
+  // load base chars
   for (int i = 0; i < 256; ++i) {
+    VTexAtlas8bit::Rect rc;
+
+    // allocate char in atlas
+    for (;;) {
+      rc = currAtlas->allocSubImage(SpaceWidth+2, FontHeight+2);
+      if (rc.isValid()) break;
+      CreateTranslatedAtlases(currAtlas, nextToUpdate);
+      nextToUpdate = Chars.length();
+      currAtlas = allocAtlas(Translation, asize, asize);
+    }
+
+    //GCon->Logf(NAME_Debug, "char #%d (%dx%d): rect=(%d,%d)-(%dx%d)", Chars.length(), SpaceWidth, FontHeight, rc.x, rc.y, rc.w, rc.h);
+
+    // load char data
+    {
+      int Count = SpaceWidth*FontHeight;
+      int cx = 0, cy = 0;
+      do {
+        vint32 Code = Streamer<vint8>(Strm);
+        if (Code >= 0) {
+          Count -= Code+1;
+          while (Code-- >= 0) {
+            const vuint8 c = Streamer<vuint8>(Strm);
+            currAtlas->setPixel(rc, cx+1, cy+1, c);
+            if (++cx == SpaceWidth) { cx = 0; ++cy; }
+          }
+        } else if (Code != -128) {
+          Code = 1-Code;
+          Count -= Code;
+          vuint8 c = Streamer<vuint8>(Strm);
+          //c = min2(c, maxcol);
+          while (Code-- > 0) {
+            currAtlas->setPixel(rc, cx+1, cy+1, c);
+            if (++cx == SpaceWidth) { cx = 0; ++cy; }
+          }
+        }
+      } while (Count > 0);
+    }
+
     FFontChar &FChar = Chars.Alloc();
     FChar.Char = i;
     FChar.TexNum = -1;
-    FChar.Rect.setFull();
-
-    // create texture objects for all different colors
-    FChar.Textures = new VTexture*[TextColors.length()];
-    for (int j = 0; j < TextColors.length(); ++j) {
-      FChar.Textures[j] = new VFontChar2(LumpNum, Strm.Tell(), SpaceWidth, FontHeight, Translation+j*256, 255);
-      // currently all render drivers expect all textures to be registered in texture manager
-      GTextureManager.AddTexture(FChar.Textures[j]);
-    }
-    if (FChar.Textures[CR_UNTRANSLATED]) FChar.BaseTex = FChar.Textures[CR_UNTRANSLATED];
-
-    // skip character data
-    int Count = SpaceWidth*FontHeight;
-    do {
-      vint8 Code = Streamer<vint8>(Strm);
-      if (Code >= 0) {
-        Count -= Code+1;
-        while (Code-- >= 0) Streamer<vint8>(Strm);
-      } else if (Code != -128) {
-        Count -= 1-Code;
-        Streamer<vint8>(Strm);
-      }
-    } while (Count > 0);
-    if (Count < 0) Sys_Error("Overflow decompressing a character %d", i);
+    FChar.BaseTex = currAtlas;
+    rc.x += 1;
+    rc.y += 1;
+    rc.w -= 2;
+    rc.h -= 2;
+    VTexAtlas8bit::FRect frc = currAtlas->convertRect(rc);
+    FChar.Rect = CharRect(frc);
+    //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g) : (%g,%g)-(%g,%g)", frc.x0, frc.y0, frc.x1, frc.y1, FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
+    FChar.Width = SpaceWidth;
+    FChar.Height = FontHeight;
   }
+  CreateTranslatedAtlases(currAtlas, nextToUpdate);
 }
 
 
@@ -1431,6 +1577,9 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
       }
       if (FChar.Textures[CR_UNTRANSLATED]) FChar.BaseTex = FChar.Textures[CR_UNTRANSLATED];
 
+      FChar.Width = FChar.BaseTex->GetScaledWidthI();
+      FChar.Height = FChar.BaseTex->GetScaledHeightI();
+
       // skip character data
       do {
         vint8 Code = Streamer<vint8>(Strm);
@@ -1476,13 +1625,10 @@ VSingleTextureFont::VSingleTextureFont (VName AName, int TexNum) {
   FChar.BaseTex = Tex;
   FChar.Textures = nullptr;
   FChar.Rect.setFull();
+
+  FChar.Width = SpaceWidth;
+  FChar.Height = FontHeight;
 }
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-#ifdef VAVOOM_NAME_FONT_TEXTURES
-static int vfontcharTxCount = 0;
-#endif
 
 
 //==========================================================================

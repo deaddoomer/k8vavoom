@@ -61,8 +61,9 @@ protected:
     CharRect Rect;
     VTexture *BaseTex;
     VTexture **Textures;
+    int Width, Height;
 
-    inline int GetWidth (const int defval=0) const noexcept { return (BaseTex ? (int)(BaseTex->GetScaledWidthF()*Rect.getWidth()) : defval); }
+    //inline int GetWidth (const int defval=0) const noexcept { return (BaseTex ? (int)(BaseTex->GetScaledWidthF()*Rect.getWidth()) : defval); }
   };
 
   VName Name;
@@ -107,7 +108,7 @@ protected:
 public:
   VFont ();
   VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex, int ASpaceWidth);
-  ~VFont ();
+  virtual ~VFont ();
 
   inline VName GetFontName () const noexcept { return Name; }
 
