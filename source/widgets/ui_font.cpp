@@ -154,6 +154,34 @@ static inline VName GenFontTextureName () noexcept {
 
 //==========================================================================
 //
+//  safeFormat
+//
+//  should have only one format for decimal
+//
+//==========================================================================
+static bool safeFormat (VStr fmt) noexcept {
+  bool seenFormat = false;
+  int prcpos = fmt.indexOf('%');
+  while (prcpos >= 0) {
+    if (prcpos+1 >= fmt.length()) return false;
+    if (fmt[prcpos+1] == '%') { prcpos = fmt.indexOf('%', prcpos+2); continue; }
+    if (seenFormat) return false;
+    seenFormat = true;
+    ++prcpos;
+    if (fmt[prcpos] == '-' || fmt[prcpos] == '+') ++prcpos;
+    while (prcpos < fmt.length() && VStr::digitInBase(fmt[prcpos], 10) >= 0) ++prcpos;
+    if (prcpos >= fmt.length()) return false;
+    const char fc = fmt[prcpos++];
+    if (fc != 'x' && fc != 'X' && fc != 'd' && fc != 'i') return false;
+    if (prcpos+1 >= fmt.length()) break;
+    prcpos = fmt.indexOf('%', prcpos);
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
 //  UnpackFONx
 //
 //==========================================================================
@@ -890,6 +918,9 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
   Translation = nullptr;
   bool ColorsUsed[256];
   memset(ColorsUsed, 0, sizeof(ColorsUsed));
+
+  if (!safeFormat(FormatStr)) Sys_Error("font format string \"%s\" is not safe!", *FormatStr.quote());
+  //GCon->Logf(NAME_Debug, "**** format \"%s\" is SAFE!", *FormatStr.quote());
 
   const bool allowCFonLower = FormatStr.startsWithCI("stcfn");
 
