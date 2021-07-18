@@ -39,6 +39,8 @@ public:
 
     inline bool isValid () const noexcept { return (x >= 0 && y >= 0 && w > 0 && h > 0); }
     inline int area () const noexcept { return w*h; }
+
+    inline void shrinkBy (const int delta) noexcept { x += delta; y += delta; w -= delta*2; h -= delta*2; }
   };
 
   struct FRect {
@@ -65,6 +67,8 @@ private:
 private:
   // node id or BadRect
   int findBestFit (int w, int h) noexcept;
+
+  vuint8 findTransparentColor () const noexcept;
 
 private:
   vuint8 *BytePixels;

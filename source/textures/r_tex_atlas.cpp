@@ -50,6 +50,9 @@ VTexAtlas8bit::VTexAtlas8bit (VName aName, rgba_t *APalette, int aWidth, int aHe
   Palette = APalette;
 
   rects.append(Rect(0, 0, aWidth, aHeight)); // one big rect
+
+  const vuint8 tc = findTransparentColor();
+  if (tc != 0) memset(BytePixels, tc, aWidth*aHeight);
 }
 
 
@@ -106,6 +109,29 @@ rgba_t *VTexAtlas8bit::GetPalette () {
 //==========================================================================
 VTexture *VTexAtlas8bit::GetHighResolutionTexture () {
   return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VTexAtlas8bit::findTransparentColor
+//
+//==========================================================================
+vuint8 VTexAtlas8bit::findTransparentColor () const noexcept {
+  if (Palette[0].a == 0) return 0;
+  vint32 maxdist = MAX_VINT32;
+  vuint8 bestc = 0;
+  for (unsigned f = 0; f < 256; ++f) {
+    if (Palette[f].a == 0) {
+      vint32 dist = Palette[f].r*Palette[f].r+Palette[f].g*Palette[f].g+Palette[f].b*Palette[f].b;
+      if (!dist) return (vuint8)f;
+      if (dist < maxdist) {
+        maxdist = dist;
+        bestc = (vuint8)f;
+      }
+    }
+  }
+  return bestc;
 }
 
 
