@@ -301,7 +301,7 @@ void VFontBitmapBase::CalculateAtlasSize (int TotalDataSize) noexcept {
   asize = 2;
   if (TotalDataSize <= 0) return;
   while (asize*asize < TotalDataSize) {
-    if (asize == 4096) break;
+    if (asize == 1024) break;
     asize *= 2;
   }
 }
@@ -1582,7 +1582,7 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) :
   FontHeight = h;
 
   if (SpaceWidth == 0 || FontHeight == 0) Sys_Error("font '%s' at '%s' has zero dimensions", *AName, *W_FullLumpName(LumpNum));
-  if (SpaceWidth > 4096-2 || FontHeight > 4096-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
+  if (SpaceWidth > 1024-2 || FontHeight > 1024-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
 
   FirstChar = 0;
   LastChar = 255;
@@ -1689,7 +1689,7 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
   else SpaceWidth = TotalWidth*2/(3*Count);
 
   if (MaxWidth == 0 || FontHeight == 0) Sys_Error("font '%s' at '%s' has zero dimensions", *AName, *W_FullLumpName(LumpNum));
-  if (MaxWidth > 4096-2 || FontHeight > 4096-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
+  if (MaxWidth > 1024-2 || FontHeight > 1024-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
 
   // read palette
   bool ColorsUsed[256];
