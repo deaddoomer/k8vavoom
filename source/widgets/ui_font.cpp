@@ -66,9 +66,20 @@ protected:
   TArray<VTexture *> tratlaslist;
 
 protected:
+  // for FONx
+  VTexAtlas8bit *currAtlas;
+  int nextToUpdate;
+  int asize; // atlas size
+
+protected:
   VTexAtlas8bit *allocAtlas (rgba_t *APalette, int awdt=1024, int ahgt=1024);
   VTexAtlas8bit *allocTranslated (rgba_t *APalette, VTexAtlas8bit *currAtlas);
   void CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nextToUpdate);
+
+  // for FONx
+  void CalculateAtlasSize (int TotalDataSize) noexcept;
+  void ReadFONxChar (VStream &Strm, VName AName, int LumpNum, int Chr, int CharWidth, int CharHeight);
+  void DoneReadingFONx ();
 
 public:
   VFontBitmapBase ();
@@ -138,6 +149,9 @@ static TArray<VColTransMap> TextColorLookup;
 static int vfontcharTxCount = 0;
 #endif
 
+static_assert(NUM_TEXT_COLORS >= 26);
+
+
 
 //==========================================================================
 //
@@ -172,12 +186,22 @@ static vuint8 *UnpackFONx (VStream &Strm, int Count, const int MaxCol) {
 }
 
 
+
+//**************************************************************************
+//
+// VFontBitmapBase
+//
+//**************************************************************************
+
 //==========================================================================
 //
 //  VFontBitmapBase::VFontBitmapBase
 //
 //==========================================================================
 VFontBitmapBase::VFontBitmapBase () {
+  currAtlas = nullptr;
+  nextToUpdate = 0;
+  asize = 0;
 }
 
 
@@ -250,6 +274,96 @@ void VFontBitmapBase::CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nex
   }
 }
 
+
+//==========================================================================
+//
+//  VFontBitmapBase::CalculateAtlasSize
+//
+//==========================================================================
+void VFontBitmapBase::CalculateAtlasSize (int TotalDataSize) noexcept {
+  asize = 2;
+  if (TotalDataSize <= 0) return;
+  while (asize*asize < TotalDataSize) {
+    if (asize == 4096) break;
+    asize *= 2;
+  }
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::DoneReadingFONx
+//
+//==========================================================================
+void VFontBitmapBase::DoneReadingFONx () {
+  if (!currAtlas) return;
+  CreateTranslatedAtlases(currAtlas, nextToUpdate);
+  currAtlas = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VFontBitmapBase::ReadFONxChar
+//
+//==========================================================================
+void VFontBitmapBase::ReadFONxChar (VStream &Strm, VName AName, int LumpNum, int Chr, int CharWidth, int CharHeight) {
+  if (CharWidth < 1 || CharHeight < 1) return;
+
+  if (!currAtlas) {
+    vassert(asize);
+    vassert(nextToUpdate == 0);
+    vassert(Chars.length() == 0);
+    currAtlas = allocAtlas(Translation, asize, asize);
+  }
+
+  VTexAtlas8bit::Rect rc;
+
+  // allocate char in atlas
+  for (;;) {
+    rc = currAtlas->allocSubImage(CharWidth+2, CharHeight+2);
+    if (rc.isValid()) break;
+    CreateTranslatedAtlases(currAtlas, nextToUpdate);
+    nextToUpdate = Chars.length();
+    currAtlas = allocAtlas(Translation, asize, asize);
+  }
+
+  //GCon->Logf(NAME_Debug, "char #%d (%dx%d): rect=(%d,%d)-(%dx%d)", Chars.length(), SpaceWidth, FontHeight, rc.x, rc.y, rc.w, rc.h);
+
+  // load char data
+  vuint8 *cdata = UnpackFONx(Strm, CharWidth*CharHeight, 255);
+  if (!cdata) Sys_Error("error loading font '%s' from '%s'", *AName, *W_FullLumpName(LumpNum));
+  const vuint8 *csrc = cdata;
+  for (int cy = 0; cy < CharHeight; ++cy) {
+    for (int cx = 0; cx < CharWidth; ++cx) {
+      currAtlas->setPixel(rc, cx+1, cy+1, *csrc++);
+    }
+  }
+  delete[] cdata;
+
+  FFontChar &FChar = Chars.Alloc();
+  if (Chr >= 0 && Chr < 128) AsciiChars[Chr] = Chars.length()-1;
+  FChar.Char = Chr;
+  FChar.TexNum = -1;
+  FChar.BaseTex = currAtlas;
+  rc.x += 1;
+  rc.y += 1;
+  rc.w -= 2;
+  rc.h -= 2;
+  VTexAtlas8bit::FRect frc = currAtlas->convertRect(rc);
+  FChar.Rect = CharRect(frc);
+  //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g) : (%g,%g)-(%g,%g)", frc.x0, frc.y0, frc.x1, frc.y1, FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
+  FChar.Width = CharWidth;
+  FChar.Height = CharHeight;
+}
+
+
+
+//**************************************************************************
+//
+// VFont
+//
+//**************************************************************************
 
 //==========================================================================
 //
@@ -1053,8 +1167,6 @@ void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
 }
 
 
-static_assert(NUM_TEXT_COLORS >= 26);
-
 //==========================================================================
 //
 //  VFont::ParseColorEscape
@@ -1291,7 +1403,12 @@ VStr VFont::SplitTextWithNewlines (VStr Text, int MaxWidth, bool trimRight) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VSpecialFont
+//
+//**************************************************************************
 
 //==========================================================================
 //
@@ -1387,7 +1504,12 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VFon1Font
+//
+//**************************************************************************
 
 //==========================================================================
 //
@@ -1411,13 +1533,6 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) :
 
   if (SpaceWidth == 0 || FontHeight == 0) Sys_Error("font '%s' at '%s' has zero dimensions", *AName, *W_FullLumpName(LumpNum));
   if (SpaceWidth > 4096-2 || FontHeight > 4096-2) Sys_Error("font '%s' at '%s' has too big dimensions", *AName, *W_FullLumpName(LumpNum));
-
-  int asize = 2;
-  while (asize*asize < ((SpaceWidth+2)*(FontHeight+2))*256) {
-    if (asize == 4096) break;
-    asize *= 2;
-  }
-  GCon->Logf(NAME_Debug, "atlas size for font '%s' from '%s' is %dx%d", *AName, *W_FullLumpName(LumpNum), asize, asize);
 
   FirstChar = 0;
   LastChar = 255;
@@ -1443,55 +1558,22 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) :
 
   BuildTranslations(ColorsUsed, Pal, true, false);
 
-  VTexAtlas8bit *currAtlas = allocAtlas(Translation, asize, asize);
-  int nextToUpdate = 0;
+  CalculateAtlasSize(((SpaceWidth+2)*(FontHeight+2))*256);
+  GCon->Logf(NAME_Debug, "atlas size for font '%s' from '%s' is %dx%d", *AName, *W_FullLumpName(LumpNum), asize, asize);
 
-  // load base chars
   for (int i = 0; i < 256; ++i) {
-    VTexAtlas8bit::Rect rc;
-
-    // allocate char in atlas
-    for (;;) {
-      rc = currAtlas->allocSubImage(SpaceWidth+2, FontHeight+2);
-      if (rc.isValid()) break;
-      CreateTranslatedAtlases(currAtlas, nextToUpdate);
-      nextToUpdate = Chars.length();
-      currAtlas = allocAtlas(Translation, asize, asize);
-    }
-
-    //GCon->Logf(NAME_Debug, "char #%d (%dx%d): rect=(%d,%d)-(%dx%d)", Chars.length(), SpaceWidth, FontHeight, rc.x, rc.y, rc.w, rc.h);
-
-    // load char data
-    vuint8 *cdata = UnpackFONx(Strm, SpaceWidth*FontHeight, 255);
-    if (!cdata) Sys_Error("error loading font '%s' from '%s'", *AName, *W_FullLumpName(LumpNum));
-    const vuint8 *csrc = cdata;
-    for (int cy = 0; cy < FontHeight; ++cy) {
-      for (int cx = 0; cx < SpaceWidth; ++cx) {
-        currAtlas->setPixel(rc, cx+1, cy+1, *csrc++);
-      }
-    }
-    delete[] cdata;
-
-    FFontChar &FChar = Chars.Alloc();
-    if (i < 128) AsciiChars[i] = Chars.length()-1;
-    FChar.Char = i;
-    FChar.TexNum = -1;
-    FChar.BaseTex = currAtlas;
-    rc.x += 1;
-    rc.y += 1;
-    rc.w -= 2;
-    rc.h -= 2;
-    VTexAtlas8bit::FRect frc = currAtlas->convertRect(rc);
-    FChar.Rect = CharRect(frc);
-    //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g) : (%g,%g)-(%g,%g)", frc.x0, frc.y0, frc.x1, frc.y1, FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
-    FChar.Width = SpaceWidth;
-    FChar.Height = FontHeight;
+    ReadFONxChar(Strm, AName, LumpNum, i, SpaceWidth, FontHeight);
   }
-  CreateTranslatedAtlases(currAtlas, nextToUpdate);
+  DoneReadingFONx();
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VFon2Font
+//
+//**************************************************************************
 
 //==========================================================================
 //
@@ -1572,67 +1654,26 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
 
   BuildTranslations(ColorsUsed, Pal, false, !!RescalePal);
 
-  int asize = 2;
-  while (asize*asize < (TotalWidth2*(FontHeight+2))) {
-    if (asize == 4096) break;
-    asize *= 2;
-  }
+  CalculateAtlasSize(TotalWidth2*(FontHeight+2));
   GCon->Logf(NAME_Debug, "atlas size for font '%s' from '%s' is %dx%d", *AName, *W_FullLumpName(LumpNum), asize, asize);
-
-  VTexAtlas8bit *currAtlas = allocAtlas(Translation, asize, asize);
-  int nextToUpdate = 0;
 
   for (int i = 0; i < Count; ++i) {
     int DataSize = Widths[i]*FontHeight;
     if (DataSize <= 0) continue;
-
-    VTexAtlas8bit::Rect rc;
-
-    // allocate char in atlas
-    for (;;) {
-      rc = currAtlas->allocSubImage(Widths[i]+2, FontHeight+2);
-      if (rc.isValid()) break;
-      CreateTranslatedAtlases(currAtlas, nextToUpdate);
-      nextToUpdate = Chars.length();
-      currAtlas = allocAtlas(Translation, asize, asize);
-    }
-
-    //GCon->Logf(NAME_Debug, "char #%d (%dx%d): rect=(%d,%d)-(%dx%d)", Chars.length(), Widths[i], FontHeight, rc.x, rc.y, rc.w, rc.h);
-
-    // load char data
-    vuint8 *cdata = UnpackFONx(Strm, DataSize, ActiveColors);
-    if (!cdata) Sys_Error("error loading font '%s' from '%s'", *AName, *W_FullLumpName(LumpNum));
-    const vuint8 *csrc = cdata;
-    for (int cy = 0; cy < FontHeight; ++cy) {
-      for (int cx = 0; cx < Widths[i]; ++cx) {
-        currAtlas->setPixel(rc, cx+1, cy+1, *csrc++);
-      }
-    }
-    delete[] cdata;
-
-    int Chr = FirstChar+i;
-    FFontChar &FChar = Chars.Alloc();
-    if (Chr < 128) AsciiChars[Chr] = Chars.length()-1;
-    FChar.Char = Chr;
-    FChar.TexNum = -1;
-    FChar.BaseTex = currAtlas;
-    rc.x += 1;
-    rc.y += 1;
-    rc.w -= 2;
-    rc.h -= 2;
-    VTexAtlas8bit::FRect frc = currAtlas->convertRect(rc);
-    FChar.Rect = CharRect(frc);
-    //GCon->Logf(NAME_Debug, "  frc=(%g,%g)-(%g,%g) : (%g,%g)-(%g,%g)", frc.x0, frc.y0, frc.x1, frc.y1, FChar.Rect.x0, FChar.Rect.y0, FChar.Rect.x1, FChar.Rect.y1);
-    FChar.Width = Widths[i];
-    FChar.Height = FontHeight;
+    ReadFONxChar(Strm, AName, LumpNum, FirstChar+i, Widths[i], FontHeight);
   }
-  CreateTranslatedAtlases(currAtlas, nextToUpdate);
+  DoneReadingFONx();
 
   delete[] Widths;
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
+
+//**************************************************************************
+//
+// VSingleTextureFont
+//
+//**************************************************************************
 
 //==========================================================================
 //
