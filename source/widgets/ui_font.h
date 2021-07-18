@@ -35,12 +35,34 @@ struct VSplitLine {
 
 // base class for fonts
 class VFont {
+public:
+  // x1 and y1 should be greater than x0 and y0
+  struct CharRect {
+    float x0, y0, x1, y1;
+    float xofs, yofs;
+
+    inline CharRect () noexcept : x0(0.0f), y0(0.0f), x1(0.0f), y1(0.0f), xofs(0.0f), yofs(0.0f) {}
+    inline CharRect (const VTexAtlas8bit::FRect &fr, const float axofs=0.0f, const float ayofs=0.0f) noexcept : x0(fr.x0), y0(fr.y0), x1(fr.x1), y1(fr.y1), xofs(axofs), yofs(ayofs) {}
+
+    inline void clear () noexcept { x0 = y0 = x1 = y1 = xofs = yofs = 0.0f; }
+    inline bool isValid () const noexcept { return (x0 < x1 && y0 < y1); }
+
+    inline float getWidth () const noexcept { return x1-x0; }
+
+    inline void setFull () noexcept { x0 = y0 = xofs = yofs = 0.0f; x1 = y1 = 1.0f; }
+
+    static inline CharRect FullRect () noexcept { CharRect res; res.setFull(); return res; }
+  };
+
 protected:
   struct FFontChar {
     int Char;
     int TexNum;
+    CharRect Rect;
     VTexture *BaseTex;
     VTexture **Textures;
+
+    inline int GetWidth (const int defval=0) const noexcept { return (BaseTex ? (int)(BaseTex->GetScaledWidthF()*Rect.getWidth()) : defval); }
   };
 
   VName Name;
@@ -49,7 +71,7 @@ protected:
   // font characters
   TArray<FFontChar> Chars;
   TMapNC<vint32, vint32> CharMap; // key: code; value: index in `Chars`
-  // fast look-up for ASCII characters
+  // fast lookup for ASCII characters
   int AsciiChars[128];
   // range of available characters
   int FirstChar;
@@ -81,19 +103,6 @@ protected:
   static void ParseTextColors ();
   static void ParseFontDefs ();
   static void MarkUsedColors (VTexture *Tex, bool *Used);
-
-public:
-  // x1 and y1 should be greater than x0 and y0
-  struct CharRect {
-    float x0, y0, x1, y1;
-    float xofs, yofs;
-
-    inline CharRect () noexcept : x0(0.0f), y0(0.0f), x1(0.0f), y1(0.0f), xofs(0.0f), yofs(0.0f) {}
-    inline CharRect (const VTexAtlas8bit::FRect &fr, const float axofs=0.0f, const float ayofs=0.0f) noexcept : x0(fr.x0), y0(fr.y0), x1(fr.x1), y1(fr.y1), xofs(axofs), yofs(ayofs) {}
-
-    void inline clear () noexcept { x0 = y0 = x1 = y1 = xofs = yofs = 0.0f; }
-    bool isValid () const noexcept { return (x0 < x1 && y0 < y1); }
-  };
 
 public:
   VFont ();
