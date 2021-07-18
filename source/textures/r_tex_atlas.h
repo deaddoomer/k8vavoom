@@ -70,7 +70,6 @@ private:
   vuint8 *BytePixels;
   rgba_t *Palette;
   TArray<Rect> rects;
-  //int wdt, hgt;
 
 public:
   // will own `aBytePixels`
@@ -79,6 +78,8 @@ public:
   virtual vuint8 *GetPixels () override;
   virtual rgba_t *GetPalette () override;
   virtual VTexture *GetHighResolutionTexture () override;
+
+  VTexAtlas8bit *Clone (VName aName, rgba_t *APalette) noexcept;
 
   // returns invalid rect if there's no more room (or invalid dimensions)
   Rect allocSubImage (const int iwdt, const int ihgt) noexcept;

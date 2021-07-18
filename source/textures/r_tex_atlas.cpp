@@ -47,6 +47,7 @@ VTexAtlas8bit::VTexAtlas8bit (VName aName, rgba_t *APalette, int aWidth, int aHe
   TOffset = 0;
   SScale = 1.0f;
   TScale = 1.0f;
+  Palette = APalette;
 
   rects.append(Rect(0, 0, aWidth, aHeight)); // one big rect
 }
@@ -60,6 +61,20 @@ VTexAtlas8bit::VTexAtlas8bit (VName aName, rgba_t *APalette, int aWidth, int aHe
 VTexAtlas8bit::~VTexAtlas8bit () {
   Z_Free(BytePixels);
   BytePixels = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VTexAtlas8bit::Clone
+//
+//==========================================================================
+VTexAtlas8bit *VTexAtlas8bit::Clone (VName aName, rgba_t *APalette) noexcept {
+  vassert(Width > 0 && Height > 0);
+  VTexAtlas8bit *res = new VTexAtlas8bit(aName, APalette, Width, Height);
+  res->rects = rects;
+  memcpy(res->BytePixels, BytePixels, Width*Height);
+  return res;
 }
 
 
