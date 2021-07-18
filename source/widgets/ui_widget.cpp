@@ -1175,6 +1175,8 @@ void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &r
 
   X -= Tex->GetScaledSOffsetI();
   Y -= Tex->GetScaledTOffsetI();
+  X -= rect.xofs;
+  Y -= rect.yofs;
 
   const float tws = Tex->GetScaledWidthF();
   const float ths = Tex->GetScaledHeightF();

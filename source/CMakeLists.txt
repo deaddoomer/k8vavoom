@@ -117,6 +117,7 @@ set(TEXTURELIB_SOURCES
   textures/r_tex_camera.cpp
   textures/r_tex_warp.cpp
   textures/r_tex_translation.cpp
+  textures/r_tex_atlas.cpp
   # image loaders
   textures/formats/img_automap.cpp
   textures/formats/img_flat.cpp

@@ -86,10 +86,12 @@ public:
   // x1 and y1 should be greater than x0 and y0
   struct CharRect {
     float x0, y0, x1, y1;
+    float xofs, yofs;
 
-    inline CharRect () noexcept { x0 = y0 = x1 = y1 = 0.0f; }
+    inline CharRect () noexcept : x0(0.0f), y0(0.0f), x1(0.0f), y1(0.0f), xofs(0.0f), yofs(0.0f) {}
+    inline CharRect (const VTexAtlas8bit::FRect &fr, const float axofs=0.0f, const float ayofs=0.0f) noexcept : x0(fr.x0), y0(fr.y0), x1(fr.x1), y1(fr.y1), xofs(axofs), yofs(ayofs) {}
 
-    void inline clear () noexcept { x0 = y0 = x1 = y1 = 0.0f; }
+    void inline clear () noexcept { x0 = y0 = x1 = y1 = xofs = yofs = 0.0f; }
     bool isValid () const noexcept { return (x0 < x1 && y0 < y1); }
   };
 
