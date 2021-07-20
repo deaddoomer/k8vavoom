@@ -65,13 +65,23 @@ void VTextureTranslation::Clear () {
 //
 //==========================================================================
 void VTextureTranslation::CalcCrc () {
-  auto Work = TCRC32();
+  XXH32_state_t *state = XXH32_createState();
+  XXH32_reset(state, 0x29a);
+  //auto Work = TCRC32();
   for (int i = 1; i < 256; ++i) {
+    /*
     Work += Palette[i].r;
     Work += Palette[i].g;
     Work += Palette[i].b;
+    */
+    XXH32_update(state, &Palette[i].r, sizeof(Palette[i].r));
+    XXH32_update(state, &Palette[i].g, sizeof(Palette[i].g));
+    XXH32_update(state, &Palette[i].b, sizeof(Palette[i].b));
+    XXH32_update(state, &Palette[i].a, sizeof(Palette[i].a));
   }
-  Crc = Work;
+  //Crc = Work;
+  Crc = XXH32_digest(state);
+  XXH32_freeState(state);
 }
 
 

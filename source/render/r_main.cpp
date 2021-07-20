@@ -164,8 +164,6 @@ VCvarB r_vertical_fov("r_vertical_fov", true, "Maintain vertical FOV for widescr
 
 // translation tables
 VTextureTranslation *PlayerTranslations[MAXPLAYERS+1];
-//static TArray<VTextureTranslation *> CachedTranslations;
-//static TMapNC<vuint32, int> CachedTranslationsMap; // key:crc; value: translation index
 
 static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false, "Disable all texture precaching?", CVAR_PreInit);
 static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive);
@@ -2534,25 +2532,6 @@ VTextureTranslation *R_GetCachedTranslation (int TransNum, VLevel *Level) {
 
   if (!Tr) return nullptr;
   return Tr;
-
-  /*
-  auto cpi = CachedTranslationsMap.find(Tr->Crc);
-  if (cpi) {
-    int cidx = *cpi;
-    while (cidx >= 0) {
-      VTextureTranslation *Check = CachedTranslations[cidx];
-      if (memcmp(Check->Palette, Tr->Palette, sizeof(Tr->Palette)) == 0) return Check;
-      cidx = Check->nextInCache;
-    }
-  }
-
-  VTextureTranslation *Copy = new VTextureTranslation;
-  *Copy = *Tr;
-  Copy->nextInCache = (cpi ? *cpi : -1);
-  CachedTranslationsMap.put(Copy->Crc, CachedTranslations.length());
-  CachedTranslations.Append(Copy);
-  return Copy;
-  */
 }
 
 

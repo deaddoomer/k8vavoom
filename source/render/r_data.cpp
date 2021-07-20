@@ -888,19 +888,24 @@ int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname) {
   } while (sc->Check(","));
 
   // see if we already have this translation
-  for (int i = 0; i < DecorateTranslations.length(); ++i) {
-    if (DecorateTranslations[i]->Crc != Tr->Crc) continue;
-    if (memcmp(DecorateTranslations[i]->Palette, Tr->Palette, sizeof(Tr->Palette))) continue;
-    // found a match
-    delete Tr;
-    Tr = nullptr;
-    return (TRANSL_Decorate<<TRANSL_TYPE_SHIFT)+i;
+  const int tlen = DecorateTranslations.length();
+  if (tlen) {
+    VTextureTranslation **xtr = DecorateTranslations.ptr();
+    for (int i = 0; i < tlen; ++i, ++xtr) {
+      if ((*xtr)->Crc != Tr->Crc) continue;
+      if (memcmp((*xtr)->Palette, Tr->Palette, sizeof(Tr->Palette)) != 0) continue;
+      // found a match
+      delete Tr;
+      Tr = nullptr;
+      return (TRANSL_Decorate<<TRANSL_TYPE_SHIFT)+i;
+    }
   }
 
   // add it
   if (DecorateTranslations.length() >= MAX_DECORATE_TRANSLATIONS) {
     sc->Error("Too many translations in DECORATE scripts");
   }
+
   DecorateTranslations.Append(Tr);
   int res = (TRANSL_Decorate<<TRANSL_TYPE_SHIFT)+DecorateTranslations.length()-1;
   if (!trname.isEmpty()) NamedTranslations.put(trname, res);
@@ -927,12 +932,16 @@ static inline bool isGoodTranslationArgs (int AStart, int AEnd) noexcept {
 //==========================================================================
 static int appendLevelTranslation (VTextureTranslation *tr) {
   // see if we already have this translation
-  for (int i = 0; i < GLevel->Translations.length(); ++i) {
-    if (GLevel->Translations[i]->Crc != tr->Crc) continue;
-    if (memcmp(GLevel->Translations[i]->Palette, tr->Palette, sizeof(tr->Palette))) continue;
-    // found a match
-    delete tr;
-    return (TRANSL_Level<<TRANSL_TYPE_SHIFT)+i;
+  const int tlen = GLevel->Translations.length();
+  if (tlen) {
+    VTextureTranslation **xtr = GLevel->Translations.ptr();
+    for (int i = 0; i < tlen; ++i, ++xtr) {
+      if ((*xtr)->Crc != tr->Crc) continue;
+      if (memcmp((*xtr)->Palette, tr->Palette, sizeof(tr->Palette)) != 0) continue;
+      // found a match
+      delete tr;
+      return (TRANSL_Level<<TRANSL_TYPE_SHIFT)+i;
+    }
   }
 
   if (GLevel->Translations.length() >= MAX_LEVEL_TRANSLATIONS) {
