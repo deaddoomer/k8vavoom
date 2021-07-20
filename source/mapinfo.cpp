@@ -1045,8 +1045,8 @@ MAPINFOCMD(missileshootersactivetimpactlines) { info->Flags &= ~VLevelInfo::LIF_
 MAPINFOCMD(filterstarts) { info->Flags |= VLevelInfo::LIF_FilterStarts; }
 MAPINFOCMD(infiniteflightpowerup) { info->Flags |= VLevelInfo::LIF_InfiniteFlightPowerup; }
 MAPINFOCMD(noinfiniteflightpowerup) { info->Flags &= ~VLevelInfo::LIF_InfiniteFlightPowerup; }
-MAPINFOCMD(clipmidtextures) { info->Flags |= VLevelInfo::LIF_ClipMidTex; }
-MAPINFOCMD(wrapmidtextures) { info->Flags |= VLevelInfo::LIF_WrapMidTex; }
+MAPINFOCMD(clipmidtextures) { info->Flags |= VLevelInfo::LIF_ClipMidTex; /*sc->Message("ClipMidTextures is ignored");*/ }
+MAPINFOCMD(wrapmidtextures) { info->Flags |= VLevelInfo::LIF_WrapMidTex; sc->Message("WrapMidTextures is ignored"); }
 MAPINFOCMD(keepfullinventory) { info->Flags |= VLevelInfo::LIF_KeepFullInventory; }
 MAPINFOCMD(additive_scrollers) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
 MAPINFOCMD(checkswitchrange) { info->Flags2 |= VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 &= ~VLevelInfo::LIF2_NoCheckSwitchRange; }

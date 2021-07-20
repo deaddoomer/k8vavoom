@@ -765,8 +765,8 @@ void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
   L.L.lineTag = (bExtended ? -1 : 0);
   L.L.sidenum[0] = -1;
   L.L.sidenum[1] = -1;
-  if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) L.L.flags |= ML_CLIP_MIDTEX;
-  if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) L.L.flags |= ML_WRAP_MIDTEX;
+  //if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) L.L.flags |= ML_CLIP_MIDTEX;
+  //if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) L.L.flags |= ML_WRAP_MIDTEX;
   //bool HavePassUse = false;
 
   VStr arg0str;

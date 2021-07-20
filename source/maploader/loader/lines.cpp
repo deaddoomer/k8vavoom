@@ -65,8 +65,8 @@ void VLevel::LoadLineDefs1 (int Lump, const VMapInfo &MInfo) {
     ld->alpha = 1.0f;
     ld->lineTag = -1; //k8: this should be zero, i think
 
-    if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) ld->flags |= ML_CLIP_MIDTEX;
-    if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) ld->flags |= ML_WRAP_MIDTEX;
+    //if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) ld->flags |= ML_CLIP_MIDTEX;
+    //if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) ld->flags |= ML_WRAP_MIDTEX;
   }
 }
 
@@ -121,8 +121,8 @@ void VLevel::LoadLineDefs2 (int Lump, const VMapInfo &MInfo) {
     ld->alpha = 1.0f;
     ld->lineTag = -1;
 
-    if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) ld->flags |= ML_CLIP_MIDTEX;
-    if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) ld->flags |= ML_WRAP_MIDTEX;
+    //if (MInfo.Flags&VLevelInfo::LIF_ClipMidTex) ld->flags |= ML_CLIP_MIDTEX;
+    //if (MInfo.Flags&VLevelInfo::LIF_WrapMidTex) ld->flags |= ML_WRAP_MIDTEX;
   }
 }
 
