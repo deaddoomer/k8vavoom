@@ -118,7 +118,7 @@ void VDirPakFile::ScanDirectory (VStr relpath, int depth) {
       vassert(fe.lumpName == NAME_None);
       vassert(fe.lumpNamespace == -1);
       // fe.lumpNamespace = ns;
-      //GLog.Logf(NAME_Dev, "%d: ns=%d; pakname=<%s>; diskname=<%s>; lumpname=<%s>", files.length()-1, fe.ns, *fe.pakname, *fe.diskname, *fe.lumpname);
+      //GLog.Logf(NAME_Debug, "::: ns=%d; diskname=<%s> (%s); lumpname=<%s>", fe.lumpNamespace, *fe.diskNameIntr, *diskname, *fe.fileNameIntr);
       pakdir.append(fe);
     }
   }
