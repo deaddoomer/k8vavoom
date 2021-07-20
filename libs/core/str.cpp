@@ -406,10 +406,6 @@ VVA_CHECKRESULT bool VStr::isUtf8Valid (const char *s) noexcept {
 VVA_CHECKRESULT VStr VStr::toLowerCase1251 () const noexcept {
   const int slen = length();
   if (slen < 1) return VStr();
-  if (atomicIsUnique()) {
-    for (int c = 0; c < slen; ++c) dataptr[c] = locase1251(dataptr[c]);
-    return VStr(*this);
-  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (locase1251(data[f]) != data[f]) {
@@ -431,10 +427,6 @@ VVA_CHECKRESULT VStr VStr::toLowerCase1251 () const noexcept {
 VVA_CHECKRESULT VStr VStr::toUpperCase1251 () const noexcept {
   const int slen = length();
   if (slen < 1) return VStr();
-  if (atomicIsUnique()) {
-    for (int c = 0; c < slen; ++c) dataptr[c] = upcase1251(dataptr[c]);
-    return VStr(*this);
-  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (upcase1251(data[f]) != data[f]) {
@@ -456,10 +448,6 @@ VVA_CHECKRESULT VStr VStr::toUpperCase1251 () const noexcept {
 VVA_CHECKRESULT VStr VStr::toLowerCaseKOI () const noexcept {
   const int slen = length();
   if (slen < 1) return VStr();
-  if (atomicIsUnique()) {
-    for (int c = 0; c < slen; ++c) dataptr[c] = locaseKOI(dataptr[c]);
-    return VStr(*this);
-  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (locaseKOI(data[f]) != data[f]) {
@@ -481,10 +469,6 @@ VVA_CHECKRESULT VStr VStr::toLowerCaseKOI () const noexcept {
 VVA_CHECKRESULT VStr VStr::toUpperCaseKOI () const noexcept {
   const int slen = length();
   if (slen < 1) return VStr();
-  if (atomicIsUnique()) {
-    for (int c = 0; c < slen; ++c) dataptr[c] = upcaseKOI(dataptr[c]);
-    return VStr(*this);
-  }
   const char *data = getData();
   for (int f = 0; f < slen; ++f) {
     if (upcaseKOI(data[f]) != data[f]) {
@@ -679,13 +663,6 @@ VVA_CHECKRESULT VStr VStr::mid (int start, int len) const noexcept {
     if (len < 1) return VStr();
   }
   if (start == 0 && len == mylen) return VStr(*this);
-/*
-  // hack for unique strings (we can do it in-place)
-  if (start == 0 && atomicIsUnique()) {
-    resize(len);
-    return VStr(*this);
-  }
-*/
   return VStr(getData()+start, len);
 }
 
@@ -1196,10 +1173,6 @@ VVA_CHECKRESULT VStr VStr::ToLower () const noexcept {
   if (!dataptr) return VStr();
   const int l = length();
   if (!l) return VStr();
-  if (atomicIsUnique()) {
-    for (int i = 0; i < l; ++i) if (dataptr[i] >= 'A' && dataptr[i] <= 'Z') dataptr[i] += 32; // poor man's tolower()
-    return VStr(*this);
-  }
   bool hasWork = false;
   const char *data = getData();
   for (int i = 0; i < l; ++i) if (data[i] >= 'A' && data[i] <= 'Z') { hasWork = true; break; }
@@ -1224,10 +1197,6 @@ VVA_CHECKRESULT VStr VStr::ToUpper () const noexcept {
   if (!data) return VStr();
   int l = length();
   if (!l) return VStr();
-  if (atomicIsUnique()) {
-    for (int i = 0; i < l; ++i) if (dataptr[i] >= 'a' && dataptr[i] <= 'z') dataptr[i] -= 32; // poor man's toupper()
-    return VStr(*this);
-  }
   bool hasWork = false;
   for (int i = 0; i < l; ++i) if (data[i] >= 'a' && data[i] <= 'z') { hasWork = true; break; }
   if (hasWork) {
@@ -2179,16 +2148,6 @@ VVA_CHECKRESULT VStr VStr::DefaultExtension (VStr extension) const noexcept {
 //==========================================================================
 VVA_CHECKRESULT VStr VStr::FixFileSlashes () const noexcept {
   if (!length()) return VStr();
-  if (atomicIsUnique()) {
-    char *c = dataptr;
-    while (*c) {
-      c = (char *)strchr(c, '\\');
-      if (!c) break;
-      *c = '/';
-      ++c;
-    }
-    return VStr(*this);
-  }
   const char *data = getData();
   if (strchr(data, '\\')) {
     VStr res(*this);
