@@ -1056,12 +1056,29 @@ void VLevel::AddPolyAnchorPoint (mthing_t *thing, float x, float y, float height
 //
 //  VLevel::CalcPolyobjCenter2D
 //
-//  ssectors can contain split points on the same line
-//  if i'll simply sum all vertices, our center could be not right
-//  so i will use only "turning points" (as it should be)
-//
 //==========================================================================
 TVec VLevel::CalcPolyobjCenter2D (polyobj_t *po) noexcept {
+  #if 1
+  // find bounding box, and use it's center
+  if (po->numlines == 0) Sys_Error("pobj #%d has no lines (internal engine error)", po->tag);
+  float xmin = +FLT_MAX;
+  float ymin = +FLT_MAX;
+  float xmax = -FLT_MAX;
+  float ymax = -FLT_MAX;
+  for (auto &&it : po->LineFirst()) {
+    for (unsigned f = 0; f < 2; ++f) {
+      const TVec v = *(f ? it.line()->v2 : it.line()->v1);
+      xmin = min2(xmin, v.x);
+      ymin = min2(ymin, v.y);
+      xmax = max2(xmax, v.x);
+      ymax = max2(ymax, v.y);
+    }
+  }
+  return TVec((xmin+xmax)*0.5f, (ymin+ymax)*0.5f);
+  #else
+  // ssectors can contain split points on the same line
+  // if i'll simply sum all vertices, our center could be not right
+  // so i will use only "turning points" (as it should be)
   int count = 0;
   TVec center = TVec(0.0f, 0.0f);
   TVec pdir(0.0f, 0.0f);
@@ -1097,6 +1114,7 @@ TVec VLevel::CalcPolyobjCenter2D (polyobj_t *po) noexcept {
   if (count < 3) return TVec::ZeroVector;
   center = center/(float)count;
   return center;
+  #endif
 }
 
 
@@ -1119,15 +1137,19 @@ void VLevel::InitPolyobjs () {
       TVec cp;
       if (po->posector) {
         cp = CalcPolyobjCenter2D(po);
-        if (cp.isZero2D()) Host_Error("cannot calculate centroid for pobj #%d", po->tag);
+        //if (cp.isZero2D()) Host_Error("cannot calculate centroid for pobj #%d", po->tag);
       } else {
         vassert(po->numlines && po->numsegs);
+        #if 0
         cp = TVec(0.0f, 0.0f);
         for (auto &&it : po->LineFirst()) {
           cp.x += it.line()->v1->x;
           cp.y += it.line()->v1->y;
         }
         cp /= (float)po->numlines;
+        #else
+        cp = CalcPolyobjCenter2D(po);
+        #endif
       }
 
       PolyAnchorPoint_t anchor;
