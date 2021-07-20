@@ -47,6 +47,7 @@ bool DrawStrikeLine;
 //
 //==========================================================================
 override void FixMinimumHeight () {
+  UpdateFontName();
   /*
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
@@ -96,7 +97,7 @@ int DrawSlot (int y, string text, bool entering, optional int color) {
     ShadeRect(0, y+4, 128, 10, GetCvarF('menu_darkening'));
   }
 
-  SetFont('smallfont');
+  SetFont(FontName);
   SetTextAlign(hleft, vtop);
   DrawText(5, y+5, text, color!optional);
   if (entering) DrawCursor();

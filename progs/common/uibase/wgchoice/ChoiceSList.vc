@@ -38,6 +38,7 @@ string lastCurrAddr;
 override void OnCreate () {
   Width = Parent.Width;
   Height = Parent.Height;
+  UpdateFontName();
 }
 
 
@@ -47,6 +48,7 @@ override void OnCreate () {
 //
 //==========================================================================
 void StartSearching () {
+  UpdateFontName();
   StartSearch(Master);
 }
 
@@ -60,7 +62,7 @@ void DrawTextBox (string text) {
   auto rootw = GetClGame().GRoot;
 
   rootw.SetTextAlign(hcenter, vcenter);
-  rootw.SetFont('smallfont');
+  rootw.SetFont(FontName);
 
   int w = (rootw.TextWidth(text)+16)&~15;
   int h = (rootw.TextHeight(text)+16)&~15;
@@ -105,7 +107,7 @@ override void OnDraw () {
 
   bool allowBG = IsFocused;
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   int maxmapwdt = 0;
   int maxplrwdt = TextWidth(va("9/9"));

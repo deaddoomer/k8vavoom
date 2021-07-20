@@ -143,7 +143,7 @@ void SetInitialValue (float AValue) {
 override void OnDraw () {
   DrawBackground();
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   string caption;
   int idx = findValue(Value);
@@ -227,7 +227,7 @@ void OpenComboPopup (optional int X, optional int Y) {
   if (!specified_X) {
     auto oldFont = GetFont();
     scope(exit) SetFont(oldFont);
-    SetFont('smallfont');
+    SetFont(FontName);
     int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
     X = xx;
   }
@@ -308,7 +308,7 @@ void addItem (string text, bool current) {
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
 
-  SetFont('smallfont');
+  SetFont(choice.FontName);
   //SetTextAlign(hleft, vtop);
   int hgt = 0, wdt = 0;
   foreach (auto str; items) {
@@ -338,7 +338,7 @@ void addItem (string text, bool current) {
 override void OnDraw () {
   if (!items || Width < 1 || Height < 1) return;
   //printdebug("%s: cob=%B; focused=%B", UniqueId, CloseOnBlur, IsFocused());
-  SetFont('smallfont');
+  SetFont(choice.FontName);
   SetTextAlign(hleft, vtop);
   ShadeRect(0, 0, Width, Height, /*GetCvarF('menu_darkening')*/0.8);
   DrawRect(0, 0, Width, Height, RGB(255, 255, 255));
@@ -429,7 +429,7 @@ int FindItemAt (int x, int y) {
   if (x < 1 || y < 4 || x >= Width-1 || y >= Height-4) return -1;
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
-  SetFont('smallfont');
+  SetFont(choice.FontName);
   int yy = 4;
   foreach (int idx, auto str; items) {
     int hgt = TextHeight(str);

@@ -27,6 +27,8 @@ class HelpText : Widget;
 private string mText;
 private bool mAtTop;
 
+name FontName = 'smallfont';
+
 
 final string text {
   get { return mText; }
@@ -55,10 +57,13 @@ void positionIt () {
 //
 //==========================================================================
 void setText (string text) {
+  string fname = GetCvarS('ui_font_helptext');
+  if (fname && !FontName.strEquCI(fname)) FontName = name(fname);
+
   text = text.xstrip;
   mText = SplitTextWithNewlines(text, GetVirtualWidth()-16);
 
-  SetFont('smallfont');
+  SetFont(FontName);
   SetTextAlign(hleft, vtop);
   SetSize(TextWidth(mText)+8, TextHeight(mText)+7);
   positionIt();
@@ -84,7 +89,7 @@ void setAtTop (bool v) {
 //==========================================================================
 override void OnDraw () {
   if (!mText || Width < 1 || Height < 1) return;
-  SetFont('smallfont');
+  SetFont(FontName);
   SetTextAlign(hleft, vtop);
   ShadeRect(0, 0, Width, Height, /*GetCvarF('menu_darkening')*/0.8);
   DrawRect(0, 0, Width, Height, RGB(255, 127, 0));

@@ -41,6 +41,7 @@ delegate void ValueChanged (Object Sender);
 //==========================================================================
 override void OnCreate () {
   ::OnCreate();
+  UpdateFontName();
   InitSlot();
 }
 
@@ -62,6 +63,7 @@ override void OnFocusLost () {
 //
 //==========================================================================
 void SetText (string AText) {
+  UpdateFontName();
   Text = TranslateString(AText);
 }
 
@@ -77,7 +79,7 @@ void DisableSlotRendering () {
     //Height = 20;
     auto oldFont = GetFont();
     scope(exit) SetFont(oldFont);
-    SetFont('smallfont');
+    SetFont(FontName);
     Height = FontHeight()+TextHeightAdd;
     // hack for default doom font
     if (Height == 10 && TextHeightAdd == 2) Height = 11;
@@ -159,7 +161,7 @@ void FinishEnteringText () {
 override void OnDraw () {
   DrawBackground();
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   if (DrawSlotPic) {
     // editor with a slot

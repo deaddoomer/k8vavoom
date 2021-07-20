@@ -41,6 +41,20 @@ delegate void Activated (Object Sender);
 
 //==========================================================================
 //
+//  SetButtonFont
+//
+//==========================================================================
+void SetButtonFont () {
+  if (TextFont == 'smallfont') {
+    SetFont(FontName);
+  } else {
+    SetFont(TextFont);
+  }
+}
+
+
+//==========================================================================
+//
 //  FixMinimumHeight
 //
 //  call this after setting text and font
@@ -99,7 +113,7 @@ void SetText (string AText, optional bool disableTranslation) {
 int CalcTextWidth () {
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
-  SetFont(TextFont);
+  SetButtonFont();
   return TextWidth(Text);
 }
 
@@ -112,7 +126,7 @@ int CalcTextWidth () {
 int CalcTextHeight () {
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
-  SetFont(TextFont);
+  SetButtonFont();
   //return TextHeight(Text);
   return FontHeight();
 }
@@ -199,7 +213,7 @@ override void OnDraw () {
   int clr = (IsFocused ? TextColorFocus : TextColor);
   if (hasSubMenuChecked < 0 || !Enabled) clr = CR_DARKGRAY;
 
-  SetFont(TextFont);
+  SetButtonFont();
   SetTextAlign(TextHAlign, TextVAlign);
   DrawText(CursorXOffs, TextHeightAdd/2, Text, clr);
 }

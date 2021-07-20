@@ -65,7 +65,7 @@ override void OnDraw () {
        if (TextVAlign == vbottom) y += Height-TextHeightAdd/2-1;
   else if (TextVAlign == vcenter) y += Height/2;
   //FillRect(0, 0, Width, Height-2, 0xff_000000|(int(ClipRect.OriginY)&0xff));
-  SetFont(TextFont);
+  SetButtonFont();
   SetTextAlign(TextHAlign, TextVAlign);
 
   int clr = (IsFocused ? TextColorFocus : TextColor);

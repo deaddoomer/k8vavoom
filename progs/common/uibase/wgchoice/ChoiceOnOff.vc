@@ -60,7 +60,7 @@ void SetInverted (bool ainverted) {
 override void OnDraw () {
   DrawBackground();
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   int ty = TextHeightAdd/2;
 

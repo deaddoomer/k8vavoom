@@ -95,7 +95,7 @@ void SetInitialValue (float AValue) {
 override void OnDraw () {
   DrawBackground();
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   int ty = TextHeightAdd/2;
   int Col = (IsFocused ? TextColorFocus : TextColor);

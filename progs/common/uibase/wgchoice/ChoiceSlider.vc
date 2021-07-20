@@ -90,9 +90,10 @@ override void OnFocusLost () {
 //
 //==========================================================================
 override void FixMinimumHeight () {
+  UpdateFontName();
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
-  SetFont('smallfont');
+  SetFont(FontName);
   int height = FontHeight()+TextHeightAdd;
   // hack for default doom font
   if (height == 10 && TextHeightAdd == 2) height = 11;
@@ -247,7 +248,7 @@ override void OnDraw () {
 
   DrawBackground();
 
-  SetFont('smallfont');
+  SetFont(FontName);
 
   #ifdef UI_USE_LUMP_SLIDER
   int ty = 3;
@@ -302,7 +303,7 @@ override void OnDraw () {
   DrawText(xt, SliderSY, sld, CR_UNTRANSLATED);
   DrawText(xt+GetSliderPos(Value), SliderSY, "\x13", (IsFocused ? CR_SLIDER_HI_KNOB : CR_UNTRANSLATED));
   xt += SliderWidth;
-  SetFont('smallfont');
+  SetFont(FontName);
   #endif
 
   SetTextAlign(hleft, vtop);

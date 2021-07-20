@@ -1010,7 +1010,7 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
   opt.AddItem("Select automatically", 0);
   opt.AddItem("Lightmaps (Quake-style)", 1);
   string nn;
-       if (R_SupportsShadowVolumeRendering() && R_SupportsShadowMapRendering()) nn = "Stencil Shadows(D3) / Shadowmaps";
+       if (R_SupportsShadowVolumeRendering() && R_SupportsShadowMapRendering()) nn = "D3 Shadows / Shadowmaps";
   else if (R_SupportsShadowVolumeRendering()) nn = "Stencil Shadows (D3-style)";
   else nn = "Shadowmaps";
   opt.AddItem(nn, 2);

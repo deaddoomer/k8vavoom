@@ -25,6 +25,7 @@
 //**************************************************************************
 class MenuTitleText : Widget;
 
+name FontName = 'bigfont';
 string Text;
 
 
@@ -34,7 +35,7 @@ string Text;
 //
 //==========================================================================
 void FixSize () {
-  SetFont('bigfont');
+  SetFont(FontName);
   SetConfiguration(0, 0, Parent.Width, TextHeight(Text)+6);
 }
 
@@ -45,7 +46,7 @@ void FixSize () {
 //
 //==========================================================================
 override void OnDraw () {
-  SetFont('bigfont');
+  SetFont(FontName);
   SetTextAlign(hcenter, vtop);
   int y = (Height-TextHeight(Text))/2;
   DrawText(Width/2, y, Text);

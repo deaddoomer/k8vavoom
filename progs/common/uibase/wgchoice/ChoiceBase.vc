@@ -38,6 +38,19 @@ int TextHeightAdd;
 
 bool HighlightBackground;
 
+name FontName = 'smallfont';
+
+
+//==========================================================================
+//
+//  UpdateFontName
+//
+//==========================================================================
+void UpdateFontName () {
+  string fname = GetCvarS('ui_font_menuitems');
+  if (fname && !FontName.strEquCI(fname)) FontName = name(fname);
+}
+
 
 //==========================================================================
 //
@@ -45,9 +58,10 @@ bool HighlightBackground;
 //
 //==========================================================================
 void FixMinimumHeight () {
+  UpdateFontName();
   auto oldFont = GetFont();
   scope(exit) SetFont(oldFont);
-  SetFont('smallfont');
+  SetFont(FontName);
   int height = FontHeight()+TextHeightAdd;
   // hack for default doom font
   if (height == 10 && TextHeightAdd == 2) height = 11;
