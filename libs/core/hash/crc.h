@@ -27,7 +27,7 @@
 // based on intel's slice-by-8 idea
 // conforms to RFC 3720 (section B.4.)
 // start with 0; pass returned value for continuous calculation
-vuint32 crc32cBuffer (vuint32 crc, const void *data, size_t length);
+vuint32 crc32cBuffer (vuint32 crc, const void *data, size_t length) noexcept;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -43,19 +43,21 @@ private:
   vuint16 curr;
 
 public:
-  TCRC16 () : curr(CRC_INIT_VALUE) {}
-  TCRC16 (const TCRC16 &o) : curr(o.curr) {}
-  inline void Init () { curr = CRC_INIT_VALUE; }
-  inline void reset () { curr = CRC_INIT_VALUE; }
-  inline TCRC16 &operator += (vuint8 v) { curr = (curr<<8)^crc16Table[(curr>>8)^v]; return *this; }
-  TCRC16 &put (const void *buf, size_t len) {
+  inline TCRC16 () noexcept : curr(CRC_INIT_VALUE) {}
+  inline TCRC16 (const TCRC16 &o) noexcept : curr(o.curr) {}
+  inline void Init () noexcept { curr = CRC_INIT_VALUE; }
+  inline void Reset () noexcept { curr = CRC_INIT_VALUE; }
+  inline void reset () noexcept { curr = CRC_INIT_VALUE; }
+  inline TCRC16 &operator += (vuint8 v) noexcept { curr = (curr<<8)^crc16Table[(curr>>8)^v]; return *this; }
+  inline TCRC16 &put (const void *buf, size_t len) noexcept {
     const vuint8 *b = (const vuint8 *)buf;
     while (len--) {
       curr = (curr<<8)^crc16Table[(curr>>8)^(*b++)];
     }
     return *this;
   }
-  inline operator vuint16 () const { return curr^CRC_XOR_VALUE; }
+  inline vuint16 Result () const noexcept { return curr^CRC_XOR_VALUE; }
+  inline operator vuint16 () const noexcept { return Result(); }
 };
 
 
@@ -67,12 +69,13 @@ private:
   vuint32 curr;
 
 public:
-  TCRC32 () : curr(0xffffffffU) {}
-  TCRC32 (const TCRC32 &o) : curr(o.curr) {}
-  inline void Init () { curr = 0; }
-  inline void reset () { curr = 0; }
-  inline TCRC32 &operator += (vuint8 b) { curr ^= b; curr = crc32Table[curr&0x0f]^(curr>>4); curr = crc32Table[curr&0x0f]^(curr>>4); return *this; }
-  TCRC32 &put (const void *buf, size_t len) {
+  inline TCRC32 () noexcept : curr(/*0xffffffffU*/0) {}
+  inline TCRC32 (const TCRC32 &o) noexcept : curr(o.curr) {}
+  inline void Init () noexcept { curr = 0; }
+  inline void Reset () noexcept { curr = 0; }
+  inline void reset () noexcept { curr = 0; }
+  inline TCRC32 &operator += (vuint8 b) noexcept { curr ^= b; curr = crc32Table[curr&0x0f]^(curr>>4); curr = crc32Table[curr&0x0f]^(curr>>4); return *this; }
+  inline TCRC32 &put (const void *buf, size_t len) noexcept {
     const vuint8 *b = (const vuint8 *)buf;
     while (len--) {
       curr ^= *b++;
@@ -81,5 +84,6 @@ public:
     }
     return *this;
   }
-  inline operator vuint32 () const { return curr^0xffffffffU; }
+  inline vuint32 Result () const noexcept { return curr^0xffffffffU; }
+  inline operator vuint32 () const noexcept { return Result(); }
 };
