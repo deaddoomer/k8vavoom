@@ -90,7 +90,8 @@ override void OnDraw () {
     if (!qsdatestr || qsdatestr == "UNKNOWN") qsdatestr = " "; else qsdatestr = "QUICKSAVE: "~qsdatestr;
   }
   // draw it all
-  SetFont('smallfont');
+  //SetFont('smallfont');
+  SetFont(Items[0].FontName);
   //SetTextAlign(hleft, vtop);
   SetTextAlign(hright, vtop);
   int ty = Height-FontHeight()*2-2;

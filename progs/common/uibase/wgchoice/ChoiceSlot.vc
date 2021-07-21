@@ -64,6 +64,7 @@ override void FixMinimumHeight () {
 //
 //==========================================================================
 void InitSlot () {
+  UpdateFontName();
   if (WadLumpPresent('m_fslot')) {
     pic_M_FSLOT = R_RegisterPic('m_fslot');
   } else {
@@ -99,7 +100,10 @@ int DrawSlot (int y, string text, bool entering, optional int color) {
 
   SetFont(FontName);
   SetTextAlign(hleft, vtop);
-  DrawText(5, y+5, text, color!optional);
+  int fh = FontHeight()/2;
+  // default font height is 8
+  DrawText(5, y+5-4+fh-(FontName.nameEquCI('smallfont') ? 0 : 1), text, color!optional);
+  //DrawText(5, y+5, text, color!optional);
   if (entering) DrawCursor();
 
   if (DrawStrikeLine) {
