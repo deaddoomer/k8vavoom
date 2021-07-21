@@ -332,7 +332,10 @@ load_again:
   sha224_init(&sha224ctx);
   md5ctx.Init();
 
-  bool sha224valid = false;
+  //sha224: k8vavoom hash
+  //md5: gzdoom-compatible hash (only for non-UDMF, UDMF hashes are not compatible)
+
+  bool mapHashValid = false;
   VStr cacheFileName;
   VStr cacheDir = getCacheDir();
 
@@ -350,7 +353,8 @@ load_again:
       else if (LName == NAME_dialogue) DialogueLump = lumpnum+i;
       else if (LName == NAME_znodes) {}
     }
-    sha224valid = hashLump(&sha224ctx, &md5ctx, lumpnum+1);
+    mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // hash map header
+    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, lumpnum+1); // hash map text
   } else {
     // find all lumps
     int LIdx = lumpnum+1;
@@ -365,21 +369,6 @@ load_again:
     if (W_LumpName(LIdx) == NAME_reject) RejectLump = LIdx++;
     if (W_LumpName(LIdx) == NAME_blockmap) LIdx++;
 
-    sha224valid = hashLump(nullptr, &md5ctx, lumpnum); // md5
-    if (sha224valid) sha224valid = hashLump(nullptr, &md5ctx, ThingsLump); // md5
-
-    if (sha224valid) sha224valid = hashLump(&sha224ctx, &md5ctx, LinesLump);
-    if (sha224valid) sha224valid = hashLump(&sha224ctx, &md5ctx, SidesLump);
-    if (sha224valid) sha224valid = hashLump(&sha224ctx, nullptr, VertexesLump); // not in md5
-    if (sha224valid) sha224valid = hashLump(&sha224ctx, &md5ctx, SectorsLump);
-
-    // determine level format
-    if (W_LumpName(LIdx) == NAME_behavior) {
-      LevelFlags |= LF_Extended;
-      BehaviorLump = LIdx++;
-      if (sha224valid) sha224valid = hashLump(nullptr, &md5ctx, BehaviorLump); // md5
-    }
-
     // verify that it's a valid map
     if (ThingsLump == -1 || LinesLump == -1 || SidesLump == -1 ||
         VertexesLump == -1 || SectorsLump == -1)
@@ -391,6 +380,20 @@ load_again:
       if (VertexesLump == -1) nf += " vertexes";
       if (SectorsLump == -1) nf += " sectors";
       Host_Error("Map '%s' is not a valid map (%s), %s", *MapName, *W_FullLumpName(lumpnum), *nf);
+    }
+
+    mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // map header: only in md5
+    if (mapHashValid) mapHashValid = hashLump(nullptr, &md5ctx, ThingsLump); // things: only in md5
+    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, LinesLump); // lines: both
+    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, SidesLump); // sides: both
+    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, nullptr, VertexesLump); // vertices: only sha
+    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, SectorsLump); // sectors: both
+
+    // determine level format
+    if (W_LumpName(LIdx) == NAME_behavior) {
+      LevelFlags |= LF_Extended;
+      BehaviorLump = LIdx++;
+      if (mapHashValid) mapHashValid = hashLump(nullptr, &md5ctx, BehaviorLump); // compiled scrips: only md5
     }
   }
   InitTime += Sys_Time();
@@ -407,7 +410,7 @@ load_again:
 
   if (AuxiliaryMap) GCon->Log("loading map from nested wad");
 
-  if (sha224valid) {
+  if (mapHashValid) {
     vuint8 sha224hash[SHA224_DIGEST_SIZE];
     sha224_final(&sha224ctx, sha224hash);
     MapHash = VStr::buf2hex(sha224hash, SHA224_DIGEST_SIZE);
@@ -426,17 +429,17 @@ load_again:
   }
 
   bool cachedDataLoaded = false;
-  if (sha224valid && cacheDir.length()) {
+  if (mapHashValid && cacheDir.length()) {
     cacheFileName = VStr("mapcache_")+MapHash.left(32)+".cache"; // yeah, truncated
     cacheFileName = cacheDir+"/"+cacheFileName;
   } else {
-    sha224valid = false;
+    mapHashValid = false;
   }
 
   bool hasCacheFile = false;
 
   //FIXME: load cache file into temp buffer, and process it later
-  if (sha224valid) {
+  if (mapHashValid) {
     if (killCache) {
       Sys_FileDelete(cacheFileName);
     } else {
@@ -593,7 +596,7 @@ load_again:
 
 
   // update cache
-  if (loader_cache_data && saveCachedData && sha224valid && TotalTime+Sys_Time() > loader_cache_time_limit) {
+  if (loader_cache_data && saveCachedData && mapHashValid && TotalTime+Sys_Time() > loader_cache_time_limit) {
     VStream *strm = FL_OpenSysFileWrite(cacheFileName);
     if (strm) {
       bool err = !SaveCachedData(strm);
