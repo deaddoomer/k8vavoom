@@ -125,6 +125,19 @@ void KnownMapBugFixer () {
     return;
   }
 
+  // Doom: E3M8
+  if (MapHashMD5 == "ef128313112110ed6c1549af96af26c9") {
+    // invalid line sectors
+    assert(Sides[Lines[21].sidenum[0]].Sector);
+    assert(Sides[Lines[57].sidenum[1]].Sector);
+    Lines[21].frontsector = &Sectors[1];
+    Sides[Lines[21].sidenum[0]].Sector = Lines[21].frontsector;
+    Lines[57].backsector = &Sectors[1];
+    Sides[Lines[57].sidenum[1]].Sector = Lines[57].backsector;
+    printwarn("MAPFIX: Doom: E3M8 detected and fixed");
+    return;
+  }
+
   // Doom: E4M1
   if (MapHashMD5 == "da0c8281ac70eec31127c228bcd7fe2c") {
     // missing textures
