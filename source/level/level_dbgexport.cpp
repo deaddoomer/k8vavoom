@@ -304,8 +304,9 @@ void VLevel::DebugSaveLevel (VStream &strm) {
     strm.writef("  sector = %d;\n", (int)(ptrdiff_t)(sub->sector-&Sectors[0]));
     strm.writef("  firstseg = %d;\n", sub->firstline);
     strm.writef("  numsegs = %d;\n", sub->numlines);
-    vassert(sub->parent);
-    strm.writef("  bspnode = %d;\n", (int)(ptrdiff_t)(sub->parent-&Nodes[0]));
+    if (sub->parent) {
+      strm.writef("  bspnode = %d;\n", (int)(ptrdiff_t)(sub->parent-&Nodes[0]));
+    }
     strm.writef("}\n");
   }
 
