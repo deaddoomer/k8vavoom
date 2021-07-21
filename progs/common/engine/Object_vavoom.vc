@@ -679,9 +679,14 @@ native static final GameObject::VSplashInfo *GetSplashInfo (name Name); // can r
 native static final GameObject::VTerrainInfo *GetTerrainInfo (name Name); // can return `nullptr`
 
 // returns 0 if not found
-native static final int FindLineSpecialByName (string s);
+// can return `nullptr`
+native static final int FindLineSpecialByName (string s, optional out GameObject::VLineSpecInfo info);
 // returns empty string if not found
-native static final string FindLineSpecialNameByNumber (int num);
+native static final string FindLineSpecialNameByNumber (int num, optional out GameObject::VLineSpecInfo info);
+// get info by index
+native static final bool GetLineSpecialInfoByNumber (int num, optional out GameObject::VLineSpecInfo info);
+// return 0 if not found
+native static final int FindScriptLineSpecialByName (string s);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

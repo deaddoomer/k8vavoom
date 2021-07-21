@@ -26,6 +26,7 @@
 static final string LineSpecial2Str (int special) {
   switch (special) {
     case LNSPEC_None: return "None";
+
     case LNSPEC_PolyStartLine: return "PolyStartLine";
     case LNSPEC_PolyRotateLeft: return "PolyRotateLeft";
     case LNSPEC_PolyRotateRight: return "PolyRotateRight";
@@ -35,6 +36,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_PolyDoorSwing: return "PolyDoorSwing";
     case LNSPEC_PolyDoorSlide: return "PolyDoorSlide";
     case LNSPEC_LineHorizon: return "LineHorizon";
+
     case LNSPEC_DoorClose: return "DoorClose";
     case LNSPEC_DoorOpen: return "DoorOpen";
     case LNSPEC_DoorRaise: return "DoorRaise";
@@ -45,6 +47,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ThingRaise: return "ThingRaise";
     case LNSPEC_StartConversation: return "StartConversation";
     case LNSPEC_ThingStop: return "ThingStop";
+
     case LNSPEC_FloorLowerByValue: return "FloorLowerByValue";
     case LNSPEC_FloorLowerToLowest: return "FloorLowerToLowest";
     case LNSPEC_FloorLowerToNearest: return "FloorLowerToNearest";
@@ -55,6 +58,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_StairsBuildUpNormal: return "StairsBuildUpNormal";
     case LNSPEC_FloorRaiseAndCrush: return "FloorRaiseAndCrush";
     case LNSPEC_PillarBuild: return "PillarBuild";
+
     case LNSPEC_PillarOpen: return "PillarOpen";
     case LNSPEC_StairsBuildDownSync: return "StairsBuildDownSync";
     case LNSPEC_StairsBuildUpSync: return "StairsBuildUpSync";
@@ -65,6 +69,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_FloorMoveToValue: return "FloorMoveToValue";
     case LNSPEC_CeilingWaggle: return "CeilingWaggle";
     case LNSPEC_TeleportZombieChanger: return "TeleportZombieChanger";
+
     case LNSPEC_CeilingLowerByValue: return "CeilingLowerByValue";
     case LNSPEC_CeilingRaiseByValue: return "CeilingRaiseByValue";
     case LNSPEC_CeilingCrushAndRaise: return "CeilingCrushAndRaise";
@@ -73,16 +78,18 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_CeilingCrushRaiseAndStay: return "CeilingCrushRaiseAndStay";
     case LNSPEC_FloorCrushStop: return "FloorCrushStop";
     case LNSPEC_CeilingMoveToValue: return "CeilingMoveToValue";
-
+    case LNSPEC_SectorAttach3dMidtex: return "SectorAttach3dMidtex";
     case LNSPEC_GlassBreak: return "GlassBreak";
-    case LNSPEC_ExtraFloorLightOnly: return "ExtraFloorLightOnly";
 
+    case LNSPEC_ExtraFloorLightOnly: return "ExtraFloorLightOnly";
     case LNSPEC_SectorSetLink: return "SectorSetLink";
     case LNSPEC_ScrollWall: return "ScrollWall";
     case LNSPEC_LineSetTextureOffset: return "LineSetTextureOffset";
     case LNSPEC_SectorChangeFlags: return "SectorChangeFlags";
     case LNSPEC_LineSetBlocking: return "LineSetBlocking";
-
+    case LNSPEC_LineSetTextureScale: return "LineSetTextureScale";
+    case LNSPEC_SectorSetPortal: return "SectorSetPortal";
+    case LNSPEC_SectorCopyScroller: return "SectorCopyScroller";
     case LNSPEC_PolyobjMoveToSpotOverride: return "PolyobjMoveToSpotOverride";
 
     case LNSPEC_PlatPerpetualRaise: return "PlatPerpetualRaise";
@@ -95,9 +102,9 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_FloorRaiseTimes8Instant: return "FloorRaiseTimes8Instant";
     case LNSPEC_FloorMoveToValueTimes8: return "FloorMoveToValueTimes8";
     case LNSPEC_CeilingMoveToValueTimes8: return "CeilingMoveToValueTimes8";
+
     case LNSPEC_Teleport: return "Teleport";
     case LNSPEC_TeleportNoFog: return "TeleportNoFog";
-    case LNSPEC_TeleportNoStop: return "TeleportNoStop";
     case LNSPEC_ThrustThing: return "ThrustThing";
     case LNSPEC_DamageThing: return "DamageThing";
     case LNSPEC_TeleportNewMap: return "TeleportNewMap";
@@ -105,6 +112,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_TeleportOther: return "TeleportOther";
     case LNSPEC_TeleportGroup: return "TeleportGroup";
     case LNSPEC_TeleportSector: return "TeleportSector";
+    case LNSPEC_ThingSetConversation: return "ThingSetConversation";
 
     case LNSPEC_ACSExecute: return "ACSExecute";
     case LNSPEC_ACSSuspend: return "ACSSuspend";
@@ -112,7 +120,6 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ACSLockedExecute: return "ACSLockedExecute";
     case LNSPEC_ACSExecuteWithResult: return "ACSExecuteWithResult";
     case LNSPEC_ACSLockedExecuteDoor: return "ACSLockedExecuteDoor";
-
     case LNSPEC_PolyobjMoveToSpot: return "PolyobjMoveToSpot";
     case LNSPEC_PolyobjStop: return "PolyobjStop";
     case LNSPEC_PolyobjMoveTo: return "PolyobjMoveTo";
@@ -125,13 +132,21 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_PillarBuildCrush: return "PillarBuildCrush";
     case LNSPEC_FloorAndCeilingLowerByValue: return "FloorAndCeilingLowerByValue";
     case LNSPEC_FloorAndCeilingRaiseByValue: return "FloorAndCeilingRaiseByValue";
+    case LNSPEC_CeilingLowerAndCrushDist: return "CeilingLowerAndCrushDist";
+    case LNSPEC_SectorSetTranslucent: return "SectorSetTranslucent";
+    case LNSPEC_FloorRaiseAndCrushDoom: return "FloorRaiseAndCrushDoom";
 
     case LNSPEC_ScrollTextureLeft: return "ScrollTextureLeft";
     case LNSPEC_ScrollTextureRight: return "ScrollTextureRight";
     case LNSPEC_ScrollTextureUp: return "ScrollTextureUp";
     case LNSPEC_ScrollTextureDown: return "ScrollTextureDown";
-
+    case LNSPEC_CeilingCrushAndRaiseSilentDist: return "CeilingCrushAndRaiseSilentDist";
+    case LNSPEC_DoorWaitRaise: return "DoorWaitRaise";
+    case LNSPEC_DoorWaitClose: return "DoorWaitClose";
+    case LNSPEC_LineSetPortalTarget: return "LineSetPortalTarget";
+  //108: wtf?!
     case LNSPEC_LightForceLightning: return "LightForceLightning";
+
     case LNSPEC_LightRaiseByValue: return "LightRaiseByValue";
     case LNSPEC_LightLowerByValue: return "LightLowerByValue";
     case LNSPEC_LightChangeToValue: return "LightChangeToValue";
@@ -140,19 +155,20 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_LightFlicker: return "LightFlicker";
     case LNSPEC_LightStrobe: return "LightStrobe";
     case LNSPEC_LightStop: return "LightStop";
-
     case LNSPEC_PlaneCopy: return "PlaneCopy";
-
     case LNSPEC_ThingDamage: return "ThingDamage";
+
     case LNSPEC_QuakeTremor: return "QuakeTremor";
     case LNSPEC_LineSetIdentification: return "LineSetIdentification";
-
+  //122: ???
+  //123: ???
+  //124: ???
     case LNSPEC_ThingMove: return "ThingMove";
-
+  //126: ???
     case LNSPEC_ThingSetSpecial: return "ThingSetSpecial";
     case LNSPEC_ThrustThingZ: return "ThrustThingZ";
-
     case LNSPEC_UsePuzzleItem: return "UsePuzzleItem";
+
     case LNSPEC_ThingActivate: return "ThingActivate";
     case LNSPEC_ThingDeactivate: return "ThingDeactivate";
     case LNSPEC_ThingRemove: return "ThingRemove";
@@ -163,13 +179,22 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ThingSpawnNoFog: return "ThingSpawnNoFog";
     case LNSPEC_FloorWaggle: return "FloorWaggle";
     case LNSPEC_ThingSpawnFacing: return "ThingSpawnFacing";
+
     case LNSPEC_SectorSoundChange: return "SectorSoundChange";
 
+    case LNSPEC_TeleportNoStop: return "TeleportNoStop";
+  //155: ???
+    case LNSPEC_LineSetPortal: return "LineSetPortal";
+  //157: SetGlobalFogParameter
+  //158: FS_Execute
     case LNSPEC_SectorSetPlaneReflection: return "SectorSetPlaneReflection";
+
     case LNSPEC_SectorSet3dFloor: return "SectorSet3dFloor";
     case LNSPEC_Contents: return "Contents";
-
+  //161..167: ???
+    case LNSPEC_CeilingCrushAndRaiseDist: return "CeilingCrushAndRaiseDist";
     case LNSPEC_CeilingGenericCrush2: return "CeilingGenericCrush2";
+
     case LNSPEC_SectorSetCeilingScale2: return "SectorSetCeilingScale2";
     case LNSPEC_SectorSetFloorScale2: return "SectorSetFloorScale2";
     case LNSPEC_PlaneUpNearestWaitDownStay: return "PlaneUpNearestWaitDownStay";
@@ -180,6 +205,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ThingHate: return "ThingHate";
     case LNSPEC_ThingProjectileAimed: return "ThingProjectileAimed";
     case LNSPEC_ChangeSkill: return "ChangeSkill";
+
     case LNSPEC_ThingSetTranslation: return "ThingSetTranslation";
     case LNSPEC_PlaneAlign: return "PlaneAlign";
     case LNSPEC_LineMirror: return "LineMirror";
@@ -190,6 +216,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_SectorSetFloorPanning: return "SectorSetFloorPanning";
     case LNSPEC_SectorSetCeilingScale: return "SectorSetCeilingScale";
     case LNSPEC_SectorSetFloorScale: return "SectorSetFloorScale";
+
     case LNSPEC_StaticInit: return "StaticInit";
     case LNSPEC_SetPlayerProperty: return "SetPlayerProperty";
     case LNSPEC_CeilingLowerToHighestFloor: return "CeilingLowerToHighestFloor";
@@ -200,6 +227,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_CeilingCrushAndRaiseSilentA: return "CeilingCrushAndRaiseSilentA";
     case LNSPEC_CeilingRaiseByValueTimes8: return "CeilingRaiseByValueTimes8";
     case LNSPEC_CeilingLowerByValueTimes8: return "CeilingLowerByValueTimes8";
+
     case LNSPEC_FloorGeneric: return "FloorGeneric";
     case LNSPEC_CeilingGeneric: return "CeilingGeneric";
     case LNSPEC_DoorGeneric: return "DoorGeneric";
@@ -210,6 +238,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_PlatPerpetualRaiseLip: return "PlatPerpetualRaiseLip";
     case LNSPEC_LineTranslucent: return "LineTranslucent";
     case LNSPEC_TransferHeights: return "TransferHeights";
+
     case LNSPEC_TransferFloorLight: return "TransferFloorLight";
     case LNSPEC_TransferCeilingLight: return "TransferCeilingLight";
     case LNSPEC_SectorSetColor: return "SectorSetColor";
@@ -220,6 +249,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_StairsBuildUpDoom: return "StairsBuildUpDoom";
     case LNSPEC_SectorSetWind: return "SectorSetWind";
     case LNSPEC_SectorSetFriction: return "SectorSetFriction";
+
     case LNSPEC_SectorSetCurrent: return "SectorSetCurrent";
     case LNSPEC_ScrollTextureBoth: return "ScrollTextureBoth";
     case LNSPEC_ScrollTextureModel: return "ScrollTextureModel";
@@ -230,6 +260,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_PointPushSetForce: return "PointPushSetForce";
     case LNSPEC_FloorRaiseToNearestChange: return "FloorRaiseToNearestChange";
     case LNSPEC_ThingSetGoal: return "ThingSetGoal";
+
     case LNSPEC_FloorRaiseByValueChangeTex: return "FloorRaiseByValueChangeTex";
     case LNSPEC_PlatToggle: return "PlatToggle";
     case LNSPEC_LightStrobeDoom: return "LightStrobeDoom";
@@ -240,6 +271,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ChangeCamera: return "ChangeCamera";
     case LNSPEC_FloorRaiseToLowestCeiling: return "FloorRaiseToLowestCeiling";
     case LNSPEC_FloorRaiseByValueChange: return "FloorRaiseByValueChange";
+
     case LNSPEC_FloorRaiseByTexture: return "FloorRaiseByTexture";
     case LNSPEC_FloorLowerToLowestChange: return "FloorLowerToLowestChange";
     case LNSPEC_FloorLowerToHighest: return "FloorLowerToHighest";
@@ -250,6 +282,7 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_ElevatorLowerToNearest: return "ElevatorLowerToNearest";
     case LNSPEC_HealThing: return "HealThing";
     case LNSPEC_DoorCloseWaitOpen: return "DoorCloseWaitOpen";
+
     case LNSPEC_FloorDonut: return "FloorDonut";
     case LNSPEC_FloorAndCeilingLowerRaise: return "FloorAndCeilingLowerRaise";
     case LNSPEC_CeilingRaiseToNearest: return "CeilingRaiseToNearest";
@@ -257,14 +290,364 @@ static final string LineSpecial2Str (int special) {
     case LNSPEC_CeilingLowerToFloor: return "CeilingLowerToFloor";
     case LNSPEC_CeilingCrushRaiseAndStaySilentA: return "CeilingCrushRaiseAndStaySilentA";
 
-    case LNSPEC_SectorSetPortal: return "SectorSetPortal";
-    case LNSPEC_LineSetPortal: return "LineSetPortal";
+  //!!!UNIMPLEMENTED!!!
+    case LNSPEC_FloorLowerToHighestEE: return "FloorLowerToHighestEE";
+    case LNSPEC_FloorRaiseToLowest: return "FloorRaiseToLowest";
+    case LNSPEC_FloorLowerToLowestCeiling: return "FloorLowerToLowestCeiling";
+    case LNSPEC_FloorRaiseToCeiling: return "FloorRaiseToCeiling";
 
+    case LNSPEC_FloorToCeilingInstant: return "FloorToCeilingInstant";
+    case LNSPEC_FloorLowerByTexture: return "FloorLowerByTexture";
+    case LNSPEC_CeilingRaiseToHighest: return "CeilingRaiseToHighest";
+    case LNSPEC_CeilingToHighestInstant: return "CeilingToHighestInstant";
+    case LNSPEC_CeilingLowerToNearest: return "CeilingLowerToNearest";
+    case LNSPEC_CeilingRaiseToLowest: return "CeilingRaiseToLowest";
+    case LNSPEC_CeilingRaiseToHighestFloor: return "CeilingRaiseToHighestFloor";
+    case LNSPEC_CeilingToFloorInstant: return "CeilingToFloorInstant";
+    case LNSPEC_CeilingRaiseByTexture: return "CeilingRaiseByTexture";
+    case LNSPEC_CeilingLowerByTexture: return "CeilingLowerByTexture";
+
+    case LNSPEC_StairsBuildDownDoom: return "StairsBuildDownDoom";
+    case LNSPEC_StairsBuildUpDoomSync: return "StairsBuildUpDoomSync";
+    case LNSPEC_StairsBuildDownDoomSync: return "StairsBuildDownDoomSync";
+    case LNSPEC_StairsBuildUpDoomCrush: return "StairsBuildUpDoomCrush";
+    case LNSPEC_DoorAnimatedClose: return "DoorAnimatedClose";
+    case LNSPEC_FloorStop: return "FloorStop";
+    case LNSPEC_CeilingStop: return "CeilingStop";
+  //!!!UNIMPLEMENTED!!!
+
+  //implemented
     case LNSPEC_SectorSetFloorGlow: return "SectorSetFloorGlow";
     case LNSPEC_SectorSetCeilingGlow: return "SectorSetCeilingGlow";
 
+  //!!!UNIMPLEMENTED!!!
+    case LNSPEC_FloorMoveToValueAndCrush: return "FloorMoveToValueAndCrush";
+
+    case LNSPEC_CeilingMoveToValueAndCrush: return "CeilingMoveToValueAndCrush";
+    case LNSPEC_LineSetAutomapFlags: return "LineSetAutomapFlags";
+    case LNSPEC_LineSetAutomapStyle: return "LineSetAutomapStyle";
+  //!!!UNIMPLEMENTED!!!
+
+  // special EDGE actions
     case LNSPEC_EDGEWater: return "EDGEWater";
     case LNSPEC_SectorSet3dThinFloorEDGE: return "SectorSet3dThinFloorEDGE";
   }
   return va("lsp#%d", special);
+}
+
+
+//<0: unknown
+static final int Str2LineSpecial (string s) {
+  s = s.xstrip;
+
+  if (!s || s.strEquCI("None")) return LNSPEC_None;
+
+  if (s.strEquCI("PolyStartLine")) return LNSPEC_PolyStartLine;
+  if (s.strEquCI("PolyRotateLeft")) return LNSPEC_PolyRotateLeft;
+  if (s.strEquCI("PolyRotateRight")) return LNSPEC_PolyRotateRight;
+  if (s.strEquCI("PolyMove")) return LNSPEC_PolyMove;
+  if (s.strEquCI("PolyExplicitLine")) return LNSPEC_PolyExplicitLine;
+  if (s.strEquCI("PolyMoveTimes8")) return LNSPEC_PolyMoveTimes8;
+  if (s.strEquCI("PolyDoorSwing")) return LNSPEC_PolyDoorSwing;
+  if (s.strEquCI("PolyDoorSlide")) return LNSPEC_PolyDoorSlide;
+  if (s.strEquCI("LineHorizon")) return LNSPEC_LineHorizon;
+
+  if (s.strEquCI("DoorClose")) return LNSPEC_DoorClose;
+  if (s.strEquCI("DoorOpen")) return LNSPEC_DoorOpen;
+  if (s.strEquCI("DoorRaise")) return LNSPEC_DoorRaise;
+  if (s.strEquCI("DoorLockedRaise")) return LNSPEC_DoorLockedRaise;
+  if (s.strEquCI("DoorAnimated")) return LNSPEC_DoorAnimated;
+  if (s.strEquCI("Autosave")) return LNSPEC_Autosave;
+  if (s.strEquCI("TransferWallLight")) return LNSPEC_TransferWallLight;
+  if (s.strEquCI("ThingRaise")) return LNSPEC_ThingRaise;
+  if (s.strEquCI("StartConversation")) return LNSPEC_StartConversation;
+  if (s.strEquCI("ThingStop")) return LNSPEC_ThingStop;
+
+  if (s.strEquCI("FloorLowerByValue")) return LNSPEC_FloorLowerByValue;
+  if (s.strEquCI("FloorLowerToLowest")) return LNSPEC_FloorLowerToLowest;
+  if (s.strEquCI("FloorLowerToNearest")) return LNSPEC_FloorLowerToNearest;
+  if (s.strEquCI("FloorRaiseByValue")) return LNSPEC_FloorRaiseByValue;
+  if (s.strEquCI("FloorRaiseToHighest")) return LNSPEC_FloorRaiseToHighest;
+  if (s.strEquCI("FloorRaiseToNearest")) return LNSPEC_FloorRaiseToNearest;
+  if (s.strEquCI("StairsBuildDownNormal")) return LNSPEC_StairsBuildDownNormal;
+  if (s.strEquCI("StairsBuildUpNormal")) return LNSPEC_StairsBuildUpNormal;
+  if (s.strEquCI("FloorRaiseAndCrush")) return LNSPEC_FloorRaiseAndCrush;
+  if (s.strEquCI("PillarBuild")) return LNSPEC_PillarBuild;
+
+  if (s.strEquCI("PillarOpen")) return LNSPEC_PillarOpen;
+  if (s.strEquCI("StairsBuildDownSync")) return LNSPEC_StairsBuildDownSync;
+  if (s.strEquCI("StairsBuildUpSync")) return LNSPEC_StairsBuildUpSync;
+  if (s.strEquCI("ForceField")) return LNSPEC_ForceField;
+  if (s.strEquCI("ClearForceField")) return LNSPEC_ClearForceField;
+  if (s.strEquCI("FloorRaiseByValueTimes8")) return LNSPEC_FloorRaiseByValueTimes8;
+  if (s.strEquCI("FloorLowerByValueTimes8")) return LNSPEC_FloorLowerByValueTimes8;
+  if (s.strEquCI("FloorMoveToValue")) return LNSPEC_FloorMoveToValue;
+  if (s.strEquCI("CeilingWaggle")) return LNSPEC_CeilingWaggle;
+  if (s.strEquCI("TeleportZombieChanger")) return LNSPEC_TeleportZombieChanger;
+
+  if (s.strEquCI("CeilingLowerByValue")) return LNSPEC_CeilingLowerByValue;
+  if (s.strEquCI("CeilingRaiseByValue")) return LNSPEC_CeilingRaiseByValue;
+  if (s.strEquCI("CeilingCrushAndRaise")) return LNSPEC_CeilingCrushAndRaise;
+  if (s.strEquCI("CeilingLowerAndCrush")) return LNSPEC_CeilingLowerAndCrush;
+  if (s.strEquCI("CeilingCrushStop")) return LNSPEC_CeilingCrushStop;
+  if (s.strEquCI("CeilingCrushRaiseAndStay")) return LNSPEC_CeilingCrushRaiseAndStay;
+  if (s.strEquCI("FloorCrushStop")) return LNSPEC_FloorCrushStop;
+  if (s.strEquCI("CeilingMoveToValue")) return LNSPEC_CeilingMoveToValue;
+  if (s.strEquCI("SectorAttach3dMidtex")) return LNSPEC_SectorAttach3dMidtex;
+  if (s.strEquCI("GlassBreak")) return LNSPEC_GlassBreak;
+
+  if (s.strEquCI("ExtraFloorLightOnly")) return LNSPEC_ExtraFloorLightOnly;
+  if (s.strEquCI("SectorSetLink")) return LNSPEC_SectorSetLink;
+  if (s.strEquCI("ScrollWall")) return LNSPEC_ScrollWall;
+  if (s.strEquCI("LineSetTextureOffset")) return LNSPEC_LineSetTextureOffset;
+  if (s.strEquCI("SectorChangeFlags")) return LNSPEC_SectorChangeFlags;
+  if (s.strEquCI("LineSetBlocking")) return LNSPEC_LineSetBlocking;
+  if (s.strEquCI("LineSetTextureScale")) return LNSPEC_LineSetTextureScale;
+  if (s.strEquCI("SectorSetPortal")) return LNSPEC_SectorSetPortal;
+  if (s.strEquCI("SectorCopyScroller")) return LNSPEC_SectorCopyScroller;
+  if (s.strEquCI("PolyobjMoveToSpotOverride")) return LNSPEC_PolyobjMoveToSpotOverride;
+
+  if (s.strEquCI("PlatPerpetualRaise")) return LNSPEC_PlatPerpetualRaise;
+  if (s.strEquCI("PlatStop")) return LNSPEC_PlatStop;
+  if (s.strEquCI("PlatDownWaitUpStay")) return LNSPEC_PlatDownWaitUpStay;
+  if (s.strEquCI("PlatDownByValueWaitUpStay")) return LNSPEC_PlatDownByValueWaitUpStay;
+  if (s.strEquCI("PlatUpWaitDownStay")) return LNSPEC_PlatUpWaitDownStay;
+  if (s.strEquCI("PlatUpByValueWaitDownStay")) return LNSPEC_PlatUpByValueWaitDownStay;
+  if (s.strEquCI("FloorLowerTimes8Instant")) return LNSPEC_FloorLowerTimes8Instant;
+  if (s.strEquCI("FloorRaiseTimes8Instant")) return LNSPEC_FloorRaiseTimes8Instant;
+  if (s.strEquCI("FloorMoveToValueTimes8")) return LNSPEC_FloorMoveToValueTimes8;
+  if (s.strEquCI("CeilingMoveToValueTimes8")) return LNSPEC_CeilingMoveToValueTimes8;
+
+  if (s.strEquCI("Teleport")) return LNSPEC_Teleport;
+  if (s.strEquCI("TeleportNoFog")) return LNSPEC_TeleportNoFog;
+  if (s.strEquCI("ThrustThing")) return LNSPEC_ThrustThing;
+  if (s.strEquCI("DamageThing")) return LNSPEC_DamageThing;
+  if (s.strEquCI("TeleportNewMap")) return LNSPEC_TeleportNewMap;
+  if (s.strEquCI("TeleportEndGame")) return LNSPEC_TeleportEndGame;
+  if (s.strEquCI("TeleportOther")) return LNSPEC_TeleportOther;
+  if (s.strEquCI("TeleportGroup")) return LNSPEC_TeleportGroup;
+  if (s.strEquCI("TeleportSector")) return LNSPEC_TeleportSector;
+  if (s.strEquCI("ThingSetConversation")) return LNSPEC_ThingSetConversation;
+
+  if (s.strEquCI("ACSExecute")) return LNSPEC_ACSExecute;
+  if (s.strEquCI("ACSSuspend")) return LNSPEC_ACSSuspend;
+  if (s.strEquCI("ACSTerminate")) return LNSPEC_ACSTerminate;
+  if (s.strEquCI("ACSLockedExecute")) return LNSPEC_ACSLockedExecute;
+  if (s.strEquCI("ACSExecuteWithResult")) return LNSPEC_ACSExecuteWithResult;
+  if (s.strEquCI("ACSLockedExecuteDoor")) return LNSPEC_ACSLockedExecuteDoor;
+  if (s.strEquCI("PolyobjMoveToSpot")) return LNSPEC_PolyobjMoveToSpot;
+  if (s.strEquCI("PolyobjStop")) return LNSPEC_PolyobjStop;
+  if (s.strEquCI("PolyobjMoveTo")) return LNSPEC_PolyobjMoveTo;
+  if (s.strEquCI("PolyobjMoveToOverride")) return LNSPEC_PolyobjMoveToOverride;
+
+  if (s.strEquCI("PolyRotateLeftOverride")) return LNSPEC_PolyRotateLeftOverride;
+  if (s.strEquCI("PolyRotateRightOverride")) return LNSPEC_PolyRotateRightOverride;
+  if (s.strEquCI("PolyMoveOverride")) return LNSPEC_PolyMoveOverride;
+  if (s.strEquCI("PolyMoveTimes8Override")) return LNSPEC_PolyMoveTimes8Override;
+  if (s.strEquCI("PillarBuildCrush")) return LNSPEC_PillarBuildCrush;
+  if (s.strEquCI("FloorAndCeilingLowerByValue")) return LNSPEC_FloorAndCeilingLowerByValue;
+  if (s.strEquCI("FloorAndCeilingRaiseByValue")) return LNSPEC_FloorAndCeilingRaiseByValue;
+  if (s.strEquCI("CeilingLowerAndCrushDist")) return LNSPEC_CeilingLowerAndCrushDist;
+  if (s.strEquCI("SectorSetTranslucent")) return LNSPEC_SectorSetTranslucent;
+  if (s.strEquCI("FloorRaiseAndCrushDoom")) return LNSPEC_FloorRaiseAndCrushDoom;
+
+  if (s.strEquCI("ScrollTextureLeft")) return LNSPEC_ScrollTextureLeft;
+  if (s.strEquCI("ScrollTextureRight")) return LNSPEC_ScrollTextureRight;
+  if (s.strEquCI("ScrollTextureUp")) return LNSPEC_ScrollTextureUp;
+  if (s.strEquCI("ScrollTextureDown")) return LNSPEC_ScrollTextureDown;
+  if (s.strEquCI("CeilingCrushAndRaiseSilentDist")) return LNSPEC_CeilingCrushAndRaiseSilentDist;
+  if (s.strEquCI("DoorWaitRaise")) return LNSPEC_DoorWaitRaise;
+  if (s.strEquCI("DoorWaitClose")) return LNSPEC_DoorWaitClose;
+  if (s.strEquCI("LineSetPortalTarget")) return LNSPEC_LineSetPortalTarget;
+  //108: wtf?!
+  if (s.strEquCI("LightForceLightning")) return LNSPEC_LightForceLightning;
+
+  if (s.strEquCI("LightRaiseByValue")) return LNSPEC_LightRaiseByValue;
+  if (s.strEquCI("LightLowerByValue")) return LNSPEC_LightLowerByValue;
+  if (s.strEquCI("LightChangeToValue")) return LNSPEC_LightChangeToValue;
+  if (s.strEquCI("LightFade")) return LNSPEC_LightFade;
+  if (s.strEquCI("LightGlow")) return LNSPEC_LightGlow;
+  if (s.strEquCI("LightFlicker")) return LNSPEC_LightFlicker;
+  if (s.strEquCI("LightStrobe")) return LNSPEC_LightStrobe;
+  if (s.strEquCI("LightStop")) return LNSPEC_LightStop;
+  if (s.strEquCI("PlaneCopy")) return LNSPEC_PlaneCopy;
+  if (s.strEquCI("ThingDamage")) return LNSPEC_ThingDamage;
+
+  if (s.strEquCI("QuakeTremor")) return LNSPEC_QuakeTremor;
+  if (s.strEquCI("LineSetIdentification")) return LNSPEC_LineSetIdentification;
+  //122: ???
+  //123: ???
+  //124: ???
+  if (s.strEquCI("ThingMove")) return LNSPEC_ThingMove;
+  //126: ???
+  if (s.strEquCI("ThingSetSpecial")) return LNSPEC_ThingSetSpecial;
+  if (s.strEquCI("ThrustThingZ")) return LNSPEC_ThrustThingZ;
+  if (s.strEquCI("UsePuzzleItem")) return LNSPEC_UsePuzzleItem;
+
+  if (s.strEquCI("ThingActivate")) return LNSPEC_ThingActivate;
+  if (s.strEquCI("ThingDeactivate")) return LNSPEC_ThingDeactivate;
+  if (s.strEquCI("ThingRemove")) return LNSPEC_ThingRemove;
+  if (s.strEquCI("ThingDestroy")) return LNSPEC_ThingDestroy;
+  if (s.strEquCI("ThingProjectile")) return LNSPEC_ThingProjectile;
+  if (s.strEquCI("ThingSpawn")) return LNSPEC_ThingSpawn;
+  if (s.strEquCI("ThingProjectileGravity")) return LNSPEC_ThingProjectileGravity;
+  if (s.strEquCI("ThingSpawnNoFog")) return LNSPEC_ThingSpawnNoFog;
+  if (s.strEquCI("FloorWaggle")) return LNSPEC_FloorWaggle;
+  if (s.strEquCI("ThingSpawnFacing")) return LNSPEC_ThingSpawnFacing;
+
+  if (s.strEquCI("SectorSoundChange")) return LNSPEC_SectorSoundChange;
+
+  if (s.strEquCI("TeleportNoStop")) return LNSPEC_TeleportNoStop;
+  //155: ???
+  if (s.strEquCI("LineSetPortal")) return LNSPEC_LineSetPortal;
+  //157: SetGlobalFogParameter
+  //158: FS_Execute
+  if (s.strEquCI("SectorSetPlaneReflection")) return LNSPEC_SectorSetPlaneReflection;
+
+  if (s.strEquCI("SectorSet3dFloor")) return LNSPEC_SectorSet3dFloor;
+  if (s.strEquCI("Contents")) return LNSPEC_Contents;
+  //161..167: ???
+  if (s.strEquCI("CeilingCrushAndRaiseDist")) return LNSPEC_CeilingCrushAndRaiseDist;
+  if (s.strEquCI("CeilingGenericCrush2")) return LNSPEC_CeilingGenericCrush2;
+
+  if (s.strEquCI("SectorSetCeilingScale2")) return LNSPEC_SectorSetCeilingScale2;
+  if (s.strEquCI("SectorSetFloorScale2")) return LNSPEC_SectorSetFloorScale2;
+  if (s.strEquCI("PlaneUpNearestWaitDownStay")) return LNSPEC_PlaneUpNearestWaitDownStay;
+  if (s.strEquCI("NoiseAlert")) return LNSPEC_NoiseAlert;
+  if (s.strEquCI("SendToCommunicator")) return LNSPEC_SendToCommunicator;
+  if (s.strEquCI("ThingProjectileIntercept")) return LNSPEC_ThingProjectileIntercept;
+  if (s.strEquCI("ThingChangeTID")) return LNSPEC_ThingChangeTID;
+  if (s.strEquCI("ThingHate")) return LNSPEC_ThingHate;
+  if (s.strEquCI("ThingProjectileAimed")) return LNSPEC_ThingProjectileAimed;
+  if (s.strEquCI("ChangeSkill")) return LNSPEC_ChangeSkill;
+
+  if (s.strEquCI("ThingSetTranslation")) return LNSPEC_ThingSetTranslation;
+  if (s.strEquCI("PlaneAlign")) return LNSPEC_PlaneAlign;
+  if (s.strEquCI("LineMirror")) return LNSPEC_LineMirror;
+  if (s.strEquCI("LineAlignCeiling")) return LNSPEC_LineAlignCeiling;
+  if (s.strEquCI("LineAlignFloor")) return LNSPEC_LineAlignFloor;
+  if (s.strEquCI("SectorSetRotation")) return LNSPEC_SectorSetRotation;
+  if (s.strEquCI("SectorSetCeilingPanning")) return LNSPEC_SectorSetCeilingPanning;
+  if (s.strEquCI("SectorSetFloorPanning")) return LNSPEC_SectorSetFloorPanning;
+  if (s.strEquCI("SectorSetCeilingScale")) return LNSPEC_SectorSetCeilingScale;
+  if (s.strEquCI("SectorSetFloorScale")) return LNSPEC_SectorSetFloorScale;
+
+  if (s.strEquCI("StaticInit")) return LNSPEC_StaticInit;
+  if (s.strEquCI("SetPlayerProperty")) return LNSPEC_SetPlayerProperty;
+  if (s.strEquCI("CeilingLowerToHighestFloor")) return LNSPEC_CeilingLowerToHighestFloor;
+  if (s.strEquCI("CeilingLowerInstant")) return LNSPEC_CeilingLowerInstant;
+  if (s.strEquCI("CeilingRaiseInstant")) return LNSPEC_CeilingRaiseInstant;
+  if (s.strEquCI("CeilingCrushRaiseAndStayA")) return LNSPEC_CeilingCrushRaiseAndStayA;
+  if (s.strEquCI("CeilingCrushAndRaiseA")) return LNSPEC_CeilingCrushAndRaiseA;
+  if (s.strEquCI("CeilingCrushAndRaiseSilentA")) return LNSPEC_CeilingCrushAndRaiseSilentA;
+  if (s.strEquCI("CeilingRaiseByValueTimes8")) return LNSPEC_CeilingRaiseByValueTimes8;
+  if (s.strEquCI("CeilingLowerByValueTimes8")) return LNSPEC_CeilingLowerByValueTimes8;
+
+  if (s.strEquCI("FloorGeneric")) return LNSPEC_FloorGeneric;
+  if (s.strEquCI("CeilingGeneric")) return LNSPEC_CeilingGeneric;
+  if (s.strEquCI("DoorGeneric")) return LNSPEC_DoorGeneric;
+  if (s.strEquCI("PlatGeneric")) return LNSPEC_PlatGeneric;
+  if (s.strEquCI("StairsGeneric")) return LNSPEC_StairsGeneric;
+  if (s.strEquCI("CeilingGenericCrush")) return LNSPEC_CeilingGenericCrush;
+  if (s.strEquCI("PlatDownWaitUpStayLip")) return LNSPEC_PlatDownWaitUpStayLip;
+  if (s.strEquCI("PlatPerpetualRaiseLip")) return LNSPEC_PlatPerpetualRaiseLip;
+  if (s.strEquCI("LineTranslucent")) return LNSPEC_LineTranslucent;
+  if (s.strEquCI("TransferHeights")) return LNSPEC_TransferHeights;
+
+  if (s.strEquCI("TransferFloorLight")) return LNSPEC_TransferFloorLight;
+  if (s.strEquCI("TransferCeilingLight")) return LNSPEC_TransferCeilingLight;
+  if (s.strEquCI("SectorSetColor")) return LNSPEC_SectorSetColor;
+  if (s.strEquCI("SectorSetFade")) return LNSPEC_SectorSetFade;
+  if (s.strEquCI("SectorSetDamage")) return LNSPEC_SectorSetDamage;
+  if (s.strEquCI("TeleportLine")) return LNSPEC_TeleportLine;
+  if (s.strEquCI("SectorSetGravity")) return LNSPEC_SectorSetGravity;
+  if (s.strEquCI("StairsBuildUpDoom")) return LNSPEC_StairsBuildUpDoom;
+  if (s.strEquCI("SectorSetWind")) return LNSPEC_SectorSetWind;
+  if (s.strEquCI("SectorSetFriction")) return LNSPEC_SectorSetFriction;
+
+  if (s.strEquCI("SectorSetCurrent")) return LNSPEC_SectorSetCurrent;
+  if (s.strEquCI("ScrollTextureBoth")) return LNSPEC_ScrollTextureBoth;
+  if (s.strEquCI("ScrollTextureModel")) return LNSPEC_ScrollTextureModel;
+  if (s.strEquCI("ScrollFloor")) return LNSPEC_ScrollFloor;
+  if (s.strEquCI("ScrollCeiling")) return LNSPEC_ScrollCeiling;
+  if (s.strEquCI("ScrollTextureOffsets")) return LNSPEC_ScrollTextureOffsets;
+  if (s.strEquCI("ACSExecuteAlways")) return LNSPEC_ACSExecuteAlways;
+  if (s.strEquCI("PointPushSetForce")) return LNSPEC_PointPushSetForce;
+  if (s.strEquCI("FloorRaiseToNearestChange")) return LNSPEC_FloorRaiseToNearestChange;
+  if (s.strEquCI("ThingSetGoal")) return LNSPEC_ThingSetGoal;
+
+  if (s.strEquCI("FloorRaiseByValueChangeTex")) return LNSPEC_FloorRaiseByValueChangeTex;
+  if (s.strEquCI("PlatToggle")) return LNSPEC_PlatToggle;
+  if (s.strEquCI("LightStrobeDoom")) return LNSPEC_LightStrobeDoom;
+  if (s.strEquCI("LightMinNeighbor")) return LNSPEC_LightMinNeighbor;
+  if (s.strEquCI("LightMaxNeighbor")) return LNSPEC_LightMaxNeighbor;
+  if (s.strEquCI("FloorTransferTrigger")) return LNSPEC_FloorTransferTrigger;
+  if (s.strEquCI("FloorTransferNumeric")) return LNSPEC_FloorTransferNumeric;
+  if (s.strEquCI("ChangeCamera")) return LNSPEC_ChangeCamera;
+  if (s.strEquCI("FloorRaiseToLowestCeiling")) return LNSPEC_FloorRaiseToLowestCeiling;
+  if (s.strEquCI("FloorRaiseByValueChange")) return LNSPEC_FloorRaiseByValueChange;
+
+  if (s.strEquCI("FloorRaiseByTexture")) return LNSPEC_FloorRaiseByTexture;
+  if (s.strEquCI("FloorLowerToLowestChange")) return LNSPEC_FloorLowerToLowestChange;
+  if (s.strEquCI("FloorLowerToHighest")) return LNSPEC_FloorLowerToHighest;
+  if (s.strEquCI("ExitNormal")) return LNSPEC_ExitNormal;
+  if (s.strEquCI("ExitSecret")) return LNSPEC_ExitSecret;
+  if (s.strEquCI("ElevatorRaiseToNearest")) return LNSPEC_ElevatorRaiseToNearest;
+  if (s.strEquCI("ElevatorMoveToFloor")) return LNSPEC_ElevatorMoveToFloor;
+  if (s.strEquCI("ElevatorLowerToNearest")) return LNSPEC_ElevatorLowerToNearest;
+  if (s.strEquCI("HealThing")) return LNSPEC_HealThing;
+  if (s.strEquCI("DoorCloseWaitOpen")) return LNSPEC_DoorCloseWaitOpen;
+
+  if (s.strEquCI("FloorDonut")) return LNSPEC_FloorDonut;
+  if (s.strEquCI("FloorAndCeilingLowerRaise")) return LNSPEC_FloorAndCeilingLowerRaise;
+  if (s.strEquCI("CeilingRaiseToNearest")) return LNSPEC_CeilingRaiseToNearest;
+  if (s.strEquCI("CeilingLowerToLowest")) return LNSPEC_CeilingLowerToLowest;
+  if (s.strEquCI("CeilingLowerToFloor")) return LNSPEC_CeilingLowerToFloor;
+  if (s.strEquCI("CeilingCrushRaiseAndStaySilentA")) return LNSPEC_CeilingCrushRaiseAndStaySilentA;
+
+  //LNSPEC_Max,
+
+  //!!!UNIMPLEMENTED!!!
+  if (s.strEquCI("FloorLowerToHighestEE")) return LNSPEC_FloorLowerToHighestEE;
+  if (s.strEquCI("FloorRaiseToLowest")) return LNSPEC_FloorRaiseToLowest;
+  if (s.strEquCI("FloorLowerToLowestCeiling")) return LNSPEC_FloorLowerToLowestCeiling;
+  if (s.strEquCI("FloorRaiseToCeiling")) return LNSPEC_FloorRaiseToCeiling;
+
+  if (s.strEquCI("FloorToCeilingInstant")) return LNSPEC_FloorToCeilingInstant;
+  if (s.strEquCI("FloorLowerByTexture")) return LNSPEC_FloorLowerByTexture;
+  if (s.strEquCI("CeilingRaiseToHighest")) return LNSPEC_CeilingRaiseToHighest;
+  if (s.strEquCI("CeilingToHighestInstant")) return LNSPEC_CeilingToHighestInstant;
+  if (s.strEquCI("CeilingLowerToNearest")) return LNSPEC_CeilingLowerToNearest;
+  if (s.strEquCI("CeilingRaiseToLowest")) return LNSPEC_CeilingRaiseToLowest;
+  if (s.strEquCI("CeilingRaiseToHighestFloor")) return LNSPEC_CeilingRaiseToHighestFloor;
+  if (s.strEquCI("CeilingToFloorInstant")) return LNSPEC_CeilingToFloorInstant;
+  if (s.strEquCI("CeilingRaiseByTexture")) return LNSPEC_CeilingRaiseByTexture;
+  if (s.strEquCI("CeilingLowerByTexture")) return LNSPEC_CeilingLowerByTexture;
+
+  if (s.strEquCI("StairsBuildDownDoom")) return LNSPEC_StairsBuildDownDoom;
+  if (s.strEquCI("StairsBuildUpDoomSync")) return LNSPEC_StairsBuildUpDoomSync;
+  if (s.strEquCI("StairsBuildDownDoomSync")) return LNSPEC_StairsBuildDownDoomSync;
+  if (s.strEquCI("StairsBuildUpDoomCrush")) return LNSPEC_StairsBuildUpDoomCrush;
+  if (s.strEquCI("DoorAnimatedClose")) return LNSPEC_DoorAnimatedClose;
+  if (s.strEquCI("FloorStop")) return LNSPEC_FloorStop;
+  if (s.strEquCI("CeilingStop")) return LNSPEC_CeilingStop;
+  //!!!UNIMPLEMENTED!!!
+
+  //implemented
+  if (s.strEquCI("SectorSetFloorGlow")) return LNSPEC_SectorSetFloorGlow;
+  if (s.strEquCI("SectorSetCeilingGlow")) return LNSPEC_SectorSetCeilingGlow;
+
+  //!!!UNIMPLEMENTED!!!
+  if (s.strEquCI("FloorMoveToValueAndCrush")) return LNSPEC_FloorMoveToValueAndCrush;
+
+  if (s.strEquCI("CeilingMoveToValueAndCrush")) return LNSPEC_CeilingMoveToValueAndCrush;
+  if (s.strEquCI("LineSetAutomapFlags")) return LNSPEC_LineSetAutomapFlags;
+  if (s.strEquCI("LineSetAutomapStyle")) return LNSPEC_LineSetAutomapStyle;
+  //!!!UNIMPLEMENTED!!!
+
+  // special EDGE actions
+  if (s.strEquCI("EDGEWater")) return LNSPEC_EDGEWater;
+  if (s.strEquCI("SectorSet3dThinFloorEDGE")) return LNSPEC_SectorSet3dThinFloorEDGE;
+
+  return -1;
 }

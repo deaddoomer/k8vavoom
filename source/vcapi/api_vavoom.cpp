@@ -737,16 +737,54 @@ IMPLEMENT_FREE_FUNCTION(VEntity, GetLightEffectLightFlags) {
 }
 
 
-//native static final int FindLineSpecialByName (string s);
+//native static final int FindLineSpecialByName (string s, optional out VLineSpecInfo info);
 IMPLEMENT_FREE_FUNCTION(VObject, FindLineSpecialByName) {
   VStr s;
-  vobjGetParam(s);
-  RET_INT(FindLineSpecialByName(s));
+  VOptParamPtr<VLineSpecInfo> info;
+  vobjGetParam(s, info);
+  const VLineSpecInfo *li = FindLineSpecialByName(s);
+  if (li) {
+    if (info.specified) *info.value = *li;
+    RET_INT(li->Index);
+  } else {
+    if (info.specified) info.value->clear();
+    RET_INT(0);
+  }
 }
 
-//native static final string FindLineSpecialNameByNumber (int num);
+//native static final string FindLineSpecialNameByNumber (int num, optional out VLineSpecInfo info);
 IMPLEMENT_FREE_FUNCTION(VObject, FindLineSpecialNameByNumber) {
   int num;
-  vobjGetParam(num);
-  RET_STR(FindLineSpecialNameByNumber(num));
+  VOptParamPtr<VLineSpecInfo> info;
+  vobjGetParam(num, info);
+  const VLineSpecInfo *li = FindLineSpecialByNumber(num);
+  if (li) {
+    if (info.specified) *info.value = *li;
+    RET_STR(li->Name);
+  } else {
+    if (info.specified) info.value->clear();
+    RET_STR(VStr());
+  }
+}
+
+//native static final bool GetLineSpecialInfoByNumber (int num, optional out VLineSpecInfo info);
+IMPLEMENT_FREE_FUNCTION(VObject, GetLineSpecialInfoByNumber) {
+  int num;
+  VOptParamPtr<VLineSpecInfo> info;
+  vobjGetParam(num, info);
+  const VLineSpecInfo *li = FindLineSpecialByNumber(num);
+  if (li) {
+    if (info.specified) *info.value = *li;
+    RET_BOOL(true);
+  } else {
+    if (info.specified) info.value->clear();
+    RET_BOOL(false);
+  }
+}
+
+//native static final int FindScriptLineSpecialByName (string s);
+IMPLEMENT_FREE_FUNCTION(VObject, FindScriptLineSpecialByName) {
+  VStr s;
+  vobjGetParam(s);
+  RET_INT(FindScriptLineSpecialByName(s));
 }

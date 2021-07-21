@@ -190,7 +190,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     // find the state action method: first check action specials, then state actions
     // hack: `ACS_ExecuteWithResult` has its own method, but it still should be in line specials
     if (!FuncName.strEquCI("ACS_ExecuteWithResult")) {
-      int spcn = FindLineSpecialByName(FuncName);
+      int spcn = FindScriptLineSpecialByName(FuncName);
       if (spcn) {
         Func = Class->FindMethodChecked("A_ExecActionSpecial");
         if (NumArgs > 5) {

@@ -52,11 +52,12 @@ void ProcessDecorateScripts ();
 void ShutdownDecorate ();
 void CompilerReportMemory ();
 
-//extern TArray<VLineSpecInfo> LineSpecialInfos;
+// returns `nullptr` if not found
+extern const VLineSpecInfo *FindLineSpecialByName (VStr s);
+// returns `nullptr` if not found
+extern const VLineSpecInfo *FindLineSpecialByNumber (int num);
 // returns 0 if not found
-extern int FindLineSpecialByName (VStr s);
-// returns empty string if not found
-extern VStr FindLineSpecialNameByNumber (int num);
+extern int FindScriptLineSpecialByName (VStr s);
 
 // list of all classes that need to be limited in some way
 extern TArray<VClass *> NumberLimitedClasses;

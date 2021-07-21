@@ -356,8 +356,19 @@ enum {
   SECSPEC_PUSH_MASK     = 0x1000,
 };
 
+
+struct VLineSpecInfo {
+  int Index;
+  string Name;
+  // flags
+  bool bUnimplemented;
+  bool bNoScript;
+  bool bNoLine;
+};
+
 enum {
   LNSPEC_None,
+
   LNSPEC_PolyStartLine,
   LNSPEC_PolyRotateLeft,
   LNSPEC_PolyRotateRight,
@@ -367,6 +378,7 @@ enum {
   LNSPEC_PolyDoorSwing,
   LNSPEC_PolyDoorSlide,
   LNSPEC_LineHorizon,
+
   LNSPEC_DoorClose,// 10
   LNSPEC_DoorOpen,
   LNSPEC_DoorRaise,
@@ -377,6 +389,7 @@ enum {
   LNSPEC_ThingRaise,
   LNSPEC_StartConversation,
   LNSPEC_ThingStop,
+
   LNSPEC_FloorLowerByValue,// 20
   LNSPEC_FloorLowerToLowest,
   LNSPEC_FloorLowerToNearest,
@@ -387,6 +400,7 @@ enum {
   LNSPEC_StairsBuildUpNormal,
   LNSPEC_FloorRaiseAndCrush,
   LNSPEC_PillarBuild,
+
   LNSPEC_PillarOpen,// 30
   LNSPEC_StairsBuildDownSync,
   LNSPEC_StairsBuildUpSync,
@@ -397,6 +411,7 @@ enum {
   LNSPEC_FloorMoveToValue,
   LNSPEC_CeilingWaggle,
   LNSPEC_TeleportZombieChanger,
+
   LNSPEC_CeilingLowerByValue,// 40
   LNSPEC_CeilingRaiseByValue,
   LNSPEC_CeilingCrushAndRaise,
@@ -405,19 +420,21 @@ enum {
   LNSPEC_CeilingCrushRaiseAndStay,
   LNSPEC_FloorCrushStop,
   LNSPEC_CeilingMoveToValue,
-
+  LNSPEC_SectorAttach3dMidtex, // unimplemented
   LNSPEC_GlassBreak = 49,
-  LNSPEC_ExtraFloorLightOnly = 50,
 
-  LNSPEC_SectorSetLink = 51,
-  LNSPEC_ScrollWall = 52,
+  LNSPEC_ExtraFloorLightOnly = 50,//50
+  LNSPEC_SectorSetLink,
+  LNSPEC_ScrollWall,
   LNSPEC_LineSetTextureOffset,
   LNSPEC_SectorChangeFlags,
-  LNSPEC_LineSetBlocking, // 55
+  LNSPEC_LineSetBlocking,
+  LNSPEC_LineSetTextureScale, // unimplemented
+  LNSPEC_SectorSetPortal, // unimplemented
+  LNSPEC_SectorCopyScroller, // unimplemented
+  LNSPEC_PolyobjMoveToSpotOverride,
 
-  LNSPEC_PolyobjMoveToSpotOverride = 59,
-
-  LNSPEC_PlatPerpetualRaise = 60,
+  LNSPEC_PlatPerpetualRaise = 60,//60
   LNSPEC_PlatStop,
   LNSPEC_PlatDownWaitUpStay,
   LNSPEC_PlatDownByValueWaitUpStay,
@@ -427,6 +444,7 @@ enum {
   LNSPEC_FloorRaiseTimes8Instant,
   LNSPEC_FloorMoveToValueTimes8,
   LNSPEC_CeilingMoveToValueTimes8,
+
   LNSPEC_Teleport,// 70
   LNSPEC_TeleportNoFog,
   LNSPEC_ThrustThing,
@@ -436,6 +454,7 @@ enum {
   LNSPEC_TeleportOther,
   LNSPEC_TeleportGroup,
   LNSPEC_TeleportSector,
+  LNSPEC_ThingSetConversation, // unimplemented
 
   LNSPEC_ACSExecute = 80,// 80
   LNSPEC_ACSSuspend,
@@ -443,7 +462,6 @@ enum {
   LNSPEC_ACSLockedExecute,
   LNSPEC_ACSExecuteWithResult,
   LNSPEC_ACSLockedExecuteDoor,
-
   LNSPEC_PolyobjMoveToSpot = 86,
   LNSPEC_PolyobjStop = 87,
   LNSPEC_PolyobjMoveTo = 88,
@@ -456,13 +474,21 @@ enum {
   LNSPEC_PillarBuildCrush,
   LNSPEC_FloorAndCeilingLowerByValue,
   LNSPEC_FloorAndCeilingRaiseByValue,
+  LNSPEC_CeilingLowerAndCrushDist, // unimplemented
+  LNSPEC_SectorSetTranslucent, // unimplemented
+  LNSPEC_FloorRaiseAndCrushDoom, // unimplemented
 
   LNSPEC_ScrollTextureLeft = 100,// 100
   LNSPEC_ScrollTextureRight,
   LNSPEC_ScrollTextureUp,
   LNSPEC_ScrollTextureDown,
-
+  LNSPEC_CeilingCrushAndRaiseSilentDist, // unimplemented
+  LNSPEC_DoorWaitRaise, // unimplemented
+  LNSPEC_DoorWaitClose, // unimplemented
+  LNSPEC_LineSetPortalTarget, // unimplemented
+  //108: wtf?!
   LNSPEC_LightForceLightning = 109,
+
   LNSPEC_LightRaiseByValue,// 110
   LNSPEC_LightLowerByValue,
   LNSPEC_LightChangeToValue,
@@ -471,19 +497,20 @@ enum {
   LNSPEC_LightFlicker,
   LNSPEC_LightStrobe,
   LNSPEC_LightStop,
-
   LNSPEC_PlaneCopy, // 118
-
   LNSPEC_ThingDamage = 119,
+
   LNSPEC_QuakeTremor,// 120
   LNSPEC_LineSetIdentification,
-
+  //122: ???
+  //123: ???
+  //124: ???
   LNSPEC_ThingMove = 125,
-
+  //126: ???
   LNSPEC_ThingSetSpecial = 127,
   LNSPEC_ThrustThingZ,
-
   LNSPEC_UsePuzzleItem = 129,
+
   LNSPEC_ThingActivate,// 130
   LNSPEC_ThingDeactivate,
   LNSPEC_ThingRemove,
@@ -494,14 +521,22 @@ enum {
   LNSPEC_ThingSpawnNoFog,
   LNSPEC_FloorWaggle,
   LNSPEC_ThingSpawnFacing,
+
   LNSPEC_SectorSoundChange,// 140
 
   LNSPEC_TeleportNoStop = 154,
+  //155: ???
+  LNSPEC_LineSetPortal = 156, // unimplemented
+  //157: SetGlobalFogParameter
+  //158: FS_Execute
   LNSPEC_SectorSetPlaneReflection = 159,
+
   LNSPEC_SectorSet3dFloor,// 160
   LNSPEC_Contents,
-
+  //161..167: ???
+  LNSPEC_CeilingCrushAndRaiseDist = 168, // unimplemented
   LNSPEC_CeilingGenericCrush2 = 169,
+
   LNSPEC_SectorSetCeilingScale2,// 170
   LNSPEC_SectorSetFloorScale2,
   LNSPEC_PlaneUpNearestWaitDownStay,
@@ -512,6 +547,7 @@ enum {
   LNSPEC_ThingHate,
   LNSPEC_ThingProjectileAimed,
   LNSPEC_ChangeSkill,
+
   LNSPEC_ThingSetTranslation,// 180
   LNSPEC_PlaneAlign,
   LNSPEC_LineMirror,
@@ -522,6 +558,7 @@ enum {
   LNSPEC_SectorSetFloorPanning,
   LNSPEC_SectorSetCeilingScale,
   LNSPEC_SectorSetFloorScale,
+
   LNSPEC_StaticInit,// 190
   LNSPEC_SetPlayerProperty,
   LNSPEC_CeilingLowerToHighestFloor,
@@ -532,6 +569,7 @@ enum {
   LNSPEC_CeilingCrushAndRaiseSilentA,
   LNSPEC_CeilingRaiseByValueTimes8,
   LNSPEC_CeilingLowerByValueTimes8,
+
   LNSPEC_FloorGeneric,// 200
   LNSPEC_CeilingGeneric,
   LNSPEC_DoorGeneric,
@@ -542,6 +580,7 @@ enum {
   LNSPEC_PlatPerpetualRaiseLip,
   LNSPEC_LineTranslucent,
   LNSPEC_TransferHeights,
+
   LNSPEC_TransferFloorLight,// 210
   LNSPEC_TransferCeilingLight,
   LNSPEC_SectorSetColor,
@@ -552,6 +591,7 @@ enum {
   LNSPEC_StairsBuildUpDoom,
   LNSPEC_SectorSetWind,
   LNSPEC_SectorSetFriction,
+
   LNSPEC_SectorSetCurrent,// 220
   LNSPEC_ScrollTextureBoth,
   LNSPEC_ScrollTextureModel,
@@ -562,6 +602,7 @@ enum {
   LNSPEC_PointPushSetForce,
   LNSPEC_FloorRaiseToNearestChange,
   LNSPEC_ThingSetGoal,
+
   LNSPEC_FloorRaiseByValueChangeTex,// 230
   LNSPEC_PlatToggle,
   LNSPEC_LightStrobeDoom,
@@ -572,6 +613,7 @@ enum {
   LNSPEC_ChangeCamera,
   LNSPEC_FloorRaiseToLowestCeiling,
   LNSPEC_FloorRaiseByValueChange,
+
   LNSPEC_FloorRaiseByTexture,// 240
   LNSPEC_FloorLowerToLowestChange,
   LNSPEC_FloorLowerToHighest,
@@ -582,20 +624,53 @@ enum {
   LNSPEC_ElevatorLowerToNearest,
   LNSPEC_HealThing,
   LNSPEC_DoorCloseWaitOpen,
+
   LNSPEC_FloorDonut,// 250
   LNSPEC_FloorAndCeilingLowerRaise,
   LNSPEC_CeilingRaiseToNearest,
   LNSPEC_CeilingLowerToLowest,
   LNSPEC_CeilingLowerToFloor,
-  LNSPEC_CeilingCrushRaiseAndStaySilentA,
+  LNSPEC_CeilingCrushRaiseAndStaySilentA, //255
 
   //LNSPEC_Max,
 
-  LNSPEC_SectorSetPortal = 57,
-  LNSPEC_LineSetPortal = 156,
+  //!!!UNIMPLEMENTED!!!
+  LNSPEC_FloorLowerToHighestEE,//256
+  LNSPEC_FloorRaiseToLowest,
+  LNSPEC_FloorLowerToLowestCeiling,
+  LNSPEC_FloorRaiseToCeiling,
 
+  LNSPEC_FloorToCeilingInstant,//260
+  LNSPEC_FloorLowerByTexture,
+  LNSPEC_CeilingRaiseToHighest,
+  LNSPEC_CeilingToHighestInstant,
+  LNSPEC_CeilingLowerToNearest,
+  LNSPEC_CeilingRaiseToLowest,
+  LNSPEC_CeilingRaiseToHighestFloor,
+  LNSPEC_CeilingToFloorInstant,
+  LNSPEC_CeilingRaiseByTexture,
+  LNSPEC_CeilingLowerByTexture,
+
+  LNSPEC_StairsBuildDownDoom,//270
+  LNSPEC_StairsBuildUpDoomSync,
+  LNSPEC_StairsBuildDownDoomSync,
+  LNSPEC_StairsBuildUpDoomCrush,
+  LNSPEC_DoorAnimatedClose,
+  LNSPEC_FloorStop,
+  LNSPEC_CeilingStop,
+  //!!!UNIMPLEMENTED!!!
+
+  //implemented
   LNSPEC_SectorSetFloorGlow = 277,
   LNSPEC_SectorSetCeilingGlow = 278,
+
+  //!!!UNIMPLEMENTED!!!
+  LNSPEC_FloorMoveToValueAndCrush,
+
+  LNSPEC_CeilingMoveToValueAndCrush,//280
+  LNSPEC_LineSetAutomapFlags,
+  LNSPEC_LineSetAutomapStyle,
+  //!!!UNIMPLEMENTED!!!
 
   // special EDGE actions
   LNSPEC_EDGEWater = 100_600,

@@ -629,9 +629,9 @@ struct VFlagList {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-//TArray<VLineSpecInfo> LineSpecialInfos;
-static TMap<VStrCI, int> LineSpecialMapByName;
-static TMap<int, VStr> LineSpecialMapByNumber;
+TArray<VLineSpecInfo> LineSpecialInfoList;
+static TMap<VStrCI, int> LineSpecialMapByName; // value is index in `LineSpecialInfoList`
+static TMap<int, int> LineSpecialMapByNumber; // value is index in `LineSpecialInfoList`
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -3957,6 +3957,46 @@ static void ParseDecorate (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, 
 
 //==========================================================================
 //
+//  ParseOneLineSpecialDefinition
+//
+//==========================================================================
+static void ParseOneLineSpecialDefinition (VScriptParser *sc, bool doWarn) {
+  sc->ExpectNumber();
+  const int num = sc->Number;
+  sc->ExpectString();
+  const VStr name = sc->String.xstrip();
+  vuint32 flags = 0u;
+  while (sc->Check(":")) {
+    if (sc->Check("NOSCRIPT")) { flags |= VLineSpecInfo::NoScript; continue; }
+    if (sc->Check("UNIMPLEMENTED")) { flags |= VLineSpecInfo::Unimplemented; continue; }
+    if (sc->Check("NOLINE")) { flags |= VLineSpecInfo::NoLine; continue; }
+    sc->Errorf("invalid line special flag '%s'", *sc->String);
+  }
+
+  if (!num || name.isEmpty()) {
+    sc->Message("invalid line special");
+    return;
+  }
+
+  // register
+  if (doWarn) {
+    if (LineSpecialMapByName.has(name)) sc->Messagef("duplicate line special #%d name '%s'", num, *name);
+    if (LineSpecialMapByNumber.has(num)) sc->Messagef("duplicate line special index #%d for name '%s'", num, *name);
+  }
+
+  const int cidx = LineSpecialInfoList.length();
+  VLineSpecInfo &nfo = LineSpecialInfoList.alloc();
+  nfo.Index = num;
+  nfo.Name = name;
+  nfo.Flags = flags;
+
+  LineSpecialMapByName.put(name, cidx);
+  LineSpecialMapByNumber.put(num, cidx);
+}
+
+
+//==========================================================================
+//
 //  ReadLineSpecialInfos
 //
 //==========================================================================
@@ -3966,20 +4006,7 @@ void ReadLineSpecialInfos () {
   if (!Strm) Sys_Error("'line_specials.txt' is required");
   VScriptParser *sc = new VScriptParser("line_specials.txt", Strm);
   while (!sc->AtEnd()) {
-    //VLineSpecInfo &I = LineSpecialInfos.Alloc();
-    sc->ExpectNumber();
-    //I.Number = sc->Number;
-    const int num = sc->Number;
-    sc->ExpectString();
-    //I.Name = sc->String.ToLower();
-    const VStr name = sc->String.xstrip();
-    if (!num || name.isEmpty()) {
-      sc->Message("invalid line special");
-      continue;
-    }
-    // register
-    if (LineSpecialMapByName.put(name, num)) sc->Messagef("duplicate line special (%d : %s)", num, *name);
-    LineSpecialMapByNumber.put(num, name);
+    ParseOneLineSpecialDefinition(sc, true/*warnings*/);
   }
   delete sc;
 
@@ -3990,20 +4017,7 @@ void ReadLineSpecialInfos () {
     if (!W_RealLumpName(lump).strEquCI("k8vavoom/line_specials.rc")) continue;
     sc = VScriptParser::NewWithLump(lump);
     while (!sc->AtEnd()) {
-      //VLineSpecInfo &I = LineSpecialInfos.Alloc();
-      sc->ExpectNumber();
-      //I.Number = sc->Number;
-      const int num = sc->Number;
-      sc->ExpectString();
-      //I.Name = sc->String.ToLower();
-      const VStr name = sc->String.xstrip();
-      if (!num || name.isEmpty()) {
-        sc->Message("invalid line special");
-        continue;
-      }
-      // register
-      LineSpecialMapByName.put(name, num);
-      LineSpecialMapByNumber.put(num, name);
+      ParseOneLineSpecialDefinition(sc, false/*no warnings*/);
     }
     delete sc;
   }
@@ -4017,22 +4031,40 @@ void ReadLineSpecialInfos () {
 //  FindLineSpecialByName
 //
 //==========================================================================
-int FindLineSpecialByName (VStr s) {
+int FindScriptLineSpecialByName (VStr s) {
+  s = s.xstrip();
   if (s.isEmpty()) return 0;
   auto it = LineSpecialMapByName.find(s);
-  return (it ? *it : 0);
+  if (!it) return 0;
+  const VLineSpecInfo &nfo = LineSpecialInfoList[*it];
+  return (nfo.IsScriptAllowed() ? nfo.Index : 0);
 }
 
 
 //==========================================================================
 //
-//  FindLineSpecialNameByNumber
+//  FindLineSpecialByName
 //
 //==========================================================================
-VStr FindLineSpecialNameByNumber (int num) {
-  if (num <= 0) return VStr();
+const VLineSpecInfo *FindLineSpecialByName (VStr s) {
+  s = s.xstrip();
+  if (s.isEmpty()) return nullptr;
+  auto it = LineSpecialMapByName.find(s);
+  if (!it) return nullptr;
+  return &LineSpecialInfoList[*it];
+}
+
+
+//==========================================================================
+//
+//  FindLineSpecialByNumber
+//
+//==========================================================================
+const VLineSpecInfo *FindLineSpecialByNumber (int num) {
+  if (num <= 0) return nullptr;
   auto it = LineSpecialMapByNumber.find(num);
-  return (it ? *it : VStr());
+  if (!it) return nullptr;
+  return &LineSpecialInfoList[*it];
 }
 
 

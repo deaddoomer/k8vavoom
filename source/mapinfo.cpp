@@ -1179,16 +1179,7 @@ MAPINFOCMD(specialaction) {
   A.TypeName = *sc->String.ToLower();
   sc->Expect(",");
   sc->ExpectString();
-  A.Special = FindLineSpecialByName(sc->String);
-  /*
-  A.Special = 0;
-  for (int i = 0; i < LineSpecialInfos.length(); ++i) {
-    if (!LineSpecialInfos[i].Name.ICmp(sc->String)) {
-      A.Special = LineSpecialInfos[i].Number;
-      break;
-    }
-  }
-  */
+  A.Special = FindScriptLineSpecialByName(sc->String);
   if (!A.Special) miWarning(sc, "Unknown action special '%s'", *sc->String);
   memset(A.Args, 0, sizeof(A.Args));
   for (int i = 0; i < 5 && sc->Check(","); ++i) {
@@ -2721,17 +2712,7 @@ static void ParseMapInfo (VScriptParser *sc) {
               }
               if (argn > 5) GCon->Logf(NAME_Warning, "MAPINFO:%s: too many arguments (%d) to special '%s'", *loc.toStringNoCol(), argn, *spcname);
               // find special number
-              if (special == 0) {
-                /*
-                for (int sdx = 0; sdx < LineSpecialInfos.length(); ++sdx) {
-                  if (LineSpecialInfos[sdx].Name.ICmp(spcname) == 0) {
-                    special = LineSpecialInfos[sdx].Number;
-                    break;
-                  }
-                }
-                */
-                special = FindLineSpecialByName(spcname);
-              }
+              if (special == 0) special = FindScriptLineSpecialByName(spcname);
               if (!special) {
                 flags &= ~mobjinfo_t::FlagSpecial;
                 GCon->Logf(NAME_Warning, "MAPINFO:%s: special '%s' not found", *loc.toStringNoCol(), *spcname);

@@ -67,6 +67,26 @@ struct polyobj_t;
 struct polyobjpart_t;
 
 
+struct VLineSpecInfo {
+  vint32 Index;
+  VStr Name;
+  enum {
+    Unimplemented = 1u<<0,
+    NoScript      = 1u<<1,
+    NoLine        = 1u<<2,
+  };
+  vuint32 Flags;
+
+  inline void clear () noexcept { Index = 0; Name.clear(); Flags = 0u; }
+
+  inline bool IsUnimplemented () const noexcept { return (Flags&Unimplemented); }
+  inline bool IsNoScript () const noexcept { return (Flags&NoScript); }
+  inline bool IsNoLine () const noexcept { return (Flags&NoLine); }
+
+  inline bool IsScriptAllowed () const noexcept { return !(Flags&(Unimplemented|NoScript|NoLine)); }
+};
+
+
 // line specials that are used by the loader
 enum {
   LNSPEC_PolyStartLine        = 1,
