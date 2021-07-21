@@ -169,6 +169,9 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
       TVec xdir = cv-lastv1;
       if (xdir.lengthSquared() >= 0.2f*0.2f) {
         xdir = xdir.normalised();
+        // dot product for two normalized vectors is cosine between them
+        // cos(0) is 1, so if it isn't, we have a turn
+        // cos(180) is -1, but it doesn't matter here
         if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
           // looks like we did made a turn
           // we have a new point
