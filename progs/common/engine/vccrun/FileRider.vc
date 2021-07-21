@@ -24,8 +24,9 @@
 //**************************************************************************
 // k8: no, file name is not a typo
 
+
 // ////////////////////////////////////////////////////////////////////////// //
-// this can be used to read binary files, but it is not recommended
+// this can be used to read binary files too
 class FileReader : Object native;
 
 enum {
@@ -89,8 +90,95 @@ native final int readU32BE ();
 native final int readI16BE ();
 native final int readI32BE ();
 
+native final float readF32 ();
+native final float readF32BE ();
+
 alias readU16LE = readU16;
 alias readU32LE = readU32;
 
 alias readI16LE = readI16;
 alias readI32LE = readI32;
+
+alias readF32LE = readF32;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class FileWriter : Object native;
+
+enum {
+  SeekStart,
+  SeekCur,
+  SeekEnd,
+}
+
+native private readonly void *fstream;
+
+
+native final static string GetBaseDir ();
+
+
+native final static bool CreateDir (string filename);
+
+// returns `none` on error
+// opens file for writing, possibly doesn't truncate
+native final static FileWriter Open (string filename, optional bool notruncate/*=false*/);
+
+// returns `none` on error
+// creates file for reading and writing (truncates the existing file)
+final static FileWriter Create (string filename) { return Open(filename, notruncate:false); }
+
+// closes the file, but won't destroy the object
+native final void close ();
+
+// returns success flag (false means "error")
+// whence is one of SeekXXX; default is SeekStart
+// return code is not fully reliable (actual seek may be delayed)
+native final bool seek (int ofs, optional int whence/*=SeekStart*/);
+
+native final void putch (int ch);
+
+native final void writeBuf (string buf);
+
+// returns name of the opened file (it may be empty)
+native final string fileName { get; }
+
+// is this object open (if object is error'd, it is not open)
+native final bool isOpen { get; }
+
+// `true` if something was error'd
+// there is no reason to continue after an error (and this is UB)
+// closed file always returns `true`
+native final bool error { get; }
+
+// get file size
+native final int size { get; }
+
+// get current position
+native final int position { get; set; }
+
+
+// convenient functions
+native final void writeU8 (int v);
+native final void writeU16 (int v);
+native final void writeU32 (int v);
+
+native final void writeI8 (int v);
+native final void writeI16 (int v);
+native final void writeI32 (int v);
+
+native final void writeU16BE (int v);
+native final void writeU32BE (int v);
+native final void writeI16BE (int v);
+native final void writeI32BE (int v);
+
+alias writeU16LE = writeU16;
+alias writeU32LE = writeU32;
+
+alias writeI16LE = writeI16;
+alias writeI32LE = writeI32;
+
+
+native final void writeF32 (float v);
+native final void writeF32BE (float v);
+
+alias writeF32LE = writeF32;

@@ -1011,7 +1011,7 @@ VStr fsysForEachPakFile (bool (*dg) (VStr fname)) {
 }
 
 
-// open file for reading, NOT relative to basedir
+// open file for writing, NOT relative to basedir
 VStream *fsysOpenDiskFileWrite (VStr fname) {
   if (fname.length() == 0) return nullptr;
   FILE *fl = fopen(*fname, "wb");
@@ -1020,6 +1020,7 @@ VStream *fsysOpenDiskFileWrite (VStr fname) {
 }
 
 
+// open file for reading, NOT relative to basedir
 VStream *fsysOpenDiskFile (VStr fname) {
   if (fname.length() == 0) return nullptr;
   FILE *fl = fopen(*fname, "rb");
@@ -1537,6 +1538,30 @@ void *fsysOpenDir (VStr path) { return Sys_OpenDir(path); }
 VStr fsysReadDir (void *adir) { return Sys_ReadDir(adir); }
 void fsysCloseDir (void *adir) { Sys_CloseDir(adir); }
 double fsysCurrTick () { return Sys_Time(); }
+
+
+// creates file in `fsysBaseDir`
+VStream *fsysCreateFileSafe (VStr fname, bool notrunccate) {
+  if (fname.isEmpty()) return nullptr;
+  //GLog.Logf(NAME_Debug, "000: <%s>", *fname);
+  fname = normalizeFilePath(fname);
+  //GLog.Logf(NAME_Debug, "001: <%s>", *fname);
+  if (fname.isEmpty() || fname.endsWith("/")) return nullptr;
+  fname = fsysBaseDir.appendPath(fname);
+  //GLog.Logf(NAME_Debug, "002: <%s>", *fname);
+  FILE *fl = fopen(*fname, (notrunccate ? "rb+" : "wb"));
+  if (!fl) return nullptr;
+  return new VStreamDiskFile(fl, fname, true);
+}
+
+
+bool fsysCreateDirSafe (VStr dirname) {
+  if (dirname.isEmpty()) return false;
+  dirname = normalizeFilePath(dirname);
+  if (dirname.isEmpty()) return false;
+  dirname = fsysBaseDir.appendPath(dirname);
+  return Sys_CreateDirectory(dirname);
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //

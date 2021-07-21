@@ -17,11 +17,14 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 IMPLEMENT_CLASS(V, FileReader);
+IMPLEMENT_CLASS(V, FileWriter);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 void VFileReader::Destroy () {
-  delete fstream; fstream = nullptr;
+  if (fstream && !fstream->IsError()) fstream->Close();
+  delete fstream;
+  fstream = nullptr;
   Super::Destroy();
 }
 
@@ -45,6 +48,7 @@ IMPLEMENT_FUNCTION(VFileReader, Open) {
 IMPLEMENT_FUNCTION(VFileReader, close) {
   vobjGetParamSelf();
   if (Self && Self->fstream) {
+    if (!Self->fstream->IsError()) Self->fstream->Close();
     delete Self->fstream;
     Self->fstream = nullptr;
   }
@@ -242,4 +246,307 @@ IMPLEMENT_FUNCTION(VFileReader, readI32BE) {
   Self->fstream->Serialize(&b[0], 4);
   if (Self->fstream->IsError()) { RET_INT(0); return; }
   RET_INT(b[3]|(b[2]<<8)|(b[1]<<16)|(b[0]<<24));
+}
+
+IMPLEMENT_FUNCTION(VFileReader, readF32) {
+  vobjGetParamSelf();
+  if (!Self || !Self->fstream || Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  float f;
+  #ifdef VAVOOM_LITTLE_ENDIAN
+  Self->fstream->Serialize(&f, sizeof(f));
+  if (Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  #else
+  vuint8 *b = (vuint8 *)&f;
+  Self->fstream->Serialize(&b[3], 1);
+  Self->fstream->Serialize(&b[2], 1);
+  Self->fstream->Serialize(&b[1], 1);
+  Self->fstream->Serialize(&b[0], 1);
+  if (Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  #endif
+  RET_FLOAT(f);
+}
+
+
+IMPLEMENT_FUNCTION(VFileReader, readF32BE) {
+  vobjGetParamSelf();
+  if (!Self || !Self->fstream || Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  float f;
+  #ifdef VAVOOM_LITTLE_ENDIAN
+  vuint8 *b = (vuint8 *)&f;
+  Self->fstream->Serialize(&b[3], 1);
+  Self->fstream->Serialize(&b[2], 1);
+  Self->fstream->Serialize(&b[1], 1);
+  Self->fstream->Serialize(&b[0], 1);
+  if (Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  #else
+  Self->fstream->Serialize(&f, sizeof(f));
+  if (Self->fstream->IsError()) { RET_FLOAT(0.0f); return; }
+  #endif
+  RET_FLOAT(f);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+void VFileWriter::Destroy () {
+  if (fstream && !fstream->IsError()) fstream->Close();
+  delete fstream;
+  fstream = nullptr;
+  Super::Destroy();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+IMPLEMENT_FUNCTION(VFileWriter, GetBaseDir) {
+  RET_STR(fsysBaseDir);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, CreateDir) {
+  VStr dirname;
+  vobjGetParam(dirname);
+  if (dirname.isEmpty()) { RET_BOOL(false); return; }
+  RET_BOOL(fsysCreateDirSafe(dirname));
+}
+
+// returns `none` on error
+//native final static FileReader Open (string filename, optional bool notruncate/*=false*/);
+IMPLEMENT_FUNCTION(VFileWriter, Open) {
+  VStr fname;
+  VOptParamBool notrunc(false);
+  vobjGetParam(fname, notrunc);
+  if (fname.isEmpty()) { RET_REF(nullptr); return; }
+  VStream *fs = fsysCreateFileSafe(fname, notrunc.value);
+  if (!fs) { RET_REF(nullptr); return; }
+  VFileWriter *res = (VFileWriter *)StaticSpawnWithReplace(StaticClass()); // disable replacements?
+  res->fstream = fs;
+  RET_REF(res);
+}
+
+
+// closes the file, but won't destroy the object
+//native void close ();
+IMPLEMENT_FUNCTION(VFileWriter, close) {
+  vobjGetParamSelf();
+  if (Self && Self->fstream) {
+    if (!Self->fstream->IsError()) Self->fstream->Close();
+    delete Self->fstream;
+    Self->fstream = nullptr;
+  }
+}
+
+// returns success flag (false means "error")
+// whence is one of SeekXXX; default is SeekStart
+//native bool seek (int ofs, optional int whence);
+IMPLEMENT_FUNCTION(VFileWriter, seek) {
+  int ofs;
+  VOptParamInt whence(SeekStart);
+  vobjGetParamSelf(ofs, whence);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) { RET_BOOL(false); return; }
+  switch (whence) {
+    case SeekCur: ofs += Self->fstream->Tell(); break;
+    case SeekEnd: ofs = Self->fstream->TotalSize()+ofs; break;
+  }
+  if (ofs < 0) ofs = 0;
+  Self->fstream->Seek(ofs);
+  RET_BOOL(!Self->fstream->IsError());
+}
+
+//native void putch (int ch);
+IMPLEMENT_FUNCTION(VFileWriter, putch) {
+  int ch;
+  vobjGetParamSelf(ch);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) { return; }
+  vuint8 b = ch&0xff;
+  Self->fstream->Serialize(&b, 1);
+}
+
+//native string writeBuf (string s);
+IMPLEMENT_FUNCTION(VFileWriter, writeBuf) {
+  VStr buf;
+  vobjGetParamSelf(buf);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  if (!buf.isEmpty()) Self->fstream->Serialize(*buf, buf.length());
+}
+
+// returns name of the opened file (it may be empty)
+//native string fileName { get; }
+IMPLEMENT_FUNCTION(VFileWriter, get_fileName) {
+  vobjGetParamSelf();
+  RET_STR(Self && Self->fstream && !Self->fstream->IsError() ? Self->fstream->GetName() : VStr::EmptyString);
+}
+
+// is this object open (if object is error'd, it is not open)
+//native bool isOpen { get; }
+IMPLEMENT_FUNCTION(VFileWriter, get_isOpen) {
+  vobjGetParamSelf();
+  RET_BOOL(Self && Self->fstream && !Self->fstream->IsError());
+}
+
+// `true` if something was error'd
+// there is no reason to continue after an error (and this is UB)
+//native bool error { get; }
+IMPLEMENT_FUNCTION(VFileWriter, get_error) {
+  vobjGetParamSelf();
+  RET_BOOL(Self && Self->fstream ? Self->fstream->IsError() : true);
+}
+
+// get file size
+//native int size { get; }
+IMPLEMENT_FUNCTION(VFileWriter, get_size) {
+  vobjGetParamSelf();
+  RET_INT(Self && Self->fstream && !Self->fstream->IsError() ? Self->fstream->TotalSize() : 0);
+}
+
+// get current position
+//native int position { get; }
+IMPLEMENT_FUNCTION(VFileWriter, get_position) {
+  vobjGetParamSelf();
+  RET_INT(Self && Self->fstream && !Self->fstream->IsError() ? Self->fstream->Tell() : 0);
+}
+
+// set current position
+//native void position { set; }
+IMPLEMENT_FUNCTION(VFileWriter, set_position) {
+  int ofs;
+  vobjGetParamSelf(ofs);
+  if (Self && Self->fstream && !Self->fstream->IsError()) {
+    if (ofs < 0) ofs = 0;
+    Self->fstream->Seek(ofs);
+  }
+}
+
+
+// convenient functions
+IMPLEMENT_FUNCTION(VFileWriter, writeU8) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b = v&0xff;
+  Self->fstream->Serialize(&b, 1);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeU16) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[2];
+  b[0] = v&0xff;
+  b[1] = (v>>8)&0xff;
+  Self->fstream->Serialize(&b[0], 2);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeU32) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[4];
+  b[0] = v&0xff;
+  b[1] = (v>>8)&0xff;
+  b[2] = (v>>16)&0xff;
+  b[3] = (v>>24)&0xff;
+  Self->fstream->Serialize(&b[0], 4);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeI8) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vint8 b = v&0xff;
+  Self->fstream->Serialize(&b, 1);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeI16) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[2];
+  b[0] = v&0xff;
+  b[1] = (v>>8)&0xff;
+  Self->fstream->Serialize(&b[0], 2);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeI32) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[4];
+  b[0] = v&0xff;
+  b[1] = (v>>8)&0xff;
+  b[2] = (v>>16)&0xff;
+  b[3] = (v>>24)&0xff;
+  Self->fstream->Serialize(&b[0], 4);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeU16BE) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[2];
+  b[1] = v&0xff;
+  b[0] = (v>>8)&0xff;
+  Self->fstream->Serialize(&b[0], 2);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeU32BE) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[4];
+  b[3] = v&0xff;
+  b[2] = (v>>8)&0xff;
+  b[1] = (v>>16)&0xff;
+  b[0] = (v>>24)&0xff;
+  Self->fstream->Serialize(&b[0], 4);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeI16BE) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[2];
+  b[1] = v&0xff;
+  b[0] = (v>>8)&0xff;
+  Self->fstream->Serialize(&b[0], 2);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeI32BE) {
+  int v;
+  vobjGetParamSelf(v);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  vuint8 b[4];
+  b[3] = v&0xff;
+  b[2] = (v>>8)&0xff;
+  b[1] = (v>>16)&0xff;
+  b[0] = (v>>24)&0xff;
+  Self->fstream->Serialize(&b[0], 4);
+}
+
+IMPLEMENT_FUNCTION(VFileWriter, writeF32) {
+  float f;
+  vobjGetParamSelf(f);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  #ifdef VAVOOM_LITTLE_ENDIAN
+  Self->fstream->Serialize(&f, sizeof(f));
+  #else
+  const vuint8 *b = (const vuint8 *)&f;
+  Self->fstream->Serialize(&b[3], 1);
+  Self->fstream->Serialize(&b[2], 1);
+  Self->fstream->Serialize(&b[1], 1);
+  Self->fstream->Serialize(&b[0], 1);
+  #endif
+}
+
+
+IMPLEMENT_FUNCTION(VFileWriter, writeF32BE) {
+  float f;
+  vobjGetParamSelf(f);
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  #ifdef VAVOOM_LITTLE_ENDIAN
+  const vuint8 *b = (const vuint8 *)&f;
+  Self->fstream->Serialize(&b[3], 1);
+  Self->fstream->Serialize(&b[2], 1);
+  Self->fstream->Serialize(&b[1], 1);
+  Self->fstream->Serialize(&b[0], 1);
+  #else
+  Self->fstream->Serialize(&f, sizeof(f));
+  #endif
 }

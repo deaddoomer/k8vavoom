@@ -388,6 +388,11 @@ double fsysCurrTick ();
 
 VStr fsysForEachPakFile (bool (*dg) (VStr fname));
 
+// creates file in `fsysBaseDir`
+VStream *fsysCreateFileSafe (VStr fname, bool notrunccate=false);
+
+bool fsysCreateDirSafe (VStr dirname);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 void fsys_Register_ZIP ();

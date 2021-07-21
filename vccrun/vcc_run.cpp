@@ -307,7 +307,7 @@ static void DisplayUsage () {
   printf("    -D<name>           Define macro\n");
   printf("    -I<directory>      Include files directory\n");
   printf("    -P<directory>      Package import files directory\n");
-  printf("    -base <directory>  Set base directory\n");
+  printf("    -base <directory>  Set base directory for fsys\n");
   printf("    -file <name>       Add pak file\n");
   exit(1);
 }
