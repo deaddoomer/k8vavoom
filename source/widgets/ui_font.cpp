@@ -282,11 +282,13 @@ VTexAtlas8bit *VFontBitmapBase::allocTranslated (rgba_t *APalette, VTexAtlas8bit
 //
 //==========================================================================
 void VFontBitmapBase::CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nextToUpdate) {
+  if (nextToUpdate >= Chars.length()) return;
   for (int f = nextToUpdate; f < Chars.length(); ++f) {
     Chars[f].Textures = new VTexture*[TextColors.length()];
   }
   for (int j = 0; j < TextColors.length(); ++j) {
-    VTexture *tt = (j == CR_UNTRANSLATED ? currAtlas : allocTranslated(Translation+j*256, currAtlas));
+    //VTexture *tt = (j == CR_UNTRANSLATED ? currAtlas : allocTranslated(Translation+j*256, currAtlas));
+    VTexture *tt = allocTranslated(Translation+j*256, currAtlas);
     for (int f = nextToUpdate; f < Chars.length(); ++f) Chars[f].Textures[j] = tt;
   }
 }
