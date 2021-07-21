@@ -39,7 +39,8 @@
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)
 
-#define VV_CHOOSE_SKY_BY_AREA
+// THIS IS GLITCHY!
+//#define VV_CHOOSE_SKY_BY_AREA
 
 static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? Most of the time this is not needed; might be useful for complex stacked sectors.", CVAR_Archive);
 
@@ -1542,25 +1543,34 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
     #ifdef VV_CHOOSE_SKY_BY_AREA
     float BestArea = -FLT_MAX;
     #endif
+    #ifdef VV_CHOOSE_SKY_BY_AREA
+    bool hasSky = false;
+    #endif
     bool BestIsSkyBox = false;
     int pidx = 0;
     while (pidx < Portals.length()) {
       VPortal *pp = Portals.ptr()[pidx];
       if (pp && pp->IsSky()) {
         #ifdef VV_CHOOSE_SKY_BY_AREA
+        hasSky = true;
         vassert(pp->needBBox);
+        float area;
         int x0, y0, x1, y1;
         if (!CalcBBox3DScreenPosition(pp->bbox3d, &x0, &y0, &x1, &y1)) {
+          /*NO!
           // delete this sky portal, it seems to be invisible
           delete pp;
           Portals.ptr()[pidx] = nullptr;
           Portals.RemoveIndex(pidx);
           continue;
+          */
+          area = FLT_MAX;
+        } else {
+          // calculate portal area
+          const float pw = (float)(x1-x0+1);
+          const float ph = (float)(y1-y0+1);
+          area = fabsf(pw*ph);
         }
-        // calculate portal area
-        const float pw = (float)(x1-x0+1);
-        const float ph = (float)(y1-y0+1);
-        const float area = pw*ph;
         //BestSky->Surfs.length() < pp->Surfs.length()
         if (!BestSky || (!BestIsSkyBox && pp->IsSkyBox()) ||
             (BestIsSkyBox == pp->IsSkyBox() && area > BestArea))
@@ -1582,6 +1592,14 @@ void VRenderLevelShared::RenderBspWorld (const refdef_t *rd, const VViewClipper 
       }
       ++pidx;
     }
+
+    #ifdef VV_CHOOSE_SKY_BY_AREA
+    if (!hasSky) {
+      GCon->Log(NAME_Debug, "*** NO SKIES! ***");
+    } else {
+      if (!BestSky) GCon->Log(NAME_Debug, "*** NO BEST SKY! ***");
+    }
+    #endif
 
     // if we found a sky, render it, and remove it from portal list
     if (BestSky) {
