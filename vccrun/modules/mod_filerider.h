@@ -42,7 +42,10 @@ public:
 
   DECLARE_FUNCTION(close)
   DECLARE_FUNCTION(seek)
+
   DECLARE_FUNCTION(getch)
+  DECLARE_FUNCTION(readln)
+
   DECLARE_FUNCTION(readBuf)
 
   DECLARE_FUNCTION(get_fileName)
@@ -98,6 +101,10 @@ public:
   DECLARE_FUNCTION(seek)
 
   DECLARE_FUNCTION(putch)
+
+  DECLARE_FUNCTION(printf)
+  DECLARE_FUNCTION(printfln)
+
   DECLARE_FUNCTION(writeBuf)
 
   DECLARE_FUNCTION(get_fileName)

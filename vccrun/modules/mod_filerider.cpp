@@ -76,10 +76,43 @@ IMPLEMENT_FUNCTION(VFileReader, seek) {
 IMPLEMENT_FUNCTION(VFileReader, getch) {
   vobjGetParamSelf();
   if (!Self || !Self->fstream || Self->fstream->IsError()) { RET_INT(-1); return; }
+  if (Self->fstream->AtEnd()) { RET_INT(-1); return; }
   vuint8 b;
   Self->fstream->Serialize(&b, 1);
   if (Self->fstream->IsError()) { RET_INT(-1); return; }
   RET_INT(b);
+}
+
+// returns empty string on eof or on error
+// otherwise, string ends with "\n" (if not truncated due to being very long)
+//native final string readln ();
+IMPLEMENT_FUNCTION(VFileReader, readln) {
+  vobjGetParamSelf();
+  if (!Self || !Self->fstream || Self->fstream->IsError()) { RET_STR(VStr::EmptyString); return; }
+  VStr res;
+  for (;;) {
+    if (Self->fstream->AtEnd()) break;
+    if (Self->fstream->IsError()) { res.clear(); break; }
+    vuint8 b;
+    Self->fstream->Serialize(&b, 1);
+    if (Self->fstream->IsError()) { res.clear(); break; }
+    res += (char)b;
+    if (b == '\n') break;
+    if (b == '\r') {
+      if (Self->fstream->AtEnd()) break;
+      Self->fstream->Serialize(&b, 1);
+      if (Self->fstream->IsError()) { res.clear(); break; }
+      if (b != '\n') {
+        int pos = Self->fstream->Tell();
+        if (pos <= 0 || Self->fstream->IsError()) { res.clear(); break; }
+        Self->fstream->Seek(pos-1);
+      } else {
+        res += '\n';
+      }
+      break;
+    }
+  }
+  RET_STR(res);
 }
 
 // reads `size` bytes from file
@@ -365,6 +398,28 @@ IMPLEMENT_FUNCTION(VFileWriter, writeBuf) {
   vobjGetParamSelf(buf);
   if (!Self || !Self->fstream || Self->fstream->IsError()) return;
   if (!buf.isEmpty()) Self->fstream->Serialize(*buf, buf.length());
+}
+
+//native final void printf (string fmt, ...) [printf,1];
+IMPLEMENT_FUNCTION(VFileWriter, printf) {
+  VStr s = VObject::PF_FormatString();
+  vobjGetParamSelf();
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  if (s.isEmpty()) return;
+  Self->fstream->Serialize(*s, s.length());
+}
+
+//native final void printfln (string fmt, ...) [printf,1];
+IMPLEMENT_FUNCTION(VFileWriter, printfln) {
+  VStr s = VObject::PF_FormatString();
+  vobjGetParamSelf();
+  if (!Self || !Self->fstream || Self->fstream->IsError()) return;
+  #ifdef WIN32
+  s += "\r\n";
+  #else
+  s += "\n";
+  #endif
+  Self->fstream->Serialize(*s, s.length());
 }
 
 // returns name of the opened file (it may be empty)
