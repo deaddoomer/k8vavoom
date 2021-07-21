@@ -542,7 +542,7 @@ void VSky::Draw (int ColorMap) {
 //
 //  VRenderLevelShared::InitSky
 //
-//  Called at level load.
+//  called at level load
 //
 //==========================================================================
 void VRenderLevelShared::InitSky () {
@@ -581,14 +581,13 @@ void VRenderLevelShared::InitSky () {
 //==========================================================================
 void VRenderLevelShared::AnimateSky (float frametime) {
   InitSky();
-  if (!(Level->LevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen)) {
-    // update sky column offsets
-    for (int i = 0; i < BaseSky.NumSkySurfs; ++i) {
-      BaseSky.sky[i].columnOffset1 += BaseSky.sky[i].scrollDelta1*frametime;
-      BaseSky.sky[i].columnOffset1 = fmodf(BaseSky.sky[i].columnOffset1, 32768.0f);
-      BaseSky.sky[i].columnOffset2 += BaseSky.sky[i].scrollDelta2*frametime;
-      BaseSky.sky[i].columnOffset2 = fmodf(BaseSky.sky[i].columnOffset2, 32768.0f);
-    }
+  if (!BaseSky.NumSkySurfs) return;
+  if (Level->LevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
+  // update sky column offsets
+  sky_t *sky = BaseSky.sky;
+  for (int i = BaseSky.NumSkySurfs; i--; ++sky) {
+    sky->columnOffset1 = fmodf(sky->columnOffset1+sky->scrollDelta1*frametime, 32768.0f);
+    sky->columnOffset2 = fmodf(sky->columnOffset2+sky->scrollDelta2*frametime, 32768.0f);
   }
 }
 #endif
