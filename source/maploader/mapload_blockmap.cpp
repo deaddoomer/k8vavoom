@@ -94,6 +94,11 @@ void VLevel::CreateBlockMap () {
 
     if (X1 > X2) { int tmp = X2; X2 = X1; X1 = tmp; }
     if (Y1 > Y2) { int tmp = Y2; Y2 = Y1; Y1 = tmp; }
+    // just in case
+    X1 = clampval(X1, 0, Width-1);
+    Y1 = clampval(Y1, 0, Height-1);
+    X2 = clampval(X2, 0, Width-1);
+    Y2 = clampval(Y2, 0, Height-1);
 
     // line index
     const int i = (int)(ptrdiff_t)(&line-&Lines[0]);
@@ -117,12 +122,12 @@ void VLevel::CreateBlockMap () {
         for (int y = Y1; y <= Y2; ++y) {
           // check if the line crosses the block
           if (line.slopetype == ST_POSITIVE) {
-            int p1 = line.PointOnSide(TVec(MinX+x*128, MinY+(y+1)*128, 0));
-            int p2 = line.PointOnSide(TVec(MinX+(x+1)*128, MinY+y*128, 0));
+            int p1 = line.PointOnSide(TVec(MinX+x*128, MinY+(y+1)*128, 0.0f));
+            int p2 = line.PointOnSide(TVec(MinX+(x+1)*128, MinY+y*128, 0.0f));
             if (p1 == p2) continue;
           } else {
-            int p1 = line.PointOnSide(TVec(MinX+x*128, MinY+y*128, 0));
-            int p2 = line.PointOnSide(TVec(MinX+(x+1)*128, MinY+(y+1)*128, 0));
+            int p1 = line.PointOnSide(TVec(MinX+x*128, MinY+y*128, 0.0f));
+            int p2 = line.PointOnSide(TVec(MinX+(x+1)*128, MinY+(y+1)*128, 0.0f));
             if (p1 == p2) continue;
           }
           BlockLines[x+y*Width].Append(i);
