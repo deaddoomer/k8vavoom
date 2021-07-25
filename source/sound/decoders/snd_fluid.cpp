@@ -49,7 +49,7 @@ static VCvarI snd_fluid_interp("snd_fluid_interp", "2", "FluidSynth interpolatio
 static VCvarI snd_fluid_voices("snd_fluid_voices", "128", "Number of FluidSynth voices.", CVAR_Archive);
 static VCvarF snd_fluid_gain("snd_fluid_gain", "1", "FluidSynth global gain.", CVAR_Archive);
 
-static VCvarB snd_fluid_reverb("snd_fluid_reverb", true, "Allow FluidSynth reverb?", CVAR_Archive);
+static VCvarB snd_fluid_reverb("snd_fluid_reverb", false, "Allow FluidSynth reverb?", CVAR_Archive);
 // [0..1.2]
 static VCvarF snd_fluid_reverb_roomsize("snd_fluid_reverb_roomsize", "0.61", "FluidSynth reverb room size.", CVAR_Archive);
 // [0..1]
