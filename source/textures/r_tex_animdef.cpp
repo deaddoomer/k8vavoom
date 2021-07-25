@@ -31,6 +31,7 @@
 
 
 static VCvarB dbg_dump_animdef_ranges("dbg_dump_animdef_ranges", false, "Dump ANIMDEF ranges?", CVAR_PreInit);
+static VCvarB r_texanim_boomhack("r_texanim_boomhack", false, "Animate all Boom textures as one?", CVAR_Archive);
 
 
 static int cli_WarnSwitchTextures = 0;
@@ -71,6 +72,7 @@ struct AnimDef_t {
   float Time;
   vint16 StartFrameDef;
   vint16 CurrentFrame;
+  vint16 StartOffset; // hack for BadApple.wad
   vuint8 Type;
   int allowDecals;
   int range; // is this range animation?
@@ -504,6 +506,8 @@ void P_InitAnimated () {
     // we are always goind forward, indicies in framedefs will take care of the rest
     ad.Type = ANIM_Forward;
     ad.NumFrames = ids.length();
+    // hack for BadApple.wad; it is still slightly off, but much better than it was before
+    ad.StartOffset = (ad.NumFrames == 1536 ? 426 : 0);
 
     // create frames
     for (int f = 0; f < ad.NumFrames; ++f) {
@@ -513,8 +517,8 @@ void P_InitAnimated () {
       fd.BaseTime = BaseTime; // why not?
     }
 
-    ad.CurrentFrame = ad.NumFrames-1; // so we'll "animate" to the first frame
-    ad.Time = 0.0001f; // force 1st game tic to animate
+    ad.CurrentFrame = 0; //ad.NumFrames-1; // so we'll "animate" to the first frame
+    ad.Time = -666.69f; // force 1st game tic to animate
     ad.allowDecals = (Type == 3);
     AnimDefs.Append(ad);
   }
@@ -630,6 +634,7 @@ static void ParseFTAnim (int wadfile, VScriptParser *sc, int fttype) {
 
   int CurType = 0;
   ad.StartFrameDef = FrameDefs.length();
+  ad.StartOffset = 0;
   ad.Type = ANIM_Forward;
   ad.allowDecals = 0;
   ad.range = (vanilla ? 1 : 0);
@@ -778,8 +783,8 @@ static void ParseFTAnim (int wadfile, VScriptParser *sc, int fttype) {
 
   if (!ignore && FrameDefs.length() > ad.StartFrameDef) {
     ad.NumFrames = FrameDefs.length()-ad.StartFrameDef;
-    ad.CurrentFrame = (ad.Type != ANIM_Random ? ad.NumFrames-1 : (int)(Random()*ad.NumFrames));
-    ad.Time = 0.0001f; // force 1st game tic to animate
+    ad.CurrentFrame = (ad.Type != ANIM_Random || ad.NumFrames < 2 ? 0/*ad.NumFrames-1*/ : (int)(Random()*ad.NumFrames)%ad.NumFrames);
+    ad.Time = -666.69f; // force 1st game tic to animate
     AnimDefs.Append(ad);
   } else if (!ignore && !optional) {
     // report something here
@@ -1264,32 +1269,55 @@ bool R_IsAnimatedTexture (int texid) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+#ifdef CLIENT
+static float lastSurfAnimGameTime = 0.0f;
+
+
+//==========================================================================
+//
+//  R_ResetAnimatedSurfaces
+//
+//==========================================================================
+void R_ResetAnimatedSurfaces () {
+  for (AnimDef_t &ad : AnimDefs) {
+    if (ad.Type == ANIM_OscillateDown) ad.Type = ANIM_OscillateUp;
+    ad.CurrentFrame = 0; // so we'll "animate" to the first frame
+    ad.Time = -666.69f; // force 1st game tic to animate
+  }
+  lastSurfAnimGameTime = 0.0f;
+  GCon->Logf("texture animation sequences restarted");
+}
+
+
 //==========================================================================
 //
 //  R_AnimateSurfaces
 //
 //==========================================================================
-#ifdef CLIENT
-static float lastSurfAnimGameTime = 0;
-
 void R_AnimateSurfaces () {
   if (!GClLevel) {
-    lastSurfAnimGameTime = 0;
+    if (lastSurfAnimGameTime != 0.0f) {
+      R_ResetAnimatedSurfaces();
+      lastSurfAnimGameTime = 0.0f;
+    }
     return;
   }
   const float dtime = GClLevel->Time-lastSurfAnimGameTime;
   // if less than zero, it means that we're started a new map; do not animate
-  if (dtime > 0.0f) {
+  // also, don't allow this to grow alot, so game loading won't do huge fastforwards
+  if (dtime > 0.0f && dtime < 1.666f) {
     // animate flats and textures
     for (int i = 0; i < AnimDefs.length(); ++i) {
       AnimDef_t &ad = AnimDefs[i];
       //ad.Time -= host_frametime;
-      ad.Time -= dtime;
+      bool doChangeFrame = (ad.Time > -666.0f);
+      if (doChangeFrame) ad.Time -= dtime; else ad.Time = 0.0f;
       for (int trycount = 128; trycount > 0; --trycount) {
         if (ad.Time > 0.0f) break;
 
         bool validAnimation = true;
-        if (ad.NumFrames > 1) {
+        if (ad.NumFrames > 1 && doChangeFrame) {
           switch (ad.Type) {
             case ANIM_Forward:
               ad.CurrentFrame = (ad.CurrentFrame+1)%ad.NumFrames;
@@ -1327,6 +1355,7 @@ void R_AnimateSurfaces () {
 
         ad.Time += fd.BaseTime/35.0f;
         if (fd.RandomRange) ad.Time += Random()*(fd.RandomRange/35.0f); // random tics
+        doChangeFrame = true;
 
         if (!ad.range) {
           // simple case
@@ -1342,6 +1371,7 @@ void R_AnimateSurfaces () {
           }
         } else {
           // range animation, hard case; see... "explanation" at the top of this file
+          const bool asNew = !r_texanim_boomhack.asBool();
           FrameDef_t *fdp = &FrameDefs[ad.StartFrameDef];
           for (int currfdef = 0; currfdef < ad.NumFrames; ++currfdef, ++fdp) {
             VTexture *atx = GTextureManager[fdp->Index];
@@ -1349,13 +1379,17 @@ void R_AnimateSurfaces () {
             atx->noDecals = (ad.allowDecals == 0);
             atx->animNoDecals = (ad.allowDecals == 0);
             atx->animated = true;
-            int afdidx = ad.StartFrameDef+(currfdef+ad.CurrentFrame)%ad.NumFrames;
+            // hack for BadApple.wad; should be harmless for other wads
+            int afdidx = ad.StartFrameDef+((asNew ? currfdef : 0)+ad.CurrentFrame+ad.StartOffset)%ad.NumFrames;
+            //if (ad.StartOffset) GCon->Logf(NAME_Debug, "currfdef=%d; afdidx=%d/%d", currfdef, afdidx-ad.StartFrameDef, ad.NumFrames-1);
             if (FrameDefs[afdidx].Index < 1) continue;
             atx->TextureTranslation = FrameDefs[afdidx].Index;
           }
         }
       }
     }
+  } else {
+    //if (dtime != 0.0f) R_ResetAnimatedSurfaces();
   }
   lastSurfAnimGameTime = GClLevel->Time;
 }

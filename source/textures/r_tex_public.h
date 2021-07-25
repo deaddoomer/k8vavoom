@@ -857,7 +857,10 @@ void R_InitHiResTextures ();
 void R_DumpTextures ();
 void R_ShutdownTexture ();
 VAnimDoorDef *R_FindAnimDoor (vint32);
+#ifdef CLIENT
+void R_ResetAnimatedSurfaces ();
 void R_AnimateSurfaces ();
+#endif
 bool R_IsAnimatedTexture (int texid);
 
 void R_UpdateSkyFlatNum (bool force=false);

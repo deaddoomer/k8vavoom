@@ -184,6 +184,9 @@ void VLevel::PostCtor () {
   sectorTags = tagHashAlloc();
   PolyTagMap = new TMapNC<int, int>();
   suid2ent = new TMapNC<vuint32, VEntity *>();
+  #ifdef CLIENT
+  R_ResetAnimatedSurfaces();
+  #endif
   Super::PostCtor();
 }
 
