@@ -35,7 +35,7 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
 //
 //==========================================================================
 [decorate] final void A_SeekerMissile (int aThreshold, int TurnMax, optional int flags,
-                            optional int chance, optional int distance)
+                                       optional int chance, optional int distance)
 {
        if (aThreshold < 0) aThreshold = 0;
   else if (aThreshold > 90) aThreshold = 90;
@@ -43,7 +43,11 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
        if (TurnMax < 0) TurnMax = 0;
   else if (TurnMax > 90) TurnMax = 90;
 
-  if ((flags&SMF_LOOK) && !Tracer && (Random() < float(chance)/100.0)) {
+  if (!specified_chance) chance = 50;
+  if (!specified_distance) distance = 10;
+
+  if ((flags&SMF_LOOK) && !Tracer && P_Random() < chance) {
+    //printdebug("%C: looking for a target...", self);
     Entity Other;
     foreach RoughBlockSearch(Other, distance) {
       EntityEx link = EntityEx(Other);
@@ -52,11 +56,15 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
       if (!link.bShootable) continue;
       if (IsTeammate(link)) continue;
       if (!CanSeek(link)) continue;
+      //printdebug("%C: 003: %C: looking for a target... (%B) : cansee=%B", self, link, bScreenSeeker, CanSee(link, disableBetterSight:true));
       if (bScreenSeeker) {
-        if (CanSee(link, disableBetterSight:true)) {
-          float angle = AngleMod360(atan2(link.Origin.y-Target.Origin.y, link.Origin.x-Target.Origin.x)-Target.Angles.yaw);
-          if (angle <= 226.0*360.0/256.0 || angle >= 30.0*360.0/256.0) continue;
-        }
+        if (!CanSee(link, disableBetterSight:true)) continue;
+        float angle = AngleMod360(atan2(link.Origin.y-Target.Origin.y, link.Origin.x-Target.Origin.x)-Target.Angles.yaw);
+        //printdebug("%C: angle=%s, dist=%s (%C)", link, angle, link.DistTo(self), Target);
+        // 317 : 42
+        //if (angle <= 226.0*360.0/256.0 || angle >= 30.0*360.0/256.0) continue;
+        if (!(angle >= 226.0*360.0/256.0 || angle <= 30.0*360.0/256.0)) continue;
+        //printdebug("   GOT!");
       } else {
         if (!CanSee(link, disableBetterSight:true)) continue;
       }
@@ -64,6 +72,7 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
       break;
     }
   }
+
   SeekerMissile(float(aThreshold), float(TurnMax), !!(flags&SMF_PRECISE), !!(flags&SMF_CURSPEED));
 }
 
