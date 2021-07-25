@@ -294,9 +294,9 @@ VVA_CHECKRESULT bool CheckSphereVs2dAABB (const float bbox[4], const TVec &lorg,
 VVA_CHECKRESULT bool CheckSphereVsAABBIgnoreZ (const float bbox[6], const TVec &lorg, const float radius) noexcept;
 
 // considers the line to be infinite
-// check the relationship between the given box and the partition
-// line.  Returns -1 if box is on left side, +1 if box is on right
-// size, or 0 if the line intersects the box.
+// check the relationship between the given box and the partition line.
+// returns 0 if box is on left side, +1 if box is on right side,
+// or -1 if the line intersects the box.
 VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const TVec &v2) noexcept;
 
 

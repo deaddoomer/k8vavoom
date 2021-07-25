@@ -496,9 +496,10 @@ int TFrustum::checkQuadEx (const TVec &v1, const TVec &v2, const TVec &v3, const
 //
 //  BoxOnLineSide2D
 //
-//  check the relationship between the given box and the partition
-//  line.  Returns -1 if box is on left side, +1 if box is on right
-//  size, or 0 if the line intersects the box.
+//  considers the line to be infinite
+//  check the relationship between the given box and the partition line.
+//  returns 0 if box is on left side, +1 if box is on right side,
+//  or -1 if the line intersects the box.
 //
 //==========================================================================
 VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const TVec &v2) noexcept {
@@ -507,7 +508,7 @@ VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const
 
   int p1, p2;
 
-  if (!dir.y) {
+  if (dir.y == 0.0f) {
     // horizontal
     p1 = (tmbox[BOX2D_TOP] > v1.y);
     p2 = (tmbox[BOX2D_BOTTOM] > v1.y);
@@ -515,7 +516,7 @@ VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const
       p1 ^= 1;
       p2 ^= 1;
     }
-  } else if (!dir.x) {
+  } else if (dir.x == 0.0f) {
     // vertical
     p1 = (tmbox[BOX2D_RIGHT] < v1.x);
     p2 = (tmbox[BOX2D_LEFT] < v1.x);
@@ -532,8 +533,8 @@ VVA_CHECKRESULT int BoxOnLineSide2D (const float tmbox[4], const TVec &v1, const
       p2 = lpl.PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_BOTTOM], 0.0f));
     } else {
       // negative
-      p1 = lpl.PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_TOP], 0.0f));
-      p2 = lpl.PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_BOTTOM], 0.0f));
+      p1 = lpl.PointOnSide(TVec(tmbox[BOX2D_LEFT], tmbox[BOX2D_BOTTOM], 0.0f));
+      p2 = lpl.PointOnSide(TVec(tmbox[BOX2D_RIGHT], tmbox[BOX2D_TOP], 0.0f));
     }
   }
 
