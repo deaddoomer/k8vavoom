@@ -470,6 +470,8 @@ void P_InitAnimated () {
       continue;
     }
 
+    if (BaseTime < 1) BaseTime = 1;
+
     if (!TmpName2[0]) Sys_Error("P_InitPicAnims: empty first texture (ofs:0x%08x)", (vuint32)(Strm.Tell()-4-2*9-1));
     if (!TmpName1[0]) Sys_Error("P_InitPicAnims: empty second texture (ofs:0x%08x)", (vuint32)(Strm.Tell()-4-2*9-1));
 
@@ -507,7 +509,12 @@ void P_InitAnimated () {
     ad.Type = ANIM_Forward;
     ad.NumFrames = ids.length();
     // hack for BadApple.wad; it is still slightly off, but much better than it was before
-    ad.StartOffset = (ad.NumFrames == 1536 ? 426 : 0);
+    // this is prolly due to texture animation during the wipe
+    //ad.StartOffset = (ad.NumFrames == 1536 ? 426 : 0);
+    if (BaseTime < 2130 && ad.NumFrames) {
+      ad.StartOffset = (2130/BaseTime)%ad.NumFrames;
+      //GCon->Logf(NAME_Debug, "Boom animation advanced to %d (wipe emulation); BaseTime=%d; NumFrames=%d", ad.StartOffset, BaseTime, ad.NumFrames);
+    }
 
     // create frames
     for (int f = 0; f < ad.NumFrames; ++f) {
@@ -1272,6 +1279,55 @@ bool R_IsAnimatedTexture (int texid) {
 // ////////////////////////////////////////////////////////////////////////// //
 #ifdef CLIENT
 static float lastSurfAnimGameTime = 0.0f;
+static int preloaderInited = 0; // <0: don't check; >0: check
+static TMapNC<int, bool> rangeAnimated; // key: texid
+
+
+//==========================================================================
+//
+//  R_CheckAnimatedTexture
+//
+//  FIXME: currently only for Boom animated lumps
+//
+//==========================================================================
+void R_CheckAnimatedTexture (int id, void (*CacheTextureCallback) (int id, void *udata), void *udata) {
+  if (id <= 0) return;
+  if (!preloaderInited) {
+    preloaderInited = 1;
+    rangeAnimated.clear(); // just in case
+    for (AnimDef_t &ad : AnimDefs) {
+      if (!ad.range) continue;
+      FrameDef_t *fdp = &FrameDefs[ad.StartFrameDef];
+      for (int currfdef = 0; currfdef < ad.NumFrames; ++currfdef, ++fdp) {
+        VTexture *atx = GTextureManager[fdp->Index];
+        if (!atx) continue;
+        rangeAnimated.put(fdp->Index, true);
+      }
+    }
+  }
+
+  if (preloaderInited < 0) return;
+  if (!rangeAnimated.has(id)) return;
+
+  for (AnimDef_t &ad : AnimDefs) {
+    if (!ad.range) continue;
+    bool found = false;
+    FrameDef_t *fdp = &FrameDefs[ad.StartFrameDef];
+    for (int currfdef = 0; currfdef < ad.NumFrames; ++currfdef, ++fdp) {
+      if (id == fdp->Index) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) continue;
+    fdp = &FrameDefs[ad.StartFrameDef];
+    for (int currfdef = 0; currfdef < ad.NumFrames; ++currfdef, ++fdp) {
+      VTexture *atx = GTextureManager[fdp->Index];
+      if (!atx) continue;
+      CacheTextureCallback(fdp->Index, udata);
+    }
+  }
+}
 
 
 //==========================================================================

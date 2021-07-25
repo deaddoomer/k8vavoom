@@ -2079,6 +2079,20 @@ int VRenderLevelShared::CollectSpriteTextures (TMapNC<vint32, vint32> &texturety
 
 //==========================================================================
 //
+//  CacheTextureCallback
+//
+//==========================================================================
+static void CacheTextureCallback (int id, void *udata) {
+  if (id > 0) {
+    //VRenderLevelShared *rend = (VRenderLevelShared *)udata;
+    TMapNC<vint32, vint32> *tt = (TMapNC<vint32, vint32> *)udata;
+    tt->put(id, TType_Normal);
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::PrecacheLevel
 //
 //  preloads all relevant graphics for the level
@@ -2102,6 +2116,9 @@ void VRenderLevelShared::PrecacheLevel () {
     }
     // walls
     for (auto &&side : Level->allSides()) {
+      R_CheckAnimatedTexture(side.TopTexture, &CacheTextureCallback, &texturetype);
+      R_CheckAnimatedTexture(side.MidTexture, &CacheTextureCallback, &texturetype);
+      R_CheckAnimatedTexture(side.BottomTexture, &CacheTextureCallback, &texturetype);
       if (side.TopTexture > 0) texturetype.put(side.TopTexture, TType_Normal);
       if (side.MidTexture > 0) texturetype.put(side.MidTexture, TType_Normal);
       if (side.BottomTexture > 0) texturetype.put(side.BottomTexture, TType_Normal);

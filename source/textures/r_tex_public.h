@@ -860,6 +860,8 @@ VAnimDoorDef *R_FindAnimDoor (vint32);
 #ifdef CLIENT
 void R_ResetAnimatedSurfaces ();
 void R_AnimateSurfaces ();
+void R_CheckAnimatedTexture (int id, void (*CacheTextureCallback) (int id, void *udata), void *udata);
+
 #endif
 bool R_IsAnimatedTexture (int texid);
 

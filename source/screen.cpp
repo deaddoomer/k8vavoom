@@ -777,7 +777,10 @@ void SCR_Update (bool fullUpdate) {
         clWipeTimer = (float)(ctt-wipeStartedTime);
         // render wipe
         if (clWipeTimer >= 0.0f) {
-          if (!Drawer->RenderWipe(clWipeTimer)) clWipeTimer = -1.0f;
+          if (!Drawer->RenderWipe(clWipeTimer)) {
+            clWipeTimer = -1.0f;
+            if (isBadApple) R_ResetAnimatedSurfaces();
+          }
         }
       } else {
         Drawer->RenderWipe(-1.0f);
