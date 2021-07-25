@@ -358,10 +358,20 @@ IMPLEMENT_FUNCTION(VObject, BoxOnLineSide2DV) {
   TVec bmin, bmax, v1, v2;
   vobjGetParam(bmin, bmax, v1, v2);
   float tmbox[4];
-  tmbox[BOX2D_TOP] = bmax.y;
-  tmbox[BOX2D_BOTTOM] = bmin.y;
-  tmbox[BOX2D_LEFT] = bmin.x;
-  tmbox[BOX2D_RIGHT] = bmax.x;
+  if (bmin.y < bmax.y) {
+    tmbox[BOX2D_TOP] = bmax.y;
+    tmbox[BOX2D_BOTTOM] = bmin.y;
+  } else {
+    tmbox[BOX2D_TOP] = bmin.y;
+    tmbox[BOX2D_BOTTOM] = bmax.y;
+  }
+  if (bmin.x < bmax.x) {
+    tmbox[BOX2D_LEFT] = bmin.x;
+    tmbox[BOX2D_RIGHT] = bmax.x;
+  } else {
+    tmbox[BOX2D_LEFT] = bmax.x;
+    tmbox[BOX2D_RIGHT] = bmin.x;
+  }
   RET_INT(BoxOnLineSide2D(tmbox, v1, v2));
 }
 
