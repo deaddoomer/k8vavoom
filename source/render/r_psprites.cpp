@@ -427,7 +427,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
     mdri.light = mdri.seclight = light;
     mdri.fade = ri.fade;
 
-    //GCon->Logf(NAME_Debug, "PSPRITE #%d is %d: sx=%g; sy=%g; %s", ii, i, cl->ViewStates[i].SX, cl->ViewStates[i].SY, *vst->Loc.toStringNoCol());
+    //GCon->Logf(NAME_Debug, "PSPRITE #%d is %d: sx=%g; sy=%g; ovlsx=%g; ovlsy=%g; %s", ii, i, cl->ViewStates[i].OvlOfsX, cl->ViewStates[i].OvlOfsY, SX, SY, *vst->Loc.toStringNoCol());
 
     const float nSX = (i != PS_WEAPON ? getVSOffset(SX, cl->ViewStates[i].OvlOfsX) : SX);
     const float nSY = (i != PS_WEAPON ? getVSOffset(SY, cl->ViewStates[i].OvlOfsY) : SY);

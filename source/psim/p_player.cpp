@@ -313,13 +313,17 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
 
       if (LastViewObject != _stateRouteSelf) {
         // new object
+        //GCon->Logf(NAME_Debug, "NEW PSPRITE (%d)! '%s'", position, (_stateRouteSelf ? _stateRouteSelf->GetClass()->GetName() : "<none>"));
         LastViewObject = _stateRouteSelf;
         ViewStates[position].OvlOfsX = ViewStates[position].OvlOfsY = 0.0f;
         // set overlay states for weapon
         if (position == PS_WEAPON) {
+          ViewStateOfsX = ViewStateOfsY = 0.0f;
+          ViewStateBobOfsX = ViewStateBobOfsY = 0.0f;
           Crosshair = 0;
           for (int f = 0; f < NUMPSPRITES; ++f) {
             if (f != PS_WEAPON) {
+              //GCon->Logf(NAME_Debug, "...clearing offsets for #%d", f);
               //ViewStates[f].SX = ViewStates[PS_WEAPON].SX;
               //ViewStates[f].SY = ViewStates[PS_WEAPON].SY;
               ViewStates[f].OvlOfsX = ViewStates[f].OvlOfsY = 0.0f;
