@@ -1402,6 +1402,7 @@ public:
   virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
   virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) override;
   virtual void Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
+  virtual void Posteffect_CAS (float coeff, int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;

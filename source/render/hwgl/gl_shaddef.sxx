@@ -359,4 +359,7 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   // underwater effect
   Shader UnderwaterFX both="postprocess/underwater/underwater";
+
+  // contrast adaptive sharpening
+  Shader [OpenGL >= 3.0] CasFX both="postprocess/cas/cas";
 }

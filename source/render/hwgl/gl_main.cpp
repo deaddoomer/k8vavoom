@@ -54,6 +54,7 @@ static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_hires_tonemap("__gl_can_hires_tonemap", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_shadowmaps("__gl_can_shadowmaps", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_shadowvols("__gl_can_shadowvols", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_cas_filter("__gl_can_cas_filter", false, "who cares.", CVAR_Rom);
 
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
@@ -1520,6 +1521,8 @@ void VOpenGLDrawer::InitResolution () {
 
   GLDRW_CHECK_ERROR("finish OpenGL initialization");
 
+  gl_can_cas_filter = CasFX.CheckOpenGLVersion(glVerMajor, glVerMinor, false);
+
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
   blendEnabled = true;
@@ -1787,6 +1790,31 @@ void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidt
   UnderwaterFX.SetScreenFBO(0);
   //UnderwaterFX.SetTextureDimensions(postSrcFBO.getWidth(), postSrcFBO.getHeight());
   UnderwaterFX.SetInputTime(time);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  RenderPostSrcFullscreenQuad();
+  FinishPostSrcFBO();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::Posteffect_CAS
+//
+//==========================================================================
+void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  if (coeff < 0.001f) return;
+
+  //if (!CasFX.CheckOpenGLVersion(glVerMajor, glVerMinor, false)) return;
+  if (!gl_can_cas_filter.asBool()) return;
+
+  PostSrcMatrixSaver matsaver(this, restoreMatrices);
+  PreparePostSrcFBO();
+
+  CasFX.Activate();
+  CasFX.SetScreenFBO(0);
+  CasFX.SetSharpenIntensity(coeff);
 
   currentActiveShader->UploadChangedUniforms();
 

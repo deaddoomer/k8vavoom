@@ -69,6 +69,9 @@ static VCvarB r_tonemap_psprites("r_tonemap_psprites", true, "Apply tonemap afte
 
 static VCvarI r_underwater("r_underwater", "1", "Underwater shader (0:off, 1:Quake-like).", CVAR_Archive);
 
+static VCvarI r_cas_filter("r_cas_filter", "0", "Use adaptive sharpening posprocess filter?", CVAR_Archive);
+static VCvarF r_cas_filter_coeff("r_cas_filter_coeff", "0.4", "Sharpen coeffecient for CAS, [0..1].", CVAR_Archive);
+
 static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", 0);
 
 static VCvarF r_hack_aspect_scale("r_hack_aspect_scale", "1.2", "Aspect ratio scale. As my aspect code is FUBARed, you can use this to make things look right.", CVAR_Archive);
@@ -1645,6 +1648,13 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // draw the psprites on top of everything
   if (drawPSprites) DrawPlayerSprites();
+
+  if (r_cas_filter.asInt() > 0) {
+    float coeff = r_cas_filter_coeff.asFloat();
+    if (isFiniteF(coeff) && coeff >= 0.001f) {
+      Drawer->Posteffect_CAS(coeff, refdef.x, refdef.y, refdef.width, refdef.height, false/*don't save matrices*/);
+    }
+  }
 
   // apply underwater shader if necessary
   if (r_underwater.asInt() > 0 && Level->PointContents(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f)) > 0) {

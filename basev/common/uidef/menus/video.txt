@@ -87,6 +87,27 @@ menudef VideoOptions {
       "require 16MB of VRAM instead of 1MB.";
   }
 
+  option enum [__gl_can_cas_filter > 0] {
+    title = "Contrast Adaptive Sharpening";
+    cvar = r_cas_filter;
+    list {
+      "None",
+      "Simple",
+    }
+    help =
+      "Very experimental CAS filtering.",
+      "It will make the image slightly sharper. You may or may not like the effect.";
+  }
+
+  option slider [__gl_can_cas_filter > 0] {
+    title = "CAS Sharpening Coefficient";
+    cvar = r_cas_filter_coeff;
+    min = 0;
+    max = 1;
+    step = 0.1;
+    help = "CAS Sharpening coefficient.";
+  }
+
 
   header "Renderer";
 

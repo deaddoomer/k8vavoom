@@ -19,8 +19,6 @@ function(sxx_compile output filename)
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.inc
-      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/bloom/*.fs
-      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/bloom/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/decal/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/decal/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/draw/*.fs
@@ -29,6 +27,8 @@ function(sxx_compile output filename)
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/lightmap/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/masked/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/masked/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/masked/poly/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/masked/poly/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/particle/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/particle/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/shadowvol/*.fs
@@ -41,6 +41,14 @@ function(sxx_compile output filename)
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/sky/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
       )
     # assume we have vshadpp in PATH
     add_custom_command(
@@ -54,8 +62,6 @@ else()
   file(GLOB vshadpp_FILES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/*.fs
-    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/bloom/*.fs
-    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/bloom/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/common/*.inc
@@ -81,6 +87,14 @@ else()
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/sky/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
     )
 
     add_custom_command(
