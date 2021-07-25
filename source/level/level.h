@@ -375,6 +375,8 @@ class VLevel : public VGameObject {
     LF_Has3DPolyObjects                 = 1u<<11,
     // set by loader
     LF_HasFullSegs                      = 1u<<12,
+    // BadApple.wad ;-)
+    LF_IsBadApple                       = 1u<<13,
   };
   vuint32 LevelFlags;
 
@@ -635,6 +637,8 @@ public:
   inline void MarkSegTouched (const seg_t *seg) noexcept {
     if (seg) dcSegTouchMark.ptr()[(unsigned)(ptrdiff_t)(seg-&Segs[0])] = dcLineTouchCounter;
   }
+
+  inline bool IsBadApple () const noexcept { return (LevelFlags&LF_IsBadApple); }
 
 public:
   inline void ResetTempPathIntercepts () noexcept { tempPathInterceptsUsed = 0; }

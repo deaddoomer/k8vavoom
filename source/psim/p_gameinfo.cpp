@@ -114,6 +114,13 @@ IMPLEMENT_FUNCTION(VGameInfo, get_isInWipe) {
 //==========================================================================
 bool VGameInfo::IsPaused (bool ignoreOpenConsole) {
   if (NetMode <= NM_TitleMap) return false;
+#ifdef CLIENT
+  // BadApple.wad hack
+  if (NetMode == NM_Standalone) {
+    const bool isBadApple = ((GLevel && GLevel->IsBadApple()) || (GClLevel && GClLevel->IsBadApple()));
+    if (isBadApple) return IsInWipe();
+  }
+#endif
   // should we totally ignore pause flag in server mode?
   return
     !!(Flags&GIF_Paused)

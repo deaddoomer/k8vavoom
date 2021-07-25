@@ -306,6 +306,9 @@ void VRenderLevelShared::DrawPlayerSprites () {
   if (!r_draw_psprites || r_chasecam) return;
   if (!cl || !cl->MO) return;
 
+  // BadApple.wad hack
+  if (Level->IsBadApple()) return;
+
   int RendStyle = STYLE_Normal;
   float Alpha = 1.0f;
   cl->MO->eventGetViewEntRenderParams(Alpha, RendStyle);
@@ -448,6 +451,9 @@ void VRenderLevelShared::RenderCrosshair () {
   // do not show crosshair if player is dead
   if (!cl || !cl->MO || cl->MO->Health <= 0) return;
   int ch = crosshair.asInt();
+
+  // BadApple.wad hack
+  if (Level->IsBadApple()) return;
 
   //GCon->Logf(NAME_Debug, "***xhair*** prevCrosshairPic=%d; currCrosshairPicHandle=%d; pch=%d", prevCrosshairPic, currCrosshairPicHandle, (cl->Crosshair > 0 ? cl->Crosshair+1024 : 0));
 

@@ -426,6 +426,9 @@ load_again:
       GCon->Logf(NAME_Dev, "map hash, md5: %s", *MapHashMD5);
       GCon->Logf(NAME_Dev, "map hash, sha: %s", *MapHash);
     }
+    // BadApple.wad hack
+    // md5: 3cca5044d82cf1d1a91eca7933d5b4f6
+    if (MapHash == "277172f699952090de13deb68cc635718ce6dd84cc7a0c3ef48c2907") LevelFlags |= LF_IsBadApple;
   }
 
   bool cachedDataLoaded = false;

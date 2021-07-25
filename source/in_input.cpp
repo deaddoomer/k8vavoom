@@ -691,7 +691,8 @@ void VInput::ProcessEvents () {
 
     // key bindings
     if (!ev.isEatenOrCancelled()) {
-      if ((ev.type == ev_keydown || ev.type == ev_keyup) && (ev.keycode > 0 && ev.keycode < 256)) {
+      const bool isBadApple = ((GLevel && GLevel->IsBadApple()) || (GClLevel && GClLevel->IsBadApple()));
+      if (!isBadApple && (ev.type == ev_keydown || ev.type == ev_keyup) && (ev.keycode > 0 && ev.keycode < 256)) {
         //VStr kb;
         //if (isAllowed(ev.keycode&0xff)) kb = (ev.type == ev_keydown ? KeyBindingsDown[ev.keycode&0xff] : KeyBindingsUp[ev.keycode&0xff]);
         VStr kb = getBinding((ev.type == ev_keydown), ev.keycode&0xff, true/*skip automap*/);

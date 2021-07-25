@@ -113,6 +113,8 @@ native transient bool bConvertSectorLightsToStatic;
 native transient readonly bool bHas3DPolyObjects;
 // set by loader
 native transient readonly bool bHasFullSegs;
+// BadApple.wad ;-)
+native transient readonly bool bIsBadApple;
 
 native transient name UDMFNamespace; // locased
 

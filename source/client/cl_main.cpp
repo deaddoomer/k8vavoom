@@ -632,7 +632,11 @@ int CL_GetNumberOfChannels () {
 //==========================================================================
 bool CL_Responder (event_t *ev) {
   if (GGameInfo->NetMode == NM_TitleMap) return false;
-  if (cl) return cl->Responder(ev);
+  if (cl) {
+    // BadApple.wad hack
+    if (cl->MO && cl->MO->XLevel->IsBadApple()) return false;
+    return cl->Responder(ev);
+  }
   return false;
 }
 

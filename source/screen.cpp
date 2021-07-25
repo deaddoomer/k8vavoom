@@ -37,6 +37,7 @@
 #include "server/server.h"
 #include "client/client.h"
 #include "filesys/files.h"
+#include "psim/p_entity.h"
 
 
 extern int screenblocks;
@@ -698,6 +699,9 @@ void SCR_Update (bool fullUpdate) {
     Drawer->RenderWipe(-1.0f);
   }
 
+  // BadApple.wad hack
+  const bool isBadApple = (cl && cl->MO && cl->MO->XLevel->IsBadApple());
+
   // do buffered drawing
   if (cl && cls.signon && cl->MO && /*!GClGame->InIntermission()*/CL_IsInGame()) {
     if (GGameInfo->NetMode == NM_Client && !cl->Level) {
@@ -717,7 +721,7 @@ void SCR_Update (bool fullUpdate) {
           //if (clWipeTimer >= 0.0f) GCon->Logf(NAME_Debug, "R_RenderPlayerView(): clWipeTimer=%g; wipeStartedTime=%g; wipeStarted=%d; Time=%g; TicTime=%d", clWipeTimer, wipeStartedTime, (int)wipeStarted, GLevel->Time, GLevel->TicTime);
           R_RenderPlayerView();
           // draw crosshair
-          if (cl && cl->MO && cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) {
+          if (!isBadApple && cl && cl->MO && cl->MO == cl->Camera && GGameInfo->NetMode != NM_TitleMap) {
             Drawer->WantCrosshair();
             if (!crosshair_topmost) Drawer->DrawCrosshair();
           }
@@ -726,7 +730,7 @@ void SCR_Update (bool fullUpdate) {
         Drawer->ClearScreen(VDrawer::CLEAR_ALL);
       }
       Drawer->Setup2D(); // restore 2D projection
-      if (GGameInfo->NetMode != NM_TitleMap) {
+      if (GGameInfo->NetMode != NM_TitleMap && !isBadApple) {
         AM_Drawer();
         CT_Drawer();
         SB_Drawer();

@@ -797,7 +797,12 @@ void CalcHeight (float deltaTime) {
       if (!DeltaViewHeight) DeltaViewHeight = 0.00001;
     }
   }
-  ViewOrg.z = MO.Origin.z+ViewHeight+mvbobbob;
+
+  if (Level.XLevel.bIsBadApple) {
+    ViewOrg.z = MO.Origin.z+41;
+  } else {
+    ViewOrg.z = MO.Origin.z+ViewHeight+mvbobbob;
+  }
   SaveViewOrgFixInfo();
 
   SanitizeViewOrgZ();
@@ -4102,6 +4107,7 @@ void ShowElvenGiftMessage () {
 void GiveElvenGifts (optional mthing_t *mthing, optional bool Voodoo, optional bool forced) {
   // do not do this on a titlemap
   if (nameicmp(Level.XLevel.MapName, 'titlemap') == 0) return;
+  if (Level.XLevel.bIsBadApple) return;
 
   //print("************SpawnPlayer: gifted=%s", (k8ElvenGifted ? "tan" : "ona"));
   k8ElvenGiftMessageTime = 666;
