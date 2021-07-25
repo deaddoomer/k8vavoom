@@ -765,6 +765,8 @@ public:
 extern VCvarB snd_sf2_autoload;
 extern VCvarS snd_sf2_file;
 
+extern bool SoundHasBadApple;
+
 extern TArray<VStr> sf2FileList;
 
 bool SF2_NeedDiskScan ();

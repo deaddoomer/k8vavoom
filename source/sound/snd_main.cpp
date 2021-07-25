@@ -1387,6 +1387,8 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
 void VAudio::PlaySong (const char *Song, bool Loop, bool allowRandom) {
   if (!Song || !Song[0] || !StreamMusicPlayer) return;
 
+  if (SoundHasBadApple && VStr::strEquCI(Song, "d_runnin")) return;
+
   VStr ss(Song);
   while (ss.length() && ss[0] == '\x01') ss.chopLeft(1);
   if (allowRandom) ss = SelectRandomSong(ss);

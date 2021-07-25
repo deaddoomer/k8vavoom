@@ -43,6 +43,9 @@ static VCvarB snd_verbose_truncate("snd_verbose_truncate", false, "Show silence-
 static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in background thread?", CVAR_Archive);
 
 
+bool SoundHasBadApple = false;
+
+
 #ifdef CLIENT
 class VRawSampleLoader : public VSampleLoader {
 public:
@@ -404,6 +407,21 @@ void VSoundManager::Init () {
   queuedSounds.clear();
   queuedSoundsMap.clear();
   readySounds.clear();
+
+  SoundHasBadApple = false;
+#ifdef CLIENT
+  // BadApple.wad hack
+  //GCon->Logf(NAME_Debug, "!!! %d: <%s> : %d : <%s>", (int)loaderThreadStarted, *S_sfx[sound_id].TagName, W_LumpLength(S_sfx[sound_id].LumpNum), *W_LumpName(S_sfx[sound_id].LumpNum));
+  for (int f = 1; f < S_sfx.length(); ++f) {
+    if (W_LumpName(S_sfx[f].LumpNum) == "dsbossit" && W_LumpLength(S_sfx[f].LumpNum) == 2415320) {
+      SoundHasBadApple = true;
+      GCon->Log(NAME_Init, "Found BadApple song, preloading it...");
+      LoadSound(f);
+      if (S_sfx[f].GetLoadedState() != sfxinfo_t::ST_Loaded) GCon->Logf(NAME_Error, "error loading BadApple sound!");
+      //break;
+    }
+  }
+#endif
 }
 
 
