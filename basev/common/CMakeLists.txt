@@ -92,8 +92,6 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/common/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/common/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/common/*.inc
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/bloom/*.fs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/bloom/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/decal/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/decal/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/draw/*.fs
@@ -114,12 +112,14 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/shadowvol/surf/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/sky/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/sky/*.vs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/tonemap/*.fs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/tonemap/*.vs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/underwater/*.fs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/underwater/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/wipe/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/wipe/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/bloom/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/bloom/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/tonemap/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/tonemap/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/underwater/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/underwater/*.vs
   )
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
