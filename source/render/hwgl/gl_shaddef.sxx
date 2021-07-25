@@ -356,4 +356,7 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   // global colormaps
   Shader ColormapTonemap both="tonemap/tonemap_colormap";
+
+  // underwater effect
+  Shader UnderwaterFX both="underwater/underwater";
 }

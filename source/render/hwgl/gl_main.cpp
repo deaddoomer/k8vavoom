@@ -151,6 +151,28 @@ static VCvarB gl_s3tc_present("__gl_s3tc_present", false, "Use S3TC texture comp
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+class PostSrcMatrixSaver {
+public:
+  VOpenGLDrawer *self;
+public:
+  VV_DISABLE_COPY(PostSrcMatrixSaver)
+
+  inline PostSrcMatrixSaver (VOpenGLDrawer *aself, bool doSave) noexcept {
+    if (doSave) {
+      self = aself;
+      aself->PostSrcSaveMatrices();
+    } else {
+      self = nullptr;
+    }
+  }
+
+  inline ~PostSrcMatrixSaver () noexcept {
+    if (self) { self->PostSrcRestoreMatrices(); self = nullptr; }
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 #ifdef VV_SHADER_COMPILING_PROGRESS
 
 #define PROG_BUF_WIDTH   (512)
@@ -460,12 +482,11 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , bloomcoloraveragingFBO()
   , cameraFBOList()
   , currMainFBO(-1)
-  , tonemapSrcFBO()
+  , postSrcFBO()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
   , tonemapMode(0)
   , tonemapColorAlgo(0)
-  , colormapSrcFBO()
 {
   glVerMajor = glVerMinor = 0;
 
@@ -992,9 +1013,8 @@ void VOpenGLDrawer::DeinitResolution () {
     glDeleteTextures(1, &tonemapPalLUT);
     tonemapPalLUT = 0;
   }
-  tonemapSrcFBO.destroy();
 
-  colormapSrcFBO.destroy();
+  postSrcFBO.destroy();
 
   memset(currentViewport, 0, sizeof(currentViewport));
   currentViewport[0] = -666;
@@ -1533,28 +1553,44 @@ void VOpenGLDrawer::InitResolution () {
 
 //==========================================================================
 //
-//  VOpenGLDrawer::VOpenGLDrawer
+//  VOpenGLDrawer::EnsurePostSrcFBO
+//
+//  this will force main FBO with `SetMainFBO(true);`
+//  it also copies main FBO to `postSrcFBO`
+//  make sure to save matrices if necessary, because this will destroy them
 //
 //==========================================================================
-void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+void VOpenGLDrawer::EnsurePostSrcFBO () {
+  // enforce main FBO
   SetMainFBO(true); // forced
   auto mfbo = GetMainFBO();
 
-  if (!tonemapPalLUT) {
-    // allocate tonemap FBO object, and generate tonemap LUT
-    tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
-    p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
-    GeneratePaletteLUT();
-  } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool() || tonemapColorAlgo != gl_tonemap_pal_algo.asInt()) {
-    tonemapMode = (int)gl_tonemap_pal_hires.asBool();
-    GeneratePaletteLUT();
+  // check dimensions for already created FBO
+  if (postSrcFBO.isValid()) {
+    if (postSrcFBO.getWidth() == mfbo->getWidth() && postSrcFBO.getHeight() == mfbo->getHeight()) {
+      return;
+    }
+    // destroy it, and recreate
+    postSrcFBO.destroy();
   }
 
-  if (restoreMatrices) {
-    glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
-    glMatrixMode(GL_MODELVIEW); glPushMatrix();
-    glMatrixMode(GL_PROJECTION); glPushMatrix();
-  }
+  // create postsrc FBO
+  postSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
+  p_glObjectLabelVA(GL_FRAMEBUFFER, postSrcFBO.getFBOid(), "Posteffects Texture Source FBO");
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PreparePostSrcFBO
+//
+//  this will setup matrices, ensure source FBO, and
+//  copy main FBO to postsrc FBO
+//
+//==========================================================================
+void VOpenGLDrawer::PreparePostSrcFBO () {
+  EnsurePostSrcFBO();
+  auto mfbo = GetMainFBO();
 
   SetOrthoProjection(0, mfbo->getWidth(), mfbo->getHeight(), 0);
   glMatrixMode(GL_MODELVIEW);
@@ -1566,14 +1602,92 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
   glEnable(GL_TEXTURE_2D);
 
   // copy main FBO to tonemap source FBO, so we can read it
-  mfbo->blitTo(&tonemapSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, tonemapSrcFBO.getWidth(), tonemapSrcFBO.getHeight(), GL_NEAREST);
+  mfbo->blitTo(&postSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postSrcFBO.getWidth(), postSrcFBO.getHeight(), GL_NEAREST);
   mfbo->activate();
 
   // source texture
-  SelectTexture(0);
-  glBindTexture(GL_TEXTURE_2D, tonemapSrcFBO.getColorTid());
+  //SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, postSrcFBO.getColorTid());
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::RenderPostSrcFullscreenQuad
+//
+//  should be called after `PreparePostSrcFBO()`
+//
+//==========================================================================
+void VOpenGLDrawer::RenderPostSrcFullscreenQuad () {
+  auto mfbo = GetMainFBO();
+  glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
+    glTexCoord2f(1.0f, 1.0f); glVertex2i(mfbo->getWidth(), 0);
+    glTexCoord2f(1.0f, 0.0f); glVertex2i(mfbo->getWidth(), mfbo->getHeight());
+    glTexCoord2f(0.0f, 0.0f); glVertex2i(0, mfbo->getHeight());
+  glEnd();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::FinishPostSrcFBO
+//
+//==========================================================================
+void VOpenGLDrawer::FinishPostSrcFBO () {
+  // unbind texture 0
+  //SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  // and deactivate shaders (just in case)
+  DeactivateShader();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PostSrcSaveMatrices
+//
+//==========================================================================
+void VOpenGLDrawer::PostSrcSaveMatrices () {
+  glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
+  glMatrixMode(GL_MODELVIEW); glPushMatrix();
+  glMatrixMode(GL_PROJECTION); glPushMatrix();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PostSrcRestoreMatrices
+//
+//==========================================================================
+void VOpenGLDrawer::PostSrcRestoreMatrices () {
+  glPopAttrib();
+  glMatrixMode(GL_PROJECTION); glPopMatrix();
+  glMatrixMode(GL_MODELVIEW); glPopMatrix();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::Posteffect_Tonemap
+//
+//==========================================================================
+void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  if (!tonemapPalLUT) {
+    // allocate tonemap FBO object, and generate tonemap LUT
+    //tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
+    //p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
+    GeneratePaletteLUT();
+  } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool() || tonemapColorAlgo != gl_tonemap_pal_algo.asInt()) {
+    tonemapMode = (int)gl_tonemap_pal_hires.asBool();
+    GeneratePaletteLUT();
+  }
+
+  PostSrcMatrixSaver matsaver(this, restoreMatrices);
+  PreparePostSrcFBO();
+
   // LUT texture
   SelectTexture(1);
   glBindTexture(GL_TEXTURE_2D, tonemapPalLUT);
@@ -1590,27 +1704,13 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
 
   currentActiveShader->UploadChangedUniforms();
 
-  // draw fullscreen quad
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
-    glTexCoord2f(1.0f, 1.0f); glVertex2i(mfbo->getWidth(), 0);
-    glTexCoord2f(1.0f, 0.0f); glVertex2i(mfbo->getWidth(), mfbo->getHeight());
-    glTexCoord2f(0.0f, 0.0f); glVertex2i(0, mfbo->getHeight());
-  glEnd();
+  RenderPostSrcFullscreenQuad();
 
   // unbind texture 1
   glBindTexture(GL_TEXTURE_2D, 0);
-  // unbind texture 0
   SelectTexture(0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  // and deactivate shaders (just in case)
-  DeactivateShader();
 
-  if (restoreMatrices) {
-    glPopAttrib();
-    glMatrixMode(GL_PROJECTION); glPopMatrix();
-    glMatrixMode(GL_MODELVIEW); glPopMatrix();
-  }
+  FinishPostSrcFBO();
 }
 
 
@@ -1622,32 +1722,8 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
 void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) {
   if (cmap <= CM_Default || cmap >= CM_Max) return;
 
-  SetMainFBO(true); // forced
-  auto mfbo = GetMainFBO();
-
-  // create colormap FBO
-  if (!colormapSrcFBO.isValid()) {
-    colormapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
-  }
-
-  SetOrthoProjection(0, mfbo->getWidth(), mfbo->getHeight(), 0);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  GLDisableBlend();
-  GLDisableDepthWrite();
-  glEnable(GL_TEXTURE_2D);
-
-  // copy main FBO to tonemap source FBO, so we can read it
-  mfbo->blitTo(&colormapSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, colormapSrcFBO.getWidth(), colormapSrcFBO.getHeight(), GL_NEAREST);
-  mfbo->activate();
-
-  // source texture
-  //SelectTexture(0);
-  glBindTexture(GL_TEXTURE_2D, colormapSrcFBO.getColorTid());
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  //PostSrcMatrixSaver matsaver(this, restoreMatrices);
+  PreparePostSrcFBO();
 
   // the formula is:
   //   i = clamp(i*IntRange.z+IntRange.a, IntRange.x, IntRange.y);
@@ -1693,16 +1769,27 @@ void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, i
 
   currentActiveShader->UploadChangedUniforms();
 
-  // draw fullscreen quad
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
-    glTexCoord2f(1.0f, 1.0f); glVertex2i(mfbo->getWidth(), 0);
-    glTexCoord2f(1.0f, 0.0f); glVertex2i(mfbo->getWidth(), mfbo->getHeight());
-    glTexCoord2f(0.0f, 0.0f); glVertex2i(0, mfbo->getHeight());
-  glEnd();
+  RenderPostSrcFullscreenQuad();
+  FinishPostSrcFBO();
+}
 
-  // unbind texture 0
-  glBindTexture(GL_TEXTURE_2D, 0);
-  // and deactivate shaders (just in case)
-  DeactivateShader();
+
+//==========================================================================
+//
+//  VOpenGLDrawer::Posteffect_Underwater
+//
+//==========================================================================
+void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  PostSrcMatrixSaver matsaver(this, restoreMatrices);
+  PreparePostSrcFBO();
+
+  UnderwaterFX.Activate();
+  UnderwaterFX.SetScreenFBO(0);
+  //UnderwaterFX.SetTextureDimensions(postSrcFBO.getWidth(), postSrcFBO.getHeight());
+  UnderwaterFX.SetInputTime(time);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  RenderPostSrcFullscreenQuad();
+  FinishPostSrcFBO();
 }

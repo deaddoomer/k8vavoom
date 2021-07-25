@@ -116,6 +116,8 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/sky/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/tonemap/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/tonemap/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/underwater/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/underwater/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/wipe/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/wipe/*.vs
   )

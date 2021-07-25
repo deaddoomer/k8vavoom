@@ -50,6 +50,16 @@ menudef VideoOptions {
   }
 
   option enum {
+    title = "Underwater Distorsion";
+    cvar = r_underwater;
+    list {
+      "None",
+      "Quake-like",
+    }
+    help = "Use underwater distortion shader?";
+  }
+
+  option enum {
     title = "Tonemap";
     cvar = r_tonemap;
     list {

@@ -960,7 +960,7 @@ protected:
   bool hasBoundsTest; // GL_EXT_depth_bounds_test
 
   FBO mainFBO;
-  FBO ambLightFBO; // we'll copy ambient light texture here, so we can use it in decal renderer to light decals
+  FBO ambLightFBO; // we'll copy ambient light texture here, to use it in decal renderer to light decals
   FBO wipeFBO; // we'll copy main FBO here to render wipe transitions
   // bloom
   FBO bloomscratchFBO, bloomscratch2FBO, bloomeffectFBO, bloomcoloraveragingFBO;
@@ -971,15 +971,14 @@ protected:
   // current "main" fbo: <0: `mainFBO`, otherwise camera FBO
   int currMainFBO;
 
+  // texture FBO used in various post-render shader effects (tonemap, colormap, underwater, etc.)
+  FBO postSrcFBO; // main fbo texture will be copied there (this has no depth or stencil buffers, only texture)
+
   // tonemap
-  FBO tonemapSrcFBO; // main fbo will be copied there
   GLuint tonemapPalLUT; // palette LUT texture
   int tonemapLastGamma;
   int tonemapMode; // 0: 64x64x64, 1: 128x128x128
   int tonemapColorAlgo;
-
-  // colormap
-  FBO colormapSrcFBO; // main fbo will be copied there
 
   GLint maxTexSize;
 
@@ -1380,10 +1379,29 @@ private: // bloom
   void BloomDoGaussian ();
   void BloomDrawEffect (int ax, int ay, int awidth, int aheight);
 
+protected:
+  // this will force main FBO with `SetMainFBO(true);`
+  void EnsurePostSrcFBO ();
+
+  // this will setup matrices, ensure source FBO, and copy main FBO to postsrc FBO
+  void PreparePostSrcFBO ();
+
+  // should be called after `PreparePostSrcFBO()`
+  void RenderPostSrcFullscreenQuad ();
+
+  // this will deactivate texture 0 and shaders
+  void FinishPostSrcFBO ();
+
+  void PostSrcSaveMatrices ();
+  void PostSrcRestoreMatrices ();
+
+  friend class PostSrcMatrixSaver;
+
 public:
   virtual void Posteffect_Bloom (int ax, int ay, int awidth, int aheight) override;
   virtual void Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
   virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) override;
+  virtual void Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;
