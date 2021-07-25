@@ -96,7 +96,8 @@ menudef VideoOptions {
     }
     help =
       "Very experimental CAS filtering.",
-      "It will make the image slightly sharper. You may or may not like the effect.";
+      "If you prefer to play with bilinear texture filtering,",
+      "try to turn this on, it may make distant textures less blurry.";
   }
 
   option slider [__gl_can_cas_filter > 0] {
@@ -105,7 +106,10 @@ menudef VideoOptions {
     min = 0;
     max = 1;
     step = 0.1;
-    help = "CAS Sharpening coefficient.";
+    help =
+      "CAS Sharpening coefficient.",
+      "You can play with this a little, to increase",
+      "filter contrast.";
   }
 
 
