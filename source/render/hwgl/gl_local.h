@@ -236,7 +236,7 @@ public:
     inline void SetOpenGLVersion (int cond, int ver) noexcept { oglVersionCond = cond; oglVersion = ver; }
     inline void SetForCubemaps () noexcept { forCubemaps = true; }
 
-    inline bool IsLoaded () const noexcept { return compiled; }
+    VVA_ALWAYS_INLINE bool IsLoaded () const noexcept { return compiled; }
 
     bool CheckOpenGLVersion (int major, int minor, bool canCubemaps) noexcept;
 
@@ -254,29 +254,31 @@ public:
     void Deactivate ();
     bool IsActive () const noexcept;
 
-    static inline bool notEqual_float (const float &v1, const float &v2) { return (FASI(v1) != FASI(v2)); }
-    static inline bool notEqual_bool (const bool v1, const bool v2) { return (v1 != v2); }
-    static inline bool notEqual_vec2 (const float *v1, const float *v2) { return (memcmp(v1, v2, sizeof(float)*2) != 0); }
-    static inline bool notEqual_vec3 (const TVec &v1, const TVec &v2) { return (memcmp(&v1.x, &v2.x, sizeof(float)*3) != 0); }
-    static inline bool notEqual_vec4 (const float *v1, const float *v2) { return (memcmp(v1, v2, sizeof(float)*4) != 0); }
-    static inline bool notEqual_mat3 (const float *v1, const float *v2) { return (memcmp(v1, v2, sizeof(float)*9) != 0); }
-    static inline bool notEqual_mat4 (const VMatrix4 &v1, const VMatrix4 &v2) { return (memcmp(&v1.m[0][0], &v2.m[0][0], sizeof(float)*16) != 0); }
-    static inline bool notEqual_sampler2D (const vuint32 v1, const vuint32 v2) { return (v1 != v2); }
-    static inline bool notEqual_sampler2DShadow (const vuint32 v1, const vuint32 v2) { return (v1 != v2); }
-    static inline bool notEqual_samplerCube (const vuint32 v1, const vuint32 v2) { return (v1 != v2); }
-    static inline bool notEqual_samplerCubeShadow (const vuint32 v1, const vuint32 v2) { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_float (const float &v1, const float &v2) noexcept { return (FASI(v1) != FASI(v2)); }
+    static VVA_ALWAYS_INLINE bool notEqual_int (const int32_t v1, const int32_t v2) noexcept { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_bool (const bool v1, const bool v2) noexcept { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_vec2 (const float *v1, const float *v2) noexcept { return (memcmp(v1, v2, sizeof(float)*2) != 0); }
+    static VVA_ALWAYS_INLINE bool notEqual_vec3 (const TVec &v1, const TVec &v2) noexcept { return (memcmp(&v1.x, &v2.x, sizeof(float)*3) != 0); }
+    static VVA_ALWAYS_INLINE bool notEqual_vec4 (const float *v1, const float *v2) noexcept { return (memcmp(v1, v2, sizeof(float)*4) != 0); }
+    static VVA_ALWAYS_INLINE bool notEqual_mat3 (const float *v1, const float *v2) noexcept { return (memcmp(v1, v2, sizeof(float)*9) != 0); }
+    static VVA_ALWAYS_INLINE bool notEqual_mat4 (const VMatrix4 &v1, const VMatrix4 &v2) noexcept { return (memcmp(&v1.m[0][0], &v2.m[0][0], sizeof(float)*16) != 0); }
+    static VVA_ALWAYS_INLINE bool notEqual_sampler2D (const vuint32 v1, const vuint32 v2) noexcept { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_sampler2DShadow (const vuint32 v1, const vuint32 v2) noexcept { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_samplerCube (const vuint32 v1, const vuint32 v2) noexcept { return (v1 != v2); }
+    static VVA_ALWAYS_INLINE bool notEqual_samplerCubeShadow (const vuint32 v1, const vuint32 v2) noexcept { return (v1 != v2); }
 
-    static inline void copyValue_float (float &dest, const float &src) { dest = src; }
-    static inline void copyValue_bool (bool &dest, const bool &src) { dest = src; }
-    static inline void copyValue_vec3 (TVec &dest, const TVec &src) { dest = src; }
-    static inline void copyValue_mat4 (VMatrix4 &dest, const VMatrix4 &src) { memcpy(&dest.m[0][0], &src.m[0][0], sizeof(float)*16); }
-    static inline void copyValue_vec4 (float *dest, const float *src) { memcpy(dest, src, sizeof(float)*4); }
-    static inline void copyValue_vec2 (float *dest, const float *src) { memcpy(dest, src, sizeof(float)*2); }
-    static inline void copyValue_mat3 (float *dest, const float *src) { memcpy(dest, src, sizeof(float)*9); }
-    static inline void copyValue_sampler2D (vuint32 &dest, const vuint32 &src) { dest = src; }
-    static inline void copyValue_sampler2DShadow (vuint32 &dest, const vuint32 &src) { dest = src; }
-    static inline void copyValue_samplerCube (vuint32 &dest, const vuint32 &src) { dest = src; }
-    static inline void copyValue_samplerCubeShadow (vuint32 &dest, const vuint32 &src) { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_float (float &dest, const float &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_int (int32_t &dest, const int32_t src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_bool (bool &dest, const bool &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_vec3 (TVec &dest, const TVec &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_mat4 (VMatrix4 &dest, const VMatrix4 &src) noexcept { memcpy(&dest.m[0][0], &src.m[0][0], sizeof(float)*16); }
+    static VVA_ALWAYS_INLINE void copyValue_vec4 (float *dest, const float *src) noexcept { memcpy(dest, src, sizeof(float)*4); }
+    static VVA_ALWAYS_INLINE void copyValue_vec2 (float *dest, const float *src) noexcept { memcpy(dest, src, sizeof(float)*2); }
+    static VVA_ALWAYS_INLINE void copyValue_mat3 (float *dest, const float *src) noexcept { memcpy(dest, src, sizeof(float)*9); }
+    static VVA_ALWAYS_INLINE void copyValue_sampler2D (vuint32 &dest, const vuint32 &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_sampler2DShadow (vuint32 &dest, const vuint32 &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_samplerCube (vuint32 &dest, const vuint32 &src) noexcept { dest = src; }
+    static VVA_ALWAYS_INLINE void copyValue_samplerCubeShadow (vuint32 &dest, const vuint32 &src) noexcept { dest = src; }
   };
 
   friend class VGLShader;
@@ -303,17 +305,17 @@ public:
     FBO ();
     ~FBO ();
 
-    inline bool isValid () const noexcept { return (mOwner != nullptr); }
-    inline int getWidth () const noexcept { return mWidth; }
-    inline int getHeight () const noexcept { return mHeight; }
+    VVA_ALWAYS_INLINE bool isValid () const noexcept { return (mOwner != nullptr); }
+    VVA_ALWAYS_INLINE int getWidth () const noexcept { return mWidth; }
+    VVA_ALWAYS_INLINE int getHeight () const noexcept { return mHeight; }
 
-    inline bool getLinearFilter () const noexcept { return mLinearFilter; }
+    VVA_ALWAYS_INLINE bool getLinearFilter () const noexcept { return mLinearFilter; }
     // has effect after texture recreation
-    inline void setLinearFilter (bool v) noexcept { mLinearFilter = v; }
+    VVA_ALWAYS_INLINE void setLinearFilter (bool v) noexcept { mLinearFilter = v; }
 
-    inline GLuint getColorTid () const noexcept { return mColorTid; }
-    inline GLuint getFBOid () const noexcept { return mFBO; }
-    inline GLuint getDSRBTid () const noexcept { return mDepthStencilRBO; }
+    VVA_ALWAYS_INLINE GLuint getColorTid () const noexcept { return mColorTid; }
+    VVA_ALWAYS_INLINE GLuint getFBOid () const noexcept { return mFBO; }
+    VVA_ALWAYS_INLINE GLuint getDSRBTid () const noexcept { return mDepthStencilRBO; }
 
     void createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat=false);
     void createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat=false);
@@ -396,16 +398,16 @@ protected:
   unsigned depthMaskSP;
   GLint currDepthMaskState;
 
-  inline void GLForceDepthWrite () noexcept { currDepthMaskState = 1; glDepthMask(GL_TRUE); }
-  inline void GLEnableDepthWrite () noexcept { if (!currDepthMaskState) { currDepthMaskState = 1; glDepthMask(GL_TRUE); } }
-  inline void GLDisableDepthWrite () noexcept { if (currDepthMaskState) { currDepthMaskState = 0; glDepthMask(GL_FALSE); } }
+  VVA_ALWAYS_INLINE void GLForceDepthWrite () noexcept { currDepthMaskState = 1; glDepthMask(GL_TRUE); }
+  VVA_ALWAYS_INLINE void GLEnableDepthWrite () noexcept { if (!currDepthMaskState) { currDepthMaskState = 1; glDepthMask(GL_TRUE); } }
+  VVA_ALWAYS_INLINE void GLDisableDepthWrite () noexcept { if (currDepthMaskState) { currDepthMaskState = 0; glDepthMask(GL_FALSE); } }
 
-  inline void PushDepthMask () noexcept {
+  VVA_ALWAYS_INLINE void PushDepthMask () noexcept {
     if (depthMaskSP >= MaxDepthMaskStack) Sys_Error("OpenGL: depth mask stack overflow");
     depthMaskStack[depthMaskSP++] = currDepthMaskState;
   }
 
-  inline void PopDepthMask () noexcept {
+  VVA_ALWAYS_INLINE void PopDepthMask () noexcept {
     if (depthMaskSP == 0) Sys_Error("OpenGL: depth mask stack underflow");
     const GLint st = depthMaskStack[--depthMaskSP];
     if (currDepthMaskState != st) { currDepthMaskState = st; glDepthMask(st); }
@@ -428,7 +430,7 @@ public:
     SCS_MAXY,
   };
 
-  inline bool checkGLVer (int major, int minor) const noexcept { return (glVerMajor == major ? (glVerMinor >= minor) : (glVerMajor > major)); }
+  VVA_ALWAYS_INLINE bool checkGLVer (int major, int minor) const noexcept { return (glVerMajor == major ? (glVerMinor >= minor) : (glVerMajor > major)); }
 
 protected:
   // we have two shadowmaps: one for lights with radius less than 1020 (16-bit floats), and one for 1020+ (32-bit floats)

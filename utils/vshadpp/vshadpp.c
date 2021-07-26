@@ -1274,6 +1274,7 @@ int parseGLSL (Parser *par, ShaderInfo *si) {
 // ////////////////////////////////////////////////////////////////////////// //
 const char *getShitppType (const char *glslType) {
   if (strEqu(glslType, "float")) return "float";
+  if (strEqu(glslType, "int")) return "int32_t";
   if (strEqu(glslType, "bool")) return "bool";
   if (strEqu(glslType, "vec3")) return "TVec";
   if (strEqu(glslType, "mat4")) return "VMatrix4";
@@ -1293,6 +1294,7 @@ const char *getShitppType (const char *glslType) {
 
 const char *getShitppStoreType (const char *glslType) {
   if (strEqu(glslType, "float")) return "float";
+  if (strEqu(glslType, "int")) return "int32_t";
   if (strEqu(glslType, "bool")) return "bool";
   if (strEqu(glslType, "vec3")) return "TVec";
   if (strEqu(glslType, "mat4")) return "VMatrix4";
@@ -1325,6 +1327,12 @@ void writeInitValueNoChecks (FILE *fo, const LocInfo *loc) {
       fprintf(fo, "curr_%s = 0.0f;", loc->name);
     } else {
       fprintf(fo, "last_%s = curr_%s = 0.0f;", loc->name, loc->name);
+    }
+  } else if (strEqu(loc->glslType, "int")) {
+    if (loc->isAttr) {
+      fprintf(fo, "curr_%s = 0;", loc->name);
+    } else {
+      fprintf(fo, "last_%s = curr_%s = 0;", loc->name, loc->name);
     }
   } else if (strEqu(loc->glslType, "bool")) {
     if (loc->isAttr) {
@@ -1367,6 +1375,7 @@ void writeUploadNoChecks (FILE *fo, const LocInfo *loc) {
   if (!loc || !fo) return;
   fprintf(fo, "owner->%s", (loc->isAttr ? "p_glVertexAttrib" : "p_glUniform"));
        if (strEqu(loc->glslType, "float")) fprintf(fo, "1fARB(loc_%s, curr_%s);", loc->name, loc->name);
+  else if (strEqu(loc->glslType, "int")) fprintf(fo, "1iARB(loc_%s, curr_%s);", loc->name, loc->name);
   else if (strEqu(loc->glslType, "bool")) fprintf(fo, "1iARB(loc_%s, (curr_%s ? GL_TRUE : GL_FALSE));", loc->name, loc->name);
   else if (strEqu(loc->glslType, "sampler2D")) fprintf(fo, "1iARB(loc_%s, (GLint)curr_%s);", loc->name, loc->name);
   else if (strEqu(loc->glslType, "sampler2DShadow")) fprintf(fo, "1iARB(loc_%s, (GLint)curr_%s);", loc->name, loc->name);
@@ -1374,7 +1383,7 @@ void writeUploadNoChecks (FILE *fo, const LocInfo *loc) {
   else if (strEqu(loc->glslType, "samplerCubeShadow")) fprintf(fo, "1iARB(loc_%s, (GLint)curr_%s);", loc->name, loc->name);
   else {
     const char *onestr = (loc->isAttr ? "" : "1,");
-    if (strEqu(loc->glslType, "vec3")) fprintf(fo, "3fvARB(loc_%s, %s &curr_%s.x);", loc->name, onestr, loc->name);
+         if (strEqu(loc->glslType, "vec3")) fprintf(fo, "3fvARB(loc_%s, %s &curr_%s.x);", loc->name, onestr, loc->name);
     else if (strEqu(loc->glslType, "mat4")) fprintf(fo, "Matrix4fvARB(loc_%s, %s GL_FALSE, &curr_%s.m[0][0]);", loc->name, onestr, loc->name);
     else if (strEqu(loc->glslType, "vec4")) fprintf(fo, "4fvARB(loc_%s, %s &curr_%s[0]);", loc->name, onestr, loc->name);
     else if (strEqu(loc->glslType, "vec2")) fprintf(fo, "2fvARB(loc_%s, %s &curr_%s[0]);", loc->name, onestr, loc->name);
@@ -1549,6 +1558,7 @@ int main (int argc, char **argv) {
       const char *shitppType = getShitppType(loc->glslType);
       fprintf(foh, "    inline void Set%s%s (const %s %sv) { ", loc->name, (loc->isAttr ? "Attr" : ""), shitppType, getShitppAmp(shitppType));
            if (strEqu(loc->glslType, "float")) fprintf(foh, "curr_%s = v; ", loc->name);
+      else if (strEqu(loc->glslType, "int")) fprintf(foh, "curr_%s = v; ", loc->name);
       else if (strEqu(loc->glslType, "bool")) fprintf(foh, "curr_%s = (v ? GL_TRUE : GL_FALSE);", loc->name);
       else if (strEqu(loc->glslType, "sampler2D")) fprintf(foh, "curr_%s = (GLint)v;", loc->name);
       else if (strEqu(loc->glslType, "sampler2DShadow")) fprintf(foh, "curr_%s = (GLint)v;", loc->name);
