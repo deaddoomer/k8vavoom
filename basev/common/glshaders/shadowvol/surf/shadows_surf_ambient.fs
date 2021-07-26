@@ -1,7 +1,7 @@
 #version 120
 $include "common/common.inc"
 
-uniform vec4 Light;
+uniform vec4 Light; // a is light level
 
 #ifdef VV_AMBIENT_MASKED_WALL
 uniform sampler2D Texture;
@@ -17,12 +17,13 @@ $include "common/texture_vars.fs"
 
 //#ifdef VV_AMBIENT_GLOW
 $include "common/glow_vars.fs"
+$include "common/doom_lighting.fs"
 //#endif
 
 
 void main () {
 //#ifdef VV_AMBIENT_GLOW
-  vec4 lt = calcGlow(Light);
+  vec4 lt = calcGlowLLev(Light);
 //#else
 //  vec4 lt = Light;
 //#endif

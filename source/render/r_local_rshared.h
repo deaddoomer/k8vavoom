@@ -473,6 +473,7 @@ public:
     LP_IgnoreStatLights = 1u<<4,
     LP_IgnoreGlowLights = 1u<<5,
     LP_IgnoreAmbLight   = 1u<<6,
+    LP_NoLightFade      = 1u<<7,
   };
 
   // defined only after `PushDlights()`

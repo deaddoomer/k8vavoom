@@ -154,7 +154,11 @@ float BaseAspect;
 float PSpriteOfsAspect;
 float EffectiveFOV;
 float AspectFOVX;
-float AspectEffectiveFOVX;
+float AspectEffectiveFOVX; // focaltangent
+static float ViewCenterX;
+static float RefScrWidth = 800.0f;
+static float RefScrHeight = 600.0f;
+static float CachedGlobVis = 1280.0f;
 
 static FDrawerDesc *DrawerList[DRAWER_MAX];
 
@@ -344,6 +348,82 @@ float R_GetAspectRatioValue () {
   int aspectRatio = r_aspect_ratio.asInt();
   if (aspectRatio < 0 || aspectRatio >= (int)ASPECT_COUNT) aspectRatio = 0;
   return (float)AspectList[aspectRatio].horiz/(float)AspectList[aspectRatio].vert;
+}
+
+
+//==========================================================================
+//
+//  R_CalcGlobVis
+//
+//  FIXME: totally wrong for cameras!
+//
+//==========================================================================
+float R_CalcGlobVis () {
+  return CachedGlobVis;
+}
+
+
+//==========================================================================
+//
+//  CalcGlobVis
+//
+//  FIXME: totally wrong for cameras!
+//
+//==========================================================================
+static float CalcGlobVis () {
+  float vis = r_light_globvis.asFloat();
+  if (!isFiniteF(vis)) vis = 8.0f;
+  vis = clampval(vis, -204.7f, 204.7f); // (205 and larger do not work in 5:4 aspect ratio)
+
+  float virtwidth = RefScrWidth;
+  float virtheight = RefScrHeight;
+
+  /*
+    // convert to vertical aspect ratio
+    const float centerx = refdef.width*0.5f;
+
+    // for widescreen displays, increase the FOV so that the middle part of the
+    // screen that would be visible on a 4:3 display has the requested FOV
+    // taken from GZDoom
+    const float baseAspect = CalcBaseAspectRatio(r_aspect_ratio); // PixelAspect
+    const float centerxwide = centerx*(IsAspectTallerThanWide(baseAspect) ? 1.0f : GetAspectMultiplier(baseAspect)/48.0f);
+    if (centerxwide != centerx) {
+      // centerxwide is what centerx would be if the display was not widescreen
+      effectiveFOV = RAD2DEGF(2.0f*atanf(centerx*tanf(DEG2RADF(effectiveFOV)*0.5f)/centerxwide));
+      // just in case
+      if (effectiveFOV >= 180.0f) effectiveFOV = 179.5f;
+    }
+  */
+  //const float baseAspect = CalcBaseAspectRatio(r_aspect_ratio); // PixelAspect
+
+  if (IsAspectTallerThanWide(BaseAspect)) {
+    virtheight = (virtheight*GetAspectMultiplier(BaseAspect))/48.0f;
+  } else {
+    virtwidth = (virtwidth*GetAspectMultiplier(BaseAspect))/48.0f;
+  }
+
+  const float r_Yaspect = 200.0f;
+
+  const float YaspectMul = 320.0f*virtheight/(200.0f*virtwidth);
+  float InvZtoScale = YaspectMul*ViewCenterX;
+
+  float wallVisibility = vis;
+
+  // prevent overflow on walls
+  //FIXME: pass real width here for cameras?
+  const float viewwidth = RefScrWidth;
+
+  float maxVisForWall = (InvZtoScale*(RefScrWidth*r_Yaspect)/(viewwidth*RefScrHeight*AspectEffectiveFOVX));
+  maxVisForWall = 32767.0 / maxVisForWall;
+       if (vis < 0 && vis < -maxVisForWall) wallVisibility = -maxVisForWall;
+  else if (vis > 0 && vis > maxVisForWall) wallVisibility = maxVisForWall;
+
+  wallVisibility = InvZtoScale*RefScrWidth*GetAspectBaseHeight(BaseAspect)/(viewwidth*RefScrHeight*3.0f)*(wallVisibility*AspectEffectiveFOVX);
+
+  const float res = wallVisibility/AspectEffectiveFOVX;
+  //GCon->Logf(NAME_Debug, "R_CalcGlobVis=%f", res);
+
+  return res/32.0f; // for shader
 }
 
 
@@ -1193,6 +1273,9 @@ void VRenderLevelShared::ExecuteSetViewSize () {
   }
   refdef.x = (ScreenWidth-refdef.width)>>1;
 
+  RefScrWidth = refdef.width;
+  RefScrHeight = refdef.height;
+
   PixelAspect = CalcAspect(r_aspect_ratio, ScreenWidth, ScreenHeight);
   SetAspectRatioCVars(r_aspect_ratio, ScreenWidth, ScreenHeight);
   prev_aspect_ratio = r_aspect_ratio;
@@ -1244,8 +1327,10 @@ void VRenderLevelShared::ExecuteSetViewSize () {
       PSpriteOfsAspect += r_hack_psprite_yofs.asFloat();
       GCon->Logf(NAME_Debug, "!!!   final PSpriteOfsAspect=%f", PSpriteOfsAspect);
     }
+    ViewCenterX = centerx;
   } else {
     PSpriteOfsAspect = 0.0f;
+    ViewCenterX = refdef.width*0.5f;
   }
   EffectiveFOV = effectiveFOV;
 
@@ -1256,6 +1341,8 @@ void VRenderLevelShared::ExecuteSetViewSize () {
 
   AspectFOVX = refdef.fovx;
   AspectEffectiveFOVX = tanf(DEG2RADF(currentFOV)/2.0f);
+
+  CachedGlobVis = CalcGlobVis();
 
   /*
   Drawer->ClearScreen(VDrawer::CLEAR_ALL);

@@ -130,6 +130,14 @@ static int maxrdcount = 0; // sorry for this global, it is for debugging
 } while (0)
 
 
+#define CALC_LMODE_VARS  \
+  const float globVis = R_CalcGlobVis(); \
+  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f); \
+  const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0); \
+  /*const float llev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));*/ \
+  const float llev = getSurfLightLevel(surf);
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::RenderFinishShaderDecals
@@ -149,18 +157,25 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       SurfDecalNoLMap.Activate();
       SurfDecalNoLMap.SetTexture(0);
       //SurfDecalNoLMap_Locs.storeFogType();
-      SurfDecalNoLMap.SetFogFade(surf->Fade, 1.0f);
       {
-        //const float llev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));
-        const float llev = getSurfLightLevel(surf);
+        CALC_LMODE_VARS
+        SurfDecalNoLMap.SetLightGlobVis(globVis);
+        SurfDecalNoLMap.SetLightMode(lightMode);
         SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
+        SurfDecalNoLMap.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
       }
       break;
     case DT_LIGHTMAP:
       if (gl_regular_disable_overbright) {
         SurfDecalLMapNoOverbright.Activate();
         SurfDecalLMapNoOverbright.SetTexture(0);
-        SurfDecalLMapNoOverbright.SetFogFade(surf->Fade, 1.0f);
+        {
+          CALC_LMODE_VARS
+          SurfDecalLMapNoOverbright.SetLightGlobVis(globVis);
+          SurfDecalLMapNoOverbright.SetLightMode(lightMode);
+          SurfDecalLMapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
+          SurfDecalLMapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+        }
         SurfDecalLMapNoOverbright.SetLightMap(1);
         //SurfDecalLMapNoOverbright.SetLMapOnly(tex, surf, cache);
         SurfDecalLMapNoOverbright.SetLMap(surf, tex, cache);
@@ -168,7 +183,13 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalLMapOverbright.Activate();
         SurfDecalLMapOverbright.SetTexture(0);
         //SurfDecalLMapOverbright_Locs.storeFogType();
-        SurfDecalLMapOverbright.SetFogFade(surf->Fade, 1.0f);
+        {
+          CALC_LMODE_VARS
+          SurfDecalLMapOverbright.SetLightGlobVis(globVis);
+          SurfDecalLMapOverbright.SetLightMode(lightMode);
+          SurfDecalLMapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
+          SurfDecalLMapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+        }
         SurfDecalLMapOverbright.SetLightMap(1);
         SurfDecalLMapOverbright.SetSpecularMap(2);
         //SurfDecalLMapOverbright.SetLMapOnly(tex, surf, cache);

@@ -1,12 +1,18 @@
 #version 120
 $include "common/common.inc"
 
+// used to render sprites
+#ifdef VV_MASKED_GLOW
+this should not happen!
+#endif
+
 uniform sampler2D Texture;
 $include "common/texshade.inc"
 #ifdef VV_MASKED_BRIGHTMAP
 $include "common/brightmap_vars.fs"
 #endif
 uniform vec4 Light;
+//uniform float Alpha;
 uniform float AlphaRef;
 
 $include "common/fog_vars.fs"
@@ -17,6 +23,7 @@ $include "common/texture_vars.fs"
 #ifdef VV_MASKED_GLOW
 $include "common/glow_vars.fs"
 #endif
+$include "common/doom_lighting.fs"
 
 
 void main () {
@@ -25,11 +32,7 @@ void main () {
   if (TexColor.a < AlphaRef) discard;
   //TexColor *= Light;
 
-#ifdef VV_MASKED_GLOW
-  vec4 lt = calcGlow(Light);
-#else
-  vec4 lt = Light;
-#endif
+  vec4 lt = calcLightLLev(Light);
 #ifdef VV_MASKED_BRIGHTMAP
   $include "common/brightmap_calc.fs"
 #endif

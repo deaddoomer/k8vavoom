@@ -1461,10 +1461,11 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
   }
 
   // bound, invert, and shift
+  // also, subtract ambient light, because it will be added back in the shader
   for (unsigned i = 0; i < (unsigned)size; ++i) {
-    lmtracer.blocklightsr[i] = xblight((int)lmtracer.blocklightsr[i]);
-    lmtracer.blocklightsg[i] = xblight((int)lmtracer.blocklightsg[i]);
-    lmtracer.blocklightsb[i] = xblight((int)lmtracer.blocklightsb[i]);
+    lmtracer.blocklightsr[i] = xblight((int)lmtracer.blocklightsr[i]-tR);
+    lmtracer.blocklightsg[i] = xblight((int)lmtracer.blocklightsg[i]-tG);
+    lmtracer.blocklightsb[i] = xblight((int)lmtracer.blocklightsb[i]-tB);
   }
 
   #ifdef VV_EXPERIMENTAL_LMAP_FILTER

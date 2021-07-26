@@ -14,10 +14,11 @@ uniform sampler2D SpecularMap;
 #endif
 #endif
 uniform float FullBright; // for fullbright; either 0.0 or 1.0
-#ifndef REG_LIGHTMAP
+//#ifndef REG_LIGHTMAP
 uniform vec4 Light;
-#endif
+//#endif
 $include "common/fog_vars.fs"
+$include "common/doom_lighting.fs"
 
 
 void main () {
@@ -38,6 +39,7 @@ void main () {
 
 #ifdef REG_LIGHTMAP
   // lightmapped
+/*
   vec3 lmc = texture2D(LightMap, LightmapCoordinate).rgb;
   lmc.r = max(lmc.r, FullBright);
   lmc.g = max(lmc.g, FullBright);
@@ -45,14 +47,29 @@ void main () {
 #ifdef VV_USE_OVERBRIGHT
   vec3 spc = texture2D(SpecularMap, LightmapCoordinate).rgb;
 #endif
-  FinalColor.rgb *= lmc.rgb;
+*/
+  vec4 amblight = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
+  amblight = calcLightLLev(amblight);
+  vec4 lt = texture2D(LightMap, LightmapCoordinate);
+  lt.a = 1.0;
+  //lt.a = mix(1.0, Light.a, FullBright); // required for `calcGlowLLev()`
+  //lt.a = Light.a; // required for `calcGlowLLev()`
+  lt.r = mix(lt.r, 0.0, FullBright);
+  lt.g = mix(lt.g, 0.0, FullBright);
+  lt.b = mix(lt.b, 0.0, FullBright);
+  //lt = calcGlow(lt);
+  lt.rgb += amblight.rgb;
+
+  FinalColor.rgb *= lt.rgb;
 #ifdef VV_USE_OVERBRIGHT
-  FinalColor.rgb += spc.rgb;
+  FinalColor.rgb += texture2D(SpecularMap, LightmapCoordinate).rgb;
 #endif
 #else
   // normal
-  FinalColor.rgb *= Light.rgb;
-  FinalColor.rgb *= max(Light.a, FullBright);
+  vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
+  lt = calcLightLLev(lt);
+  FinalColor.rgb *= lt.rgb;
+  //FinalColor.rgb *= max(lt.a, FullBright);
 #endif
   FinalColor.rgb = clamp(FinalColor.rgb, 0.0, 1.0);
 

@@ -30,6 +30,8 @@
 //
 //  VOpenGLDrawer::DrawMaskedPolygon
 //
+//  used only to render translucent walls
+//
 //==========================================================================
 void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additive, bool DepthWrite, bool onlyTranslucent) {
   if (!surf->IsPlVisible()) return; // viewer is in back side or on plane
@@ -51,6 +53,10 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
   //k8: non-translucent walls should not end here, so there is no need to recalc/check lightmaps
   const float lightLevel = getSurfLightLevel(surf);
   const bool zbufferWriteDisabled = (!DepthWrite || Additive || Alpha < 1.0f); // translucent things should not modify z-buffer
+
+  const float globVis = R_CalcGlobVis();
+  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const bool lightWithFog = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
 
   bool doDecals = RenderSurfaceHasDecals(surf);
 
@@ -80,11 +86,22 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     //SurfMaskedPolyBrightmapGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
     // this should be a different shader, but meh
     SurfMaskedPolyBrightmapGlow.SetAlphaRef(onlyTranslucent ? -1.0f : (Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f));
+
+    SurfMaskedPolyBrightmapGlow.SetLightGlobVis(globVis);
+    SurfMaskedPolyBrightmapGlow.SetLightMode(lightMode);
+    SurfMaskedPolyBrightmapGlow.SetAlpha(Alpha);
+
     SurfMaskedPolyBrightmapGlow.SetLight(
-      ((surf->Light>>16)&255)*lightLevel/255.0f,
-      ((surf->Light>>8)&255)*lightLevel/255.0f,
-      (surf->Light&255)*lightLevel/255.0f, Alpha);
-    SurfMaskedPolyBrightmapGlow.SetFogFade(surf->Fade, Alpha);
+      ((surf->Light>>16)&255)*255.0f,
+      ((surf->Light>>8)&255)*255.0f,
+      (surf->Light&255)*255.0f, lightLevel);
+    /*
+      SurfMaskedPolyBrightmapGlow.SetLight(
+        ((surf->Light>>16)&255)*lightLevel/255.0f,
+        ((surf->Light>>8)&255)*lightLevel/255.0f,
+        (surf->Light&255)*lightLevel/255.0f, -1.0f);
+    */
+    SurfMaskedPolyBrightmapGlow.SetFogFade((lightWithFog ? surf->Fade : 0), Alpha);
     SurfMaskedPolyBrightmapGlow.SetSpriteTex(TVec(tex->soffs, tex->toffs), tex->saxis, tex->taxis, tex_iw, tex_ih);
     attribPosition = SurfMaskedPolyBrightmapGlow.loc_Position;
   } else {
@@ -99,11 +116,21 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     //SurfMaskedPolyGlow.SetAlphaRef(Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f);
     // this should be a different shader, but meh
     SurfMaskedPolyGlow.SetAlphaRef(onlyTranslucent ? -1.0f : (Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f));
+
+    SurfMaskedPolyGlow.SetLightGlobVis(globVis);
+    SurfMaskedPolyGlow.SetLightMode(lightMode);
+    SurfMaskedPolyGlow.SetAlpha(Alpha);
     SurfMaskedPolyGlow.SetLight(
-      ((surf->Light>>16)&255)*lightLevel/255.0f,
-      ((surf->Light>>8)&255)*lightLevel/255.0f,
-      (surf->Light&255)*lightLevel/255.0f, Alpha);
-    SurfMaskedPolyGlow.SetFogFade(surf->Fade, Alpha);
+      ((surf->Light>>16)&255)*255.0f,
+      ((surf->Light>>8)&255)*255.0f,
+      (surf->Light&255)*255.0f, lightLevel);
+    /*
+      SurfMaskedPolyGlow.SetLight(
+        ((surf->Light>>16)&255)*lightLevel/255.0f,
+        ((surf->Light>>8)&255)*lightLevel/255.0f,
+        (surf->Light&255)*lightLevel/255.0f, -1.0f);
+    */
+    SurfMaskedPolyGlow.SetFogFade((lightWithFog ? surf->Fade : 0), Alpha);
     SurfMaskedPolyGlow.SetSpriteTex(TVec(tex->soffs, tex->toffs), tex->saxis, tex->taxis, tex_iw, tex_ih);
     attribPosition = SurfMaskedPolyGlow.loc_Position;
   }
@@ -186,19 +213,33 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
     if (ri.translucency == RenderStyleInfo::Fuzzy) shadtype = ShaderFuzzy;
   }
 
+  //const float globVis = R_CalcGlobVis();
+
   const bool trans = (ri.translucency || ri.alpha < 1.0f || Tex->isTranslucent());
   SetSpriteTexture(sptype, sprite_filter, Tex, Translation, CMap, (ri.isShaded() ? ri.stencilColor : 0u));
+
+  const bool fogAllowed = (ri.fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
+  //const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
 
   GLuint attribPosition;
   switch (shadtype) {
     case ShaderMasked:
       SurfMasked.Activate();
       SurfMasked.SetTexture(0);
+      /*
+      SurfMasked.SetLightGlobVis(globVis);
+      SurfMasked.SetLightMode(lightMode);
+      SurfMasked.SetAlpha(ri.alpha);
+      SurfMasked.SetLight(
+        ((ri.light>>16)&255)/255.0f,
+        ((ri.light>>8)&255)/255.0f,
+        (ri.light&255)/255.0f, ((ri.light>>24)&0xff)/255.0f);
+      */
       SurfMasked.SetLight(
         ((ri.light>>16)&255)/255.0f,
         ((ri.light>>8)&255)/255.0f,
         (ri.light&255)/255.0f, ri.alpha);
-      SurfMasked.SetFogFade(ri.fade, ri.alpha);
+      SurfMasked.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMasked.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
       SurfMasked.SetSpriteTex(texorg, saxis, taxis, tex_iw, tex_ih);
       attribPosition = SurfMasked.loc_Position;
@@ -211,11 +252,20 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       SelectTexture(1);
       SetSpriteBrightmapTexture(sptype, Tex->Brightmap);
       SelectTexture(0);
+      /*
+      SurfMaskedBrightmap.SetLightGlobVis(globVis);
+      SurfMaskedBrightmap.SetLightMode(lightMode);
+      SurfMaskedBrightmap.SetAlpha(ri.alpha);
+      SurfMaskedBrightmap.SetLight(
+        ((ri.light>>16)&255)/255.0f,
+        ((ri.light>>8)&255)/255.0f,
+        (ri.light&255)/255.0f, ((ri.light>>24)&0xff)/255.0f);
+      */
       SurfMaskedBrightmap.SetLight(
         ((ri.light>>16)&255)/255.0f,
         ((ri.light>>8)&255)/255.0f,
         (ri.light&255)/255.0f, ri.alpha);
-      SurfMaskedBrightmap.SetFogFade(ri.fade, ri.alpha);
+      SurfMaskedBrightmap.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMaskedBrightmap.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
       SurfMaskedBrightmap.SetSpriteTex(texorg, saxis, taxis, tex_iw, tex_ih);
       attribPosition = SurfMaskedBrightmap.loc_Position;
@@ -227,11 +277,20 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
         ((ri.stencilColor>>16)&255)/255.0f,
         ((ri.stencilColor>>8)&255)/255.0f,
         (ri.stencilColor&255)/255.0f);
+      /*
+      SurfMaskedStencil.SetLightGlobVis(globVis);
+      SurfMaskedStencil.SetLightMode(lightMode);
+      SurfMaskedStencil.SetAlpha(ri.alpha);
+      SurfMaskedStencil.SetLight(
+        ((ri.light>>16)&255)/255.0f,
+        ((ri.light>>8)&255)/255.0f,
+        (ri.light&255)/255.0f, ((ri.light>>24)&0xff)/255.0f);
+      */
       SurfMaskedStencil.SetLight(
         ((ri.light>>16)&255)/255.0f,
         ((ri.light>>8)&255)/255.0f,
         (ri.light&255)/255.0f, ri.alpha);
-      SurfMaskedStencil.SetFogFade(ri.fade, ri.alpha);
+      SurfMaskedStencil.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMaskedStencil.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
       SurfMaskedStencil.SetSpriteTex(texorg, saxis, taxis, tex_iw, tex_ih);
       attribPosition = SurfMaskedStencil.loc_Position;
@@ -239,11 +298,20 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
     case ShaderFakeShadow:
       SurfMaskedFakeShadow.Activate();
       SurfMaskedFakeShadow.SetTexture(0);
+      /*
+      SurfMaskedFakeShadow.SetLightGlobVis(globVis);
+      SurfMaskedFakeShadow.SetLightMode(lightMode);
+      SurfMaskedFakeShadow.SetAlpha(ri.alpha);
+      SurfMaskedFakeShadow.SetLight(
+        ((ri.light>>16)&255)/255.0f,
+        ((ri.light>>8)&255)/255.0f,
+        (ri.light&255)/255.0f, ((ri.light>>24)&0xff)/255.0f);
+      */
       SurfMaskedFakeShadow.SetLight(
         ((ri.light>>16)&255)/255.0f,
         ((ri.light>>8)&255)/255.0f,
         (ri.light&255)/255.0f, ri.alpha);
-      SurfMaskedFakeShadow.SetFogFade(ri.fade, ri.alpha);
+      SurfMaskedFakeShadow.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMaskedFakeShadow.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
       SurfMaskedFakeShadow.SetSpriteTex(texorg, saxis, taxis, tex_iw, tex_ih);
       attribPosition = SurfMaskedFakeShadow.loc_Position;
@@ -258,7 +326,8 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
         (ri.light&255)/255.0f, ri.alpha);
       */
       SurfMaskedFuzzy.SetTime(time);
-      SurfMaskedFuzzy.SetFogFade(ri.fade, ri.alpha);
+      //FIXME: lighting!
+      SurfMaskedFuzzy.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMaskedFuzzy.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
       SurfMaskedFuzzy.SetSpriteTex(texorg, saxis, taxis, tex_iw, tex_ih);
       attribPosition = SurfMaskedFuzzy.loc_Position;

@@ -236,6 +236,8 @@ extern int screenblocks; // viewport size
 
 extern vuint8 light_remap[256];
 extern VCvarB r_darken;
+extern VCvarI r_light_mode;
+extern VCvarF r_light_globvis;
 extern VCvarB r_allow_ambient;
 extern VCvarI r_ambient_min;
 extern VCvarB r_dynamic_lights;
@@ -324,7 +326,7 @@ bool R_HaveClassModelByName (VName clsName);
 
 static inline VVA_CHECKRESULT int R_GetLightLevel (const int fixedLevel, int llev) noexcept {
   llev = (fixedLevel > 0 ? clampToByte(fixedLevel) : (r_allow_ambient.asBool() ? clampToByte(llev) : 0));
-  if (r_darken.asBool()) llev = light_remap[(unsigned)llev];
+  if (r_light_mode.asInt() <= 0 && r_darken.asBool()) llev = light_remap[(unsigned)llev];
   return (llev >= r_ambient_min.asInt() ? llev : clampToByte(r_ambient_min.asInt()));
 }
 

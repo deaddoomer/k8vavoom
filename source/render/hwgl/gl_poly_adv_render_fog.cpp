@@ -26,6 +26,8 @@
 #include "gl_local.h"
 #include "gl_poly_adv_render.h"
 
+static VCvarB gl_dbg_adv_fog_nolightfade("gl_dbg_adv_fog_nolightfade", false, "Disable light fade fog?", 0);
+
 
 //==========================================================================
 //
@@ -62,6 +64,8 @@ void VOpenGLDrawer::DrawWorldFogPass () {
   texinfo_t lastTexinfo;
   lastTexinfo.initLastUsed();
 
+  const bool noLightFade = (gl_dbg_adv_fog_nolightfade.asBool() || r_light_mode.asInt() > 0);
+
   bool lastCullFace = true;
   glEnable(GL_CULL_FACE);
 
@@ -76,6 +80,7 @@ void VOpenGLDrawer::DrawWorldFogPass () {
     glDisable(GL_TEXTURE_2D);
     for (auto &&surf : dls.DrawSurfListSolid) {
       if (!surf->Fade) continue;
+      if (noLightFade && surf->Fade == FADE_LIGHT) continue; //!!!skip normal light fade
       if (lastFade != surf->Fade) {
         SADV_FLUSH_VBO();
         lastFade = surf->Fade;
@@ -99,6 +104,7 @@ void VOpenGLDrawer::DrawWorldFogPass () {
     vuint32 lastFade = 0;
     for (auto &&surf : dls.DrawSurfListMasked) {
       if (!surf->Fade) continue;
+      if (noLightFade && surf->Fade == FADE_LIGHT) continue; //!!!skip normal light fade
       if (lastFade != surf->Fade) {
         SADV_FLUSH_VBO();
         lastFade = surf->Fade;

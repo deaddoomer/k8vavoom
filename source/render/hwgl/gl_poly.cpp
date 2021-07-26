@@ -248,9 +248,15 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
   SurfSimple.SetTex(Tex);
   VV_GLDRAWER_DEACTIVATE_GLOW(SurfSimple);
 
+  const float globVis = R_CalcGlobVis();
+  const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
+  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
   const float lev = getSurfLightLevel(surf);
-  SurfSimple.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-  SurfSimple.SetFogFade(surf->Fade, 1.0f);
+  //SurfSimple.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+  SurfSimple.SetLightGlobVis(globVis);
+  SurfSimple.SetLightMode(lightMode);
+  SurfSimple.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+  SurfSimple.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
 
   // draw it
   /*
@@ -339,10 +345,17 @@ bool VOpenGLDrawer::RenderSimpleSurface (bool textureChanged, surface_t *surf) {
 
   if (surf->count < 3) return false;
 
+  const float globVis = R_CalcGlobVis();
+  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
+
   float lev = getSurfLightLevel(surf);
   if (doBrightmap) {
-    SurfSimpleBrightmap.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-    SurfSimpleBrightmap.SetFogFade(surf->Fade, 1.0f);
+    //SurfSimpleBrightmap.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+    SurfSimpleBrightmap.SetLightGlobVis(globVis);
+    SurfSimpleBrightmap.SetLightMode(lightMode);
+    SurfSimpleBrightmap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+    SurfSimpleBrightmap.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
     if (gp.isActive()) {
       VV_GLDRAWER_ACTIVATE_GLOW(SurfSimpleBrightmap, gp);
     } else {
@@ -350,16 +363,22 @@ bool VOpenGLDrawer::RenderSimpleSurface (bool textureChanged, surface_t *surf) {
     }
   } else {
     if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
-      SurfSimple.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfSimple.SetFogFade(surf->Fade, 1.0f);
+      //SurfSimple.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfSimple.SetLightGlobVis(globVis);
+      SurfSimple.SetLightMode(lightMode);
+      SurfSimple.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfSimple.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
       if (gp.isActive()) {
         VV_GLDRAWER_ACTIVATE_GLOW(SurfSimple, gp);
       } else {
         VV_GLDRAWER_DEACTIVATE_GLOW(SurfSimple);
       }
     } else {
-      SurfSimpleMasked.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfSimpleMasked.SetFogFade(surf->Fade, 1.0f);
+      //SurfSimpleMasked.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfSimpleMasked.SetLightGlobVis(globVis);
+      SurfSimpleMasked.SetLightMode(lightMode);
+      SurfSimpleMasked.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfSimpleMasked.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
       if (gp.isActive()) {
         VV_GLDRAWER_ACTIVATE_GLOW(SurfSimpleMasked, gp);
       } else {
@@ -479,12 +498,19 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
   }
   */
 
+  const float globVis = R_CalcGlobVis();
+  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
+
   if (doBrightmap) {
     if (gl_regular_disable_overbright) {
       SurfLightmapBrightmapNoOverbright.SetFullBright(fullBright);
       SurfLightmapBrightmapNoOverbright.SetLMap(surf, tex, cache);
-      SurfLightmapBrightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfLightmapBrightmapNoOverbright.SetFogFade(surf->Fade, 1.0f);
+      //SurfLightmapBrightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfLightmapBrightmapNoOverbright.SetLightGlobVis(globVis);
+      SurfLightmapBrightmapNoOverbright.SetLightMode(lightMode);
+      SurfLightmapBrightmapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfLightmapBrightmapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
       if (gp.isActive()) {
         VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapBrightmapNoOverbright, gp);
       } else {
@@ -493,8 +519,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
     } else {
       SurfLightmapBrightmapOverbright.SetFullBright(fullBright);
       SurfLightmapBrightmapOverbright.SetLMap(surf, tex, cache);
-      SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfLightmapBrightmapOverbright.SetFogFade(surf->Fade, 1.0f);
+      //SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfLightmapBrightmapOverbright.SetLightGlobVis(globVis);
+      SurfLightmapBrightmapOverbright.SetLightMode(lightMode);
+      SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfLightmapBrightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
       if (gp.isActive()) {
         VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapBrightmapOverbright, gp);
       } else {
@@ -506,8 +535,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
       if (gl_regular_disable_overbright) {
         SurfLightmapNoOverbright.SetFullBright(fullBright);
         SurfLightmapNoOverbright.SetLMap(surf, tex, cache);
-        SurfLightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapNoOverbright.SetFogFade(surf->Fade, 1.0f);
+        //SurfLightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+        SurfLightmapNoOverbright.SetLightGlobVis(globVis);
+        SurfLightmapNoOverbright.SetLightMode(lightMode);
+        SurfLightmapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+        SurfLightmapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {
           VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapNoOverbright, gp);
         } else {
@@ -516,8 +548,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
       } else {
         SurfLightmapOverbright.SetFullBright(fullBright);
         SurfLightmapOverbright.SetLMap(surf, tex, cache);
-        SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapOverbright.SetFogFade(surf->Fade, 1.0f);
+        //SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+        SurfLightmapOverbright.SetLightGlobVis(globVis);
+        SurfLightmapOverbright.SetLightMode(lightMode);
+        SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+        SurfLightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {
           VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapOverbright, gp);
         } else {
@@ -528,8 +563,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
       if (gl_regular_disable_overbright) {
         SurfLightmapMaskedNoOverbright.SetFullBright(fullBright);
         SurfLightmapMaskedNoOverbright.SetLMap(surf, tex, cache);
-        SurfLightmapMaskedNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapMaskedNoOverbright.SetFogFade(surf->Fade, 1.0f);
+        //SurfLightmapMaskedNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+        SurfLightmapMaskedNoOverbright.SetLightGlobVis(globVis);
+        SurfLightmapMaskedNoOverbright.SetLightMode(lightMode);
+        SurfLightmapMaskedNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+        SurfLightmapMaskedNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {
           VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapMaskedNoOverbright, gp);
         } else {
@@ -538,8 +576,11 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
       } else {
         SurfLightmapMaskedOverbright.SetFullBright(fullBright);
         SurfLightmapMaskedOverbright.SetLMap(surf, tex, cache);
-        SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapMaskedOverbright.SetFogFade(surf->Fade, 1.0f);
+        //SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+        SurfLightmapMaskedOverbright.SetLightGlobVis(globVis);
+        SurfLightmapMaskedOverbright.SetLightMode(lightMode);
+        SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+        SurfLightmapMaskedOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {
           VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapMaskedOverbright, gp);
         } else {

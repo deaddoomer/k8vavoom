@@ -14,6 +14,7 @@ $include "common/texture_vars.fs"
 
 //#ifdef VV_AMBIENT_GLOW
 $include "common/glow_vars.fs"
+$include "common/doom_lighting.fs"
 //#endif
 
 
@@ -26,7 +27,9 @@ void main () {
   if (TexColor.a < ALPHA_MASKED) discard; // only normal and masked walls should go thru this
 #endif
 
-  vec4 lt = calcGlow(Light);
+  //vec4 lt = calcGlow(Light);
+  vec4 lt = calcGlowLLev(Light);
+  //lt.rgb = vec3(0.2, 0.8, 0.2);
 #ifdef VV_SIMPLE_BRIGHTMAP
   $include "common/brightmap_calc.fs"
 #endif

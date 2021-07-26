@@ -876,6 +876,9 @@ public:
 void R_DrawViewBorder ();
 void R_ParseGLDefSkyBoxesScript (VScriptParser *sc);
 
+// for dark light mode
+float R_CalcGlobVis ();
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 //extern VCvarI r_fog;

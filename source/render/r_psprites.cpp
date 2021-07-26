@@ -316,6 +316,9 @@ void VRenderLevelShared::DrawPlayerSprites () {
   RenderStyleInfo ri;
   if (!CalculateRenderStyleInfo(ri, RendStyle, Alpha)) return;
 
+  const int oldRM = r_light_mode.asInt();
+  r_light_mode = 0; // switch to real ambient lighting
+
   int ltxr = 0, ltxg = 0, ltxb = 0;
   {
     // check if we have any light at player's origin (rough), and owned by player
@@ -439,6 +442,8 @@ void VRenderLevelShared::DrawPlayerSprites () {
       RenderPSprite(nSX, nSY, cl->getMFI(i), 3.0f/*NUMPSPRITES-ii*/, ri);
     }
   }
+
+  r_light_mode = oldRM; // restore lighting mode
 }
 
 

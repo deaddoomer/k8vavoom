@@ -26,6 +26,8 @@
 #include "gl_local.h"
 #include "gl_poly_adv_render.h"
 
+static VCvarF gl_dbg_adv_lightdimdist("gl_dbg_adv_lightdimdist", "2048", "Max light diminishing distance?", 0);
+
 
 //==========================================================================
 //
@@ -63,6 +65,8 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
       glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     }
   }
+
+  const float globVis = R_CalcGlobVis();
 
   // draw normal surfaces
   if (dls.DrawSurfListSolid.length() != 0 || dls.DrawSurfListMasked.length() != 0) {
@@ -127,10 +131,12 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         SADV_FLUSH_VBO(); \
         prevsflight = lev; \
         prevlight = surf->Light; \
+        (shader_).SetLightGlobVis(globVis); \
+        (shader_).SetLightMode(surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f); \
         (shader_).SetLight( \
-          ((prevlight>>16)&255)*lev/255.0f, \
-          ((prevlight>>8)&255)*lev/255.0f, \
-          (prevlight&255)*lev/255.0f, 1.0f); \
+          ((prevlight>>16)&255)*255.0f, \
+          ((prevlight>>8)&255)*255.0f, \
+          (prevlight&255)*255.0f, lev); \
       }
 
     #define SADV_CHECK_TEXTURE_BM(shader_)  do { \

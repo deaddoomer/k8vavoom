@@ -32,7 +32,10 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB r_darken("r_darken", true, "Darken level to better match original DooM?", CVAR_Archive);
+VCvarI r_light_mode("r_light_mode", "0", "Lighting mode (0:Vavoom; 1:Dark; 2:DarkBanded)?", CVAR_Archive);
+VCvarF r_light_globvis("r_light_globvis", "4", "Dark lighting mode visibility.", CVAR_Archive);
+
+VCvarB r_darken("r_darken", true, "Darken level to better match original Doom?", CVAR_Archive);
 VCvarI r_ambient_min("r_ambient_min", "0", "Minimal ambient light.", CVAR_Archive);
 VCvarB r_allow_ambient("r_allow_ambient", true, "Allow ambient lights?", CVAR_Archive);
 VCvarB r_dynamic_lights("r_dynamic_lights", true, "Allow dynamic lights?", CVAR_Archive);
@@ -1123,6 +1126,42 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
 }
 
 
+//===========================================================================
+//
+//  Doom-like lighting equation
+//
+//  level: [0..255]
+//
+//===========================================================================
+static inline float DoomLightingEquation (float llev, float zdist) {
+  //const lm = r_light_mode.asInt();
+  //if (lm <= 0) return llev;
+
+  // L is the integer llev level used in the game
+  const float L = llev; //*255.0;
+
+  const float z = fabsf(zdist);
+
+  const float LightGlobVis = R_CalcGlobVis();
+
+  // more-or-less Doom light level equation
+  const float vis = min2(LightGlobVis/z, 24.0f/32.0f);
+  const float shade = 2.0f-(L+12.0f)/128.0f;
+  float lightscale;
+
+  if (r_light_mode.asInt() >= 2) {
+    // banded
+    lightscale = float(-floorf(-(shade-vis)*31.0f)-0.5f)/31.0f;
+  } else {
+    // smooth
+    lightscale = shade-vis;
+  }
+
+  // result is the normalized colormap index (1 bright .. 0 dark)
+  return 255.0f*(1.0f-clampval(lightscale, 0.0f, 31.0f/32.0f));
+}
+
+
 //==========================================================================
 //
 //  VRenderLevelShared::CalculateSubAmbient
@@ -1149,9 +1188,22 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
     l = R_GetLightLevel(0, reglight->params->lightlevel+(flags&LP_IgnoreExtraLight ? 0 : ExtraLight));
 
     int SecLightColor = reglight->params->LightColor;
-    lr = ((SecLightColor>>16)&255)*l/255.0f;
-    lg = ((SecLightColor>>8)&255)*l/255.0f;
-    lb = (SecLightColor&255)*l/255.0f;
+    if (r_light_mode.asInt() <= 0 || (flags&LP_NoLightFade)) {
+      lr = ((SecLightColor>>16)&255)*l/255.0f;
+      lg = ((SecLightColor>>8)&255)*l/255.0f;
+      lb = (SecLightColor&255)*l/255.0f;
+    } else {
+      // calculate light fading
+      const TVec mp = p-Drawer->vieworg;
+      TVec pp;
+      pp.x = DotProduct(mp, Drawer->viewright);
+      pp.y = DotProduct(mp, Drawer->viewup);
+      pp.z = DotProduct(mp, Drawer->viewforward);
+      const float nl = DoomLightingEquation(l, pp.z);
+      lr = ((SecLightColor>>16)&255)*nl/255.0f;
+      lg = ((SecLightColor>>8)&255)*nl/255.0f;
+      lb = (SecLightColor&255)*nl/255.0f;
+    }
 
     // light from floor's lightmap
     //k8: nope, we'll use light sources to calculate this
@@ -1458,13 +1510,18 @@ vuint32 VRenderLevelShared::CalcEntityLight (VEntity *lowner, unsigned dflags) {
   const unsigned lflags =
     LP_IgnoreFixedLight|
     LP_IgnoreExtraLight|
+    LP_NoLightFade|
     (dflags&VDrawer::ELFlag_AllowSelfLights ? 0u : LP_IgnoreSelfLights)|
     (dflags&VDrawer::ELFlag_IgnoreDynLights ? LP_IgnoreDynLights : 0u)|
     (dflags&VDrawer::ELFlag_IgnoreStaticLights ? LP_IgnoreStatLights : 0u)|
     (dflags&VDrawer::ELFlag_IgnoreAmbLights ? LP_IgnoreAmbLight : 0u)|
     (dflags&VDrawer::ELFlag_IgnoreGlowLights ? LP_IgnoreGlowLights : 0u)|
     0u;
+  // we need real light
+  //const int oldRM = r_light_mode.asInt();
+  //r_light_mode = 0; // switch to real ambient lighting
   vuint32 res = LightPoint(lowner, lowner->Origin, max2(1.0f, lowner->Radius), max2(0.0f, lowner->Height), lowner->SubSector, lflags);
+  //r_light_mode = oldRM; // restore lighting mode
   if (res == 0u) res = 0x01000000u;
   return res;
 }

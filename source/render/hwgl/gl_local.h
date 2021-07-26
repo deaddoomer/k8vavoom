@@ -101,6 +101,7 @@ extern VCvarF gl_letterbox_scale;
 extern VCvarB gl_enable_depth_bounds;
 extern VCvarB gl_enable_clip_control;
 
+extern VCvarI r_light_mode;
 
 // ////////////////////////////////////////////////////////////////////////// //
 typedef void (*VV_GLOBJECTLABEL) (GLenum identifier, GLuint name, GLsizei length, const GLchar *label);
