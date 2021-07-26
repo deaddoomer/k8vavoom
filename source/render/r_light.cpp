@@ -33,7 +33,7 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 VCvarI r_light_mode("r_light_mode", "0", "Lighting mode (0:Vavoom; 1:Dark; 2:DarkBanded)?", CVAR_Archive);
-VCvarF r_light_globvis("r_light_globvis", "4", "Dark lighting mode visibility.", CVAR_Archive);
+VCvarF r_light_globvis("r_light_globvis", "8", "Dark lighting mode visibility.", CVAR_Archive);
 
 VCvarB r_darken("r_darken", true, "Darken level to better match original Doom?", CVAR_Archive);
 VCvarI r_ambient_min("r_ambient_min", "0", "Minimal ambient light.", CVAR_Archive);
