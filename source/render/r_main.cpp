@@ -79,6 +79,7 @@ static float prev_r_hack_aspect_scale = 0.0f;
 
 static VCvarF r_hack_psprite_yofs("r_hack_psprite_yofs", "0", "PSprite offset for non-standard ration scales. Positive is down.", CVAR_Archive);
 static float prev_r_hack_psprite_yofs = 0.0f;
+static float prev_r_light_globvis = -666.0f;
 
 static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
@@ -1229,6 +1230,7 @@ void VRenderLevelShared::ExecuteSetViewSize () {
   prev_r_dbg_proj_aspect = r_dbg_proj_aspect.asBool();
   prev_r_hack_aspect_scale = r_hack_aspect_scale.asFloat();
   prev_r_hack_psprite_yofs = r_hack_psprite_yofs.asFloat();
+  prev_r_light_globvis = r_light_globvis.asFloat();
 
   // sanitise screen size
   if (allow_small_screen_size) {
@@ -1416,7 +1418,8 @@ void VRenderLevelShared::SetupFrame () {
       r_vertical_fov != prev_vertical_fov_flag ||
       r_dbg_proj_aspect.asBool() != prev_r_dbg_proj_aspect ||
       r_hack_aspect_scale.asFloat() != prev_r_hack_aspect_scale ||
-      r_hack_psprite_yofs.asFloat() != prev_r_hack_psprite_yofs)
+      r_hack_psprite_yofs.asFloat() != prev_r_hack_psprite_yofs ||
+      r_light_globvis.asFloat() != prev_r_light_globvis)
   {
     ExecuteSetViewSize();
   }

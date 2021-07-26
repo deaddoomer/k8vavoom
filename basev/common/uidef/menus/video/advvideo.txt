@@ -125,6 +125,29 @@ menudef AdvVideoOptions {
 
   header "Lighting";
 
+  option enum {
+    title = "Light Mode";
+    cvar = r_light_mode;
+    list {
+      "Vavoom",
+      "DarkDoom",
+    }
+    help =
+      "This selects lighting mode.",
+      "\c[!WHITE]Vavoom\c- is the lighting mode used in Vavoom, and then in k8vavoom.",
+      "\c[!WHITE]DarkDoom\c- is the lighting mode that is closer to Vanilla Doom.",
+      "\c[!WHITE]DarkDoom Banded\c- is like the previous one, but with banded light levels.";
+  }
+
+  option slider [__k8vavoom_developer_version > 0] {
+    title = "Minimum DarkDoom Visibility";
+    cvar = r_light_globvis;
+    min = -128;
+    max = 128;
+    step = 0.2;
+    help = "Minimum visibility for DarkDoom lighting mode.";
+  }
+
   option bool {
     title = "Darken lights";
     cvar = r_darken;
