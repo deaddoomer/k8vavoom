@@ -1903,7 +1903,9 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
     // no need to do this anymore, solid texture texels should be processed as usual
     //if (NewTex->isTranslucent() && !OldTex->isTranslucent()) NewTex->ResetTranslucentFlag();
     // we may not need it for a long time
+    //GCon->Logf(NAME_Debug, "*** releasing %s", *OldTex->Name);
     OldTex->ReleasePixels();
+    //GCon->Logf(NAME_Debug, "*** released %s", *OldTex->Name);
     // k8: don't delete old texture, it can be referenced out there
     //delete OldTex;
     //OldTex = nullptr;

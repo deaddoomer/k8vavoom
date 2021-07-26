@@ -536,6 +536,9 @@ public:
   // the texture will be re-read on next `GetPixels()`
   // can be used to release hires texture memory
   virtual void ReleasePixels ();
+  // it's not enough to check `Pixels`; use this instead
+  // this is because camera textures, for example, never frees pixels
+  virtual bool PixelsReleased () const noexcept;
 
   virtual vuint8 *GetPixels () = 0;
   vuint8 *GetPixels8 ();

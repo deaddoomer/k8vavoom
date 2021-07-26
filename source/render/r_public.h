@@ -254,6 +254,7 @@ public:
   virtual bool IsHugeTexture () const noexcept override;
   virtual bool CheckModified () override;
   virtual void ReleasePixels () override;
+  virtual bool PixelsReleased () const noexcept override;
   virtual vuint8 *GetPixels () override;
   void CopyImage ();
   bool NeedUpdate ();

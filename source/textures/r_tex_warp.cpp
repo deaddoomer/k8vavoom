@@ -283,6 +283,7 @@ vuint8 *VWarp2Texture::GetPixels () {
 //==========================================================================
 void VWarpTexture::ReleasePixels () {
   if (InReleasingPixels()) return; // already released
+  if (PixelsReleased()) return; // safeguard
   VTexture::ReleasePixels();
   ReleasePixelsLock rlock(this);
   if (SrcTex) SrcTex->ReleasePixels();

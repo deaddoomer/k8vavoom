@@ -202,6 +202,18 @@ VTexture *VCameraTexture::GetHighResolutionTexture () {
 
 //==========================================================================
 //
+//  VCameraTexture::PixelsReleased
+//
+//  it's not enough to check `Pixels`; use this instead
+//
+//==========================================================================
+bool VCameraTexture::PixelsReleased () const noexcept {
+  return true; // yeah
+}
+
+
+//==========================================================================
+//
 //  VCameraTexture::ReleasePixels
 //
 //==========================================================================

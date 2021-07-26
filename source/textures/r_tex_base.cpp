@@ -310,6 +310,18 @@ bool VTexture::CheckModified () {
 
 //==========================================================================
 //
+//  VTexture::PixelsReleased
+//
+//  it's not enough to check `Pixels`; use this instead
+//
+//==========================================================================
+bool VTexture::PixelsReleased () const noexcept {
+  return (!Pixels && !Pixels8Bit && !Pixels8BitA);
+}
+
+
+//==========================================================================
+//
 //  VTexture::ReleasePixels
 //
 //==========================================================================
@@ -317,6 +329,12 @@ void VTexture::ReleasePixels () {
   if (SourceLump < 0) return; // this texture cannot be reloaded
   //GCon->Logf(NAME_Debug, "VTexture::ReleasePixels: '%s' (%d: %s)", *Name, SourceLump, *W_FullLumpName(SourceLump));
   if (InReleasingPixels()) return; // already released
+  // safeguard
+  if (PixelsReleased()) {
+    // just in case
+    mFormat = mOrigFormat; // undo `ConvertPixelsToRGBA()`
+    return;
+  }
   MarkGCUnused();
   ReleasePixelsLock rlock(this);
   if (Pixels) { delete[] Pixels; Pixels = nullptr; }
@@ -324,7 +342,6 @@ void VTexture::ReleasePixels () {
   if (Pixels8BitA) { delete[] Pixels8BitA; Pixels8BitA = nullptr; }
   Pixels8BitValid = Pixels8BitAValid = false;
   mFormat = mOrigFormat; // undo `ConvertPixelsToRGBA()`
-  if (Brightmap) Brightmap->ReleasePixels();
   // restore offset
   if (alreadyCropped) {
     SOffset += croppedOfsX;
@@ -334,6 +351,7 @@ void VTexture::ReleasePixels () {
   }
   alreadyCropped = false;
   croppedOfsX = croppedOfsY = 0;
+  if (Brightmap) Brightmap->ReleasePixels();
 }
 
 

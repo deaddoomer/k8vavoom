@@ -583,7 +583,7 @@ void VMultiPatchTexture::SetFrontSkyLayer () {
 //
 //==========================================================================
 vuint8 *VMultiPatchTexture::GetPixels () {
-  // if already got pixels, then just return them.
+  // if already got pixels, then just return them
   if (Pixels) return Pixels;
   transFlags = TransValueSolid; // for now
 
@@ -820,14 +820,26 @@ vuint8 *VMultiPatchTexture::GetPixels () {
 //==========================================================================
 void VMultiPatchTexture::ReleasePixels () {
   if (InReleasingPixels()) return; // already released
+  if (PixelsReleased()) return; // safeguard
+  //GCon->Logf(NAME_Debug, "VMultiPatchTexture::ReleasePixels (%d:%s:%d): 000 %s", SourceLump, *Name, (int)Type, *W_FullLumpName(SourceLump));
   VTexture::ReleasePixels();
+  //GCon->Logf(NAME_Debug, "VMultiPatchTexture::ReleasePixels (%d:%s:%d): 001", SourceLump, *Name, (int)Type);
   // release patch textures
   ReleasePixelsLock rlock(this);
+  assert(Type == -1);
+  #if 0
+  for (int f = 0; f < PatchCount; ++f) {
+    if (Patches[f].Tex) {
+      GCon->Logf(NAME_Debug, "VMultiPatchTexture::ReleasePixels (%d:%s:%d): patch #%d is %s (%d) %s", SourceLump, *Name, (int)Type, f, *Patches[f].Tex->Name, Patches[f].Tex->SourceLump, *W_FullLumpName(Patches[f].Tex->SourceLump));
+    }
+  }
+  #endif
   VTexPatch *patch = Patches;
   for (int i = 0; i < PatchCount; ++i, ++patch) {
     VTexture *PatchTex = patch->Tex;
     if (!PatchTex || PatchTex->Type == TEXTYPE_Null) continue;
     if (PatchTex == this) continue; // just in case
+    //GCon->Logf(NAME_Debug, "VMultiPatchTexture::ReleasePixels (%d:%s:%d): i=%d; txlump=%d (%s)", SourceLump, *Name, (int)Type, i, PatchTex->SourceLump, *PatchTex->Name);
     PatchTex->ReleasePixels();
   }
 }
