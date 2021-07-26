@@ -321,6 +321,10 @@ public:
     void activate ();
     void deactivate ();
 
+    // other FBO should have the same dimensions!
+    // returns `false` on any error
+    bool swapColorTextures (FBO *other);
+
     // this blits only color info
     // restore active FBO manually after calling this
     // it also can reset shader program

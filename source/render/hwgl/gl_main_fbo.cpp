@@ -277,6 +277,40 @@ void VOpenGLDrawer::FBO::deactivate () {
 
 //==========================================================================
 //
+//  VOpenGLDrawer::FBO::swapColorTextures
+//
+//  other FBO should have the same dimensions!
+//  returns `false` on any error
+//
+//==========================================================================
+bool VOpenGLDrawer::FBO::swapColorTextures (FBO *other) {
+  if (!other) return false;
+  if (!isValid() || !other->isValid()) return false;
+  if (mWidth != other->mWidth || mHeight != other->mHeight) return false;
+  if (!mFBO || !mColorTid || !other->mFBO || !other->mColorTid) return false;
+  //if (mOwner != other->mOwner) return false;
+
+  // attach our color texture to another FBO
+  glBindTexture(GL_TEXTURE_2D, mColorTid);
+  GLDRW_CHECK_ERROR("FBO: glBindTexture");
+  mOwner->p_glObjectLabelVA(GL_TEXTURE, mColorTid, "FBO(%u) color texture", other->mFBO);
+  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, other->mFBO);
+  mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
+
+  // attach other color texture to us
+  glBindTexture(GL_TEXTURE_2D, other->mColorTid);
+  GLDRW_CHECK_ERROR("FBO: glBindTexture");
+  mOwner->p_glObjectLabelVA(GL_TEXTURE, other->mColorTid, "FBO(%u) color texture", mFBO);
+  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+  mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, other->mColorTid, 0);
+
+  mOwner->ReactivateCurrentFBO();
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::FBO::blitTo
 //
 //  this blits only color info

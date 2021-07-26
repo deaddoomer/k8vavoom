@@ -1604,8 +1604,15 @@ void VOpenGLDrawer::PreparePostSrcFBO () {
   GLDisableDepthWrite();
   glEnable(GL_TEXTURE_2D);
 
-  // copy main FBO to tonemap source FBO, so we can read it
+  #if 0
+  // copy main FBO to postprocess source FBO, so we can read it
   mfbo->blitTo(&postSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postSrcFBO.getWidth(), postSrcFBO.getHeight(), GL_NEAREST);
+  #else
+  if (!postSrcFBO.swapColorTextures(mfbo)) {
+    GCon->Logf(NAME_Debug, "FBO texture swapping failed, use blitting");
+    mfbo->blitTo(&postSrcFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postSrcFBO.getWidth(), postSrcFBO.getHeight(), GL_NEAREST);
+  }
+  #endif
   mfbo->activate();
 
   // source texture
