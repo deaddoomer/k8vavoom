@@ -52,11 +52,9 @@ sec_region_t *VLevel::PointRegionLight (const subsector_t *sub, const TVec &p, u
   bool wasInsideSwimmable = false;
   float bestheight = FLT_MAX; // for swimmable
   float bestceil = FLT_MAX; // for solid
-  unsigned gflg = 0;
+  unsigned gflg = 3u; // both glows allowed
 
-  if (!sector->Has3DFloors()) {
-    if (glowFlags) *glowFlags = 3u; // both glows allowed
-  } else {
+  if (sector->Has3DFloors()) {
     // check regions
     for (sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
       if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual)) continue;
