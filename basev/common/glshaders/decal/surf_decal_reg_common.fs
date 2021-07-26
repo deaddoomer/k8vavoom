@@ -18,6 +18,7 @@ uniform float FullBright; // for fullbright; either 0.0 or 1.0
 uniform vec4 Light;
 //#endif
 $include "common/fog_vars.fs"
+$include "common/glow_vars.fs"
 $include "common/doom_lighting.fs"
 
 
@@ -48,17 +49,16 @@ void main () {
   vec3 spc = texture2D(SpecularMap, LightmapCoordinate).rgb;
 #endif
 */
-  vec4 amblight = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
-  amblight = calcLightLLev(amblight);
-  vec4 lt = texture2D(LightMap, LightmapCoordinate);
-  lt.a = 1.0;
-  //lt.a = mix(1.0, Light.a, FullBright); // required for `calcGlowLLev()`
-  //lt.a = Light.a; // required for `calcGlowLLev()`
-  lt.r = mix(lt.r, 0.0, FullBright);
-  lt.g = mix(lt.g, 0.0, FullBright);
-  lt.b = mix(lt.b, 0.0, FullBright);
-  //lt = calcGlow(lt);
-  lt.rgb += amblight.rgb;
+
+  vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
+  //lt = calcLightLLev(lt);
+  lt = calcGlowLLev(lt);
+
+  vec3 lmap = texture2D(LightMap, LightmapCoordinate).rgb;
+  lmap.r = mix(lmap.r, 0.0, FullBright);
+  lmap.g = mix(lmap.g, 0.0, FullBright);
+  lmap.b = mix(lmap.b, 0.0, FullBright);
+  lt.rgb += lmap.rgb;
 
   FinalColor.rgb *= lt.rgb;
 #ifdef VV_USE_OVERBRIGHT
@@ -67,7 +67,8 @@ void main () {
 #else
   // normal
   vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
-  lt = calcLightLLev(lt);
+  //lt = calcLightLLev(lt);
+  lt = calcGlowLLev(lt);
   FinalColor.rgb *= lt.rgb;
   //FinalColor.rgb *= max(lt.a, FullBright);
 #endif

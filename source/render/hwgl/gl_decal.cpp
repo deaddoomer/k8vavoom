@@ -132,10 +132,12 @@ static int maxrdcount = 0; // sorry for this global, it is for debugging
 
 #define CALC_LMODE_VARS  \
   const float globVis = R_CalcGlobVis(); \
-  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f); \
+  const int lightMode = (surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0); \
   const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0); \
   /*const float llev = (dc->flags&decal_t::Fullbright ? 1.0f : getSurfLightLevel(surf));*/ \
-  const float llev = getSurfLightLevel(surf);
+  const float llev = getSurfLightLevel(surf); \
+  GlowParams gp; \
+  CalcGlow(gp, surf);
 
 
 //==========================================================================
@@ -163,6 +165,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalNoLMap.SetLightMode(lightMode);
         SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
         SurfDecalNoLMap.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+        if (gp.isActive()) {
+          VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalNoLMap, gp);
+        } else {
+          VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalNoLMap);
+        }
       }
       break;
     case DT_LIGHTMAP:
@@ -175,6 +182,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           SurfDecalLMapNoOverbright.SetLightMode(lightMode);
           SurfDecalLMapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
           SurfDecalLMapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+          if (gp.isActive()) {
+            VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalLMapNoOverbright, gp);
+          } else {
+            VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalLMapNoOverbright);
+          }
         }
         SurfDecalLMapNoOverbright.SetLightMap(1);
         //SurfDecalLMapNoOverbright.SetLMapOnly(tex, surf, cache);
@@ -189,6 +201,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           SurfDecalLMapOverbright.SetLightMode(lightMode);
           SurfDecalLMapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
           SurfDecalLMapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+          if (gp.isActive()) {
+            VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalLMapOverbright, gp);
+          } else {
+            VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalLMapOverbright);
+          }
         }
         SurfDecalLMapOverbright.SetLightMap(1);
         SurfDecalLMapOverbright.SetSpecularMap(2);

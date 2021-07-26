@@ -1,6 +1,6 @@
 // this code is based on GZDoom lighting shader
 uniform float LightGlobVis;
-uniform float LightMode; // 0: Vavoom; 1: Dark; 2: DarkBanded
+uniform int LightMode; // 0: Vavoom; 1: Dark; 2: DarkBanded
 
 
 //===========================================================================
@@ -30,7 +30,7 @@ float DoomLightingEquation (float llev) {
   float shade = 2.0-(L+12.0)/128.0;
   float lightscale;
 
-  if (LightMode >= 2.0) {
+  if (LightMode >= 2) {
     // banded
     lightscale = float(-floor(-(shade-vis)*31.0)-0.5)/31.0;
   } else {
@@ -46,16 +46,16 @@ float DoomLightingEquation (float llev) {
 #ifdef HAS_GLOW_VARS
 vec4 calcGlowLLev (vec4 lt) {
   float llev = lt.a;
-  lt = calcGlow(lt.rgb); // `lt.a` is always `1.0`
-  if (LightMode > 0.0) llev = DoomLightingEquation(llev);
+  if (LightMode > 0) llev = DoomLightingEquation(llev);
   lt.rgb *= llev;
+  lt = calcGlow(lt.rgb, llev); // `lt.a` is always `1.0`
   //lt.a = 1.0;
   return lt;
 }
 #else
 vec4 calcLightLLev (vec4 lt) {
   float llev = lt.a;
-  if (LightMode > 0.0) llev = DoomLightingEquation(llev);
+  if (LightMode > 0) llev = DoomLightingEquation(llev);
   lt.rgb *= llev;
   lt.a = 1.0;
   return lt;

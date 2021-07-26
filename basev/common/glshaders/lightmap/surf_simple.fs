@@ -27,13 +27,10 @@ void main () {
   if (TexColor.a < ALPHA_MASKED) discard; // only normal and masked walls should go thru this
 #endif
 
-  //vec4 lt = calcGlow(Light);
   vec4 lt = calcGlowLLev(Light);
-  //lt.rgb = vec3(0.2, 0.8, 0.2);
 #ifdef VV_SIMPLE_BRIGHTMAP
   $include "common/brightmap_calc.fs"
 #endif
-  //TexColor *= lt;
 
   TexColor.rgb *= lt.rgb;
 

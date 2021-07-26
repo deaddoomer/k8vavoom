@@ -132,11 +132,11 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         prevsflight = lev; \
         prevlight = surf->Light; \
         (shader_).SetLightGlobVis(globVis); \
-        (shader_).SetLightMode(surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f); \
+        (shader_).SetLightMode(surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0); \
         (shader_).SetLight( \
-          ((prevlight>>16)&255)*255.0f, \
-          ((prevlight>>8)&255)*255.0f, \
-          (prevlight&255)*255.0f, lev); \
+          ((prevlight>>16)&255)/255.0f, \
+          ((prevlight>>8)&255)/255.0f, \
+          (prevlight&255)/255.0f, lev); \
       }
 
     #define SADV_CHECK_TEXTURE_BM(shader_)  do { \
@@ -184,14 +184,18 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
 
       // normal glowing textures
       if (idx < len && (*sptr)->shaderClass == SFST_NormalGlow) {
+        GlowParams lastgp;
         ShadowsAmbient.Activate();
         attribPosition = ShadowsAmbient.loc_Position;
         vboAdvSurf.enableAttrib(attribPosition);
         if (glTextureEnabled) { glTextureEnabled = false; glDisable(GL_TEXTURE_2D); }
         for (; idx < len && (*sptr)->shaderClass == SFST_NormalGlow; ++idx, ++sptr) {
           SADV_DO_HEAD_LIGHT(ShadowsAmbient)
-          SADV_FLUSH_VBO();
-          VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbient, surf->gp);
+          if (lastgp != surf->gp) {
+            lastgp = surf->gp;
+            SADV_FLUSH_VBO();
+            VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbient, surf->gp);
+          }
           SADV_DO_RENDER();
         }
         SADV_FLUSH_VBO();
@@ -218,6 +222,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
 
       // brightmap glow textures
       if (idx < len && (*sptr)->shaderClass == SFST_BMapGlow) {
+        GlowParams lastgp;
         ShadowsAmbientBrightmap.Activate();
         attribPosition = ShadowsAmbientBrightmap.loc_Position;
         vboAdvSurf.enableAttrib(attribPosition);
@@ -225,8 +230,11 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         for (; idx < len && (*sptr)->shaderClass == SFST_BMapGlow; ++idx, ++sptr) {
           SADV_DO_HEAD_LIGHT(ShadowsAmbientBrightmap)
           SADV_CHECK_TEXTURE_BM(ShadowsAmbientBrightmap);
-          SADV_FLUSH_VBO();
-          VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientBrightmap, surf->gp);
+          if (lastgp != surf->gp) {
+            lastgp = surf->gp;
+            SADV_FLUSH_VBO();
+            VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientBrightmap, surf->gp);
+          }
           SADV_DO_RENDER();
         }
         SADV_FLUSH_VBO();
@@ -265,6 +273,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
 
       // normal glowing textures
       if (idx < len && (*sptr)->shaderClass == SFST_NormalGlow) {
+        GlowParams lastgp;
         ShadowsAmbientMasked.Activate();
         attribPosition = ShadowsAmbientMasked.loc_Position;
         vboAdvSurf.enableAttrib(attribPosition);
@@ -272,8 +281,11 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         for (; idx < len && (*sptr)->shaderClass == SFST_NormalGlow; ++idx, ++sptr) {
           SADV_DO_HEAD_LIGHT(ShadowsAmbientMasked)
           SADV_CHECK_TEXTURE(ShadowsAmbientMasked);
-          SADV_FLUSH_VBO();
-          VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientMasked, surf->gp);
+          if (lastgp != surf->gp) {
+            lastgp = surf->gp;
+            SADV_FLUSH_VBO();
+            VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientMasked, surf->gp);
+          }
           SADV_DO_RENDER();
         }
         SADV_FLUSH_VBO();
@@ -300,6 +312,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
 
       // brightmap glow textures
       if (idx < len && (*sptr)->shaderClass == SFST_BMapGlow) {
+        GlowParams lastgp;
         ShadowsAmbientBrightmap.Activate();
         attribPosition = ShadowsAmbientBrightmap.loc_Position;
         vboAdvSurf.enableAttrib(attribPosition);
@@ -307,8 +320,11 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         for (; idx < len && (*sptr)->shaderClass == SFST_BMapGlow; ++idx, ++sptr) {
           SADV_DO_HEAD_LIGHT(ShadowsAmbientBrightmap)
           SADV_CHECK_TEXTURE_BM(ShadowsAmbientBrightmap);
-          SADV_FLUSH_VBO();
-          VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientBrightmap, surf->gp);
+          if (lastgp != surf->gp) {
+            lastgp = surf->gp;
+            SADV_FLUSH_VBO();
+            VV_GLDRAWER_ACTIVATE_GLOW(ShadowsAmbientBrightmap, surf->gp);
+          }
           SADV_DO_RENDER();
         }
         SADV_FLUSH_VBO();

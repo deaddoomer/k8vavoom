@@ -250,7 +250,7 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
 
   const float globVis = R_CalcGlobVis();
   const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
-  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const int lightMode = (surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0);
   const float lev = getSurfLightLevel(surf);
   //SurfSimple.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
   SurfSimple.SetLightGlobVis(globVis);
@@ -346,7 +346,7 @@ bool VOpenGLDrawer::RenderSimpleSurface (bool textureChanged, surface_t *surf) {
   if (surf->count < 3) return false;
 
   const float globVis = R_CalcGlobVis();
-  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const int lightMode = (surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0);
   const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
 
   float lev = getSurfLightLevel(surf);
@@ -499,7 +499,7 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
   */
 
   const float globVis = R_CalcGlobVis();
-  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const int lightMode = (surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0);
   const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
 
   if (doBrightmap) {

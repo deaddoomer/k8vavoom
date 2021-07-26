@@ -55,7 +55,7 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
   const bool zbufferWriteDisabled = (!DepthWrite || Additive || Alpha < 1.0f); // translucent things should not modify z-buffer
 
   const float globVis = R_CalcGlobVis();
-  const float lightMode = (surf->Fade == FADE_LIGHT ? (float)r_light_mode.asInt() : 0.0f);
+  const int lightMode = (surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0);
   const bool lightWithFog = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
 
   bool doDecals = RenderSurfaceHasDecals(surf);

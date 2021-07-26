@@ -823,24 +823,24 @@ private:
   shad_.SetCeilingGlowHeight(128); \
 } while (0)
 
-  inline void CalcGlow (GlowParams &gp, const surface_t *surf) const {
+  inline void CalcGlow (GlowParams &gp, const surface_t *surf) const noexcept {
     gp.clear();
     if (!surf->seg || !surf->subsector) return;
     bool checkFloorFlat, checkCeilingFlat;
     const sector_t *sec = surf->subsector->sector;
     // check for glowing sector floor
-    if (surf->glowFloorHeight > 0 && surf->glowFloorColor) {
+    if (surf->glowFloorColor && surf->glowFloorHeight > 0.0f) {
       gp.floorGlowHeight = surf->glowFloorHeight;
-      gp.glowCF = surf->glowFloorColor;
+      gp.glowCF = surf->glowFloorColor; // always fullbright
       gp.floorZ = sec->floor.GetPointZClamped(*surf->seg->v1);
       checkFloorFlat = false;
     } else {
       checkFloorFlat = true;
     }
     // check for glowing sector ceiling
-    if (surf->glowCeilingHeight > 0 && surf->glowCeilingColor) {
+    if (surf->glowCeilingColor && surf->glowCeilingHeight > 0.0f) {
       gp.ceilingGlowHeight = surf->glowCeilingHeight;
-      gp.glowCC = surf->glowCeilingColor;
+      gp.glowCC = surf->glowCeilingColor; // always fullbright
       gp.ceilingZ = sec->ceiling.GetPointZClamped(*surf->seg->v1);
       checkCeilingFlat = false;
     } else {
@@ -853,24 +853,30 @@ private:
         if (checkFloorFlat && sec->floor.pic) {
           VTexture *gtex = GTextureManager(sec->floor.pic);
           if (gtex && gtex->Type != TEXTYPE_Null && gtex->glowing) {
-            gp.floorGlowHeight = 128;
+            gp.floorGlowHeight = 128.0f;
             gp.glowCF = gtex->glowing;
             gp.floorZ = sec->floor.GetPointZClamped(*surf->seg->v1);
             if (!gtex->IsGlowFullbright()) {
               // fix light level
-              gp.glowCF = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
+              //gp.glowCF = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
+              gp.glowCF &= 0x00ffffffu;
+            } else {
+              gp.glowCF |= 0xff000000u;
             }
           }
         }
         if (checkCeilingFlat && sec->ceiling.pic) {
           VTexture *gtex = GTextureManager(sec->ceiling.pic);
           if (gtex && gtex->Type != TEXTYPE_Null && gtex->glowing) {
-            gp.ceilingGlowHeight = 128;
+            gp.ceilingGlowHeight = 128.0f;
             gp.glowCC = gtex->glowing;
             gp.ceilingZ = sec->ceiling.GetPointZClamped(*surf->seg->v1);
             if (!gtex->IsGlowFullbright()) {
               // fix light level
-              gp.glowCC = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
+              //gp.glowCC = (gp.glowCF&0x00ffffffu)|(((unsigned)surf->Light)&0xff000000u);
+              gp.glowCC &= 0x00ffffffu;
+            } else {
+              gp.glowCC |= 0xff000000u;
             }
           }
         }

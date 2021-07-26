@@ -33,33 +33,18 @@ void main () {
   if (TexColor.a < ALPHA_MASKED) discard; // only normal and masked walls should go thru this
 #endif
 
-  /*
-  vec4 lt = texture2D(LightMap, LightmapCoordinate);
-  lt.a = 1.0;
-  //lt.a = mix(1.0, Light.a, FullBright); // required for `calcGlowLLev()`
-  //lt.a = Light.a; // required for `calcGlowLLev()`
-  lt.r = mix(lt.r, Light.r, FullBright);
-  lt.g = mix(lt.g, Light.g, FullBright);
-  lt.b = mix(lt.b, Light.b, FullBright);
-  //lt = calcGlow(lt);
+  vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
   lt = calcGlowLLev(lt);
-  */
-  vec4 amblight = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
-  amblight = calcGlowLLev(amblight);
-  vec4 lt = texture2D(LightMap, LightmapCoordinate);
-  lt.a = 1.0;
-  //lt.a = mix(1.0, Light.a, FullBright); // required for `calcGlowLLev()`
-  //lt.a = Light.a; // required for `calcGlowLLev()`
-  lt.r = mix(lt.r, 0.0, FullBright);
-  lt.g = mix(lt.g, 0.0, FullBright);
-  lt.b = mix(lt.b, 0.0, FullBright);
-  //lt = calcGlow(lt);
-  lt.rgb += amblight.rgb;
+
+  vec3 lmap = texture2D(LightMap, LightmapCoordinate).rgb;
+  lmap.r = mix(lmap.r, 0.0, FullBright);
+  lmap.g = mix(lmap.g, 0.0, FullBright);
+  lmap.b = mix(lmap.b, 0.0, FullBright);
+  lt.rgb += lmap.rgb;
 
 #ifdef VV_LIGHTMAP_BRIGHTMAP
   $include "common/brightmap_calc.fs"
 #endif
-  //TexColor *= lt;
   TexColor.rgb *= lt.rgb;
 #ifdef VV_USE_OVERBRIGHT
   TexColor.rgb += texture2D(SpecularMap, LightmapCoordinate).rgb;
@@ -67,7 +52,7 @@ void main () {
 
   // convert to premultiplied
   vec4 FinalColor;
-  FinalColor.a = lt.a;//TexColor.a*lt.a; //k8: non-additive and non-translucent should not end here anyway
+  FinalColor.a = 1.0; //lt.a;//TexColor.a*lt.a; //k8: additive and translucent should not end here anyway
   FinalColor.rgb = clamp(TexColor.rgb*FinalColor.a, 0.0, 1.0);
   //vec4 FinalColor = TexColor;
   $include "common/fog_calc.fs"

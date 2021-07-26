@@ -139,12 +139,33 @@ struct texinfo_t {
 // ////////////////////////////////////////////////////////////////////////// //
 //WARNING! take care of setting heights to non-zero, or glow shaders will fail!
 struct GlowParams {
+public:
   vuint32 glowCC, glowCF; // glow colors
   float floorZ, ceilingZ;
   float floorGlowHeight, ceilingGlowHeight;
-  GlowParams () : glowCC(0), glowCF(0), floorZ(0), ceilingZ(0), floorGlowHeight(128), ceilingGlowHeight(128) {}
-  inline bool isActive () const { return !!(glowCC|glowCF); }
-  inline void clear () { glowCC = glowCF = 0; floorGlowHeight = ceilingGlowHeight = 128; }
+
+public:
+  VVA_ALWAYS_INLINE GlowParams () noexcept : glowCC(0), glowCF(0), floorZ(0.0f), ceilingZ(0.0f), floorGlowHeight(128.0f), ceilingGlowHeight(128.0f) {}
+  VVA_ALWAYS_INLINE bool isActive () const noexcept { return !!(glowCC|glowCF); }
+  VVA_ALWAYS_INLINE void clear () noexcept { glowCC = glowCF = 0; floorGlowHeight = ceilingGlowHeight = 128; }
+  VVA_ALWAYS_INLINE bool operator = (const GlowParams &other) const noexcept {
+    return
+      glowCC == other.glowCC &&
+      glowCF == other.glowCF &&
+      FASI(floorZ) == FASI(other.floorZ) &&
+      FASI(ceilingZ) == FASI(other.ceilingZ) &&
+      FASI(floorGlowHeight) == FASI(other.floorGlowHeight) &&
+      FASI(ceilingGlowHeight) == FASI(other.ceilingGlowHeight);
+  }
+  VVA_ALWAYS_INLINE bool operator != (const GlowParams &other) const noexcept {
+    return
+      glowCC != other.glowCC ||
+      glowCF != other.glowCF ||
+      FASI(floorZ) != FASI(other.floorZ) ||
+      FASI(ceilingZ) != FASI(other.ceilingZ) ||
+      FASI(floorGlowHeight) != FASI(other.floorGlowHeight) ||
+      FASI(ceilingGlowHeight) != FASI(other.ceilingGlowHeight);
+  }
 };
 
 
