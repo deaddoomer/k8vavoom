@@ -537,17 +537,21 @@ VTexture *VTexture::GetHighResolutionTexture () {
 //  normalize 8-bit palette, remap color 0
 //
 //==========================================================================
-void VTexture::FixupPalette (rgba_t Palette[256], bool forceOpacity) {
+void VTexture::FixupPalette (rgba_t Palette[256], bool forceOpacity, bool transparent0) {
   if (!Palette) return;
   const int black = R_ProcessPalette(Palette, forceOpacity);
   if (Width < 1 || Height < 1) return;
   vassert(Pixels);
   uint8_t *pix = (uint8_t *)Pixels;
   for (int i = Width*Height; i--; ++pix) {
+    if (!transparent0 && *pix == 0) {
+      *pix = black;
+      continue;
+    }
     if (Palette[*pix].a == 0) {
       *pix = 0;
     } else if (*pix == 0) {
-      Pixels[i] = black;
+      *pix = black;
     }
   }
 }

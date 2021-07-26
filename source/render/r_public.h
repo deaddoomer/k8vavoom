@@ -272,7 +272,7 @@ extern vuint8 r_white_color; // and this is really white
 // remaps color 0 to the nearest color, emulates VGA if necessary
 // returns index of new color 0
 // if `forceOpacity` is set, colors [1..255] will be forced to full opacity
-int R_ProcessPalette (rgba_t pal[256], bool forceOpacity=true);
+int R_ProcessPalette (rgba_t pal[256], bool forceOpacity);
 
 #if defined(VAVOOM_RGB_TABLE_7_BITS)
 # define VAVOOM_COLOR_COMPONENT_MAX  (128)

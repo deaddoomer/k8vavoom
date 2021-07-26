@@ -414,7 +414,7 @@ vuint8 *VTgaTexture::GetPixels () {
 
   // for 8-bit textures remap color 0
   if (mFormat == TEXFMT_8Pal) {
-    FixupPalette(Palette, forcePalOpacity);
+    FixupPalette(Palette, forcePalOpacity, false/*transparent0*/);
     if (Width > 0 && Height > 0) {
       const vuint8 *s = Pixels;
       for (int cnt = Width*Height; cnt--; ++s) {

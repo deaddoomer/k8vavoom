@@ -567,7 +567,8 @@ public:
 protected:
   // normalize 8-bit palette, remap color 0
   // if `forceOpacity` is set, colors [1..255] will be forced to full opacity
-  void FixupPalette (rgba_t Palette[256], bool forceOpacity=true);
+  // if `transparent0` is set, color 0 will be transparent, otherwise it will be remapped
+  void FixupPalette (rgba_t Palette[256], bool forceOpacity, bool transparent0);
 };
 
 

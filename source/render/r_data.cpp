@@ -221,7 +221,7 @@ static void InitPalette () {
   }
   // find white color
   // preprocess, remap color 0
-  r_black_color = R_ProcessPalette(pal);
+  r_black_color = R_ProcessPalette(pal, true/*forceOpacity*/);
   // find white color
   const bool newDistAlgo = (r_color_distance_algo.asInt() > 0);
   int best_dist_white = (newDistAlgo ? 0x7fffffff : -0x7fffffff);

@@ -329,7 +329,7 @@ vuint8 *VPcxTexture::GetPixels () {
       //Palette[c].a = 255; // no need, it will be set by `FixupPalette()`
     }
 
-    FixupPalette(Palette);
+    FixupPalette(Palette, true/*forceOpacity*/, false/*transparent0*/);
 
     if (Width > 0 && Height > 0) {
       const vuint8 *s = Pixels;

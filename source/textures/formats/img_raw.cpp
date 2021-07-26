@@ -130,7 +130,7 @@ vuint8 *VRawPicTexture::GetPixels () {
     for (unsigned i = 0; i < 256; ++i) {
       PStrm << Palette[i].r << Palette[i].g << Palette[i].b;
     }
-    black = R_ProcessPalette(Palette);
+    black = R_ProcessPalette(Palette, true/*forceOpacity*/);
   }
 
   // read data
