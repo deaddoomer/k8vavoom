@@ -1195,11 +1195,12 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
     } else {
       // calculate light fading
       const TVec mp = p-Drawer->vieworg;
-      TVec pp;
-      pp.x = DotProduct(mp, Drawer->viewright);
-      pp.y = DotProduct(mp, Drawer->viewup);
-      pp.z = DotProduct(mp, Drawer->viewforward);
-      const float nl = DoomLightingEquation(l, pp.z);
+      //TVec pp;
+      //pp.x = DotProduct(mp, Drawer->viewright);
+      //pp.y = DotProduct(mp, Drawer->viewup);
+      //pp.z = DotProduct(mp, Drawer->viewforward);
+      const float ppz = DotProduct(mp, Drawer->viewforward);
+      const float nl = DoomLightingEquation(l, ppz);
       lr = ((SecLightColor>>16)&255)*nl/255.0f;
       lg = ((SecLightColor>>8)&255)*nl/255.0f;
       lb = (SecLightColor&255)*nl/255.0f;
