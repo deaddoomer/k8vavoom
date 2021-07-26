@@ -341,7 +341,7 @@ void IM_InitAnimatedBack () {
     if (checkForDoom2()) {
       BgPic = 'interpic';
     } else {
-      if (im_episode > 3) {
+      if (im_episode > 4) {
         BgPic = 'interpic';
       } else {
         BgPic = name(va("$in_epi%d", im_episode));

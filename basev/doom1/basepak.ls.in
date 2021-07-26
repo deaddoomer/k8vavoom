@@ -1,6 +1,11 @@
 $dest basepak.pk3
 
+// additional gfx
+$recursedir graphics/  @CMAKE_CURRENT_SOURCE_DIR@/graphics/
+
 // various definitions
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt
 sndinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/sndinfo.txt
 sprofs.txt   @CMAKE_CURRENT_SOURCE_DIR@/sprofs.txt
+in_epi4.txt  @CMAKE_CURRENT_SOURCE_DIR@/in_epi4.txt
+credits.txt  @CMAKE_CURRENT_SOURCE_DIR@/credits.txt
