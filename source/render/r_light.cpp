@@ -1194,6 +1194,8 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
       lb = (SecLightColor&255)*l/255.0f;
     } else {
       // calculate light fading
+      // this transforms point into camera space
+      // as we are interested only in distance, it is enough to get transformed `z`
       const TVec mp = p-Drawer->vieworg;
       //TVec pp;
       //pp.x = DotProduct(mp, Drawer->viewright);
