@@ -1123,15 +1123,23 @@ MAPINFOCMD(cdid) { skipUnimplementedCommand(sc, true); }
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(gravity) {
   if (newFormat) sc->Expect("=");
-  sc->ExpectNumber();
-  info->Gravity = (float)sc->Number;
+  sc->ExpectFloat();
+  if (sc->Float <= 0.0 || sc->Float > 100000.0f) {
+    sc->Messagef("ignored invalid gravity value %g", sc->Float);
+  } else {
+    info->Gravity = sc->Float;
+  }
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(aircontrol) {
   if (newFormat) sc->Expect("=");
   sc->ExpectFloat();
-  info->AirControl = sc->Float;
+  if (sc->Float <= 0.0 || sc->Float > 100000.0f) {
+    sc->Messagef("ignored invalid air control value %g", sc->Float);
+  } else {
+    info->AirControl = sc->Float;
+  }
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
