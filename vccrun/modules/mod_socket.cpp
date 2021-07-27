@@ -235,6 +235,7 @@ struct SocketObj {
   //bool sendSQEmpty; // should we send "sbuf is empty" event if it is empty?
   double timeLastRecv;
   double timeLastSend;
+  VStr sslhost;
 
 #ifdef USE_GNU_TLS
   bool tls;
@@ -259,9 +260,11 @@ struct SocketObj {
       gnutls_init(&session, GNUTLS_CLIENT);
 
       // use default priorities
-      const char *err;
-      auto ret = gnutls_priority_set_direct(session, "PERFORMANCE", &err);
-      if (ret < 0) return false;
+      //const char *err;
+      //auto ret = gnutls_priority_set_direct(session, "PERFORMANCE", &err);
+      auto res = gnutls_set_default_priority(session);
+      if (res < 0) return false;
+      gnutls_session_enable_compatibility_mode(session);
 
       // put the x509 credentials to the current session
       gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, xcred);
@@ -309,6 +312,12 @@ struct SocketObj {
 #ifdef USE_GNU_TLS
     if (handshakeComplete) return 1;
     if (tls) {
+      // set host name
+      if (!sslhost.isEmpty()) {
+        int res = gnutls_server_name_set(session, GNUTLS_NAME_DNS, *sslhost, (size_t)sslhost.length());
+        if (res < 0) return -1; // oops
+        sslhost.clear(); // do not set it again
+      }
       auto ret = gnutls_handshake(session);
       if (ret < 0) {
         //fprintf(stderr, "GNUTLS: handshake failed(%d): %s\n", gnutls_error_is_fatal(ret), gnutls_strerror(ret));
@@ -518,6 +527,8 @@ static int SocketConnect (SockType type, const VStr &host, int port, SocketOptio
     so->toConnect = opts.ConnectTimeout;
 
     so->timeLastRecv = so->timeLastSend = Sys_Time();
+
+    so->sslhost = host.cloneUniqueMT();
 
     resid = so->id;
   }
