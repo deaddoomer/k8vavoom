@@ -304,6 +304,10 @@ bool VOpenGLDrawer::FBO::swapColorTextures (FBO *other) {
   mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, other->mColorTid, 0);
 
+  const GLuint tmp = mColorTid;
+  mColorTid = other->mColorTid;
+  other->mColorTid = tmp;
+
   mOwner->ReactivateCurrentFBO();
   return true;
 }
