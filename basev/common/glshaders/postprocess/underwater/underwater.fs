@@ -4,6 +4,7 @@ $include "common/common.inc"
 varying vec2 TextureCoordinate;
 uniform sampler2D ScreenFBO;
 uniform float InputTime;
+//uniform vec2 TextureDimensions;
 
 // based on the code by Jason Allen Doucette ( http://xona.com/jason/ )
 // Quake-style Underwater Distortion
@@ -35,6 +36,9 @@ void main () {
 
   // shear the coordinates
   fragCoord += distortOffset;
+
+  fragCoord.x = fract(fragCoord.x+1024.0);
+  fragCoord.y = fract(fragCoord.y+1024.0);
 
   gl_FragColor = texture2D(ScreenFBO, fragCoord);
 }

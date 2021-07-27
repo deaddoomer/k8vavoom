@@ -540,6 +540,7 @@ set(MAIN_OPENGL_SOURCES
   render/hwgl/gl_main.cpp
   render/hwgl/gl_main_ctl.cpp
   render/hwgl/gl_main_fbo.cpp
+  render/hwgl/gl_main_postprocess.cpp
   render/hwgl/gl_main_scissor.cpp
   render/hwgl/gl_main_shader.cpp
   render/hwgl/gl_main_views.cpp
