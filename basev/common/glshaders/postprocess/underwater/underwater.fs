@@ -37,8 +37,8 @@ void main () {
   // shear the coordinates
   fragCoord += distortOffset;
 
-  fragCoord.x = fract(fragCoord.x+1024.0);
-  fragCoord.y = fract(fragCoord.y+1024.0);
+  //fragCoord.x = fract(fragCoord.x+1024.0);
+  //fragCoord.y = fract(fragCoord.y+1024.0);
 
   gl_FragColor = texture2D(ScreenFBO, fragCoord);
 }
