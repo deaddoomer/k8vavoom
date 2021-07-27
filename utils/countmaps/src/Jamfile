@@ -1,0 +1,12 @@
+SubDir TOP src ;
+
+Main countmaps :
+  main.cpp
+;
+
+LinkLibraries countmaps :
+  libcore.a
+;
+
+
+SubInclude TOP src libs ;

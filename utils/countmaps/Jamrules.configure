@@ -1,0 +1,17 @@
+PROJECT_NAME = "jamtest" ;
+
+
+rule -configure- {
+  -configure-add-line- DEFINES "+=" HAVE_INTTYPES_H ";" ;
+  if $(NT) || $(WINDOZE) {
+    -configure-add-line- LINKLIBS.all "+=" "-lwinmm" ";" ;
+    -configure-add-line- LINKFLAGS.all "+=" '-Wl,-subsystem,console' ";" ;
+  } else {
+    -configure-add-line- LINKFLAGS.all "+=" -pthread ";" ;
+  }
+}
+
+
+check-setup-windoze ;
+if $(NT) || $(WINDOZE) { K8JAM-CONFIGURE-FILE = $(TOP)/Jamrules.auto.shitdoze.configure ; }
+configure ;
