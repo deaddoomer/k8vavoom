@@ -81,13 +81,23 @@ static int internalCheck (VStr fname, bool isWAD, int startfile) {
           continue;
         }
         const bool intrWAD = (memcmp(sign, "IWAD", 4) == 0 || memcmp(sign, "PWAD", 4) == 0);
+        FSysAuxMark *mark = W_MarkAuxiliary();
         int cfx = W_AddAuxiliaryStream(xst, (intrWAD ? VFS_Wad : VFS_Archive));
-        //GLog.Logf(NAME_Debug, "fh=%d (%d)", cfx, W_LumpFile(cfx));
-        for (auto &&it : WadMapIterator::FromWadFile(W_LumpFile(cfx))) {
-          //GLog.Logf(NAME_Debug, "lump %d:<%s>: map %s", nlump, *W_FullLumpName(nlump), *it.getFullName());
-          (void)it;
-          ++count;
+        if (cfx >= 0) {
+          int localcount = 0;
+          //GLog.Logf(NAME_Debug, "fh=%d (%d)", cfx, W_LumpFile(cfx));
+          for (auto &&it : WadMapIterator::FromWadFile(W_LumpFile(cfx))) {
+            //GLog.Logf(NAME_Debug, "lump %d:<%s>: map %s", nlump, *W_FullLumpName(nlump), *it.getFullName());
+            (void)it;
+            ++count;
+            ++localcount;
+          }
+          if (localcount) GLog.Logf("%-2d : %s", localcount, *W_FullLumpName(nlump));
+        } else {
+          xst->Close();
+          delete xst;
         }
+        W_ReleaseAuxiliary(mark);
       }
       return count;
     }
@@ -144,6 +154,11 @@ static int checkFile (VStr fname) {
   /*const int aux =*/ W_StartAuxiliary();
   //GLog.Logf(NAME_Debug, "%s: isWAD=%d", *fname, (int)isWAD);
   const int stx = W_AddAuxiliaryStream(mainst, (isWAD ? VFS_Wad : VFS_Archive));
+  if (stx == -1) {
+    mainst->Close();
+    delete mainst;
+    return -1;
+  }
   const int res = internalCheck(fname, isWAD, stx);
   W_CloseAuxiliary();
   return res;
