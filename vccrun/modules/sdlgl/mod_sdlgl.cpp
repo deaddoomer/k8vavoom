@@ -3875,6 +3875,10 @@ IMPLEMENT_FUNCTION(VGLVideo, get_currZ) {
   RET_INT(currZ);
 }
 
+IMPLEMENT_FUNCTION(VGLVideo, get_currZFloat) {
+  RET_FLOAT(currZFloat);
+}
+
 IMPLEMENT_FUNCTION(VGLVideo, set_currZ) {
   int z;
   vobjGetParam(z);
@@ -4199,11 +4203,16 @@ IMPLEMENT_FUNCTION(VGLVideo, glSetColor) {
   if (mInited) glColor4f(r, g, b, a);
 }
 
-// native final static void glBegin (GLBegin mode);
+// native final static void glBegin (GLBegin mode, optional bool for2d/*=false*/);
 IMPLEMENT_FUNCTION(VGLVideo, glBegin) {
   int mode;
-  vobjGetParam(mode);
+  VOptParamBool for2d(false);
+  vobjGetParam(mode, for2d);
   if (mInited) {
+    if (for2d) {
+      setupBlending();
+      glDisable(GL_TEXTURE_2D);
+    }
     switch (mode) {
       case GLBegin_Points: glBegin(GL_POINTS); break;
       case GLBegin_Lines: glBegin(GL_LINES); break;
@@ -4215,6 +4224,7 @@ IMPLEMENT_FUNCTION(VGLVideo, glBegin) {
       case GLBegin_Quads: glBegin(GL_QUADS); break;
       case GLBegin_QuadStrip: glBegin(GL_QUAD_STRIP); break;
       case GLBegin_Polygon: glBegin(GL_POLYGON); break;
+      default: GLog.Log(NAME_Error, "invalid `glBegin()` argument"); break;
     }
   }
 }

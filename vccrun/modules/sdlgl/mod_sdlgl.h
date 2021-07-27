@@ -285,6 +285,7 @@ public:
   DECLARE_FUNCTION(get_depthFunc)
   DECLARE_FUNCTION(set_depthFunc)
 
+  DECLARE_FUNCTION(get_currZFloat)
   DECLARE_FUNCTION(get_currZ)
   DECLARE_FUNCTION(set_currZ)
 

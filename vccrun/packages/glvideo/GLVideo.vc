@@ -156,6 +156,7 @@ native final static ZFunc depthFunc { get; set; }
 // current z value, in range of [0..65535]
 // values closer to 0 takes priority
 native final static int currZ { get; set; }
+native final static float currZFloat { get; }
 
 
 //native final static void setSmoothLine (bool v);
@@ -301,7 +302,7 @@ enum GLBegin {
 native final static void glSetTexture (GLTexture tx, optional bool repeat); // `none` means disable texturing
 native final static void glSetColor (float r, float g, float b, optional float a/*=1*/);
 
-native final static void glBegin (GLBegin mode);
+native final static void glBegin (GLBegin mode, optional bool for2d/*=false*/);
 native final static void glEnd ();
 // with optional texture coordinates
 native final static void glVertex (TVec p, optional float s, optional float t);
