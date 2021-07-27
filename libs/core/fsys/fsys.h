@@ -144,15 +144,25 @@ enum WAuxFileType {
 };
 
 
+struct FSysAuxMark;
+
 // returns lump handle
 int W_StartAuxiliary (); // returns first aux index
 int W_OpenAuxiliary (VStr FileName); // -1: not found
 //int W_AddAuxiliary (VStr FileName); // -1: not found
-int W_AddAuxiliaryStream (VStream *strm, WAuxFileType ftype); // -1: error/not found; otherwise handle of the first appended file
+// -1: error/not found; otherwise handle of the first appended file
+// on success it will own the stream, otherwise won't
+int W_AddAuxiliaryStream (VStream *strm, WAuxFileType ftype);
 void W_CloseAuxiliary (); // close all aux files
 int W_GetFirstAuxFile (); // returns -1 if no aux archives were opened, or fileid
 int W_GetFirstAuxLump (); // returns -1 if no aux archives were opened, or lump id
 
+FSysAuxMark *W_MarkAuxiliary (); // can return `nullptr` on error; frees all opened auxes after calling this
+//WARNING! make sure you don't have open files from auxes to be released!
+void W_ReleaseAuxiliary (FSysAuxMark *&mark); // will free the mark, it cannot be used after this
+
+bool W_IsInAuxiliaryMode ();
+int W_AuxiliaryOpenedArchives ();
 
 // all checks/finders returns -1 if nothing was found.
 // well, except "get" kinds -- they're bombing out.

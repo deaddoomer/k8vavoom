@@ -51,6 +51,15 @@ bool fsys_EnableAuxSearch = false;
 static inline int getSPCount () { return (AuxiliaryIndex >= 0 && !fsys_EnableAuxSearch ? AuxiliaryIndex : fsysSearchPaths.length()); }
 
 
+static int auxMarkCounter = 0;
+
+struct FSysAuxMark {
+  int counter;
+  int AuxIndex; // copy of `AuxiliaryIndex`
+  int FreeFromFile; // free from this file
+};
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 FArchiveReaderInfo *arcInfoHead = nullptr;
 bool arcInfoArrayRecreate = true;
@@ -365,6 +374,7 @@ void W_AddFileFromZip (VStr WadName, VStream *WadStrm) {
 //==========================================================================
 static void W_CloseAuxiliary_NoLock () {
   if (AuxiliaryIndex >= 0) {
+    ++auxMarkCounter;
     // close all additional files
     for (int f = fsysSearchPaths.length()-1; f >= AuxiliaryIndex; --f) fsysSearchPaths[f]->Close();
     for (int f = fsysSearchPaths.length()-1; f >= AuxiliaryIndex; --f) {
@@ -395,7 +405,10 @@ void W_CloseAuxiliary () {
 //==========================================================================
 int W_StartAuxiliary () {
   MyThreadLocker glocker(&fsys_glock);
-  if (AuxiliaryIndex < 0) AuxiliaryIndex = fsysSearchPaths.length();
+  if (AuxiliaryIndex < 0) {
+    AuxiliaryIndex = fsysSearchPaths.length();
+    ++auxMarkCounter;
+  }
   return MAKE_HANDLE(AuxiliaryIndex, 0);
 }
 
@@ -546,6 +559,75 @@ int W_AddAuxiliaryStream (VStream *strm, WAuxFileType ftype) {
   }
 
   return MAKE_HANDLE(residx, 0);
+}
+
+
+//==========================================================================
+//
+//  W_MarkAuxiliary
+//
+//  can return `nullptr` on error
+//
+//==========================================================================
+FSysAuxMark *W_MarkAuxiliary () {
+  MyThreadLocker glocker(&fsys_glock);
+  if (AuxiliaryIndex < 0) return nullptr;
+  FSysAuxMark *res = (FSysAuxMark *)Z_Calloc(sizeof(FSysAuxMark));
+  res->counter = auxMarkCounter;
+  res->AuxIndex = AuxiliaryIndex;
+  res->FreeFromFile = fsysSearchPaths.length();
+  return res;
+}
+
+
+//==========================================================================
+//
+//  W_ReleaseAuxiliary
+//
+//  will free the mark, it cannot be used after this
+//
+//==========================================================================
+void W_ReleaseAuxiliary (FSysAuxMark *&mark) {
+  if (!mark) return;
+  MyThreadLocker glocker(&fsys_glock);
+  if (mark->counter == auxMarkCounter &&
+      mark->AuxIndex == AuxiliaryIndex &&
+      mark->FreeFromFile < fsysSearchPaths.length())
+  {
+    // close all additional files
+    //GLog.Logf(NAME_Debug, "W_ReleaseAuxiliary: auxindex=%d; from=%d; last=%d", mark->AuxIndex, mark->FreeFromFile, fsysSearchPaths.length()-1);
+    for (int f = fsysSearchPaths.length()-1; f >= mark->FreeFromFile; --f) fsysSearchPaths[f]->Close();
+    for (int f = fsysSearchPaths.length()-1; f >= mark->FreeFromFile; --f) {
+      delete fsysSearchPaths[f];
+      fsysSearchPaths[f] = nullptr;
+    }
+    fsysSearchPaths.setLength(mark->FreeFromFile);
+  }
+  Z_Free(mark);
+  mark = nullptr;
+}
+
+
+//==========================================================================
+//
+//  W_IsInAuxiliaryMode
+//
+//==========================================================================
+bool W_IsInAuxiliaryMode () {
+  MyThreadLocker glocker(&fsys_glock);
+  return (AuxiliaryIndex >= 0);
+}
+
+
+//==========================================================================
+//
+//  W_IsInAuxiliaryMode
+//
+//==========================================================================
+int W_AuxiliaryOpenedArchives () {
+  MyThreadLocker glocker(&fsys_glock);
+  if (AuxiliaryIndex < 0) return 0;
+  return fsysSearchPaths.length()-AuxiliaryIndex;
 }
 
 
