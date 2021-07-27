@@ -711,8 +711,10 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
         *lsidp = f; // update index
         if (doReports && !aszip && !IsDupLumpAllowed(lmp)) {
           if (!dupsReported.put(fi.fileNameIntr, true)) {
-            GLog.Logf(NAME_Warning, "duplicate lump \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
-            GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+            if (fsys_WarningReportsEnabled) {
+              GLog.Logf(NAME_Warning, "duplicate lump \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
+              GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+            }
           }
         }
       }
@@ -722,8 +724,10 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
     if (fi.fileNameIntr.length()) {
       if (doReports && aszip && filemap.has(fi.fileNameIntr)) {
         if (!dupsReported.put(fi.fileNameIntr, true)) {
-          GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
-          GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+          if (fsys_WarningReportsEnabled) {
+            GLog.Logf(NAME_Warning, "duplicate file \"%s\" in archive \"%s\".", *fi.fileNameIntr, *getArchiveName());
+            GLog.Logf(NAME_Warning, "THIS IS WRONG. DO NOT USE BROKEN TOOLS TO CREATE %s FILES!", (aszip ? "ARCHIVE" : "WAD"));
+          }
         }
       }
 
@@ -742,7 +746,7 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
   // bomb out on zscript
   if (!zscriptAllowed && seenZScriptLump >= 0) {
     if (fsys_IgnoreZScript) {
-      if (warnZScript) { warnZScript = false; GLog.Logf(NAME_Error, "Archive \"%s\" contains zscript!", *getArchiveName()); }
+      if (warnZScript && fsys_WarningReportsEnabled) { warnZScript = false; GLog.Logf(NAME_Error, "Archive \"%s\" contains zscript!", *getArchiveName()); }
     } else {
       Sys_Error("Archive \"%s\" contains zscript!", *getArchiveName());
     }

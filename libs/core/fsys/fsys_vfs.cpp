@@ -1269,7 +1269,7 @@ bool W_IsValidMapHeaderLump (int lump) {
 //==========================================================================
 void WadMapIterator::advanceToNextMapLump () {
   MyThreadLocker glocker(&fsys_glock);
-  //GLog.Logf(NAME_Debug, "***START: lump=%d***", lump);
+  //GLog.Logf(NAME_Debug, "***START: lump=%d*** (%s)", lump, *W_FullLumpName_NoLock(lump));
   while (lump >= 0) {
     if (W_IsValidMapHeaderLump_NoLock(lump)) {
       //GLog.Logf(NAME_Debug, "MAP LUMP %d (%s)", lump, *W_FullLumpName_NoLock(lump));

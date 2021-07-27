@@ -62,6 +62,7 @@ extern EName fsys_report_added_paks_logtype;
 extern bool fsys_developer_debug;
 extern int fsys_IgnoreZScript;
 extern bool fsys_DisableBDW;
+extern bool fsys_WarningReportsEnabled; // default is `true`
 
 // used for game detection
 extern bool fsys_EnableAuxSearch;
@@ -69,6 +70,11 @@ extern bool fsys_EnableAuxSearch;
 extern bool fsys_skipSounds;
 extern bool fsys_skipSprites;
 extern bool fsys_skipDehacked;
+
+extern bool fsys_report_added_paks;
+extern bool fsys_no_dup_reports;
+extern int fsys_dev_dump_paks;
+
 
 // this is internal now, use the api to set it
 //extern TArray<VStr> fsys_game_filters;

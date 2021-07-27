@@ -32,6 +32,7 @@ bool fsys_developer_debug = false;
 int fsys_IgnoreZScript = 1;
 bool fsys_DisableBDW = false;
 bool fsys_report_added_paks = true;
+bool fsys_WarningReportsEnabled = true;
 
 bool fsys_skipSounds = false;
 bool fsys_skipSprites = false;

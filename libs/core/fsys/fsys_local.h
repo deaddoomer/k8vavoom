@@ -310,12 +310,11 @@ VStream *FL_OpenFileReadBaseOnly_NoLock (VStr Name, int *lump);
 extern const VPK3ResDirInfo PK3ResourceDirs[];
 extern TArray<VSearchPath *> fsysSearchPaths;
 
-extern bool fsys_report_added_paks;
-extern bool fsys_no_dup_reports;
+//extern bool fsys_report_added_paks;
+//extern bool fsys_no_dup_reports;
+//extern int fsys_dev_dump_paks;
 
 extern mythread_mutex fsys_glock;
-
-extern int fsys_dev_dump_paks;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
