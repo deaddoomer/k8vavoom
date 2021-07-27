@@ -18,28 +18,17 @@ float DoomLightingEquation (float llev) {
     float z = gl_FragCoord.z/gl_FragCoord.w;
   #endif
 
-  // LightGlobVis = R_GetGlobVis(r_visibility) / 32.0
-  // Allow negative visibilities, just for novelty's sake
-  //return clamp(vis, -204.7, 204.7); // (205 and larger do not work in 5:4 aspect ratio)
-  //CUSTOM_CVAR(Float, r_visibility, 8.0f, CVAR_NOINITCALL)
-
-  //float LightGlobVis = 1280.0/32.0; //8.0/32.0; //8.0;
-
   // more-or-less Doom light level equation
   float vis = min(LightGlobVis/z, 24.0/32.0);
   float shade = 2.0-(L+12.0)/128.0;
-  float lightscale;
+  float lightscale = shade-vis;
 
-  if (LightMode >= 2) {
-    // banded
-    lightscale = float(-floor(-(shade-vis)*31.0)-0.5)/31.0;
-  } else {
-    // smooth
-    lightscale = shade-vis;
-  }
+  if (LightMode >= 2) lightscale = (-floor(-lightscale*31.0)-0.5)/31.0; // banded
 
-  // result is the normalized colormap index (1 bright .. 0 dark)
-  return 1.0-clamp(lightscale, 0.0, 31.0/32.0);
+  lightscale = clamp(lightscale, 0.0, 31.0/32.0);
+  // `lightscale` is the normalized colormap index (0 bright .. 1 dark)
+
+  return 1.0-lightscale;
 }
 
 

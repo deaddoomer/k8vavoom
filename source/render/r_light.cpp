@@ -1140,25 +1140,21 @@ static inline float DoomLightingEquation (float llev, float zdist) {
   // L is the integer llev level used in the game
   const float L = llev; //*255.0;
 
-  const float z = fabsf(zdist);
+  const float z = max2(fabsf(zdist), 0.001f);
 
   const float LightGlobVis = R_CalcGlobVis();
 
   // more-or-less Doom light level equation
   const float vis = min2(LightGlobVis/z, 24.0f/32.0f);
   const float shade = 2.0f-(L+12.0f)/128.0f;
-  float lightscale;
+  float lightscale = shade-vis;
 
-  if (r_light_mode.asInt() >= 2) {
-    // banded
-    lightscale = float(-floorf(-(shade-vis)*31.0f)-0.5f)/31.0f;
-  } else {
-    // smooth
-    lightscale = shade-vis;
-  }
+  if (r_light_mode.asInt() >= 2) lightscale = (-floorf(-lightscale*31.0f)-0.5f)/31.0f; // banded
 
-  // result is the normalized colormap index (1 bright .. 0 dark)
-  return 255.0f*(1.0f-clampval(lightscale, 0.0f, 31.0f/32.0f));
+  lightscale = clampval(lightscale, 0.0f, 31.0f/32.0f);
+  // `lightscale` is the normalized colormap index (0 bright .. 1 dark)
+
+  return 255.0f*(1.0f-lightscale);
 }
 
 
