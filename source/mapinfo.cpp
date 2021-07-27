@@ -1135,7 +1135,7 @@ MAPINFOCMD(gravity) {
 MAPINFOCMD(aircontrol) {
   if (newFormat) sc->Expect("=");
   sc->ExpectFloat();
-  if (sc->Float <= 0.0 || sc->Float > 100000.0f) {
+  if (sc->Float < 0.0 || sc->Float > 10.0f) {
     sc->Messagef("ignored invalid air control value %g", sc->Float);
   } else {
     info->AirControl = sc->Float;
