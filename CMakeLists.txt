@@ -325,9 +325,7 @@ endif(WITH_STRTODEX)
 ##############
 
 if(RPATH_VALUE)
-  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wl,-rpath /opt/gcc11/lib")
-  #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath /opt/gcc11/lib")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath ${RPATH_VALUE}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,${RPATH_VALUE}")
 endif(RPATH_VALUE)
 
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Werror=format-security")
