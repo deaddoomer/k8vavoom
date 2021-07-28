@@ -33,6 +33,8 @@ void *operator new (size_t size) noexcept(false);
 void *operator new[] (size_t size) noexcept(false);
 void operator delete (void *p) noexcept;
 void operator delete[] (void *p) noexcept;
+void operator delete (void *p, size_t size) noexcept;
+void operator delete[] (void *p, size_t size) noexcept;
 # define VV_ZONE_NOEXCEPT  noexcept
 #else
 # define VV_ZONE_NOEXCEPT

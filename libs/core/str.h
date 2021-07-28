@@ -691,7 +691,7 @@ public:
   static VVA_CHECKRESULT inline char wchar2win (vuint32 wc) noexcept { return (wc < 65536 ? wc2shitmap[wc] : '?'); }
   static VVA_CHECKRESULT inline char wchar2koi (vuint32 wc) noexcept { return (wc < 65536 ? wc2koimap[wc] : '?'); }
 
-  static VVA_CHECKRESULT inline VVA_PURE int digitInBase (char ch, int base=10) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST int digitInBase (char ch, int base=10) noexcept {
     if (base < 1 || base > 36 || ch < '0') return -1;
     if (base <= 10) return (ch < 48+base ? ch-48 : -1);
     if (ch >= '0' && ch <= '9') return ch-48;
@@ -700,7 +700,7 @@ public:
     return ch-65+10;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE char upcase1251 (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST char upcase1251 (char ch) noexcept {
     if ((vuint8)ch < 128) return ch-(ch >= 'a' && ch <= 'z' ? 32 : 0);
     if ((vuint8)ch >= 224 /*&& (vuint8)ch <= 255*/) return (vuint8)ch-32;
     if ((vuint8)ch == 184 || (vuint8)ch == 186 || (vuint8)ch == 191) return (vuint8)ch-16;
@@ -708,7 +708,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE char locase1251 (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST char locase1251 (char ch) noexcept {
     if ((vuint8)ch < 128) return ch+(ch >= 'A' && ch <= 'Z' ? 32 : 0);
     if ((vuint8)ch >= 192 && (vuint8)ch <= 223) return (vuint8)ch+32;
     if ((vuint8)ch == 168 || (vuint8)ch == 170 || (vuint8)ch == 175) return (vuint8)ch+16;
@@ -716,7 +716,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE bool isAlpha2151 (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST bool isAlpha2151 (char ch) noexcept {
     if (ch >= 'A' && ch <= 'Z') return true;
     if (ch >= 'a' && ch <= 'z') return true;
     if ((vuint8)ch >= 191) return true;
@@ -729,7 +729,7 @@ public:
   }
 
   /* koi8-u */
-  static VVA_CHECKRESULT inline VVA_PURE int locaseKOI (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST int locaseKOI (char ch) noexcept {
     if ((vuint8)ch < 128) {
       if (ch >= 'A' && ch <= 'Z') ch += 32;
     } else {
@@ -743,7 +743,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE int upcaseKOI (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST int upcaseKOI (char ch) noexcept {
     if ((vuint8)ch < 128) {
       if (ch >= 'a' && ch <= 'z') ch -= 32;
     } else {
@@ -757,7 +757,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE bool isAlphaKOI (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST bool isAlphaKOI (char ch) noexcept {
     if (ch >= 'A' && ch <= 'Z') return true;
     if (ch >= 'a' && ch <= 'z') return true;
     if ((vuint8)ch >= 192) return true;
@@ -769,7 +769,7 @@ public:
     return false;
   }
 
-  static VVA_CHECKRESULT inline VVA_PURE bool isAlphaAscii (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST bool isAlphaAscii (char ch) noexcept {
     return
       (ch >= 'A' && ch <= 'Z') ||
       (ch >= 'a' && ch <= 'z');
@@ -777,7 +777,7 @@ public:
 
   // returns length of the following utf-8 sequence from its first char, or -1 for invalid first char
   /*
-  static VVA_CHECKRESULT inline VVA_PURE int utf8CodeLen (char ch) noexcept {
+  static VVA_CHECKRESULT inline VVA_CONST int utf8CodeLen (char ch) noexcept {
     if ((vuint8)ch < 0x80) return 1;
     if ((ch&0xFE) == 0xFC) return 6;
     if ((ch&0xFC) == 0xF8) return 5;
@@ -821,12 +821,12 @@ public:
 };
 
 
-//inline vuint32 GetTypeHash (const char *s) { return (s && s[0] ? fnvHashBuf(s, strlen(s)) : 1); }
-//inline vuint32 GetTypeHash (const VStr &s) { return (s.length() ? fnvHashBuf(*s, s.length()) : 1); }
+//inline VVA_PURE vuint32 GetTypeHash (const char *s) { return (s && s[0] ? fnvHashBuf(s, strlen(s)) : 1); }
+//inline VVA_PURE vuint32 GetTypeHash (const VStr &s) { return (s.length() ? fnvHashBuf(*s, s.length()) : 1); }
 
 // results MUST be equal
-inline vuint32 GetTypeHash (const char *s) noexcept { return fnvHashStr(s); }
-inline vuint32 GetTypeHash (const VStr &s) noexcept { return fnvHashStr(*s); }
+inline VVA_PURE vuint32 GetTypeHash (const char *s) noexcept { return fnvHashStr(s); }
+inline VVA_PURE vuint32 GetTypeHash (const VStr &s) noexcept { return fnvHashStr(*s); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //

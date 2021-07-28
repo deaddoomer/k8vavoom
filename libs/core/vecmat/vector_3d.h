@@ -92,19 +92,22 @@ public:
   static const TVec InvalidVector;
 
 public:
-  inline TVec () noexcept {}
-  inline TVec (ENoInit) noexcept {}
+  VVA_ALWAYS_INLINE TVec () noexcept {}
+  VVA_ALWAYS_INLINE TVec (ENoInit) noexcept {}
   //nope;TVec () : x(0.0f), y(0.0f), z(0.0f) {}
-  inline TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
-  inline TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
-  inline TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
+  VVA_ALWAYS_INLINE TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
+  VVA_ALWAYS_INLINE TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
+  VVA_ALWAYS_INLINE TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
 
-  inline VVA_CHECKRESULT const float &operator [] (size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
-  inline VVA_CHECKRESULT float &operator [] (size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
+  //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(TVec)); return *this; }
+  VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { x = other.x; y = other.y; z = other.z; return *this; }
 
-  inline VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
-  inline VVA_CHECKRESULT bool isZero () const noexcept { return (x == 0.0f && y == 0.0f && z == 0.0f); }
-  inline VVA_CHECKRESULT bool isZero2D () const noexcept { return (x == 0.0f && y == 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return (x == 0.0f && y == 0.0f && z == 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return (x == 0.0f && y == 0.0f); }
 
   // this is what VavoomC wants: false is either zero, or invalid vector
   inline VVA_CHECKRESULT bool toBool () const noexcept {
@@ -113,9 +116,9 @@ public:
       (x != 0.0f || y != 0.0f || z != 0.0f);
   }
 
-  inline TVec &operator += (const TVec &v) noexcept { x += v.x; y += v.y; z += v.z; return *this; }
-  inline TVec &operator -= (const TVec &v) noexcept { x -= v.x; y -= v.y; z -= v.z; return *this; }
-  inline TVec &operator *= (float scale) noexcept { x *= scale; y *= scale; z *= scale; return *this; }
+  VVA_ALWAYS_INLINE TVec &operator += (const TVec &v) noexcept { x += v.x; y += v.y; z += v.z; return *this; }
+  VVA_ALWAYS_INLINE TVec &operator -= (const TVec &v) noexcept { x -= v.x; y -= v.y; z -= v.z; return *this; }
+  VVA_ALWAYS_INLINE TVec &operator *= (float scale) noexcept { x *= scale; y *= scale; z *= scale; return *this; }
   inline TVec &operator /= (float scale) noexcept {
     scale = 1.0f/scale;
     if (isFiniteF(scale)) {
@@ -128,36 +131,36 @@ public:
     return *this;
   }
 
-  inline TVec operator + (void) const noexcept { return *this; }
-  inline TVec operator - (void) const noexcept { return TVec(-x, -y, -z); }
+  VVA_ALWAYS_INLINE TVec operator + (void) const noexcept { return *this; }
+  VVA_ALWAYS_INLINE TVec operator - (void) const noexcept { return TVec(-x, -y, -z); }
 
 #ifdef USE_FAST_INVSQRT
-  inline VVA_CHECKRESULT float invlength () const noexcept { return fastInvSqrtf(VSUM3(x*x, y*y, z*z)); }
-  inline VVA_CHECKRESULT float invlength2D () const noexcept { return fastInvSqrtf(VSUM2(x*x, y*y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength () const noexcept { return fastInvSqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength2D () const noexcept { return fastInvSqrtf(VSUM2(x*x, y*y)); }
 #else
-  inline VVA_CHECKRESULT float invlength () const noexcept { return 1.0f/sqrtf(VSUM3(x*x, y*y, z*z)); }
-  inline VVA_CHECKRESULT float invlength2D () const noexcept { return 1.0f/sqrtf(VSUM2(x*x, y*y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength () const noexcept { return 1.0f/sqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength2D () const noexcept { return 1.0f/sqrtf(VSUM2(x*x, y*y)); }
 #endif
 
-  inline VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
 
-  inline VVA_CHECKRESULT float Length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
-  inline VVA_CHECKRESULT float length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
 
-  inline VVA_CHECKRESULT float Length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
-  inline VVA_CHECKRESULT float length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
 
-  inline VVA_CHECKRESULT float LengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
-  inline VVA_CHECKRESULT float lengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float LengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float lengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
 
-  inline VVA_CHECKRESULT float Length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
-  inline VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
 
-  inline VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
-  inline VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
 
-  inline VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
-  inline VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
 
   inline void normaliseInPlace () noexcept { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; }
   inline void normalise2DInPlace () noexcept { const float invlen = invlength2D(); x *= invlen; y *= invlen; z = 0.0f; }
@@ -168,31 +171,31 @@ public:
   inline VVA_CHECKRESULT TVec Normalised2D () const noexcept { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
   inline VVA_CHECKRESULT TVec normalised2D () const noexcept { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
 
-  inline VVA_CHECKRESULT float Dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
-  inline VVA_CHECKRESULT float dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
 
-  inline VVA_CHECKRESULT float DotV2Neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
-  inline VVA_CHECKRESULT float dotv2neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DotV2Neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dotv2neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
 
-  inline VVA_CHECKRESULT float Dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
-  inline VVA_CHECKRESULT float dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
 
-  inline VVA_CHECKRESULT TVec Cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
-  inline VVA_CHECKRESULT TVec cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec Cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
 
   // 2d cross product (z, as x and y are effectively zero in 2d)
-  inline VVA_CHECKRESULT float Cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
-  inline VVA_CHECKRESULT float cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
 
   // z is zero
-  inline VVA_CHECKRESULT TVec mul2 (const float s) const noexcept { return TVec(x*s, y*s, 0.0f); }
-  inline VVA_CHECKRESULT TVec mul3 (const float s) const noexcept { return TVec(x*s, y*s, z*s); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec mul2 (const float s) const noexcept { return TVec(x*s, y*s, 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec mul3 (const float s) const noexcept { return TVec(x*s, y*s, z*s); }
 
   // returns projection of this vector onto `v`
   inline VVA_CHECKRESULT TVec projectTo (const TVec &v) const noexcept { return v.mul3(dot(v)/v.lengthSquared()); }
   inline VVA_CHECKRESULT TVec projectTo2D (const TVec &v) const noexcept { return v.mul2(dot2D(v)/v.length2DSquared()); }
 
-  inline VVA_CHECKRESULT TVec sub2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec sub2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f); }
 
   // dir must be normalised, angle must be valid
   inline VVA_CHECKRESULT bool IsInSpotlight (const TVec &origin, const TVec &dir, const float angle) const noexcept {
@@ -302,55 +305,55 @@ static_assert(__builtin_offsetof(TVec, y) == __builtin_offsetof(TVec, x)+sizeof(
 static_assert(__builtin_offsetof(TVec, z) == __builtin_offsetof(TVec, y)+sizeof(float), "TVec layout fail (1)");
 static_assert(sizeof(TVec) == sizeof(float)*3, "TVec layout fail (2)");
 
-inline vuint32 GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
+VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
 
 
-static VVA_OKUNUSED inline TVec operator + (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, v2.x), VSUM2(v1.y, v2.y), VSUM2(v1.z, v2.z)); }
-static VVA_OKUNUSED inline TVec operator - (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, -(v2.x)), VSUM2(v1.y, -(v2.y)), VSUM2(v1.z, -(v2.z))); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator + (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, v2.x), VSUM2(v1.y, v2.y), VSUM2(v1.z, v2.z)); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator - (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, -(v2.x)), VSUM2(v1.y, -(v2.y)), VSUM2(v1.z, -(v2.z))); }
 
-static VVA_OKUNUSED inline TVec operator * (const TVec &v, float s) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
-static VVA_OKUNUSED inline TVec operator * (float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
-static VVA_OKUNUSED inline TVec operator / (const TVec &v, float s) noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(v.x*s, v.y*s, v.z*s); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (const TVec &v, float s) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator / (const TVec &v, float s) noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(v.x*s, v.y*s, v.z*s); }
 
-static VVA_OKUNUSED inline bool operator == (const TVec &v1, const TVec &v2) noexcept { return (v1.x == v2.x && v1.y == v2.y && v1.z == v2.z); }
-static VVA_OKUNUSED inline bool operator != (const TVec &v1, const TVec &v2) noexcept { return (v1.x != v2.x || v1.y != v2.y || v1.z != v2.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE bool operator == (const TVec &v1, const TVec &v2) noexcept { return (v1.x == v2.x && v1.y == v2.y && v1.z == v2.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE bool operator != (const TVec &v1, const TVec &v2) noexcept { return (v1.x != v2.x || v1.y != v2.y || v1.z != v2.z); }
 
-//static VVA_OKUNUSED inline float operator * (const TVec &a, const TVec &b) noexcept { return a.dot(b); }
-//static VVA_OKUNUSED inline TVec operator ^ (const TVec &a, const TVec &b) noexcept { return a.cross(b); }
-//static VVA_OKUNUSED inline TVec operator % (const TVec &a, const TVec &b) noexcept { return a.cross(b); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE float operator * (const TVec &a, const TVec &b) noexcept { return a.dot(b); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator ^ (const TVec &a, const TVec &b) noexcept { return a.cross(b); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator % (const TVec &a, const TVec &b) noexcept { return a.cross(b); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec abs (const TVec &v1) noexcept { return v1.abs(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec abs (const TVec &v1) noexcept { return v1.abs(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline float Length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float Length2D (const TVec &v) noexcept { return v.length2D(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float length2D (const TVec &v) noexcept { return v.length2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length (const TVec &v) noexcept { return v.length(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length (const TVec &v) noexcept { return v.length(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2D (const TVec &v) noexcept { return v.length2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2D (const TVec &v) noexcept { return v.length2D(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline float LengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float LengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise (const TVec &v) noexcept { return v.normalised(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalised(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline float DotProductV2Neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float dotv2neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProductV2Neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dotv2neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
 
 // returns signed magnitude of cross-product (z, as x and y are effectively zero in 2d)
-static VVA_OKUNUSED VVA_CHECKRESULT inline float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 
 static VVA_OKUNUSED inline VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
 
@@ -418,7 +421,7 @@ static inline VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, 
 }
 
 
-static inline VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
   return
     x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
     y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
@@ -474,6 +477,7 @@ static inline VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec
 //
 //==========================================================================
 float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept;
+
 
 //==========================================================================
 //

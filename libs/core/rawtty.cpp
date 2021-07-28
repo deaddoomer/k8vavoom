@@ -839,9 +839,9 @@ static void parseMouse (TTYEvent &type, int toEscMSec) noexcept {
   }
   if (nn[1] > 0) --nn[1];
   if (nn[2] > 0) --nn[2];
-  if (nn[1] < 0) nn[1] = 1;
+  //if (nn[1] < 0) nn[1] = 1;
   if (nn[1] > 0x7fffu) nn[1] = 0x7fffu;
-  if (nn[2] < 0) nn[2] = 1;
+  //if (nn[2] < 0) nn[2] = 1;
   if (nn[2] > 0x7fffu) nn[2] = 0x7fffu;
   switch (nn[0]) {
     case 0: type.type = (press ? TTYEvent::Type::MLeftDown : TTYEvent::Type::MLeftUp); break;

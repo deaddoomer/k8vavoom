@@ -369,15 +369,19 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
 
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
     if (sides[i] == PlaneCoplanar) {
-      if (destfront) destfront[fcount] = points[i]; ++fcount; // not a bug
-      if (destback) destback[bcount] = points[i]; ++bcount; // not a bug
+      if (destfront) destfront[fcount] = points[i];
+      /*fuckyougcc*/ ++fcount; // not a bug
+      if (destback) destback[bcount] = points[i];
+      /*fuckyougcc*/ ++bcount; // not a bug
       continue;
     }
 
     if (sides[i] == PlaneFront) {
-      if (destfront) destfront[fcount] = points[i]; ++fcount; // not a bug
+      if (destfront) destfront[fcount] = points[i];
+      /*fuckyougcc*/ ++fcount; // not a bug
     } else {
-      if (destback) destback[bcount] = points[i]; ++bcount; // not a bug
+      if (destback) destback[bcount] = points[i];
+      /*fuckyougcc*/ ++bcount; // not a bug
     }
 
     if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
@@ -393,8 +397,10 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
       else if (norm[j] == -1.0f) mid[j] = -pdist;
       else mid[j] = p1[j]+idist*(p2[j]-p1[j]);
     }
-    if (destfront) destfront[fcount] = mid; ++fcount; // not a bug
-    if (destback) destback[bcount] = mid; ++bcount; // not a bug
+    if (destfront) destfront[fcount] = mid;
+    /*fuckyougcc*/ ++fcount; // not a bug
+    if (destback) destback[bcount] = mid;
+    /*fuckyougcc*/ ++bcount; // not a bug
   }
 
   if (frontcount) *frontcount = (int)fcount;

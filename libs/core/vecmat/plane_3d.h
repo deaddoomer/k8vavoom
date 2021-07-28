@@ -536,7 +536,7 @@ public:
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");
 static_assert(sizeof(TPlane) == sizeof(float)*4, "TPlane layout fail (1)");
 
-inline vuint32 GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
+inline VVA_PURE vuint32 GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
 
 static inline VVA_OKUNUSED VVA_CHECKRESULT
 float PlaneAngles2D (const TPlane *from, const TPlane *to) noexcept {

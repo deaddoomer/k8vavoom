@@ -436,7 +436,7 @@ void VZLibStreamReader::initialize () {
 //
 //==========================================================================
 int VZLibStreamReader::fillPackedBuffer () {
-  vassert(zStream.avail_in >= 0 && zStream.avail_in <= BUFFER_SIZE);
+  vassert(/*unsigned:zStream.avail_in >= 0 &&*/ zStream.avail_in <= BUFFER_SIZE);
   if (zStream.avail_in >= BUFFER_SIZE) return 1;
   vint32 left = (int)compressedSize-(srccurpos-stpos);
   if (left < 0) {
@@ -883,7 +883,7 @@ void VZLibStreamWriter::Serialise (void *buf, int len) {
 //  VZLibStreamWriter::Seek
 //
 //==========================================================================
-void VZLibStreamWriter::Seek (int pos) {
+void VZLibStreamWriter::Seek (int /*pos*/) {
   GLog.Log(NAME_Error, "Cannot seek in compressed writer");
   SetError();
 }

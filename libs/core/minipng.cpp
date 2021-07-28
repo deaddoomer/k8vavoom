@@ -105,7 +105,7 @@ bool PNGHandle::loadIDAT () {
         return false;
       }
       fidlen = Chunks[ChunkPt].Size;
-      if (fidlen < 0) return false;
+      //if (fidlen < 0) return false;
       if (fidlen > 0) { ++ChunkPt; break; }
     }
   }
@@ -203,7 +203,7 @@ float png_gamma = 0;
 //
 //==========================================================================
 bool M_CreatePNG (VStream *file, const vuint8 *buffer, const PalEntry *palette,
-                  ESSType color_type, int width, int height, int pitch, float gamma)
+                  ESSType color_type, int width, int height, int pitch, float /*gamma*/)
 {
   vuint8 work[8+   // signature
         12+2*4+5+  // IHDR

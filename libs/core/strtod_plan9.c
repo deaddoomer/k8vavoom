@@ -137,7 +137,7 @@ static double ldexp_intr (double d, int pwr, int *uoflag) {
       if (uoflag) *uoflag = 1;
       return makeInf(((*(const uint64_t *)&d)&DBL_SIGN_MASK) != 0);
     }
-    if ((exp += pwr) >= DBL_EXP_SMASK) {
+    if ((exp += pwr) >= (int)DBL_EXP_SMASK) { //k8: i am unsure about `int` here
       if (uoflag) *uoflag = 1;
       return makeInf(((*(const uint64_t *)&d)&DBL_SIGN_MASK) != 0);
     }

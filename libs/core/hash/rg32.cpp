@@ -96,7 +96,7 @@ void RG32::belt () {
   for (unsigned i = 12; i > 0; --i) {
     for (unsigned s = 0; s < 3; ++s) {
       unsigned v = i-1;
-      if (v < 0) v = 12;
+      //!if (v < 0) v = 12; //k8: this should not happen
       b[(s*13)+i] = b[(s*13)+v];
     }
   }

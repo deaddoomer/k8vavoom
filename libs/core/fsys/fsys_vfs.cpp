@@ -69,20 +69,18 @@ TArray<vuint8> arcInfoSignBuf;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static int OpenerCmpFunc (const void *aa, const void *bb, void *udata) {
-    if (aa == bb) return 0;
-    const FArchiveReaderInfo *a = *(const FArchiveReaderInfo **)aa;
-    const FArchiveReaderInfo *b = *(const FArchiveReaderInfo **)bb;
-    if (a->sign && a->sign[0]) {
-      // `a` has a signature, check `b`
-      if (!b->sign || !b->sign[0]) return -1; // prefer `a` to signature-less format anyway
-    } else {
-      // `a` doesn't have a signature, check `b`
-      if (b->sign && b->sign[0]) return 1; // prefer `b` to signature-less format anyway
-    }
-    return a->priority-b->priority;
+static int OpenerCmpFunc (const void *aa, const void *bb, void * /*udata*/) {
+  if (aa == bb) return 0;
+  const FArchiveReaderInfo *a = *(const FArchiveReaderInfo **)aa;
+  const FArchiveReaderInfo *b = *(const FArchiveReaderInfo **)bb;
+  if (a->sign && a->sign[0]) {
+    // `a` has a signature, check `b`
+    if (!b->sign || !b->sign[0]) return -1; // prefer `a` to signature-less format anyway
+  } else {
+    // `a` doesn't have a signature, check `b`
+    if (b->sign && b->sign[0]) return 1; // prefer `b` to signature-less format anyway
   }
+  return a->priority-b->priority;
 }
 
 
@@ -199,7 +197,7 @@ VSearchPath *FArchiveReaderInfo::OpenArchive (VStream *strm, VStr filename, bool
 //  VSearchPath::ListWadFiles
 //
 //==========================================================================
-void VSearchPath::ListWadFiles (TArray<VStr> &list) {
+void VSearchPath::ListWadFiles (TArray<VStr> &/*list*/) {
 }
 
 
@@ -208,7 +206,7 @@ void VSearchPath::ListWadFiles (TArray<VStr> &list) {
 //  VSearchPath::ListPk3Files
 //
 //==========================================================================
-void VSearchPath::ListPk3Files (TArray<VStr> &list) {
+void VSearchPath::ListPk3Files (TArray<VStr> &/*list*/) {
 }
 
 
@@ -266,7 +264,7 @@ static void AddArchiveFile_NoLock (VStr filename, VSearchPath *arc, bool allowpk
 //  from a root directory
 //
 //==========================================================================
-void W_AddDiskFile (VStr FileName, bool FixVoices) {
+void W_AddDiskFile (VStr FileName, bool /*FixVoices*/) {
   int wadtime = Sys_FileTime(FileName);
   if (wadtime == -1) Sys_Error("Required file \"%s\" doesn't exist!", *FileName);
 
@@ -309,7 +307,7 @@ void W_AddDiskFile (VStr FileName, bool FixVoices) {
 //  W_AddDiskFileOptional
 //
 //==========================================================================
-bool W_AddDiskFileOptional (VStr FileName, bool FixVoices) {
+bool W_AddDiskFileOptional (VStr FileName, bool /*FixVoices*/) {
   int wadtime = Sys_FileTime(FileName);
   if (wadtime == -1) return false;
 

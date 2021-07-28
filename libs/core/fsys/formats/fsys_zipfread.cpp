@@ -52,8 +52,8 @@
 
 #ifndef VAVOOM_USE_LIBLZMA
 static const ISzAlloc fsysLzmaAlloc = {
-  .Alloc = [](ISzAllocPtr p, size_t size) -> void * { return Z_Malloc((int)size); },
-  .Free = [](ISzAllocPtr p, void *addr) -> void { Z_Free(addr); },
+  .Alloc = [](ISzAllocPtr /*p*/, size_t size) -> void * { return Z_Malloc((int)size); },
+  .Free = [](ISzAllocPtr /*p*/, void *addr) -> void { Z_Free(addr); },
 };
 #endif
 

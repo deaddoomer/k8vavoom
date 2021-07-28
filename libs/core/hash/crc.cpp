@@ -443,7 +443,7 @@ static const vuint32 crcctbl88[256] = {
 
 
 // conforms to RFC 3720 (section B.4.)
-vuint32 crc32cBuffer (vuint32 crc32c, const void *data, size_t length) noexcept {
+VVA_PURE vuint32 crc32cBuffer (vuint32 crc32c, const void *data, size_t length) noexcept {
   if (length) {
     crc32c = ~crc32c;
     const vuint8 *src = (const vuint8 *)data;

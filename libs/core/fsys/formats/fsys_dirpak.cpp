@@ -135,7 +135,7 @@ void VDirPakFile::ScanDirectory (VStr relpath, int depth) {
 //  do not refresh file size, to support dynamic reloads
 //
 //==========================================================================
-void VDirPakFile::UpdateLumpLength (int Lump, int len) {
+void VDirPakFile::UpdateLumpLength (int /*Lump*/, int /*len*/) {
   // do nothing
 }
 

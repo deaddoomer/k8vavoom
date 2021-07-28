@@ -237,7 +237,7 @@ private:
 public:
   WadMapIterator () : lump(-1) {}
   WadMapIterator (const WadMapIterator &it) : lump(it.lump) {}
-  WadMapIterator (const WadMapIterator &it, bool asEnd) : lump(-1) {}
+  WadMapIterator (const WadMapIterator &/*it*/, bool /*asEnd*/) : lump(-1) {}
   inline WadMapIterator &operator = (const WadMapIterator &it) { lump = it.lump; return *this; }
 
   static inline WadMapIterator FromWadFile (int aFile) {
@@ -287,7 +287,7 @@ public:
   WadNSIterator () : lump(-1), ns(WADNS_Global) {}
   WadNSIterator (EWadNamespace aNS) : lump(-1), ns(aNS) { lump = W_IterateNS(-1, aNS); }
   WadNSIterator (const WadNSIterator &it) : lump(it.lump), ns(it.ns) {}
-  WadNSIterator (const WadNSIterator &it, bool asEnd) : lump(-1), ns(it.ns) {}
+  WadNSIterator (const WadNSIterator &it, bool /*asEnd*/) : lump(-1), ns(it.ns) {}
   inline WadNSIterator &operator = (const WadNSIterator &it) { lump = it.lump; ns = it.ns; return *this; }
 
   static inline WadNSIterator FromWadFile (int aFile, EWadNamespace aNS) {
@@ -354,7 +354,7 @@ public:
   WadNSNameIterator (const char *aname, EWadNamespace aNS) : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(aname, VName::FindLower); startIteration(); }
   WadNSNameIterator (VStr &str, EWadNamespace aNS) : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(*str, VName::FindLower); startIteration(); }
   WadNSNameIterator (const WadNSNameIterator &it) : lump(it.lump), ns(it.ns), lumpname(it.lumpname) {}
-  WadNSNameIterator (const WadNSNameIterator &it, bool asEnd) : lump(-1), ns(it.ns), lumpname(it.lumpname) {}
+  WadNSNameIterator (const WadNSNameIterator &it, bool /*asEnd*/) : lump(-1), ns(it.ns), lumpname(it.lumpname) {}
   inline WadNSNameIterator &operator = (const WadNSNameIterator &it) { lump = it.lump; ns = it.ns; lumpname = it.lumpname; return *this; }
 
   static inline WadNSNameIterator FromWadFile (const char *aname, int aFile, EWadNamespace aNS) {
@@ -407,7 +407,7 @@ public:
   WadFileIterator () : lump(-1), fname() {}
   WadFileIterator (VStr afname) : lump(-1), fname(afname) { lump = W_IterateFile(-1, afname); }
   WadFileIterator (const WadFileIterator &it) : lump(it.lump), fname(it.fname) {}
-  WadFileIterator (const WadFileIterator &it, bool asEnd) : lump(-1), fname(it.fname) {}
+  WadFileIterator (const WadFileIterator &it, bool /*asEnd*/) : lump(-1), fname(it.fname) {}
   inline WadFileIterator &operator = (const WadFileIterator &it) { lump = it.lump; fname = it.fname; return *this; }
 
   static inline WadFileIterator FromFirstAuxFile () {

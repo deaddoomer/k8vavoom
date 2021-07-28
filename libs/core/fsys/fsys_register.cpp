@@ -50,25 +50,25 @@ public:
     // check for 7z and other faulty archive formats first
     // 7z
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_7z("7z",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream * /*strm*/, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         Sys_Error("7z archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "7z\xbc\xaf\x27\x1c", -666);
     // rar
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_rar("rar",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream * /*strm*/, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         Sys_Error("Rar archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "Rar!", -666);
     // ar
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_ar("ar",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream * /*strm*/, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         Sys_Error("ar archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "!<arch>\x0a", -666);
     // tar
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_tar("tar",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         if (strm->TotalSize() < 257+16) return nullptr;
         char sign[5];
         strm->Seek(257);
@@ -81,7 +81,7 @@ public:
       }, nullptr, -666);
     // gzip
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_gzip("gzip",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         if (strm->TotalSize() < 10) return nullptr;
         strm->Seek(3);
         if (strm->IsError()) return nullptr;
@@ -93,7 +93,7 @@ public:
       }, "\x1f\x8b\x08", -666);
     // dfwad
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_dfwad("dfwad",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream * /*strm*/, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         Sys_Error("DFWAD archives aren't supported, so '%s' cannot be opened!", *filename);
         return nullptr;
       }, "DFWAD\x01", -666);
@@ -104,14 +104,14 @@ public:
 
     // PAK
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_pak("pak",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         if (strm->TotalSize() < 12) return nullptr;
         strm->Seek(0);
         if (strm->IsError()) return nullptr;
         return new VQuakePakFile(strm, filename, 1);
       }, "PACK");
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_sin("sin",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         if (strm->TotalSize() < 12) return nullptr;
         strm->Seek(0);
         if (strm->IsError()) return nullptr;
@@ -133,7 +133,7 @@ public:
     // checking for this is slow, but the sorter will check it last, as it has no signature
     // still, give it lower priority in case we'll have other signature-less formats
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_zip("zip",
-      [](VStream *strm, VStr filename, bool FixVoices) -> VSearchPath* {
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
         if (strm->TotalSize() < 16) return nullptr;
         vuint32 cdofs = VZipFile::SearchCentralDir(strm);
         if (cdofs == 0) return nullptr;

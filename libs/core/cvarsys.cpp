@@ -1060,19 +1060,17 @@ vuint32 VCvar::countCVars () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static int vcvcmp (const void *aa, const void *bb, void *udata) {
-    const VCvar *a = *(const VCvar **)aa;
-    const VCvar *b = *(const VCvar **)bb;
-    if (a == b) return 0;
-    // mod vars should came last
-    if (a->IsModVar()) {
-      if (!b->IsModVar()) return 1;
-    } else if (b->IsModVar()) {
-      if (!a->IsModVar()) return -1;
-    }
-    return VStr::ICmp(a->GetName(), b->GetName());
+static int vcvcmp (const void *aa, const void *bb, void */*udata*/) {
+  const VCvar *a = *(const VCvar **)aa;
+  const VCvar *b = *(const VCvar **)bb;
+  if (a == b) return 0;
+  // mod vars should came last
+  if (a->IsModVar()) {
+    if (!b->IsModVar()) return 1;
+  } else if (b->IsModVar()) {
+    if (!a->IsModVar()) return -1;
   }
+  return VStr::ICmp(a->GetName(), b->GetName());
 }
 
 

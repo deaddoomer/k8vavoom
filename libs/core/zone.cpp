@@ -291,3 +291,17 @@ void operator delete[] (void *p) noexcept {
   //fprintf(stderr, "delete[] (%p)\n", p);
   Z_Free(p);
 }
+
+
+void operator delete (void *p, size_t /*size*/) noexcept {
+  if (!isZManActive()) return; // shitdoze hack
+  //fprintf(stderr, "delete (%p)\n", p);
+  Z_Free(p);
+}
+
+
+void operator delete[] (void *p, size_t /*size*/) noexcept {
+  if (!isZManActive()) return; // shitdoze hack
+  //fprintf(stderr, "delete (%p)\n", p);
+  Z_Free(p);
+}
