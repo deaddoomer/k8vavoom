@@ -46,6 +46,9 @@ option(WITH_SYS_LIBJPG "Use system libjpg (if stb_image is off)" ON)
 
 option(WITH_OLD_CPU "Use pIV CPU instruction set" OFF)
 
+#option(WITH_RPATH "Use -rpath" OFF)
+set(RPATH_VALUE "" CACHE STRING "-rpath linker option value")
+
 # default is SSE2
 option(WITH_SSE3 "Use SSE3 instruction set (may not compile)" OFF)
 option(WITH_SSE4 "Use SSE4 instruction set (may not compile)" OFF)
@@ -320,6 +323,12 @@ endif(WITH_STRTODEX)
 ##############
 ## warnings ##
 ##############
+
+if(RPATH_VALUE)
+  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wl,-rpath /opt/gcc11/lib")
+  #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath /opt/gcc11/lib")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath ${RPATH_VALUE}")
+endif(RPATH_VALUE)
 
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Werror=format-security")
 
