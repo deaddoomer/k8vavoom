@@ -103,7 +103,7 @@ bool VOpenGLDrawer::RenderSurfaceHasDecals (const surface_t *surf) const {
 //  `RenderFinishShaderDecals()` to restore render state
 //
 //==========================================================================
-void VOpenGLDrawer::RenderPrepareShaderDecals (const surface_t *surf) {
+void VOpenGLDrawer::RenderPrepareShaderDecals (const surface_t * /*surf*/) {
   if (!decalUsedStencil) decalStcVal = (IsStencilBufferDirty() ? 255 : 0);
   if (++decalStcVal == 0) {
     // it wrapped, so clear stencil buffer

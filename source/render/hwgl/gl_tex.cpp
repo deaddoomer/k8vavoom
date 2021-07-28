@@ -617,7 +617,7 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
 //  VOpenGLDrawer::UploadTexture8
 //
 //==========================================================================
-void VOpenGLDrawer::UploadTexture8 (int Width, int Height, const vuint8 *Data, const rgba_t *Pal, int SourceLump, int hitype) {
+void VOpenGLDrawer::UploadTexture8 (int Width, int Height, const vuint8 *Data, const rgba_t *Pal, int /*SourceLump*/, int hitype) {
   // this is single-threaded, so why not?
   int w = (Width > 0 ? Width : 2);
   int h = (Height > 0 ? Height : 2);
@@ -648,7 +648,7 @@ void VOpenGLDrawer::UploadTexture8 (int Width, int Height, const vuint8 *Data, c
 //  VOpenGLDrawer::UploadTexture8A
 //
 //==========================================================================
-void VOpenGLDrawer::UploadTexture8A (int Width, int Height, const pala_t *Data, const rgba_t *Pal, int SourceLump, int hitype) {
+void VOpenGLDrawer::UploadTexture8A (int Width, int Height, const pala_t *Data, const rgba_t *Pal, int /*SourceLump*/, int hitype) {
   // this is single-threaded, so why not?
   int w = (Width > 0 ? Width : 2);
   int h = (Height > 0 ? Height : 2);

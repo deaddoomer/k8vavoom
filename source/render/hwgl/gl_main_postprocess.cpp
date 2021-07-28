@@ -211,6 +211,7 @@ void VOpenGLDrawer::PostSrcRestoreMatrices () {
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  (void)ax; (void)ay; (void)awidth; (void)aheight;
   if (!tonemapPalLUT) {
     // allocate tonemap FBO object, and generate tonemap LUT
     //tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
@@ -256,6 +257,7 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) {
+  (void)ax; (void)ay; (void)awidth; (void)aheight;
   if (cmap <= CM_Default || cmap >= CM_Max) return;
 
   //PostSrcMatrixSaver matsaver(this, restoreMatrices);
@@ -316,6 +318,7 @@ void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, i
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  (void)ax; (void)ay; (void)awidth; (void)aheight;
   PostSrcMatrixSaver matsaver(this, restoreMatrices);
   PreparePostSrcFBO();
 
@@ -337,6 +340,7 @@ void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidt
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
+  (void)ax; (void)ay; (void)awidth; (void)aheight;
   if (coeff < 0.001f) return;
 
   //if (!CasFX.CheckOpenGLVersion(glVerMajor, glVerMinor, false)) return;

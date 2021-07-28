@@ -113,7 +113,7 @@ typedef void (*VV_GLGLDEBUGMESSAGECONTROL) (GLenum source, GLenum type, GLenum s
 #endif
 
 
-static void vv_glDebugCallback (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
+static void vv_glDebugCallback (GLenum source, GLenum type, GLuint /*id*/, GLenum /*severity*/, GLsizei /*length*/, const GLchar *message, const void * /*userParam*/) {
   if (!message || !message[0]) return;
 
   // block this spam; i will deal with it later (maybe)
@@ -143,14 +143,14 @@ static void vv_glDebugCallback (GLenum source, GLenum type, GLuint id, GLenum se
   //if (source == GL_DEBUG_SOURCE_API && type == GL_DEBUG_TYPE_ERROR) abort();
 }
 
-static void vv_glDebugMessageCallbackDummy (VV_GLDEBUGPROC callback, const void *userParam) {}
-static void vv_glObjectLabel (GLenum identifier, GLuint name, GLsizei length, const GLchar *label) {}
-static void vv_glObjectPtrLabel (const void *ptr, GLsizei length, const GLchar *label) {}
-static void vv_glGetObjectLabel (GLenum identifier, GLuint name, GLsizei bufSize, GLsizei *length, GLchar *label) {
+static void vv_glDebugMessageCallbackDummy (VV_GLDEBUGPROC /*callback*/, const void * /*userParam*/) {}
+static void vv_glObjectLabel (GLenum /*identifier*/, GLuint /*name*/, GLsizei /*length*/, const GLchar * /*label*/) {}
+static void vv_glObjectPtrLabel (const void * /*ptr*/, GLsizei /*length*/, const GLchar * /*label*/) {}
+static void vv_glGetObjectLabel (GLenum /*identifier*/, GLuint /*name*/, GLsizei bufSize, GLsizei *length, GLchar *label) {
   if (length) *length = 0;
   if (bufSize > 0 && label) label[0] = 0;
 }
-static void vv_glGetObjectPtrLabel (const void *ptr, GLsizei bufSize, GLsizei *length, GLchar *label) {
+static void vv_glGetObjectPtrLabel (const void * /*ptr*/, GLsizei bufSize, GLsizei *length, GLchar *label) {
   if (length) *length = 0;
   if (bufSize > 0 && label) label[0] = 0;
 }

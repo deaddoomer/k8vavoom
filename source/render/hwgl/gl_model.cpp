@@ -138,7 +138,7 @@ static void AliasSetupTransform (const TVec &modelorg, const TAVec &angles,
 //  AliasSetupNormalTransform
 //
 //==========================================================================
-static void AliasSetupNormalTransform (const TAVec &angles, const TVec &Scale, VMatrix4 &RotationMatrix) {
+static void AliasSetupNormalTransform (const TAVec &angles, const TVec &/*Scale*/, VMatrix4 &RotationMatrix) {
   TVec alias_forward(0, 0, 0), alias_right(0, 0, 0), alias_up(0, 0, 0);
   AngleVectors(angles, alias_forward, alias_right, alias_up);
 
@@ -253,7 +253,7 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
                                     VMeshModel *Mdl, int frame, int nextframe,
                                     VTexture *Skin, VTextureTranslation *Trans, int CMap,
                                     const RenderStyleInfo &ri,
-                                    bool is_view_model, float Inter, bool Interpolate,
+                                    bool is_view_model, float Inter, bool /*Interpolate*/,
                                     bool ForceDepthUse, bool AllowTransparency, bool onlyDepth)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
@@ -416,7 +416,7 @@ void VOpenGLDrawer::DrawAliasModelAmbient (const TVec &origin, const TAVec &angl
                                            const AliasModelTrans &Transform,
                                            VMeshModel *Mdl, int frame, int nextframe,
                                            VTexture *Skin, vuint32 light, float Alpha,
-                                           float Inter, bool Interpolate,
+                                           float Inter, bool /*Interpolate*/,
                                            bool ForceDepth, bool AllowTransparency)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
@@ -730,7 +730,7 @@ void VOpenGLDrawer::DrawAliasModelLight (const TVec &origin, const TAVec &angles
                                          const AliasModelTrans &Transform,
                                          VMeshModel *Mdl, int frame, int nextframe,
                                          VTexture *Skin, float Alpha, float Inter,
-                                         bool Interpolate, bool AllowTransparency)
+                                         bool /*Interpolate*/, bool AllowTransparency)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
 
@@ -830,8 +830,8 @@ void VOpenGLDrawer::SetupModelShadowMap (unsigned int facenum) {
 void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &angles,
                               const AliasModelTrans &Transform,
                               VMeshModel *Mdl, int frame, int nextframe,
-                              VTexture *Skin, float Alpha, float Inter,
-                              bool Interpolate, bool AllowTransparency)
+                              VTexture *Skin, float /*Alpha*/, float Inter,
+                              bool /*Interpolate*/, bool /*AllowTransparency*/)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
   if (!gl_dbg_adv_render_shadow_models) return;
@@ -923,7 +923,7 @@ void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &an
 //  VOpenGLDrawer::BeginModelsShadowsPass
 //
 //==========================================================================
-void VOpenGLDrawer::BeginModelsShadowsPass (TVec &LightPos, float LightRadius) {
+void VOpenGLDrawer::BeginModelsShadowsPass (TVec &LightPos, float /*LightRadius*/) {
   ShadowsModelShadowVol.Activate();
   ShadowsModelShadowVol.SetLightPos(LightPos);
 }
@@ -951,7 +951,7 @@ void VOpenGLDrawer::EndModelsShadowsPass () {
 void VOpenGLDrawer::DrawAliasModelShadow (const TVec &origin, const TAVec &angles,
                                           const AliasModelTrans &Transform,
                                           VMeshModel *Mdl, int frame, int nextframe,
-                                          float Inter, bool Interpolate,
+                                          float Inter, bool /*Interpolate*/,
                                           const TVec &LightPos, float LightRadius)
 {
   if (!gl_dbg_adv_render_shadow_models || Mdl->STVerts.length() == 0) return;
@@ -1108,7 +1108,7 @@ void VOpenGLDrawer::DrawAliasModelTextures (const TVec &origin, const TAVec &ang
                                             VMeshModel *Mdl, int frame, int nextframe,
                                             VTexture *Skin, VTextureTranslation *Trans, int CMap,
                                             const RenderStyleInfo &ri, float Inter,
-                                            bool Interpolate, bool ForceDepth, bool AllowTransparency)
+                                            bool /*Interpolate*/, bool /*ForceDepth*/, bool AllowTransparency)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
 
@@ -1251,7 +1251,7 @@ void VOpenGLDrawer::DrawAliasModelFog (const TVec &origin, const TAVec &angles,
                                        const AliasModelTrans &Transform,
                                        VMeshModel *Mdl, int frame, int nextframe,
                                        VTexture *Skin, vuint32 Fade, float Alpha, float Inter,
-                                       bool Interpolate, bool AllowTransparency)
+                                       bool /*Interpolate*/, bool AllowTransparency)
 {
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
 
@@ -1259,6 +1259,8 @@ void VOpenGLDrawer::DrawAliasModelFog (const TVec &origin, const TAVec &angles,
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
 
   if (!gl_dbg_adv_render_fog_models) return;
+
+  if (r_light_mode.asInt() > 0 && Fade == FADE_LIGHT) return;
 
   UploadModel(Mdl);
 

@@ -187,7 +187,7 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
 void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex,
                                        const RenderStyleInfo &ri,
                                        VTextureTranslation *Translation, int CMap,
-                                       const TVec &sprnormal, float sprpdist,
+                                       const TVec &/*sprnormal*/, float /*sprpdist*/,
                                        const TVec &saxis, const TVec &taxis, const TVec &texorg,
                                        SpriteType sptype)
 {
