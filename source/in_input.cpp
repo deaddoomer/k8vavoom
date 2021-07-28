@@ -92,7 +92,7 @@ private:
 
   int strifeMode = -666;
 
-  inline const bool IsStrife () {
+  inline bool IsStrife () {
     if (strifeMode == -666) strifeMode = (game_name.asStr().strEquCI("strife") ? 1 : 0);
     return strifeMode;
   }
