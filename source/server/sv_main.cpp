@@ -214,7 +214,7 @@ struct VCVFSSaver {
 
 static int vcmodCurrFileLump = -1;
 
-static VStream *vcmodOpenFile (VStr filename, void *userdata) {
+static VStream *vcmodOpenFile (VStr filename, void * /*userdata*/) {
   /*
   for (int flump = W_IterateFile(-1, filename); flump >= 0; flump = W_IterateFile(flump, filename)) {
     if (vcmodCurrFile >= 0 && (vcmodCurrFile != W_LumpFile(flump))) continue;
@@ -728,6 +728,7 @@ static void SV_RunPlayerTick (VBasePlayer *Player, bool skipFrame) {
   const float maxmove = max2(0.0f, sv_maxmove.asFloat()*(sv_disable_run ? 0.5f : 1.0f));
        if (Player->ForwardMove > maxmove) Player->ForwardMove = maxmove;
   else if (Player->ForwardMove < -maxmove) Player->ForwardMove = -maxmove;
+  //
        if (Player->SideMove > maxmove) Player->SideMove = maxmove;
   else if (Player->SideMove < -maxmove) Player->SideMove = -maxmove;
   // check for disabled freelook (this is required for server)
