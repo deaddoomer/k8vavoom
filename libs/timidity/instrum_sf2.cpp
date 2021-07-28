@@ -941,7 +941,7 @@ static int32 to_offset(int offset)
 //
 //==========================================================================
 
-static int32 calc_rate(MidiSong* song, int diff, int sample_rate, double msec)
+static int32 calc_rate(MidiSong* song, int diff, int /*sample_rate*/, double msec)
 {
 	double rate;
 

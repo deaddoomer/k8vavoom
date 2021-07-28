@@ -429,7 +429,7 @@ static void Parse_colh(DLS_Data *data, RIFF_Chunk *chunk)
 	AllocInstruments(data);
 }
 
-static void Parse_insh(DLS_Data *data, RIFF_Chunk *chunk, DLS_Instrument *instrument)
+static void Parse_insh(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Instrument *instrument)
 {
 	INSTHEADER *header = (INSTHEADER *)chunk->data;
 	header->cRegions = LE_LONG(header->cRegions);
@@ -439,7 +439,7 @@ static void Parse_insh(DLS_Data *data, RIFF_Chunk *chunk, DLS_Instrument *instru
 	AllocRegions(instrument);
 }
 
-static void Parse_rgnh(DLS_Data *data, RIFF_Chunk *chunk, DLS_Region *region)
+static void Parse_rgnh(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Region *region)
 {
 	RGNHEADER *header = (RGNHEADER *)chunk->data;
 	header->RangeKey.usLow = LE_SHORT(header->RangeKey.usLow);
@@ -451,7 +451,7 @@ static void Parse_rgnh(DLS_Data *data, RIFF_Chunk *chunk, DLS_Region *region)
 	region->header = header;
 }
 
-static void Parse_wlnk(DLS_Data *data, RIFF_Chunk *chunk, DLS_Region *region)
+static void Parse_wlnk(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Region *region)
 {
 	WAVELINK *wlnk = (WAVELINK *)chunk->data;
 	wlnk->fusOptions = LE_SHORT(wlnk->fusOptions);
@@ -461,7 +461,7 @@ static void Parse_wlnk(DLS_Data *data, RIFF_Chunk *chunk, DLS_Region *region)
 	region->wlnk = wlnk;
 }
 
-static void Parse_wsmp(DLS_Data *data, RIFF_Chunk *chunk, WSMPL **wsmp_ptr, WLOOP **wsmp_loop_ptr)
+static void Parse_wsmp(DLS_Data * /*data*/, RIFF_Chunk *chunk, WSMPL **wsmp_ptr, WLOOP **wsmp_loop_ptr)
 {
 	uint32 i;
 	WSMPL *wsmp = (WSMPL *)chunk->data;
@@ -486,7 +486,7 @@ static void Parse_wsmp(DLS_Data *data, RIFF_Chunk *chunk, WSMPL **wsmp_ptr, WLOO
 	}
 }
 
-static void Parse_art(DLS_Data *data, RIFF_Chunk *chunk, CONNECTIONLIST **art_ptr, CONNECTION **artList_ptr)
+static void Parse_art(DLS_Data * /*data*/, RIFF_Chunk *chunk, CONNECTIONLIST **art_ptr, CONNECTION **artList_ptr)
 {
 	uint32 i;
 	CONNECTIONLIST *art = (CONNECTIONLIST *)chunk->data;
@@ -573,7 +573,7 @@ static void Parse_lrgn(DLS_Data *data, RIFF_Chunk *chunk, DLS_Instrument *instru
 	}
 }
 
-static void Parse_INFO_INS(DLS_Data *data, RIFF_Chunk *chunk, DLS_Instrument *instrument)
+static void Parse_INFO_INS(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Instrument *instrument)
 {
 	for (chunk = chunk->child; chunk; chunk = chunk->next)
 	{
@@ -649,7 +649,7 @@ static void Parse_ptbl(DLS_Data *data, RIFF_Chunk *chunk)
 	AllocWaveList(data);
 }
 
-static void Parse_fmt(DLS_Data *data, RIFF_Chunk *chunk, DLS_Wave *wave)
+static void Parse_fmt(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Wave *wave)
 {
 	WaveFMT *fmt = (WaveFMT *)chunk->data;
 	fmt->wFormatTag = LE_SHORT(fmt->wFormatTag);
@@ -661,7 +661,7 @@ static void Parse_fmt(DLS_Data *data, RIFF_Chunk *chunk, DLS_Wave *wave)
 	wave->format = fmt;
 }
 
-static void Parse_data(DLS_Data *data, RIFF_Chunk *chunk, DLS_Wave *wave)
+static void Parse_data(DLS_Data * /*data*/, RIFF_Chunk *chunk, DLS_Wave *wave)
 {
 	wave->data = chunk->data;
 	wave->length = chunk->length;
@@ -870,7 +870,7 @@ static int32 to_offset(int offset)
 /* calculate ramp rate in fractional unit;
 * diff = 8bit, time = msec
 */
-static int32 calc_rate(MidiSong* song, int diff, int sample_rate, double msec)
+static int32 calc_rate(MidiSong* song, int diff, int /*sample_rate*/, double msec)
 {
 	double rate;
 

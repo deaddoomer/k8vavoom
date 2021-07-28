@@ -35,7 +35,7 @@ char				current_filename[1024];
 static PathList*	pathlist = NULL; /* This is a linked list */
 
 /* This is meant to find and open files for reading */
-FILE* open_file(const char* name, int decompress, int noise_mode)
+FILE* open_file(const char* name, int /*decompress*/, int noise_mode)
 {
 	if (!name || !(*name))
 	{

@@ -169,7 +169,7 @@ static void reverse_data(int16* sp, int32 ls, int32 le)
    undefined.
 
    TODO: do reverse loops right */
-static Instrument* load_instrument(MidiSong* song, const char *name, int percussion,
+static Instrument* load_instrument(MidiSong* song, const char *name, int /*percussion*/,
 	int panning, int amp, int note_to_use,
 	int strip_loop, int strip_envelope,
 	int strip_tail)
