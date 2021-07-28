@@ -38,7 +38,7 @@
 //  VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj
 //
 //==========================================================================
-void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef /*r_floor*/, TSecPlaneRef /*r_ceiling*/) {
   FreeWSurfs(sp->surfs);
   vassert(sub->sector);
 
@@ -95,7 +95,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
 //  VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj
 //
 //==========================================================================
-void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef /*r_floor*/, TSecPlaneRef /*r_ceiling*/) {
   FreeWSurfs(sp->surfs);
 
   const line_t *linedef = seg->linedef;
@@ -153,7 +153,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *s
 //  create normal midtexture surface for 3d polyobject
 //
 //==========================================================================
-void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef r_floor, TSecPlaneRef r_ceiling) {
+void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *seg, segpart_t *sp, TSecPlaneRef /*r_floor*/, TSecPlaneRef /*r_ceiling*/) {
   FreeWSurfs(sp->surfs);
 
   const line_t *linedef = seg->linedef;

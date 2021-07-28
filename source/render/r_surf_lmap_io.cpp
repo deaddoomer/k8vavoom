@@ -196,7 +196,7 @@ struct SurfaceInfoBlock {
   }
 
   // must be initialised with `initWith()`
-  void writeTo (VStream *strm, VLevel *Level) {
+  void writeTo (VStream *strm, VLevel * /*Level*/) {
     vassert(strm);
     vassert(!strm->IsLoading());
     vuint8 flag = 0;

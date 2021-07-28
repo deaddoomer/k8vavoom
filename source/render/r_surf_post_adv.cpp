@@ -32,7 +32,7 @@
 //  VRenderLevelShadowVolume::InitSurfs
 //
 //==========================================================================
-void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t *surfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) {
+void VRenderLevelShadowVolume::InitSurfs (bool /*recalcStaticLightmaps*/, surface_t *surfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) {
   if (!texinfo && !plane) return;
   for (; surfs; surfs = surfs->next) {
     if (texinfo) surfs->texinfo = texinfo;
@@ -53,6 +53,7 @@ void VRenderLevelShadowVolume::InitSurfs (bool recalcStaticLightmaps, surface_t 
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
+  (void)sreg; (void)ssf; (void)axis; (void)nextaxis; (void)plane; (void)doSubdivisions;
   // always create centroid for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
   vassert(!surf->next);
@@ -79,6 +80,7 @@ surface_t *VRenderLevelShadowVolume::SubdivideFace (surface_t *surf, subregion_t
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::SubdivideSeg (surface_t *surf, const TVec &axis, const TVec *nextaxis, seg_t *seg) {
+  (void)axis; (void)nextaxis; (void)seg;
   // advanced renderer can draw whole surface
   return surf;
 }
@@ -90,6 +92,7 @@ surface_t *VRenderLevelShadowVolume::SubdivideSeg (surface_t *surf, const TVec &
 //
 //==========================================================================
 surface_t *VRenderLevelShadowVolume::FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) {
+  (void)seg;
   return surf;
 }
 

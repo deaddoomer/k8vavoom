@@ -45,6 +45,7 @@
 //
 //==========================================================================
 static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t *&surf, int vf0, int &vf1, const bool goUp, bool &wasChanged, const int linenum) {
+  (void)linenum;
   TJLOG(NAME_Debug, "InsertEdgePoint: hz=%g; goUp=%d; vf0=%d; vf1=%d; vf0.z=%g; vf1.z=%g", hz, (int)goUp, vf0, vf1, surf->verts[vf0].z, surf->verts[vf1-1].z);
   // find the index to insert new vertex (before)
   int insidx = vf0;

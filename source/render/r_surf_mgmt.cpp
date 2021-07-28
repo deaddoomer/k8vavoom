@@ -826,6 +826,7 @@ void VRenderLevelShared::InvaldateAllSegParts () noexcept {
 //
 //==========================================================================
 void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept {
+  (void)fsec;
   if (!line || line->pobj()) return; // no line, or polyobject line
   //vassert(fsec);
   const unsigned lineidx = (unsigned)(ptrdiff_t)(line-&Level->Lines[0]);

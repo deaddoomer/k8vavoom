@@ -759,6 +759,7 @@ static void AddFloorPointToSegWalls (VRenderLevelShared *RLev, seg_t *seg, sec_s
 //
 //==========================================================================
 surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
+  (void)sreg;
   if (!surf) return surf;
 
   subsector_t *sub = surf->subsector;

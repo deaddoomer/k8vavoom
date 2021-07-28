@@ -331,7 +331,7 @@ bool VRenderLevelShared::CalcLightVis (const TVec &org, const float radius, cons
 //  usually, `dest` is light origin
 //
 //==========================================================================
-bool VRenderLevelShared::RadiusCastRay (bool textureCheck, const subsector_t *subsector, const TVec &org, const subsector_t *destsubsector, const TVec &dest, float radius) {
+bool VRenderLevelShared::RadiusCastRay (bool textureCheck, const subsector_t *subsector, const TVec &org, const subsector_t *destsubsector, const TVec &dest, float /*radius*/) {
 #if 0
   // BSP tracing
   float dsq = length2DSquared(org-dest);
