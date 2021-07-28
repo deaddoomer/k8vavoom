@@ -919,6 +919,7 @@ bool VWidget::TransferAndClipRect (float &X1, float &Y1, float &X2, float &Y2) c
   (oc) = 0; \
        if ((my) < 0.0f) (oc) |= TOP; \
   else if ((my) >= f_h) (oc) |= BOTTOM; \
+  /* fuck you, gshitcc */ \
        if ((mx) < 0.0f) (oc) |= LEFT; \
   else if ((mx) >= f_w) (oc) |= RIGHT;
 

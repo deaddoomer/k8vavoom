@@ -160,6 +160,7 @@ public:
   (oc) = 0; \
        if ((my) < 0) (oc) |= CLTR_TOP; \
   else if ((my) >= boxhd) (oc) |= CLTR_BOTTOM; \
+  /* fuck you, gshitcc */ \
        if ((mx) < 0) (oc) |= CLTR_LEFT; \
   else if ((mx) >= boxwd) (oc) |= CLTR_RIGHT;
 
