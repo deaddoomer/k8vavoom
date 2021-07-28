@@ -100,7 +100,8 @@ public:
   VVA_ALWAYS_INLINE TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
 
   //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(TVec)); return *this; }
-  VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { x = other.x; y = other.y; z = other.z; return *this; }
+  //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { x = other.x; y = other.y; z = other.z; return *this; }
+  VVA_ALWAYS_INLINE TVec &operator = (const TVec &src) noexcept = default;
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (size_t i) noexcept { vassert(i < 3); return (&x)[i]; }

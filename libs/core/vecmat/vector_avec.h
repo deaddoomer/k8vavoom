@@ -39,7 +39,8 @@ public:
   VVA_ALWAYS_INLINE TAVec (const TAVec &other) noexcept : pitch(other.pitch), yaw(other.yaw), roll(other.roll) {}
 
   //VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(TAVec)); return *this; }
-  VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &other) noexcept { pitch = other.pitch; yaw = other.yaw; roll = other.roll; return *this; }
+  //VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &other) noexcept { pitch = other.pitch; yaw = other.yaw; roll = other.roll; return *this; }
+  VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &src) noexcept = default;
 
   VVA_ALWAYS_INLINE bool isValid () const noexcept { return (isFiniteF(pitch) && isFiniteF(yaw) && isFiniteF(roll)); }
   VVA_ALWAYS_INLINE bool isZero () const noexcept { return (pitch == 0.0f && yaw == 0.0f && roll == 0.0f); }

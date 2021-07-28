@@ -235,45 +235,45 @@ private:
   void advanceToNextMapLump ();
 
 public:
-  WadMapIterator () : lump(-1) {}
-  WadMapIterator (const WadMapIterator &it) : lump(it.lump) {}
-  WadMapIterator (const WadMapIterator &/*it*/, bool /*asEnd*/) : lump(-1) {}
-  inline WadMapIterator &operator = (const WadMapIterator &it) { lump = it.lump; return *this; }
+  inline WadMapIterator () noexcept : lump(-1) {}
+  inline WadMapIterator (const WadMapIterator &it) noexcept : lump(it.lump) {}
+  inline WadMapIterator (const WadMapIterator &/*it*/, bool /*asEnd*/) noexcept : lump(-1) {}
+  inline WadMapIterator &operator = (const WadMapIterator &it) noexcept { lump = it.lump; return *this; }
 
-  static inline WadMapIterator FromWadFile (int aFile) {
+  static inline WadMapIterator FromWadFile (int aFile) noexcept {
     WadMapIterator it;
     it.lump = W_StartIterationFromLumpFileNS(aFile, WADNS_Global);
     it.advanceToNextMapLump();
     return it;
   }
 
-  static inline WadMapIterator FromFirstAuxFile () {
+  static inline WadMapIterator FromFirstAuxFile () noexcept {
     WadMapIterator it;
     it.lump = W_GetFirstAuxLump();
     it.advanceToNextMapLump();
     return it;
   }
 
-  inline WadMapIterator begin () { return WadMapIterator(*this); }
-  inline WadMapIterator end () { return WadMapIterator(*this, true); }
-  inline bool operator == (const WadMapIterator &b) const { return (lump == b.lump); }
-  inline bool operator != (const WadMapIterator &b) const { return (lump != b.lump); }
-  inline WadMapIterator operator * () const { return WadMapIterator(*this); } /* required for iterator */
-  inline void operator ++ () { if (lump >= 0) { ++lump; advanceToNextMapLump(); } } /* this is enough for iterator */
+  inline WadMapIterator begin () noexcept { return WadMapIterator(*this); }
+  inline WadMapIterator end () noexcept { return WadMapIterator(*this, true); }
+  inline bool operator == (const WadMapIterator &b) const noexcept { return (lump == b.lump); }
+  inline bool operator != (const WadMapIterator &b) const noexcept { return (lump != b.lump); }
+  inline WadMapIterator operator * () const noexcept { return WadMapIterator(*this); } /* required for iterator */
+  inline void operator ++ () noexcept { if (lump >= 0) { ++lump; advanceToNextMapLump(); } } /* this is enough for iterator */
 
-  inline bool isEmpty () const { return (lump < 0); }
+  inline bool isEmpty () const noexcept { return (lump < 0); }
 
-  inline int getFile () const { return (lump >= 0 ? W_LumpFile(lump) : -1); }
-  inline int getLength () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline int getSize () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline VName getName () const { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
-  inline VStr getFullName () const { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
-  inline VStr getRealName () const { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
-  inline VStr getFullPakName () const { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
+  inline int getFile () const noexcept { return (lump >= 0 ? W_LumpFile(lump) : -1); }
+  inline int getLength () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline int getSize () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline VName getName () const noexcept { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
+  inline VStr getFullName () const noexcept { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
+  inline VStr getRealName () const noexcept { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
+  inline VStr getFullPakName () const noexcept { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
 
-  inline bool isAux () const { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
-  inline bool isIWAD () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
-  inline bool isIWad () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isAux () const noexcept { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
+  inline bool isIWAD () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isIWad () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
 };
 
 
@@ -284,39 +284,39 @@ public:
   EWadNamespace ns;
 
 public:
-  WadNSIterator () : lump(-1), ns(WADNS_Global) {}
-  WadNSIterator (EWadNamespace aNS) : lump(-1), ns(aNS) { lump = W_IterateNS(-1, aNS); }
-  WadNSIterator (const WadNSIterator &it) : lump(it.lump), ns(it.ns) {}
-  WadNSIterator (const WadNSIterator &it, bool /*asEnd*/) : lump(-1), ns(it.ns) {}
-  inline WadNSIterator &operator = (const WadNSIterator &it) { lump = it.lump; ns = it.ns; return *this; }
+  inline WadNSIterator () noexcept : lump(-1), ns(WADNS_Global) {}
+  inline WadNSIterator (EWadNamespace aNS) noexcept : lump(-1), ns(aNS) { lump = W_IterateNS(-1, aNS); }
+  inline WadNSIterator (const WadNSIterator &it) noexcept : lump(it.lump), ns(it.ns) {}
+  inline WadNSIterator (const WadNSIterator &it, bool /*asEnd*/) noexcept : lump(-1), ns(it.ns) {}
+  inline WadNSIterator &operator = (const WadNSIterator &it) noexcept { lump = it.lump; ns = it.ns; return *this; }
 
-  static inline WadNSIterator FromWadFile (int aFile, EWadNamespace aNS) {
+  static inline WadNSIterator FromWadFile (int aFile, EWadNamespace aNS) noexcept {
     WadNSIterator it;
     it.ns = aNS;
     it.lump = W_StartIterationFromLumpFileNS(aFile, aNS);
     return it;
   }
 
-  inline WadNSIterator begin () { return WadNSIterator(*this); }
-  inline WadNSIterator end () { return WadNSIterator(*this, true); }
-  inline bool operator == (const WadNSIterator &b) const { return (lump == b.lump && ns == b.ns); }
-  inline bool operator != (const WadNSIterator &b) const { return (lump != b.lump || ns != b.ns); }
-  inline WadNSIterator operator * () const { return WadNSIterator(*this); } /* required for iterator */
-  inline void operator ++ () { lump = (lump >= 0 ? W_IterateNS(lump, ns) : -1); } /* this is enough for iterator */
+  inline WadNSIterator begin () noexcept { return WadNSIterator(*this); }
+  inline WadNSIterator end () noexcept { return WadNSIterator(*this, true); }
+  inline bool operator == (const WadNSIterator &b) const noexcept { return (lump == b.lump && ns == b.ns); }
+  inline bool operator != (const WadNSIterator &b) const noexcept { return (lump != b.lump || ns != b.ns); }
+  inline WadNSIterator operator * () const noexcept { return WadNSIterator(*this); } /* required for iterator */
+  inline void operator ++ () noexcept { lump = (lump >= 0 ? W_IterateNS(lump, ns) : -1); } /* this is enough for iterator */
 
-  inline bool isEmpty () const { return (lump < 0); }
+  inline bool isEmpty () const noexcept { return (lump < 0); }
 
-  inline int getFile () const { return (lump >= 0 ? W_LumpFile(lump) : -1); }
-  inline int getLength () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline int getSize () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline VName getName () const { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
-  inline VStr getFullName () const { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
-  inline VStr getRealName () const { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
-  inline VStr getFullPakName () const { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
+  inline int getFile () const noexcept { return (lump >= 0 ? W_LumpFile(lump) : -1); }
+  inline int getLength () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline int getSize () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline VName getName () const noexcept { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
+  inline VStr getFullName () const noexcept { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
+  inline VStr getRealName () const noexcept { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
+  inline VStr getFullPakName () const noexcept { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
 
-  inline bool isAux () const { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
-  inline bool isIWAD () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
-  inline bool isIWad () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isAux () const noexcept { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
+  inline bool isIWAD () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isIWad () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
 };
 
 
@@ -329,7 +329,7 @@ public:
 
 private:
   // all fields are set
-  inline void startIteration () {
+  inline void startIteration () noexcept {
     if (lumpname != NAME_None) {
       if (lump < 0) lump = W_IterateNS(-1, ns);
       for (; lump >= 0; lump = W_IterateNS(lump, ns)) {
@@ -340,7 +340,7 @@ private:
     }
   }
 
-  inline void nextStep () {
+  inline void nextStep () noexcept {
     if (lump >= 0) {
       for (lump = W_IterateNS(lump, ns); lump >= 0; lump = W_IterateNS(lump, ns)) {
         if (W_LumpName(lump) == lumpname) break;
@@ -349,15 +349,15 @@ private:
   }
 
 public:
-  WadNSNameIterator () : lump(-1), ns(WADNS_Global), lumpname(NAME_None) {}
-  WadNSNameIterator (VName aname, EWadNamespace aNS) : lump(-1), ns(aNS), lumpname(aname) { if (aname != NAME_None) lumpname = VName(*aname, VName::FindLower); startIteration(); }
-  WadNSNameIterator (const char *aname, EWadNamespace aNS) : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(aname, VName::FindLower); startIteration(); }
-  WadNSNameIterator (VStr &str, EWadNamespace aNS) : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(*str, VName::FindLower); startIteration(); }
-  WadNSNameIterator (const WadNSNameIterator &it) : lump(it.lump), ns(it.ns), lumpname(it.lumpname) {}
-  WadNSNameIterator (const WadNSNameIterator &it, bool /*asEnd*/) : lump(-1), ns(it.ns), lumpname(it.lumpname) {}
-  inline WadNSNameIterator &operator = (const WadNSNameIterator &it) { lump = it.lump; ns = it.ns; lumpname = it.lumpname; return *this; }
+  inline WadNSNameIterator () noexcept : lump(-1), ns(WADNS_Global), lumpname(NAME_None) {}
+  inline WadNSNameIterator (VName aname, EWadNamespace aNS) noexcept : lump(-1), ns(aNS), lumpname(aname) { if (aname != NAME_None) lumpname = VName(*aname, VName::FindLower); startIteration(); }
+  inline WadNSNameIterator (const char *aname, EWadNamespace aNS) noexcept : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(aname, VName::FindLower); startIteration(); }
+  inline WadNSNameIterator (VStr &str, EWadNamespace aNS) noexcept : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(*str, VName::FindLower); startIteration(); }
+  inline WadNSNameIterator (const WadNSNameIterator &it) noexcept : lump(it.lump), ns(it.ns), lumpname(it.lumpname) {}
+  inline WadNSNameIterator (const WadNSNameIterator &it, bool /*asEnd*/) noexcept : lump(-1), ns(it.ns), lumpname(it.lumpname) {}
+  inline WadNSNameIterator &operator = (const WadNSNameIterator &it) noexcept { lump = it.lump; ns = it.ns; lumpname = it.lumpname; return *this; }
 
-  static inline WadNSNameIterator FromWadFile (const char *aname, int aFile, EWadNamespace aNS) {
+  static inline WadNSNameIterator FromWadFile (const char *aname, int aFile, EWadNamespace aNS) noexcept {
     WadNSNameIterator it;
     it.ns = aNS;
     it.lump = W_StartIterationFromLumpFileNS(aFile, aNS);
@@ -366,34 +366,34 @@ public:
     return it;
   }
 
-  static inline WadNSNameIterator FromWadFile (VName aname, int aFile, EWadNamespace aNS) {
+  static inline WadNSNameIterator FromWadFile (VName aname, int aFile, EWadNamespace aNS) noexcept {
     return FromWadFile((aname != NAME_None ? *aname : nullptr), aFile, aNS);
   }
 
-  static inline WadNSNameIterator FromWadFile (VStr aname, int aFile, EWadNamespace aNS) {
+  static inline WadNSNameIterator FromWadFile (VStr aname, int aFile, EWadNamespace aNS) noexcept {
     return FromWadFile(*aname, aFile, aNS);
   }
 
-  inline WadNSNameIterator begin () { return WadNSNameIterator(*this); }
-  inline WadNSNameIterator end () { return WadNSNameIterator(*this, true); }
-  inline bool operator == (const WadNSNameIterator &b) const { return (lump == b.lump && ns == b.ns && lumpname == b.lumpname); }
-  inline bool operator != (const WadNSNameIterator &b) const { return (lump != b.lump || ns != b.ns || lumpname != b.lumpname); }
-  inline WadNSNameIterator operator * () const { return WadNSNameIterator(*this); } /* required for iterator */
-  inline void operator ++ () { nextStep(); } /* this is enough for iterator */
+  inline WadNSNameIterator begin () noexcept { return WadNSNameIterator(*this); }
+  inline WadNSNameIterator end () noexcept { return WadNSNameIterator(*this, true); }
+  inline bool operator == (const WadNSNameIterator &b) const noexcept { return (lump == b.lump && ns == b.ns && lumpname == b.lumpname); }
+  inline bool operator != (const WadNSNameIterator &b) const noexcept { return (lump != b.lump || ns != b.ns || lumpname != b.lumpname); }
+  inline WadNSNameIterator operator * () const noexcept { return WadNSNameIterator(*this); } /* required for iterator */
+  inline void operator ++ () noexcept { nextStep(); } /* this is enough for iterator */
 
-  inline bool isEmpty () const { return (lump < 0); }
+  inline bool isEmpty () const noexcept { return (lump < 0); }
 
-  inline int getFile () const { return (lump >= 0 ? W_LumpFile(lump) : -1); }
-  inline int getLength () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline int getSize () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline VName getName () const { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
-  inline VStr getFullName () const { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
-  inline VStr getRealName () const { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
-  inline VStr getFullPakName () const { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
+  inline int getFile () const noexcept { return (lump >= 0 ? W_LumpFile(lump) : -1); }
+  inline int getLength () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline int getSize () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline VName getName () const noexcept { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
+  inline VStr getFullName () const noexcept { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
+  inline VStr getRealName () const noexcept { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
+  inline VStr getFullPakName () const noexcept { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
 
-  inline bool isAux () const { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
-  inline bool isIWAD () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
-  inline bool isIWad () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isAux () const noexcept { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
+  inline bool isIWAD () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isIWad () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
 };
 
 
@@ -404,38 +404,38 @@ public:
   VStr fname;
 
 public:
-  WadFileIterator () : lump(-1), fname() {}
-  WadFileIterator (VStr afname) : lump(-1), fname(afname) { lump = W_IterateFile(-1, afname); }
-  WadFileIterator (const WadFileIterator &it) : lump(it.lump), fname(it.fname) {}
-  WadFileIterator (const WadFileIterator &it, bool /*asEnd*/) : lump(-1), fname(it.fname) {}
-  inline WadFileIterator &operator = (const WadFileIterator &it) { lump = it.lump; fname = it.fname; return *this; }
+  inline WadFileIterator () noexcept : lump(-1), fname() {}
+  inline WadFileIterator (VStr afname) noexcept : lump(-1), fname(afname) { lump = W_IterateFile(-1, afname); }
+  inline WadFileIterator (const WadFileIterator &it) noexcept : lump(it.lump), fname(it.fname) {}
+  inline WadFileIterator (const WadFileIterator &it, bool /*asEnd*/) noexcept : lump(-1), fname(it.fname) {}
+  inline WadFileIterator &operator = (const WadFileIterator &it) noexcept { lump = it.lump; fname = it.fname; return *this; }
 
-  static inline WadFileIterator FromFirstAuxFile () {
+  static inline WadFileIterator FromFirstAuxFile () noexcept {
     WadFileIterator it;
     it.lump = W_GetFirstAuxLump();
     return it;
   }
 
-  inline WadFileIterator begin () { return WadFileIterator(*this); }
-  inline WadFileIterator end () { return WadFileIterator(*this, true); }
-  inline bool operator == (const WadFileIterator &b) const { return (lump == b.lump); }
-  inline bool operator != (const WadFileIterator &b) const { return (lump != b.lump); }
-  inline WadFileIterator operator * () const { return WadFileIterator(*this); } /* required for iterator */
-  inline void operator ++ () { lump = (lump >= 0 ? W_IterateFile(lump, fname) : -1); } /* this is enough for iterator */
+  inline WadFileIterator begin () noexcept { return WadFileIterator(*this); }
+  inline WadFileIterator end () noexcept { return WadFileIterator(*this, true); }
+  inline bool operator == (const WadFileIterator &b) const noexcept { return (lump == b.lump); }
+  inline bool operator != (const WadFileIterator &b) const noexcept { return (lump != b.lump); }
+  inline WadFileIterator operator * () const noexcept { return WadFileIterator(*this); } /* required for iterator */
+  inline void operator ++ () noexcept { lump = (lump >= 0 ? W_IterateFile(lump, fname) : -1); } /* this is enough for iterator */
 
-  inline bool isEmpty () const { return (lump < 0); }
+  inline bool isEmpty () const noexcept { return (lump < 0); }
 
-  inline int getFile () const { return (lump >= 0 ? W_LumpFile(lump) : -1); }
-  inline int getLength () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline int getSize () const { return (lump >= 0 ? W_LumpLength(lump) : -1); }
-  inline VName getName () const { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
-  inline VStr getFullName () const { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
-  inline VStr getRealName () const { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
-  inline VStr getFullPakName () const { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
+  inline int getFile () const noexcept { return (lump >= 0 ? W_LumpFile(lump) : -1); }
+  inline int getLength () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline int getSize () const noexcept { return (lump >= 0 ? W_LumpLength(lump) : -1); }
+  inline VName getName () const noexcept { return (lump >= 0 ? W_LumpName(lump) : NAME_None); }
+  inline VStr getFullName () const noexcept { return (lump >= 0 ? W_FullLumpName(lump) : VStr::EmptyString); }
+  inline VStr getRealName () const noexcept { return (lump >= 0 ? W_RealLumpName(lump) : VStr::EmptyString); } // without pak prefix
+  inline VStr getFullPakName () const noexcept { return (lump >= 0 ? W_FullPakNameForLump(lump) : VStr::EmptyString); } // without pak prefix
 
-  inline bool isAux () const { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
-  inline bool isIWAD () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
-  inline bool isIWad () const { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isAux () const noexcept { return (lump >= 0 ? W_IsAuxLump(lump) : false); }
+  inline bool isIWAD () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
+  inline bool isIWad () const noexcept { return (lump >= 0 ? W_IsIWADLump(lump) : false); }
 };
 
 

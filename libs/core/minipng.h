@@ -68,21 +68,21 @@ struct PalEntry {
   };
 #endif
 
-  PalEntry () : d(0) {}
-  PalEntry (const PalEntry &src) : d(src.d) {}
+  inline PalEntry () noexcept : d(0) {}
+  inline PalEntry (const PalEntry &src) noexcept : d(src.d) {}
 
-  static inline PalEntry RGB (int r, int g, int b) { return PalEntry(255, clampToByte(r), clampToByte(g), clampToByte(b)); }
-  static inline PalEntry RGBA (int r, int g, int b, int a) { return PalEntry(clampToByte(a), clampToByte(r), clampToByte(g), clampToByte(b)); }
+  static inline PalEntry RGB (int r, int g, int b) noexcept { return PalEntry(255, clampToByte(r), clampToByte(g), clampToByte(b)); }
+  static inline PalEntry RGBA (int r, int g, int b, int a) noexcept { return PalEntry(clampToByte(a), clampToByte(r), clampToByte(g), clampToByte(b)); }
 
-  static inline PalEntry Transparent () { return PalEntry(); }
+  static inline PalEntry Transparent () noexcept { return PalEntry(); }
 
-  inline void operator = (vuint32 other) { d = other; }
-  inline void operator = (const PalEntry &other) { d = other.d; }
+  inline void operator = (vuint32 other) noexcept { d = other; }
+  inline void operator = (const PalEntry &other) noexcept { d = other.d; }
 
-  inline operator vuint32 () const { return d; }
-  inline void setRGB (const PalEntry &other) { d = (other.d&0xffffffU)|0xff000000U; }
+  inline operator vuint32 () const noexcept { return d; }
+  inline void setRGB (const PalEntry &other) noexcept { d = (other.d&0xffffffU)|0xff000000U; }
 
-  inline PalEntry modulate (PalEntry other) const {
+  inline PalEntry modulate (PalEntry other) const noexcept {
     if (isWhite()) {
       return other;
     } else if (other.isWhite()) {
@@ -96,7 +96,7 @@ struct PalEntry {
   }
 
   // see https://www.compuphase.com/cmetric.htm
-  inline vint32 distanceSquared (const PalEntry &other) const {
+  inline vint32 distanceSquared (const PalEntry &other) const noexcept {
     const vint32 rmean = ((vint32)r+(vint32)other.r)/2;
     const vint32 dr = (vint32)r-(vint32)other.r;
     const vint32 dg = (vint32)g-(vint32)other.g;
@@ -104,25 +104,25 @@ struct PalEntry {
     return (((512+rmean)*dr*dr)/256)+4*dg*dg+(((767-rmean)*db*db)/256);
   }
 
-  inline int luminance () const { return (r*77+g*143+b*37)>>8; }
+  inline int luminance () const noexcept { return (r*77+g*143+b*37)>>8; }
 
   // this for 'nocoloredspritelighting' and not the same as desaturation.
   // the normal formula results in a value that's too dark.
-  inline void decolorize () { const int v = r+g+b; r = g = b = ((255*3)+v+v)/9; }
+  inline void decolorize () noexcept { const int v = r+g+b; r = g = b = ((255*3)+v+v)/9; }
 
-  inline bool isBlack () const { return ((d&0xffffffU) == 0); }
-  inline bool isWhite () const { return ((d&0xffffffU) == 0xffffffU); }
+  inline bool isBlack () const noexcept { return ((d&0xffffffU) == 0); }
+  inline bool isWhite () const noexcept { return ((d&0xffffffU) == 0xffffffU); }
 
-  inline bool isOpaque () const { return ((d&0xff000000U) == 0xff000000U); }
-  inline bool isTransparent () const { return ((d&0xff000000U) == 0); }
+  inline bool isOpaque () const noexcept { return ((d&0xff000000U) == 0xff000000U); }
+  inline bool isTransparent () const noexcept { return ((d&0xff000000U) == 0); }
 
-  inline PalEntry premulted () const { return PalEntry(a, r*a/255, g*a/255, b*a/255); }
+  inline PalEntry premulted () const noexcept { return PalEntry(a, r*a/255, g*a/255, b*a/255); }
 
-  inline PalEntry inverseColor () const { PalEntry nc; nc.a = a; nc.r = 255-r; nc.g = 255-g; nc.b = 255-b; return nc; }
+  inline PalEntry inverseColor () const noexcept { PalEntry nc; nc.a = a; nc.r = 255-r; nc.g = 255-g; nc.b = 255-b; return nc; }
 
 private:
-  PalEntry (vuint32 argb) { d = argb; }
-  PalEntry (vuint8 ia, vuint8 ir, vuint8 ig, vuint8 ib) { a = ia; r = ir; g = ig; b = ib; }
+  inline PalEntry (vuint32 argb) noexcept { d = argb; }
+  inline PalEntry (vuint8 ia, vuint8 ir, vuint8 ig, vuint8 ib) noexcept { a = ia; r = ir; g = ig; b = ib; }
 };
 
 

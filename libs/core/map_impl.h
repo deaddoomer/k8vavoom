@@ -139,7 +139,7 @@ public:
     }
 
     // special ctor that will create "end pointer"
-    inline TIterator (const TIterator &src, bool dummy) noexcept : map(src.map), index(src.map->mEBSize) {}
+    inline TIterator (const TIterator &src, bool /*dummy*/) noexcept : map(src.map), index(src.map->mEBSize) {}
 
     inline TIterator (const TIterator &src) noexcept : map(src.map), index(src.index) {}
     inline TIterator &operator = (const TIterator &src) noexcept { if (&src != this) { map = src.map; index = src.index; } return *this; }

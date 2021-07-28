@@ -65,6 +65,8 @@ public:
   inline TPlane (const TVec &anormal, const float adist) noexcept : normal(anormal), dist(adist) {}
   inline TPlane (const TPlane &src) noexcept : normal(src.normal), dist(src.dist) {}
 
+  VVA_ALWAYS_INLINE TPlane &operator = (const TPlane &src) noexcept = default;
+
   inline VVA_CHECKRESULT bool isValid () const noexcept { return (normal.isValid() && !normal.isZero() && isFiniteF(dist)); }
   inline VVA_CHECKRESULT bool isVertical () const noexcept { return (normal.z == 0.0f); }
 

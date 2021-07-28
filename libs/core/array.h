@@ -353,7 +353,7 @@ public:
     public: \
       xconst_##IndexIteratorRev (xconst_ TArray<T> *aarr) noexcept : arr(aarr) { currindex = (arr->length1D() > 0 ? arr->length1D()-1 : -1); } \
       xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it) noexcept : arr(it.arr), currindex(it.currindex) {} \
-      xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool asEnd) noexcept : arr(it.arr), currindex(-1) {} \
+      xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool /*asEnd*/) noexcept : arr(it.arr), currindex(-1) {} \
       inline xconst_##IndexIteratorRev begin () noexcept { return xconst_##IndexIteratorRev(*this); } \
       inline xconst_##IndexIteratorRev end () noexcept { return xconst_##IndexIteratorRev(*this, true); } \
       inline bool operator == (const xconst_##IndexIteratorRev &b) const noexcept { return (arr == b.arr && currindex == b.currindex); } \
