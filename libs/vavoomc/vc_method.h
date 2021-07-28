@@ -181,6 +181,8 @@ private:
 public:
   enum { MAX_PARAMS = 32 };
 
+  static_assert(MAX_PARAMS > 0 && MAX_PARAMS <= 32, "there cannot be more than 32 arguments!");
+
   // persistent fields
   vint32 NumLocals;
   vint32 Flags;
