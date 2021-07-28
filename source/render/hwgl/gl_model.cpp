@@ -278,9 +278,9 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
   VMatrix4 RotationMatrix;
   AliasSetupTransform(origin, angles, Transform, RotationMatrix);
 
-  GLuint attrPosition;
-  GLuint attrVert2;
-  GLuint attrTexCoord;
+  GLint attrPosition;
+  GLint attrVert2;
+  GLint attrTexCoord;
 
   if (!ri.isStenciled()) {
     SurfModel.Activate();

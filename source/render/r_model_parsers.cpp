@@ -193,7 +193,7 @@ void VMeshModel::Load_MD2 (vuint8 *Data, int DataSize) {
   if (pmodel->numtris <= 0) Sys_Error("model '%s' has no triangles", *this->Name);
   if (pmodel->numtris > 65536) Sys_Error("model '%s' has too many triangles", *this->Name);
   //if (pmodel->skinwidth&0x03) Sys_Error("Mod_LoadAliasModel: skinwidth not multiple of 4");
-  if (pmodel->numskins < 0 || pmodel->numskins > 1024) Sys_Error("model '%s' has invalid number of skins: %u", *this->Name, pmodel->numskins);
+  if (/*pmodel->numskins < 0 ||*/ pmodel->numskins > 1024) Sys_Error("model '%s' has invalid number of skins: %u", *this->Name, pmodel->numskins);
   if (pmodel->numframes < 1 || pmodel->numframes > 1024) Sys_Error("model '%s' has invalid numebr of frames: %u", *this->Name, pmodel->numframes);
 
   // base s and t vertices
@@ -438,7 +438,7 @@ void VMeshModel::Load_MD3 (vuint8 *Data, int DataSize) {
     pmesh->vertOfs = LittleLong(pmesh->vertOfs);
     pmesh->endOfs = LittleLong(pmesh->endOfs);
 
-    if (pmesh->shaderNum < 0 || pmesh->shaderNum > 1024) Sys_Error("model '%s' has invalid number of shaders: %u", *this->Name, pmesh->shaderNum);
+    if (/*pmesh->shaderNum < 0 ||*/ pmesh->shaderNum > 1024) Sys_Error("model '%s' has invalid number of shaders: %u", *this->Name, pmesh->shaderNum);
     if (pmesh->frameNum != pmodel->frameNum) Sys_Error("model '%s' has mismatched number of frames in mesh", *this->Name);
     //if (pmesh->vertNum < 1) Sys_Error("model '%s' has no vertices", *this->Name);
     if (pmesh->vertNum < 1) GCon->Logf(NAME_Error, "model '%s' has no vertices", *this->Name);

@@ -724,7 +724,7 @@ void VNetConnection::ReceivedPacket (VBitStreamReader &Packet) {
           Msg.GetNumBits(), Packet.GetPos(), Packet.GetNum(), Packet.GetNum()-Packet.GetPos());
       }
 
-      if (Msg.ChanIndex < 0 || Msg.ChanIndex >= MAX_CHANNELS) {
+      if (/*Msg.ChanIndex < 0 ||*/ Msg.ChanIndex >= MAX_CHANNELS) {
         // this is not fatal
         GCon->Logf(NAME_DevNet, "%s: got message for channel with invalid index %d", *GetAddress(), Msg.ChanIndex);
         continue;

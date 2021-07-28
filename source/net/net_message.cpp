@@ -160,7 +160,7 @@ bool VMessageIn::LoadFrom (VBitStreamReader &srcPacket) {
 //
 //==========================================================================
 void VMessageOut::WriteHeader (VBitStreamWriter &strm) const {
-  vassert(ChanIndex >= 0 && ChanIndex < MAX_CHANNELS);
+  vassert(/*ChanIndex >= 0 &&*/ ChanIndex < MAX_CHANNELS);
   // "normal message" flag
   strm.WriteBit(false);
   strm.WriteBit(bReliable);

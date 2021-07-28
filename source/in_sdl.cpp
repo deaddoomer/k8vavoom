@@ -552,7 +552,7 @@ VStr VSdlInputDevice::GetClipboardText () {
   if (!text || !text[0]) return VStr::EmptyString;
   for (char *p = text; *p; ++p) {
     const char ch = *p;
-         if (ch <= 0 || ch > 127) *p = '?';
+         if ((unsigned)(ch&0xff) <= 0 || (unsigned)(ch&0xff) > 127) *p = '?';
     else if (ch == '\t' || ch == '\n') *p = ' ';
     else if (ch > 0 && ch < 32) *p = ' ';
   }
@@ -771,14 +771,14 @@ void VSdlInputDevice::ReadInput () {
       case SDL_JOYBUTTONDOWN:
         if (joystick) {
           //GCon->Logf(NAME_Debug, "JOY BUTTON %d", ev.jbutton.button);
-          if (ev.jbutton.button >= 0 && ev.jbutton.button <= 15) {
+          if (/*ev.jbutton.button >= 0 &&*/ (unsigned)ev.jbutton.button <= 15) {
             joy_newb |= 1u<<ev.jbutton.button;
           }
         }
         break;
       case SDL_JOYBUTTONUP:
         if (joystick) {
-          if (ev.jbutton.button >= 0 && ev.jbutton.button <= 15) {
+          if (/*ev.jbutton.button >= 0 &&*/ (unsigned)ev.jbutton.button <= 15) {
             joy_newb &= ~(1u<<ev.jbutton.button);
           }
         }

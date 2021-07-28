@@ -179,7 +179,7 @@ void VOpenGLDrawer::PrepareShadowCube (const TVec &LightPos, const float Radius)
 //
 //==========================================================================
 void VOpenGLDrawer::ActivateShadowMapFace (unsigned int facenum) noexcept {
-  vassert(facenum >= 0 && facenum <= 5);
+  vassert(/*facenum >= 0 &&*/ facenum <= 5);
 
   // clear next shadowmap face (so it can be done in parallel)
   /*

@@ -1908,7 +1908,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       // frame letter is irrelevant
       State->Frame = VState::FF_DONTCHANGE;
     } else if (FChar < 'A' || FChar > '^') {
-      if (FChar < 33 || FChar > 127) {
+      if ((unsigned)(FChar&0xff) < 33 || (unsigned)(FChar&0xff) > 127) {
         sc->Error(va("Frames must be A-Z, [, \\ or ], got <0x%02x>", (vuint32)(FChar&0xff)));
       } else {
         sc->Error(va("Frames must be A-Z, [, \\ or ], got <%c>", FChar));
@@ -2089,7 +2089,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         // frame letter is irrelevant
         frm = VState::FF_DONTCHANGE;
       } else if (FSChar < 'A' || FSChar > '^') {
-        if (FSChar < 33 || FSChar > 127) {
+        if ((unsigned)(FSChar&0xff) < 33 || (unsigned)(FSChar&0xff) > 127) {
           sc->Error(va("Frames must be A-Z, [, \\ or ], got <0x%02x>", (vuint32)(FSChar&0xff)));
         } else {
           sc->Error(va("Frames must be A-Z, [, \\ or ], got <%c>", FSChar));
