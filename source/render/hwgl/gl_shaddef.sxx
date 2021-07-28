@@ -118,7 +118,7 @@ Set TextureSTSet {
       curr_TexIH = owner->tex_ih;
     }
 
-    inline void SetSpriteTex (const TVec &texorg, const TVec &saxis, const TVec &taxis, const float tex_iw, const float tex_ih) {
+    inline void SetSpriteTex (const TVec &/*texorg*/, const TVec &saxis, const TVec &taxis, const float tex_iw, const float tex_ih) {
       curr_SAxis = saxis;
       curr_SOffs = 0/*soffs*/;
       curr_TexIW = tex_iw;

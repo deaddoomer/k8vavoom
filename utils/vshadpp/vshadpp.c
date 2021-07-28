@@ -1663,7 +1663,7 @@ int main (int argc, char **argv) {
     fprintf(foc, "}\n");
 
     // generate uniform uploader
-    fprintf(foc, "void VOpenGLDrawer::VShaderDef_%s::UploadChangedUniforms (bool forced) {\n", si->name);
+    fprintf(foc, "void VOpenGLDrawer::VShaderDef_%s::UploadChangedUniforms (bool forced) {\n  (void)forced;\n", si->name);
     for (const LocInfo *loc = si->locs; loc; loc = loc->next) {
       if (loc->isAttr) continue;
       fprintf(foc, "  if (loc_%s >= 0 && (forced || changed_%s || notEqual_%s(last_%s, curr_%s))) {\n", loc->name, loc->name, loc->glslType, loc->name, loc->name);
