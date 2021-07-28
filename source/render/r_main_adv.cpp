@@ -59,26 +59,35 @@ struct DynLightInfo {
 };
 
 
-extern "C" {
-  static int stLightCompare (const void *aa, const void *bb, void *udata) {
-    if (aa == bb) return 0;
-    const StLightInfo *a = (const StLightInfo *)aa;
-    const StLightInfo *b = (const StLightInfo *)bb;
-    //TODO: consider radius too?
-    if (a->distSq < b->distSq) return -1;
-    if (a->distSq > b->distSq) return 1;
-    return 0;
-  }
+//==========================================================================
+//
+//  stLightCompare
+//
+//==========================================================================
+static int stLightCompare (const void *aa, const void *bb, void * /*udata*/) {
+  if (aa == bb) return 0;
+  const StLightInfo *a = (const StLightInfo *)aa;
+  const StLightInfo *b = (const StLightInfo *)bb;
+  //TODO: consider radius too?
+  if (a->distSq < b->distSq) return -1;
+  if (a->distSq > b->distSq) return 1;
+  return 0;
+}
 
-  static int dynLightCompare (const void *aa, const void *bb, void *udata) {
-    if (aa == bb) return 0;
-    const DynLightInfo *a = (const DynLightInfo *)aa;
-    const DynLightInfo *b = (const DynLightInfo *)bb;
-    //TODO: consider radius too?
-    if (a->distSq < b->distSq) return -1;
-    if (a->distSq > b->distSq) return 1;
-    return 0;
-  }
+
+//==========================================================================
+//
+//  dynLightCompare
+//
+//==========================================================================
+static int dynLightCompare (const void *aa, const void *bb, void * /*udata*/) {
+  if (aa == bb) return 0;
+  const DynLightInfo *a = (const DynLightInfo *)aa;
+  const DynLightInfo *b = (const DynLightInfo *)bb;
+  //TODO: consider radius too?
+  if (a->distSq < b->distSq) return -1;
+  if (a->distSq > b->distSq) return 1;
+  return 0;
 }
 
 

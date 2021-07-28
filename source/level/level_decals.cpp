@@ -229,7 +229,7 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
 //  decalAreaCompare
 //
 //==========================================================================
-static int decalAreaCompare (const void *aa, const void *bb, void *udata) {
+static int decalAreaCompare (const void *aa, const void *bb, void * /*udata*/) {
   if (aa == bb) return 0;
   const decal_t *adc = *(const decal_t **)aa;
   const decal_t *bdc = *(const decal_t **)bb;

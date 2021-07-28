@@ -262,7 +262,7 @@ static void CreateBlockmap(void)
 
 
 extern "C" {
-static int BlockCompare(const void *p1, const void *p2, void *udata)
+static int BlockCompare(const void *p1, const void *p2, void * /*udata*/)
 {
 	int blk_num1 = ((const u16_t *) p1)[0];
 	int blk_num2 = ((const u16_t *) p2)[0];
@@ -1016,7 +1016,7 @@ static inline int VanillaSegAngle(const seg_t *seg)
 */
 
 extern "C" {
-static int SegCompare(const void *p1, const void *p2, void *udata)
+static int SegCompare(const void *p1, const void *p2, void * /*udata*/)
 {
 	const seg_t *A = ((const seg_t **) p1)[0];
 	const seg_t *B = ((const seg_t **) p2)[0];
@@ -1034,7 +1034,7 @@ static int SegCompare(const void *p1, const void *p2, void *udata)
 
 /* ----- writing routines ------------------------------ */
 
-void MarkOverflow(int flags)
+void MarkOverflow(int /*flags*/)
 {
 	// flags are ignored
 

@@ -1931,7 +1931,7 @@ void VTextureManager::ReplaceTextureWithHiRes (int OldIndex, VTexture *NewTex, i
 //  VTextureManager::AddHiResTexturesFromNS
 //
 //==========================================================================
-void VTextureManager::AddHiResTexturesFromNS (EWadNamespace NS, int ttype, bool &messaged) {
+void VTextureManager::AddHiResTexturesFromNS (EWadNamespace NS, int ttype, bool & /*messaged*/) {
   for (auto &&it : WadNSIterator(NS)) {
     int lump = it.lump;
     VName Name = W_LumpName(lump);
@@ -2438,13 +2438,11 @@ void R_UpdateSkyFlatNum (bool force) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static int sortCmpVStrCI (const void *a, const void *b, void *udata) {
-    if (a == b) return 0;
-    VStr *sa = (VStr *)a;
-    VStr *sb = (VStr *)b;
-    return sa->ICmp(*sb);
-  }
+static int sortCmpVStrCI (const void *a, const void *b, void * /*udata*/) {
+  if (a == b) return 0;
+  VStr *sa = (VStr *)a;
+  VStr *sb = (VStr *)b;
+  return sa->ICmp(*sb);
 }
 
 

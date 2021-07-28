@@ -35,7 +35,7 @@ namespace ajbsp
 static char message_buf[SYS_MSG_BUFLEN];
 
 
-void Failure(const char *fmt, ...)
+void Failure(const char * /*fmt*/, ...)
 {
 #if 0
 	va_list args;
@@ -505,7 +505,7 @@ static inline int cmpVertex (const vertex_t *A, const vertex_t *B) {
 }
 
 extern "C" {
-static int VertexCompare(const void *p1, const void *p2, void *udata)
+static int VertexCompare(const void *p1, const void *p2, void * /*udata*/)
 {
 	int vert1 = ((const u32_t *) p1)[0];
 	int vert2 = ((const u32_t *) p2)[0];
@@ -634,7 +634,7 @@ static inline int LineVertexLowest(const linedef_t *L)
 
 
 extern "C" {
-static int LineStartCompare(const void *p1, const void *p2, void *udata)
+static int LineStartCompare(const void *p1, const void *p2, void * /*udata*/)
 {
 	int line1 = ((const int *) p1)[0];
 	int line2 = ((const int *) p2)[0];

@@ -82,20 +82,28 @@ static VCvarB dbg_disable_sprite_sorting("dbg_disable_sprite_sorting", false, "D
 static VCvarB dbg_disable_translucent_polys("dbg_disable_translucent_polys", false, "Disable rendering of translucent polygons?", CVAR_PreInit);
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-extern "C" {
-  static inline VVA_OKUNUSED int compareSurfacesByTexture (const surface_t *sa, const surface_t *sb) {
-    if (sa == sb) return 0;
-    const texinfo_t *ta = sa->texinfo;
-    const texinfo_t *tb = sb->texinfo;
-    if ((uintptr_t)ta->Tex < (uintptr_t)ta->Tex) return -1;
-    if ((uintptr_t)tb->Tex > (uintptr_t)tb->Tex) return 1;
-    return ((int)ta->ColorMap)-((int)tb->ColorMap);
-  }
+//==========================================================================
+//
+//  compareSurfacesByTexture
+//
+//==========================================================================
+static inline VVA_OKUNUSED int compareSurfacesByTexture (const surface_t *sa, const surface_t *sb) {
+  if (sa == sb) return 0;
+  const texinfo_t *ta = sa->texinfo;
+  const texinfo_t *tb = sb->texinfo;
+  if ((uintptr_t)ta->Tex < (uintptr_t)ta->Tex) return -1;
+  if ((uintptr_t)tb->Tex > (uintptr_t)tb->Tex) return 1;
+  return ((int)ta->ColorMap)-((int)tb->ColorMap);
+}
 
-  static VVA_OKUNUSED int drawListItemCmpByTexture (const void *a, const void *b, void *udata) {
-    return compareSurfacesByTexture(*(const surface_t **)a, *(const surface_t **)b);
-  }
+
+//==========================================================================
+//
+//  drawListItemCmpByTexture
+//
+//==========================================================================
+static VVA_OKUNUSED int drawListItemCmpByTexture (const void *a, const void *b, void * /*udata*/) {
+  return compareSurfacesByTexture(*(const surface_t **)a, *(const surface_t **)b);
 }
 
 

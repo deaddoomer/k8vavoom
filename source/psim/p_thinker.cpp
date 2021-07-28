@@ -590,7 +590,7 @@ COMMAND(Info_ThinkerCount) {
 //  classNameCompare
 //
 //==========================================================================
-static int classNameCompare (const void *aa, const void *bb, void *udata) {
+static int classNameCompare (const void *aa, const void *bb, void * /*udata*/) {
   if (aa == bb) return 0;
   VClass *a = *(VClass **)aa;
   VClass *b = *(VClass **)bb;
@@ -610,7 +610,7 @@ struct ThinkerListEntry {
 //
 //==========================================================================
 extern "C" {
-  static int classTLECompare (const void *aa, const void *bb, void *udata) {
+  static int classTLECompare (const void *aa, const void *bb, void * /*udata*/) {
     if (aa == bb) return 0;
     const ThinkerListEntry *a = (const ThinkerListEntry *)aa;
     const ThinkerListEntry *b = (const ThinkerListEntry *)bb;
