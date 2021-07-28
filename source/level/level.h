@@ -1417,10 +1417,8 @@ private:
   }
 
   static inline void AddToBox2D (float box2d[4], const float x, const float y) {
-         if (x < box2d[BOX2D_LEFT]) box2d[BOX2D_LEFT] = x;
-    else if (x > box2d[BOX2D_RIGHT]) box2d[BOX2D_RIGHT] = x;
-         if (y < box2d[BOX2D_BOTTOM]) box2d[BOX2D_BOTTOM] = y;
-    else if (y > box2d[BOX2D_TOP]) box2d[BOX2D_TOP] = y;
+    if (x < box2d[BOX2D_LEFT]) box2d[BOX2D_LEFT] = x; else if (x > box2d[BOX2D_RIGHT]) box2d[BOX2D_RIGHT] = x;
+    if (y < box2d[BOX2D_BOTTOM]) box2d[BOX2D_BOTTOM] = y; else if (y > box2d[BOX2D_TOP]) box2d[BOX2D_TOP] = y;
   }
 
   // post-loading routines
