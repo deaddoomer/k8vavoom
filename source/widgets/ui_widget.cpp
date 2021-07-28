@@ -1910,12 +1910,12 @@ public:
   }
 
   inline int xToPublic (const int cx, const int cy) const noexcept { return (cx+calcRowSize(cy))/2; }
-  inline int yToPublic (const int cx, const int cy) const noexcept { return (cy+diameter)/2; }
+  inline int yToPublic (const int /*cx*/, const int cy) const noexcept { return (cy+diameter)/2; }
   inline int yToPublic (const int cy) const noexcept { return (cy+diameter)/2; }
   inline void xyToPublic (int &cx, int &cy) const noexcept { const int sx = cx; const int sy = cy; cx = xToPublic(sx, sy); cy = yToPublic(sx, sy); }
 
   inline int xToInternal (const int x, const int y) const noexcept { return x*2-calcRowSize(y*2-diameter); }
-  inline int yToInternal (const int x, const int y) const noexcept { return y*2-diameter; }
+  inline int yToInternal (const int /*x*/, const int y) const noexcept { return y*2-diameter; }
   inline int yToInternal (const int y) const noexcept { return y*2-diameter; }
   inline void xyToInternal (int &x, int &y) const noexcept { const int sx = x; const int sy = y; x = xToInternal(sx, sy); y = yToInternal(sx, sy); }
 
