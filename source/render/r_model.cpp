@@ -2057,6 +2057,17 @@ void R_DrawModelFrame (const TVec &Origin, float Angle, VModel *Model,
   const char *Skin, int TranslStart,
   int TranslEnd, int Color, float Inter)
 {
+  (void)Origin;
+  (void)Angle;
+  (void)Model;
+  (void)Frame;
+  (void)NextFrame;
+  (void)Skin;
+  (void)TranslStart;
+  (void)TranslEnd;
+  (void)Color;
+  (void)Inter;
+
   //FIXME!
   /*
   bool Interpolate = true;

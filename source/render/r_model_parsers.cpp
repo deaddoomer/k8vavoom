@@ -170,8 +170,11 @@ bool VMeshModel::LoadMD2Frames (VStr mdpath, TArray<VStr> &names) {
 //
 //  VMeshModel::Load_MD2
 //
+//  FIXME: use `DataSize` for checks!
+//
 //==========================================================================
 void VMeshModel::Load_MD2 (vuint8 *Data, int DataSize) {
+  (void)DataSize;
   mmdl_t *pmodel;
   mstvert_t *pstverts;
   mtriangle_t *ptri;
@@ -385,8 +388,11 @@ void VMeshModel::Load_MD2 (vuint8 *Data, int DataSize) {
 //
 //  VMeshModel::Load_MD3
 //
+//  FIXME: use `DataSize` for checks!
+//
 //==========================================================================
 void VMeshModel::Load_MD3 (vuint8 *Data, int DataSize) {
+  (void)DataSize;
   this->Uploaded = false;
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;

@@ -268,7 +268,7 @@ void VRenderLevelShadowVolume::CollectAdvLightSurfaces (const seg_t *origseg, su
 //  clips the given segment and adds any visible pieces to the line list
 //
 //==========================================================================
-void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, unsigned int ssflag) {
+void VRenderLevelShadowVolume::CollectAdvLightLine (subsector_t * /*sub*/, sec_region_t *secregion, drawseg_t *dseg, unsigned int ssflag) {
   if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
   if (!seg) return; // just in case

@@ -69,6 +69,7 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
                                                    TVec &Pos, float Radius, float LightMin, vuint32 Color,
                                                    TVec coneDir, float coneAngle, bool forceRender)
 {
+  (void)RD; (void)Range;
   if (Radius <= LightMin || gl_dbg_wireframe) return;
 
   //if (PortalDepth > 0) { GCon->Logf(NAME_Debug, "skipped portal lighting (depth=%d)", PortalDepth); return; }

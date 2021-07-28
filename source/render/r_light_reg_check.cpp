@@ -53,7 +53,7 @@ void VRenderLevelLightmap::CollectRegLightSurfaces (TMapNC<surface_t *, bool> &l
 //  VRenderLevelLightmap::CheckRegLightSurfaces
 //
 //==========================================================================
-void VRenderLevelLightmap::CheckRegLightSurfaces (const seg_t *origseg, surface_t *InSurfs, texinfo_t *texinfo,
+void VRenderLevelLightmap::CheckRegLightSurfaces (const seg_t * /*origseg*/, surface_t *InSurfs, texinfo_t *texinfo,
                                                   VEntity *SkyBox, bool CheckSkyBoxAlways, TMapNC<surface_t *, bool> &litSurfaces)
 {
   if (!InSurfs) return;
@@ -86,7 +86,7 @@ void VRenderLevelLightmap::CheckRegLightSurfaces (const seg_t *origseg, surface_
 //  clips the given segment and adds any visible pieces to the line list
 //
 //==========================================================================
-void VRenderLevelLightmap::CheckRegLightLine (subsector_t *sub, sec_region_t *secregion, drawseg_t *dseg, TMapNC<surface_t *, bool> &litSurfaces) {
+void VRenderLevelLightmap::CheckRegLightLine (subsector_t * /*sub*/, sec_region_t *secregion, drawseg_t *dseg, TMapNC<surface_t *, bool> &litSurfaces) {
   if (!dseg) return; // just in case
   const seg_t *seg = dseg->seg;
   if (!seg) return; // just in case
@@ -139,7 +139,7 @@ void VRenderLevelLightmap::CheckRegLightLine (subsector_t *sub, sec_region_t *se
 //  this is used for floor and ceilings
 //
 //==========================================================================
-void VRenderLevelLightmap::CheckRegLightSecSurface (sec_region_t *secregion, sec_surface_t *ssurf, VEntity *SkyBox, TMapNC<surface_t *, bool> &litSurfaces) {
+void VRenderLevelLightmap::CheckRegLightSecSurface (sec_region_t * /*secregion*/, sec_surface_t *ssurf, VEntity *SkyBox, TMapNC<surface_t *, bool> &litSurfaces) {
   //const sec_plane_t &plane = *ssurf->secplane;
   if (!ssurf->esecplane.splane->pic) return;
 

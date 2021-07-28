@@ -241,7 +241,7 @@ void VRenderLevelShadowVolume::RenderMobjsShadow (VEntity *owner, vuint32 dlflag
 //  VRenderLevelShadowVolume::RenderMobjsShadowMap
 //
 //==========================================================================
-void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsigned int facenum, vuint32 dlflags) {
+void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsigned int /*facenum*/, vuint32 dlflags) {
   if (!r_draw_mobjs || !r_models || !r_model_shadows) return;
   if (!r_dbg_advthing_draw_shadow) return;
   if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
@@ -453,7 +453,7 @@ void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner, const 
 //  VRenderLevelShadowVolume::RenderMobjShadowMapSprite
 //
 //==========================================================================
-void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const unsigned int facenum, const bool allowRotating) {
+void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const unsigned int /*facenum*/, const bool allowRotating) {
   const int sprtype = ent->SpriteType;
   if (sprtype != SPR_VP_PARALLEL_UPRIGHT) return;
 

@@ -114,7 +114,7 @@ void VRenderLevelShadowVolume::RefilterStaticLights () {
 //  VRenderLevelShadowVolume::BuildLightMap
 //
 //==========================================================================
-void VRenderLevelShadowVolume::BuildLightMap (surface_t *surf) {
+void VRenderLevelShadowVolume::BuildLightMap (surface_t * /*surf*/) {
 }
 
 

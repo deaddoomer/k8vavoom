@@ -192,7 +192,7 @@ void GZModelDef::clear () {
 //  GZModelDef::ParseMD2Frames
 //
 //==========================================================================
-bool GZModelDef::ParseMD2Frames (VStr mdpath, TArray<VStr> &names) {
+bool GZModelDef::ParseMD2Frames (VStr /*mdpath*/, TArray<VStr> &/*names*/) {
   return false;
 }
 
@@ -202,7 +202,7 @@ bool GZModelDef::ParseMD2Frames (VStr mdpath, TArray<VStr> &names) {
 //  GZModelDef::IsModelFileExists
 //
 //==========================================================================
-bool GZModelDef::IsModelFileExists (VStr mdpath) {
+bool GZModelDef::IsModelFileExists (VStr /*mdpath*/) {
   return true;
 }
 

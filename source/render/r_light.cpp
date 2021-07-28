@@ -391,7 +391,7 @@ void VRenderLevelShared::RemoveStaticLightByOwner (vuint32 OwnerUId) {
 //  VRenderLevelShared::InvalidateStaticLightmaps
 //
 //==========================================================================
-void VRenderLevelShared::InvalidateStaticLightmaps (const TVec &org, float radius, bool relight, bool noGeoClip) {
+void VRenderLevelShared::InvalidateStaticLightmaps (const TVec &/*org*/, float /*radius*/, bool /*relight*/, bool /*noGeoClip*/) {
 }
 
 
@@ -716,7 +716,7 @@ void VRenderLevelShared::DecayLights (float timeDelta) {
 //  VRenderLevelShared::ThinkerAdded
 //
 //==========================================================================
-void VRenderLevelShared::ThinkerAdded (VThinker *Owner) {
+void VRenderLevelShared::ThinkerAdded (VThinker * /*Owner*/) {
   //if (!Owner) return;
   //if (!Owner->IsA(VEntity::StaticClass())) return;
   //suid2ent.put(Owner->ServerUId, (VEntity *)Owner);
@@ -771,6 +771,7 @@ void VRenderLevelShared::ProcessCachedSurfaces () {
 //
 //==========================================================================
 float VRenderLevelShared::CheckLightPointCone (VEntity *lowner, const TVec &p, const float radius, const float height, const TVec &coneOrigin, const TVec &coneDir, const float coneAngle) {
+  (void)lowner;
   TPlane pl;
   pl.SetPointNormal3D(coneOrigin, coneDir);
 
@@ -1086,6 +1087,7 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
 //
 //==========================================================================
 void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height, unsigned flags) {
+  (void)flags;
   if (r_static_lights && sub) {
     if (!staticLightsFiltered) RefilterStaticLights();
     const TVec p = calcLightPoint(pt, height);
@@ -1167,6 +1169,7 @@ static inline float DoomLightingEquation (float llev, float zdist) {
 //
 //==========================================================================
 void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags) {
+  (void)lowner; (void)radius;
   unsigned glowFlags = 3u; // bit 0: floor glow allowed; bit 1: ceiling glow allowed
   if (height < 0.0f) height = 0.0f;
 
@@ -1483,7 +1486,7 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
 //  VRenderLevelShared::InvalidateStaticLightmapsSubs
 //
 //==========================================================================
-void VRenderLevelShared::InvalidateStaticLightmapsSubs (subsector_t *sub) {
+void VRenderLevelShared::InvalidateStaticLightmapsSubs (subsector_t * /*sub*/) {
 }
 
 
@@ -1492,7 +1495,7 @@ void VRenderLevelShared::InvalidateStaticLightmapsSubs (subsector_t *sub) {
 //  VRenderLevelShared::InvalidatePObjLMaps
 //
 //==========================================================================
-void VRenderLevelShared::InvalidatePObjLMaps (polyobj_t *po) {
+void VRenderLevelShared::InvalidatePObjLMaps (polyobj_t * /*po*/) {
 }
 
 

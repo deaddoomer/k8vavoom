@@ -163,6 +163,7 @@ void VRenderLevelShared::RenderCollectSurfaces (const refdef_t *rd, const VViewC
 //
 //==========================================================================
 void VRenderLevelShared::PrepareWorldRender (const refdef_t *rd, const VViewClipper *Range) {
+  (void)rd; (void)Range;
   if (dbgCheckVisTime > 0) GCon->Logf(NAME_Debug, "dbgCheckVisTime: %g", dbgCheckVisTime);
   ClearQueues();
   MarkLeaves(); // this sets `r_viewleaf`

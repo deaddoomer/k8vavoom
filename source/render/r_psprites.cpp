@@ -391,7 +391,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
        if (cl->ViewStateOfsX <= -10000.0f) SX += cl->ViewStateOfsX+10000.0f;
   else if (cl->ViewStateOfsX >= 10000.0f) SX += cl->ViewStateOfsX-10000.0f;
   else SX += cl->ViewStateOfsX;
-
+  // fuck you, gshitcc
        if (cl->ViewStateOfsY <= -10000.0f) SY += cl->ViewStateOfsY+10000.0f;
   else if (cl->ViewStateOfsY >= 10000.0f) SY += cl->ViewStateOfsY-10000.0f;
   else SY += cl->ViewStateOfsY;

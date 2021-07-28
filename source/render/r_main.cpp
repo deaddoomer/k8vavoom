@@ -2385,7 +2385,7 @@ vuint32 VRenderLevelShared::GetLightChainHead () {
 //  block number+1 or 0
 //
 //==========================================================================
-vuint32 VRenderLevelShared::GetLightChainNext (vuint32 bnum) {
+vuint32 VRenderLevelShared::GetLightChainNext (vuint32 /*bnum*/) {
   return 0;
 }
 
@@ -2395,7 +2395,7 @@ vuint32 VRenderLevelShared::GetLightChainNext (vuint32 bnum) {
 //  VRenderLevelShared::GetLightBlockDirtyArea
 //
 //==========================================================================
-VDirtyArea &VRenderLevelShared::GetLightBlockDirtyArea (vuint32 bnum) {
+VDirtyArea &VRenderLevelShared::GetLightBlockDirtyArea (vuint32 /*bnum*/) {
   return unusedDirty;
 }
 
@@ -2405,7 +2405,7 @@ VDirtyArea &VRenderLevelShared::GetLightBlockDirtyArea (vuint32 bnum) {
 //  VRenderLevelShared::GetLightAddBlockDirtyArea
 //
 //==========================================================================
-VDirtyArea &VRenderLevelShared::GetLightAddBlockDirtyArea (vuint32 bnum) {
+VDirtyArea &VRenderLevelShared::GetLightAddBlockDirtyArea (vuint32 /*bnum*/) {
   return unusedDirty;
 }
 
@@ -2415,7 +2415,7 @@ VDirtyArea &VRenderLevelShared::GetLightAddBlockDirtyArea (vuint32 bnum) {
 //  VRenderLevelShared::GetLightBlock
 //
 //==========================================================================
-rgba_t *VRenderLevelShared::GetLightBlock (vuint32 bnum) {
+rgba_t *VRenderLevelShared::GetLightBlock (vuint32 /*bnum*/) {
   return nullptr;
 }
 
@@ -2425,7 +2425,7 @@ rgba_t *VRenderLevelShared::GetLightBlock (vuint32 bnum) {
 //  VRenderLevelShared::GetLightAddBlock
 //
 //==========================================================================
-rgba_t *VRenderLevelShared::GetLightAddBlock (vuint32 bnum) {
+rgba_t *VRenderLevelShared::GetLightAddBlock (vuint32 /*bnum*/) {
   return nullptr;
 }
 
@@ -2435,7 +2435,7 @@ rgba_t *VRenderLevelShared::GetLightAddBlock (vuint32 bnum) {
 //  VRenderLevelShared::GetLightChainFirst
 //
 //==========================================================================
-surfcache_t *VRenderLevelShared::GetLightChainFirst (vuint32 bnum) {
+surfcache_t *VRenderLevelShared::GetLightChainFirst (vuint32 /*bnum*/) {
   return nullptr;
 }
 
@@ -2445,7 +2445,7 @@ surfcache_t *VRenderLevelShared::GetLightChainFirst (vuint32 bnum) {
 //  VRenderLevelShared::ResetLightmaps
 //
 //==========================================================================
-void VRenderLevelShared::ResetLightmaps (bool recalcNow) {
+void VRenderLevelShared::ResetLightmaps (bool /*recalcNow*/) {
 }
 
 
@@ -2474,7 +2474,7 @@ bool VRenderLevelShared::isNeedLightmapCache () const noexcept {
 //  VRenderLevelShared::saveLightmaps
 //
 //==========================================================================
-void VRenderLevelShared::saveLightmaps (VStream *strm) {
+void VRenderLevelShared::saveLightmaps (VStream * /*strm*/) {
 }
 
 
@@ -2483,7 +2483,7 @@ void VRenderLevelShared::saveLightmaps (VStream *strm) {
 //  VRenderLevelShared::loadLightmaps
 //
 //==========================================================================
-bool VRenderLevelShared::loadLightmaps (VStream *strm) {
+bool VRenderLevelShared::loadLightmaps (VStream * /*strm*/) {
   return false;
 }
 
