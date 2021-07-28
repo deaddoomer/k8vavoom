@@ -1007,6 +1007,7 @@ STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip)
 
 static void *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__result_info *ri, int bpc)
 {
+   (void)bpc;
    memset(ri, 0, sizeof(*ri)); // make sure it's initialized if we add new fields
    ri->bits_per_channel = 8; // default is 8 so most paths don't have to be changed
    ri->channel_order = STBI_ORDER_RGB; // all current input & output are this, but this is here so we can add BGR order
@@ -7250,6 +7251,7 @@ static int stbi__info_main(stbi__context *s, int *x, int *y, int *comp)
 
 static int stbi__is_16_main(stbi__context *s)
 {
+   (void)s;
    #ifndef STBI_NO_PNG
    if (stbi__png_is16(s))  return 1;
    #endif

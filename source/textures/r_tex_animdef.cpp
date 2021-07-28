@@ -538,6 +538,7 @@ void P_InitAnimated () {
 //
 //==========================================================================
 static bool FindFirstTextureInSequence (int wadfile, VName txname, int fttype, int &txbase) {
+  (void)wadfile;
   txbase = -1;
   if (txname == NAME_None) return false;
 
@@ -566,6 +567,7 @@ static bool FindFirstTextureInSequence (int wadfile, VName txname, int fttype, i
 //
 //==========================================================================
 static int GetTextureIdWithOffset (int wadfile, int txbase, int offset, int fttype, bool optional) {
+  (void)wadfile;
   //GCon->Logf("***   %d : %d : %d", txlist, txbase, offset);
 
   if (txbase < 0) return -1;

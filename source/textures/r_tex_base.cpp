@@ -583,7 +583,7 @@ void VTexture::ClearTranslations () {
 //  VTexture::ClearTranslationAt
 //
 //==========================================================================
-void VTexture::ClearTranslationAt (int idx) {
+void VTexture::ClearTranslationAt (int /*idx*/) {
   // currently, there's nothing to do
 }
 

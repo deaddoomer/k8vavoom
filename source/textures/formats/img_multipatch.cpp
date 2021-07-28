@@ -40,7 +40,7 @@ static int cli_DumpMPData = 0;
 //
 //==========================================================================
 VMultiPatchTexture::VMultiPatchTexture (VStream &Strm, int DirectoryIndex,
-    TArray<VTextureManager::WallPatchInfo> &patchlist, int FirstTex, bool IsStrife)
+    TArray<VTextureManager::WallPatchInfo> &patchlist, int /*FirstTex*/, bool IsStrife)
   : VTexture()
 {
   Type = TEXTYPE_Wall;
