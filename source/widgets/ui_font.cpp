@@ -135,7 +135,7 @@ static TArray<VColTransMap> TextColorLookup;
 static int vfontcharTxCount = 0;
 #endif
 
-static_assert(NUM_TEXT_COLORS >= 26);
+static_assert(NUM_TEXT_COLORS >= 26, "we should have at least 26 user text colors!");
 
 
 //==========================================================================
