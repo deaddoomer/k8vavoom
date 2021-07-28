@@ -559,7 +559,7 @@ void FNodeBuilder::AddSegToShortBBox (short bbox[4], const FPrivSeg *seg)
   if (v2y > bbox[BOXTOP])   bbox[BOXTOP] = v2y;
 }
 
-void FNodeBuilder::DumpNodes(MapNodeEx *outNodes, int nodeCount)
+void FNodeBuilder::DumpNodes(MapNodeEx * /*outNodes*/, int /*nodeCount*/)
 {
 /*
   for (unsigned int i = 0; i < Nodes.Size(); ++i)

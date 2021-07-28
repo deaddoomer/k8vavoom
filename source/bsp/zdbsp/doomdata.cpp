@@ -28,6 +28,7 @@ void FLevel::FindMapBounds () {
   for (int i = 1; i < NumVertices; ++i) {
          if (Vertices[i].x < minx) minx = Vertices[i].x;
     else if (Vertices[i].x > maxx) maxx = Vertices[i].x;
+    // fuck you, gshitcc
          if (Vertices[i].y < miny) miny = Vertices[i].y;
     else if (Vertices[i].y > maxy) maxy = Vertices[i].y;
   }
