@@ -56,7 +56,7 @@ TArray<VLevel::DecalLineInfo> VLevel::connectedLines;
 //  IsSpecialLine
 //
 //==========================================================================
-static inline bool IsSpecialLine (const line_t *line, const int sidenum, const int texid) noexcept {
+static inline bool IsSpecialLine (const line_t *line, const int /*sidenum*/, const int texid) noexcept {
   // has special?
   if (!line || !line->special || texid <= 0) return false;
   //GCon->Logf("linespc=%d; spac=0x%04x; texid=%d (%d)", line->special, (unsigned)line->SpacFlags, texid, (int)VLevelInfo::IsSwitchTexture(texid));

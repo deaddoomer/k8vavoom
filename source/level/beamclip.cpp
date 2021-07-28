@@ -254,6 +254,7 @@ static inline bool IsGoodSegForPoly (const VViewClipper &clip, const seg_t *seg)
 //
 //==========================================================================
 static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TVec *lorg=nullptr, const float *lrad=nullptr) noexcept {
+  (void)level; (void)Frustum; (void)lorg; (void)lrad;
   const line_t *ldef = seg->linedef;
 
   if ((ldef->flags&ML_ADDITIVE) != 0 || ldef->alpha < 1.0f) return false; // skip translucent walls
@@ -516,6 +517,7 @@ bool VViewClipper::IsSegAClosedSomethingServer (VLevel *level, rep_sector_t *rep
 //
 //==========================================================================
 bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum, const seg_t *seg, const TVec *lorg, const float *lrad) noexcept {
+  (void)level;
   if (!clip_platforms) return false;
   if (!seg->backsector) return false;
 
@@ -1661,7 +1663,7 @@ void VViewClipper::CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror, bool
 //  VViewClipper::CheckAddPObjClipSeg
 //
 //==========================================================================
-void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, bool clipAll) noexcept {
+void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, bool /*clipAll*/) noexcept {
   // viewer is in back side or on plane?
   int orgside = seg->PointOnSide2(Origin);
   if (orgside == 2) return; // origin is on plane
@@ -1843,7 +1845,7 @@ bool VViewClipper::ClipLightCheckRegion (const subregion_t *region, subsector_t 
 //  `CalcLightVisCheckNode()`
 //
 //==========================================================================
-bool VViewClipper::ClipLightCheckSeg (const seg_t *seg, int asShadow) const noexcept {
+bool VViewClipper::ClipLightCheckSeg (const seg_t *seg, int /*asShadow*/) const noexcept {
   if (ClipIsEmpty()) return true; // no clip nodes yet
   if (!seg->SphereTouches(Origin, Radius)) return false;
   // we have to check even "invisible" segs here, 'cause we need them all
@@ -1867,7 +1869,7 @@ bool VViewClipper::ClipLightCheckSeg (const seg_t *seg, int asShadow) const noex
 //  VViewClipper::ClipLightCheckSubsector
 //
 //==========================================================================
-bool VViewClipper::ClipLightCheckSubsector (subsector_t *sub, int asShadow) const noexcept {
+bool VViewClipper::ClipLightCheckSubsector (subsector_t *sub, int /*asShadow*/) const noexcept {
   if (ClipIsFull()) return false;
   const int slight = CheckSubsectorLight(sub);
   if (!slight) return false;
