@@ -7,7 +7,8 @@ if(NOT WIN32)
   add_definitions(-DHAVE_LOCALTIME_R)
 endif(NOT WIN32)
 
-set(XMPLITE_C_FLAGS "-Wno-shadow=local -Wno-stringop-truncation")
+# TEMP!
+set(XMPLITE_C_FLAGS "-Wno-unused-parameter -Wno-sign-compare")
 
 set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} ${XMPLITE_C_FLAGS}")
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${XMPLITE_C_FLAGS}")

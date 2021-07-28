@@ -344,9 +344,13 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 #endif
 
 			if (info != NULL && !is_prowizard) {
+				/*
 				strncpy(info->name, buf, XMP_NAME_SIZE - 1);
 				strncpy(info->type, format_loader[i]->name,
 							XMP_NAME_SIZE - 1);
+				*/
+				snprintf(info->name, XMP_NAME_SIZE, "%s", buf);
+				snprintf(info->type, XMP_NAME_SIZE, "%s", format_loader[i]->name);
 			}
 			return 0;
 		}
