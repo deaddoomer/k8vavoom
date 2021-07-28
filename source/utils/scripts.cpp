@@ -197,14 +197,14 @@ void VScriptSavedPos::saveFrom (const VScriptParser &par) noexcept {
   TokStartPtr = par.TokStartPtr;
   TokStartLine = par.TokStartLine;
   flags =
-    (par.CMode ? Flag_CMode : 0u)|
-    (par.Escape ? Flag_Escape : 0u)|
-    (par.AllowNumSign ? Flag_AllowNumSign : 0u)|
-    (par.EDGEMode ? Flag_EDGEMode : 0u)|
+    (par.CMode ? Flag_CMode : Flag_None)|
+    (par.Escape ? Flag_Escape : Flag_None)|
+    (par.AllowNumSign ? Flag_AllowNumSign : Flag_None)|
+    (par.EDGEMode ? Flag_EDGEMode : Flag_None)|
     //
-    (par.End ? Flag_End : 0u)|
-    (par.Crossed ? Flag_Crossed : 0u)|
-    (par.QuotedString ? Flag_QuotedString : 0u)|
+    (par.End ? Flag_End : Flag_None)|
+    (par.Crossed ? Flag_Crossed : Flag_None)|
+    (par.QuotedString ? Flag_QuotedString : Flag_None)|
     0u;
 }
 

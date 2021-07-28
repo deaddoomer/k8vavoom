@@ -323,8 +323,8 @@ unsigned VRenderLevelShadowVolume::CheckShadowingFlats (subsector_t *sub) {
     if ((allowed&FlatSectorShadowInfo::NoFloor) == 0) renderFloor = false;
     if ((allowed&FlatSectorShadowInfo::NoCeiling) == 0) renderCeiling = false;
     nfo.renderFlag =
-      (renderFloor ? 0u : FlatSectorShadowInfo::NoFloor)|
-      (renderCeiling ? 0u : FlatSectorShadowInfo::NoCeiling);
+      (renderFloor ? FlatSectorShadowInfo::NothingZero : FlatSectorShadowInfo::NoFloor)|
+      (renderCeiling ? FlatSectorShadowInfo::NothingZero : FlatSectorShadowInfo::NoCeiling);
   }
   return nfo.renderFlag;
 }

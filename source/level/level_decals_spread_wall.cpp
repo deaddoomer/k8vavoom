@@ -295,7 +295,7 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
   #endif
 
   // side 1 will have decals flipped, so flip them to make it look right
-  const unsigned xflipside = (side ? decal_t::FlipX : 0u);
+  const unsigned xflipside = (side ? decal_t::FlipX : decal_t::FlagNothingZero);
 
   const TVec &v1 = *li->v1;
   const TVec &v2 = *li->v2;
@@ -833,9 +833,9 @@ void VLevel::AddOneDecal (int level, TVec org, VDecalDef *dec, int side, line_t 
 
   // setup flips
   params.orflags |=
-    (dec->flipXValue ? decal_t::FlipX : 0u)|
-    (dec->flipYValue ? decal_t::FlipY : 0u)|
-    (params.forcePermanent ? decal_t::Permanent : 0u);
+    (dec->flipXValue ? decal_t::FlipX : decal_t::FlagNothingZero)|
+    (dec->flipYValue ? decal_t::FlipY : decal_t::FlagNothingZero)|
+    (params.forcePermanent ? decal_t::Permanent : decal_t::FlagNothingZero);
   if (params.forceFlipX) params.orflags ^= decal_t::FlipX;
 
   // calculate offset from line start

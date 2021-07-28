@@ -282,7 +282,7 @@ void VLevel::FixTransparentDoors () {
       }
       if (!topflag && !botflag) continue;
 
-      sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : 0u)|(botflag ? sector_t::SF_IsTransDoorBot : 0u);
+      sec.SectorFlags |= sector_t::SF_IsTransDoor|(topflag ? sector_t::SF_IsTransDoorTop : sector_t::SF_NothingZero)|(botflag ? sector_t::SF_IsTransDoorBot : sector_t::SF_NothingZero);
       GCon->Logf(NAME_Debug, "sector #%d is transdoor (top=%d; bot=%d), with line #%d", (int)(ptrdiff_t)(&sec-&Sectors[0]), (int)topflag, (int)botflag, (int)(ptrdiff_t)(ldef-&Lines[0]));
       break;
     }

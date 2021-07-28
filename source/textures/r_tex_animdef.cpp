@@ -97,45 +97,45 @@ public:
 
 public:
   VV_DISABLE_COPY(ListOfLumps)
-  ListOfLumps () : list(), map() {}
+  inline ListOfLumps () noexcept : list(), map() {}
 
-  inline void clear () { map.clear(); list.clear(); }
+  inline void clear () noexcept { map.clear(); list.clear(); }
 
   void append (VName txname, int filenum);
 
   // returns -1 if not found
   int findInFileFrom (int stidx, VName aname) const;
 
-  inline int length () const { return list.length(); }
-  const ListLump &operator [] (int idx) const { vassert(idx >= 0 && idx < list.length()); return list[idx]; }
+  inline int length () const noexcept { return list.length(); }
+  inline const ListLump &operator [] (int idx) const noexcept { vassert(idx >= 0 && idx < list.length()); return list[idx]; }
 
 public:
   struct NameIterator {
     const TArray<ListLump> *list;
     int currIndex;
 
-    NameIterator () : list(nullptr), currIndex(-1) {}
-    NameIterator (const ListOfLumps *alist, VName aname) : list(&alist->list) { auto mip = alist->map.find(aname); currIndex = (mip ? *mip : -1); }
-    NameIterator (const NameIterator &it) : list(it.list), currIndex(it.currIndex) {}
-    NameIterator (const NameIterator &it, bool asEnd) : list(it.list), currIndex(-1) {}
-    inline NameIterator &operator = (const NameIterator &it) { list = it.list; currIndex = it.currIndex; return *this; }
+    inline NameIterator () noexcept : list(nullptr), currIndex(-1) {}
+    inline NameIterator (const ListOfLumps *alist, VName aname) noexcept : list(&alist->list) { auto mip = alist->map.find(aname); currIndex = (mip ? *mip : -1); }
+    inline NameIterator (const NameIterator &it) noexcept : list(it.list), currIndex(it.currIndex) {}
+    inline NameIterator (const NameIterator &it, bool /*asEnd*/) noexcept : list(it.list), currIndex(-1) {}
+    inline NameIterator &operator = (const NameIterator &it) noexcept { list = it.list; currIndex = it.currIndex; return *this; }
 
-    inline NameIterator begin () { return NameIterator(*this); }
-    inline NameIterator end () { return NameIterator(*this, true); }
-    inline bool operator == (const NameIterator &b) const { return (list == b.list && currIndex == b.currIndex); }
-    inline bool operator != (const NameIterator &b) const { return (list != b.list || currIndex != b.currIndex); }
-    inline NameIterator operator * () const { return NameIterator(*this); } /* required for iterator */
-    inline void operator ++ () { if (currIndex >= 0) currIndex = (*list)[currIndex].nextIndex; } /* this is enough for iterator */
+    inline NameIterator begin () noexcept { return NameIterator(*this); }
+    inline NameIterator end () noexcept { return NameIterator(*this, true); }
+    inline bool operator == (const NameIterator &b) const noexcept { return (list == b.list && currIndex == b.currIndex); }
+    inline bool operator != (const NameIterator &b) const noexcept { return (list != b.list || currIndex != b.currIndex); }
+    inline NameIterator operator * () const noexcept { return NameIterator(*this); } /* required for iterator */
+    inline void operator ++ () noexcept { if (currIndex >= 0) currIndex = (*list)[currIndex].nextIndex; } /* this is enough for iterator */
 
-    inline bool isEmpty () const { return (currIndex < 0); }
-    inline int index () const { return currIndex; }
-    inline VName getName () const { return (currIndex >= 0 ? (*list)[currIndex].texName : NAME_None); }
-    inline int getFile () const { return (currIndex >= 0 ? (*list)[currIndex].lumpFile : -1); }
+    inline bool isEmpty () const noexcept { return (currIndex < 0); }
+    inline int index () const noexcept { return currIndex; }
+    inline VName getName () const noexcept { return (currIndex >= 0 ? (*list)[currIndex].texName : NAME_None); }
+    inline int getFile () const noexcept { return (currIndex >= 0 ? (*list)[currIndex].lumpFile : -1); }
   };
 
-  inline NameIterator named (VName aname) const { return NameIterator(this, aname); }
+  inline NameIterator named (VName aname) const noexcept { return NameIterator(this, aname); }
 
-  inline int findInFileFrom (const NameIterator &it, VName aname) const { return findInFileFrom(it.index(), aname); }
+  inline int findInFileFrom (const NameIterator &it, VName aname) const noexcept { return findInFileFrom(it.index(), aname); }
 };
 
 

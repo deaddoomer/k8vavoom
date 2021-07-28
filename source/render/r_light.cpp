@@ -1510,12 +1510,12 @@ vuint32 VRenderLevelShared::CalcEntityLight (VEntity *lowner, unsigned dflags) {
     LP_IgnoreFixedLight|
     LP_IgnoreExtraLight|
     LP_NoLightFade|
-    (dflags&VDrawer::ELFlag_AllowSelfLights ? 0u : LP_IgnoreSelfLights)|
-    (dflags&VDrawer::ELFlag_IgnoreDynLights ? LP_IgnoreDynLights : 0u)|
-    (dflags&VDrawer::ELFlag_IgnoreStaticLights ? LP_IgnoreStatLights : 0u)|
-    (dflags&VDrawer::ELFlag_IgnoreAmbLights ? LP_IgnoreAmbLight : 0u)|
-    (dflags&VDrawer::ELFlag_IgnoreGlowLights ? LP_IgnoreGlowLights : 0u)|
-    0u;
+    (dflags&VDrawer::ELFlag_AllowSelfLights ? LP_NothingZero : LP_IgnoreSelfLights)|
+    (dflags&VDrawer::ELFlag_IgnoreDynLights ? LP_IgnoreDynLights : LP_NothingZero)|
+    (dflags&VDrawer::ELFlag_IgnoreStaticLights ? LP_IgnoreStatLights : LP_NothingZero)|
+    (dflags&VDrawer::ELFlag_IgnoreAmbLights ? LP_IgnoreAmbLight : LP_NothingZero)|
+    (dflags&VDrawer::ELFlag_IgnoreGlowLights ? LP_IgnoreGlowLights : LP_NothingZero)|
+    LP_NothingZero;
   // we need real light
   //const int oldRM = r_light_mode.asInt();
   //r_light_mode = 0; // switch to real ambient lighting

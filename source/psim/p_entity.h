@@ -839,6 +839,8 @@ public:
     CSE_IgnoreBlockAll   = 1u<<2,
     CSE_IgnoreFakeFloors = 1u<<3,
     CSE_CheckBaseRegion  = 1u<<4,
+    //
+    CSE_NothingZero = 0u,
   };
   bool CanSeeEx (VEntity *Ent, unsigned flags=0);
 

@@ -226,6 +226,8 @@ VName R_HasNamedSkybox (VStr aname);
 struct SpriteTexInfo {
   enum {
     Flipped = 1u<<0,
+    //
+    NothingZero = 0u,
   };
 
   int texid; // <0: no texture

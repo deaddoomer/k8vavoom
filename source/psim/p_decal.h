@@ -369,6 +369,8 @@ private:
 struct decal_t {
   // flags bit values
   enum {
+    FlagNothingZero = 0u,
+    //
     SlideFloor = 0x00001U, // curz: offset with floorz, slide with it
     SlideCeil  = 0x00002U, // curz: offset with ceilingz, slide with it
     FlipX      = 0x00010U,

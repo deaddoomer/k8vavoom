@@ -869,7 +869,7 @@ public:
   // checks all subsectors
   bool IsPointInSector2D (const sector_t *sec, TVec in) const noexcept;
 
-  inline const vuint8 IsRejectedVis (const sector_t *from, const sector_t *dest) const noexcept {
+  inline vuint8 IsRejectedVis (const sector_t *from, const sector_t *dest) const noexcept {
     if (!from || !dest) return 0xff; // this is REJECT matrix, not ACCEPT
     if (RejectMatrix) {
       const unsigned s1 = (unsigned)(ptrdiff_t)(from-Sectors);
@@ -1071,6 +1071,8 @@ public: // regions and openings internal functions
   enum {
     BSO_UsePoint = 1u<<0,
     BSO_Do3DMid  = 1u<<1,
+    //
+    BSO_NothingZero = 0u,
   };
 
   void BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, sector_t *sector, const TVec point,

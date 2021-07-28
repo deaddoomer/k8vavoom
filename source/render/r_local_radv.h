@@ -51,6 +51,8 @@ private:
     enum {
       NoFloor   = 1u<<0,
       NoCeiling = 1u<<1,
+      //
+      NothingZero = 0u,
     };
     unsigned renderFlag;
     unsigned frametag;

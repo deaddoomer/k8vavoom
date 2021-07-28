@@ -58,9 +58,11 @@ static TMapNC<sector_t *, bool> poSectorMap;
 
 
 enum {
-  AFF_VERT = 1u<<0,
-  AFF_MOVE = 1u<<1,
+  AFF_VERT  = 1u<<0,
+  AFF_MOVE  = 1u<<1,
   AFF_STUCK = 1u<<2,
+  //
+  AFF_NOTHING_ZERO = 0u,
 };
 
 struct SavedEntityData {
@@ -2158,13 +2160,13 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         if (verticalMove && oldz > pofz && oldz < pofz+z) {
           // yeah
           if (verticalMoveUp) {
-            edata.aflags = AFF_VERT|(docarry ? AFF_MOVE : 0u);
+            edata.aflags = AFF_VERT|(docarry ? AFF_MOVE : AFF_NOTHING_ZERO);
             mobj->Origin.z = pofz+z;
           }
         } else if (oldz == pofz) {
           // the object is standing on the pobj ceiling (i.e. floor ;-)
           // always carry, and always move with the pobj, even if it is flying
-          edata.aflags = AFF_VERT|(docarry ? AFF_MOVE : 0u);
+          edata.aflags = AFF_VERT|(docarry ? AFF_MOVE : AFF_NOTHING_ZERO);
           mobj->Origin.z = pofz+z;
         }
       }

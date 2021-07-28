@@ -51,7 +51,7 @@ static VCvarB dbg_disable_cansee("dbg_disable_cansee", false, "Disable CanSee pr
 //
 //==========================================================================
 bool VEntity::CanSee (VEntity *Other, bool forShooting, bool alwaysBetter) {
-  return CanSeeEx(Other, (forShooting ? CSE_ForShooting : 0u)|(alwaysBetter ? CSE_AlwaysBetter : 0u)|CSE_CheckBaseRegion);
+  return CanSeeEx(Other, (forShooting ? CSE_ForShooting : CSE_NothingZero)|(alwaysBetter ? CSE_AlwaysBetter : CSE_NothingZero)|CSE_CheckBaseRegion);
 }
 
 

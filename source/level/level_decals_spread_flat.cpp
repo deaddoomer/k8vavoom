@@ -300,9 +300,9 @@ void VLevel::SpreadFlatDecalEx (const TVec org, float range, VDecalDef *dec, int
 
   // setup flips
   unsigned flips =
-    (dec->flipXValue ? decal_t::FlipX : 0u)|
-    (dec->flipYValue ? decal_t::FlipY : 0u)|
-    (params.forcePermanent ? decal_t::Permanent : 0u);
+    (dec->flipXValue ? decal_t::FlipX : decal_t::FlagNothingZero)|
+    (dec->flipYValue ? decal_t::FlipY : decal_t::FlagNothingZero)|
+    (params.forcePermanent ? decal_t::Permanent : decal_t::FlagNothingZero);
   if (params.forceFlipX) flips ^= decal_t::FlipX;
   params.orflags |= flips;
 

@@ -969,13 +969,13 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
 
   trace.PlaneNoBlockFlags =
     SPF_NOBLOCKSIGHT|
-    (ignoreFakeFloors ? SPF_IGNORE_FAKE_FLOORS : 0u)|
-    (skipBaseRegion ? SPF_IGNORE_BASE_REGION : 0u);
+    (ignoreFakeFloors ? SPF_IGNORE_FAKE_FLOORS : SPF_NOTHING_ZERO)|
+    (skipBaseRegion ? SPF_IGNORE_BASE_REGION : SPF_NOTHING_ZERO);
 
   trace.LineBlockMask =
     ML_BLOCKSIGHT|
     (ignoreBlockAll ? 0 : ML_BLOCKEVERYTHING)|
-    (trace.PlaneNoBlockFlags&SPF_NOBLOCKSHOOT ? ML_BLOCKHITSCAN : 0u);
+    (trace.PlaneNoBlockFlags&SPF_NOBLOCKSHOOT ? ML_BLOCKHITSCAN : ML_NOTHING_ZERO);
 
   //GCon->Logf(NAME_Debug, "checking sight, ssec #%d, esec #%d", (int)(ptrdiff_t)(trace.StartSubSector->sector-&trace.Level->Sectors[0]), (int)(ptrdiff_t)(trace.EndSubSector->sector-&trace.Level->Sectors[0]));
 

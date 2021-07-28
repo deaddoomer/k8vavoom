@@ -44,6 +44,8 @@ public:
   char *TokStartPtr;
   vint32 TokStartLine;
   enum {
+    Flag_None = 0u,
+    //
     Flag_CMode = 1u<<0,
     Flag_Escape = 1u<<1,
     Flag_AllowNumSign = 1u<<2,

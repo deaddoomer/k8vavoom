@@ -200,11 +200,11 @@ decal_t *VLevel::AllocSegDecal (seg_t *seg, VDecalDef *dec, float alpha, VDecalA
   decal->scaleY = decal->origScaleY = dec->scaleY.value;
   decal->alpha = decal->origAlpha = alpha;
   decal->flags =
-    (dec->fullbright ? decal_t::Fullbright : 0u)|
-    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
-    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
-    (dec->bootPrint ? decal_t::BootPrint : 0u)|
-    (dec->additive ? decal_t::Additive : 0u);
+    (dec->fullbright ? decal_t::Fullbright : decal_t::FlagNothingZero)|
+    (dec->fuzzy ? decal_t::Fuzzy : decal_t::FlagNothingZero)|
+    (dec->bloodSplat ? decal_t::BloodSplat : decal_t::FlagNothingZero)|
+    (dec->bootPrint ? decal_t::BootPrint : decal_t::FlagNothingZero)|
+    (dec->additive ? decal_t::Additive : decal_t::FlagNothingZero);
 
   decal->boottime = 0.0f; //dec->boottime.value;
   decal->bootanimator = NAME_None; //dec->bootanimator;
@@ -513,11 +513,11 @@ void VLevel::NewFlatDecal (bool asFloor, subsector_t *sub, const int eregidx, co
   decal->alpha = decal->origAlpha = dcalpha;
   decal->flags =
     params.orflags|
-    (dec->fullbright ? decal_t::Fullbright : 0u)|
-    (dec->fuzzy ? decal_t::Fuzzy : 0u)|
-    (dec->bloodSplat ? decal_t::BloodSplat : 0u)|
-    (dec->bootPrint ? decal_t::BootPrint : 0u)|
-    (dec->additive ? decal_t::Additive : 0u);
+    (dec->fullbright ? decal_t::Fullbright : decal_t::FlagNothingZero)|
+    (dec->fuzzy ? decal_t::Fuzzy : decal_t::FlagNothingZero)|
+    (dec->bloodSplat ? decal_t::BloodSplat : decal_t::FlagNothingZero)|
+    (dec->bootPrint ? decal_t::BootPrint : decal_t::FlagNothingZero)|
+    (dec->additive ? decal_t::Additive : decal_t::FlagNothingZero);
 
   decal->boottime = dec->boottime.value;
   decal->bootanimator = dec->bootanimator;

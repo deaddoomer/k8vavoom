@@ -124,7 +124,7 @@ bool R_GetSpriteTextureInfo (SpriteTexInfo *nfo, int sprindex, int sprframeidx) 
   // use single rotation for all views
   if (nfo) {
     nfo->texid = sprframe->lump[0];
-    nfo->flags = (sprframe->flip[0] ? SpriteTexInfo::Flipped : 0u);
+    nfo->flags = (sprframe->flip[0] ? SpriteTexInfo::Flipped : SpriteTexInfo::NothingZero);
   }
 
   return true;

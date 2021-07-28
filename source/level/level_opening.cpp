@@ -611,13 +611,13 @@ opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsign
   op0list_lop.resetNoDtor();
   op1list_lop.resetNoDtor();
 
-  BuildSectorOpenings(linedef, op0list_lop, linedef->frontsector, point, NoBlockFlags, (do3dmidtex ? BSO_Do3DMid : 0u)|(usePoint ? BSO_UsePoint : 0u));
+  BuildSectorOpenings(linedef, op0list_lop, linedef->frontsector, point, NoBlockFlags, (do3dmidtex ? BSO_Do3DMid : BSO_NothingZero)|(usePoint ? BSO_UsePoint : BSO_NothingZero));
   if (op0list_lop.length() == 0) {
     // just in case: no front sector openings
     return nullptr;
   }
 
-  BuildSectorOpenings(linedef, op1list_lop, linedef->backsector, point, NoBlockFlags, (do3dmidtex ? BSO_Do3DMid : 0u)|(usePoint ? BSO_UsePoint : 0u));
+  BuildSectorOpenings(linedef, op1list_lop, linedef->backsector, point, NoBlockFlags, (do3dmidtex ? BSO_Do3DMid : BSO_NothingZero)|(usePoint ? BSO_UsePoint : BSO_NothingZero));
   if (op1list_lop.length() == 0) {
     // just in case: no back sector openings
     return nullptr;

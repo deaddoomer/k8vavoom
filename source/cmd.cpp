@@ -90,7 +90,7 @@ static bool wasRunCliCommands = false;
 //  sortCmpVStrCI
 //
 //==========================================================================
-static int sortCmpVStrCI (const void *a, const void *b, void *udata) {
+static int sortCmpVStrCI (const void *a, const void *b, void * /*udata*/) {
   if (a == b) return 0;
   VStr *sa = (VStr *)a;
   VStr *sb = (VStr *)b;
@@ -202,7 +202,7 @@ VCommand::~VCommand () {
 //  return non-empty string to replace arg
 //
 //==========================================================================
-VStr VCommand::AutoCompleteArg (const TArray<VStr> &args, int aidx) {
+VStr VCommand::AutoCompleteArg (const TArray<VStr> &/*args*/, int /*aidx*/) {
   return VStr::EmptyString;
 }
 
@@ -281,14 +281,14 @@ void VCommand::InsertCLICommands () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static int vapcmp (const void *aa, const void *bb, void *udata) {
+static int vapcmp (const void *aa, const void *bb, void * /*udata*/) {
   const VCommand::VAlias *a = *(const VCommand::VAlias **)aa;
   const VCommand::VAlias *b = *(const VCommand::VAlias **)bb;
   if (a == b) return 0;
   return a->Name.ICmp(b->Name);
 }
 
-static int vstrptrcmpci (const void *aa, const void *bb, void *udata) {
+static int vstrptrcmpci (const void *aa, const void *bb, void * /*udata*/) {
   const VStr *a = (const VStr *)aa;
   const VStr *b = (const VStr *)bb;
   if (a == b) return 0;

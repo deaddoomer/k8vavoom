@@ -350,7 +350,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
             intercept_t *itp = Level->AllocTempPathIntercept();
             memset((void *)itp, 0, sizeof(*itp));
             itp->frac = hfrac;
-            itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : 0u);
+            itp->Flags = intercept_t::IF_IsAPlane|(isSky ? intercept_t::IF_IsASky : intercept_t::IF_NothingZero);
             itp->sector = ssub->sector;
             itp->plane = oplane;
             itp->hitpoint = ohp;
@@ -525,7 +525,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
       // check if hitpoint is under or above a pobj
       if (hpz < po->pofloor.minz || hpz > po->poceiling.maxz) {
         // check hitscan blocking flags (only front side matters for now)
-        const unsigned lbflag = ld->flags|(ld->flags&ML_BLOCKEVERYTHING ? ML_BLOCKPROJECTILE : 0u);
+        const unsigned lbflag = ld->flags|(ld->flags&ML_BLOCKEVERYTHING ? ML_BLOCKPROJECTILE : ML_NOTHING_ZERO);
         if (doopening && ((lbflag&lineflags)&(ML_BLOCKHITSCAN|ML_BLOCKPROJECTILE)) && ld->sidenum[0] >= 0 && hpz > po->poceiling.maxz) {
           const side_t *fsd = &Level->Sides[ld->sidenum[0]];
           if (fsd->TopTexture > 0) {
@@ -620,7 +620,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
     if (doadd) {
       if (!isSky && ld->special == LNSPEC_LineHorizon) isSky = true;
       intercept_t &In = NewIntercept(frac);
-      In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : 0u)|(isSky ? intercept_t::IF_IsASky : 0u);
+      In.Flags = intercept_t::IF_IsALine|(blockFlag ? intercept_t::IF_IsABlockingLine : intercept_t::IF_NothingZero)|(isSky ? intercept_t::IF_IsASky : intercept_t::IF_NothingZero);
       In.line = ld;
       In.side = ld->PointOnSide2(trace_org3d);
       if (In.side == 2) {

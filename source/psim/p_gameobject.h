@@ -134,6 +134,9 @@ enum {
   SPF_PLAYER = 1u<<8, //256u
   SPF_MONSTER = 1u<<9, //512u
   SPF_HITINFO = 1u<<10, //1024u
+
+  //
+  SPF_NOTHING_ZERO = 0u,
 };
 
 
@@ -384,6 +387,8 @@ enum {
   ML_KEEPDATA            = 0x20000000u, // keep FloorData or CeilingData after activating them
                                         // used to simulate original Heretic behaviour
   ML_NODECAL             = 0x40000000u, // don't spawn decals on this linedef
+
+  ML_NOTHING_ZERO = 0u,
 };
 
 enum {
@@ -942,6 +947,8 @@ struct sec_region_t {
     RF_SkipFloorSurf = 1u<<3, // do not create floor surface for this region
     RF_SkipCeilSurf  = 1u<<4, // do not create ceiling surface for this region
     RF_SaneRegion    = 1u<<5, // k8vavoom-style 3d floor region
+    //
+    RF_NothingZero = 0u,
   };
   vuint32 regflags;
 
@@ -1079,6 +1086,8 @@ struct sector_t {
     SF_IsTransDoorTop   = 1u<<16, // `SF_IsTransDoor` is always set with this
     SF_IsTransDoorBot   = 1u<<17, // `SF_IsTransDoor` is always set with this
     SF_IsTransDoorTrack = 1u<<18, // fix one-sided "door tracks" for this sector (Boom transparent walls hack)
+    //
+    SF_NothingZero = 0u,
   };
   vuint32 SectorFlags;
 
@@ -1606,6 +1615,8 @@ enum {
 struct intercept_t {
   float frac; // along trace line
   enum {
+    IF_NothingZero     = 0u,
+    //
     IF_IsALine         = 1u<<0,
     IF_IsABlockingLine = 1u<<1, // not yet
     IF_IsAPlane        = 1u<<2, // plane hit

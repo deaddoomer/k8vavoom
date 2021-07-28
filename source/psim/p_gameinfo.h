@@ -270,7 +270,7 @@ public:
   public:
     inline PlayersIter (int atype, VGameInfo *agi) noexcept : gi(agi), plridx(-1), type(atype) { nextByType(); }
     inline PlayersIter (const PlayersIter &src) noexcept : gi(src.gi), plridx(src.plridx), type(src.type) {}
-    inline PlayersIter (const PlayersIter &src, bool atEnd) noexcept : gi(src.gi), plridx(MAXPLAYERS), type(src.type) {}
+    inline PlayersIter (const PlayersIter &src, bool /*atEnd*/) noexcept : gi(src.gi), plridx(MAXPLAYERS), type(src.type) {}
 
     inline PlayersIter begin () noexcept { return PlayersIter(*this); }
     inline PlayersIter end () noexcept { return PlayersIter(*this, true); }

@@ -728,7 +728,7 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplitFromReg (sec_region_t *frontr
   nfo.typeFlags = typeFlags;
   nfo.onlySolid = onlySolid;
   nfo.ignorereg = ignorereg;
-  nfo.mask = ((onlySolid ? sec_region_t::RF_NonSolid : 0u)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion);
+  nfo.mask = ((onlySolid ? sec_region_t::RF_NonSolid : sec_region_t::RF_NothingZero)|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion);
 
   return RecursiveQuadSplit(nfo, frontreg, backreg, quad);
 }
