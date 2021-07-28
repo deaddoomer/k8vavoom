@@ -874,6 +874,7 @@ void VEmitContext::AddBuiltin (int b, const TLocation &aloc) {
   I.Opcode = OPC_Builtin;
   I.Arg1 = b;
   I.Arg2 = 0;
+  I.loc = aloc;
 }
 
 
