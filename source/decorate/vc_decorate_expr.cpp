@@ -340,7 +340,7 @@ static const MathOpHandler oplist[] = {
 //  ParseConvertToUserVar
 //
 //==========================================================================
-static VExpression *ParseConvertToUserVar (VScriptParser *sc, VClass *Class, VExpression *lhs) {
+static VExpression *ParseConvertToUserVar (VScriptParser * /*sc*/, VClass * /*Class*/, VExpression *lhs) {
   if (!lhs || !lhs->IsDecorateSingleName()) return lhs;
   // for locals, `VDecorateSingleName()` will resolve itself into The Right Thing
   if (((VDecorateSingleName *)lhs)->localAccess) return lhs;
@@ -1104,6 +1104,7 @@ static VStatement *ParseActionStatement (VScriptParser *sc, VClass *Class, VStat
 static VMethod *CreateStateActionCallWrapperStmt (VStatement *Stmt, VClass *Class, VState *State, const TLocation &Loc) {
   vassert(Stmt);
   vassert(State);
+  (void)Class;
   #if defined(VC_DECORATE_ACTION_BELONGS_TO_STATE)
   VMethod *M = new VMethod(NAME_None, State, Loc);
   #else

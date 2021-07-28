@@ -1103,7 +1103,7 @@ VExpression *VDecorateUserVar::ResolveCompleteAssign (VEmitContext &ec, VExpress
 //  VDecorateUserVar::Emit
 //
 //==========================================================================
-void VDecorateUserVar::Emit (VEmitContext &ec) {
+void VDecorateUserVar::Emit (VEmitContext &/*ec*/) {
   Sys_Error("VDecorateUserVar::Emit: the thing that should not be!");
 }
 
