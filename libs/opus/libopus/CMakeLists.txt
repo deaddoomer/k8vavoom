@@ -6,6 +6,17 @@ include(opus_functions.cmake)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-cpp")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
 
+# k8: sorry!
+if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+endif()
+
+if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread")
+endif()
+
 set(PACKAGE_VERSION "1.3.1")
 message(STATUS "Opus package version: ${PACKAGE_VERSION}")
 
