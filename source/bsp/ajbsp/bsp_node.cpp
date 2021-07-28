@@ -811,6 +811,7 @@ static bool PickNodeWorker(superblock_t *part_list,
 //
 seg_t *PickNode(superblock_t *seg_list, int depth, const bbox_t *bbox)
 {
+	(void)depth;
 	seg_t *best=NULL;
 
 	int best_cost=INT_MAX;
