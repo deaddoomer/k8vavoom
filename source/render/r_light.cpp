@@ -1388,7 +1388,7 @@ vuint32 VRenderLevelShared::LightPointAmbient (VEntity *lowner, const TVec p, fl
 //  FIXME:POBJ:
 //
 //==========================================================================
-void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox) {
+void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum /*, const float *bbox*/) {
  tailcall:
   //if (!CheckSphereVsAABBIgnoreZ(bbox, sl.origin, sl.radius)) return;
 
@@ -1401,23 +1401,23 @@ void VRenderLevelShared::CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum,
       // light is completely on the front side
       //return CalcBSPNodeLMaps(slindex, sl, bsp->children[0], bsp->bbox[0]);
       bspnum = bsp->children[0];
-      bbox = bsp->bbox[0];
+      //!bbox = bsp->bbox[0];
       goto tailcall;
     } else if (dist <= -sl.radius) {
       // light is completely on the back side
       //return CalcBSPNodeLMaps(slindex, sl, bsp->children[1], bsp->bbox[1]);
       bspnum = bsp->children[1];
-      bbox = bsp->bbox[1];
+      //!bbox = bsp->bbox[1];
       goto tailcall;
     } else {
       unsigned side = (unsigned)(dist <= 0.0f);
       // recursively divide front space
-      CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
+      CalcBSPNodeLMaps(slindex, sl, bsp->children[side]/*, bsp->bbox[side]*/);
       // possibly divide back space
       side ^= 1;
       //return CalcBSPNodeLMaps(slindex, sl, bsp->children[side], bsp->bbox[side]);
       bspnum = bsp->children[side];
-      bbox = bsp->bbox[side];
+      //!bbox = bsp->bbox[side];
       goto tailcall;
     }
   } else {
@@ -1472,8 +1472,8 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
       }
     }
   } else {
-    const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
-    CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1, bbox);
+    //!const float bbox[6] = { -999999.0f, -999999.0f, -999999.0f, +999999.0f, +999999.0f, +999999.0f };
+    CalcBSPNodeLMaps(slindex, sl, Level->NumNodes-1/*, bbox*/);
   }
 }
 

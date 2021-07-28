@@ -1029,7 +1029,7 @@ protected:
   // calculate subsector's light from static light sources (light variables must be initialized)
   void CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &p, float radius, float height, unsigned flags);
 
-  void CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum, const float *bbox);
+  void CalcBSPNodeLMaps (int slindex, light_t &sl, int bspnum /*, const float *bbox*/);
   void CalcStaticLightTouchingSubs (int slindex, light_t &sl);
 
   // called when some surface from the given subsector changed
