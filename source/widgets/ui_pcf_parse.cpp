@@ -78,10 +78,10 @@ public:
 
     inline bool isTypeCorrect () const noexcept {
       if (type == 0) return false;
-      if (type&((~1)<<8)) return false;
+      if (type&((~1u)<<8)) return false;
       bool was1 = false;
       for (unsigned shift = 0; shift < 9; ++shift) {
-        if (type&(1<<shift)) {
+        if (type&(1u<<shift)) {
           if (was1) return false;
           was1 = true;
         }
