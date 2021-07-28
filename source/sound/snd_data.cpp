@@ -1260,7 +1260,7 @@ void VSoundManager::CleanupSounds () {
 //==========================================================================
 void VSoundManager::SetSingularity (int sound_id, bool singular) {
   if (sound_id < 1 || sound_id >= S_sfx.length()) return;
-  S_sfx[sound_id].bSingular = true;
+  S_sfx[sound_id].bSingular = singular;
 }
 
 

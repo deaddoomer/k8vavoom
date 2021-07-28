@@ -271,6 +271,7 @@ void VXMPAudioCodec::Restart () {
 //
 //==========================================================================
 VAudioCodec *VXMPAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int signsize) {
+  (void)sign; (void)signsize;
   if (snd_module_player != 1) return nullptr;
   VXMPAudioCodec *Codec = new VXMPAudioCodec(InStrm, true);
   if (!Codec->Init()) {
