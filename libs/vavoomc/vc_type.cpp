@@ -1470,7 +1470,7 @@ vuint32 VScriptDictElem::calcHash () const {
 //  don't clear value on destroying
 //
 //==========================================================================
-void VScriptDictElem::CreateFromPtr (VScriptDictElem &e, void *ptr, const VFieldType &atype, bool calcHash) {
+void VScriptDictElem::CreateFromPtr (VScriptDictElem &e, void *ptr, const VFieldType &atype, bool /*calcHash*/) {
   e.clear();
   if (atype.Type != TYPE_String && isSimpleType(atype)) {
     // for x86_64, pointer size is not equal to integer size, for example
@@ -1615,7 +1615,7 @@ void VScriptDictElem::Serialise (VStream &strm, const VFieldType &dtp) {
 //  VScriptDictElem::Serialise
 //
 //==========================================================================
-void VScriptDictElem::Serialise (VStream &strm, const VFieldType &dtp) const {
+void VScriptDictElem::Serialise (VStream &strm, const VFieldType &/*dtp*/) const {
   vassert(!strm.IsLoading());
   // writing
   vuint8 *ptr;
@@ -1822,7 +1822,7 @@ void VScriptDict::streamSkip (VStream &strm) {
   strm << tp;
   vuint32 count = 0;
   strm << STRM_INDEX(count);
-  if (count < 0 || count > 0x1fffffff) VPackage::IOError("invalid dictionary size");
+  if (/*count < 0 ||*/ count > 0x1fffffff) VPackage::IOError("invalid dictionary size");
   if (count == 0) return;
   while (count--) {
     VScriptDictElem::streamSkip(strm); // key

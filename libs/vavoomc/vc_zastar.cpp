@@ -81,7 +81,7 @@ void VMiAStarGraphIntr::AdjacentCost (void *state, MP_VECTOR<micropather::StateC
 //  VMiAStarGraphIntr::PrintStateInfo
 //
 //==========================================================================
-void VMiAStarGraphIntr::PrintStateInfo (void *state) {
+void VMiAStarGraphIntr::PrintStateInfo (void * /*state*/) {
 }
 
 

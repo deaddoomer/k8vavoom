@@ -666,8 +666,10 @@ VDelegateType::VDelegateType (VExpression *aexpr, const TLocation &aloc)
 //
 //  VDelegateType::VDelegateType
 //
+//  FIXME: `atype` is here for... for what?
+//
 //==========================================================================
-VDelegateType::VDelegateType (VFieldType atype, const TLocation &aloc)
+VDelegateType::VDelegateType (VFieldType /*atype*/, const TLocation &aloc)
   : VTypeExpr(TYPE_Unknown, aloc)
   , Flags(0)
   , NumParams(0)

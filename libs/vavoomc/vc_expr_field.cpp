@@ -1066,7 +1066,7 @@ void VVectorDirectFieldAccess::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VVectorDirectFieldAccess::DoResolve (VEmitContext &ec) {
   // op is already resolved
-  //if (op) op = op->Resolve(ec);
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   Type = VFieldType(TYPE_Float);
   SetResolved();
@@ -1198,7 +1198,7 @@ void VVectorSwizzleExpr::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VVectorSwizzleExpr::DoResolve (VEmitContext &ec) {
   // op is already resolved
-  //if (op) op = op->Resolve(ec);
+  if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
   Type = VFieldType(TYPE_Vector);
   SetResolved();

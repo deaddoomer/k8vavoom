@@ -93,7 +93,7 @@ public:
   void LoadObject (TLocation l);
 
   // will delete `Strm`
-  void LoadSourceObject (VStream *Strm, VStr filename, TLocation l);
+  void LoadSourceObject (VStream *Strm, VStr filename, const TLocation &l);
 
   // this emits code for all `PackagesToEmit()`
   // this *MUST* be called after `StaticLoadPackage()!`

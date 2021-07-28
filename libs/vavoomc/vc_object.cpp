@@ -1015,7 +1015,7 @@ void VObject::SerialiseFields (VStream &Strm) {
 //  this serialises other object internal data
 //
 //==========================================================================
-void VObject::SerialiseOther (VStream &Strm) {
+void VObject::SerialiseOther (VStream &/*Strm*/) {
 }
 
 

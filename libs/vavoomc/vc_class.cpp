@@ -1511,7 +1511,7 @@ static void RehashList (TArray<mobjinfo_t> &list, TMapNC<vint32, vint32> &map) {
 //  AllocateIdFromList
 //
 //==========================================================================
-static mobjinfo_t *AllocateIdFromList (TArray<mobjinfo_t> &list, TMapNC<vint32, vint32> &map, vint32 id, int GameFilter, VClass *cls, const char *msg) {
+static mobjinfo_t *AllocateIdFromList (TArray<mobjinfo_t> &list, TMapNC<vint32, vint32> &map, vint32 id, int GameFilter, VClass *cls, const char * /*msg*/) {
   if (id <= 0) return nullptr;
 #if 0
   mobjinfo_t *mi = nullptr;

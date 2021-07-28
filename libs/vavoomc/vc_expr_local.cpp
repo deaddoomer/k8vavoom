@@ -99,7 +99,7 @@ VExpression *VLocalDecl::DoResolve (VEmitContext &ec) {
 //  VLocalDecl::Emit
 //
 //==========================================================================
-void VLocalDecl::Emit (VEmitContext &ec) {
+void VLocalDecl::Emit (VEmitContext &/*ec*/) {
   VCFatalError("internal compiler error: VLocalDecl::Emit should not be called directly");
   //EmitInitialisations(ec);
 }

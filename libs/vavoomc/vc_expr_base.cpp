@@ -409,7 +409,7 @@ static bool workerCoerceOp1None (VEmitContext &ec, VExpression *&op1, VExpressio
 //  workerCoerceOp1Null
 //
 //==========================================================================
-static bool workerCoerceOp1Null (VEmitContext &ec, VExpression *&op1, VExpression *&op2) {
+static bool workerCoerceOp1Null (VEmitContext &/*ec*/, VExpression *&op1, VExpression *&op2) {
   if (!op1 || !op2) return false;
   if (op1->IsNullLiteral() && !op2->IsNoneLiteral() && !op2->IsNullLiteral()) {
     switch (op2->Type.Type) {
@@ -509,7 +509,7 @@ VExpression *VExpression::ResolveIterator (VEmitContext &) {
 //  VExpression::ResolveCompleteAssign
 //
 //==========================================================================
-VExpression *VExpression::ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved) {
+VExpression *VExpression::ResolveCompleteAssign (VEmitContext &/*ec*/, VExpression * /*val*/, bool &/*resolved*/) {
   // do nothing
   return this;
 }
@@ -540,7 +540,7 @@ void VExpression::RequestAddressOfForAssign () {
 //  VExpression::EmitCheckResolved
 //
 //==========================================================================
-void VExpression::EmitCheckResolved (VEmitContext &ec) {
+void VExpression::EmitCheckResolved (VEmitContext & /*ec*/) {
   if (!IsResolved()) {
     VCFatalError("%s: trying to emit unresolved expression (%s) (%s)", *Loc.toStringNoCol(), *toString(), *GetMyTypeName());
   }
@@ -701,6 +701,7 @@ bool VExpression::InCompilerCleanup = false;
 //
 //==========================================================================
 static void *vcAllocMem (size_t size, const size_t flags, const char *sfx) {
+  (void)sfx;
   size_t *res = (size_t *)AllocMem(size+sizeof(size_t)*2);
   res[0] = size;
   res[1] = flags;
@@ -729,6 +730,7 @@ static void *vcAllocMem (size_t size, const size_t flags, const char *sfx) {
 //
 //==========================================================================
 static void vcFreeMem (void *p, const size_t flags, const char *sfx) {
+  (void)sfx;
   if (!p) return;
   size_t *mem = (size_t *)p;
   mem -= 2;

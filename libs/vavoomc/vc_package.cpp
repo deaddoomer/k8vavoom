@@ -582,7 +582,7 @@ void VPackage::StaticEmitPackages () {
 //  will delete `Strm`
 //
 //==========================================================================
-void VPackage::LoadSourceObject (VStream *Strm, VStr filename, TLocation l) {
+void VPackage::LoadSourceObject (VStream *Strm, VStr filename, const TLocation &/*l*/) {
   if (!Strm) return;
 
   const bool showInfo = VObject::cliShowPackageLoading;

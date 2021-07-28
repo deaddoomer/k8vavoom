@@ -96,9 +96,9 @@ VStatement::~VStatement () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void VStatement::EmitCtor (VEmitContext &ec) {}
-void VStatement::EmitDtor (VEmitContext &ec, bool properLeave) {}
-void VStatement::EmitFinalizer (VEmitContext &ec, bool properLeave) {}
+void VStatement::EmitCtor (VEmitContext &/*ec*/) {}
+void VStatement::EmitDtor (VEmitContext &/*ec*/, bool /*properLeave*/) {}
+void VStatement::EmitFinalizer (VEmitContext &/*ec*/, bool /*properLeave*/) {}
 
 // ////////////////////////////////////////////////////////////////////////// //
 bool VStatement::IsCompound () const noexcept { return false; }
@@ -1558,7 +1558,7 @@ bool VForeach::IsInLoop () const noexcept {
 //  VForeach::EmitFinalizer
 //
 //==========================================================================
-void VForeach::EmitFinalizer (VEmitContext &ec, bool properLeave) {
+void VForeach::EmitFinalizer (VEmitContext &ec, bool /*properLeave*/) {
   ec.AddStatement(OPC_IteratorPop, Loc);
 }
 
@@ -2328,7 +2328,7 @@ void VForeachScriptedOuter::DoSyntaxCopyTo (VStatement *e) {
 //  VForeachScriptedOuter::DoResolve
 //
 //==========================================================================
-VStatement *VForeachScriptedOuter::DoResolve (VEmitContext &ec) {
+VStatement *VForeachScriptedOuter::DoResolve (VEmitContext &/*ec*/) {
   VCFatalError("VForeachScriptedOuter::DoResolve: it should never be called!");
   return nullptr;
 }
@@ -2727,7 +2727,7 @@ bool VForeachScripted::IsInLoop () const noexcept {
 //  VForeachScripted::EmitFinalizer
 //
 //==========================================================================
-void VForeachScripted::EmitFinalizer (VEmitContext &ec, bool properLeave) {
+void VForeachScripted::EmitFinalizer (VEmitContext &ec, bool /*properLeave*/) {
   if (ivDone) ivDone->Emit(ec);
 }
 
@@ -2974,7 +2974,7 @@ bool VSwitch::IsEndsWithReturn () const noexcept {
 //  VSwitch::IsProperCaseEnd
 //
 //==========================================================================
-bool VSwitch::IsProperCaseEnd (const VStatement *ASwitch, VStatement *aUpScope) noexcept {
+bool VSwitch::IsProperCaseEnd (const VStatement * /*ASwitch*/, VStatement *aUpScope) noexcept {
   UpScopeGuard upguard(this, aUpScope);
   return IsEndsWithReturn();
 }
@@ -3336,7 +3336,7 @@ void VBreak::DoSyntaxCopyTo (VStatement *e) {
 //  VBreak::DoResolve
 //
 //==========================================================================
-VStatement *VBreak::DoResolve (VEmitContext &ec) {
+VStatement *VBreak::DoResolve (VEmitContext &/*ec*/) {
   // check if we have a good break scope
   for (VStatement *st = UpScope; st; st = st->UpScope) {
     if (!st->IsContBreakAllowed()) {
@@ -3731,7 +3731,7 @@ bool VReturn::IsFlowStop () const noexcept {
 //  VReturn::IsProperCaseEnd
 //
 //==========================================================================
-bool VReturn::IsProperCaseEnd (const VStatement *ASwitch, VStatement *aUpScope) noexcept {
+bool VReturn::IsProperCaseEnd (const VStatement * /*ASwitch*/, VStatement * /*aUpScope*/) noexcept {
   return true; // always
 }
 
@@ -3978,7 +3978,7 @@ bool VGotoStmt::IsFlowStop () const noexcept {
 //  VGotoStmt::IsProperCaseEnd
 //
 //==========================================================================
-bool VGotoStmt::IsProperCaseEnd (const VStatement *ASwitch, VStatement *aUpScope) noexcept {
+bool VGotoStmt::IsProperCaseEnd (const VStatement *ASwitch, VStatement * /*aUpScope*/) noexcept {
   return (Switch == ASwitch);
 }
 
@@ -4080,7 +4080,7 @@ void VBaseCompoundStatement::ProcessVarDecls () {
 //  VBaseCompoundStatement::BeforeProcessVarDecls
 //
 //==========================================================================
-bool VBaseCompoundStatement::BeforeProcessVarDecls (VEmitContext &ec) {
+bool VBaseCompoundStatement::BeforeProcessVarDecls (VEmitContext &/*ec*/) {
   return true;
 }
 
@@ -4090,7 +4090,7 @@ bool VBaseCompoundStatement::BeforeProcessVarDecls (VEmitContext &ec) {
 //  VBaseCompoundStatement::BeforeResolveStatements
 //
 //==========================================================================
-bool VBaseCompoundStatement::BeforeResolveStatements (VEmitContext &ec) {
+bool VBaseCompoundStatement::BeforeResolveStatements (VEmitContext &/*ec*/) {
   return true;
 }
 
@@ -4100,7 +4100,7 @@ bool VBaseCompoundStatement::BeforeResolveStatements (VEmitContext &ec) {
 //  VBaseCompoundStatement::AfterResolveStatements
 //
 //==========================================================================
-bool VBaseCompoundStatement::AfterResolveStatements (VEmitContext &ec) {
+bool VBaseCompoundStatement::AfterResolveStatements (VEmitContext &/*ec*/) {
   return true;
 }
 
@@ -4129,7 +4129,7 @@ VStatement *VBaseCompoundStatement::DoResolve (VEmitContext &ec) {
 //  VBaseCompoundStatement::BeforeEmitStatements
 //
 //==========================================================================
-bool VBaseCompoundStatement::BeforeEmitStatements (VEmitContext &ec) {
+bool VBaseCompoundStatement::BeforeEmitStatements (VEmitContext &/*ec*/) {
   return true;
 }
 
@@ -4139,7 +4139,7 @@ bool VBaseCompoundStatement::BeforeEmitStatements (VEmitContext &ec) {
 //  VBaseCompoundStatement::AfterEmitStatements
 //
 //==========================================================================
-bool VBaseCompoundStatement::AfterEmitStatements (VEmitContext &ec) {
+bool VBaseCompoundStatement::AfterEmitStatements (VEmitContext &/*ec*/) {
   return true;
 }
 
@@ -4343,7 +4343,7 @@ bool VTryFinallyCompound::IsContBreakAllowed () const noexcept {
 //  VTryFinallyCompound::EmitDtor
 //
 //==========================================================================
-void VTryFinallyCompound::EmitDtor (VEmitContext &ec, bool properLeave) {
+void VTryFinallyCompound::EmitDtor (VEmitContext &ec, bool /*properLeave*/) {
   // `scope(exit)` should be called even on `return`
   if (retScope && !ec.InReturn) return;
   if (Finally) Finally->Emit(ec, UpScope); // avoid double return

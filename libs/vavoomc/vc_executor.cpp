@@ -296,7 +296,7 @@ static void popOldIterator () {
 //  ExecDictOperator
 //
 //==========================================================================
-static void ExecDictOperator (vuint8 *origip, vuint8 *&ip, VStack *&sp, VFieldType &KType, VFieldType &VType, vuint8 dcopcode) {
+static void ExecDictOperator (vuint8 *origip, vuint8 *&/*ip*/, VStack *&sp, VFieldType &KType, VFieldType &VType, vuint8 dcopcode) {
   VScriptDict *ht;
   VScriptDictElem e, v, *r;
   switch (dcopcode) {
@@ -3529,17 +3529,15 @@ void VObject::DumpProfile () {
 
 // ////////////////////////////////////////////////////////////////////////// //
 // sorter
-extern "C" {
-  static int profCmpTimes (const void *a, const void *b, void *udata) {
-    const VMethod::ProfileInfo *f1 = &(*(const VMethod **)a)->Profile;
-    const VMethod::ProfileInfo *f2 = &(*(const VMethod **)b)->Profile;
-    if (f1 == f2) return 0;
-    if (f1->totalTime == f2->totalTime) {
-      if (f1->callCount == f2->callCount) return 0;
-      return (f1->callCount > f2->callCount ? -1 : 1);
-    }
-    return (f1->totalTime > f2->totalTime ? -1 : 1);
+static int profCmpTimes (const void *a, const void *b, void * /*udata*/) {
+  const VMethod::ProfileInfo *f1 = &(*(const VMethod **)a)->Profile;
+  const VMethod::ProfileInfo *f2 = &(*(const VMethod **)b)->Profile;
+  if (f1 == f2) return 0;
+  if (f1->totalTime == f2->totalTime) {
+    if (f1->callCount == f2->callCount) return 0;
+    return (f1->callCount > f2->callCount ? -1 : 1);
   }
+  return (f1->totalTime > f2->totalTime ? -1 : 1);
 }
 
 

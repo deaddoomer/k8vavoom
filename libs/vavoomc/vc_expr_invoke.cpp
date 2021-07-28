@@ -232,7 +232,7 @@ void VArgMarshall::DoSyntaxCopyTo (VExpression *e) {
 //  VArgMarshall::Emit
 //
 //==========================================================================
-void VArgMarshall::Emit (VEmitContext &ec) {
+void VArgMarshall::Emit (VEmitContext &/*ec*/) {
   VCFatalError("The thing that should not be (VArgMarshall::Emit)");
 }
 
@@ -1787,7 +1787,7 @@ void VTypeInvocation::Emit (VEmitContext &) {
 //  VTypeInvocation::GetVMethod
 //
 //==========================================================================
-VMethod *VTypeInvocation::GetVMethod (VEmitContext &ec) {
+VMethod *VTypeInvocation::GetVMethod (VEmitContext &/*ec*/) {
   return nullptr;
 }
 
@@ -3157,7 +3157,7 @@ void VInvocation::CheckDecorateParams (VEmitContext &ec) {
 //  VInvocation::GetVMethod
 //
 //==========================================================================
-VMethod *VInvocation::GetVMethod (VEmitContext &ec) {
+VMethod *VInvocation::GetVMethod (VEmitContext &/*ec*/) {
   return nullptr;
 }
 
@@ -3187,7 +3187,7 @@ VName VInvocation::GetMethodName () const {
 //  VInvocation::SetMethodName
 //
 //==========================================================================
-void VInvocation::SetMethodName (VName aname) {
+void VInvocation::SetMethodName (VName /*aname*/) {
   VCFatalError("VC: Internal compiler error: `VInvocation::SetMethodName()` called");
 }
 
@@ -3331,7 +3331,7 @@ void VInvokeWrite::Emit (VEmitContext &ec) {
 //  VInvokeWrite::GetVMethod
 //
 //==========================================================================
-VMethod *VInvokeWrite::GetVMethod (VEmitContext &ec) {
+VMethod *VInvokeWrite::GetVMethod (VEmitContext &/*ec*/) {
   return nullptr;
 }
 
@@ -3361,7 +3361,7 @@ VName VInvokeWrite::GetMethodName () const {
 //  VInvokeWrite::SetMethodName
 //
 //==========================================================================
-void VInvokeWrite::SetMethodName (VName aname) {
+void VInvokeWrite::SetMethodName (VName /*aname*/) {
   VCFatalError("VC: Internal compiler error: `VInvokeWrite::SetMethodName()` called");
 }
 

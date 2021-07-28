@@ -678,7 +678,7 @@ void VMemberBase::StaticAddDefine (const char *s) {
 //  pkgOpenFileDG
 //
 //==========================================================================
-static VStream *pkgOpenFileDG (VLexer *self, VStr filename) {
+static VStream *pkgOpenFileDG (VLexer * /*self*/, VStr filename) {
   if (VMemberBase::dgOpenFile) return VMemberBase::dgOpenFile(filename, VMemberBase::userdata);
   return VPackage::OpenFileStreamRO(filename);
 }

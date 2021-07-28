@@ -360,7 +360,7 @@ VExpression *VClassNameLiteral::DoResolve (VEmitContext &ec) {
 //  VClassNameLiteral::Emit
 //
 //==========================================================================
-void VClassNameLiteral::Emit (VEmitContext &ec) {
+void VClassNameLiteral::Emit (VEmitContext &/*ec*/) {
   VCFatalError("VClassNameLiteral::Emit: the thing that should not be!");
 }
 
@@ -932,7 +932,7 @@ VExpression *VDollar::DoResolve (VEmitContext &ec) {
 //  VDollar::Emit
 //
 //==========================================================================
-void VDollar::Emit (VEmitContext &ec) {
+void VDollar::Emit (VEmitContext &/*ec*/) {
   ParseError(Loc, "the thing that should not be");
 }
 

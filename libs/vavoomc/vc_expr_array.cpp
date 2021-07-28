@@ -743,7 +743,7 @@ VExpression *VSliceOp::DoResolve (VEmitContext &ec) {
 //  VSliceOp::ResolveAssignmentTarget
 //
 //==========================================================================
-VExpression *VSliceOp::ResolveAssignmentTarget (VEmitContext &ec) {
+VExpression *VSliceOp::ResolveAssignmentTarget (VEmitContext &/*ec*/) {
   // actually, this is handled in `ResolveCompleteAssign()`
   ParseError(Loc, "Cannot assign to slices");
   return nullptr;
@@ -1415,7 +1415,7 @@ void VDynArrayClear::DoSyntaxCopyTo (VExpression *e) {
 //  VDynArrayClear::DoResolve
 //
 //==========================================================================
-VExpression *VDynArrayClear::DoResolve (VEmitContext &ec) {
+VExpression *VDynArrayClear::DoResolve (VEmitContext &/*ec*/) {
   if (IsReadOnly() || (ArrayExpr && ArrayExpr->IsReadOnly())) {
     ParseError(Loc, "Cannot change read-only array");
     delete this;
@@ -1931,7 +1931,7 @@ void VDynArrayAllocElement::DoSyntaxCopyTo (VExpression *e) {
 //  VDynArrayAllocElement::DoResolve
 //
 //==========================================================================
-VExpression *VDynArrayAllocElement::DoResolve (VEmitContext &ec) {
+VExpression *VDynArrayAllocElement::DoResolve (VEmitContext &/*ec*/) {
   if (IsReadOnly() || (ArrayExpr && ArrayExpr->IsReadOnly())) {
     ParseError(Loc, "Cannot change read-only array");
     delete this;
@@ -2123,7 +2123,7 @@ void VSliceGetLength::DoSyntaxCopyTo (VExpression *e) {
 //  VSliceGetLength::DoResolve
 //
 //==========================================================================
-VExpression *VSliceGetLength::DoResolve (VEmitContext &ec) {
+VExpression *VSliceGetLength::DoResolve (VEmitContext &/*ec*/) {
   Type = VFieldType(TYPE_Int);
   SetResolved();
   return this;
@@ -2215,7 +2215,7 @@ void VSliceGetPtr::DoSyntaxCopyTo (VExpression *e) {
 //  VSliceGetPtr::DoResolve
 //
 //==========================================================================
-VExpression *VSliceGetPtr::DoResolve (VEmitContext &ec) {
+VExpression *VSliceGetPtr::DoResolve (VEmitContext &/*ec*/) {
   //fprintf(stderr, "setype: <%s>\n", *sexpr->Type.GetName());
   Type = sexpr->Type.GetArrayInnerType();
   //Type = Type.MakePointerType();
@@ -2305,7 +2305,7 @@ void VDictGetLength::DoSyntaxCopyTo (VExpression *e) {
 //  VDictGetLength::DoResolve
 //
 //==========================================================================
-VExpression *VDictGetLength::DoResolve (VEmitContext &ec) {
+VExpression *VDictGetLength::DoResolve (VEmitContext &/*ec*/) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
   SetResolved();
@@ -2393,7 +2393,7 @@ void VDictGetCapacity::DoSyntaxCopyTo (VExpression *e) {
 //  VDictGetCapacity::DoResolve
 //
 //==========================================================================
-VExpression *VDictGetCapacity::DoResolve (VEmitContext &ec) {
+VExpression *VDictGetCapacity::DoResolve (VEmitContext &/*ec*/) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
   SetResolved();
@@ -2483,7 +2483,7 @@ void VDictClearOrReset::DoSyntaxCopyTo (VExpression *e) {
 //  VDictClearOrReset::DoResolve
 //
 //==========================================================================
-VExpression *VDictClearOrReset::DoResolve (VEmitContext &ec) {
+VExpression *VDictClearOrReset::DoResolve (VEmitContext &/*ec*/) {
   if (!sexpr) { delete this; return nullptr; }
   if (IsReadOnly() || sexpr->IsReadOnly()) {
     ParseError(Loc, "Cannot change read-only dictionary");
@@ -2580,7 +2580,7 @@ void VDictRehash::DoSyntaxCopyTo (VExpression *e) {
 //  VDictRehash::DoResolve
 //
 //==========================================================================
-VExpression *VDictRehash::DoResolve (VEmitContext &ec) {
+VExpression *VDictRehash::DoResolve (VEmitContext &/*ec*/) {
   if (!sexpr) { delete this; return nullptr; }
   if (IsReadOnly() || sexpr->IsReadOnly()) {
     ParseError(Loc, "Cannot change read-only dictionary");
@@ -3021,7 +3021,7 @@ void VDictFirstIndex::DoSyntaxCopyTo (VExpression *e) {
 //  VDictFirstIndex::DoResolve
 //
 //==========================================================================
-VExpression *VDictFirstIndex::DoResolve (VEmitContext &ec) {
+VExpression *VDictFirstIndex::DoResolve (VEmitContext &/*ec*/) {
   sexpr->RequestAddressOf();
   Type = VFieldType(TYPE_Int);
   SetResolved();
@@ -3530,7 +3530,7 @@ void VStructZero::DoSyntaxCopyTo (VExpression *e) {
 //  VStructZero::DoResolve
 //
 //==========================================================================
-VExpression *VStructZero::DoResolve (VEmitContext &ec) {
+VExpression *VStructZero::DoResolve (VEmitContext &/*ec*/) {
   if (!sexpr) { delete this; return nullptr; }
   vassert(sexpr->Type.Type == TYPE_Struct || sexpr->Type.Type == TYPE_Vector);
   if (sexpr->IsReadOnly()) {
