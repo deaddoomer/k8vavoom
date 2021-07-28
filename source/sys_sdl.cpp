@@ -193,7 +193,7 @@ char *Sys_ConsoleInput () {
 //==========================================================================
 static volatile int sigReceived = 0;
 
-static void signal_handler (int s) {
+static void signal_handler (int /*s*/) {
   sigReceived = 1;
   VObject::vmAbortBySignal += 1;
 }
