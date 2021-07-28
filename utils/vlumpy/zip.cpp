@@ -305,7 +305,7 @@ local void ziplocal_putValue_inmemory OF((void* dest, uLong x, int nbByte))
 /****************************************************************************/
 
 
-local uLong ziplocal_TmzDateToDosDate(const tm_zip* ptm, uLong dosDate)
+local uLong ziplocal_TmzDateToDosDate(const tm_zip* ptm, uLong /*dosDate*/)
 {
   uLong year = (uLong)ptm->tm_year;
   if (year>1980)
@@ -467,7 +467,7 @@ local uLong ziplocal_SearchCentralDir OF((
 /************************************************************/
 zipFile ZEXPORT zipOpen2 (const char *pathname,
   int append,
-  zipcharpc* globalcomment,
+  zipcharpc* /*globalcomment*/,
   zlib_filefunc_def* pzlib_filefunc_def)
 {
   zip_internal ziinit;
@@ -656,7 +656,7 @@ extern int ZEXPORT zipOpenNewFileInZip3 (zipFile file,
   int memLevel,
   int strategy,
   const char* password,
-  uLong crcForCrypting)
+  uLong /*crcForCrypting*/)
 {
   zip_internal* zi;
   uInt size_filename;

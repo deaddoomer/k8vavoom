@@ -303,6 +303,7 @@ static void AddLZ77Data(const ZopfliLZ77Store* lz77,
                         unsigned char** out, size_t* outsize) {
   size_t testlength = 0;
   size_t i;
+  (void)expected_data_size;
 
   for (i = lstart; i < lend; i++) {
     unsigned dist = lz77->dists[i];
