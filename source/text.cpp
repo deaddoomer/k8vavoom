@@ -357,7 +357,7 @@ void R_OSDMsgShow (const char *msg, int clr, bool sendKeepalives) {
 //  R_PBarReset
 //
 //==========================================================================
-bool R_PBarReset (bool sendKeepalives) {
+bool R_PBarReset (bool /*sendKeepalives*/) {
   lastPBarWdt = -666;
   pbarStartTime = Sys_Time();
   pbarLastUpdateTime = 0;

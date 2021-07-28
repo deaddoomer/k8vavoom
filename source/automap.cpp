@@ -789,7 +789,7 @@ static void AM_findMinMaxBoundaries () {
   for (int i = 0; i < GClLevel->NumVertexes; ++i) {
          if (GClLevel->Vertexes[i].x < min_x) min_x = GClLevel->Vertexes[i].x;
     else if (GClLevel->Vertexes[i].x > max_x) max_x = GClLevel->Vertexes[i].x;
-
+    // fuck you, gshitcc
          if (GClLevel->Vertexes[i].y < min_y) min_y = GClLevel->Vertexes[i].y;
     else if (GClLevel->Vertexes[i].y > max_y) max_y = GClLevel->Vertexes[i].y;
   }
@@ -849,7 +849,7 @@ static void AM_changeWindowLoc () {
 
        if (m_x+m_w/2.0f > max_x) m_x = max_x-m_w/2.0f;
   else if (m_x+m_w/2.0f < min_x) m_x = min_x-m_w/2.0f;
-
+  // fuck you, gshitcc
        if (m_y+m_h/2.0f > max_y) m_y = max_y-m_h/2.0f;
   else if (m_y+m_h/2.0f < min_y) m_y = min_y-m_h/2.0f;
 
@@ -2495,7 +2495,7 @@ void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float an
 //  AM_Minimap_DrawPlayer
 //
 //==========================================================================
-void AM_Minimap_DrawPlayer (VWidget *w, float xc, float yc, float scale, float plrangle, float alpha) {
+void AM_Minimap_DrawPlayer (VWidget *w, float /*xc*/, float /*yc*/, float scale, float plrangle, float alpha) {
   if (!minimap_draw_player) return;
   float s, c;
   const mline_t *player_arrow;

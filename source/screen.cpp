@@ -337,7 +337,7 @@ static void DrawFPS () {
 
        if (worldThinkTimeVM < 0) vmAverage.setValue(0);
   else if (worldThinkTimeVM >= 0) vmAverage.update(worldThinkTimeVM);
-
+  // fuck you, gshitcc
        if (worldThinkTimeDecal < 0) decalAverage.setValue(0);
   else if (worldThinkTimeDecal >= 0) decalAverage.update(worldThinkTimeDecal);
 
