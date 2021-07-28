@@ -1807,7 +1807,7 @@ static void ParseGameDefinitions (VScriptParser *sc, TArray<GameDefinition> &gam
 //  ParseBaseGameDefsFile
 //
 //==========================================================================
-static void ParseBaseGameDefsFile (VStr name, VStr mainiwad, bool inHomeDir) {
+static void ParseBaseGameDefsFile (VStr name, VStr /*mainiwad*/, bool inHomeDir) {
   VStr UseName;
 
   if (name.isAbsolutePath()) {
@@ -2319,34 +2319,34 @@ void FL_InitOptions () {
 
   // add known game aliases
   //FIXME: unhardcode this!
-  GParsedArgs.RegisterCallback("-doom", "select Doom/Ultimate Doom game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "doom"; return 0; });
+  GParsedArgs.RegisterCallback("-doom", "select Doom/Ultimate Doom game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "doom"; return 0; });
   GParsedArgs.RegisterAlias("-doom1", "-doom");
-  GParsedArgs.RegisterCallback("-doom2", "select Doom II game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "doom2"; return 0; });
-  GParsedArgs.RegisterCallback("-tnt", "select TNT Evilution game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "tnt"; return 0; });
+  GParsedArgs.RegisterCallback("-doom2", "select Doom II game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "doom2"; return 0; });
+  GParsedArgs.RegisterCallback("-tnt", "select TNT Evilution game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "tnt"; return 0; });
   GParsedArgs.RegisterAlias("-evilution", "-tnt");
-  GParsedArgs.RegisterCallback("-plutonia", "select Plutonia game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "plutonia"; return 0; });
-  GParsedArgs.RegisterCallback("-nerve", "select Doom II + No Rest for the Living game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "nerve"; return 0; });
+  GParsedArgs.RegisterCallback("-plutonia", "select Plutonia game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "plutonia"; return 0; });
+  GParsedArgs.RegisterCallback("-nerve", "select Doom II + No Rest for the Living game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "nerve"; return 0; });
 
-  GParsedArgs.RegisterCallback("-freedoom", "select Freedoom Phase I game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "freedoom"; return 0; });
+  GParsedArgs.RegisterCallback("-freedoom", "select Freedoom Phase I game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "freedoom"; return 0; });
   GParsedArgs.RegisterAlias("-freedoom1", "-freedoom");
-  GParsedArgs.RegisterCallback("-freedoom2", "select Freedoom Phase II game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "freedoom2"; return 0; });
+  GParsedArgs.RegisterCallback("-freedoom2", "select Freedoom Phase II game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "freedoom2"; return 0; });
 
-  GParsedArgs.RegisterCallback("-heretic", "select Heretic game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "heretic"; return 0; });
-  GParsedArgs.RegisterCallback("-hexen", "select Hexen game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "hexen"; return 0; });
-  GParsedArgs.RegisterCallback("-hexendd", "select Hexen:Deathkings game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "hexendd"; return 0; });
+  GParsedArgs.RegisterCallback("-heretic", "select Heretic game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "heretic"; return 0; });
+  GParsedArgs.RegisterCallback("-hexen", "select Hexen game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "hexen"; return 0; });
+  GParsedArgs.RegisterCallback("-hexendd", "select Hexen:Deathkings game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "hexendd"; return 0; });
 
-  GParsedArgs.RegisterCallback("-strife", "select Strife game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "strife"; return 0; });
-  GParsedArgs.RegisterCallback("-strifeteaser", "select Strife Teaser game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "strifeteaser"; return 0; });
+  GParsedArgs.RegisterCallback("-strife", "select Strife game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "strife"; return 0; });
+  GParsedArgs.RegisterCallback("-strifeteaser", "select Strife Teaser game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "strifeteaser"; return 0; });
 
   // hidden
-  GParsedArgs.RegisterCallback("-complete", "!DooM Complete game (broken for now)", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "complete"; return 0; });
+  GParsedArgs.RegisterCallback("-complete", "!DooM Complete game (broken for now)", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "complete"; return 0; });
 
-  GParsedArgs.RegisterCallback("-chex", "Chex Quest game (semi-broken)", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "chex"; return 0; });
+  GParsedArgs.RegisterCallback("-chex", "Chex Quest game (semi-broken)", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "chex"; return 0; });
   GParsedArgs.RegisterAlias("-chex1", "-chex");
-  GParsedArgs.RegisterCallback("-chex2", "Chex Quest 2 game (semi-broken)", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "chex2"; return 0; });
-  GParsedArgs.RegisterCallback("-chex3", "!Chex Quest 3 game (semi-broken)", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "chex3"; return 0; });
+  GParsedArgs.RegisterCallback("-chex2", "Chex Quest 2 game (semi-broken)", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "chex2"; return 0; });
+  GParsedArgs.RegisterCallback("-chex3", "!Chex Quest 3 game (semi-broken)", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "chex3"; return 0; });
 
-  GParsedArgs.RegisterCallback("-hacx", "HacX (untested) game", [] (VArgs &args, int idx) -> int { cliGameCStr = nullptr; cliGameMode = "hacx"; return 0; });
+  GParsedArgs.RegisterCallback("-hacx", "HacX (untested) game", [] (VArgs &/*args*/, int /*idx*/) -> int { cliGameCStr = nullptr; cliGameMode = "hacx"; return 0; });
 
   GParsedArgs.RegisterFlagSet("-k8runmap", "try to detect and run first pwad map automatically", &doStartMap);
 

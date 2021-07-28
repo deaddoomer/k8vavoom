@@ -507,7 +507,7 @@ static int detectFromList (FSysModDetectorHelper &hlp, int seenZScriptLump) {
 //  detectCzechbox
 //
 //==========================================================================
-static int detectCzechbox (FSysModDetectorHelper &hlp, int seenZScriptLump) {
+static int detectCzechbox (FSysModDetectorHelper &hlp, int /*seenZScriptLump*/) {
   if (hlp.hasLump("dehacked", 1066, "6bf56571d1f34d7cd7378b95556d67f8")) {
     GLog.Log(NAME_Init, "Detected PWAD: CzechBox release");
     return AD_NONE;
