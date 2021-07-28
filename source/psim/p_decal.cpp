@@ -514,7 +514,7 @@ void VDecalDef::genValues () noexcept {
        if (flipX == FlipRandom) flipXValue = (Random() < 0.5f);
   else if (flipX == FlipAlways) flipXValue = true;
   else flipXValue = false;
-
+  // fuck you, gshitcc
        if (flipY == FlipRandom) flipYValue = (Random() < 0.5f);
   else if (flipY == FlipAlways) flipYValue = true;
   else flipYValue = false;

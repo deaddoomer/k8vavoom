@@ -54,8 +54,14 @@ option(WITH_SSE42 "Use SSE4.2 instruction set (may not compile)" OFF)
 option(NO_SSE "Disable all SSE instructions" OFF)
 option(INSANE_AVX "Use AVX2 instruction set (don't do this, it won't give you any noticeable speedup and may be broken)" OFF)
 
-option(WITH_GCC_ANAL "Turn on gcc10 static analyzer" OFF)
-
+# do not tempt poor things
+if("$ENV{USER}" STREQUAL "ketmar")
+  option(WITH_GCC_ANAL "Turn on gcc10 static analyzer" OFF)
+  option(WITH_GCC_IDIOCITY "Turn on gcc idiotic pseudo-warnings (don't care, won't fix)" OFF)
+else()
+  set(WITH_GCC_ANAL OFF)
+  set(WITH_GCC_IDIOCITY OFF)
+endif()
 
 option(WITH_GLAD "Use supplied GLAD for GL bindings" OFF)
 option(NO_PTHREAD "Disable pthreads, use C11 threads instead" OFF)
@@ -64,8 +70,14 @@ option(NO_RAWTTY "Disable raw TTY control" OFF)
 
 option(WITH_STRTODEX "Use internal strtod implementation to parse floats" ON)
 
-option(DEBUG_FPU_CHECKS "Use FPU and turn on some checks (GNU/Linux only)" OFF)
-option(UNSTABLE_OPTIMISATIONS "Use -O3 (WARNING! DON'T DO THAT! NEVER!)" OFF)
+# do not tempt poor things
+if("$ENV{USER}" STREQUAL "ketmar")
+  option(DEBUG_FPU_CHECKS "Use FPU and turn on some checks (GNU/Linux only)" OFF)
+  option(UNSTABLE_OPTIMISATIONS "Use -O3 (WARNING! DON'T DO THAT! NEVER!)" OFF)
+else()
+  set(DEBUG_FPU_CHECKS OFF)
+  set(UNSTABLE_OPTIMISATIONS OFF)
+endif()
 
 if(CMAKE_CROSSCOMPILING AND WIN32)
   option(SDL2_OVERRIDE "Some specific changes for custom-built SDL2 (do not turn on if you don't know what it is)" ON)
@@ -260,6 +272,9 @@ if(K8_UNFUCK_AS_GCC)
     set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fanalyzer")
   endif(WITH_GCC_ANAL)
 endif(K8_UNFUCK_AS_GCC)
+
+# WARNING! do not touch anything here even if you think you know what you're doing.
+#          any change may and WILL break the code.
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-delete-null-pointer-checks")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-strict-aliasing")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-strict-overflow")
@@ -280,13 +295,17 @@ if(NSWITCH)
   set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fexceptions")
   set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -frtti")
 endif(NSWITCH)
+
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wall")
 #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-frame-address")
-if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
-  # k8: fuck you, gcc. i have my own style, gtfo.
-  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-misleading-indentation")
-  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-ignored-attributes")
-endif()
+
+if(NOT WITH_GCC_IDIOCITY)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
+    # k8: fuck you, gcc. i have my own style, gtfo.
+    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-misleading-indentation")
+    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-ignored-attributes")
+  endif()
+endif(NOT WITH_GCC_IDIOCITY)
 
 if(VV_STACK_REALIGN)
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -mstackrealign")
@@ -297,9 +316,17 @@ if(WITH_STRTODEX)
   add_definitions(-DVCORE_ALLOW_STRTODEX=1)
 endif(WITH_STRTODEX)
 
-# for mi-malloc
-set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-invalid-memory-model")
 
+##############
+## warnings ##
+##############
+
+set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Werror=format-security")
+
+if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
+  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-diagnostics-show-line-numbers")
+  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-diagnostics-show-labels")
+endif()
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.9)
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wimplicit-fallthrough")
@@ -315,13 +342,27 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.7)
   set(UNFUCK_GXX_FLAGS "${UNFUCK_GCC_FLAGS} -Wsuggest-override")
 endif()
 
-if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
-  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-diagnostics-show-line-numbers")
-  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-diagnostics-show-labels")
+if(WITH_GCC_IDIOCITY)
+  # don't use!
+  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wextra")
+  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-ignored-attributes")
+  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-unused-parameter")
+  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-misleading-indentation")
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-address-of-packed-member")
-endif()
+else(WITH_GCC_IDIOCITY)
+  # for mi-malloc
+  set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-invalid-memory-model")
 
-# some math/FPU options
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
+    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-address-of-packed-member")
+  endif()
+endif(WITH_GCC_IDIOCITY)
+
+
+###########################
+## some math/FPU options ##
+###########################
+
 if(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
   # use -ffast-math, 'cause why not?
   # k8: nope, i command my former self to not do this
@@ -331,6 +372,14 @@ if(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
     set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-math-errno")
   endif()
 endif(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
+
+
+##########################################
+## unfuck idiotic gcc code downgradizer ##
+##########################################
+
+# WARNING! do not touch anything here even if you think you know what you're doing.
+#          any change may and WILL break the code.
 
 # actually, we don't need strict floating point math compliance, so let's use "-ffast-math"
 # no, no fuckin' way. with "-ffast-math" not-a-number is EQUAL TO ZERO!
@@ -438,12 +487,15 @@ endif(NOT WIN32)
 
 if(UNSTABLE_OPTIMISATIONS)
   set(VV_OPTIM "-O3")
+  message(STATUS "USING UNSTABLE GCC CODE DEGRADIZER OPTIONS!")
 else(UNSTABLE_OPTIMISATIONS)
   set(VV_OPTIM "-O2")
 endif(UNSTABLE_OPTIMISATIONS)
 
-# unfuck all build types
 
+############################
+## unfuck all build types ##
+############################
 string(REGEX REPLACE "-O[0-9]" " " CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 string(REGEX REPLACE "-O[0-9]" " " CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 
