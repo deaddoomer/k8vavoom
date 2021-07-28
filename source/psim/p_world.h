@@ -116,8 +116,8 @@ public:
 
 private:
   void Init (VThinker *Self, const TVec &p0, const TVec &p1, int flags, vuint32 planeflags, vuint32 lineflags);
-  void AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
-  void AddThingIntercepts (VThinker *Self, int mapx, int mapy);
+  void AddLineIntercepts (int mapx, int mapy, vuint32 planeflags, vuint32 lineflags);
+  void AddThingIntercepts (int mapx, int mapy);
   intercept_t &NewIntercept (const float frac);
 
   inline int InterceptCount () const noexcept { return Level->CurrentPathInterceptionIndex()-poolStart; }

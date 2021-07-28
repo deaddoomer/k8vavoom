@@ -408,7 +408,7 @@ void VEntity::CopyTraceCeiling (tmtrace_t *tr, bool setz) {
 //  VEntity::CopyRegFloor
 //
 //==========================================================================
-void VEntity::CopyRegFloor (sec_region_t *r, bool setz) {
+void VEntity::CopyRegFloor (sec_region_t *r) {
   EFloor = r->efloor;
   FloorZ = EFloor.GetPointZClamped(Origin);
 }
@@ -419,7 +419,7 @@ void VEntity::CopyRegFloor (sec_region_t *r, bool setz) {
 //  VEntity::CopyRegCeiling
 //
 //==========================================================================
-void VEntity::CopyRegCeiling (sec_region_t *r, bool setz) {
+void VEntity::CopyRegCeiling (sec_region_t *r) {
   ECeiling = r->eceiling;
   CeilingZ = ECeiling.GetPointZClamped(Origin);
 }

@@ -110,7 +110,7 @@ struct SightTraceInfo {
 //  returns `true` if no hit was detected
 //
 //==========================================================================
-static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region_t *reg, const TSecPlaneRef &spl, const float frac) {
+static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region_t * /*reg*/, const TSecPlaneRef &spl, const float frac) {
   if (!trace.lightCheck || !trace.flatTextureCheck) return false; // blocked
 
   //const TSecPlaneRef &spl = (checkFloor ? reg->efloor : reg->eceiling);
@@ -337,7 +337,7 @@ static bool SightPassRegions (const sector_t *sec, const TVec point, const unsig
 //  returns `true` if no hit was detected
 //
 //==========================================================================
-static bool SightCanPassOpening (const line_t *linedef, const TVec point, const int side, const unsigned flagmask) {
+static bool SightCanPassOpening (const line_t *linedef, const TVec point, const int /*side*/, const unsigned flagmask) {
   const sector_t *fsec = linedef->frontsector;
   const sector_t *bsec = linedef->backsector;
 
@@ -946,7 +946,7 @@ static VVA_CHECKRESULT inline bool isNotInsideBM (const TVec &pos, const VLevel 
 //  returns `true` if no hit was detected
 //
 //==========================================================================
-bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float myheight, const TVec &orgdirFwd, const TVec &orgdirRight,
+bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float myheight, const TVec &/*orgdirFwd*/, const TVec &orgdirRight,
                          const TVec &dest, float radius, float height, bool skipBaseRegion, const subsector_t *DestSubSector,
                          bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors)
 {
@@ -1042,7 +1042,7 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
 //  returns `true` if no hit was detected
 //
 //==========================================================================
-bool VLevel::CastLightRay (bool textureCheck, const subsector_t *startSubSector, const TVec &org, const TVec &dest, const subsector_t *endSubSector) {
+bool VLevel::CastLightRay (bool /*textureCheck*/, const subsector_t *startSubSector, const TVec &org, const TVec &dest, const subsector_t *endSubSector) {
   // if starting or ending point is out of blockmap bounds, don't bother tracing
   // we can get away with this, because nothing can see anything beyound the map extents
   if (isNotInsideBM(org, this)) return false;

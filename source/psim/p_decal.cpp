@@ -1141,7 +1141,7 @@ VDecalAnim *VDecalAnim::getAt (int idx) noexcept {
 //  VDecalAnim::hasTypeId
 //
 //==========================================================================
-bool VDecalAnim::hasTypeId (vuint8 tid, int depth) const noexcept {
+bool VDecalAnim::hasTypeId (vuint8 tid, int /*depth*/) const noexcept {
   return (getTypeId() == tid);
 }
 
@@ -1170,7 +1170,7 @@ bool VDecalAnim::calcWillDisappear () const noexcept {
 //  VDecalAnim::calcMaxScales
 //
 //==========================================================================
-void VDecalAnim::calcMaxScales (float *sx, float *sy) const noexcept {
+void VDecalAnim::calcMaxScales (float * /*sx*/, float * /*sy*/) const noexcept {
   // nothing to do here
 }
 

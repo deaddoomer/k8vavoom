@@ -1013,7 +1013,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
 //  VLevel::Add3DPolyobjLink
 //
 //==========================================================================
-void VLevel::Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid) {
+void VLevel::Add3DPolyobjLink (mthing_t * /*thing*/, int srcpid, int destpid) {
   if (!srcpid || !destpid) return;
   const int idx = NumPolyLinks3D++;
 
@@ -2602,7 +2602,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
 //  VLevel::PolyCheckMobjLineBlocking
 //
 //==========================================================================
-bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool rotation) {
+bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool /*rotation*/) {
   int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY/*+MAXRADIUS*/)+1;
   int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY/*-MAXRADIUS*/)-1;
   int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX/*-MAXRADIUS*/)-1;

@@ -257,6 +257,8 @@ void VLevelInfo::SecretExitLevel (int Position) {
 //  starts intermission routine, which is used only during hub exits,
 //  and DeathMatch games.
 //
+//  FIXME: `SaveAngle` is used in `LNSPEC_TeleportNewMap`
+//
 //==========================================================================
 void VLevelInfo::Completed (int InMap, int InPosition, int SaveAngle) {
   int Map = InMap;

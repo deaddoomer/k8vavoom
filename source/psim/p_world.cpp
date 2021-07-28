@@ -299,9 +299,9 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
         (int)interestingCell
         );
       #endif
-      if (flags&PT_ADDTHINGS) AddThingIntercepts(Self, mapx, mapy);
+      if (flags&PT_ADDTHINGS) AddThingIntercepts(mapx, mapy);
       // have to check lines anyway, to fix `max_frac`
-      AddLineIntercepts(Self, mapx, mapy, planeflags, lineflags);
+      AddLineIntercepts(mapx, mapy, planeflags, lineflags);
       // if the current cell was "not interesting" (i.e. further than `max_frac`), we can early exit
       if (!interestingCell) {
         #ifdef VV_DEBUG_TRAVERSER
@@ -480,7 +480,7 @@ intercept_t &VPathTraverse::NewIntercept (const float frac) {
 //  register a hit.
 //
 //==========================================================================
-void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
+void VPathTraverse::AddLineIntercepts (int mapx, int mapy, vuint32 planeflags, vuint32 lineflags) {
   const bool doopening = !(scanflags&PT_NOOPENS);
   const bool doadd = (scanflags&PT_ADDLINES);
   const bool dorailings = (scanflags&PT_RAILINGS);
@@ -650,7 +650,7 @@ void VPathTraverse::AddLineIntercepts (VThinker *Self, int mapx, int mapy, vuint
 //  VPathTraverse::AddThingIntercepts
 //
 //==========================================================================
-void VPathTraverse::AddThingIntercepts (VThinker *Self, int mapx, int mapy) {
+void VPathTraverse::AddThingIntercepts (int mapx, int mapy) {
   //if (!Self) return false;
   // proper ray-vs-aabb
   float bbox[4];

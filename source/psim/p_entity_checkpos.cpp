@@ -439,7 +439,7 @@ void VEntity::CheckDropOff (float &DeltaX, float &DeltaY, float baseSpeed) {
 //  find dropoff lines (the same as `CheckDropOff()` is using)
 //
 //=============================================================================
-int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec pos) {
+int VEntity::FindDropOffLine (TArray<VDropOffLineInfo> *list, TVec /*pos*/) {
   int res = 0;
 
   const float rad = GetMoveRadius();

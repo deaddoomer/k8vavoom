@@ -392,8 +392,8 @@ protected:
   void CopyTraceFloor (tmtrace_t *tr, bool setz=true);
   void CopyTraceCeiling (tmtrace_t *tr, bool setz=true);
 
-  void CopyRegFloor (sec_region_t *reg, bool setz=true);
-  void CopyRegCeiling (sec_region_t *reg, bool setz=true);
+  void CopyRegFloor (sec_region_t *reg);
+  void CopyRegCeiling (sec_region_t *reg);
 
   // used in `TryMove()`
   bool CheckBlockingMobj (VEntity *blockmobj);
