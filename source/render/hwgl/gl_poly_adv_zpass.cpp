@@ -113,6 +113,7 @@ static VVA_OKUNUSED void R_ProjectPointsToPlane (TVec *dest, const TVec *src, un
 //
 //==========================================================================
 void VOpenGLDrawer::RenderSurfaceShadowVolumeZPassIntr (VLevel *Level, const surface_t *surf, const TVec &LightPos, float Radius) {
+  (void)Level; (void)Radius;
   const unsigned vcount = (unsigned)surf->count;
   const SurfVertex *sverts = surf->verts;
   const SurfVertex *v = sverts;

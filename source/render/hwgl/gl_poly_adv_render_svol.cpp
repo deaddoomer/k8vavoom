@@ -130,7 +130,8 @@ void VOpenGLDrawer::BeginShadowVolumesPass () {
 //  setup rendering parameters for shadow volume rendering
 //
 //==========================================================================
-void VOpenGLDrawer::BeginLightShadowVolumes (const TVec &LightPos, const float Radius, bool useZPass, bool hasScissor, const int scoords[4], const refdef_t *rd) {
+void VOpenGLDrawer::BeginLightShadowVolumes (const TVec &LightPos, const float /*Radius*/, bool useZPass, bool hasScissor, const int scoords[4], const refdef_t *rd) {
+  (void)scoords;
   wasRenderedShadowSurface = false;
   if (gl_dbg_wireframe) return;
   //GCon->Logf("*** VOpenGLDrawer::BeginLightShadowVolumes(): stencil_dirty=%d", (int)IsStencilBufferDirty());

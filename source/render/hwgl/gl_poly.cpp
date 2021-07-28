@@ -59,11 +59,11 @@ static inline int compareSurfaces (const surface_t *sa, const surface_t *sb) {
   return ((int)ta->ColorMap)-((int)tb->ColorMap);
 }
 
-static int surfListItemCmp (const void *a, const void *b, void *udata) {
+static int surfListItemCmp (const void *a, const void *b, void * /*udata*/) {
   return compareSurfaces(((const VOpenGLDrawer::SurfListItem *)a)->surf, ((const VOpenGLDrawer::SurfListItem *)b)->surf);
 }
 
-static int drawListItemCmp (const void *a, const void *b, void *udata) {
+static int drawListItemCmp (const void *a, const void *b, void * /*udata*/) {
   return compareSurfaces(*(const surface_t **)a, *(const surface_t **)b);
 }
 

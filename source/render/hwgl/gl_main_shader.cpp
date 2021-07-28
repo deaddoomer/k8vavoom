@@ -612,7 +612,8 @@ GLhandleARB VOpenGLDrawer::LoadShader (VGLShader *gls, const char *progname, con
 //  VOpenGLDrawer::CreateProgram
 //
 //==========================================================================
-GLhandleARB VOpenGLDrawer::CreateProgram (VGLShader *gls, const char *progname, GLhandleARB VertexShader, GLhandleARB FragmentShader) {
+GLhandleARB VOpenGLDrawer::CreateProgram (VGLShader *Self, const char *progname, GLhandleARB VertexShader, GLhandleARB FragmentShader) {
+  (void)Self;
   // create program object
   GLDRW_RESET_ERROR();
   GLhandleARB Program = p_glCreateProgramObjectARB();
