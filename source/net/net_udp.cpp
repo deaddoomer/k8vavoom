@@ -450,7 +450,7 @@ int VUdpDriver::OpenListenSocket (int port) {
 //  required for UDP
 //
 //==========================================================================
-int VUdpDriver::ConnectSocketTo (sockaddr_t *addr) {
+int VUdpDriver::ConnectSocketTo (sockaddr_t * /*addr*/) {
   int newsocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (newsocket == -1) return -1;
 
@@ -503,7 +503,7 @@ bool VUdpDriver::CloseSocket (int socket) {
 //  VUdpDriver::CheckNewConnections
 //
 //==========================================================================
-int VUdpDriver::CheckNewConnections (bool rconOnly) {
+int VUdpDriver::CheckNewConnections (bool /*rconOnly*/) {
   char buf[4096];
   if (net_acceptsocket == -1) return -1;
   if (recvfrom(net_acceptsocket, buf, sizeof(buf), MSG_PEEK, nullptr, nullptr) >= 0) {

@@ -859,7 +859,7 @@ int VNetConnection::PutOneAck (vuint32 ackId, bool forceSend) {
 //  cmpAcks
 //
 //==========================================================================
-static int cmpAcks (const void *aa, const void *bb, void *ncptr) {
+static int cmpAcks (const void *aa, const void *bb, void * /*ncptr*/) {
   const vuint32 a = *(const vuint32 *)aa;
   const vuint32 b = *(const vuint32 *)bb;
   return

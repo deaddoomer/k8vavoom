@@ -358,7 +358,7 @@ void VLevelChannel::BuildUpdateSets () {
 //  VLevelChannel::UpdateLine
 //
 //==========================================================================
-int VLevelChannel::UpdateLine (VMessageOut &Msg, VBitStreamWriter &strm, int lidx) {
+int VLevelChannel::UpdateLine (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int lidx) {
   vassert(lidx >= 0 && lidx < Level->NumLines);
 
   line_t *Line = &Level->Lines[lidx];
@@ -1146,7 +1146,7 @@ bool VLevelChannel::ParseSector (VMessageIn &Msg) {
 //  VLevelChannel::UpdatePolyObj
 //
 //==========================================================================
-int VLevelChannel::UpdatePolyObj (VMessageOut &Msg, VBitStreamWriter &strm, int oidx) {
+int VLevelChannel::UpdatePolyObj (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int oidx) {
   vassert(oidx >= 0 && oidx < Level->NumPolyObjs);
 
   polyobj_t *Po = Level->PolyObjs[oidx];
@@ -1227,7 +1227,7 @@ bool VLevelChannel::ParsePolyObj (VMessageIn &Msg) {
 //  VLevelChannel::UpdateCameraTexture
 //
 //==========================================================================
-int VLevelChannel::UpdateCameraTexture (VMessageOut &Msg, VBitStreamWriter &strm, int idx) {
+int VLevelChannel::UpdateCameraTexture (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int idx) {
   if (idx > 255) return 0; // oops
   vassert(idx >= 0 && idx < Level->CameraTextures.length());
 
@@ -1300,7 +1300,7 @@ bool VLevelChannel::ParseCameraTexture (VMessageIn &Msg) {
 //  VLevelChannel::UpdateTranslation
 //
 //==========================================================================
-int VLevelChannel::UpdateTranslation (VMessageOut &Msg, VBitStreamWriter &strm, int idx) {
+int VLevelChannel::UpdateTranslation (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int idx) {
   if (idx > 4095) return 0; // artificial limit
   vassert(idx >= 0 && idx < Level->Translations.length());
 
@@ -1434,7 +1434,7 @@ bool VLevelChannel::ParseTranslation (VMessageIn &Msg) {
 //  VLevelChannel::UpdateBodyQueueTran
 //
 //==========================================================================
-int VLevelChannel::UpdateBodyQueueTran (VMessageOut &Msg, VBitStreamWriter &strm, int idx) {
+int VLevelChannel::UpdateBodyQueueTran (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int idx) {
   if (idx > 8191) return 0; // artificial limit
   vassert(idx >= 0 && idx < Level->BodyQueueTrans.length());
 
@@ -1500,7 +1500,7 @@ bool VLevelChannel::ParseBodyQueueTran (VMessageIn &Msg) {
 //  VLevelChannel::UpdateStaticLight
 //
 //==========================================================================
-int VLevelChannel::UpdateStaticLight (VMessageOut &Msg, VBitStreamWriter &strm, int idx, bool forced) {
+int VLevelChannel::UpdateStaticLight (VMessageOut &/*Msg*/, VBitStreamWriter &strm, int idx, bool forced) {
   if (idx > 65535) return 0; // arbitrary limit
   vassert(idx >= 0 && idx < Level->StaticLights.length());
 

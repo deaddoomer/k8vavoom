@@ -155,7 +155,7 @@ int VDemoPlaybackNetConnection::GetRawPacket (void *dest, size_t destSize) {
 //  VDemoPlaybackNetConnection::SendMessage
 //
 //==========================================================================
-void VDemoPlaybackNetConnection::SendMessage (VMessageOut *Msg) {
+void VDemoPlaybackNetConnection::SendMessage (VMessageOut * /*Msg*/) {
 }
 
 
@@ -229,7 +229,7 @@ bool VDemoRecordingSocket::IsLocalConnection () const noexcept {
 //  VDemoRecordingSocket::GetMessage
 //
 //==========================================================================
-int VDemoRecordingSocket::GetMessage (void *dest, size_t destSize) {
+int VDemoRecordingSocket::GetMessage (void * /*dest*/, size_t /*destSize*/) {
   GNet->UpdateNetTime();
   LastMessageTime = GNet->GetNetTime();
   return 0;

@@ -197,7 +197,7 @@ void VChannel::ReceivedCloseAck () {
 //  called by `ReceivedAcks()`, strictly in sequence
 //
 //==========================================================================
-void VChannel::OutMessageAcked (VMessageOut &Msg) {
+void VChannel::OutMessageAcked (VMessageOut &/*Msg*/) {
 }
 
 
@@ -552,7 +552,7 @@ bool VChannel::FlushMsg (VMessageOut *msg) {
 //  VChannel::SendRpc
 //
 //==========================================================================
-void VChannel::SendRpc (VMethod *Func, VObject *Owner) {
+void VChannel::SendRpc (VMethod *Func, VObject * /*Owner*/) {
   // we cannot simply get out of here, because we need to pop function arguments
 
   //const bool blockSend = !CanSendData();
