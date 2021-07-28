@@ -367,7 +367,7 @@ void VOpenGLDrawer::SetupLightShadowMap (unsigned int facenum) {
 //  VOpenGLDrawer::DrawSpriteShadowMap
 //
 //==========================================================================
-void VOpenGLDrawer::DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TVec &sprnormal,
+void VOpenGLDrawer::DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TVec &/*sprnormal*/,
                                          const TVec &saxis, const TVec &taxis, const TVec &texorg)
 {
   if (gl_dbg_wireframe) return;
