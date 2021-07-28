@@ -410,7 +410,7 @@ void TILine::DrawAt (int x0, int y0, int clrNormal, int clrLR) {
     temp = (char *)Z_Realloc(temp, tempsize);
   }
   // draw left "arrow"
-  if (visfirst > 0) { T_DrawText(x0, y0, "<", CR_FIRE); x0 = T_GetCursorX(); }
+  if (visfirst > 0) { T_DrawText(x0, y0, "<", clrLR); x0 = T_GetCursorX(); }
   // draw text before cursor
   int cpos = visfirst;
   int tpos = 0;
@@ -436,7 +436,7 @@ void TILine::DrawAt (int x0, int y0, int clrNormal, int clrLR) {
     temp[tpos] = 0;
     T_DrawText(x0, y0, temp, clrNormal);
     // draw right "arrow"
-    if (cpos < len) T_DrawText(T_GetCursorX(), y0, ">", CR_FIRE);
+    if (cpos < len) T_DrawText(T_GetCursorX(), y0, ">", clrLR);
   }
   // draw cursor
   T_DrawCursorAt(x0, y0, cursorChar, CR_DEBUG_GREEN);
