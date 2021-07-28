@@ -830,6 +830,7 @@ static void skipUnimplementedCommand (VScriptParser *sc, bool wantArg) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(levelnum) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->LevelNum = sc->Number;
@@ -838,6 +839,8 @@ MAPINFOCMD(levelnum) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(author) {
+  (void)HexenMode;
+  (void)info;
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
 }
@@ -845,6 +848,7 @@ MAPINFOCMD(author) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(cluster) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->Cluster = sc->Number;
@@ -863,6 +867,7 @@ MAPINFOCMD(cluster) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(warptrans) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->WarpTrans = sc->Number;
@@ -870,6 +875,7 @@ MAPINFOCMD(warptrans) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(next) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   info->NextMap = ParseNextMapName(sc, HexenMode);
   // hack for "complete"
@@ -884,17 +890,20 @@ MAPINFOCMD(next) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(secret) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   info->SecretMap = ParseNextMapName(sc, HexenMode);
 }
 
 MAPINFOCMD(secretnext) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   info->SecretMap = ParseNextMapName(sc, HexenMode);
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(sky1) {
+  (void)HexenMode;
   wasSky1Sky2 |= WSK_WAS_SKY1;
   const VTextLocation loc = sc->GetLoc();
   if (newFormat) sc->Expect("=");
@@ -940,6 +949,7 @@ MAPINFOCMD(sky1) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(sky2) {
+  (void)HexenMode;
   wasSky1Sky2 |= WSK_WAS_SKY2;
   if (newFormat) sc->Expect("=");
   sc->ExpectName();
@@ -966,6 +976,7 @@ MAPINFOCMD(sky2) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(skybox) {
+  (void)HexenMode;
   const VTextLocation loc = sc->GetLoc();
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
@@ -990,6 +1001,8 @@ MAPINFOCMD(skybox) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(skyrotate) {
+  (void)HexenMode;
+  (void)info;
   miWarning(sc, "\"skyrotate\" command is not supported yet");
   if (newFormat) sc->Expect("=");
   sc->ExpectFloatWithSign();
@@ -998,83 +1011,84 @@ MAPINFOCMD(skyrotate) {
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
-MAPINFOCMD(doublesky) { info->Flags |= VLevelInfo::LIF_DoubleSky; }
-MAPINFOCMD(lightning) { info->Flags |= VLevelInfo::LIF_Lightning; }
-MAPINFOCMD(forcenoskystretch) { info->Flags |= VLevelInfo::LIF_ForceNoSkyStretch; }
-MAPINFOCMD(skystretch) { info->Flags &= ~VLevelInfo::LIF_ForceNoSkyStretch; }
-MAPINFOCMD(map07special) { info->Flags |= VLevelInfo::LIF_Map07Special; }
-MAPINFOCMD(baronspecial) { info->Flags |= VLevelInfo::LIF_BaronSpecial; }
-MAPINFOCMD(cyberdemonspecial) { info->Flags |= VLevelInfo::LIF_CyberDemonSpecial; }
-MAPINFOCMD(spidermastermindspecial) { info->Flags |= VLevelInfo::LIF_SpiderMastermindSpecial; }
-MAPINFOCMD(minotaurspecial) { info->Flags |= VLevelInfo::LIF_MinotaurSpecial; }
-MAPINFOCMD(dsparilspecial) { info->Flags |= VLevelInfo::LIF_DSparilSpecial; }
-MAPINFOCMD(ironlichspecial) { info->Flags |= VLevelInfo::LIF_IronLichSpecial; }
-MAPINFOCMD(specialaction_exitlevel) { info->Flags &= ~(VLevelInfo::LIF_SpecialActionOpenDoor|VLevelInfo::LIF_SpecialActionLowerFloor); }
-MAPINFOCMD(specialaction_opendoor) { info->Flags &= ~VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags |= VLevelInfo::LIF_SpecialActionOpenDoor; }
-MAPINFOCMD(specialaction_lowerfloor) { info->Flags |= VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags &= ~VLevelInfo::LIF_SpecialActionOpenDoor; }
-MAPINFOCMD(specialaction_killmonsters) { info->Flags |= VLevelInfo::LIF_SpecialActionKillMonsters; }
-MAPINFOCMD(specialaction_blazedoor) {} //FIXME
-MAPINFOCMD(intermission) { info->Flags &= ~VLevelInfo::LIF_NoIntermission; }
-MAPINFOCMD(nointermission) { info->Flags |= VLevelInfo::LIF_NoIntermission; }
-MAPINFOCMD(nosoundclipping) { /* ignored */ }
-MAPINFOCMD(noinventorybar) { /* ignored */ }
-MAPINFOCMD(allowmonstertelefrags) { info->Flags |= VLevelInfo::LIF_AllowMonsterTelefrags; }
-MAPINFOCMD(noallies) { info->Flags |= VLevelInfo::LIF_NoAllies; }
-MAPINFOCMD(fallingdamage) { info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_FallingDamage; }
-MAPINFOCMD(oldfallingdamage) { info->Flags &= ~(VLevelInfo::LIF_FallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_OldFallingDamage; }
-MAPINFOCMD(forcefallingdamage) { info->Flags &= ~(VLevelInfo::LIF_FallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_OldFallingDamage; }
-MAPINFOCMD(strifefallingdamage) { info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_FallingDamage); info->Flags |= VLevelInfo::LIF_StrifeFallingDamage; }
-MAPINFOCMD(nofallingdamage) { info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_StrifeFallingDamage|VLevelInfo::LIF_FallingDamage); }
-MAPINFOCMD(monsterfallingdamage) { info->Flags |= VLevelInfo::LIF_MonsterFallingDamage; }
-MAPINFOCMD(nomonsterfallingdamage) { info->Flags &= ~VLevelInfo::LIF_MonsterFallingDamage; }
-MAPINFOCMD(deathslideshow) { info->Flags |= VLevelInfo::LIF_DeathSlideShow; }
-MAPINFOCMD(allowfreelook) { info->Flags &= ~VLevelInfo::LIF_NoFreelook; }
-MAPINFOCMD(nofreelook) { info->Flags |= VLevelInfo::LIF_NoFreelook; }
-MAPINFOCMD(allowjump) { info->Flags &= ~VLevelInfo::LIF_NoJump; }
-MAPINFOCMD(allowcrouch) { info->Flags2 &= ~VLevelInfo::LIF2_NoCrouch; }
-MAPINFOCMD(nojump) { info->Flags |= VLevelInfo::LIF_NoJump; }
-MAPINFOCMD(nocrouch) { info->Flags2 |= VLevelInfo::LIF2_NoCrouch; }
-MAPINFOCMD(resethealth) { info->Flags2 |= VLevelInfo::LIF2_ResetHealth; }
-MAPINFOCMD(resetinventory) { info->Flags2 |= VLevelInfo::LIF2_ResetInventory; }
-MAPINFOCMD(resetitems) { info->Flags2 |= VLevelInfo::LIF2_ResetItems; }
-MAPINFOCMD(noautosequences) { info->Flags |= VLevelInfo::LIF_NoAutoSndSeq; }
-MAPINFOCMD(activateowndeathspecials) { info->Flags |= VLevelInfo::LIF_ActivateOwnSpecial; }
-MAPINFOCMD(killeractivatesdeathspecials) { info->Flags &= ~VLevelInfo::LIF_ActivateOwnSpecial; }
-MAPINFOCMD(missilesactivateimpactlines) { info->Flags |= VLevelInfo::LIF_MissilesActivateImpact; }
-MAPINFOCMD(missileshootersactivetimpactlines) { info->Flags &= ~VLevelInfo::LIF_MissilesActivateImpact; }
-MAPINFOCMD(filterstarts) { info->Flags |= VLevelInfo::LIF_FilterStarts; }
-MAPINFOCMD(infiniteflightpowerup) { info->Flags |= VLevelInfo::LIF_InfiniteFlightPowerup; }
-MAPINFOCMD(noinfiniteflightpowerup) { info->Flags &= ~VLevelInfo::LIF_InfiniteFlightPowerup; }
-MAPINFOCMD(clipmidtextures) { info->Flags |= VLevelInfo::LIF_ClipMidTex; /*sc->Message("ClipMidTextures is ignored");*/ }
-MAPINFOCMD(wrapmidtextures) { info->Flags |= VLevelInfo::LIF_WrapMidTex; sc->Message("WrapMidTextures is ignored"); }
-MAPINFOCMD(keepfullinventory) { info->Flags |= VLevelInfo::LIF_KeepFullInventory; }
-MAPINFOCMD(additive_scrollers) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
-MAPINFOCMD(checkswitchrange) { info->Flags2 |= VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 &= ~VLevelInfo::LIF2_NoCheckSwitchRange; }
-MAPINFOCMD(nocheckswitchrange) { info->Flags2 &= ~VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 |= VLevelInfo::LIF2_NoCheckSwitchRange; }
-MAPINFOCMD(compat_shorttex) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatShortTex, newFormat); }
-MAPINFOCMD(compat_stairs) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatStairs, newFormat); }
-MAPINFOCMD(compat_limitpain) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatLimitPain, newFormat); }
-MAPINFOCMD(compat_nopassover) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoPassOver, newFormat); }
-MAPINFOCMD(compat_notossdrops) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoTossDrops, newFormat); }
-MAPINFOCMD(compat_useblocking) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatUseBlocking, newFormat); }
-MAPINFOCMD(compat_nodoorlight) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoDoorLight, newFormat); }
-MAPINFOCMD(compat_ravenscroll) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatRavenScroll, newFormat); }
-MAPINFOCMD(compat_soundtarget) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatSoundTarget, newFormat); }
-MAPINFOCMD(compat_dehhealth) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDehHealth, newFormat); }
-MAPINFOCMD(compat_trace) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatTrace, newFormat); }
-MAPINFOCMD(compat_dropoff) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDropOff, newFormat); }
-MAPINFOCMD(compat_boomscroll) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
-MAPINFOCMD(compat_invisibility) { DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatInvisibility, newFormat); }
-MAPINFOCMD(compat_sectorsounds) { DoCompatFlag(sc, info, 0, newFormat); }
-MAPINFOCMD(compat_crossdropoff) { DoCompatFlag(sc, info, 0, newFormat); }
+MAPINFOCMD(doublesky) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_DoubleSky; }
+MAPINFOCMD(lightning) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_Lightning; }
+MAPINFOCMD(forcenoskystretch) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_ForceNoSkyStretch; }
+MAPINFOCMD(skystretch) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_ForceNoSkyStretch; }
+MAPINFOCMD(map07special) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_Map07Special; }
+MAPINFOCMD(baronspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_BaronSpecial; }
+MAPINFOCMD(cyberdemonspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_CyberDemonSpecial; }
+MAPINFOCMD(spidermastermindspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_SpiderMastermindSpecial; }
+MAPINFOCMD(minotaurspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_MinotaurSpecial; }
+MAPINFOCMD(dsparilspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_DSparilSpecial; }
+MAPINFOCMD(ironlichspecial) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_IronLichSpecial; }
+MAPINFOCMD(specialaction_exitlevel) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_SpecialActionOpenDoor|VLevelInfo::LIF_SpecialActionLowerFloor); }
+MAPINFOCMD(specialaction_opendoor) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags |= VLevelInfo::LIF_SpecialActionOpenDoor; }
+MAPINFOCMD(specialaction_lowerfloor) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_SpecialActionLowerFloor; info->Flags &= ~VLevelInfo::LIF_SpecialActionOpenDoor; }
+MAPINFOCMD(specialaction_killmonsters) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_SpecialActionKillMonsters; }
+MAPINFOCMD(specialaction_blazedoor) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; } //FIXME
+MAPINFOCMD(intermission) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_NoIntermission; }
+MAPINFOCMD(nointermission) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_NoIntermission; }
+MAPINFOCMD(nosoundclipping) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; /* ignored */ }
+MAPINFOCMD(noinventorybar) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; /* ignored */ }
+MAPINFOCMD(allowmonstertelefrags) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_AllowMonsterTelefrags; }
+MAPINFOCMD(noallies) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_NoAllies; }
+MAPINFOCMD(fallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_FallingDamage; }
+MAPINFOCMD(oldfallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_FallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_OldFallingDamage; }
+MAPINFOCMD(forcefallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_FallingDamage|VLevelInfo::LIF_StrifeFallingDamage); info->Flags |= VLevelInfo::LIF_OldFallingDamage; }
+MAPINFOCMD(strifefallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_FallingDamage); info->Flags |= VLevelInfo::LIF_StrifeFallingDamage; }
+MAPINFOCMD(nofallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~(VLevelInfo::LIF_OldFallingDamage|VLevelInfo::LIF_StrifeFallingDamage|VLevelInfo::LIF_FallingDamage); }
+MAPINFOCMD(monsterfallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_MonsterFallingDamage; }
+MAPINFOCMD(nomonsterfallingdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_MonsterFallingDamage; }
+MAPINFOCMD(deathslideshow) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_DeathSlideShow; }
+MAPINFOCMD(allowfreelook) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_NoFreelook; }
+MAPINFOCMD(nofreelook) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_NoFreelook; }
+MAPINFOCMD(allowjump) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_NoJump; }
+MAPINFOCMD(allowcrouch) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 &= ~VLevelInfo::LIF2_NoCrouch; }
+MAPINFOCMD(nojump) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_NoJump; }
+MAPINFOCMD(nocrouch) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 |= VLevelInfo::LIF2_NoCrouch; }
+MAPINFOCMD(resethealth) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 |= VLevelInfo::LIF2_ResetHealth; }
+MAPINFOCMD(resetinventory) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 |= VLevelInfo::LIF2_ResetInventory; }
+MAPINFOCMD(resetitems) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 |= VLevelInfo::LIF2_ResetItems; }
+MAPINFOCMD(noautosequences) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_NoAutoSndSeq; }
+MAPINFOCMD(activateowndeathspecials) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_ActivateOwnSpecial; }
+MAPINFOCMD(killeractivatesdeathspecials) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_ActivateOwnSpecial; }
+MAPINFOCMD(missilesactivateimpactlines) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_MissilesActivateImpact; }
+MAPINFOCMD(missileshootersactivetimpactlines) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_MissilesActivateImpact; }
+MAPINFOCMD(filterstarts) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_FilterStarts; }
+MAPINFOCMD(infiniteflightpowerup) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_InfiniteFlightPowerup; }
+MAPINFOCMD(noinfiniteflightpowerup) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags &= ~VLevelInfo::LIF_InfiniteFlightPowerup; }
+MAPINFOCMD(clipmidtextures) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_ClipMidTex; /*sc->Message("ClipMidTextures is ignored");*/ }
+MAPINFOCMD(wrapmidtextures) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_WrapMidTex; sc->Message("WrapMidTextures is ignored"); }
+MAPINFOCMD(keepfullinventory) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags |= VLevelInfo::LIF_KeepFullInventory; }
+MAPINFOCMD(additive_scrollers) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
+MAPINFOCMD(checkswitchrange) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 |= VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 &= ~VLevelInfo::LIF2_NoCheckSwitchRange; }
+MAPINFOCMD(nocheckswitchrange) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Flags2 &= ~VLevelInfo::LIF2_CheckSwitchRange; info->Flags2 |= VLevelInfo::LIF2_NoCheckSwitchRange; }
+MAPINFOCMD(compat_shorttex) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatShortTex, newFormat); }
+MAPINFOCMD(compat_stairs) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatStairs, newFormat); }
+MAPINFOCMD(compat_limitpain) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatLimitPain, newFormat); }
+MAPINFOCMD(compat_nopassover) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoPassOver, newFormat); }
+MAPINFOCMD(compat_notossdrops) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoTossDrops, newFormat); }
+MAPINFOCMD(compat_useblocking) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatUseBlocking, newFormat); }
+MAPINFOCMD(compat_nodoorlight) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatNoDoorLight, newFormat); }
+MAPINFOCMD(compat_ravenscroll) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatRavenScroll, newFormat); }
+MAPINFOCMD(compat_soundtarget) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatSoundTarget, newFormat); }
+MAPINFOCMD(compat_dehhealth) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDehHealth, newFormat); }
+MAPINFOCMD(compat_trace) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatTrace, newFormat); }
+MAPINFOCMD(compat_dropoff) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatDropOff, newFormat); }
+MAPINFOCMD(compat_boomscroll) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatBoomScroll, newFormat); }
+MAPINFOCMD(compat_invisibility) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, VLevelInfo::LIF2_CompatInvisibility, newFormat); }
+MAPINFOCMD(compat_sectorsounds) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, 0, newFormat); }
+MAPINFOCMD(compat_crossdropoff) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; DoCompatFlag(sc, info, 0, newFormat); }
 
 // ////////////////////////////////////////////////////////////////////////// //
-MAPINFOCMD(noinfighting) { info->Infighting = -1; }
-MAPINFOCMD(normalinfighting) { info->Infighting = 0; }
-MAPINFOCMD(totalinfighting) { info->Infighting = 1; }
+MAPINFOCMD(noinfighting) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Infighting = -1; }
+MAPINFOCMD(normalinfighting) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Infighting = 0; }
+MAPINFOCMD(totalinfighting) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->Infighting = 1; }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(fadetable) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectName8();
   info->FadeTable = sc->Name8;
@@ -1082,6 +1096,7 @@ MAPINFOCMD(fadetable) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(fade) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
   info->Fade = M_ParseColor(*sc->String);
@@ -1089,6 +1104,7 @@ MAPINFOCMD(fade) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(outsidefog) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
   info->OutsideFog = M_ParseColor(*sc->String);
@@ -1096,6 +1112,7 @@ MAPINFOCMD(outsidefog) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(music) {
+  (void)HexenMode;
   if (newFormat) sc->Expect("=");
   //sc->ExpectName8();
   //info->SongLump = sc->Name8;
@@ -1111,17 +1128,18 @@ MAPINFOCMD(music) {
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
-MAPINFOCMD(cdtrack) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*info->CDTrack = sc->Number;*/ }
-MAPINFOCMD(cd_start_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_STARTTRACK] = sc->Number;*/ }
-MAPINFOCMD(cd_end1_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END1TRACK] = sc->Number;*/ }
-MAPINFOCMD(cd_end2_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END2TRACK] = sc->Number;*/ }
-MAPINFOCMD(cd_end3_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END3TRACK] = sc->Number;*/ }
-MAPINFOCMD(cd_intermission_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_INTERTRACK] = sc->Number;*/ }
-MAPINFOCMD(cd_title_track) { if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_TITLETRACK] = sc->Number;*/ }
-MAPINFOCMD(cdid) { skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(cdtrack) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*info->CDTrack = sc->Number;*/ }
+MAPINFOCMD(cd_start_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_STARTTRACK] = sc->Number;*/ }
+MAPINFOCMD(cd_end1_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END1TRACK] = sc->Number;*/ }
+MAPINFOCMD(cd_end2_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END2TRACK] = sc->Number;*/ }
+MAPINFOCMD(cd_end3_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_END3TRACK] = sc->Number;*/ }
+MAPINFOCMD(cd_intermission_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_INTERTRACK] = sc->Number;*/ }
+MAPINFOCMD(cd_title_track) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; if (newFormat) sc->Expect("="); sc->ExpectNumber(); /*cd_NonLevelTracks[CD_TITLETRACK] = sc->Number;*/ }
+MAPINFOCMD(cdid) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(gravity) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectFloat();
   if (sc->Float <= 0.0 || sc->Float > 100000.0f) {
@@ -1133,6 +1151,7 @@ MAPINFOCMD(gravity) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(aircontrol) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectFloat();
   if (sc->Float < 0.0 || sc->Float > 10.0f) {
@@ -1144,6 +1163,7 @@ MAPINFOCMD(aircontrol) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(titlepatch) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   //FIXME: quoted string is a textual level name
   if (newFormat) sc->Expect("=");
   sc->ExpectName8Def(NAME_None);
@@ -1152,6 +1172,7 @@ MAPINFOCMD(titlepatch) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(par) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->ParTime = sc->Number;
@@ -1159,6 +1180,7 @@ MAPINFOCMD(par) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(sucktime) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->SuckTime = sc->Number;
@@ -1166,6 +1188,7 @@ MAPINFOCMD(sucktime) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(vertwallshade) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->VertWallShade = midval(-128, sc->Number, 127);
@@ -1173,6 +1196,7 @@ MAPINFOCMD(vertwallshade) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(horizwallshade) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectNumber();
   info->HorizWallShade = midval(-128, sc->Number, 127);
@@ -1180,6 +1204,7 @@ MAPINFOCMD(horizwallshade) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(specialaction) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   VMapSpecialAction &A = info->SpecialActions.Alloc();
   //sc->SetCMode(true);
@@ -1198,6 +1223,7 @@ MAPINFOCMD(specialaction) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(redirect) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
   info->RedirectType = *sc->String.ToLower();
@@ -1206,18 +1232,21 @@ MAPINFOCMD(redirect) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(strictmonsteractivation) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   info->Flags2 &= ~VLevelInfo::LIF2_LaxMonsterActivation;
   info->Flags2 |= VLevelInfo::LIF2_HaveMonsterActivation;
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(laxmonsteractivation) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   info->Flags2 |= VLevelInfo::LIF2_LaxMonsterActivation;
   info->Flags2 |= VLevelInfo::LIF2_HaveMonsterActivation;
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(interpic) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   //sc->ExpectName8();
   sc->ExpectString();
@@ -1226,6 +1255,7 @@ MAPINFOCMD(interpic) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(enterpic) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   //sc->ExpectName8();
   sc->ExpectString();
@@ -1234,6 +1264,7 @@ MAPINFOCMD(enterpic) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(exitpic) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   //sc->ExpectName8();
   sc->ExpectString();
@@ -1242,6 +1273,7 @@ MAPINFOCMD(exitpic) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(intermusic) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   if (newFormat) sc->Expect("=");
   sc->ExpectString();
   info->InterMusic = *sc->String.ToLower();
@@ -1249,6 +1281,7 @@ MAPINFOCMD(intermusic) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 MAPINFOCMD(background) {
+  (void)HexenMode; (void)info; (void)newFormat; (void)sc;
   sc->Message("'background' mapinfo command is not supported");
   if (newFormat) sc->Expect("=");
   //sc->ExpectName8();
@@ -1256,20 +1289,20 @@ MAPINFOCMD(background) {
 }
 
 // ////////////////////////////////////////////////////////////////////////// //
-MAPINFOCMD(airsupply) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(sndseq) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(sndinfo) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(soundinfo) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(bordertexture) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(f1) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(teamdamage) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(fogdensity) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(outsidefogdensity) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(skyfog) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(translator) { sc->MessageErr(va("*** map '%s' contains translator lump, it may not work!", *info->LumpName)); skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(lightmode) { skipUnimplementedCommand(sc, true); }
-MAPINFOCMD(smoothlighting) { info->FakeContrast = 1; }
-MAPINFOCMD(evenlighting) { info->FakeContrast = 2; }
+MAPINFOCMD(airsupply) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(sndseq) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(sndinfo) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(soundinfo) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(bordertexture) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(f1) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(teamdamage) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(fogdensity) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(outsidefogdensity) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(skyfog) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(translator) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; sc->MessageErr(va("*** map '%s' contains translator lump, it may not work!", *info->LumpName)); skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(lightmode) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; skipUnimplementedCommand(sc, true); }
+MAPINFOCMD(smoothlighting) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->FakeContrast = 1; }
+MAPINFOCMD(evenlighting) { (void)HexenMode; (void)info; (void)newFormat; (void)sc; info->FakeContrast = 2; }
 
 
 //==========================================================================
