@@ -759,12 +759,17 @@ void VNetConnection::ReceivedPacket (VBitStreamReader &Packet) {
         chan = CreateChannel(Msg.ChanType, Msg.ChanIndex, false); // opened remotely
         if (!chan) {
           // cannot create channel, send close packet to notify the remote about it
+          // WTF?! what i was thinking? send close packet with what channel?!
+          // dunno what to do here
+          GCon->Logf(NAME_DevNet, "%s: cannot create channel #%d with type %u", *GetAddress(), Msg.ChanIndex, Msg.ChanType);
+          #if 0
           VMessageOut refmsg(Msg.ChanType, Msg.ChanIndex, true/*reliable*/);
           refmsg.bClose = true;
           chan->SendMessage(&refmsg);
           Flush();
           delete chan;
           vassert(Msg.ChanIndex != 0); // the thing that should not happen
+          #endif
           continue;
         }
       }
