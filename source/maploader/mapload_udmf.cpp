@@ -753,7 +753,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
 //  VUdmfParser::ParseLineDef
 //
 //==========================================================================
-void VUdmfParser::ParseLineDef (const VMapInfo &MInfo) {
+void VUdmfParser::ParseLineDef (const VMapInfo &/*MInfo*/) {
   VParsedLine &L = ParsedLines.Alloc();
   memset((void *)&L, 0, sizeof(VParsedLine));
   L.index = ParsedLines.length()-1;

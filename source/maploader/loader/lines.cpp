@@ -35,7 +35,7 @@
 //  For Doom and Heretic
 //
 //==========================================================================
-void VLevel::LoadLineDefs1 (int Lump, const VMapInfo &MInfo) {
+void VLevel::LoadLineDefs1 (int Lump, const VMapInfo &/*MInfo*/) {
   const int NumBaseVerts = NumVertexes;
   NumLines = W_LumpLength(Lump)/14;
   if (NumLines <= 0) Host_Error("Map '%s' has no lines!", *MapName);
@@ -78,7 +78,7 @@ void VLevel::LoadLineDefs1 (int Lump, const VMapInfo &MInfo) {
 //  Hexen format
 //
 //==========================================================================
-void VLevel::LoadLineDefs2 (int Lump, const VMapInfo &MInfo) {
+void VLevel::LoadLineDefs2 (int Lump, const VMapInfo &/*MInfo*/) {
   const int NumBaseVerts = NumVertexes;
   NumLines = W_LumpLength(Lump)/16;
   if (NumLines <= 0) Host_Error("Map '%s' has no lines!", *MapName);

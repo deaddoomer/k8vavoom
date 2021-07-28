@@ -164,7 +164,7 @@ __attribute__((format(printf,1,2))) void ajbsp_PrintDetail (const char *fmt, ...
 //  ajbsp_DebugPrintf
 //
 //==========================================================================
-__attribute__((format(printf,1,2))) void ajbsp_DebugPrintf (const char *fmt, ...) {
+__attribute__((format(printf,1,2))) void ajbsp_DebugPrintf (const char * /*fmt*/, ...) {
 }
 
 
@@ -173,7 +173,7 @@ __attribute__((format(printf,1,2))) void ajbsp_DebugPrintf (const char *fmt, ...
 //  ajbsp_PrintMapName
 //
 //==========================================================================
-void ajbsp_PrintMapName (const char *name) {
+void ajbsp_PrintMapName (const char * /*name*/) {
 }
 
 
@@ -458,7 +458,7 @@ static void CopySegs (VLevel *Level, CopyInfo &nfo) {
 //  CopySubsectors
 //
 //==========================================================================
-static void CopySubsectors (VLevel *Level, CopyInfo &nfo) {
+static void CopySubsectors (VLevel *Level, CopyInfo &/*nfo*/) {
   Level->NumSubsectors = ajbsp::num_subsecs;
   delete[] Level->Subsectors;
   Level->Subsectors = new subsector_t[Level->NumSubsectors];
@@ -552,7 +552,7 @@ static void CopyNode (VLevel *Level, int &NodeIndex, ajbsp::node_t *SrcNode, nod
        if (SrcNode->r.node) Node->children[0] = SrcNode->r.node->index;
   else if (SrcNode->r.subsec) Node->children[0] = SrcNode->r.subsec->index|NF_SUBSECTOR;
   else Host_Error("AJBSP: bad left child in BSP");
-
+  // fuck you, gshitcc
        if (SrcNode->l.node) Node->children[1] = SrcNode->l.node->index;
   else if (SrcNode->l.subsec) Node->children[1] = SrcNode->l.subsec->index|NF_SUBSECTOR;
   else Host_Error("AJBSP: bad right child in BSP");

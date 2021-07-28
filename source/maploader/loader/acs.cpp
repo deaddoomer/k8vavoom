@@ -34,7 +34,7 @@
 //  load libraries from 'loadacs'
 //
 //==========================================================================
-void VLevel::LoadLoadACS (int lacsLump, int XMapLump) {
+void VLevel::LoadLoadACS (int lacsLump, int /*XMapLump*/) {
   if (lacsLump < 0) return;
   GCon->Logf("Loading ACS libraries from '%s'...", *W_FullLumpName(lacsLump));
   VScriptParser *sc = VScriptParser::NewWithLump(lacsLump);
