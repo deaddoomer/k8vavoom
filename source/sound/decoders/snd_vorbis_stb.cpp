@@ -381,7 +381,7 @@ void VVorbisAudioCodec::Restart () {
 //  VVorbisAudioCodec::Create
 //
 //==========================================================================
-VAudioCodec *VVorbisAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int signsize) {
+VAudioCodec *VVorbisAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int /*signsize*/) {
   if (sign[0] != 'O' || sign[1] != 'g' || sign[2] != 'g' || sign[3] != 'S') return nullptr;
   VVorbisAudioCodec *Codec = new VVorbisAudioCodec(InStrm, true);
   if (!Codec->Init()) {

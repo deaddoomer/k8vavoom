@@ -264,7 +264,7 @@ void VFlacAudioCodec::Restart () {
 //  VFlacAudioCodec::Create
 //
 //==========================================================================
-VAudioCodec *VFlacAudioCodec::Create (VStream *InStream, const vuint8 sign[], int signsize) {
+VAudioCodec *VFlacAudioCodec::Create (VStream *InStream, const vuint8 sign[], int /*signsize*/) {
   // check if it's a possible FLAC file
   if ((sign[0] != 'f' || sign[1] != 'L' || sign[2] != 'a' || sign[3] != 'C') &&
       (sign[0] != 'O' || sign[1] != 'g' || sign[2] != 'g' || sign[3] != 'S'))

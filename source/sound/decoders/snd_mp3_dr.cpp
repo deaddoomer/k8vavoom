@@ -261,7 +261,8 @@ void VMP3AudioCodec::Restart () {
 //  VMP3AudioCodec::Create
 //
 //==========================================================================
-VAudioCodec *VMP3AudioCodec::Create (VStream *InStream, const vuint8 sign[], int signsize) {
+VAudioCodec *VMP3AudioCodec::Create (VStream *InStream, const vuint8 sign[], int /*signsize*/) {
+  (void)sign;
   VMP3AudioCodec *Codec = new VMP3AudioCodec(InStream, true);
   if (!Codec->Init()) {
     Codec->Cleanup();
