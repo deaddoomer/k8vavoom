@@ -248,7 +248,7 @@ void VOpusAudioCodec::Restart () {
 //  VOpusAudioCodec::Create
 //
 //==========================================================================
-VAudioCodec *VOpusAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int signsize) {
+VAudioCodec *VOpusAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int /*signsize*/) {
   // check if it's a possible Opus file
   if (sign[0] != 'O' || sign[1] != 'g' || sign[2] != 'g' || sign[3] != 'S') return nullptr;
   VOpusAudioCodec *Codec = new VOpusAudioCodec(InStrm, true);

@@ -158,7 +158,7 @@ protected:
   static bool NeedRestart ();
   static void UpdateCvarCache ();
 
-  static void onCVarChanged (VCvar *cvar, VStr oldValue) { needRestart = true; }
+  static void onCVarChanged (VCvar * /*cvar*/, VStr /*oldValue*/) noexcept { needRestart = true; }
 
 public:
   FluidManager () {
@@ -213,7 +213,7 @@ extern "C" {
   #else
   # define VV_FLUID_LOG_CONST
   #endif
-  static void shutTheFuckUpFluid (int level, VV_FLUID_LOG_CONST char *message, void *data) {
+  static void shutTheFuckUpFluid (int level, VV_FLUID_LOG_CONST char *message, void * /*data*/) {
     switch (level) {
       case FLUID_PANIC:
         GCon->Logf(NAME_Error, "FluidSynth PANIC: %s", message);
@@ -438,7 +438,7 @@ VFluidAudioCodec::~VFluidAudioCodec () {
 //  VFluidAudioCodec::eventCB
 //
 //==========================================================================
-void VFluidAudioCodec::eventCB (double timemsecs, const MIDIData::MidiEvent &ev, void *) {
+void VFluidAudioCodec::eventCB (double /*timemsecs*/, const MIDIData::MidiEvent &ev, void *) {
   switch (ev.type) {
     case MIDIData::NOTE_OFF:
       fluid_synth_noteoff(FluidManager::synth, ev.channel, ev.data1);
@@ -535,6 +535,7 @@ void VFluidAudioCodec::Restart () {
 //
 //==========================================================================
 VAudioCodec *VFluidAudioCodec::Create (VStream *InStrm, const vuint8 sign[], int signsize) {
+  (void)sign; (void)signsize;
   if (snd_midi_player != 1) return nullptr;
   if (InStrm->IsError()) return nullptr;
 
