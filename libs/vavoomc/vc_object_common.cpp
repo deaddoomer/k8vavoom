@@ -2582,6 +2582,13 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, isSlope) {
   RET_BOOL(Self->isSlope());
 }
 
+//native bool isWall () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, isWall) {
+  TPlane *Self;
+  vobjGetParam(Self);
+  RET_BOOL(Self->isWall());
+}
+
 //native float GetRealDist () const;
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetRealDist) {
   TPlane *Self;
@@ -2869,7 +2876,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox3DAcceptPoint) {
   RET_VEC(Self->get3DBBoxAcceptPoint(bbox));
 }
 
-//native TVec GetDoomBox2DAcceptPoint (const TVec origin, const float radius, const float height);
+//native TVec GetDoomBox2DAcceptPoint (const TVec origin, const float radius);
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DAcceptPoint) {
   TPlane *Self;
   TVec origin;
@@ -2880,7 +2887,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DAcceptPoint) {
   RET_VEC(Self->get2DBBoxAcceptPoint(bbox));
 }
 
-//native TVec GetDoomBox3DAcceptPoint (const TVec origin, const float radius);
+//native TVec GetDoomBox3DAcceptPoint (const TVec origin, const float radius, const float height);
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DAcceptPoint) {
   TPlane *Self;
   TVec origin;
@@ -2910,7 +2917,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox3DRejectPoint) {
   RET_VEC(Self->get3DBBoxRejectPoint(bbox));
 }
 
-//native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius, const float height);
+//native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius);
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DRejectPoint) {
   TPlane *Self;
   TVec origin;
@@ -2921,7 +2928,7 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DRejectPoint) {
   RET_VEC(Self->get2DBBoxRejectPoint(bbox));
 }
 
-//native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius);
+//native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius, const float height);
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DRejectPoint) {
   TPlane *Self;
   TVec origin;
@@ -2931,4 +2938,54 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DRejectPoint) {
   radius = fabsf(radius);
   CreateDoom3DBBox(bbox, origin, radius, height);
   RET_VEC(Self->get3DBBoxRejectPoint(bbox));
+}
+
+
+//native float Angle2DToPlane (const ref TPlane to) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DToPlane) {
+  TPlane *Self;
+  TPlane *To;
+  vobjGetParam(Self, To);
+  if (!Self || !To || Self == To) {
+    RET_FLOAT(0.0f);
+  } else {
+    RET_FLOAT(PlanesAngle2D(Self, To));
+  }
+}
+
+//native float Angle2DToPlaneFlipTo (const ref TPlane to) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DToPlaneFlipTo) {
+  TPlane *Self;
+  TPlane *To;
+  vobjGetParam(Self, To);
+  if (!Self || !To || Self == To) {
+    RET_FLOAT(0.0f);
+  } else {
+    RET_FLOAT(PlanesAngle2DFlipTo(Self, To));
+  }
+}
+
+
+//native float Angle2DSignedToPlane (const ref TPlane to) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DSignedToPlane) {
+  TPlane *Self;
+  TPlane *To;
+  vobjGetParam(Self, To);
+  if (!Self || !To || Self == To) {
+    RET_FLOAT(0.0f);
+  } else {
+    RET_FLOAT(PlanesAngle2DSigned(Self, To));
+  }
+}
+
+//native float Angle2DSignedToPlaneFlipTo (const ref TPlane to) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DSignedToPlaneFlipTo) {
+  TPlane *Self;
+  TPlane *To;
+  vobjGetParam(Self, To);
+  if (!Self || !To || Self == To) {
+    RET_FLOAT(0.0f);
+  } else {
+    RET_FLOAT(PlanesAngle2DSignedFlipTo(Self, To));
+  }
 }

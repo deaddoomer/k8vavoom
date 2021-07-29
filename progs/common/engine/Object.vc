@@ -101,27 +101,33 @@ struct TPlane {
   TVec normal;
   float dist;
 
-  native float PointDistance (const TVec p) const;
-  // initialises vertical plane from point and direction
+  // initialises vertical plane from point and direction (direction need not to be normalized)
   native void SetPointDirXY (const TVec point, const TVec dir);
   // initialises vertical plane from 2 points
   native void Set2Points (const TVec v1, const TVec v2);
+
   // initialises "full" plane from point and direction
   // `norm` must be normalized, both vectors must be valid
   native void SetPointNormal3D (const TVec point, const TVec norm);
   // initialises "full" plane from point and direction (direction will be normalised)
   native void SetPointNormal3DSafe (const TVec point, const TVec dir);
+
   // the normal will point out of the clock for clockwise ordered points
   native void SetFromTriangle (const TVec a, const TVec b, const TVec c);
+
   native bool isFloor () const;
   native bool isCeiling () const;
   native bool isSlope () const;
+  native bool isWall () const;
+
   // valid only for horizontal planes!
   native float GetRealDist () const;
+
   // WARNING! do not call this repeatedly, or on normalized plane!
   //          due to floating math inexactness, you will accumulate errors.
   native void NormaliseInPlace ();
   native void FlipInPlace ();
+
   // returns intersection time (or -1 if there is no intersection)
   // negative means "no intersection" (and `*currhit` is not modified)
   // yeah, we have too many of those
@@ -138,12 +144,15 @@ struct TPlane {
   native TVec LineIntersect (const TVec p0, const TVec p1, optional const float eps/*=0*/) const;
   // this adds `shift` to plane distance
   native float LineIntersectTimeWithShift (const TVec p0, const TVec p1, const float shift, optional const float eps/*=0*/) const;
+
   native float GetPointZ (const TVec v) const;
   native float GetPointZRev (const TVec v) const;
+
   native TVec Project (const TVec v) const;
   // intersection of 3 planes
   // returns invalid vector if there is no intersection (check with `res.x.isNaN`)
   native TVec IntersectionPoint (const ref TPlane plane2, const ref TPlane plane3) const;
+
   // sphere sweep test; if `true` (hit), `hitpos` will be sphere position when it hits this plane, and `u` will be normalized collision time
   native bool SweepSphere (const TVec origin, const float radius, const TVec amove, optional out TVec hitpos, optional out float u) const;
   // box must be valid
@@ -159,32 +168,40 @@ struct TPlane {
   // `vstart` and `vend` are for bounding box center point
   // returns `true` on hit/stuck
   native bool SweepBox3DEx (const float radius, const float height, const TVec vstart, const TVec vend, optional out float time, optional out TVec hitpoint) const;
+
+  // calculate signed distance from plane to point
+  native float PointDistance (const TVec p) const;
   // returns side 0 (front) or 1 (back, or on plane)
   native int PointOnSide (const TVec point) const;
   // returns side 0 (front), 1 (back), or 2 (on)
   native int PointOnSide2 (const TVec point) const;
+
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
   native int SphereOnSide (const TVec center, float radius) const;
   native bool SphereTouches (const TVec center, float radius) const;
   // returns side 0 (front), 1 (back), or 2 (collides)
   native int SphereOnSide2 (const TVec center, float radius) const;
+
   // returns `false` if the box fully is on the back side of the plane
   native bool checkBox3D (const TVec bmin, const TVec bmax) const;
   // returns `false` if the box fully is on the back side of the plane
   // returns `true` for non-vertical planes (because our box is 2d)
   native bool checkBox2D (const TVec bmin, const TVec bmax) const;
+
   // returns `false` if the box fully is on the back side of the plane
   native bool checkDoomBox3D (const TVec origin, const float radius, const float height) const;
   // returns `false` if the box fully is on the back side of the plane
   // returns `true` for non-vertical planes (because our box is 2d)
   native bool checkDoomBox2D (const TVec origin, const float radius) const;
+
   // returns side 0 (front), 1 (back), or 2 (collides)
   // if the box is touching the plane from the front, it is still assumed to be in front
   native int Box3DOnSide2 (const TVec bmin, const TVec bmax) const;
   // returns side 0 (front), 1 (back), or 2 (collides)
   // if the box is touching the plane from the front, it is still assumed to be in front
   native int DoomBox3DOnSide2 (const TVec origin, const float radius, const float height) const;
+
   // returns side 0 (front), 1 (back), or 2 (collides)
   // if the box is touching the plane from the front, it is still assumed to be in front
   // returns 2 for non-vertical planes (because our box is 2d)
@@ -194,15 +211,25 @@ struct TPlane {
   // returns 2 for non-vertical planes (because our box is 2d)
   native int DoomBox2DOnSide2 (const TVec origin, const float radius) const;
 
-  native TVec GetBox2DAcceptPoint (const TVec bmin, const TVec bmax);
-  native TVec GetBox3DAcceptPoint (const TVec bmin, const TVec bmax);
-  native TVec GetDoomBox2DAcceptPoint (const TVec origin, const float radius, const float height);
-  native TVec GetDoomBox3DAcceptPoint (const TVec origin, const float radius);
+  // "accept point" is box corner nearest to the plane
+  // "reject point" is box corner furthest from the plane
 
-  native TVec GetBox2DRejectPoint (const TVec bmin, const TVec bmax);
-  native TVec GetBox3DRejectPoint (const TVec bmin, const TVec bmax);
-  native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius, const float height);
-  native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius);
+  native TVec GetBox2DAcceptPoint (const TVec bmin, const TVec bmax) const;
+  native TVec GetBox3DAcceptPoint (const TVec bmin, const TVec bmax) const;
+  native TVec GetDoomBox2DAcceptPoint (const TVec origin, const float radius) const;
+  native TVec GetDoomBox3DAcceptPoint (const TVec origin, const float radius, const float height) const;
+
+  native TVec GetBox2DRejectPoint (const TVec bmin, const TVec bmax) const;
+  native TVec GetBox3DRejectPoint (const TVec bmin, const TVec bmax) const;
+  native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius) const;
+  native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius, const float height) const;
+
+  // should be used only for wall planes!
+  native float Angle2DToPlane (const ref TPlane to) const;
+  native float Angle2DToPlaneFlipTo (const ref TPlane to) const;
+
+  native float Angle2DSignedToPlane (const ref TPlane to) const;
+  native float Angle2DSignedToPlaneFlipTo (const ref TPlane to) const;
 };
 
 
