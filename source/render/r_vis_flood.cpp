@@ -137,7 +137,7 @@ bool VRenderLevelShared::CheckBSPFloodVisibilitySub (const TVec &org, const floa
     if (!isCircleTouchingLine(org, radiusSq, *seg->v1, *seg->v2)) continue;
     // check plane angles
     if (firsttravel && r_lightflood_check_plane_angles) {
-      if (PlaneAngles2D(firsttravel, seg) >= 180.0f && PlaneAngles2DFlipTo(firsttravel, seg) >= 180.0f) continue;
+      if (PlanesAngle2D(firsttravel, seg) >= 180.0f && PlanesAngle2DFlipTo(firsttravel, seg) >= 180.0f) continue;
     }
     // ok, it is touching, recurse
     if (CheckBSPFloodVisibilitySub(org, radius, seg->partner->frontsub, (firsttravel ? firsttravel : seg))) {

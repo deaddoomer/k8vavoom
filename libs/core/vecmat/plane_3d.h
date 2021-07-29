@@ -60,17 +60,17 @@ public:
 
 public:
   // fuck you, shitpp! i have to define all ctors when i want only one or two
-  inline TPlane () noexcept {}
-  inline TPlane (ENoInit) noexcept {}
-  inline TPlane (const TVec &anormal, const float adist) noexcept : normal(anormal), dist(adist) {}
-  inline TPlane (const TPlane &src) noexcept : normal(src.normal), dist(src.dist) {}
+  VVA_ALWAYS_INLINE TPlane () noexcept {}
+  VVA_ALWAYS_INLINE TPlane (ENoInit) noexcept {}
+  VVA_ALWAYS_INLINE TPlane (const TVec &anormal, const float adist) noexcept : normal(anormal), dist(adist) {}
+  VVA_ALWAYS_INLINE TPlane (const TPlane &src) noexcept : normal(src.normal), dist(src.dist) {}
 
   VVA_ALWAYS_INLINE TPlane &operator = (const TPlane &src) noexcept = default;
 
   inline VVA_CHECKRESULT bool isValid () const noexcept { return (normal.isValid() && !normal.isZero() && isFiniteF(dist)); }
-  inline VVA_CHECKRESULT bool isVertical () const noexcept { return (normal.z == 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isVertical () const noexcept { return (normal.z == 0.0f); }
 
-  inline void Set (const TVec &Anormal, float Adist) noexcept {
+  VVA_ALWAYS_INLINE void Set (const TVec &Anormal, float Adist) noexcept {
     normal = Anormal;
     dist = Adist;
   }
@@ -87,7 +87,7 @@ public:
     }
   }
 
-  // initialises vertical plane from point and direction
+  // initialises vertical plane from point and direction (direction need not to be normalized)
   inline void SetPointDirXY (const TVec &point, const TVec &dir) noexcept {
     normal = TVec(dir.y, -dir.x, 0.0f);
     // use some checks to avoid floating point inexactness on axial planes
@@ -112,7 +112,7 @@ public:
 
   // initialises "full" plane from point and direction
   // `norm` must be normalized, both vectors must be valid
-  inline void SetPointNormal3D (const TVec &point, const TVec &norm) noexcept {
+  VVA_ALWAYS_INLINE void SetPointNormal3D (const TVec &point, const TVec &norm) noexcept {
     normal = norm;
     dist = DotProduct(point, normal);
   }
@@ -136,26 +136,27 @@ public:
   }
 
   // initialises vertical plane from 2 points
-  inline void Set2Points (const TVec &v1, const TVec &v2) noexcept {
+  VVA_ALWAYS_INLINE void Set2Points (const TVec &v1, const TVec &v2) noexcept {
     SetPointDirXY(v1, v2-v1);
   }
 
   // the normal will point out of the clock for clockwise ordered points
-  inline void SetFromTriangle (const TVec &a, const TVec &b, const TVec &c) noexcept {
+  VVA_ALWAYS_INLINE void SetFromTriangle (const TVec &a, const TVec &b, const TVec &c) noexcept {
     normal = (c-a).cross(b-a).normalised();
     dist = DotProduct(a, normal);
   }
 
-  inline bool isFloor () const noexcept { return (normal.z > 0.0f); }
-  inline bool isCeiling () const noexcept { return (normal.z < 0.0f); }
-  inline bool isSlope () const noexcept { return (fabsf(normal.z) != 1.0f); }
+  VVA_ALWAYS_INLINE bool isFloor () const noexcept { return (normal.z > 0.0f); }
+  VVA_ALWAYS_INLINE bool isCeiling () const noexcept { return (normal.z < 0.0f); }
+  VVA_ALWAYS_INLINE bool isSlope () const noexcept { return (fabsf(normal.z) != 1.0f); }
+  VVA_ALWAYS_INLINE bool isWall () const noexcept { return (normal.z == 0.0f); }
 
   // valid only for horizontal planes!
-  inline float GetRealDist () const noexcept { return dist*normal.z; }
+  VVA_ALWAYS_INLINE float GetRealDist () const noexcept { return dist*normal.z; }
 
   // WARNING! do not call this repeatedly, or on normalized plane!
   //          due to floating math inexactness, you will accumulate errors.
-  inline void NormaliseInPlace () noexcept {
+  VVA_ALWAYS_INLINE void NormaliseInPlace () noexcept {
     const float mag = normal.invlength();
     normal *= mag;
     // multiply by mag too, because we're doing "dot-dist", so
@@ -163,14 +164,14 @@ public:
     dist *= mag;
   }
 
-  inline void FlipInPlace () noexcept {
+  VVA_ALWAYS_INLINE void FlipInPlace () noexcept {
     normal = -normal;
     dist = -dist;
   }
 
   // *signed* distance from point to plane
   // plane must be normalized
-  inline VVA_CHECKRESULT float PointDistance (const TVec &p) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float PointDistance (const TVec &p) const noexcept {
     return DotProduct(p, normal)-dist;
   }
 
@@ -197,39 +198,39 @@ public:
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
-  inline VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
     return (VSUM3(dist, -(normal.x*x), -(normal.y*y))/normal.z);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRev (float x, float y) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZRev (float x, float y) const noexcept {
     return (VSUM3(-dist, -(-normal.x*x), -(-normal.y*y))/(-normal.z));
   }
 
-  inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept {
     return GetPointZ(v.x, v.y);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRev (const TVec &v) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZRev (const TVec &v) const noexcept {
     return GetPointZRev(v.x, v.y);
   }
 
 
   // "land" point onto the plane
   // plane must be normalized
-  inline VVA_CHECKRESULT TVec landAlongNormal (const TVec &point) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec landAlongNormal (const TVec &point) const noexcept {
     const float pdist = PointDistance(point);
     return (fabsf(pdist) > 0.0001f ? point-normal*pdist : point);
   }
 
   // plane must be normalized
-  inline VVA_CHECKRESULT TVec Project (const TVec &v) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec Project (const TVec &v) const noexcept {
     return v-(v-normal*dist).dot(normal)*normal;
   }
 
 
   // returns the point where the line p0-p1 intersects this plane
   // `p0` and `p1` must not be the same
-  inline VVA_CHECKRESULT float LineIntersectTime (const TVec &p0, const TVec &p1, const float eps=0.0001f) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float LineIntersectTime (const TVec &p0, const TVec &p1, const float eps=0.0001f) const noexcept {
     const float dv = normal.dot(p1-p0);
     return (fabsf(dv) > eps ? (dist-normal.dot(p0))/dv : INFINITY);
   }
@@ -262,7 +263,7 @@ public:
 
   // returns the point where the line p0-p1 intersects this plane
   // `p0` and `p1` must not be the same
-  inline VVA_CHECKRESULT float LineIntersectTimeWithShift (const TVec &p0, const TVec &p1, const float shift, const float eps=0.0001f) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float LineIntersectTimeWithShift (const TVec &p0, const TVec &p1, const float shift, const float eps=0.0001f) const noexcept {
     const float dv = normal.dot(p1-p0);
     return (fabsf(dv) > eps ? (dist+shift-normal.dot(p0))/dv : INFINITY);
   }
@@ -303,52 +304,52 @@ public:
 
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept {
     return (DotProduct(point, normal)-dist <= 0.0f);
   }
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept {
     return (DotProduct(point, normal)-dist < 0.1f);
   }
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point, const float thre) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point, const float thre) const noexcept {
     return (DotProduct(point, normal)-dist < thre);
   }
 
   // returns side 0 (front, or on plane) or 1 (back)
   // "fri" means "front inclusive"
-  inline VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept {
     return (DotProduct(point, normal)-dist < 0.0f);
   }
 
   // returns side 0 (front), 1 (back), or 2 (on)
   // used in line tracing (only)
-  inline VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
     const float dot = DotProduct(point, normal)-dist;
     return (dot < -0.1f ? 1 : dot > 0.1f ? 0 : 2);
   }
 
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
-  inline VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept {
     return (PointDistance(center) <= -radius);
   }
 
-  inline VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept {
     return (fabsf(PointDistance(center)) < radius);
   }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
-  inline VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
     const float d = PointDistance(center);
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
 
   // returns "AABB reject point"
   // i.e. box point that is furthest from the plane
-  inline VVA_CHECKRESULT TVec get3DBBoxRejectPoint (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxRejectPoint (const float bbox[6]) const noexcept {
     return TVec(
       bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
       bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
@@ -357,21 +358,21 @@ public:
 
   // returns "AABB accept point"
   // i.e. box point that is closest to the plane
-  inline VVA_CHECKRESULT TVec get3DBBoxAcceptPoint (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxAcceptPoint (const float bbox[6]) const noexcept {
     return TVec(
       bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
       bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
       bbox[BOX3D_Z+(normal.z < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)]);
   }
 
-  inline VVA_CHECKRESULT TVec get2DBBoxRejectPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxRejectPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
       bbox2d[normal.x < 0.0f ? BOX2D_LEFT : BOX2D_RIGHT],
       bbox2d[normal.y < 0.0f ? BOX2D_BOTTOM : BOX2D_TOP],
       (normal.z < 0.0f ? minz : maxz));
   }
 
-  inline VVA_CHECKRESULT TVec get2DBBoxAcceptPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxAcceptPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
       bbox2d[normal.x < 0.0f ? BOX2D_RIGHT : BOX2D_LEFT],
       bbox2d[normal.y < 0.0f ? BOX2D_TOP : BOX2D_BOTTOM],
@@ -379,20 +380,20 @@ public:
   }
 
   // returns `false` if the box fully is on the back side of the plane
-  inline VVA_CHECKRESULT bool checkBox3D (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool checkBox3D (const float bbox[6]) const noexcept {
     // check reject point
     return (PointDistance(get3DBBoxRejectPoint(bbox)) > 0.0f); // at least partially on a front side?
   }
 
   // returns `false` if the box fully is on the back side of the plane
-  inline VVA_CHECKRESULT bool checkBox3DInclusive (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool checkBox3DInclusive (const float bbox[6]) const noexcept {
     // check reject point
     return (PointDistance(get3DBBoxRejectPoint(bbox)) >= 0.0f); // at least partially on a front side?
   }
 
   // returns `false` if the box fully is on the back side of the plane
   // returns `true` for non-vertical planes (because our box is 2d)
-  inline VVA_CHECKRESULT bool checkBox2D (const float bbox2d[4]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool checkBox2D (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // vertical plane
       // check reject point
@@ -404,7 +405,7 @@ public:
 
   // returns `false` if the box fully is on the back side of the plane
   // returns `true` for non-vertical planes (because our box is 2d)
-  inline VVA_CHECKRESULT bool checkBox2DInclusive (const float bbox2d[4]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool checkBox2DInclusive (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // vertical plane
       // check reject point
@@ -419,7 +420,7 @@ public:
 
   // returns one of OUTSIDE, INSIDE, PARTIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
-  inline VVA_CHECKRESULT int checkBox3DEx (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int checkBox3DEx (const float bbox[6]) const noexcept {
     // check reject point
     if (PointDistance(get3DBBoxRejectPoint(bbox)) <= 0.0f) return OUTSIDE; // entire box on a back side
     // check accept point
@@ -430,7 +431,7 @@ public:
   // returns one of OUTSIDE, INSIDE, PARTIALLY
   // if the box is touching the plane from inside, it is still assumed to be inside
   // returns PARTIALLY for non-vertical planes (because our box is 2d)
-  inline VVA_CHECKRESULT int checkBox2DEx (const float bbox2d[4]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int checkBox2DEx (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // check reject point
       if (PointDistance(get2DBBoxRejectPoint(bbox2d)) <= 0.0f) return OUTSIDE; // entire box on a back side
@@ -444,7 +445,7 @@ public:
 
   // returns side 0 (front), 1 (back), or 2 (collides)
   // if the box is touching the plane from the front, it is still assumed to be in front
-  inline VVA_CHECKRESULT int Box3DOnSide2 (const float bbox[6]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int Box3DOnSide2 (const float bbox[6]) const noexcept {
     // check reject point
     if (PointDistance(get3DBBoxRejectPoint(bbox)) <= 0.0f) return 1; // entire box is on a back side
     // check accept point
@@ -455,7 +456,7 @@ public:
   // returns side 0 (front), 1 (back), or 2 (collides)
   // if the box is touching the plane from the front, it is still assumed to be in front
   // returns 2 for non-vertical planes (because our box is 2d)
-  inline VVA_CHECKRESULT int Box2DOnSide2 (const float bbox2d[4]) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int Box2DOnSide2 (const float bbox2d[4]) const noexcept {
     if (normal.z == 0.0f) {
       // check reject point
       if (PointDistance(get2DBBoxRejectPoint(bbox2d)) <= 0.0f) return 1; // entire box is on a back side
@@ -538,18 +539,37 @@ public:
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");
 static_assert(sizeof(TPlane) == sizeof(float)*4, "TPlane layout fail (1)");
 
-inline VVA_PURE vuint32 GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
+VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
 
-static inline VVA_OKUNUSED VVA_CHECKRESULT
-float PlaneAngles2D (const TPlane *from, const TPlane *to) noexcept {
-  float afrom = VectorAngleYaw(from->normal);
-  float ato = VectorAngleYaw(to->normal);
-  return AngleMod(AngleMod(ato-afrom+180)-180);
+// should be used only for wall planes!
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT
+float PlanesAngle2D (const TPlane *from, const TPlane *to) noexcept {
+  const float afrom = VectorAngleYaw(from->normal);
+  const float ato = VectorAngleYaw(to->normal);
+  return AngleMod(AngleMod(ato-afrom+180.0f)-180.0f);
 }
 
-static inline VVA_OKUNUSED VVA_CHECKRESULT
-float PlaneAngles2DFlipTo (const TPlane *from, const TPlane *to) noexcept {
-  float afrom = VectorAngleYaw(from->normal);
-  float ato = VectorAngleYaw(-to->normal);
-  return AngleMod(AngleMod(ato-afrom+180)-180);
+// should be used only for wall planes!
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT
+float PlanesAngle2DFlipTo (const TPlane *from, const TPlane *to) noexcept {
+  const float afrom = VectorAngleYaw(from->normal);
+  const float ato = VectorAngleYaw(-to->normal);
+  return AngleMod(AngleMod(ato-afrom+180.0f)-180.0f);
+}
+
+
+// should be used only for wall planes!
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT
+float PlanesAngle2DSigned (const TPlane *from, const TPlane *to) noexcept {
+  const float afrom = VectorAngleYaw(from->normal);
+  const float ato = VectorAngleYaw(to->normal);
+  return AngleMod(ato-afrom+180.0f)-180.0f;
+}
+
+// should be used only for wall planes!
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT
+float PlanesAngle2DSignedFlipTo (const TPlane *from, const TPlane *to) noexcept {
+  const float afrom = VectorAngleYaw(from->normal);
+  const float ato = VectorAngleYaw(-to->normal);
+  return AngleMod(ato-afrom+180.0f)-180.0f;
 }

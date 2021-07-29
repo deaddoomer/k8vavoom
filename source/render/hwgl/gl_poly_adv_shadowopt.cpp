@@ -102,11 +102,11 @@ static bool CanSurfaceSegCastShadow (const surface_t *surf, const TVec LightPos,
     const line_t *l2 = *lnx;
     if (!l2->SphereTouches(LightPos, Radius)) continue;
     if (l2->flags&ML_TWOSIDED) return true;
-    if (PlaneAngles2D(ldef, l2) <= 180.0f && PlaneAngles2DFlipTo(ldef, l2) <= 180.0f) {
-      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlaneAngles2D(ldef, l2), PlaneAngles2DFlipTo(ldef, l2));
+    if (PlanesAngle2D(ldef, l2) <= 180.0f && PlanesAngle2DFlipTo(ldef, l2) <= 180.0f) {
+      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlanesAngle2D(ldef, l2), PlanesAngle2DFlipTo(ldef, l2));
       continue;
     } else {
-      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlaneAngles2D(ldef, l2), PlaneAngles2DFlipTo(ldef, l2));
+      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlanesAngle2D(ldef, l2), PlanesAngle2DFlipTo(ldef, l2));
     }
     return true;
   }
@@ -117,11 +117,11 @@ static bool CanSurfaceSegCastShadow (const surface_t *surf, const TVec LightPos,
     const line_t *l2 = *lnx;
     if (!l2->SphereTouches(LightPos, Radius)) continue;
     if (l2->flags&ML_TWOSIDED) return true;
-    if (PlaneAngles2D(ldef, l2) <= 180.0f && PlaneAngles2DFlipTo(ldef, l2) <= 180.0f) {
-      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlaneAngles2D(ldef, l2), PlaneAngles2DFlipTo(ldef, l2));
+    if (PlanesAngle2D(ldef, l2) <= 180.0f && PlanesAngle2DFlipTo(ldef, l2) <= 180.0f) {
+      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlanesAngle2D(ldef, l2), PlanesAngle2DFlipTo(ldef, l2));
       continue;
     } else {
-      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlaneAngles2D(ldef, l2), PlaneAngles2DFlipTo(ldef, l2));
+      //!!!GCon->Logf("::: %d vs %d: %g : %g", (int)(ptrdiff_t)(ldef-GClLevel->Lines), (int)(ptrdiff_t)(l2-GClLevel->Lines), PlanesAngle2D(ldef, l2), PlanesAngle2DFlipTo(ldef, l2));
     }
     return true;
   }
