@@ -908,19 +908,36 @@ static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
   MessageBox(NULL, buf, "k8vavoom", MB_OK);
   //TerminateProcess(GetCurrentProcess(), 1);
   #endif
+  const char *msg = nullptr;
+  bool fatal = false;
+  //ver.dwMajorVersion = 11; ver.dwBuildNumber = 33000;
   if (ver.dwMajorVersion > 6 && ver.dwMajorVersion < 10) {
-    MessageBox(NULL, "Failed to determine your windows version. Cannot continue.", "k8vavoom windows version check", MB_OK);
-    TerminateProcess(GetCurrentProcess(), 1);
-    ExitProcess(1); // just in case
-  }
-  if (ver.dwMajorVersion > 10) {
-    MessageBox(NULL, "Sorry, but windows 11 and higher are not supported. Cannot continue.", "k8vavoom windows version check", MB_OK);
-    TerminateProcess(GetCurrentProcess(), 1);
-    ExitProcess(1); // just in case
-  }
-  if (ver.dwMajorVersion == 10) {
+    msg = "Failed to determine your windows version.\r\nContinue on your own risk!\r\n\r\nTHIS IS NOT A K8VAVOOM BUG!";
+  } else if (ver.dwMajorVersion > 10) {
+    msg = "Windows 11 and higher are not supported.\r\nSorry!\r\nContinue on your own risk,\r\nbut expect bugs and crashes.\r\n\r\nTHIS IS NOT A K8VAVOOM BUG!";
+  } else if (ver.dwMajorVersion == 10) {
     if (ver.dwMinorVersion > 0 || ver.dwBuildNumber >= 22000) {
-      MessageBox(NULL, "Sorry, but your windows version is not supported. Cannot continue.", "k8vavoom windows version check", MB_OK);
+      msg = "Windows 11 preview is not supported.\n\rSorry, but cannot continue.\r\n\r\nTHIS IS NOT A K8VAVOOM BUG!";
+      fatal = true;
+    }
+  }
+  if (msg) {
+    srand((unsigned)GetTickCount());
+    UINT flags = MB_ICONERROR|MB_SETFOREGROUND|MB_TOPMOST|(fatal ? MB_OK : MB_OKCANCEL);
+    if (!fatal && (rand()&0xff) > 127) flags ^= MB_DEFBUTTON2;
+    int res = MessageBoxA(NULL, msg, "k8vavoom Windows Version Check Warning", flags);
+    if (res == IDCANCEL) fatal = true;
+    if (!fatal && (rand()&0xff) > 127) {
+      //if ((rand()&0xff) > 127) flags ^= MB_DEFBUTTON2;
+      const int stt = rand()%5+((rand()&0xff) > 127 ? 3 : 2);
+      Sleep(stt*1000);
+      flags |= MB_DEFBUTTON2;
+      static char xmsg[256];
+      snprintf(xmsg, sizeof(xmsg), "LET ME REPEAT IT:\r\n\r\n%s", msg);
+      res = MessageBoxA(NULL, xmsg, "k8vavoom Windows Version Check Warning!", flags);
+      if (res == IDCANCEL) fatal = true;
+    }
+    if (fatal) {
       TerminateProcess(GetCurrentProcess(), 1);
       ExitProcess(1); // just in case
     }
