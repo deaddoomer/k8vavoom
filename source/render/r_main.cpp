@@ -81,8 +81,8 @@ static VCvarF r_hack_psprite_yofs("r_hack_psprite_yofs", "0", "PSprite offset fo
 static float prev_r_hack_psprite_yofs = 0.0f;
 static float prev_r_light_globvis = -666.0f;
 
-static VCvarI k8ColormapInverse("k8ColormapInverse", "0", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
-static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "0", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
+static VCvarI k8ColormapInverse("k8ColormapInverse", "2", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
+static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "3", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
 
 static const char *videoDrvName = nullptr;
