@@ -908,6 +908,8 @@ static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
   MessageBox(NULL, buf, "k8vavoom", MB_OK);
   //TerminateProcess(GetCurrentProcess(), 1);
   #endif
+  const char *ee = getenv("K8VAVOOM_SKIP_WINVER_CHECK");
+  if (ee && strcmp(ee, "tan") == 0) return;
   const char *msg = nullptr;
   bool fatal = false;
   //ver.dwMajorVersion = 11; ver.dwBuildNumber = 33000;
