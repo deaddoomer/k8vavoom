@@ -501,6 +501,11 @@ VTexture *VTexture::GetHighResolutionTexture () {
 
   if (!r_hirestex) return nullptr;
 
+  // ignore nameless and special font textures
+  if (Name == NAME_None) return nullptr;
+  const char *namestr = *Name;
+  if (namestr[0] == '\x7f') return nullptr;
+
   // determine directory name depending on type
   const char *DirName;
   switch (Type) {
@@ -514,7 +519,7 @@ VTexture *VTexture::GetHighResolutionTexture () {
 
   // try to find it
   /*static*/ const char *Exts[] = { "png", "jpg", "tga", nullptr };
-  int LumpNum = W_FindLumpByFileNameWithExts(VStr("hirestex/")+DirName+"/"+*Name, Exts);
+  int LumpNum = W_FindLumpByFileNameWithExts(VStr("hirestex/")+DirName+"/"+namestr, Exts);
   if (LumpNum >= 0) {
     // create new high-resolution texture
     HiResTexture = CreateTexture(Type, LumpNum);

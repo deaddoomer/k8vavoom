@@ -1835,11 +1835,11 @@ rgba_t *VFontChar::GetPalette () {
 //==========================================================================
 VTexture *VFontChar::GetHighResolutionTexture () {
   if (!HiResTexture) {
-    /*
+    #if 0
     GCon->Logf("getting hires texture for basetex %p", BaseTex);
     GCon->Logf(" basetex name: %s", *BaseTex->Name);
     GCon->Logf(" basetex hires: %p", BaseTex->GetHighResolutionTexture());
-    */
+    #endif
     if (!r_hirestex) return nullptr;
     VTexture *Tex = BaseTex->GetHighResolutionTexture();
     if (Tex) HiResTexture = new VFontChar(Tex, Palette);
