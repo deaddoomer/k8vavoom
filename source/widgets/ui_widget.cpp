@@ -1526,7 +1526,11 @@ VFont *VWidget::GetFont () noexcept {
 //
 //==========================================================================
 void VWidget::SetFont (VFont *AFont) noexcept {
-  if (!AFont) Sys_Error("VWidget::SetFont: cannot set `nullptr` font");
+  if (!AFont) {
+    AFont = VFont::GetFont(VStrCI(NAME_consolefont));
+    if (!AFont) Sys_Error("VWidget::SetFont: cannot set `nullptr` font");
+    //GCon->Logf(NAME_Debug, "*** '%s' ***", *AFont->GetFontName());
+  }
   Font = AFont;
 }
 
