@@ -399,12 +399,28 @@ void VFont::RegisterFont (VFont *font, VName aname) {
   Fonts = font;
 
   // add to font map
-  if (FontMap.has(VStr(aname))) {
+  if (FontMap.has(VStrCI(aname))) {
     GCon->Logf(NAME_Init, "replacing font '%s'", *aname);
+    // remove old font from the list, just for fun
+    //FIXME: memory leak!
+    VFont *prev = nullptr;
+    VFont *curr = Fonts;
+    while (curr) {
+      if (curr != font && VStr::strEquCI(*curr->Name, *aname)) break;
+      prev = curr;
+      curr = curr->Next;
+    }
+    if (!curr) {
+      GCon->Log(NAME_Error, "internal error: old font not found (this is harmless, but still a bug!)");
+    } else {
+      if (prev) prev->Next = curr->Next; else Fonts = curr->Next;
+      curr->Next = nullptr;
+      delete curr;
+    }
   } else {
     GCon->Logf(NAME_Init, "registering font '%s'", *aname);
   }
-  FontMap.put(VStr(aname), font);
+  FontMap.put(VStrCI(aname), font);
 }
 
 
@@ -416,69 +432,81 @@ void VFont::RegisterFont (VFont *font, VName aname) {
 void VFont::StaticInit () {
   ParseTextColors();
 
+  // load custom fonts (they can override standard fonts)
+  ParseFontDefs();
+
   // initialise standard fonts
   GCon->Log(NAME_Init, "creading default fonts");
 
   // small font
-  if (W_CheckNumForName(NAME_fonta_s) >= 0) {
-    GCon->Log(NAME_Init, "  SmallFont: from 'fonta' lumps");
-    SmallFont = new VFont(NAME_smallfont, "fonta%02d", 33, 95, 1, -666);
-  } else {
-    GCon->Log(NAME_Init, "  SmallFont: from 'stcfn' lumps");
-    SmallFont = new VFont(NAME_smallfont, "stcfn%03d", 33, 95, 33, -666);
-  }
+  //GCon->Logf(NAME_Debug, "'%s' : '%s' : %d : '%s' : '%s'", *VName(NAME_smallfont), *VStrCI(NAME_smallfont), (int)FontMap.has(VStrCI(NAME_smallfont)), *VStrCI(69), *VStrCI(666u));
+  if (!FontMap.has(VStrCI(NAME_smallfont))) {
+    for (VFont *f = Fonts; f; f = f->Next) GCon->Logf(NAME_Debug, "%p: '%s'", f, *f->Name);
+    //GCon->Logf(NAME_Debug, "'%s' : '%s' : %d", *VName(NAME_smallfont), *VStrCI(NAME_smallfont), (int)FontMap.has(VStrCI(NAME_smallfont)));
+    if (W_CheckNumForName(NAME_fonta_s) >= 0) {
+      GCon->Log(NAME_Init, "  SmallFont: from 'fonta' lumps");
+      SmallFont = new VFont(NAME_smallfont, "fonta%02d", 33, 95, 1, -666);
+    } else {
+      GCon->Log(NAME_Init, "  SmallFont: from 'stcfn' lumps");
+      SmallFont = new VFont(NAME_smallfont, "stcfn%03d", 33, 95, 33, -666);
+    }
 
-  if (SmallFont->GetFontName() == NAME_None) {
-    GCon->Log(NAME_Init, "  SmallFont: cannot create it, using ConsoleFont instead");
-    SmallFont = GetFont(VStr(VName(NAME_smallfont)), VStr(VAVOOM_CON_FONT_PATH));
-    if (!SmallFont) Sys_Error("cannot create console font");
+    if (SmallFont->GetFontName() == NAME_None) {
+      delete SmallFont;
+      GCon->Log(NAME_Init, "  SmallFont: cannot create it, using ConsoleFont instead");
+      SmallFont = GetFont(VStr(VName(NAME_smallfont)), VStr(VAVOOM_CON_FONT_PATH));
+      if (!SmallFont) Sys_Error("cannot create console font");
+    }
   }
 
   // strife's second small font
-  if (W_CheckNumForName(NAME_stbfn033) >= 0) {
-    GCon->Log(NAME_Init, "  Strife secondary small font");
-    new VFont(NAME_smallfont2, "stbfn%03d", 33, 95, 33, -666);
+  if (!FontMap.has(VStrCI(NAME_smallfont2))) {
+    if (W_CheckNumForName(NAME_stbfn033) >= 0) {
+      GCon->Log(NAME_Init, "  Strife secondary small font");
+      new VFont(NAME_smallfont2, "stbfn%03d", 33, 95, 33, -666);
+    }
   }
 
   // big font
-  bool haveBigFont = false;
-  if (W_CheckNumForName(NAME_bigfont) >= 0) {
-    GCon->Log(NAME_Init, "  BigFont: from FON lump");
-    if (!GetFont(VStr(VName(NAME_bigfont)), VStr(VName(NAME_bigfont)))) {
-      GCon->Log(NAME_Init, "  BigFont: cannot create");
-    } else {
-      haveBigFont = true;
+  if (!FontMap.has(VStrCI(NAME_bigfont))) {
+    bool haveBigFont = false;
+    if (W_CheckNumForName(NAME_bigfont) >= 0) {
+      GCon->Log(NAME_Init, "  BigFont: from FON lump");
+      if (!GetFont(VStr(VName(NAME_bigfont)), VStr(VName(NAME_bigfont)))) {
+        GCon->Log(NAME_Init, "  BigFont: cannot create");
+      } else {
+        haveBigFont = true;
+      }
     }
-  }
-  if (!haveBigFont) {
-    GCon->Log(NAME_Init, "  BigFont: from 'fontb' lumps");
-    auto fnt = new VFont(NAME_bigfont, "fontb%02d", 33, 95, 1, -666);
-    if (fnt->GetFontName() == NAME_None) {
-      GCon->Log(NAME_Init, "  BigFont: cannot create");
-    } else {
-      haveBigFont = true;
+    if (!haveBigFont) {
+      GCon->Log(NAME_Init, "  BigFont: from 'fontb' lumps");
+      auto fnt = new VFont(NAME_bigfont, "fontb%02d", 33, 95, 1, -666);
+      if (fnt->GetFontName() == NAME_None) {
+        GCon->Log(NAME_Init, "  BigFont: cannot create");
+      } else {
+        haveBigFont = true;
+      }
     }
-  }
-  if (!haveBigFont && W_CheckNumForName("dbigfont") >= 0) {
-    GCon->Log(NAME_Init, "  BigFont: from FON lump");
-    if (!GetFont(VStr(VName(NAME_bigfont)), VStr("dbigfont"))) {
-      GCon->Log(NAME_Init, "  BigFont: cannot create");
-    } else {
-      haveBigFont = true;
+    if (!haveBigFont && W_CheckNumForName("dbigfont") >= 0) {
+      GCon->Log(NAME_Init, "  BigFont: from FON lump");
+      if (!GetFont(VStr(VName(NAME_bigfont)), VStr("dbigfont"))) {
+        GCon->Log(NAME_Init, "  BigFont: cannot create");
+      } else {
+        haveBigFont = true;
+      }
     }
-  }
-  if (!haveBigFont) {
-    GCon->Log(NAME_Init, "  BigFont: from console font");
-    if (!GetFont(VStr(VName(NAME_bigfont)), VStr(VAVOOM_CON_FONT_PATH))) Sys_Error("cannot create console font");
+    if (!haveBigFont) {
+      GCon->Log(NAME_Init, "  BigFont: from console font");
+      if (!GetFont(VStr(VName(NAME_bigfont)), VStr(VAVOOM_CON_FONT_PATH))) Sys_Error("cannot create console font");
+    }
   }
 
   // console font
-  GCon->Log(NAME_Init, "  ConsoleFont: from FON lump");
-  ConFont = GetFont(VStr(VName(NAME_consolefont)), /*NAME_confont*/VStr(VAVOOM_CON_FONT_PATH));
-  if (!ConFont) Sys_Error("cannot create console font");
-
-  // load custom fonts (they can override standard fonts)
-  ParseFontDefs();
+  if (!FontMap.has(VStrCI(NAME_consolefont))) {
+    GCon->Log(NAME_Init, "  ConsoleFont: from FON lump");
+    ConFont = GetFont(VStr(VName(NAME_consolefont)), /*NAME_confont*/VStr(VAVOOM_CON_FONT_PATH));
+    if (!ConFont) Sys_Error("cannot create console font");
+  }
 }
 
 
