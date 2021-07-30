@@ -478,11 +478,14 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
         delete this;
         return enew;
       }
-      // string?
+      // string? (parsing it as a number was tried above, so just route it)
       if (IsStrConst() || IsDecorateSingleName()) {
         //VStr Lbl = GetStrConst(ec.Package);
         VStr Lbl;
         if (IsStrConst()) Lbl = GetStrConst(ec.Package); else { VDecorateSingleName *e = (VDecorateSingleName *)this; Lbl = VStr(e->Name); }
+        if (Lbl.startsWithCI("user_")) {
+          ParseWarningAsError(Loc, "uservars for state jumps are not supported (arg #%d for action `%s`). please, don't do this, this is a misfeature!", argnum, funcName);
+        }
         //k8: actually, don't resolve any "::" here, our dynamic resolver will do this for us
         /*
         int DCol = Lbl.IndexOf("::");

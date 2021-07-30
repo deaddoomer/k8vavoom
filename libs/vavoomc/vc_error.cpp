@@ -105,6 +105,8 @@ __attribute__((format(printf, 2, 3))) void ParseWarning (const TLocation &l, con
 //
 //  ParseWarningAsError
 //
+//  this is used in DECORATE parser
+//
 //==========================================================================
 __attribute__((format(printf, 2, 3))) void ParseWarningAsError (const TLocation &l, const char *text, ...) {
   if (vcGagErrors || vcWarningsSilenced) return;
@@ -112,7 +114,7 @@ __attribute__((format(printf, 2, 3))) void ParseWarningAsError (const TLocation 
   va_start(argPtr, text);
   const char *buf = vavarg(text, argPtr);
   va_end(argPtr);
-  GLog.Logf(NAME_Error, "%s: shit! %s", *(vcErrorIncludeCol ? l.toString(): l.toStringNoCol()), buf);
+  GLog.Logf(NAME_Error, "%s: OOPS! %s", *(vcErrorIncludeCol ? l.toString(): l.toStringNoCol()), buf);
 }
 
 
