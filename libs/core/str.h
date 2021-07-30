@@ -157,22 +157,22 @@ public:
   static int double2str (char *buf, double v) noexcept; // 0-terminated
 
 public:
-  inline VStr (ENoInit) noexcept {}
-  inline VStr () noexcept : dataptr(nullptr) {}
-  inline VStr (const VStr &instr) noexcept : dataptr(instr.dataptr) { incref(); }
-  inline VStr (const char *instr, int len=-1) noexcept : dataptr(nullptr) { setContent(instr, len); }
-  inline VStr (const VStr &instr, int start, int len) noexcept : dataptr(nullptr) { assign(instr.mid(start, len)); }
+  VVA_ALWAYS_INLINE VStr (ENoInit) noexcept {}
+  VVA_ALWAYS_INLINE VStr () noexcept : dataptr(nullptr) {}
+  VVA_ALWAYS_INLINE VStr (const VStr &instr) noexcept : dataptr(instr.dataptr) { incref(); }
+  VVA_ALWAYS_INLINE VStr (const char *instr, int len=-1) noexcept : dataptr(nullptr) { setContent(instr, len); }
+  VVA_ALWAYS_INLINE VStr (const VStr &instr, int start, int len) noexcept : dataptr(nullptr) { assign(instr.mid(start, len)); }
 
-  explicit inline VStr (const VName InName) noexcept : dataptr(nullptr) { setNameContent(InName); }
+  explicit VVA_ALWAYS_INLINE VStr (const VName InName) noexcept : dataptr(nullptr) { setNameContent(InName); }
 
-  explicit inline VStr (char v) noexcept : dataptr(nullptr) { setContent(&v, 1); }
-  explicit inline VStr (bool v) noexcept : dataptr(nullptr) { setContent(v ? "true" : "false"); }
+  explicit VVA_ALWAYS_INLINE VStr (char v) noexcept : dataptr(nullptr) { setContent(&v, 1); }
+  explicit VVA_ALWAYS_INLINE VStr (bool v) noexcept : dataptr(nullptr) { setContent(v ? "true" : "false"); }
   explicit VStr (int v) noexcept;
   explicit VStr (unsigned v) noexcept;
   explicit VStr (float v) noexcept;
   explicit VStr (double v) noexcept;
 
-  inline ~VStr () noexcept { clear(); }
+  VVA_ALWAYS_INLINE ~VStr () noexcept { clear(); }
 
   // this will create an unique copy of the string, which (copy) can be used in other threads
   VVA_CHECKRESULT VStr cloneUnique () const noexcept;
@@ -185,43 +185,43 @@ public:
   VVA_CHECKRESULT VStr &makeImmutableRetSelf () noexcept;
 
   // clears the string
-  inline void Clean () noexcept { decref(); }
-  inline void Clear () noexcept { decref(); }
-  inline void clear () noexcept { decref(); }
+  VVA_ALWAYS_INLINE void Clean () noexcept { decref(); }
+  VVA_ALWAYS_INLINE void Clear () noexcept { decref(); }
+  VVA_ALWAYS_INLINE void clear () noexcept { decref(); }
 
   // returns length of the string
-  VVA_CHECKRESULT inline int Length () const noexcept { return (dataptr ? store()->length : 0); }
-  VVA_CHECKRESULT inline int length () const noexcept { return (dataptr ? store()->length : 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int Length () const noexcept { return (dataptr ? store()->length : 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int length () const noexcept { return (dataptr ? store()->length : 0); }
 
   inline void setLength (int len, char fillChar=' ') noexcept {
     if (len < 0) len = 0;
     resize(len);
     if (len > 0) memset(getData(), fillChar&0xff, len);
   }
-  inline void SetLength (int len, char fillChar=' ') noexcept { setLength(len, fillChar); }
+  VVA_ALWAYS_INLINE void SetLength (int len, char fillChar=' ') noexcept { setLength(len, fillChar); }
 
-  VVA_CHECKRESULT inline int getCapacity () const noexcept { return (dataptr ? store()->alloted : 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int getCapacity () const noexcept { return (dataptr ? store()->alloted : 0); }
 
   // returns number of characters in a UTF-8 string
-  VVA_CHECKRESULT inline int Utf8Length () const noexcept { return Utf8Length(getCStr(), length()); }
-  VVA_CHECKRESULT inline int utf8Length () const noexcept { return Utf8Length(getCStr(), length()); }
-  VVA_CHECKRESULT inline int utf8length () const noexcept { return Utf8Length(getCStr(), length()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int Utf8Length () const noexcept { return Utf8Length(getCStr(), length()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int utf8Length () const noexcept { return Utf8Length(getCStr(), length()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int utf8length () const noexcept { return Utf8Length(getCStr(), length()); }
 
   // returns C string
   // `*` can be used in some dummied-out macros
-  /*VVA_CHECKRESULT*/ inline const char *operator * () const noexcept { return (dataptr ? getData() : ""); }
-  VVA_CHECKRESULT inline const char *getCStr () const noexcept { return (dataptr ? getData() : ""); }
-  VVA_CHECKRESULT inline char *getMutableCStr () noexcept { makeMutable(); return (dataptr ? getData() : nullptr); }
+  /*VVA_CHECKRESULT*/ VVA_ALWAYS_INLINE const char *operator * () const noexcept { return (dataptr ? getData() : ""); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE const char *getCStr () const noexcept { return (dataptr ? getData() : ""); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE char *getMutableCStr () noexcept { makeMutable(); return (dataptr ? getData() : nullptr); }
 
   // character accessors
-  VVA_CHECKRESULT inline char operator [] (int idx) const noexcept { return (dataptr && idx >= 0 && idx < length() ? getData()[idx] : 0); }
-  VVA_CHECKRESULT inline char *GetMutableCharPointer (int idx) noexcept { makeMutable(); return (dataptr ? &dataptr[idx] : nullptr); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE char operator [] (int idx) const noexcept { return (dataptr && idx >= 0 && idx < length() ? getData()[idx] : 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE char *GetMutableCharPointer (int idx) noexcept { makeMutable(); return (dataptr ? &dataptr[idx] : nullptr); }
 
   // checks if string is empty
-  VVA_CHECKRESULT inline bool IsEmpty () const noexcept { return (length() == 0); }
-  VVA_CHECKRESULT inline bool isEmpty () const noexcept { return (length() == 0); }
-  VVA_CHECKRESULT inline bool IsNotEmpty () const noexcept { return (length() != 0); }
-  VVA_CHECKRESULT inline bool isNotEmpty () const noexcept { return (length() != 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsEmpty () const noexcept { return (length() == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isEmpty () const noexcept { return (length() == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsNotEmpty () const noexcept { return (length() != 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isNotEmpty () const noexcept { return (length() != 0); }
 
   // if start is negative, `len` will be adjusted!
   VVA_CHECKRESULT VStr mid (int start, int len) const noexcept;
@@ -235,8 +235,8 @@ public:
   void chopRight (int len) noexcept;
 
   // assignement operators
-  inline VStr &operator = (const char *instr) noexcept { setContent(instr); return *this; }
-  inline VStr &operator = (const VStr &instr) noexcept { assign(instr); return *this; }
+  VVA_ALWAYS_INLINE VStr &operator = (const char *instr) noexcept { setContent(instr); return *this; }
+  VVA_ALWAYS_INLINE VStr &operator = (const VStr &instr) noexcept { assign(instr); return *this; }
 
   VStr &appendCStr (const char *instr, int len=-1) noexcept {
     if (len < 0) len = (int)(instr && instr[0] ? strlen(instr) : 0);
@@ -256,7 +256,7 @@ public:
   }
 
   // concatenation operators
-  inline VStr &operator += (const char *instr) noexcept { return appendCStr(instr, -1); }
+  VVA_ALWAYS_INLINE VStr &operator += (const char *instr) noexcept { return appendCStr(instr, -1); }
 
   VStr &operator += (const VStr &instr) noexcept {
     const int inl = instr.length();
@@ -280,14 +280,14 @@ public:
     return *this;
   }
 
-  inline VStr &operator += (bool v) noexcept { return operator+=(v ? "true" : "false"); }
-  inline VStr &operator += (int v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%d", v); return operator+=(buf); }
-  inline VStr &operator += (unsigned v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%u", v); return operator+=(buf); }
-  //inline VStr &operator += (float v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%f", v); return operator+=(buf); }
-  //inline VStr &operator += (double v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%f", v); return operator+=(buf); }
+  VVA_ALWAYS_INLINE VStr &operator += (bool v) noexcept { return operator+=(v ? "true" : "false"); }
+  VVA_ALWAYS_INLINE VStr &operator += (int v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%d", v); return operator+=(buf); }
+  VVA_ALWAYS_INLINE VStr &operator += (unsigned v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%u", v); return operator+=(buf); }
+  //VVA_ALWAYS_INLINE VStr &operator += (float v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%f", v); return operator+=(buf); }
+  //VVA_ALWAYS_INLINE VStr &operator += (double v) noexcept { char buf[64]; snprintf(buf, sizeof(buf), "%f", v); return operator+=(buf); }
   VStr &operator += (float v) noexcept;
   VStr &operator += (double v) noexcept;
-  inline VStr &operator += (const VName &v) noexcept { return operator+=(*v); }
+  VVA_ALWAYS_INLINE VStr &operator += (const VName &v) noexcept { return operator+=(*v); }
 
   friend VVA_CHECKRESULT VStr operator + (const VStr &S1, const char *S2) noexcept { VStr res(S1); res += S2; return res; }
   friend VVA_CHECKRESULT VStr operator + (const VStr &S1, const VStr &S2) noexcept { VStr res(S1); res += S2; return res; }
@@ -314,76 +314,76 @@ public:
   friend VVA_CHECKRESULT bool operator >= (const VStr &S1, const VStr &S2) noexcept { return (S1.getData() == S2.getData() ? true : (Cmp(*S1, *S2) >= 0)); }
 
   // comparison functions
-  VVA_CHECKRESULT inline int Cmp (const char *S2) const noexcept { return Cmp(getData(), S2); }
-  VVA_CHECKRESULT inline int Cmp (const VStr &S2) const noexcept { return Cmp(getData(), *S2); }
-  VVA_CHECKRESULT inline int ICmp (const char *S2) const noexcept { return ICmp(getData(), S2); }
-  VVA_CHECKRESULT inline int ICmp (const VStr &S2) const noexcept { return ICmp(getData(), *S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int Cmp (const char *S2) const noexcept { return Cmp(getData(), S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int Cmp (const VStr &S2) const noexcept { return Cmp(getData(), *S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int ICmp (const char *S2) const noexcept { return ICmp(getData(), S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int ICmp (const VStr &S2) const noexcept { return ICmp(getData(), *S2); }
 
-  VVA_CHECKRESULT inline int cmp (const char *S2) const noexcept { return Cmp(getData(), S2); }
-  VVA_CHECKRESULT inline int cmp (const VStr &S2) const noexcept { return Cmp(getData(), *S2); }
-  VVA_CHECKRESULT inline int icmp (const char *S2) const noexcept { return ICmp(getData(), S2); }
-  VVA_CHECKRESULT inline int icmp (const VStr &S2) const noexcept { return ICmp(getData(), *S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int cmp (const char *S2) const noexcept { return Cmp(getData(), S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int cmp (const VStr &S2) const noexcept { return Cmp(getData(), *S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int icmp (const char *S2) const noexcept { return ICmp(getData(), S2); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int icmp (const VStr &S2) const noexcept { return ICmp(getData(), *S2); }
 
-  VVA_CHECKRESULT inline bool StrEqu (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool StrEqu (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
-  VVA_CHECKRESULT inline bool StrEquCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool StrEquCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEqu (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEqu (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEquCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEquCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
 
-  VVA_CHECKRESULT inline bool strequ (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool strequ (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
-  VVA_CHECKRESULT inline bool strequCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool strequCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequ (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequ (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
 
-  VVA_CHECKRESULT inline bool strEqu (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool strEqu (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
-  VVA_CHECKRESULT inline bool strEquCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
-  VVA_CHECKRESULT inline bool strEquCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEqu (const char *S2) const noexcept { return (Cmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEqu (const VStr &S2) const noexcept { return (Cmp(getData(), *S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEquCI (const char *S2) const noexcept { return (ICmp(getData(), S2) == 0); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEquCI (const VStr &S2) const noexcept { return (ICmp(getData(), *S2) == 0); }
 
   VVA_CHECKRESULT bool StartsWith (const char *) const noexcept;
   VVA_CHECKRESULT bool StartsWith (const VStr &) const noexcept;
   VVA_CHECKRESULT bool EndsWith (const char *) const noexcept;
   VVA_CHECKRESULT bool EndsWith (const VStr &) const noexcept;
 
-  VVA_CHECKRESULT inline bool startsWith (const char *s) const noexcept { return StartsWith(s); }
-  VVA_CHECKRESULT inline bool startsWith (const VStr &s) const noexcept { return StartsWith(s); }
-  VVA_CHECKRESULT inline bool endsWith (const char *s) const noexcept { return EndsWith(s); }
-  VVA_CHECKRESULT inline bool endsWith (const VStr &s) const noexcept { return EndsWith(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool startsWith (const char *s) const noexcept { return StartsWith(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool startsWith (const VStr &s) const noexcept { return StartsWith(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool endsWith (const char *s) const noexcept { return EndsWith(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool endsWith (const VStr &s) const noexcept { return EndsWith(s); }
 
   VVA_CHECKRESULT bool startsWithNoCase (const char *s) const noexcept;
   VVA_CHECKRESULT bool startsWithNoCase (const VStr &s) const noexcept;
   VVA_CHECKRESULT bool endsWithNoCase (const char *s) const noexcept;
   VVA_CHECKRESULT bool endsWithNoCase (const VStr &s) const noexcept;
 
-  VVA_CHECKRESULT inline bool StartsWithNoCase (const char *s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool StartsWithNoCase (const VStr &s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool EndsWithNoCase (const char *s) const noexcept { return endsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool EndsWithNoCase (const VStr &s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StartsWithNoCase (const char *s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StartsWithNoCase (const VStr &s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool EndsWithNoCase (const char *s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool EndsWithNoCase (const VStr &s) const noexcept { return endsWithNoCase(s); }
 
-  VVA_CHECKRESULT inline bool StartsWithCI (const char *s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool StartsWithCI (const VStr &s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool EndsWithCI (const char *s) const noexcept { return endsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool EndsWithCI (const VStr &s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StartsWithCI (const char *s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StartsWithCI (const VStr &s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool EndsWithCI (const char *s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool EndsWithCI (const VStr &s) const noexcept { return endsWithNoCase(s); }
 
-  VVA_CHECKRESULT inline bool startsWithCI (const char *s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool startsWithCI (const VStr &s) const noexcept { return startsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool endsWithCI (const char *s) const noexcept { return endsWithNoCase(s); }
-  VVA_CHECKRESULT inline bool endsWithCI (const VStr &s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool startsWithCI (const char *s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool startsWithCI (const VStr &s) const noexcept { return startsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool endsWithCI (const char *s) const noexcept { return endsWithNoCase(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool endsWithCI (const VStr &s) const noexcept { return endsWithNoCase(s); }
 
   static VVA_CHECKRESULT bool startsWith (const char *str, const char *part) noexcept;
   static VVA_CHECKRESULT bool endsWith (const char *str, const char *part) noexcept;
   static VVA_CHECKRESULT bool startsWithNoCase (const char *str, const char *part) noexcept;
   static VVA_CHECKRESULT bool endsWithNoCase (const char *str, const char *part) noexcept;
 
-  static VVA_CHECKRESULT inline bool StartsWith (const char *str, const char *part) noexcept { return startsWith(str, part); }
-  static VVA_CHECKRESULT inline bool SndsWith (const char *str, const char *part) noexcept { return endsWith(str, part); }
-  static VVA_CHECKRESULT inline bool startsWithCI (const char *str, const char *part) noexcept { return startsWithNoCase(str, part); }
-  static VVA_CHECKRESULT inline bool endsWithCI (const char *str, const char *part) noexcept { return endsWithNoCase(str, part); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StartsWith (const char *str, const char *part) noexcept { return startsWith(str, part); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool SndsWith (const char *str, const char *part) noexcept { return endsWith(str, part); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool startsWithCI (const char *str, const char *part) noexcept { return startsWithNoCase(str, part); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool endsWithCI (const char *str, const char *part) noexcept { return endsWithNoCase(str, part); }
 
   VVA_CHECKRESULT VStr ToLower () const noexcept;
   VVA_CHECKRESULT VStr ToUpper () const noexcept;
 
-  VVA_CHECKRESULT inline VStr toLowerCase () const noexcept { return ToLower(); }
-  VVA_CHECKRESULT inline VStr toUpperCase () const noexcept { return ToUpper(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr toLowerCase () const noexcept { return ToLower(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr toUpperCase () const noexcept { return ToUpper(); }
 
   VVA_CHECKRESULT bool isLowerCase () const noexcept;
   VVA_CHECKRESULT static bool isLowerCase (const char *s) noexcept;
@@ -395,22 +395,22 @@ public:
   VVA_CHECKRESULT int LastIndexOf (const char *ps, int stpos=0) const noexcept;
   VVA_CHECKRESULT int LastIndexOf (const VStr &ps, int stpos=0) const noexcept;
 
-  VVA_CHECKRESULT inline int indexOf (char v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
-  VVA_CHECKRESULT inline int indexOf (const char *v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
-  VVA_CHECKRESULT inline int indexOf (const VStr &v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
-  VVA_CHECKRESULT inline int lastIndexOf (char v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
-  VVA_CHECKRESULT inline int lastIndexOf (const char *v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
-  VVA_CHECKRESULT inline int lastIndexOf (const VStr &v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int indexOf (char v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int indexOf (const char *v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int indexOf (const VStr &v, int stpos=0) const noexcept { return IndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int lastIndexOf (char v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int lastIndexOf (const char *v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE int lastIndexOf (const VStr &v, int stpos=0) const noexcept { return LastIndexOf(v, stpos); }
 
   VVA_CHECKRESULT VStr Replace (const char *Search, const char *Replacement) const noexcept;
-  VVA_CHECKRESULT inline VStr Replace (VStr Search, VStr Replacement) const noexcept { return Replace(*Search, *Replacement); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr Replace (VStr Search, VStr Replacement) const noexcept { return Replace(*Search, *Replacement); }
 
-  VVA_CHECKRESULT inline VStr replace (const char *s0, const char *s1) const noexcept { return Replace(s0, s1); }
-  VVA_CHECKRESULT inline VStr replace (const VStr &s0, const VStr &s1) const noexcept { return Replace(*s0, *s1); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr replace (const char *s0, const char *s1) const noexcept { return Replace(s0, s1); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr replace (const VStr &s0, const VStr &s1) const noexcept { return Replace(*s0, *s1); }
 
   VVA_CHECKRESULT VStr Utf8Substring (int start, int len) const noexcept;
-  VVA_CHECKRESULT inline VStr utf8Substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
-  VVA_CHECKRESULT inline VStr utf8substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr utf8Substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr utf8substring (int start, int len) const noexcept { return Utf8Substring(start, len); }
 
   // split on char `c`
   // if `keepEmpty` is `true`, keep empty components
@@ -419,24 +419,24 @@ public:
   void Split (const char *chars, TArray<VStr> &A, bool keepEmpty=false) const noexcept;
   void SplitOnBlanks (TArray<VStr> &A, bool doQuotedStrings=false) const noexcept;
 
-  inline void split (char c, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(c, a, keepEmpty); }
-  inline void split (const char *s, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(s, a, keepEmpty); }
-  inline void splitOnBlanks (TArray<VStr> &a, bool doQuotedStrings=false) const noexcept { return SplitOnBlanks(a, doQuotedStrings); }
+  VVA_ALWAYS_INLINE void split (char c, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(c, a, keepEmpty); }
+  VVA_ALWAYS_INLINE void split (const char *s, TArray<VStr> &a, bool keepEmpty=false) const noexcept { return Split(s, a, keepEmpty); }
+  VVA_ALWAYS_INLINE void splitOnBlanks (TArray<VStr> &a, bool doQuotedStrings=false) const noexcept { return SplitOnBlanks(a, doQuotedStrings); }
 
   // split string to path components; first component can be '/', others has no slashes
   void SplitPath (TArray<VStr> &arr) const noexcept;
-  inline void splitPath (TArray<VStr> &arr) const noexcept { return SplitPath(arr); }
+  VVA_ALWAYS_INLINE void splitPath (TArray<VStr> &arr) const noexcept { return SplitPath(arr); }
 
   static bool IsSplittedPathAbsolute (const TArray<VStr> &spp) noexcept;
 
   VVA_CHECKRESULT static bool isUtf8Valid (const char *s) noexcept;
   VVA_CHECKRESULT bool isUtf8Valid () const noexcept;
 
-  VVA_CHECKRESULT inline static bool IsUtf8Valid (const char *s) noexcept { return isUtf8Valid(s); }
-  VVA_CHECKRESULT inline bool IsUtf8Valid () const noexcept { return isUtf8Valid(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE static bool IsUtf8Valid (const char *s) noexcept { return isUtf8Valid(s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsUtf8Valid () const noexcept { return isUtf8Valid(); }
 
-  VVA_CHECKRESULT inline bool IsValidUtf8 () const noexcept { return isUtf8Valid(); }
-  VVA_CHECKRESULT inline bool isValidUtf8 () const noexcept { return isUtf8Valid(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsValidUtf8 () const noexcept { return isUtf8Valid(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isValidUtf8 () const noexcept { return isUtf8Valid(); }
 
   VVA_CHECKRESULT VStr Latin1ToUtf8 () const noexcept;
 
@@ -449,7 +449,7 @@ public:
   VVA_CHECKRESULT VStr quote (bool addQCh=false, bool forceQCh=false) const noexcept;
   VVA_CHECKRESULT bool needQuoting () const noexcept;
 
-  inline VVA_CHECKRESULT VStr forceQuote () const noexcept { return quote(true, true); } // always adds quotes
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr forceQuote () const noexcept { return quote(true, true); } // always adds quotes
 
   VVA_CHECKRESULT VStr xmlEscape () const noexcept;
   VVA_CHECKRESULT VStr xmlUnescape () const noexcept;
@@ -474,18 +474,18 @@ public:
   VVA_CHECKRESULT VStr RemoveTrailingSlash () const noexcept;
   VVA_CHECKRESULT VStr AppendPath (const VStr &path) const noexcept;
 
-  VVA_CHECKRESULT inline VStr extractFilePath () const noexcept { return ExtractFilePath(); }
-  VVA_CHECKRESULT inline VStr extractFileName () const noexcept { return ExtractFileName(); }
-  VVA_CHECKRESULT inline VStr extractFileBase (bool doSysError=true) const noexcept { return ExtractFileBase(doSysError); }
-  VVA_CHECKRESULT inline VStr extractFileBaseName () const noexcept { return ExtractFileBaseName(); }
-  VVA_CHECKRESULT inline VStr extractFileExtension () const noexcept { return ExtractFileExtension(); }
-  VVA_CHECKRESULT inline VStr stripExtension () const noexcept { return StripExtension(); }
-  VVA_CHECKRESULT inline VStr defaultPath (VStr basepath) const noexcept { return DefaultPath(basepath); }
-  VVA_CHECKRESULT inline VStr defaultExtension (VStr extension) const noexcept { return DefaultExtension(extension); }
-  VVA_CHECKRESULT inline VStr fixSlashes () const noexcept { return FixFileSlashes(); }
-  VVA_CHECKRESULT inline VStr appendTrailingSlash () const noexcept { return AppendTrailingSlash(); }
-  VVA_CHECKRESULT inline VStr removeTrailingSlash () const noexcept { return RemoveTrailingSlash(); }
-  VVA_CHECKRESULT inline VStr appendPath (const VStr &path) const noexcept { return AppendPath(path); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr extractFilePath () const noexcept { return ExtractFilePath(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr extractFileName () const noexcept { return ExtractFileName(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr extractFileBase (bool doSysError=true) const noexcept { return ExtractFileBase(doSysError); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr extractFileBaseName () const noexcept { return ExtractFileBaseName(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr extractFileExtension () const noexcept { return ExtractFileExtension(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr stripExtension () const noexcept { return StripExtension(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr defaultPath (VStr basepath) const noexcept { return DefaultPath(basepath); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr defaultExtension (VStr extension) const noexcept { return DefaultExtension(extension); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr fixSlashes () const noexcept { return FixFileSlashes(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr appendTrailingSlash () const noexcept { return AppendTrailingSlash(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr removeTrailingSlash () const noexcept { return RemoveTrailingSlash(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr appendPath (const VStr &path) const noexcept { return AppendPath(path); }
 
   // removes all blanks
   VVA_CHECKRESULT VStr trimRight () const noexcept;
@@ -493,12 +493,12 @@ public:
   VVA_CHECKRESULT VStr trimAll () const noexcept;
 
   // from my iv.strex
-  VVA_CHECKRESULT inline VStr xstrip () const noexcept { return trimAll(); }
-  VVA_CHECKRESULT inline VStr xstripleft () const noexcept { return trimLeft(); }
-  VVA_CHECKRESULT inline VStr xstripright () const noexcept { return trimRight(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr xstrip () const noexcept { return trimAll(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr xstripleft () const noexcept { return trimLeft(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE VStr xstripright () const noexcept { return trimRight(); }
 
   VVA_CHECKRESULT bool IsAbsolutePath () const noexcept;
-  VVA_CHECKRESULT inline bool isAbsolutePath () const noexcept { return IsAbsolutePath(); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isAbsolutePath () const noexcept { return IsAbsolutePath(); }
 
   VVA_CHECKRESULT static VVA_ALWAYS_INLINE bool IsPathSeparatorChar (const char ch) noexcept {
     #if !defined(_WIN32)
@@ -519,8 +519,8 @@ public:
   // reject absolute names, names with ".", and names with "..", and names ends with path delimiter
   VVA_CHECKRESULT bool isSafeDiskFileName () const noexcept;
 
-  static VVA_CHECKRESULT inline int Length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
-  static VVA_CHECKRESULT inline int length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE int Length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE int length (const char *s) noexcept { return (s ? (int)strlen(s) : 0); }
 
   // calculates length of the following utf-8 sequence from its first char, or -1 for invalid first char
   // zero char means zero length
@@ -536,39 +536,39 @@ public:
     return -1; // invalid utf-8
   }
 
-  static VVA_CHECKRESULT inline bool IsValidUtf8Continuation (const char ch) noexcept { return (((vuint8)ch&0xc0) == 0x80); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsValidUtf8Continuation (const char ch) noexcept { return (((vuint8)ch&0xc0) == 0x80); }
 
-  static VVA_CHECKRESULT inline bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
 
   static VVA_CHECKRESULT int Utf8Length (const char *s, int len=-1) noexcept;
-  static VVA_CHECKRESULT inline int utf8Length (const char *s, int len=-1) noexcept { return (int)Utf8Length(s, len); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE int utf8Length (const char *s, int len=-1) noexcept { return (int)Utf8Length(s, len); }
   static VVA_CHECKRESULT size_t ByteLengthForUtf8 (const char *s, size_t N) noexcept; // `N` must be valid!
   // get utf8 char; advances pointer, returns '?' on invalid char, or 0 on string end
   static VVA_CHECKRESULT int Utf8GetChar (const char *&s) noexcept;
   static VVA_CHECKRESULT VStr FromUtf8Char (int) noexcept;
 
-  static VVA_CHECKRESULT inline int Cmp (const char *S1, const char *S2) noexcept { return (S1 == S2 ? 0 : strcmp((S1 ? S1 : ""), (S2 ? S2 : ""))); }
-  static VVA_CHECKRESULT inline int NCmp (const char *S1, const char *S2, size_t N) noexcept { return (S1 == S2 ? 0 : strncmp((S1 ? S1 : ""), (S2 ? S2 : ""), N)); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE int Cmp (const char *S1, const char *S2) noexcept { return (S1 == S2 ? 0 : strcmp((S1 ? S1 : ""), (S2 ? S2 : ""))); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE int NCmp (const char *S1, const char *S2, size_t N) noexcept { return (S1 == S2 ? 0 : strncmp((S1 ? S1 : ""), (S2 ? S2 : ""), N)); }
 
   static VVA_CHECKRESULT int ICmp (const char *s0, const char *s1) noexcept;
   static VVA_CHECKRESULT int NICmp (const char *s0, const char *s1, size_t max) noexcept;
 
-  static VVA_CHECKRESULT inline bool strequ (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool strequCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool nstrequ (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
-  static VVA_CHECKRESULT inline bool nstrequCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequ (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strequCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool nstrequ (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool nstrequCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
 
-  static VVA_CHECKRESULT inline bool StrEqu (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool StrEquCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool NStrEqu (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
-  static VVA_CHECKRESULT inline bool NStrEquCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEqu (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool StrEquCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool NStrEqu (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool NStrEquCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
 
-  static VVA_CHECKRESULT inline bool strEqu (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool strEquCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
-  static VVA_CHECKRESULT inline bool nstrEqu (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
-  static VVA_CHECKRESULT inline bool nstrEquCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEqu (const char *S1, const char *S2) noexcept { return (Cmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool strEquCI (const char *S1, const char *S2) noexcept { return (ICmp(S1, S2) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool nstrEqu (const char *S1, const char *S2, size_t max) noexcept { return (NCmp(S1, S2, max) == 0); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool nstrEquCI (const char *S1, const char *S2, size_t max) noexcept { return (NICmp(S1, S2, max) == 0); }
 
-  static inline void Cpy (char *dst, const char *src) noexcept {
+  static VVA_ALWAYS_INLINE void Cpy (char *dst, const char *src) noexcept {
     if (dst) { if (src) strcpy(dst, src); else *dst = 0; }
   }
 
@@ -584,11 +584,11 @@ public:
     }
   }
 
-  static VVA_CHECKRESULT inline char ToUpper (char c) noexcept { return (c >= 'a' && c <= 'z' ? c-32 : c); }
-  static VVA_CHECKRESULT inline char ToLower (char c) noexcept { return (c >= 'A' && c <= 'Z' ? c+32 : c); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char ToUpper (char c) noexcept { return (c >= 'a' && c <= 'z' ? c-32 : c); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char ToLower (char c) noexcept { return (c >= 'A' && c <= 'Z' ? c+32 : c); }
 
-  static VVA_CHECKRESULT inline char toupper (char c) noexcept { return (c >= 'a' && c <= 'z' ? c-32 : c); }
-  static VVA_CHECKRESULT inline char tolower (char c) noexcept { return (c >= 'A' && c <= 'Z' ? c+32 : c); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char toupper (char c) noexcept { return (c >= 'a' && c <= 'z' ? c-32 : c); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char tolower (char c) noexcept { return (c >= 'A' && c <= 'Z' ? c+32 : c); }
 
   // append codepoint to this string, in utf-8
   VStr &utf8Append (vuint32 code) noexcept;
@@ -635,38 +635,38 @@ public:
     return true;
   }
 
-  VVA_CHECKRESULT inline bool fnameEqu1251CI (const VStr &s) const noexcept { return fnameEqu1251CI(s.getData()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool fnameEqu1251CI (const VStr &s) const noexcept { return fnameEqu1251CI(s.getData()); }
   VVA_CHECKRESULT bool fnameEqu1251CI (const char *s) const noexcept;
 
-  VVA_CHECKRESULT inline bool fnameEquKOICI (const VStr &s) const noexcept { return fnameEquKOICI(s.getData()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool fnameEquKOICI (const VStr &s) const noexcept { return fnameEquKOICI(s.getData()); }
   VVA_CHECKRESULT bool fnameEquKOICI (const char *s) const noexcept;
 
   static VVA_CHECKRESULT VStr buf2hex (const void *buf, int buflen) noexcept;
 
-  inline bool convertInt (int *outv) const noexcept { return convertInt(getCStr(), outv); }
-  inline bool convertFloat (float *outv) const noexcept { return convertFloat(getCStr(), outv); }
+  VVA_ALWAYS_INLINE bool convertInt (int *outv) const noexcept { return convertInt(getCStr(), outv); }
+  VVA_ALWAYS_INLINE bool convertFloat (float *outv) const noexcept { return convertFloat(getCStr(), outv); }
 
   static VVA_CHECKRESULT bool globmatch (const char *str, const char *pat, bool caseSensitive=true) noexcept;
-  VVA_CHECKRESULT inline bool globmatch (const char *pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), pat, caseSensitive); }
-  VVA_CHECKRESULT inline bool globmatch (const VStr &pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), *pat, caseSensitive); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globmatch (const char *pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), pat, caseSensitive); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globmatch (const VStr &pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), *pat, caseSensitive); }
 
-  static VVA_CHECKRESULT inline bool globMatch (const char *str, const char *pat, bool caseSensitive=true) noexcept { return globmatch(str, pat, caseSensitive); }
-  VVA_CHECKRESULT inline bool globMatch (const char *pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), pat, caseSensitive); }
-  VVA_CHECKRESULT inline bool globMatch (const VStr &pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), *pat, caseSensitive); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatch (const char *str, const char *pat, bool caseSensitive=true) noexcept { return globmatch(str, pat, caseSensitive); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatch (const char *pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), pat, caseSensitive); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatch (const VStr &pat, bool caseSensitive=true) const noexcept { return globmatch(getData(), *pat, caseSensitive); }
 
-  static VVA_CHECKRESULT inline bool globmatchCI (const char *str, const char *pat) noexcept { return globmatch(str, pat, false); }
-  VVA_CHECKRESULT inline bool globmatchCI (const char *pat) const noexcept { return globmatch(getData(), pat, false); }
-  VVA_CHECKRESULT inline bool globmatchCI (const VStr &pat) const noexcept { return globmatch(getData(), *pat, false); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globmatchCI (const char *str, const char *pat) noexcept { return globmatch(str, pat, false); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globmatchCI (const char *pat) const noexcept { return globmatch(getData(), pat, false); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globmatchCI (const VStr &pat) const noexcept { return globmatch(getData(), *pat, false); }
 
-  static VVA_CHECKRESULT inline bool globMatchCI (const char *str, const char *pat) noexcept { return globmatch(str, pat, false); }
-  VVA_CHECKRESULT inline bool globMatchCI (const char *pat) const noexcept { return globmatch(getData(), pat, false); }
-  VVA_CHECKRESULT inline bool globMatchCI (const VStr &pat) const noexcept { return globmatch(getData(), *pat, false); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatchCI (const char *str, const char *pat) noexcept { return globmatch(str, pat, false); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatchCI (const char *pat) const noexcept { return globmatch(getData(), pat, false); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool globMatchCI (const VStr &pat) const noexcept { return globmatch(getData(), *pat, false); }
 
   // will not clear `args`
   void Tokenise (TArray <VStr> &args) const noexcept;
-  inline void Tokenize (TArray <VStr> &args) const noexcept { Tokenise(args); }
-  inline void tokenise (TArray <VStr> &args) const noexcept { Tokenise(args); }
-  inline void tokenize (TArray <VStr> &args) const noexcept { Tokenise(args); }
+  VVA_ALWAYS_INLINE void Tokenize (TArray <VStr> &args) const noexcept { Tokenise(args); }
+  VVA_ALWAYS_INLINE void tokenise (TArray <VStr> &args) const noexcept { Tokenise(args); }
+  VVA_ALWAYS_INLINE void tokenize (TArray <VStr> &args) const noexcept { Tokenise(args); }
 
   // this finds start of the next command
   // commands are ';'-delimited
@@ -681,17 +681,17 @@ public:
   // this algo is not a speed demon, but it does the work
   static float ApproxMatch (const char *left, int leftlen, const char *right, int rightlen) noexcept;
 
-  float inline ApproxMatch (const char *right, int rightlen=-1) noexcept { return ApproxMatch(getData(), length(), right, rightlen); }
-  float inline ApproxMatch (VStr right) noexcept { return ApproxMatch(getData(), length(), right.getData(), right.length()); }
+  float VVA_ALWAYS_INLINE ApproxMatch (const char *right, int rightlen=-1) noexcept { return ApproxMatch(getData(), length(), right, rightlen); }
+  float VVA_ALWAYS_INLINE ApproxMatch (VStr right) noexcept { return ApproxMatch(getData(), length(), right.getData(), right.length()); }
 
-  float inline approxMatch (const char *right, int rightlen=-1) noexcept { return ApproxMatch(getData(), length(), right, rightlen); }
-  float inline approxMatch (VStr right) noexcept { return ApproxMatch(getData(), length(), right.getData(), right.length()); }
+  float VVA_ALWAYS_INLINE approxMatch (const char *right, int rightlen=-1) noexcept { return ApproxMatch(getData(), length(), right, rightlen); }
+  float VVA_ALWAYS_INLINE approxMatch (VStr right) noexcept { return ApproxMatch(getData(), length(), right.getData(), right.length()); }
 
 public:
-  static VVA_CHECKRESULT inline char wchar2win (vuint32 wc) noexcept { return (wc < 65536 ? wc2shitmap[wc] : '?'); }
-  static VVA_CHECKRESULT inline char wchar2koi (vuint32 wc) noexcept { return (wc < 65536 ? wc2koimap[wc] : '?'); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char wchar2win (vuint32 wc) noexcept { return (wc < 65536 ? wc2shitmap[wc] : '?'); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE char wchar2koi (vuint32 wc) noexcept { return (wc < 65536 ? wc2koimap[wc] : '?'); }
 
-  static VVA_CHECKRESULT inline VVA_CONST int digitInBase (char ch, int base=10) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST int digitInBase (char ch, int base=10) noexcept {
     if (base < 1 || base > 36 || ch < '0') return -1;
     if (base <= 10) return (ch < 48+base ? ch-48 : -1);
     if (ch >= '0' && ch <= '9') return ch-48;
@@ -700,7 +700,7 @@ public:
     return ch-65+10;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST char upcase1251 (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST char upcase1251 (char ch) noexcept {
     if ((vuint8)ch < 128) return ch-(ch >= 'a' && ch <= 'z' ? 32 : 0);
     if ((vuint8)ch >= 224 /*&& (vuint8)ch <= 255*/) return (vuint8)ch-32;
     if ((vuint8)ch == 184 || (vuint8)ch == 186 || (vuint8)ch == 191) return (vuint8)ch-16;
@@ -708,7 +708,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST char locase1251 (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST char locase1251 (char ch) noexcept {
     if ((vuint8)ch < 128) return ch+(ch >= 'A' && ch <= 'Z' ? 32 : 0);
     if ((vuint8)ch >= 192 && (vuint8)ch <= 223) return (vuint8)ch+32;
     if ((vuint8)ch == 168 || (vuint8)ch == 170 || (vuint8)ch == 175) return (vuint8)ch+16;
@@ -716,7 +716,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST bool isAlpha2151 (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST bool isAlpha2151 (char ch) noexcept {
     if (ch >= 'A' && ch <= 'Z') return true;
     if (ch >= 'a' && ch <= 'z') return true;
     if ((vuint8)ch >= 191) return true;
@@ -729,7 +729,7 @@ public:
   }
 
   /* koi8-u */
-  static VVA_CHECKRESULT inline VVA_CONST int locaseKOI (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST int locaseKOI (char ch) noexcept {
     if ((vuint8)ch < 128) {
       if (ch >= 'A' && ch <= 'Z') ch += 32;
     } else {
@@ -743,7 +743,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST int upcaseKOI (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST int upcaseKOI (char ch) noexcept {
     if ((vuint8)ch < 128) {
       if (ch >= 'a' && ch <= 'z') ch -= 32;
     } else {
@@ -757,7 +757,7 @@ public:
     return ch;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST bool isAlphaKOI (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST bool isAlphaKOI (char ch) noexcept {
     if (ch >= 'A' && ch <= 'Z') return true;
     if (ch >= 'a' && ch <= 'z') return true;
     if ((vuint8)ch >= 192) return true;
@@ -769,7 +769,7 @@ public:
     return false;
   }
 
-  static VVA_CHECKRESULT inline VVA_CONST bool isAlphaAscii (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST bool isAlphaAscii (char ch) noexcept {
     return
       (ch >= 'A' && ch <= 'Z') ||
       (ch >= 'a' && ch <= 'z');
@@ -777,7 +777,7 @@ public:
 
   // returns length of the following utf-8 sequence from its first char, or -1 for invalid first char
   /*
-  static VVA_CHECKRESULT inline VVA_CONST int utf8CodeLen (char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE VVA_CONST int utf8CodeLen (char ch) noexcept {
     if ((vuint8)ch < 0x80) return 1;
     if ((ch&0xFE) == 0xFC) return 6;
     if ((ch&0xFC) == 0xF8) return 5;
@@ -789,7 +789,7 @@ public:
   */
 
   /*
-  static VVA_CHECKRESULT inline bool isPathDelimiter (const char ch) noexcept {
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isPathDelimiter (const char ch) noexcept {
     #ifdef _WIN32
       return (ch == '/' || ch == '\\' || ch == ':');
     #else
@@ -797,7 +797,7 @@ public:
     #endif
   }
 
-  static VVA_CHECKRESULT inline bool IsPathDelimiter (const char ch) noexcept { return isPathDelimiter(ch); }
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool IsPathDelimiter (const char ch) noexcept { return isPathDelimiter(ch); }
   */
 
   static VVA_CHECKRESULT bool isSafeDiskFileName (const VStr &fname) noexcept { return fname.isSafeDiskFileName(); }
@@ -821,12 +821,12 @@ public:
 };
 
 
-//inline VVA_PURE vuint32 GetTypeHash (const char *s) { return (s && s[0] ? fnvHashBuf(s, strlen(s)) : 1); }
-//inline VVA_PURE vuint32 GetTypeHash (const VStr &s) { return (s.length() ? fnvHashBuf(*s, s.length()) : 1); }
+//VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const char *s) { return (s && s[0] ? fnvHashBuf(s, strlen(s)) : 1); }
+//VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const VStr &s) { return (s.length() ? fnvHashBuf(*s, s.length()) : 1); }
 
 // results MUST be equal
-inline VVA_PURE vuint32 GetTypeHash (const char *s) noexcept { return fnvHashStr(s); }
-inline VVA_PURE vuint32 GetTypeHash (const VStr &s) noexcept { return fnvHashStr(*s); }
+VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const char *s) noexcept { return fnvHashStr(s); }
+VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const VStr &s) noexcept { return fnvHashStr(*s); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -838,7 +838,7 @@ public:
     Reject = 12,
   };
 
-  static VVA_CHECKRESULT inline bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
+  static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
 
 protected:
   vuint32 state;
@@ -847,19 +847,21 @@ public:
   vuint32 codepoint; // decoded codepoint (valid only when decoder is in "complete" state)
 
 public:
-  inline VUtf8DecoderFast () noexcept : state(Accept), codepoint(0) {}
+  VVA_ALWAYS_INLINE VUtf8DecoderFast () noexcept : state(Accept), codepoint(0) {}
 
-  inline void reset () noexcept { state = Accept; codepoint = 0; }
+  VVA_ALWAYS_INLINE VUtf8DecoderFast &operator = (const VUtf8DecoderFast &other) noexcept = default;
+
+  VVA_ALWAYS_INLINE void reset () noexcept { state = Accept; codepoint = 0; }
 
   // is current character valid and complete? take `codepoint` then
-  VVA_CHECKRESULT inline bool complete () const noexcept { return (state == Accept); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool complete () const noexcept { return (state == Accept); }
   // is current character invalid and complete? take `Replacement` then
-  VVA_CHECKRESULT inline bool invalid () const noexcept { return (state == Reject); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool invalid () const noexcept { return (state == Reject); }
   // is current character complete (valid or invaluid)? take `codepoint` then
-  VVA_CHECKRESULT inline bool hasCodePoint () const noexcept { return (state == Accept || state == Reject); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool hasCodePoint () const noexcept { return (state == Accept || state == Reject); }
 
   // process another input byte; returns `true` if codepoint is complete
-  inline bool put (vuint8 c) noexcept {
+  VVA_ALWAYS_INLINE bool put (vuint8 c) noexcept {
     if (state == Reject) { state = Accept; codepoint = 0; } // restart from invalid state
     vuint8 tp = utf8dfa[c];
     codepoint = (state != Accept ? (c&0x3f)|(codepoint<<6) : (0xff>>tp)&c);
