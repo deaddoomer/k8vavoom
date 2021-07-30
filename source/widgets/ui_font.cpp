@@ -1207,6 +1207,9 @@ VTexture *VFont::GetChar (int Chr, CharRect *rect, int *pWidth, int Color) {
   VTexture *Tex = Chars[Idx].Textures ? Chars[Idx].Textures[Color] :
     Chars[Idx].TexNum > 0 ? GTextureManager(Chars[Idx].TexNum) :
     Chars[Idx].BaseTex;
+  // need to do it here, so renderer could get the right dimensions
+  VTexture *HiTex = (Tex ? Tex->GetHighResolutionTexture() : nullptr);
+  if (HiTex) Tex = HiTex;
   if (pWidth) *pWidth = Chars[Idx].Width;
   if (rect) *rect = Chars[Idx].Rect;
   return Tex;
@@ -1236,7 +1239,7 @@ int VFont::GetCharWidth (int Chr) {
 //
 //==========================================================================
 void VFont::MarkUsedColors (VTexture *Tex, bool *Used) {
-  if (!Tex || Tex->Format == TEXFMT_RGBA) return; // wtf?
+  if (!Tex /*|| Tex->Format == TEXFMT_RGBA*/) return; // wtf?
   const vuint8 *Pixels = Tex->GetPixels8();
   int Count = Tex->GetWidth()*Tex->GetHeight();
   for (int i = 0; i < Count; ++i) Used[Pixels[i]] = true;
@@ -1524,6 +1527,7 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
       GCon->Logf(NAME_Error, "font '%s': missing patch '%s' for char #%d", *AName, *LumpName, Char);
       texid = -1;
     }
+
     VTexture *Tex = GTextureManager[texid];
     if (Tex) {
       FFontChar &FChar = Chars.Alloc();
