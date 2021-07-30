@@ -32,7 +32,9 @@ public:
   VVA_ALWAYS_INLINE VStrCI (const char *instr) noexcept : VStr(instr) {}
   VVA_ALWAYS_INLINE VStrCI (const VStr &instr) noexcept : VStr(instr) {}
   VVA_ALWAYS_INLINE VStrCI (const VStrCI &instr) noexcept : VStr(instr) {}
+
   explicit VVA_ALWAYS_INLINE VStrCI (const VName InName) noexcept : VStr(InName) {}
+  explicit VVA_ALWAYS_INLINE VStrCI (const EName InName) noexcept : VStr(InName) {}
 
   explicit VVA_ALWAYS_INLINE VStrCI (char v) noexcept : VStr(v) {}
   explicit VVA_ALWAYS_INLINE VStrCI (bool v) noexcept : VStr(v) {}

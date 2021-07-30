@@ -164,6 +164,7 @@ public:
   VVA_ALWAYS_INLINE VStr (const VStr &instr, int start, int len) noexcept : dataptr(nullptr) { assign(instr.mid(start, len)); }
 
   explicit VVA_ALWAYS_INLINE VStr (const VName InName) noexcept : dataptr(nullptr) { setNameContent(InName); }
+  explicit VVA_ALWAYS_INLINE VStr (const EName InName) noexcept : dataptr(nullptr) { setNameContent(*VName(InName)); }
 
   explicit VVA_ALWAYS_INLINE VStr (char v) noexcept : dataptr(nullptr) { setContent(&v, 1); }
   explicit VVA_ALWAYS_INLINE VStr (bool v) noexcept : dataptr(nullptr) { setContent(v ? "true" : "false"); }
