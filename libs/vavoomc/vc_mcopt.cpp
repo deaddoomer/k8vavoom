@@ -850,6 +850,10 @@ struct Instr {
           case OPC_Builtin_FPow:
             spdelta = -1;
             return;
+          case OPC_Builtin_FloatEquEps:
+          case OPC_Builtin_FloatEquEpsLess:
+            spdelta = -2;
+            return;
           case OPC_Builtin_IntClamp:
           case OPC_Builtin_FloatClamp:
           case OPC_Builtin_VectorClampF:

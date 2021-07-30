@@ -627,6 +627,10 @@ native static final float fmodpos (float x, float y) [builtin FModPos]; // x-n*y
 native static final float length (const TVec vec) [builtin VecLength]; // vector length
 native static final float lengthSquared (const TVec vec) [builtin VecLengthSquared]; // vector length
 native static final float fpow (float x, float y) [builtin FPow];
+
+native static final bool fequeps (float v0, float v1, float eps) [builtin FloatEquEps]; // fabs(v0-v1) <= eps
+native static final bool fequepsless (float v0, float v1, float eps) [builtin FloatEquEps]; // fabs(v0-v1) < eps
+
 alias Length = length;
 alias LengthSquared = lengthSquared;
 // vector length without z component

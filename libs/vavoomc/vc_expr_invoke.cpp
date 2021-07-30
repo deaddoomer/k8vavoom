@@ -2343,6 +2343,26 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       if (!isFiniteF(fvres)) return this;
       e = new VFloatLiteral(fvres, Loc);
       break;
+    case OPC_Builtin_FloatEquEps:
+      if (!CheckSimpleConstArgs(3, (const int []){TYPE_Float, TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst(); // v0
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst(); // v1
+      if (!isFiniteF(fv2)) return this;
+      fvres = Args[2]->GetFloatConst(); // eps
+      if (!isFiniteF(fv2)) return this;
+      e = new VIntLiteral((fabsf(fv-fv2) <= fvres ? 1 : 0), Loc);
+      break;
+    case OPC_Builtin_FloatEquEpsLess:
+      if (!CheckSimpleConstArgs(3, (const int []){TYPE_Float, TYPE_Float})) return this;
+      fv = Args[0]->GetFloatConst(); // v0
+      if (!isFiniteF(fv)) return this;
+      fv2 = Args[1]->GetFloatConst(); // v1
+      if (!isFiniteF(fv2)) return this;
+      fvres = Args[2]->GetFloatConst(); // eps
+      if (!isFiniteF(fv2)) return this;
+      e = new VIntLiteral((fabsf(fv-fv2) < fvres ? 1 : 0), Loc);
+      break;
     case OPC_Builtin_VecLength:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();

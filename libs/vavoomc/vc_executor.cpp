@@ -2903,6 +2903,8 @@ func_loop:
             sp -= 1;
             break;
           case OPC_Builtin_FPow: sp[-2].f = powf(sp[-2].f, sp[-1].f); sp -= 1; break;
+          case OPC_Builtin_FloatEquEps: /*GLog.Logf(NAME_Debug, "v0=%f; v1=%f; eps=%f; diff=%f; res=%d", sp[-3].f, sp[-2].f, sp[-1].f, fabsf(sp[-2].f-sp[-3].f), (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f));*/ sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f); sp -= 2; break;
+          case OPC_Builtin_FloatEquEpsLess: sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) < sp[-1].f); sp -= 2; break;
           case OPC_Builtin_VecLength:
             if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
             sp[-3].f = sqrtf(VSUM3(sp[-1].f*sp[-1].f, sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f));

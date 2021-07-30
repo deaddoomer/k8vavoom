@@ -58,6 +58,8 @@ enum {
   DECLARE_OPC_BUILTIN(FMod),
   DECLARE_OPC_BUILTIN(FModPos),
   DECLARE_OPC_BUILTIN(FPow),
+  DECLARE_OPC_BUILTIN(FloatEquEps), // v0, v1, eps
+  DECLARE_OPC_BUILTIN(FloatEquEpsLess), // v0, v1, eps
   DECLARE_OPC_BUILTIN(VecLength),
   DECLARE_OPC_BUILTIN(VecLengthSquared),
   DECLARE_OPC_BUILTIN(VecLength2D),
