@@ -47,7 +47,7 @@ static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, 
     VExpression *val = ParseExpressionNoAssign(sc, Class);
     sc->Expect(")");
     if (!val) sc->Error("invalid assignment");
-    VExpression *dest = new VDecorateUserVar(VName(*varName), stloc);
+    VExpression *dest = new VDecorateUserVar(varName, stloc);
     return new VAssignment(VAssignment::Assign, dest, val, stloc);
   } else if (FuncName.strEquCI("A_SetUserArray") || FuncName.strEquCI("A_SetUserArrayFloat")) {
     auto stloc = sc->GetVCLoc();
@@ -65,7 +65,7 @@ static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, 
     VExpression *val = ParseExpressionNoAssign(sc, Class);
     if (!val) sc->Error("decorate parsing error");
     sc->Expect(")");
-    VExpression *dest = new VDecorateUserVar(VName(*varName), idx, stloc);
+    VExpression *dest = new VDecorateUserVar(varName, idx, stloc);
     return new VAssignment(VAssignment::Assign, dest, val, stloc);
   }
   return nullptr;
@@ -346,7 +346,7 @@ static VExpression *ParseConvertToUserVar (VScriptParser * /*sc*/, VClass * /*Cl
   if (((VDecorateSingleName *)lhs)->localAccess) return lhs;
   VStr vn = ((VDecorateSingleName *)lhs)->Name;
   // decorate uservar should resolve to the special thing
-  VExpression *e = new VDecorateUserVar(*vn, lhs->Loc);
+  VExpression *e = new VDecorateUserVar(vn, lhs->Loc);
   //GCon->Logf(NAME_Debug, "%s: CVT: `%s` -- %s -> %s", *lhs->Loc.toStringNoCol(), *vn, *lhs->toString(), *e->toString());
   delete lhs;
   return e;
@@ -503,7 +503,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
       sc->Expect("]");
       //op = new VArrayElement(op, ind, l);
       if (!op->IsDecorateSingleName()) sc->Error("cannot index non-array");
-      VExpression *e = new VDecorateUserVar(*((VDecorateSingleName *)op)->Name, ind, op->Loc);
+      VExpression *e = new VDecorateUserVar(((VDecorateSingleName *)op)->Name, ind, op->Loc);
       delete op;
       op = e;
     }

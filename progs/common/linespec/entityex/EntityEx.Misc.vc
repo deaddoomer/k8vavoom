@@ -3542,6 +3542,7 @@ final state FindJumpState (name Label) {
 //
 //===========================================================================
 final state FindJumpStateOfs (int offset) {
+  //printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`!", self, offset);
   state res = XLevel.CallingState;
   if (!res) return none;
   if (offset == 0) {
@@ -3558,6 +3559,11 @@ final state FindJumpStateOfs (int offset) {
   if (!res) {
     printwarn("Bad jump offset (runaway) in decorate action for '%C' (%s)", self, XLevel.CallingState);
   }
+  #if 0
+  else {
+    printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`! dest is %s", self, offset, res);
+  }
+  #endif
   return res;
 }
 

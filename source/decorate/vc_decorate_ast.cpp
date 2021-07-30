@@ -28,6 +28,133 @@
 
 //==========================================================================
 //
+//  VDecorateInvocation
+//
+//==========================================================================
+class VDecorateInvocation : public VExpression {
+public:
+  VName Name;
+  VMethod *Func; // if this is not null, use it instead of searching by `Name` (yet `Name` still be valid!)
+  int NumArgs;
+  VState *CallerState; // used for `Func`
+  VExpression *Args[VMethod::MAX_PARAMS+1];
+
+  VDecorateInvocation (VName AName, const TLocation &ALoc, int ANumArgs, VExpression *AArgs[]);
+  VDecorateInvocation (VMethod *AFunc, VName AName, const TLocation &ALoc, int ANumArgs, VExpression *AArgs[]);
+  virtual ~VDecorateInvocation () override;
+  virtual VExpression *SyntaxCopy () override;
+  virtual VExpression *DoResolve (VEmitContext &) override;
+  virtual void Emit (VEmitContext &) override;
+
+  virtual VStr toString () const override;
+
+  void FixKnownShit (VEmitContext &ec, const char *FuncName);
+
+protected:
+  VDecorateInvocation () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
+
+  bool HasFloatArg (VEmitContext &ec);
+};
+
+
+//==========================================================================
+//
+//  VDecorateUserVar
+//
+//  this generates call to _get/_set uservar methods
+//
+//==========================================================================
+class VDecorateUserVar : public VExpression {
+public:
+  VStr fldname;
+  VExpression *index; // array index, if not nullptr
+
+  VDecorateUserVar (VStr afldname, const TLocation &aloc);
+  VDecorateUserVar (VStr afldname, VExpression *aindex, const TLocation &aloc);
+  virtual ~VDecorateUserVar () override;
+  virtual VExpression *SyntaxCopy () override;
+  virtual VExpression *DoResolve (VEmitContext &ec) override;
+  //virtual VExpression *ResolveAssignmentTarget (VEmitContext &ec) override;
+  virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved) override;
+  virtual void Emit (VEmitContext &ec) override;
+  virtual bool IsDecorateUserVar () const override;
+  virtual VStr toString () const override;
+
+protected:
+  VDecorateUserVar () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
+};
+
+
+//==========================================================================
+//
+//  VDecorateAJump
+//
+//  as `A_Jump()` can have insane amounts of arguments, we'll generate
+//  VM code directly instead
+//
+//==========================================================================
+class VDecorateAJump : public VExpression {
+private:
+  VExpression *xstc; // bool(`XLevel.StateCall`) access expression
+  VExpression *xass; // XLevel.StateCall->Result = false
+  VExpression *crnd0; // first call to P_Random()
+  VExpression *crnd1; // second call to P_Random()
+
+public:
+  VExpression *prob; // probability
+  TArray<VExpression *> labels; // jump labels
+  VState *CallerState;
+
+public:
+  VDecorateAJump (const TLocation &aloc);
+  virtual ~VDecorateAJump () override;
+  virtual VExpression *SyntaxCopy () override;
+  virtual VExpression *DoResolve (VEmitContext &ec) override;
+  virtual void Emit (VEmitContext &ec) override;
+  virtual VStr toString () const override;
+
+protected:
+  VDecorateAJump () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
+};
+
+
+
+//==========================================================================
+//
+//  VDecorateRndPick
+//
+//  as `[f]randompick()` can have insane amounts of arguments, we'll
+//  generate VM code directly instead
+//
+//==========================================================================
+class VDecorateRndPick : public VExpression {
+private:
+  VExpression *crnd0; // first call to P_Random()
+
+public:
+  TArray<VExpression *> numbers; // jump labels
+  bool asFloat;
+
+public:
+  VDecorateRndPick (bool aAsFloat, const TLocation &aloc);
+  virtual ~VDecorateRndPick () override;
+  virtual VExpression *SyntaxCopy () override;
+  virtual VExpression *DoResolve (VEmitContext &ec) override;
+  virtual void Emit (VEmitContext &ec) override;
+  virtual VStr toString () const override;
+
+protected:
+  VDecorateRndPick () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
+};
+
+
+
+//==========================================================================
+//
 //  tryStringAsFloat
 //
 //==========================================================================
@@ -483,65 +610,23 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
         //VStr Lbl = GetStrConst(ec.Package);
         VStr Lbl;
         if (IsStrConst()) Lbl = GetStrConst(ec.Package); else { VDecorateSingleName *e = (VDecorateSingleName *)this; Lbl = VStr(e->Name); }
-        if (Lbl.startsWithCI("user_")) {
-          ParseWarningAsError(Loc, "uservars for state jumps are not supported (arg #%d for action `%s`). please, don't do this, this is a misfeature!", argnum, funcName);
-        }
-        //k8: actually, don't resolve any "::" here, our dynamic resolver will do this for us
-        /*
-        int DCol = Lbl.IndexOf("::");
-        // always use dynamic resolving for `A_Jump()`
-        if (DCol >= 0 && !VStr::strEqu(funcName, "A_Jump")) {
-          // jump to a specific parent class state, resolve it and pass value directly
-          VStr ClassName(Lbl, 0, DCol);
-          VClass *CheckClass;
-          if (ClassName.strEquCI("Super")) {
-            CheckClass = ec.SelfClass->ParentClass;
-            if (!CheckClass) {
-              ParseError((aloc ? *aloc : Loc), "`%s` argument #%d wants `Super` without superclass!", funcName, argnum);
-              delete this;
-              return nullptr;
-            }
-          } else {
-            CheckClass = VClass::FindClassNoCase(*ClassName);
-            if (!CheckClass) {
-              ParseError((aloc ? *aloc : Loc), "No such class `%s` (argument #%d for `%s`)", *ClassName, argnum, funcName);
-              delete this;
-              return nullptr;
-            }
-            if (!ec.SelfClass->IsChildOf(CheckClass)) {
-              ParseError((aloc ? *aloc : Loc), "`%s` is not a subclass of `%s` (argument #%d for `%s`)", ec.SelfClass->GetName(), CheckClass->GetName(), argnum, funcName);
-              delete this;
-              return nullptr;
-            }
-          }
-          vassert(CheckClass);
-          VStr LblName(Lbl, DCol+2, Lbl.Length()-DCol-2);
-          TArray<VName> Names;
-          VMemberBase::StaticSplitStateLabel(LblName, Names);
-          VStateLabel *StLbl = CheckClass->FindStateLabel(Names, true);
-          if (!StLbl) {
-            if (VMemberBase::optDeprecatedLaxStates) {
-              ParseWarningAsError((aloc ? *aloc : Loc), "No such state '%s' in class '%s' (argument #%d for `%s`)", *Lbl, CheckClass->GetName(), argnum, funcName);
-              // emulate virtual state jump, and let VM deal with it
-              VExpression *TmpArgs[1];
-              TmpArgs[0] = this;
-              return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
-            } else {
-              ParseError((aloc ? *aloc : Loc), "No such state '%s' in class '%s' (argument #%d for `%s`)", *Lbl, CheckClass->GetName(), argnum, funcName);
-              delete this;
-              return nullptr;
-            }
-          }
-          VExpression *enew = new VStateConstant(StLbl->State, Loc);
-          delete this;
-          return enew;
-        }
-        */
+        //k8: don't resolve any "::" here, our dynamic resolver will do this for us
         // it's a virtual state jump
         //ParseWarning(Args[i]->Loc, "***VSJMP `%s`: <%s>", Func->GetName(), *Lbl);
         VExpression *TmpArgs[1];
-        TmpArgs[0] = this;
-        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
+        //FIXME: support user arrays here!
+        if (Lbl.startsWithCI("user_")) {
+          //ParseWarningAsError(Loc, "uservars for state jumps are not supported (arg #%d for action `%s`). please, don't do this, this is a misfeature!", argnum, funcName);
+          // uservar; route with `FindJumpStateOfs()`
+          //GCon->Logf(NAME_Debug, "DECORATE: %s: routing uservar (%s) state with `FindJumpStateOfs()`", *Loc.toStringNoCol(), *Lbl);
+          VExpression *enew = new VDecorateUserVar(Lbl, Loc);
+          delete this;
+          TmpArgs[0] = enew;
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, Loc, 1, TmpArgs);
+        } else {
+          TmpArgs[0] = this;
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
+        }
       }
       // none as literal?
       if (IsNoneLiteral()) {
@@ -581,133 +666,6 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
   if (massaged) *massaged = false;
   return this;
 }
-
-
-//==========================================================================
-//
-//  VDecorateInvocation
-//
-//==========================================================================
-class VDecorateInvocation : public VExpression {
-public:
-  VName Name;
-  VMethod *Func; // if this is not null, use it instead of searching by `Name` (yet `Name` still be valid!)
-  int NumArgs;
-  VState *CallerState; // used for `Func`
-  VExpression *Args[VMethod::MAX_PARAMS+1];
-
-  VDecorateInvocation (VName AName, const TLocation &ALoc, int ANumArgs, VExpression *AArgs[]);
-  VDecorateInvocation (VMethod *AFunc, VName AName, const TLocation &ALoc, int ANumArgs, VExpression *AArgs[]);
-  virtual ~VDecorateInvocation () override;
-  virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &) override;
-  virtual void Emit (VEmitContext &) override;
-
-  virtual VStr toString () const override;
-
-  void FixKnownShit (VEmitContext &ec, const char *FuncName);
-
-protected:
-  VDecorateInvocation () {}
-  virtual void DoSyntaxCopyTo (VExpression *e) override;
-
-  bool HasFloatArg (VEmitContext &ec);
-};
-
-
-//==========================================================================
-//
-//  VDecorateUserVar
-//
-//  this generates call to _get/_set uservar methods
-//
-//==========================================================================
-class VDecorateUserVar : public VExpression {
-public:
-  VName fldname;
-  VExpression *index; // array index, if not nullptr
-
-  VDecorateUserVar (VName afldname, const TLocation &aloc);
-  VDecorateUserVar (VName afldname, VExpression *aindex, const TLocation &aloc);
-  virtual ~VDecorateUserVar () override;
-  virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &ec) override;
-  //virtual VExpression *ResolveAssignmentTarget (VEmitContext &ec) override;
-  virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved) override;
-  virtual void Emit (VEmitContext &ec) override;
-  virtual bool IsDecorateUserVar () const override;
-  virtual VStr toString () const override;
-
-protected:
-  VDecorateUserVar () {}
-  virtual void DoSyntaxCopyTo (VExpression *e) override;
-};
-
-
-//==========================================================================
-//
-//  VDecorateAJump
-//
-//  as `A_Jump()` can have insane amounts of arguments, we'll generate
-//  VM code directly instead
-//
-//==========================================================================
-class VDecorateAJump : public VExpression {
-private:
-  VExpression *xstc; // bool(`XLevel.StateCall`) access expression
-  VExpression *xass; // XLevel.StateCall->Result = false
-  VExpression *crnd0; // first call to P_Random()
-  VExpression *crnd1; // second call to P_Random()
-
-public:
-  VExpression *prob; // probability
-  TArray<VExpression *> labels; // jump labels
-  VState *CallerState;
-
-public:
-  VDecorateAJump (const TLocation &aloc);
-  virtual ~VDecorateAJump () override;
-  virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &ec) override;
-  virtual void Emit (VEmitContext &ec) override;
-  virtual VStr toString () const override;
-
-protected:
-  VDecorateAJump () {}
-  virtual void DoSyntaxCopyTo (VExpression *e) override;
-};
-
-
-
-//==========================================================================
-//
-//  VDecorateRndPick
-//
-//  as `[f]randompick()` can have insane amounts of arguments, we'll
-//  generate VM code directly instead
-//
-//==========================================================================
-class VDecorateRndPick : public VExpression {
-private:
-  VExpression *crnd0; // first call to P_Random()
-
-public:
-  TArray<VExpression *> numbers; // jump labels
-  bool asFloat;
-
-public:
-  VDecorateRndPick (bool aAsFloat, const TLocation &aloc);
-  virtual ~VDecorateRndPick () override;
-  virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &ec) override;
-  virtual void Emit (VEmitContext &ec) override;
-  virtual VStr toString () const override;
-
-protected:
-  VDecorateRndPick () {}
-  virtual void DoSyntaxCopyTo (VExpression *e) override;
-};
-
 
 
 //==========================================================================
@@ -953,7 +911,7 @@ void VDecorateInvocation::Emit (VEmitContext &) {
 //  VDecorateUserVar::VDecorateUserVar
 //
 //==========================================================================
-VDecorateUserVar::VDecorateUserVar (VName afldname, const TLocation &aloc)
+VDecorateUserVar::VDecorateUserVar (VStr afldname, const TLocation &aloc)
   : VExpression(aloc)
   , fldname(afldname)
   , index(nullptr)
@@ -966,7 +924,7 @@ VDecorateUserVar::VDecorateUserVar (VName afldname, const TLocation &aloc)
 //  VDecorateUserVar::VDecorateUserVar
 //
 //==========================================================================
-VDecorateUserVar::VDecorateUserVar (VName afldname, VExpression *aindex, const TLocation &aloc)
+VDecorateUserVar::VDecorateUserVar (VStr afldname, VExpression *aindex, const TLocation &aloc)
   : VExpression(aloc)
   , fldname(afldname)
   , index(aindex)
@@ -981,7 +939,7 @@ VDecorateUserVar::VDecorateUserVar (VName afldname, VExpression *aindex, const T
 //==========================================================================
 VDecorateUserVar::~VDecorateUserVar () {
   delete index; index = nullptr;
-  fldname = NAME_None; // just4fun
+  //fldname.clear(); // just4fun
 }
 
 
@@ -1018,7 +976,7 @@ void VDecorateUserVar::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VDecorateUserVar::DoResolve (VEmitContext &ec) {
   if (!ec.SelfClass) Sys_Error("VDecorateUserVar::DoResolve: internal compiler error");
   //GLog.Logf(NAME_Debug, "%s: user field '%s'", *Loc.toString(), *fldname);
-  VName fldnamelo = (fldname == NAME_None ? fldname : VName(*fldname, VName::AddLower));
+  VName fldnamelo = (fldname.isEmpty() ? NAME_None : VName(*fldname, VName::AddLower));
   VName fldn = ec.SelfClass->FindDecorateStateFieldTrans(fldnamelo);
   if (fldn == NAME_None) {
     ParseError(Loc, "field `%s` is not found in class `%s`", *fldname, *ec.SelfClass->GetFullName());
@@ -1065,7 +1023,7 @@ VExpression *VDecorateUserVar::ResolveCompleteAssign (VEmitContext &ec, VExpress
   if (!ec.SelfClass) Sys_Error("VDecorateUserVar::DoResolve: internal compiler error");
   if (!val) { delete this; return nullptr; }
   resolved = true; // anyway
-  VName fldnamelo = (fldname == NAME_None ? fldname : VName(*fldname, VName::AddLower));
+  VName fldnamelo = (fldname.isEmpty() ? NAME_None : VName(*fldname, VName::AddLower));
   VName fldn = ec.SelfClass->FindDecorateStateFieldTrans(fldnamelo);
   if (fldn == NAME_None) {
     ParseError(Loc, "field `%s` is not found in class `%s`", *fldname, *ec.SelfClass->GetFullName());
@@ -1212,7 +1170,7 @@ VExpression *VDecorateSingleName::DoResolve (VEmitContext &ec) {
 
   // route uservar
   if (VStr::startsWithCI(*Name, "user_")) {
-    VExpression *e = new VDecorateUserVar(VName(*Name, VName::Add), Loc);
+    VExpression *e = new VDecorateUserVar(Name, Loc);
     delete this;
     return e->Resolve(ec);
   }
