@@ -928,6 +928,15 @@ struct DiskFile {
 //==========================================================================
 static void CreateFileList (TArray<DiskFile> &flist, VStr diskpath, VStr destpath, bool recurse, VStr ext) {
   if (Sys_FileExists(diskpath.appendPath(".baseignoredir"))) return;
+
+  VStr de = diskpath;
+  while (!de.isEmpty() && (de.endsWith("/") || de.endsWith("\\"))) de.chopRight(1);
+  de = de.extractFileBaseName();
+  if (de.startsWith("_") || de.startsWith(".")) {
+    //fprintf(stderr, "IGNORED: <%s> : <%s> -> <%s>\n", *diskpath, *de, *destpath);
+    return;
+  }
+
   auto dir = Sys_OpenDir(diskpath, recurse); // want directories?
   if (!dir) return;
   if (destpath.length()) {
@@ -938,10 +947,12 @@ static void CreateFileList (TArray<DiskFile> &flist, VStr diskpath, VStr destpat
     for (char *cp = diskpath.GetMutableCharPointer(0); *cp; ++cp) if (*cp == '\\') *cp = '/';
     if (diskpath[diskpath.length()-1] != '/') diskpath += "/";
   }
+
   TArray<VStr> dirnames;
   for (;;) {
     VStr fname = Sys_ReadDir(dir);
     if (fname.isEmpty()) break;
+    if (fname.startsWith("_") || fname.startsWith(".")) continue;
     if (fname[fname.length()-1] == '/') {
       //CreateFileList(flist, diskpath+fname, destpath+fname, recurse, ext);
       dirnames.append(fname);
