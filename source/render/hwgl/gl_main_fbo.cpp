@@ -35,6 +35,8 @@
 #include "gl_local.h"
 
 
+//#define VVGL_FBO_USE_DEPTH_TEXTURE
+
 static ColorCV letterboxColor(&gl_letterbox_color);
 static VCvarB gl_enable_fp_zbuffer("gl_enable_fp_zbuffer", false, "Enable using of floating-point depth buffer for OpenGL3+?", CVAR_Archive|CVAR_PreInit);
 
@@ -86,10 +88,17 @@ void VOpenGLDrawer::FBO::destroy () {
   mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
   glDeleteTextures(1, &mColorTid);
+  #ifndef VVGL_FBO_USE_DEPTH_TEXTURE
   if (mDepthStencilRBO) {
     mOwner->p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
     mOwner->p_glDeleteRenderbuffers(1, &mDepthStencilRBO);
   }
+  #else
+  if (mDepthStencilRBO) {
+    mOwner->p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0);
+    glDeleteTextures(1, &mDepthStencilRBO);
+  }
+  #endif
   mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, 0);
   mOwner->p_glDeleteFramebuffers(1, &mFBO);
   // clear object
@@ -179,6 +188,7 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
 
     //GCon->Log(NAME_Init, "OpenGL: using combined depth/stencil renderbuffer for FBO");
 
+    #ifndef VVGL_FBO_USE_DEPTH_TEXTURE
     // create a render buffer object for the depth/stencil buffer
     aowner->p_glGenRenderbuffers(1, &mDepthStencilRBO);
     if (mDepthStencilRBO == 0) Sys_Error("OpenGL: cannot create depth/stencil render buffer for FBO: error is %s", VGetGLErrorStr(glGetError()));
@@ -201,6 +211,22 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
     // bind it to FBO
     aowner->p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mDepthStencilRBO);
     GLDRW_CHECK_ERROR("bind depth/stencil renderbuffer storage");
+
+    #else
+    // depthstencil texture
+    (void)depthStencilFormat;
+    glGenTextures(1, &mDepthStencilRBO);
+    glBindTexture(GL_TEXTURE_2D, mDepthStencilRBO);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexImage2D(GL_TEXTURE_2D, 0, /*depthStencilFormat*/GL_DEPTH24_STENCIL8, awidth, aheight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0);
+    GLDRW_CHECK_ERROR("error creating depth/stencil FBO texture");
+    aowner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, mDepthStencilRBO, 0);
+    GLDRW_CHECK_ERROR("error attaching depth/stencil FBO texture");
+    #endif
   }
 
   {
