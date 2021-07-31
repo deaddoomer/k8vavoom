@@ -421,6 +421,8 @@ typedef void (APIENTRY *glFramebufferRenderbuffer_t) (GLenum target, GLenum atta
 
 typedef void (APIENTRY *glGenerateMipmap_t) (GLenum target);
 
+typedef void (APIENTRY *glDrawBuffers_t) (GLsizei n, const GLenum *bufs);
+
 #elif defined(VV_GLIMPORTS)
 // here, `VGLAPIPTR(name,required)` should be defined
 # ifndef VGLAPIPTR
@@ -544,6 +546,8 @@ typedef void (APIENTRY *glGenerateMipmap_t) (GLenum target);
   VGLAPIPTR(glDepthBounds, false);
   #endif
   VGLAPIPTR(glBlitFramebuffer, false);
+
+  VGLAPIPTR(glDrawBuffers, true);
 
   VGLAPIPTR(glGetProgramiv, true);
   //VGLAPIPTR(glGetPointerv, true);
