@@ -145,6 +145,18 @@ menudef SpriteVideoOptions {
     help = "Translucency for 'Translucent' fuzzy effect style.";
   }
 
+  option enum {
+    title = "Fuzz Type";
+    cvar = r_fuzzmode;
+    list {
+      "Vanilla",
+      "Smooth",
+      "Noise",
+      "Vertical",
+    }
+    help = "Fuzzy (like Specter) effect type.";
+  }
+
 
   header "Texture Filtering";
 

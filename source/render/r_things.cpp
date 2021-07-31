@@ -55,7 +55,8 @@ static VCvarB r_thing_faster_collect("r_thing_faster_collect", false, "Use faste
 VCvarB r_draw_mobjs("r_draw_mobjs", true, "Draw mobjs?", /*CVAR_Archive|*/CVAR_PreInit);
 VCvarB r_draw_psprites("r_draw_psprites", true, "Draw psprites?", /*CVAR_Archive|*/CVAR_PreInit);
 VCvarI r_drawfuzz("r_drawfuzz", "1", "Fuzz effect (0:alpha; 1:shadow)", CVAR_Archive);
-VCvarF r_fuzzalpha("r_fuzzalpha", "0.34", "Alpha for fuzzy sprites.", CVAR_Archive);
+VCvarF r_fuzzalpha("r_fuzzalpha", "0.34", "Alpha for alpha-based fuzzy sprites.", CVAR_Archive);
+VCvarI r_fuzzmode("r_fuzzmode", "0", "Fuzzy mode (0:vanilla; 1..3:noise).", CVAR_Archive);
 VCvarF r_transsouls("r_transsouls", "1", "Lost Souls alpha.", CVAR_Archive);
 
 VCvarB r_models("r_models", true, "Allow 3d models?", CVAR_Archive);

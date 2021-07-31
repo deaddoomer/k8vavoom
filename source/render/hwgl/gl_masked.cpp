@@ -25,6 +25,8 @@
 //**************************************************************************
 #include "gl_local.h"
 
+extern VCvarI r_fuzzmode;
+
 
 //==========================================================================
 //
@@ -326,6 +328,8 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
         (ri.light&255)/255.0f, ri.alpha);
       */
       SurfMaskedFuzzy.SetTime(time);
+      SurfMaskedFuzzy.SetMode(r_fuzzmode.asInt());
+      SurfMaskedFuzzy.SetViewHeight(currentActiveFBO->getHeight());
       //FIXME: lighting!
       SurfMaskedFuzzy.SetFogFade((fogAllowed ? ri.fade : 0), ri.alpha);
       SurfMaskedFuzzy.SetAlphaRef(trans ? getAlphaThreshold() : 0.666f);
