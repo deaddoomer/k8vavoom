@@ -2903,6 +2903,7 @@ func_loop:
             sp -= 1;
             break;
           case OPC_Builtin_FPow: sp[-2].f = powf(sp[-2].f, sp[-1].f); sp -= 1; break;
+          case OPC_Builtin_FLog2: sp[-1].f = log2f(sp[-1].f); break;
           case OPC_Builtin_FloatEquEps: /*GLog.Logf(NAME_Debug, "v0=%f; v1=%f; eps=%f; diff=%f; res=%d", sp[-3].f, sp[-2].f, sp[-1].f, fabsf(sp[-2].f-sp[-3].f), (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f));*/ sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f); sp -= 2; break;
           case OPC_Builtin_FloatEquEpsLess: sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) < sp[-1].f); sp -= 2; break;
           case OPC_Builtin_VecLength:
