@@ -65,5 +65,5 @@ void main () {
   FinalColor.rgb = vec3(0.0,0.0,0.0);
   $include "common/fog_calc.fs"
 
-  gl_FragColor = clamp(FinalColor, 0.0, 1.0);
+  out_FragValue0 = clamp(FinalColor, 0.0, 1.0);
 }

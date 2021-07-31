@@ -21,5 +21,5 @@ void main () {
   //if (FinalColor.a < ALPHA_MIN) discard;
 #endif
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

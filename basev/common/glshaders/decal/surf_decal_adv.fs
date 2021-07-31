@@ -40,5 +40,5 @@ void main () {
   FinalColor.rgb *= FinalColor.a;
 
   //FinalColor = ambColor;
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

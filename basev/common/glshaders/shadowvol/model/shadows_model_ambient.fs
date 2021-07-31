@@ -25,5 +25,5 @@ void main () {
   FinalColor.rgb = Light.rgb;
   FinalColor.a = clamp(InAlpha*(ClampTransp*(ClampTransp*(3.0-(2.0*ClampTransp)))), 0.0, 1.0);
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

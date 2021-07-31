@@ -13,5 +13,5 @@ void main () {
   vec4 FinalColor;
   FinalColor.rgb = vec3(0.0, 0.0, 0.0);
   FinalColor.a = Transp*Transp*(3.0-(2.0*Transp));
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

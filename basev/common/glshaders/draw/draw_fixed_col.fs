@@ -11,5 +11,5 @@ void main () {
   FinalColor_1.g = Color.g*Color.a;
   FinalColor_1.b = Color.b*Color.a;
   FinalColor_1.a = Color.a;
-  gl_FragColor = FinalColor_1;
+  out_FragValue0 = FinalColor_1;
 }

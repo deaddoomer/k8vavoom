@@ -42,9 +42,9 @@
 
 #ifdef VV_SHADOWMAPS
   //shadowMul = clamp(shadowMul*1.0, 0.0, 1.0); //debug
-  //gl_FragColor = vec4(shadowMul, 0.0, 0.0, 1.0);
-  //gl_FragColor = vec4(clamp(fromLightToFragment.x, 0.0, 1.0), 0.0, 0.0, 1.0);
-  gl_FragColor = vec4(LightColor, finalA);
+  //out_FragValue0 = vec4(shadowMul, 0.0, 0.0, 1.0);
+  //out_FragValue0 = vec4(clamp(fromLightToFragment.x, 0.0, 1.0), 0.0, 0.0, 1.0);
+  out_FragValue0 = vec4(LightColor, finalA);
 #else
-  gl_FragColor = vec4(LightColor, finalA);
+  out_FragValue0 = vec4(LightColor, finalA);
 #endif

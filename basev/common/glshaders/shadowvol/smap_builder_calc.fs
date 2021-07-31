@@ -17,4 +17,4 @@ $include "shadowvol/smap_common_defines.inc"
   //dist += 0.18;
   #endif
   if (dist >= LightRadius) discard;
-  gl_FragColor.r = dist/LightRadius;
+  out_FragValue0.r = dist/LightRadius;

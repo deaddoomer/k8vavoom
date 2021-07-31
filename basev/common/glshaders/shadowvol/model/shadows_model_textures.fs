@@ -47,5 +47,5 @@ void main () {
   if (FinalColor.z < 0) { FinalColor.r = 1.0; FinalColor.z = -FinalColor.z; }
 #endif
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

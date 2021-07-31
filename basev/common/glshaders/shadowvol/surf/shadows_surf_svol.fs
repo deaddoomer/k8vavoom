@@ -3,5 +3,5 @@ $include "common/common.inc"
 
 
 void main () {
-  //gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+  //out_FragValue0 = vec4(0.0, 0.0, 0.0, 0.0);
 }

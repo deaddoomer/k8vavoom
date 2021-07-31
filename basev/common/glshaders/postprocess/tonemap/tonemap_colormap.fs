@@ -62,5 +62,5 @@ vec3 Tonemap (vec3 color) {
 
 void main () {
   vec3 color = texture2D(ScreenFBO, TextureCoordinate).rgb;
-  gl_FragColor = vec4(Tonemap(color), 1.0);
+  out_FragValue0 = vec4(Tonemap(color), 1.0);
 }

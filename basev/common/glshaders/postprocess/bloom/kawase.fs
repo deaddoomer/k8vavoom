@@ -19,6 +19,6 @@ void main () {
      texture2D(TextureSource, TexCoord2)+
      texture2D(TextureSource, TexCoord3)+
      texture2D(TextureSource, TexCoord4))/4.0;
-  gl_FragColor = vec4(clr.rgb, 1.0);
-  //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  out_FragValue0 = vec4(clr.rgb, 1.0);
+  //out_FragValue0 = vec4(1.0, 0.0, 0.0, 1.0);
 }

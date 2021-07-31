@@ -29,5 +29,5 @@ void main () {
   FinalColor.rgb = vec3(depth.r, depth.g, depth.b);
   //FinalColor.rgb = vec3(TextureCoordinate.x, TextureCoordinate.y, CubeZ);
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

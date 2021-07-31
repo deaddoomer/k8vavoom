@@ -14,5 +14,5 @@ void main () {
   const float Transp = 0.9;
 #endif
 
-  gl_FragColor = Light*Transp*Transp*(3.0-2.0*Transp);
+  out_FragValue0 = Light*Transp*Transp*(3.0-2.0*Transp);
 }

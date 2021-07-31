@@ -18,5 +18,5 @@ void main () {
 
   $include "common/fog_calc.fs"
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

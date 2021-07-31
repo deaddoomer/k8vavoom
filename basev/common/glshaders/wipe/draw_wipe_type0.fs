@@ -43,5 +43,5 @@ void main () {
   // convert to premultiplied
   FinalColor.rgb *= FinalColor.a;
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

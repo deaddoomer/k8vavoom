@@ -33,5 +33,5 @@ void main () {
   FinalColor.rgb = TexColor.rgb*FinalColor.a;
 #endif
 
-  gl_FragColor = FinalColor;
+  out_FragValue0 = FinalColor;
 }

@@ -62,5 +62,5 @@ void main () {
 
   color = do_cas(color, TextureCoordinate, SharpenIntensity);
 
-  gl_FragColor = vec4(color, 1.0f);
+  out_FragValue0 = vec4(color, 1.0f);
 }
