@@ -3,7 +3,8 @@
 
 #define ALPHA_MIN     (0.012)
 // shaders can get "semi-translucent" textures; reject all translucent pixels
-#define ALPHA_MASKED  (1.0)
+//#define ALPHA_MASKED  (1.0)
+#define ALPHA_MASKED  (0.666)
 
 #ifdef VV_MRT_RENDERING
 # define out_FragValue0  gl_FragData[0]
