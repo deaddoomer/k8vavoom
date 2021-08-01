@@ -101,6 +101,12 @@ protected:
   };
 
 protected:
+  static vuint8 *subwarned; // for warning about subsectors with less than 3 segs
+
+  // returns previous "warned" flags, and sets it
+  bool CheckAndSetSubWarned (const subsector_t *sub) noexcept;
+
+protected:
   //VLevel *Level; // moved to `VRenderLevelPublic()`
   VEntity *ViewEnt;
   VPortal *CurrPortal;

@@ -129,7 +129,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   int vcount = sub->numlines;
 
   if (vcount < 3) {
-    GCon->Logf(NAME_Warning, "CreateSecSurface: subsector #%d of sector #%d has only #%d seg%s", (int)(ptrdiff_t)(sub-Level->Subsectors), (int)(ptrdiff_t)(sub->sector-Level->Sectors), vcount, (vcount != 1 ? "s" : ""));
+    if (!CheckAndSetSubWarned(sub)) GCon->Logf(NAME_Warning, "CreateSecSurface: subsector #%d of sector #%d has only #%d seg%s", (int)(ptrdiff_t)(sub-Level->Subsectors), (int)(ptrdiff_t)(sub->sector-Level->Sectors), vcount, (vcount != 1 ? "s" : ""));
     if (vcount < 1) Sys_Error("ZERO SEGS. WTF?!");
     if (!ssurf) {
       // new sector surface

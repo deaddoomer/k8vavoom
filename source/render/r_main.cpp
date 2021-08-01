@@ -208,6 +208,7 @@ VCvarB prof_r_bsp_mobj_collect("prof_r_bsp_mobj_collect", false, "Show total mob
 VRenderLevelShared::PPNode *VRenderLevelShared::pphead = nullptr;
 VRenderLevelShared::PPNode *VRenderLevelShared::ppcurr = nullptr;
 int VRenderLevelShared::ppMinNodeSize = 0;
+vuint8 *VRenderLevelShared::subwarned = nullptr;
 
 
 struct AspectInfo {
@@ -760,6 +761,9 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   PortalUsingStencil = 0;
   //VPortal::ResetFrame();
 
+  subwarned = (vuint8 *)Z_Calloc(Level->NumSubsectors+1);
+  //memset(subwarned, 0, Level->NumSubsectors+1);
+
   BspVisFrame = 1;
   BspVisData = new unsigned[Level->NumSubsectors+1];
   memset(BspVisData, 0, (Level->NumSubsectors+1)*sizeof(BspVisData[0]));
@@ -842,6 +846,9 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
 //
 //==========================================================================
 VRenderLevelShared::~VRenderLevelShared () {
+  Z_Free(subwarned);
+  subwarned = nullptr;
+
   VDrawer::LightFadeMult = 1.0f; // restore it
   if (Drawer) {
     Drawer->ClearCameraFBOs();
@@ -994,6 +1001,22 @@ VRenderLevelShared::~VRenderLevelShared () {
   KillPortalPool();
 
   if (Level && Level->Renderer == this) Level->Renderer = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::CheckAndSetSubWarned
+//
+//  returns previous "warned" flags, and sets it
+//
+//==========================================================================
+bool VRenderLevelShared::CheckAndSetSubWarned (const subsector_t *sub) noexcept {
+  if (!sub || !subwarned) return true; // shut up!
+  vuint8 *p = subwarned+(unsigned)(ptrdiff_t)(sub-Level->Subsectors);
+  const bool res = (*p != 0);
+  *p = 1;
+  return res;
 }
 
 
