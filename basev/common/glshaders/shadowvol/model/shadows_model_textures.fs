@@ -36,9 +36,13 @@ void main () {
 #else
   FinalColor.rgb = TexColor.rgb;
 #endif
+  FinalColor.a = TexColor.a;
 
-  float ClampTransp = clamp((TexColor.a-0.1)/0.9, 0.0, 1.0);
-  FinalColor.a = TexColor.a*(ClampTransp*(ClampTransp*(3.0-(2.0*ClampTransp))))*InAlpha;
+#ifdef VV_OLD_VAVOOM_CLAMPTRANSP
+  float ClampTransp = clamp((FinalColor.a-0.1)/0.9, 0.0, 1.0);
+  FinalColor.a *= ClampTransp*(ClampTransp*(3.0-(2.0*ClampTransp)));
+#endif
+  FinalColor.a *= InAlpha;
 
 #if 0
   FinalColor.x = 0;

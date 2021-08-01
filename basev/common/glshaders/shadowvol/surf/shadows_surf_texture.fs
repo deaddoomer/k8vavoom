@@ -13,12 +13,20 @@ void main () {
 #endif
 
   vec4 FinalColor;
+#ifdef VV_TEXTURED_MASKED_WALL
+  #if 0
+  //k8: there seem to be no reason to do this
   FinalColor.rgb = TexColor.rgb;
 
   float ClampTransp = clamp((TexColor.a-0.1)/0.9, 0.0, 1.0);
   FinalColor.a = TexColor.a*(ClampTransp*(ClampTransp*(3.0-(2.0*ClampTransp))));
-#ifdef VV_TEXTURED_MASKED_WALL
+  #else
+  FinalColor = TexColor;
+  #endif
   //if (FinalColor.a < ALPHA_MIN) discard;
+#else
+  // `TexColor.a` is always 1.0 here
+  FinalColor = TexColor;
 #endif
 
   out_FragValue0 = FinalColor;
