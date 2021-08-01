@@ -972,8 +972,8 @@ void VOpenGLDrawer::DrawLightmapWorld () {
 
       SelectTexture(1);
       glBindTexture(GL_TEXTURE_2D, lmap_id[lb]);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       if (anisotropyExists) {
         glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
       }
@@ -1003,8 +1003,8 @@ void VOpenGLDrawer::DrawLightmapWorld () {
       if (!gl_regular_disable_overbright) {
         SelectTexture(2);
         glBindTexture(GL_TEXTURE_2D, addmap_id[lb]);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         if (anisotropyExists) {
           glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
         }

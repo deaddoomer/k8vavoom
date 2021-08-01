@@ -161,8 +161,8 @@ void VOpenGLDrawer::FillRectWithFlatRepeat (float x1, float y1, float x2, float 
   float oldWS, oldWT;
   glGetTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &oldWS);
   glGetTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &oldWT);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   //GLEnableBlend();
   //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied
   glBegin(GL_QUADS);
@@ -171,8 +171,8 @@ void VOpenGLDrawer::FillRectWithFlatRepeat (float x1, float y1, float x2, float 
     glTexCoord2f(s2*tex_iw_sc, t2*tex_ih_sc); glVertex2f(x2, y2);
     glTexCoord2f(s1*tex_iw_sc, t2*tex_ih_sc); glVertex2f(x1, y2);
   glEnd();
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, oldWS);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, oldWT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, oldWS);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, oldWT);
   //GLDisableBlend();
 }
 

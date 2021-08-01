@@ -148,11 +148,11 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
   if (mirroredRepeat) {
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
   } else {
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, aowner->ClampToEdge);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, aowner->ClampToEdge);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, aowner->ClampToEdge);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, aowner->ClampToEdge);
   }
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (mLinearFilter ? GL_LINEAR : GL_NEAREST));

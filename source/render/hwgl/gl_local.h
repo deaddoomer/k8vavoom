@@ -1310,6 +1310,7 @@ protected:
 
   // returns `false` if non-main texture was bound
   // `ttype` is used to override releasing and cropping modes
+  // "non-main" means "translated, colormapped, or shaded"
   bool SetTextureLump (SetTexType ttype, VTexture *Tex, VTextureTranslation *Translation, int CMap, vuint32 ShadeColor=0);
 
   void GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pHandle, VTextureTranslation *Translation, int CMap, bool needUpdate, vuint32 ShadeColor);

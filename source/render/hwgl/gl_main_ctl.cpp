@@ -219,24 +219,50 @@ void VOpenGLDrawer::RestoreDepthFunc () {
 }
 
 
+static const GLint GLLevelMinFilter[5] = {
+  GL_NEAREST, // 0: nearest, no mipmaps
+  GL_NEAREST_MIPMAP_NEAREST, // 1: nearest mipmap
+  GL_LINEAR_MIPMAP_NEAREST, // 2: linear nearest
+  GL_LINEAR, // 3: bilinear
+  GL_LINEAR_MIPMAP_LINEAR, // 4: trilinear
+};
+
+static const GLint GLLevelMagFilter[5] = {
+  GL_NEAREST, // 0: nearest, no mipmaps
+  GL_NEAREST, // 1: nearest mipmap
+  GL_LINEAR, // 2: linear nearest
+  GL_LINEAR, // 3: bilinear
+  GL_LINEAR, // 4: trilinear
+};
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::RestoreDepthFunc
+//
+//==========================================================================
+static inline void SetGLFilteringMode (int level) noexcept {
+  level = clampval(level, 0, 4);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GLLevelMinFilter[(unsigned)level]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GLLevelMagFilter[(unsigned)level]);
+}
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::SetupShadowTextureFiltering
 //
 //==========================================================================
 void VOpenGLDrawer::SetupShadowTextureFiltering (VTexture *Tex) {
-  if (!Tex) return;
-  const unsigned ck = Tex->checkFiltering(0, 1, false)&~(VTexture::FilterWrongModel|VTexture::FilterWrongAniso); // `asModel` doesn't matter here
+  if (!Tex || Tex->Type == TEXTYPE_Null) return;
+  const unsigned ck = Tex->checkFiltering(0, 1, false)&~(VTexture::FilterWrongModel/*|VTexture::FilterWrongAniso*/); // `asModel` doesn't matter here
   if (ck) {
     if (ck&VTexture::FilterWrongLevel) {
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      SetGLFilteringMode(0);
     }
-    /*
     if ((ck&VTexture::FilterWrongAniso) && anisotropyExists) {
       glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), 1.0f);
     }
-    */
     Tex->setFiltering(0, 1, Tex->filteringAsModel());
   }
 }
@@ -248,53 +274,26 @@ void VOpenGLDrawer::SetupShadowTextureFiltering (VTexture *Tex) {
 //
 //==========================================================================
 void VOpenGLDrawer::ForceTextureFiltering (VTexture *Tex, int level, int wrap) {
-  if (!Tex) return;
-  GLint rep = (wrap < 0 ? ClampToEdge : wrap > 0 ? GL_REPEAT : (Tex->isWrapRepeat() ? GL_REPEAT : ClampToEdge));
-  int aniso;
-  if (level == -666) {
-    aniso = 1;
-    level = 0;
-  } else {
-    if (level < 0 || level > 4) level = 0;
-    if (anisotropyExists) {
-      aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy);
-      aniso = clampval(aniso, 1, 255);
-    } else {
-      aniso = 1;
-    }
-  }
+  if (!Tex || Tex->Type == TEXTYPE_Null) return;
+
   // wrapping
+  const GLint rep = (wrap < 0 ? ClampToEdge : wrap > 0 ? GL_REPEAT : (Tex->isWrapRepeat() ? GL_REPEAT : ClampToEdge));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, rep);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, rep);
+
   // anisotropy
-  if (anisotropyExists) glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)aniso);
+  if (anisotropyExists) {
+    int aniso = (level != -666 ? gl_texture_filter_anisotropic.asInt() : 1);
+    aniso = clampval(aniso, 1, max_anisotropy); // `max_anisotropy` clamped to 255
+    glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)aniso);
+  }
 
   // setup filtering
-  int mipfilter, maxfilter;
-  switch (level) {
-    case 1: // nearest mipmap
-      maxfilter = GL_NEAREST;
-      mipfilter = GL_NEAREST_MIPMAP_NEAREST;
-      break;
-    case 2: // linear nearest
-      maxfilter = GL_LINEAR;
-      mipfilter = GL_LINEAR_MIPMAP_NEAREST;
-      break;
-    case 3: // bilinear
-      maxfilter = GL_LINEAR;
-      mipfilter = GL_LINEAR;
-      break;
-    case 4: // trilinear
-      maxfilter = GL_LINEAR;
-      mipfilter = GL_LINEAR_MIPMAP_LINEAR;
-      break;
-    default: // nearest, no mipmaps
-      maxfilter = GL_NEAREST;
-      mipfilter = GL_NEAREST;
-      break;
-  }
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipfilter);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxfilter);
+  SetGLFilteringMode(level);
+
+  // this is called when "non-main" (i.e. translated, colormapped, or shaded) texture was bound
+  // do not record new filtering mode, 'cause it affects only the main texture, not secondaries
+  //Tex->setFiltering(level, aniso, (rep == GL_REPEAT));
 }
 
 
@@ -305,58 +304,42 @@ void VOpenGLDrawer::ForceTextureFiltering (VTexture *Tex, int level, int wrap) {
 //==========================================================================
 void VOpenGLDrawer::SetupTextureFiltering (VTexture *Tex, int level, int wrap) {
   if (!Tex) return;
-  GLint rep = (wrap < 0 ? ClampToEdge : wrap > 0 ? GL_REPEAT : (Tex->isWrapRepeat() ? GL_REPEAT : ClampToEdge));
+
+  // anisotropy (calculate it here, we need to check and set it later)
   int aniso;
   if (level == -666) {
     aniso = 1;
     level = 0;
   } else {
-    if (level < 0 || level > 4) level = 0;
-    if (anisotropyExists) {
-      aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy);
-      aniso = clampval(aniso, 1, 255);
-    } else {
-      aniso = 1;
-    }
+    aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy); // `max_anisotropy` clamped to 255
+    //aniso = clampval(aniso, 1, 255);
   }
+
+  // why not?
+  level = clampval(level, 0, 4);
+
+  // repeat mode
+  const GLint rep = (wrap < 0 ? ClampToEdge : wrap > 0 ? GL_REPEAT : (Tex->isWrapRepeat() ? GL_REPEAT : ClampToEdge));
+
+  // check for changes
   const unsigned ck = Tex->checkFiltering(level, aniso, (rep == GL_REPEAT));
+
   // wrapping
   if (ck&VTexture::FilterWrongModel) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, rep);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, rep);
   }
+
   // anisotropy
   if ((ck&VTexture::FilterWrongAniso) && anisotropyExists) {
     glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)aniso);
   }
+
+  // filtering
   if (ck&VTexture::FilterWrongLevel) {
-    // setup filtering
-    int mipfilter, maxfilter;
-    switch (level) {
-      case 1: // nearest mipmap
-        maxfilter = GL_NEAREST;
-        mipfilter = GL_NEAREST_MIPMAP_NEAREST;
-        break;
-      case 2: // linear nearest
-        maxfilter = GL_LINEAR;
-        mipfilter = GL_LINEAR_MIPMAP_NEAREST;
-        break;
-      case 3: // bilinear
-        maxfilter = GL_LINEAR;
-        mipfilter = GL_LINEAR;
-        break;
-      case 4: // trilinear
-        maxfilter = GL_LINEAR;
-        mipfilter = GL_LINEAR_MIPMAP_LINEAR;
-        break;
-      default: // nearest, no mipmaps
-        maxfilter = GL_NEAREST;
-        mipfilter = GL_NEAREST;
-        break;
-    }
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipfilter);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxfilter);
+    SetGLFilteringMode(level);
   }
+
   if (ck) Tex->setFiltering(level, aniso, (rep == GL_REPEAT));
 }
 
