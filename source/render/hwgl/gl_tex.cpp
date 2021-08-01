@@ -628,17 +628,17 @@ void VOpenGLDrawer::UploadTexture8 (int Width, int Height, const vuint8 *Data, c
     databufSize = (size_t)(w*h*4);
   }
   rgba_t *NewData = databuf;
+  bool doFringeRemove = false;
   if (Width > 0 && Height > 0) {
-    bool doFringeRemove = false;
     for (int i = 0; i < Width*Height; ++i, ++Data, ++NewData) {
       *NewData = (*Data ? Pal[*Data] : rgba_t::Transparent());
       if (!doFringeRemove && NewData->a != 255) doFringeRemove = true;
     }
-    if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
+    //if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
   } else {
     if (w && h) memset((void *)NewData, 0, w*h*4);
   }
-  UploadTexture(w, h, databuf, false, -1, hitype);
+  UploadTexture(w, h, databuf, doFringeRemove, -1, hitype);
   //Z_Free(NewData);
 }
 
@@ -660,18 +660,18 @@ void VOpenGLDrawer::UploadTexture8A (int Width, int Height, const pala_t *Data, 
   }
   rgba_t *NewData = databuf;
   //rgba_t *NewData = (rgba_t *)Z_Calloc(Width*Height*4);
+  bool doFringeRemove = false;
   if (Width > 0 && Height > 0) {
-    bool doFringeRemove = false;
     for (int i = 0; i < Width*Height; ++i, ++Data, ++NewData) {
       *NewData = Pal[Data->idx];
       NewData->a = Data->a;
       if (!doFringeRemove && NewData->a != 255) doFringeRemove = true;
     }
-    if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
+    //if (doFringeRemove) VTexture::FilterFringe(databuf, w, h);
   } else {
     if (w && h) memset((void *)NewData, 0, w*h*4);
   }
-  UploadTexture(w, h, databuf, false, -1, hitype);
+  UploadTexture(w, h, databuf, doFringeRemove, -1, hitype);
   //Z_Free(NewData);
 }
 
@@ -712,7 +712,7 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
     // smooth transparent edges
     if (width <= maxTexSize && height <= maxTexSize) {
       if (width && height) memcpy(pmimage, data, width*height*4);
-      VTexture::SmoothEdges(pmimage, width, height);
+      if (doFringeRemove) VTexture::SmoothEdges(pmimage, width, height);
       // must rescale image to get "top" mipmap texture image
       VTexture::ResampleTexture(width, height, pmimage, w, h, image, multisampling_sample);
     } else {
