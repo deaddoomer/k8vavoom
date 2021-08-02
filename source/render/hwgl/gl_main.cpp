@@ -55,6 +55,7 @@ static VCvarB gl_can_hires_tonemap("__gl_can_hires_tonemap", false, "who cares."
 static VCvarB gl_can_shadowmaps("__gl_can_shadowmaps", false, "who cares.", CVAR_Rom);
 static VCvarB gl_can_shadowvols("__gl_can_shadowvols", false, "who cares.", CVAR_Rom);
 VCvarB gl_can_cas_filter("__gl_can_cas_filter", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_clipcontrol("__gl_can_clipcontrol", false, "who cares.", CVAR_Rom);
 
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
@@ -1130,11 +1131,13 @@ void VOpenGLDrawer::InitResolution () {
   DepthZeroOne = false;
   canRenderShadowmaps = false;
   p_glClipControl = nullptr;
+  gl_can_clipcontrol = false;
 
   if (!isCrippledGPU) {
     if ((major > 4 || (major == 4 && minor >= 5)) || CheckExtension("GL_ARB_clip_control")) {
       p_glClipControl = glClipControl_t(GetExtFuncPtr("glClipControl"));
     }
+    gl_can_clipcontrol = !!p_glClipControl;
     if (p_glClipControl) {
       if (gl_enable_clip_control) {
         GCon->Log(NAME_Init, "OpenGL: `glClipControl()` found");
@@ -1144,6 +1147,7 @@ void VOpenGLDrawer::InitResolution () {
       }
     }
   }
+
 
   /*
   if (!CheckExtension("GL_ARB_multitexture")) {

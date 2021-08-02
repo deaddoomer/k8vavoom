@@ -391,9 +391,9 @@ menudef AdvVideoOptions {
   }
 
 
-  header "Strange Options";
+  header "Strange Options" [gl_is_shitty_gpu == 0 || __gl_can_clipcontrol > 0 || __k8vavoom_developer_version > 0];
 
-  option bool [/*gl_is_shitty_gpu == 0 &&*/ __k8vavoom_developer_version > 0] {
+  option bool [gl_is_shitty_gpu == 0 && __k8vavoom_developer_version > 0] {
     title = "Use floating Point Depth Buffer";
     cvar = gl_enable_fp_zbuffer;
     help =
@@ -423,7 +423,7 @@ menudef AdvVideoOptions {
       "\cKuse 'Set Resolution' to activate this.";
   }
 
-  option bool {
+  option bool [__gl_can_clipcontrol > 0] {
     title = "Improve depth buffer precision";
     cvar = gl_enable_clip_control;
     help =
