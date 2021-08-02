@@ -7,7 +7,7 @@ uniform sampler2D TexPalLUT;
 
 
 vec3 Tonemap (vec3 color) {
-  ivec3 c = ivec3(clamp(color.rgb, vec3(0.0), vec3(1.0))*63.0+0.5);
+  ivec3 c = ivec3(clamp(color.rgb, 0.0, 1.0)*63.0+0.5);
   int index = int((c.r*64+c.g)*64+c.b);
   float tx = int(mod(index, 512))+0.5;
   tx /= 512.0;
