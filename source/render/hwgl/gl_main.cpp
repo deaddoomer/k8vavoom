@@ -151,7 +151,7 @@ VCvarB gl_shadowmap_more_cubes("gl_shadowmap_more_cubes", false, "Use all availa
 
 static VCvarB gl_s3tc_present("__gl_s3tc_present", false, "Use S3TC texture compression, if supported?", CVAR_Rom);
 
-VCvarB gl_use_srgb("__gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", CVAR_Archive|CVAR_PreInit);
+VCvarB gl_use_srgb("__gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", /*CVAR_Archive|*/CVAR_PreInit);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
