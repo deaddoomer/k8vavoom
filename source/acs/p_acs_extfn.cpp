@@ -81,9 +81,18 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
     case ACSF_CheckActorClass:
       if (argCount >= 2) {
         VEntity *Ent = EntityFromTID(args[0], Activator);
+        if (!Ent) return 0;
         VStr name = GetStr(args[1]);
         if (name.length() == 0) return 0;
-        return (Ent ? (name.ICmp(*Ent->GetClass()->Name) == 0 ? 1 : 0) : 0);
+        //GCon->Logf(NAME_Debug, "ACSF_CheckActorClass:000: `%s` : '%s'", Ent->GetClass()->GetName(), *name);
+        if (name.strEquCI(Ent->GetClass()->GetName())) return 1;
+        // check replaced class (but not for players)
+        // skip this for players, because most of the time checking player class via ACS should be strict
+        if (Ent->IsPlayer()) return 0;
+        VClass *rpc = Ent->GetClass()->GetReplacee();
+        if (!rpc || rpc == Ent->GetClass() || !rpc->IsChildOf(VEntity::StaticClass())) return 0;
+        //GCon->Logf(NAME_Debug, "ACSF_CheckActorClass:001: `%s` : '%s'", rpc->GetName(), *name);
+        return (name.strEquCI(rpc->GetName()) ? 1 : 0);
       }
       return 0;
 
