@@ -1566,6 +1566,8 @@ bool VOpenGLDrawer::RecreateFBOs (bool wantFP) {
   currentActiveFBO = currFBO;
   ReactivateCurrentFBO();
 
+  GCon->Logf(NAME_Debug, "recreaded FBOs (%s)", (mainFBO.isColorFloat() ? "FP" : mainFBO.isColor10Bit() ? "int10" : "int8"));
+
   return (mainFBO.isColorFloat() == wantFP);
 }
 

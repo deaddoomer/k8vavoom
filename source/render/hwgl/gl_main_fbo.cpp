@@ -39,6 +39,9 @@
 
 static ColorCV letterboxColor(&gl_letterbox_color);
 static VCvarB gl_enable_fp_zbuffer("gl_enable_fp_zbuffer", false, "Enable using of floating-point depth buffer for OpenGL3+?", CVAR_Archive|CVAR_PreInit);
+// this is much slower on my GPU than 8 bits, and visuals aren't better
+static VCvarB gl_use_better_color_precision("gl_use_better_color_precision", false, "Use slightly better color precision (10 bits)?", CVAR_Archive|CVAR_PreInit);
+static VCvarI gl_color_fp_format("gl_color_fp_format", "0", "Floating point format for FP color textures (0:10 bit; 1:16 bit; 2: 32 bit)", CVAR_Archive|CVAR_PreInit);
 
 
 
@@ -165,8 +168,16 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   GLDRW_RESET_ERROR();
   mType = Color8Bit;
   bool texOk = false;
+  // float
   if (wantFP) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R11F_G11F_B10F, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    GLint fmt;
+    switch (gl_color_fp_format.asInt()) {
+      default:
+      case 0: fmt = GL_R11F_G11F_B10F; break;
+      case 1: fmt = GL_RGB16F; break;
+      case 2: fmt = GL_RGB32F; break;
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, fmt, awidth, aheight, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, nullptr);
     texOk = (glGetError() == 0);
     if (texOk) {
       mType = ColorFP;
@@ -174,8 +185,9 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
       GCon->Log(NAME_Debug, "cannot create FP color texture, falling back to integers");
     }
   }
-  if (!texOk) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  // int10
+  if (!texOk && gl_use_better_color_precision.asBool()) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, awidth, aheight, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, nullptr);
     texOk = (glGetError() == 0);
     if (texOk) {
       mType = Color10Bit;
@@ -183,9 +195,12 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
       GCon->Log(NAME_Debug, "cannot create 10-bit integer color texture, falling back to 8-bit");
     }
   }
+  // int8
   if (!texOk) {
-    glTexImage2D(GL_TEXTURE_2D, 0, /*GL_RGBA*//*GL_RGB10_A2*/GL_R11F_G11F_B10F, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     GLDRW_CHECK_ERROR("FBO: glTexImage2D");
+    mType = Color8Bit;
   }
   aowner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
   GLDRW_CHECK_ERROR("FBO: glFramebufferTexture2D");
