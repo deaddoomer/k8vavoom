@@ -726,7 +726,7 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
   int cmode = (HaveS3TC && hitype != UpTexNoCompress ? gl_s3tc_mode.asInt() : 0);
   if (cmode == 1 && hitype != UpTexHiRes) cmode = 0;
   // don't bother with small textures anyway
-  if (cmode > 0 && width > 256 && height > 256 && isPOT(width) && isPOT(height)) {
+  if (cmode > 0 && width > 256 && height > 256 && isPOT(width) && isPOT(height) && !gl_use_srgb.asBool()) {
     // determine texture format:
     // COMPRESSED_RGB_S3TC_DXT1_EXT  -- RGB
     // COMPRESSED_RGBA_S3TC_DXT1_EXT -- RGBA with 1-bit alpha
@@ -748,6 +748,8 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
   } else {
     //if (gl_s3tc_dump) GCon->Logf(NAME_Debug, "NOS3TC(%s): size: %dx%d", *W_FullLumpName(SourceLump), width, height);
   }
+
+  if (internal == GL_RGBA && gl_use_srgb.asBool()) internal = GL_SRGB8_ALPHA8;
 
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
   //glTexImage2D(GL_TEXTURE_2D, 0, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);

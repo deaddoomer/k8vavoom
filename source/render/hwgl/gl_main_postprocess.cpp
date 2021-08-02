@@ -81,7 +81,9 @@ void VOpenGLDrawer::EnsurePostSrcFBO () {
 
   // check dimensions for already created FBO
   if (postSrcFBO.isValid()) {
-    if (postSrcFBO.getWidth() == mfbo->getWidth() && postSrcFBO.getHeight() == mfbo->getHeight()) {
+    if (postSrcFBO.getWidth() == mfbo->getWidth() && postSrcFBO.getHeight() == mfbo->getHeight() &&
+        postSrcFBO.isColorFloat() == mfbo->isColorFloat())
+    {
       return;
     }
     // destroy it, and recreate
@@ -89,7 +91,7 @@ void VOpenGLDrawer::EnsurePostSrcFBO () {
   }
 
   // create postsrc FBO
-  postSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
+  postSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
   p_glObjectLabelVA(GL_FRAMEBUFFER, postSrcFBO.getFBOid(), "Posteffects Texture Source FBO");
 }
 
@@ -358,8 +360,6 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
 }
-
-
 
 
 //==========================================================================

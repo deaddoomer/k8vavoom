@@ -198,7 +198,7 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   // int8
   if (!texOk) {
     //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, (gl_use_srgb.asBool() ? GL_SRGB8 : GL_RGB), awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     GLDRW_CHECK_ERROR("FBO: glTexImage2D");
     mType = Color8Bit;
   }
