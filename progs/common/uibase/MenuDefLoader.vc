@@ -25,77 +25,6 @@
 
 //**************************************************************************
 //
-// MenuDefConditionBase
-//
-//**************************************************************************
-class MenuDefConditionBase : Object;
-
-string cond;
-name cvar;
-float fval;
-string sval;
-bool isfloat;
-
-
-//==========================================================================
-//
-//  test
-//
-//==========================================================================
-bool test () {
-  if (!cvar || !CvarExists(cvar)) return false;
-  if (isfloat) {
-    float var = GetCvarF(cvar);
-    if (cond == "=" || cond == "==") return (var == fval);
-    if (cond == "!=" || cond == "<>") return (var != fval);
-    if (cond == "<") return (var < fval);
-    if (cond == "<=") return (var <= fval);
-    if (cond == ">") return (var > fval);
-    if (cond == ">=") return (var >= fval);
-  } else {
-    string var = GetCvarS(cvar);
-    if (cond == "=" || cond == "==") return (var == sval);
-    if (cond == "!=" || cond == "<>") return (var != sval);
-    if (cond == "<") return (var < sval);
-    if (cond == "<=") return (var <= sval);
-    if (cond == ">") return (var > sval);
-    if (cond == ">=") return (var >= sval);
-  }
-  return false;
-}
-
-
-//==========================================================================
-//
-//  parse
-//
-//  '[' eaten
-//
-//==========================================================================
-void parse (ScriptsParser par) {
-  par.ExpectIdentifier();
-  cvar = name(par.String);
-       if (par.Check("=") || par.Check("==")) cond = "==";
-  else if (par.Check("!=")) cond = "!=";
-  else if (par.Check("<")) cond = "<";
-  else if (par.Check("<=")) cond = "<=";
-  else if (par.Check(">")) cond = ">";
-  else if (par.Check(">=")) cond = ">=";
-  else par.ScriptError("invalid condition '%s'", par.String);
-  if (par.CheckFloat(withSign:true)) {
-    fval = par.Float;
-    isfloat = true;
-  } else {
-    sval = par.String;
-    isfloat = false;
-  }
-  par.Expect("]");
-}
-
-
-
-//**************************************************************************
-//
 // MenuDefinition
 //
 //**************************************************************************
@@ -296,8 +225,7 @@ void parse (ScriptsParser par) {
       // condition?
       if (par.Check("[")) {
         //printdebug("HDR: condition (0)!");
-        hdr.cond = SpawnObject(MenuDefConditionBase);
-        hdr.cond.parse(par);
+        hdr.cond = MenuDefCondition.parse(par);
       }
       if (par.Check("{")) {
         while (!par.Check("}")) {
@@ -310,8 +238,7 @@ void parse (ScriptsParser par) {
         // condition?
         if (!hdr.cond && par.Check("[")) {
           //printdebug("HDR: condition (1)!");
-          hdr.cond = SpawnObject(MenuDefConditionBase);
-          hdr.cond.parse(par);
+          hdr.cond = MenuDefCondition.parse(par);
         }
         par.Expect(";");
         hdr.title = stitle;
@@ -324,8 +251,7 @@ void parse (ScriptsParser par) {
       auto subplace = SpawnObject(MenuDefOptionModSubMenus);
       // condition?
       if (par.Check("[")) {
-        subplace.cond = SpawnObject(MenuDefConditionBase);
-        subplace.cond.parse(par);
+        subplace.cond = MenuDefCondition.parse(par);
       }
       par.Expect(";");
       options[$] = subplace;
@@ -345,7 +271,7 @@ void parse (ScriptsParser par) {
 //**************************************************************************
 class MenuDefOptionBase : Object;
 
-MenuDefConditionBase cond;
+MenuDefCondition cond;
 string title;
 name cvar;
 string help;
@@ -450,8 +376,7 @@ final static MenuDefOptionBase parse (ScriptsParser par) {
   else par.ScriptError("invalid option type '%s'", par.String);
   // condition?
   if (par.Check("[")) {
-    res.cond = SpawnObject(MenuDefConditionBase);
-    res.cond.parse(par);
+    res.cond = MenuDefCondition.parse(par);
   }
   par.Expect("{");
   while (!par.Check("}")) {

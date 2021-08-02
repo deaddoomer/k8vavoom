@@ -1,0 +1,193 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 2018-2021 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+
+//**************************************************************************
+//
+// MenuDefCondition
+//
+//**************************************************************************
+class MenuDefCondition : Object;
+
+
+//==========================================================================
+//
+//  parseTerm
+//
+//==========================================================================
+private static final MenuDefCondition parseTerm (ScriptsParser par) {
+  if (par.Check("(")) {
+    MenuDefCondition res = parseOr(par);
+    par.Expect(")");
+    return res;
+  }
+  // id and condition
+  par.ExpectIdentifier();
+  MenuDefConditionCheck ck = SpawnObject(MenuDefConditionCheck);
+  ck.cvar = name(par.String);
+       if (par.Check("=") || par.Check("==")) ck.cond = "==";
+  else if (par.Check("!=")) ck.cond = "!=";
+  else if (par.Check("<")) ck.cond = "<";
+  else if (par.Check("<=")) ck.cond = "<=";
+  else if (par.Check(">")) ck.cond = ">";
+  else if (par.Check(">=")) ck.cond = ">=";
+  else { delete ck; par.ScriptError("invalid condition '%s'", par.String); }
+  if (par.CheckFloat(withSign:true)) {
+    ck.fval = par.Float;
+    ck.isfloat = true;
+  } else {
+    ck.sval = par.String;
+    ck.isfloat = false;
+  }
+  return ck;
+}
+
+
+//==========================================================================
+//
+//  parseAnd
+//
+//==========================================================================
+private static final MenuDefCondition parseAnd (ScriptsParser par) {
+  MenuDefCondition op0 = parseTerm(par);
+  while (par.Check("&&")) {
+    MenuDefCondition op1 = parseTerm(par);
+    MenuDefConditionLogOp lop = SpawnObject(MenuDefConditionLogOp);
+    lop.isOr = false;
+    lop.op0 = op0;
+    lop.op1 = op1;
+    op0 = lop;
+  }
+  return op0;
+}
+
+
+//==========================================================================
+//
+//  parseOr
+//
+//==========================================================================
+static final MenuDefCondition parseOr (ScriptsParser par) {
+  MenuDefCondition op0 = parseAnd(par);
+  while (par.Check("||")) {
+    MenuDefCondition op1 = parseAnd(par);
+    MenuDefConditionLogOp lop = SpawnObject(MenuDefConditionLogOp);
+    lop.isOr = true;
+    lop.op0 = op0;
+    lop.op1 = op1;
+    op0 = lop;
+  }
+  return op0;
+}
+
+
+//==========================================================================
+//
+//  parse
+//
+//  '[' eaten
+//
+//==========================================================================
+static final MenuDefCondition parse (ScriptsParser par) {
+  if (par.Check("]")) return none;
+  MenuDefCondition res = parseOr(par);
+  par.Expect("]");
+  return res;
+}
+
+
+bool test () {
+  return false;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// logical and / logical or
+class MenuDefConditionLogOp : MenuDefCondition;
+
+bool isOr;
+MenuDefCondition op0, op1;
+
+
+//==========================================================================
+//
+//  test
+//
+//==========================================================================
+override bool test () {
+  bool res = op0.test();
+  if (isOr) {
+    if (res) return true;
+  } else {
+    if (!res) return false;
+  }
+  return op1.test();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// simple condition expression
+class MenuDefConditionCheck : MenuDefCondition;
+
+string cond;
+name cvar;
+float fval;
+string sval;
+bool isfloat;
+
+
+//==========================================================================
+//
+//  test
+//
+//==========================================================================
+override bool test () {
+  if (!cvar || !CvarExists(cvar)) return false;
+  if (isfloat) {
+    float var = GetCvarF(cvar);
+    #if 0
+    // debug
+    switch (cvar) {
+      case '__k8vavoom_developer_version': var = 0; break;
+      case 'gl_is_shitty_gpu': var = 1; break;
+      case '__gl_can_clipcontrol': var = 0; break;
+    }
+    #endif
+    if (cond == "=" || cond == "==") return (var == fval);
+    if (cond == "!=" || cond == "<>") return (var != fval);
+    if (cond == "<") return (var < fval);
+    if (cond == "<=") return (var <= fval);
+    if (cond == ">") return (var > fval);
+    if (cond == ">=") return (var >= fval);
+  } else {
+    string var = GetCvarS(cvar);
+    if (cond == "=" || cond == "==") return (var == sval);
+    if (cond == "!=" || cond == "<>") return (var != sval);
+    if (cond == "<") return (var < sval);
+    if (cond == "<=") return (var <= sval);
+    if (cond == ">") return (var > sval);
+    if (cond == ">=") return (var >= sval);
+  }
+  return false;
+}

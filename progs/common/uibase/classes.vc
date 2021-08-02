@@ -28,6 +28,7 @@ import 'linespec';
 #include "HelpText.vc"
 
 #include "MenuScreen.vc"
+#include "MenuDefCondition.vc"
 #include "MenuDefLoader.vc"
 #include "MenuTitleText.vc"
 #include "MenuStaticBitmap.vc"
