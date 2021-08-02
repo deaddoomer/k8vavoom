@@ -27,7 +27,9 @@
 
 
 VCvarB gl_regular_prefill_depth("gl_regular_prefill_depth", false, "Prefill depth buffer for regular renderer?", CVAR_Archive);
-VCvarB gl_regular_disable_overbright("gl_regular_disable_overbright", false, "Disable overbright rendering (this may be slightly faster on complex geometry)?", CVAR_Archive);
+
+extern VCvarB r_lmap_overbright;
+extern VCvarF r_overbright_specular;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -433,50 +435,33 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
   GlowParams gp;
   CalcGlow(gp, surf);
 
+  float spec = (r_lmap_overbright.asBool() ? r_overbright_specular.asFloat() : 0.0f);
+  if (!isFiniteF(spec)) spec = 0.1f;
+  spec = clampval(spec, 0.0f, 16.0f);
+
   if (textureChanged) {
     if (doBrightmap) {
-      if (gl_regular_disable_overbright) {
-        SurfLightmapBrightmapNoOverbright.Activate();
-        SurfLightmapBrightmapNoOverbright.SetBrightMapAdditive(r_brightmaps_additive ? 1.0f : 0.0f);
-        SurfLightmapBrightmapNoOverbright.SetTexture(0);
-        SurfLightmapBrightmapNoOverbright.SetLightMap(1);
-        SurfLightmapBrightmapNoOverbright.SetTextureBM(2);
-        SelectTexture(2);
-        SetBrightmapTexture(tex->Tex->Brightmap);
-        SelectTexture(0);
-        SetCommonTexture(tex->Tex, tex->ColorMap);
-        SurfLightmapBrightmapNoOverbright.SetTex(tex);
-      } else {
-        SurfLightmapBrightmapOverbright.Activate();
-        SurfLightmapBrightmapOverbright.SetBrightMapAdditive(r_brightmaps_additive ? 1.0f : 0.0f);
-        SurfLightmapBrightmapOverbright.SetTexture(0);
-        SurfLightmapBrightmapOverbright.SetLightMap(1);
-        SurfLightmapBrightmapOverbright.SetSpecularMap(2);
-        SurfLightmapBrightmapOverbright.SetTextureBM(3);
-        SelectTexture(3);
-        SetBrightmapTexture(tex->Tex->Brightmap);
-        SelectTexture(0);
-        SetCommonTexture(tex->Tex, tex->ColorMap);
-        SurfLightmapBrightmapOverbright.SetTex(tex);
-      }
+      SurfLightmapBrightmapOverbright.Activate();
+      SurfLightmapBrightmapOverbright.SetBrightMapAdditive(r_brightmaps_additive ? 1.0f : 0.0f);
+      SurfLightmapBrightmapOverbright.SetTexture(0);
+      SurfLightmapBrightmapOverbright.SetLightMap(1);
+      SurfLightmapBrightmapOverbright.SetSpecular(spec);
+      SurfLightmapBrightmapOverbright.SetTextureBM(2);
+      SelectTexture(2);
+      SetBrightmapTexture(tex->Tex->Brightmap);
+      SelectTexture(0);
+      SetCommonTexture(tex->Tex, tex->ColorMap);
+      SurfLightmapBrightmapOverbright.SetTex(tex);
     } else {
       SetCommonTexture(tex->Tex, tex->ColorMap);
       if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
-        if (gl_regular_disable_overbright) {
-          SurfLightmapNoOverbright.Activate();
-          SurfLightmapNoOverbright.SetTex(tex);
-        } else {
-          SurfLightmapOverbright.Activate();
-          SurfLightmapOverbright.SetTex(tex);
-        }
+        SurfLightmapOverbright.Activate();
+        SurfLightmapOverbright.SetTex(tex);
+        SurfLightmapOverbright.SetSpecular(spec);
       } else {
-        if (gl_regular_disable_overbright) {
-          SurfLightmapMaskedNoOverbright.Activate();
-          SurfLightmapMaskedNoOverbright.SetTex(tex);
-        } else {
-          SurfLightmapMaskedOverbright.Activate();
-          SurfLightmapMaskedOverbright.SetTex(tex);
-        }
+        SurfLightmapMaskedOverbright.Activate();
+        SurfLightmapMaskedOverbright.SetTex(tex);
+        SurfLightmapMaskedOverbright.SetSpecular(spec);
       }
     }
   }
@@ -503,89 +488,44 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
   const bool fogAllowed = (surf->Fade != FADE_LIGHT || r_light_mode.asInt() <= 0);
 
   if (doBrightmap) {
-    if (gl_regular_disable_overbright) {
-      SurfLightmapBrightmapNoOverbright.SetFullBright(fullBright);
-      SurfLightmapBrightmapNoOverbright.SetLMap(surf, tex, cache);
-      //SurfLightmapBrightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfLightmapBrightmapNoOverbright.SetLightGlobVis(globVis);
-      SurfLightmapBrightmapNoOverbright.SetLightMode(lightMode);
-      SurfLightmapBrightmapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-      SurfLightmapBrightmapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-      if (gp.isActive()) {
-        VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapBrightmapNoOverbright, gp);
-      } else {
-        VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapBrightmapNoOverbright);
-      }
+    SurfLightmapBrightmapOverbright.SetFullBright(fullBright);
+    SurfLightmapBrightmapOverbright.SetLMap(surf, tex, cache);
+    //SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+    SurfLightmapBrightmapOverbright.SetLightGlobVis(globVis);
+    SurfLightmapBrightmapOverbright.SetLightMode(lightMode);
+    SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+    SurfLightmapBrightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+    if (gp.isActive()) {
+      VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapBrightmapOverbright, gp);
     } else {
-      SurfLightmapBrightmapOverbright.SetFullBright(fullBright);
-      SurfLightmapBrightmapOverbright.SetLMap(surf, tex, cache);
-      //SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-      SurfLightmapBrightmapOverbright.SetLightGlobVis(globVis);
-      SurfLightmapBrightmapOverbright.SetLightMode(lightMode);
-      SurfLightmapBrightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-      SurfLightmapBrightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-      if (gp.isActive()) {
-        VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapBrightmapOverbright, gp);
-      } else {
-        VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapBrightmapOverbright);
-      }
+      VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapBrightmapOverbright);
     }
   } else {
     if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
-      if (gl_regular_disable_overbright) {
-        SurfLightmapNoOverbright.SetFullBright(fullBright);
-        SurfLightmapNoOverbright.SetLMap(surf, tex, cache);
-        //SurfLightmapNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapNoOverbright.SetLightGlobVis(globVis);
-        SurfLightmapNoOverbright.SetLightMode(lightMode);
-        SurfLightmapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-        SurfLightmapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-        if (gp.isActive()) {
-          VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapNoOverbright, gp);
-        } else {
-          VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapNoOverbright);
-        }
+      SurfLightmapOverbright.SetFullBright(fullBright);
+      SurfLightmapOverbright.SetLMap(surf, tex, cache);
+      //SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfLightmapOverbright.SetLightGlobVis(globVis);
+      SurfLightmapOverbright.SetLightMode(lightMode);
+      SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfLightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+      if (gp.isActive()) {
+        VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapOverbright, gp);
       } else {
-        SurfLightmapOverbright.SetFullBright(fullBright);
-        SurfLightmapOverbright.SetLMap(surf, tex, cache);
-        //SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapOverbright.SetLightGlobVis(globVis);
-        SurfLightmapOverbright.SetLightMode(lightMode);
-        SurfLightmapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-        SurfLightmapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-        if (gp.isActive()) {
-          VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapOverbright, gp);
-        } else {
-          VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapOverbright);
-        }
+        VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapOverbright);
       }
     } else {
-      if (gl_regular_disable_overbright) {
-        SurfLightmapMaskedNoOverbright.SetFullBright(fullBright);
-        SurfLightmapMaskedNoOverbright.SetLMap(surf, tex, cache);
-        //SurfLightmapMaskedNoOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapMaskedNoOverbright.SetLightGlobVis(globVis);
-        SurfLightmapMaskedNoOverbright.SetLightMode(lightMode);
-        SurfLightmapMaskedNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-        SurfLightmapMaskedNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-        if (gp.isActive()) {
-          VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapMaskedNoOverbright, gp);
-        } else {
-          VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedNoOverbright);
-        }
+      SurfLightmapMaskedOverbright.SetFullBright(fullBright);
+      SurfLightmapMaskedOverbright.SetLMap(surf, tex, cache);
+      //SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
+      SurfLightmapMaskedOverbright.SetLightGlobVis(globVis);
+      SurfLightmapMaskedOverbright.SetLightMode(lightMode);
+      SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
+      SurfLightmapMaskedOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+      if (gp.isActive()) {
+        VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapMaskedOverbright, gp);
       } else {
-        SurfLightmapMaskedOverbright.SetFullBright(fullBright);
-        SurfLightmapMaskedOverbright.SetLMap(surf, tex, cache);
-        //SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)*lev/255.0f, ((surf->Light>>8)&255)*lev/255.0f, (surf->Light&255)*lev/255.0f, 1.0f);
-        SurfLightmapMaskedOverbright.SetLightGlobVis(globVis);
-        SurfLightmapMaskedOverbright.SetLightMode(lightMode);
-        SurfLightmapMaskedOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, lev);
-        SurfLightmapMaskedOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-        if (gp.isActive()) {
-          VV_GLDRAWER_ACTIVATE_GLOW(SurfLightmapMaskedOverbright, gp);
-        } else {
-          VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedOverbright);
-        }
+        VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedOverbright);
       }
     }
   }
@@ -609,24 +549,12 @@ bool VOpenGLDrawer::RenderLMapSurface (bool textureChanged, surface_t *surf, sur
       //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // this was for non-premultiplied
       //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // decal renderer is using this too
       if (doBrightmap) {
-        if (gl_regular_disable_overbright) {
-          SurfLightmapBrightmapNoOverbright.Activate();
-        } else {
-          SurfLightmapBrightmapOverbright.Activate();
-        }
+        SurfLightmapBrightmapOverbright.Activate();
       } else {
         if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
-          if (gl_regular_disable_overbright) {
-            SurfLightmapNoOverbright.Activate();
-          } else {
-            SurfLightmapOverbright.Activate();
-          }
+          SurfLightmapOverbright.Activate();
         } else {
-          if (gl_regular_disable_overbright) {
-            SurfLightmapMaskedNoOverbright.Activate();
-          } else {
-            SurfLightmapMaskedOverbright.Activate();
-          }
+          SurfLightmapMaskedOverbright.Activate();
         }
       }
       return true;
@@ -897,51 +825,26 @@ void VOpenGLDrawer::DrawLightmapWorld () {
   // draw surfaces with lightmaps
   {
     //unsigned lmc = 0;
-    if (gl_regular_disable_overbright) {
-      SurfLightmapMaskedNoOverbright.Activate();
-      SurfLightmapMaskedNoOverbright.SetTexture(0);
-      SurfLightmapMaskedNoOverbright.SetLightMap(1);
-      VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedNoOverbright);
-      SurfLightmapMaskedNoOverbright.UploadChangedUniforms();
+    float spec = (r_lmap_overbright.asBool() ? r_overbright_specular.asFloat() : 0.0f);
+    if (!isFiniteF(spec)) spec = 0.1f;
+    spec = clampval(spec, 0.0f, 16.0f);
 
-      //unsigned lmc = 0;
-      SurfLightmapNoOverbright.Activate();
-      SurfLightmapNoOverbright.SetTexture(0);
-      SurfLightmapNoOverbright.SetLightMap(1);
-      //SurfLightmap_Locs.storeFogType();
-      VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapNoOverbright);
-      SurfLightmapNoOverbright.UploadChangedUniforms();
+    SurfLightmapMaskedOverbright.Activate();
+    SurfLightmapMaskedOverbright.SetTexture(0);
+    SurfLightmapMaskedOverbright.SetLightMap(1);
+    SurfLightmapMaskedOverbright.SetSpecular(spec);
+    //SurfLightmap_Locs.storeFogType();
+    VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedOverbright);
+    SurfLightmapMaskedOverbright.UploadChangedUniforms();
 
-      if (lastOverbrightEnable) {
-        // update all atlases, why not
-        memset(atlases_updated, 0, sizeof(atlases_updated));
-        lastOverbrightEnable = false;
-      }
-    } else {
-      SurfLightmapMaskedOverbright.Activate();
-      SurfLightmapMaskedOverbright.SetTexture(0);
-      SurfLightmapMaskedOverbright.SetLightMap(1);
-      SurfLightmapMaskedOverbright.SetSpecularMap(2);
-      //SurfLightmap_Locs.storeFogType();
-      VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapMaskedOverbright);
-      SurfLightmapMaskedOverbright.UploadChangedUniforms();
-
-      //unsigned lmc = 0;
-      SurfLightmapOverbright.Activate();
-      SurfLightmapOverbright.SetTexture(0);
-      SurfLightmapOverbright.SetLightMap(1);
-      SurfLightmapOverbright.SetSpecularMap(2);
-      //SurfLightmap_Locs.storeFogType();
-      VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapOverbright);
-      SurfLightmapOverbright.UploadChangedUniforms();
-
-      if (!lastOverbrightEnable) {
-        // update all atlases, why not
-        memset(atlases_updated, 0, sizeof(atlases_updated));
-        lastOverbrightEnable = true;
-      }
-    }
-
+    //unsigned lmc = 0;
+    SurfLightmapOverbright.Activate();
+    SurfLightmapOverbright.SetTexture(0);
+    SurfLightmapOverbright.SetLightMap(1);
+    SurfLightmapOverbright.SetSpecular(spec);
+    //SurfLightmap_Locs.storeFogType();
+    VV_GLDRAWER_DEACTIVATE_GLOW(SurfLightmapOverbright);
+    SurfLightmapOverbright.UploadChangedUniforms();
 
     lastTexinfo.resetLastUsed();
     if (forceAtlasUpdate) {
@@ -954,12 +857,10 @@ void VOpenGLDrawer::DrawLightmapWorld () {
       const vuint32 lb = lcbn-1;
       vassert(lb < NUM_BLOCK_SURFS);
       VDirtyArea &blockDirty = RendLev->GetLightBlockDirtyArea(lb);
-      VDirtyArea &addBlockDirty = RendLev->GetLightAddBlockDirtyArea(lb);
       // is full atlas update required?
       if ((atlases_updated[lb]&0x01u) == 0) {
         atlases_updated[lb] |= 0x01u;
         blockDirty.addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
-        addBlockDirty.addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
       } else {
         /*
         if (blockDirty.isValid()) {
@@ -968,7 +869,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
         */
       }
       //++lmc;
-      //GCon->Logf(NAME_Debug, "GL: *** lightmap atlas #%u (%u : %u)", lb, lmap_id[lb], addmap_id[lb]);
+      //GCon->Logf(NAME_Debug, "GL: *** lightmap atlas #%u (%u)", lb, lmap_id[lb]);
 
       SelectTexture(1);
       glBindTexture(GL_TEXTURE_2D, lmap_id[lb]);
@@ -998,37 +899,6 @@ void VOpenGLDrawer::DrawLightmapWorld () {
           glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         }
         blockDirty.clear();
-      }
-
-      if (!gl_regular_disable_overbright) {
-        SelectTexture(2);
-        glBindTexture(GL_TEXTURE_2D, addmap_id[lb]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        if (anisotropyExists) {
-          glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
-        }
-
-        if (addBlockDirty.isValid()) {
-          //GCon->Logf(NAME_Debug, "GL: updated lightmap add atlas #%u", lb);
-          //atlases_updated[lb] |= 0x02u;
-          //RendLev->SetLightAddBlockChanged(lb, false);
-          //glTexImage2D(GL_TEXTURE_2D, 0, 4, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, RendLev->GetLightAddBlock(lb));
-          const int x0 = addBlockDirty.x0;
-          const int y0 = addBlockDirty.y0;
-          const int wdt = addBlockDirty.getWidth();
-          const int hgt = addBlockDirty.getHeight();
-          if ((wdt >= BLOCK_WIDTH && hgt >= BLOCK_HEIGHT) || !gl_lmap_allow_partial_updates) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, RendLev->GetLightAddBlock(lb));
-          } else {
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, BLOCK_WIDTH);
-            glTexSubImage2D(GL_TEXTURE_2D, 0,
-              x0, y0, wdt, hgt,
-              GL_RGBA, GL_UNSIGNED_BYTE, RendLev->GetLightAddBlock(lb)+y0*BLOCK_WIDTH+x0);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-          }
-          addBlockDirty.clear();
-        }
       }
 
       SelectTexture(0);

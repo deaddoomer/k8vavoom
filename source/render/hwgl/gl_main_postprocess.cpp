@@ -39,6 +39,9 @@ extern VCvarB gl_tonemap_pal_hires;
 extern VCvarI gl_tonemap_pal_algo;
 extern VCvarB gl_can_cas_filter;
 
+extern VCvarB r_adv_overbright;
+extern VCvarF r_overbright_specular;
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 class PostSrcMatrixSaver {
@@ -213,9 +216,6 @@ void VOpenGLDrawer::PostSrcRestoreMatrices () {
 void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
   (void)ax; (void)ay; (void)awidth; (void)aheight;
   if (!tonemapPalLUT) {
-    // allocate tonemap FBO object, and generate tonemap LUT
-    //tonemapSrcFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight());
-    //p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
     GeneratePaletteLUT();
   } else if (tonemapLastGamma != usegamma || tonemapMode != (int)gl_tonemap_pal_hires.asBool() || tonemapColorAlgo != gl_tonemap_pal_algo.asInt()) {
     tonemapMode = (int)gl_tonemap_pal_hires.asBool();
@@ -357,4 +357,99 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
 
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
+}
+
+
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PostprocessOvebright
+//
+//  normalize overbrighting for fp textures
+//
+//==========================================================================
+void VOpenGLDrawer::PostprocessOvebright () {
+  //GCon->Log(NAME_Debug, "VOpenGLDrawer::PostprocessOvebright!");
+
+  glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
+  glMatrixMode(GL_MODELVIEW); glPushMatrix();
+  glMatrixMode(GL_PROJECTION); glPushMatrix();
+
+  // enforce main FBO
+  SetMainFBO(true); // forced
+  auto mfbo = GetMainFBO();
+
+  // check dimensions for already created FBO
+  if (postOverFBO.isValid()) {
+    if (postOverFBO.getWidth() != mfbo->getWidth() || postOverFBO.getHeight() != mfbo->getHeight() ||
+        postOverFBO.isColorFloat() != mfbo->isColorFloat())
+    {
+      postOverFBO.destroy();
+    }
+  }
+
+  if (!postOverFBO.isValid()) {
+    // create postsrc FBO
+    postOverFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
+    p_glObjectLabelVA(GL_FRAMEBUFFER, postOverFBO.getFBOid(), "Posteffects Texture Source FBO");
+    if (postOverFBO.isColorFloat() != mfbo->isColorFloat()) {
+      GCon->Logf(NAME_Warning, "cannot create FP temprorary FBO, overbright is disabled.");
+      r_adv_overbright = false;
+      return;
+    }
+  }
+
+  if (!postOverFBO.swapColorTextures(mfbo)) {
+    GCon->Logf(NAME_Debug, "FBO texture swapping failed, use blitting");
+    mfbo->blitTo(&postOverFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postOverFBO.getWidth(), postOverFBO.getHeight(), GL_NEAREST);
+  }
+  mfbo->activate();
+
+  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  GLDisableBlend();
+  GLDisableDepthWrite();
+  glEnable(GL_TEXTURE_2D);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+  // source texture
+  SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, postOverFBO.getColorTid());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  PostprocessOberbright.Activate();
+  float spec = r_overbright_specular.asFloat();
+  if (!isFiniteF(spec)) spec = 0.1f;
+  spec = clampval(spec, 0.0f, 16.0f);
+  PostprocessOberbright.SetSpecular(spec);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  vassert(postOverFBO.getWidth() == mfbo->getWidth());
+  vassert(postOverFBO.getHeight() == mfbo->getHeight());
+  //GCon->Logf(NAME_Debug, "width=%d; height=%d", mfbo->getWidth(), mfbo->getHeight());
+  glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f); glVertex2f(0.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
+    glTexCoord2f(0.0f, 1.0f); glVertex2f(0.0f, 1.0f);
+  glEnd();
+
+  // unbind texture 0
+  SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  // and deactivate shaders (just in case)
+  DeactivateShader();
+
+  glPopAttrib();
+  glMatrixMode(GL_PROJECTION); glPopMatrix();
+  glMatrixMode(GL_MODELVIEW); glPopMatrix();
 }

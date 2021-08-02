@@ -144,6 +144,10 @@ VCvarB r_shadows("r_shadows", true, "Allow shadows from lights?", CVAR_Archive);
 
 VCvarB r_lit_semi_translucent("r_lit_semi_translucent", true, "Lit semi-translucent textures?", CVAR_Archive);
 
+VCvarB r_lmap_overbright("r_lmap_overbright", true, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
+VCvarB r_adv_overbright("r_adv_overbright", true, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
+VCvarF r_overbright_specular("r_overbright_specular", "0.1", "Specular light in regular renderer.", CVAR_Archive);
+
 static VCvarF r_hud_fullscreen_alpha("r_hud_fullscreen_alpha", "0.44", "Alpha for fullscreen HUD", CVAR_Archive);
 
 extern VCvarB r_light_opt_shadow;
@@ -1666,6 +1670,27 @@ void VRenderLevelShared::RenderPlayerView () {
     InvaldateAllSegParts();
   }
 
+  if (IsShadowMapRenderer() || IsShadowVolumeRenderer()) {
+    const bool overbright = r_adv_overbright.asBool();
+    if (overbright != Drawer->IsMainFBOFloat()) {
+      if (!Drawer->RecreateFBOs(overbright)) {
+        GCon->Log(NAME_Warning, "cannot use overbright, turned it off");
+        r_adv_overbright = false;
+      }
+    }
+  }
+  /*
+  else {
+    const bool overbright = r_lmap_overbright.asBool();
+    if (overbright != Drawer->IsMainFBOFloat()) {
+      if (!Drawer->RecreateFBOs(overbright)) {
+        GCon->Log(NAME_Warning, "cannot use overbright, turned it off");
+        r_lmap_overbright = false;
+      }
+    }
+  }
+  */
+
   Drawer->MirrorFlip = false;
   Drawer->MirrorClip = false;
 
@@ -2425,30 +2450,10 @@ VDirtyArea &VRenderLevelShared::GetLightBlockDirtyArea (vuint32 /*bnum*/) {
 
 //==========================================================================
 //
-//  VRenderLevelShared::GetLightAddBlockDirtyArea
-//
-//==========================================================================
-VDirtyArea &VRenderLevelShared::GetLightAddBlockDirtyArea (vuint32 /*bnum*/) {
-  return unusedDirty;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::GetLightBlock
 //
 //==========================================================================
 rgba_t *VRenderLevelShared::GetLightBlock (vuint32 /*bnum*/) {
-  return nullptr;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::GetLightAddBlock
-//
-//==========================================================================
-rgba_t *VRenderLevelShared::GetLightAddBlock (vuint32 /*bnum*/) {
   return nullptr;
 }
 

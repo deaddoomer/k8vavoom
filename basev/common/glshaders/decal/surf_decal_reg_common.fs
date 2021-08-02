@@ -9,9 +9,7 @@ $include "common/texture_vars.fs"
 #endif
 #ifdef REG_LIGHTMAP
 uniform sampler2D LightMap;
-#ifdef VV_USE_OVERBRIGHT
-uniform sampler2D SpecularMap;
-#endif
+uniform float Specular;
 #endif
 uniform float FullBright; // for fullbright; either 0.0 or 1.0
 //#ifndef REG_LIGHTMAP
@@ -20,6 +18,7 @@ uniform vec4 Light;
 $include "common/fog_vars.fs"
 $include "common/glow_vars.fs"
 $include "common/doom_lighting.fs"
+$include "common/overbright.fs"
 
 
 void main () {
@@ -45,9 +44,6 @@ void main () {
   lmc.r = max(lmc.r, FullBright);
   lmc.g = max(lmc.g, FullBright);
   lmc.b = max(lmc.b, FullBright);
-#ifdef VV_USE_OVERBRIGHT
-  vec3 spc = texture2D(SpecularMap, LightmapCoordinate).rgb;
-#endif
 */
 
   vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));
@@ -59,11 +55,9 @@ void main () {
   lmap.g = mix(lmap.g, 0.0, FullBright);
   lmap.b = mix(lmap.b, 0.0, FullBright);
   lt.rgb += lmap.rgb;
+  normOverbrightV4(lt, Specular);
 
   FinalColor.rgb *= lt.rgb;
-#ifdef VV_USE_OVERBRIGHT
-  FinalColor.rgb += texture2D(SpecularMap, LightmapCoordinate).rgb;
-#endif
 #else
   // normal
   vec4 lt = vec4(Light.rgb, mix(Light.a, 1.0, FullBright));

@@ -68,10 +68,6 @@ private:
   LCEntry light_chain_used[NUM_BLOCK_SURFS];
   vuint32 light_chain_head; // entry+1 (i.e. 0 means "none")
 
-  // specular lightmaps
-  rgba_t add_block[NUM_BLOCK_SURFS][BLOCK_WIDTH*BLOCK_HEIGHT];
-  VDirtyArea add_block_dirty[NUM_BLOCK_SURFS];
-
   // surface (lightmap) cache
   VLMapCache lmcache;
   // list of all surfaces with lightmaps; used only in `ProcessCachedSurfaces()`
@@ -159,9 +155,7 @@ public:
   virtual vuint32 GetLightChainNext (vuint32 bnum) override;
 
   virtual VDirtyArea &GetLightBlockDirtyArea (vuint32 bnum) override;
-  virtual VDirtyArea &GetLightAddBlockDirtyArea (vuint32 bnum) override;
   virtual rgba_t *GetLightBlock (vuint32 bnum) override;
-  virtual rgba_t *GetLightAddBlock (vuint32 bnum) override;
   virtual surfcache_t *GetLightChainFirst (vuint32 bnum) override;
   virtual void NukeLightmapCache () override;
 

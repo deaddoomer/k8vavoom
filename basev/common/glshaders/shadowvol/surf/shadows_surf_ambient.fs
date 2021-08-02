@@ -38,5 +38,5 @@ void main () {
   if (TexColor.a < ALPHA_MASKED) discard; // only normal and masked walls should go thru this
   $include "common/brightmap_calc.fs"
 #endif
-  out_FragValue0 = lt;
+  out_FragValue0 = clamp(lt, 0.0, 1.0);
 }

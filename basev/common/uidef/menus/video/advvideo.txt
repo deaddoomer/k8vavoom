@@ -61,6 +61,7 @@ menudef AdvVideoOptions {
       "\cJIf unsure, leave it enabled.";
   }
 
+  /* removed
   option bool {
     title = "Disable Overbright Rendering";
     cvar = gl_regular_disable_overbright;
@@ -72,6 +73,7 @@ menudef AdvVideoOptions {
       "slowdowns.",
       "\cJIf unsure, leave it as 'OFF'.";
   }
+  */
 
   /* textures are always sorted, because why not?
   option bool {
@@ -362,20 +364,27 @@ menudef AdvVideoOptions {
   }
 
 
-  header "Other Lightmap Lighting";
+  header "Overbright";
 
   option bool {
-    title = "Static Lightmap Overbright";
-    cvar = r_lmap_overbright_static;
+    title = "Lightmap Overbright";
+    cvar = r_lmap_overbright;
+  }
+
+  option bool {
+    title = "Shadowmap/Shadow Volumes Overbright";
+    cvar = r_adv_overbright;
   }
 
   option slider {
-    title = "Specular (overbright) Intensity";
-    cvar = r_lmap_specular;
+    title = "Specular (Overbright) Intensity";
+    cvar = r_overbright_specular;
     step = 0.1;
     min = 0;
     max = 4;
   }
+
+  header "Other Lightmap Lighting";
 
   option bool {
     title = "Precalculate Static Lights";

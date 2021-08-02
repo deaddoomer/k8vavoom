@@ -116,12 +116,14 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/wipe/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/bloom/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/bloom/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/overbright/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/overbright/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/tonemap/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/tonemap/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/underwater/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/underwater/*.vs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.fs
-  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.vs
   )
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3

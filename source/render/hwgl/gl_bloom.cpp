@@ -168,10 +168,10 @@ void VOpenGLDrawer::BloomInitEffectTexture () {
   bloomMipmapCount = Q_log2(bloomWidth > bloomHeight ? bloomWidth : bloomHeight);
 
   bloomeffectFBO.setLinearFilter(!r_bloom_id0_effect);
-  bloomeffectFBO.createTextureOnly(this, bloomWidth, bloomHeight, true);
+  bloomeffectFBO.createTextureOnly(this, bloomWidth, bloomHeight, false/*fp*/, true/*mirrorrepeat*/);
 
   bloomcoloraveragingFBO.setLinearFilter(!r_bloom_id0_effect);
-  bloomcoloraveragingFBO.createTextureOnly(this, bloomWidth, bloomHeight, true);
+  bloomcoloraveragingFBO.createTextureOnly(this, bloomWidth, bloomHeight, false/*fp*/, true/*mirrorrepeat*/);
   glBindTexture(GL_TEXTURE_2D, bloomcoloraveragingFBO.getColorTid());
   bloomColAvgValid = false;
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1000);
@@ -210,10 +210,10 @@ void VOpenGLDrawer::BloomInitTextures () {
 
   // init the "scratch" texture
   bloomscratchFBO.setLinearFilter(!r_bloom_id0_effect);
-  bloomscratchFBO.createTextureOnly(this, bloomWidth, bloomHeight, true);
+  bloomscratchFBO.createTextureOnly(this, bloomWidth, bloomHeight, false/*fp*/, true/*mirrorrepeat*/);
 
   bloomscratch2FBO.setLinearFilter(!r_bloom_id0_effect);
-  bloomscratch2FBO.createTextureOnly(this, bloomWidth, bloomHeight, true);
+  bloomscratch2FBO.createTextureOnly(this, bloomWidth, bloomHeight, false/*fp*/, true/*mirrorrepeat*/);
 
   // init the screen-size RBO
   BloomAllocRBO(bloomScrWdt, bloomScrHgt, &bloomFullSizeDownsampleRBOid, &bloomFullSizeDownsampleFBOid);

@@ -246,36 +246,16 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   // use universal shader (color/shade)
   Shader SurfDecalNoLMap both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
-  Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_SHADE_EX" } }
-  Shader SurfDecalLMapNoOverbright both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
+  Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
   Shader SurfDecalAdv both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_SHADE_EX"; }
-
-  //Shader SurfDecalNoLMap both="decal/surf_decal_nolmap";
-  //Shader SurfDecalLMapOverbright both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT" } }
-  //Shader SurfDecalLMapNoOverbright both="decal/surf_decal_lmap";
-  //Shader SurfDecalAdv both="decal/surf_decal_adv";
-
-  //Shader SurfDecalNoLMapShade both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_SHADE"; }
-  //Shader SurfDecalLMapOverbrightShade both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_SHADE" } }
-  //Shader SurfDecalLMapNoOverbrightShade both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_SHADE"; }
-  //Shader SurfDecalAdvShade both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_SHADE"; }
-
-  //Shader SurfDecalNoLMapStencil both="decal/surf_decal_nolmap" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
-  //Shader SurfDecalLMapOverbrightStencil both="decal/surf_decal_lmap" { defines { "VV_USE_OVERBRIGHT", "VV_TEXTURED_ZDOOM_STENCIL" } }
-  //Shader SurfDecalLMapNoOverbrightStencil both="decal/surf_decal_lmap" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
-  //Shader SurfDecalAdvStencil both="decal/surf_decal_adv" { define "VV_TEXTURED_ZDOOM_STENCIL"; }
 
   Shader SurfSimple both="lightmap/surf_simple";
   Shader SurfSimpleMasked both="lightmap/surf_simple" { define "VV_SIMPLE_MASKED"; }
   Shader SurfSimpleBrightmap both="lightmap/surf_simple" { define "VV_SIMPLE_BRIGHTMAP"; }
 
-  Shader SurfLightmapOverbright both="lightmap/surf_lightmap" { defines { "VV_USE_OVERBRIGHT" } }
-  Shader SurfLightmapMaskedOverbright both="lightmap/surf_lightmap" { defines { "VV_USE_OVERBRIGHT", "VV_SIMPLE_MASKED" } }
-  Shader SurfLightmapBrightmapOverbright both="lightmap/surf_lightmap" { defines { "VV_USE_OVERBRIGHT", "VV_LIGHTMAP_BRIGHTMAP" } }
-
-  Shader SurfLightmapNoOverbright both="lightmap/surf_lightmap";
-  Shader SurfLightmapMaskedNoOverbright both="lightmap/surf_lightmap" { define "VV_SIMPLE_MASKED"; }
-  Shader SurfLightmapBrightmapNoOverbright both="lightmap/surf_lightmap" { define "VV_LIGHTMAP_BRIGHTMAP"; }
+  Shader SurfLightmapOverbright both="lightmap/surf_lightmap";
+  Shader SurfLightmapMaskedOverbright both="lightmap/surf_lightmap" { define "VV_SIMPLE_MASKED"; }
+  Shader SurfLightmapBrightmapOverbright both="lightmap/surf_lightmap" { define "VV_LIGHTMAP_BRIGHTMAP"; }
 
   Shader SurfSky both="sky/surf_sky";
   Shader SurfDSky both="sky/surf_dsky";
@@ -341,6 +321,9 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   Shader [advanced] [cubemaps] DbgShadowMap both="draw/draw_smap_dbg";
 
+
+  // overbright normaliser
+  Shader PostprocessOberbright both="postprocess/overbright/overbright";
 
   // wipe
   Shader DrawWipeType0 both="wipe/draw_wipe_type0";

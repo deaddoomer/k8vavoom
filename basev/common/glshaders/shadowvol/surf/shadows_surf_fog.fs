@@ -20,5 +20,5 @@ void main () {
   vec4 FinalColor;
   $include "common/fog_calc_main.fs"
 
-  out_FragValue0 = FinalColor;
+  out_FragValue0 = clamp(FinalColor, 0.0, 1.0);
 }

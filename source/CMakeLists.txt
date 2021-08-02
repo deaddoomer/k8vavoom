@@ -43,12 +43,14 @@ function(sxx_compile output filename)
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.vs
-      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
-      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
       )
     # assume we have vshadpp in PATH
     add_custom_command(
@@ -89,12 +91,14 @@ else()
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/wipe/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/underwater/*.vs
-    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
-    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
     )
 
     add_custom_command(

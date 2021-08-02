@@ -31,6 +31,9 @@
 extern VCvarI gl_bigdecal_limit;
 extern VCvarI gl_smalldecal_limit;
 
+extern VCvarB r_lmap_overbright;
+extern VCvarF r_overbright_specular;
+
 
 // decal kind
 enum { DWALL, DFLOOR, DCEILING };
@@ -173,45 +176,28 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
       }
       break;
     case DT_LIGHTMAP:
-      if (gl_regular_disable_overbright) {
-        SurfDecalLMapNoOverbright.Activate();
-        SurfDecalLMapNoOverbright.SetTexture(0);
-        {
-          CALC_LMODE_VARS
-          SurfDecalLMapNoOverbright.SetLightGlobVis(globVis);
-          SurfDecalLMapNoOverbright.SetLightMode(lightMode);
-          SurfDecalLMapNoOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
-          SurfDecalLMapNoOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-          if (gp.isActive()) {
-            VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalLMapNoOverbright, gp);
-          } else {
-            VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalLMapNoOverbright);
-          }
+      SurfDecalLMapOverbright.Activate();
+      SurfDecalLMapOverbright.SetTexture(0);
+      //SurfDecalLMapOverbright_Locs.storeFogType();
+      {
+        CALC_LMODE_VARS
+        SurfDecalLMapOverbright.SetLightGlobVis(globVis);
+        SurfDecalLMapOverbright.SetLightMode(lightMode);
+        SurfDecalLMapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
+        SurfDecalLMapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
+        if (gp.isActive()) {
+          VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalLMapOverbright, gp);
+        } else {
+          VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalLMapOverbright);
         }
-        SurfDecalLMapNoOverbright.SetLightMap(1);
-        //SurfDecalLMapNoOverbright.SetLMapOnly(tex, surf, cache);
-        SurfDecalLMapNoOverbright.SetLMap(surf, tex, cache);
-      } else {
-        SurfDecalLMapOverbright.Activate();
-        SurfDecalLMapOverbright.SetTexture(0);
-        //SurfDecalLMapOverbright_Locs.storeFogType();
-        {
-          CALC_LMODE_VARS
-          SurfDecalLMapOverbright.SetLightGlobVis(globVis);
-          SurfDecalLMapOverbright.SetLightMode(lightMode);
-          SurfDecalLMapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
-          SurfDecalLMapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
-          if (gp.isActive()) {
-            VV_GLDRAWER_ACTIVATE_GLOW(SurfDecalLMapOverbright, gp);
-          } else {
-            VV_GLDRAWER_DEACTIVATE_GLOW(SurfDecalLMapOverbright);
-          }
-        }
-        SurfDecalLMapOverbright.SetLightMap(1);
-        SurfDecalLMapOverbright.SetSpecularMap(2);
-        //SurfDecalLMapOverbright.SetLMapOnly(tex, surf, cache);
-        SurfDecalLMapOverbright.SetLMap(surf, tex, cache);
+        float spec = (r_lmap_overbright.asBool() ? r_overbright_specular.asFloat() : 0.0f);
+        if (!isFiniteF(spec)) spec = 0.1f;
+        spec = clampval(spec, 0.0f, 16.0f);
+        SurfDecalLMapOverbright.SetSpecular(spec);
       }
+      SurfDecalLMapOverbright.SetLightMap(1);
+      //SurfDecalLMapOverbright.SetLMapOnly(tex, surf, cache);
+      SurfDecalLMapOverbright.SetLMap(surf, tex, cache);
       break;
     case DT_ADVANCED:
       SurfDecalAdv.Activate();
@@ -557,19 +543,11 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalNoLMap.SetTexShadeMode(smode);
         break;
       case DT_LIGHTMAP:
-        if (gl_regular_disable_overbright) {
-          SurfDecalLMapNoOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-          SurfDecalLMapNoOverbright.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
-          SurfDecalLMapNoOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
-          SurfDecalLMapNoOverbright.SetTexShade(sr, sg, sb);
-          SurfDecalLMapNoOverbright.SetTexShadeMode(smode);
-        } else {
-          SurfDecalLMapOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
-          SurfDecalLMapOverbright.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
-          SurfDecalLMapOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
-          SurfDecalLMapOverbright.SetTexShade(sr, sg, sb);
-          SurfDecalLMapOverbright.SetTexShadeMode(smode);
-        }
+        SurfDecalLMapOverbright.SetFullBright(dc->flags&decal_t::Fullbright ? 1.0f : 0.0f);
+        SurfDecalLMapOverbright.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
+        SurfDecalLMapOverbright.SetDecalTex(saxis, taxis, soffs, toffs, tex_iw, tex_ih);
+        SurfDecalLMapOverbright.SetTexShade(sr, sg, sb);
+        SurfDecalLMapOverbright.SetTexShadeMode(smode);
         break;
       case DT_ADVANCED:
         SurfDecalAdv.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));

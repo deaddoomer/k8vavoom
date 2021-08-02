@@ -85,7 +85,6 @@ extern VCvarB r_glow_flat;
 extern VCvarB gl_lmap_allow_partial_updates;
 
 extern VCvarB gl_regular_prefill_depth;
-extern VCvarB gl_regular_disable_overbright;
 
 extern VCvarI gl_release_ram_textures_mode;
 extern VCvarI gl_release_ram_textures_mode_sprite;
@@ -286,6 +285,13 @@ public:
   class FBO {
     //friend class VOpenGLDrawer;
   private:
+    enum {
+      Color8Bit,
+      Color10Bit,
+      ColorFP,
+    };
+
+  private:
     class VOpenGLDrawer *mOwner;
     GLuint mFBO;
     GLuint mColorTid;
@@ -293,12 +299,13 @@ public:
     int mWidth;
     int mHeight;
     bool mLinearFilter;
+    unsigned mType;
 
   public:
     bool scrScaled;
 
   private:
-    void createInternal (VOpenGLDrawer *aowner, int awidth, int aheight, bool createDepthStencil, bool mirroredRepeat);
+    void createInternal (VOpenGLDrawer *aowner, int awidth, int aheight, bool createDepthStencil, bool mirroredRepeat, bool wantFP);
 
   public:
     VV_DISABLE_COPY(FBO)
@@ -317,8 +324,12 @@ public:
     VVA_ALWAYS_INLINE GLuint getFBOid () const noexcept { return mFBO; }
     VVA_ALWAYS_INLINE GLuint getDSRBTid () const noexcept { return mDepthStencilRBO; }
 
-    void createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat=false);
-    void createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat=false);
+    bool isColor8Bit () const noexcept { return (mType == Color8Bit); }
+    bool isColor10Bit () const noexcept { return (mType == Color10Bit); }
+    bool isColorFloat () const noexcept { return (mType == ColorFP); }
+
+    void createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP=false, bool mirroredRepeat=false);
+    void createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP=false, bool mirroredRepeat=false);
     void destroy ();
 
     void activate ();
@@ -365,7 +376,6 @@ private:
   TArray<surface_t *> zfillMasked;
 
   bool canIntoBloomFX;
-  bool lastOverbrightEnable;
 
   bool scissorEnabled;
   int scissorX, scissorY, scissorW, scissorH;
@@ -499,6 +509,15 @@ public:
 
   virtual void InitResolution () override;
   virtual void DeinitResolution () override;
+
+  // recreate FBOs with fp/int formats (alpha is not guaranteed)
+  // used for overbright
+  virtual bool RecreateFBOs (bool wantFP) override;
+  virtual bool IsMainFBOFloat () override;
+  virtual bool IsCameraFBO () override;
+
+  // normalize overbrighting for fp textures
+  virtual void PostprocessOvebright () override;
 
   // shadowmap management
   // this also unload shaders
@@ -985,7 +1004,8 @@ protected:
   int currMainFBO;
 
   // texture FBO used in various post-render shader effects (tonemap, colormap, underwater, etc.)
-  FBO postSrcFBO; // main fbo texture will be copied there (this has no depth or stencil buffers, only texture)
+  FBO postSrcFBO; // main fbo texture will be copied there (this has no depth or stencil buffers, only texture), never FP
+  FBO postOverFBO; // can be FP
 
   // tonemap
   GLuint tonemapPalLUT; // palette LUT texture
@@ -996,7 +1016,6 @@ protected:
   GLint maxTexSize;
 
   GLuint lmap_id[NUM_BLOCK_SURFS];
-  GLuint addmap_id[NUM_BLOCK_SURFS];
   bool atlasesGenerated;
   vuint8 atlases_updated[NUM_BLOCK_SURFS];
 

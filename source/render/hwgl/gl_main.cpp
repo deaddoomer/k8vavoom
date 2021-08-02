@@ -463,6 +463,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , cameraFBOList()
   , currMainFBO(-1)
   , postSrcFBO()
+  , postOverFBO()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
   , tonemapMode(0)
@@ -499,7 +500,6 @@ VOpenGLDrawer::VOpenGLDrawer ()
   offsetEnabled = false;
   offsetFactor = offsetUnits = 0;
 
-  lastOverbrightEnable = !gl_regular_disable_overbright;
   //cameraFBO[0].mOwner = nullptr;
   //cameraFBO[1].mOwner = nullptr;
 
@@ -995,6 +995,7 @@ void VOpenGLDrawer::DeinitResolution () {
   }
 
   postSrcFBO.destroy();
+  postOverFBO.destroy();
 
   memset(currentViewport, 0, sizeof(currentViewport));
   currentViewport[0] = -666;
@@ -1386,13 +1387,6 @@ void VOpenGLDrawer::InitResolution () {
   wipeFBO.createTextureOnly(this, calcWidth, calcHeight);
   p_glObjectLabelVA(GL_FRAMEBUFFER, wipeFBO.getFBOid(), "Wipe FBO");
 
-  // allocate tonemap FBO object, and generate tonemap LUT
-  /*
-  tonemapSrcFBO.createTextureOnly(this, calcWidth, calcHeight);
-  p_glObjectLabelVA(GL_FRAMEBUFFER, tonemapSrcFBO.getFBOid(), "Palette Tonemap FBO");
-  GeneratePaletteLUT();
-  */
-
   // `colormapSrcFBO` will be allocated on demand
 
   //if (major >= 3) canRenderShadowmaps = true;
@@ -1534,3 +1528,63 @@ void VOpenGLDrawer::InitResolution () {
 #undef gl_
 #undef glc_
 #undef glg_
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::RecreateFBOs
+//
+//  recreate FBOs with fp/int formats (alpha is not guaranteed)
+//  used for overbright
+//
+//==========================================================================
+bool VOpenGLDrawer::RecreateFBOs (bool wantFP) {
+  vassert(mainFBO.isValid());
+  vassert(ambLightFBO.isValid());
+
+  const int mwdt = mainFBO.getWidth();
+  const int mhgt = mainFBO.getHeight();
+  vassert(mwdt > 0);
+  vassert(mhgt > 0);
+
+  if (mainFBO.isColorFloat() == wantFP) return true; // no need to do anything
+
+  FBO *currFBO = currentActiveFBO;
+
+  // reallocate main FBO object
+  const bool scrScaled = mainFBO.scrScaled;
+  mainFBO.destroy();
+  mainFBO.createDepthStencil(this, mwdt, mhgt, wantFP);
+  mainFBO.scrScaled = scrScaled;
+  p_glObjectLabelVA(GL_FRAMEBUFFER, mainFBO.getFBOid(), "Main FBO");
+
+  // reallocate ambient light FBO object
+  ambLightFBO.destroy();
+  ambLightFBO.createTextureOnly(this, mwdt, mhgt, wantFP);
+  p_glObjectLabelVA(GL_FRAMEBUFFER, ambLightFBO.getFBOid(), "Ambient light FBO");
+
+  currentActiveFBO = currFBO;
+  ReactivateCurrentFBO();
+
+  return (mainFBO.isColorFloat() == wantFP);
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::IsMainFBOFloat
+//
+//==========================================================================
+bool VOpenGLDrawer::IsMainFBOFloat () {
+  return mainFBO.isColorFloat();
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::IsCameraFBO
+//
+//==========================================================================
+bool VOpenGLDrawer::IsCameraFBO () {
+  return (currMainFBO >= 0);
+}

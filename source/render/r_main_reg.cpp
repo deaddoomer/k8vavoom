@@ -139,7 +139,6 @@ VRenderLevelLightmap::VRenderLevelLightmap (VLevel *ALevel)
 void VRenderLevelLightmap::releaseAtlas (vuint32 aid) noexcept {
   vassert(aid < NUM_BLOCK_SURFS);
   block_dirty[aid].addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
-  add_block_dirty[aid].addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
 }
 
 
@@ -151,7 +150,6 @@ void VRenderLevelLightmap::releaseAtlas (vuint32 aid) noexcept {
 void VRenderLevelLightmap::allocAtlas (vuint32 aid) noexcept {
   vassert(aid < NUM_BLOCK_SURFS);
   block_dirty[aid].addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
-  add_block_dirty[aid].addDirty(0, 0, BLOCK_WIDTH, BLOCK_HEIGHT);
 }
 
 
@@ -195,13 +193,11 @@ void VRenderLevelLightmap::advanceCacheFrame () {
 void VRenderLevelLightmap::initLightChain () {
   memset(light_block, 0, sizeof(light_block));
   memset(light_chain, 0, sizeof(light_chain));
-  memset(add_block, 0, sizeof(add_block));
   memset(light_chain_used, 0, sizeof(light_chain_used));
   light_chain_head = 0;
   // force updating of all lightmaps
   for (unsigned f = 0; f < NUM_BLOCK_SURFS; ++f) {
     block_dirty[f].clear();
-    add_block_dirty[f].clear();
   }
 }
 
@@ -270,34 +266,12 @@ VDirtyArea &VRenderLevelLightmap::GetLightBlockDirtyArea (vuint32 bnum) {
 
 //==========================================================================
 //
-//  VRenderLevelLightmap::GetLightAddBlockDirtyArea
-//
-//==========================================================================
-VDirtyArea &VRenderLevelLightmap::GetLightAddBlockDirtyArea (vuint32 bnum) {
-  vassert(bnum < NUM_BLOCK_SURFS);
-  return add_block_dirty[bnum];
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelLightmap::GetLightBlock
 //
 //==========================================================================
 rgba_t *VRenderLevelLightmap::GetLightBlock (vuint32 bnum) {
   vassert(bnum < NUM_BLOCK_SURFS);
   return light_block[bnum];
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelLightmap::GetLightAddBlock
-//
-//==========================================================================
-rgba_t *VRenderLevelLightmap::GetLightAddBlock (vuint32 bnum) {
-  vassert(bnum < NUM_BLOCK_SURFS);
-  return add_block[bnum];
 }
 
 
@@ -347,6 +321,12 @@ void VRenderLevelLightmap::RenderScene (const refdef_t *RD, const VViewClipper *
     MiniStopTimer profDrawLMap("DrawLightmapWorld", prof_r_bsp_world_render.asBool());
     Drawer->DrawLightmapWorld();
     profDrawLMap.stopAndReport();
+
+    /*
+    if (r_lmap_overbright.asBool() && Drawer->IsMainFBOFloat() && !Drawer->IsCameraFBO()) {
+      Drawer->PostprocessOvebright();
+    }
+    */
   }
 
   //if (!r_reg_disable_portals) RenderPortals(); //k8: it was here before, why?

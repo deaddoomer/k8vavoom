@@ -51,5 +51,5 @@ void main () {
   if (FinalColor.z < 0) { FinalColor.r = 1.0; FinalColor.z = -FinalColor.z; }
 #endif
 
-  out_FragValue0 = FinalColor;
+  out_FragValue0 = clamp(FinalColor, 0.0, 1.0);
 }

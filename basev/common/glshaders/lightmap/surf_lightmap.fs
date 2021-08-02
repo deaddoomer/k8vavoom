@@ -5,9 +5,7 @@ $include "common/common.inc"
 
 uniform sampler2D Texture;
 uniform sampler2D LightMap;
-#ifdef VV_USE_OVERBRIGHT
-uniform sampler2D SpecularMap;
-#endif
+uniform float Specular;
 #ifdef VV_LIGHTMAP_BRIGHTMAP
 $include "common/brightmap_vars.fs"
 #endif
@@ -22,6 +20,7 @@ $include "common/doom_lighting.fs"
 uniform float FullBright; // 0.0 or 1.0
 uniform vec4 Light;
 //#endif
+$include "common/overbright.fs"
 
 
 void main () {
@@ -41,14 +40,13 @@ void main () {
   lmap.g = mix(lmap.g, 0.0, FullBright);
   lmap.b = mix(lmap.b, 0.0, FullBright);
   lt.rgb += lmap.rgb;
+  normOverbrightV4(lt, Specular);
 
 #ifdef VV_LIGHTMAP_BRIGHTMAP
   $include "common/brightmap_calc.fs"
 #endif
   TexColor.rgb *= lt.rgb;
-#ifdef VV_USE_OVERBRIGHT
-  TexColor.rgb += texture2D(SpecularMap, LightmapCoordinate).rgb;
-#endif
+  //TexColor.rgb = clamp(TexColor.rgb, 0.0, 1.0);
 
   // convert to premultiplied
   vec4 FinalColor;

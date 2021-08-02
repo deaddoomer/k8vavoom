@@ -29,5 +29,5 @@ void main () {
   FinalColor = TexColor;
 #endif
 
-  out_FragValue0 = FinalColor;
+  out_FragValue0 = clamp(FinalColor, 0.0, 1.0);
 }

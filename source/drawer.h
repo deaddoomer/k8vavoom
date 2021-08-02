@@ -323,9 +323,7 @@ public:
   virtual vuint32 GetLightChainNext (vuint32 bnum) = 0;
 
   virtual VDirtyArea &GetLightBlockDirtyArea (vuint32 bnum) = 0;
-  virtual VDirtyArea &GetLightAddBlockDirtyArea (vuint32 bnum) = 0;
   virtual rgba_t *GetLightBlock (vuint32 bnum) = 0;
-  virtual rgba_t *GetLightAddBlock (vuint32 bnum) = 0;
   virtual surfcache_t *GetLightChainFirst (vuint32 bnum) = 0;
 
   virtual void BuildLightMap (surface_t *) = 0;
@@ -558,6 +556,15 @@ public:
   virtual bool SetResolution (int AWidth, int AHeight, int fsmode) = 0;
   virtual void InitResolution () = 0;
   virtual void DeinitResolution () = 0;
+
+  // recreate FBOs with fp/int formats (alpha is not guaranteed)
+  // used for overbright
+  virtual bool RecreateFBOs (bool wantFP) = 0;
+  virtual bool IsMainFBOFloat () = 0;
+  virtual bool IsCameraFBO () = 0;
+
+  // normalize overbrighting for fp textures
+  virtual void PostprocessOvebright () = 0;
 
   virtual void EnableBlend () = 0;
   virtual void DisableBlend () = 0;

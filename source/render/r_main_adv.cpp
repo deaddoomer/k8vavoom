@@ -389,6 +389,10 @@ void VRenderLevelShadowVolume::RenderSceneLights (const refdef_t *RD, const VVie
   RenderSceneStaticLights(RD, Range);
   RenderSceneDynamicLights(RD, Range);
 
+  if (r_adv_overbright.asBool() && Drawer->IsMainFBOFloat() && !Drawer->IsCameraFBO()) {
+    Drawer->PostprocessOvebright();
+  }
+
   profDrawSVol.stopAndReport();
 
   if (dbg_adv_show_light_count) {
@@ -399,6 +403,9 @@ void VRenderLevelShadowVolume::RenderSceneLights (const refdef_t *RD, const VVie
 }
 
 
+// sorry!
+static bool shadowmapsForced = false;
+
 //==========================================================================
 //
 //  VRenderLevelShadowVolume::RenderScene
@@ -407,12 +414,15 @@ void VRenderLevelShadowVolume::RenderSceneLights (const refdef_t *RD, const VVie
 void VRenderLevelShadowVolume::RenderScene (const refdef_t *RD, const VViewClipper *Range) {
   if (!Drawer->SupportsShadowVolumeRendering()) {
     if (!Drawer->SupportsShadowMapRendering()) {
-      Host_Error("Shadow volume rendering is not supported by your graphics card");
+      Host_Error("Advanced lighting is not supported by your graphics card");
     }
     // force shadowmaps if shadow volumes are not supported
-    if (!r_shadowmaps) {
-      r_shadowmaps = true;
-      GCon->Logf("Forced shadowmap renderer, because shadow volumes are not supported.");
+    if (!shadowmapsForced) {
+      shadowmapsForced = true;
+      if (!r_shadowmaps) {
+        r_shadowmaps = true;
+        GCon->Log("Forced shadowmap renderer, because shadow volumes are not supported.");
+      }
     }
   }
 

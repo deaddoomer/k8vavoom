@@ -506,9 +506,7 @@ public:
   virtual vuint32 GetLightChainNext (vuint32 bnum) override;
 
   virtual VDirtyArea &GetLightBlockDirtyArea (vuint32 bnum) override;
-  virtual VDirtyArea &GetLightAddBlockDirtyArea (vuint32 bnum) override;
   virtual rgba_t *GetLightBlock (vuint32 bnum) override;
-  virtual rgba_t *GetLightAddBlock (vuint32 bnum) override;
   virtual surfcache_t *GetLightChainFirst (vuint32 bnum) override;
 
   virtual void NukeLightmapCache () override;

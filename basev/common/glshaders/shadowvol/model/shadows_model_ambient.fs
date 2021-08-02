@@ -27,7 +27,7 @@ void main () {
 #endif
 
   vec4 FinalColor;
-  FinalColor.rgb = Light.rgb;
+  FinalColor.rgb = clamp(Light.rgb, 0.0, 1.0);
   FinalColor.a = clamp(InAlpha*ClampTransp, 0.0, 1.0);
 
   out_FragValue0 = FinalColor;

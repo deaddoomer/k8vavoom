@@ -61,6 +61,7 @@ VOpenGLDrawer::FBO::FBO ()
   , mWidth(0)
   , mHeight(0)
   , mLinearFilter(false)
+  , mType(Color8Bit)
   , scrScaled(false)
 {
 }
@@ -108,6 +109,7 @@ void VOpenGLDrawer::FBO::destroy () {
   mWidth = 0;
   mHeight = 0;
   mLinearFilter = false;
+  mType = Color8Bit;
   if (mOwner->currentActiveFBO == this) mOwner->currentActiveFBO = nullptr;
   mOwner->ReactivateCurrentFBO();
   mOwner = nullptr;
@@ -119,7 +121,7 @@ void VOpenGLDrawer::FBO::destroy () {
 //  VOpenGLDrawer::FBO::createInternal
 //
 //==========================================================================
-void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int aheight, bool createDepthStencil, bool mirroredRepeat) {
+void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int aheight, bool createDepthStencil, bool mirroredRepeat, bool wantFP) {
   destroy();
   vassert(aowner);
   vassert(awidth > 0);
@@ -161,8 +163,30 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
 
   // empty texture
   GLDRW_RESET_ERROR();
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  GLDRW_CHECK_ERROR("FBO: glTexImage2D");
+  mType = Color8Bit;
+  bool texOk = false;
+  if (wantFP) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R11F_G11F_B10F, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    texOk = (glGetError() == 0);
+    if (texOk) {
+      mType = ColorFP;
+    } else {
+      GCon->Log(NAME_Debug, "cannot create FP color texture, falling back to integers");
+    }
+  }
+  if (!texOk) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    texOk = (glGetError() == 0);
+    if (texOk) {
+      mType = Color10Bit;
+    } else {
+      GCon->Log(NAME_Debug, "cannot create 10-bit integer color texture, falling back to 8-bit");
+    }
+  }
+  if (!texOk) {
+    glTexImage2D(GL_TEXTURE_2D, 0, /*GL_RGBA*//*GL_RGB10_A2*/GL_R11F_G11F_B10F, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    GLDRW_CHECK_ERROR("FBO: glTexImage2D");
+  }
   aowner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
   GLDRW_CHECK_ERROR("FBO: glFramebufferTexture2D");
 
@@ -260,8 +284,8 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
 //  VOpenGLDrawer::FBO::createTextureOnly
 //
 //==========================================================================
-void VOpenGLDrawer::FBO::createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat) {
-  createInternal(aowner, awidth, aheight, false, mirroredRepeat);
+void VOpenGLDrawer::FBO::createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP, bool mirroredRepeat) {
+  createInternal(aowner, awidth, aheight, false, mirroredRepeat, wantFP);
 }
 
 
@@ -270,8 +294,8 @@ void VOpenGLDrawer::FBO::createTextureOnly (VOpenGLDrawer *aowner, int awidth, i
 //  VOpenGLDrawer::FBO::createDepthStencil
 //
 //==========================================================================
-void VOpenGLDrawer::FBO::createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool mirroredRepeat) {
-  createInternal(aowner, awidth, aheight, true, mirroredRepeat);
+void VOpenGLDrawer::FBO::createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP, bool mirroredRepeat) {
+  createInternal(aowner, awidth, aheight, true, mirroredRepeat, wantFP);
 }
 
 

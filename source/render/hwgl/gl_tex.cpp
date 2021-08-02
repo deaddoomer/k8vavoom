@@ -69,11 +69,8 @@ static int isPOT (int val) {
 void VOpenGLDrawer::GenerateLightmapAtlasTextures () {
   vassert(!atlasesGenerated);
   glGenTextures(NUM_BLOCK_SURFS, lmap_id);
-  glGenTextures(NUM_BLOCK_SURFS, addmap_id);
   for (unsigned f = 0; f < NUM_BLOCK_SURFS; ++f) {
     glBindTexture(GL_TEXTURE_2D, lmap_id[f]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glBindTexture(GL_TEXTURE_2D, addmap_id[f]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
   }
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -91,10 +88,8 @@ void VOpenGLDrawer::GenerateLightmapAtlasTextures () {
 void VOpenGLDrawer::DeleteLightmapAtlases () {
   if (atlasesGenerated) {
     glDeleteTextures(NUM_BLOCK_SURFS, lmap_id);
-    glDeleteTextures(NUM_BLOCK_SURFS, addmap_id);
     atlasesGenerated = false;
     memset(lmap_id, 0, sizeof(lmap_id));
-    memset(addmap_id, 0, sizeof(addmap_id));
     memset(atlases_updated, 0, sizeof(atlases_updated));
     //GCon->Log(NAME_Debug, "******** VOpenGLDrawer::DeleteLightmapAtlases ********");
   }

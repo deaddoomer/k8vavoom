@@ -282,6 +282,10 @@ extern VCvarB r_shadowmap_fix_light_dist;
 
 extern VCvarB r_lit_semi_translucent;
 
+extern VCvarB r_lmap_overbright;
+extern VCvarB r_adv_overbright;
+extern VCvarF r_overbright_specular;
+
 extern VCvarB r_dbg_lightbulbs_static;
 extern VCvarB r_dbg_lightbulbs_dynamic;
 extern VCvarF r_dbg_lightbulbs_zofs_static;

@@ -61,8 +61,6 @@ enum { Filter4X = false };
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarI r_lmap_filtering("r_lmap_filtering", "3", "Static lightmap filtering (0: none; 1: simple; 2: simple++; 3: extra).", CVAR_Archive);
 static VCvarB r_lmap_lowfilter("r_lmap_lowfilter", false, "Filter lightmaps without extra samples?", CVAR_Archive);
-static VCvarB r_lmap_overbright_static("r_lmap_overbright_static", true, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
-static VCvarF r_lmap_specular("r_lmap_specular", "0.1", "Specular light in regular renderer.", CVAR_Archive);
 static VCvarI r_lmap_atlas_limit("r_lmap_atlas_limit", "14", "Nuke lightmap cache if it reached this number of atlases.", CVAR_Archive);
 
 VCvarB r_lmap_bsp_trace_static("r_lmap_bsp_trace_static", false, "Trace static lightmaps with BSP tree instead of blockmap?", CVAR_Archive);
@@ -81,9 +79,6 @@ struct LightmapTracer {
   vuint32 blocklightsr[GridSize*GridSize];
   vuint32 blocklightsg[GridSize*GridSize];
   vuint32 blocklightsb[GridSize*GridSize];
-  vuint32 blockaddlightsr[GridSize*GridSize];
-  vuint32 blockaddlightsg[GridSize*GridSize];
-  vuint32 blockaddlightsb[GridSize*GridSize];
 
   #ifdef VV_EXPERIMENTAL_LMAP_FILTER
   vuint32 blocklightsrNew[GridSize*GridSize];
@@ -1339,7 +1334,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
 //  xblight
 //
 //==========================================================================
-static inline int xblight (int add) noexcept {
+static VVA_ALWAYS_INLINE int xblight (const int add) noexcept {
   enum {
     minlight = 256,
     maxlight = 0xff00,
@@ -1380,6 +1375,7 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
   const rgb_t *lightmap_rgb = surf->lightmap_rgb;
 
   // clear to ambient
+  /*
   int t = getSurfLightLevelInt(surf);
   t <<= 8;
   int tR = ((surf->Light>>16)&255)*t/255;
@@ -1393,9 +1389,13 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
     lmtracer.blocklightsb[i] = tB;
     lmtracer.blockaddlightsr[i] = lmtracer.blockaddlightsg[i] = lmtracer.blockaddlightsb[i] = 0;
   }
+  */
+
+  memset(lmtracer.blocklightsr, 0, sizeof(lmtracer.blocklightsr[0])*(unsigned)size);
+  memset(lmtracer.blocklightsg, 0, sizeof(lmtracer.blocklightsg[0])*(unsigned)size);
+  memset(lmtracer.blocklightsb, 0, sizeof(lmtracer.blocklightsb[0])*(unsigned)size);
 
   // sum lightmaps
-  const bool overbright = r_lmap_overbright_static.asBool();
   if (lightmap_rgb) {
     if (!lightmap) Sys_Error("RGB lightmap without uncolored lightmap");
     lmtracer.isColored = true;
@@ -1404,7 +1404,7 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
       lmtracer.blocklightsr[i] += lightmap_rgb[i].r<<8;
       lmtracer.blocklightsg[i] += lightmap_rgb[i].g<<8;
       lmtracer.blocklightsb[i] += lightmap_rgb[i].b<<8;
-      if (!overbright) {
+      /*if (!overbright)*/ {
         if (lmtracer.blocklightsr[i] > 0xffff) lmtracer.blocklightsr[i] = 0xffff;
         if (lmtracer.blocklightsg[i] > 0xffff) lmtracer.blocklightsg[i] = 0xffff;
         if (lmtracer.blocklightsb[i] > 0xffff) lmtracer.blocklightsb[i] = 0xffff;
@@ -1412,12 +1412,12 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
     }
   } else if (lightmap) {
     for (int i = 0; i < size; ++i) {
-      t = lightmap[i]<<8;
+      const int t = lightmap[i]<<8;
       //blocklights[i] += t;
       lmtracer.blocklightsr[i] += t;
       lmtracer.blocklightsg[i] += t;
       lmtracer.blocklightsb[i] += t;
-      if (!overbright) {
+      /*if (!overbright)*/ {
         if (lmtracer.blocklightsr[i] > 0xffff) lmtracer.blocklightsr[i] = 0xffff;
         if (lmtracer.blocklightsg[i] > 0xffff) lmtracer.blocklightsg[i] = 0xffff;
         if (lmtracer.blocklightsb[i] > 0xffff) lmtracer.blocklightsb[i] = 0xffff;
@@ -1428,45 +1428,13 @@ void VRenderLevelLightmap::BuildLightMap (surface_t *surf) {
   // add all the dynamic lights
   if (surf->dlightframe == currDLightFrame) AddDynamicLights(surf);
 
-  // calc additive light
-  // this must be done before lightmap procesing because it will clamp all lights
-  const float spcoeff = clampval(r_lmap_specular.asFloat(), 0.0f, 16.0f);
-  for (unsigned i = 0; i < (unsigned)size; ++i) {
-    t = lmtracer.blocklightsr[i];
-    t -= 0x10000;
-    if (t > 0) {
-      t = int(spcoeff*t);
-      if (t > 0xffff) t = 0xffff;
-      lmtracer.blockaddlightsr[i] = t;
-      lmtracer.hasOverbright = true;
-    }
-
-    t = lmtracer.blocklightsg[i];
-    t -= 0x10000;
-    if (t > 0) {
-      t = int(spcoeff*t);
-      if (t > 0xffff) t = 0xffff;
-      lmtracer.blockaddlightsg[i] = t;
-      lmtracer.hasOverbright = true;
-    }
-
-    t = lmtracer.blocklightsb[i];
-    t -= 0x10000;
-    if (t > 0) {
-      t = int(spcoeff*t);
-      if (t > 0xffff) t = 0xffff;
-      lmtracer.blockaddlightsb[i] = t;
-      lmtracer.hasOverbright = true;
-    }
-  }
-
   // bound, invert, and shift
-  // also, subtract ambient light, because it will be added back in the shader
   for (unsigned i = 0; i < (unsigned)size; ++i) {
-    lmtracer.blocklightsr[i] = xblight((int)lmtracer.blocklightsr[i]-tR);
-    lmtracer.blocklightsg[i] = xblight((int)lmtracer.blocklightsg[i]-tG);
-    lmtracer.blocklightsb[i] = xblight((int)lmtracer.blocklightsb[i]-tB);
+    lmtracer.blocklightsr[i] = xblight((int)lmtracer.blocklightsr[i]);
+    lmtracer.blocklightsg[i] = xblight((int)lmtracer.blocklightsg[i]);
+    lmtracer.blocklightsb[i] = xblight((int)lmtracer.blocklightsb[i]);
   }
+
 
   #ifdef VV_EXPERIMENTAL_LMAP_FILTER
   enum {
@@ -1625,23 +1593,6 @@ bool VRenderLevelLightmap::BuildSurfaceLightmap (surface_t *surface) {
   }
   chainLightmap(cache);
   block_dirty[bnum].addDirty(cache->s, cache->t, smax, tmax);
-
-  // overbrights
-  lbp = &add_block[bnum][cache->t*BLOCK_WIDTH+cache->s];
-  blpos = 0;
-  for (int y = 0; y < tmax; ++y, lbp += BLOCK_WIDTH) {
-    rgba_t *dlbp = lbp;
-    for (int x = 0; x < smax; ++x, ++dlbp, ++blpos) {
-      dlbp->r = clampToByte(lmtracer.blockaddlightsr[blpos]>>8);
-      dlbp->g = clampToByte(lmtracer.blockaddlightsg[blpos]>>8);
-      dlbp->b = clampToByte(lmtracer.blockaddlightsb[blpos]>>8);
-      dlbp->a = 255;
-    }
-  }
-
-  if (/*hasOverbright*/true) {
-    add_block_dirty[bnum].addDirty(cache->s, cache->t, smax, tmax);
-  }
 
   return true;
 }
