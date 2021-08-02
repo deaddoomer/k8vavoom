@@ -420,7 +420,20 @@ void *VOpenGLDrawer::ReadScreen (int *bpp, bool *bot2top) {
   glBindTexture(GL_TEXTURE_2D, GetMainFBO()->getColorTid());
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   void *dst = Z_Malloc(GetMainFBO()->getWidth()*GetMainFBO()->getHeight()*3);
+  #if 0
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, dst);
+  #else
+  float *tmp = (float *)Z_Malloc(GetMainFBO()->getWidth()*GetMainFBO()->getHeight()*sizeof(float)*3);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, tmp);
+  vuint8 *d = (vuint8 *)dst;
+  float *s = tmp;
+  for (int f = GetMainFBO()->getWidth()*GetMainFBO()->getHeight()*3; f > 0; --f) {
+    float v = *s++;
+    v = clampval(v, 0.0f, 1.0f);
+    *d++ = clampToByte((int)(v*255.0f));
+  }
+  Z_Free(tmp);
+  #endif
   glBindTexture(GL_TEXTURE_2D, oldbindtex);
 
   *bpp = 24;
