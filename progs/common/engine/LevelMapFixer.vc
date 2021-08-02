@@ -429,6 +429,7 @@ void KnownMapBugFixer () {
   if (MapHashMD5 == "1c5f5371b392663e70c8c7b94ceeb82b") {
     bForceNoTexturePrecache = true;
     //bForceNoPrecalcStaticLights = true;
+    return;
   }
   //ldr_extrasamples_override = 0;
 
@@ -504,6 +505,7 @@ void KnownMapBugFixer () {
     Lines[2039].flags |= ML_REPEAT_SPECIAL;
     Lines[2040].flags |= ML_REPEAT_SPECIAL;
     printwarn("MAPFIX: Hell Revealed MAP23 detected and fixed");
+    return;
   }
 
   // Venom MAP01, swap sides
@@ -515,6 +517,7 @@ void KnownMapBugFixer () {
     Sides[sn1].TopTexture = Sides[sn0].TopTexture;
     Sides[sn1].BottomTexture = Sides[sn0].BottomTexture;
     printwarn("MAPFIX: Venom MAP01 detected and fixed");
+    return;
   }
 
   //k8: this hack will make SS:R map05 turret work right in both versions
@@ -529,6 +532,7 @@ void KnownMapBugFixer () {
         break;
       }
     }
+    return;
   }
 
   //k8: Maps Of Chaos (Overkill), MAP04 invalid player start
@@ -537,6 +541,7 @@ void KnownMapBugFixer () {
     // fix invalid player 1 start (it should be DM start instead)
     Things[286].type = 11;
     Things[286].angle = 180;
+    return;
   }
 
   //k8: No End In Sight (v 1.4), E2M4, lift bug (found by steinkrauz)
@@ -544,6 +549,7 @@ void KnownMapBugFixer () {
     printwarn("MAPFIX: No End In Sight, E2M4");
     // fix missing bottom texture on back sidedef
     Sides[Lines[3085].sidenum[1]].BottomTexture = LdrTexNumForName("PLAT1", TEXTYPE_Wall);
+    return;
   }
 
   //k8: Memento Mori MAP27 (found by steinkrauz)
@@ -552,6 +558,7 @@ void KnownMapBugFixer () {
     // fix missing bottom texture on back sidedef
     Sides[Lines[854].sidenum[1]].BottomTexture = LdrTexNumForName("STONE4", TEXTYPE_Wall);
     Sides[Lines[1119].sidenum[1]].BottomTexture = LdrTexNumForName("STONE4", TEXTYPE_Wall);
+    return;
   }
 
   /* i changed door logic back to "tolerant", so it is not needed anymore
@@ -560,6 +567,7 @@ void KnownMapBugFixer () {
     printwarn("MAPFIX: Maps Of Chaos (Overkill), MAP01");
     // move demon a little, so it won't block a wall
     Things[131].x = -221;
+    return;
   }
   */
 
@@ -592,6 +600,7 @@ void KnownMapBugFixer () {
         line.arg1 = newtag;
       }
     }
+    return;
   }
 
   //k8: Zen Dynamics MAP01
@@ -599,5 +608,29 @@ void KnownMapBugFixer () {
     printwarn("MAPFIX: Zen Dynamics, MAP01");
     // move player 1 start, it is stuck in a wall
     Things[0].x -= 1;
+    return;
+  }
+
+
+  // maps from ikspcial.zip
+  // underwtr.wad
+  if (MapHashMD5 == "837f6ca0df891069b63580cc9ec0582e") {
+    printwarn("MAPFIX: ikspcial:underwtr");
+    bForceUseZDBSP = true;
+    return;
+  }
+
+  // cross.wad
+  if (MapHashMD5 == "4d2ebeebf5685d8dd8302da19b53bf70") {
+    printwarn("MAPFIX: ikspcial:cross");
+    bForceUseZDBSP = true;
+    return;
+  }
+
+  // undergnd
+  if (MapHashMD5 == "4c918a1eced8ed9d03bc42b011b680f7") {
+    printwarn("MAPFIX: ikspcial:undergnd");
+    bForceUseZDBSP = true;
+    return;
   }
 }

@@ -32,7 +32,7 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarI nodes_builder_type("nodes_builder_type", "0", "Which internal node builder to use (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
+static VCvarI nodes_builder_type("nodes_builder_type", "0", "Which internal node builder to use (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
 // default nodes builder for UDMF is still AJBSP, because it seems that i fixed UDMF bugs
 static VCvarI nodes_builder_normal("nodes_builder_normal", "1", "Which internal node builder to use for non-UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
 static VCvarI nodes_builder_udmf("nodes_builder_udmf", "1", "Which internal node builder to use for UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
@@ -46,6 +46,7 @@ static VCvarI nodes_builder_udmf("nodes_builder_udmf", "1", "Which internal node
 //
 //==========================================================================
 int VLevel::GetNodesBuilder () const {
+  if (LevelFlags&LF_ForceUseZDBSP) return BSP_ZD;
   int nbt = nodes_builder_type;
   if (nbt <= 0) nbt = (LevelFlags&LF_TextMap ? nodes_builder_udmf : nodes_builder_normal);
   if (nbt == 2) return BSP_ZD;
@@ -69,8 +70,14 @@ void VLevel::BuildNodes () {
   R_PBarReset();
 #endif
   switch (GetNodesBuilder()) {
-    case BSP_AJ: BuildNodesAJ(); break;
-    case BSP_ZD: BuildNodesZD(); break;
+    case BSP_AJ:
+      GCon->Log("Selected nodes builder: AJBSP");
+      BuildNodesAJ();
+      break;
+    case BSP_ZD:
+      GCon->Log("Selected nodes builder: ZDBSP");
+      BuildNodesZD();
+      break;
     default: Sys_Error("cannot determine nodes builder (this is internal engine bug!)");
   }
 #ifdef CLIENT

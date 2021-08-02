@@ -100,7 +100,7 @@ native transient readonly bool bForServer; // true if this level belongs to the 
 native transient readonly bool bExtended; // true if level was in Hexen format (or extended namespace for UDMF)
 native transient readonly bool bTextMap; // UDMF format map
 // used in map fixer
-native transient bool bForceRebuildNodes;
+native transient bool bForceUseZDBSP; // force ZDBSP (it works better with some ancient tricky maps)
 native transient bool bForceAllowSeveralPObjInSubsector; // this is not used anymore, but kept for compatibility
 native transient bool bForceNoTexturePrecache;
 native transient bool bForceNoPrecalcStaticLights;

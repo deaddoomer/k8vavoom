@@ -49,7 +49,7 @@ VCvarB loader_cache_data("loader_cache_data", true, "Cache built level data?", C
 VCvarF loader_cache_time_limit("loader_cache_time_limit", "3", "Cache data if building took more than this number of seconds.", CVAR_Archive);
 
 
-extern VCvarI nodes_builder_type;
+//extern VCvarI nodes_builder_type;
 #ifdef CLIENT
 extern VCvarI r_max_portal_depth;
 extern VCvarI r_max_portal_depth_override;
@@ -398,16 +398,6 @@ load_again:
   }
   InitTime += Sys_Time();
 
-  if (nodes_builder_type == 0) {
-    const char *nbname;
-    switch (GetNodesBuilder()) {
-      case BSP_AJ: nbname = "AJBSP"; break;
-      case BSP_ZD: nbname = "ZDBSP"; break;
-      default: nbname = "<unknown (bug)>"; break;
-    }
-    GCon->Logf("Selected nodes builder: %s", nbname);
-  }
-
   if (AuxiliaryMap) GCon->Log("loading map from nested wad");
 
   if (mapHashValid) {
@@ -513,7 +503,6 @@ load_again:
 
   double Lines2Time = -Sys_Time();
   FixKnownMapErrors();
-  bool forceNodeRebuildFromFixer = !!(LevelFlags&LF_ForceRebuildNodes);
   Lines2Time += Sys_Time();
 
   //HACK! fix things skill settings
@@ -532,7 +521,6 @@ load_again:
     }
     VStream::Destroy(strm);
     if (cachedDataLoaded) {
-      forceNodeRebuildFromFixer = false; //k8: is this right?
       NeedNodesBuild = false;
       // touch cache file, so it will survive longer
       Sys_Touch(cacheFileName);
@@ -542,7 +530,7 @@ load_again:
   bool forceNewBlockmap = false;
   double NodesTime = -Sys_Time();
   // and again; sorry!
-  if (NeedNodesBuild || forceNodeRebuildFromFixer) {
+  if (NeedNodesBuild) {
     GCon->Logf("building GL nodes");
     //R_OSDMsgShowSecondary("BUILDING NODES");
     BuildNodes();

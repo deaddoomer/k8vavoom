@@ -362,7 +362,7 @@ class VLevel : public VGameObject {
     LF_Extended  = 1u<<1, // true if level was in Hexen format (or extended namespace for UDMF)
     LF_TextMap   = 1u<<2, // UDMF format map
     // used in map fixer
-    LF_ForceRebuildNodes                = 1u<<3,
+    LF_ForceUseZDBSP                    = 1u<<3, // force ZDBSP (it works better with some ancient tricky maps)
     LF_ForceAllowSeveralPObjInSubsector = 1u<<4, // this is not used anymore, but kept for compatibility
     LF_ForceNoTexturePrecache           = 1u<<5,
     LF_ForceNoPrecalcStaticLights       = 1u<<6,
