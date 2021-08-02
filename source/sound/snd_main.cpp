@@ -92,7 +92,7 @@ public:
   virtual void PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
                         int origin_id, int channel, float volume, float Attenuation, bool Loop) override;
   virtual void StopSound (int origin_id, int channel) override;
-  virtual void StopAllSound () override;
+  virtual void StopAllSound (bool keepLastSwitch=false) override;
   virtual bool IsSoundPlaying (int origin_id, int InSoundId) override;
   virtual void MoveSounds (int origin_id, const TVec &neworigin) override;
 
@@ -148,6 +148,7 @@ private:
     bool is3D;
     bool LocalPlayerSound;
     bool Loop;
+    double SysStartTime; // start time
   };
 
   // sound curve
@@ -182,7 +183,7 @@ private:
   friend class TCmdMusic;
 
   // sound effect helpers
-  int GetChannel (int, int, int, int);
+  int GetChannel (int sound_id, int origin_id, int channel, int priority);
   void StopChannel (int cidx); // won't deallocate it
   void UpdateSfx ();
 
@@ -690,6 +691,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   Channel[chan].is3D = is3D;
   Channel[chan].LocalPlayerSound = LocalPlayerSound;
   Channel[chan].Loop = Loop;
+  Channel[chan].SysStartTime = Sys_Time();
 }
 
 
@@ -735,6 +737,7 @@ int VAudio::GetChannel (int sound_id, int origin_id, int channel, int priority) 
     int lp = -1; // least priority
     int found = 0;
     int prior = priority;
+    double lowesttime = HUGE_VAL;
     FOR_EACH_CHANNEL(i) {
       if (Channel[i].sound_id == sound_id) {
         if (GSoundManager->S_sfx[sound_id].bSingular) {
@@ -742,8 +745,11 @@ int VAudio::GetChannel (int sound_id, int origin_id, int channel, int priority) 
           return -1;
         }
         ++found; // found one; now, should we replace it?
-        if (prior >= Channel[i].priority) {
+        if (prior > Channel[i].priority ||
+            (prior == Channel[i].priority && lowesttime > Channel[i].SysStartTime))
+        {
           // if we're gonna kill one, then this will be it
+          lowesttime = (prior == Channel[i].priority ? Channel[i].SysStartTime : HUGE_VAL);
           lp = i;
           prior = Channel[i].priority;
         }
@@ -772,7 +778,10 @@ int VAudio::GetChannel (int sound_id, int origin_id, int channel, int priority) 
       lowestlp = i;
       lowestprio = Channel[i].priority;
     } else if (Channel[i].priority == lowestprio) {
-      if (lowestlp < 0 || Channel[lowestlp].origin_id == Channel[i].origin_id) {
+      if (lowestlp < 0 ||
+          (Channel[lowestlp].origin_id == Channel[i].origin_id &&
+           Channel[lowestlp].SysStartTime > Channel[i].SysStartTime))
+      {
         lowestlp = i;
       }
     }
@@ -821,8 +830,29 @@ void VAudio::StopSound (int origin_id, int channel) {
 //  VAudio::StopAllSound
 //
 //==========================================================================
-void VAudio::StopAllSound () {
+void VAudio::StopAllSound (bool keepLastSwitch) {
   // stop all sounds
+  if (keepLastSwitch) {
+    // check if we have sector sound, and it was started "right now"
+    // this is used to keep the sound of exit switch
+    int sectorKeep = -1;
+    FOR_EACH_CHANNEL(i) {
+      if (Channel[i].origin_id&(SNDORG_Sector<<24)) {
+        if (sectorKeep < 0 || Channel[i].SysStartTime > Channel[sectorKeep].SysStartTime) {
+          sectorKeep = i;
+        }
+      }
+    }
+    if (sectorKeep >= 0 && Sys_Time()-Channel[sectorKeep].SysStartTime < 0.6) {
+      // stop all sounds except this one
+      //GCon->Logf(NAME_Debug, "keeping sector channel #%d", sectorKeep);
+      FOR_EACH_CHANNEL(i) {
+        if (i != sectorKeep) StopChannel(i);
+      }
+    }
+    return;
+  }
+  //GCon->Log(NAME_Debug, "stopping all sounds");
   FOR_EACH_CHANNEL(i) StopChannel(i);
   ResetAllChannels();
 }

@@ -79,7 +79,7 @@ bool showTotals;
 //
 //==========================================================================
 void Start () {
-  StopAllSounds();
+  StopAllSounds(keepLastSwitch:true);
   IM_InitStats();
   IM_LoadPics();
   if (!ClGame.deathmatch && !HubCount) {

@@ -122,7 +122,8 @@ public:
   virtual void AddedToLevel ();
   virtual void RemovedFromLevel ();
 
-  void StartSound (const TVec &, vint32, vint32, vint32, float, float, bool, bool=false);
+  void StartSound (const TVec &origin, vint32 origin_id, vint32 sound_id, vint32 channel,
+                   float volume, float Attenuation, bool Loop, bool Local=false);
   void StopSound (vint32, vint32);
   void StartSoundSequence (const TVec &, vint32, VName, vint32);
   void AddSoundSequenceChoice (vint32, VName);

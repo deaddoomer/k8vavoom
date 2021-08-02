@@ -671,7 +671,7 @@ native static final int GetSoundID (name Name);
 native static final void SetSeqTrans (name Name, int Num, int SeqType);
 native static final name GetSeqTrans (int Num, int SeqType);
 native static final name GetSeqSlot (name Sequence);
-native static final void StopAllSounds ();
+native static final void StopAllSounds (optional bool keepLastSwitch);
 
 native static final GameObject::VTerrainInfo *TerrainType (int pic, bool asPlayer); // never returns `nullptr`
 native static final GameObject::VTerrainBootprint *TerrainBootprint (int pic); // can return `nullptr`

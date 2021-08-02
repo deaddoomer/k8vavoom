@@ -170,7 +170,7 @@ bool IsNextEndGame () {
 //
 //==========================================================================
 void Start () {
-  StopAllSounds();
+  StopAllSounds(keepLastSwitch:true);
   ClGame.bSkipIntermission = false;
   cnt = 0.0;
   btime = 0.0;

@@ -197,7 +197,7 @@ override void StatusBarUpdateWidgets (float DeltaTime) {
 //
 //==========================================================================
 override void IntermissionStart () {
-  StopAllSounds();
+  StopAllSounds(keepLastSwitch:true);
   GSBar.Hide();
   GImission.Show();
   GImission.Start();

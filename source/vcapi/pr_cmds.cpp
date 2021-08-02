@@ -96,9 +96,12 @@ IMPLEMENT_FREE_FUNCTION(VObject, GetSoundID) {
   RET_INT(GSoundManager->GetSoundID(Name));
 }
 
+//native static final void StopAllSounds (optional bool keepLastSwitch);
 IMPLEMENT_FREE_FUNCTION(VObject, StopAllSounds) {
+  VOptParamBool keepLastSwitch(false);
+  vobjGetParam(keepLastSwitch);
 #ifdef CLIENT
-  GAudio->StopAllSound();
+  GAudio->StopAllSound(keepLastSwitch);
 #endif
 }
 
