@@ -133,13 +133,17 @@ void VLevelInfo::SetMapInfo (VLevel *InLevel, const VMapInfo &Info) {
 //
 //==========================================================================
 void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
-                                   int Channel, float Volume, float Attenuation)
+                                   int Channel, float Volume, float Attenuation,
+                                   const TVec *org)
 {
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
-    StartSound(Sector->soundorg, (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(SNDORG_Sector<<24), SoundId, Channel, Volume, Attenuation, false);
+    const int sid = (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(org ? (SNDORG_SectorOrg<<24) : (SNDORG_Sector<<24));
+    TVec sorg = (org ? *org : Sector->soundorg);
+    if (!org) sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
+    StartSound(sorg, sid, SoundId, Channel, Volume, Attenuation, false);
   } else {
-    StartSound(TVec(0, 0, 0), 0, SoundId, Channel, Volume, Attenuation, false);
+    StartSound((org ? *org : TVec(0.0f, 0.0f, 0.0f)), 0, SoundId, Channel, Volume, Attenuation, false);
   }
 }
 
@@ -501,14 +505,19 @@ IMPLEMENT_FUNCTION(VLevelInfo, IsSwitchTexture) {
   RET_BOOL(VLevelInfo::IsSwitchTexture(texid));
 }
 
+//native final bool ChangeSwitchTexture (line_t *line, Entity Activator, int SideNum, int useAgain, name DefaultSound, out ubyte Quest, optional const TVec org);
 IMPLEMENT_FUNCTION(VLevelInfo, ChangeSwitchTexture) {
-  P_GET_PTR(vuint8, pQuest);
-  P_GET_NAME(DefaultSound);
-  P_GET_BOOL(useAgain);
-  P_GET_INT(SideNum);
-  P_GET_SELF;
-  bool Quest;
-  bool Ret = Self->ChangeSwitchTexture(SideNum, useAgain, DefaultSound, Quest);
+  line_t *line;
+  VEntity *act;
+  int SideNum;
+  int useAgain;
+  VName DefaultSound;
+  vuint8 *pQuest;
+  VOptParamVec org(TVec(0.0f, 0.0f, 0.0f));
+  vobjGetParamSelf(line, act, SideNum, useAgain, DefaultSound, pQuest, org);
+  const TVec *porg = (org.specified ? &org.value : nullptr);
+  bool Quest = false;
+  bool Ret = Self->ChangeSwitchTexture(line, act, SideNum, useAgain, DefaultSound, Quest, porg);
   if (pQuest) *pQuest = Quest;
   RET_BOOL(Ret);
 }

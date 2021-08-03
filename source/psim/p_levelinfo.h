@@ -157,7 +157,8 @@ public:
 
   void SetMapInfo (VLevel *Level, const VMapInfo &);
 
-  void SectorStartSound (const sector_t *Sector, int SoundId, int Channel, float Volume, float Attenuation);
+  // if `org` is `nullptr`, use sector sound origin
+  void SectorStartSound (const sector_t *Sector, int SoundId, int Channel, float Volume, float Attenuation, const TVec *org=nullptr);
   void SectorStopSound (const sector_t *sector, int channel);
   void SectorStartSequence (const sector_t *Sector, VName Name, int ModeNum);
   void SectorStopSequence (const sector_t *sector);
@@ -169,8 +170,10 @@ public:
   void Completed (int Map, int Position, int SaveAngle);
 
   static bool IsSwitchTexture (int texid);
-  bool ChangeSwitchTexture (int, bool, VName, bool &);
-  bool StartButton (int, vuint8, int, VName, bool);
+  // `line` is used to calculate sound origin; can be `nullptr1
+  // `sidenum` is side index in `Sides` array
+  bool ChangeSwitchTexture (line_t *line, VEntity *activator, int sidenum, bool useAgain, VName DefaultSound, bool &Quest, const TVec *org=nullptr);
+  bool StartButton (line_t *line, VEntity *activator, int sidenum, vuint8 w, int SwitchDef, VName DefaultSound, bool UseAgain, TVec &outsndorg);
 
   VEntity *FindMobjFromTID (int, VEntity *);
 

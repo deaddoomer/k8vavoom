@@ -54,6 +54,7 @@ enum {
   SNDORG_Entity,
   SNDORG_Sector,
   SNDORG_PolyObj,
+  SNDORG_SectorOrg, // sector, but with custom origin
 };
 
 

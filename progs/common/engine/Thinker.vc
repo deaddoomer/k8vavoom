@@ -230,3 +230,5 @@ readonly name DefaultSound;
 readonly ubyte UseAgain;
 readonly int tbversion; // v1 stores more data
 readonly int SwitchDefTexture;
+readonly TVec ActivateSoundOrg; // if `x` is finite, this is the origin of activation sound
+readonly bool bSoundOrgSet;

@@ -280,7 +280,9 @@ native final void Completed (int Map, int Position, int SaveAngle);
 // ////////////////////////////////////////////////////////////////////////// //
 // special thinker utilites
 native static final bool IsSwitchTexture (int textureid);
-native final bool ChangeSwitchTexture (int SideNum, int useAgain, name DefaultSound, out ubyte Quest);
+// `org` can be used to set switch sound origin
+// `line` is used to calculate sound origin; can be `nullptr1
+native final bool ChangeSwitchTexture (line_t *line, Entity Activator, int SideNum, int useAgain, name DefaultSound, out ubyte Quest, optional const TVec org);
 native final Entity FindMobjFromTID (int tid, Entity Prev);
 // checkpoint saves are lightweight, but they aren't saving map state, only player inventory
 native final void AutoSave (optional bool checkpoint);

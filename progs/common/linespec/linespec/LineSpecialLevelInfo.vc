@@ -420,7 +420,7 @@ override void SpawnSpecials () {
   changeBack = (Line->special == LNSPEC_GlassBreak && (Line->flags&ML_TWOSIDED) && buttonSuccess);
   if ((lineActivation&(SPAC_Use|SPAC_Impact|SPAC_UseThrough)) && buttonSuccess) {
     ubyte Quest;
-    ChangeSwitchTexture(Line->sidenum[0], repeat,
+    ChangeSwitchTexture(Line, A, Line->sidenum[0], repeat,
       (Line->special == LNSPEC_ExitNormal ||
        Line->special == LNSPEC_ExitSecret ||
        Line->special == LNSPEC_TeleportNewMap ||
@@ -5181,11 +5181,11 @@ int EV_SectorSetPlaneReflection (int Arg1, int Arg2, int Arg3, int Arg4, int Arg
   if (!Line) return false;
   if (Line->flags&ML_TWOSIDED) Line->flags &= ~(ML_BLOCKING|ML_BLOCKEVERYTHING);
 
-  bool switched = ChangeSwitchTexture(Line->sidenum[0], false, 'switches/normbutn', Quest1);
+  bool switched = ChangeSwitchTexture(Line, A, Line->sidenum[0], false, 'switches/normbutn', Quest1);
   Line->special = 0;
 
   if (Line->sidenum[1] != -1) {
-    if (ChangeSwitchTexture(Line->sidenum[1], false, 'switches/normbutn', Quest2)) switched = true;
+    if (ChangeSwitchTexture(Line, A, Line->sidenum[1], false, 'switches/normbutn', Quest2)) switched = true;
   } else {
     Quest2 = Quest1;
   }

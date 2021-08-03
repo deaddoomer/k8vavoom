@@ -30,6 +30,7 @@
 #include "../gamedefs.h"
 #include "../sound/sound.h"
 #include "p_levelinfo.h"
+#include "p_entity.h"
 #include "../utils/ntvalueioex.h"
 
 
@@ -81,6 +82,11 @@ class VThinkButton : public VThinker {
   vuint8 UseAgain; // boolean
   vint32 tbversion; // v1 stores more data
   VTextureID SwitchDefTexture;
+  TVec ActivateSoundOrg;
+  enum {
+    Flag_SoundOrgSet = 1u<<0,
+  };
+  vuint8 Flags;
 
   virtual void SerialiseOther (VStream &) override;
   virtual void Tick (float) override;
@@ -112,13 +118,46 @@ bool VLevelInfo::IsSwitchTexture (int texid) {
 
 //==========================================================================
 //
+//  CalcSoundOrigin
+//
+//==========================================================================
+static bool CalcSoundOrigin (TVec *outsndorg, const line_t *line, VEntity *activator, const sector_t *sec) {
+  if (!line) {
+    if (outsndorg) *outsndorg = TVec(INFINITY, INFINITY, INFINITY);
+    return false;
+  }
+  // for polyobjects, use polyobject anchor
+  //FIXME: start polyobject sequence instead?
+  const polyobj_t *po = line->pobj();
+  if (po) {
+    if (outsndorg) *outsndorg = po->startSpot;
+    return true;
+  }
+  // use center of the line, and activator/sector z
+  TVec sndorg = ((*line->v1)+(*line->v2))*0.5f; // center of the line
+  if (activator) {
+    // use activator z position
+    sndorg.z = activator->Origin.z+max2(0.0f, activator->Height*0.5f);
+  } else if (sec) {
+    // use sector floor
+    sndorg.z = (sec->floor.minz+sec->floor.maxz)*0.5f+8.0f;
+  } else {
+    sndorg.z = 0.0f; // just in case
+  }
+  if (outsndorg) *outsndorg = sndorg;
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VLevelInfo::ChangeSwitchTexture
 //
 //  Function that changes wall texture.
 //  Tell it if switch is ok to use again (1=yes, it's a button).
 //
 //==========================================================================
-bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultSound, bool &Quest) {
+bool VLevelInfo::ChangeSwitchTexture (line_t *line, VEntity *activator, int sidenum, bool useAgain, VName DefaultSound, bool &Quest, const TVec *org) {
   Quest = false;
   if (sidenum < 0 || sidenum >= XLevel->NumSides) return false;
   InitSwitchTextureCache();
@@ -154,55 +193,30 @@ bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultS
   TSwitch *sw = *swpp;
   vassert(sw);
 
+  TVec outsndorg(INFINITY, INFINITY, INFINITY);
+  bool calcSoundOrigin = true;
+
   bool PlaySound = true;
   if (useAgain || sw->NumFrames > 1) {
-    PlaySound = StartButton(sidenum, where, sw->InternalIndex, DefaultSound, useAgain);
+    PlaySound = StartButton(line, activator, sidenum, where, sw->InternalIndex, DefaultSound, useAgain, outsndorg);
+    calcSoundOrigin = false;
   }
 
   if (PlaySound) {
-    SectorStartSound(XLevel->Sides[sidenum].Sector, (sw->Sound ? sw->Sound : GSoundManager->GetSoundID(DefaultSound)), 0, 1, 1);
+    if (calcSoundOrigin) (void)CalcSoundOrigin(&outsndorg, line, activator, XLevel->Sides[sidenum].Sector);
+    sector_t *sec = XLevel->Sides[sidenum].Sector;
+    const int sndid = (sw->Sound ? sw->Sound : GSoundManager->GetSoundID(DefaultSound));
+    if (org) {
+      SectorStartSound(sec, sndid, 0/*channel*/, 1.0f/*volume*/, 1.0f/*attenuation*/, org);
+    } else if (isFiniteF(outsndorg.x)) {
+      SectorStartSound(sec, sndid, 0/*channel*/, 1.0f/*volume*/, 1.0f/*attenuation*/, &outsndorg);
+    } else {
+      SectorStartSound(sec, sndid, 0/*channel*/, 1.0f/*volume*/, 1.0f/*attenuation*/);
+    }
   }
 
   Quest = sw->Quest;
   return true;
-
-  /*
-  const int texTop = XLevel->Sides[sidenum].TopTexture;
-  const int texMid = XLevel->Sides[sidenum].MidTexture;
-  const int texBot = XLevel->Sides[sidenum].BottomTexture;
-
-  for (auto &&it : Switches.itemsIdx()) {
-    TSwitch *sw = it.value();
-
-    EBWhere where;
-    if (texTop && sw->Tex == texTop) {
-      where = SWITCH_Top;
-      XLevel->Sides[sidenum].TopTexture = sw->Frames[0].Texture;
-    } else if (texMid && sw->Tex == texMid) {
-      where = SWITCH_Middle;
-      XLevel->Sides[sidenum].MidTexture = sw->Frames[0].Texture;
-    } else if (texBot && sw->Tex == texBot) {
-      where = SWITCH_Bottom;
-      XLevel->Sides[sidenum].BottomTexture = sw->Frames[0].Texture;
-    } else {
-      continue;
-    }
-
-    bool PlaySound = true;
-    if (useAgain || sw->NumFrames > 1) {
-      PlaySound = StartButton(sidenum, where, it.index(), DefaultSound, useAgain);
-    }
-
-    if (PlaySound) {
-      SectorStartSound(XLevel->Sides[sidenum].Sector, (sw->Sound ? sw->Sound : GSoundManager->GetSoundID(DefaultSound)), 0, 1, 1);
-    }
-
-    Quest = sw->Quest;
-    return true;
-  }
-  */
-
-  return false;
 }
 
 
@@ -214,14 +228,16 @@ bool VLevelInfo::ChangeSwitchTexture (int sidenum, bool useAgain, VName DefaultS
 //  FIXME: make this faster!
 //
 //==========================================================================
-bool VLevelInfo::StartButton (int sidenum, vuint8 w, int SwitchDef, VName DefaultSound, bool UseAgain) {
-  if (sidenum < 0) return false;
+bool VLevelInfo::StartButton (line_t *line, VEntity *activator, int sidenum, vuint8 w, int SwitchDef, VName DefaultSound, bool UseAgain, TVec &outsndorg) {
+  outsndorg.x = outsndorg.y = outsndorg.z = INFINITY;
+  if (sidenum < 0 || sidenum >= XLevel->NumSides) return false;
 
   // see if button is already pressed
   for (TThinkerIterator<VThinkButton> Btn(XLevel); Btn; ++Btn) {
     if (Btn->Side == sidenum) {
       // force advancing to the next frame
       Btn->Timer = 0.001f;
+      if (Btn->Flags&VThinkButton::Flag_SoundOrgSet) outsndorg = Btn->ActivateSoundOrg;
       return false;
     }
   }
@@ -238,8 +254,23 @@ bool VLevelInfo::StartButton (int sidenum, vuint8 w, int SwitchDef, VName Defaul
     But->tbversion = 1;
     But->SwitchDefTexture = Switches[SwitchDef]->Tex;
     But->AdvanceFrame();
+    TVec sndorg;
+    if (CalcSoundOrigin(&sndorg, line, activator, XLevel->Sides[sidenum].Sector)) {
+      But->Flags = VThinkButton::Flag_SoundOrgSet;
+      #if 1
+      GCon->Logf(NAME_Debug, "%s: sndorg=(%g,%g,%g); sectorsndorg=(%g,%g,%g)",
+        (activator ? activator->GetClass()->GetName() : "<none>"),
+        sndorg.x, sndorg.y, sndorg.z,
+        XLevel->Sides[sidenum].Sector->soundorg.x, XLevel->Sides[sidenum].Sector->soundorg.y, XLevel->Sides[sidenum].Sector->soundorg.z);
+      #endif
+      But->ActivateSoundOrg = sndorg;
+      outsndorg = sndorg;
+    } else {
+      But->Flags = 0u;
+    }
     return true;
   } else {
+    But->DestroyThinker(); // just in case
     return false;
   }
 }
@@ -297,9 +328,14 @@ void VThinkButton::Tick (float DeltaTime) {
         SwitchDef = Def->PairIndex;
         Def = Switches[Def->PairIndex];
         Frame = -1;
-        Level->SectorStartSound(XLevel->Sides[Side].Sector,
-          Def->Sound ? Def->Sound :
-          GSoundManager->GetSoundID(DefaultSound), 0, 1, 1);
+        sector_t *sec = XLevel->Sides[Side].Sector;
+        const int sndid = (Def->Sound ? Def->Sound : GSoundManager->GetSoundID(DefaultSound));
+        if (Flags&Flag_SoundOrgSet) {
+          // make "deactivate" sound at the exact same place as "activate" sound
+          Level->SectorStartSound(sec, sndid, 0/*channel*/, 1.0f/*volume*/, 1.0f/*attenuation*/, &ActivateSoundOrg);
+        } else {
+          Level->SectorStartSound(sec, sndid, 0/*channel*/, 1.0f/*volume*/, 1.0f/*attenuation*/);
+        }
         UseAgain = 0;
       }
 
