@@ -1794,28 +1794,6 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
 
     // if we are above the polyobject, check for blocking top texture
     if (!check3DPObjLineBlocked(po, mobj, ld)) continue;
-    /*
-    if (checkTopTex) {
-      bool hitit = false;
-      do {
-        if ((ld->flags&ML_CLIP_MIDTEX) == 0) break;
-        if (!mobj->IsBlocking3DPobjLineTop(ld)) break;
-        if (!mobj->LineIntersects(ld)) break;
-        // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
-        const side_t *tside = &Level->Sides[ld->sidenum[0]];
-        if (tside->TopTexture <= 0) break; // wtf?!
-        VTexture *ttex = GTextureManager(tside->TopTexture);
-        if (!ttex || ttex->Type == TEXTYPE_Null) break; // wtf?!
-        const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
-        if (mobjz0 >= ptopz+texh) break; // didn't hit top texture
-        hitit = true;
-      } while (0);
-      if (!hitit) continue;
-    } else {
-      if (!mobj->IsBlockingLine(ld)) continue;
-      if (!mobj->LineIntersects(ld)) continue;
-    }
-    */
     wasIntersect = true;
 
     // check if we're inside (we need this to determine the right line side)
@@ -1854,34 +1832,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
         for (auto &&lxx : po->LineFirst()) {
           const line_t *lnx = lxx.line();
           if (lnx == ld) continue;
-          //if (!mobj->IsBlockingLine(lnx)) continue;
-          //if (!mobj->LineIntersects(lnx)) continue;
-
-          // if we are above the polyobject, check for blocking top texture
-          /*
-          if (checkTopTex) {
-            bool hitit = false;
-            do {
-              if ((lnx->flags&ML_CLIP_MIDTEX) == 0) break;
-              if (!mobj->IsBlocking3DPobjLineTop(lnx)) break;
-              if (!mobj->LineIntersects(lnx)) break;
-              // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
-              const side_t *tside = &Level->Sides[lnx->sidenum[0]];
-              if (tside->TopTexture <= 0) break; // wtf?!
-              VTexture *ttex = GTextureManager(tside->TopTexture);
-              if (!ttex || ttex->Type == TEXTYPE_Null) break; // wtf?!
-              const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
-              if (mobjz0 >= ptopz+texh) break; // didn't hit top texture
-              hitit = true;
-            } while (0);
-            if (!hitit) continue;
-          } else {
-            if (!mobj->IsBlockingLine(lnx)) continue;
-            if (!mobj->LineIntersects(lnx)) continue;
-          }
-          */
           if (!check3DPObjLineBlocked(po, mobj, lnx)) continue;
-
           if (dbg_pobj_unstuck_verbose.asBool()) {
             GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, corner %u; stuck in line #%d",
               mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), cridx, (int)(ptrdiff_t)(lnx-&Level->Lines[0]));
@@ -1890,7 +1841,6 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
           break;
         }
         mobj->Origin = mobjOrigOrigin;
-        //if (stuckOther) continue; // alas: NOPE
       }
 
       if (dbg_pobj_unstuck_verbose.asBool()) {
@@ -2834,35 +2784,6 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool /*
           GCon->Logf(NAME_Debug, "mobj '%s': blocked by pobj %d, line #%d", mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&mobj->XLevel->Lines[0]));
         }
 
-        /*
-        if (po->posector) {
-          if (mobj->Origin.z >= po->poceiling.maxz) continue; // fully above
-          if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue; // fully below
-          if (!check3DPObjLineBlocked(po, mobj, ld)) continue;
-        } else {
-          // check for non-3d pobj with midtex
-          if ((ld->flags&(ML_TWOSIDED|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) {
-            if (!mobj->LineIntersects(ld)) continue;
-            // use front side
-            const int side = 0; //ld->PointOnSide(mobj->Origin);
-            float pz0 = 0.0f, pz1 = 0.0f;
-            if (!GetMidTexturePosition(ld, side, &pz0, &pz1)) continue; // no middle texture
-            if (mobj->Origin.z >= pz1 || mobj->Origin.z+max2(0.0f, mobj->Height) <= pz0) continue; // no collision
-            //ldblock = true;
-          } else {
-            if (!mobj->IsBlockingLine(ld)) continue;
-            if (!mobj->LineIntersects(ld)) continue;
-          }
-        }
-        */
-
-        /*
-        if (!ldblock) {
-          if (!mobj->IsBlockingLine(ld)) continue;
-          if (!mobj->LineIntersects(ld)) continue;
-        }
-        */
-
         //TODO: crush corpses!
         //TODO: crush objects with platforms
 
@@ -2894,6 +2815,7 @@ bool VLevel::PolyCheckMobjBlocked (polyobj_t *po, bool rotation) {
   }
   return blocked;
 }
+
 
 
 //==========================================================================
