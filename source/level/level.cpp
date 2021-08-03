@@ -184,6 +184,7 @@ void VLevel::PostCtor () {
   sectorTags = tagHashAlloc();
   PolyTagMap = new TMapNC<int, int>();
   suid2ent = new TMapNC<vuint32, VEntity *>();
+  SoundIDMap = new TMapNC<vuint32, VEntity *>();
   #ifdef CLIENT
   R_ResetAnimatedSurfaces();
   #endif
@@ -604,6 +605,12 @@ void VLevel::Destroy () {
     suid2ent->clear();
     delete suid2ent;
     suid2ent = nullptr;
+  }
+
+  if (SoundIDMap) {
+    SoundIDMap->clear();
+    delete SoundIDMap;
+    SoundIDMap = nullptr;
   }
 
   ClearAllMapData(); // this also clears decals
@@ -1125,6 +1132,66 @@ vuint32 VLevel::CalcEntityLight (VEntity *lowner, unsigned flags) {
 #endif
   return 0u;
 }
+
+
+//==========================================================================
+//
+//  VLevel::RegisterEntitySoundID
+//
+//==========================================================================
+void VLevel::RegisterEntitySoundID (VEntity *ent, int SoundOriginID) {
+  if (!ent || SoundOriginID <= 0) return;
+  if (!SoundIDMap) return;
+  SoundIDMap->put((vuint32)SoundOriginID, ent);
+}
+
+
+//==========================================================================
+//
+//  VLevel::RemoveEntitySoundID
+//
+//==========================================================================
+void VLevel::RemoveEntitySoundID (int SoundOriginID) {
+  if (SoundOriginID <= 0) return;
+  if (!SoundIDMap) return;
+  SoundIDMap->del((vuint32)SoundOriginID);
+}
+
+
+//==========================================================================
+//
+//  VLevel::FindEntityBySoundID
+//
+//==========================================================================
+VEntity *VLevel::FindEntityBySoundID (int SoundOriginID) {
+  if (SoundOriginID <= 0) return nullptr;
+  if (!SoundIDMap) return nullptr;
+  auto ep = SoundIDMap->find((vuint32)SoundOriginID);
+  return (ep ? *ep : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VLevel::FindSectorBySoundID
+//
+//==========================================================================
+sector_t *VLevel::FindSectorBySoundID (int SoundOriginID) {
+  if (SoundOriginID < 0 || SoundOriginID >= NumSectors) return nullptr;
+  return &Sectors[SoundOriginID];
+}
+
+
+//==========================================================================
+//
+//  VLevel::FindPObjBySoundID
+//
+//==========================================================================
+polyobj_t *VLevel::FindPObjBySoundID (int SoundOriginID) {
+  if (SoundOriginID < 0 || SoundOriginID >= NumPolyObjs) return nullptr;
+  return PolyObjs[SoundOriginID];
+}
+
 
 
 //==========================================================================

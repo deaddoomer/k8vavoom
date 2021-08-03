@@ -1030,10 +1030,49 @@ void VAudio::UpdateSfx () {
     // full volume sound?
     if (!Channel[i].origin_id || Channel[i].Attenuation <= 0) continue;
 
-    if (cl && cl->MO && Channel[i].origin_id == cl->MO->SoundOriginID) {
-      //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); new origin=(%g,%g,%g)", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, cl->MO->Origin.x, cl->MO->Origin.y, cl->MO->Origin.z);
-      Channel[i].origin = cl->MO->Origin;
-      Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+    if (cl) {
+      if (cl->MO && Channel[i].origin_id == cl->MO->SoundOriginID) {
+        //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); new origin=(%g,%g,%g)", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, cl->MO->Origin.x, cl->MO->Origin.y, cl->MO->Origin.z);
+        Channel[i].origin = cl->MO->Origin;
+        Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+      } else if (!Channel[i].LocalPlayerSound) {
+        VLevel *Level = (GClLevel ? GClLevel : GLevel);
+        if (Level) {
+          // update positions
+          switch ((Channel[i].origin_id>>24)&0xff) {
+            case SNDORG_Entity:
+              // move sound with the entity
+              {
+                VEntity *ent = Level->FindEntityBySoundID(Channel[i].origin_id&0x00ffffff);
+                if (ent) {
+                  Channel[i].origin = ent->Origin;
+                  Channel[i].velocity = ent->Velocity;
+                  // this will be re-added later
+                  Channel[i].origin -= Channel[i].velocity*host_frametime;
+                }
+              }
+              break;
+            case SNDORG_Sector:
+              {
+                sector_t *sec = Level->FindSectorBySoundID(Channel[i].origin_id&0x00ffffff);
+                if (sec) {
+                  Channel[i].origin = sec->soundorg;
+                  Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+                }
+              }
+              break;
+            case SNDORG_PolyObj:
+              {
+                polyobj_t *pobj = Level->FindPObjBySoundID(Channel[i].origin_id&0x00ffffff);
+                if (pobj) {
+                  Channel[i].origin = pobj->startSpot;
+                  Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+                }
+              }
+              break;
+          }
+        }
+      }
     }
 
     // client sound?

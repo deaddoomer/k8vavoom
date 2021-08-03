@@ -575,6 +575,8 @@ class VLevel : public VGameObject {
   // bookkeeping is done in `AddThinker()` and `RemoveThinker()`
   TMapNC<vuint32, VEntity *> *suid2ent;
 
+  TMapNC<vuint32, VEntity *> *SoundIDMap;
+
   // unified list for floor and ceiling decals
   VDecalList *subsectorDecalList;
 
@@ -599,6 +601,14 @@ public:
   inline void MarkSubTouched (const subsector_t *sub) noexcept {
     if (sub) dcSubTouchMark.ptr()[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])] = dcSubTouchCounter;
   }
+
+public:
+  void RegisterEntitySoundID (VEntity *ent, int SoundOriginID);
+  void RemoveEntitySoundID (int SoundOriginID);
+  VEntity *FindEntityBySoundID (int SoundOriginID);
+
+  sector_t *FindSectorBySoundID (int SoundOriginID);
+  polyobj_t *FindPObjBySoundID (int SoundOriginID);
 
 public:
   // decal segfill statics

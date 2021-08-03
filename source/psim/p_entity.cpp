@@ -275,6 +275,21 @@ void VEntity::AddedToLevel () {
   if (!XLevel->NextSoundOriginID) XLevel->NextSoundOriginID = 1;
   SoundOriginID = XLevel->NextSoundOriginID+(SNDORG_Entity<<24);
   XLevel->NextSoundOriginID = (XLevel->NextSoundOriginID+1)&0x00ffffff;
+  XLevel->RegisterEntitySoundID(this, SoundOriginID);
+}
+
+
+//==========================================================================
+//
+//  VEntity::RemovedFromLevel
+//
+//==========================================================================
+void VEntity::RemovedFromLevel () {
+  if (XLevel && SoundOriginID) {
+    XLevel->RemoveEntitySoundID(SoundOriginID);
+    SoundOriginID = 0;
+  }
+  VThinker::RemovedFromLevel();
 }
 
 

@@ -444,6 +444,7 @@ public:
   // VThinker interface
   virtual void DestroyThinker () override;
   virtual void AddedToLevel () override;
+  virtual void RemovedFromLevel () override;
   virtual void Tick (float deltaTime) override;
 
   inline bool IsRenderable () const noexcept {

@@ -261,6 +261,7 @@ private native transient int tempPathInterceptsUsed;
 private native transient /*decal_t*/void *subdecalhead;
 private native transient /*decal_t*/void *subdecaltail;
 private native transient void *suid2ent;
+private native transient void *SoundIDMap;
 
 private native transient /*VDecalList*/void *subsectorDecalList;
 
