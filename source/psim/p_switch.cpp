@@ -86,7 +86,7 @@ class VThinkButton : public VThinker {
   enum {
     Flag_SoundOrgSet = 1u<<0,
   };
-  vuint8 Flags;
+  vuint32 Flags;
 
   virtual void SerialiseOther (VStream &) override;
   virtual void Tick (float) override;
