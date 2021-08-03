@@ -71,7 +71,15 @@ void VOpenGLDrawer::GenerateLightmapAtlasTextures () {
   glGenTextures(NUM_BLOCK_SURFS, lmap_id);
   for (unsigned f = 0; f < NUM_BLOCK_SURFS; ++f) {
     glBindTexture(GL_TEXTURE_2D, lmap_id[f]);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (anisotropyExists) {
+      glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
+    }
+    // create texture image
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   }
   glBindTexture(GL_TEXTURE_2D, 0);
   atlasesGenerated = true;
@@ -722,7 +730,7 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
 
   VTexture::AdjustGamma((rgba_t *)image, w*h);
 
-  GLint internal = GL_RGBA;
+  GLint internal = GL_RGBA8;
   int cmode = (HaveS3TC && hitype != UpTexNoCompress ? gl_s3tc_mode.asInt() : 0);
   if (cmode == 1 && hitype != UpTexHiRes) cmode = 0;
   // don't bother with small textures anyway
@@ -749,10 +757,9 @@ void VOpenGLDrawer::UploadTexture (int width, int height, const rgba_t *data, bo
     //if (gl_s3tc_dump) GCon->Logf(NAME_Debug, "NOS3TC(%s): size: %dx%d", *W_FullLumpName(SourceLump), width, height);
   }
 
-  if (internal == GL_RGBA && gl_use_srgb.asBool()) internal = GL_SRGB8_ALPHA8;
+  if (internal == GL_RGBA8 && gl_use_srgb.asBool()) internal = GL_SRGB8_ALPHA8;
 
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-  //glTexImage2D(GL_TEXTURE_2D, 0, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
   glTexImage2D(GL_TEXTURE_2D, 0, internal, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
   if (p_glGenerateMipmap) p_glGenerateMipmap(GL_TEXTURE_2D);
 }

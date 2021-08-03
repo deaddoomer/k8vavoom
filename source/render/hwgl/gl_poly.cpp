@@ -873,11 +873,6 @@ void VOpenGLDrawer::DrawLightmapWorld () {
 
       SelectTexture(1);
       glBindTexture(GL_TEXTURE_2D, lmap_id[lb]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      if (anisotropyExists) {
-        glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (float)clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy));
-      }
 
       // check for lightmap update
       if (blockDirty.isValid()) {
@@ -889,8 +884,9 @@ void VOpenGLDrawer::DrawLightmapWorld () {
         const int y0 = blockDirty.y0;
         const int wdt = blockDirty.getWidth();
         const int hgt = blockDirty.getHeight();
-        if ((wdt >= BLOCK_WIDTH && hgt >= BLOCK_HEIGHT) || !gl_lmap_allow_partial_updates) {
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, RendLev->GetLightBlock(lb));
+        if (/*(wdt >= BLOCK_WIDTH && hgt >= BLOCK_HEIGHT) ||*/ !gl_lmap_allow_partial_updates) {
+          // this still can be slower than `glTexSubImage2D()`
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, RendLev->GetLightBlock(lb));
         } else {
           glPixelStorei(GL_UNPACK_ROW_LENGTH, BLOCK_WIDTH);
           glTexSubImage2D(GL_TEXTURE_2D, 0,

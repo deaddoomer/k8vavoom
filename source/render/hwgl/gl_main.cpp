@@ -264,6 +264,7 @@ void VOpenGLDrawer::InitShaderProgress () {
   glBindTexture(GL_TEXTURE_2D, shadMsgTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
   GLDRW_CHECK_ERROR("create progress texture");
 
@@ -891,6 +892,7 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
   p_glObjectLabelVA(GL_TEXTURE, tonemapPalLUT, "Palette Tonemap LUT Texture");
   GLDRW_CHECK_ERROR("bind tonemapPalLUT");
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, /*GL_CLAMP_TO_EDGE*/ClampToEdge);
@@ -898,9 +900,9 @@ void VOpenGLDrawer::GeneratePaletteLUT () {
   GLDRW_CHECK_ERROR("set tonemapPalLUT options");
   //glTexSubImage2D(GL_TEXTURE_2D, 0,  0, 0, 512, 512, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)tdata);
   if (tonemapMode == 0) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB/*A*/, 512, 512, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, (const void *)tdata);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8/*A*/, 512, 512, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, (const void *)tdata);
   } else {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB/*A*/, 2048, 2048, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, (const void *)tdata);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8/*A*/, 2048, 2048, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, (const void *)tdata);
   }
   GLDRW_CHECK_ERROR("upload tonemapPalLUT");
   glBindTexture(GL_TEXTURE_2D, 0);

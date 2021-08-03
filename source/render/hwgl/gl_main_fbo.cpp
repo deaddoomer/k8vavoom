@@ -150,6 +150,7 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   GLDRW_CHECK_ERROR("FBO: glBindTexture");
   aowner->p_glObjectLabelVA(GL_TEXTURE, mColorTid, "FBO(%u) color texture", mFBO);
 
+  glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
   if (mirroredRepeat) {
@@ -197,8 +198,8 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   }
   // int8
   if (!texOk) {
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_2D, 0, (gl_use_srgb.asBool() ? GL_SRGB8 : GL_RGB), awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, (gl_use_srgb.asBool() ? GL_SRGB8 : GL_RGB8), awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     GLDRW_CHECK_ERROR("FBO: glTexImage2D");
     mType = Color8Bit;
   }
@@ -256,6 +257,7 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
     (void)depthStencilFormat;
     glGenTextures(1, &mDepthStencilRBO);
     glBindTexture(GL_TEXTURE_2D, mDepthStencilRBO);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
