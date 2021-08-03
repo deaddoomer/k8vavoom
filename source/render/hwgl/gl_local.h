@@ -288,13 +288,6 @@ public:
   class FBO {
     //friend class VOpenGLDrawer;
   private:
-    enum {
-      Color8Bit,
-      Color10Bit,
-      ColorFP,
-    };
-
-  private:
     class VOpenGLDrawer *mOwner;
     GLuint mFBO;
     GLuint mColorTid;
@@ -302,7 +295,8 @@ public:
     int mWidth;
     int mHeight;
     bool mLinearFilter;
-    unsigned mType;
+    bool mIsFP;
+    GLint mType; // texture type
 
   public:
     bool scrScaled;
@@ -318,6 +312,7 @@ public:
     VVA_ALWAYS_INLINE bool isValid () const noexcept { return (mOwner != nullptr); }
     VVA_ALWAYS_INLINE int getWidth () const noexcept { return mWidth; }
     VVA_ALWAYS_INLINE int getHeight () const noexcept { return mHeight; }
+    VVA_ALWAYS_INLINE int getGLType () const noexcept { return (int)mType; }
 
     VVA_ALWAYS_INLINE bool getLinearFilter () const noexcept { return mLinearFilter; }
     // has effect after texture recreation
@@ -327,9 +322,9 @@ public:
     VVA_ALWAYS_INLINE GLuint getFBOid () const noexcept { return mFBO; }
     VVA_ALWAYS_INLINE GLuint getDSRBTid () const noexcept { return mDepthStencilRBO; }
 
-    bool isColor8Bit () const noexcept { return (mType == Color8Bit); }
-    bool isColor10Bit () const noexcept { return (mType == Color10Bit); }
-    bool isColorFloat () const noexcept { return (mType == ColorFP); }
+    bool isColor8Bit () const noexcept { return (!mIsFP && mType != GL_RGB10_A2); }
+    bool isColor10Bit () const noexcept { return (mType == GL_RGB10_A2); }
+    bool isColorFloat () const noexcept { return mIsFP; }
 
     void createTextureOnly (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP=false, bool mirroredRepeat=false);
     void createDepthStencil (VOpenGLDrawer *aowner, int awidth, int aheight, bool wantFP=false, bool mirroredRepeat=false);

@@ -64,7 +64,8 @@ VOpenGLDrawer::FBO::FBO ()
   , mWidth(0)
   , mHeight(0)
   , mLinearFilter(false)
-  , mType(Color8Bit)
+  , mIsFP(false)
+  , mType(GL_RGB8)
   , scrScaled(false)
 {
 }
@@ -112,7 +113,8 @@ void VOpenGLDrawer::FBO::destroy () {
   mWidth = 0;
   mHeight = 0;
   mLinearFilter = false;
-  mType = Color8Bit;
+  mIsFP = false;
+  mType = GL_RGB8;
   if (mOwner->currentActiveFBO == this) mOwner->currentActiveFBO = nullptr;
   mOwner->ReactivateCurrentFBO();
   mOwner = nullptr;
@@ -167,7 +169,8 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
 
   // empty texture
   GLDRW_RESET_ERROR();
-  mType = Color8Bit;
+  mType = GL_RGB8;
+  mIsFP = false;
   bool texOk = false;
   // float
   if (wantFP) {
@@ -181,17 +184,20 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
     glTexImage2D(GL_TEXTURE_2D, 0, fmt, awidth, aheight, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, nullptr);
     texOk = (glGetError() == 0);
     if (texOk) {
-      mType = ColorFP;
+      mType = fmt;
+      mIsFP = true;
     } else {
       GCon->Log(NAME_Debug, "cannot create FP color texture, falling back to integers");
     }
   }
   // int10
   if (!texOk && gl_use_better_color_precision.asBool()) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, awidth, aheight, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, nullptr);
+    const GLint fmt = GL_RGB10_A2;
+    glTexImage2D(GL_TEXTURE_2D, 0, fmt, awidth, aheight, 0, GL_RGB/*A*/, GL_UNSIGNED_BYTE, nullptr);
     texOk = (glGetError() == 0);
     if (texOk) {
-      mType = Color10Bit;
+      mType = fmt;
+      mIsFP = false;
     } else {
       GCon->Log(NAME_Debug, "cannot create 10-bit integer color texture, falling back to 8-bit");
     }
@@ -199,9 +205,11 @@ void VOpenGLDrawer::FBO::createInternal (VOpenGLDrawer *aowner, int awidth, int 
   // int8
   if (!texOk) {
     //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, awidth, aheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_2D, 0, (gl_use_srgb.asBool() ? GL_SRGB8 : GL_RGB8), awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    const GLint fmt = (gl_use_srgb.asBool() ? GL_SRGB8 : GL_RGB8);
+    glTexImage2D(GL_TEXTURE_2D, 0, fmt, awidth, aheight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     GLDRW_CHECK_ERROR("FBO: glTexImage2D");
-    mType = Color8Bit;
+    mType = fmt;
+    mIsFP = false;
   }
   aowner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
   GLDRW_CHECK_ERROR("FBO: glFramebufferTexture2D");
@@ -357,23 +365,34 @@ bool VOpenGLDrawer::FBO::swapColorTextures (FBO *other) {
   if (!mFBO || !mColorTid || !other->mFBO || !other->mColorTid) return false;
   //if (mOwner != other->mOwner) return false;
 
-  // attach our color texture to another FBO
+  // swap texture ids and types
+  {
+    const GLuint tmpTid = mColorTid;
+    const GLint tmpType = mType;
+    const bool tmpIsFP = mIsFP;
+    // set our
+    mColorTid = other->mColorTid;
+    mType = other->mType;
+    mIsFP = other->mIsFP;
+    // set other
+    other->mColorTid = tmpTid;
+    other->mType = tmpType;
+    other->mIsFP = tmpIsFP;
+  }
+
+  // attach our new color texture
   glBindTexture(GL_TEXTURE_2D, mColorTid);
   GLDRW_CHECK_ERROR("FBO: glBindTexture");
-  mOwner->p_glObjectLabelVA(GL_TEXTURE, mColorTid, "FBO(%u) color texture", other->mFBO);
-  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, other->mFBO);
+  mOwner->p_glObjectLabelVA(GL_TEXTURE, mColorTid, "FBO(%u) color texture", mFBO);
+  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
 
-  // attach other color texture to us
+  // attach other new color texture
   glBindTexture(GL_TEXTURE_2D, other->mColorTid);
   GLDRW_CHECK_ERROR("FBO: glBindTexture");
-  mOwner->p_glObjectLabelVA(GL_TEXTURE, other->mColorTid, "FBO(%u) color texture", mFBO);
-  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+  mOwner->p_glObjectLabelVA(GL_TEXTURE, other->mColorTid, "FBO(%u) color texture", other->mFBO);
+  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, other->mFBO);
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, other->mColorTid, 0);
-
-  const GLuint tmp = mColorTid;
-  mColorTid = other->mColorTid;
-  other->mColorTid = tmp;
 
   mOwner->ReactivateCurrentFBO();
   return true;
