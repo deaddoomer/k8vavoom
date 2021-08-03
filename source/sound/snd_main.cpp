@@ -1064,7 +1064,10 @@ void VAudio::UpdateSfx () {
             case SNDORG_PolyObj:
               {
                 polyobj_t *pobj = Level->FindPObjBySoundID(Channel[i].origin_id&0x00ffffff);
-                if (pobj) {
+                // do not move origin for non-3d polyobject
+                // this is because non-3d pobjs are usually used for things like doors and such, and
+                // moving their sound origin won't do anything good
+                if (pobj && pobj->Is3D()) {
                   Channel[i].origin = pobj->startSpot;
                   Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
                 }
