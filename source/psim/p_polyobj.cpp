@@ -1566,6 +1566,8 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
       pobbox[BOX2D_MAXX] = max2(pobbox[BOX2D_MAXX], sub->bbox2d[BOX2D_MAXX]);
       pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], sub->bbox2d[BOX2D_MAXY]);
     }
+    // update sector sound origin
+    po->posector->soundorg = TVec((pobbox[BOX2D_RIGHT]+pobbox[BOX2D_LEFT])*0.5f, (pobbox[BOX2D_TOP]+pobbox[BOX2D_BOTTOM])*0.5f, 0.0f);
   } else {
     // use polyobject lines
     line_t * const *ld = po->lines;
@@ -1582,7 +1584,8 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
       pobbox[BOX2D_MAXY] = max2(pobbox[BOX2D_MAXY], (*ld)->v2->y);
     }
   }
-  memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
+  //memcpy(po->bbox2d, pobbox, sizeof(po->bbox2d));
+  CopyBBox2D(po->bbox2d, pobbox);
 
   PutPObjInSubsectors(po);
 

@@ -140,7 +140,15 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
     const int sid = (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(org ? (SNDORG_SectorOrg<<24) : (SNDORG_Sector<<24));
     TVec sorg = (org ? *org : Sector->soundorg);
-    if (!org) sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
+    if (!org) {
+      if (!Sector->isInnerPObj()) {
+        // normal sector
+        sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
+      } else {
+        // 3d pobj
+        sorg = Sector->ownpobj->startSpot;
+      }
+    }
     StartSound(sorg, sid, SoundId, Channel, Volume, Attenuation, false);
   } else {
     StartSound((org ? *org : TVec(0.0f, 0.0f, 0.0f)), 0, SoundId, Channel, Volume, Attenuation, false);

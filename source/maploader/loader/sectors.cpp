@@ -173,7 +173,7 @@ void VLevel::GroupLines () {
     }
 
     // set the soundorg to the middle of the bounding box
-    sector->soundorg = TVec((bbox2d[BOX2D_RIGHT]+bbox2d[BOX2D_LEFT])/2.0f, (bbox2d[BOX2D_TOP]+bbox2d[BOX2D_BOTTOM])/2.0f, 0);
+    sector->soundorg = TVec((bbox2d[BOX2D_RIGHT]+bbox2d[BOX2D_LEFT])*0.5f, (bbox2d[BOX2D_TOP]+bbox2d[BOX2D_BOTTOM])*0.5f, 0.0f);
 
     // adjust bounding box to map blocks
     /*

@@ -1056,7 +1056,14 @@ void VAudio::UpdateSfx () {
               {
                 sector_t *sec = Level->FindSectorBySoundID(Channel[i].origin_id&0x00ffffff);
                 if (sec) {
-                  Channel[i].origin = sec->soundorg;
+                  if (!sec->isInnerPObj()) {
+                    // normal sector
+                    Channel[i].origin = sec->soundorg;
+                    Channel[i].origin.z = (sec->floor.minz+sec->floor.maxz)*0.5f+8.0f;
+                  } else {
+                    // 3d pobj
+                    Channel[i].origin = sec->ownpobj->startSpot;
+                  }
                   Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
                 }
               }

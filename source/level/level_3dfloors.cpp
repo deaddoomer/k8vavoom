@@ -64,8 +64,8 @@ void VLevel::AddExtraFloorSane (line_t *line, sector_t *dst) {
 
   sector_t *src = line->frontsector;
 
-  const float floorz = src->floor.GetPointZ(dst->soundorg);
-  const float ceilz = src->ceiling.GetPointZ(dst->soundorg);
+  const float floorz = src->floor.GetPointZClamped(dst->soundorg);
+  const float ceilz = src->ceiling.GetPointZClamped(dst->soundorg);
   bool flipped = false;
 
   if (floorz < ceilz) {
@@ -127,8 +127,8 @@ void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst) {
   if (doDump) { GCon->Logf("src sector #%d: floor=%s; ceiling=%s; (%g,%g); type=0x%02x, flags=0x%04x (solid=%d)", (int)(ptrdiff_t)(src-Sectors), getTexName(src->floor.pic), getTexName(src->ceiling.pic), min2(src->floor.minz, src->floor.maxz), max2(src->ceiling.minz, src->ceiling.maxz), line->arg2, line->arg3, (int)isSolid); }
   if (doDump) { GCon->Logf("dst sector #%d: soundorg=(%g,%g,%g); fc=(%g,%g)", (int)(ptrdiff_t)(dst-Sectors), dst->soundorg.x, dst->soundorg.y, dst->soundorg.z, min2(dst->floor.minz, dst->floor.maxz), max2(dst->ceiling.minz, dst->ceiling.maxz)); }
 
-  const float floorz = src->floor.GetPointZ(dst->soundorg);
-  const float ceilz = src->ceiling.GetPointZ(dst->soundorg);
+  const float floorz = src->floor.GetPointZClamped(dst->soundorg);
+  const float ceilz = src->ceiling.GetPointZClamped(dst->soundorg);
   bool flipped = false;
 
   if (floorz > ceilz) {
