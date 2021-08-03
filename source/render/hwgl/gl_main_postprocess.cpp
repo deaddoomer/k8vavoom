@@ -212,6 +212,26 @@ void VOpenGLDrawer::PostSrcRestoreMatrices () {
 
 //==========================================================================
 //
+//  VOpenGLDrawer::PrepareForPosteffects
+//
+//==========================================================================
+void VOpenGLDrawer::PrepareForPosteffects () {
+  // nothing to do here
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::FinishPosteffects
+//
+//==========================================================================
+void VOpenGLDrawer::FinishPosteffects () {
+  // nothing to do here
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::Posteffect_Tonemap
 //
 //==========================================================================

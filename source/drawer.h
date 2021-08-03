@@ -563,6 +563,9 @@ public:
   virtual bool IsMainFBOFloat () = 0;
   virtual bool IsCameraFBO () = 0;
 
+  virtual void PrepareMainFBO () = 0;
+  virtual void RestoreMainFBO () = 0;
+
   // normalize overbrighting for fp textures
   virtual void PostprocessOvebright () = 0;
 
@@ -575,6 +578,12 @@ public:
   virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) = 0;
   virtual void Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) = 0;
   virtual void Posteffect_CAS (float coeff, int ax, int ay, int awidth, int aheight, bool restoreMatrices) = 0;
+
+  // contrary to the name, this must be called at the very beginning of the rendering pass, right after setting the matices
+  virtual void PrepareForPosteffects () = 0;
+  // call this after finishing all posteffects, to restore main FBO in the proper state
+  // this is required because posteffects can attach non-FP texture to FBO
+  virtual void FinishPosteffects () = 0;
 
   // can be called several times
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) = 0;

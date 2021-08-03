@@ -457,6 +457,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , shaderHead(nullptr)
   , surfList()
   , mainFBO()
+  , mainFBOFP()
   , ambLightFBO()
   , wipeFBO()
   , bloomscratchFBO()
@@ -992,7 +993,7 @@ void VOpenGLDrawer::DeinitResolution () {
   // destroy FBOs
   DestroyCameraFBOList();
   mainFBO.destroy();
-  //secondFBO.destroy();
+  mainFBOFP.destroy();
   ambLightFBO.destroy();
   wipeFBO.destroy();
   BloomDeinit();
@@ -1393,9 +1394,9 @@ void VOpenGLDrawer::InitResolution () {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
   }
 
-  // allocate ambient light FBO object
-  ambLightFBO.createTextureOnly(this, calcWidth, calcHeight);
-  p_glObjectLabelVA(GL_FRAMEBUFFER, ambLightFBO.getFBOid(), "Ambient light FBO");
+  // ambient light FBO object will be allocated on demand
+  //ambLightFBO.createTextureOnly(this, calcWidth, calcHeight);
+  //p_glObjectLabelVA(GL_FRAMEBUFFER, ambLightFBO.getFBOid(), "Ambient light FBO");
 
   // allocate wipe FBO object
   wipeFBO.createTextureOnly(this, calcWidth, calcHeight);
@@ -1554,35 +1555,94 @@ void VOpenGLDrawer::InitResolution () {
 //==========================================================================
 bool VOpenGLDrawer::RecreateFBOs (bool wantFP) {
   vassert(mainFBO.isValid());
-  vassert(ambLightFBO.isValid());
+  //vassert(ambLightFBO.isValid());
 
   const int mwdt = mainFBO.getWidth();
   const int mhgt = mainFBO.getHeight();
   vassert(mwdt > 0);
   vassert(mhgt > 0);
 
-  if (mainFBO.isColorFloat() == wantFP) return true; // no need to do anything
-
   FBO *currFBO = currentActiveFBO;
 
-  // reallocate main FBO object
-  const bool scrScaled = mainFBO.scrScaled;
-  mainFBO.destroy();
-  mainFBO.createDepthStencil(this, mwdt, mhgt, wantFP);
-  mainFBO.scrScaled = scrScaled;
+  // if we don't want FP color textures, it is very easy
+  if (!wantFP) {
+    // destroy main FP FBO, it is enough to tell the code what to do
+    if (mainFBOFP.isValid()) {
+      mainFBOFP.destroy();
+      // also destroy ambient light FBO, it will be recreated if necessary
+      ambLightFBO.destroy();
+      // reactivate old FBO
+      if (currFBO == &mainFBOFP) currFBO = nullptr;
+      currentActiveFBO = currFBO;
+      ReactivateCurrentFBO();
+    }
+    return true;
+  }
+
+  // here we definitely want FP color textures
+  vassert(wantFP);
+
+  // if we already have main FP FBO, there's nothing to do here
+  if (mainFBOFP.isValid()) {
+    vassert(mainFBOFP.isColorFloat());
+    return true;
+  }
+
+  // allocate main FP FBO
+  //const bool scrScaled = mainFBO.scrScaled;
+  // we don't need depth/stencil, main FP FBO is just a texture holder
+  //mainFBOFP.createDepthStencil(this, mwdt, mhgt, wantFP);
+  mainFBOFP.createTextureOnly(this, mwdt, mhgt, wantFP);
+  if (!mainFBOFP.isColorFloat()) {
+    // oops, cannot do that
+    mainFBOFP.destroy();
+    return false;
+  }
+  //mainFBOFP.scrScaled = scrScaled;
   p_glObjectLabelVA(GL_FRAMEBUFFER, mainFBO.getFBOid(), "Main FBO");
 
-  // reallocate ambient light FBO object
+  // ambient light FBO object will be allocated on demand, destroy the old one, because why not?
   ambLightFBO.destroy();
-  ambLightFBO.createTextureOnly(this, mwdt, mhgt, wantFP);
-  p_glObjectLabelVA(GL_FRAMEBUFFER, ambLightFBO.getFBOid(), "Ambient light FBO");
 
   currentActiveFBO = currFBO;
   ReactivateCurrentFBO();
 
-  GCon->Logf(NAME_Debug, "recreaded FBOs (%s)", (mainFBO.isColorFloat() ? "FP" : mainFBO.isColor10Bit() ? "int10" : "int8"));
+  GCon->Log(NAME_Debug, "created FP FBO");
 
-  return (mainFBO.isColorFloat() == wantFP);
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PrepareMainFBO
+//
+//==========================================================================
+void VOpenGLDrawer::PrepareMainFBO () {
+  // check invariants
+  vassert(!mainFBO.isColorFloat());
+  vassert(!mainFBOFP.isValid() || mainFBOFP.isColorFloat());
+
+  // if we have main FP FBO, then use it for rendering
+  if (mainFBOFP.isValid()) mainFBOFP.swapColorTextures(&mainFBO);
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::RestoreMainFBO
+//
+//==========================================================================
+void VOpenGLDrawer::RestoreMainFBO () {
+  // switch to non-FP texture
+  if (mainFBOFP.isValid()) {
+    // check invariants
+    vassert(mainFBO.isColorFloat());
+    vassert(!mainFBOFP.isColorFloat());
+    // swap textures, and blit FP texture to the normal one
+    mainFBOFP.swapColorTextures(&mainFBO);
+    mainFBOFP.blitTo(&mainFBO, 0, 0, mainFBOFP.getWidth(), mainFBOFP.getHeight(), 0, 0, mainFBO.getWidth(), mainFBO.getHeight(), GL_NEAREST);
+  }
 }
 
 

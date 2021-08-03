@@ -550,6 +550,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         SurfDecalLMapOverbright.SetTexShadeMode(smode);
         break;
       case DT_ADVANCED:
+        vassert(ambLightFBO.isValid());
         SurfDecalAdv.SetSplatAlpha(clampval(dc->alpha, 0.0f, 1.0f));
         if (!tex1set) {
           tex1set = true;

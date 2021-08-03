@@ -47,8 +47,20 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
     glEnable(GL_TEXTURE_2D);
     //p_glBlendEquation(GL_FUNC_ADD);
 
-    // copy ambient light texture to FBO, so we can use it to light decals
     auto mfbo = GetMainFBO();
+
+    // allocate ambient light FBO object if necessary
+    if (!ambLightFBO.isValid() ||
+        ambLightFBO.getWidth() != mfbo->getWidth() ||
+        ambLightFBO.getHeight() != mfbo->getHeight() ||
+        ambLightFBO.getGLType() != mfbo->getGLType())
+    {
+      ambLightFBO.destroy(); // it is safe to destroy non-valid FBOs
+      ambLightFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
+      p_glObjectLabelVA(GL_FRAMEBUFFER, ambLightFBO.getFBOid(), "Ambient light FBO");
+    }
+
+    // copy ambient light texture to FBO, so we can use it to light decals
     mfbo->blitTo(&ambLightFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, ambLightFBO.getWidth(), ambLightFBO.getHeight(), GL_NEAREST);
     mfbo->activate();
   }

@@ -1672,24 +1672,19 @@ void VRenderLevelShared::RenderPlayerView () {
 
   if (IsShadowMapRenderer() || IsShadowVolumeRenderer()) {
     const bool overbright = r_adv_overbright.asBool();
-    if (overbright != Drawer->IsMainFBOFloat()) {
-      if (!Drawer->RecreateFBOs(overbright)) {
-        GCon->Log(NAME_Warning, "cannot use overbright, turned it off");
-        r_adv_overbright = false;
-      }
+    // it is safe to call it on each frame, it won't do any unneeded work
+    if (!Drawer->RecreateFBOs(overbright)) {
+      GCon->Log(NAME_Warning, "cannot use overbright, turned it off");
+      r_adv_overbright = false;
     }
+  } else {
+    // lightmapped renderer doesn't need main FP FBO
+    // it is safe to call it on each frame, it won't do any unneeded work
+    Drawer->RecreateFBOs(false);
   }
-  /*
-  else {
-    const bool overbright = r_lmap_overbright.asBool();
-    if (overbright != Drawer->IsMainFBOFloat()) {
-      if (!Drawer->RecreateFBOs(overbright)) {
-        GCon->Log(NAME_Warning, "cannot use overbright, turned it off");
-        r_lmap_overbright = false;
-      }
-    }
-  }
-  */
+
+  // this swaps FP and non-FP main FBOs if necessary
+  Drawer->PrepareMainFBO();
 
   Drawer->MirrorFlip = false;
   Drawer->MirrorClip = false;
@@ -1751,6 +1746,9 @@ void VRenderLevelShared::RenderPlayerView () {
 
   SetupFrame();
 
+  // this should be always called here
+  Drawer->PrepareForPosteffects();
+
   // reset global colormap, it will be done with the shader
   const int savedColorMap = (r_dbg_force_colormap.asInt() ? r_dbg_force_colormap.asInt() : ColorMap);
   const bool shaderCM = true;
@@ -1763,6 +1761,8 @@ void VRenderLevelShared::RenderPlayerView () {
   //GCon->Log(NAME_Debug, "*** VRenderLevelShared::RenderPlayerView: EXIT ***");
 
   if (dbg_clip_dump_added_ranges) ViewClip.Dump();
+
+  Drawer->RestoreMainFBO();
 
   // perform bloom effect
   //GCon->Logf(NAME_Debug, "BLOOM: (%d,%d); (%dx%d)", refdef.x, refdef.y, refdef.width, refdef.height);
@@ -1808,6 +1808,9 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // apply tonemap, if necessary
   if (doTonemap) Drawer->Posteffect_Tonemap(refdef.x, refdef.y, refdef.width, refdef.height, false);
+
+  // this should be called even if nothing was applied before
+  Drawer->FinishPosteffects();
 
   Drawer->EndView();
 }

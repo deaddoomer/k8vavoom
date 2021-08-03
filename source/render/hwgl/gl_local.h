@@ -990,8 +990,19 @@ protected:
   bool hasBoundsTest; // GL_EXT_depth_bounds_test
 
   FBO mainFBO;
+  FBO mainFBOFP; // if we're using FP color textures for main FBO, this will hold it
   FBO ambLightFBO; // we'll copy ambient light texture here, to use it in decal renderer to light decals
   FBO wipeFBO; // we'll copy main FBO here to render wipe transitions
+  // the scheme is like this (for overbrights):
+  //   in the main playerview renderer, we'll swap main FBO and main FP FBO
+  //   then we'll render the scene
+  //   then we'll fix overbright (this retains FP texture)
+  //   then we'll finish rendering objects and textures
+  //   then we'll blit FP texture to non-FP (it is saved in main FP FBO currently)
+  //   then we'll swap main FBO and main FP FBO again
+  // now our main FBO is non-FP, as it was before
+  // this trickery is done so posteffect shaders could use non-FP color textures (for speed)
+
   // bloom
   FBO bloomscratchFBO, bloomscratch2FBO, bloomeffectFBO, bloomcoloraveragingFBO;
   // view (texture) camera updates will use this to render camera views
@@ -1001,9 +1012,8 @@ protected:
   // current "main" fbo: <0: `mainFBO`, otherwise camera FBO
   int currMainFBO;
 
-  // texture FBO used in various post-render shader effects (tonemap, colormap, underwater, etc.)
-  FBO postSrcFBO; // main fbo texture will be copied there (this has no depth or stencil buffers, only texture), never FP
-  FBO postOverFBO; // can be FP
+  FBO postSrcFBO;
+  FBO postOverFBO; // must be FP is main FBO is fp
 
   // tonemap
   GLuint tonemapPalLUT; // palette LUT texture
@@ -1434,6 +1444,15 @@ public:
   virtual void Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, int aheight) override;
   virtual void Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
   virtual void Posteffect_CAS (float coeff, int ax, int ay, int awidth, int aheight, bool restoreMatrices) override;
+
+  virtual void PrepareMainFBO () override;
+  virtual void RestoreMainFBO () override;
+
+  // contrary to the name, this must be called at the very beginning of the rendering pass, right after setting the matices
+  virtual void PrepareForPosteffects () override;
+  // call this after finishing all posteffects, to restore main FBO in the proper state
+  // this is required because posteffects can attach non-FP texture to FBO
+  virtual void FinishPosteffects () override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;
