@@ -822,10 +822,10 @@ void Host_Frame () {
     SCR_Update();
     if (show_time) time2 = Sys_Time();
 
-    if (cls.signon) CL_DecayLights();
-
     // update audio
     GAudio->UpdateSounds();
+
+    if (cls.signon) CL_DecayLights();
     #endif
 
     if (show_time) {
