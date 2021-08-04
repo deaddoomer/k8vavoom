@@ -25,12 +25,10 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "p_entity.h"
-#include "p_levelinfo.h"
 #include "p_decal.h"
 #ifdef CLIENT
 # include "../drawer.h"
 #endif
-
 
 static TMapNC<VEntity *, bool> poEntityMap;
 static TMapNC<sector_t *, bool> poSectorMap;

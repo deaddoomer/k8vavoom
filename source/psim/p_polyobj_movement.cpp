@@ -609,10 +609,11 @@ static bool CheckAffectedMObjPositions (const polyobj_t *pofirst) noexcept {
 //
 //==========================================================================
 bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool /*rotation*/) {
-  int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY/*+MAXRADIUS*/)+1;
-  int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY/*-MAXRADIUS*/)-1;
-  int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX/*-MAXRADIUS*/)-1;
-  int right = MapBlock(ld->bbox2d[BOX2D_RIGHT]-BlockMapOrgX/*+MAXRADIUS*/)+1;
+  // check one extra block, as usual
+  int top = MapBlock(ld->bbox2d[BOX2D_TOP]-BlockMapOrgY)+1;
+  int bottom = MapBlock(ld->bbox2d[BOX2D_BOTTOM]-BlockMapOrgY)-1;
+  int left = MapBlock(ld->bbox2d[BOX2D_LEFT]-BlockMapOrgX)-1;
+  int right = MapBlock(ld->bbox2d[BOX2D_RIGHT]-BlockMapOrgX)+1;
 
   if (top < 0 || right < 0 || bottom >= BlockMapHeight || left >= BlockMapWidth) return false;
 
@@ -627,13 +628,7 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool /*
     for (int bx = left; bx <= right; ++bx) {
       for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
-        //if (!(mobj->EntityFlags&VEntity::EF_ColideWithWorld)) continue;
-        //if (!(mobj->EntityFlags&(VEntity::EF_Solid|VEntity::EF_Corpse))) continue;
         if (!NeedPositionCheck(mobj)) continue;
-
-        // check mobj height (pobj floor and ceiling shouldn't be sloped here)
-        //FIXME: check height for 3dmitex pobj
-        //bool ldblock = false;
 
         if (!checkPObjLineBlocked(po, mobj, ld)) continue;
 

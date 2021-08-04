@@ -24,9 +24,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "p_entity.h"
-#include "p_levelinfo.h"
-#include "p_decal.h"
 #ifdef CLIENT
 # include "../drawer.h"
 #endif
