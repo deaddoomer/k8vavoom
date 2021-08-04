@@ -5255,7 +5255,7 @@ override void SetViewPos () {
     ViewOrg.x = MO.Origin.x;
     ViewOrg.y = MO.Origin.y;
 
-    if (LocalQuakeHappening) {
+    if (LocalQuakeHappening && !(GetCvarI('r_screen_shake_mode')&1)) {
       //TODO: implement A_QuakeEx flags!
       //float intensity = float(LocalQuakeHappening);
       if (LocalQuakeHappening.x) ViewOrg.x += (Random()-0.5)*(LocalQuakeHappening.x*4.0);

@@ -44,10 +44,11 @@ name SoundName;
   EntityEx victim;
   float dist;
 
-  bool allowDamage = !Level.Game.netgame;
-
   //print("QuakeFocus: dur=%s; power=%s", QuakeDuration, Richters);
   if (QuakeDuration-- > 0) {
+    bool allowDamage = !Level.Game.netgame;
+    int quakeMode = GetCvarI('r_screen_shake_mode');
+
     if (Richters > 256/9) Richters = 256/9;
 
     foreach (auto playnum; 0..MAXPLAYERS) {
@@ -55,16 +56,20 @@ name SoundName;
       if (!pl || !pl.bSpawned) continue;
       victim = EntityEx(pl.MO);
       dist = DistTo(victim);
-      if (dist < TremorRadius) {
+      if (!(quakeMode&1) && dist < TremorRadius) {
         // in tremor radius
         pl.LocalQuakeHappening = vector(Richters, Richters, 0);
+      } else {
+        pl.LocalQuakeHappening = vector(0, 0, 0);
       }
       // check if in damage radius
       if (allowDamage && dist < DamageRadius && victim.Origin.z <= victim.FloorZ) {
         if (Random() < 0.1953125) victim.Damage(none, none, 1+(P_Random()&7), spawnBlood:true);
         // thrust player around
-        an = victim.Angles.yaw+Random()*256.0;
-        victim.Thrust(an, float(Richters)/2.0);
+        if (!(quakeMode&2)) {
+          an = victim.Angles.yaw+Random()*256.0;
+          victim.Thrust(an, float(Richters)/2.0);
+        }
       }
     }
   } else {

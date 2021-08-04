@@ -102,6 +102,8 @@ VCvarI r_fullbright_splevel_decoration("r_fullbright_splevel_decoration", "255",
 VCvarI r_fullbright_splevel_pickup("r_fullbright_splevel_pickup", "255", "Fullbright level for pickups (0 means \"disable fullbright\").", CVAR_Archive);
 VCvarI r_fullbright_splevel_other("r_fullbright_splevel_other", "255", "Fullbright level for other things (0 means \"disable fullbright\").", CVAR_Archive);
 
+static VCvarI r_screen_shake_mode("r_screen_shake_mode", "0", "Screen shake (from earthquakes and such) mode: 0:default, 1:disabled.", CVAR_Archive);
+
 static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive);
 
 

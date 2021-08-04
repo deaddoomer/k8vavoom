@@ -129,6 +129,20 @@ menudef AccessibilityOptions {
       "You can turn off psprite (player weapons) rendering.";
   }
 
+  option enum {
+    title = "Screen Shaking";
+    cvar = r_screen_shake_mode;
+    // bit 0: quake disabled
+    // bit 1: thrust disabled
+    list {
+      "Normal",
+      "Quake Disabled",
+      "Thrust Disabled",
+      "Quake And Thrust Disabled",
+    }
+    help = "You can turn off screen shacking from earthquakes and such here.";
+  }
+
 
   header "Fullbright Sprites";
 
