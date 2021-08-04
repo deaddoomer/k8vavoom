@@ -385,7 +385,10 @@ set(PSIM_SOURCES
   psim/p_player_input.cpp
   psim/p_playerreplicationinfo.cpp
   psim/p_playerreplicationinfo.h
-  psim/p_polyobj.cpp
+  psim/p_polyobj_misc.cpp
+  psim/p_polyobj_movement.cpp
+  psim/p_polyobj_spawn.cpp
+  psim/p_polyobj_vcapi.cpp
   psim/p_switch.cpp
   psim/p_terrain.cpp
   psim/p_thinker.cpp
