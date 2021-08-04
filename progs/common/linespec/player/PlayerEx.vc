@@ -2854,7 +2854,7 @@ void PaletteFlash () {
       */
 
       float maxent = fmin(GetCvarF('k8DamageFlashMaxIntensity'), 1.0)*255.0;
-      if (maxent <= 0.0) maxent = 255.0; // cheaters must be punished! ;-)
+      if (maxent < 0.0) maxent = 255.0; // cheaters must be punished! ;-)
       int Amount = int(fclamp(114.0*DamageFlash*dmgIntensity, 0, maxent));
       //printdebug("%C: maxent=%s; DamageFlash=%s; dmgIntensity=%s; amount=%s (%s)", self, maxent, DamageFlash, dmgIntensity, int(114.0*DamageFlash*dmgIntensity), Amount);
       //if (Amount >= 228) Amount = 228;
@@ -2864,7 +2864,7 @@ void PaletteFlash () {
 
     if (BonusFlash) {
       float maxBonusFlashTime = GetCvarF('k8BonusFlashMaxTime');
-      if (maxBonusFlashTime > 0) BonusFlash = fmin(BonusFlash, maxBonusFlashTime);
+      if (maxBonusFlashTime >= 0) BonusFlash = fmin(BonusFlash, maxBonusFlashTime);
       if (BonusFlash > 0) {
         int Amount = int(256.0*BonusFlash);
         if (Amount >= 128) Amount = 128;

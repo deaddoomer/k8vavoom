@@ -181,7 +181,7 @@ menudef MiscOptions {
   option slider {
     title = "Max Pickup Flash Time";
     cvar = k8BonusFlashMaxTime;
-    min = 0.1;
+    min = 0.0;
     max = 4.0;
     step = 0.1;
     help =
@@ -193,7 +193,7 @@ menudef MiscOptions {
   option slider {
     title = "Max Damage Tint Intensity";
     cvar = k8DamageFlashMaxIntensity;
-    min = 0.1;
+    min = 0.0;
     max = 1.0;
     step = 0.02;
     help =
