@@ -89,6 +89,8 @@ static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode:
 static VCvarI r_sectorflick_mode("r_sectorflick_mode", "0", "Sector light flickering mode: 0:default; 1:only when the sector is invisible.", CVAR_Archive);
 static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector light level (0 means \"don't force\").", CVAR_Archive);
 static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive);
+static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
+static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
 
 
 static const char *videoDrvName = nullptr;

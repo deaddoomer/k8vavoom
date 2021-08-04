@@ -65,7 +65,7 @@ menudef AccessibilityOptions {
   }
 
   option bool {
-    title = "Dynamic lights";
+    title = "Allow Dynamic Lights";
     cvar = r_dynamic_lights;
     help = "Allow dynamic lighting with light sources?";
   }
@@ -73,7 +73,41 @@ menudef AccessibilityOptions {
   option bool {
     title = "Allow Static Lighting";
     cvar = r_static_lights;
-    help = "Allow static lighting with light sources?";
+    help =
+      "Allow static lighting with light sources?",
+      "\c[WHITE]Please, note that static lights may still flicker or pulse!\c-";
+  }
+
+  option enum {
+    title = "Lighting Effects";
+    cvar = r_dynlightfx_mode;
+    list {
+      "Enabled",
+      "Disabled"
+    }
+    help =
+      "You can turn off lighting effects from dynamic lighting here.",
+      "Note that this controls static light from light sources too",
+      "(i.e. from things like candelabras, or static light sources",
+      "directly put on the map).",
+      "\c[WHITE]Please, note that most lighting from things (like powerups)\c-",
+      "\c[WHITE]is not controlled by this.\c-",
+      "\c[WHITE]You may want to disable sprite dynamic lights too.\c-";
+  }
+
+  option enum {
+    title = "Sprite Dynamic Lights";
+    cvar = r_sprlight_mode;
+    list {
+      "Enabled",
+      "Disabled"
+    }
+    help =
+      "You can turn off lighting effects from sprites here.",
+      "Sprites can have light sources attached to specific frames.",
+      "Here, you can turn off those lights. It is hard to control",
+      "flickering for such lights, so the only way is to control them",
+      "is to turn them off (at least for now).";
   }
 
 

@@ -2291,7 +2291,7 @@ override void ClientTick (float DeltaTime) {
   // do state effects, dynlight, and various particle trails
   DoStateEffects(DeltaTime);
 
-  if (bDynamicLight) {
+  if (bDynamicLight && GetCvarI('r_sprlight_mode') <= 0) {
     // update dynamic lights
     dlight_t *dl = AllocDlight(self, Origin, radius:fmax(0, fmax(DLightPrevRadius, DLightRadius)));
     if (dl) {
@@ -2360,7 +2360,7 @@ final void DoStateEffects (float DeltaTime) {
 
   AngleVectors(Angles, out Forward, out Right, out Up);
 
-  if (!bStaticLightSpawned) {
+  if (!bStaticLightSpawned && FXLights.length && GetCvarI('r_sprlight_mode') <= 0) {
     //if (self isa 'ExplosiveBarrel') printdebug("%C: numdynlights=%s (static=%B)", self, FXLights.length, bStaticLightSpawned);
     //if (FXLights && (self isa 'HacxLongCeilingLamp')) printdebug("%C: l0ofs=%s; up=%s; org.z=%s; ceil=%s", self, FXLights[0].Offset, Up, Origin.z, Sector.ceiling.minz);
     // dynamic lights
@@ -2491,7 +2491,7 @@ final void DoStateEffects (float DeltaTime) {
 
   if (State != PrevEffectState) {
     // particle effects
-    if (FXParticles.length > 0 && GetCvarB('r_particle_effects')) {
+    if (FXParticles.length && GetCvarB('r_particle_effects')) {
       foreach (auto i; 0..FXParticles.length) {
         ParticleEffectDef *P = FXParticles[i];
         if (!P) continue;

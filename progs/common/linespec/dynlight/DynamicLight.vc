@@ -214,7 +214,10 @@ override void ClientTick (float DeltaTime) {
 
   if (bDormant || !DeltaTime) return;
 
+  bool accallowed = (GetCvarI('r_dynlightfx_mode') <= 0);
+
   int realLightType = LightType&DLTYPE_TypeMask;
+  int accLightType = (accallowed ? realLightType : DLTYPE_Point);
 
   switch (realLightType) {
     case DLTYPE_Point:
@@ -227,26 +230,44 @@ override void ClientTick (float DeltaTime) {
         LightTime += DeltaTime;
         if (LightTime >= PulseCycle) LightTime = 0.0;
         float Frac = (1.0+sin(360.0*LightTime/PulseCycle))*0.5;
+        if (!accallowed) Frac = 0.5;
         Intensity = float(Args[3])+Frac*float(Args[4]-Args[3]);
         //print("PULSE: %s (%s)", Frac, Intensity);
       }
       break;
     case DLTYPE_Flicker:
-      Intensity = float(Random() >= Angles.yaw/360.0 ? Args[4] : Args[3]);
+      if (accallowed) {
+        Intensity = float(Random() >= Angles.yaw/360.0 ? Args[4] : Args[3]);
+      } else {
+        // use average value
+        Intensity = float((Args[4]+Args[3])*0.5);
+      }
       break;
     case DLTYPE_FlickerRandom:
       LightTime += DeltaTime;
       if (LightTime > Angles.yaw/35.0) {
         LightTime = 0.0;
-        Intensity = float(Args[3])+Random()*float(Args[4]-Args[3]);
+        if (accallowed) {
+          Intensity = float(Args[3])+Random()*float(Args[4]-Args[3]);
+        } else {
+          // use average value
+          Intensity = float((Args[4]+Args[3])*0.5);
+        }
       }
       break;
     case DLTYPE_Sector:
       {
         float Scale = float(Args[3])*0.125;
         if (!Scale) Scale = 1.0;
-        Intensity = fclamp(float(Sector->params.lightlevel)*Scale, 0.0, 255.0);
+        if (accallowed) {
+          Intensity = fclamp(float(Sector->params.lightlevel)*Scale, 0.0, 255.0);
+        } else {
+          Intensity = Args[3]; //k8: i don't know what to do here
+        }
       }
+      break;
+    case DLTYPE_MuzzleFlash:
+      if (GetCvarI('r_extralight_mode') > 0) return;
       break;
   }
 
@@ -255,7 +276,7 @@ override void ClientTick (float DeltaTime) {
     //dl->origin = Origin;
     //dl->radius = IntensityToRadius(Intensity);
     dl->die = XLevel.Time+0.01;
-    dl->type = /*LightType*/realLightType;
+    dl->type = /*LightType*//*realLightType*/accLightType;
     if (LightType&DLTYPE_Spot) {
       dl.type |= DLTYPE_Spot;
       AngleVector(Angles, out dl.coneDirection);

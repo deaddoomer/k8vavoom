@@ -2667,6 +2667,7 @@ void FlatDecalEffect (TVec org, name dectype, float range, optional int translat
 //
 //==========================================================================
 void ClientExplosion (int clr, float rad, TVec org) {
+  if (GetCvarI('r_sprlight_mode') > 0) return;
   dlight_t *dl = Level.AllocDlight(none, org, rad+150.0);
   if (dl) {
     //dl->origin = org;
@@ -2707,13 +2708,15 @@ void ClientParticleExplosion (int clr, float rad, TVec org) {
     p->gravity = 40.0+(Random()*512.0)-256.0;
   }
 
-  dlight_t *dl = Level.AllocDlight(none, org, rad+150.0);
-  if (dl) {
-    //dl->origin = org;
-    //dl->radius = rad + 150.0;
-    dl->color = clr;
-    dl->die = Level.XLevel.Time+0.5;
-    dl->decay = 300.0;
+  if (GetCvarI('r_sprlight_mode') <= 0) {
+    dlight_t *dl = Level.AllocDlight(none, org, rad+150.0);
+    if (dl) {
+      //dl->origin = org;
+      //dl->radius = rad + 150.0;
+      dl->color = clr;
+      dl->die = Level.XLevel.Time+0.5;
+      dl->decay = 300.0;
+    }
   }
 }
 
