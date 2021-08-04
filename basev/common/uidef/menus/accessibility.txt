@@ -41,7 +41,7 @@ menudef AccessibilityOptions {
   }
 
   option slider {
-    title = "Fixel Light Level";
+    title = "Fixed Light Level";
     cvar = r_force_sector_light;
     step = 16;
     min = 0;
