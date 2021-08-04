@@ -1597,7 +1597,7 @@ void VRenderLevelShared::SetupFrame () {
       case 6: ColorMap = CM_Blue; break;
       case 7: ColorMap = CM_Inverse; break;
       case 8: ColorMap = CM_Default; break;
-      case 9: ColorMap = CM_Default; FixedLight = 0; ExtraLight = min2(254, ExtraLight+clampval(r_cm_extralight_add.asInt(), 0, 255)); break;
+      case 9: ColorMap = CM_Default; FixedLight = 0; FullbrightThings = 1/*interesting*/; ExtraLight = min2(254, ExtraLight+clampval(r_cm_extralight_add.asInt(), 0, 255)); break;
     }
   }
 
