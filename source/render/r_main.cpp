@@ -87,6 +87,7 @@ static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "3", "LightAmp colormap r
 static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0:default; 1:ignore fullbright; 2:ignore colormap; 3:ignore both.", CVAR_Archive);
 static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_sectorflick_mode("r_sectorflick_mode", "0", "Sector light flickering mode: 0:default; 1:only when the sector is invisible.", CVAR_Archive);
+static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector light level (0 means \"don't force\")..", CVAR_Archive);
 
 
 static const char *videoDrvName = nullptr;
@@ -1586,6 +1587,9 @@ void VRenderLevelShared::SetupFrame () {
   }
 
   if (!allowFB && ExtraLight > 2*8) ExtraLight = 2*8;
+
+  const int forceL = r_force_sector_light.asInt();
+  if (forceL > 0) FixedLight = min2(forceL, 255);
 
   if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
 

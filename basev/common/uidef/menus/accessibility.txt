@@ -40,6 +40,18 @@ menudef AccessibilityOptions {
       "\c[WHITE]Note that dynamic lights are independent of this!\c-";
   }
 
+  option slider {
+    title = "Fixel Light Level";
+    cvar = r_force_sector_light;
+    step = 16;
+    min = 0;
+    max = 255;
+    help =
+      "Force uniform lighting for all sectors.",
+      "\c[WHITE]0\c- means don't force.";
+  }
+
+
   header "Global Colormap/Tint Control";
 
   option enum {
