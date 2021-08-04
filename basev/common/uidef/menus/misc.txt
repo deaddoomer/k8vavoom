@@ -199,7 +199,7 @@ menudef MiscOptions {
     help =
       "Maximum intensity for damage screen tint.",
       "Getting alot of damage in a short time turns screen to",
-      "almost completely red. You can decrease this valud to",
+      "almost completely red. You can decrease this value to",
       "avoid this. But beware! This is very close to cheating.";
   }
 
