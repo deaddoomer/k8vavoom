@@ -1,11 +1,12 @@
 menus {
 
+  "menus/accessibility.txt",
   "menus/amoptions.txt",
   "menus/gameplay.txt",
   "menus/healthaccum.txt",
   "menus/hudoptions.txt",
-  "menus/minimapoptions.txt",
   "menus/maphacks.txt",
+  "menus/minimapoptions.txt",
   "menus/misc.txt",
   "menus/mouse.txt",
   "menus/options.txt",

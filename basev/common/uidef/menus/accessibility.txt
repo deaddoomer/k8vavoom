@@ -1,0 +1,155 @@
+// accessibility options menu
+menudef AccessibilityOptions {
+  //selector = MenuSelector_SmallRight;
+  Title = "ACCESSIBILITY OPTIONS";
+
+
+  header "Bobbing";
+
+  option slider {
+    title = "Head Bobbing";
+    cvar = movebob;
+    step = 0.1;
+    min = 0;
+    max = 1;
+    help = "Player camera bobbing. Vanilla default is 0.25.";
+  }
+
+  option slider {
+    title = "Weapon Bobbing";
+    cvar = weaponbob;
+    step = 0.02;
+    min = 0;
+    max = 1;
+    help = "Player weapon bobbing. Relative to camera bobbing.";
+  }
+
+  header "Global Colormap/Tint Control";
+
+  option enum {
+    title = "Global Colormap Mode";
+    cvar = r_colormap_mode;
+    list {
+      "Default",
+      "No Fullbright",
+      "No Color Change",
+      "Fully Disabled",
+    }
+    help =
+      "You can globally control colormap effects with this.",
+      "It is possible to disable map fullbright, color change, or both.",
+      "Individual colormap settings for some powerups can be set below.";
+  }
+
+  option enum {
+    title = "Global Colortint Mode";
+    cvar = r_colortint_mode;
+    list {
+      "Enabled",
+      "Disabled",
+    }
+    help =
+      "You can globally control colorting effects with this.",
+      "Color tinting is screen flashing on pickups,",
+      "or other such palette-like color tinting effects.";
+  }
+
+
+  header "Color Maps";
+
+  option enum {
+    title = "Inverse Colormap";
+    cvar = k8ColormapInverse;
+    list {
+      "Original Inverse",
+      "Monochrome Grayscale",
+      "Gold",
+      "Green",
+      "Red",
+      "Berserk Red",
+      "Blue",
+      "Inverse",
+    }
+    help =
+      "You can replace original 'inversed' colormap for invulnerability"
+      "with another one of your choice.";
+  }
+
+  option enum {
+    title = "LightAmp Colormap";
+    cvar = k8ColormapLightAmp;
+    list {
+      "Original",
+      "Monochrome Grayscale",
+      "Gold",
+      "Green",
+      "Red",
+      "Berserk Red",
+      "Blue",
+      "Inverse",
+    }
+    help =
+      "You can replace LightAmp colormap with another one of your choice.";
+  }
+
+  option enum {
+    title = "Berserk Colormap";
+    cvar = k8ColormapBerserk;
+    list {
+      "Original Tint",
+      "Monochrome Grayscale",
+      "Gold",
+      "Green",
+      "Red",
+      "Berserk Red",
+      "Blue",
+      "Inverse",
+    }
+    help =
+      "You can replace Berserk tint with a colormap of your choice."
+      "Note that you can override berserk tint color with cvar:"
+      "\cJk8BerserkTint #100";
+  }
+
+  option enum {
+    title = "EnviroSuit Colormap";
+    cvar = k8ColormapEnviSuit;
+    list {
+      "Original Tint",
+      "Monochrome Grayscale",
+      "Gold",
+      "Green",
+      "Red",
+      "Berserk Red",
+      "Blue",
+      "Inverse",
+    }
+    help =
+      "You can replace EnviroSuit tint with a colormap of your choice.";
+  }
+
+  option slider {
+    title = "Max Pickup Flash Time";
+    cvar = k8BonusFlashMaxTime;
+    min = 0.1;
+    max = 4.0;
+    step = 0.1;
+    help =
+      "Maximum time for bonus flash.",
+      "If too high, picking up alot of bonuses can be annoying.",
+      "One bonus lasts 0.2 seconds. Use 0 for unlimited time.";
+  }
+
+  option slider {
+    title = "Max Damage Tint Intensity";
+    cvar = k8DamageFlashMaxIntensity;
+    min = 0.1;
+    max = 1.0;
+    step = 0.02;
+    help =
+      "Maximum intensity for damage screen tint.",
+      "Getting alot of damage in a short time turns screen to",
+      "almost completely red. You can decrease this valud to",
+      "avoid this. But beware! This is very close to cheating.";
+  }
+}

@@ -77,9 +77,16 @@ menudef OptionsMenu {
     submenu = HealthAccumOptions;
   }
 
+  option submenu {
+    title = "Accessibility Options";
+    submenu = AccessibilityOptions;
+  }
+
+
   header "";
 
   modsubmenus; // place mod submenus here
+
 
   header "";
 

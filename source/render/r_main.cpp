@@ -84,6 +84,9 @@ static float prev_r_light_globvis = -666.0f;
 static VCvarI k8ColormapInverse("k8ColormapInverse", "2", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "3", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
+static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0:default; 1:ignore fullbright; 2:ignore colormap; 3:ignore both.", CVAR_Archive);
+static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive);
+
 
 static const char *videoDrvName = nullptr;
 static int cli_DisableSplash = 0;
@@ -1525,23 +1528,29 @@ void VRenderLevelShared::SetupFrame () {
     Drawer->vieworg = cl->ViewOrg;
   }
 
+  const bool allowFB = !(r_colormap_mode.asInt()&1);
+  const bool allowCMap = !(r_colormap_mode.asInt()&2);
+
   ColorMapFixedLight = false;
-  ExtraLight = (ViewEnt && ViewEnt->Player ? ViewEnt->Player->ExtraLight*8 : 0);
+  ExtraLight = (ViewEnt && ViewEnt->Player ? clampval(ViewEnt->Player->ExtraLight*8, 0, 255) : 0);
+
+  FixedLight = 0;
+  ColorMap = CM_Default;
+
   bool doInverseHack = true;
   if (cl->Camera == cl->MO) {
-    ColorMap = CM_Default;
-         if (cl->FixedColormap == INVERSECOLORMAP) { ColorMap = CM_Inverse; FixedLight = 255; }
-    else if (cl->FixedColormap == INVERSXCOLORMAP) { ColorMap = CM_Inverse; FixedLight = 255; doInverseHack = false; }
-    else if (cl->FixedColormap == GOLDCOLORMAP) { ColorMap = CM_Gold; FixedLight = 255; }
-    else if (cl->FixedColormap == REDCOLORMAP) { ColorMap = CM_Red; FixedLight = 255; }
-    else if (cl->FixedColormap == GREENCOLORMAP) { ColorMap = CM_Green; FixedLight = 255; }
-    else if (cl->FixedColormap == MONOCOLORMAP) { ColorMap = CM_Mono; FixedLight = 255; }
-    else if (cl->FixedColormap == BEREDCOLORMAP) { ColorMap = CM_BeRed; FixedLight = 255; }
-    else if (cl->FixedColormap == BLUECOLORMAP) { ColorMap = CM_Blue; FixedLight = 255; }
-    else if (cl->FixedColormap >= NUMCOLORMAPS) { FixedLight = 255; }
+         if (cl->FixedColormap == INVERSECOLORMAP) { if (allowCMap) ColorMap = CM_Inverse; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == INVERSXCOLORMAP) { if (allowCMap) { ColorMap = CM_Inverse; doInverseHack = false; } if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == GOLDCOLORMAP) { if (allowCMap) ColorMap = CM_Gold; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == REDCOLORMAP) { if (allowCMap) ColorMap = CM_Red; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == GREENCOLORMAP) { if (allowCMap) ColorMap = CM_Green; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == MONOCOLORMAP) { if (allowCMap) ColorMap = CM_Mono; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == BEREDCOLORMAP) { if (allowCMap) ColorMap = CM_BeRed; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == BLUECOLORMAP) { if (allowCMap) ColorMap = CM_Blue; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap >= NUMCOLORMAPS) { if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap) {
       // lightamp sets this to 1
-      if (cl->FixedColormap == 1) {
+      if (cl->FixedColormap == 1 && allowCMap) {
         switch (k8ColormapLightAmp.asInt()) {
           case 1: ColorMap = CM_Mono; break;
           case 2: ColorMap = CM_Gold; break;
@@ -1552,23 +1561,18 @@ void VRenderLevelShared::SetupFrame () {
           case 7: ColorMap = CM_Inverse; doInverseHack = false; break;
         }
       }
-      FixedLight = 255-(cl->FixedColormap<<3);
+      if (allowFB) FixedLight = 255-(cl->FixedColormap<<3);
     }
-    else { FixedLight = 0; }
-  } else {
-    FixedLight = 0;
-    ColorMap = CM_Default;
   }
 
   // inverse colormap flash effect
   if (cl->ExtraLight == 255) {
-    ExtraLight = 0;
-    ColorMap = CM_Inverse;
-    FixedLight = 255;
+    if (allowCMap) ColorMap = CM_Inverse;
+    if (allowFB) { ExtraLight = 0; FixedLight = 255; }
   }
 
   // inverse colormap hack
-  if (doInverseHack && ColorMap == CM_Inverse) {
+  if (doInverseHack && ColorMap == CM_Inverse && allowCMap) {
     switch (k8ColormapInverse.asInt()) {
       case 1: ColorMap = CM_Mono; break;
       case 2: ColorMap = CM_Gold; break;
@@ -1579,6 +1583,8 @@ void VRenderLevelShared::SetupFrame () {
       case 7: ColorMap = CM_Inverse; break;
     }
   }
+
+  if (!allowFB && ExtraLight > 2*8) ExtraLight = 2*8;
 
   if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
 
@@ -1812,7 +1818,7 @@ void VRenderLevelShared::RenderPlayerView () {
   // this should be called even if nothing was applied before
   Drawer->FinishPosteffects();
 
-  Drawer->EndView();
+  Drawer->EndView(r_colortint_mode.asInt() != 0);
 }
 
 
