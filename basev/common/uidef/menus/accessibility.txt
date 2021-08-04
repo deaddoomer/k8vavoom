@@ -43,12 +43,21 @@ menudef AccessibilityOptions {
   option slider {
     title = "Fixed Light Level";
     cvar = r_force_sector_light;
-    step = 16;
+    step = 4;
     min = 0;
     max = 255;
     help =
       "Force uniform lighting for all sectors.",
       "\c[WHITE]0\c- means don't force.";
+  }
+
+  option slider {
+    title = "Extra Level Lighting";
+    cvar = r_level_extra_lighting;
+    step = 4;
+    min = 0;
+    max = 255;
+    help = "Increase lighting of all sectors.";
   }
 
   option enum {

@@ -88,6 +88,7 @@ static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0
 static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_sectorflick_mode("r_sectorflick_mode", "0", "Sector light flickering mode: 0:default; 1:only when the sector is invisible.", CVAR_Archive);
 static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector light level (0 means \"don't force\").", CVAR_Archive);
+static VCvarI r_level_extra_lighting("r_level_extra_lighting", "0", "Add extra light to all sectors ([0..255]).", CVAR_Archive);
 static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
@@ -1607,6 +1608,8 @@ void VRenderLevelShared::SetupFrame () {
 
   const int forceL = r_force_sector_light.asInt();
   if (forceL > 0) FixedLight = min2(forceL, 255);
+
+  if (r_level_extra_lighting.asInt() > 0) ExtraLight = clampval(ExtraLight+clampval(r_level_extra_lighting.asInt(), 0, 255), 0, 255);
 
   if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
 
