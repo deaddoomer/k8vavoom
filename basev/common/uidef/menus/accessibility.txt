@@ -129,9 +129,12 @@ menudef AccessibilityOptions {
       "You can turn off psprite (player weapons) rendering.";
   }
 
+
+  header "Fullbright Sprites";
+
   option enum {
     title = "Fullbright Sprites";
-    cvar = r_fullbright_sprites;
+    cvar = r_fullbright_sprites_mode;
     list {
       "Normal",
       "Interesting",
@@ -140,6 +143,62 @@ menudef AccessibilityOptions {
     help =
       "Always render sprites as fullbright?",
       "'Interesting' sprites are players, monsters, projectiles, and pickups.";
+  }
+
+  option slider {
+    title = "Player Fullbright Level";
+    cvar = r_fullbright_splevel_player;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Monster Fullbright Level";
+    cvar = r_fullbright_splevel_monster;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Projectile Fullbright Level";
+    cvar = r_fullbright_splevel_missile;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Pickup Fullbright Level";
+    cvar = r_fullbright_splevel_pickup;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Corpse Fullbright Level";
+    cvar = r_fullbright_splevel_corpse;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Decoration Fullbright Level";
+    cvar = r_fullbright_splevel_decoration;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Other Fullbright Level";
+    cvar = r_fullbright_splevel_other;
+    min = 0;
+    max = 255;
+    step = 4;
   }
 
 

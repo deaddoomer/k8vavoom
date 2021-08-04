@@ -84,6 +84,14 @@ VCvarB r_shadows_players("r_shadows_players", true, "Render shadows for players?
 
 static VCvarB r_draw_adjacent_sector_things("r_draw_adjacent_sector_things", true, "Draw things in sectors adjacent to visible sectors (can fix disappearing things, but somewhat slow)?", CVAR_Archive);
 
+extern VCvarI r_fullbright_splevel_player;
+extern VCvarI r_fullbright_splevel_missile;
+extern VCvarI r_fullbright_splevel_corpse;
+extern VCvarI r_fullbright_splevel_monster;
+extern VCvarI r_fullbright_splevel_decoration;
+extern VCvarI r_fullbright_splevel_pickup;
+extern VCvarI r_fullbright_splevel_other;
+
 
 //==========================================================================
 //
@@ -263,10 +271,41 @@ void VRenderLevelShared::SetupRIThingLighting (VEntity *ent, RenderStyleInfo &ri
              (ent->EntityFlags&(VEntity::EF_FullBright|VEntity::EF_Bright)) ||
              (FullbrightThings && (FullbrightThings == 2 || ent->IsInterestingThing())))
   {
-    ri.light = ri.seclight = 0xffffffff;
-    if (FullbrightThings != 2 && allowBM && r_brightmaps && r_brightmaps_sprite && !ent->IsInterestingThing()) {
+    bool interesting = ent->IsInterestingThing();
+    ri.light = ri.seclight = 0xffffffffu;
+    if (FullbrightThings != 2 && allowBM && r_brightmaps && r_brightmaps_sprite && !interesting) {
       ri.seclight = LightPoint(ent, ent->Origin, ent->GetRenderRadius(), ent->Height, ent->SubSector);
-      ri.seclight |= 0xff000000;
+      ri.seclight |= 0xff000000u;
+    }
+    if (FullbrightThings) {
+      interesting = (interesting || FullbrightThings == 2);
+      unsigned lvl = 0xffffffffu;
+      switch (ent->Classify()) {
+        case VEntity::EType::ET_Unknown: if (interesting) lvl = clampToByte(r_fullbright_splevel_other.asInt()); break;
+        case VEntity::EType::ET_Player: if (interesting) lvl = clampToByte(r_fullbright_splevel_player.asInt()); break;
+        case VEntity::EType::ET_Missile: if (interesting) lvl = clampToByte(r_fullbright_splevel_missile.asInt()); break;
+        case VEntity::EType::ET_Corpse: if (interesting) lvl = clampToByte(r_fullbright_splevel_corpse.asInt()); break;
+        case VEntity::EType::ET_Monster: if (interesting) lvl = clampToByte(r_fullbright_splevel_monster.asInt()); break;
+        case VEntity::EType::ET_Decoration: if (interesting) lvl = clampToByte(r_fullbright_splevel_decoration.asInt()); break;
+        case VEntity::EType::ET_Pickup: if (interesting) lvl = clampToByte(r_fullbright_splevel_pickup.asInt()); break;
+      }
+      if (lvl != 0xffffffffu) {
+        if (lvl == 0) {
+          if (!asAmbient) {
+            // use old way of lighting (i.e. calculate rough lighting from all light sources)
+            ri.light = ri.seclight = LightPoint(ent, ent->Origin, ent->GetRenderRadius(), ent->Height, ent->SubSector);
+          } else {
+            // use only ambient lighting, lighting from light sources will be added later
+            // this is used in advrender
+            ri.light = ri.seclight = LightPointAmbient(ent, ent->Origin, ent->GetRenderRadius(), ent->Height, ent->SubSector);
+          }
+        } else if (lvl != 255) {
+          //ri.light = (ri.light&0x00ffffffu)|(lvl<<24);
+          //ri.seclight = (ri.seclight&0x00ffffffu)|(lvl<<24);
+          ri.light = lvl|(lvl<<8)|(lvl<<16)|(lvl<<24);
+          ri.seclight = lvl|(lvl<<8)|(lvl<<16)|(lvl<<24);
+        }
+      }
     }
   } else {
     if (!asAmbient) {

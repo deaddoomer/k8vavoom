@@ -92,7 +92,15 @@ static VCvarI r_level_extra_lighting("r_level_extra_lighting", "0", "Add extra l
 static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
-static VCvarI r_fullbright_sprites("r_fullbright_sprites", "0", "Always render sprites as fullbright (0:none; 1:interesting; 2:all)?", CVAR_Archive);
+
+VCvarI r_fullbright_sprites_mode("r_fullbright_sprites_mode", "0", "Always render sprites as fullbright (0:none; 1:interesting; 2:all)?", CVAR_Archive);
+VCvarI r_fullbright_splevel_player("r_fullbright_splevel_player", "255", "Fullbright level for players (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_missile("r_fullbright_splevel_missile", "255", "Fullbright level for projectiles (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_corpse("r_fullbright_splevel_corpse", "255", "Fullbright level for corpses (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_monster("r_fullbright_splevel_monster", "255", "Fullbright level for monsters (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_decoration("r_fullbright_splevel_decoration", "255", "Fullbright level for decorations (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_pickup("r_fullbright_splevel_pickup", "255", "Fullbright level for pickups (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_splevel_other("r_fullbright_splevel_other", "255", "Fullbright level for other things (0 means \"disable fullbright\").", CVAR_Archive);
 
 static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive);
 
@@ -1613,7 +1621,7 @@ void VRenderLevelShared::SetupFrame () {
 
   if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
 
-  if (r_fullbright_sprites.asInt()) FullbrightThings = r_fullbright_sprites.asInt();
+  if (r_fullbright_sprites_mode.asInt()) FullbrightThings = r_fullbright_sprites_mode.asInt();
 
   Drawer->SetupView(this, &refdef);
   //advanceCacheFrame();
