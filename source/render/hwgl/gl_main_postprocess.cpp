@@ -152,10 +152,6 @@ void VOpenGLDrawer::PreparePostSrcFBO () {
 //
 //==========================================================================
 void VOpenGLDrawer::RenderPostSrcFullscreenQuad () {
-  auto mfbo = GetMainFBO();
-  vassert(postSrcFBO.getWidth() == mfbo->getWidth());
-  vassert(postSrcFBO.getHeight() == mfbo->getHeight());
-  //GCon->Logf(NAME_Debug, "width=%d; height=%d", mfbo->getWidth(), mfbo->getHeight());
   glBegin(GL_QUADS);
     #if 0
     glTexCoord3f(0.0f, 0.0f, 10.0f); glVertex2i(0, 0);
@@ -472,4 +468,127 @@ void VOpenGLDrawer::PostprocessOvebright () {
   glPopAttrib();
   glMatrixMode(GL_PROJECTION); glPopMatrix();
   glMatrixMode(GL_MODELVIEW); glPopMatrix();
+}
+
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::EnsurePostSrcFSFBO
+//
+//  this will force main FBO with `SetMainFBO(true);`
+//  it also copies main FBO to `postSrcFSFBO`
+//  make sure to save matrices if necessary, because this will destroy them
+//
+//==========================================================================
+void VOpenGLDrawer::EnsurePostSrcFSFBO () {
+  // enforce main FBO
+  SetMainFBO(true); // forced
+  auto mfbo = GetMainFBO();
+
+  // check dimensions for already created FBO
+  if (postSrcFSFBO.isValid()) {
+    if (postSrcFSFBO.getWidth() == mfbo->getWidth() && postSrcFSFBO.getHeight() == mfbo->getHeight() &&
+        postSrcFSFBO.isColorFloat() == mfbo->isColorFloat())
+    {
+      return;
+    }
+    // destroy it, and recreate
+    postSrcFSFBO.destroy();
+  }
+
+  // create postsrc FBO
+  postSrcFSFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
+  p_glObjectLabelVA(GL_FRAMEBUFFER, postSrcFSFBO.getFBOid(), "FS-Posteffects Texture Source FBO");
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PreparePostSrcFSFBO
+//
+//  this will setup matrices, ensure source FBO, and
+//  copy main FBO to postsrc FBO
+//
+//==========================================================================
+void VOpenGLDrawer::PreparePostSrcFSFBO () {
+  EnsurePostSrcFSFBO();
+  auto mfbo = GetMainFBO();
+
+  #if 0
+  // copy main FBO to postprocess source FBO, so we can read it
+  mfbo->blitTo(&postSrcFSFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postSrcFSFBO.getWidth(), postSrcFSFBO.getHeight(), GL_NEAREST);
+  #else
+  if (!postSrcFSFBO.swapColorTextures(mfbo)) {
+    GCon->Logf(NAME_Debug, "FBO texture swapping failed, use blitting");
+    mfbo->blitTo(&postSrcFSFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, postSrcFSFBO.getWidth(), postSrcFSFBO.getHeight(), GL_NEAREST);
+  }
+  #endif
+  mfbo->activate();
+
+  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  GLDisableBlend();
+  GLDisableDepthWrite();
+  glEnable(GL_TEXTURE_2D);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+  // source texture
+  SelectTexture(0);
+  glBindTexture(GL_TEXTURE_2D, postSrcFSFBO.getColorTid());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  /*
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  */
+}
+
+
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::PostprocessOvebright
+//
+//  normalize overbrighting for fp textures
+//
+//==========================================================================
+void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
+  if (mode < 1 || mode > 5) return;
+
+  PostSrcMatrixSaver matsaver(this, true);
+  PreparePostSrcFSFBO();
+
+  ColorBlind.Activate();
+  ColorBlind.SetScreenFBO(0);
+  ColorBlind.SetMode(mode);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  RenderPostSrcFullscreenQuad();
+  FinishPostSrcFBO();
+}
+
+
+void VOpenGLDrawer::Posteffect_ColorMatrix (const float mat[12]) {
+  PostSrcMatrixSaver matsaver(this, true);
+  PreparePostSrcFSFBO();
+
+  ColorMatrix.Activate();
+  ColorMatrix.SetScreenFBO(0);
+  ColorMatrix.SetMatR0(mat[0], mat[1], mat[2], mat[3]);
+  ColorMatrix.SetMatR1(mat[4], mat[5], mat[6], mat[7]);
+  ColorMatrix.SetMatR2(mat[8], mat[9], mat[10], mat[11]);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  RenderPostSrcFullscreenQuad();
+  FinishPostSrcFBO();
 }

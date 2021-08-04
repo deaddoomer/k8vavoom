@@ -345,4 +345,8 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   // contrast adaptive sharpening
   Shader [OpenGL >= 3.0] CasFX both="postprocess/cas/cas";
+
+  // FS posteffects
+  Shader ColorBlind both="postprocess/colorblind/colorblind";
+  Shader ColorMatrix both="postprocess/colormatrix/colormatrix";
 }

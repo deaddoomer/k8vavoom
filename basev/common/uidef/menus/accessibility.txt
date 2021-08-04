@@ -270,4 +270,48 @@ menudef AccessibilityOptions {
       "almost completely red. You can decrease this value to",
       "avoid this. But beware! This is very close to cheating.";
   }
+
+
+  header "Color Blindness Helpers";
+
+  option enum {
+    title = "Color Swap Mode";
+    cvar = acc_colorswap_mode;
+    list {
+      "RGB (normal)",
+      "GBR",
+      "GRB",
+      "BRG",
+      "BGR",
+      "RBG"
+    }
+    help =
+      "You can swap color components here.",
+      "This will distort colors, of course, but may help some",
+      "color-blind people to differentiate colors better.";
+  }
+
+
+  header "Color Blindness Emulation";
+
+  option enum {
+    title = "Colorblind Emulation Mode";
+    cvar = acc_colormatrix_mode;
+    list {
+      "None",
+      "Protanopia",
+      "Protanomaly",
+      "Deuteranopia",
+      "Deuteranomaly",
+      "Tritanopia",
+      "Tritanomaly",
+      "Achromatopsia",
+      "Achromatomaly",
+    }
+    help =
+      "Rough colorblindness emulation modes.",
+      "This can help you to test your maps/graphics against",
+      "different colorblindness kinds.",
+      "\c[!RED]WARNING! The emulation is not perfect!\c-";
+  }
 }

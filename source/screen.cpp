@@ -194,7 +194,11 @@ VCvarB draw_lag("draw_lag", true, "Draw network lag value?", CVAR_Archive);
 
 static VCvarI draw_gc_stats("draw_gc_stats", "0", "Draw GC stats (0: none; 1: brief; 2: full)?", CVAR_Archive);
 
-static VCvarB draw_cycles("draw_cycles", false, "Draw cycle counter?", 0); //NOOP
+//static VCvarB draw_cycles("draw_cycles", false, "Draw cycle counter?", 0); //NOOP
+
+
+static VCvarI acc_colorswap_mode("acc_colorswap_mode", "0", "Colorblind color swap mode: 0=RGB; 1=GBR; 2=GRB; 3=BRG; 4=BGR; 5=RBG", CVAR_Archive);
+static VCvarI acc_colormatrix_mode("acc_colormatrix_mode", "0", "Colormatrix colorblind emulation mode.", CVAR_Archive);
 
 
 //**************************************************************************
@@ -662,6 +666,55 @@ void SCR_SignalWipeStart () {
 }
 
 
+// matrices are from here: http://web.archive.org/web/20091001043530/http://www.colorjack.com/labs/colormatrix/
+static const float KnownColorMatrices[8][4*3] = {
+  // Protanopia [1]
+  {0.567f, 0.433f,   0.0f, 0.0f,
+   0.558f, 0.442f,   0.0f, 0.0f,
+     0.0f, 0.242f, 0.758f, 0.0f},
+  // Protanomaly [2]
+  {0.817f, 0.183f,   0.0f, 0.0f,
+   0.333f, 0.667f,   0.0f, 0.0f,
+     0.0f, 0.125f, 0.875f, 0.0f},
+  // Deuteranopia [3]
+  {0.625f, 0.375f,   0.0f, 0.0f,
+     0.7f,   0.3f,   0.0f, 0.0f,
+     0.0f,   0.3f,   0.7f, 0.0f},
+  // Deuteranomaly [4]
+  {  0.8f,   0.2f,   0.0f, 0.0f,
+   0.258f, 0.742f,   0.0f, 0.0f,
+     0.0f, 0.142f, 0.858f, 0.0f},
+  // Tritanopia [5]
+  { 0.95f,  0.05f,   0.0f, 0.0f,
+     0.0f, 0.433f, 0.567f, 0.0f,
+     0.0f, 0.475f, 0.525f, 0.0f},
+  // Tritanomaly [6]
+  {0.967f, 0.033f,   0.0f, 0.0f,
+     0.0f, 0.733f, 0.267f, 0.0f,
+     0.0f, 0.183f, 0.817f, 0.0f},
+  // Achromatopsia [7]
+  {0.299f, 0.587f, 0.114f, 0.0f,
+   0.299f, 0.587f, 0.114f, 0.0f,
+   0.299f, 0.587f, 0.114f, 0.0f},
+  // Achromatomaly [8]
+  {0.618f, 0.320f, 0.062f, 0.0f,
+   0.163f, 0.775f, 0.062f, 0.0f,
+   0.163f, 0.320f, 0.516f, 0.0f},
+};
+
+
+//==========================================================================
+//
+//  ApplyColorMatrix
+//
+//==========================================================================
+static void ApplyColorMatrix () {
+  const int cmat = acc_colormatrix_mode.asInt();
+  if (cmat < 1 || cmat > 8) return;
+  Drawer->Posteffect_ColorMatrix(KnownColorMatrices[cmat-1]);
+}
+
+
 //==========================================================================
 //
 //  SCR_Update
@@ -809,6 +862,9 @@ void SCR_Update (bool fullUpdate) {
   // draw touchscreen controls
   Touch_Draw();
 #endif
+
+  Drawer->Posteffect_ColorBlind(acc_colorswap_mode.asInt());
+  ApplyColorMatrix();
 
   // page flip or blit buffer
   Drawer->Update();

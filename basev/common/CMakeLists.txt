@@ -118,6 +118,10 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/bloom/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/cas/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/colorblind/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/colorblind/*.vs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/colormatrix/*.fs
+  ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/colormatrix/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/overbright/*.fs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/overbright/*.vs
   ${CMAKE_CURRENT_SOURCE_DIR}/glshaders/postprocess/tonemap/*.fs

@@ -57,10 +57,10 @@ vec3 do_cas (vec3 color, vec2 uv_interp, float sharpen_intensity) {
 
 void main () {
   //vec3 color = texture2D(ScreenFBO, fragCoord).rgb;
-  //vec3 color = textureLod(ScreenFBO, vec3(TextureCoordinate, /*ViewIndex*/0.0f), 0.0f).rgb;
-  vec3 color = textureLod(ScreenFBO, TextureCoordinate, 0.0f).rgb;
+  //vec3 color = textureLod(ScreenFBO, vec3(TextureCoordinate, /*ViewIndex*/0.0), 0.0).rgb;
+  vec3 color = textureLod(ScreenFBO, TextureCoordinate, 0.0).rgb;
 
   color = do_cas(color, TextureCoordinate, SharpenIntensity);
 
-  out_FragValue0 = vec4(color, 1.0f);
+  out_FragValue0 = vec4(color, 1.0);
 }

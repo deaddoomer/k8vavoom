@@ -11,8 +11,8 @@ $include "common/overbright.fs"
 void main () {
   vec3 color = texture2D(ScreenFBO, TextureCoordinate).rgb;
 
-  //const float spcoeff = clampval(r_overbright_specular.asFloat(), 0.0f, 16.0f);
+  //const float spcoeff = clampval(r_overbright_specular.asFloat(), 0.0, 16.0);
   normOverbrightV3(color, Specular);
 
-  out_FragValue0 = vec4(color, 1.0f);
+  out_FragValue0 = vec4(color, 1.0);
 }

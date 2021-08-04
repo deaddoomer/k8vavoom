@@ -585,6 +585,10 @@ public:
   // this is required because posteffects can attach non-FP texture to FBO
   virtual void FinishPosteffects () = 0;
 
+  // the following posteffects should be called after the whole screen was rendered!
+  virtual void Posteffect_ColorBlind (int mode) = 0;
+  virtual void Posteffect_ColorMatrix (const float mat[12]) = 0;
+
   // can be called several times
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) = 0;
   // can be called several times in a row (i.e. one creation may lead to many shutdowns)

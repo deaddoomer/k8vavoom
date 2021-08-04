@@ -1014,6 +1014,7 @@ protected:
 
   FBO postSrcFBO;
   FBO postOverFBO; // must be FP is main FBO is fp
+  FBO postSrcFSFBO;
 
   // tonemap
   GLuint tonemapPalLUT; // palette LUT texture
@@ -1427,6 +1428,11 @@ protected:
   // this will setup matrices, ensure source FBO, and copy main FBO to postsrc FBO
   void PreparePostSrcFBO ();
 
+  void EnsurePostSrcFSFBO ();
+
+  // this will setup matrices, ensure source FBO, and copy main FBO to postsrc FBO
+  void PreparePostSrcFSFBO ();
+
   // should be called after `PreparePostSrcFBO()`
   void RenderPostSrcFullscreenQuad ();
 
@@ -1453,6 +1459,10 @@ public:
   // call this after finishing all posteffects, to restore main FBO in the proper state
   // this is required because posteffects can attach non-FP texture to FBO
   virtual void FinishPosteffects () override;
+
+  // the following posteffects should be called after the whole screen was rendered!
+  virtual void Posteffect_ColorBlind (int mode) override;
+  virtual void Posteffect_ColorMatrix (const float[16]) override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;

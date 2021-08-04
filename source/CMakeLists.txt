@@ -45,6 +45,10 @@ function(sxx_compile output filename)
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colorblind/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colorblind/*.vs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colormatrix/*.fs
+      ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colormatrix/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.fs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.vs
       ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
@@ -93,6 +97,10 @@ else()
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/bloom/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/cas/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colorblind/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colorblind/*.vs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colormatrix/*.fs
+    ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/colormatrix/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.fs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/overbright/*.vs
     ${CMAKE_SOURCE_DIR}/basev/common/glshaders/postprocess/tonemap/*.fs
