@@ -53,7 +53,7 @@ static VCvarB r_dbg_thing_dump_vislist("r_dbg_thing_dump_vislist", false, "Dump 
 static VCvarB r_thing_faster_collect("r_thing_faster_collect", false, "Use faster by-sector thing collector? (This may miss some visible things in invisible sectors)", CVAR_Archive);
 
 VCvarB r_draw_mobjs("r_draw_mobjs", true, "Draw mobjs?", /*CVAR_Archive|*/CVAR_PreInit);
-VCvarB r_draw_psprites("r_draw_psprites", true, "Draw psprites?", /*CVAR_Archive|*/CVAR_PreInit);
+VCvarB r_draw_psprites("r_draw_psprites", true, "Draw psprites?", CVAR_Archive);
 VCvarI r_drawfuzz("r_drawfuzz", "1", "Fuzz effect (0:alpha; 1:shadow)", CVAR_Archive);
 VCvarF r_fuzzalpha("r_fuzzalpha", "0.34", "Alpha for alpha-based fuzzy sprites.", CVAR_Archive);
 VCvarI r_fuzzmode("r_fuzzmode", "0", "Fuzzy mode (0:vanilla; 1..3:noise).", CVAR_Archive);

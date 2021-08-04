@@ -51,6 +51,41 @@ menudef AccessibilityOptions {
       "\c[WHITE]0\c- means don't force.";
   }
 
+  option enum {
+    title = "Extra Light From Firing";
+    cvar = r_extralight_mode;
+    list {
+      "Enabled",
+      "Disabled"
+    }
+    help =
+      "Enable or disable extra lighting from weapon firing.",
+      "Please, note that this won't affect dynamic lighting",
+      "that can be attached to player weapons!";
+  }
+
+  option bool {
+    title = "Dynamic lights";
+    cvar = r_dynamic_lights;
+    help = "Allow dynamic lighting with light sources?";
+  }
+
+  option bool {
+    title = "Allow Static Lighting";
+    cvar = r_static_lights;
+    help = "Allow static lighting with light sources?";
+  }
+
+
+  header "Render Control";
+
+  option bool {
+    title = "Render PSprites";
+    cvar = r_draw_psprites;
+    help =
+      "You can turn off psprite (player weapons) rendering.";
+  }
+
 
   header "Global Colormap/Tint Control";
 

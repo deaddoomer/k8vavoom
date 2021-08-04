@@ -303,11 +303,13 @@ menudef AdvVideoOptions {
   option bool {
     title = "Dynamic/stencil shadows";
     cvar = r_shadows;
+    help = "Allow rendering shadows (with either shadowmaps or shadow volumes).";
   }
 
   option bool {
     title = "Dynamic lights";
     cvar = r_dynamic_lights;
+    help = "Allow dynamic lighting with light sources?";
   }
 
   option bool {

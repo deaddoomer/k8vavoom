@@ -117,7 +117,7 @@ menudef AdvRenderOptions {
   option bool {
     title = "Allow Static Lighting";
     cvar = r_static_lights;
-    help = "Process static lights?";
+    help = "Allow static lighting with light sources?";
   }
 
   option numeric {
