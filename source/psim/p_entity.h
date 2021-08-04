@@ -432,6 +432,9 @@ public:
   };
 
 public:
+  static VClass *clsInventory;
+
+public:
   // call this *AFTER* all decorate code was compiled!
   static void EntityStaticInit ();
 
@@ -647,19 +650,19 @@ public:
   bool NeedPhysics (const float deltaTime);
 
   //bool IsMonster () { static VMethodProxy method("IsMonster"); vobjPutParamSelf(); VMT_RET_BOOL(method); }
-  inline bool IsPlayer () const noexcept { return !!(EntityFlags&EF_IsPlayer); }
-  inline bool IsMissile () const noexcept { return !!(EntityFlags&EF_Missile); }
-  inline bool IsAnyCorpse () const noexcept { return !!((EntityFlags&EF_Corpse)|(FlagsEx&EFEX_PseudoCorpse)); }
-  inline bool IsRealCorpse () const noexcept { return !!(EntityFlags&EF_Corpse); }
-  inline bool IsSolid () const noexcept { return !!(EntityFlags&EF_Solid); }
-  inline bool IsMonster () const noexcept { return !!(FlagsEx&EFEX_Monster); }
-  inline bool IsNoInteraction () const noexcept { return !!(FlagsEx&EFEX_NoInteraction); }
-  inline bool IsPlayerOrMonster () const noexcept { return !!((EntityFlags&EF_IsPlayer)|(FlagsEx&EFEX_Monster)); }
-  inline bool IsPlayerOrMissileOrMonster () const noexcept { return !!((EntityFlags&(EF_IsPlayer|EF_Missile))|(FlagsEx&EFEX_Monster)); }
+  inline bool IsPlayer () const noexcept { return (EntityFlags&EF_IsPlayer); }
+  inline bool IsMissile () const noexcept { return (EntityFlags&EF_Missile); }
+  inline bool IsAnyCorpse () const noexcept { return ((EntityFlags&EF_Corpse)|(FlagsEx&EFEX_PseudoCorpse)); }
+  inline bool IsRealCorpse () const noexcept { return (EntityFlags&EF_Corpse); }
+  inline bool IsSolid () const noexcept { return (EntityFlags&EF_Solid); }
+  inline bool IsMonster () const noexcept { return (FlagsEx&EFEX_Monster); }
+  inline bool IsNoInteraction () const noexcept { return (FlagsEx&EFEX_NoInteraction); }
+  inline bool IsPlayerOrMonster () const noexcept { return ((EntityFlags&EF_IsPlayer)|(FlagsEx&EFEX_Monster)); }
+  inline bool IsPlayerOrMissileOrMonster () const noexcept { return ((EntityFlags&(EF_IsPlayer|EF_Missile))|(FlagsEx&EFEX_Monster)); }
   // floating, flying, floatbob; used in renderer to disable sprite offset fix
-  inline bool IsAnyAerial () const noexcept { return !!((EntityFlags&(EF_Float|EF_Fly))|(FlagsEx&EFEX_FloatBob)); }
-  inline bool IsFloatBob () const noexcept { return !!(FlagsEx&EFEX_FloatBob); }
-  inline bool IsSpriteFlipped () const noexcept { return !!(FlagsEx&EFEX_CorpseFlipped); }
+  inline bool IsAnyAerial () const noexcept { return ((EntityFlags&(EF_Float|EF_Fly))|(FlagsEx&EFEX_FloatBob)); }
+  inline bool IsFloatBob () const noexcept { return (FlagsEx&EFEX_FloatBob); }
+  inline bool IsSpriteFlipped () const noexcept { return (FlagsEx&EFEX_CorpseFlipped); }
 
   enum EType {
     ET_Unknown,
@@ -672,21 +675,21 @@ public:
   };
 
   // used in renderer
-  inline EType Classify () const {
+  inline EType Classify () const noexcept {
     if (IsPlayer()) return EType::ET_Player;
     if (IsMissile()) return EType::ET_Missile;
     if (IsAnyCorpse()) return EType::ET_Corpse;
     if (IsMonster()) return EType::ET_Monster;
     if (IsSolid()) return EType::ET_Decoration;
     // either pickup, or unknown
-    // get inventory class
-    static VClass *invCls = nullptr;
-    static bool invClsInited = false;
-    if (!invClsInited) {
-      invClsInited = true;
-      invCls = VMemberBase::StaticFindClass("Inventory");
-    }
-    return (invCls && IsA(invCls) ? EType::ET_Pickup : EType::ET_Unknown);
+    return (clsInventory && IsA(clsInventory) ? EType::ET_Pickup : EType::ET_Unknown);
+  }
+
+  // used to apply fullbright
+  inline bool IsInterestingThing () const noexcept {
+    if (IsPlayerOrMissileOrMonster()) return true;
+    // either pickup, or unknown
+    return (!IsSolid() && clsInventory && IsA(clsInventory)); // pickup
   }
 
   bool SetState (VState *);

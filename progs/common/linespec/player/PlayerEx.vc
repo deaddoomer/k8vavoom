@@ -3717,6 +3717,7 @@ void ResetPlayerOnSpawn (optional bool keepPlayerState) {
   MorphTime = 0.0;
   ExtraLight = 0;
   FixedColormap = 0;
+  CShift = 0;
   LastSectorDamageTic = 0;
   LastHazardTime = 0.0;
   Rain1 = none;
@@ -4420,6 +4421,7 @@ override void PlayerExitMap (bool clusterChange) {
   EntityEx(MO).bShadow = false; // cancel invisibility
   ExtraLight = 0; // cancel gun flashes
   FixedColormap = 0; // cancel ir gogles
+  CShift = 0;
   DamageFlash = 0.0; // no palette changes
   DamageFlashType = '';
   BonusFlash = 0.0;

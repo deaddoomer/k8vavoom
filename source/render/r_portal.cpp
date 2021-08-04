@@ -496,17 +496,28 @@ void VSkyBoxPortal::DrawContents () {
   Drawer->viewangles.yaw += Viewport->Angles.yaw;
   AngleVectors(Drawer->viewangles, Drawer->viewforward, Drawer->viewright, Drawer->viewup);
 
+  const int oldExtraLight = RLev->ExtraLight;
+  const int oldFixedLight = RLev->FixedLight;
+  const int oldFullbrightThings = RLev->FullbrightThings;
+
   // no light flashes in the sky
   RLev->ExtraLight = 0;
   //if (RLev->ColorMap == CM_Default) RLev->FixedLight = 0;
   if (!RLev->ColorMapFixedLight) RLev->FixedLight = 0;
+  RLev->FullbrightThings = 0; //FIXME
 
-  // prevent recursion
-  VEntity::AutoPortalDirty guard(Viewport);
-  AutoSavedBspVis bspvisguard(RLev);
-  refdef_t rd = RLev->refdef;
-  RLev->CurrPortal = this;
-  RLev->RenderScene(&rd, nullptr);
+  {
+    // prevent recursion
+    VEntity::AutoPortalDirty guard(Viewport);
+    AutoSavedBspVis bspvisguard(RLev);
+    refdef_t rd = RLev->refdef;
+    RLev->CurrPortal = this;
+    RLev->RenderScene(&rd, nullptr);
+  }
+
+  RLev->ExtraLight = oldExtraLight;
+  RLev->FixedLight = oldFixedLight;
+  RLev->FullbrightThings = oldFullbrightThings;
 }
 
 

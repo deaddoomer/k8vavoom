@@ -260,10 +260,14 @@ void VRenderLevelShared::SetupRIThingLighting (VEntity *ent, RenderStyleInfo &ri
   if (ent->RenderStyle == STYLE_Fuzzy) {
     ri.light = ri.seclight = 0;
   } else if ((ent->State->Frame&VState::FF_FULLBRIGHT) ||
-             (ent->EntityFlags&(VEntity::EF_FullBright|VEntity::EF_Bright)))
+             (ent->EntityFlags&(VEntity::EF_FullBright|VEntity::EF_Bright)) ||
+             (FullbrightThings && (FullbrightThings == 2 || ent->IsInterestingThing())))
   {
     ri.light = ri.seclight = 0xffffffff;
-    if (allowBM && r_brightmaps && r_brightmaps_sprite) ri.seclight = LightPoint(ent, ent->Origin, ent->GetRenderRadius(), ent->Height, ent->SubSector);
+    if (FullbrightThings != 2 && allowBM && r_brightmaps && r_brightmaps_sprite && !ent->IsInterestingThing()) {
+      ri.seclight = LightPoint(ent, ent->Origin, ent->GetRenderRadius(), ent->Height, ent->SubSector);
+      ri.seclight |= 0xff000000;
+    }
   } else {
     if (!asAmbient) {
       // use old way of lighting (i.e. calculate rough lighting from all light sources)

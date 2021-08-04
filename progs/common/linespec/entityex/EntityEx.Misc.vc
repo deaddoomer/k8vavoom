@@ -1896,6 +1896,12 @@ void NoBlockingSet () {
 //
 //==========================================================================
 final void EntityPreTick (float deltaTime) {
+  // reset fixed colormap for players; it will be assigned by powerup effect
+  if (bIsPlayer && Player.MO == self) {
+    Player.FixedColormap = 0;
+    //Player.ExtraLight = 0; // nope, this could be changed by decorate actions
+    Player.CShift = 0;
+  }
   // handle powerup effects
   for (Inventory Item = Inventory; Item && Item.Owner == self; Item = Item.Inventory) {
     Item.DoEffect();

@@ -67,6 +67,8 @@ enum {
   BEREDCOLOR   = 0x0012345B,
   BLUECOLOR    = 0x0012345C,
   INVERSXCOLOR = 0x0012345D,
+  TRANSNOCOLOR = 0x0012345E,
+  NOTHINGCOLOR = 0x0012345F, // not used here
 };
 
 /*
@@ -3056,6 +3058,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             else if (sc->Check("MonoMap")) pdef->Field->SetInt(DefObj, MONOCOLOR);
             else if (sc->Check("MonochromeMap")) pdef->Field->SetInt(DefObj, MONOCOLOR);
             else if (sc->Check("BlueMap")) pdef->Field->SetInt(DefObj, BLUECOLOR);
+            else if (sc->Check("TransparentMap")) pdef->Field->SetInt(DefObj, TRANSNOCOLOR);
             else {
               fuckfloat = false;
               vuint32 Col = sc->ExpectColor();

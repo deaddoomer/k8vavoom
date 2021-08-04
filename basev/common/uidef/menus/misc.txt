@@ -103,6 +103,8 @@ menudef MiscOptions {
       "Berserk Red",
       "Blue",
       "Inverse",
+      "No Color Change",
+      "Fixed Light Amplification",
     }
     help =
       "You can replace original 'inversed' colormap for invulnerability"
@@ -121,6 +123,8 @@ menudef MiscOptions {
       "Berserk Red",
       "Blue",
       "Inverse",
+      "No Color Change",
+      "Fixed Light Amplification",
     }
     help =
       "You can replace LightAmp colormap with another one of your choice.";
@@ -138,6 +142,8 @@ menudef MiscOptions {
       "Berserk Red",
       "Blue",
       "Inverse",
+      "No Color Change",
+      "Fixed Light Amplification",
     }
     help =
       "You can replace Berserk tint with a colormap of your choice."
@@ -157,9 +163,19 @@ menudef MiscOptions {
       "Berserk Red",
       "Blue",
       "Inverse",
+      "No Color Change",
+      "Fixed Light Amplification",
     }
     help =
       "You can replace EnviroSuit tint with a colormap of your choice.";
+  }
+
+  option slider {
+    title = "Extra Lighting for Fixed Amp";
+    cvar = r_cm_extralight_add;
+    step = 1;
+    min = 0;
+    max = 255;
   }
 
   option slider {

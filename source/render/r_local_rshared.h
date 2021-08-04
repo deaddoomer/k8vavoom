@@ -132,6 +132,7 @@ protected:
   // some code checks for `ColorMap == CM_Default` to resed fixed light
   // this is now wrong, as we may render colormaps with postprocess shader
   bool ColorMapFixedLight;
+  int FullbrightThings; // 0:normal; 1:only interesting; 2:everything
 
   int NumParticles;
   particle_t *Particles;

@@ -82,7 +82,7 @@ static float prev_r_hack_psprite_yofs = 0.0f;
 static float prev_r_light_globvis = -666.0f;
 
 static VCvarI k8ColormapInverse("k8ColormapInverse", "2", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
-static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "3", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
+static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "9", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
 
 static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0:default; 1:ignore fullbright; 2:ignore colormap; 3:ignore both.", CVAR_Archive);
 static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive);
@@ -91,6 +91,9 @@ static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector li
 static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
 static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
+static VCvarI r_fullbright_sprites("r_fullbright_sprites", "0", "Always render sprites as fullbright (0:none; 1:interesting; 2:all)?", CVAR_Archive);
+
+static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive);
 
 
 static const char *videoDrvName = nullptr;
@@ -1537,6 +1540,7 @@ void VRenderLevelShared::SetupFrame () {
   const bool allowCMap = !(r_colormap_mode.asInt()&2);
 
   ColorMapFixedLight = false;
+  FullbrightThings = 0;
   ExtraLight = (ViewEnt && ViewEnt->Player ? clampval(ViewEnt->Player->ExtraLight*8, 0, 255) : 0);
 
   FixedLight = 0;
@@ -1545,17 +1549,21 @@ void VRenderLevelShared::SetupFrame () {
   bool doInverseHack = true;
   if (cl->Camera == cl->MO) {
          if (cl->FixedColormap == INVERSECOLORMAP) { if (allowCMap) ColorMap = CM_Inverse; if (allowFB) FixedLight = 255; }
-    else if (cl->FixedColormap == INVERSXCOLORMAP) { if (allowCMap) { ColorMap = CM_Inverse; doInverseHack = false; } if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == INVERSXCOLORMAP) { if (allowCMap) ColorMap = CM_Inverse; doInverseHack = false; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == GOLDCOLORMAP) { if (allowCMap) ColorMap = CM_Gold; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == REDCOLORMAP) { if (allowCMap) ColorMap = CM_Red; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == GREENCOLORMAP) { if (allowCMap) ColorMap = CM_Green; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == MONOCOLORMAP) { if (allowCMap) ColorMap = CM_Mono; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == BEREDCOLORMAP) { if (allowCMap) ColorMap = CM_BeRed; if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap == BLUECOLORMAP) { if (allowCMap) ColorMap = CM_Blue; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == NOCOLORMAP) { ColorMap = CM_Default; if (allowFB) FixedLight = 255; }
+    else if (cl->FixedColormap == NOTHINGCOLORMAP) { ColorMap = CM_Default; ExtraLight = min2(254, ExtraLight+clampval(r_cm_extralight_add.asInt(), 0, 255)); }
     else if (cl->FixedColormap >= NUMCOLORMAPS) { if (allowFB) FixedLight = 255; }
     else if (cl->FixedColormap) {
       // lightamp sets this to 1
+      bool fixallowed = true;
       if (cl->FixedColormap == 1 && allowCMap) {
+        FullbrightThings = 1; // only interesting
         switch (k8ColormapLightAmp.asInt()) {
           case 1: ColorMap = CM_Mono; break;
           case 2: ColorMap = CM_Gold; break;
@@ -1564,9 +1572,11 @@ void VRenderLevelShared::SetupFrame () {
           case 5: ColorMap = CM_BeRed; break;
           case 6: ColorMap = CM_Blue; break;
           case 7: ColorMap = CM_Inverse; doInverseHack = false; break;
+          case 8: ColorMap = CM_Default; break;
+          case 9: ColorMap = CM_Default; fixallowed = false; FixedLight = 0; ExtraLight = min2(254, ExtraLight+clampval(r_cm_extralight_add.asInt(), 0, 255)); break;
         }
       }
-      if (allowFB) FixedLight = 255-(cl->FixedColormap<<3);
+      if (allowFB && fixallowed) FixedLight = 255-(cl->FixedColormap<<3);
     }
   }
 
@@ -1586,10 +1596,12 @@ void VRenderLevelShared::SetupFrame () {
       case 5: ColorMap = CM_BeRed; break;
       case 6: ColorMap = CM_Blue; break;
       case 7: ColorMap = CM_Inverse; break;
+      case 8: ColorMap = CM_Default; break;
+      case 9: ColorMap = CM_Default; FixedLight = 0; ExtraLight = min2(254, ExtraLight+clampval(r_cm_extralight_add.asInt(), 0, 255)); break;
     }
   }
 
-  if (!allowFB && ExtraLight > 2*8) ExtraLight = 2*8;
+  if (!allowFB && ExtraLight > 16) ExtraLight = 16;
 
   if (r_extralight_mode.asInt() > 0) ExtraLight = 0;
 
@@ -1597,6 +1609,8 @@ void VRenderLevelShared::SetupFrame () {
   if (forceL > 0) FixedLight = min2(forceL, 255);
 
   if (ColorMap != CM_Default && FixedLight) ColorMapFixedLight = true;
+
+  if (r_fullbright_sprites.asInt()) FullbrightThings = r_fullbright_sprites.asInt();
 
   Drawer->SetupView(this, &refdef);
   //advanceCacheFrame();

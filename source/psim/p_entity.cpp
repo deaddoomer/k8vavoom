@@ -60,6 +60,8 @@ extern VCvarB dbg_vm_show_tick_stats;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+VClass *VEntity::clsInventory = nullptr;
+
 static VClass *classSectorThinker = nullptr;
 static VField *fldNextAffector = nullptr;
 
@@ -137,6 +139,7 @@ void VEntity::EntityStaticInit () {
   classActor = FindClassChecked("Actor");
   classSectorThinker = FindClassChecked("SectorThinker");
   classScroller = FindClassChecked("Scroller");
+  clsInventory = FindClassChecked("Inventory");
 
   // prepare fields
 

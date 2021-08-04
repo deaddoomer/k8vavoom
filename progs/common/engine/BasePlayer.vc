@@ -40,6 +40,8 @@ enum {
   BEREDCOLORMAP   = 37,
   BLUECOLORMAP    = 38,
   INVERSXCOLORMAP = 39,
+  NOCOLORMAP      = 40,
+  NOTHINGCOLORMAP = 41,
 };
 
 const float TOCENTRE = -128.0;
