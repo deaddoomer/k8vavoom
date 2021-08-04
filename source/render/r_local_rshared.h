@@ -301,6 +301,8 @@ public:
       renderedSectorMarks[secnum] = renderedSectorCounter;
       renderedSectors.append(secnum);
     }
+    // mark it inside the sector
+    Level->Sectors[secnum].LastRenderTic = Level->TicTime;
   }
 
   /*

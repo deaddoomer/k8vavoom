@@ -24,6 +24,22 @@ menudef AccessibilityOptions {
     help = "Player weapon bobbing. Relative to camera bobbing.";
   }
 
+
+  header "Lighting Control";
+
+  option enum {
+    title = "Flickering/Pulse Sector Light";
+    cvar = r_sectorflick_mode;
+    list {
+      "Enabled",
+      "When Sector Is Invisible",
+      "Disabled",
+    }
+    help =
+      "Control flickering/pulse sector lighting.",
+      "\c[WHITE]Note that dynamic lights are independent of this!\c-";
+  }
+
   header "Global Colormap/Tint Control";
 
   option enum {

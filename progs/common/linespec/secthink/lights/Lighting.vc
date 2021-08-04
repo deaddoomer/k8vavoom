@@ -30,5 +30,20 @@
 class Lighting : SectorThinker abstract;
 
 
+//============================================================================
+//
+//  IsAccEnabled
+//
+//============================================================================
+final bool IsAccEnabled () {
+  int fmode = GetCvarI('r_sectorflick_mode');
+  if (!fmode) return true;
+  if (fmode > 1) return false; // fully disabled
+  // it should be invisible for at least 100 msecs to flicker
+  //printdebug("Sector #%s: lrt=%s; tt=%s", Sector-&XLevel.Sectors[0], Sector.LastRenderTic, XLevel.TicTime);
+  return (XLevel.TicTime-Sector.LastRenderTic >= 4);
+}
+
+
 defaultproperties {
 }

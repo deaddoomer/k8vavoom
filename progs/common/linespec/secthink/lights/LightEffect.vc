@@ -107,6 +107,8 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
 override void Tick (float DeltaTime) {
   int d;
 
+  if (!IsAccEnabled()) return; // don't advance if disabled
+
   if (Time) {
     Time -= DeltaTime;
     if (Time <= 0.0) Time = 0.0;

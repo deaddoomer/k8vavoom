@@ -58,6 +58,8 @@ void Init (sector_t *InSector) {
 //
 //==========================================================================
 override void Tick (float DeltaTime) {
+  if (!IsAccEnabled()) return; // don't advance if disabled
+
   switch (Direction) {
     case -1:
       // down

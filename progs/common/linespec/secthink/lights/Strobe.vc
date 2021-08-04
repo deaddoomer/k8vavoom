@@ -62,6 +62,8 @@ void Init (sector_t *InSector, int FastOrSlow, int InMaxTime, int InSync) {
 //
 //==========================================================================
 override void Tick (float DeltaTime) {
+  if (!IsAccEnabled()) return; // don't advance if disabled
+
   Time -= DeltaTime;
   if (Time > 0.0) return;
 

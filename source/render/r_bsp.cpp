@@ -1191,6 +1191,7 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
           markSectorRendered(secnum);
           for (subsector_t *posub = pobj->GetSector()->subsectors; posub; posub = posub->seclink) {
             //GCon->Logf(NAME_Debug, "pobj #%d: sub #%d (%p)", pobj->tag, (int)(ptrdiff_t)(posub-&Level->Subsectors[0]), posub->regions);
+            MarkBspVis((int)(ptrdiff_t)(posub-&Level->Subsectors[0]));
             RenderSubRegions(posub);
           }
         }
@@ -1339,7 +1340,6 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
       // mark this sector as rendered (thing visibility check needs this info)
       const int secnum = (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]);
       MarkBspVisSector(secnum);
-
       markSectorRendered(secnum);
 
       // update world

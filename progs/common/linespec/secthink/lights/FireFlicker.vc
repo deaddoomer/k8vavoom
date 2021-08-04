@@ -55,6 +55,8 @@ void Init (sector_t *InSector) {
 //
 //==========================================================================
 override void Tick (float deltaTime) {
+  if (!IsAccEnabled()) return; // don't advance if disabled
+
   Time -= deltaTime;
   if (Time > 0.0) return;
   int Amount = (P_Random()&3)*16;

@@ -55,7 +55,9 @@ void Init (sector_t *InSector, int InBase, int InIndex) {
 //
 //============================================================================
 override void Tick (float deltaTime) {
-  Index += deltaTime;
+  if (!IsAccEnabled()) return; // don't advance if disabled
+
+  Index = fmod(Index+deltaTime, 1024.0);
   Sector->params.lightlevel = clamp(Base+Level.Game.PhaseTable[int(Index*32.0)&63], 0, 255);
 }
 

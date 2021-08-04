@@ -1121,6 +1121,11 @@ struct sector_t {
 
   vint32 Zone; // reverb zone id
 
+  // this is set to `Level->TicTime` when some sector lines were rendered
+  // has no sense for servers (nothing is ever rendered)
+  // `0` may mean "not rendered at all", or "rendered at the very first tic"
+  vint32 LastRenderTic;
+
   vint32 ZExtentsCacheId;
   float LastMinZ, LastMaxZ;
 
