@@ -63,6 +63,8 @@ static VCvarS sb_color_smallammo_lower("sb_color_smallammo_lower", "default", "S
 static VCvarS sb_color_smallammo_low("sb_color_smallammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive);
 static VCvarS sb_color_smallammo_verylow("sb_color_smallammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive);
 
+static VCvarS sb_color_weapon_name("sb_color_weapon_name", "default", "StatusBar FS weapon name color.", CVAR_Archive);
+
 static ColorCV sbColorAmmo1(&sb_color_ammo1, nullptr, true); // allow "no color"
 static ColorCV sbColorAmmo2(&sb_color_ammo2, nullptr, true); // allow "no color"
 static ColorCV sbColorArmor(&sb_color_armor, nullptr, true); // allow "no color"
@@ -75,6 +77,8 @@ static ColorCV sbColorSmallAmmoNormal(&sb_color_smallammo_normal, nullptr, true)
 static ColorCV sbColorSmallAmmoLower(&sb_color_smallammo_lower, nullptr, true); // allow "no color"
 static ColorCV sbColorSmallAmmoLow(&sb_color_smallammo_low, nullptr, true); // allow "no color"
 static ColorCV sbColorSmallAmmoVeryLow(&sb_color_smallammo_verylow, nullptr, true); // allow "no color"
+
+static ColorCV sbColorWeaponName(&sb_color_weapon_name, nullptr, true); // allow "no color"
 
 
 //==========================================================================
@@ -159,11 +163,13 @@ enum {
   SBTC_HealthAccum,
   SBTC_Frags,
   // smaller ammo counters
-  SmallAmmoFull,
-  SmallAmmoNormal,
-  SmallAmmoLower,
-  SmallAmmoLow,
-  SmallAmmoVeryLow,
+  SBTC_SmallAmmoFull,
+  SBTC_SmallAmmoNormal,
+  SBTC_SmallAmmoLower,
+  SBTC_SmallAmmoLow,
+  SBTC_SmallAmmoVeryLow,
+  //
+  SBTC_WeaponName,
 };
 
 
@@ -188,11 +194,12 @@ IMPLEMENT_FREE_FUNCTION(VObject, SB_GetTextColor) {
     case SBTC_Health: RET_INT(sbColorHealth.getColor()); break;
     case SBTC_HealthAccum: RET_INT(sbColorHealthAccum.getColor()); break;
     case SBTC_Frags: RET_INT(sbColorFrags.getColor()); break;
-    case SmallAmmoFull: RET_INT(retDefColor(sbColorSmallAmmoFull.getColor(), CR_WHITE)); break;
-    case SmallAmmoNormal: RET_INT(retDefColor(sbColorSmallAmmoNormal.getColor(), CR_GREEN)); break;
-    case SmallAmmoLower: RET_INT(retDefColor(sbColorSmallAmmoLower.getColor(), CR_ORANGE)); break;
-    case SmallAmmoLow: RET_INT(retDefColor(sbColorSmallAmmoLow.getColor(), CR_YELLOW)); break;
-    case SmallAmmoVeryLow: RET_INT(retDefColor(sbColorSmallAmmoVeryLow.getColor(), CR_RED)); break;
+    case SBTC_SmallAmmoFull: RET_INT(retDefColor(sbColorSmallAmmoFull.getColor(), CR_WHITE)); break;
+    case SBTC_SmallAmmoNormal: RET_INT(retDefColor(sbColorSmallAmmoNormal.getColor(), CR_GREEN)); break;
+    case SBTC_SmallAmmoLower: RET_INT(retDefColor(sbColorSmallAmmoLower.getColor(), CR_ORANGE)); break;
+    case SBTC_SmallAmmoLow: RET_INT(retDefColor(sbColorSmallAmmoLow.getColor(), CR_YELLOW)); break;
+    case SBTC_SmallAmmoVeryLow: RET_INT(retDefColor(sbColorSmallAmmoVeryLow.getColor(), CR_RED)); break;
+    case SBTC_WeaponName: RET_INT(retDefColor(sbColorWeaponName.getColor(), CR_GOLD)); break;
     default: RET_INT(0);
   }
 }

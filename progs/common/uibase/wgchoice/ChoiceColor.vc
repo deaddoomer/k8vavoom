@@ -29,6 +29,7 @@ string Text;
 bool bLeftAlign;
 
 int ColorValue;
+bool AllowDefaultColor;
 
 MenuColorPopup cbox;
 
@@ -70,8 +71,12 @@ override void SetOrigin (int x, int y) {
 void SetSessionColorCvar (name Name) {
   cvarSession = Name;
   if (Name) {
-    int color = ParseColor(GetCvarS(Name));
-    if (color) ColorValue = color;
+    int color = ParseColor(GetCvarS(Name), retZeroIfInvalid:AllowDefaultColor);
+    if (color) {
+      ColorValue = color;
+    } else if (AllowDefaultColor) {
+      ColorValue = 0;
+    }
   }
   FixLatchedColor();
 }
@@ -87,7 +92,13 @@ bool SetNewColor (int v) {
     if (!ValueChanging(self, v)) return false;
   }
   ColorValue = v;
-  if (cvarSession) SetCvarS(cvarSession, va("#%02x%02x%02x", RGBGetR(v), RGBGetG(v), RGBGetB(v)));
+  if (cvarSession) {
+    if (AllowDefaultColor && v == 0) {
+      SetCvarS(cvarSession, "default");
+    } else {
+      SetCvarS(cvarSession, va("#%02x%02x%02x", RGBGetR(v), RGBGetG(v), RGBGetB(v)));
+    }
+  }
   return true;
 }
 
@@ -123,7 +134,12 @@ override void OnDraw () {
   }
 
   int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
-  FillRect(xx+2, 2, 64, Height-4, ColorValue);
+  if (AllowDefaultColor && !ColorValue) {
+    SetTextAlign(hleft, vtop);
+    DrawText(xx+2, ty, "DEFAULT", Col);
+  } else {
+    FillRect(xx+2, 2, 64, Height-4, ColorValue);
+  }
 }
 
 
@@ -151,6 +167,12 @@ override bool OnEvent (ref event_t evt) {
       case K_ENTER:
         OpenColorPopup();
         return true;
+      case K_BACKSPACE:
+        if (AllowDefaultColor) {
+          SetNewColor(0);
+          return true;
+        }
+        break;
     }
   }
 
@@ -176,6 +198,7 @@ void SetNewColorPopup (int color, float h, float s, float v) {
 void OpenColorPopup (optional int X, optional int Y) {
   cbox = GetRootWidget.NewChild(MenuColorPopup);
   if (!cbox) return;
+  cbox.defaultAllowed = AllowDefaultColor;
   cbox.SetNewColorCB = &SetNewColorPopup;
   cbox.OnCloseCB = delegate void () { cbox = none; };
   if (!specified_X) {
@@ -228,7 +251,9 @@ int currColor;
 float h, s, v;
 int xbase, ybase;
 
+bool defaultAllowed;
 bool doneHovered;
+bool defaultHovered;
 
 delegate void SetNewColorCB (int color, float h, float s, float v);
 delegate void ColorChangedCB (int color, float h, float s, float v);
@@ -372,6 +397,28 @@ final bool CheckDoneHover (int x, int y) {
 
 //==========================================================================
 //
+//  CheckDefaultHover
+//
+//==========================================================================
+final bool CheckDefaultHover (int x, int y) {
+  if (!defaultAllowed) return false;
+  string txts = "[DONE]";
+  int doneW = TextWidth(txts);
+  int doneH = TextHeight(txts);
+  int doneX = Width-4-doneW;
+  int doneY = Height-doneH-2;
+  doneX -= 2;
+  txts = "[DEF]";
+  doneW = TextWidth(txts);
+  doneX -= doneW;
+  return
+    x >= doneX-2 && x < doneX-2+doneW+4 &&
+    y >= doneY-2 && y < doneY-2+doneH+4;
+}
+
+
+//==========================================================================
+//
 //  OnDraw
 //
 //==========================================================================
@@ -440,6 +487,21 @@ override void OnDraw () {
     int doneY = Height-doneH-2;
     if (doneHovered) FillRect(doneX-2, doneY-2, doneW+4, doneH+4, RGB(64, 64, 64));
     DrawText(doneX, doneY, txts, CR_YELLOW);
+    if (defaultAllowed) {
+      doneX -= 2;
+      txts = "[DEF]";
+      doneW = TextWidth(txts);
+      doneX -= doneW;
+      if (defaultHovered) FillRect(doneX-2, doneY-2, doneW+4, doneH+4, RGB(64, 64, 64));
+      DrawText(doneX, doneY, txts, CR_YELLOW);
+    }
+  } else {
+    string txts = "[BS=DEFAULT]";
+    int doneW = TextWidth(txts);
+    int doneH = TextHeight(txts);
+    int doneX = Width-4-doneW;
+    int doneY = Height-doneH-2;
+    DrawText(doneX, doneY, txts, CR_YELLOW);
   }
 }
 
@@ -475,6 +537,7 @@ override bool OnEvent (ref event_t evt) {
 
   if (evt.type == ev_mouse) {
     doneHovered = CheckDoneHover(evt.msx, evt.msy);
+    defaultHovered = CheckDefaultHover(evt.msx, evt.msy);
     /*
     if (evt.msx >= 1 && evt.msy >= 4 && evt.msx < Width-1 && evt.msy < Height-4) {
     }
@@ -496,6 +559,12 @@ override bool OnEvent (ref event_t evt) {
       // "done" button
       if (CheckDoneHover(evt.x, evt.y)) {
         if (SetNewColorCB) SetNewColorCB(currColor, h, s, v);
+        Destroy();
+        return true;
+      }
+      // "default" button
+      if (CheckDefaultHover(evt.x, evt.y)) {
+        if (SetNewColorCB) SetNewColorCB(0, h, s, v);
         Destroy();
         return true;
       }
@@ -522,6 +591,12 @@ override bool OnEvent (ref event_t evt) {
       case K_ENTER:
         if (SetNewColorCB) SetNewColorCB(currColor, h, s, v);
         Destroy();
+        return true;
+      case K_BACKSPACE: // default
+        if (defaultAllowed) {
+          if (SetNewColorCB) SetNewColorCB(0, h, s, v);
+          Destroy();
+        }
         return true;
       case K_LEFTARROW: dx = -1; break;
       case K_RIGHTARROW: dx = 1; break;

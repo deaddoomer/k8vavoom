@@ -116,7 +116,7 @@ private:
       }
       return;
     }
-    if (cvarAlpha) fltA = clampval(cvarAlpha->asFloat(), 0.0f, 1.0f);
+    fltA = (cvarAlpha ? clampval(cvarAlpha->asFloat(), 0.0f, 1.0f) : 1.0f);
     oldval = nval;
     color = M_ParseColor(*nval, true); // return 0 if invalid
     if (mNoColorAllowed && !color) {
@@ -125,7 +125,7 @@ private:
     } else {
       if (!color) color = 0x7fff00; // replace invalid color with my preferred one ;-)
       color &= 0xffffffu;
-      color |= ((vuint32)(fltA*255))<<24u;
+      color |= ((vuint32)(fltA*255.0f))<<24;
       fltR = M_GetColorR(color)/255.0f;
       fltG = M_GetColorG(color)/255.0f;
       fltB = M_GetColorB(color)/255.0f;

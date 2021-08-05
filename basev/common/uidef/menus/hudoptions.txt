@@ -270,10 +270,10 @@ menudef HUDOptions {
     cvar = r_hud_draw_weapon_name;
   }
 
-  option enum {
+  option color {
     title = "Weapon Name Color";
-    cvar = r_hud_weapon_name_color;
-    list = text_colors;
+    cvar = sb_color_weapon_name;
+    allowdefault = true;
   }
 
   option slider {

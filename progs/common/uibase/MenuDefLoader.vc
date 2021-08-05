@@ -1392,6 +1392,39 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
 //**************************************************************************
 class MenuDefOptionColor : MenuDefOptionBase;
 
+bool AllowDefaultColor;
+
+
+//==========================================================================
+//
+//  parseOne
+//
+//==========================================================================
+override bool parseOne (ScriptsParser par) {
+  if (::parseOne(par)) return true;
+
+  if (par.Check("allowdefault")) {
+    par.Expect("=");
+    par.ExpectString();
+    if (par.String.strEquCI("true") ||
+        par.String.strEquCI("tan"))
+    {
+      AllowDefaultColor = true;
+    } else if (par.String.strEquCI("false") ||
+               par.String.strEquCI("ona"))
+    {
+      AllowDefaultColor = false;
+    } else {
+      par.Error("boolean value expected");
+    }
+    par.Expect(";");
+    return true;
+  }
+
+  return false;
+}
+
+
 //==========================================================================
 //
 //  CreateOption
@@ -1403,5 +1436,6 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
   if (textColor != CR_UNDEFINED) opt.TextColor = textColor;
   if (textColorFocus != CR_UNDEFINED) opt.TextColorFocus = textColorFocus;
   if (cvar) opt.SetSessionColorCvar(cvar);
+  opt.AllowDefaultColor = AllowDefaultColor;
   return opt;
 }

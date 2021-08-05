@@ -597,6 +597,8 @@ enum SBTextColor {
   SmallAmmoLower,
   SmallAmmoLow,
   SmallAmmoVeryLow,
+  //
+  WeaponName,
 }
 
 native static final int SB_GetTextColor (SBTextColor type);

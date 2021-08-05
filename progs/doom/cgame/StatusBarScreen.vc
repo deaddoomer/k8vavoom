@@ -944,7 +944,8 @@ override void SB_DrawFullscreenStats () {
         int ypos = ovh-10;
         //DrawText(xpos, ypos, lastWeaponName, GetCvarI('r_hud_weapon_name_color'), CR_UNTRANSLATED, currAlpha);
         SetTextAlign(hcenter, vtop);
-        DrawText(Width/2, ypos, lastWeaponName, GetCvarI('r_hud_weapon_name_color'), CR_UNTRANSLATED, currAlpha);
+        DrawText(Width/2, ypos, lastWeaponName, SB_GetTextColor(SBTextColor.WeaponName), CR_UNTRANSLATED, currAlpha);
+        //printdebug("WCC: <%s> : %d : 0x%08x", GetCvarS('sb_color_weapon_name'), SB_GetTextColor(SBTextColor.WeaponName), SB_GetTextColor(SBTextColor.WeaponName));
       }
     }
   }

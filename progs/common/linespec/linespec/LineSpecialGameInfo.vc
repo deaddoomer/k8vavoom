@@ -339,7 +339,7 @@ override void Init () {
 
   CreateCvarBool('r_hud_draw_weapon_name', true, "Draw weapon name on fullscreen HUD?", CVAR_ARCHIVE);
   CreateCvarFloat('r_hud_weapon_name_fadeout_time', 1.4, "Weapon name fadeout time on fullscreen HUD.", CVAR_ARCHIVE);
-  CreateCvarInt('r_hud_weapon_name_color', 5, "Weapon name color on fullscreen HUD.", CVAR_ARCHIVE);
+  //CreateCvarInt('r_hud_weapon_name_color', 5, "Weapon name color on fullscreen HUD.", CVAR_ARCHIVE);
 
   CreateCvarBool('fuck_stealth_monsters', false, "Turn all fuckin' stealth monsters to normal ones?", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
 
