@@ -34,6 +34,10 @@
 #include "gl_local.h"
 
 
+extern VCvarI r_wipe_type;
+extern VCvarF r_wipe_duration;
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::PrepareWipe
@@ -59,12 +63,16 @@ void VOpenGLDrawer::PrepareWipe () {
 //
 //==========================================================================
 bool VOpenGLDrawer::RenderWipe (float time) {
-  /*static*/ const float WipeDur = 1.0f;
+  // /*static*/ const float WipeDur = 1.0f;
 
   if (time < 0.0f) {
     wipeFBO.blitTo(&mainFBO, 0, 0, mainFBO.getWidth(), mainFBO.getHeight(), 0, 0, mainFBO.getWidth(), mainFBO.getHeight(), GL_NEAREST);
     return true;
   }
+
+  float WipeDur = r_wipe_duration.asFloat();
+       if (!isFiniteF(WipeDur) || WipeDur < 0.1f) WipeDur = 0.1f;
+  else if (WipeDur > 15.0f) WipeDur = 15.0f;
 
   //GCon->Logf(NAME_Debug, "WIPE: time=%g", time);
 
@@ -103,12 +111,31 @@ bool VOpenGLDrawer::RenderWipe (float time) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  DrawWipeType0.Activate();
-  DrawWipeType0.SetTexture(0);
-  DrawWipeType0.SetWipeTime(time);
-  DrawWipeType0.SetWipeDuration(WipeDur);
-  DrawWipeType0.SetScreenSize((float)getWidth(), (float)getHeight());
-  DrawWipeType0.UploadChangedUniforms();
+  switch (r_wipe_type.asInt()) {
+    default:
+    case 0:
+      DrawWipeType0.Activate();
+      DrawWipeType0.SetTexture(0);
+      DrawWipeType0.SetWipeTime(time);
+      DrawWipeType0.SetWipeDuration(WipeDur);
+      DrawWipeType0.SetScreenSize((float)getWidth(), (float)getHeight());
+      break;
+    case 1:
+      DrawWipeType1.Activate();
+      DrawWipeType1.SetTexture(0);
+      DrawWipeType1.SetWipeTime(time);
+      DrawWipeType1.SetWipeDuration(WipeDur);
+      DrawWipeType1.SetScreenSize((float)getWidth(), (float)getHeight());
+      break;
+    case 2:
+      DrawWipeType2.Activate();
+      DrawWipeType2.SetTexture(0);
+      DrawWipeType2.SetWipeTime(time);
+      DrawWipeType2.SetWipeDuration(WipeDur);
+      break;
+  }
+
+  currentActiveShader->UploadChangedUniforms();
 
   glBegin(GL_QUADS);
     glTexCoord2f(0, 1); glVertex2f(0, 0);

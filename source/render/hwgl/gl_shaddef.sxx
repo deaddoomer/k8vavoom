@@ -327,6 +327,8 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   // wipe
   Shader DrawWipeType0 both="wipe/draw_wipe_type0";
+  Shader DrawWipeType1 vertex="wipe/draw_wipe_type0" fragment="wipe/draw_wipe_type1";
+  Shader DrawWipeType2 vertex="wipe/draw_wipe_type0" fragment="wipe/draw_wipe_type2";
 
   // bloom
   Shader BloomColorExp both="postprocess/bloom/colorexp";

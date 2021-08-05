@@ -21,13 +21,8 @@ void main () {
   TexColor = texture2D(Texture, TextureCoordinate);
   FinalColor.rgb = TexColor.rgb;
 
-  /*
-  // sample color from ambient light texture
-  vec2 tc2 = gl_FragCoord.xy/ScreenSize.xy;
-  */
-
   // [0..1]
-  float frc = 1.0-clamp(WipeTime, 0.0, WipeDuration)/WipeDuration;
+  float frc = clamp(WipeTime, 0.0, WipeDuration)/WipeDuration;
 
   float y0 = (ScreenSize.y+STP_HEIGHT)*frc-STP_HEIGHT;
   float y1 = y0+STP_HEIGHT-1.0;
@@ -40,7 +35,8 @@ void main () {
     frc = (gl_FragCoord.y-y0)/STP_HEIGHT;
     FinalColor.a = mix(0.0, 1.0, 1.0-frc);
   }
-  //FinalColor = vec4(1.0, 0.0, 0.0, 1.0);
+
+  FinalColor.a = 1.0-FinalColor.a;
 
   // convert to premultiplied
   FinalColor.rgb *= FinalColor.a;

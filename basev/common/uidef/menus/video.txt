@@ -50,6 +50,17 @@ menudef VideoOptions {
   }
 
   option enum {
+    title = "Wipe Type";
+    cvar = r_wipe_type;
+    list {
+      "Vertical Crossfade Down",
+      "Vertical Crossfade Up",
+      "Fullscreen Crossfade",
+    }
+    help = "Select screen wipe type.";
+  }
+
+  option enum {
     title = "Underwater Distorsion";
     cvar = r_underwater;
     list {

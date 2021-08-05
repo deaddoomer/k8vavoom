@@ -170,6 +170,7 @@ static VCvarB crosshair_topmost("crosshair_topmost", false, "Render crosshair on
 
 VCvarB r_wipe_enabled("r_wipe_enabled", true, "Is screen wipe effect enabled?", CVAR_Archive);
 VCvarI r_wipe_type("r_wipe_type", "0", "Wipe type?", CVAR_Archive);
+VCvarF r_wipe_duration("r_wipe_duration", "1", "Wipe duration, in seconds?", CVAR_Archive);
 
 static VCvarI ui_max_scale("ui_max_scale", "0", "Maximal UI scale (0 means unlimited).", CVAR_Archive);
 static VCvarI ui_min_scale("ui_min_scale", "0", "Minimal UI scale (0 means unlimited).", CVAR_Archive);
