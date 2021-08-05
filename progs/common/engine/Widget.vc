@@ -279,6 +279,14 @@ native final void DrawPicRecoloredEx (float x, float y, float tx0, float ty0, fl
 native final void DrawPicShadowEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, optional float alpha/*=0.625*/,
                                    optional float scaleX/*=1.0*/, optional float scaleY/*=1.0*/, optional bool ignoreOffset/*=false*/);
 
+final void DrawPicRecolored (float x, float y, int color, int handle, optional float scaleX, optional float scaleY, optional bool ignoreOffset) {
+  DrawPicRecoloredEx(x, y, 0.0, 0.0, 1.0, 1.0, color, handle, scaleX!optional, scaleY!optional, ignoreOffset!optional);
+}
+
+final void DrawPicShadow (float x, float y, int color, int handle, optional float alpha, optional float scaleX, optional float scaleY, optional bool ignoreOffset) {
+  DrawPicShadowEx(x, y, 0.0, 0.0, 1.0, 1.0, handle, alpha!optional, scaleX!optional, scaleY!optional, ignoreOffset!optional);
+}
+
 native final void DrawPic (int X, int Y, int Handle, optional float Alpha, optional int Translation);
 native final void DrawPicScaled (int X, int Y, int Handle, float scaleX, float scaleY, optional float Alpha, optional int Translation);
 native final void DrawShadowedPic (int X, int Y, int Handle, optional float scaleX, optional float scaleY, optional bool ignoreOffset);

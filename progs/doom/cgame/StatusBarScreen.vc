@@ -287,7 +287,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
     //R_GetPicInfo(pic_percent, &info);
     //x -= info.width;
     if (recolored) {
-      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, pic_percent);
+      DrawPicRecolored(x, y, color, pic_percent);
     } else {
       DrawPic(x, y, pic_percent, alpha);
     }
@@ -303,7 +303,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
       R_GetPicInfo(hh, &info);
       x -= info.width;
       if (recolored) {
-        DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, hh);
+        DrawPicRecolored(x, y, color, hh);
       } else {
         DrawPic(x, y, hh, alpha);
       }
@@ -316,7 +316,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
     R_GetPicInfo(pic_minus, &info);
     x -= info.width;
     if (recolored) {
-      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, pic_minus);
+      DrawPicRecolored(x, y, color, pic_minus);
     } else {
       DrawPic(x, y, pic_minus, alpha);
     }
@@ -343,7 +343,7 @@ void SB_DrawSmallNum (int x, int y, int num, int color) {
     R_GetPicInfo(hh, &info);
     x -= info.width;
     if (recolored) {
-      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, hh);
+      DrawPicRecolored(x, y, color, hh);
     } else {
       DrawPic(x, y, hh);
     }
