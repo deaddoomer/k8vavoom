@@ -43,4 +43,33 @@ int SB_RealHeight ();
 extern int sb_height;
 
 
+//WARNING! keep in sync with VC code!
+enum {
+  SBTC_Ammo1 = 0,
+  SBTC_Ammo2,
+  SBTC_Armor,
+  SBTC_Health,
+  SBTC_HealthAccum,
+  SBTC_Frags,
+  // smaller ammo counters
+  SBTC_SmallAmmoFull,
+  SBTC_SmallAmmoNormal,
+  SBTC_SmallAmmoLower,
+  SBTC_SmallAmmoLow,
+  SBTC_SmallAmmoVeryLow,
+  //
+  SBTC_WeaponName,
+  // automap stats
+  SBTC_AutomapMapName,
+  SBTC_AutomapMapCluster,
+  SBTC_AutomapKills,
+  SBTC_AutomapItems,
+  SBTC_AutomapSecrets,
+  SBTS_AutomapGameTotalTime,
+};
+
+// type is SBTC_xxx
+// returns CR_UNTRANSLATED for default
+vuint32 SB_GetTextColor (int type, vuint32 defval=0xdeadf00dU);
+
 #endif

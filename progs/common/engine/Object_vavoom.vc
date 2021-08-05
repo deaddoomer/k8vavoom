@@ -599,9 +599,16 @@ enum SBTextColor {
   SmallAmmoVeryLow,
   //
   WeaponName,
+  // automap stats
+  AutomapMapName,
+  AutomapMapCluster,
+  AutomapKills,
+  AutomapItems,
+  AutomapSecrets,
+  AutomapGameTotalTime,
 }
 
-native static final int SB_GetTextColor (SBTextColor type);
+native static final int SB_GetTextColor (SBTextColor type, optional int defval);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

@@ -44,6 +44,7 @@
 #endif
 #include "text.h"
 #include "menu.h"
+#include "sbar.h"
 
 // there is no need to do this anymore: OpenGL will do it for us
 //#define AM_DO_CLIPPING
@@ -2138,8 +2139,8 @@ static void AM_DrawWorldTimer () {
     } else {
       snprintf(dayBuffer, sizeof(dayBuffer), "%.2d DAYS", days);
     }
-    T_DrawText(sx, 18, dayBuffer, CR_UNTRANSLATED);
-    if (days >= 5) T_DrawText(sx-10, 28, "YOU FREAK!!!", CR_UNTRANSLATED);
+    T_DrawText(sx, 18, dayBuffer, SB_GetTextColor(SBTS_AutomapGameTotalTime));
+    if (days >= 5) T_DrawText(sx-10, 28, "YOU FREAK!!!", SB_GetTextColor(SBTS_AutomapGameTotalTime));
   }
 }
 
@@ -2164,7 +2165,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
   if (!cl || !GClLevel) return;
 
   const float alpha = (asAutomap ? 1.0 : clampval(draw_map_stats_alpha.asFloat(), 0.0f, 1.0f));
-  if (alpha <= 0.0f) return;
+  if (alpha < 0.004f) return;
 
   T_SetFont(SmallFont);
   T_SetAlign(hleft, vbottom);
@@ -2185,21 +2186,21 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
     }
     lnamebuf[lbpos] = 0;
     if (asAutomap) {
-      T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+      T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
     } else {
       const bool hasInternalName = VStr::startsWithCI(lnamebuf, *GClLevel->MapName);
       if (draw_map_stats_name) {
         // need internal name
         if (!hasInternalName) {
           VStr ss = va("%s: %s", *GClLevel->MapName, lnamebuf);
-          T_DrawText(20, currY, *ss, CR_UNTRANSLATED, alpha);
+          T_DrawText(20, currY, *ss, SB_GetTextColor(SBTC_AutomapMapName), alpha);
         } else {
-          T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+          T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
         }
       } else {
         // no internal name
         if (!hasInternalName) {
-          T_DrawText(20, currY, lnamebuf, CR_UNTRANSLATED, alpha);
+          T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
         } else {
           VStr ss(lnamebuf+strlen(*GClLevel->MapName));
           for (;;) {
@@ -2208,7 +2209,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
             if (ss[0] != ':') break;
             ss.chopLeft(1);
           }
-          T_DrawText(20, currY, *ss, CR_UNTRANSLATED, alpha);
+          T_DrawText(20, currY, *ss, SB_GetTextColor(SBTC_AutomapMapName), alpha);
         }
       }
     }
@@ -2219,7 +2220,7 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
   if (drawMapName || (!asAutomap && !nameRendered && (draw_map_stats_title || draw_map_stats_name))) {
     lname = VStr(GClLevel->MapName);
     lname = lname.xstrip();
-    T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), CR_UNTRANSLATED, alpha);
+    T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), SB_GetTextColor(SBTC_AutomapMapCluster), alpha);
     currY -= T_FontHeight();
   }
 
@@ -2244,17 +2245,17 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
 
     if (asAutomap || draw_map_stats_kills) {
       snprintf(kill, sizeof(kill), "Kills: %.2d / %.2d", kills, totalkills);
-      T_DrawText(8, currY, kill, CR_RED, alpha);
+      T_DrawText(8, currY, kill, SB_GetTextColor(SBTC_AutomapKills), alpha);
       currY += T_FontHeight();
     }
     if (asAutomap || draw_map_stats_items) {
       snprintf(item, sizeof(item), "Items: %.2d / %.2d", items, totalitems);
-      T_DrawText(8, currY, item, CR_GREEN, alpha);
+      T_DrawText(8, currY, item, SB_GetTextColor(SBTC_AutomapItems), alpha);
       currY += T_FontHeight();
     }
     if (asAutomap || draw_map_stats_secrets) {
       snprintf(secret, sizeof(secret), "Secrets: %.2d / %.2d", secrets, totalsecrets);
-      T_DrawText(8, currY, secret, CR_GOLD, alpha);
+      T_DrawText(8, currY, secret, SB_GetTextColor(SBTC_AutomapSecrets), alpha);
     }
   }
 }

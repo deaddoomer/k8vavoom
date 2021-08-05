@@ -65,6 +65,14 @@ static VCvarS sb_color_smallammo_verylow("sb_color_smallammo_verylow", "default"
 
 static VCvarS sb_color_weapon_name("sb_color_weapon_name", "default", "StatusBar FS weapon name color.", CVAR_Archive);
 
+static VCvarS sb_color_automap_mapname("sb_color_automap_mapname", "default", "Automap stats: map name color.", CVAR_Archive);
+static VCvarS sb_color_automap_mapcluster("sb_color_automap_mapcluster", "default", "Automap stats: map cluster info color.", CVAR_Archive);
+static VCvarS sb_color_automap_kills("sb_color_automap_kills", "default", "Automap stats: number of kills color.", CVAR_Archive);
+static VCvarS sb_color_automap_items("sb_color_automap_items", "default", "Automap stats: number of items color.", CVAR_Archive);
+static VCvarS sb_color_automap_secrets("sb_color_automap_secrets", "default", "Automap stats: number of secrets color.", CVAR_Archive);
+static VCvarS sb_color_automap_totaltime("sb_color_automap_totaltime", "default", "Automap stats: total playing time color.", CVAR_Archive);
+
+
 static ColorCV sbColorAmmo1(&sb_color_ammo1, nullptr, true); // allow "no color"
 static ColorCV sbColorAmmo2(&sb_color_ammo2, nullptr, true); // allow "no color"
 static ColorCV sbColorArmor(&sb_color_armor, nullptr, true); // allow "no color"
@@ -79,6 +87,13 @@ static ColorCV sbColorSmallAmmoLow(&sb_color_smallammo_low, nullptr, true); // a
 static ColorCV sbColorSmallAmmoVeryLow(&sb_color_smallammo_verylow, nullptr, true); // allow "no color"
 
 static ColorCV sbColorWeaponName(&sb_color_weapon_name, nullptr, true); // allow "no color"
+
+static ColorCV sbColorAutomapMapName(&sb_color_automap_mapname, nullptr, true); // allow "no color"
+static ColorCV sbColorAutomapMapCluster(&sb_color_automap_mapcluster, nullptr, true); // allow "no color"
+static ColorCV sbColorAutomapKills(&sb_color_automap_kills, nullptr, true); // allow "no color"
+static ColorCV sbColorAutomapItems(&sb_color_automap_items, nullptr, true); // allow "no color"
+static ColorCV sbColorAutomapSecrets(&sb_color_automap_secrets, nullptr, true); // allow "no color"
+static ColorCV sbColorAutomapTotalTime(&sb_color_automap_totaltime, nullptr, true); // allow "no color"
 
 
 //==========================================================================
@@ -148,29 +163,54 @@ void SB_Start () {
 }
 
 
+//==========================================================================
+//
+//  retDefColorU
+//
+//==========================================================================
+static inline vuint32 retDefColorU (const vuint32 clr, const vuint32 def) noexcept {
+  return (clr ? clr : def);
+}
+
+
+//==========================================================================
+//
+//  SB_GetTextColor
+//
+//==========================================================================
+vuint32 SB_GetTextColor (int type, vuint32 defval) {
+  if (defval == 0xdeadf00dU) defval = CR_UNTRANSLATED;
+  switch (type) {
+    case SBTC_Ammo1: return retDefColorU(sbColorAmmo1.getColor(), defval);
+    case SBTC_Ammo2: return retDefColorU(sbColorAmmo2.getColor(), defval);
+    case SBTC_Armor: return retDefColorU(sbColorArmor.getColor(), defval);
+    case SBTC_Health: return retDefColorU(sbColorHealth.getColor(), defval);
+    case SBTC_HealthAccum: return retDefColorU(sbColorHealthAccum.getColor(), defval);
+    case SBTC_Frags: return retDefColorU(sbColorFrags.getColor(), defval);
+    case SBTC_SmallAmmoFull: return retDefColorU(sbColorSmallAmmoFull.getColor(), CR_WHITE);
+    case SBTC_SmallAmmoNormal: return retDefColorU(sbColorSmallAmmoNormal.getColor(), CR_GREEN);
+    case SBTC_SmallAmmoLower: return retDefColorU(sbColorSmallAmmoLower.getColor(), CR_ORANGE);
+    case SBTC_SmallAmmoLow: return retDefColorU(sbColorSmallAmmoLow.getColor(), CR_YELLOW);
+    case SBTC_SmallAmmoVeryLow: return retDefColorU(sbColorSmallAmmoVeryLow.getColor(), CR_RED);
+    case SBTC_WeaponName: return retDefColorU(sbColorWeaponName.getColor(), CR_GOLD);
+    case SBTC_AutomapMapName: return retDefColorU(sbColorAutomapMapName.getColor(), defval);
+    case SBTC_AutomapMapCluster: return retDefColorU(sbColorAutomapMapCluster.getColor(), defval);
+    case SBTC_AutomapKills: return retDefColorU(sbColorAutomapKills.getColor(), CR_RED);
+    case SBTC_AutomapItems: return retDefColorU(sbColorAutomapItems.getColor(), CR_GREEN);
+    case SBTC_AutomapSecrets: return retDefColorU(sbColorAutomapSecrets.getColor(), CR_GOLD);
+    case SBTS_AutomapGameTotalTime: return retDefColorU(sbColorAutomapTotalTime.getColor(), defval);
+    default: break;
+  }
+  return CR_UNTRANSLATED;
+}
+
+
 
 //==========================================================================
 //
 //  VC API
 //
 //==========================================================================
-//WARNING! keep in sync with VC code!
-enum {
-  SBTC_Ammo1 = 0,
-  SBTC_Ammo2,
-  SBTC_Armor,
-  SBTC_Health,
-  SBTC_HealthAccum,
-  SBTC_Frags,
-  // smaller ammo counters
-  SBTC_SmallAmmoFull,
-  SBTC_SmallAmmoNormal,
-  SBTC_SmallAmmoLower,
-  SBTC_SmallAmmoLow,
-  SBTC_SmallAmmoVeryLow,
-  //
-  SBTC_WeaponName,
-};
 
 
 //==========================================================================
@@ -183,23 +223,10 @@ static inline int retDefColor (const vuint32 clr, const int def) noexcept {
 }
 
 
-//native static final int SB_GetTextColor (int type);
+//native static final int SB_GetTextColor (int type, optional int defval);
 IMPLEMENT_FREE_FUNCTION(VObject, SB_GetTextColor) {
   int type;
-  vobjGetParam(type);
-  switch (type) {
-    case SBTC_Ammo1: RET_INT(sbColorAmmo1.getColor()); break;
-    case SBTC_Ammo2: RET_INT(sbColorAmmo2.getColor()); break;
-    case SBTC_Armor: RET_INT(sbColorArmor.getColor()); break;
-    case SBTC_Health: RET_INT(sbColorHealth.getColor()); break;
-    case SBTC_HealthAccum: RET_INT(sbColorHealthAccum.getColor()); break;
-    case SBTC_Frags: RET_INT(sbColorFrags.getColor()); break;
-    case SBTC_SmallAmmoFull: RET_INT(retDefColor(sbColorSmallAmmoFull.getColor(), CR_WHITE)); break;
-    case SBTC_SmallAmmoNormal: RET_INT(retDefColor(sbColorSmallAmmoNormal.getColor(), CR_GREEN)); break;
-    case SBTC_SmallAmmoLower: RET_INT(retDefColor(sbColorSmallAmmoLower.getColor(), CR_ORANGE)); break;
-    case SBTC_SmallAmmoLow: RET_INT(retDefColor(sbColorSmallAmmoLow.getColor(), CR_YELLOW)); break;
-    case SBTC_SmallAmmoVeryLow: RET_INT(retDefColor(sbColorSmallAmmoVeryLow.getColor(), CR_RED)); break;
-    case SBTC_WeaponName: RET_INT(retDefColor(sbColorWeaponName.getColor(), CR_GOLD)); break;
-    default: RET_INT(0);
-  }
+  VOptParamInt defval(0xdeadf00d);
+  vobjGetParam(type, defval);
+  RET_INT((int)SB_GetTextColor(type, (unsigned)defval.value));
 }
