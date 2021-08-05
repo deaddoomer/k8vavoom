@@ -74,7 +74,7 @@ void VOpenGLDrawer::DrawPicRecolored (float x1, float y1, float x2, float y2,
   SetPic(Tex, nullptr, CM_Default);
   DrawSimpleRecolor.Activate();
   DrawSimpleRecolor.SetTexture(0);
-  DrawSimpleRecolor.SetLight(((rgbcolor>>16)&0xff)/255.0f, ((rgbcolor>>8)&0xff)/255.0f, (rgbcolor&0xff)/255.0f, 1.0f/*((rgbcolor>>24)&0xff)/255.0f*/);
+  DrawSimpleRecolor.SetLight(((rgbcolor>>16)&0xff)/255.0f, ((rgbcolor>>8)&0xff)/255.0f, (rgbcolor&0xff)/255.0f, ((rgbcolor>>24)&0xff)/255.0f);
   DrawSimpleRecolor.SetAlpha(Alpha);
   DrawSimpleRecolor.SetMaxIntensity(Tex->GetMaxIntensity());
   DrawSimpleRecolor.UploadChangedUniforms();

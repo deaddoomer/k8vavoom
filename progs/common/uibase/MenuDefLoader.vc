@@ -1435,7 +1435,7 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
   opt.SetText(title);
   if (textColor != CR_UNDEFINED) opt.TextColor = textColor;
   if (textColorFocus != CR_UNDEFINED) opt.TextColorFocus = textColorFocus;
-  if (cvar) opt.SetSessionColorCvar(cvar);
   opt.AllowDefaultColor = AllowDefaultColor;
+  if (cvar) opt.SetSessionColorCvar(cvar);
   return opt;
 }

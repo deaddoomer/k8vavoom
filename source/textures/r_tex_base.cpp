@@ -1286,6 +1286,7 @@ float VTexture::GetMaxIntensity () {
       }
     }
     maxintensity = clampval(maxintensity/255.0f, 0.0f, 1.0f);
+    ReleasePixels(); // we don't need it anymore
     //GCon->Logf(NAME_Debug, "Texture '%s': maxintensity=%f", *Name, maxintensity);
   }
   return maxintensity;

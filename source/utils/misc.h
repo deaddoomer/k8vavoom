@@ -76,7 +76,7 @@ VVA_CHECKRESULT vuint32 M_LookupColorName (const char *Name); // returns 0 if no
 // this returns color with high byte set to `0xff` (and black color for unknown names)
 // but when `retZeroIfInvalid` is `true`, it returns `0` for unknown color
 // format: ff_RR_GG_BB
-VVA_CHECKRESULT vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid=false);
+VVA_CHECKRESULT vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid=false, bool showError=true);
 
 // this also parses numeric skills
 // returns -1 on error, or skill number (0-based)
@@ -118,7 +118,7 @@ private:
     }
     fltA = (cvarAlpha ? clampval(cvarAlpha->asFloat(), 0.0f, 1.0f) : 1.0f);
     oldval = nval;
-    color = M_ParseColor(*nval, true); // return 0 if invalid
+    color = M_ParseColor(*nval, true, false); // return 0 if invalid, don't show errors
     if (mNoColorAllowed && !color) {
       fltA = -1.0f;
       fltR = fltG = fltB = 0.0f;

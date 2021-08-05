@@ -407,18 +407,29 @@ IMPLEMENT_FREE_FUNCTION(VObject, GetLockDef) {
   RET_PTR(GetLockDef(Lock));
 }
 
+//native static final int ParseColor (string Name, optional bool retZeroIfInvalid/*=false*/, optional bool showError/*=true*/);
 IMPLEMENT_FREE_FUNCTION(VObject, ParseColor) {
-  P_GET_BOOL_OPT(retZeroIfInvalid, false);
-  P_GET_STR(Name);
-  RET_INT(M_ParseColor(*Name, retZeroIfInvalid));
+  VStr Name;
+  VOptParamBool retZeroIfInvalid(false);
+  VOptParamBool showError(true);
+  vobjGetParam(Name, retZeroIfInvalid, showError);
+  RET_INT(M_ParseColor(*Name, retZeroIfInvalid, showError));
 }
 
 IMPLEMENT_FREE_FUNCTION(VObject, TextColorString) {
+  char buf[24];
   P_GET_INT(Color);
-  char buf[3];
-  buf[0] = TEXT_COLOR_ESCAPE;
-  buf[1] = (Color < CR_BRICK || Color >= NUM_TEXT_COLORS ? '-' : (char)(Color+'A'));
-  buf[2] = 0;
+  /*if (Color == -1) {
+    buf[0] = TEXT_COLOR_ESCAPE;
+    buf[1] = '-';
+    buf[2] = 0;
+  } else*/ if ((Color&0xff000000) == 0xff000000) {
+    snprintf(buf, sizeof(buf), "%c[#%04x]", TEXT_COLOR_ESCAPE, Color&0xffffff);
+  } else {
+    buf[0] = TEXT_COLOR_ESCAPE;
+    buf[1] = (Color < CR_BRICK || Color >= NUM_TEXT_COLORS ? '-' : (char)(Color+'A'));
+    buf[2] = 0;
+  }
   RET_STR(VStr(buf));
 }
 

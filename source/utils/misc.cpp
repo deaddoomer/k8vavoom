@@ -326,7 +326,7 @@ static int tryHexByte (const char *s) noexcept {
 //  M_ParseColor
 //
 //==========================================================================
-vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid) {
+vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid, bool showError) {
   if (!Name || !Name[0]) return (retZeroIfInvalid ? 0U : 0xff000000U);
   vuint32 res = M_LookupColorName(Name);
   if (res) {
@@ -378,7 +378,7 @@ vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid) {
       // skip whitespace and quotes
       while (*s && (*s <= ' ' || *s == '"' || *s == '\'')) ++s;
       if (!s[0] || VStr::digitInBase(s[0], 16) < 0) {
-        GCon->Logf(NAME_Warning, "Invalid color <%s> (0)", Name);
+        if (showError) GCon->Logf(NAME_Warning, "Invalid color <%s> (0)", Name);
         return (retZeroIfInvalid ? 0U : 0xff000000U);
       }
       // parse hex
@@ -388,7 +388,7 @@ vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid) {
         if (s[0] <= ' ' || *s == '"' || *s == '\'') break;
         int d = VStr::digitInBase(s[0], 16);
         if (d < 0) {
-          GCon->Logf(NAME_Warning, "Invalid color <%s> (1)", Name);
+          if (showError) GCon->Logf(NAME_Warning, "Invalid color <%s> (1)", Name);
           return (retZeroIfInvalid ? 0U : 0xff000000U);
         }
         n = n*16+d;
@@ -417,12 +417,12 @@ vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid) {
       if (colDec[0] >= 0 && colDec[1] >= 0 && colDec[2] >= 0 &&
           colDec[0] <= 255 && colDec[1] <= 255 && colDec[2] <= 255)
       {
-        GCon->Logf(NAME_Warning, "Decimal color <%s> (0x00_%02x_%02x_%02x)", Name, colDec[0], colDec[1], colDec[2]);
+        if (showError) GCon->Logf(NAME_Warning, "Decimal color <%s> (0x00_%02x_%02x_%02x)", Name, colDec[0], colDec[1], colDec[2]);
         Col[0] = colDec[0];
         Col[1] = colDec[1];
         Col[2] = colDec[2];
       } else {
-        GCon->Logf(NAME_Warning, "Invalid color <%s> (2)", Name);
+        if (showError) GCon->Logf(NAME_Warning, "Invalid color <%s> (2)", Name);
       }
     }
     //GCon->Logf("*** COLOR <%s> is 0x%08x", *Name, 0xff000000U|(((vuint32)Col[0])<<16)|(((vuint32)Col[1])<<8)|((vuint32)Col[2]));

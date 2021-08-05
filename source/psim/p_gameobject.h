@@ -169,7 +169,8 @@ enum {
 // ////////////////////////////////////////////////////////////////////////// //
 // text colors, these must match the constants used in ACS
 enum {
-  CR_UNDEFINED = -1,
+  //CR_UNDEFINED = -1,
+  //
   CR_BRICK, //A
   CR_TAN, //B
   CR_GRAY, //C
@@ -204,7 +205,9 @@ enum {
   CR_INIT_CYAN,
   CR_SLIDER_HI_KNOB,
   // no more
-  NUM_TEXT_COLORS
+  NUM_TEXT_COLORS,
+  //
+  CR_UNDEFINED = 0x00adf00d,
 };
 
 

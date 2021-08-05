@@ -71,7 +71,8 @@ override void SetOrigin (int x, int y) {
 void SetSessionColorCvar (name Name) {
   cvarSession = Name;
   if (Name) {
-    int color = ParseColor(GetCvarS(Name), retZeroIfInvalid:AllowDefaultColor);
+    int color = ParseColor(GetCvarS(Name), retZeroIfInvalid:AllowDefaultColor, showError:false);
+    printdebug("cvar:<%s>; val:<%s>; color:0x%08x; AllowDefaultColor=%B", Name, GetCvarS(Name), color, AllowDefaultColor);
     if (color) {
       ColorValue = color;
     } else if (AllowDefaultColor) {

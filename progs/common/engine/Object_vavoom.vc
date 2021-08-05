@@ -117,7 +117,8 @@ enum HUDMsgFlag {
 
 // text colors
 enum {
-  CR_UNDEFINED = -1,
+  //CR_UNDEFINED = -1,
+  //
   CR_BRICK, //A
   CR_TAN, //B
   CR_GRAY, //C
@@ -152,7 +153,9 @@ enum {
   CR_INIT_CYAN,
   CR_SLIDER_HI_KNOB,
   // no more
-  NUM_TEXT_COLORS
+  NUM_TEXT_COLORS,
+  //
+  CR_UNDEFINED = 0x00_ad_f0_0d,
 };
 
 // status bar view type
@@ -405,7 +408,7 @@ native static final string TranslateString (string Id); // *WITH* leading '$'
 native static final GameObject::LockDef *GetLockDef (int Lock);
 // this returns color with high byte set to `0xff` (and black color for unknown names)
 // but when `retZeroIfInvalid` is `true`, it returns `0` for unknown color
-native static final int ParseColor (string Name, optional bool retZeroIfInvalid/*=false*/);
+native static final int ParseColor (string Name, optional bool retZeroIfInvalid/*=false*/, optional bool showError/*=true*/);
 native static final string TextColorString (int Color);
 native static final bool StartTitleMap ();
 native static final bool IsAutoloadingMapFromCLI ();

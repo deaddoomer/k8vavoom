@@ -283,6 +283,7 @@ VTexAtlas8bit *VFontBitmapBase::allocTranslated (rgba_t *APalette, VTexAtlas8bit
 //==========================================================================
 void VFontBitmapBase::CreateTranslatedAtlases (VTexAtlas8bit *currAtlas, int nextToUpdate) {
   if (nextToUpdate >= Chars.length()) return;
+  (void)currAtlas->GetMaxIntensity(); // cache it
   for (int f = nextToUpdate; f < Chars.length(); ++f) {
     Chars[f].Textures = new VTexture*[TextColors.length()];
   }
@@ -1036,6 +1037,8 @@ VFont::VFont (VName AName, VStr FormatStr, int First, int Count, int StartIndex,
         // mark colors that are used by this texture
         MarkUsedColors(Tex, ColorsUsed);
 
+        (void)Tex->GetMaxIntensity(); // cache it
+
         //if (developer) GCon->Logf(NAME_Dev, "loaded char lump '%s' as '%s' (%d) for char %d of font '%s'", *W_FullLumpName(Lump), *LumpName, Lump, Char, *AName);
         wasAnyChar = true;
       } else {
@@ -1554,6 +1557,8 @@ VSpecialFont::VSpecialFont (VName AName, const TArray<int> &CharIndexes, const T
 
       // mark colors that are used by this texture
       MarkUsedColors(Tex, ColorsUsed);
+
+      (void)Tex->GetMaxIntensity(); // cache it
     }
   }
 
@@ -1774,6 +1779,7 @@ VSingleTextureFont::VSingleTextureFont (VName AName, int TexNum) {
   RegisterFont(this, AName);
 
   VTexture *Tex = GTextureManager[TexNum];
+  if (!Tex) Tex = GTextureManager[0];
   for (int i = 0; i < 128; ++i) AsciiChars[i] = -1;
   AsciiChars[(int)'A'] = 0;
   FirstChar = 'A';
@@ -1792,6 +1798,8 @@ VSingleTextureFont::VSingleTextureFont (VName AName, int TexNum) {
 
   FChar.Width = SpaceWidth;
   FChar.Height = FontHeight;
+
+  (void)Tex->GetMaxIntensity(); // cache it
 }
 
 
@@ -1827,6 +1835,7 @@ VFontChar::VFontChar (VTexture *ATex, rgba_t *APalette)
   if (!isFiniteF(SScale) || SScale <= 0.0f) SScale = 1.0f;
   if (!isFiniteF(TScale) || TScale <= 0.0f) TScale = 1.0f;
   //GCon->Logf("created font char with basetex %p (%s)", BaseTex, *BaseTex->Name);
+  (void)BaseTex->GetMaxIntensity(); // cache it
 }
 
 

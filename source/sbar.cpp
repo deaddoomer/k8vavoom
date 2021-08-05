@@ -226,7 +226,7 @@ static inline int retDefColor (const vuint32 clr, const int def) noexcept {
 //native static final int SB_GetTextColor (int type, optional int defval);
 IMPLEMENT_FREE_FUNCTION(VObject, SB_GetTextColor) {
   int type;
-  VOptParamInt defval(0xdeadf00d);
+  VOptParamInt defval(CR_UNTRANSLATED);
   vobjGetParam(type, defval);
   RET_INT((int)SB_GetTextColor(type, (unsigned)defval.value));
 }

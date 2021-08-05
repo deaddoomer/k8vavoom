@@ -280,9 +280,8 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
   bool neg;
   picinfo_t info;
 
-  //int color = (clamp(cast(int)(alpha*255.0), 0, 255)<<24)|0x00_ff_00;
-  bool recolored = (color != 0);
-  color = (color&0xff_ff_ff)|(clamp(cast(int)(alpha*255.0), 0, 255)<<24);
+  bool recolored = (color < 0);
+  if (recolored) color = (color&0xff_ff_ff)|(clamp(cast(int)(alpha*255.0), 0, 255)<<24);
 
   if (perc && pic_percent > 0) {
     //R_GetPicInfo(pic_percent, &info);
