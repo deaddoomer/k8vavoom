@@ -417,6 +417,8 @@ void *VOpenGLDrawer::ReadScreen (int *bpp, bool *bot2top) {
   GLint oldbindtex = 0;
   glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldbindtex);
 
+  ApplyFullscreenPosteffects(); // so screenshots will look ok
+
   glBindTexture(GL_TEXTURE_2D, GetMainFBO()->getColorTid());
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   void *dst = Z_Malloc(GetMainFBO()->getWidth()*GetMainFBO()->getHeight()*3);
@@ -435,6 +437,9 @@ void *VOpenGLDrawer::ReadScreen (int *bpp, bool *bot2top) {
   Z_Free(tmp);
   #endif
   glBindTexture(GL_TEXTURE_2D, oldbindtex);
+
+  // restore main FBO
+  FinishFullscreenPosteffects();
 
   *bpp = 24;
   *bot2top = true;
