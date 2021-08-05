@@ -298,7 +298,7 @@ menudef HUDOptions {
   header "HUD Colors";
 
   option submenu {
-    title = "Shadowmap Options";
+    title = "Set HUD Text Colors";
     submenu = HUDColorsOptions;
   }
 }
