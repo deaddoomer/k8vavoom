@@ -293,4 +293,176 @@ menudef HUDOptions {
     title = "Doomguy Face in center";
     cvar = r_hud_fs_face_centered;
   }
+
+
+  header "HUD Colors";
+
+  option submenu {
+    title = "Shadowmap Options";
+    submenu = HUDColorsOptions;
+  }
+}
+
+
+menudef HUDColorsOptions {
+  Title = "HUD COLORS";
+
+
+  header "Main Colors";
+
+  option color {
+    title = "Ammo";
+    cvar = sb_color_ammo1;
+    allowdefault = true;
+    help = "StatusBar ammo number color.";
+  }
+
+  option color {
+    title = "Secondary Ammo";
+    cvar = sb_color_ammo2;
+    allowdefault = true;
+    help = "StatusBar secondary ammo number color.";
+  }
+
+  option color {
+    title = "Armor";
+    cvar = sb_color_armor;
+    allowdefault = true;
+    help = "StatusBar armor number color.";
+  }
+
+  option color {
+    title = "Health";
+    cvar = sb_color_health;
+    allowdefault = true;
+    help = "StatusBar health number color.";
+  }
+
+  option color {
+    title = "Health Accumulator";
+    cvar = sb_color_healthaccum;
+    allowdefault = true;
+    help = "StatusBar health accumulator number color.";
+  }
+
+  option color {
+    title = "Frags";
+    cvar = sb_color_frags;
+    allowdefault = true;
+    help = "StatusBar frags number color.";
+  }
+
+
+  header "Small Statusbar Digits";
+
+  option color {
+    title = "Ammo";
+    cvar = sb_color_small_ammo;
+    allowdefault = true;
+    help = "Ammo digits in non-fullscreen statusbar.";
+  }
+
+  option color {
+    title = "Max Ammo";
+    cvar = sb_color_small_ammomax;
+    allowdefault = true;
+    help = "Max ammo digits in non-fullscreen statusbar.";
+  }
+
+  option color {
+    title = "Item Amount";
+    cvar = sb_color_itemamount;
+    allowdefault = true;
+    help = "StatusBar item amount color.";
+  }
+
+
+  header "Weapon Info Colors";
+
+  option color {
+    title = "Name";
+    cvar = sb_color_weapon_name;
+    allowdefault = true;
+    help = "Current weapon name color.";
+  }
+
+  option color {
+    title = "Ammo (full)";
+    cvar = sb_color_weaponammo_full;
+    allowdefault = true;
+    help = "StatusBar FS small ammo number color (full).";
+  }
+
+  option color {
+    title = "Ammo (normal)";
+    cvar = sb_color_weaponammo_normal;
+    allowdefault = true;
+    help = "StatusBar FS small ammo number color (normal).";
+  }
+
+  option color {
+    title = "Ammo (lower)";
+    cvar = sb_color_weaponammo_lower;
+    allowdefault = true;
+    help = "StatusBar FS small ammo number color (lower).";
+  }
+
+  option color {
+    title = "Ammo (low)";
+    cvar = sb_color_weaponammo_low;
+    allowdefault = true;
+    help = "StatusBar FS small ammo number color (low).";
+  }
+
+  option color {
+    title = "Ammo (very low/empty)";
+    cvar = sb_color_weaponammo_verylow;
+    allowdefault = true;
+    help = "StatusBar FS small ammo number color (very low/empty).";
+  }
+
+
+  header "Stats Colors";
+
+  option color {
+    title = "Map Name";
+    cvar = sb_color_automap_mapname;
+    allowdefault = true;
+    help = "Automap stats: map name color.";
+  }
+
+  option color {
+    title = "Map Cluster";
+    cvar = sb_color_automap_mapcluster;
+    allowdefault = true;
+    help = "Automap stats: map cluster info color.";
+  }
+
+  option color {
+    title = "Kills";
+    cvar = sb_color_automap_kills;
+    allowdefault = true;
+    help = "Automap stats: number of kills color.";
+  }
+
+  option color {
+    title = "Items";
+    cvar = sb_color_automap_items;
+    allowdefault = true;
+    help = "Automap stats: number of items color.";
+  }
+
+  option color {
+    title = "Secrets";
+    cvar = sb_color_automap_secrets;
+    allowdefault = true;
+    help = "Automap stats: number of secrets color.";
+  }
+
+  option color {
+    title = "Game Timer";
+    cvar = sb_color_automap_totaltime;
+    allowdefault = true;
+    help = "Automap stats: total playing time color.";
+  }
 }

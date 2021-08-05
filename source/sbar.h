@@ -51,12 +51,16 @@ enum {
   SBTC_Health,
   SBTC_HealthAccum,
   SBTC_Frags,
-  // smaller ammo counters
-  SBTC_SmallAmmoFull,
-  SBTC_SmallAmmoNormal,
-  SBTC_SmallAmmoLower,
-  SBTC_SmallAmmoLow,
-  SBTC_SmallAmmoVeryLow,
+  // small numbers
+  SBTC_SmallAmmo,
+  SBTC_SmallMaxAmmo,
+  SBTC_ItemAmount,
+  // FS weapon ammo counters
+  SBTC_WeaponAmmoFull,
+  SBTC_WeaponAmmoNormal,
+  SBTC_WeaponAmmoLower,
+  SBTC_WeaponAmmoLow,
+  SBTC_WeaponAmmoVeryLow,
   //
   SBTC_WeaponName,
   // automap stats

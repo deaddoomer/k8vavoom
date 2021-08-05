@@ -57,11 +57,15 @@ static VCvarS sb_color_health("sb_color_health", "default", "StatusBar health nu
 static VCvarS sb_color_healthaccum("sb_color_healthaccum", "default", "StatusBar health accumulator number color.", CVAR_Archive);
 static VCvarS sb_color_frags("sb_color_frags", "default", "StatusBar frags number color.", CVAR_Archive);
 
-static VCvarS sb_color_smallammo_full("sb_color_smallammo_full", "default", "StatusBar FS small ammo number color (full).", CVAR_Archive);
-static VCvarS sb_color_smallammo_normal("sb_color_smallammo_normal", "default", "StatusBar FS small ammo number color (normal).", CVAR_Archive);
-static VCvarS sb_color_smallammo_lower("sb_color_smallammo_lower", "default", "StatusBar FS small ammo number color (lower).", CVAR_Archive);
-static VCvarS sb_color_smallammo_low("sb_color_smallammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive);
-static VCvarS sb_color_smallammo_verylow("sb_color_smallammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive);
+static VCvarS sb_color_small_ammo("sb_color_small_ammo", "default", "StatusBar small ammo color.", CVAR_Archive);
+static VCvarS sb_color_small_ammomax("sb_color_small_ammomax", "default", "StatusBar small max ammo color.", CVAR_Archive);
+static VCvarS sb_color_itemamount("sb_color_itemamount", "default", "StatusBar item amount color.", CVAR_Archive);
+
+static VCvarS sb_color_weaponammo_full("sb_color_weaponammo_full", "default", "StatusBar FS small ammo number color (full).", CVAR_Archive);
+static VCvarS sb_color_weaponammo_normal("sb_color_weaponammo_normal", "default", "StatusBar FS small ammo number color (normal).", CVAR_Archive);
+static VCvarS sb_color_weaponammo_lower("sb_color_weaponammo_lower", "default", "StatusBar FS small ammo number color (lower).", CVAR_Archive);
+static VCvarS sb_color_weaponammo_low("sb_color_weaponammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive);
+static VCvarS sb_color_weaponammo_verylow("sb_color_weaponammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive);
 
 static VCvarS sb_color_weapon_name("sb_color_weapon_name", "default", "StatusBar FS weapon name color.", CVAR_Archive);
 
@@ -80,11 +84,15 @@ static ColorCV sbColorHealth(&sb_color_health, nullptr, true); // allow "no colo
 static ColorCV sbColorHealthAccum(&sb_color_healthaccum, nullptr, true); // allow "no color"
 static ColorCV sbColorFrags(&sb_color_frags, nullptr, true); // allow "no color"
 
-static ColorCV sbColorSmallAmmoFull(&sb_color_smallammo_full, nullptr, true); // allow "no color"
-static ColorCV sbColorSmallAmmoNormal(&sb_color_smallammo_normal, nullptr, true); // allow "no color"
-static ColorCV sbColorSmallAmmoLower(&sb_color_smallammo_lower, nullptr, true); // allow "no color"
-static ColorCV sbColorSmallAmmoLow(&sb_color_smallammo_low, nullptr, true); // allow "no color"
-static ColorCV sbColorSmallAmmoVeryLow(&sb_color_smallammo_verylow, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmo(&sb_color_small_ammo, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmoMax(&sb_color_small_ammomax, nullptr, true); // allow "no color"
+static ColorCV sbColorItemAmount(&sb_color_itemamount, nullptr, true); // allow "no color"
+
+static ColorCV sbColorWeaponAmmoFull(&sb_color_weaponammo_full, nullptr, true); // allow "no color"
+static ColorCV sbColorWeaponAmmoNormal(&sb_color_weaponammo_normal, nullptr, true); // allow "no color"
+static ColorCV sbColorWeaponAmmoLower(&sb_color_weaponammo_lower, nullptr, true); // allow "no color"
+static ColorCV sbColorWeaponAmmoLow(&sb_color_weaponammo_low, nullptr, true); // allow "no color"
+static ColorCV sbColorWeaponAmmoVeryLow(&sb_color_weaponammo_verylow, nullptr, true); // allow "no color"
 
 static ColorCV sbColorWeaponName(&sb_color_weapon_name, nullptr, true); // allow "no color"
 
@@ -187,11 +195,14 @@ vuint32 SB_GetTextColor (int type, vuint32 defval) {
     case SBTC_Health: return retDefColorU(sbColorHealth.getColor(), defval);
     case SBTC_HealthAccum: return retDefColorU(sbColorHealthAccum.getColor(), defval);
     case SBTC_Frags: return retDefColorU(sbColorFrags.getColor(), defval);
-    case SBTC_SmallAmmoFull: return retDefColorU(sbColorSmallAmmoFull.getColor(), CR_WHITE);
-    case SBTC_SmallAmmoNormal: return retDefColorU(sbColorSmallAmmoNormal.getColor(), CR_GREEN);
-    case SBTC_SmallAmmoLower: return retDefColorU(sbColorSmallAmmoLower.getColor(), CR_ORANGE);
-    case SBTC_SmallAmmoLow: return retDefColorU(sbColorSmallAmmoLow.getColor(), CR_YELLOW);
-    case SBTC_SmallAmmoVeryLow: return retDefColorU(sbColorSmallAmmoVeryLow.getColor(), CR_RED);
+    case SBTC_SmallAmmo: return retDefColorU(sbColorSmallAmmo.getColor(), defval);
+    case SBTC_SmallMaxAmmo: return retDefColorU(sbColorSmallAmmoMax.getColor(), defval);
+    case SBTC_ItemAmount: return retDefColorU(sbColorItemAmount.getColor(), defval);
+    case SBTC_WeaponAmmoFull: return retDefColorU(sbColorWeaponAmmoFull.getColor(), CR_WHITE);
+    case SBTC_WeaponAmmoNormal: return retDefColorU(sbColorWeaponAmmoNormal.getColor(), CR_GREEN);
+    case SBTC_WeaponAmmoLower: return retDefColorU(sbColorWeaponAmmoLower.getColor(), CR_ORANGE);
+    case SBTC_WeaponAmmoLow: return retDefColorU(sbColorWeaponAmmoLow.getColor(), CR_YELLOW);
+    case SBTC_WeaponAmmoVeryLow: return retDefColorU(sbColorWeaponAmmoVeryLow.getColor(), CR_RED);
     case SBTC_WeaponName: return retDefColorU(sbColorWeaponName.getColor(), CR_GOLD);
     case SBTC_AutomapMapName: return retDefColorU(sbColorAutomapMapName.getColor(), defval);
     case SBTC_AutomapMapCluster: return retDefColorU(sbColorAutomapMapCluster.getColor(), defval);

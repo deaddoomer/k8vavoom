@@ -329,21 +329,24 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
 //  SB_DrawSmallNum
 //
 //==========================================================================
-void SB_DrawSmallNum (int x, int y, int num) {
+void SB_DrawSmallNum (int x, int y, int num, int color) {
   picinfo_t info;
+
+  bool recolored = (color < 0);
+  if (recolored) color |= 0xff_00_00_00;
 
   if (num < 0) num = -num;
 
-  R_GetPicInfo(pic_yellownum[0], &info);
-  int w = info.width;
-
-  // in the special case of 0, you draw 0
-  //if (!num) DrawPic(x-w, y, pic_yellownum[0]);
-
   // draw the new number
   do {
-    x -= w;
-    DrawPic(x, y, pic_yellownum[num%10]);
+    int hh = pic_yellownum[num%10];
+    R_GetPicInfo(hh, &info);
+    x -= info.width;
+    if (recolored) {
+      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, hh);
+    } else {
+      DrawPic(x, y, hh);
+    }
     num /= 10;
   } while (num);
 }
@@ -445,7 +448,7 @@ override void SB_DrawMainBar (bool inAutomap) {
       DrawPic(210+i*31, 448, pic_artibox, ST_FULLSCREEN_ALPHA);
       if (Item) {
         DrawShadowedPic(207+i*31, 446, R_RegisterPic(Item.IconName));
-        SB_DrawSmallNum(238+i*31, 470, Item.Amount);
+        SB_DrawSmallNum(238+i*31, 470, Item.Amount, SB_GetTextColor(SBTextColor.ItemAmount));
         if (Item == cl.InvPtr) DrawPic(210+i*31, 448, pic_selectbox, ST_FULLSCREEN_ALPHA);
         Item = Item.NextInv();
       }
@@ -456,7 +459,7 @@ override void SB_DrawMainBar (bool inAutomap) {
     // ready artifact
     DrawPic(486, 448, pic_artibox, ST_FULLSCREEN_ALPHA);
     DrawShadowedPic(483, 446, R_RegisterPic(cl.InvPtr.IconName));
-    SB_DrawSmallNum(514, 470, cl.InvPtr.Amount);
+    SB_DrawSmallNum(514, 470, cl.InvPtr.Amount, SB_GetTextColor(SBTextColor.ItemAmount));
   }
 }
 
@@ -469,7 +472,7 @@ override void SB_DrawMainBar (bool inAutomap) {
 void DrawAmmo (int CountX, int CountY, int MaxX, int MaxY, class!Inventory AmmoClass) {
   Inventory Item = EntityEx(cl.MO).FindInventory(AmmoClass);
   // ammo count
-  SB_DrawSmallNum(CountX, CountY, (Item ? Item.Amount : 0));
+  SB_DrawSmallNum(CountX, CountY, (Item ? Item.Amount : 0), SB_GetTextColor(SBTextColor.SmallAmmo));
   // max ammo count
   int maxam;
   if (Item) {
@@ -478,7 +481,7 @@ void DrawAmmo (int CountX, int CountY, int MaxX, int MaxY, class!Inventory AmmoC
   } else {
     maxam = AmmoClass.default.MaxAmount;
   }
-  SB_DrawSmallNum(MaxX, MaxY, maxam);
+  SB_DrawSmallNum(MaxX, MaxY, maxam, SB_GetTextColor(SBTextColor.SmallMaxAmmo));
 }
 
 
@@ -874,11 +877,11 @@ override void SB_DrawFullscreenStats () {
           int maxam = ai.ammo.k8GetAmmoKingMax();
           int am = ai.ammo.Amount;
           int aclr;
-               if (am >= maxam) aclr = SB_GetTextColor(SBTextColor.SmallAmmoFull);
-          else if (am > maxam-maxam/3) aclr = SB_GetTextColor(SBTextColor.SmallAmmoNormal);
-          else if (am > maxam/2) aclr = SB_GetTextColor(SBTextColor.SmallAmmoLower);
-          else if (am > maxam/3) aclr = SB_GetTextColor(SBTextColor.SmallAmmoLow);
-          else aclr = SB_GetTextColor(SBTextColor.SmallAmmoVeryLow);
+               if (am >= maxam) aclr = SB_GetTextColor(SBTextColor.WeaponAmmoFull);
+          else if (am > maxam-maxam/3) aclr = SB_GetTextColor(SBTextColor.WeaponAmmoNormal);
+          else if (am > maxam/2) aclr = SB_GetTextColor(SBTextColor.WeaponAmmoLower);
+          else if (am > maxam/3) aclr = SB_GetTextColor(SBTextColor.WeaponAmmoLow);
+          else aclr = SB_GetTextColor(SBTextColor.WeaponAmmoVeryLow);
           //aclr = (am < maxam ? (am < maxam/4 ? CR_UNTRANSLATED : CR_GREEN) : CR_YELLOW);
           //!string astr = va("%3d", am);
           //!int ax0 = xpos+(30-TextWidth(astr))/2;
@@ -959,7 +962,7 @@ override void SB_DrawFullscreenStats () {
       DrawPicFit(30, 30, 210+i*31, /*448*/ovh-32, pic_artibox, fsalpha);
       if (Item) {
         DrawPicFitCenter(28, -28, 211+i*31, /*446*/ovh-31, R_RegisterPic(Item.IconName), shadowed:true);
-        SB_DrawSmallNum(238+i*31, /*470*/ovh-10, Item.Amount);
+        SB_DrawSmallNum(238+i*31, /*470*/ovh-10, Item.Amount, SB_GetTextColor(SBTextColor.ItemAmount));
         if (Item == cl.InvPtr) DrawPicFit(30, 30, 210+i*31, /*448*/ovh-32, pic_selectbox, fsalpha);
         Item = Item.NextInv();
       }
@@ -974,7 +977,7 @@ override void SB_DrawFullscreenStats () {
       if (icon > 0) {
         DrawPicFit(30, 30, 486, /*448*/ovh-32, pic_artibox, fsalpha);
         DrawPicFitCenter(28, -28, 487, /*446*/ovh-31, icon, shadowed:true);
-        SB_DrawSmallNum(514, /*470*/ovh-10, Item.Amount);
+        SB_DrawSmallNum(514, /*470*/ovh-10, Item.Amount, SB_GetTextColor(SBTextColor.ItemAmount));
       }
     }
   }

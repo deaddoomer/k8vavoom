@@ -2131,7 +2131,7 @@ static void AM_DrawWorldTimer () {
   }
 
   snprintf(timeBuffer, sizeof(timeBuffer), "%.2d : %.2d : %.2d", hours, minutes, seconds);
-  T_DrawText(sx, 8, timeBuffer, CR_UNTRANSLATED);
+  T_DrawText(sx, 8, timeBuffer, SB_GetTextColor(SBTS_AutomapGameTotalTime));
 
   if (days) {
     if (days == 1) {

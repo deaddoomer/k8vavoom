@@ -176,10 +176,14 @@ void LoadMenuDefs () {
       if (par.Check(",")) continue;
       par.ExpectString();
       string fname = va("//uidef/%s", par.String);
-      MenuDefinition mdef = MenuScreen.LoadMenu(fname);
-      if (!mdef) continue;
-      if (!mdef.menuName) { delete mdef; continue; }
-      menudefs[$] = mdef;
+      auto mpar = MenuScreen.CreateMenuParser(fname);
+      scope(exit) delete mpar;
+      for (;;) {
+        MenuDefinition mdef = MenuScreen.LoadOneMenu(mpar);
+        if (!mdef) break;
+        if (!mdef.menuName) { delete mdef; continue; }
+        menudefs[$] = mdef;
+      }
     }
   }
 

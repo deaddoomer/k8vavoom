@@ -280,13 +280,22 @@ void FinishCreatingMenu () {
 
 //==========================================================================
 //
-//  LoadMenu
+//  CreateMenuParser
 //
 //==========================================================================
-final static MenuDefinition LoadMenu (string adefFileName) {
+final static ScriptsParser CreateMenuParser (string adefFileName) {
   if (!adefFileName) FatalError("undefined menudef");
-  auto par = MenuDefinition.openParser(adefFileName);
-  scope(exit) delete par;
+  return MenuDefinition.openParser(adefFileName);
+}
+
+
+//==========================================================================
+//
+//  LoadOneMenu
+//
+//==========================================================================
+final static MenuDefinition LoadOneMenu (ScriptsParser par) {
+  if (par.AtEnd) return none;
   par.Expect("menudef");
   auto mdef = SpawnObject(MenuDefinition);
   mdef.parse(par);
@@ -389,10 +398,15 @@ void CreateMenu () {
     CreateChoices();
     FinishCreatingMenu();
   } else {
-    auto mdef = LoadMenu(defFileName);
-    scope(exit) delete mdef;
-    //mdef.dump();
-    CreateMenuFromDef(mdef);
+    auto par = CreateMenuParser(defFileName);
+    scope(exit) delete par;
+    for (;;) {
+      auto mdef = LoadOneMenu(par);
+      if (!mdef) break;
+      scope(exit) delete mdef;
+      //mdef.dump();
+      CreateMenuFromDef(mdef);
+    }
   }
 }
 

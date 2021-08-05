@@ -594,12 +594,16 @@ enum SBTextColor {
   Health,
   HealthAccum,
   Frags,
+  // small numbers
+  SmallAmmo,
+  SmallMaxAmmo,
+  ItemAmount,
   // smaller ammo counters
-  SmallAmmoFull,
-  SmallAmmoNormal,
-  SmallAmmoLower,
-  SmallAmmoLow,
-  SmallAmmoVeryLow,
+  WeaponAmmoFull,
+  WeaponAmmoNormal,
+  WeaponAmmoLower,
+  WeaponAmmoLow,
+  WeaponAmmoVeryLow,
   //
   WeaponName,
   // automap stats
