@@ -274,7 +274,7 @@ native final void DrawPicScaledIgnoreOffset (int X, int Y, int Handle, optional 
 native final void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, optional float alpha);
 native final void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, optional float alpha);
 
-native final void DrawPicRecoloredEx (float x, float y, float tx0, float ty0, float tx1, float ty1, vuint32 color, int handle,
+native final void DrawPicRecoloredEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int color, int handle,
                                       optional float scaleX/*=1.0*/, optional float scaleY/*=1.0*/, optional bool ignoreOffset/*=false*/);
 native final void DrawPicShadowEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, optional float alpha/*=0.625*/,
                                    optional float scaleX/*=1.0*/, optional float scaleY/*=1.0*/, optional bool ignoreOffset/*=false*/);
