@@ -469,6 +469,7 @@ VOpenGLDrawer::VOpenGLDrawer ()
   , postSrcFBO()
   , postOverFBO()
   , postSrcFSFBO()
+  , tempMainFBO()
   , tonemapPalLUT(0)
   , tonemapLastGamma(-1)
   , tonemapMode(0)
@@ -1010,6 +1011,7 @@ void VOpenGLDrawer::DeinitResolution () {
   postSrcFBO.destroy();
   postOverFBO.destroy();
   postSrcFSFBO.destroy();
+  tempMainFBO.destroy();
 
   memset(currentViewport, 0, sizeof(currentViewport));
   currentViewport[0] = -666;

@@ -309,6 +309,8 @@ public:
     FBO ();
     ~FBO ();
 
+    void SwapWith (FBO *other);
+
     VVA_ALWAYS_INLINE bool isValid () const noexcept { return (mOwner != nullptr); }
     VVA_ALWAYS_INLINE int getWidth () const noexcept { return mWidth; }
     VVA_ALWAYS_INLINE int getHeight () const noexcept { return mHeight; }
@@ -1015,6 +1017,7 @@ protected:
   FBO postSrcFBO;
   FBO postOverFBO; // must be FP is main FBO is fp
   FBO postSrcFSFBO;
+  FBO tempMainFBO; // used in FS posteffects
 
   // tonemap
   GLuint tonemapPalLUT; // palette LUT texture
@@ -1463,6 +1466,9 @@ public:
   // the following posteffects should be called after the whole screen was rendered!
   virtual void Posteffect_ColorBlind (int mode) override;
   virtual void Posteffect_ColorMatrix (const float[16]) override;
+
+  virtual void ApplyFullscreenPosteffects () override;
+  virtual void FinishFullscreenPosteffects () override;
 
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) override;
   virtual void LevelRendererDestroyed () override;

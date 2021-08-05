@@ -81,6 +81,28 @@ VOpenGLDrawer::FBO::~FBO () {
 }
 
 
+template <class T> constexpr VVA_ALWAYS_INLINE void swapval (T &a, T &b) noexcept { T tmp = a; a = b; b = tmp; }
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::FBO::SwapWith
+//
+//==========================================================================
+void VOpenGLDrawer::FBO::SwapWith (FBO *other) {
+  if (!other || other == this) return;
+  swapval(mOwner, other->mOwner);
+  swapval(mFBO, other->mFBO);
+  swapval(mColorTid, other->mColorTid);
+  swapval(mDepthStencilRBO, other->mDepthStencilRBO);
+  swapval(mWidth, other->mWidth);
+  swapval(mHeight, other->mHeight);
+  swapval(mLinearFilter, other->mLinearFilter);
+  swapval(mIsFP, other->mIsFP);
+  swapval(mType, other->mType);
+}
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::FBO::destroy

@@ -589,6 +589,9 @@ public:
   virtual void Posteffect_ColorBlind (int mode) = 0;
   virtual void Posteffect_ColorMatrix (const float mat[12]) = 0;
 
+  virtual void ApplyFullscreenPosteffects () = 0;
+  virtual void FinishFullscreenPosteffects () = 0;
+
   // can be called several times
   virtual void LevelRendererCreated (VRenderLevelPublic *Renderer) = 0;
   // can be called several times in a row (i.e. one creation may lead to many shutdowns)

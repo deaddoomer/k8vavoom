@@ -38,6 +38,9 @@
 
 VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit);
 
+static VCvarI acc_colorswap_mode("acc_colorswap_mode", "0", "Colorblind color swap mode: 0=RGB; 1=GBR; 2=GRB; 3=BRG; 4=BGR; 5=RBG", CVAR_Archive);
+static VCvarI acc_colormatrix_mode("acc_colormatrix_mode", "0", "Colormatrix colorblind emulation mode.", CVAR_Archive);
+
 extern VCvarB gl_shadowmap_preclear;
 extern VCvarB r_dbg_proj_aspect;
 
@@ -97,6 +100,123 @@ void VOpenGLDrawer::StartUpdate () {
 }
 
 
+// matrices are from here: http://web.archive.org/web/20091001043530/http://www.colorjack.com/labs/colormatrix/
+static const float KnownColorMatrices[8][4*3] = {
+  // Protanopia [1]
+  {0.567f, 0.433f,   0.0f, 0.0f,
+   0.558f, 0.442f,   0.0f, 0.0f,
+     0.0f, 0.242f, 0.758f, 0.0f},
+  // Protanomaly [2]
+  {0.817f, 0.183f,   0.0f, 0.0f,
+   0.333f, 0.667f,   0.0f, 0.0f,
+     0.0f, 0.125f, 0.875f, 0.0f},
+  // Deuteranopia [3]
+  {0.625f, 0.375f,   0.0f, 0.0f,
+     0.7f,   0.3f,   0.0f, 0.0f,
+     0.0f,   0.3f,   0.7f, 0.0f},
+  // Deuteranomaly [4]
+  {  0.8f,   0.2f,   0.0f, 0.0f,
+   0.258f, 0.742f,   0.0f, 0.0f,
+     0.0f, 0.142f, 0.858f, 0.0f},
+  // Tritanopia [5]
+  { 0.95f,  0.05f,   0.0f, 0.0f,
+     0.0f, 0.433f, 0.567f, 0.0f,
+     0.0f, 0.475f, 0.525f, 0.0f},
+  // Tritanomaly [6]
+  {0.967f, 0.033f,   0.0f, 0.0f,
+     0.0f, 0.733f, 0.267f, 0.0f,
+     0.0f, 0.183f, 0.817f, 0.0f},
+  // Achromatopsia [7]
+  {0.299f, 0.587f, 0.114f, 0.0f,
+   0.299f, 0.587f, 0.114f, 0.0f,
+   0.299f, 0.587f, 0.114f, 0.0f},
+  // Achromatomaly [8]
+  {0.618f, 0.320f, 0.062f, 0.0f,
+   0.163f, 0.775f, 0.062f, 0.0f,
+   0.163f, 0.320f, 0.516f, 0.0f},
+};
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::ApplyFullscreenPosteffects
+//
+//==========================================================================
+void VOpenGLDrawer::ApplyFullscreenPosteffects () {
+  const int cmat = acc_colormatrix_mode.asInt();
+  const int mode = acc_colorswap_mode.asInt();
+
+  // need to do something?
+  if ((cmat < 1 || cmat > 8) && (mode < 1 || mode > 5)) {
+    if (tempMainFBO.isValid()) tempMainFBO.destroy();
+    return;
+  }
+
+  FBO *mfbo = GetMainFBO();
+
+  // ensure temp FBO
+  if (!tempMainFBO.isValid() ||
+       tempMainFBO.getWidth() != mfbo->getWidth() ||
+       tempMainFBO.getHeight() != mfbo->getHeight() ||
+       tempMainFBO.isColorFloat() != mfbo->isColorFloat())
+  {
+    tempMainFBO.destroy();
+  }
+
+  if (!tempMainFBO.isValid()) {
+    //tempMainFBO.createDepthStencil(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
+    tempMainFBO.createTextureOnly(this, mfbo->getWidth(), mfbo->getHeight(), mfbo->isColorFloat());
+    p_glObjectLabelVA(GL_FRAMEBUFFER, tempMainFBO.getFBOid(), "FS-Posteffects Temporary Main FBO");
+  }
+
+  mfbo->blitTo(&tempMainFBO, 0, 0, mfbo->getWidth(), mfbo->getHeight(), 0, 0, tempMainFBO.getWidth(), tempMainFBO.getHeight(), GL_NEAREST);
+
+  mfbo->SwapWith(&tempMainFBO);
+  currentActiveFBO = nullptr;
+  mfbo->activate();
+
+  Posteffect_ColorBlind(mode);
+  if (!(cmat < 1 || cmat > 8)) Posteffect_ColorMatrix(KnownColorMatrices[cmat-1]);
+}
+
+
+//==========================================================================
+//
+//  FinishFullscreenPosteffects
+//
+//==========================================================================
+void VOpenGLDrawer::FinishFullscreenPosteffects () {
+  if (tempMainFBO.isValid()) {
+    FBO *mfbo = GetMainFBO();
+    mfbo->SwapWith(&tempMainFBO);
+    currentActiveFBO = nullptr;
+    mfbo->activate();
+  }
+}
+
+
+//==========================================================================
+//
+//  GetInverseCBMode
+//
+//==========================================================================
+/*
+static int GetInverseCBMode () noexcept {
+  int mode = acc_colorswap_mode.asInt();
+  switch (mode) {
+    case 1: return 3; // 120 -> 201: gbr
+    case 2: return 2; // 102 -> 102: grb
+    case 3: return 1; // 201 -> 120: brg
+    case 4: return 4; // 210 -> 210: bgr
+    case 5: return 5; // 021 -> 021: rbg
+  }
+  return 0;
+}
+*/
+
+
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::FinishUpdate
@@ -104,7 +224,9 @@ void VOpenGLDrawer::StartUpdate () {
 //==========================================================================
 void VOpenGLDrawer::FinishUpdate () {
   //mainFBO.blitToScreen();
+  ApplyFullscreenPosteffects();
   GetMainFBO()->blitToScreen();
+  FinishFullscreenPosteffects();
   if (gl_shadowmap_preclear) ClearAllShadowMaps();
   glBindTexture(GL_TEXTURE_2D, 0);
   SetMainFBO(true); // forced
