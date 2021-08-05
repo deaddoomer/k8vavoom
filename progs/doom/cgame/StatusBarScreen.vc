@@ -276,31 +276,52 @@ override void StartMap () {
 //  SB_DrawTallNum
 //
 //==========================================================================
-void SB_DrawTallNum (int x, int y, int num, float alpha, bool perc) {
-  int w;
-  int neg;
+void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
+  bool neg;
   picinfo_t info;
 
-  if (perc) DrawPic(x, y, pic_percent, alpha);
+  //int color = (clamp(cast(int)(alpha*255.0), 0, 255)<<24)|0x00_ff_00;
+  bool recolored = (color != 0);
+  color = (color&0xff_ff_ff)|(clamp(cast(int)(alpha*255.0), 0, 255)<<24);
 
-  R_GetPicInfo(pic_tallnum[0], &info);
-  w = info.width;
+  if (perc && pic_percent > 0) {
+    //R_GetPicInfo(pic_percent, &info);
+    //x -= info.width;
+    if (recolored) {
+      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, pic_percent);
+    } else {
+      DrawPic(x, y, pic_percent, alpha);
+    }
+  }
 
-  neg = num < 0;
+  neg = (num < 0);
   if (neg) num = -num;
 
-  // in the special case of 0, you draw 0
-  //if (!num) DrawPic(x-w, y, pic_tallnum[0], alpha);
-
-  // draw the new number
+  // draw the number
   do {
-    x -= w;
-    DrawPic(x, y, pic_tallnum[num%10], alpha);
+    int hh = pic_tallnum[num%10];
+    if (hh > 0) {
+      R_GetPicInfo(hh, &info);
+      x -= info.width;
+      if (recolored) {
+        DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, hh);
+      } else {
+        DrawPic(x, y, hh, alpha);
+      }
+    }
     num /= 10;
   } while (num);
 
   // draw a minus sign if necessary
-  if (neg) DrawPic(x-8, y, pic_minus, alpha);
+  if (neg && pic_minus > 0) {
+    R_GetPicInfo(pic_minus, &info);
+    x -= info.width;
+    if (recolored) {
+      DrawPicRecoloredEx(x, y, 0, 0, 1, 1, color, pic_minus);
+    } else {
+      DrawPic(x, y, pic_minus, alpha);
+    }
+  }
 }
 
 
@@ -364,15 +385,15 @@ override void SB_DrawMainBar (bool inAutomap) {
 
   // ready weapon ammo
   if (cl.ReadyWeapon && cl.ReadyWeapon.Ammo1) {
-    SB_DrawTallNum(ST_AMMOX, ST_AMMOY, cl.ReadyWeapon.Ammo1.Amount, 1.0, false);
+    SB_DrawTallNum(ST_AMMOX, ST_AMMOY, cl.ReadyWeapon.Ammo1.Amount, SB_GetTextColor(SBTextColor.Ammo), 1.0, false);
   }
 
   // health percentage
-  SB_DrawTallNum(ST_HEALTHX, ST_HEALTHY, clamp(cl.Health, -99, 999), 1.0, true);
+  SB_DrawTallNum(ST_HEALTHX, ST_HEALTHY, clamp(cl.Health, -99, 999), SB_GetTextColor(SBTextColor.Health), 1.0, true);
 
   if (ClGame.deathmatch) {
     // frags sum
-    SB_DrawTallNum(ST_FRAGSX, ST_FRAGSY, cl.Frags, 1.0, false);
+    SB_DrawTallNum(ST_FRAGSX, ST_FRAGSY, cl.Frags, SB_GetTextColor(SBTextColor.Frags), 1.0, false);
   } else {
     // weapons owned
     auto pawn = PlayerPawn(cl.MO);
@@ -399,7 +420,7 @@ override void SB_DrawMainBar (bool inAutomap) {
 
   // armor percentage
   BasicArmor Armor = BasicArmor(EntityEx(cl.MO).FindInventory(BasicArmor, disableReplacement:true));
-  SB_DrawTallNum(ST_ARMORX, ST_ARMORY, (Armor ? Armor.Amount : 0), 1.0, true);
+  SB_DrawTallNum(ST_ARMORX, ST_ARMORY, (Armor ? Armor.Amount : 0), SB_GetTextColor(SBTextColor.Armor), 1.0, true);
 
   // keyboxes 0-2
        if (EntityEx(cl.MO).FindInventory(BlueSkull)) DrawPic(ST_KEY0X, ST_KEY0Y, pic_keys[3]);
@@ -692,7 +713,7 @@ override void SB_DrawFullscreenStats () {
   }
 
   // health
-  SB_DrawTallNum(ST_TDHEALTHX-faceNDelta, ST_TDHEALTHY, clamp(cl.Health, -999, 999), fsalpha, false);
+  SB_DrawTallNum(ST_TDHEALTHX-faceNDelta, ST_TDHEALTHY, clamp(cl.Health, -999, 999), SB_GetTextColor(SBTextColor.Health), fsalpha, false);
   // draw berserk pack if player has berserk powerup
   int healthicon = pic_health;
   if (pic_berserk > 0 && EntityEx(cl.MO).FindInventory(PowerStrength)) healthicon = pic_berserk;
@@ -701,14 +722,14 @@ override void SB_DrawFullscreenStats () {
 
   // Health Accumulation Device
   if (GetCvarB('k8HealthAccum_Enabled')) {
-    SB_DrawTallNum(ST_TDHEALTHX-faceNDelta, ST_TDHEALTHY-18, cl.k8HealthAccum_Amount, fsalpha, false);
+    SB_DrawTallNum(ST_TDHEALTHX-faceNDelta, ST_TDHEALTHY-18, cl.k8HealthAccum_Amount, SB_GetTextColor(SBTextColor.HealthAccum), fsalpha, false);
   }
 
   // armor
   BasicArmor Armor = BasicArmor(EntityEx(cl.MO).FindInventory(BasicArmor, disableReplacement:true));
   if (Armor && Armor.Amount) {
     int i = Armor.SavePercent > 0.335 ? 1 : 0;
-    SB_DrawTallNum(ST_TDARMORX-faceNDelta, ST_TDARMORY, Armor.Amount, fsalpha, false);
+    SB_DrawTallNum(ST_TDARMORX-faceNDelta, ST_TDARMORY, Armor.Amount, SB_GetTextColor(SBTextColor.Armor), fsalpha, false);
     // standard doom image is 31x17
     //DrawPic(ST_TDARMORX-60, ST_TDARMORY+15, pic_armor[i], fsalpha);
     DrawPicFit(32, 18, ST_TDARMORX-82-faceNDelta, ST_TDARMORY-2, pic_armor[i], fsalpha);
@@ -717,13 +738,13 @@ override void SB_DrawFullscreenStats () {
   // ready weapon ammo with icon
   if (cl.ReadyWeapon) {
     if (cl.ReadyWeapon.Ammo1) {
-      SB_DrawTallNum(ST_TDAMMOX, ST_TDAMMOY, cl.ReadyWeapon.Ammo1.Amount, fsalpha, false);
+      SB_DrawTallNum(ST_TDAMMOX, ST_TDAMMOY, cl.ReadyWeapon.Ammo1.Amount, SB_GetTextColor(SBTextColor.Ammo), fsalpha, false);
       if (cl.ReadyWeapon.Ammo1.IconName) {
         DrawPic(ST_TDAMMOX-60, ST_TDAMMOY+15, R_RegisterPic(cl.ReadyWeapon.Ammo1.IconName), fsalpha);
       }
     }
     if (cl.ReadyWeapon.Ammo2 && cl.ReadyWeapon.Ammo2 != cl.ReadyWeapon.Ammo1) {
-      SB_DrawTallNum(ST_TDAMMOX, ST_TDAMMOY-32, cl.ReadyWeapon.Ammo2.Amount, fsalpha, false);
+      SB_DrawTallNum(ST_TDAMMOX, ST_TDAMMOY-32, cl.ReadyWeapon.Ammo2.Amount, SB_GetTextColor(SBTextColor.Ammo2), fsalpha, false);
       if (cl.ReadyWeapon.Ammo2.IconName) {
         DrawPic(ST_TDAMMOX-60, ST_TDAMMOY-32+15, R_RegisterPic(cl.ReadyWeapon.Ammo2.IconName), fsalpha);
       }
@@ -759,7 +780,7 @@ override void SB_DrawFullscreenStats () {
 
   if (ClGame.deathmatch) {
     // frags sum
-    SB_DrawTallNum(ovw-10, 10, cl.Frags, fsalpha, false);
+    SB_DrawTallNum(ovw-10, 10, cl.Frags, SB_GetTextColor(SBTextColor.Frags), fsalpha, false);
   }
 
 
@@ -792,7 +813,7 @@ override void SB_DrawFullscreenStats () {
         int ypos = ovh-10-30;
         foreach (auto idx; 0..wlist.length) {
           if (!wlist[idx]) continue;
-          //SB_DrawTallNum(xpos, ypos, cl.ReadyWeapon.Ammo1.Amount, fsalpha, false);
+          //SB_DrawTallNum(xpos, ypos, cl.ReadyWeapon.Ammo1.Amount, SB_GetTextColor(SBTextColor.Ammo), fsalpha, false);
           //DrawPic(ST_TDAMMOX-60, ST_TDAMMOY+15, R_RegisterPic(cl.ReadyWeapon.Ammo1.IconName), fsalpha);
           DrawPic(xpos, ypos, R_RegisterPic(wlist[idx].Ammo1.IconName), fsalpha);
           SetTextAlign(hleft, vtop);
@@ -842,7 +863,7 @@ override void SB_DrawFullscreenStats () {
         int ypos = ovh-10-20;
         //picinfo_t pi;
         foreach (const ref AmmoInfo ai; alist) {
-          //SB_DrawTallNum(xpos, ypos, cl.ReadyWeapon.Ammo1.Amount, fsalpha, false);
+          //SB_DrawTallNum(xpos, ypos, cl.ReadyWeapon.Ammo1.Amount, SB_GetTextColor(SBTextColor.Ammo), fsalpha, false);
           //DrawPic(ST_TDAMMOX-60, ST_TDAMMOY+15, R_RegisterPic(cl.ReadyWeapon.Ammo1.IconName), fsalpha);
           float alpha = fmin(1.0, fsalpha+(ai.active ? 0.4 : 0.05));
           int ico = R_RegisterPic(ai.ammo.IconName);
@@ -854,11 +875,11 @@ override void SB_DrawFullscreenStats () {
           int maxam = ai.ammo.k8GetAmmoKingMax();
           int am = ai.ammo.Amount;
           int aclr;
-               if (am >= maxam) aclr = CR_WHITE;
-          else if (am > maxam-maxam/3) aclr = CR_GREEN;
-          else if (am > maxam/2) aclr = CR_ORANGE;
-          else if (am > maxam/3) aclr = CR_YELLOW;
-          else aclr = CR_RED;
+               if (am >= maxam) aclr = SB_GetTextColor(SBTextColor.SmallAmmoFull);
+          else if (am > maxam-maxam/3) aclr = SB_GetTextColor(SBTextColor.SmallAmmoNormal);
+          else if (am > maxam/2) aclr = SB_GetTextColor(SBTextColor.SmallAmmoLower);
+          else if (am > maxam/3) aclr = SB_GetTextColor(SBTextColor.SmallAmmoLow);
+          else aclr = SB_GetTextColor(SBTextColor.SmallAmmoVeryLow);
           //aclr = (am < maxam ? (am < maxam/4 ? CR_UNTRANSLATED : CR_GREEN) : CR_YELLOW);
           //!string astr = va("%3d", am);
           //!int ax0 = xpos+(30-TextWidth(astr))/2;

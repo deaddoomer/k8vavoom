@@ -49,6 +49,33 @@ extern VCvarI screen_size;
 
 int sb_height = 32;
 
+// colors
+static VCvarS sb_color_ammo1("sb_color_ammo1", "default", "StatusBar ammo number color.", CVAR_Archive);
+static VCvarS sb_color_ammo2("sb_color_ammo2", "default", "StatusBar ammo number color.", CVAR_Archive);
+static VCvarS sb_color_armor("sb_color_armor", "default", "StatusBar armor number color.", CVAR_Archive);
+static VCvarS sb_color_health("sb_color_health", "default", "StatusBar health number color.", CVAR_Archive);
+static VCvarS sb_color_healthaccum("sb_color_healthaccum", "default", "StatusBar health accumulator number color.", CVAR_Archive);
+static VCvarS sb_color_frags("sb_color_frags", "default", "StatusBar frags number color.", CVAR_Archive);
+
+static VCvarS sb_color_smallammo_full("sb_color_smallammo_full", "default", "StatusBar FS small ammo number color (full).", CVAR_Archive);
+static VCvarS sb_color_smallammo_normal("sb_color_smallammo_normal", "default", "StatusBar FS small ammo number color (normal).", CVAR_Archive);
+static VCvarS sb_color_smallammo_lower("sb_color_smallammo_lower", "default", "StatusBar FS small ammo number color (lower).", CVAR_Archive);
+static VCvarS sb_color_smallammo_low("sb_color_smallammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive);
+static VCvarS sb_color_smallammo_verylow("sb_color_smallammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive);
+
+static ColorCV sbColorAmmo1(&sb_color_ammo1, nullptr, true); // allow "no color"
+static ColorCV sbColorAmmo2(&sb_color_ammo2, nullptr, true); // allow "no color"
+static ColorCV sbColorArmor(&sb_color_armor, nullptr, true); // allow "no color"
+static ColorCV sbColorHealth(&sb_color_health, nullptr, true); // allow "no color"
+static ColorCV sbColorHealthAccum(&sb_color_healthaccum, nullptr, true); // allow "no color"
+static ColorCV sbColorFrags(&sb_color_frags, nullptr, true); // allow "no color"
+
+static ColorCV sbColorSmallAmmoFull(&sb_color_smallammo_full, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmoNormal(&sb_color_smallammo_normal, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmoLower(&sb_color_smallammo_lower, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmoLow(&sb_color_smallammo_low, nullptr, true); // allow "no color"
+static ColorCV sbColorSmallAmmoVeryLow(&sb_color_smallammo_verylow, nullptr, true); // allow "no color"
+
 
 //==========================================================================
 //
@@ -114,4 +141,58 @@ void SB_Drawer () {
 //==========================================================================
 void SB_Start () {
   GClGame->eventStatusBarStartMap();
+}
+
+
+
+//==========================================================================
+//
+//  VC API
+//
+//==========================================================================
+//WARNING! keep in sync with VC code!
+enum {
+  SBTC_Ammo1 = 0,
+  SBTC_Ammo2,
+  SBTC_Armor,
+  SBTC_Health,
+  SBTC_HealthAccum,
+  SBTC_Frags,
+  // smaller ammo counters
+  SmallAmmoFull,
+  SmallAmmoNormal,
+  SmallAmmoLower,
+  SmallAmmoLow,
+  SmallAmmoVeryLow,
+};
+
+
+//==========================================================================
+//
+//  retDefColor
+//
+//==========================================================================
+static inline int retDefColor (const vuint32 clr, const int def) noexcept {
+  return (clr ? (int)clr : (int)def);
+}
+
+
+//native static final int SB_GetTextColor (int type);
+IMPLEMENT_FREE_FUNCTION(VObject, SB_GetTextColor) {
+  int type;
+  vobjGetParam(type);
+  switch (type) {
+    case SBTC_Ammo1: RET_INT(sbColorAmmo1.getColor()); break;
+    case SBTC_Ammo2: RET_INT(sbColorAmmo2.getColor()); break;
+    case SBTC_Armor: RET_INT(sbColorArmor.getColor()); break;
+    case SBTC_Health: RET_INT(sbColorHealth.getColor()); break;
+    case SBTC_HealthAccum: RET_INT(sbColorHealthAccum.getColor()); break;
+    case SBTC_Frags: RET_INT(sbColorFrags.getColor()); break;
+    case SmallAmmoFull: RET_INT(retDefColor(sbColorSmallAmmoFull.getColor(), CR_WHITE)); break;
+    case SmallAmmoNormal: RET_INT(retDefColor(sbColorSmallAmmoNormal.getColor(), CR_GREEN)); break;
+    case SmallAmmoLower: RET_INT(retDefColor(sbColorSmallAmmoLower.getColor(), CR_ORANGE)); break;
+    case SmallAmmoLow: RET_INT(retDefColor(sbColorSmallAmmoLow.getColor(), CR_YELLOW)); break;
+    case SmallAmmoVeryLow: RET_INT(retDefColor(sbColorSmallAmmoVeryLow.getColor(), CR_RED)); break;
+    default: RET_INT(0);
+  }
 }

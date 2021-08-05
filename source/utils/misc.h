@@ -103,23 +103,37 @@ private:
   VCvarF *cvarAlpha;
   vuint32 color;
   VStr oldval; // as `VStr` are COWs, comparing the same string to itself is cheap
-  float fltR, fltG, fltB, fltA;
+  float fltR, fltG, fltB, fltA; // negative alpha means "no color"
+  bool mNoColorAllowed;
 
 private:
-  inline void updateCache () {
+  inline void updateCache () noexcept {
     VStr nval = cvar->asStr();
-    if (nval == oldval && (!cvarAlpha || cvarAlpha->asFloat() == fltA)) return;
+    if (nval == oldval && (!cvarAlpha || cvarAlpha->asFloat() == fltA)) {
+      if (mNoColorAllowed && oldval.isEmpty()) {
+        fltA = -1.0f;
+        fltR = fltG = fltB = 0.0f;
+      }
+      return;
+    }
     if (cvarAlpha) fltA = clampval(cvarAlpha->asFloat(), 0.0f, 1.0f);
     oldval = nval;
-    color = M_ParseColor(*nval)&0xffffffu;
-    color |= ((vuint32)(fltA*255))<<24u;
-    fltR = M_GetColorR(color)/255.0f;
-    fltG = M_GetColorG(color)/255.0f;
-    fltB = M_GetColorB(color)/255.0f;
+    color = M_ParseColor(*nval, true); // return 0 if invalid
+    if (mNoColorAllowed && !color) {
+      fltA = -1.0f;
+      fltR = fltG = fltB = 0.0f;
+    } else {
+      if (!color) color = 0x7fff00; // replace invalid color with my preferred one ;-)
+      color &= 0xffffffu;
+      color |= ((vuint32)(fltA*255))<<24u;
+      fltR = M_GetColorR(color)/255.0f;
+      fltG = M_GetColorG(color)/255.0f;
+      fltB = M_GetColorB(color)/255.0f;
+    }
   }
 
 public:
-  inline ColorCV (VCvarS *acvar, VCvarF *acvarAlpha=nullptr)
+  inline ColorCV (VCvarS *acvar, VCvarF *acvarAlpha=nullptr, bool aNoColorAllowed=false) noexcept
     : cvar(acvar)
     , cvarAlpha(acvarAlpha)
     , color(0)
@@ -128,17 +142,24 @@ public:
     , fltG(0)
     , fltB(0)
     , fltA((acvarAlpha ? -666.0f : 1.0f))
+    , mNoColorAllowed(aNoColorAllowed)
   {
   }
 
-  inline vuint32 getColor () { updateCache(); return color; }
+  inline bool getNoColorAllowed () const noexcept { return mNoColorAllowed; }
+  inline void setNoColorAllowed (const bool v) noexcept { mNoColorAllowed = v; }
 
-  inline float getFloatA () { updateCache(); return fltA; }
-  inline float getFloatR () { updateCache(); return fltR; }
-  inline float getFloatG () { updateCache(); return fltG; }
-  inline float getFloatB () { updateCache(); return fltB; }
+  // 0 may mean "no color" if no color is allowed
+  inline vuint32 getColor () noexcept { updateCache(); return color; }
 
-  inline operator vuint32 () { return getColor(); }
+  inline bool isNoColor () noexcept { updateCache(); return (fltA < 0.0f); }
+
+  inline float getFloatA () noexcept { updateCache(); return clampval(fltA, 0.0f, 1.0f); }
+  inline float getFloatR () noexcept { updateCache(); return fltR; }
+  inline float getFloatG () noexcept { updateCache(); return fltG; }
+  inline float getFloatB () noexcept { updateCache(); return fltB; }
+
+  inline operator vuint32 () noexcept { return getColor(); }
 };
 
 

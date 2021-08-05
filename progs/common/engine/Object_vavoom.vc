@@ -582,6 +582,25 @@ native static final void R_GetTranslatedPalette (int transnum, ref array!ColorRG
 //  color 0 *WILL* be translated too!
 native static final int R_CreateColorTranslation (const ref array!ColorRGBA pal);
 
+// some colors (we don't have special "color" cvar type yet)
+enum SBTextColor {
+  Ammo = 0,
+  Ammo1 = 0,
+  Ammo2,
+  Armor,
+  Health,
+  HealthAccum,
+  Frags,
+  // smaller ammo counters
+  SmallAmmoFull,
+  SmallAmmoNormal,
+  SmallAmmoLower,
+  SmallAmmoLow,
+  SmallAmmoVeryLow,
+}
+
+native static final int SB_GetTextColor (SBTextColor type);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // client sound stuff
