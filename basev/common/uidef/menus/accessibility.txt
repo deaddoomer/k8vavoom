@@ -159,60 +159,9 @@ menudef AccessibilityOptions {
       "'Interesting' sprites are players, monsters, projectiles, and pickups.";
   }
 
-  option slider {
-    title = "Player Fullbright Level";
-    cvar = r_fullbright_splevel_player;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Monster Fullbright Level";
-    cvar = r_fullbright_splevel_monster;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Projectile Fullbright Level";
-    cvar = r_fullbright_splevel_missile;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Pickup Fullbright Level";
-    cvar = r_fullbright_splevel_pickup;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Corpse Fullbright Level";
-    cvar = r_fullbright_splevel_corpse;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Decoration Fullbright Level";
-    cvar = r_fullbright_splevel_decoration;
-    min = 0;
-    max = 255;
-    step = 4;
-  }
-
-  option slider {
-    title = "Other Fullbright Level";
-    cvar = r_fullbright_splevel_other;
-    min = 0;
-    max = 255;
-    step = 4;
+  option submenu {
+    title = "Set Sprite Bright Levels";
+    submenu = AccessibilityOptionsSpriteLevels;
   }
 
 
@@ -395,5 +344,66 @@ menudef AccessibilityOptions {
       "This can help you to test your maps/graphics against",
       "different colorblindness kinds.",
       "\c[!RED]WARNING! The emulation is not perfect!\c-";
+  }
+}
+
+
+menudef AccessibilityOptionsSpriteLevels {
+  Title = "SPRITE BRIGHT LEVELS";
+
+  option slider {
+    title = "Player Fullbright Level";
+    cvar = r_fullbright_splevel_player;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Monster Fullbright Level";
+    cvar = r_fullbright_splevel_monster;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Projectile Fullbright Level";
+    cvar = r_fullbright_splevel_missile;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Pickup Fullbright Level";
+    cvar = r_fullbright_splevel_pickup;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Corpse Fullbright Level";
+    cvar = r_fullbright_splevel_corpse;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Decoration Fullbright Level";
+    cvar = r_fullbright_splevel_decoration;
+    min = 0;
+    max = 255;
+    step = 4;
+  }
+
+  option slider {
+    title = "Other Fullbright Level";
+    cvar = r_fullbright_splevel_other;
+    min = 0;
+    max = 255;
+    step = 4;
   }
 }
