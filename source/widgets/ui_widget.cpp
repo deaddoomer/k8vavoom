@@ -1113,7 +1113,7 @@ void VWidget::DrawPic (int X, int Y, VTexture *Tex, float Alpha, int Trans) {
 //
 //==========================================================================
 void VWidget::DrawPicPart (float x, float y, float pwdt, float phgt, int handle, float alpha) {
-  if (handle < 0 || alpha < 0.004f || pwdt <= 0.0f || phgt <= 0.0f || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
+  if (handle <= 0 || alpha < 0.004f || pwdt <= 0.0f || phgt <= 0.0f || !isFiniteF(pwdt) || !isFiniteF(phgt)) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
   x -= Tex->GetScaledSOffsetF();
@@ -1138,7 +1138,7 @@ void VWidget::DrawPicPart (float x, float y, float pwdt, float phgt, int handle,
 //
 //==========================================================================
 void VWidget::DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha) {
-  if (handle < 0 || alpha < 0.004f || tx1 <= tx0 || ty1 <= ty0) return;
+  if (handle <= 0 || alpha < 0.004f /*|| tx1 <= tx0 || ty1 <= ty0*/) return;
   VTexture *Tex = GTextureManager(handle);
   if (!Tex || Tex->Type == TEXTYPE_Null) return;
   x -= Tex->GetScaledSOffsetF();
@@ -1210,10 +1210,99 @@ void VWidget::DrawCharPic (int X, int Y, VTexture *Tex, const VFont::CharRect &r
     //GCon->Logf(NAME_Debug,"%s:  001: x1=%g; y1=%g; x2=%g; y2=%g; s1=%g; t1=%g; s2=%g; t3=%g", *Tex->Name, X1, Y1, X2, Y2, S1, T1, S2, T2);
     if (shadowed) Drawer->DrawPicShadow(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, 0.625f*Alpha);
     if (rgbcolor < 0) {
-      Drawer->DrawPicRecolored(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, rgbcolor, Alpha);
+      Drawer->DrawPicRecolored(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, ((unsigned)rgbcolor|0xff000000u), Alpha);
     } else {
       Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, nullptr, Alpha);
     }
+  }
+}
+
+
+//==========================================================================
+//
+//  VWidget::DrawPicRecolored
+//
+//  texture coords are in [0..1]
+//  high byte of color is alpha
+//
+//==========================================================================
+void VWidget::DrawPicRecolored (float x, float y, float tx0, float ty0, float tx1, float ty1,
+                                vuint32 color, int handle, float scaleX, float scaleY, bool ignoreOffset)
+{
+  if (handle <= 0) return;
+  if (!(color&0xff000000u)) return;
+  if (!isFiniteF(scaleX) || scaleX <= 0.0f) return;
+  if (!isFiniteF(scaleY) || scaleY <= 0.0f) return;
+  VTexture *Tex = GTextureManager(handle);
+  if (!Tex || Tex->Type == TEXTYPE_Null) return;
+
+  if (!ignoreOffset) {
+    x -= Tex->GetScaledSOffsetF()*scaleX;
+    y -= Tex->GetScaledTOffsetF()*scaleY;
+  }
+
+  const float tws = Tex->GetScaledWidthF()*scaleX;
+  const float ths = Tex->GetScaledHeightF()*scaleY;
+  if (tws < 1.0f || ths < 1.0f) return;
+
+  const float tw = Tex->GetWidth();
+  const float th = Tex->GetHeight();
+  if (tw < 1.0f || th < 1.0f) return;
+
+  float X1 = x+tws*tx0;
+  float Y1 = y+ths*ty0;
+  float X2 = x+tws*tx1;
+  float Y2 = y+ths*ty1;
+  float S1 = tw*tx0;
+  float T1 = th*ty0;
+  float S2 = tw*tx1;
+  float T2 = th*ty1;
+  if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
+    const float alpha = ((color>>24)&0xffu)/255.0f;
+    Drawer->DrawPicRecolored(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, (color|0xff000000u), alpha);
+  }
+}
+
+
+//==========================================================================
+//
+//  VWidget::DrawPicShadow
+//
+//==========================================================================
+void VWidget::DrawPicShadow (float x, float y, float tx0, float ty0, float tx1, float ty1,
+                             int handle, float alpha, float scaleX, float scaleY, bool ignoreOffset)
+{
+  if (handle <= 0) return;
+  if (!isFiniteF(alpha) || alpha < 0.004f) return;
+  if (!isFiniteF(scaleX) || scaleX <= 0.0f) return;
+  if (!isFiniteF(scaleY) || scaleY <= 0.0f) return;
+  VTexture *Tex = GTextureManager(handle);
+  if (!Tex || Tex->Type == TEXTYPE_Null) return;
+
+  if (!ignoreOffset) {
+    x -= Tex->GetScaledSOffsetF()*scaleX;
+    y -= Tex->GetScaledTOffsetF()*scaleY;
+  }
+
+  const float tws = Tex->GetScaledWidthF()*scaleX;
+  const float ths = Tex->GetScaledHeightF()*scaleY;
+  if (tws < 1.0f || ths < 1.0f) return;
+
+  const float tw = Tex->GetWidth();
+  const float th = Tex->GetHeight();
+  if (tw < 1.0f || th < 1.0f) return;
+
+  float X1 = x+tws*tx0;
+  float Y1 = y+ths*ty0;
+  float X2 = x+tws*tx1;
+  float Y2 = y+ths*ty1;
+  float S1 = tw*tx0;
+  float T1 = th*ty0;
+  float S2 = tw*tx1;
+  float T2 = th*ty1;
+  if (TransferAndClipRect(X1, Y1, X2, Y2, S1, T1, S2, T2)) {
+    //Drawer->DrawPic(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, nullptr, alpha);
+    Drawer->DrawPicShadow(X1, Y1, X2, Y2, S1, T1, S2, T2, Tex, alpha);
   }
 }
 
@@ -2455,7 +2544,7 @@ IMPLEMENT_FUNCTION(VWidget, SetFocus) {
 }
 
 
-// native final void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, optional float alpha);
+//native final void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, optional float alpha);
 IMPLEMENT_FUNCTION(VWidget, DrawPicPart) {
   float x, y, pwdt, phgt;
   int handle;
@@ -2464,13 +2553,40 @@ IMPLEMENT_FUNCTION(VWidget, DrawPicPart) {
   if (Self) Self->DrawPicPart(x, y, pwdt, phgt, handle, alpha);
 }
 
-// native final void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, optional float alpha);
+//native final void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, optional float alpha);
 IMPLEMENT_FUNCTION(VWidget, DrawPicPartEx) {
   float x, y, tx0, ty0, tx1, ty1;
   int handle;
   VOptParamFloat alpha(1.0f);
   vobjGetParamSelf(x, y, tx0, ty0, tx1, ty1, handle, alpha);
   if (Self) Self->DrawPicPartEx(x, y, tx0, ty0, tx1, ty1, handle, alpha);
+}
+
+//native final void DrawPicRecoloredEx (float x, float y, float tx0, float ty0, float tx1, float ty1, vuint32 color, int handle,
+//                                      optional float scaleX/*=1.0*/, optional float scaleY/*=1.0*/, optional bool ignoreOffset/*=false*/);
+IMPLEMENT_FUNCTION(VWidget, DrawPicRecoloredEx) {
+  float x, y, tx0, ty0, tx1, ty1;
+  vuint32 color;
+  int handle;
+  VOptParamFloat scaleX(1.0f);
+  VOptParamFloat scaleY(1.0f);
+  VOptParamBool ignoreOffset(false);
+  vobjGetParamSelf(x, y, tx0, ty0, tx1, ty1, color, handle, scaleX, scaleY, ignoreOffset);
+  if (Self) Self->DrawPicRecolored(x, y, tx0, ty0, tx1, ty1, color, handle, scaleX, scaleY, ignoreOffset);
+}
+
+//native final void DrawPicShadowEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle,
+//                                   optional float alpha/*=0.625f*/,
+//                                   optional float scaleX/*=1.0*/, optional float scaleY/*=1.0*/, optional bool ignoreOffset/*=false*/);
+IMPLEMENT_FUNCTION(VWidget, DrawPicShadowEx) {
+  float x, y, tx0, ty0, tx1, ty1;
+  int handle;
+  VOptParamFloat alpha(0.625f);
+  VOptParamFloat scaleX(1.0f);
+  VOptParamFloat scaleY(1.0f);
+  VOptParamBool ignoreOffset(false);
+  vobjGetParamSelf(x, y, tx0, ty0, tx1, ty1, handle, alpha, scaleX, scaleY, ignoreOffset);
+  if (Self) Self->DrawPicShadow(x, y, tx0, ty0, tx1, ty1, handle, alpha, scaleX, scaleY, ignoreOffset);
 }
 
 IMPLEMENT_FUNCTION(VWidget, DrawPicScaledIgnoreOffset) {

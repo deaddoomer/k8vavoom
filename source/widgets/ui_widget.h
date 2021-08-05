@@ -397,7 +397,13 @@ public:
   void DrawPic (int X, int Y, VTexture *Tex, float Alpha=1.0f, int Trans=0);
 
   void DrawPicPart (float x, float y, float pwdt, float phgt, int handle, float alpha);
+  // texture coords are in [0..1]
   void DrawPicPartEx (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha);
+
+  // texture coords are in [0..1]
+  // high byte of color is alpha
+  void DrawPicRecolored (float x, float y, float tx0, float ty0, float tx1, float ty1, vuint32 color, int handle, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
+  void DrawPicShadow (float x, float y, float tx0, float ty0, float tx1, float ty1, int handle, float alpha=0.625f, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
 
   void DrawShadowedPic (int X, int Y, int Handle, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
   void DrawShadowedPic (int X, int Y, VTexture *Tex, float scaleX=1.0f, float scaleY=1.0f, bool ignoreOffset=false);
@@ -544,6 +550,8 @@ public:
 
   DECLARE_FUNCTION(DrawPicPart)
   DECLARE_FUNCTION(DrawPicPartEx)
+  DECLARE_FUNCTION(DrawPicRecoloredEx)
+  DECLARE_FUNCTION(DrawPicShadowEx)
 
   DECLARE_FUNCTION(FillRectWithFlat)
   DECLARE_FUNCTION(FillRectWithFlatHandle)
