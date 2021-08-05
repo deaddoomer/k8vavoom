@@ -137,6 +137,7 @@ VTexture::VTexture ()
   , noHires(false)
   , hiresRepTex(false)
   , avgcolor(0)
+  , maxintensity(+NAN)
   , transFlags(TransValueUnknown)
   , lastTextureFiltering(-666)
   , lastUpdateFrame(0)
@@ -1261,6 +1262,33 @@ rgb_t VTexture::GetAverageColor (vuint32 maxout) {
   }
 
   return rgb_t(clampToByte(r), clampToByte(g), clampToByte(b));
+}
+
+
+//==========================================================================
+//
+//  VTexture::GetMaxIntensity
+//
+//  [0..1]
+//
+//==========================================================================
+float VTexture::GetMaxIntensity () {
+  if (!isFiniteF(maxintensity)) {
+    maxintensity = 0.0f;
+    (void)GetPixels();
+    for (int y = 0; y < Height; ++y) {
+      for (int x = 0; x < Width; ++x) {
+        rgba_t c = getPixel(x, y);
+        if (c.a == 0) continue;
+        // recolor shader formula
+        const float i = c.r*0.2989f+c.g*0.5870f+c.b*0.1140f;
+        if (i > maxintensity) maxintensity = i;
+      }
+    }
+    maxintensity = clampval(maxintensity/255.0f, 0.0f, 1.0f);
+    //GCon->Logf(NAME_Debug, "Texture '%s': maxintensity=%f", *Name, maxintensity);
+  }
+  return maxintensity;
 }
 
 

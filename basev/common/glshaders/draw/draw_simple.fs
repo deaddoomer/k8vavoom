@@ -6,6 +6,7 @@ $include "common/texshade.inc"
 uniform float Alpha;
 #ifdef LIGHTING
 uniform vec4 Light;
+uniform float MaxIntensity; // [0..1]
 #endif
 
 varying vec2 TextureCoordinate;
@@ -16,7 +17,8 @@ void main () {
   if (TexColor.a < ALPHA_MIN) discard;
 
 #ifdef RECOLOR
-  float is = clamp(TexColor.r*0.2989+TexColor.g*0.5870+TexColor.b*0.1140, 0.0, 1.0);
+  float is = TexColor.r*0.2989+TexColor.g*0.5870+TexColor.b*0.1140;
+  is = clamp(is/MaxIntensity, 0.0, 1.0);
   TexColor.rgb = vec3(is, is, is);
 #endif
 

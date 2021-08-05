@@ -248,6 +248,7 @@ public:
   bool hiresRepTex; // set for hires replacements
 
   vuint32 avgcolor; // if high byte is 0: unknown yet
+  float maxintensity; // non-finite: unknown yet
 
   enum {
     FlagTransparent     = 0x01u, // does texture have any non-solid pixels? set in `GetPixels()`
@@ -443,6 +444,10 @@ public:
 
   // use `153` to calculate glow color
   rgb_t GetAverageColor (vuint32 maxout);
+
+  // [0..1]
+  float GetMaxIntensity ();
+
   void ResizeCanvas (int newwdt, int newhgt);
 
   void CropTexture (); // this also crops brightmap texture
