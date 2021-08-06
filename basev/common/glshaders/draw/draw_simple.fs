@@ -1,6 +1,8 @@
 #version 120
 $include "common/common.inc"
 
+#define RECOLOR_FAST_GAMMA
+
 uniform sampler2D Texture;
 $include "common/texshade.inc"
 uniform float Alpha;
@@ -17,8 +19,16 @@ void main () {
   if (TexColor.a < ALPHA_MIN) discard;
 
 #ifdef RECOLOR
+  #ifdef RECOLOR_FAST_GAMMA
+  vec3 lc = TexColor.rgb*TexColor.rgb;
+  float is = 0.212655*lc.r+0.715158*lc.g+0.072187*lc.b;
+  is = clamp(sqrt(is)/MaxIntensity, 0.0, 1.0);
+  #else
   float is = TexColor.r*0.2989+TexColor.g*0.5870+TexColor.b*0.1140;
   is = clamp(is/MaxIntensity, 0.0, 1.0);
+  #endif
+  // it looks slightly better this way
+  is = smoothstep(0.0, 1.0, is);
   TexColor.rgb = vec3(is, is, is);
 #endif
 

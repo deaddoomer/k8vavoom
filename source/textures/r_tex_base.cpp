@@ -27,6 +27,8 @@
 #include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "r_tex.h"
 
+#define VV_INTENSITY_FAST_GAMMA
+
 //#define VV_VERY_VERBOSE_TEXTURE_LOADER
 static VCvarB dbg_verbose_texture_loader("dbg_verbose_texture_loader", false, "WERY verbose texture loader?", CVAR_PreInit);
 
@@ -1281,11 +1283,26 @@ float VTexture::GetMaxIntensity () {
         rgba_t c = getPixel(x, y);
         if (c.a == 0) continue;
         // recolor shader formula
+        #ifdef VV_INTENSITY_FAST_GAMMA
+        const float r = (float)c.r/255.0f;
+        const float g = (float)c.g/255.0f;
+        const float b = (float)c.b/255.0f;
+        const float lcr = r*r;
+        const float lcg = g*g;
+        const float lcb = b*b;
+        const float i = 0.212655f*lcr+0.715158f*lcg+0.072187f*lcb;
+        #else
         const float i = c.r*0.2989f+c.g*0.5870f+c.b*0.1140f;
+        #endif
         if (i > maxintensity) maxintensity = i;
       }
     }
+    #ifdef VV_INTENSITY_FAST_GAMMA
+    //if (maxintensity > 0.0f) maxintensity = min2(sqrtf(maxintensity), 1.0f);
+    if (maxintensity > 0.0f) maxintensity = sqrtf(maxintensity);
+    #else
     maxintensity = clampval(maxintensity/255.0f, 0.0f, 1.0f);
+    #endif
     ReleasePixels(); // we don't need it anymore
     //GCon->Logf(NAME_Debug, "Texture '%s': maxintensity=%f", *Name, maxintensity);
   }
