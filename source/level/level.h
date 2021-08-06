@@ -117,22 +117,22 @@ struct rep_sector_t {
   float floor_BaseYOffs;
   float floor_PObjCX;
   float floor_PObjCY;
-  VEntity *floor_SkyBox;
   float floor_MirrorAlpha;
-  int ceil_pic;
-  float ceil_dist;
-  float ceil_xoffs;
-  float ceil_yoffs;
-  float ceil_XScale;
-  float ceil_YScale;
-  float ceil_Angle;
-  float ceil_BaseAngle;
-  float ceil_BaseXOffs;
-  float ceil_BaseYOffs;
-  float ceil_PObjCX;
-  float ceil_PObjCY;
-  VEntity *ceil_SkyBox;
-  float ceil_MirrorAlpha;
+  VEntity *floor_SkyBox;
+  int ceiling_pic;
+  float ceiling_dist;
+  float ceiling_xoffs;
+  float ceiling_yoffs;
+  float ceiling_XScale;
+  float ceiling_YScale;
+  float ceiling_Angle;
+  float ceiling_BaseAngle;
+  float ceiling_BaseXOffs;
+  float ceiling_BaseYOffs;
+  float ceiling_PObjCX;
+  float ceiling_PObjCY;
+  float ceiling_MirrorAlpha;
+  VEntity *ceiling_SkyBox;
   int Sky;
   sec_params_t params;
 };
@@ -1458,7 +1458,7 @@ private:
 
   // this also fixes inner sector height (forces to pobj floor and ceiling)
   // does nothing for non-3d polyobjects
-  void OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation=false);
+  void OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation);
 
   void PutPObjInSubsectors (polyobj_t *po) noexcept;
 

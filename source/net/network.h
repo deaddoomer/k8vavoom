@@ -111,7 +111,7 @@ class VNetContext;
 // sent on handshake
 enum {
   NET_PROTOCOL_VERSION_HI = 7,
-  NET_PROTOCOL_VERSION_LO = 16,
+  NET_PROTOCOL_VERSION_LO = 17,
 };
 
 enum {

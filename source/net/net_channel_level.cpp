@@ -766,6 +766,29 @@ bool VLevelChannel::ParseSide (VMessageIn &Msg) {
 
 //==========================================================================
 //
+//  WriteFloatWithFlag
+//
+//==========================================================================
+static inline void WriteFloatWithFlag (VBitStreamWriter &strm, float &vcheck, float v, const bool rounded) {
+  if (rounded) v = mround(v);
+  if (vcheck != v) {
+    strm.WriteBit(true);
+    strm << v;
+    vcheck = v;
+  } else {
+    strm.WriteBit(false);
+  }
+}
+
+#define WRITE_FLOAT_WITH_FLAG_ROUNDED(pfx,name)  WriteFloatWithFlag(strm, RepSec->pfx##_##name, Sec->pfx.name, true)
+#define WRITE_FLOAT_WITH_FLAG(pfx,name)          WriteFloatWithFlag(strm, RepSec->pfx##_##name, Sec->pfx.name, false)
+
+#define CHECK_FLOAT(pfx,name)          RepSec->pfx##_##name != Sec->pfx.name
+#define CHECK_FLOAT_ROUNDED(pfx,name)  RepSec->pfx##_##name != mround(Sec->pfx.name)
+
+
+//==========================================================================
+//
 //  VLevelChannel::UpdateSector
 //
 //==========================================================================
@@ -807,13 +830,13 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
   }
 
   // ceiling texture
-  if (RepSec->ceil_pic != Sec->ceiling.pic) {
+  if (RepSec->ceiling_pic != Sec->ceiling.pic) {
     strm.WriteUInt(CMD_SectorTexture);
     strm << STRM_INDEX_U(sidx);
     strm.WriteBit(true); // ceiling
     Sec->floor.pic.Serialise(strm);
 
-    RepSec->ceil_pic = Sec->ceiling.pic;
+    RepSec->ceiling_pic = Sec->ceiling.pic;
 
     PutStream(&Msg, strm);
     if (!CanSendData()) { FlushMsg(&Msg); Connection->NeedsUpdate = true; return -1; }
@@ -822,16 +845,18 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
 
   // floor
   if (RepSec->floor_dist != Sec->floor.dist ||
-      mround(RepSec->floor_xoffs) != mround(Sec->floor.xoffs) ||
-      mround(RepSec->floor_yoffs) != mround(Sec->floor.yoffs) ||
-      RepSec->floor_XScale != Sec->floor.XScale ||
-      RepSec->floor_YScale != Sec->floor.YScale ||
-      mround(RepSec->floor_Angle) != mround(Sec->floor.Angle) ||
-      mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle) ||
-      mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs) ||
-      mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs) ||
-      RepSec->floor_SkyBox != FloorSkyBox ||
-      RepSec->floor_MirrorAlpha != Sec->floor.MirrorAlpha)
+      CHECK_FLOAT_ROUNDED(floor, xoffs) ||
+      CHECK_FLOAT_ROUNDED(floor, yoffs) ||
+      CHECK_FLOAT(floor, XScale) ||
+      CHECK_FLOAT(floor, YScale) ||
+      CHECK_FLOAT_ROUNDED(floor, Angle) ||
+      CHECK_FLOAT_ROUNDED(floor, BaseAngle) ||
+      CHECK_FLOAT_ROUNDED(floor, BaseXOffs) ||
+      CHECK_FLOAT_ROUNDED(floor, BaseYOffs) ||
+      CHECK_FLOAT_ROUNDED(floor, PObjCX) ||
+      CHECK_FLOAT_ROUNDED(floor, PObjCY) ||
+      CHECK_FLOAT_ROUNDED(floor, MirrorAlpha) ||
+      RepSec->floor_SkyBox != FloorSkyBox)
   {
     strm.WriteUInt(CMD_Sector);
     strm << STRM_INDEX_U(sidx);
@@ -843,38 +868,23 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
       strm << Sec->floor.TexZ;
       //GCon->Logf(NAME_DevNet, "%s: sent floor distance change (sector=%d; dist=%g)", *GetDebugName(), sidx, Sec->floor.dist);
     }
-    strm.WriteBit(mround(RepSec->floor_xoffs) != mround(Sec->floor.xoffs));
-    if (mround(RepSec->floor_xoffs) != mround(Sec->floor.xoffs)) strm << Sec->floor.xoffs;
-    strm.WriteBit(mround(RepSec->floor_yoffs) != mround(Sec->floor.yoffs));
-    if (mround(RepSec->floor_yoffs) != mround(Sec->floor.yoffs)) strm << Sec->floor.yoffs;
-    strm.WriteBit(RepSec->floor_XScale != Sec->floor.XScale);
-    if (RepSec->floor_XScale != Sec->floor.XScale) strm << Sec->floor.XScale;
-    strm.WriteBit(RepSec->floor_YScale != Sec->floor.YScale);
-    if (RepSec->floor_YScale != Sec->floor.YScale) strm << Sec->floor.YScale;
-    strm.WriteBit(mround(RepSec->floor_Angle) != mround(Sec->floor.Angle));
-    if (mround(RepSec->floor_Angle) != mround(Sec->floor.Angle)) strm << Sec->floor.Angle;
-    strm.WriteBit(mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle));
-    if (mround(RepSec->floor_BaseAngle) != mround(Sec->floor.BaseAngle)) strm << Sec->floor.BaseAngle;
-    strm.WriteBit(mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs));
-    if (mround(RepSec->floor_BaseXOffs) != mround(Sec->floor.BaseXOffs)) strm << Sec->floor.BaseXOffs;
-    strm.WriteBit(mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs));
-    if (mround(RepSec->floor_BaseYOffs) != mround(Sec->floor.BaseYOffs)) strm << Sec->floor.BaseYOffs;
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, xoffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, yoffs);
+    WRITE_FLOAT_WITH_FLAG(floor, XScale);
+    WRITE_FLOAT_WITH_FLAG(floor, YScale);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, Angle);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, BaseAngle);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, BaseXOffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, BaseYOffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, PObjCX);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, PObjCY);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(floor, MirrorAlpha);
+
     strm.WriteBit(RepSec->floor_SkyBox != FloorSkyBox);
     if (RepSec->floor_SkyBox != FloorSkyBox) strm << FloorSkyBox;
-    strm.WriteBit(RepSec->floor_MirrorAlpha != Sec->floor.MirrorAlpha);
-    if (RepSec->floor_MirrorAlpha != Sec->floor.MirrorAlpha) strm << Sec->floor.MirrorAlpha;
 
     RepSec->floor_dist = Sec->floor.dist;
-    RepSec->floor_xoffs = Sec->floor.xoffs;
-    RepSec->floor_yoffs = Sec->floor.yoffs;
-    RepSec->floor_XScale = Sec->floor.XScale;
-    RepSec->floor_YScale = Sec->floor.YScale;
-    RepSec->floor_Angle = Sec->floor.Angle;
-    RepSec->floor_BaseAngle = Sec->floor.BaseAngle;
-    RepSec->floor_BaseXOffs = Sec->floor.BaseXOffs;
-    RepSec->floor_BaseYOffs = Sec->floor.BaseYOffs;
     RepSec->floor_SkyBox = FloorSkyBox;
-    RepSec->floor_MirrorAlpha = Sec->floor.MirrorAlpha;
 
     PutStream(&Msg, strm);
     if (!CanSendData()) { FlushMsg(&Msg); Connection->NeedsUpdate = true; return -1; }
@@ -882,60 +892,47 @@ int VLevelChannel::UpdateSector (VMessageOut &Msg, VBitStreamWriter &strm, int s
   }
 
   // ceiling
-  if (RepSec->ceil_dist != Sec->ceiling.dist ||
-      mround(RepSec->ceil_xoffs) != mround(Sec->ceiling.xoffs) ||
-      mround(RepSec->ceil_yoffs) != mround(Sec->ceiling.yoffs) ||
-      RepSec->ceil_XScale != Sec->ceiling.XScale ||
-      RepSec->ceil_YScale != Sec->ceiling.YScale ||
-      mround(RepSec->ceil_Angle) != mround(Sec->ceiling.Angle) ||
-      mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle) ||
-      mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs) ||
-      mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs) ||
-      RepSec->ceil_SkyBox != CeilSkyBox ||
-      RepSec->ceil_MirrorAlpha != Sec->ceiling.MirrorAlpha)
+  if (RepSec->ceiling_dist != Sec->ceiling.dist ||
+      CHECK_FLOAT_ROUNDED(ceiling, xoffs) ||
+      CHECK_FLOAT_ROUNDED(ceiling, yoffs) ||
+      CHECK_FLOAT(ceiling, XScale) ||
+      CHECK_FLOAT(ceiling, YScale) ||
+      CHECK_FLOAT_ROUNDED(ceiling, Angle) ||
+      CHECK_FLOAT_ROUNDED(ceiling, BaseAngle) ||
+      CHECK_FLOAT_ROUNDED(ceiling, BaseXOffs) ||
+      CHECK_FLOAT_ROUNDED(ceiling, BaseYOffs) ||
+      CHECK_FLOAT_ROUNDED(ceiling, PObjCX) ||
+      CHECK_FLOAT_ROUNDED(ceiling, PObjCY) ||
+      CHECK_FLOAT_ROUNDED(ceiling, MirrorAlpha) ||
+      RepSec->ceiling_SkyBox != CeilSkyBox)
   {
     strm.WriteUInt(CMD_Sector);
     strm << STRM_INDEX_U(sidx);
     strm.WriteBit(true); // ceiling
 
-    strm.WriteBit(RepSec->ceil_dist != Sec->ceiling.dist);
-    if (RepSec->ceil_dist != Sec->ceiling.dist) {
+    strm.WriteBit(RepSec->ceiling_dist != Sec->ceiling.dist);
+    if (RepSec->ceiling_dist != Sec->ceiling.dist) {
       strm << Sec->ceiling.dist;
       strm << Sec->ceiling.TexZ;
       //GCon->Logf(NAME_DevNet, "%s: sent ceiling distance change (sector=%d; dist=%g)", *GetDebugName(), sidx, Sec->ceiling.dist);
     }
-    strm.WriteBit(mround(RepSec->ceil_xoffs) != mround(Sec->ceiling.xoffs));
-    if (mround(RepSec->ceil_xoffs) != mround(Sec->ceiling.xoffs)) strm << Sec->ceiling.xoffs;
-    strm.WriteBit(mround(RepSec->ceil_yoffs) != mround(Sec->ceiling.yoffs));
-    if (mround(RepSec->ceil_yoffs) != mround(Sec->ceiling.yoffs)) strm << Sec->ceiling.yoffs;
-    strm.WriteBit(RepSec->ceil_XScale != Sec->ceiling.XScale);
-    if (RepSec->ceil_XScale != Sec->ceiling.XScale) strm << Sec->ceiling.XScale;
-    strm.WriteBit(RepSec->ceil_YScale != Sec->ceiling.YScale);
-    if (RepSec->ceil_YScale != Sec->ceiling.YScale) strm << Sec->ceiling.YScale;
-    strm.WriteBit(mround(RepSec->ceil_Angle) != mround(Sec->ceiling.Angle));
-    if (mround(RepSec->ceil_Angle) != mround(Sec->ceiling.Angle)) strm << Sec->ceiling.Angle;
-    strm.WriteBit(mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle));
-    if (mround(RepSec->ceil_BaseAngle) != mround(Sec->ceiling.BaseAngle)) strm << Sec->ceiling.BaseAngle;
-    strm.WriteBit(mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs));
-    if (mround(RepSec->ceil_BaseXOffs) != mround(Sec->ceiling.BaseXOffs)) strm << Sec->ceiling.BaseXOffs;
-    strm.WriteBit(mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs));
-    if (mround(RepSec->ceil_BaseYOffs) != mround(Sec->ceiling.BaseYOffs)) strm << Sec->ceiling.BaseYOffs;
-    strm.WriteBit(RepSec->ceil_SkyBox != CeilSkyBox);
-    if (RepSec->ceil_SkyBox != CeilSkyBox) strm << CeilSkyBox;
-    strm.WriteBit(RepSec->ceil_MirrorAlpha != Sec->ceiling.MirrorAlpha);
-    if (RepSec->ceil_MirrorAlpha != Sec->ceiling.MirrorAlpha) strm << Sec->ceiling.MirrorAlpha;
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, xoffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, yoffs);
+    WRITE_FLOAT_WITH_FLAG(ceiling, XScale);
+    WRITE_FLOAT_WITH_FLAG(ceiling, YScale);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, Angle);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, BaseAngle);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, BaseXOffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, BaseYOffs);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, PObjCX);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, PObjCY);
+    WRITE_FLOAT_WITH_FLAG_ROUNDED(ceiling, MirrorAlpha);
 
-    RepSec->ceil_dist = Sec->ceiling.dist;
-    RepSec->ceil_xoffs = Sec->ceiling.xoffs;
-    RepSec->ceil_yoffs = Sec->ceiling.yoffs;
-    RepSec->ceil_XScale = Sec->ceiling.XScale;
-    RepSec->ceil_YScale = Sec->ceiling.YScale;
-    RepSec->ceil_Angle = Sec->ceiling.Angle;
-    RepSec->ceil_BaseAngle = Sec->ceiling.BaseAngle;
-    RepSec->ceil_BaseXOffs = Sec->ceiling.BaseXOffs;
-    RepSec->ceil_BaseYOffs = Sec->ceiling.BaseYOffs;
-    RepSec->ceil_SkyBox = CeilSkyBox;
-    RepSec->ceil_MirrorAlpha = Sec->ceiling.MirrorAlpha;
+    strm.WriteBit(RepSec->ceiling_SkyBox != CeilSkyBox);
+    if (RepSec->ceiling_SkyBox != CeilSkyBox) strm << CeilSkyBox;
+
+    RepSec->ceiling_dist = Sec->ceiling.dist;
+    RepSec->ceiling_SkyBox = CeilSkyBox;
 
     PutStream(&Msg, strm);
     if (!CanSendData()) { FlushMsg(&Msg); Connection->NeedsUpdate = true; return -1; }
@@ -1110,6 +1107,8 @@ bool VLevelChannel::ParseSector (VMessageIn &Msg) {
     if (Msg.ReadBit()) Sec->ceiling.BaseAngle = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->ceiling.BaseXOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->ceiling.BaseYOffs = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->ceiling.PObjCX = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->ceiling.PObjCY = Msg.ReadInt();
     if (Msg.ReadBit()) Msg << Sec->ceiling.SkyBox;
     if (Msg.ReadBit()) Msg << Sec->ceiling.MirrorAlpha;
   } else {
@@ -1126,6 +1125,8 @@ bool VLevelChannel::ParseSector (VMessageIn &Msg) {
     if (Msg.ReadBit()) Sec->floor.BaseAngle = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->floor.BaseXOffs = Msg.ReadInt();
     if (Msg.ReadBit()) Sec->floor.BaseYOffs = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->floor.PObjCX = Msg.ReadInt();
+    if (Msg.ReadBit()) Sec->floor.PObjCY = Msg.ReadInt();
     if (Msg.ReadBit()) Msg << Sec->floor.SkyBox;
     if (Msg.ReadBit()) Msg << Sec->floor.MirrorAlpha;
   }

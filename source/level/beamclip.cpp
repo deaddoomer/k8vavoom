@@ -201,7 +201,7 @@ static inline void CopyHeightServer (VLevel *level, rep_sector_t *repsecs, const
 
   int snum = (int)(ptrdiff_t)(sec-&level->Sectors[0]);
   if (repsecs[snum].floor_dist < sec->floor.dist) fplane->dist = repsecs[snum].floor_dist;
-  if (repsecs[snum].ceil_dist < sec->ceiling.dist) cplane->dist = repsecs[snum].ceil_dist;
+  if (repsecs[snum].ceiling_dist < sec->ceiling.dist) cplane->dist = repsecs[snum].ceiling_dist;
 }
 
 
