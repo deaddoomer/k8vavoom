@@ -66,63 +66,7 @@ struct UnstuckInfo {
 
 //==========================================================================
 //
-//  check3DPObjLineBlocked
-//
-//==========================================================================
-static VVA_ALWAYS_INLINE bool check3DPObjLineBlocked (const polyobj_t *po, VEntity *mobj, const line_t *ld) {
-  const float mobjz0 = mobj->Origin.z;
-  const float ptopz = po->poceiling.minz;
-  if (mobjz0 >= ptopz) {
-    if ((ld->flags&ML_CLIP_MIDTEX) == 0) return false;
-    if (!mobj->IsBlocking3DPobjLineTop(ld)) return false;
-    if (!mobj->LineIntersects(ld)) return false;
-    // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
-    const side_t *tside = &mobj->XLevel->Sides[ld->sidenum[0]];
-    if (tside->TopTexture <= 0) return false; // wtf?!
-    VTexture *ttex = GTextureManager(tside->TopTexture);
-    if (!ttex || ttex->Type == TEXTYPE_Null) return false; // wtf?!
-    const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
-    if (mobjz0 >= ptopz+texh) return false; // didn't hit top texture
-  } else {
-    if (!mobj->IsBlockingLine(ld)) return false;
-    if (!mobj->LineIntersects(ld)) return false;
-  }
-  return true;
-}
-
-
-//==========================================================================
-//
-//  checkPObjLineBlocked
-//
-//==========================================================================
-static VVA_ALWAYS_INLINE bool checkPObjLineBlocked (const polyobj_t *po, VEntity *mobj, const line_t *ld) {
-  if (po->posector) {
-    if (mobj->Origin.z >= po->poceiling.maxz) return false; // fully above
-    if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) return false; // fully below
-    return check3DPObjLineBlocked(po, mobj, ld);
-  } else {
-    // check for non-3d pobj with midtex
-    if ((ld->flags&(ML_TWOSIDED|ML_3DMIDTEX)) == (ML_TWOSIDED|ML_3DMIDTEX)) {
-      if (!mobj->LineIntersects(ld)) return false;
-      // use front side
-      const int side = 0; //ld->PointOnSide(mobj->Origin);
-      float pz0 = 0.0f, pz1 = 0.0f;
-      if (!mobj->XLevel->GetMidTexturePosition(ld, side, &pz0, &pz1)) return false; // no middle texture
-      if (mobj->Origin.z >= pz1 || mobj->Origin.z+max2(0.0f, mobj->Height) <= pz0) return false; // no collision
-      //ldblock = true;
-    } else {
-      if (!mobj->IsBlockingLine(ld)) return false;
-      if (!mobj->LineIntersects(ld)) return false;
-    }
-  }
-  return true;
-}
-
-
-//==========================================================================
-//
-//  CalcPolyUnstuckVectorNew
+//  CalcPolyUnstuckVector
 //
 //  calculate horizontal "unstuck vector" (delta to move)
 //  for the given 3d polyobject
@@ -172,7 +116,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
     const line_t *ld = lit.line();
 
     // if we are above the polyobject, check for blocking top texture
-    if (!check3DPObjLineBlocked(po, mobj, ld)) continue;
+    if (!mobj->Check3DPObjLineBlocked(po, ld)) continue;
     wasIntersect = true;
 
     // check if we're inside (we need this to determine the right line side)
@@ -211,7 +155,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
         for (auto &&lxx : po->LineFirst()) {
           const line_t *lnx = lxx.line();
           if (lnx == ld) continue;
-          if (!check3DPObjLineBlocked(po, mobj, lnx)) continue;
+          if (!mobj->Check3DPObjLineBlocked(po, lnx)) continue;
           if (dbg_pobj_unstuck_verbose.asBool()) {
             GCon->Logf(NAME_Debug, "mobj '%s': going to unstuck from pobj %d, line #%d, corner %u; stuck in line #%d",
               mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&Level->Lines[0]), cridx, (int)(ptrdiff_t)(lnx-&Level->Lines[0]));
@@ -244,27 +188,6 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, VLevel *Level, p
 
   if (wasIntersect) return (uvlist.length() > 0);
   return true;
-}
-
-
-//==========================================================================
-//
-//  NeedPositionCheck
-//
-//==========================================================================
-static inline bool NeedPositionCheck (VEntity *mobj) noexcept {
-  if (mobj->IsGoingToDie()) return false; // just in case
-  if ((mobj->FlagsEx&(VEntity::EFEX_NoInteraction|VEntity::EFEX_NoTickGrav)) == VEntity::EFEX_NoInteraction) return false;
-  if (mobj->Height < 1.0f || mobj->Radius < 1.0f) return false;
-  return
-    (mobj->EntityFlags&(
-      VEntity::EF_Solid|
-      VEntity::EF_NoSector|
-      VEntity::EF_NoBlockmap|
-      VEntity::EF_ColideWithWorld|
-      VEntity::EF_Blasted|
-      VEntity::EF_Corpse|
-      VEntity::EF_Invisible)) == (VEntity::EF_Solid|VEntity::EF_ColideWithWorld);
 }
 
 
@@ -318,7 +241,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
       continue;
     }
     VEntity *mobj = edata.mobj;
-    if (!mobj || !NeedPositionCheck(mobj)) continue;
+    if (!mobj || !mobj->PObjNeedPositionCheck()) continue;
 
     bool doFinalCheck = true;
     // try to unstuck 3 times
@@ -347,7 +270,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
-            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
+            if (mobj->PObjNeedPositionCheck() && mobj->Health > 0) return false; // blocked if not crushed
           }
           wasMove = false; // get away, we're done with this mobj
           break;
@@ -458,7 +381,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
-            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
+            if (mobj->PObjNeedPositionCheck() && mobj->Health > 0) return false; // blocked if not crushed
           }
           wasMove = false; // get away, we're done with this mobj
           break;
@@ -495,7 +418,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
             if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) return false; // blocked
           } else {
             mobj->Level->eventPolyCrushMobj(mobj, po);
-            if (NeedPositionCheck(mobj) && mobj->Health > 0) return false; // blocked if not crushed
+            if (mobj->PObjNeedPositionCheck() && mobj->Health > 0) return false; // blocked if not crushed
           }
         }
       }
@@ -522,7 +445,7 @@ static bool CheckAffectedMObjPositions (const polyobj_t *pofirst) noexcept {
   for (auto &&edata : poAffectedEnitities) {
     if (!edata.aflags) continue;
     VEntity *mobj = edata.mobj;
-    if (!NeedPositionCheck(mobj)) continue;
+    if (!mobj->PObjNeedPositionCheck()) continue;
     // temporarily disable collision with things
     //FIXME: reenable it when i'll write stacking code
     //!mobj->EntityFlags &= ~VEntity::EF_ColideWithThings;
@@ -628,9 +551,8 @@ bool VLevel::PolyCheckMobjLineBlocking (const line_t *ld, polyobj_t *po, bool /*
     for (int bx = left; bx <= right; ++bx) {
       for (VEntity *mobj = BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
         if (mobj->IsGoingToDie()) continue;
-        if (!NeedPositionCheck(mobj)) continue;
-
-        if (!checkPObjLineBlocked(po, mobj, ld)) continue;
+        if (!mobj->PObjNeedPositionCheck()) continue;
+        if (!mobj->CheckPObjLineBlocked(po, ld)) continue;
 
         if (dbg_pobj_unstuck_verbose.asBool()) {
           GCon->Logf(NAME_Debug, "mobj '%s': blocked by pobj %d, line #%d", mobj->GetClass()->GetName(), po->tag, (int)(ptrdiff_t)(ld-&mobj->XLevel->Lines[0]));
@@ -817,7 +739,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     // note that `Link3DPolyobjMObjs()` collected all touching mobjs in `poRoughEntityList` for us
     for (VEntity *mobj : poRoughEntityList) {
       // check flags
-      if (!NeedPositionCheck(mobj)) continue;
+      if (!mobj->PObjNeedPositionCheck()) continue;
       float mobjbb2d[4];
       mobj->Create2DBox(mobjbb2d);
       const float mz0 = mobj->Origin.z;
@@ -826,15 +748,15 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         //if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, max2(0.0f, mobj->Radius), po->bbox2d)) continue;
         const float pz0 = po->pofloor.minz;
-        const float pz1 = po->poceiling.maxz;
+        //const float pz1 = po->poceiling.maxz;
         if (mz1 <= pz0) continue;
-        if (mz0 >= pz1) continue;
+        //if (mz0 >= pz1) continue;
         if (!Are2DBBoxesOverlap(mobjbb2d, po->bbox2d)) continue;
         // possible vertical intersection, check pobj lines
         bool blk = false;
         line_t **lineList = po->lines;
         for (int count = po->numlines; count; --count, ++lineList) {
-          if (!check3DPObjLineBlocked(po, mobj, *lineList)) continue;
+          if (!mobj->CheckPObjLineBlocked(po, *lineList)) continue;
           blk = true;
           break;
         }
@@ -869,8 +791,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         VEntity *mobj = n->Thing;
         if (mobj->IsGoingToDie()) continue;
         // check flags
-        if (!NeedPositionCheck(mobj)) continue;
-        //if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue; // done in `NeedPositionCheck()`
+        if (!mobj->PObjNeedPositionCheck()) continue;
+        //if (mobj->Height <= 0.0f || mobj->Radius <= 0.0f) continue; // done in `PObjNeedPositionCheck()`
         const float mz0 = mobj->Origin.z;
         const float mz1 = mz0+mobj->Height;
         if (mz1 <= pz0) continue;
@@ -1029,7 +951,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
         }
         // check if it is initially stuck
         #if 1
-        if (NeedPositionCheck(mobj)) {
+        if (mobj->PObjNeedPositionCheck()) {
           for (polyobj_t *xpp = pofirst; xpp; xpp = (skipLink ? nullptr : xpp->polink)) {
             if (mobj->Origin.z >= po->poceiling.maxz || mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) {
               // do nothing

@@ -805,7 +805,7 @@ private:
   }
 
 public:
-  inline void Create2DBox (float box2d[4]) const noexcept {
+  VVA_ALWAYS_INLINE void Create2DBox (float box2d[4]) const noexcept {
     box2d[BOX2D_MAXY] = Origin.y+Radius;
     box2d[BOX2D_MINY] = Origin.y-Radius;
     box2d[BOX2D_MINX] = Origin.x-Radius;
@@ -813,7 +813,7 @@ public:
   }
 
   // doesn't check any line flags
-  inline bool LineIntersects (const line_t *ld) const noexcept {
+  VVA_ALWAYS_INLINE bool LineIntersects (const line_t *ld) const noexcept {
     if (ld && Radius > 0.0f) {
       // this is the order of 2d box points
       const float tmbbox[4] = {
@@ -827,6 +827,38 @@ public:
       return false;
     }
   }
+
+  // used in 3d pobj collision detection
+  inline bool PObjNeedPositionCheck () const noexcept {
+    if (IsGoingToDie()) return false; // just in case
+    if ((FlagsEx&(EFEX_NoInteraction|EFEX_NoTickGrav)) == EFEX_NoInteraction) return false;
+    if (Height <= 0.0f || Radius <= 0.0f) return false;
+    return
+      (EntityFlags&(
+        EF_Solid|
+        EF_NoSector|
+        EF_NoBlockmap|
+        EF_ColideWithWorld|
+        EF_Blasted|
+        EF_Corpse|
+        EF_Invisible)) == (EF_Solid|EF_ColideWithWorld);
+  }
+
+  // used in 3d pobj collision detection
+  // WARNING! this doesn't check vertical coordinates if it's not required for blocking top texture!
+  // all necessary checks (height and intersection) already done
+  bool Check3DPObjLineBlockedInternal (const polyobj_t *po, const line_t *ld) const noexcept;
+
+  // used in 3d pobj collision detection
+  // WARNING! this doesn't check vertical coordinates if it's not required for blocking top texture!
+  bool Check3DPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept;
+
+  // used in pobj collision detection
+  bool CheckPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept;
+
+  // this does all the necessary checks for pobjs and 3d pobjs too
+  // does check for blocking 3d midtex, and for 3d floors (i.e. checks openings)
+  bool IsRealBlockingLine (const line_t *ld) const noexcept;
 
 public:
   bool SetDecorateFlag (VStr, bool); // true: flag was found and set

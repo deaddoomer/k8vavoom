@@ -1157,6 +1157,115 @@ VTerrainInfo *VEntity::GetActorTerrain () {
 
 //==========================================================================
 //
+//  VEntity::Check3DPObjLineBlockedInternal
+//
+//  used in 3d pobj collision detection
+//  WARNING! this doesn't check vertical coordinates
+//           if it's not required for blocking top texture!
+//  all necessary checks (height and intersection) shoule be already done
+//
+//==========================================================================
+bool VEntity::Check3DPObjLineBlockedInternal (const polyobj_t *po, const line_t *ld) const noexcept {
+  const float mobjz0 = Origin.z;
+  const float ptopz = po->poceiling.minz;
+  if (mobjz0 >= ptopz) {
+    if ((ld->flags&ML_CLIP_MIDTEX) == 0) return false;
+    if (!IsBlocking3DPobjLineTop(ld)) return false;
+    // side doesn't matter, as it is guaranteed that both sides have the texture with the same height
+    const side_t *tside = &XLevel->Sides[ld->sidenum[0]];
+    if (tside->TopTexture <= 0) return false; // wtf?!
+    VTexture *ttex = GTextureManager(tside->TopTexture);
+    if (!ttex || ttex->Type == TEXTYPE_Null) return false; // wtf?!
+    const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
+    return (mobjz0 < ptopz+texh); // hit top texture?
+  } else {
+    return IsBlockingLine(ld);
+  }
+}
+
+
+//==========================================================================
+//
+//  VEntity::Check3DPObjLineBlocked
+//
+//  used in 3d pobj collision detection
+//  WARNING! this doesn't check vertical coordinates
+//           if it's not required for blocking top texture!
+//
+//==========================================================================
+bool VEntity::Check3DPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept {
+  if (!po || !ld || !po->posector) return false; // just in case
+  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (!LineIntersects(ld)) return false;
+  return Check3DPObjLineBlockedInternal(po, ld);
+}
+
+
+//==========================================================================
+//
+//  VEntity::CheckPObjLineBlocked
+//
+//  used in pobj collision detection
+//
+//==========================================================================
+bool VEntity::CheckPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept {
+  if (!po || !ld) return false; // just in case
+  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (!LineIntersects(ld)) return false;
+  if (po->posector) {
+    if (Origin.z >= po->poceiling.maxz) {
+      // fully above, may hit top blocking texture
+      if ((ld->flags&ML_CLIP_MIDTEX) == 0) return false;
+    } else {
+      if (Origin.z+Height <= po->pofloor.minz) return false; // fully below
+    }
+    return Check3DPObjLineBlockedInternal(po, ld);
+  } else {
+    // check for non-3d pobj with midtex
+    if ((ld->flags&(ML_TWOSIDED|ML_3DMIDTEX)) != (ML_TWOSIDED|ML_3DMIDTEX)) return IsBlockingLine(ld);
+    // use front side
+    //const int side = 0; //ld->PointOnSide(mobj->Origin);
+    float pz0 = 0.0f, pz1 = 0.0f;
+    if (!XLevel->GetMidTexturePosition(ld, /*side*/0, &pz0, &pz1)) return false; // no middle texture
+    return (Origin.z < pz1 && Origin.z+Height > pz0);
+  }
+}
+
+
+//==========================================================================
+//
+//  VEntity::IsRealBlockingLine
+//
+//  this does all the necessary checks for pobjs and 3d pobjs too
+//  does check for blocking 3d midtex, and for 3d floors (i.e. checks openings)
+//
+//==========================================================================
+bool VEntity::IsRealBlockingLine (const line_t *ld) const noexcept {
+  if (!ld) return false;
+  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (!ld->backsector || !(ld->flags&ML_TWOSIDED)) return !LineIntersects(ld); // one sided line
+  // polyobject line?
+  if (ld->pobj()) return CheckPObjLineBlocked(ld->pobj(), ld);
+  if (!LineIntersects(ld)) return false;
+  if (IsBlockingLine(ld)) return true;
+  // check openings
+  opening_t *open = XLevel->LineOpenings(ld, Origin, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
+  const float z0 = Origin.z;
+  const float z1 = z0+Height;
+  open = VLevel::FindRelOpening(open, z0, z1);
+  // process railings
+  if (open && (ld->flags&ML_RAILING)) {
+    open->bottom += 32.0f;
+    open->range -= 32.0f;
+    if (open->range <= 0.0f || z1 < open->bottom || z0 > open->top) open = nullptr;
+  }
+  // blocked if there is no opening
+  return !!open;
+}
+
+
+//==========================================================================
+//
 //  Script natives
 //
 //==========================================================================
