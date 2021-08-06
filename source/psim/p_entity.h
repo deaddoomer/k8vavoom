@@ -812,6 +812,22 @@ public:
     box2d[BOX2D_MAXX] = Origin.x+Radius;
   }
 
+  VVA_ALWAYS_INLINE bool CollisionWithOther (const VEntity *other) const noexcept {
+    if (!other) return false;
+    if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
+    if ((other->EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
+    if (Radius <= 0.0f || Height <= 0.0f || other->Radius <= 0.0f || other->Height <= 0.0f) return false;
+    // check vertical collision
+    if (Origin.z+Height <= other->Origin.z || Origin.z >= other->Origin.z+other->Height) return false;
+    // check horizontal collision
+    const float rad = GetMoveRadius();
+    const float otherrad = other->GetMoveRadius();
+    const float blockdist = otherrad+rad;
+    return
+      fabsf(other->Origin.x-Origin.x) < blockdist ||
+      fabsf(other->Origin.y-Origin.y) < blockdist;
+  }
+
   // doesn't check any line flags
   VVA_ALWAYS_INLINE bool LineIntersects (const line_t *ld) const noexcept {
     if (ld && Radius > 0.0f) {

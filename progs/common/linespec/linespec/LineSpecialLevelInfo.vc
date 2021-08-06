@@ -5509,7 +5509,9 @@ override bool PolyThrustMobj (Entity Other, TVec thrustDir, polyobj_t *po, bool 
 
   Other.Velocity += (force*thrustDir)*2.0;
   if (po->bCrush) {
-    TVec testPos = Other.Origin+force*thrustDir*Game.frametime;
+    //TVec testPos = Other.Origin+force*thrustDir*Game.frametime;
+    TVec testPos = Other.Origin+Other.Velocity.xy.normalise*2.0f;
+    //printdebug("%C: %B : check=%B; org=%s; testpos=%s; move=%s", ex, ex.bInvulnerable, Other.CheckPosition(testPos), Other.Origin, testPos, testPos-Other.Origin);
     // platforms are always deadly
     if (po->posector && !ex.bInvulnerable && (po->bSideCrush || !Other.CheckPosition(testPos))) {
       ex.Damage(none, none, 10000, 'Crush', NoArmor:true, forced:true, spawnBlood:true, ignoreDamageFactors:true, ignorePowerups:true);
