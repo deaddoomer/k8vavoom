@@ -59,6 +59,7 @@ struct UnstuckInfo {
   TVec uv; // unstuck vector
   TVec unorm; // unstuck normal
   bool blockedByOther;
+  bool normFlipped;
   const line_t *line;
 };
 
@@ -129,6 +130,7 @@ static void CalcMapUnstuckVector (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
           nfo.uv = TVec(0.0f, 0.0f); // unused
           nfo.unorm = (side ? -ld->normal : ld->normal);
           nfo.blockedByOther = false; // unused
+          nfo.normFlipped = side;
           nfo.line = ld;
         }
       }
@@ -256,6 +258,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, polyobj_t *po, V
         nfo.uv = uv;
         nfo.unorm = (badSide ? -ld->normal : ld->normal); // pobj sides points to outside
         nfo.blockedByOther = stuckOther;
+        nfo.normFlipped = badSide;
         nfo.line = (foundVector ? nullptr : ld);
       }
       foundVector = true;
@@ -312,6 +315,148 @@ static int unstuckVectorCompare (const void *aa, const void *bb, void */*udata*/
 
 //==========================================================================
 //
+//  DoUnstuckByAverage
+//
+//  returns `false` if can't
+//
+//==========================================================================
+static bool DoUnstuckByAverage (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
+  tmtrace_t tmtrace;
+  const TVec origOrigin = mobj->Origin;
+
+  // try to unstick by average vector
+  TVec nsum(0.0f, 0.0f, 0.0f);
+  for (auto &&nfo : uvlist) if (nfo.line) nsum += nfo.unorm;
+  nsum.z = 0.0f; // just in case
+  if (nsum.isValid() && !nsum.isZero2D()) {
+    nsum = nsum.normalised();
+    // good unstuck normal
+    #if 0
+    // calculate distance to move away
+    float mybbox[4];
+    mobj->Create2DBox(mybbox);
+    float ndist = 0.0f;
+    for (auto &&nfo : uvlist) {
+      if (!nfo.line) continue;
+      const bool blocked = mobj->Check3DPObjLineBlocked(nfo.line->pobj(), nfo.line);
+      if (!blocked) continue;
+      const TVec p0 = nfo.line->get2DBBoxRejectPoint(mybbox);
+      const TVec p1 = nfo.line->get2DBBoxAcceptPoint(mybbox);
+      const float tm0 = nfo.line->LineIntersectTime(p0, p0+nsum);
+      float tm1 = nfo.line->LineIntersectTime(p1, p1+nsum);
+      float tm;
+      if (!isFiniteF(tm0)) {
+        if (!isFiniteF(tm1)) continue;
+        tm = fabsf(tm1);
+      } else {
+        tm = fabsf(tm0);
+        if (isFiniteF(tm1)) {
+          tm1 = fabsf(tm1);
+          if (tm < tm1) tm = tm1;
+        }
+      }
+      if (tm > ndist) ndist = tm;
+    }
+    if (dbg_pobj_unstuck_verbose.asBool()) {
+      GCon->Logf(NAME_Debug, "+++ %s: trying by normal (%g,%g,%g); ndist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, ndist);
+    }
+    // try calculated distance
+    if (ndist > 0.0f) {
+      ndist += 0.02f;
+      mobj->Origin = origOrigin+nsum*ndist;
+      bool ok = true;
+      for (auto &&nfo : uvlist) {
+        if (nfo.line) {
+          ok = !mobj->Check3DPObjLineBlocked(nfo.line->pobj(), nfo.line);
+          if (!ok) break;
+        }
+      }
+      if (ok) {
+        ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+      }
+      if (ok) return true;
+    }
+    #endif
+
+    // try to move by 1/3 of radius
+    const float maxdist = mobj->Radius/3.0f;
+    TVec goodPos(0.0f, 0.0f, 0.0f);
+    bool goodPosFound = false;
+    if (maxdist > 0.0f) {
+      //FIXME: use binary search for now
+      float maxlow = 0.0f;
+      float maxhigh = maxdist;
+      if (dbg_pobj_unstuck_verbose.asBool()) {
+        GCon->Logf(NAME_Debug, "%s: trying by normal (%g,%g,%g); maxdist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, maxhigh);
+      }
+      while (maxlow < maxhigh && maxhigh-maxlow > 0.001f) {
+        float maxmid = (maxlow+maxhigh)*0.5f;
+        mobj->Origin = origOrigin+nsum*maxmid;
+        bool ok = true;
+        for (auto &&nfo : uvlist) {
+          if (nfo.line) {
+            ok = !mobj->Check3DPObjLineBlocked(nfo.line->pobj(), nfo.line);
+            if (!ok) break;
+          }
+        }
+        if (ok) {
+          ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+        }
+        if (dbg_pobj_unstuck_verbose.asBool()) {
+          GCon->Logf(NAME_Debug, "  ok=%d; maxmid=%g; dist=%g", (int)ok, maxmid, (origOrigin-mobj->Origin).length2D());
+        }
+        if (ok) {
+          // not blocked
+          const float sqdist = (origOrigin-mobj->Origin).length2DSquared();
+          goodPosFound = true;
+          goodPos = mobj->Origin;
+          if (sqdist <= 0.1f*0.1f) break;
+          // shrink
+          maxhigh = maxmid;
+        } else {
+          // blocked
+          maxlow = maxmid;
+        }
+      }
+      if (goodPosFound) {
+        if (dbg_pobj_unstuck_verbose.asBool()) {
+          GCon->Logf(NAME_Debug, "%s: found by normal (%g,%g,%g); dist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, (origOrigin-goodPos).length2D());
+        }
+        return true;
+      }
+    }
+  }
+
+  // try non-average
+  // sort unstuck vectors by distance
+  timsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
+
+  // try each unstuck vector
+  //bool wasAtLeastOneGood = false;
+  for (auto &&nfo : uvlist) {
+    if (nfo.blockedByOther) continue; // bad line
+    const TVec uv = nfo.uv;
+    vassert(uv.isValid());
+    if (uv.isZero2D()) continue; // just in case
+    //wasAtLeastOneGood = true;
+    if (dbg_pobj_unstuck_verbose.asBool()) {
+      GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", mobj->GetClass()->GetName(), uv.x, uv.y, uv.z);
+    }
+    // need to move
+    //TODO: move any touching objects too
+    mobj->Origin = origOrigin+uv;
+    const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
+    if (ok) return true;
+  }
+
+  // restore
+  mobj->Origin = origOrigin;
+  return false;
+}
+
+
+//==========================================================================
+//
 //  UnstuckFromRotatedPObj
 //
 //  returns `false` if movement was blocked
@@ -345,7 +490,6 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
     for (int trycount = 3; trycount > 0; --trycount) {
       doFinalCheck = true;
       bool wasMove = false;
-
       for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
         if (!po || !po->posector) continue;
         // reject only polyobjects that are above us
@@ -370,115 +514,16 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
 
         if (uvlist.length() == 0) continue; // not stuck in this pobj
 
-        const TVec origOrigin = mobj->Origin;
-        bool foundGoodUnstuck = false;
-
-        // try to unstick by average vector
-        bool tryNonAverage = true;
-        {
-          TVec nsum(0.0f, 0.0f, 0.0f);
-          for (auto &&nfo : uvlist) if (nfo.line) nsum += nfo.unorm;
-          nsum.z = 0.0f; // just in case
-          nsum = nsum.normalised();
-          if (nsum.isValid() && !nsum.isZero2D()) {
-            // good unstuck normal
-            // try to move by 1/3 of radius
-            const float maxdist = mobj->Radius/3.0f;
-            TVec goodPos(0.0f, 0.0f, 0.0f);
-            bool goodPosFound = false;
-            if (maxdist > 0.0f) {
-              //FIXME: use binary search for now
-              float maxlow = 0.0f;
-              float maxhigh = maxdist;
-              if (dbg_pobj_unstuck_verbose.asBool()) {
-                GCon->Logf(NAME_Debug, "%s: trying by normal (%g,%g,%g); maxdist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, maxhigh);
-              }
-              while (maxlow < maxhigh && maxhigh-maxlow > 0.001f) {
-                float maxmid = (maxlow+maxhigh)*0.5f;
-                mobj->Origin = origOrigin+nsum*maxmid;
-                bool ok = true;
-                for (auto &&nfo : uvlist) {
-                  if (nfo.line) {
-                    ok = !mobj->Check3DPObjLineBlocked(nfo.line->pobj(), nfo.line);
-                    if (!ok) break;
-                  }
-                }
-                if (ok) {
-                  ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-                }
-                if (dbg_pobj_unstuck_verbose.asBool()) {
-                  GCon->Logf(NAME_Debug, "  ok=%d; maxmid=%g; dist=%g", (int)ok, maxmid, (origOrigin-mobj->Origin).length2D());
-                }
-                if (ok) {
-                  // not blocked
-                  const float sqdist = (origOrigin-mobj->Origin).length2DSquared();
-                  //if (goodPosFound && sqdist <= 0.1f*0.1f) break;
-                  maxhigh = maxmid;
-                  goodPosFound = true;
-                  goodPos = mobj->Origin;
-                  //edata.aflags |= AFF_MOVE;
-                  //wasMove = true;
-                  //foundGoodUnstuck = true;
-                  // restore
-                  mobj->Origin = origOrigin;
-                  if (sqdist <= 0.1f*0.1f) break;
-                } else {
-                  // blocked
-                  maxlow = maxmid;
-                }
-              }
-              if (goodPosFound) {
-                if (dbg_pobj_unstuck_verbose.asBool()) {
-                  GCon->Logf(NAME_Debug, "%s: found by normal (%g,%g,%g); dist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, (origOrigin-goodPos).length2D());
-                }
-                mobj->Origin = goodPos;
-                edata.aflags |= AFF_MOVE;
-                wasMove = true;
-                foundGoodUnstuck = true;
-                tryNonAverage = false;
-              }
-            }
-          }
-        }
-
-        if (tryNonAverage) {
-          // sort unstuck vectors by distance
-          timsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
-
-          // try each unstuck vector
-          //bool wasAtLeastOneGood = false;
-          for (auto &&nfo : uvlist) {
-            if (nfo.blockedByOther) continue; // bad line
-            const TVec uv = nfo.uv;
-            vassert(uv.isValid());
-            if (uv.isZero2D()) continue; // just in case
-            //wasAtLeastOneGood = true;
-            if (dbg_pobj_unstuck_verbose.asBool()) {
-              GCon->Logf(NAME_Debug, "mobj '%s' unstuck move: (%g,%g,%g)", edata.mobj->GetClass()->GetName(), uv.x, uv.y, uv.z);
-            }
-            // need to move
-            //TODO: move any touching objects too
-            mobj->Origin = origOrigin+uv;
-            const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-            if (ok) {
-              // not blocked, check other linked polyobjects
-              edata.aflags |= AFF_MOVE;
-              wasMove = true;
-              foundGoodUnstuck = true;
-              break;
-            }
-            // restore
-            mobj->Origin = origOrigin;
-          }
-        } // tryNonAverage
-
-        // if we can't find good unstucking move, crush
-        if (!foundGoodUnstuck) {
+        if (!DoUnstuckByAverage(uvlist, mobj)) {
           // totally stuck
           if (!checkCrushMObj(po, mobj, true)) return false; // blocked
           wasMove = false; // get away, we're done with this mobj
           break;
         }
+
+        // moved
+        wasMove = true;
+        edata.aflags |= AFF_MOVE;
       } // polyobject link loop
 
       if (!wasMove) {
@@ -492,61 +537,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
     if (!mobj->IsGoingToDie() && mobj->PObjNeedPositionCheck()) {
       CalcMapUnstuckVector(uvlist, mobj);
       if (uvlist.length()) {
-        bool wasMove = false;
-        TVec nsum(0.0f, 0.0f, 0.0f);
-        for (auto &&nfo : uvlist) nsum += nfo.unorm;
-        nsum.z = 0.0f; // just in case
-        nsum = nsum.normalised();
-        if (nsum.isValid() && !nsum.isZero2D()) {
-          // good unstuck normal
-          // try to move by 1/3 of radius
-          const float maxdist = mobj->Radius/3.0f;
-          TVec goodPos(0.0f, 0.0f, 0.0f);
-          bool goodPosFound = false;
-          if (maxdist > 0.0f) {
-            //FIXME: use binary search for now
-            float maxlow = 0.0f;
-            float maxhigh = maxdist;
-            #if 0
-            GCon->Logf(NAME_Debug, "%s: trying by normal (%g,%g,%g); maxdist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, maxhigh);
-            #endif
-            const TVec origOrigin = mobj->Origin;
-            while (maxlow < maxhigh && maxhigh-maxlow > 0.001f) {
-              float maxmid = (maxlow+maxhigh)*0.5f;
-              mobj->Origin = origOrigin+nsum*maxmid;
-              const bool ok = mobj->CheckRelPosition(tmtrace, mobj->Origin, /*noPickups*/true, /*ignoreMonsters*/true, /*ignorePlayers*/true);
-              #if 0
-              GCon->Logf(NAME_Debug, "  ok=%d; maxmid=%g; dist=%g", (int)ok, maxmid, (origOrigin-mobj->Origin).length2D());
-              #endif
-              if (ok) {
-                // not blocked
-                maxhigh = maxmid;
-                goodPosFound = true;
-                goodPos = mobj->Origin;
-                //edata.aflags |= AFF_MOVE;
-                //wasMove = true;
-                //foundGoodUnstuck = true;
-                const float sqdist = (origOrigin-mobj->Origin).length2DSquared();
-                // restore
-                mobj->Origin = origOrigin;
-                if (sqdist <= 0.1f*0.1f) break;
-              } else {
-                // blocked
-                maxlow = maxmid;
-              }
-            }
-            if (goodPosFound) {
-              #if 0
-              GCon->Logf(NAME_Debug, "%s: found by normal (%g,%g,%g); dist=%g", mobj->GetClass()->GetName(), nsum.x, nsum.y, nsum.z, (origOrigin-goodPos).length2D());
-              #endif
-              mobj->Origin = goodPos;
-              edata.aflags |= AFF_MOVE;
-              doFinalCheck = true; // just in case
-              wasMove = true;
-            }
-          }
-          if (!wasMove) return false; // blocked
-        }
+        if (!DoUnstuckByAverage(uvlist, mobj)) return false; // blocked
       }
     }
 
@@ -573,7 +564,6 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
         }
       }
     }
-
   }
 
   // ok to move
