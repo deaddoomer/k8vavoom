@@ -348,3 +348,19 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline float BBox2DArea (const float bbox2d[
 }
 
 void ShrinkBBox2D (float bbox2d[4], const float bbox2dsrc[4], float ratio) noexcept;
+
+
+// `cx` and `cy` is AABB center, like for entities
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsAABBInside2DBBox (const float cx, const float cy, const float radius, const float bbox2d[4]) noexcept {
+  return
+    cx+radius >= bbox2d[BOX2D_MINX] && cx-radius <= bbox2d[BOX2D_MAXX] &&
+    cy+radius >= bbox2d[BOX2D_MINY] && cy-radius <= bbox2d[BOX2D_MAXY];
+}
+
+// `org` is bottom origin, like for entities
+static VVA_OKUNUSED VVA_CHECKRESULT inline bool IsAABBInside3DBBox (const TVec org, const float radius, const float height, const float bbox3d[6]) noexcept {
+  return
+    org.x+radius >= bbox3d[BOX3D_MINX] && org.x-radius <= bbox3d[BOX3D_MAXX] &&
+    org.y+radius >= bbox3d[BOX3D_MINY] && org.y-radius <= bbox3d[BOX3D_MAXY] &&
+    org.z+height >= bbox3d[BOX3D_MINZ] && org.z <= bbox3d[BOX3D_MAXZ];
+}
