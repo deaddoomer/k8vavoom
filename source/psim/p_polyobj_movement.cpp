@@ -950,7 +950,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       **vptr = np;
     }
     UpdatePolySegs(po);
-    if (dovmove) OffsetPolyobjFlats(po, z);
+    if (dovmove) OffsetPolyobjFlats(po, z, false);
   }
 
   // now check if movement is blocked by any affected object
@@ -1331,8 +1331,12 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
     if (flatsSaved) {
       po->pofloor.BaseAngle = AngleMod(po->pofloor.BaseAngle+angle);
       po->poceiling.BaseAngle = AngleMod(po->poceiling.BaseAngle+angle);
-      OffsetPolyobjFlats(po, 0.0f, true);
+    } else {
+      // on loading, our baseangle is not set
+      //FIXME: wrong with initially rotated floors
+      po->pofloor.BaseAngle = po->poceiling.BaseAngle = AngleMod(po->angle);
     }
+    OffsetPolyobjFlats(po, 0.0f, true);
     LinkPolyobj(po, false);
     // move decals
     if (!forcedMove && po->Is3D() && subsectorDecalList) {
