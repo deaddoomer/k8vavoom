@@ -810,11 +810,58 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
 
   // if not blocked, relink polyobject temporarily, and check vertical hits
   if (!blocked && !forcedMove && pofirst->posector) {
-    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-      LinkPolyobj(po);
-    }
+    for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) LinkPolyobj(po, false); // don't relink mobjs
+    Link3DPolyobjMObjs(pofirst, skipLink);
     linked = true;
     // check height-blocking objects
+    // note that `Link3DPolyobjMObjs()` collected all touching mobjs in `poRoughEntityList` for us
+    for (VEntity *mobj : poRoughEntityList) {
+      // check flags
+      if (!NeedPositionCheck(mobj)) continue;
+      float mobjbb2d[4];
+      mobj->Create2DBox(mobjbb2d);
+      const float mz0 = mobj->Origin.z;
+      const float mz1 = mz0+mobj->Height;
+      // check all polyobjects
+      for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+        //if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, max2(0.0f, mobj->Radius), po->bbox2d)) continue;
+        const float pz0 = po->pofloor.minz;
+        const float pz1 = po->poceiling.maxz;
+        if (mz1 <= pz0) continue;
+        if (mz0 >= pz1) continue;
+        if (!Are2DBBoxesOverlap(mobjbb2d, po->bbox2d)) continue;
+        // possible vertical intersection, check pobj lines
+        bool blk = false;
+        line_t **lineList = po->lines;
+        for (int count = po->numlines; count; --count, ++lineList) {
+          if (!check3DPObjLineBlocked(po, mobj, *lineList)) continue;
+          blk = true;
+          break;
+        }
+        if (blk) {
+          if (mobj->EntityFlags&VEntity::EF_Solid) {
+            //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
+            if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) {
+              blocked = true;
+              break;
+            }
+          } else {
+            mobj->Level->eventPolyCrushMobj(mobj, po);
+          }
+        } else {
+          if (IsBBox2DTouching3DPolyObj(po, mobjbb2d)) {
+            if (mobj->EntityFlags&VEntity::EF_Solid) {
+              blocked = true;
+              break;
+            } else {
+              mobj->Level->eventPolyCrushMobj(mobj, po);
+            }
+          }
+        }
+      }
+      if (blocked) break;
+    }
+    /*
     for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
       const float pz0 = po->pofloor.minz;
       const float pz1 = po->poceiling.maxz;
@@ -831,7 +878,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
         // vertical intersection, blocked movement
         if (mobj->EntityFlags&VEntity::EF_Solid) {
           //GCon->Logf(NAME_Debug, "pobj #%d hit %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
-          if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/*vertical*/)) blocked = true;
+          if (mobj->Level->eventPolyThrustMobj(mobj, TVec(0.0f, 0.0f), po, true/ *vertical* /)) blocked = true;
         } else {
           mobj->Level->eventPolyCrushMobj(mobj, po);
         }
@@ -839,6 +886,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       }
       if (blocked) break;
     }
+    */
     // if blocked, unlink back
     if (blocked) {
       for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
@@ -863,8 +911,10 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
       UpdatePolySegs(po);
       OffsetPolyobjFlats(po, 0.0f, true);
-      LinkPolyobj(po);
+      LinkPolyobj(po, false); // do not relink mobjs
     }
+    // relink mobjs
+    Link3DPolyobjMObjs(pofirst, skipLink);
     // restore and relink all mobjs back
     for (auto &&edata : poAffectedEnitities) {
       VEntity *mobj = edata.mobj;
@@ -883,7 +933,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
     po->startSpot.y += y;
     po->startSpot.z += z;
     OffsetPolyobjFlats(po, 0.0f, true);
-    if (!linked) LinkPolyobj(po);
+    if (!linked) LinkPolyobj(po, false); // do not relink mobjs
     // move decals
     if (!forcedMove && po->Is3D() && subsectorDecalList) {
       for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
@@ -896,6 +946,8 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       }
     }
   }
+  // relink mobjs
+  Link3DPolyobjMObjs(pofirst, skipLink);
 
   // relink all mobjs back
   for (auto &&edata : poAffectedEnitities) {
@@ -1106,8 +1158,10 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       TVec **vptr = po->segPts;
       for (int f = po->segPtsCount; f--; ++vptr, ++prevPts) **vptr = *prevPts;
       UpdatePolySegs(po);
-      LinkPolyobj(po);
+      LinkPolyobj(po, false); // do not relink mobjs
     }
+    // relink mobjs
+    Link3DPolyobjMObjs(pofirst, skipLink);
     // restore and relink all mobjs back
     for (auto &&edata : poAffectedEnitities) {
       VEntity *mobj = edata.mobj;
@@ -1143,7 +1197,7 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       po->poceiling.BaseAngle = AngleMod(po->poceiling.BaseAngle+angle);
       OffsetPolyobjFlats(po, 0.0f, true);
     }
-    LinkPolyobj(po);
+    LinkPolyobj(po, false);
     // move decals
     if (!forcedMove && po->Is3D() && subsectorDecalList) {
       for (subsector_t *posub = po->GetSector()->subsectors; posub; posub = posub->seclink) {
@@ -1165,6 +1219,8 @@ bool VLevel::RotatePolyobj (int num, float angle, unsigned flags) {
       }
     }
   }
+  // relink mobjs
+  Link3DPolyobjMObjs(pofirst, skipLink);
 
   // relink things
   if (!forcedMove && poAffectedEnitities.length()) {

@@ -30,40 +30,93 @@
 # include "../drawer.h"
 #endif
 
-static TMapNC<VEntity *, bool> poEntityMap;
-static TMapNC<sector_t *, bool> poSectorMap;
 
+TArray<VEntity *> VLevel::poRoughEntityList; // moved to VLevel as static
 
 
 //==========================================================================
 //
-//  CollectPObjTouchingThingsRough
+//  CollectPObjTouchingThingsRoughBlockmap
 //
-//  collect all objects from sectors this polyobject may touch
+//  collect all objects from blockmap cells this polyobject may touch
+//  puts it in `entList`
+//
+//  pobj bounding box must be valid
 //
 //==========================================================================
-static void CollectPObjTouchingThingsRough (polyobj_t *po) {
-  //FIXME: do not use static map here
-  poEntityMap.reset();
-  poSectorMap.reset();
-    //const int visCount = Level->nextVisitedCount();
-    //if (n->Visited != visCount) n->Visited = visCount;
-  for (polyobjpart_t *part = po->parts; part; part = part->nextpobj) {
-    sector_t *sec = part->sub->sector;
-    if (sec->isAnyPObj()) continue; // just in case
-    if (!poSectorMap.put(sec, true)) {
-      //GCon->Logf(NAME_Debug, "pobj #%d: checking sector #%d for entities...", po->tag, (int)(ptrdiff_t)(sec-&Sectors[0]));
-      // new sector, process things
-      for (msecnode_t *n = sec->TouchingThingList; n; n = n->SNext) {
-        //GCon->Logf(NAME_Debug, "pobj #%d:   found entity %s(%u)", po->tag, n->Thing->GetClass()->GetName(), n->Thing->GetUniqueId());
-        poEntityMap.put(n->Thing, true);
+static VVA_OKUNUSED void CollectTouchingThingsRoughBlockmap (TArray<VEntity *> &entList, VLevel *XLevel, const float bbox2d[4], bool clearList=true) {
+  if (clearList) {
+    entList.reset();
+    // do it anyway, because we may rely on the fact that `validcount` is incremented
+    XLevel->IncrementValidCount();
+  }
+
+  DeclareMakeBlockMapCoordsBBox2DMaxRadius(bbox2d, cleft, cbottom, cright, ctop);
+
+  const int bwdt = XLevel->BlockMapWidth;
+  if (ctop < 0 || cright < 0 || cbottom >= XLevel->BlockMapHeight || cleft >= bwdt) return;
+  const int bhgt = XLevel->BlockMapHeight;
+
+  const int bottom = max2(cbottom, 0);
+  const int top = min2(ctop, bhgt-1);
+  const int left = max2(cleft, 0);
+  const int right = min2(cright, bwdt-1);
+  const int visCount = validcount;
+
+  const int ey = top*bwdt;
+  for (int by = bottom*bwdt; by <= ey; by += bwdt) {
+    for (int bx = left; bx <= right; ++bx) {
+      for (VEntity *mobj = XLevel->BlockLinks[by+bx]; mobj; mobj = mobj->BlockMapNext) {
+        if (mobj->IsGoingToDie()) continue;
+        if (mobj->ValidCount == visCount) continue;
+        mobj->ValidCount = visCount;
+        entList.append(mobj);
       }
     }
   }
 }
 
 
+//==========================================================================
+//
+//  CollectPObjTouchingThingsRoughSectors
+//
+//  collect all objects from sectors this polyobject may touch
+//  puts it in `entList`
+//
+//  this is done by checking each sector this pobj possibly touches,
+//  so it should be done after calling `PutPObjInSubsectors()`
+//
+//  this also checks pobj bounding box, to skip mobjs that cannot be touched
+//
+//==========================================================================
+static VVA_OKUNUSED void CollectPObjTouchingThingsRoughSectors (TArray<VEntity *> &entList, VLevel *XLevel, polyobj_t *po, bool clearList=true) {
+  if (clearList) {
+    entList.reset();
+    // do it anyway, because we may rely on the fact that `validcount` is incremented
+    XLevel->IncrementValidCount();
+  }
 
+  const int visCount = validcount;
+
+  // touching sectors
+  for (polyobjpart_t *part = po->parts; part; part = part->nextpobj) {
+    sector_t *sec = part->sub->sector;
+    if (sec->isAnyPObj()) continue; // just in case
+    if (sec->validcount == visCount) continue;
+    sec->validcount = visCount;
+    // new sector, process things
+    for (msecnode_t *n = sec->TouchingThingList; n; n = n->SNext) {
+      VEntity *mobj = n->Thing;
+      if (mobj->IsGoingToDie()) continue;
+      if (mobj->ValidCount == visCount) continue;
+      mobj->ValidCount = visCount;
+      // check bounding box
+      if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, max2(0.0f, mobj->Radius), po->bbox2d)) continue;
+      entList.append(mobj);
+    }
+  }
+}
 
 
 //==========================================================================
@@ -594,7 +647,7 @@ bool VLevel::IsGood3DPolyobj (polyobj_t *po) {
 void VLevel::InitPolyBlockMap () {
   PolyBlockMap = new polyblock_t*[BlockMapWidth*BlockMapHeight];
   memset((void *)PolyBlockMap, 0, sizeof(polyblock_t *)*BlockMapWidth*BlockMapHeight);
-  for (int i = 0; i < NumPolyObjs; ++i) LinkPolyobj(PolyObjs[i]);
+  for (int i = 0; i < NumPolyObjs; ++i) LinkPolyobj(PolyObjs[i], true);
 }
 
 
@@ -678,7 +731,7 @@ void VLevel::UpdatePolySegs (polyobj_t *po) {
 //  VLevel::LinkPolyobj
 //
 //==========================================================================
-void VLevel::LinkPolyobj (polyobj_t *po) {
+void VLevel::LinkPolyobj (polyobj_t *po, bool relinkMObjs) {
   /* k8 notes
      relink polyobject to the new subsector.
      it is not the best way, but at least something.
@@ -789,15 +842,30 @@ void VLevel::LinkPolyobj (polyobj_t *po) {
   }
 
   // relink all mobjs this polyobject may touch (if it is 3d pobj)
-  if (po->posector) {
-    CollectPObjTouchingThingsRough(po);
+  if (relinkMObjs && po->posector) {
+    CollectPObjTouchingThingsRoughSectors(poRoughEntityList, this, po);
     // relink all things, so they can get pobj info right
-    for (auto &&it : poEntityMap.first()) {
-      VEntity *mobj = it.key();
+    for (VEntity *mobj : poRoughEntityList) {
       //GCon->Logf(NAME_Debug, "pobj #%d: relinking entity %s(%u)", po->tag, mobj->GetClass()->GetName(), mobj->GetUniqueId());
       mobj->LinkToWorld(); // relink it
     }
   }
+}
+
+
+//==========================================================================
+//
+//  VLevel::Link3DPolyobjMObjs
+//
+//==========================================================================
+void VLevel::Link3DPolyobjMObjs (polyobj_t *pofirst, bool skipLink) {
+  bool first = true;
+  for (polyobj_t *po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
+    if (!po->posector) continue;
+    CollectPObjTouchingThingsRoughSectors(poRoughEntityList, this, po, first);
+    first = false;
+  }
+  for (VEntity *mobj : poRoughEntityList) mobj->LinkToWorld(); // relink
 }
 
 

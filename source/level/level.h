@@ -581,8 +581,9 @@ class VLevel : public VGameObject {
   VDecalList *subsectorDecalList;
 
 public:
-  // sorry for this global
+  // sorry for those globals
   static TMapNC<VName, bool> baddecals;
+  static TArray<VEntity *> poRoughEntityList; // for polyobjects
 
 public:
   // decal floodfill statics
@@ -1445,7 +1446,8 @@ private:
   void TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor);
   void UpdatePolySegs (polyobj_t *po);
   void InitPolyBlockMap ();
-  void LinkPolyobj (polyobj_t *po);
+  void LinkPolyobj (polyobj_t *po, bool relinkMObjs);
+  void Link3DPolyobjMObjs (polyobj_t *pofirst, bool skipLink);
   void UnlinkPolyobj (polyobj_t *po);
 
   // used in spawner
