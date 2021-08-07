@@ -27,6 +27,9 @@
 //#define SPOTLIGHT_DISCO_CROWN_TEST
 //#define CALCLIGHT_TEST
 
+//#define DEBUG_3DPOBJ_JUMPS
+
+
 class PlayerEx : BasePlayer abstract;
 
 // player internal flags, for cheats and debug
@@ -1001,6 +1004,22 @@ void MovePlayer (float deltaTime) {
     EntityEx(MO).bOnMobj = false;
     JumpTime = 0.5;
     MO.PlaySound('*jump', CHAN_VOICE);
+    // add last polyobject speed, if there is any
+    auto pawn = PlayerPawn(MO);
+    if (pawn) {
+      #ifdef DEBUG_3DPOBJ_JUMPS
+      if (pawn.lastStand3DPObj) {
+        printdebug("%C: jumping from pobj %s: vel=%s;  (FloorZ=%s; z=%s, onmobj=%B)", pawn, pawn.lastStand3DPObj.tag, pawn.lastStand3DPObjVel, MO.FloorZ, MO.Origin.z, EntityEx(MO).bOnMobj);
+      }
+      #endif
+      if (pawn.lastStand3DPObj) {
+        MO.Velocity += pawn.lastStand3DPObjVel;
+        pawn.lastJump3DPObj = pawn.lastStand3DPObj;
+        pawn.lastStand3DPObj = nullptr;
+      } else {
+        pawn.lastJump3DPObj = nullptr;
+      }
+    }
   }
 }
 
@@ -5033,6 +5052,58 @@ override void PlayerTick (float deltaTime) {
   // call specialized ticker for morped player
   if (MorphTime) PlayerPawn(MO).MorphPlayerThink();
 
+
+  // remember 3d pobj we are standing on
+  {
+    auto pawn = PlayerPawn(MO);
+    if (pawn) {
+      // fix current polyobject
+      polyobj_t *oldpo = pawn.lastStand3DPObj;
+      pawn.lastStand3DPObj = nullptr;
+      pawn.lastStand3DPObjVel = vector(0, 0);
+      if (MO.Sector && MO.Sector.ownpobj) {
+        polyobj_t *po = MO.Sector.ownpobj;
+        if (po.posector) {
+          // are we standing on it?
+          float dz = MO.Origin.z-po.poceiling.minz;
+          if (dz >= 0.0 && dz < 0.1) {
+            pawn.lastStand3DPObjVel = PolyobjThinker.CalcSpeedVector(po);
+            while (po.polinkprev) po = po.polinkprev;
+            pawn.lastStand3DPObj = po;
+          }
+        }
+      }
+
+      #ifdef DEBUG_3DPOBJ_JUMPS
+      if (oldpo != pawn.lastStand3DPObj) {
+        printdebug("%C: changed current pobj from %s to %s (poz=%s; z=%s)", pawn, (oldpo ? oldpo.tag : -1), (pawn.lastStand3DPObj ? pawn.lastStand3DPObj.tag : -1),
+          (pawn.lastStand3DPObj ? pawn.lastStand3DPObj.poceiling.minz : float.nan), MO.Origin.z);
+      }
+      #endif
+
+      // check for landing
+      if (pawn.lastJump3DPObj) {
+        // on ground?
+        if (MO.Origin.z <= MO.FloorZ || EntityEx(MO).bOnMobj) {
+          // yes, subtract velocity (if landed on the same pobj)
+          #ifdef DEBUG_3DPOBJ_JUMPS
+          if (pawn.lastStand3DPObj != pawn.lastJump3DPObj) {
+            printdebug("%C: landed from pobj %s to %s (FloorZ=%s; z=%s, onmobj=%B)", pawn, pawn.lastJump3DPObj.tag, (pawn.lastStand3DPObj ? pawn.lastStand3DPObj.tag : -1),
+              MO.FloorZ, MO.Origin.z, EntityEx(MO).bOnMobj);
+          } else {
+            printdebug("%C: landed on the same pobj %s; stvel=%s", pawn, pawn.lastJump3DPObj.tag, PolyobjThinker.CalcSpeedVector(pawn.lastJump3DPObj));
+          }
+          #endif
+          if (pawn.lastStand3DPObj == pawn.lastJump3DPObj) {
+            pawn.Velocity -= PolyobjThinker.CalcSpeedVector(pawn.lastJump3DPObj);
+          }
+          pawn.lastJump3DPObj = nullptr;
+        }
+      }
+    }
+  }
+
+
   // move around
   // ReactionTime is used to prevent movement for a bit after a teleport (or water jump)
   if (Actor(MO).ReactionTime) {
@@ -5207,6 +5278,7 @@ override void PlayerTick (float deltaTime) {
   ProduceFootSteps(deltaTime);
 
   #if 0
+  // debug
   if (MO.Sector && MO.Sector.ownpobj) {
     polyobj_t *po = MO.Sector.ownpobj;
     if (po.posector) {

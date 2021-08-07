@@ -150,6 +150,14 @@ transient protected array!PlrWeaponSlotEntry actualWeaponSlots;
 // >0: if 1, allow blood; decrement
 transient int secondaryBloodCount;
 
+// used to fix velocity when jumping from the moving 3d pobj
+// not saved yet, so loading saved game will have velocities wrong
+// i may fix this later, but for now consider this as "official cheat"
+transient polyobj_t *lastStand3DPObj;
+transient polyobj_t *lastJump3DPObj; // 3d pobj we jumped from
+transient TVec lastStand3DPObjVel;
+//transient TVec lastJump3DPObjVel;
+
 
 replication {
   reliable if (Role == ROLE_Authority)

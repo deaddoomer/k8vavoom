@@ -253,10 +253,14 @@ Note that ML_BLOCKEVERYTHING will not block sight.
 <a id="movenote"><h1>Notes about movement</h1>
 <p>
 You can move your 3d polyobject by all three axes, and it will carry all things standing on it. Currently
-it works like a platform in arcade games: it carries things, but doesn't modify their velocities. This means
-that if the player will jump while riding some 3d polyobject, the jump will be strictly vertical (and the
-platform will move away). I may add flags to make "non-arcade" platforms later, but for now there is only
-one platform type available.
+it works like a platform in arcade games: it carries things, but doesn't modify their velocities.
+Yet jumping (and only jumping, not walking!) from moving 3d polyobject will add its velocity to the
+player velocity. That velocity will be subtracted if the player will land on the same 3d polyobject.
+This allows more-or-less proper jumping on moving platforms. Note that for chained 3d polyobjects,
+the velocity will be taken from the object you moved via ACS (i.e. most of the time this will properly
+work with chain links).
+<br/>
+Rotating 3d polyobjects will not add any rotation impulse, though.
 </p>
 <p>
 Rotating 3d polyobject is allowed too. As you may expect, all things standing on such 3d polyobject will be
@@ -531,6 +535,7 @@ in the future, but it will be opt-in (i.e. there will be a special flag to turn 
 <p>
  <ul>
   <li>Added the thing (<a href="#thing9367">9367</a>) to specify polyobject link sequences.</li>
+  <li>Jumping from the moving 3d pobj will try to retain 3d pobj velocity.</li>
  </ul>
 </p>
 
