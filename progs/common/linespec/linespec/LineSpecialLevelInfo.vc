@@ -4300,7 +4300,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
       }
       return true;
     } else {
-      A.SetOrigin(OldOrg, properFloorCheck:true); //k8: really?
+      A.SetOrigin(OldOrg, properFloorCheck:true, dontRemember:true); //k8: really?
       return false;
     }
   }

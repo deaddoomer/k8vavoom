@@ -645,7 +645,7 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
     #ifdef CLIENT
     // if we're spawning something on the client side, mark it as detached
     // this is harmless for non-authorithy entities
-    if (GGameInfo->NetMode == NM_Client) Ret->ThinkerFlags |= VThinker::TF_DetachComplete;
+    if (GGameInfo && GGameInfo->NetMode == NM_Client) Ret->ThinkerFlags |= VThinker::TF_DetachComplete;
     #endif
     if (Class->IsChildOf(VEntity::StaticClass())) {
       VEntity *e = (VEntity *)Ret;

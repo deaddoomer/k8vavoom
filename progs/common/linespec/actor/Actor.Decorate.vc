@@ -1640,7 +1640,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
   tmtrace_t tmtrace;
   if ((flags&WARPF_NOCHECKPOSITION) || tomove.CheckRelPosition(out tmtrace, tomove.Origin, noPickups:true)) {
     if (flags&WARPF_TESTONLY) {
-      tomove.SetOrigin(oldOrigin);
+      tomove.SetOrigin(oldOrigin, dontRemember:true);
     } else {
       tomove.Angles.yaw = angle;
       if (flags&WARPF_COPYPITCH) tomove.Angles.pitch = tgt.Angles.pitch;
@@ -1658,7 +1658,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
     return true;
   } else {
     //FIXME: keep interpolation?
-    tomove.SetOrigin(oldOrigin);
+    tomove.SetOrigin(oldOrigin, dontRemember:true);
     KeepChainResult(); // it should not succeed
     return false;
   }

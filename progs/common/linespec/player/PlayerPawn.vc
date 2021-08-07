@@ -156,12 +156,80 @@ transient int secondaryBloodCount;
 transient polyobj_t *lastStand3DPObj;
 transient polyobj_t *lastJump3DPObj; // 3d pobj we jumped from
 transient TVec lastStand3DPObjVel;
-//transient TVec lastJump3DPObjVel;
+
+// this can be used in monster attacks
+// it contains saved pawn positions from last tics
+// it saves position on each even tick (roughly eash 57 msecs)
+// this is a circular list
+const int SAVED_POS_MAX = 6;
+transient TVec LastPosBuffer[SAVED_POS_MAX];
+transient int LastPosBufferPos; // latest saved position
+transient int LastPosBufferTic; // latest tic on which save was done
 
 
 replication {
   reliable if (Role == ROLE_Authority)
     ViewHeight;
+}
+
+
+//==========================================================================
+//
+//  OnBeforeSave
+//
+//==========================================================================
+void OnBeforeSave (bool isAutosave, bool isCheckpoint) {
+  //printdebug("%C: OnBeforeSave: isAutosave=%B; isCheckpoint=%B", self, isAutosave, isCheckpoint);
+}
+
+
+//==========================================================================
+//
+//  OnAfterSave
+//
+//==========================================================================
+void OnAfterSave (bool isAutosave, bool isCheckpoint) {
+  //printdebug("%C: OnAfterSave: isAutosave=%B; isCheckpoint=%B", self, isAutosave, isCheckpoint);
+}
+
+
+//==========================================================================
+//
+//  OnSaveLoaded
+//
+//==========================================================================
+void OnSaveLoaded () {
+  foreach (ref TVec p; LastPosBuffer) p = Origin;
+  //printdebug("%C: loaded saved game origin: %s", self, Origin);
+}
+
+
+//==========================================================================
+//
+//  OnMapSpawn
+//
+//==========================================================================
+override void OnMapSpawn (mthing_t *mthing) {
+  ::OnMapSpawn(mthing);
+  foreach (ref TVec p; LastPosBuffer) p = Origin;
+  //printdebug("%C: spawn origin: %s", self, Origin);
+}
+
+
+//==========================================================================
+//
+//  SetOrigin
+//
+//  for player pawn, it is used in spawn, teleport, and `EV_ThingMove()`
+//  (`A_Warp()` can do that too, but hey, who will warp the player? ;-)
+//
+//==========================================================================
+override void SetOrigin (TVec NewOrigin, optional int properFloorCheck, optional bool dontRemember) {
+  ::SetOrigin(NewOrigin, properFloorCheck!optional, dontRemember!optional);
+  if (!dontRemember) {
+    foreach (ref TVec p; LastPosBuffer) p = Origin;
+    //printdebug("%C: new origin: %s", self, Origin);
+  }
 }
 
 

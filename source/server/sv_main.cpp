@@ -248,6 +248,7 @@ VLevel *VServerNetContext::GetLevel () {
 //
 //==========================================================================
 void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions) {
+  //for (unsigned f = 0; f < MAXPLAYERS; ++f) GPlayersBase[f] = nullptr;
   if (modlistfile == NAME_None) return;
   if (!modtypestr && !modtypestr[0]) modtypestr = "common";
   VCVFSSaver saver;
@@ -407,10 +408,10 @@ void SV_UpdateSkyFlat () {
 //==========================================================================
 void SV_ResetPlayers () {
   for (int i = 0; i < MAXPLAYERS; ++i) {
-    if (GPlayersBase[i]) {
-      GPlayersBase[i]->ResetButtons();
-      GPlayersBase[i]->eventResetToDefaults();
-    }
+    VBasePlayer *Player = GPlayersBase[i];
+    if (!Player) continue;
+    Player->ResetButtons();
+    Player->eventResetToDefaults();
   }
 }
 
@@ -422,7 +423,9 @@ void SV_ResetPlayers () {
 //==========================================================================
 void SV_ResetPlayerButtons () {
   for (int i = 0; i < MAXPLAYERS; ++i) {
-    if (GPlayersBase[i]) GPlayersBase[i]->ResetButtons();
+    VBasePlayer *Player = GPlayersBase[i];
+    if (!Player) continue;
+    Player->ResetButtons();
   }
 }
 
@@ -434,7 +437,9 @@ void SV_ResetPlayerButtons () {
 //==========================================================================
 void SV_SendLoadedEvent () {
   for (int i = 0; i < MAXPLAYERS; ++i) {
-    if (GPlayersBase[i]) GPlayersBase[i]->eventOnSaveLoaded();
+    VBasePlayer *Player = GPlayersBase[i];
+    if (!Player || !(Player->PlayerFlags&VBasePlayer::PF_Active)) continue;
+    Player->eventOnSaveLoaded();
   }
 }
 
@@ -446,7 +451,9 @@ void SV_SendLoadedEvent () {
 //==========================================================================
 void SV_SendBeforeSaveEvent (bool isAutosave, bool isCheckpoint) {
   for (int i = 0; i < MAXPLAYERS; ++i) {
-    if (GPlayersBase[i]) GPlayersBase[i]->eventOnBeforeSave(isAutosave, isCheckpoint);
+    VBasePlayer *Player = GPlayersBase[i];
+    if (!Player || !(Player->PlayerFlags&VBasePlayer::PF_Active)) continue;
+    Player->eventOnBeforeSave(isAutosave, isCheckpoint);
   }
 }
 
@@ -458,7 +465,9 @@ void SV_SendBeforeSaveEvent (bool isAutosave, bool isCheckpoint) {
 //==========================================================================
 void SV_SendAfterSaveEvent (bool isAutosave, bool isCheckpoint) {
   for (int i = 0; i < MAXPLAYERS; ++i) {
-    if (GPlayersBase[i]) GPlayersBase[i]->eventOnAfterSave(isAutosave, isCheckpoint);
+    VBasePlayer *Player = GPlayersBase[i];
+    if (!Player || !(Player->PlayerFlags&VBasePlayer::PF_Active)) continue;
+    Player->eventOnAfterSave(isAutosave, isCheckpoint);
   }
 }
 

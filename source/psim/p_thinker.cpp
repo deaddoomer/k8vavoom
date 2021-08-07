@@ -340,16 +340,18 @@ private:
   VThinker *Current;
 
 public:
-  VScriptThinkerIterator (VThinker *ASelf, VClass *AClass, VThinker **AOut)
+  inline VScriptThinkerIterator (VThinker *ASelf, VClass *AClass, VThinker **AOut) noexcept
     : Self(ASelf)
     , Class(AClass)
     , Out(AOut)
     , Current(nullptr)
-  {}
+  {
+    //GCon->Logf(NAME_Debug, "VScriptThinkerIterator: ASelf=%p; AClass=%p", ASelf, AClass);
+  }
 
   virtual bool GetNext () override {
     if (!Current) {
-      Current = Self->XLevel->ThinkerHead;
+      Current = (Self ? Self->XLevel->ThinkerHead : nullptr);
     } else {
       Current = Current->Next;
     }
@@ -373,7 +375,7 @@ private:
   int Index;
 
 public:
-  VActivePlayersIterator (VThinker *ASelf, VBasePlayer **AOut)
+  inline VActivePlayersIterator (VThinker *ASelf, VBasePlayer **AOut) noexcept
     : Self(ASelf)
     , Out(AOut)
     , Index(0)
@@ -381,7 +383,7 @@ public:
 
   virtual bool GetNext () override {
     while (Index < MAXPLAYERS) {
-      VBasePlayer *P = Self->Level->Game->Players[Index];
+      VBasePlayer *P = (Self ? Self->Level->Game->Players[Index] : nullptr);
       ++Index;
       if (P && (P->PlayerFlags&VBasePlayer::PF_Spawned)) {
         *Out = P;

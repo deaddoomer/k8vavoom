@@ -629,6 +629,12 @@ void ResetToDefaults () {
 //
 //==========================================================================
 void eventOnSaveLoaded () {
+  // call `OnSaveLoaded()` for all player pawns
+  if (!Level) { printerror("%C(%s): FUUUUUU (eventOnSaveLoaded)!", self, ClientNum); return; }
+  PlayerPawn pawn;
+  foreach Level.AllThinkers(PlayerPawn, pawn) {
+    if (!pawn.IsDestroyed) pawn.OnSaveLoaded();
+  }
 }
 
 
@@ -643,6 +649,12 @@ void eventOnSaveLoaded () {
 //
 //==========================================================================
 void eventOnBeforeSave (bool isAutosave, bool isCheckpoint) {
+  // call `OnBeforeSave()` for all player pawns
+  if (!Level) { printerror("%C(%s): FUUUUUU (eventOnBeforeSave)!", self, ClientNum); return; }
+  PlayerPawn pawn;
+  foreach Level.AllThinkers(PlayerPawn, pawn) {
+    if (!pawn.IsDestroyed) pawn.OnBeforeSave(isAutosave, isCheckpoint);
+  }
 }
 
 
@@ -656,6 +668,12 @@ void eventOnBeforeSave (bool isAutosave, bool isCheckpoint) {
 //
 //==========================================================================
 void eventOnAfterSave (bool isAutosave, bool isCheckpoint) {
+  // call `OnAfterSave()` for all player pawns
+  if (!Level) { printerror("%C(%s): FUUUUUU (eventOnAfterSave)!", self, ClientNum); return; }
+  PlayerPawn pawn;
+  foreach Level.AllThinkers(PlayerPawn, pawn) {
+    if (!pawn.IsDestroyed) pawn.OnAfterSave(isAutosave, isCheckpoint);
+  }
 }
 
 

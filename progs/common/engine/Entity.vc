@@ -1032,8 +1032,11 @@ void CalcFakeZMovement (out TVec Ret, float DeltaTime) {
 //
 //  pass -666 to force proper check (sorry for this hack)
 //
+//  `dontRemember` will be set if there's no need to record this movement
+//  (used for player pawns)
+//
 //==========================================================================
-final void SetOrigin (TVec NewOrigin, optional int properFloorCheck) {
+/*final*/ void SetOrigin (TVec NewOrigin, optional int properFloorCheck, optional bool dontRemember) {
   UnlinkFromWorld();
   Origin = NewOrigin;
   LastMoveOrigin = NewOrigin;
