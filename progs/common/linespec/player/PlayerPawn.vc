@@ -235,6 +235,30 @@ override void SetOrigin (TVec NewOrigin, optional int properFloorCheck, optional
 
 //==========================================================================
 //
+//  Physics
+//
+//  returns `false` if mobj is destroyed
+//  actually, `false` means "stop processing current tick code", so you
+//  can return `false` for this reason too
+//
+//==========================================================================
+override bool Physics (float DeltaTime) {
+  bool res = ::Physics(DeltaTime);
+  if (!IsDestroyed && XLevel) {
+    int tic = XLevel.TicTime;
+    if (!(tic&2) && tic != LastPosBufferTic) {
+      LastPosBufferPos = (LastPosBufferPos+1)%LastPosBuffer.length;
+      LastPosBufferTic = tic;
+      LastPosBuffer[LastPosBufferPos] = Origin;
+      //printdebug("%C: saved tic to %s", self, LastPosBufferPos);
+    }
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
 //  GetPawnViewHeight
 //
 //==========================================================================
