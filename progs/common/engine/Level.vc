@@ -86,6 +86,8 @@ struct rep_light_t {
 struct VPolyLink3D {
   int srcpid;
   int destpid;
+  // for sequences, link all objects from `srcpid` to `destpid`
+  bool bSequence;
 };
 
 

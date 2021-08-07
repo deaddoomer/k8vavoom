@@ -5205,6 +5205,17 @@ override void PlayerTick (float deltaTime) {
   LeaveBootPrints(deltaTime);
 
   ProduceFootSteps(deltaTime);
+
+  #if 0
+  if (MO.Sector && MO.Sector.ownpobj) {
+    polyobj_t *po = MO.Sector.ownpobj;
+    if (po.posector) {
+      // this is 3d pobj
+      TVec vel = PolyobjThinker.CalcSpeedVector(po);
+      printdebug("PLAYER: 3d pobj #%s; velocity=%s", po.tag, vel);
+    }
+  }
+  #endif
 }
 
 

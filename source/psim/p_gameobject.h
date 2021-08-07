@@ -1306,6 +1306,7 @@ public:
   sector_t *refsector; // for normal polyobjects this is their spawn sector
   float refsectorOldFloorHeight; // to check if we need to move polyobject vertically
   polyobj_t *polink; // next polyobject in link chain
+  polyobj_t *polinkprev; // previous polyobject in link chain
   float angle;
   vint32 tag; // reference tag assigned in HereticEd
   vint32 mirror; // 0 usually means "none"

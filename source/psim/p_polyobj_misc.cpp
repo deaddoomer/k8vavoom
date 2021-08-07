@@ -31,6 +31,12 @@
 #endif
 
 
+enum {
+  PO_3D_LINK_SEQ = 9367,
+  PO_3D_LINK = 9368,
+};
+
+
 TArray<VEntity *> VLevel::poRoughEntityList; // moved to VLevel as static
 
 
@@ -905,8 +911,23 @@ void VLevel::UnlinkPolyobj (polyobj_t *po) {
 //  VLevel::Add3DPolyobjLink
 //
 //==========================================================================
-void VLevel::Add3DPolyobjLink (mthing_t * /*thing*/, int srcpid, int destpid) {
-  if (!srcpid || !destpid) return;
+void VLevel::Add3DPolyobjLink (mthing_t *thing, int srcpid, int destpid) {
+  if (!thing) Host_Error("Add3DPolyobjLink(): called without a thing");
+  vassert(thing);
+
+  bool isSeq = false;
+       if (thing->type == PO_3D_LINK) isSeq = false;
+  else if (thing->type == PO_3D_LINK_SEQ) isSeq = true;
+  else Host_Error("Add3DPolyobjLink(): called with invalid thing");
+
+  if (!isSeq) {
+    // normal link
+    if (!srcpid || !destpid) return;
+  } else {
+    // sequence link
+    if (srcpid == destpid) return;
+  }
+
   const int idx = NumPolyLinks3D++;
 
   VPolyLink3D *nl = new VPolyLink3D[NumPolyLinks3D];
@@ -916,6 +937,7 @@ void VLevel::Add3DPolyobjLink (mthing_t * /*thing*/, int srcpid, int destpid) {
 
   nl[idx].srcpid = srcpid;
   nl[idx].destpid = destpid;
+  nl[idx].flags = (isSeq ? VPolyLink3D::Flag_Sequence : VPolyLink3D::Flag_NothingZero);
 }
 
 

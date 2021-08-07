@@ -77,6 +77,42 @@ static final bool IsPolyobjBusy (polyobj_t *po) {
 
 //==========================================================================
 //
+//  GetSpeedVector
+//
+//==========================================================================
+TVec GetSpeedVector () {
+  return vector(0, 0);
+}
+
+
+//==========================================================================
+//
+//  CalcSpeedVector
+//
+//  used to calculate current polyobject speed
+//  this is so jumped player will retain the impulse
+//
+//==========================================================================
+static final TVec CalcSpeedVector (polyobj_t *po) {
+  while (po) {
+    while (po.SpecialData) {
+      PolyobjThinker curr = PolyobjThinker(po.SpecialData);
+      assert(curr);
+      if (!curr.isDestroyed) {
+        TVec res = curr.GetSpeedVector();
+        //FIXME: there can be more than one mover, but meh...
+        if (res) return res;
+      }
+      curr = curr.NextAction;
+    }
+    po = po.polinkprev;
+  }
+  return vector(0, 0);
+}
+
+
+//==========================================================================
+//
 //  Accumulate
 //
 //  returns `true` if `other` was accumulated (but won't destroy it)

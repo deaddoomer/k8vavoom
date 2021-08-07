@@ -87,6 +87,33 @@ override bool Accumulate (PolyobjThinker other) {
 
 //==========================================================================
 //
+//  GetSpeedVector
+//
+//  this is used for `PolyobjMoverRotator` too
+//
+//==========================================================================
+override TVec GetSpeedVector () {
+  if (!speed && !vspeed) return vector(0, 0);
+
+  float move = speed;
+  float absMove = fabs(move);
+  if (dist < absMove) move = dist*(move < 0.0 ? -1.0 : 1.0);
+  float dirangle = angle;
+  if (bUsePobjAngleToMove) {
+    polyobj_t *poly = XLevel.GetPolyobj(polyobj);
+    if (poly) dirangle = AngleMod360(poly.angle);
+  }
+  float xMove = move*cos(dirangle);
+  float yMove = move*sin(dirangle);
+  float zMove = vspeed;
+  if (vdist < fabs(zMove)) zMove = vdist*(zMove < 0.0 ? -1.0 : 1.0);
+
+  return vector(xMove, yMove, zMove);
+}
+
+
+//==========================================================================
+//
 //  Tick
 //
 //==========================================================================

@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>3D Polyobject specification for k8vavoom engine, v0.99.1</title>
+<title>3D Polyobject specification for k8vavoom engine, v0.99.2</title>
 <style>
 .content {
   /*width: 42em;*/
@@ -49,6 +49,7 @@ will look like platform floor for the player).
 
 <b>TOC</b><br>
 <div class="toc">
+<a href="#watsnew">What's new since the previous version</a><br>
 <a href="#drawit">How to draw 3d polyobject</a><br>
 <a href="#spawnit">How to spawn 3d polyobject</a><br>
 <a href="#setheight">How to set 3d polyobject height (and texture parameters meaning)</a><br>
@@ -172,17 +173,6 @@ by a moving 3d pobj side. This is useful to create vertical crushers, because ot
 <b>WARNING! Other things args must be zero! They may be used later, and if you will not set them
 to zeroes, your map may break in the future!</b>
 </p>
-<!--
-<p>
-Also, if anchor thing height is not zero, then 3d polyobject will be offset <b>from the destination sector</b>.
-Positive anchor height will move 3d polyobject floor to the destination sector floor, and then will offset up.
-Negative anchor height will move 3d polyobject ceiling to the destination sector ceiling, and then will offset down.
-</p>
-<p>
-Note that anchor height will ignore any polyobject links. I.e. it is mostly usable for simple one-sector platforms,
-not for complex multi-polyobject structures.
-</p>
--->
 
 
 <hr>
@@ -219,11 +209,18 @@ affect all linked "children". All operations on the link chain are atomic. I.e. 
 no objects in chain will be modified. Just think about the link chain as one big object.
 </p>
 <p>
-To link polyobjects, use things with editor id <b>9368</b>. Its first argument is a master polyobject id,
-its second argument is a secondary polyobject id. It will link the secondary polyobject to the master.
+To link polyobjects, use things with editor id <b>9368</b>. Its first argument is the master polyobject id,
+its second argument is the secondary polyobject id. It will link the secondary polyobject to the master.
 Note that you cannot link two or more polyobject to one master, so to create complex structures you have
 to link all polyobjects one to another, creating a "link chain". Linking all polyobjects to a single master
 <b>will not work</b>.
+</p>
+<p><a id="thing9367"></a>
+There is a simplier way to create a link chain of sequential polyobjects, with thing <b>9367</b>.
+Its first argument is the first polyobject id, and its second argument is the last polyobject id.
+The engine will link each polyobject to the next one (in backwards direction if the starting id is higher
+then the ending id). The sequence can have "holes" (i.e. you can setup link from 1 to 6, but only have
+polyobjects with ids 2 and 4, for example). The usual link chain restrictions still should be obeyed.
 </p>
 
 
@@ -525,6 +522,18 @@ Ambient lighting of 3d polyobject is controlled only by its inner sector light l
 "inherit" light level of the sector (or sectors) it is currently in. Dynamic light level change can be implemented
 in the future, but it will be opt-in (i.e. there will be a special flag to turn it on).
 </p>
+
+
+<hr>
+<a id="watsnew"></a><h1>What's new since the previous version</h1>
+<p><b>since v0.99.1</b></p>
+
+<p>
+ <ul>
+  <li>Added the thing (<a href="#thing9367">9367</a>) to specify polyobject link sequences.</li>
+ </ul>
+</p>
+
 
 </div>
 <!-- TODO: document moving and checking order, so other sourceports will be able to implement it in compatible way -->

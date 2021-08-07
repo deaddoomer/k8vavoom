@@ -473,17 +473,37 @@ void VLevel::InitPolyobjs () {
 
   // now assign polyobject links
   for (int f = 0; f < NumPolyLinks3D; ++f) {
-    const int src = PolyLinks3D[f].srcpid;
-    const int dest = PolyLinks3D[f].destpid;
-    if (!src || !dest) continue;
-    if (src == dest) Host_Error("pobj #%d is linked to itself", src);
-    polyobj_t *psrc = GetPolyobj(src);
-    if (!psrc) Host_Error("there is no pobj #%d for link source", src);
-    polyobj_t *pdest = GetPolyobj(dest);
-    if (!pdest) Host_Error("there is no pobj #%d for link destination", dest);
-    if (psrc == pdest) Host_Error("pobj #%d is linked to itself", src);
-    if (psrc->polink) Host_Error("pobj #%d is already linked to pobj #%d", src, psrc->polink->tag);
-    psrc->polink = pdest;
+    int src = PolyLinks3D[f].srcpid;
+    int dest = PolyLinks3D[f].destpid;
+    if (PolyLinks3D[f].flags&VPolyLink3D::Flag_Sequence) {
+      // sequence
+      polyobj_t *prev = nullptr;
+      for (; src != dest; src += (src > dest ? -1 : +1)) {
+        polyobj_t *curr = GetPolyobj(src);
+        if (curr) {
+          if (prev) {
+            if (prev->polink) Host_Error("pobj #%d is already linked to pobj #%d", prev->tag, prev->polink->tag);
+            if (curr->polinkprev) Host_Error("pobj #%d is already linked from other pobj #%d", curr->tag, curr->polinkprev->tag);
+            curr->polinkprev = prev;
+            prev->polink = curr;
+          }
+          prev = curr;
+        }
+      }
+    } else {
+      // normal
+      if (!src || !dest) continue;
+      if (src == dest) Host_Error("pobj #%d is linked to itself", src);
+      polyobj_t *psrc = GetPolyobj(src);
+      if (!psrc) Host_Error("there is no pobj #%d for link source", src);
+      polyobj_t *pdest = GetPolyobj(dest);
+      if (!pdest) Host_Error("there is no pobj #%d for link destination", dest);
+      if (psrc == pdest) Host_Error("pobj #%d is linked to itself", src);
+      if (psrc->polink) Host_Error("pobj #%d is already linked to pobj #%d", src, psrc->polink->tag);
+      if (pdest->polinkprev) Host_Error("pobj #%d is already linked from other pobj #%d", dest, pdest->polinkprev->tag);
+      pdest->polinkprev = psrc;
+      psrc->polink = pdest;
+    }
   }
 
   // check for loops

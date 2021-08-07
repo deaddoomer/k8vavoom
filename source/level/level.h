@@ -293,6 +293,12 @@ struct VLightParams {
 struct VPolyLink3D {
   vint32 srcpid;
   vint32 destpid;
+  enum {
+    // for sequences, link all objects from `srcpid` to `destpid`
+    Flag_NothingZero = 0u,
+    Flag_Sequence = 1u<<0,
+  };
+  vuint32 flags;
 };
 
 

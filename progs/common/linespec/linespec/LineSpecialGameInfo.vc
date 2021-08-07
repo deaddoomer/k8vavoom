@@ -46,6 +46,7 @@ enum {
   PO_SPAWNCRUSH_TYPE = 9302,
   PO_SPAWNHURT_TYPE = 9303,
 
+  PO_3D_LINK_SEQ = 9367,
   PO_3D_LINK = 9368,
   PO_SPAWN_3D_TYPE = 9369,
 
@@ -1530,6 +1531,7 @@ override void SpawnWorld (VLevel InLevel) {
         mthing->type = 0;
         break;
       case PO_3D_LINK:
+      case PO_3D_LINK_SEQ:
         InLevel.Add3DPolyobjLink(mthing, mthing->args[0], mthing->args[1]);
         mthing->type = 0;
         break;
