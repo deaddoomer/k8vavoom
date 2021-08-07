@@ -8,7 +8,9 @@ $include "common/texshade.inc"
 uniform float Alpha;
 #ifdef LIGHTING
 uniform vec4 Light;
+#ifdef RECOLOR
 uniform float MaxIntensity; // [0..1]
+#endif
 #endif
 
 varying vec2 TextureCoordinate;
