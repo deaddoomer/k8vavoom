@@ -4933,6 +4933,8 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
+  // chainsaw (and other "pull-in") attacks sets this flag
+  // this code does "pulling in"
   if (Actor(MO).bJustAttacked) {
     ForwardMove = 100.0;
     SideMove = 0.0;
@@ -4955,9 +4957,13 @@ override void PlayerTick (float deltaTime) {
     FlyMove = 0.0;
   }
 
+  // update map timer
   WorldTimer += deltaTime;
+
+  // process inventory
   InventoryTick(deltaTime);
 
+  // dead player doesn't have to perform alot of actions ;-)
   if (PlayerState == PST_DEAD) {
     DeathPlayerTick(deltaTime);
     return;
@@ -4983,6 +4989,7 @@ override void PlayerTick (float deltaTime) {
     k8HealthAccum_Amount = 0;
   }
 
+  // "elven gift" message
   if (k8ElvenGiftMessageTime <= 0) {
     k8ElvenGiftMessageTime += deltaTime;
     if (k8ElvenGiftMessageTime >= 0) {
@@ -4991,6 +4998,7 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
+  // "elven senses" message
   if (k8BossesDetected <= 0) {
     k8BossesDetected += deltaTime;
     if (k8BossesDetected >= 0) {
@@ -5019,8 +5027,10 @@ override void PlayerTick (float deltaTime) {
   // copy view angles
   if (MO == Camera) MO.Angles = ViewAngles;
 
+  // jump time cooldown
   if (JumpTime) JumpTime = fmax(0.0, JumpTime-deltaTime);
 
+  // call specialized ticker for morped player
   if (MorphTime) PlayerPawn(MO).MorphPlayerThink();
 
   // move around
@@ -5045,8 +5055,10 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
+  // bobbing, and view height calculation
   CalcHeight(deltaTime);
 
+  // scrollers and such
   if (MO.Sector) {
     PlayerProcessScrollSectors(deltaTime);
     if (MO.Sector->special || MO.Sector->Damage || SectorHas3DFloors(MO.Sector)) PlayerInSpecialSector(deltaTime);
@@ -5059,6 +5071,7 @@ override void PlayerTick (float deltaTime) {
     LastSectorDamageTic = Level.XLevel.TicTime;
   }
 
+  // falling sound
   if (MO.Velocity.z <= -35.0*35.0 && MO.Velocity.z >= -40.0*35.0 &&
       !MorphTime && MO.WaterLevel == 0 &&
       !GetSoundPlayingInfo(MO, GetSoundID('*falling')))
@@ -5069,6 +5082,7 @@ override void PlayerTick (float deltaTime) {
   // check for weapon change (and other impulse commands)
   if (Impulse) PlayerImpulse();
 
+  // cheater "superbullet" shots
   if (Buttons&BT_SUPERBULLET) {
     float lt = MO.XLevel.Time;
     if (lt >= k8NextSuperBulletTime) {
@@ -5077,7 +5091,7 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
-  // check for use
+  // use action
   if (Buttons&BT_USE) {
     if (!bUseDown) {
       float ur, utr;
@@ -5114,7 +5128,7 @@ override void PlayerTick (float deltaTime) {
   // cycle psprites
   MovePsprites(deltaTime);
 
-  // counters
+  // poison/damage/etc. counters
   if (PoisonCount && Level.XLevel.Time-LastPoisonTime >= 0.5) {
     PoisonCount -= 5;
     if (PoisonCount < 0) PoisonCount = 0;
@@ -5141,7 +5155,7 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
-  // [RH] Zoom the player's FOV
+  // zoom the player's FOV
   float desired = DesiredFOV; // default player FOV
   // adjust FOV using on the currently held weapon
   if (PlayerState != PST_DEAD && // no adjustment while dead
