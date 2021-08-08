@@ -55,7 +55,8 @@
 VCvarB r_models("r_models", true, "Allow 3d models?", 0/*CVAR_Archive*/);
 #endif
 
-extern VCvarI sv_use_timefrac;
+
+static VCvarI sv_use_timefrac("sv_use_timefrac", "0", "Accumulate unused frame times? This *may* give slightly more stable capped framerates, but it usually don't. (0:none;1:full;2:oneframe)", CVAR_Archive);
 
 #ifdef CLIENT
 extern VCvarB r_wipe_enabled;

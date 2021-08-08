@@ -180,8 +180,6 @@ static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-
 static VCvarI cl_framerate("cl_framerate", "140", "Framerate cap for client rendering.", CVAR_Archive);
 static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive);
 
-VCvarI sv_use_timefrac("sv_use_timefrac", "0", "Accumulate unused frame times? This *may* give slightly stable capped framerates, but it usually don't. (0:none;1:full;2:oneframe)", CVAR_Archive);
-
 // this is hack for my GPU
 #ifdef CLIENT
 static double clientBadNetTimoutReleaseTime = 0;
