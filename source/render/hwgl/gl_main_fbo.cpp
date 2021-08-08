@@ -403,18 +403,25 @@ bool VOpenGLDrawer::FBO::swapColorTextures (FBO *other) {
   }
 
   // attach our new color texture
-  glBindTexture(GL_TEXTURE_2D, mColorTid);
-  GLDRW_CHECK_ERROR("FBO: glBindTexture");
+  //glBindTexture(GL_TEXTURE_2D, mColorTid);
+  //GLDRW_CHECK_ERROR("FBO: glBindTexture");
   mOwner->p_glObjectLabelVA(GL_TEXTURE, mColorTid, "FBO(%u) color texture", mFBO);
   mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+  GLDRW_CHECK_ERROR("swapColorTextures: bind self");
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mColorTid, 0);
+  GLDRW_CHECK_ERROR("swapColorTextures: set self color attachment");
 
   // attach other new color texture
-  glBindTexture(GL_TEXTURE_2D, other->mColorTid);
-  GLDRW_CHECK_ERROR("FBO: glBindTexture");
+  //glBindTexture(GL_TEXTURE_2D, other->mColorTid);
+  //GLDRW_CHECK_ERROR("FBO: glBindTexture");
   mOwner->p_glObjectLabelVA(GL_TEXTURE, other->mColorTid, "FBO(%u) color texture", other->mFBO);
   mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, other->mFBO);
+  GLDRW_CHECK_ERROR("swapColorTextures: bind other");
   mOwner->p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, other->mColorTid, 0);
+  GLDRW_CHECK_ERROR("swapColorTextures: set other color attachment");
+
+  //glBindTexture(GL_TEXTURE_2D, 0);
+  mOwner->p_glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   mOwner->ReactivateCurrentFBO();
   return true;
