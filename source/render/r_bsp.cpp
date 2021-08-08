@@ -527,22 +527,23 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
         {
           const unsigned lc = r_viewregion->params->LightColor&0xffffffu;
           if (lc != 0 && lc != 0xffffffu) {
+            bool doRegionCheck = false;
             if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !AbsSideLight) {
-              underwaterLight = true; //(r_viewregion == secregion);
-              /*
-              if (!underwaterLight) {
-                // check walls
-                for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
-                  if (reg == r_viewregion) {
-                    underwaterLight = true;
-                    break;
-                  }
-                }
-              }
-              */
+              underwaterLight = (r_viewregion == secregion);
+              doRegionCheck = !underwaterLight;
             } else if (surfaceType != SFT_Wall) {
               // check flats
-              underwaterLight = true; //(r_viewregion == secregion);
+              underwaterLight = (r_viewregion == secregion);
+              doRegionCheck = !underwaterLight;
+            }
+            // check regions
+            if (doRegionCheck) {
+              for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
+                if (reg == r_viewregion || reg->extraline == r_viewregion->extraline) {
+                  underwaterLight = true;
+                  break;
+                }
+              }
             }
             /*
             if (underwaterLight) {
