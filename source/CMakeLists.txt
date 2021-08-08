@@ -158,9 +158,6 @@ set(TEXTURELIB_SOURCES
 )
 
 set(RENDERBASE_SOURCES
-  render/anorm_dots.h
-  render/anorms.h
-  render/fmd2defs.h
   render/r_local.h
   render/r_public.h
   render/r_shared.h
@@ -182,6 +179,11 @@ set(RENDERBASE_SOURCES
   render/r_main_reg.cpp
   render/r_main_adv.cpp
   render/r_model.cpp
+  render/r_model_gz.cpp
+  render/modelparse/md2_normals.h
+  render/modelparse/r_parsecommon.cpp
+  render/modelparse/r_parse_md2.cpp
+  render/modelparse/r_parse_md3.cpp
   render/r_particle.cpp
   render/r_portal.cpp
   render/r_sky.cpp

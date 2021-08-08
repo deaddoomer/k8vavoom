@@ -23,10 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-// included from "r_model_parsers.cpp"
-
-#define IDPOLY3HEADER  (((vuint32)'3'<<24)+((vuint32)'P'<<16)+((vuint32)'D'<<8)+(vuint32)'I')
-#define MD3_VERSION    (15)
+#include "../../gamedefs.h"
+#include "../r_local.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -167,7 +165,7 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
 
   const MD3Header *pmodel = (const MD3Header *)Data;
 
-  if (pmodel->get_ver() != MD3_VERSION) Sys_Error("model '%s' has wrong version number (%u should be %i)", *this->Name, pmodel->get_ver(), MD3_VERSION);
+  if (pmodel->get_ver() != IDMD3_VERSION) Sys_Error("model '%s' has wrong version number (%u should be %i)", *this->Name, pmodel->get_ver(), IDMD3_VERSION);
   if (pmodel->get_frameNum() < 1 || pmodel->get_frameNum() > 1024) Sys_Error("model '%s' has invalid numebr of frames: %u", *this->Name, pmodel->get_frameNum());
   if (pmodel->get_surfaceNum() < 1) Sys_Error("model '%s' has no meshes", *this->Name);
   if ((unsigned)this->MeshIndex >= pmodel->get_surfaceNum()) Sys_Error("model '%s' has no mesh with index %d", *this->Name, this->MeshIndex);

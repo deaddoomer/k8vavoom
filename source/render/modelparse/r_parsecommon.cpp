@@ -23,47 +23,13 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-// included from "r_model.cpp"
-static VCvarB r_models_verbose_loading("r_models_verbose_loading", false, "Log loaded 3D models?", CVAR_PreInit);
-
-// TODO: tune this
-#define MAXALIASVERTS    (65536)
-#define MAXALIASSTVERTS  (65536)
-
-#include "r_model_parsers_md2.cpp"
-#include "r_model_parsers_md3.cpp"
+#include "../../gamedefs.h"
+#include "../r_local.h"
 
 
-//==========================================================================
-//
-//  GZModelDefEx::ParseMD2Frames
-//
-//  return `true` if model was succesfully found and parsed, or
-//  false if model wasn't found or in invalid format
-//  WARNING: don't clear `names` array!
-//
-//==========================================================================
-bool GZModelDefEx::ParseMD2Frames (VStr mdpath, TArray<VStr> &names) {
-  return VMeshModel::LoadMD2Frames(mdpath, names);
-}
+VCvarB r_models_verbose_loading("r_models_verbose_loading", false, "Log loaded 3D models?", CVAR_PreInit);
+VCvarB mdl_report_errors("mdl_report_errors", false, "Show errors in alias models?", 0/*CVAR_Archive*/);
 
-
-//bool IsKnownModelFormat (VStream *strm);
-
-
-//==========================================================================
-//
-//  GZModelDefEx::IsModelFileExists
-//
-//==========================================================================
-bool GZModelDefEx::IsModelFileExists (VStr mdpath) {
-  if (mdpath.length() == 0) return false;
-  VStream *strm = FL_OpenFileRead(mdpath);
-  if (!strm) return false;
-  bool okfmt = VMeshModel::IsKnownModelFormat(strm);
-  VStream::Destroy(strm);
-  return okfmt;
-}
 
 
 //==========================================================================

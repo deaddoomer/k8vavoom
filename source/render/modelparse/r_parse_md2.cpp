@@ -23,11 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-// included from "r_model_parsers.cpp"
-
-// little-endian "IDP2"
-#define IDPOLY2HEADER  (((vuint32)'2'<<24)+((vuint32)'P'<<16)+((vuint32)'D'<<8)+(vuint32)'I')
-#define ALIAS_VERSION  (8)
+#include "../../gamedefs.h"
+#include "../r_local.h"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -111,7 +108,7 @@ struct MD2Vertex {
 
 enum { NUMVERTEXNORMALS = 162 };
 static const float r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "anorms.h"
+#include "md2_normals.h"
 };
 
 
@@ -145,7 +142,7 @@ bool VMeshModel::LoadMD2Frames (VStr mdpath, TArray<VStr> &names) {
 
   const MD2Header *pmodel = (const MD2Header *)data.ptr();
 
-  if (pmodel->get_version() != ALIAS_VERSION) return false;
+  if (pmodel->get_version() != IDMD2_VERSION) return false;
   if (pmodel->get_numverts() <= 0 || pmodel->get_numverts() > MAXALIASVERTS) return false;
   if (pmodel->get_numstverts() <= 0 || pmodel->get_numstverts() > MAXALIASSTVERTS) return false;
   if (pmodel->get_numtris() <= 0 || pmodel->get_numtris() > 65536) return false;
@@ -179,7 +176,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
 
-  if (pmodel->get_version() != ALIAS_VERSION) Sys_Error("model '%s' has wrong version number (%i should be %i)", *this->Name, pmodel->get_version(), ALIAS_VERSION);
+  if (pmodel->get_version() != IDMD2_VERSION) Sys_Error("model '%s' has wrong version number (%i should be %i)", *this->Name, pmodel->get_version(), IDMD2_VERSION);
   if (pmodel->get_numverts() <= 0) Sys_Error("model '%s' has no vertices", *this->Name);
   if (pmodel->get_numverts() > MAXALIASVERTS) Sys_Error("model '%s' has too many vertices", *this->Name);
   if (pmodel->get_numstverts() <= 0) Sys_Error("model '%s' has no texture vertices", *this->Name);

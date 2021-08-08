@@ -30,6 +30,7 @@
 #include "../dehacked/vc_dehacked.h"
 #include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "r_local.h"
+#include "r_local_gz.h"
 
 
 #define SMOOTHSTEP(x) ((x)*(x)*(3.0f-2.0f*(x)))
@@ -38,7 +39,6 @@
 extern VCvarF gl_alpha_threshold;
 static inline float getAlphaThreshold () { float res = gl_alpha_threshold; if (res < 0) res = 0; else if (res > 1) res = 1; return res; }
 
-static VCvarB mdl_report_errors("mdl_report_errors", false, "Show errors in alias models?", 0/*CVAR_Archive*/);
 static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", 0/*CVAR_Archive*/);
 
 static VCvarB gl_dbg_log_model_rendering("gl_dbg_log_model_rendering", false, "Some debug log.", CVAR_PreInit);
@@ -266,13 +266,42 @@ static TMap<VStr, VModel *> fixedModelMap;
 
 // ////////////////////////////////////////////////////////////////////////// //
 static void ParseGZModelDefs ();
-#include "r_model_gz.cpp"
+
 
 class GZModelDefEx : public GZModelDef {
 public:
   virtual bool ParseMD2Frames (VStr mdpath, TArray<VStr> &names) override;
   virtual bool IsModelFileExists (VStr mdpath) override;
 };
+
+
+//==========================================================================
+//
+//  GZModelDefEx::ParseMD2Frames
+//
+//  return `true` if model was succesfully found and parsed, or
+//  false if model wasn't found or in invalid format
+//  WARNING: don't clear `names` array!
+//
+//==========================================================================
+bool GZModelDefEx::ParseMD2Frames (VStr mdpath, TArray<VStr> &names) {
+  return VMeshModel::LoadMD2Frames(mdpath, names);
+}
+
+
+//==========================================================================
+//
+//  GZModelDefEx::IsModelFileExists
+//
+//==========================================================================
+bool GZModelDefEx::IsModelFileExists (VStr mdpath) {
+  if (mdpath.length() == 0) return false;
+  VStream *strm = FL_OpenFileRead(mdpath);
+  if (!strm) return false;
+  bool okfmt = VMeshModel::IsKnownModelFormat(strm);
+  VStream::Destroy(strm);
+  return okfmt;
+}
 
 
 //==========================================================================
@@ -1126,9 +1155,6 @@ static void ParseGZModelDefs () {
     delete mdl;
   }
 }
-
-
-#include "r_model_parsers.cpp"
 
 
 //==========================================================================
