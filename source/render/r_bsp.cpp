@@ -445,6 +445,58 @@ void VRenderLevelShared::CommonQueueSurface (surface_t *surf, SFCType type) {
 
 //==========================================================================
 //
+//  CheckUnderwaterSurface
+//
+//==========================================================================
+static bool CheckUnderwaterSurface (const surface_t *surf, const sec_region_t *reg, const bool isWall) {
+  float floorNZ = fabsf(reg->efloor.GetNormalZ());
+  const bool flipFloor = (floorNZ < 0.0f);
+  const bool normalFloor = (fabsf(floorNZ) == 1.0f);
+  // faster check for non-sloped plane
+  if (normalFloor) floorNZ = reg->efloor.GetRealDist();
+
+  float ceilingNZ = reg->eceiling.GetNormalZ();
+  const bool flipCeiling = (ceilingNZ > 0.0f);
+  const bool normalCeiling = (fabsf(ceilingNZ) == 1.0f);
+  // faster check for non-sloped plane
+  if (normalCeiling) ceilingNZ = reg->eceiling.GetRealDist();
+
+  const SurfVertex *vtx = surf->verts;
+  for (int fff = surf->count; fff--; ++vtx) {
+    const TVec &v = vtx->vec();
+    float fdist, cdist;
+    if (normalFloor) {
+      fdist = v.z-floorNZ;
+    } else {
+      fdist = reg->efloor.PointDistance(v);
+      if (flipFloor) fdist = -fdist; // floor looks down
+    }
+    if (normalCeiling) {
+      cdist = ceilingNZ-v.z;
+    } else {
+      cdist = reg->eceiling.PointDistance(v);
+      if (flipCeiling) cdist = -cdist; // ceiling looks up
+    }
+    // above or below?
+    if (isWall) {
+      // wall
+      if (fdist < 0.0f || cdist < 0.0f) {
+        return false;
+      }
+    } else {
+      // flat
+      if (fdist >= 0.0f && cdist >= 0.0f) {
+        return true;
+      }
+    }
+  }
+
+  return isWall;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::DrawSurfaces
 //
 //==========================================================================
@@ -756,32 +808,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       sec_region_t * const *rrp = uwregs.ptr();
       for (int ridx = uwregs.length(); ridx--; ++rrp) {
         const sec_region_t *reg = *rrp;
-        const bool flipFloor = (reg->efloor.GetNormalZ() < 0.0f);
-        const bool flipCeiling = (reg->eceiling.GetNormalZ() > 0.0f);
-        bool allinside = (surfaceType == SFT_Wall);
-        const SurfVertex *vtx = surf->verts;
-        for (int fff = surf->count; fff--; ++vtx) {
-          const TVec &v = vtx->vec();
-          float fdist = reg->efloor.PointDistance(v);
-          float cdist = reg->eceiling.PointDistance(v);
-          if (flipFloor) fdist = -fdist; // floor looks down
-          if (flipCeiling) cdist = -cdist; // ceiling looks up
-          // above or below?
-          if (surfaceType == SFT_Wall) {
-            // wall
-            if (fdist < 0.0f || cdist < 0.0f) {
-              allinside = false;
-              break;
-            }
-          } else {
-            // flat
-            if (fdist >= 0.0f && cdist >= 0.0f) {
-              allinside = true;
-              break;
-            }
-          }
-        }
-        if (allinside) {
+        if (CheckUnderwaterSurface(surf, reg, (surfaceType == SFT_Wall))) {
           // found good underwater region
           //FIXME: check for overlapped regions
           bestuwreg = reg;
