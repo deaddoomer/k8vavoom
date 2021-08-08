@@ -56,20 +56,6 @@ extern VCvarB mdl_report_errors;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// sprite orientations
-enum {
-  SPR_VP_PARALLEL_UPRIGHT, // 0 (default)
-  SPR_FACING_UPRIGHT, // 1
-  SPR_VP_PARALLEL, // 2: parallel to camera visplane
-  SPR_ORIENTED, // 3
-  SPR_VP_PARALLEL_ORIENTED, // 4 (xy billboard)
-  SPR_VP_PARALLEL_UPRIGHT_ORIENTED, // 5
-  SPR_ORIENTED_OFS, // 6 (offset slightly by pitch -- for floor/ceiling splats)
-  SPR_FLAT, // 7 (offset slightly by pitch -- for floor/ceiling splats; ignore roll angle)
-  SPR_WALL, // 8 (offset slightly by yaw -- for wall splats; ignore pitch and roll angle)
-};
-
-
 enum ERenderPass {
   // for regular renderer
   RPASS_Normal,

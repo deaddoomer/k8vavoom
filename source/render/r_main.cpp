@@ -1873,7 +1873,24 @@ void VRenderLevelShared::RenderPlayerView () {
     }
   }
 
-  const int sct = (sctreg && (sctreg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_NonSolid)) ? sctreg->params->contents : 0);
+  int sct = 0;
+  if (sctreg) {
+    if (sctreg->regflags&sec_region_t::RF_BaseRegion) {
+      if (r_viewleaf->sector->IsUnderwater()) {
+        sct = CONTENTS_BOOMWATER;
+      } else {
+        const TVec p = Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f);
+        if (r_viewleaf->sector->heightsec && r_viewleaf->sector->heightsec->IsUnderwater() &&
+            p.z <= r_viewleaf->sector->heightsec->floor.GetPointZClamped(p))
+        {
+          sct = CONTENTS_BOOMWATER;
+        }
+      }
+    } else if (sctreg->regflags&sec_region_t::RF_NonSolid) {
+      sct = sctreg->params->contents;
+    }
+  }
+
   if (sct > 0) {
     //GCon->Logf(NAME_Debug, "lightlevel=%u; LightColor=0x%08x; Fade=0x%08x", sctreg->params->lightlevel, sctreg->params->LightColor, sctreg->params->Fade);
 

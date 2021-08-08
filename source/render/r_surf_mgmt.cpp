@@ -567,7 +567,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
 
 //==========================================================================
 //
-//  VRenderLevelShared::CreateWorldSurfFromWV
+//  VRenderLevelShared::CreateWorldSurfFromWVNoMoreSplits
 //
 //  quad points (usually) are:
 //   [0]: left bottom point
@@ -576,7 +576,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
 //   [3]: right bottom point
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
+void VRenderLevelShared::CreateWorldSurfFromWVNoMoreSplits (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
   if (!isValidQuad(quad)) return;
 
   TVec *wstart = quad;
@@ -592,6 +592,27 @@ void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, se
   }
 
   AppendSurfaces(sp, CreateWSurf(wstart, &sp->texinfo, seg, sub, wcount, typeFlags));
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::CreateWorldSurfFromWV
+//
+//  quad points (usually) are:
+//   [0]: left bottom point
+//   [1]: left top point
+//   [2]: right top point
+//   [3]: right bottom point
+//
+//  do some extra work here: split the quad with non-solid 3d floor flats
+//  this way we'll be able to apply lighting to wall parts
+//
+//==========================================================================
+void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
+  if (!isValidQuad(quad)) return;
+
+  return CreateWorldSurfFromWVNoMoreSplits(sub, seg, sp, quad, typeFlags);
 }
 
 

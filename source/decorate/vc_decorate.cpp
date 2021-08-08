@@ -25,7 +25,6 @@
 //**************************************************************************
 #include "../../libs/vavoomc/vc_local.h"
 #include "../gamedefs.h"
-#include "../render/r_local.h" // for SPR_xxx
 #include "../psim/p_entity.h"
 #include "../filesys/files.h"
 #include "vc_decorate.h"
@@ -39,6 +38,11 @@ static VCvarB dbg_debug_weapon_slots("dbg_debug_weapon_slots", false, "Debug wea
 static VCvarB dbg_dump_flag_changes("dbg_dump_flag_changes", false, "Dump all flag changes?", CVAR_PreInit);
 VCvarB dbg_show_missing_classes("dbg_show_missing_classes", false, "Show missing classes?", CVAR_PreInit|CVAR_Archive);
 VCvarB decorate_fail_on_unknown("decorate_fail_on_unknown", false, "Fail on unknown decorate properties?", CVAR_PreInit|CVAR_Archive);
+
+// sorry for this!
+extern int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname=VStr::EmptyString);
+extern int R_GetBloodTranslation (int Col, bool allowAdd);
+
 
 static int dcTotalSourceSize = 0;
 
