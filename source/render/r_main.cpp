@@ -1985,7 +1985,7 @@ bool VRenderLevelShared::UpdateCameraTexture (VEntity *Camera, int TexNum, int F
 //  VRenderLevelShared::GetFade
 //
 //==========================================================================
-vuint32 VRenderLevelShared::GetFade (sec_region_t *reg, bool isFloorCeiling) {
+vuint32 VRenderLevelShared::GetFade (const sec_region_t *reg, bool isFloorCeiling) {
   if (r_fog_test) return 0xff000000|(int(255*r_fog_r)<<16)|(int(255*r_fog_g)<<8)|int(255*r_fog_b);
   if (reg->params->Fade) {
     if (!(reg->regflags&sec_region_t::RF_OnlyVisual)) {

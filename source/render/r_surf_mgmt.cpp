@@ -609,8 +609,48 @@ void VRenderLevelShared::CreateWorldSurfFromWVNoMoreSplits (subsector_t *sub, se
 //  this way we'll be able to apply lighting to wall parts
 //
 //==========================================================================
-void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept {
+void VRenderLevelShared::CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4],
+                                                vuint32 typeFlags, const sec_region_t *fromreg) noexcept
+{
   if (!isValidQuad(quad)) return;
+
+  if (seg->linedef && !seg->pobj && sub->sector->Has3DFloors()) {
+    TVec qbot[4];
+    TVec qtop[4];
+    for (const sec_region_t *reg = (fromreg ? fromreg->next : sub->sector->eregions->next); reg; reg = reg->next) {
+      if ((reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) != sec_region_t::RF_NonSolid) continue;
+      // possibly need to split the wall with this
+      // ignore paper-thin regions, they have no volume anyway
+      if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) continue;
+
+      const int floorclf = (reg->regflags&sec_region_t::RF_SkipFloorSurf ? QInvalid : ClassifyQuadVsPlane(quad, reg->efloor, true));
+      if (floorclf == QInvalid || floorclf == QBottom) continue; // completely below
+
+      // need to split with the floor?
+      if (floorclf == QIntersect) {
+        const bool hasBot = SplitQuadWithPlane(quad, reg->efloor, qbot, qtop);
+        if (hasBot) {
+          CreateWorldSurfFromWV(sub, seg, sp, qbot, typeFlags, reg);
+        }
+        if (!isValidQuad(qtop)) return; // nothing to do
+        // from now on, process splitted quad
+        memcpy((void *)&quad[0], (const void *)&qtop[0], sizeof(TVec)*4);
+      }
+
+      const int ceilclf = (reg->regflags&sec_region_t::RF_SkipCeilSurf ? QInvalid : ClassifyQuadVsPlane(quad, reg->eceiling, false));
+      if (ceilclf == QInvalid || ceilclf == QTop) continue; // completely above
+
+      if (ceilclf == QIntersect) {
+        const bool hasBot = SplitQuadWithPlane(quad, reg->eceiling, qbot, qtop);
+        if (isValidQuad(qtop)) {
+          CreateWorldSurfFromWV(sub, seg, sp, qtop, typeFlags, reg);
+        }
+        if (!hasBot) return;
+        // from now on, process splitted quad
+        memcpy((void *)&quad[0], (const void *)&qbot[0], sizeof(TVec)*4);
+      }
+    }
+  }
 
   return CreateWorldSurfFromWVNoMoreSplits(sub, seg, sp, quad, typeFlags);
 }

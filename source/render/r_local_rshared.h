@@ -632,7 +632,7 @@ protected:
   void SetupCameraFrame (VEntity *, VTexture *, int, refdef_t *);
   void MarkLeaves ();
   bool UpdateCameraTexture (VEntity *Camera, int TexNum, int FOV); // returns `true` if camera texture was updated
-  vuint32 GetFade (sec_region_t *reg, bool isFloorCeiling=false);
+  vuint32 GetFade (const sec_region_t *reg, bool isFloorCeiling=false);
 
   enum {
     CST_Normal,
@@ -766,7 +766,7 @@ public:
 
   // WARNING! this may modify `quad`
   // this may split the quad with non-solid 3d floor flats
-  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags) noexcept;
+  void CreateWorldSurfFromWV (subsector_t *sub, seg_t *seg, segpart_t *sp, TVec quad[4], vuint32 typeFlags, const sec_region_t *fromreg=nullptr) noexcept;
 
   // cut quad with regions (used to cut out parts obscured by 3d floors)
   // WARNING! this may modify `quad`
@@ -850,6 +850,8 @@ protected:
 
   // quad must be valid; returns one of the `Q*` constants above
   static int ClassifyQuadVsRegion (const TVec quad[4], const sec_region_t *reg) noexcept;
+
+  static int ClassifyQuadVsPlane (const TVec quad[4], const TSecPlaneRef &regplane, bool isFloor) noexcept;
 
   // splits quad with a non-vertical plane
   // returns `false` if there is no bottom quad

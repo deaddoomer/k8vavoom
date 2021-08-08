@@ -91,6 +91,10 @@ static int oldPortalDepth = -666;
 double dbgCheckVisTime = 0;
 
 
+// sorry for this global!
+static TArray<sec_region_t *> uwregs;
+
+
 //==========================================================================
 //
 //  ClipSegToSomething
@@ -473,11 +477,12 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   const int surfaceType =
     surf->plane.normal.z == 0.0f ? SFT_Wall :
     (surf->plane.normal.z > 0.0f ? SFT_Floor : SFT_Ceiling);
-
   vuint32 lightColor;
 
   bool complexLight = false; // do we need to set wall surfaces to proper light level from 3d floors?
   bool underwaterLight = false;
+  // list of underwater regions
+  uwregs.resetNoDtor();
 
   // calculate lighting for floors and ceilings
   //TODO: do this in 3d floor setup
@@ -507,7 +512,6 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
             //if (!(secregion->regflags&sec_region_t::RF_BaseRegion)) return;
           }
         } else if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !FixedLight && !AbsSideLight) {
-          // if we're underwater, and it has "strange" lighting, use it
           // if we don't have regions that may affect light, don't do it
           for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
             if ((reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_SaneRegion|sec_region_t::RF_BaseRegion)) == 0) {
@@ -518,40 +522,22 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
         }
 
         // check for underwater light level change
-        //FIXME: this is wrong, because side walls aren't properly split,
-        //       so we won't have correct lighting
-        if (/*r_viewregion != secregion &&**/
-            r_underwater_colored_light.asBool() &&
-            !FixedLight && r_viewregion->extraline && r_viewregion->params->contents &&
-            (r_viewregion->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_NonSolid)) == sec_region_t::RF_NonSolid)
-        {
-          const unsigned lc = r_viewregion->params->LightColor&0xffffffu;
-          if (lc != 0 && lc != 0xffffffu) {
-            bool doRegionCheck = false;
-            if (surfaceType == SFT_Wall && seg && seg->frontsector == sub->sector && !AbsSideLight) {
-              underwaterLight = (r_viewregion == secregion);
-              doRegionCheck = !underwaterLight;
-            } else if (surfaceType != SFT_Wall) {
-              // check flats
-              underwaterLight = (r_viewregion == secregion);
-              doRegionCheck = !underwaterLight;
-            }
-            // check regions
-            if (doRegionCheck) {
-              for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
-                if (reg == r_viewregion || reg->extraline == r_viewregion->extraline) {
-                  underwaterLight = true;
-                  break;
-                }
-              }
-            }
-            /*
-            if (underwaterLight) {
-              //GCon->Logf(NAME_Debug, "UWLIGHT!");
-              LightParams = r_viewregion->params;
-              lightColor = LightParams->LightColor;
-            }
-            */
+        // to do this, build the list of underwater subregions to check
+        if (r_underwater_colored_light.asBool() && !FixedLight) {
+          //FIXME: process fake planes (heightsec) here too!
+          for (sec_region_t *reg = sub->sector->eregions->next; reg; reg = reg->next) {
+            if ((reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual)) != sec_region_t::RF_NonSolid) continue;
+            // check for "unusual" lighting
+            //const unsigned lc = reg->params->LightColor&0xffffffu;
+            //if (lc == 0 || lc == 0xffffffu) continue;
+            // check for paper-thin and invalid regions
+            if (reg->efloor.GetRealDist() >= reg->eceiling.GetRealDist()) continue;
+            // new underwater region
+            uwregs.append(reg);
+          }
+          underwaterLight = (uwregs.length() > 0);
+          if (underwaterLight && surfaceType == SFT_Wall && !(seg && seg->frontsector == sub->sector && !AbsSideLight)) {
+            underwaterLight = false;
           }
         }
       }
@@ -590,8 +576,6 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   lLev = R_GetLightLevel(FixedLight, lLev+ExtraLight);
   vuint32 Fade = GetFade(secregion, (surfaceType != SFT_Wall));
 
-  const int uwlLev = (!underwaterLight ? lLev : R_GetLightLevel(FixedLight, r_viewregion->params->lightlevel+ExtraLight));
-  const vuint32 uwFade = GetFade(r_viewregion, (surfaceType != SFT_Wall));
 
   /*
   if (surfaceType == SFT_Floor || surfaceType == SFT_Ceiling) {
@@ -718,7 +702,6 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
   } // done skybox rendering
 
   vuint32 sflight = (lLev<<24)|lightColor;
-  const vuint32 uwsflight = (uwlLev<<24)|(r_viewregion->params->LightColor);
 
   /* 3d floor flat debug code
   if (surfaceType == SFT_Floor) {
@@ -767,28 +750,50 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     // calculate underwater light
     if (underwaterLight && surf->count >= 3) {
       // check if it is inside our current region
-      //const bool isFlat = (surf->GetNormalZ() != 0.0f);
-      const SurfVertex *vtx = surf->verts;
-      for (int fff = surf->count; fff--; ++vtx) {
-        const TVec &v = vtx->vec();
-        const float fdist = r_viewregion->efloor.PointDistance(v);
-        const float cdist = r_viewregion->eceiling.PointDistance(v);
-        // above or below?
-        if (surfaceType == SFT_Wall) {
-          // wall
-          if (cdist > 0.0f) {
-            surf->Light = uwsflight;
-            surf->Fade = uwFade;
-            break;
-          }
-        } else {
-          // flat
-          if (fdist >= 0.0f && cdist >= 0.0f) {
-            surf->Light = uwsflight;
-            surf->Fade = uwFade;
-            break;
+      // for flats, it is enough to have at least one point inside
+      // for walls, all points must be inside
+      const sec_region_t *bestuwreg = nullptr;
+      sec_region_t * const *rrp = uwregs.ptr();
+      for (int ridx = uwregs.length(); ridx--; ++rrp) {
+        const sec_region_t *reg = *rrp;
+        const bool flipFloor = (reg->efloor.GetNormalZ() < 0.0f);
+        const bool flipCeiling = (reg->eceiling.GetNormalZ() > 0.0f);
+        bool allinside = (surfaceType == SFT_Wall);
+        const SurfVertex *vtx = surf->verts;
+        for (int fff = surf->count; fff--; ++vtx) {
+          const TVec &v = vtx->vec();
+          float fdist = reg->efloor.PointDistance(v);
+          float cdist = reg->eceiling.PointDistance(v);
+          if (flipFloor) fdist = -fdist; // floor looks down
+          if (flipCeiling) cdist = -cdist; // ceiling looks up
+          // above or below?
+          if (surfaceType == SFT_Wall) {
+            // wall
+            if (fdist < 0.0f || cdist < 0.0f) {
+              allinside = false;
+              break;
+            }
+          } else {
+            // flat
+            if (fdist >= 0.0f && cdist >= 0.0f) {
+              allinside = true;
+              break;
+            }
           }
         }
+        if (allinside) {
+          // found good underwater region
+          //FIXME: check for overlapped regions
+          bestuwreg = reg;
+          break;
+        }
+      }
+      if (bestuwreg) {
+        const int uwlLev = R_GetLightLevel(FixedLight, bestuwreg->params->lightlevel+ExtraLight);
+        const vuint32 uwFade = GetFade(bestuwreg, (surfaceType != SFT_Wall));
+        const vuint32 uwsflight = (uwlLev<<24)|(bestuwreg->params->LightColor);
+        surf->Light = uwsflight;
+        surf->Fade = uwFade;
       }
     }
 

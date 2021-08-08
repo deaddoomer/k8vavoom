@@ -101,6 +101,25 @@ int VRenderLevelShared::ClassifyQuadVsRegion (const TVec quad[4], const sec_regi
 
 //==========================================================================
 //
+//  VRenderLevelShared::ClassifyQuadVsPlane
+//
+//  quad must be valid
+//
+//==========================================================================
+int VRenderLevelShared::ClassifyQuadVsPlane (const TVec quad[4], const TSecPlaneRef &regplane, bool isFloor) noexcept {
+  const int v1floor = CheckQuadLine(quad[QUAD_V1_BOTTOM], quad[QUAD_V1_TOP], regplane, isFloor);
+  if (v1floor == QIntersect) return QIntersect;
+  const int v2floor = CheckQuadLine(quad[QUAD_V2_BOTTOM], quad[QUAD_V2_TOP], regplane, isFloor);
+  if (v2floor == QIntersect) return QIntersect;
+  // if on the different sides, it definitely intersects
+  if (v1floor != v2floor) return QIntersect;
+  // on the same side
+  return v1floor;
+}
+
+
+//==========================================================================
+//
 //  ConvertTriToQuad
 //
 //==========================================================================
