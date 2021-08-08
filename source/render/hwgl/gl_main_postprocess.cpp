@@ -65,6 +65,9 @@ public:
 };
 
 
+static bool oldBlend; // sorry for this global
+
+
 //==========================================================================
 //
 //  VOpenGLDrawer::EnsurePostSrcFBO
@@ -112,9 +115,6 @@ void VOpenGLDrawer::SetFSPosteffectMode () {
   glDisable(GL_SCISSOR_TEST);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  GLDisableBlend();
-  GLDisableDepthWrite();
-  glEnable(GL_TEXTURE_2D);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
@@ -143,6 +143,13 @@ void VOpenGLDrawer::PreparePostSrcFBO () {
   mfbo->activate();
 
   SetFSPosteffectMode();
+
+  oldBlend = GLIsBlendEnabled();
+  GLDisableBlend();
+  PushDepthMask();
+  GLDisableDepthWrite();
+
+  glEnable(GL_TEXTURE_2D);
 
   // source texture
   SelectTexture(0);
@@ -186,6 +193,8 @@ void VOpenGLDrawer::RenderPostSrcFullscreenQuad () {
 //
 //==========================================================================
 void VOpenGLDrawer::FinishPostSrcFBO () {
+  GLSetBlendEnabled(oldBlend);
+  PopDepthMask();
   // unbind texture 0
   SelectTexture(0);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -200,7 +209,7 @@ void VOpenGLDrawer::FinishPostSrcFBO () {
 //
 //==========================================================================
 void VOpenGLDrawer::PostSrcSaveMatrices () {
-  glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
+  glPushAttrib(GL_COLOR_BUFFER_BIT|GL_CURRENT_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
   glMatrixMode(GL_MODELVIEW); glPushMatrix();
   glMatrixMode(GL_PROJECTION); glPushMatrix();
 }
@@ -252,6 +261,7 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
     GeneratePaletteLUT();
   }
 
+  {
   PostSrcMatrixSaver matsaver(this, restoreMatrices);
   PreparePostSrcFBO();
 
@@ -278,6 +288,9 @@ void VOpenGLDrawer::Posteffect_Tonemap (int ax, int ay, int awidth, int aheight,
   SelectTexture(0);
 
   FinishPostSrcFBO();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
 
 
@@ -350,6 +363,8 @@ void VOpenGLDrawer::Posteffect_ColorMap (int cmap, int ax, int ay, int awidth, i
 void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidth, int aheight, bool restoreMatrices) {
   (void)ax; (void)ay; (void)awidth; (void)aheight;
   PostSrcMatrixSaver matsaver(this, restoreMatrices);
+
+  {
   PreparePostSrcFBO();
 
   UnderwaterFX.Activate();
@@ -361,6 +376,9 @@ void VOpenGLDrawer::Posteffect_Underwater (float time, int ax, int ay, int awidt
 
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
 
 
@@ -376,6 +394,7 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
   //if (!CasFX.CheckOpenGLVersion(glVerMajor, glVerMinor, false)) return;
   if (!gl_can_cas_filter.asBool()) return;
 
+  {
   PostSrcMatrixSaver matsaver(this, restoreMatrices);
   PreparePostSrcFBO();
 
@@ -387,6 +406,9 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
 
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
 
 
@@ -398,15 +420,18 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
 void VOpenGLDrawer::RenderTint (vuint32 CShift) {
   if ((CShift&0xff000000u) == 0) return;
 
+  {
   PostSrcMatrixSaver matsaver(this, true);
   SetFSPosteffectMode();
 
   glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_TEXTURE_2D);
 
-  const bool oldBlend = GLIsBlendEnabled();
+  oldBlend = GLIsBlendEnabled();
   GLEnableBlend();
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied
+  PushDepthMask();
+  GLDisableDepthWrite();
 
   DrawFixedCol.Activate();
   DrawFixedCol.SetColor(
@@ -423,6 +448,10 @@ void VOpenGLDrawer::RenderTint (vuint32 CShift) {
   DeactivateShader();
   glEnable(GL_TEXTURE_2D);
   GLSetBlendEnabled(oldBlend);
+  PopDepthMask();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
 
 
@@ -434,15 +463,15 @@ void VOpenGLDrawer::RenderTint (vuint32 CShift) {
 //
 //==========================================================================
 void VOpenGLDrawer::PostprocessOvebright () {
+  {
   //GCon->Log(NAME_Debug, "VOpenGLDrawer::PostprocessOvebright!");
-
-  glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_VIEWPORT_BIT|GL_TRANSFORM_BIT);
-  glMatrixMode(GL_MODELVIEW); glPushMatrix();
-  glMatrixMode(GL_PROJECTION); glPushMatrix();
+  PostSrcMatrixSaver matsaver(this, true);
 
   // enforce main FBO
   SetMainFBO(true); // forced
   auto mfbo = GetMainFBO();
+
+  assert(mfbo->isColorFloat());
 
   // check dimensions for already created FBO
   if (postOverFBO.isValid()) {
@@ -462,6 +491,7 @@ void VOpenGLDrawer::PostprocessOvebright () {
       r_adv_overbright = false;
       return;
     }
+    GCon->Logf(NAME_Debug, "(re)created overbright FBO");
   }
 
   if (!postOverFBO.swapColorTextures(mfbo)) {
@@ -470,16 +500,12 @@ void VOpenGLDrawer::PostprocessOvebright () {
   }
   mfbo->activate();
 
-  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-  glDisable(GL_SCISSOR_TEST);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
+  SetFSPosteffectMode();
+  oldBlend = GLIsBlendEnabled();
   GLDisableBlend();
+  PushDepthMask();
   GLDisableDepthWrite();
+
   glEnable(GL_TEXTURE_2D);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -497,27 +523,17 @@ void VOpenGLDrawer::PostprocessOvebright () {
 
   currentActiveShader->UploadChangedUniforms();
 
-  vassert(postOverFBO.getWidth() == mfbo->getWidth());
-  vassert(postOverFBO.getHeight() == mfbo->getHeight());
-  //GCon->Logf(NAME_Debug, "width=%d; height=%d", mfbo->getWidth(), mfbo->getHeight());
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f); glVertex2f(0.0f, 0.0f);
-    glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, 0.0f);
-    glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
-    glTexCoord2f(0.0f, 1.0f); glVertex2f(0.0f, 1.0f);
-  glEnd();
+  RenderPostSrcFullscreenQuad();
 
+  GLSetBlendEnabled(oldBlend);
+  PopDepthMask();
   // unbind texture 0
   SelectTexture(0);
   glBindTexture(GL_TEXTURE_2D, 0);
+  }
   // and deactivate shaders (just in case)
   DeactivateShader();
-
-  glPopAttrib();
-  glMatrixMode(GL_PROJECTION); glPopMatrix();
-  glMatrixMode(GL_MODELVIEW); glPopMatrix();
 }
-
 
 
 //==========================================================================
@@ -574,18 +590,14 @@ void VOpenGLDrawer::PreparePostSrcFSFBO () {
   #endif
   mfbo->activate();
 
-  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
+  SetFSPosteffectMode();
 
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-  glDisable(GL_SCISSOR_TEST);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
+  oldBlend = GLIsBlendEnabled();
   GLDisableBlend();
+  PushDepthMask();
   GLDisableDepthWrite();
+
   glEnable(GL_TEXTURE_2D);
-  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
   // source texture
   SelectTexture(0);
@@ -607,6 +619,7 @@ void VOpenGLDrawer::PreparePostSrcFSFBO () {
 void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
   if (mode < 1 || mode > 5) return;
 
+  {
   PostSrcMatrixSaver matsaver(this, true);
   PreparePostSrcFSFBO();
 
@@ -618,6 +631,9 @@ void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
 
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
 
 
@@ -627,6 +643,7 @@ void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_ColorMatrix (const float mat[12]) {
+  {
   PostSrcMatrixSaver matsaver(this, true);
   PreparePostSrcFSFBO();
 
@@ -640,4 +657,7 @@ void VOpenGLDrawer::Posteffect_ColorMatrix (const float mat[12]) {
 
   RenderPostSrcFullscreenQuad();
   FinishPostSrcFBO();
+  }
+  // and deactivate shaders (just in case)
+  DeactivateShader();
 }
