@@ -389,7 +389,7 @@ void VRenderLevelShadowVolume::RenderSceneLights (const refdef_t *RD, const VVie
   RenderSceneStaticLights(RD, Range);
   RenderSceneDynamicLights(RD, Range);
 
-  if (r_adv_overbright.asBool() && Drawer->IsMainFBOFloat() && !Drawer->IsCameraFBO()) {
+  if (r_adv_overbright.asBool() && PortalLevel == 0 && Drawer->IsMainFBOFloat() && !Drawer->IsCameraFBO()) {
     Drawer->PostprocessOvebright();
   }
 
