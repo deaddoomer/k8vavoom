@@ -610,7 +610,8 @@ public:
   virtual bool UseFrustumFarClip () = 0;
   virtual void SetupView (VRenderLevelDrawer *ARLev, const refdef_t *rd) = 0;
   virtual void SetupViewOrg () = 0;
-  virtual void EndView (bool ignoreColorTint=false) = 0;
+  virtual void EndView () = 0;
+  virtual void RenderTint (vuint32 CShift) = 0;
 
   // you can populate VBOs here
   virtual void BeforeDrawWorldLMap () = 0;

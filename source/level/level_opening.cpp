@@ -329,11 +329,79 @@ void VLevel::BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, 
 
 //==========================================================================
 //
+//  VLevel::PointContentsRegion
+//
+//  FIXME: use this in `PointContents()`!
+//
+//==========================================================================
+const sec_region_t *VLevel::PointContentsRegion (const sector_t *sector, const TVec &p) {
+  if (!sector) sector = PointInSubsector(p)->sector;
+
+  if (sector->heightsec && sector->heightsec->IsUnderwater() &&
+      p.z <= sector->heightsec->floor.GetPointZClamped(p))
+  {
+    return sector->heightsec->eregions;
+  }
+
+  const sec_region_t *best = sector->eregions;
+
+  if (!sector->Has3DFloors() || sector->IsUnderwater()) {
+    return sector->eregions;
+  }
+
+  const float secfz = sector->floor.GetPointZClamped(p);
+  const float seccz = sector->ceiling.GetPointZClamped(p);
+
+  // out of sector's empty space?
+  if (p.z < secfz || p.z > seccz) {
+    return best;
+  }
+
+  // ignore solid regions, as we cannot be inside them legally
+  float bestDist = +INFINITY; // minimum distance to region floor
+  for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+    if (reg->regflags&(sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+    // "sane" regions may represent Vavoom water
+    if ((reg->regflags&(sec_region_t::RF_SaneRegion|sec_region_t::RF_NonSolid)) == sec_region_t::RF_SaneRegion) {
+      if (!reg->params || (int)reg->params->contents <= 0) continue;
+      // it may be paper-thin
+      const float topz = reg->eceiling.GetPointZ(p);
+      const float botz = reg->efloor.GetPointZ(p);
+      const float minz = min2(botz, topz);
+      // everything beneath it is a water
+      if (p.z <= minz) {
+        best = reg;
+        break;
+      }
+    } else if (!(reg->regflags&sec_region_t::RF_NonSolid)) {
+      continue;
+    }
+    // non-solid
+    const float rtopz = reg->eceiling.GetPointZ(p);
+    const float rbotz = reg->efloor.GetPointZ(p);
+    // ignore paper-thin regions
+    if (rtopz <= rbotz) continue; // invalid, or paper-thin, ignore
+    // check if point is inside, and for best ceiling dist
+    if (p.z >= rbotz && p.z < rtopz) {
+      const float fdist = rtopz-p.z;
+      if (fdist < bestDist) {
+        bestDist = fdist;
+        best = reg;
+      }
+    }
+  }
+
+  return best;
+}
+
+
+//==========================================================================
+//
 //  VLevel::PointContents
 //
 //==========================================================================
-int VLevel::PointContents (sector_t *sector, const TVec &p, bool dbgDump) {
-  if (!sector) return 0;
+int VLevel::PointContents (const sector_t *sector, const TVec &p, bool dbgDump) {
+  if (!sector) sector = PointInSubsector(p)->sector;
 
   //dbgDump = true;
   if (sector->heightsec && sector->heightsec->IsUnderwater() &&
@@ -360,7 +428,7 @@ int VLevel::PointContents (sector_t *sector, const TVec &p, bool dbgDump) {
     }
 
     // ignore solid regions, as we cannot be inside them legally
-    float bestDist = 999999.0f; // minimum distance to region floor
+    float bestDist = +INFINITY; // minimum distance to region floor
     for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
       if (reg->regflags&(sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
       // "sane" regions may represent Vavoom water
@@ -938,4 +1006,13 @@ IMPLEMENT_FUNCTION(VLevel, LineOpenings) {
   VOptParamBool do3dmidtex(false);
   vobjGetParamSelf(linedef, point, blockmask, do3dmidtex);
   RET_PTR(Self->LineOpenings(linedef, *point, blockmask, do3dmidtex, true/*usePoint*/));
+}
+
+//native final int PointContents (const TVec p, optional sector_t *sector);
+IMPLEMENT_FUNCTION(VLevel, PointContents) {
+  TVec p;
+  VOptParamPtr<sector_t> sector;
+  vobjGetParamSelf(p, sector);
+  if (!sector.specified) sector.value = Self->PointInSubsector(p)->sector;
+  RET_INT(Self->PointContents(sector, p));
 }

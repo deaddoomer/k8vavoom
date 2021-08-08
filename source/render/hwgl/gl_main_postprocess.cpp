@@ -98,6 +98,29 @@ void VOpenGLDrawer::EnsurePostSrcFBO () {
 
 //==========================================================================
 //
+//  VOpenGLDrawer::SetFSPosteffectMode
+//
+//  automatically called by `PreparePostXXX()`
+//
+//==========================================================================
+void VOpenGLDrawer::SetFSPosteffectMode () {
+  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  GLDisableBlend();
+  GLDisableDepthWrite();
+  glEnable(GL_TEXTURE_2D);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::PreparePostSrcFBO
 //
 //  this will setup matrices, ensure source FBO, and
@@ -119,18 +142,7 @@ void VOpenGLDrawer::PreparePostSrcFBO () {
   #endif
   mfbo->activate();
 
-  SetOrthoProjection(0.0f, 1.0f, 0.0f, 1.0f);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-  glDisable(GL_SCISSOR_TEST);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  GLDisableBlend();
-  GLDisableDepthWrite();
-  glEnable(GL_TEXTURE_2D);
-  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  SetFSPosteffectMode();
 
   // source texture
   SelectTexture(0);
@@ -380,6 +392,42 @@ void VOpenGLDrawer::Posteffect_CAS (float coeff, int ax, int ay, int awidth, int
 
 //==========================================================================
 //
+//  VOpenGLDrawer::RenderTint
+//
+//==========================================================================
+void VOpenGLDrawer::RenderTint (vuint32 CShift) {
+  if ((CShift&0xff000000u) == 0) return;
+
+  PostSrcMatrixSaver matsaver(this, true);
+  SetFSPosteffectMode();
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glDisable(GL_TEXTURE_2D);
+
+  const bool oldBlend = GLIsBlendEnabled();
+  GLEnableBlend();
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied
+
+  DrawFixedCol.Activate();
+  DrawFixedCol.SetColor(
+    (float)((CShift>>16)&255)/255.0f,
+    (float)((CShift>>8)&255)/255.0f,
+    (float)(CShift&255)/255.0f,
+    (float)((CShift>>24)&255)/255.0f);
+
+  currentActiveShader->UploadChangedUniforms();
+
+  RenderPostSrcFullscreenQuad();
+
+  // and deactivate shaders (just in case)
+  DeactivateShader();
+  glEnable(GL_TEXTURE_2D);
+  GLSetBlendEnabled(oldBlend);
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::PostprocessOvebright
 //
 //  normalize overbrighting for fp textures
@@ -551,13 +599,9 @@ void VOpenGLDrawer::PreparePostSrcFSFBO () {
 }
 
 
-
-
 //==========================================================================
 //
-//  VOpenGLDrawer::PostprocessOvebright
-//
-//  normalize overbrighting for fp textures
+//  VOpenGLDrawer::Posteffect_ColorBlind
 //
 //==========================================================================
 void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
@@ -577,6 +621,11 @@ void VOpenGLDrawer::Posteffect_ColorBlind (int mode) {
 }
 
 
+//==========================================================================
+//
+//  VOpenGLDrawer::Posteffect_ColorMatrix
+//
+//==========================================================================
 void VOpenGLDrawer::Posteffect_ColorMatrix (const float mat[12]) {
   PostSrcMatrixSaver matsaver(this, true);
   PreparePostSrcFSFBO();

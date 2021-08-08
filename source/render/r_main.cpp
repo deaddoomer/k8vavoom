@@ -1701,6 +1701,33 @@ void R_RenderPlayerView () {
 
 //==========================================================================
 //
+//  AddBlend
+//
+//==========================================================================
+static vuint32 AddBlend (vuint32 blend, int cr, int cg, int cb, int ca) noexcept {
+  if (ca <= 0) return blend; // no alpha
+  const float r1 = float(clampToByte(cr))/255.0;
+  const float g1 = float(clampToByte(cg))/255.0;
+  const float b1 = float(clampToByte(cb))/255.0;
+  const float a1 = float(clampToByte(ca))/255.0;
+  const float a0 = float((blend>>24)&0xff)/255.0;
+  const float bla = clampval(1.0f-(1.0f-a0)*(1.0f-a1), 0.0f, 1.0f);
+  if (bla <= 0.0f) return blend;
+  const float r = (float((blend>>16)&0xff)/255.0f*a0*(1.0f-a1)+r1*a1)/bla;
+  const float g = (float((blend>>8)&0xff)/255.0f*a0*(1.0f-a1)+g1*a1)/bla;
+  const float b = (float(blend&0xff)/255.0f*a0*(1.0f-a1)+b1*a1)/bla;
+  const float a = bla;
+  blend =
+    (clampToByte((int)(a*255.0f))<<24)|
+    (clampToByte((int)(r*255.0f))<<16)|
+    (clampToByte((int)(g*255.0f))<<8)|
+    clampToByte((int)(b*255.0f));
+  return blend;
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::RenderPlayerView
 //
 //==========================================================================
@@ -1837,10 +1864,30 @@ void VRenderLevelShared::RenderPlayerView () {
     }
   }
 
-  // apply underwater shader if necessary
-  if (r_underwater.asInt() > 0 && Level->PointContents(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f)) > 0) {
-    Drawer->Posteffect_Underwater(Level->Time, refdef.x, refdef.y, refdef.width, refdef.height, false/*don't save matrices*/);
+  const sec_region_t *sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
+  const int sct = (sctreg ? sctreg->params->contents : 0);
+  vuint32 WaterCShift = 0u;
+  if (sct > 0) {
+    switch (sct) {
+      case CONTENTS_WATER: WaterCShift = AddBlend(WaterCShift, 130, 80, 50, 128); break;
+      case CONTENTS_LAVA: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
+      case CONTENTS_NUKAGE: WaterCShift = AddBlend(WaterCShift, 50, 255, 50, 150); break;
+      case CONTENTS_SLIME: WaterCShift = AddBlend(WaterCShift, 0, 25, 5, 150); break;
+      case CONTENTS_HELLSLIME: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
+      case CONTENTS_BLOOD: WaterCShift = AddBlend(WaterCShift, 160, 16, 16, 150); break;
+      case CONTENTS_SLUDGE: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 150); break;
+      case CONTENTS_HAZARD: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 128); break;
+      case CONTENTS_BOOMWATER: WaterCShift = AddBlend(WaterCShift, 0, 40, 130, 128); break;
+    }
+    //GCon->Logf(NAME_Debug, "sct=%d; CShift=0x%08x", sct, CShift);
+    if (WaterCShift) Drawer->RenderTint(WaterCShift);
+
+    // apply underwater shader if necessary
+    if (r_underwater.asInt() > 0) Drawer->Posteffect_Underwater(Level->Time, refdef.x, refdef.y, refdef.width, refdef.height, false/*don't save matrices*/);
   }
+
+  vuint32 CShift = (cl ? cl->CShift : 0u);
+  if (CShift && r_colortint_mode.asInt() == 0) Drawer->RenderTint(CShift);
 
   // apply colormap
   if (shaderCM) {
@@ -1855,7 +1902,7 @@ void VRenderLevelShared::RenderPlayerView () {
   // this should be called even if nothing was applied before
   Drawer->FinishPosteffects();
 
-  Drawer->EndView(r_colortint_mode.asInt() != 0);
+  Drawer->EndView();
 }
 
 
@@ -1889,7 +1936,7 @@ bool VRenderLevelShared::UpdateCameraTexture (VEntity *Camera, int TexNum, int F
     Drawer->SetCameraFBO(cfidx);
     SetupCameraFrame(Camera, Tex, FOV, &CameraRefDef);
     RenderScene(&CameraRefDef, nullptr);
-    Drawer->EndView(true); // ignore color tint
+    Drawer->EndView(); // ignore color tint
 
     //glFlush();
     Tex->CopyImage(); // this sets flags, but doesn't read pixels

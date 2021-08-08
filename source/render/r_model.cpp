@@ -2183,7 +2183,7 @@ bool R_DrawStateModelFrame (VState *State, VState *NextState, float Inter,
     ri, //0xffffffff, 0, 1.0f, false,
     false, InterpFrac, Interpolate, TVec(), 0, RPASS_Normal, true); // force draw
 
-  Drawer->EndView(true); // ignore color tint, just in case
+  Drawer->EndView();
   return true;
 }
 

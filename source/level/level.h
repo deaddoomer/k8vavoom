@@ -1097,7 +1097,9 @@ public: // regions and openings internal functions
 
 public: // regions
   // returns `CONTENTS_xxx` or sector content value
-  int PointContents (sector_t *sector, const TVec &p, bool dbgDump=false);
+  int PointContents (const sector_t *sector, const TVec &p, bool dbgDump=false);
+
+  const sec_region_t *PointContentsRegion (const sector_t *sector, const TVec &p);
 
   // find region for thing, and return best floor/ceiling
   // `p.z` is bottom
@@ -1732,12 +1734,18 @@ private:
   DECLARE_FUNCTION(PointInSubsector)
   DECLARE_FUNCTION(PointInSectorRender)
   DECLARE_FUNCTION(PointInSubsectorRender)
+
+  DECLARE_FUNCTION(PointContents)
+
   DECLARE_FUNCTION(BSPTraceLine)
   DECLARE_FUNCTION(BSPTraceLineEx)
+
   DECLARE_FUNCTION(ChangeSector)
   DECLARE_FUNCTION(ChangeOneSectorInternal)
+
   DECLARE_FUNCTION(AddExtraFloor)
   DECLARE_FUNCTION(SwapPlanes)
+
   DECLARE_FUNCTION(CastLightRay)
 
   DECLARE_FUNCTION(SetFloorPic)

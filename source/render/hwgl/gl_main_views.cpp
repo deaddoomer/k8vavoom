@@ -355,31 +355,9 @@ void VOpenGLDrawer::SetupViewOrg () {
 //  VOpenGLDrawer::EndView
 //
 //==========================================================================
-void VOpenGLDrawer::EndView (bool ignoreColorTint) {
+void VOpenGLDrawer::EndView () {
   Setup2D();
-
-  if (!ignoreColorTint && cl && cl->CShift) {
-    DrawFixedCol.Activate();
-    DrawFixedCol.SetColor(
-      (float)((cl->CShift>>16)&255)/255.0f,
-      (float)((cl->CShift>>8)&255)/255.0f,
-      (float)(cl->CShift&255)/255.0f,
-      (float)((cl->CShift>>24)&255)/255.0f);
-    DrawFixedCol.UploadChangedUniforms();
-    //GLEnableBlend();
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
-
-    glBegin(GL_QUADS);
-      glVertex2f(0, 0);
-      glVertex2f(getWidth(), 0);
-      glVertex2f(getWidth(), getHeight());
-      glVertex2f(0, getHeight());
-    glEnd();
-
-    //GLDisableBlend();
-    glEnable(GL_TEXTURE_2D);
-  }
+  glEnable(GL_TEXTURE_2D);
 
 #if 0
   if (r_shadowmaps.asBool() && CanRenderShadowMaps() && (dbg_shadowmaps.asInt()&0x01) != 0) {

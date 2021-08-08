@@ -551,7 +551,8 @@ public:
   // setup model matrix according to `viewangles` and `vieworg`
   virtual void SetupViewOrg () override;
   // setup 2D ortho rendering mode
-  virtual void EndView (bool ignoreColorTint=false) override;
+  virtual void EndView () override;
+  virtual void RenderTint (vuint32 CShift) override;
 
   // texture stuff
   virtual void PrecacheTexture (VTexture *Tex) override;
@@ -780,6 +781,7 @@ private:
   inline bool IsStencilBufferDirty () const noexcept { return stencilBufferDirty; }
   inline void ClearStencilBuffer () noexcept { if (stencilBufferDirty) glClear(GL_STENCIL_BUFFER_BIT); stencilBufferDirty = false; decalUsedStencil = false; }
 
+  inline bool GLIsBlendEnabled () noexcept { return blendEnabled; }
   inline void GLForceBlend () noexcept { blendEnabled = true; glEnable(GL_BLEND); }
   inline void GLEnableBlend () noexcept { if (!blendEnabled) { blendEnabled = true; glEnable(GL_BLEND); } }
   inline void GLDisableBlend () noexcept { if (blendEnabled) { blendEnabled = false; glDisable(GL_BLEND); } }
@@ -1425,6 +1427,9 @@ private: // bloom
   void BloomDrawEffect (int ax, int ay, int awidth, int aheight);
 
 protected:
+  // automatically called by `PreparePostXXX()`
+  void SetFSPosteffectMode ();
+
   // this will force main FBO with `SetMainFBO(true);`
   void EnsurePostSrcFBO ();
 

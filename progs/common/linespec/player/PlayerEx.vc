@@ -2830,6 +2830,8 @@ void PaletteFlash () {
   float b = 0.0;
   float a = 0.0;
 
+  // done in main renderer, sorry
+  #if 0
   if (MO.WaterLevel == 3) {
     switch (MO.WaterType) {
       case CONTENTS_WATER: AddBlend(r, g, b, a, RGBA(130, 80, 50, 128)); break;
@@ -2847,7 +2849,9 @@ void PaletteFlash () {
   if (nameicmp(EntityEx(MO).DamageType, 'Ice') == 0) {
     // Frozen player
     AddBlend(r, g, b, a, RGBA(2, 2, 255, 113));
-  } else {
+  } else
+  #endif
+  {
     if (DamageFlash < 0) DamageFlash = 0;
     if (DamageFlash) {
       auto pawn = PlayerPawn(MO);
