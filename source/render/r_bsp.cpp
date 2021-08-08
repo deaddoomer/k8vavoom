@@ -1265,6 +1265,59 @@ static int sortRegionsCmp (const void *a, const void *b, void *) {
 
 //==========================================================================
 //
+//  Check3DFloorCeiling
+//
+//==========================================================================
+static inline bool Check3DFloorCeiling (const sec_plane_t &secplane, const TSecPlaneRef &regplane) noexcept {
+  const float regdist = regplane.GetDist();
+  const float secdist = secplane.dist;
+
+  // check for equal distance
+  if (fabsf(regdist-secdist) < 0.01f) {
+    const TVec n = regplane.GetNormal()-secplane.normal;
+    // check for equal normal
+    if (fabsf(n.x) < 0.0001f && fabsf(n.y) < 0.0001f && fabsf(n.z) < 0.0001f) {
+      return false;
+    }
+  }
+
+  //TODO: slopes
+  if (secplane.normal.z != 1.0f || regplane.GetNormalZ() != 1.0f) return true; // ignore slopes for now
+
+  // check if regplane is out of bounds
+  const float rdist = regplane.GetRealDist();
+  if (secplane.normal.z > 0.0f) {
+    // floor
+    return (rdist > secplane.minz);
+  } else {
+    // ceiling
+    return (rdist < secplane.maxz);
+  }
+}
+
+
+//==========================================================================
+//
+//  Check3DFloor
+//
+//==========================================================================
+static inline bool Check3DFloor (const sector_t *sec, const sec_region_t *secregion) noexcept {
+  return Check3DFloorCeiling(sec->floor, secregion->efloor);
+}
+
+
+//==========================================================================
+//
+//  Check3DCeiling
+//
+//==========================================================================
+static inline bool Check3DCeiling (const sector_t *sec, const sec_region_t *secregion) noexcept {
+  return Check3DFloorCeiling(sec->ceiling, secregion->eceiling);
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::RenderSubRegions
 //
 //  Determine floor/ceiling planes.
@@ -1295,13 +1348,28 @@ void VRenderLevelShared::RenderSubRegions (subsector_t *sub) {
 
     sec_region_t *secregion = region->secregion;
     sec_surface_t *fsurf[4];
-    GetFlatSetToRender(sub, region, fsurf);
 
-    if (fsurf[0]) RenderSecSurface(sub, secregion, fsurf[0], secregion->efloor.splane->SkyBox, hasAlpha);
-    if (fsurf[1]) RenderSecSurface(sub, secregion, fsurf[1], secregion->efloor.splane->SkyBox, hasAlpha);
+    if (secregion->regflags&sec_region_t::RF_BaseRegion) {
+      // normal region
+      GetFlatSetToRender(sub, region, fsurf);
+      if (fsurf[0]) RenderSecSurface(sub, secregion, fsurf[0], secregion->efloor.splane->SkyBox, hasAlpha);
+      if (fsurf[1]) RenderSecSurface(sub, secregion, fsurf[1], secregion->efloor.splane->SkyBox, hasAlpha);
 
-    if (fsurf[2]) RenderSecSurface(sub, secregion, fsurf[2], secregion->eceiling.splane->SkyBox, hasAlpha);
-    if (fsurf[3]) RenderSecSurface(sub, secregion, fsurf[3], secregion->eceiling.splane->SkyBox, hasAlpha);
+      if (fsurf[2]) RenderSecSurface(sub, secregion, fsurf[2], secregion->eceiling.splane->SkyBox, hasAlpha);
+      if (fsurf[3]) RenderSecSurface(sub, secregion, fsurf[3], secregion->eceiling.splane->SkyBox, hasAlpha);
+    } else {
+      // 3d floor
+
+      // floor
+      if (!(secregion->regflags&sec_region_t::RF_SkipFloorSurf) && region->realfloor && Check3DFloor(sub->sector, secregion)) {
+        RenderSecSurface(sub, secregion, region->realfloor, secregion->efloor.splane->SkyBox, hasAlpha);
+      }
+
+      // ceiling
+      if (!(secregion->regflags&sec_region_t::RF_SkipCeilSurf) && region->realceil && Check3DCeiling(sub->sector, secregion)) {
+        RenderSecSurface(sub, secregion, region->realceil, secregion->eceiling.splane->SkyBox, hasAlpha);
+      }
+    }
   }
 }
 
