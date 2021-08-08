@@ -35,8 +35,6 @@
 #define SMOOTHSTEP(x) ((x)*(x)*(3.0f-2.0f*(x)))
 
 
-enum { NUMVERTEXNORMALS = 162 };
-
 extern VCvarF gl_alpha_threshold;
 static inline float getAlphaThreshold () { float res = gl_alpha_threshold; if (res < 0) res = 0; else if (res > 1) res = 1; return res; }
 
@@ -256,15 +254,6 @@ struct VModel {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// precalculated dot products for quantized angles
-/*
-enum { SHADEDOT_QUANT = 16 };
-static const float r_avertexnormal_dots[SHADEDOT_QUANT][256] =
-#include "anorm_dots.h"
-;
-*/
-
-
 static TArray<VModel *> mod_known;
 static TArray<VMeshModel *> GMeshModels;
 static TArray<VClassModelScript *> ClassModels;
@@ -273,10 +262,6 @@ static bool ClassModelMapRebuild = true;
 TArray<int> AllModelTextures;
 static TMapNC<int, bool> AllModelTexturesSeen;
 static TMap<VStr, VModel *> fixedModelMap;
-
-static const float r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "anorms.h"
-};
 
 
 // ////////////////////////////////////////////////////////////////////////// //

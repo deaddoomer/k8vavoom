@@ -27,7 +27,6 @@
 #define VAVOOM_R_LOCAL_HEADER
 
 #include "r_shared.h"
-#include "fmd2defs.h"
 
 // this doesn't help much (not even 1 FPS usually), and it is still glitchy
 //#define VV_CHECK_1S_CAST_SHADOW

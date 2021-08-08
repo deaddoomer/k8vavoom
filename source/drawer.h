@@ -32,7 +32,6 @@
 // ////////////////////////////////////////////////////////////////////////// //
 struct surface_t;
 struct surfcache_t; // see "render/r_shared.h"
-struct mmdl_t;
 struct VMeshModel;
 class VPortal;
 

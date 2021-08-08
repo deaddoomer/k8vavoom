@@ -833,7 +833,6 @@ struct VMeshEdge {
 };
 #pragma pack(pop)
 
-struct mmdl_t;
 
 struct VMeshModel {
   struct SkinInfo {
@@ -860,15 +859,15 @@ struct VMeshModel {
 
   // does nothing if `loaded` is `true`
   // bombs out on invalid model data
-  void LoadFromData (vuint8 *Data, int DataSize);
+  void LoadFromData (const vuint8 *Data, int DataSize);
 
   // does nothing if `loaded` is `true`
   // bombs out on invalid model data
   void LoadFromWad ();
 
 private:
-  void Load_MD2 (vuint8 *Data, int DataSize);
-  void Load_MD3 (vuint8 *Data, int DataSize);
+  void Load_MD2 (const vuint8 *Data, int DataSize);
+  void Load_MD3 (const vuint8 *Data, int DataSize);
 
 private:
   struct VTempEdge {
