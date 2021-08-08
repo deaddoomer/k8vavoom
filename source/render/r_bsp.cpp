@@ -771,18 +771,19 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
       const SurfVertex *vtx = surf->verts;
       for (int fff = surf->count; fff--; ++vtx) {
         const TVec &v = vtx->vec();
+        const float fdist = r_viewregion->efloor.PointDistance(v);
+        const float cdist = r_viewregion->eceiling.PointDistance(v);
+        // above or below?
         if (surfaceType == SFT_Wall) {
           // wall
-          if (r_viewregion->eceiling.PointDistance(v) > 0.0f) {
+          if (cdist > 0.0f) {
             surf->Light = uwsflight;
             surf->Fade = uwFade;
             break;
           }
         } else {
           // flat
-          if (r_viewregion->efloor.PointDistance(v) >= 0.0f &&
-              r_viewregion->eceiling.PointDistance(v) >= 0.0f)
-          {
+          if (fdist >= 0.0f && cdist >= 0.0f) {
             surf->Light = uwsflight;
             surf->Fade = uwFade;
             break;
