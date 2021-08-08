@@ -119,8 +119,9 @@ protected:
   unsigned *BspVisData;
   unsigned *BspVisSectorData; // for whole sectors
 
-  subsector_t *r_viewleaf;
-  subsector_t *r_oldviewleaf;
+  subsector_t *r_viewleaf; // set in `RenderPlayerView()`
+  sec_region_t *r_viewregion; // region the camera in, set in `RenderPlayerView()`
+
   float old_fov;
   int prev_aspect_ratio;
   bool prev_vertical_fov_flag;

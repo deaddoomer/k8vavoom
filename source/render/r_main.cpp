@@ -106,6 +106,8 @@ static VCvarI r_screen_shake_mode("r_screen_shake_mode", "0", "Screen shake (fro
 
 static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive);
 
+VCvarB r_underwater_colored_light("r_underwater_colored_light", true, "Allow underwater colored lighting? WARNING: DOESN'T WORK RIGHT YET!", CVAR_Archive);
+
 
 static const char *videoDrvName = nullptr;
 static int cli_DisableSplash = 0;
@@ -745,7 +747,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , BspVisData(nullptr)
   , BspVisSectorData(nullptr)
   , r_viewleaf(nullptr)
-  , r_oldviewleaf(nullptr)
+  , r_viewregion(nullptr)
   , old_fov(90.0f)
   , prev_aspect_ratio(666)
   , prev_vertical_fov_flag(false)
@@ -1685,7 +1687,6 @@ void VRenderLevelShared::MarkLeaves () {
 
   // we need this for debug automap view
   IncVisFrameCount();
-  r_oldviewleaf = r_viewleaf;
 }
 
 
@@ -1771,6 +1772,8 @@ void VRenderLevelShared::RenderPlayerView () {
 
   //FIXME: this is wrong, because fake sectors need to be updated for each camera separately
   r_viewleaf = Level->PointInSubsector(Drawer->vieworg);
+  const sec_region_t *sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
+  r_viewregion = (sec_region_t *)sctreg;
   // remember it
   const TVec lastorg = Drawer->vieworg;
   subsector_t *playerViewLeaf = r_viewleaf;
@@ -1852,7 +1855,13 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // recalc in case recursive scene renderer moved it
   // we need it for psprite rendering
-  r_viewleaf = (Drawer->vieworg == lastorg ? playerViewLeaf : Level->PointInSubsector(Drawer->vieworg));
+  if (Drawer->vieworg == lastorg) {
+    r_viewleaf = playerViewLeaf;
+  } else {
+    r_viewleaf = Level->PointInSubsector(Drawer->vieworg);
+    sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
+  }
+  r_viewregion = (sec_region_t *)sctreg;
 
   // draw the psprites on top of everything
   if (drawPSprites) DrawPlayerSprites();
@@ -1864,23 +1873,30 @@ void VRenderLevelShared::RenderPlayerView () {
     }
   }
 
-  const sec_region_t *sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
-  const int sct = (sctreg ? sctreg->params->contents : 0);
-  vuint32 WaterCShift = 0u;
+  const int sct = (sctreg && (sctreg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_NonSolid)) ? sctreg->params->contents : 0);
   if (sct > 0) {
-    switch (sct) {
-      case CONTENTS_WATER: WaterCShift = AddBlend(WaterCShift, 130, 80, 50, 128); break;
-      case CONTENTS_LAVA: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
-      case CONTENTS_NUKAGE: WaterCShift = AddBlend(WaterCShift, 50, 255, 50, 150); break;
-      case CONTENTS_SLIME: WaterCShift = AddBlend(WaterCShift, 0, 25, 5, 150); break;
-      case CONTENTS_HELLSLIME: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
-      case CONTENTS_BLOOD: WaterCShift = AddBlend(WaterCShift, 160, 16, 16, 150); break;
-      case CONTENTS_SLUDGE: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 150); break;
-      case CONTENTS_HAZARD: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 128); break;
-      case CONTENTS_BOOMWATER: WaterCShift = AddBlend(WaterCShift, 0, 40, 130, 128); break;
+    //GCon->Logf(NAME_Debug, "lightlevel=%u; LightColor=0x%08x; Fade=0x%08x", sctreg->params->lightlevel, sctreg->params->LightColor, sctreg->params->Fade);
+
+    // check for specific lighting
+    const unsigned lc = sctreg->params->LightColor&0xffffffu;
+    const bool doTint = (lc == 0 || lc == 0xffffffu || !r_underwater_colored_light.asBool());
+
+    if (doTint) {
+      vuint32 WaterCShift = 0u;
+      switch (sct) {
+        case CONTENTS_WATER: WaterCShift = AddBlend(WaterCShift, 130, 80, 50, 128); break;
+        case CONTENTS_LAVA: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
+        case CONTENTS_NUKAGE: WaterCShift = AddBlend(WaterCShift, 50, 255, 50, 150); break;
+        case CONTENTS_SLIME: WaterCShift = AddBlend(WaterCShift, 0, 25, 5, 150); break;
+        case CONTENTS_HELLSLIME: WaterCShift = AddBlend(WaterCShift, 255, 80, 0, 150); break;
+        case CONTENTS_BLOOD: WaterCShift = AddBlend(WaterCShift, 160, 16, 16, 150); break;
+        case CONTENTS_SLUDGE: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 150); break;
+        case CONTENTS_HAZARD: WaterCShift = AddBlend(WaterCShift, 128, 160, 128, 128); break;
+        case CONTENTS_BOOMWATER: WaterCShift = AddBlend(WaterCShift, 0, 40, 130, 128); break;
+      }
+      //GCon->Logf(NAME_Debug, "sct=%d; CShift=0x%08x", sct, CShift);
+      if (WaterCShift) Drawer->RenderTint(WaterCShift);
     }
-    //GCon->Logf(NAME_Debug, "sct=%d; CShift=0x%08x", sct, CShift);
-    if (WaterCShift) Drawer->RenderTint(WaterCShift);
 
     // apply underwater shader if necessary
     if (r_underwater.asInt() > 0) Drawer->Posteffect_Underwater(Level->Time, refdef.x, refdef.y, refdef.width, refdef.height, false/*don't save matrices*/);
