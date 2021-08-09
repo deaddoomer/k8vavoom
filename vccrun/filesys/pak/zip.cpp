@@ -402,7 +402,7 @@ vuint32 VZipFile::searchCentralDir () {
 
 VStream *VZipFile::openWithIndex (int idx) {
   if (idx < 0 || idx >= fileCount) return nullptr;
-  return new VZipFileReader(fileStream, bytesBeforeZipFile, files[idx], this);
+  return new VZipFileReaderVCC(fileStream, bytesBeforeZipFile, files[idx], this);
 }
 
 

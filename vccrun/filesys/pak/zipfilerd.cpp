@@ -30,7 +30,7 @@ static const ISzAlloc fsysLzmaAlloc = {
 };
 
 
-class VZipFileReader : public VStreamPakFile {
+class VZipFileReaderVCC : public VStreamPakFile {
 private:
   enum { UNZ_BUFSIZE = 16384 };
   //enum { UNZ_BUFSIZE = 65536 };
@@ -69,8 +69,8 @@ private:
   int readSomeBytes (void *buf, int len);
 
 public:
-  VZipFileReader (VStream *InStream, vuint32 bytesBeforeZipFile, const VZipFileInfo &aInfo, FSysDriverBase *aDriver);
-  virtual ~VZipFileReader () override;
+  VZipFileReaderVCC (VStream *InStream, vuint32 bytesBeforeZipFile, const VZipFileInfo &aInfo, FSysDriverBase *aDriver);
+  virtual ~VZipFileReaderVCC () override;
 
   virtual VStr GetName () const override;
   virtual void Serialise (void*, int) override;
@@ -82,7 +82,7 @@ public:
 };
 
 
-VZipFileReader::VZipFileReader (VStream *InStream, vuint32 bytesBeforeZipFile, const VZipFileInfo &aInfo, FSysDriverBase *aDriver)
+VZipFileReaderVCC::VZipFileReaderVCC (VStream *InStream, vuint32 bytesBeforeZipFile, const VZipFileInfo &aInfo, FSysDriverBase *aDriver)
   : VStreamPakFile(aDriver)
   , fileStream(InStream)
   , info(aInfo)
@@ -151,18 +151,18 @@ VZipFileReader::VZipFileReader (VStream *InStream, vuint32 bytesBeforeZipFile, c
 }
 
 
-VZipFileReader::~VZipFileReader () {
+VZipFileReaderVCC::~VZipFileReaderVCC () {
   Close();
   mythread_mutex_destroy(&lock);
 }
 
 
-VStr VZipFileReader::GetName () const {
+VStr VZipFileReaderVCC::GetName () const {
   return info.name.cloneUnique();
 }
 
 
-void VZipFileReader::setError () {
+void VZipFileReaderVCC::setError () {
   bError = true;
   if (usezlib) {
     if (stream_initialised) mz_inflateEnd(&stream);
@@ -173,7 +173,7 @@ void VZipFileReader::setError () {
 }
 
 
-bool VZipFileReader::Close () {
+bool VZipFileReaderVCC::Close () {
   if (!bError && rest_read_uncompressed == 0) {
     if (Crc32 != info.crc) { bError = true; /*error->Log("Bad CRC");*/ }
   }
@@ -189,7 +189,7 @@ bool VZipFileReader::Close () {
 
 // just read, no `nextpos` advancement
 // returns number of bytes read, -1 on error, or 0 on EOF
-int VZipFileReader::readSomeBytes (void *buf, int len) {
+int VZipFileReaderVCC::readSomeBytes (void *buf, int len) {
   stream.next_out = (vuint8 *)buf;
   stream.avail_out = len;
   vuint8 *lzmadest = (vuint8 *)buf;
@@ -288,7 +288,7 @@ int VZipFileReader::readSomeBytes (void *buf, int len) {
 
 
 // `pos_in_zipfile` must be valid
-bool VZipFileReader::lzmaRestart () {
+bool VZipFileReaderVCC::lzmaRestart () {
   vuint8 ziplzmahdr[4];
   vuint8 lzmaprhdr[5];
 
@@ -382,7 +382,7 @@ bool VZipFileReader::lzmaRestart () {
 // read the local header of the current zipfile
 // check the coherency of the local header and info in the end of central directory about this file
 // store in *piSizeVar the size of extra info in local header (filename and size of extra field data)
-bool VZipFileReader::checkCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint32 byte_before_the_zipfile) {
+bool VZipFileReaderVCC::checkCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint32 byte_before_the_zipfile) {
   vuint32 Magic, DateTime, Crc, ComprSize, UncomprSize;
   vuint16 Version, Flags, ComprMethod, FileNameSize, ExtraFieldSize;
 
@@ -440,7 +440,7 @@ bool VZipFileReader::checkCurrentFileCoherencyHeader (vuint32 *piSizeVar, vuint3
 }
 
 
-void VZipFileReader::Serialise (void* buf, int len) {
+void VZipFileReaderVCC::Serialise (void* buf, int len) {
   if (bError) return; // don't read anything from already broken stream
   MyThreadLocker locker(&lock);
   if (len < 0) {
@@ -540,7 +540,7 @@ void VZipFileReader::Serialise (void* buf, int len) {
 }
 
 
-void VZipFileReader::Seek (int pos) {
+void VZipFileReaderVCC::Seek (int pos) {
   if (bError) return;
   if (pos < 0) pos = 0;
   if (pos > (int)info.uncompressed_size) pos = (int)info.uncompressed_size;
@@ -548,17 +548,17 @@ void VZipFileReader::Seek (int pos) {
 }
 
 
-int VZipFileReader::Tell () {
+int VZipFileReaderVCC::Tell () {
   //return (usezlib ? stream.total_out : lzmastream.total_out);
   return nextpos;
 }
 
 
-int VZipFileReader::TotalSize () {
+int VZipFileReaderVCC::TotalSize () {
   return info.uncompressed_size;
 }
 
 
-bool VZipFileReader::AtEnd () {
+bool VZipFileReaderVCC::AtEnd () {
   return (bError || /*rest_read_uncompressed == 0*/(vuint32)nextpos >= info.uncompressed_size);
 }
