@@ -707,37 +707,67 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // for skins that are transparent in solid models (Alpha = 1.0f)
       Md2->AllowTransparency = ParseBool(ModelDefNode, "allowtransparency", false);
 
+      //<frames start_index="0" end_index="2" />
+
       // process frames
       // TODO: implement range support for frame declaration
-      int curframeindex = -1;
+      int curframeindex = 0;
       for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame")) {
         if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
+
         {
-          auto bad = FrameDefNode->FindBadAttribute("index", "position_index", "alpha_start", "alpha_end", "skin_index",
+          auto bad = FrameDefNode->FindBadAttribute("index", "end_index", "count",
+                                                    "position_index", "alpha_start", "alpha_end", "skin_index",
                                                     "shift", "shift_x", "shift_y", "shift_z",
                                                     "offset", "offset_x", "offset_y", "offset_z",
                                                     "scale", "scale_x", "scale_y", "scale_z", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
         }
 
-        ++curframeindex;
-        VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
-        //FIXME: require index?
-        F.Index = ParseIntWithDefault(FrameDefNode, "index", curframeindex);
+        int sidx = curframeindex, eidx = curframeindex;
 
-        // position model frame index
-        F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
+        if (FrameDefNode->HasAttribute("index")) {
+          sidx = ParseIntWithDefault(FrameDefNode, "index", curframeindex);
+          if (sidx < 0 || sidx > 65536) Sys_Error("%s: model '%s' frame definition has invalid index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx);
+          eidx = sidx;
+        }
 
-        // frame transformation
-        F.Transform = BaseTransform;
-        ParseTransform(FrameDefNode, F.Transform);
+        if (FrameDefNode->HasAttribute("count")) {
+          auto bad = FrameDefNode->FindFirstAttributeOf("end_index", nullptr);
+          if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s' (count/endindex conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+          const int count = ParseIntWithDefault(FrameDefNode, "count", 0);
+          if (count <= 0 || count > 65536) Sys_Error("%s: model '%s' frame definition has invalid count %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, count);
+          eidx = sidx+count-1;
+        } else if (FrameDefNode->HasAttribute("end_index")) {
+          auto bad = FrameDefNode->FindFirstAttributeOf("count", nullptr);
+          if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s' (endindex/count conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+          eidx = ParseIntWithDefault(FrameDefNode, "end_index", sidx);
+          if (eidx < sidx || eidx > 65536) Sys_Error("%s: model '%s' frame definition has invalid end index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, eidx);
+        }
+        //GCon->Logf(NAME_Debug, "%s: MDL '%s': sidx=%d; eidx=%d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx, eidx);
 
-        // alpha
-        F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
-        F.AlphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
+        for (int fnum = sidx; fnum <= eidx; ++fnum) {
+          VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
 
-        // skin index
-        F.SkinIndex = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
+          // frame index
+          F.Index = fnum; //ParseIntWithDefault(FrameDefNode, "index", curframeindex);
+
+          // position model frame index
+          F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
+
+          // frame transformation
+          F.Transform = BaseTransform;
+          ParseTransform(FrameDefNode, F.Transform);
+
+          // alpha
+          F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
+          F.AlphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
+
+          // skin index
+          F.SkinIndex = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
+        }
+
+        curframeindex = eidx+1;
       }
 
       // process skins
@@ -840,7 +870,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   for (VXmlNode *ClassDefNode : Doc->Root.childrenWithName("class")) {
     // check attrs
     {
-      auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow", "iwadonly", "thiswadonly", nullptr);
+      auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow", "iwadonly", "thiswadonly", "rotation", "bobbing", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
 
@@ -888,6 +918,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     bool hasDisabled = false;
     int frmFirstIdx = Cls->Frames.length();
 
+    int defrot = -1;
+    if (ClassDefNode->HasAttribute("rotation")) defrot = (ParseBool(ClassDefNode, "rotation", false) ? 1 : 0);
+
+    int defbob = -1;
+    if (ClassDefNode->HasAttribute("bobbing")) defbob = (ParseBool(ClassDefNode, "bobbing", false) ? 1 : 0);
+
     // process frames
     for (VXmlNode *StateDefNode : ClassDefNode->childrenWithName("state")) {
       if (StateDefNode->HasChildren()) Sys_Error("%s: model '%s' class definition should have no children", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
@@ -909,6 +945,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       ParseAngle(StateDefNode, "yaw", F.angleYaw);
       ParseAngle(StateDefNode, "pitch", F.anglePitch);
       ParseAngle(StateDefNode, "roll", F.angleRoll);
+
+      if (defrot >= 0) F.rotateSpeed = (defrot > 0 ? 100.0f : 0.0f);
+      if (defbob >= 0) F.bobSpeed = (defbob > 0 ? 180.0f : 0.0f);
 
       if (ParseBool(StateDefNode, "rotation", false)) F.rotateSpeed = 100.0f;
       if (ParseBool(StateDefNode, "bobbing", false)) F.bobSpeed = 180.0f;
@@ -1602,7 +1641,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     if (SubMdl.Version != -1 && SubMdl.Version != Version) continue;
 
     if (FDef.FrameIndex >= SubMdl.Frames.length()) {
-      GCon->Logf("Bad sub-model frame index %d", FDef.FrameIndex);
+      GCon->Logf("Bad sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *Cls.Name);
       continue;
     }
 
