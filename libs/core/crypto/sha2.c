@@ -916,7 +916,7 @@ int main(void)
     message3 = malloc(message3_len);
     if (message3 == NULL) {
         fprintf(stderr, "Can't allocate memory\n");
-        abort();
+        __builtin_trap();
     }
     memset(message3, 'a', message3_len);
 

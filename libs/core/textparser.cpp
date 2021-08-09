@@ -323,7 +323,7 @@ void VTextParser::FatalError (const VTextLocation &loc, const char *msg) {
   } else {
     Sys_Error("%s: %s", *loc.toStringNoCol(), msg);
   }
-  abort();
+  __builtin_trap();
 }
 
 

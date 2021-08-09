@@ -28,7 +28,6 @@
 #include "../psim/p_player.h"
 #include "../client/client.h"
 #include "../dehacked/vc_dehacked.h"
-#include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "r_local.h"
 #include "r_local_gz.h"
 

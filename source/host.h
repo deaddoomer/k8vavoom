@@ -46,6 +46,8 @@ void Host_ResetSkipFrames ();
 // this does GC rougly twice per second (unless forced)
 void Host_CollectGarbage (bool forced=false, bool resetUniqueId=false);
 
+void Host_InitStreamCallbacks ();
+
 extern bool host_initialised;
 extern bool host_request_exit;
 extern bool host_gdb_mode;

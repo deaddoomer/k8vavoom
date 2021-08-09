@@ -147,7 +147,7 @@ static double ldexp_intr (double d, int pwr, int *uoflag) {
   n |= ((uint64_t)(exp&DBL_EXP_SMASK))<<DBL_EXP_SHIFT;
   const double res = *(const double *)&n;
   //fprintf(stderr, " :: %a : %a; pwr=%d\n", ldexp(d, pwr), res, pwr);
-  //if (res != ldexp(d, pwr)) abort();
+  //if (res != ldexp(d, pwr)) __builtin_trap();
   return res; //ldexp(d, pwr);
 #endif
 }
@@ -793,7 +793,7 @@ float fmtstrtof (const char *as, char **aas, int *rangeErr) {
   //const float f3 = sanitizedD2F(dnext);
   const float f4 = sanitizedD2F(nextDouble(dnext));
   //assert(f1 <= f2 && f2 <= f3 && f3 <= f4);
-  //if (!(f1 <= fguesspos && fguesspos <= f3 && f3 <= f4)) abort();
+  //if (!(f1 <= fguesspos && fguesspos <= f3 && f3 <= f4)) __builtin_trap();
 
 #ifdef P9_S2F_DEBUG
   fprintf(stderr, "dgp=%a\n", dguesspos);
@@ -811,7 +811,7 @@ float fmtstrtof (const char *as, char **aas, int *rangeErr) {
   /* assert
   if (!(f1 != fguesspos && fguesspos == f3 && f3 == f4) &&
       !(f1 == fguesspos && fguesspos != f3 && f3 == f4) &&
-      !(f1 == fguesspos && fguesspos == f3 && f3 != f4)) abort();
+      !(f1 == fguesspos && fguesspos == f3 && f3 != f4)) __builtin_trap();
   */
 #ifdef P9_S2F_DEBUG
   fprintf(stderr, "!!!\n");

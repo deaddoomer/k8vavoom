@@ -61,7 +61,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "../filesys/files.h"
 #include "r_tex.h"
 

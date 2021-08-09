@@ -1282,6 +1282,11 @@ void VPartialStreamRO::SerialiseBits (void *Data, int Length) {
 }
 
 
+//==========================================================================
+//
+//  VPartialStreamRO::SerialiseInt
+//
+//==========================================================================
 void VPartialStreamRO::SerialiseInt (vuint32 &Value/*, vuint32 Max*/) {
   if (!checkValidity()) return;
   {
@@ -1434,6 +1439,8 @@ void VPartialStreamRO::io (VSerialisable *&v) {
   PARTIAL_DO_IO();
 }
 
+#undef PARTIAL_DO_IO
+
 
 //==========================================================================
 //
@@ -1493,4 +1500,354 @@ VStream *CreateDiskStreamWrite (VStr fname, VStr streamname) {
   FILE *fl = fopen(*fname, "wb");
   if (!fl) return nullptr;
   return new VStdFileStreamWrite(fl, streamname);
+}
+
+
+//**************************************************************************
+//
+// VCheckedStream
+//
+//**************************************************************************
+
+//==========================================================================
+//
+//  StreamHostSysError
+//
+//==========================================================================
+static __attribute__((noreturn)) void StreamHostSysError (const char *msg) {
+  if (!msg || !msg[0]) msg = "stream error";
+  Sys_Error("%s", msg);
+}
+
+
+VCheckedStreamAbortFn VCheckedStreamAbortFnDefault = nullptr; // set this to something if you want to use it instead of `Sys_Error()`
+
+
+//==========================================================================
+//
+//  VCheckedStream::VCheckedStream
+//
+//==========================================================================
+VCheckedStream::VCheckedStream (VStream *ASrcStream)
+  : srcStream(ASrcStream)
+  , abortFn(nullptr)
+{
+  if (!ASrcStream) FatalError("source stream is null");
+  bLoading = ASrcStream->IsLoading();
+  bError = ASrcStream->IsError();
+  checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::VCheckedStream
+//
+//==========================================================================
+VCheckedStream::VCheckedStream (VStream *ASrcStream, bool doCopy)
+  : srcStream(nullptr)
+  , abortFn(nullptr)
+{
+  openStreamAndCopy(ASrcStream, doCopy);
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::VCheckedStream
+//
+//==========================================================================
+VCheckedStream::VCheckedStream (int LumpNum, bool aUseSysError)
+  : srcStream(nullptr)
+  , abortFn(&StreamHostSysError)
+{
+  if (LumpNum < 0) FatalError(va("invalid lump number (%d) in VCheckedStream::VCheckedStream", LumpNum));
+  VStream *lst = W_CreateLumpReaderNum(LumpNum);
+  if (!lst) FatalError(va("cannot read lump (%d) in VCheckedStream::VCheckedStream", LumpNum));
+  openStreamAndCopy(lst, true);
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::~VCheckedStream
+//
+//==========================================================================
+VCheckedStream::~VCheckedStream () {
+  Close();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::FatalError
+//
+//==========================================================================
+__attribute__((noreturn)) void VCheckedStream::FatalError (const char *msg) const {
+  if (abortFn) abortFn(msg);
+  if (VCheckedStreamAbortFnDefault) VCheckedStreamAbortFnDefault(msg);
+  Sys_Error("%s", msg);
+  __builtin_unreachable(); // just in case
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::openStreamAndCopy
+//
+//==========================================================================
+void VCheckedStream::openStreamAndCopy (VStream *st, bool doCopy) {
+  if (!st) FatalError("source stream is null");
+  if (!st->IsLoading()) { VStream::Destroy(st); FatalError("source stream must be for reading"); }
+  const int ssize = st->TotalSize();
+  if (!doCopy || ssize <= 0 || ssize > 1024*1024*64) {
+    // direct
+    srcStream = st;
+    bError = st->IsError();
+  } else {
+    // load to memory stream
+    VMemoryStream *ms = new VMemoryStream(st->GetName());
+    TArray<vuint8> &arr = ms->GetArray();
+    arr.setLength(ssize);
+    st->Serialise(arr.ptr(), ssize);
+    const bool err = st->IsError();
+    VStream::Destroy(st);
+    srcStream = ms;
+    ms->BeginRead();
+    bError = err;
+  }
+  bLoading = true;
+  checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::checkError
+//
+//==========================================================================
+void VCheckedStream::checkError () const {
+  if (bError) {
+    if (srcStream) {
+      VStr name = srcStream->GetName();
+      VStream::Destroy(srcStream);
+      FatalError(va("error %s '%s'", (bLoading ? "loading from" : "writing to"), *name));
+    } else {
+      FatalError(va("error %s", (bLoading ? "loading" : "writing")));
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::Close
+//
+//==========================================================================
+bool VCheckedStream::Close () {
+  if (srcStream) {
+    checkError();
+    VStream::Destroy(srcStream);
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::GetName
+//
+//==========================================================================
+VStr VCheckedStream::GetName () const {
+  return (srcStream ? srcStream->GetName() : VStr());
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::IsError
+//
+//==========================================================================
+bool VCheckedStream::IsError () const {
+  checkError();
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::checkValidityCond
+//
+//==========================================================================
+void VCheckedStream::checkValidityCond (bool mustBeTrue) {
+  if (!bError) {
+    if (!mustBeTrue || !srcStream || srcStream->IsError()) SetError();
+  }
+  if (bError) checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::Serialise
+//
+//==========================================================================
+void VCheckedStream::Serialise (void *buf, int len) {
+  checkValidityCond(len >= 0);
+  if (len == 0) return;
+  srcStream->Serialise(buf, len);
+  checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::SerialiseBits
+//
+//==========================================================================
+void VCheckedStream::SerialiseBits (void *Data, int Length) {
+  checkValidityCond(Length >= 0);
+  srcStream->SerialiseBits(Data, Length);
+  checkError();
+}
+
+
+void VCheckedStream::SerialiseInt (vuint32 &Value/*, vuint32 Max*/) {
+  checkValidity();
+  srcStream->SerialiseInt(Value/*, Max*/);
+  checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::Seek
+//
+//==========================================================================
+void VCheckedStream::Seek (int pos) {
+  checkValidityCond(pos >= 0);
+  srcStream->Seek(pos);
+  checkError();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::Tell
+//
+//==========================================================================
+int VCheckedStream::Tell () {
+  checkValidity();
+  int res = srcStream->Tell();
+  checkError();
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::TotalSize
+//
+//==========================================================================
+int VCheckedStream::TotalSize () {
+  checkValidity();
+  int res = srcStream->TotalSize();
+  checkError();
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::AtEnd
+//
+//==========================================================================
+bool VCheckedStream::AtEnd () {
+  checkValidity();
+  bool res = srcStream->AtEnd();
+  checkError();
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::Flush
+//
+//==========================================================================
+void VCheckedStream::Flush () {
+  checkValidity();
+  srcStream->Flush();
+  checkError();
+}
+
+
+#define PARTIAL_DO_IO()  do { \
+  checkValidity(); \
+  srcStream->io(v); \
+  checkError(); \
+} while (0)
+
+
+//==========================================================================
+//
+//  VCheckedStream::io
+//
+//==========================================================================
+void VCheckedStream::io (VName &v) {
+  PARTIAL_DO_IO();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::io
+//
+//==========================================================================
+void VCheckedStream::io (VStr &v) {
+  PARTIAL_DO_IO();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::io
+//
+//==========================================================================
+void VCheckedStream::io (VObject *&v) {
+  PARTIAL_DO_IO();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::io
+//
+//==========================================================================
+void VCheckedStream::io (VMemberBase *&v) {
+  PARTIAL_DO_IO();
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::io
+//
+//==========================================================================
+void VCheckedStream::io (VSerialisable *&v) {
+  PARTIAL_DO_IO();
+}
+
+#undef PARTIAL_DO_IO
+
+
+//==========================================================================
+//
+//  VCheckedStream::SerialiseStructPointer
+//
+//==========================================================================
+void VCheckedStream::SerialiseStructPointer (void *&Ptr, VStruct *Struct) {
+  checkValidityCond(!!Ptr && !!Struct);
+  srcStream->SerialiseStructPointer(Ptr, Struct);
+  checkError();
 }

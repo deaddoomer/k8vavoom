@@ -514,7 +514,7 @@ static void test_hkdf_one (const struct HKDF_test_t *nfo) {
   unsigned char *info = hex2bin(nfo->info);
   unsigned char *prk = hex2bin(nfo->prk);
   unsigned char *okm = hex2bin(nfo->okm);
-  if (nfo->reslen != hexlen(nfo->okm)) abort();
+  if (nfo->reslen != hexlen(nfo->okm)) __builtin_trap();
   unsigned char *reskey = (unsigned char *)malloc(nfo->reslen);
 
   hkdf_sha256(reskey, nfo->reslen, ikm, hexlen(nfo->ikm), salt, hexlen(nfo->salt), info, hexlen(nfo->info));
@@ -523,7 +523,7 @@ static void test_hkdf_one (const struct HKDF_test_t *nfo) {
     printf("%s: FAILED!\n", nfo->name);
     dumphex("EXPECTED = ", okm, hexlen(nfo->okm));
     dumphex("     GOT = ", reskey, nfo->reslen);
-    abort();
+    __builtin_trap();
   } else {
     printf("%s: OK!\n", nfo->name);
   }

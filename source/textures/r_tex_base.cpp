@@ -24,7 +24,6 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "r_tex.h"
 
 #define VV_INTENSITY_FAST_GAMMA

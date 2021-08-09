@@ -36,7 +36,7 @@ typedef unsigned int vuint32;
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define vassert(cond_)  if (!(cond_)) abort()
+#define vassert(cond_)  if (!(cond_)) __builtin_trap()
 
 
 static vuint32 GetTypeHash (int a) noexcept {
@@ -54,7 +54,7 @@ static vuint32 GetTypeHash (int a) noexcept {
 
 static void fatal (const char *msg) {
   fprintf(stderr, "FATAL: %s\n", msg);
-  abort();
+  __builtin_trap();
 }
 
 

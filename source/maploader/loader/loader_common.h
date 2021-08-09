@@ -24,7 +24,6 @@
 //**
 //**************************************************************************
 #include "../../gamedefs.h"
-#include "../../utils/ntvalueioex.h"  /* VCheckedStream */
 
 
 // gl-node version identifiers

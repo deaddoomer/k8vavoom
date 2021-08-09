@@ -341,7 +341,7 @@ void _mi_warning_message(const char* fmt, ...) {
 #if MI_DEBUG
 void _mi_assert_fail(const char* assertion, const char* fname, unsigned line, const char* func ) {
   _mi_fprintf(NULL, NULL, "mimalloc: assertion failed: at \"%s\":%u, %s\n  assertion: \"%s\"\n", fname, line, (func==NULL?"":func), assertion);
-  abort();
+  __builtin_trap();
 }
 #endif
 
@@ -359,17 +359,17 @@ static void mi_error_default(int err) {
     #ifdef _MSC_VER
     __debugbreak();
     #endif
-    abort();
+    __builtin_trap();
   }
 #endif
 #if (MI_SECURE>0)
   if (err==EFAULT) {  // abort on serious errors in secure mode (corrupted meta-data)
-    abort();
+    __builtin_trap();
   }
 #endif
 #if defined(MI_XMALLOC)
   if (err==ENOMEM || err==EOVERFLOW) { // abort on memory allocation fails in xmalloc mode
-    abort();
+    __builtin_trap();
   }
 #endif
 }

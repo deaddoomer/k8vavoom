@@ -33,7 +33,6 @@
 #ifdef CLIENT
 # include "../automap.h"
 #endif
-#include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "../mapinfo.h"
 
 

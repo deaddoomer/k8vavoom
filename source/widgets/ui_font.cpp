@@ -25,7 +25,6 @@
 //**************************************************************************
 #include "../gamedefs.h"
 #include "../textures/r_tex.h"
-#include "../utils/ntvalueioex.h"  /* VCheckedStream */
 #include "ui.h"
 
 #define VAVOOM_NAME_FONT_TEXTURES

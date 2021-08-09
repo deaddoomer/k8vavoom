@@ -354,7 +354,7 @@ int main () {
     uint32_t val = chacha_next(&cha);
     printf("%4u: %u\n", n, val);
   }
-  if (!chacha_equal(&cha, &cha)) abort();
+  if (!chacha_equal(&cha, &cha)) __builtin_trap();
   return 0;
 }
 #endif

@@ -24,7 +24,8 @@
 //**
 //**************************************************************************
 
-// stream for reading in memory
+// ////////////////////////////////////////////////////////////////////////// //
+// stream for reading from raw memory chunk
 class VMemoryStreamRO : public VStream {
 protected:
   const vuint8 *Data;
@@ -58,7 +59,8 @@ public:
 };
 
 
-// stream for reading and writing in memory
+// ////////////////////////////////////////////////////////////////////////// //
+// stream for reading and writing using `TArray`
 class VMemoryStream : public VStream {
 protected:
   TArray<vuint8> Array;
@@ -92,6 +94,7 @@ public:
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // similar to VMemoryStream, but uses reference to an external array
 class VArrayStream : public VStream {
 protected:
@@ -118,10 +121,12 @@ public:
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // stream for reading and writing in memory
 // this does allocation by 8KB pages, and you cannot get direct pointer
 // the idea is that you will use this as writer, then switch it to reader,
 // and pass it to zip stream or something
+// WARNING! not tested yet
 class VPagedMemoryStream : public VStream {
 private:
   enum { FullPageSize = 8192 };
@@ -249,6 +254,65 @@ public:
   virtual void Flush () override;
   // won't free stream
   virtual bool Close () override; // returns `false` on error
+
+  // interface functions for objects and classes streams
+  virtual void io (VName &) override;
+  virtual void io (VStr &) override;
+  virtual void io (VObject *&) override;
+  virtual void io (VMemberBase *&) override;
+  virtual void io (VSerialisable *&) override;
+
+  virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override;
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+typedef void (*VCheckedStreamAbortFn) (const char *msg) __attribute__((noreturn));
+
+extern VCheckedStreamAbortFn VCheckedStreamAbortFnDefault; // set this to something if you want to use it instead of `Sys_Error()`
+
+// owns srcstream
+// will throw `Host_Error()` on any error
+// should not be used with `new`
+class VCheckedStream : public VStream {
+private:
+  mutable VStream *srcStream;
+
+public:
+  VCheckedStreamAbortFn abortFn; // if `nullptr`, use default
+
+public:
+  __attribute__((noreturn)) void FatalError (const char *msg) const;
+
+private:
+  void checkError () const;
+  void checkValidityCond (bool mustBeTrue);
+  inline void checkValidity () { checkValidityCond(true); }
+
+  void openStreamAndCopy (VStream *st, bool doCopy);
+
+public:
+  VV_DISABLE_COPY(VCheckedStream)
+
+  VCheckedStream (VStream *ASrcStream); // this should not be used with `new`
+  // this seeks to 0
+  VCheckedStream (VStream *ASrcStream, bool doCopy); // this should not be used with `new`
+  VCheckedStream (int LumpNum, bool aUseSysError=false); // this should not be used with `new`; copies into memory
+  virtual ~VCheckedStream () override;
+
+  // stream interface
+  virtual VStr GetName () const override;
+  virtual bool IsError () const override; // this will call `Host_Error()`
+  virtual void Serialise (void *Data, int Length) override;
+  virtual void SerialiseBits (void *Data, int Length) override;
+  virtual void SerialiseInt (vuint32 &Value/*, vuint32 Max*/) override;
+
+  virtual void Seek (int) override;
+  virtual int Tell () override;
+  virtual int TotalSize () override;
+  virtual bool AtEnd () override;
+  virtual void Flush () override;
+  virtual bool Close () override; // will free stream
 
   // interface functions for objects and classes streams
   virtual void io (VName &) override;

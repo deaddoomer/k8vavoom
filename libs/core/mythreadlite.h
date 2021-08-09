@@ -207,15 +207,15 @@ static __attribute__((unused)) inline int mythread_mutex_init_recursive (mythrea
 }
 
 static __attribute__((unused)) inline void mythread_mutex_destroy (mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_mutex_destroy(mutex) != 0) abort();
+  if (pthread_mutex_destroy(mutex) != 0) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_mutex_lock (mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_mutex_lock(mutex) != 0) abort();
+  if (pthread_mutex_lock(mutex) != 0) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_mutex_unlock (mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_mutex_unlock(mutex) != 0) abort();
+  if (pthread_mutex_unlock(mutex) != 0) __builtin_trap();
 }
 
 // Returns zero if the lock was aquired.
@@ -260,22 +260,22 @@ static __attribute__((unused)) inline int mythread_cond_init (mythread_cond *myc
 }
 
 static __attribute__((unused)) inline void mythread_cond_destroy (mythread_cond *cond) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_cond_destroy(&cond->cond) != 0) abort();
+  if (pthread_cond_destroy(&cond->cond) != 0) __builtin_trap();
 }
 
 
 static __attribute__((unused)) inline void mythread_cond_signal (mythread_cond *cond) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_cond_signal(&cond->cond) != 0) abort();
+  if (pthread_cond_signal(&cond->cond) != 0) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_cond_broadcast (mythread_cond *cond) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_cond_broadcast(&cond->cond) != 0) abort();
+  if (pthread_cond_broadcast(&cond->cond) != 0) __builtin_trap();
 }
 
 // Atomically releases the mutex, and waits for condition signal.
 // Upon return, the mutex is locked again.
 static __attribute__((unused)) inline void mythread_cond_wait (mythread_cond *cond, mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_cond_wait(&cond->cond, mutex) != 0) abort();
+  if (pthread_cond_wait(&cond->cond, mutex) != 0) __builtin_trap();
 }
 
 // Atomically releases the mutex, and waits on a condition or until a timeout expires.
@@ -293,7 +293,7 @@ static __attribute__((unused)) inline void mythread_condtime_set (mythread_condt
   condtime->tv_nsec = (timeout_ms%1000)*1000000;
 
   struct timespec now;
-  if (clock_gettime(cond->clk_id, &now) != 0) abort();
+  if (clock_gettime(cond->clk_id, &now) != 0) __builtin_trap();
 
   condtime->tv_sec += now.tv_sec;
   condtime->tv_nsec += now.tv_nsec;
@@ -316,7 +316,7 @@ static __attribute__((unused)) inline void mythread_rwlock_destroy (mythread_rwl
 }
 
 static __attribute__((unused)) inline void mythread_rwlock_lock_read (mythread_rwlock *rwlock) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_rwlock_rdlock(rwlock) != 0) abort();
+  if (pthread_rwlock_rdlock(rwlock) != 0) __builtin_trap();
 }
 
 // Returns zero if the lock was aquired.
@@ -325,11 +325,11 @@ static __attribute__((unused)) inline int mythread_rwlock_trylock_read (mythread
 }
 
 static __attribute__((unused)) inline void mythread_rwlock_unlock_read (mythread_rwlock *rwlock) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_rwlock_unlock(rwlock) != 0) abort();
+  if (pthread_rwlock_unlock(rwlock) != 0) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_rwlock_lock_write (mythread_rwlock *rwlock) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_rwlock_wrlock(rwlock) != 0) abort();
+  if (pthread_rwlock_wrlock(rwlock) != 0) __builtin_trap();
 }
 
 // Returns zero if the lock was aquired.
@@ -338,7 +338,7 @@ static __attribute__((unused)) inline int mythread_rwlock_trylock_write (mythrea
 }
 
 static __attribute__((unused)) inline void mythread_rwlock_unlock_write (mythread_rwlock *rwlock) VC_MYTHREAD_NOEXCEPT {
-  if (pthread_rwlock_unlock(rwlock) != 0) abort();
+  if (pthread_rwlock_unlock(rwlock) != 0) __builtin_trap();
 }
 
 
@@ -416,11 +416,11 @@ static __attribute__((unused)) inline void mythread_mutex_destroy (mythread_mute
 }
 
 static __attribute__((unused)) inline void mythread_mutex_lock (mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (mtx_lock(mutex) != thrd_success) abort();
+  if (mtx_lock(mutex) != thrd_success) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_mutex_unlock (mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (mtx_unlock(mutex) != thrd_success) abort();
+  if (mtx_unlock(mutex) != thrd_success) __builtin_trap();
 }
 
 // Returns zero if the lock was aquired.
@@ -451,17 +451,17 @@ static __attribute__((unused)) inline void mythread_cond_destroy (mythread_cond 
 }
 
 static __attribute__((unused)) inline void mythread_cond_signal (mythread_cond *cond) VC_MYTHREAD_NOEXCEPT {
-  if (cnd_signal(&cond->cond) != thrd_success) abort();
+  if (cnd_signal(&cond->cond) != thrd_success) __builtin_trap();
 }
 
 static __attribute__((unused)) inline void mythread_cond_broadcast (mythread_cond *cond) VC_MYTHREAD_NOEXCEPT {
-  if (cnd_broadcast(&cond->cond) != thrd_success) abort();
+  if (cnd_broadcast(&cond->cond) != thrd_success) __builtin_trap();
 }
 
 // Atomically releases the mutex, and waits for condition signal.
 // Upon return, the mutex is locked again.
 static __attribute__((unused)) inline void mythread_cond_wait (mythread_cond *cond, mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (cnd_wait(&cond->cond, mutex) != thrd_success) abort();
+  if (cnd_wait(&cond->cond, mutex) != thrd_success) __builtin_trap();
 }
 
 // Atomically releases the mutex, and waits on a condition or until a timeout expires.
@@ -478,7 +478,7 @@ static __attribute__((unused)) inline void mythread_condtime_set (mythread_condt
   condtime->tv_nsec = (timeout_ms%1000)*1000000;
 
   struct timespec now;
-  if (clock_gettime(cond->clk_id, &now) != 0) abort();
+  if (clock_gettime(cond->clk_id, &now) != 0) __builtin_trap();
 
   condtime->tv_sec += now.tv_sec;
   condtime->tv_nsec += now.tv_nsec;
@@ -538,9 +538,9 @@ typedef DWORD mythread_condtime;
 // but this is what we target anyway
 #define mythread_once(oncename_,func_) do { \
   BOOL pending_; \
-  if (!InitOnceBeginInitialize(&oncename_, 0, &pending_, NULL)) abort(); \
+  if (!InitOnceBeginInitialize(&oncename_, 0, &pending_, NULL)) __builtin_trap(); \
   if (pending_) func_(); \
-  /*if (!InitOnceComplete(&oncename_, 0, NULL)) abort();*/ \
+  /*if (!InitOnceComplete(&oncename_, 0, NULL)) __builtin_trap();*/ \
   InitOnceComplete(&oncename_, 0, NULL); \
 } while (0)
 
@@ -625,7 +625,7 @@ static __attribute__((unused)) inline void mythread_cond_broadcast (mythread_con
 // Atomically releases the mutex, and waits for condition signal.
 // Upon return, the mutex is locked again.
 static __attribute__((unused)) inline void mythread_cond_wait (mythread_cond *cond, mythread_mutex *mutex) VC_MYTHREAD_NOEXCEPT {
-  if (!SleepConditionVariableCS(cond, mutex, INFINITE)) abort();
+  if (!SleepConditionVariableCS(cond, mutex, INFINITE)) __builtin_trap();
 }
 
 // Atomically releases the mutex, and waits on a condition or until a timeout expires.
@@ -634,7 +634,7 @@ static __attribute__((unused)) inline void mythread_cond_wait (mythread_cond *co
 static __attribute__((unused)) inline int mythread_cond_timedwait (mythread_cond *cond, mythread_mutex *mutex, const mythread_condtime *condtime) VC_MYTHREAD_NOEXCEPT {
   BOOL ret = SleepConditionVariableCS(cond, mutex, *condtime);
   if (!ret) {
-    if (GetLastError() != ERROR_TIMEOUT) abort();
+    if (GetLastError() != ERROR_TIMEOUT) __builtin_trap();
     return 1;
   }
   return 0;

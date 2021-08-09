@@ -349,7 +349,7 @@ private:
       idx = (idx+1)&bhigh;
       ++pcur;
     }
-    abort(); // we should not come here, ever
+    __builtin_trap(); // we should not come here, ever
   }
 
 public:

@@ -119,7 +119,7 @@ VLog::VLog () noexcept
   // initial allocation, so we will have something to use on OOM
   logbufsize = INITIAL_BUFFER_SIZE;
   logbuf = (char *)Z_Malloc(logbufsize);
-  if (!logbuf) { fprintf(stderr, "FATAL: out of memory for initial log buffer!\n"); abort(); } //FIXME
+  if (!logbuf) { fprintf(stderr, "FATAL: out of memory for initial log buffer!\n"); __builtin_trap(); } //FIXME
 }
 
 
@@ -132,9 +132,9 @@ void VLog::AddListener (VLogListener *lst) noexcept {
   if (!lst) return;
   InitLogLock();
   MyThreadLocker lock(&logLock);
-  //if (inWrite) { fprintf(stderr, "FATAL: cannot add log listeners from log listener!\n"); abort(); }
+  //if (inWrite) { fprintf(stderr, "FATAL: cannot add log listeners from log listener!\n"); __builtin_trap(); }
   Listener *ls = (Listener *)Z_Malloc(sizeof(Listener));
-  if (!ls) { fprintf(stderr, "FATAL: out of memory for log listener list!\n"); abort(); }
+  if (!ls) { fprintf(stderr, "FATAL: out of memory for log listener list!\n"); __builtin_trap(); }
   ls->ls = lst;
   ls->next = nullptr;
   if (!Listeners) {
@@ -156,7 +156,7 @@ void VLog::RemoveListener (VLogListener *lst) noexcept {
   if (!lst || !Listeners) return;
   InitLogLock();
   MyThreadLocker lock(&logLock);
-  //if (inWrite) { fprintf(stderr, "FATAL: cannot remove log listeners from log listener!\n"); abort(); }
+  //if (inWrite) { fprintf(stderr, "FATAL: cannot remove log listeners from log listener!\n"); __builtin_trap(); }
   Listener *lastCurr = nullptr, *lastPrev = nullptr;
   Listener *curr = Listeners, *prev = nullptr;
   for (; curr; prev = curr, curr = curr->next) {
@@ -210,7 +210,7 @@ void VLog::doWrite (EName Type, const char *fmt, va_list ap, bool addEOL) noexce
   if (!fmt) fmt = "";
 
   // initial allocation
-  if (!logbufsize) abort(); // the thing that should not be
+  if (!logbufsize) __builtin_trap(); // the thing that should not be
 
   int size;
 
@@ -249,7 +249,7 @@ void VLog::doWrite (EName Type, const char *fmt, va_list ap, bool addEOL) noexce
       if (!logbuf) {
         //FIXME
         fprintf(stderr, "FATAL: out of memory for log buffer (new=%d)!\n", logbufsize);
-        abort();
+        __builtin_trap();
       }
     }
     logbuf[0] = 0;

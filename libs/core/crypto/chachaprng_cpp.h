@@ -298,7 +298,7 @@ int main () {
     auto val = cha();
     printf("%4u: %u\n", n, val);
   }
-  if (cha != cha) abort();
+  if (cha != cha) __builtin_trap();
   return 0;
 }
 #endif

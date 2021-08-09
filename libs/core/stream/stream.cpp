@@ -220,7 +220,7 @@ bool VStream::IsError () const {
 //
 //==========================================================================
 void VStream::Serialise (void *, int) {
-  //abort(); // k8: nope, we need dummy one
+  //__builtin_trap(); // k8: nope, we need dummy one
 }
 
 
@@ -323,7 +323,7 @@ bool VStream::Close () {
 //
 //==========================================================================
 void VStream::io (VName &v) {
-  //abort(); // k8: nope, we need dummy one
+  //__builtin_trap(); // k8: nope, we need dummy one
   if (Mapper) Mapper->io(v);
 }
 
@@ -344,7 +344,7 @@ void VStream::io (VStr &s) {
 //
 //==========================================================================
 void VStream::io (VObject *&v) {
-  //abort(); // k8: nope, we need dummy one
+  //__builtin_trap(); // k8: nope, we need dummy one
   if (Mapper) Mapper->io(v);
 }
 
@@ -355,7 +355,7 @@ void VStream::io (VObject *&v) {
 //
 //==========================================================================
 void VStream::io (VMemberBase *&v) {
-  //abort(); // k8: nope, we need dummy one
+  //__builtin_trap(); // k8: nope, we need dummy one
   if (Mapper) Mapper->io(v);
 }
 
@@ -366,7 +366,7 @@ void VStream::io (VMemberBase *&v) {
 //
 //==========================================================================
 void VStream::io (VSerialisable *&v) {
-  if (Mapper) Mapper->io(v); else abort();
+  if (Mapper) Mapper->io(v); else __builtin_trap();
 }
 
 

@@ -239,7 +239,7 @@ int hmac_test (void) {
 
   for (size_t i = 0; i < 7; ++i) {
     keys[i] = malloc(keys_len[i]+1);
-    if (!keys[i]) { fprintf(stderr, "Can't allocate memory\n"); abort(); }
+    if (!keys[i]) { fprintf(stderr, "Can't allocate memory\n"); __builtin_trap(); }
   }
 
   memset(keys[0], 0x0b, keys_len[0]);
@@ -252,7 +252,7 @@ int hmac_test (void) {
 
   messages[2] = malloc(messages2and3_len+1);
   messages[3] = malloc(messages2and3_len+1);
-  if (!messages[2] || !messages[3]) { fprintf(stderr, "Can't allocate memory\n"); abort(); }
+  if (!messages[2] || !messages[3]) { fprintf(stderr, "Can't allocate memory\n"); __builtin_trap(); }
 
   messages[2][messages2and3_len] = '\0';
   messages[3][messages2and3_len] = '\0';
@@ -329,7 +329,7 @@ static int test_hkdf_one (const struct HKDF_test_t *nfo) {
   uint8_t *info = hex2bin(nfo->info);
   uint8_t *prk = hex2bin(nfo->prk);
   uint8_t *okm = hex2bin(nfo->okm);
-  if (nfo->reslen != hexlen(nfo->okm)) abort();
+  if (nfo->reslen != hexlen(nfo->okm)) __builtin_trap();
   uint8_t *reskey = (uint8_t *)malloc(nfo->reslen);
 
   sha256pd_hkdf_buf(reskey, nfo->reslen, ikm, hexlen(nfo->ikm), salt, hexlen(nfo->salt), info, hexlen(nfo->info));
@@ -431,7 +431,7 @@ int main (int argc, char **argv) {
   uint8_t reskey[SHA256PD_HASH_SIZE];
   const char *inkey = "Alice";
   const char *insalt = "Miriel";
-  if (sha256pd_balloon(reskey, scost, tcost, inkey, strlen(inkey), insalt, strlen(insalt)) != 0) abort();
+  if (sha256pd_balloon(reskey, scost, tcost, inkey, strlen(inkey), insalt, strlen(insalt)) != 0) __builtin_trap();
   printf("KEY: "); for (unsigned f = 0; f < SHA256PD_HASH_SIZE; ++f) printf("%02x", reskey[f]); printf("\n");
 
   return 0;

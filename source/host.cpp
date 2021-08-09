@@ -190,6 +190,27 @@ static VCvarI cl_framerate_net_timeout("cl_framerate_net_timeout", "28", "If we 
 #include "dedlog.cpp"
 
 
+//==========================================================================
+//
+//  StreamHostError
+//
+//==========================================================================
+static __attribute__((noreturn)) void StreamHostError (const char *msg) {
+  if (!msg || !msg[0]) msg = "stream error";
+  Host_Error("%s", msg);
+}
+
+
+//==========================================================================
+//
+//  Host_InitStreamCallbacks
+//
+//==========================================================================
+void Host_InitStreamCallbacks () {
+  VCheckedStreamAbortFnDefault = &StreamHostError;
+}
+
+
 struct ECounterInfo {
   VClass *cc;
   int count;
@@ -198,7 +219,7 @@ struct ECounterInfo {
 
 //==========================================================================
 //
-//  CountAllEntities
+//  cmpCounterInfo
 //
 //==========================================================================
 static VVA_OKUNUSED int cmpCounterInfo (const void *aa, const void *bb, void *) {

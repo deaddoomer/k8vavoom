@@ -78,7 +78,7 @@ static size_t vstrCalcGrowStoreSizeSizeT (size_t newlen) noexcept {
   if (newsz < VSTR_THIRD_GROW_LIMIT) return (newsz+newsz/3u)|0x3fu;
   if (newsz < 0x40000000u) return newsz+32768u;
   Sys_Error("out of memory for VStr storage");
-  abort();
+  __builtin_trap();
 }
 
 
@@ -499,7 +499,7 @@ VVA_CHECKRESULT int VStr::ICmp (const char *s0, const char *s1) noexcept {
     if (!c0) return 0;
   }
   // it never came here
-  abort();
+  __builtin_trap();
 }
 
 

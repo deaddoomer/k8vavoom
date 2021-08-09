@@ -327,6 +327,8 @@ int main (int argc, char **argv) {
       }
     }
 
+    Host_InitStreamCallbacks();
+
     VObject::StaticInitOptions(GParsedArgs);
     FL_InitOptions();
     GArgs.Init(argc, argv, "-file");

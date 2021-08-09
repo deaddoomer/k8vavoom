@@ -206,6 +206,7 @@ static void signal_handler (int /*s*/) {
 //==========================================================================
 static void mainloop (int argc, char **argv) {
   try {
+    Host_InitStreamCallbacks();
     VObject::StaticInitOptions(GParsedArgs);
     FL_InitOptions();
     GArgs.Init(argc, argv, "-file");
