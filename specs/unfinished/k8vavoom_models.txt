@@ -1,0 +1,127 @@
+file: "models/models.xml"
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<vavoom_models_list>
+  <!-- the only possible node here -->
+  <include file="models/ammo/clip.xml" />
+</vavoom_models_list>
+
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<vavoom_model_definition>
+  <!-- this defines one 3d model. you can have several of them, and refer to models by their names. -->
+  <model name="base">
+    <!--
+      this defines source model file. you can use 'md2' or 'md3' tag here.
+      you can use additional attributes:
+        int mesh_index -- mesh for this model (mostly used for md3 models)
+        int version -- model version. this is used to assign different player models to different weapons, using `Weapon.PlayerModelVersion`
+        string position_file -- sets "position model"
+        int skin_anim_speed -- sets skin animation speed, in seconds; requires `skin_anim_range`
+        int skin_anim_range -- number of skins in animation loop
+        bool fullbright -- this model is fullbright (default is `false`)
+        bool noshadow -- this model doesn't cast shadow (default is `false`)
+        bool usedepth -- force depth flag (for things like monsters with alpha transaparency) (TODOCUMENT)
+        bool allowtransparency -- allow transparency in skin files, for skins that are transparent in solid models (TODOCUMENT)
+        float shift
+        float shift_x
+        float shift_y
+        float shift_z
+        float offset
+        float offset_x
+        float offset_y
+        float offset_z
+        float scale
+        float scale_x
+        float scale_y
+        float scale_z
+    -->
+    <md2 file="models/ammo/ammo.md2">
+      <!--
+        this defines model frames. each used frame in model file should be listed here, and assigned an index.
+        indexes:
+          int index -- frame index
+          int end_index -- frame end index (inclusive), default: index+1
+        or:
+          int count -- number of frames to create
+        if no index/count specified, create one frame with index of the last frame plus 1
+        you can use additional attributes:
+          int position_index
+          float alpha_start
+          float alpha_end
+          int skin_index
+      -->
+      <frame index="0" />
+      <!--
+        you can define model skins with `skin` tag
+        required attributes:
+          string file
+        you can use additional attributes:
+          rgbcolor shade
+      -->
+      <!--
+        you can define model subskins for MD3 models with `subskin` tag (for MD3 submodels)
+        required attributes:
+          int submodel_index
+          string file
+        you can use additional attributes:
+          rgbcolor shade
+      -->
+    </md2>
+  </model>
+
+  <!--
+    this attaches models to actor classes.
+    you can use additional attributes:
+      bool noselfshadow -- this class won't shadow self (default is `false`)
+      bool iwadonly -- replace frames only if sprites are from IWAD
+      bool thiswadonly -- replace frames only if sprites are from the current WAD/PK3
+      bool rotation
+      bool bobbing
+  -->
+  <class name="ClipBox">
+    <!--
+      attach model to state.
+      you can assign model either to state with the given number (int index), or to srpite (string sprite).
+      assign to indicies:
+        int index -- starting state index; use `-1` for "all states"
+        int last_index -- used to assign model to state range
+      assign to sprites:
+        string sprite -- base sprite name (4 chars)
+        string sprite_frame -- sprite frame (1 char)
+      specify model:
+        string model
+        optional int frame_index
+        optional int submodel_index
+        optional bool hidden -- TODOCUMENT
+      interpolation
+        optional float inter -- if you want to assign more than one model to some state/sprite, use this to specify interstate time [0..1]
+      optional attributes:
+        float angle_yaw
+        float angle_pitch
+        float angle_roll
+        float rotate_yaw
+        float rotate_pitch
+        float rotate_roll
+        float shift
+        float shift_x
+        float shift_y
+        float shift_z
+        float offset
+        float offset_x
+        float offset_y
+        float offset_z
+        float scale
+        float scale_x
+        float scale_y
+        float scale_z
+        bool rotation
+        bool bobbing
+        float angle_start
+        float angle_end
+        float alpha_start
+        float alpha_end
+    -->
+    <state index="-1" model="base" frame_index="0" />
+  </class>
+</vavoom_model_definition>
