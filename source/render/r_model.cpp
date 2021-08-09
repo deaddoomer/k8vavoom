@@ -370,7 +370,18 @@ void R_InitModels () {
     // parse the file
     VXmlDocument *Doc = new VXmlDocument();
     Doc->Parse(Strm, "models/models.xml");
-    for (VXmlNode *N = Doc->Root.FindChild("include"); N; N = N->FindNext()) Mod_FindName(N->GetAttribute("file"));
+    //for (VXmlNode *N = Doc->Root.FindChild("include"); N; N = N->FindNext()) Mod_FindName(N->GetAttribute("file"));
+    for (VXmlNode *N : Doc->Root.allChildren()) {
+      if (!N->Name.strEqu("include")) Sys_Error("%s: invalid model script node '%s'", *N->Loc.toStringNoCol(), *N->Name);
+      if (N->HasChildren()) Sys_Error("%s: model script include node should not have children", *N->Loc.toStringNoCol());
+      // check attrs
+      {
+        auto bad = N->FindBadAttribute("file", nullptr);
+        if (bad) Sys_Error("%s: invalid model script attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
+      }
+      if (!N->HasAttribute("file")) Sys_Error("%s: model script include node doesn't have \"file\" attribute", *N->Loc.toStringNoCol());
+      Mod_FindName(N->GetAttribute("file"));
+    }
     delete Doc;
   }
 
@@ -477,13 +488,13 @@ static bool ParseBool (VXmlNode *N, const char *name, bool defval) {
 //  `vec` must be initialised
 //
 //==========================================================================
-static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename) {
+static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool propagate) {
   vassert(SN);
   vassert(basename);
   if (SN->HasAttribute(basename)) {
-    vec.x = VStr::atof(*SN->GetAttribute("scale"), vec.x);
-    vec.y = vec.x;
-    vec.z = vec.x;
+    vec.x = VStr::atof(*SN->GetAttribute(basename), vec.x);
+    vec.y = (propagate ? vec.x : 0.0f);
+    vec.z = (propagate ? vec.x : 0.0f);
   } else {
     VStr xname;
     xname = VStr(basename)+"_x"; if (SN->HasAttribute(xname)) vec.x = VStr::atof(*SN->GetAttribute(xname), vec.x);
@@ -501,9 +512,9 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename) {
 //
 //==========================================================================
 static void ParseTransform (VXmlNode *SN, AliasModelTrans &trans) {
-  ParseVector(SN, trans.Shift, "shift");
-  ParseVector(SN, trans.Offset, "offset");
-  ParseVector(SN, trans.Scale, "scale");
+  ParseVector(SN, trans.Shift, "shift", false);
+  ParseVector(SN, trans.Offset, "offset", false);
+  ParseVector(SN, trans.Scale, "scale", true);
 }
 
 
@@ -599,87 +610,143 @@ static bool IsValidSpriteState (int lump, VState *state, bool iwadonly, bool thi
 //==========================================================================
 static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDoom=false) {
   // verify that it's a model definition file
-  if (Doc->Root.Name != "vavoom_model_definition") Sys_Error("%s is not a valid model definition file", *Mdl->Name);
+  if (Doc->Root.Name != "vavoom_model_definition") Sys_Error("%s: %s is not a valid model definition file", *Doc->Root.Loc.toStringNoCol(), *Mdl->Name);
 
   Mdl->DefaultClass = nullptr;
 
+  // check top-level nodes
+  {
+    auto bad = Doc->Root.FindBadChild("model", "class", nullptr);
+    if (bad) Sys_Error("%s: model file has invalid node '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
+  }
+
+  if (Doc->Root.HasAttributes()) Sys_Error("%s: model file node should not have attributes", *Doc->Root.Loc.toStringNoCol());
+
   // process model definitions
-  for (VXmlNode *N = Doc->Root.FindChild("model"); N; N = N->FindNext()) {
+  for (VXmlNode *ModelNode : Doc->Root.childrenWithName("model")) {
+    // check attrs
+    {
+      auto bad = ModelNode->FindBadAttribute("name", nullptr);
+      if (bad) Sys_Error("%s: model declaration has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
+    }
+
     VScriptModel &SMdl = Mdl->Models.Alloc();
-    SMdl.Name = *N->GetAttribute("name");
+    SMdl.Name = *ModelNode->GetAttribute("name");
+    if (SMdl.Name == NAME_None) Sys_Error("%s: model declaration has empty name", *ModelNode->Loc.toStringNoCol());
+
+    // check nodes
+    {
+      auto bad = ModelNode->FindBadChild("md2", "md3", nullptr);
+      if (bad) Sys_Error("%s: model '%s' definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+    }
 
     // process model parts
-    const char *mdx = (N->FindChild("md2") ? "md2" : "md3");
-    for (VXmlNode *SN = N->FindChild(mdx); SN; SN = SN->FindNext()) {
+    for (VXmlNode *ModelDefNode : ModelNode->allChildren()) {
+      if (!ModelDefNode->Name.strEqu("md2") && !ModelDefNode->Name.strEqu("md3")) continue; //Sys_Error("%s: invalid model '%s' definition node '%s'", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name, mdx);
+      const bool isMD3 = ModelDefNode->Name.strEqu("md3");
+
+      // check attrs
+      {
+        auto bad = ModelDefNode->FindBadAttribute("file", "mesh_index", "version", "position_file", "skin_anim_speed", "skin_anim_range",
+                                                  "fullbright", "noshadow", "usedepth", "allowtransparency",
+                                                  "shift", "shift_x", "shift_y", "shift_z",
+                                                  "offset", "offset_x", "offset_y", "offset_z",
+                                                  "scale", "scale_x", "scale_y", "scale_z",
+                                                  nullptr);
+        if (bad) Sys_Error("%s: model '%s' definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+      }
+
+      // check nodes
+      {
+        auto bad = ModelDefNode->FindBadChild("frame", "skin", "subskin", nullptr);
+        if (bad) Sys_Error("%s: model '%s' definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+      }
+
       VScriptSubModel *Md2 = &SMdl.SubModels.Alloc();
       const int Md2Index = SMdl.SubModels.length()-1;
 
       bool hasMeshIndex = false;
       Md2->MeshIndex = 0;
-      if (SN->HasAttribute("mesh_index")) {
+      if (ModelDefNode->HasAttribute("mesh_index")) {
         hasMeshIndex = true;
-        Md2->MeshIndex = VStr::atoi(*SN->GetAttribute("mesh_index"));
+        Md2->MeshIndex = VStr::atoi(*ModelDefNode->GetAttribute("mesh_index"));
       }
 
-      Md2->Model = Mod_FindMeshModel(Mdl->Name, SN->GetAttribute("file").ToLower().FixFileSlashes(), Md2->MeshIndex);
+      if (!ModelDefNode->HasAttribute("file")) Sys_Error("%s: model '%s' has no file", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name);
+      Md2->Model = Mod_FindMeshModel(Mdl->Name, ModelDefNode->GetAttribute("file").ToLower().FixFileSlashes(), Md2->MeshIndex);
 
       // version
-      Md2->Version = ParseIntWithDefault(SN, "version", -1);
+      Md2->Version = ParseIntWithDefault(ModelDefNode, "version", -1);
 
       // position model
       Md2->PositionModel = nullptr;
-      if (SN->HasAttribute("position_file")) {
-        Md2->PositionModel = Mod_FindMeshModel(Mdl->Name, SN->GetAttribute("position_file").ToLower().FixFileSlashes(), Md2->MeshIndex);
+      if (ModelDefNode->HasAttribute("position_file")) {
+        Md2->PositionModel = Mod_FindMeshModel(Mdl->Name, ModelDefNode->GetAttribute("position_file").ToLower().FixFileSlashes(), Md2->MeshIndex);
       }
 
       // skin animation
       Md2->SkinAnimSpeed = 0;
       Md2->SkinAnimRange = 0;
-      if (SN->HasAttribute("skin_anim_speed")) {
-        if (!SN->HasAttribute("skin_anim_range")) Sys_Error("'skin_anim_speed' requires 'skin_anim_range'");
-        Md2->SkinAnimSpeed = ParseIntWithDefault(SN, "skin_anim_speed", 1);
-        Md2->SkinAnimRange = ParseIntWithDefault(SN, "skin_anim_range", 1);
+      if (ModelDefNode->HasAttribute("skin_anim_speed")) {
+        if (!ModelDefNode->HasAttribute("skin_anim_range")) Sys_Error("'skin_anim_speed' requires 'skin_anim_range'");
+        Md2->SkinAnimSpeed = ParseIntWithDefault(ModelDefNode, "skin_anim_speed", 1);
+        Md2->SkinAnimRange = ParseIntWithDefault(ModelDefNode, "skin_anim_range", 1);
       }
 
       AliasModelTrans BaseTransform;
-      ParseTransform(SN, BaseTransform);
+      ParseTransform(ModelDefNode, BaseTransform);
 
       // fullbright flag
-      Md2->FullBright = ParseBool(SN, "fullbright", false);
+      Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
       // no shadow flag
-      Md2->NoShadow = ParseBool(SN, "noshadow", false);
+      Md2->NoShadow = ParseBool(ModelDefNode, "noshadow", false);
       // force depth test flag (for things like monsters with alpha transaparency)
-      Md2->UseDepth = ParseBool(SN, "usedepth", false);
+      Md2->UseDepth = ParseBool(ModelDefNode, "usedepth", false);
 
       // allow transparency in skin files
       // for skins that are transparent in solid models (Alpha = 1.0f)
-      Md2->AllowTransparency = ParseBool(SN, "allowtransparency", false);
+      Md2->AllowTransparency = ParseBool(ModelDefNode, "allowtransparency", false);
 
       // process frames
       // TODO: implement range support for frame declaration
-      int curframeindex = 0;
-      for (VXmlNode *FN = SN->FindChild("frame"); FN; FN = FN->FindNext(), ++curframeindex) {
+      int curframeindex = -1;
+      for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame")) {
+        if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
+        {
+          auto bad = FrameDefNode->FindBadAttribute("index", "position_index", "alpha_start", "alpha_end", "skin_index",
+                                                    "shift", "shift_x", "shift_y", "shift_z",
+                                                    "offset", "offset_x", "offset_y", "offset_z",
+                                                    "scale", "scale_x", "scale_y", "scale_z", nullptr);
+          if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+        }
+
+        ++curframeindex;
         VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
         //FIXME: require index?
-        F.Index = ParseIntWithDefault(FN, "index", curframeindex);
+        F.Index = ParseIntWithDefault(FrameDefNode, "index", curframeindex);
 
         // position model frame index
-        F.PositionIndex = ParseIntWithDefault(FN, "position_index", 0);
+        F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
 
         // frame transformation
         F.Transform = BaseTransform;
-        ParseTransform(FN, F.Transform);
+        ParseTransform(FrameDefNode, F.Transform);
 
         // alpha
-        F.AlphaStart = ParseFloatWithDefault(FN, "alpha_start", 1.0f);
-        F.AlphaEnd = ParseFloatWithDefault(FN, "alpha_end", 1.0f);
+        F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
+        F.AlphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
 
         // skin index
-        F.SkinIndex = ParseIntWithDefault(FN, "skin_index", -1);
+        F.SkinIndex = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
       }
 
       // process skins
-      for (VXmlNode *SkN = SN->FindChild("skin"); SkN; SkN = SkN->FindNext()) {
+      for (VXmlNode *SkN : ModelDefNode->childrenWithName("skin")) {
+        if (SkN->HasChildren()) Sys_Error("%s: model '%s' skin definition should have no children", *SkN->Loc.toStringNoCol(), *Mdl->Name);
+        {
+          auto bad = SkN->FindBadAttribute("file", "shade", nullptr);
+          if (bad) Sys_Error("%s: model '%s' skin definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+        }
         VStr sfl = SkN->GetAttribute("file").ToLower().FixFileSlashes();
         if (sfl.length()) {
           if (sfl.indexOf('/') < 0) sfl = Md2->Model->Name.ExtractFilePath()+sfl;
@@ -696,7 +763,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       }
 
       // if this is MD3 without mesh index, create additional models for all meshes
-      if (!hasMeshIndex && mdx[2] == '3') {
+      if (!hasMeshIndex && isMD3) {
         // load model and get number of meshes
         VStream *md3strm = FL_OpenFileRead(Md2->Model->Name);
         // allow missing models
@@ -729,7 +796,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           delete md3strm;
           // load subskins
           TArray<VMeshModel::SkinInfo> SubSkins;
-          for (VXmlNode *SkN = SN->FindChild("subskin"); SkN; SkN = SkN->FindNext()) {
+          for (VXmlNode *SkN : ModelDefNode->childrenWithName("subskin")) {
+            if (SkN->HasChildren()) Sys_Error("%s: model '%s' subskin definition should have no children", *SkN->Loc.toStringNoCol(), *Mdl->Name);
+            {
+              auto bad = SkN->FindBadAttribute("file", "shade", "submodel_index", nullptr);
+              if (bad) Sys_Error("%s: model '%s' skin definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+            }
             int subidx = ParseIntWithDefault(SkN, "submodel_index", -1);
             VStr sfl = SkN->GetAttribute("file").ToLower().FixFileSlashes();
             if (sfl.length() && subidx >= 0 && subidx < 1024) {
@@ -765,8 +837,20 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   }
 
   bool ClassDefined = false;
-  for (VXmlNode *CN = Doc->Root.FindChild("class"); CN; CN = CN->FindNext()) {
-    VStr vcClassName = CN->GetAttribute("name");
+  for (VXmlNode *ClassDefNode : Doc->Root.childrenWithName("class")) {
+    // check attrs
+    {
+      auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow", "iwadonly", "thiswadonly", nullptr);
+      if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+    }
+
+    // check nodes
+    {
+      auto bad = ClassDefNode->FindBadChild("state", nullptr);
+      if (bad) Sys_Error("%s: model '%s' class definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+    }
+
+    VStr vcClassName = ClassDefNode->GetAttribute("name");
     VClass *xcls = VClass::FindClassNoCase(*vcClassName);
     if (xcls && !xcls->IsChildOf(VEntity::StaticClass())) xcls = nullptr;
     if (xcls) {
@@ -774,15 +858,17 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     } else {
       GCon->Logf(NAME_Init, "found 3d model for unknown class `%s`", *vcClassName);
     }
+
     VClassModelScript *Cls = new VClassModelScript();
     Cls->Model = Mdl;
     Cls->Name = (xcls ? xcls->GetName() : *vcClassName);
-    Cls->NoSelfShadow = ParseBool(CN, "noselfshadow", false);
+    Cls->NoSelfShadow = ParseBool(ClassDefNode, "noselfshadow", false);
     Cls->OneForAll = false;
     Cls->CacheBuilt = false;
     Cls->isGZDoom = isGZDoom;
-    Cls->iwadonly = ParseBool(CN, "iwadonly", false);
-    Cls->thiswadonly = ParseBool(CN, "thiswadonly", false);
+    Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", false);
+    Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", false);
+
     bool deleteIt = false;
     if (cli_IgnoreModelClass.has(*Cls->Name)) {
       GCon->Logf(NAME_Init, "model '%s' ignored by user request", *Cls->Name);
@@ -803,35 +889,59 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     int frmFirstIdx = Cls->Frames.length();
 
     // process frames
-    for (VXmlNode *N = CN->FindChild("state"); N; N = N->FindNext()) {
+    for (VXmlNode *StateDefNode : ClassDefNode->childrenWithName("state")) {
+      if (StateDefNode->HasChildren()) Sys_Error("%s: model '%s' class definition should have no children", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
+      // check attrs
+      {
+        auto bad = StateDefNode->FindBadAttribute("angle_yaw", "angle_pitch", "angle_roll",
+                                                  "rotate_yaw", "rotate_pitch", "rotate_roll",
+                                                  "rotation", "bobbing",
+                                                  "gzdoom", "usepitch", "useroll",
+                                                  "index", "last_index", "sprite", "sprite_frame",
+                                                  "model", "frame_index", "submodel_index", "hidden",
+                                                  "inter", "angle_start", "angle_end", "alpha_start", "alpha_end",
+                                                  nullptr);
+        if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+      }
+
       VScriptedModelFrame &F = Cls->Frames.Alloc();
 
-      ParseAngle(N, "yaw", F.angleYaw);
-      ParseAngle(N, "pitch", F.anglePitch);
-      ParseAngle(N, "roll", F.angleRoll);
+      ParseAngle(StateDefNode, "yaw", F.angleYaw);
+      ParseAngle(StateDefNode, "pitch", F.anglePitch);
+      ParseAngle(StateDefNode, "roll", F.angleRoll);
 
-      if (ParseBool(N, "rotation", false)) F.rotateSpeed = 100.0f;
-      if (ParseBool(N, "bobbing", false)) F.bobSpeed = 180.0f;
+      if (ParseBool(StateDefNode, "rotation", false)) F.rotateSpeed = 100.0f;
+      if (ParseBool(StateDefNode, "bobbing", false)) F.bobSpeed = 180.0f;
 
       // some special things
-      if (ParseBool(N, "gzdoom", false)) {
+      if (ParseBool(StateDefNode, "gzdoom", false)) {
         F.gzdoom = true;
         F.gzNoActorPitch = 1; // don't use actor pitch
         F.gzNoActorRoll = true; // don't use actor roll
-        if (N->HasAttribute("usepitch")) {
-               if (N->GetAttribute("usepitch").strEqu("inverted")) F.gzNoActorPitch = -1; // inverted
-          else if (N->GetAttribute("usepitch").strEqu("momentum")) F.gzNoActorPitch = 2; // from momentum
-          else if (ParseBool(N, "usepitch", false)) F.gzNoActorPitch = 0; // use
+        if (StateDefNode->HasAttribute("usepitch")) {
+               if (StateDefNode->GetAttribute("usepitch").strEqu("inverted")) F.gzNoActorPitch = -1; // inverted
+          else if (StateDefNode->GetAttribute("usepitch").strEqu("momentum")) F.gzNoActorPitch = 2; // from momentum
+          else if (ParseBool(StateDefNode, "usepitch", false)) F.gzNoActorPitch = 0; // use
         }
-        if (ParseBool(N, "useroll", false)) F.gzNoActorRoll = false; // use
+        if (ParseBool(StateDefNode, "useroll", false)) F.gzNoActorRoll = false; // use
       } else {
+        auto bad = StateDefNode->FindFirstAttributeOf("usepitch", "useroll", nullptr);
+        if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
         F.gzdoom = false;
       }
 
       int lastIndex = -666;
-      if (N->HasAttribute("index")) {
-        F.Number = ParseIntWithDefault(N, "index", 0);
-        lastIndex = ParseIntWithDefault(N, "last_index", lastIndex);
+      if (StateDefNode->HasAttribute("index")) {
+        auto bad = StateDefNode->FindFirstAttributeOf("sprite", "sprite_frame", nullptr);
+        if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s' (index/sprite conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+
+        F.Number = ParseIntWithDefault(StateDefNode, "index", 0);
+        if (F.Number < 0) F.Number = -1;
+        if (F.Number >= 0) {
+          lastIndex = ParseIntWithDefault(StateDefNode, "last_index", lastIndex);
+        } else {
+          if (StateDefNode->HasAttribute("last_index")) Sys_Error("Model '%s' has state range for \"all frames\"", *Mdl->Name);
+        }
         F.sprite = NAME_None;
         F.frame = -1;
         /*
@@ -854,10 +964,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         } else {
           prevValid = true;
         }
-      } else if (N->HasAttribute("sprite") && N->HasAttribute("sprite_frame")) {
-        VName sprname = VName(*VStr(N->GetAttribute("sprite")).toLowerCase());
-        if (sprname == NAME_None) Sys_Error("Model '%s' has invalid state (empty sprite name)", *Mdl->Name);
-        VStr sprframe = N->GetAttribute("sprite_frame");
+      } else if (StateDefNode->HasAttribute("sprite") && StateDefNode->HasAttribute("sprite_frame")) {
+        auto bad = StateDefNode->FindFirstAttributeOf("index", "last_index", nullptr);
+        if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s' (sprite/index conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+
+        VName sprname = VName(*StateDefNode->GetAttribute("sprite"), VName::FindLower);
+        if (sprname == NAME_None) Sys_Error("Model '%s' has invalid state (invalid sprite name '%s')", *Mdl->Name, *StateDefNode->GetAttribute("sprite"));
+        VStr sprframe = StateDefNode->GetAttribute("sprite_frame");
         if (sprframe.length() != 1) Sys_Error("Model '%s' has invalid state (invalid sprite frame '%s')", *Mdl->Name, *sprframe);
         int sfr = sprframe[0];
         if (sfr >= 'a' && sfr <= 'z') sfr = sfr-'a'+'A';
@@ -885,13 +998,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         Sys_Error("Model '%s' has invalid state", *Mdl->Name);
       }
 
-      F.FrameIndex = ParseIntWithDefault(N, "frame_index", 0);
-      F.SubModelIndex = ParseIntWithDefault(N, "submodel_index", -1);
+      F.FrameIndex = ParseIntWithDefault(StateDefNode, "frame_index", 0);
+      F.SubModelIndex = ParseIntWithDefault(StateDefNode, "submodel_index", -1);
       if (F.SubModelIndex < 0) F.SubModelIndex = -1;
-      if (ParseBool(N, "hidden", false)) F.SubModelIndex = -2; // hidden
+      if (ParseBool(StateDefNode, "hidden", false)) F.SubModelIndex = -2; // hidden
 
       F.ModelIndex = -1;
-      VStr MdlName = N->GetAttribute("model");
+      VStr MdlName = StateDefNode->GetAttribute("model");
       for (int i = 0; i < Mdl->Models.length(); ++i) {
         if (Mdl->Models[i].Name == *MdlName) {
           F.ModelIndex = i;
@@ -900,13 +1013,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       }
       if (F.ModelIndex == -1) Sys_Error("%s has no model %s", *Mdl->Name, *MdlName);
 
-      F.Inter = ParseFloatWithDefault(N, "inter", 0.0f);
+      F.Inter = ParseFloatWithDefault(StateDefNode, "inter", 0.0f);
 
-      F.AngleStart = ParseFloatWithDefault(N, "angle_start", 0.0f);
-      F.AngleEnd = ParseFloatWithDefault(N, "angle_end", 0.0f);
+      F.AngleStart = ParseFloatWithDefault(StateDefNode, "angle_start", 0.0f);
+      F.AngleEnd = ParseFloatWithDefault(StateDefNode, "angle_end", 0.0f);
 
-      F.AlphaStart = ParseFloatWithDefault(N, "alpha_start", 1.0f);
-      F.AlphaEnd = ParseFloatWithDefault(N, "alpha_end", 1.0f);
+      F.AlphaStart = ParseFloatWithDefault(StateDefNode, "alpha_start", 1.0f);
+      F.AlphaEnd = ParseFloatWithDefault(StateDefNode, "alpha_end", 1.0f);
 
       if (F.Number >= 0 && lastIndex > 0) {
         for (int cfidx = F.Number+1; cfidx <= lastIndex; ++cfidx) {
