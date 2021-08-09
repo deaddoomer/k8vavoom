@@ -5062,7 +5062,7 @@ override void PlayerTick (float deltaTime) {
     auto pawn = PlayerPawn(MO);
     if (pawn) {
       // fix current polyobject
-      polyobj_t *oldpo = pawn.lastStand3DPObj;
+      //polyobj_t *oldpo = pawn.lastStand3DPObj;
       pawn.lastStand3DPObj = nullptr;
       pawn.lastStand3DPObjVel = vector(0, 0);
       if (MO.Sector && MO.Sector.ownpobj) {
