@@ -23,6 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_XML_PARSER_HEADER
+#define VAVOOM_XML_PARSER_HEADER
+
 
 class VXmlAttribute {
 public:
@@ -44,6 +47,10 @@ public:
   VXmlNode *NextSibling;
   TArray<VXmlAttribute> Attributes;
 
+private:
+  VXmlNode *FindChildOf (const bool match, const char *name, va_list ap) noexcept;
+  VXmlAttribute *FindAttrOf (const bool match, const char *name, va_list ap) noexcept;
+
 public:
   VXmlNode ();
   ~VXmlNode ();
@@ -61,6 +68,59 @@ public:
   VStr GetAttribute (VStr AttrName, bool Required=true) const;
   const VTextLocation GetAttributeLoc (const char *AttrName) const;
   const VTextLocation GetAttributeLoc (VStr AttrName) const;
+
+  // finish names with `nullptr`
+  // names should be simple strings, a-la "abc"
+  VXmlNode *FindBadChild (const char *name, ...) noexcept __attribute__ ((sentinel));
+
+  // finish names with `nullptr`
+  // names should be simple strings, a-la "abc"
+  VXmlAttribute *FindBadAttribute (const char *name, ...) noexcept __attribute__ ((sentinel));
+
+  // finish names with `nullptr`
+  // names should be simple strings, a-la "abc"
+  VXmlNode *FindFirstChildOf (const char *name, ...) noexcept __attribute__ ((sentinel));
+
+  // finish names with `nullptr`
+  // names should be simple strings, a-la "abc"
+  VXmlAttribute *FindFirstAttributeOf (const char *name, ...) noexcept __attribute__ ((sentinel));
+
+  inline bool HasChildren () const noexcept { return !!FirstChild; }
+  inline bool HasAttributes () const noexcept { return (Attributes.length() != 0); }
+
+public:
+  // range iteration
+  // WARNING! don't add/remove array elements in iterator loop!
+
+  class NodeIterator {
+  public:
+    VXmlNode *Node;
+  public:
+    inline NodeIterator (VXmlNode *startNode) noexcept : Node(startNode) {}
+    inline NodeIterator (const NodeIterator &it) noexcept : Node(it.Node) {}
+    inline NodeIterator begin () noexcept { return NodeIterator(*this); }
+    inline NodeIterator end () noexcept { return NodeIterator(nullptr); }
+    inline bool operator == (const NodeIterator &b) const noexcept { return (Node == b.Node); }
+    inline bool operator != (const NodeIterator &b) const noexcept { return (Node != b.Node); }
+    inline VXmlNode *operator * () const noexcept { return Node; } // required for iterator
+    inline void operator ++ () noexcept { if (Node) Node = Node->NextSibling; } // this is enough for iterator
+  };
+  inline NodeIterator allChildren () noexcept { return NodeIterator(FirstChild); }
+
+  class NamedNodeIterator {
+  public:
+    VXmlNode *Node;
+  public:
+    inline NamedNodeIterator (VXmlNode *startNode) noexcept : Node(startNode) {}
+    inline NamedNodeIterator (const NamedNodeIterator &it) noexcept : Node(it.Node) {}
+    inline NamedNodeIterator begin () noexcept { return NamedNodeIterator(*this); }
+    inline NamedNodeIterator end () noexcept { return NamedNodeIterator(nullptr); }
+    inline bool operator == (const NamedNodeIterator &b) const noexcept { return (Node == b.Node); }
+    inline bool operator != (const NamedNodeIterator &b) const noexcept { return (Node != b.Node); }
+    inline VXmlNode *operator * () const noexcept { return Node; } // required for iterator
+    inline void operator ++ () noexcept { if (Node) Node = Node->FindNext(); } // this is enough for iterator
+  };
+  inline NamedNodeIterator childrenWithName (const char *aname) noexcept { return NamedNodeIterator(FindChild(aname)); }
 };
 
 
@@ -96,3 +156,6 @@ private:
   void ParseNode (VXmlNode *);
   VStr HandleReferences (VStr);
 };
+
+
+#endif

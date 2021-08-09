@@ -57,6 +57,110 @@ VXmlNode::~VXmlNode () {
 
 //==========================================================================
 //
+//  VXmlNode::FindChildOf
+//
+//==========================================================================
+VXmlNode *VXmlNode::FindChildOf (const bool match, const char *name, va_list ap) noexcept {
+  for (VXmlNode *N = FirstChild; N; N = N->NextSibling) {
+    bool found = N->Name.strEqu(name);
+    if (!found) {
+      va_list apc;
+      va_copy(apc, ap);
+      for (;;) {
+        const char *n = va_arg(apc, const char *);
+        if (!n) break;
+        if (N->Name.strEqu(n)) { found = true; break; }
+      }
+      va_end(apc);
+    }
+    if (found == match) return N;
+  }
+  return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::FindAttrOf
+//
+//==========================================================================
+VXmlAttribute *VXmlNode::FindAttrOf (const bool match, const char *name, va_list ap) noexcept {
+  for (auto &&attr : Attributes) {
+    bool found = attr.Name.strEqu(name);
+    if (!found) {
+      va_list apc;
+      va_copy(apc, ap);
+      for (;;) {
+        const char *n = va_arg(apc, const char *);
+        if (!n) break;
+        if (attr.Name.strEqu(n)) { found = true; break; }
+      }
+      va_end(apc);
+    }
+    if (found == match) return &attr;
+  }
+  return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::FindBadChild
+//
+//==========================================================================
+__attribute__ ((sentinel)) VXmlNode *VXmlNode::FindBadChild (const char *name, ...) noexcept {
+  va_list ap;
+  va_start(ap, name);
+  VXmlNode *res = FindChildOf(false, name, ap);
+  va_end(ap);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::FindBadAttribute
+//
+//==========================================================================
+__attribute__ ((sentinel)) VXmlAttribute *VXmlNode::FindBadAttribute (const char *name, ...) noexcept {
+  va_list ap;
+  va_start(ap, name);
+  VXmlAttribute *res = FindAttrOf(false, name, ap);
+  va_end(ap);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::FindFirstChildOf
+//
+//==========================================================================
+__attribute__ ((sentinel)) VXmlNode *VXmlNode::FindFirstChildOf (const char *name, ...) noexcept {
+  va_list ap;
+  va_start(ap, name);
+  VXmlNode *res = FindChildOf(true, name, ap);
+  va_end(ap);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VXmlNode::FindFirstAttributeOf
+//
+//==========================================================================
+__attribute__ ((sentinel)) VXmlAttribute *VXmlNode::FindFirstAttributeOf (const char *name, ...) noexcept {
+  va_list ap;
+  va_start(ap, name);
+  VXmlAttribute *res = FindAttrOf(true, name, ap);
+  va_end(ap);
+  return res;
+}
+
+
+//==========================================================================
+//
 //  VXmlNode::FindChild
 //
 //==========================================================================
@@ -155,9 +259,7 @@ VXmlNode *VXmlNode::FindNext () const {
 //==========================================================================
 bool VXmlNode::HasAttribute (const char *AttrName) const {
   if (!AttrName || !AttrName[0]) return false;
-  for (int i = 0; i < Attributes.length(); ++i) {
-    if (Attributes[i].Name == AttrName) return true;
-  }
+  for (auto &&attr : Attributes) if (attr.Name == AttrName) return true;
   return false;
 }
 
@@ -169,9 +271,7 @@ bool VXmlNode::HasAttribute (const char *AttrName) const {
 //==========================================================================
 bool VXmlNode::HasAttribute (VStr AttrName) const {
   if (AttrName.isEmpty()) return false;
-  for (int i = 0; i < Attributes.length(); ++i) {
-    if (Attributes[i].Name == AttrName) return true;
-  }
+  for (auto &&attr : Attributes) if (attr.Name == AttrName) return true;
   return false;
 }
 
@@ -183,15 +283,15 @@ bool VXmlNode::HasAttribute (VStr AttrName) const {
 //==========================================================================
 VStr VXmlNode::GetAttribute (const char *AttrName, bool Required) const {
   if (AttrName && AttrName[0]) {
-    for (int i = 0; i < Attributes.length(); ++i) {
-      if (Attributes[i].Name == AttrName) return Attributes[i].Value;
-    }
+    for (auto &&attr : Attributes) if (attr.Name == AttrName) return attr.Value;
   }
   if (Required) {
+    /*
     if (Attributes.length()) {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
+    */
     Sys_Error("XML attribute \"%s\" not found in node \"%s\" at %s", (AttrName ? AttrName : ""), *Name, *Loc.toStringNoCol());
   }
   return VStr::EmptyString;
@@ -205,15 +305,15 @@ VStr VXmlNode::GetAttribute (const char *AttrName, bool Required) const {
 //==========================================================================
 VStr VXmlNode::GetAttribute (VStr AttrName, bool Required) const {
   if (!AttrName.isEmpty()) {
-    for (int i = 0; i < Attributes.length(); ++i) {
-      if (Attributes[i].Name == AttrName) return Attributes[i].Value;
-    }
+    for (auto &&attr : Attributes) if (attr.Name == AttrName) return attr.Value;
   }
   if (Required) {
+    /*
     if (Attributes.length()) {
       GLog.Logf("=== node \"%s\" attrs ===", *Name);
       for (auto &&a : Attributes) GLog.Logf("  \"%s\"=\"%s\"", *a.Name, *a.Value);
     }
+    */
     Sys_Error("XML attribute \"%s\" not found in node \"%s\" at %s", *AttrName, *Name, *Loc.toStringNoCol());
   }
   return VStr::EmptyString;
@@ -227,9 +327,7 @@ VStr VXmlNode::GetAttribute (VStr AttrName, bool Required) const {
 //==========================================================================
 const VTextLocation VXmlNode::GetAttributeLoc (const char *AttrName) const {
   if (AttrName && AttrName[0]) {
-    for (int i = 0; i < Attributes.length(); ++i) {
-      if (Attributes[i].Name == AttrName) return Attributes[i].Loc;
-    }
+    for (auto &&attr : Attributes) if (attr.Name == AttrName) return attr.Loc;
   }
   return VTextLocation();
 }
@@ -242,9 +340,7 @@ const VTextLocation VXmlNode::GetAttributeLoc (const char *AttrName) const {
 //==========================================================================
 const VTextLocation VXmlNode::GetAttributeLoc (VStr AttrName) const {
   if (!AttrName.isEmpty()) {
-    for (int i = 0; i < Attributes.length(); ++i) {
-      if (Attributes[i].Name == AttrName) return Attributes[i].Loc;
-    }
+    for (auto &&attr : Attributes) if (attr.Name == AttrName) return attr.Loc;
   }
   return VTextLocation();
 }

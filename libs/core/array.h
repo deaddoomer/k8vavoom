@@ -288,7 +288,7 @@ public:
       xconst_ T *stvalue; \
       xconst_ T *currvalue; \
     public: \
-      xconst_##RevIterator (xconst_ TArray<T> *arr) noexcept { \
+      inline xconst_##RevIterator (xconst_ TArray<T> *arr) noexcept { \
         if (arr->length1D() > 0) { \
           stvalue = arr->ArrData; \
           currvalue = arr->ArrData+arr->length1D()-1; \
@@ -296,8 +296,8 @@ public:
           stvalue = currvalue = nullptr; \
         } \
       } \
-      xconst_##RevIterator (const xconst_##RevIterator &it) noexcept : stvalue(it.stvalue), currvalue(it.currvalue) {} \
-      xconst_##RevIterator (const xconst_##RevIterator &/*it*/, bool /*asEnd*/) noexcept : stvalue(nullptr), currvalue(nullptr) {} \
+      inline xconst_##RevIterator (const xconst_##RevIterator &it) noexcept : stvalue(it.stvalue), currvalue(it.currvalue) {} \
+      inline xconst_##RevIterator (const xconst_##RevIterator &/*it*/, bool /*asEnd*/) noexcept : stvalue(nullptr), currvalue(nullptr) {} \
       inline xconst_##RevIterator begin () noexcept { return xconst_##RevIterator(*this); } \
       inline xconst_##RevIterator end () noexcept { return xconst_##RevIterator(*this, true); } \
       inline bool operator == (const xconst_##RevIterator &b) const noexcept { return (currvalue == b.currvalue); } \
@@ -318,7 +318,7 @@ public:
       xconst_ T *endvalue; \
       int currindex; \
     public: \
-      xconst_##IndexIterator (xconst_ TArray<T> *arr) noexcept { \
+      inline xconst_##IndexIterator (xconst_ TArray<T> *arr) noexcept { \
         if (arr->length1D() > 0) { \
           currvalue = arr->ArrData; \
           endvalue = currvalue+arr->length1D(); \
@@ -327,8 +327,8 @@ public:
         } \
         currindex = 0; \
       } \
-      xconst_##IndexIterator (const xconst_##IndexIterator &it) noexcept : currvalue(it.currvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
-      xconst_##IndexIterator (const xconst_##IndexIterator &it, bool /*asEnd*/) noexcept : currvalue(it.endvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
+      inline xconst_##IndexIterator (const xconst_##IndexIterator &it) noexcept : currvalue(it.currvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
+      inline xconst_##IndexIterator (const xconst_##IndexIterator &it, bool /*asEnd*/) noexcept : currvalue(it.endvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
       inline xconst_##IndexIterator begin () noexcept { return xconst_##IndexIterator(*this); } \
       inline xconst_##IndexIterator end () noexcept { return xconst_##IndexIterator(*this, true); } \
       inline bool operator == (const xconst_##IndexIterator &b) const noexcept { return (currvalue == b.currvalue); } \
@@ -351,9 +351,9 @@ public:
       xconst_ TArray<T> *arr; \
       int currindex; \
     public: \
-      xconst_##IndexIteratorRev (xconst_ TArray<T> *aarr) noexcept : arr(aarr) { currindex = (arr->length1D() > 0 ? arr->length1D()-1 : -1); } \
-      xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it) noexcept : arr(it.arr), currindex(it.currindex) {} \
-      xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool /*asEnd*/) noexcept : arr(it.arr), currindex(-1) {} \
+      inline xconst_##IndexIteratorRev (xconst_ TArray<T> *aarr) noexcept : arr(aarr) { currindex = (arr->length1D() > 0 ? arr->length1D()-1 : -1); } \
+      inline xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it) noexcept : arr(it.arr), currindex(it.currindex) {} \
+      inline xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool /*asEnd*/) noexcept : arr(it.arr), currindex(-1) {} \
       inline xconst_##IndexIteratorRev begin () noexcept { return xconst_##IndexIteratorRev(*this); } \
       inline xconst_##IndexIteratorRev end () noexcept { return xconst_##IndexIteratorRev(*this, true); } \
       inline bool operator == (const xconst_##IndexIteratorRev &b) const noexcept { return (arr == b.arr && currindex == b.currindex); } \
