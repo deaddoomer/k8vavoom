@@ -1,0 +1,37 @@
+class Main : Object;
+
+
+void testCV () {
+  int vi = GetCvarI('var_int');
+  float vf = GetCvarF('var_float');
+  bool vb = GetCvarB('var_bool');
+  string vs = GetCvarS('var_str');
+
+  writeln(vi, " == 69");
+  writeln(vf, " == 666.69");
+  writeln(vb, " == 1");
+  writeln(vs, " == Alice!");
+}
+
+void setCV () {
+  SetCvarI('var_int', 1069);
+  SetCvarF('var_float', 69.666);
+  SetCvarB('var_bool', false);
+  SetCvarS('var_str', "Miriel!");
+}
+
+void main () {
+  CreateCvarInt('var_int', 69, "integer user cvar", CVAR_USER);
+  CreateCvarFloat('var_float', 666.69, "float user cvar", CVAR_USER);
+  CreateCvarBool('var_bool', true, "boolean user cvar", CVAR_USER);
+  CreateCvarStr('var_str', "Alice!", "string user cvar", CVAR_USER);
+
+  testCV();
+  testCV();
+
+  setCV();
+  testCV();
+
+  setCV();
+  testCV();
+}
