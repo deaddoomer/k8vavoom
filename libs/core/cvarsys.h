@@ -40,6 +40,9 @@ enum {
   CVAR_AlwaysArchive = 0x8000u, // always write to config
   //
   CVAR_ACS = 0x10000u, // created from ACS script
+  //
+  CVAR_User   = 0x20000u, // created with `set`
+  CVAR_Hidden = 0x40000u,
 };
 
 
@@ -88,8 +91,13 @@ public:
 
   static void AddAllVarsToAutocomplete (void (*addfn) (const char *name));
 
-  inline bool IsACS () const noexcept { return !!(Flags&CVAR_ACS); }
+  inline bool IsACS () const noexcept { return (Flags&CVAR_ACS); }
   inline void SetACS () noexcept { Flags |= CVAR_ACS|CVAR_FromMod; }
+
+  inline bool IsUser () const noexcept { return (Flags&CVAR_User); }
+  inline void SetUser () noexcept { Flags |= CVAR_User; }
+
+  inline bool IsHidden () const noexcept { return (Flags&CVAR_Hidden); }
 
   inline CVType GetType () const noexcept { return Type; }
   // this will coerce values, if necessary
@@ -116,6 +124,7 @@ public:
   inline void SetShadow (float value) { SetShadowFloat(value); }
   inline void SetShadow (VStr value) { SetShadowStr(value); }
 
+  inline bool IsReadOnly () const noexcept { return (Flags&CVAR_Rom); }
   inline void SetReadOnly (bool v) noexcept { if (v) Flags |= CVAR_Rom; else Flags &= ~CVAR_Rom; }
 
   // this clears modified flag on call

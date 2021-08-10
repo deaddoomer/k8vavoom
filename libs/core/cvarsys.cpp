@@ -637,6 +637,7 @@ void VCvar::AddAllVarsToAutocomplete (void (*addfn) (const char *name)) {
   if (!addfn) return;
   for (vuint32 bkn = 0; bkn < CVAR_HASH_SIZE; ++bkn) {
     for (VCvar *cvar = cvhBuckets[bkn]; cvar; cvar = cvar->nextInBucket) {
+      if (cvar->IsHidden()) continue;
       if (!cvar->Name || !cvar->Name[0] || cvar->Name[0] == '_' ||
           (vuint8)cvar->Name[0] <= ' ' || (vuint8)cvar->Name[0] >= 128)
       {
