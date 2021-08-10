@@ -542,6 +542,8 @@ enum {
   SF_MAPPED  = 1u<<0, // some segs of this linedef are visible, but not all
   SF_ZEROLEN = 1u<<1, // zero-length seg (it has some fake length)
   SF_FULLSEG = 1u<<2, // is this a "fullseg"?
+  // do not spam with warnings
+  SF_SECWARNED = 1u<<3, // is this a "fullseg"?
 };
 
 struct seg_t : public TPlane {
@@ -1436,7 +1438,8 @@ struct subregion_t {
 struct subsector_t {
 public:
   enum {
-    SSMF_Rendered = 1u<<0u,
+    SSMF_Rendered   = 1u<<0u,
+    SSMF_SurfWarned = 1u<<1u,
   };
 
 public:

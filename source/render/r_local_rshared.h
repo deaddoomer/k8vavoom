@@ -101,10 +101,14 @@ protected:
   };
 
 protected:
-  static vuint8 *subwarned; // for warning about subsectors with less than 3 segs
-
+  // for warnings about subsectors with less than 3 segs
   // returns previous "warned" flags, and sets it
-  bool CheckAndSetSubWarned (const subsector_t *sub) noexcept;
+  static inline bool CheckAndSetSubWarned (subsector_t *sub) noexcept {
+    if (!sub) return true; // shut up!
+    const bool res = (sub->miscFlags&subsector_t::SSMF_SurfWarned);
+    sub->miscFlags |= subsector_t::SSMF_SurfWarned;
+    return res;
+  }
 
 protected:
   //VLevel *Level; // moved to `VRenderLevelPublic()`

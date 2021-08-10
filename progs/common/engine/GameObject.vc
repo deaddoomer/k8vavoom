@@ -1235,6 +1235,8 @@ struct seg_t : TPlane {
   bool bMapped; // some segs of this linedef are visible, but not all
   bool bZeroLen;
   bool bFullSeg;
+  // do not spam with warnings
+  bool bSecWarned;
 
   native transient readonly drawseg_t *drawsegs;
 
@@ -1372,6 +1374,7 @@ struct subsector_t {
 
   // misc flags
   bool bRendered;
+  bool bSurfWarned;
 };
 
 

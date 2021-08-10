@@ -674,10 +674,13 @@ void VRenderLevelShared::CreateWorldSurfFromWVSplit (subsector_t *sub, seg_t *se
 
   vassert(seg->frontsub == sub);
   if (seg->frontsector != sub->sector) {
-    GCon->Logf(NAME_Error, "seg of line #%d: frontsector=%d; sub->sector=%d",
-      (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
-      (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1),
-      (sub->sector ? (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]) : -1));
+    if (!(seg->flags&SF_SECWARNED)) {
+      seg->flags |= SF_SECWARNED;
+      GCon->Logf(NAME_Error, "seg of line #%d: frontsector=%d; sub->sector=%d",
+        (int)(ptrdiff_t)(seg->linedef-&Level->Lines[0]),
+        (seg->frontsector ? (int)(ptrdiff_t)(seg->frontsector-&Level->Sectors[0]) : -1),
+        (sub->sector ? (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]) : -1));
+    }
   }
   //vassert(seg->frontsector == sub->sector);
 
