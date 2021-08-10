@@ -1507,6 +1507,8 @@ enum {
   CVAR_PREINIT = 0x4000, // CLI change for this cvar should be processed before initializing main game
   CVAR_AlwaysArchive = 0x8000, // always write to config
   CVAR_ACS = 0x10000, // created from ACS script
+  CVAR_USER = 0x20000, // created with `set`
+  CVAR_HIDDEN = 0x40000,
 }
 
 native static final bool CvarExists (name Name); // is cvar exists?

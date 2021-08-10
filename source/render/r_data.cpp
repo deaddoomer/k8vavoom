@@ -35,8 +35,8 @@
 
 
 extern VCvarB dbg_show_missing_classes;
-static VCvarI r_emulate_vga_palette("__r_emulate_vga_palette", "3", "VGA palette emulation mode (0: off).", /*CVAR_Archive*/CVAR_PreInit);
-static VCvarI r_color_distance_algo("__r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", /*CVAR_Archive*/CVAR_PreInit);
+static VCvarI r_emulate_vga_palette("r_emulate_vga_palette", "3", "VGA palette emulation mode (0: off).", /*CVAR_Archive*/CVAR_PreInit|CVAR_Hidden);
+static VCvarI r_color_distance_algo("r_color_distance_algo", "1", "What algorithm use to calculate color distance?\n  0: standard\n  1: advanced.", /*CVAR_Archive*/CVAR_PreInit|CVAR_Hidden);
 // there is no sense to store this in config, because config is loaded after brightmaps
 static VCvarB x_brightmaps_ignore_iwad("x_brightmaps_ignore_iwad", false, "Ignore \"iwad\" option when *loading* brightmaps?", CVAR_PreInit);
 

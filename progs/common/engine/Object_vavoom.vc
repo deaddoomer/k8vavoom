@@ -346,8 +346,13 @@ static final bool IsTnt { get { return (stricmp(GetCvarS('game_name'), "tnt") ==
 static final bool IsNerve { get { return (stricmp(GetCvarS('game_name'), "nerve") == 0); } }
 static final bool IsStrife { get { return (stricmp(GetCvarS('game_name'), "strife") == 0); } }
 
-static final bool IsReleaseMode { get { return GetCvarB('_release_mode'); } }
-static final bool IsDeveloperVersion { get { return GetCvarB('__k8vavoom_developer_version'); } }
+static final bool IsReleaseMode { get { return GetCvarB('release_mode'); } }
+//static final bool IsDeveloperVersion { get { return GetCvarB('k8vavoom_developer_version'); } }
+#ifdef K8_DEVELOPER
+const int IsDeveloperVersion = true;
+#else
+const int IsDeveloperVersion = false;
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //

@@ -53,9 +53,9 @@ void LoadFilters () {
 //
 //==========================================================================
 void SaveFilters () {
-  if (!CvarExists('__msearch_filter_title')) CreateCvarStr('__msearch_filter_title', "", "");
-  if (!CvarExists('__msearch_filter_cvar')) CreateCvarStr('__msearch_filter_cvar', "", "");
-  if (!CvarExists('__msearch_filter_help')) CreateCvarStr('__msearch_filter_help', "", "");
+  if (!CvarExists('__msearch_filter_title')) CreateCvarStr('__msearch_filter_title', "", "", CVAR_HIDDEN);
+  if (!CvarExists('__msearch_filter_cvar')) CreateCvarStr('__msearch_filter_cvar', "", "", CVAR_HIDDEN);
+  if (!CvarExists('__msearch_filter_help')) CreateCvarStr('__msearch_filter_help', "", "", CVAR_HIDDEN);
   SetCvarS('__msearch_filter_title', filterTitle);
   SetCvarS('__msearch_filter_cvar', filterCVar);
   SetCvarS('__msearch_filter_help', filterHelp);

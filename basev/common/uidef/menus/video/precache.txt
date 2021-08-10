@@ -4,7 +4,7 @@ menudef PrecacheVideoOptions {
 
   //header "Precaching Options";
 
-  option bool /*[__k8vavoom_developer_version > 0]*/ {
+  option bool /*[k8vavoom_developer_version > 0]*/ {
     title = "Disable all texture precaching";
     textColor = BRICK;
     cvar = r_dbg_disable_all_precaching;
@@ -42,7 +42,7 @@ menudef PrecacheVideoOptions {
       "\cJWARNING: DO NOT turn this on for huge gameplay mod with alot of new monsters/weapons!.";
   }
 
-  option bool /*[__k8vavoom_developer_version > 0]*/ {
+  option bool /*[k8vavoom_developer_version > 0]*/ {
     title = "Precache PSprite Weapon Textures";
     cvar = r_precache_weapon_sprite_textures;
     help =
@@ -50,7 +50,7 @@ menudef PrecacheVideoOptions {
       "Won't do anything if sprite precaching is turned off.";
   }
 
-  option bool /*[__k8vavoom_developer_version > 0]*/ {
+  option bool /*[k8vavoom_developer_version > 0]*/ {
     title = "Precache Ammo Textures";
     cvar = r_precache_ammo_sprite_textures;
     help =
@@ -58,7 +58,7 @@ menudef PrecacheVideoOptions {
       "Won't do anything if sprite precaching is turned off.";
   }
 
-  option bool /*[__k8vavoom_developer_version > 0]*/ {
+  option bool /*[k8vavoom_developer_version > 0]*/ {
     title = "Precache Player Textures";
     cvar = r_precache_player_sprite_textures;
     help =

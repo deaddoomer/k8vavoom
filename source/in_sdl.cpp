@@ -151,15 +151,15 @@ static bool GNetCheckForUserAbortCB (void *udata) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB ui_freemouse("__ui_freemouse", false, "Don't pass mouse movement to the camera. Used in various debug modes.", 0);
+VCvarB ui_freemouse("ui_freemouse", false, "Don't pass mouse movement to the camera. Used in various debug modes.", CVAR_Hidden);
 VCvarB ui_want_mouse_at_zero("ui_want_mouse_at_zero", false, "Move real mouse cursor to (0,0) when UI activated?", CVAR_Archive);
-VCvarB ui_mouse_forced("__ui_mouse_forced", false, "Forge-grab mouse for UI?", 0);
+VCvarB ui_mouse_forced("ui_mouse_forced", false, "Forge-grab mouse for UI?", CVAR_Hidden);
 static VCvarB ui_mouse("ui_mouse", false, "Allow using mouse in UI?", CVAR_Archive);
-static VCvarB ui_active("__ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", 0);
-static VCvarB ui_control_waiting("__ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", 0);
+static VCvarB ui_active("ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", CVAR_Hidden);
+static VCvarB ui_control_waiting("ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", CVAR_Hidden);
 
-static VCvarB m_dbg_cursor("__m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit);
-static VCvarB m_dbg_motion("__m_dbg_motion", false, "Dump motion events?", CVAR_PreInit);
+static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit|CVAR_Hidden);
+static VCvarB m_dbg_motion("m_dbg_motion", false, "Dump motion events?", CVAR_PreInit|CVAR_Hidden);
 
 static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive);
 static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);

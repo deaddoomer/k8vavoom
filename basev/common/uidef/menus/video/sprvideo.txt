@@ -73,7 +73,7 @@ menudef SpriteVideoOptions {
       "Leave 'ON' if unsure.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Crop All Sprites";
     cvar = gl_crop_sprites;
     help =

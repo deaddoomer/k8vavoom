@@ -77,19 +77,19 @@ menudef MouseOptions {
   }
 
 
-  header "Mouse Debug" [__k8vavoom_developer_version > 0];
+  header "Mouse Debug" [k8vavoom_developer_version > 0];
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Show Acceleration Debug Info";
-    cvar = __m_dbg_motion;
+    cvar = m_dbg_motion;
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Leave Standard System Cursor";
-    cvar = __m_dbg_cursor;
+    cvar = m_dbg_cursor;
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Grab Mouse";
     cvar = m_grab;
     help =

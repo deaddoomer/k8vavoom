@@ -39,9 +39,9 @@ extern int cli_NoZMapinfo; // from mapinfo.cpp
 int cli_NoExternalDeh = 0;
 
 static VCvarB dbg_dump_gameinfo("dbg_dump_gameinfo", false, "Dump parsed game.txt?", CVAR_PreInit);
-static VCvarB gz_skip_menudef("_gz_skip_menudef", false, "Skip gzdoom menudef parsing?", CVAR_PreInit);
+static VCvarB gz_skip_menudef("gz_skip_menudef", false, "Skip gzdoom menudef parsing?", CVAR_PreInit|CVAR_Hidden);
 
-static VCvarB __dbg_debug_preinit("__dbg_debug_preinit", false, "Dump preinits?", CVAR_PreInit);
+static VCvarB __dbg_debug_preinit("dbg_debug_preinit", false, "Dump preinits?", CVAR_PreInit|CVAR_Hidden);
 
 VCvarS game_name("game_name", "unknown", "The Name Of The Game.", CVAR_Rom);
 
@@ -299,7 +299,7 @@ void FL_CollectPreinits () {
     vv.value = val;
     //GLog.Logf("FL_CollectPreinits:   new var '%s' with value '%s'", *vname, *val);
     //HACK!
-    if (vname.ICmp("__dbg_debug_preinit") == 0) VCvar::Set(*vname, val);
+    if (vname.ICmp("dbg_debug_preinit") == 0) VCvar::Set(*vname, val);
   }
   if (__dbg_debug_preinit && preinitCV.length()) {
     for (int f = 0; f < GArgs.Count(); ++f) GCon->Logf("::: %d: <%s>", f, GArgs[f]);

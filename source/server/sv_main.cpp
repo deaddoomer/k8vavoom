@@ -144,7 +144,7 @@ static VCvarB mod_allow_server_cvars("mod_allow_server_cvars", false, "Allow ser
 extern VCvarI host_max_skip_frames;
 extern VCvarB NoExit;
 
-static VCvarB __dbg_cl_always_allow_pause("__dbg_cl_always_allow_pause", false, "Allow pausing in network games?", CVAR_PreInit);
+static VCvarB __dbg_cl_always_allow_pause("dbg_cl_always_allow_pause", false, "Allow pausing in network games?", CVAR_PreInit|CVAR_Hidden);
 
 
 server_t sv;

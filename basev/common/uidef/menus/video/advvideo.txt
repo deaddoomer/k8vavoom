@@ -141,7 +141,7 @@ menudef AdvVideoOptions {
       "\c[!WHITE]DarkDoom Banded\c- is like the previous one, but with banded light levels.";
   }
 
-  option slider [__k8vavoom_developer_version > 0] {
+  option slider [k8vavoom_developer_version > 0] {
     title = "Minimum DarkDoom Visibility";
     cvar = r_light_globvis;
     min = -128;
@@ -349,15 +349,15 @@ menudef AdvVideoOptions {
   */
 
 
-  header "Shadow Volumes" [__gl_can_shadowvols > 0];
+  header "Shadow Volumes" [gl_can_shadowvols > 0];
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Model Shadows";
     cvar = r_model_shadows;
     help = "Let 3D models cast shadows in stenciled lighting mode.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Player Shadows";
     cvar = r_camera_player_shadows;
     help =
@@ -402,9 +402,9 @@ menudef AdvVideoOptions {
   }
 
 
-  header "Strange Options" [gl_is_shitty_gpu == 0 || __gl_can_clipcontrol > 0 || __k8vavoom_developer_version > 0];
+  header "Strange Options" [gl_is_shitty_gpu == 0 || gl_can_clipcontrol > 0 || k8vavoom_developer_version > 0];
 
-  option bool [gl_is_shitty_gpu == 0 && __k8vavoom_developer_version > 0] {
+  option bool [gl_is_shitty_gpu == 0 && k8vavoom_developer_version > 0] {
     title = "Use floating Point Depth Buffer";
     cvar = gl_enable_fp_zbuffer;
     help =
@@ -434,7 +434,7 @@ menudef AdvVideoOptions {
       "\cKuse 'Set Resolution' to activate this.";
   }
 
-  option bool [__gl_can_clipcontrol > 0] {
+  option bool [gl_can_clipcontrol > 0] {
     title = "Improve depth buffer precision";
     cvar = gl_enable_clip_control;
     help =

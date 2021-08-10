@@ -96,45 +96,45 @@ menudef AliasModelVideoOptions {
   }
 
 
-  header "Stencil Shadows" [__gl_can_shadowvols > 0];
+  header "Stencil Shadows" [gl_can_shadowvols > 0];
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Monsters";
     cvar = r_shadows_monsters;
     help = "Allow shadows for monster 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Corpses";
     cvar = r_shadows_corpses;
     help = "Allow shadows for corpse 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Missiles";
     cvar = r_shadows_missiles;
     help = "Allow shadows for projectile 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Pickups";
     cvar = r_shadows_pickups;
     help = "Allow shadows for pickup 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Decorations";
     cvar = r_shadows_decorations;
     help = "Allow shadows for decoration 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Players";
     cvar = r_shadows_players;
     help = "Allow shadows for player 3D models?";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Other";
     cvar = r_shadows_other;
     help = "Allow shadows for other (none of the above) 3D models?";

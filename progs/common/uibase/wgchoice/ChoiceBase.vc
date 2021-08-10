@@ -129,7 +129,7 @@ void FixLatchedColor () {
 //==========================================================================
 final static void setSavedInt (name Name, int val) {
   if (!CvarExists(Name)) {
-    CreateCvar(Name, va("%d", val), "___saved_menu__value___", 0);
+    CreateCvar(Name, va("%d", val), "___saved_menu__value___", CVAR_HIDDEN);
   } else {
     SetCvar(Name, val);
     int cf = CvarGetFlags(Name);
@@ -156,7 +156,7 @@ final static int getSavedInt (name Name, int defval) {
 //==========================================================================
 final static void setSavedFloat (name Name, float val) {
   if (!CvarExists(Name)) {
-    CreateCvarFloat(Name, val, "___saved_menu__value___", 0);
+    CreateCvarFloat(Name, val, "___saved_menu__value___", CVAR_HIDDEN);
   } else {
     SetCvarF(Name, val);
     int cf = CvarGetFlags(Name);

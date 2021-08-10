@@ -45,17 +45,17 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
-static VCvarB gl_crippled_gpu("__gl_crippled_gpu", false, "who cares.", CVAR_Rom);
+static VCvarB gl_crippled_gpu("gl_crippled_gpu", false, "who cares.", CVAR_Rom|CVAR_Hidden);
 
 VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", true, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive);
 VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "1", "Tonemap color distance algorithm (0-1; 1 is the best one)", CVAR_Archive);
 
-static VCvarB gl_can_bloom("__gl_can_bloom", false, "who cares.", CVAR_Rom);
-static VCvarB gl_can_hires_tonemap("__gl_can_hires_tonemap", false, "who cares.", CVAR_Rom);
-static VCvarB gl_can_shadowmaps("__gl_can_shadowmaps", false, "who cares.", CVAR_Rom);
-static VCvarB gl_can_shadowvols("__gl_can_shadowvols", false, "who cares.", CVAR_Rom);
-VCvarB gl_can_cas_filter("__gl_can_cas_filter", false, "who cares.", CVAR_Rom);
-static VCvarB gl_can_clipcontrol("__gl_can_clipcontrol", false, "who cares.", CVAR_Rom);
+static VCvarB gl_can_bloom("gl_can_bloom", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_can_hires_tonemap("gl_can_hires_tonemap", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_can_shadowmaps("gl_can_shadowmaps", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_can_shadowvols("gl_can_shadowvols", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+VCvarB gl_can_cas_filter("gl_can_cas_filter", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_can_clipcontrol("gl_can_clipcontrol", false, "who cares.", CVAR_Rom|CVAR_Hidden);
 
 VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
 VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
@@ -149,9 +149,9 @@ VCvarB gl_shadowmap_preclear("gl_shadowmap_preclear", true, "Clear shadowmaps af
 VCvarB gl_shadowmap_more_cubes("gl_shadowmap_more_cubes", false, "Use all available shadowmap cubes, and clear them in advanve?", CVAR_PreInit|CVAR_Archive);
 
 
-static VCvarB gl_s3tc_present("__gl_s3tc_present", false, "Use S3TC texture compression, if supported?", CVAR_Rom);
+static VCvarB gl_s3tc_present("gl_s3tc_present", false, "Use S3TC texture compression, if supported?", CVAR_Rom|CVAR_Hidden);
 
-VCvarB gl_use_srgb("__gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", /*CVAR_Archive|*/CVAR_PreInit);
+VCvarB gl_use_srgb("gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", /*CVAR_Archive|*/CVAR_PreInit|CVAR_Hidden);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

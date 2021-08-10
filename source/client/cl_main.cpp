@@ -70,7 +70,7 @@ static VCvarB cl_autonomous_proxy("cl_autonomous_proxy", false, "Is our client a
 
 static VCvarB d_attraction_mode("d_attraction_mode", false, "Allow demo playback (won't work with non-k8vavoom demos)?", CVAR_Archive);
 
-static VCvarB dbg_always_mark_map("__dbg_always_mark_map", false, "Always mark lines on automap?", 0/*CVAR_Archive*/);
+static VCvarB dbg_always_mark_map("dbg_always_mark_map", false, "Always mark lines on automap?", /*CVAR_Archive|*/CVAR_Hidden);
 
 extern VCvarB r_wipe_enabled;
 

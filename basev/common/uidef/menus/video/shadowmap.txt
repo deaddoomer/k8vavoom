@@ -111,7 +111,7 @@ menudef ShadowMapOptions {
       "but also gives harder edges even with bilinear blur.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Shadowmap Precision";
     cvar = gl_shadowmap_precision;
     help =
@@ -143,9 +143,9 @@ menudef ShadowMapOptions {
       "Also, there is no reason to go beyond bilinear.";
   }
 
-  header "Debug Options" [__k8vavoom_developer_version > 0];
+  header "Debug Options" [k8vavoom_developer_version > 0];
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Show Latest Cubemap";
     cvar = dbg_shadowmaps;
     help =

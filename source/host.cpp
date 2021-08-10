@@ -115,7 +115,7 @@ VCvarB developer("developer", false, "Developer (debug) mode?", CVAR_PreInit/*|C
 # undef CVAR_K8_DEV_VALUE
 # define CVAR_K8_DEV_VALUE  false
 #endif
-VCvarB k8vavoom_developer_version("__k8vavoom_developer_version", CVAR_K8_DEV_VALUE, "Don't even think about this.", CVAR_Rom);
+VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALUE, "Don't even think about this.", CVAR_Rom|CVAR_Hidden);
 
 
 static double hostLastGCTime = 0.0;
@@ -139,11 +139,11 @@ extern VCvarB real_time;
 #else
 # define VV_CVAR_RELEASE_MODE  false
 #endif
-VCvarB game_release_mode("_release_mode", VV_CVAR_RELEASE_MODE, "Affects some default settings.", CVAR_Rom);
+VCvarB game_release_mode("release_mode", VV_CVAR_RELEASE_MODE, "Affects some default settings.", CVAR_Rom|CVAR_Hidden);
 
 
 // for chex quest support
-//VCvarI game_override_mode("_game_override", 0, "Override game type for DooM game.", CVAR_Rom);
+//VCvarI game_override_mode("game_override", 0, "Override game type for DooM game.", CVAR_Rom|CVAR_Hidden);
 
 static VCvarF dbg_frametime("dbg_frametime", "0", "If greater or equal to 0.004, this is what be used instead of one Doom tic; DEBUG CVAR, DON'T USE!", CVAR_PreInit);
 //k8: this was `3`; why 3? looks like arbitrary number

@@ -51,7 +51,7 @@ MenuChoiceNumeric UIMaxScale;
 //
 //==========================================================================
 override void CreateChoices () {
-  if (GetCvarB('__gl_crippled_gpu')) {
+  if (GetCvarB('gl_crippled_gpu')) {
     CreateChoiceSubHeader("WARNING!");
     CreateChoiceSubHeader("YOUR GPU IS SEVERELY CRIPPLED");
     CreateChoiceSubHeader("BY THE VENDOR!");
@@ -222,7 +222,7 @@ override void CreateChoices () {
       "\n'Vanilla' is for square pixels, regardless of screen resolution.\n"*/);
 
 
-  if (GetCvarB('__gl_s3tc_present')) {
+  if (GetCvarB('gl_s3tc_present')) {
     S3TC = GetItemContainer().NewChild(MenuChoiceEnum);
     SetChoiceInitialSizePos(S3TC);
     S3TC.SetText("Texture Compression");

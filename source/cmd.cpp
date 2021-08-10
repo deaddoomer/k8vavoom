@@ -400,7 +400,7 @@ void VCommand::ProcessKeyConf () {
 //
 //==========================================================================
 void VCommand::AddToAutoComplete (const char *string) {
-  if (!string || !string[0] || string[0] == '_') return;
+  if (!string || !string[0] || string[0] == '_' || (vuint8)string[0] < 32 || (vuint8)string[0] >= 127) return;
 
   VStr vs(string);
   VStr vslow = vs.toLowerCase();
@@ -929,11 +929,16 @@ void VCommand::ProcessSetCommand () {
   VCvar *cv = VCvar::FindVariable(*vname);
   if (!cv) {
     switch (stype) {
-      case SST_Int: cv = VCvar::CreateNewInt(VName(*vname), 0, "user-created variable", 0); break;
-      case SST_Float: cv = VCvar::CreateNewFloat(VName(*vname), 0.0f, "user-created variable", 0); break;
-      case SST_Bool: cv = VCvar::CreateNewBool(VName(*vname), false, "user-created variable", 0); break;
-      case SST_Str: cv = VCvar::CreateNewStr(VName(*vname), "", "user-created variable", 0); break;
+      case SST_Int: cv = VCvar::CreateNewInt(VName(*vname), 0, "user-created variable", CVAR_User); break;
+      case SST_Float: cv = VCvar::CreateNewFloat(VName(*vname), 0.0f, "user-created variable", CVAR_User); break;
+      case SST_Bool: cv = VCvar::CreateNewBool(VName(*vname), false, "user-created variable", CVAR_User); break;
+      case SST_Str: cv = VCvar::CreateNewStr(VName(*vname), "", "user-created variable", CVAR_User); break;
       default: Sys_Error("VCommand::ProcessSetCommand: wtf vcreate?!");
+    }
+  } else {
+    if (cv->IsReadOnly()) {
+      if (host_initialised) GCon->Logf(NAME_Error, "'set' tried to modify read-only cvar '%s'", *vname);
+      return;
     }
   }
   vassert(cv);

@@ -108,12 +108,6 @@ HelpText sHelpText;
 
 int WidthThreshold = 380;
 
-#ifdef K8_DEVELOPER
-enum k8Developer = true;
-#else
-enum k8Developer = false;
-#endif
-
 bool HighlightBackground;
 bool CenterChoicesVert;
 

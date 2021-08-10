@@ -169,9 +169,9 @@ override bool test () {
     #if 0
     // debug
     switch (cvar) {
-      case '__k8vavoom_developer_version': var = 0; break;
+      case 'k8vavoom_developer_version': var = 0; break;
       case 'gl_is_shitty_gpu': var = 1; break;
-      case '__gl_can_clipcontrol': var = 0; break;
+      case 'gl_can_clipcontrol': var = 0; break;
     }
     #endif
     if (cond == "=" || cond == "==") return (var == fval);

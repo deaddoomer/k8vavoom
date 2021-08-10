@@ -228,7 +228,7 @@ override void Init () {
   CreateCvarBool('gm_fix_projectile_attack_offset', true, "Make player projectile shots go (roughly) through crosshair (gameplay changer)?", CVAR_ARCHIVE);
   CreateCvarBool('gm_doomguy_eye_camera', false, "Move view camera to DoomGuy eyes (this works only for standard DoomGuy height)?", CVAR_ARCHIVE);
 
-  CreateCvarBool('zdoom_blood_hack', false, "Use ZDoom blood spawn hack (different starting frame depending on damage)?", CVAR_ARCHIVE);
+  CreateCvarBool('zdoom_blood_hack', false, "Use ZDoom blood spawn hack (different starting frame depending on damage)?", CVAR_ARCHIVE|CVAR_HIDDEN);
   CreateCvarFloat('blood_ripper_delay', 0.5, "Ripper projectile blood spawn timeout, in seconds.", CVAR_ARCHIVE);
 
   CreateCvarBool('show_secret_message', true, "Show 'you found a secret area' message?", CVAR_ARCHIVE);
@@ -323,7 +323,7 @@ override void Init () {
   CreateCvarFloat('k8BonusFlashMaxTime', 0.4, "Maximum bonus flash time, in seconds (<=0 is unlimited; one bonus is 0.2).", CVAR_ARCHIVE);
   CreateCvarFloat('k8DamageFlashMaxIntensity', 0.89, "Maximum intensity of damage screen tint.", CVAR_ARCHIVE);
 
-  CreateCvarBool('k8TraceDebug', false, "Line trace debug mode", 0);
+  CreateCvarBool('k8TraceDebug', false, "Line trace debug mode", CVAR_HIDDEN);
 
   CreateCvarBool('r_particle_effects', true, "Enable particle effects?", CVAR_ARCHIVE);
   CreateCvarBool('r_particle_puffs', true, "Enable particle sparks?", CVAR_ARCHIVE);
@@ -344,7 +344,7 @@ override void Init () {
 
   CreateCvarBool('fuck_stealth_monsters', false, "Turn all fuckin' stealth monsters to normal ones?", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
 
-  CreateCvarInt('vid_renderer', 1, "Tell some idiotic mod authors that we're GZDoom in OpenGL mode (1).", 0);
+  CreateCvarInt('vid_renderer', 1, "Tell some idiotic mod authors that we're GZDoom in OpenGL mode (1).", CVAR_HIDDEN);
 
   CreateCvarBool('k8HealthAccum_Enabled', IsDeveloperVersion, "Enable Health Accumulation?", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
   CreateCvarBool('k8HealthAccum_Reset', true, "Reset accumulated health on level transition?", CVAR_ARCHIVE/*|CVAR_SERVERINFO*/);
@@ -379,7 +379,7 @@ override void Init () {
   CreateCvarFloat('k8SuperBulletCooldown', 0.15, "SuperBullet cooldown time, in seconds.", CVAR_ARCHIVE);
 
 
-  CreateCvarBool('dbg_blood_disable_entities', false, "Disable spawning of blood entities?", 0/*CVAR_ARCHIVE*/);
+  CreateCvarBool('dbg_blood_disable_entities', false, "Disable spawning of blood entities?", /*CVAR_ARCHIVE|*/0);
 
   CreateCvarBool('wp_cycle_special_slot', false, "Should weapon cycling use slot 11 too?", CVAR_ARCHIVE);
 
@@ -402,12 +402,12 @@ override void Init () {
   CreateCvarBool('bot_always_headshots', false, "Should bot always try do to a headshot?", 0/*CVAR_ARCHIVE*/);
 
 
-  CreateCvarBool('trans_debug_log', false, "Show translation debug log?", CVAR_ARCHIVE);
+  CreateCvarBool('trans_debug_log', false, "Show translation debug log?", CVAR_HIDDEN);
 
-  CreateCvarBool('dbg_disable_multiplayer', false, "Disable multiplayer menu?", 0/*CVAR_ARCHIVE*/);
+  CreateCvarBool('dbg_disable_multiplayer', false, "Disable multiplayer menu?", /*CVAR_ARCHIVE|*/CVAR_HIDDEN);
 
   // gozzo bug workaround
-  CreateCvarBool('__gz_afall_drops', false, "Should `A_Fall()` drop items?", CVAR_ARCHIVE);
+  CreateCvarBool('gz_afall_drops', false, "Should `A_Fall()` drop items?", CVAR_ARCHIVE|CVAR_HIDDEN);
 
   // some coop options
   CreateCvarBool('sv_coop_dm_things', false, "Do not spawn DM things in coop (reload level after change)?", CVAR_ARCHIVE);

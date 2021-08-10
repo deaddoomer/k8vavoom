@@ -92,7 +92,7 @@ void PostSpawn () {
 //
 //==========================================================================
 void ActivateUIMouse () {
-  SetCvar('__ui_active', 1);
+  SetCvar('ui_active', 1);
   if (GRoot && !GRoot.bMouseEnabled && GetCvarB('ui_mouse')) GRoot.SetMouse(true);
 }
 
@@ -103,7 +103,7 @@ void ActivateUIMouse () {
 //
 //==========================================================================
 void DeactivateUIMouse () {
-  SetCvar('__ui_active', 0);
+  SetCvar('ui_active', 0);
   if (GRoot && GRoot.bMouseEnabled) GRoot.SetMouse(false);
 }
 
@@ -460,7 +460,7 @@ void LoadGZMenuDef (ScriptsParser par) {
 //
 //==========================================================================
 void LoadGZMenuDefs () {
-  if (GetCvarB('_gz_skip_menudef')) return;
+  if (GetCvarB('gz_skip_menudef')) return;
 
   // scan
   array!int mdlumps;

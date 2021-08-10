@@ -47,7 +47,7 @@ extern VCvarB r_advlight_opt_optimise_scissor;
 extern VCvarB dbg_clip_dump_added_ranges;
 extern VCvarI gl_release_ram_textures_mode;
 
-VCvarB r_dbg_proj_aspect("__r_dbg_proj_aspect", true, "Apply aspect correction to projection matrix?", CVAR_PreInit);
+VCvarB r_dbg_proj_aspect("r_dbg_proj_aspect", true, "Apply aspect correction to projection matrix?", CVAR_PreInit|CVAR_Hidden);
 static bool prev_r_dbg_proj_aspect = true;
 
 static VCvarB dbg_autoclear_automap("dbg_autoclear_automap", false, "Clear automap before rendering?", 0/*CVAR_Archive*/);
@@ -192,7 +192,7 @@ static float CachedGlobVis = 1280.0f;
 static FDrawerDesc *DrawerList[DRAWER_MAX];
 
 VCvarI screen_size("screen_size", "12", "Screen size.", CVAR_Archive); // default is "fullscreen with stats"
-VCvarB allow_small_screen_size("_allow_small_screen_size", false, "Allow small screen sizes.", /*CVAR_Archive*/CVAR_PreInit);
+VCvarB allow_small_screen_size("allow_small_screen_size", false, "Allow small screen sizes.", /*CVAR_Archive*/CVAR_PreInit|CVAR_Hidden);
 static bool set_resolution_needed = true; // should we update screen size, FOV, and other such things?
 
 // angles in the SCREENWIDTH wide window

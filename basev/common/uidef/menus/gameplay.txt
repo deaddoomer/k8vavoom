@@ -327,7 +327,7 @@ menudef GameplayOptions {
       "\cGWARNING: this changes hitscan attack height!";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Projectile shots through crosshair";
     cvar = gm_fix_projectile_attack_offset;
     help =

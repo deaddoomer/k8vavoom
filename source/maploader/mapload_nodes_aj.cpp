@@ -34,7 +34,7 @@
 //#define VV_AJBSP_USE_VERTEX_ROUNDOFF
 
 
-static VCvarB ajbsp_roundoff_tree("__ajbsp_roundoff_tree", false, "Roundoff vertices in AJBSP?", CVAR_PreInit);
+static VCvarB ajbsp_roundoff_tree("ajbsp_roundoff_tree", false, "Roundoff vertices in AJBSP?", CVAR_PreInit|CVAR_Hidden);
 
 static VCvarB nodes_show_warnings("nodes_show_warnings", true, "Show various node builder warnings?", CVAR_Archive);
 static VCvarB nodes_fast_mode("nodes_fast_mode", false, "Do faster rebuild, but generate worser BSP tree?", CVAR_Archive);

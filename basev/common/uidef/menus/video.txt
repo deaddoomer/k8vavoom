@@ -3,12 +3,12 @@ menudef VideoOptions {
   //selector = MenuSelector_SmallRight;
   Title = "VIDEO OPTIONS";
 
-  header [__gl_crippled_gpu > 0] "WARNING!";
-  header [__gl_crippled_gpu > 0] "YOUR GPU IS SEVERELY CRIPPLED";
-  header [__gl_crippled_gpu > 0] "BY THE VENDOR!";
-  header [__gl_crippled_gpu > 0] "ADVANCED K8VAVOOM GRAPHICAL";
-  header [__gl_crippled_gpu > 0] "FEATURES CAN BE VERY SLOW!";
-  header [__gl_crippled_gpu > 0] "-";
+  header [gl_crippled_gpu > 0] "WARNING!";
+  header [gl_crippled_gpu > 0] "YOUR GPU IS SEVERELY CRIPPLED";
+  header [gl_crippled_gpu > 0] "BY THE VENDOR!";
+  header [gl_crippled_gpu > 0] "ADVANCED K8VAVOOM GRAPHICAL";
+  header [gl_crippled_gpu > 0] "FEATURES CAN BE VERY SLOW!";
+  header [gl_crippled_gpu > 0] "-";
 
   option slider {
     title = "Brightness";
@@ -89,7 +89,7 @@ menudef VideoOptions {
     help = "Apply tonemap filter to player sprites too?";
   }
 
-  option bool [__gl_can_hires_tonemap > 0] {
+  option bool [gl_can_hires_tonemap > 0] {
     title = "HiRes Tonemap LUT";
     cvar = gl_tonemap_pal_hires;
     help =
@@ -98,7 +98,7 @@ menudef VideoOptions {
       "require 16MB of VRAM instead of 1MB.";
   }
 
-  option enum [__gl_can_cas_filter > 0] {
+  option enum [gl_can_cas_filter > 0] {
     title = "Contrast Adaptive Sharpening";
     cvar = r_cas_filter;
     list {
@@ -111,7 +111,7 @@ menudef VideoOptions {
       "try to turn this on, it may make distant textures less blurry.";
   }
 
-  option slider [__gl_can_cas_filter > 0] {
+  option slider [gl_can_cas_filter > 0] {
     title = "CAS Sharpening Coefficient";
     cvar = r_cas_filter_coeff;
     min = 0;
@@ -141,7 +141,7 @@ menudef VideoOptions {
       "\c[!WHITE]DarkDoom Banded\c- is like the previous one, but with banded light levels.";
   }
 
-  option slider [__k8vavoom_developer_version > 0] {
+  option slider [k8vavoom_developer_version > 0] {
     title = "Minimum DarkDoom Visibility";
     cvar = r_light_globvis;
     min = -128;
@@ -363,7 +363,7 @@ menudef VideoOptions {
     submenu = "AdvVideoLightFilterOptions";
   }
 
-  option submenu [__gl_can_bloom > 0] {
+  option submenu [gl_can_bloom > 0] {
     title = "Bloom Options";
     submenu = "PFXBloomOptions";
   }
@@ -373,7 +373,7 @@ menudef VideoOptions {
     submenu = "DecalOptions";
   }
 
-  option submenu [__gl_can_shadowmaps > 0] {
+  option submenu [gl_can_shadowmaps > 0] {
     title = "Shadowmap Options";
     submenu = "ShadowMapOptions";
   }

@@ -309,7 +309,7 @@ static VCvarS am_color_mark_blink("am_color_mark_blink", "df 5f 00", "Automap co
 static VCvarS am_color_player("am_color_player", "e6 e6 e6", "Automap color: player.", CVAR_Archive);
 static VCvarS am_color_miniseg("am_color_miniseg", "7f 00 7f", "Automap color: minisegs.", CVAR_Archive);
 
-static VCvarB dbg_am_no_player_arrow("__dbg_am_no_player_arrow", false, "Type of player arrow.", CVAR_PreInit);
+static VCvarB dbg_am_no_player_arrow("dbg_am_no_player_arrow", false, "Type of player arrow.", CVAR_PreInit|CVAR_Hidden);
 
 static VCvarI am_player_arrow("am_player_arrow", 0, "Type of player arrow.", CVAR_Archive);
 static VCvarB am_follow_player("am_follow_player", true, "Should automap follow player?", CVAR_Archive);

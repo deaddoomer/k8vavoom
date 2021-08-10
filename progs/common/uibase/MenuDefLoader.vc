@@ -800,7 +800,7 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
       opt.SetInitialValue(vv);
       if (cvar) {
         if (!CvarExists(cvar)) {
-          CreateCvarFloat(cvar, vv, "___saved_menu__value___", 0);
+          CreateCvarFloat(cvar, vv, "___saved_menu__value___", CVAR_HIDDEN);
         } else {
           SetCvarF(cvar, vv);
         }

@@ -260,7 +260,7 @@
 //==========================================================================
 [decorate] final void A_Fall () {
   // called for Keen and PE, and they should not drop items
-  decorate_A_NoBlocking(GetCvarB('__gz_afall_drops'));
+  decorate_A_NoBlocking(GetCvarB('gz_afall_drops'));
 }
 
 

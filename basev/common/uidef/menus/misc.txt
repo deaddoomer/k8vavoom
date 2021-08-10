@@ -221,7 +221,7 @@ menudef MiscOptions {
       "\cJIf unsure, leave it as 'Auto'.";
   }
 
-  option enum [__k8vavoom_developer_version > 0] {
+  option enum [k8vavoom_developer_version > 0] {
     title = "Normal Nodes Builder";
     cvar = nodes_builder_normal;
     list {
@@ -234,7 +234,7 @@ menudef MiscOptions {
       "\cGDO NOT set to 'Auto'!";
   }
 
-  option enum [__k8vavoom_developer_version > 0] {
+  option enum [k8vavoom_developer_version > 0] {
     title = "UDMF Nodes Builder";
     cvar = nodes_builder_udmf;
     list {

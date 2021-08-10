@@ -32,7 +32,7 @@
 #endif
 
 
-static VCvarB dbg_pobj_unstuck_verbose("__dbg_pobj_unstuck_verbose", false, "Verbose 3d pobj unstuck code?", CVAR_PreInit);
+static VCvarB dbg_pobj_unstuck_verbose("dbg_pobj_unstuck_verbose", false, "Verbose 3d pobj unstuck code?", CVAR_PreInit|CVAR_Hidden);
 
 
 enum {

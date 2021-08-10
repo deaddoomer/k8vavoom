@@ -75,7 +75,7 @@ menudef AdvRenderOptions {
       "\cGor visual glitches will occur.";
   }
 
-  option bool /*[__k8vavoom_developer_version > 0]*/ {
+  option bool /*[k8vavoom_developer_version > 0]*/ {
     title = "Allow stacked sectors";
     cvar = r_allow_stacked_sectors;
     help =
@@ -96,7 +96,7 @@ menudef AdvRenderOptions {
       "Usually has little effect.";
   }
 
-  option numeric [__k8vavoom_developer_version > 0] {
+  option numeric [k8vavoom_developer_version > 0] {
     title = "Maximum portal depth";
     cvar = r_max_portal_depth;
     step = 1;
@@ -131,9 +131,9 @@ menudef AdvRenderOptions {
       "This is hard limit for light sources in one frame.";
   }
 
-  header "Stencil Shadows Options" [__gl_can_shadowvols > 0];
+  header "Stencil Shadows Options" [gl_can_shadowvols > 0];
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Use Scissoring";
     cvar = r_advlight_opt_scissor;
     help =
@@ -142,7 +142,7 @@ menudef AdvRenderOptions {
       "want to enjoy a slideshow, you can do it.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Optimise scissor";
     cvar = r_advlight_opt_optimise_scissor;
     help =
@@ -151,7 +151,7 @@ menudef AdvRenderOptions {
       "there is no need to render anything outside of it.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Use Depth Bounding";
     cvar = gl_enable_depth_bounds;
     help =
@@ -159,7 +159,7 @@ menudef AdvRenderOptions {
       "This can buy you some FPS by reducing fill rate.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Smarter Stencil Clearing";
     cvar = gl_smart_dirty_rects;
     help =
@@ -168,10 +168,10 @@ menudef AdvRenderOptions {
   }
 
 
-  header "Shadow Casting Optimisations" [__k8vavoom_developer_version > 0];
+  header "Shadow Casting Optimisations" [k8vavoom_developer_version > 0];
 
   /* this does nothing at all, but may be implemented again in the future
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Shadow Check";
     cvar = r_advlight_opt_trace;
     help =
@@ -182,7 +182,7 @@ menudef AdvRenderOptions {
   */
 
   /* this doesn't work right */
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Optimise Shadow Flats";
     cvar = r_shadowvol_optimise_flats;
     help =
@@ -196,7 +196,7 @@ menudef AdvRenderOptions {
       "maps with alot of huge light sources, like outdoor maps, for example.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Skip Non-Shadow Surfaces";
     cvar = gl_smart_reject_shadows;
     help =
@@ -206,7 +206,7 @@ menudef AdvRenderOptions {
       "see some invalid shadowing.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Skip Non-Shadow Segs";
     cvar = gl_smart_reject_svol_segs;
     help =
@@ -214,7 +214,7 @@ menudef AdvRenderOptions {
       "Suboption of common skipping.";
   }
 
-  option bool [__k8vavoom_developer_version > 0] {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Skip Non-Shadow Flats";
     cvar = gl_smart_reject_svol_flats;
     help =
@@ -223,9 +223,9 @@ menudef AdvRenderOptions {
   }
 
 
-  header "DEBUG Stencil Shadows Options" [__gl_can_shadowvols > 0];
+  header "DEBUG Stencil Shadows Options" [gl_can_shadowvols > 0];
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Use quad-clear for stencil";
     cvar = gl_use_stencil_quad_clear;
     help =
@@ -234,14 +234,14 @@ menudef AdvRenderOptions {
       "but you can check if this will give you any speedup.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Render Surface Textures";
     textColor = BRICK;
     cvar = gl_dbg_adv_render_surface_textures;
     help = "Turn this off to see ambient lighting without textures.";
   }
 
-  option bool [__gl_can_shadowvols > 0] {
+  option bool [gl_can_shadowvols > 0] {
     title = "Render Surface Fog";
     textColor = BRICK;
     cvar = gl_dbg_adv_render_surface_fog;

@@ -89,7 +89,7 @@ static TMapNC<VCvar *, bool> acAdded; // already added to autocompletion list?
 static void cv_created (VCvar *cvar) {
   if (!acAdded.find(cvar)) {
     acAdded.put(cvar, true);
-    VCommand::AddToAutoComplete(cvar->GetName());
+    if (!cvar->IsHidden()) VCommand::AddToAutoComplete(cvar->GetName());
   }
 }
 

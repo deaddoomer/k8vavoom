@@ -270,7 +270,7 @@ void MessageBoxStartMessage (string text, MessageBoxType type, bool input) {
   msgboxState.x = (GetVirtualWidth()-wdt)/2;
   msgboxState.y = (GetVirtualHeight()-hgt)/2;
 
-  if (GetMessageBoxInputType() == MsgBoxInputType.Keybind) SetCvar('__ui_control_waiting', 1);
+  if (GetMessageBoxInputType() == MsgBoxInputType.Keybind) SetCvar('ui_control_waiting', 1);
 
   CmdBuf_AddText("HideConsole\n");
   ActivateUIMouse();
@@ -512,7 +512,7 @@ override bool MessageBoxResponder (event_t *event) {
       case MessageBoxType.ControlStrife:
       case MessageBoxType.ControlNonStrife:
       case MessageBoxType.ControlAutomap:
-        SetCvar('__ui_control_waiting', 0);
+        SetCvar('ui_control_waiting', 0);
         ControlResponse(event->data1, msgboxState.type);
         break;
       case MessageBoxType.Shareware: SharewareResponse(event->data1); break;

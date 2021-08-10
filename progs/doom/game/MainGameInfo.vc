@@ -507,8 +507,8 @@ override void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
 defaultproperties {
   LevelInfoClass = DoomLevelInfo;
   /*
-  if (GetCvarI('_game_override')) {
-    GameFilterFlag = GetCvarI('_game_override');
+  if (GetCvarI('game_override')) {
+    GameFilterFlag = GetCvarI('game_override');
   } else {
     GameFilterFlag = EntityEx::GAME_Doom;
   }

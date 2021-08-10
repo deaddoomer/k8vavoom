@@ -90,7 +90,7 @@ menudef OptionsMenu {
 
   header "";
 
-  option submenu [__k8vavoom_developer_version > 0] {
+  option submenu [k8vavoom_developer_version > 0] {
     title = "Clipper Debug";
     submenu = ClipperOptions;
   }
