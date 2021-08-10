@@ -401,6 +401,8 @@ int SemParser::expectInt () {
 
     if (token == "ST_NUMFACES") return 666; //FIXME!
 
+    if (token == "SAVED_POS_MAX") return 666; //FIXME!
+
     if (token == "NUM_SPECIALS") return 666;
     if (token == "NUMTOTALBOTS") return 666;
 
