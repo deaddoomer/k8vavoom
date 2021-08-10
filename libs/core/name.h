@@ -208,6 +208,17 @@ public:
     return res;
   }
 
+  static VVA_CHECKRESULT VName CreateWithIndexSafe (int i) noexcept {
+    if (Initialised) {
+      if (i < 0 || i >= (int)NamesCount) i = 0;
+    } else {
+      if (i < 0 || i >= GetAutoNameCounter()) i = 0;
+    }
+    VName res;
+    res.Index = i;
+    return res;
+  }
+
   static void DebugDumpHashStats () noexcept;
 };
 

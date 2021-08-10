@@ -185,6 +185,9 @@ public:
   void makeImmutable () noexcept;
   VVA_CHECKRESULT VStr &makeImmutableRetSelf () noexcept;
 
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isNullOrImmutable () const noexcept { return (!dataptr || atomicIsImmutable()); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isNull () const noexcept { return !dataptr; }
+
   // clears the string
   VVA_ALWAYS_INLINE void Clean () noexcept { decref(); }
   VVA_ALWAYS_INLINE void Clear () noexcept { decref(); }
