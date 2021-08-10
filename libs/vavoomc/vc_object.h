@@ -694,6 +694,13 @@ public:
   inline void SetFieldObjectValue (VName fldname, VObject *Value) { Class->FindFieldChecked(fldname)->SetObjectValue(this, Value); }
 
 public:
+  // cvar cache API
+
+  // `canCache` is never `nullptr`, and always set to `true` on call
+  typedef VCvar *(*GetVCvarObjectFn) (VName name, bool *canCache);
+  static GetVCvarObjectFn GetVCvarObject;
+
+public:
   // event queue API; as it is used both in k8vavoom and in vccrun, and with
   // common `event_t` struct, there is no reason to not have it here
   //

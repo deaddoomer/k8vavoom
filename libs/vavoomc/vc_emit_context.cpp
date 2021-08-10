@@ -880,6 +880,20 @@ void VEmitContext::AddBuiltin (int b, const TLocation &aloc) {
 
 //==========================================================================
 //
+//  VEmitContext::AddCVarBuiltin
+//
+//==========================================================================
+void VEmitContext::AddCVarBuiltin (int b, VName n, const TLocation &aloc) {
+  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  I.Opcode = OPC_BuiltinCVar;
+  I.Arg1 = b;
+  I.Arg2 = n.GetIndex();
+  I.loc = aloc;
+}
+
+
+//==========================================================================
+//
 //  VEmitContext::EmitPushNumber
 //
 //==========================================================================

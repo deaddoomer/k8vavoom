@@ -29,6 +29,7 @@
 //**************************************************************************
 //#define VCC_STUPID_TRACER
 //#define VMEXEC_RUNDUMP
+//#define VCC_DEBUG_CVAR_CACHE
 
 #include "vc_public.h"
 #include "vc_progdefs.h"
@@ -42,6 +43,8 @@
 
 #define DYNARRDISPATCH_OPCODE_INFO
 #include "vc_progdefs.h"
+
+#include "vc_emit_context.h"
 
 
 #define MAX_PROG_STACK  (10000)
@@ -525,6 +528,58 @@ public:
 
 //==========================================================================
 //
+//  GetAndCacheCVar
+//
+//==========================================================================
+static inline VCvar *GetAndCacheCVar (vuint8 *ip) noexcept {
+  VName varname = VName::CreateWithIndexSafe(*(const vint32 *)(ip+2));
+  VCvar *vp = *(VCvar **)(ip+2+4);
+  if (!vp) {
+    bool canCache;
+    if (VObject::GetVCvarObject) {
+      canCache = true;
+      vp = VObject::GetVCvarObject(varname, &canCache);
+    } else {
+      canCache = true;
+      vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
+    }
+    if (!vp) VPackage::InternalFatalError(va("cannot get value of non-existent cvar '%s'", *varname));
+    if (canCache) {
+      #ifdef VCC_DEBUG_CVAR_CACHE
+      GLog.Logf(NAME_Debug, "*** CACHING CVAR '%s' ADDRESS %p", *varname, vp);
+      #endif
+      *(VCvar **)(ip+2+4) = vp;
+    }
+  } else {
+    #ifdef VCC_DEBUG_CVAR_CACHE
+    GLog.Logf(NAME_Debug, "*** CACHED CVAR '%s' ADDRESS %p", *varname, vp);
+    #endif
+  }
+  return vp;
+}
+
+
+//==========================================================================
+//
+//  GetRTCVar
+//
+//==========================================================================
+static inline VCvar *GetRTCVar (int nameidx) noexcept {
+  VName varname = VName::CreateWithIndexSafe(nameidx);
+  VCvar *vp;
+  if (VObject::GetVCvarObject) {
+    bool canCache = false;
+    vp = VObject::GetVCvarObject(varname, &canCache);
+  } else {
+    vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
+  }
+  if (!vp) VPackage::InternalFatalError(va("cannot set value of non-existent cvar '%s'", *varname));
+  return vp;
+}
+
+
+//==========================================================================
+//
 //  RunFunction
 //
 //==========================================================================
@@ -845,6 +900,7 @@ func_loop:
         }
         PR_VM_BREAK;
 
+      /*
       PR_VM_CASE(OPC_CaseGotoS)
         if (ReadInt16(ip+1) == sp[-1].i) {
           ip += ReadInt16(ip+3);
@@ -853,6 +909,7 @@ func_loop:
           ip += 5;
         }
         PR_VM_BREAK;
+      */
 
       PR_VM_CASE(OPC_CaseGoto)
         if (ReadInt32(ip+1) == sp[-1].i) {
@@ -917,14 +974,15 @@ func_loop:
         ++sp;
         PR_VM_BREAK;
 
+      // bytecode arg: pointer to the immutable `VStr`
       PR_VM_CASE(OPC_PushString)
         {
           sp->p = ReadPtr(ip+1);
           ip += 1+sizeof(void *);
+          const VStr *S = (const VStr *)sp[0].p;
+          sp[0].p = nullptr;
+          *(VStr *)&sp[0].p = *S;
           ++sp;
-          const VStr *S = (const VStr *)sp[-1].p;
-          sp[-1].p = nullptr;
-          *(VStr *)&sp[-1].p = *S;
         }
         PR_VM_BREAK;
 
@@ -2109,7 +2167,7 @@ func_loop:
         {
           ++ip;
           auto len = (*((VStr **)&sp[-1].p))->Length();
-          //((VStr *)&sp[-1].p)->Clean();
+          // do not clean it, as this opcode receives pointer to str
           sp[-1].i = (int)len;
         }
         PR_VM_BREAK;
@@ -2149,6 +2207,7 @@ func_loop:
             char *data = s->GetMutableCharPointer(idx);
             *data = ch;
           }
+          // do not clean it, as this opcode receives pointer to str
           sp -= 3; // drop it all
         }
         PR_VM_BREAK;
@@ -2288,7 +2347,8 @@ func_loop:
       PR_VM_CASE(OPC_NameToStr)
         {
           ++ip;
-          VName n = VName((EName)sp[-1].i);
+          //VName n = VName((EName)sp[-1].i);
+          VName n = VName::CreateWithIndexSafe(sp[-1].i);
           sp[-1].p = nullptr;
           *(VStr *)&sp[-1].p = VStr(n);
         }
@@ -2815,7 +2875,7 @@ func_loop:
         PR_VM_BREAK;
 
 #define DO_ISA_CLASS_NAME(tval_, fval_)  do { \
-        VName n = VName((EName)sp[-1].i); \
+        VName n = VName::CreateWithIndexSafe(sp[-1].i); \
         if (VStr::strEquCI(*n, "none")) n = NAME_None; /*HACK*/ \
         if (sp[-2].p) { \
           VClass *c = (VClass *)sp[-2].p; \
@@ -3132,7 +3192,160 @@ func_loop:
               }
               break;
             }
-          default: cstDump(ip); VPackage::InternalFatalError("Unknown builtin");
+
+          // cvar getters/setters with runtime-defined names
+          case OPC_Builtin_GetCvarIntRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-1].i);
+              sp[-1].i = vp->asInt();
+              break;
+            }
+          case OPC_Builtin_GetCvarFloatRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-1].i);
+              sp[-1].f = vp->asFloat();
+              break;
+            }
+          case OPC_Builtin_GetCvarStrRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-1].i);
+              sp[-1].p = nullptr;
+              *(VStr *)&sp[-1].p = vp->asStr();
+              break;
+            }
+          case OPC_Builtin_GetCvarBoolRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-1].i);
+              sp[-1].i = (vp->asBool() ? 1 : 0);
+              break;
+            }
+
+          case OPC_Builtin_SetCvarIntRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-2].i);
+              if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
+              sp -= 2;
+              break;
+            }
+          case OPC_Builtin_SetCvarFloatRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-2].i);
+              if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
+              sp -= 2;
+              break;
+            }
+          case OPC_Builtin_SetCvarStrRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-2].i);
+              if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
+              ((VStr *)&sp[-1].p)->clear();
+              sp -= 2;
+              break;
+            }
+          case OPC_Builtin_SetCvarBoolRT:
+            {
+              VCvar *vp = GetRTCVar(sp[-2].i);
+              if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
+              sp -= 2;
+              break;
+            }
+
+          default:
+            cstDump(ip);
+            VPackage::InternalFatalError(va("Unknown builtin %u", ReadU8(ip+1)));
+        }
+        ip += 2;
+        PR_VM_BREAK;
+
+      PR_VM_CASE(OPC_BuiltinCVar)
+        #ifdef VCC_DEBUG_CVAR_CACHE
+        {
+          unsigned n = ReadU8(ip+1);
+          GLog.Logf(NAME_Debug, "OPC_BuiltinCVar: %u", n);
+          for (unsigned f = 0; f <= n; ++f) {
+            if (!StatementBuiltinInfo[f].name) break;
+            if (f == n) {
+              GLog.Logf(NAME_Debug, "   <%s>", StatementBuiltinInfo[f].name);
+              break;
+            }
+          }
+        }
+        #endif
+        switch (ReadU8(ip+1)) {
+          // ip+2: (vint32) name index
+          // ip+2+4: vcvar ptr (pointer-sized)
+          case OPC_Builtin_GetCvarInt:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              sp[0].i = vp->asInt();
+              ++sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_GetCvarFloat:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              sp[0].f = vp->asFloat();
+              ++sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_GetCvarStr:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              sp[0].p = nullptr;
+              *(VStr *)&sp[0].p = vp->asStr();
+              ++sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_GetCvarBool:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              sp[0].i = (vp->asBool() ? 1 : 0);
+              ++sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+
+          case OPC_Builtin_SetCvarInt:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
+              --sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_SetCvarFloat:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
+              --sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_SetCvarStr:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
+              ((VStr *)&sp[-1].p)->clear();
+              --sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+          case OPC_Builtin_SetCvarBool:
+            {
+              VCvar *vp = GetAndCacheCVar(ip);
+              if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
+              --sp;
+              ip += 4+sizeof(void *);
+              break;
+            }
+            return;
+
+          default:
+            cstDump(ip);
+            VPackage::InternalFatalError(va("Unknown cvar builtin %u", ReadU8(ip+1)));
         }
         ip += 2;
         PR_VM_BREAK;

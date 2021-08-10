@@ -2122,7 +2122,15 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
   SetResolved();
 
   // some special functions will be converted to builtins, try to const-optimize 'em
-  if (Func->builtinOpc >= 0) return OptimizeBuiltin(ec);
+  if (Func->builtinOpc >= 0) {
+    #if 0
+    VExpression *e = OptimizeBuiltin(ec);
+    GLog.Logf(NAME_Debug, "VInvocation::OptimizeBuiltin:res: <%s>", StatementBuiltinInfo[Func->builtinOpc].name);
+    return e;
+    #else
+    return OptimizeBuiltin(ec);
+    #endif
+  }
   return this;
 }
 
@@ -2134,8 +2142,12 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
 //  used by `OptimizeBuiltin`; `types` are `TYPE_xxx`
 //
 //==========================================================================
-bool VInvocation::CheckSimpleConstArgs (int argc, const int *types) const {
-  if (argc != NumArgs) return false;
+bool VInvocation::CheckSimpleConstArgs (const int argc, const int *types, const bool exactArgC) const {
+  if (exactArgC) {
+    if (argc != NumArgs) return false;
+  } else {
+    if (argc > NumArgs) return false;
+  }
   for (int f = 0; f < argc; ++f) {
     if (!Args[f]) return false; // cannot omit anything (yet)
     switch (types[f]) {
@@ -2158,6 +2170,7 @@ bool VInvocation::CheckSimpleConstArgs (int argc, const int *types) const {
 //==========================================================================
 VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
   if (!Func || Func->builtinOpc < 0) return this; // sanity check
+  //GLog.Logf(NAME_Debug, "VInvocation::OptimizeBuiltin: <%s>", StatementBuiltinInfo[Func->builtinOpc].name);
   TVec v0(0, 0, 0), v1(0, 0, 0), v2(0, 0, 0);
   float fv, fv2, fvres;
   VExpression *e = nullptr;
@@ -2626,6 +2639,58 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
         return this;
       }
       break;
+
+    // special cvar optimisations
+    case OPC_Builtin_GetCvarInt:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name})) {
+        Func->builtinOpc = OPC_Builtin_GetCvarIntRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_GetCvarFloat:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name})) {
+        Func->builtinOpc = OPC_Builtin_GetCvarFloatRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_GetCvarStr:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name})) {
+        Func->builtinOpc = OPC_Builtin_GetCvarStrRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_GetCvarBool:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name})) {
+        Func->builtinOpc = OPC_Builtin_GetCvarBoolRT; // convert to RT builtin
+      }
+      return this;
+
+    case OPC_Builtin_SetCvarInt:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name}, false)) {
+        Func->builtinOpc = OPC_Builtin_SetCvarIntRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_SetCvarFloat:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name}, false)) {
+        Func->builtinOpc = OPC_Builtin_SetCvarFloatRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_SetCvarStr:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name}, false)) {
+        Func->builtinOpc = OPC_Builtin_SetCvarStrRT; // convert to RT builtin
+      }
+      return this;
+    case OPC_Builtin_SetCvarBool:
+      if (!Func->IsStatic() || DelegateLocal >= 0) ParseError(Loc, "Cannot call non-static builtin `%s`", *Func->Name);
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Name}, false)) {
+        Func->builtinOpc = OPC_Builtin_SetCvarBoolRT; // convert to RT builtin
+      }
+      return this;
+
     default: break;
   }
   if (e) {
@@ -2643,6 +2708,18 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
 //==========================================================================
 void VInvocation::Emit (VEmitContext &ec) {
   EmitCheckResolved(ec);
+
+  // special cvar optimisations
+  if (Func->builtinOpc >= OPC_Builtin_GetCvarInt && Func->builtinOpc <= OPC_Builtin_GetCvarBool) {
+    ec.AddCVarBuiltin(Func->builtinOpc, Args[0]->GetNameConst(), Loc);
+    return;
+  }
+
+  if (Func->builtinOpc >= OPC_Builtin_SetCvarInt && Func->builtinOpc <= OPC_Builtin_SetCvarBool) {
+    Args[1]->Emit(ec);
+    ec.AddCVarBuiltin(Func->builtinOpc, Args[0]->GetNameConst(), Loc);
+    return;
+  }
 
   if (SelfExpr) {
     if (!Func->IsStatic()) SelfExpr->Emit(ec);

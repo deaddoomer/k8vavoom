@@ -1520,9 +1520,9 @@ void VDecorateAJump::Emit (VEmitContext &ec) {
     for (int lidx = 0; lidx < labels.length(); ++lidx) {
       if (lidx >= 0 && lidx < 256) {
         ec.AddStatement(OPC_CaseGotoB, lidx, addrs[lidx], Loc);
-      } else if (lidx >= MIN_VINT16 && lidx < MAX_VINT16) {
+      }/* else if (lidx >= MIN_VINT16 && lidx < MAX_VINT16) {
         ec.AddStatement(OPC_CaseGotoS, lidx, addrs[lidx], Loc);
-      } else {
+      } else*/ {
         ec.AddStatement(OPC_CaseGoto, lidx, addrs[lidx], Loc);
       }
     }
@@ -1726,9 +1726,9 @@ void VDecorateRndPick::Emit (VEmitContext &ec) {
     for (int lidx = 0; lidx < numbers.length(); ++lidx) {
       if (lidx >= 0 && lidx < 256) {
         ec.AddStatement(OPC_CaseGotoB, lidx, addrs[lidx], Loc);
-      } else if (lidx >= MIN_VINT16 && lidx < MAX_VINT16) {
+      }/* else if (lidx >= MIN_VINT16 && lidx < MAX_VINT16) {
         ec.AddStatement(OPC_CaseGotoS, lidx, addrs[lidx], Loc);
-      } else {
+      }*/ else {
         ec.AddStatement(OPC_CaseGoto, lidx, addrs[lidx], Loc);
       }
     }

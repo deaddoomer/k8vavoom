@@ -213,6 +213,7 @@ public:
   void AddStatement (int statement, VLabel Lbl, const TLocation &aloc);
   void AddStatement (int statement, int p, VLabel Lbl, const TLocation &aloc);
   void AddBuiltin (int b, const TLocation &aloc);
+  void AddCVarBuiltin (int b, VName n, const TLocation &aloc);
 
   void EmitPushNumber (int Val, const TLocation &aloc);
   void EmitLocalAddress (int Ofs, const TLocation &aloc);

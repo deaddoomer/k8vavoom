@@ -1520,16 +1520,18 @@ native static final void CreateCvarInt (name Name, int defaultValue, string help
 native static final void CreateCvarFloat (name Name, float defaultValue, string helpText, optional int flags); // create a new cvar
 native static final void CreateCvarBool (name Name, bool defaultValue, string helpText, optional int flags); // create a new cvar
 native static final void CreateCvarStr (name Name, string defaultValue, string helpText, optional int flags); // create a new cvar
-native static final int GetCvar (name Name); // read int value
-native static final void SetCvar (name Name, int value); // set cvar int value
+
+native static final int GetCvar (name Name) [builtin GetCvarInt]; // read int value
+native static final void SetCvar (name Name, int value) [builtin SetCvarInt]; // set cvar int value
 alias GetCvarI = GetCvar; // read int value
 alias SetCvarI = SetCvar; // set cvar int value
-native static final float GetCvarF (name Name); // read float value
-native static final void SetCvarF (name Name, float value); // set cvar float value
-native static final string GetCvarS (name Name); // read string value
-native static final void SetCvarS (name Name, string value); // set cvar string value
-native static final bool GetCvarB (name Name); // read boolean value
-native static final void SetCvarB (name Name, bool value); // set cvar boolean value
+native static final float GetCvarF (name Name) [builtin GetCvarFloat]; // read float value
+native static final void SetCvarF (name Name, float value) [builtin SetCvarFloat]; // set cvar float value
+native static final string GetCvarS (name Name) [builtin GetCvarStr]; // read string value
+native static final void SetCvarS (name Name, string value) [builtin SetCvarStr]; // set cvar string value
+native static final bool GetCvarB (name Name) [builtin GetCvarBool]; // read boolean value
+native static final void SetCvarB (name Name, bool value) [builtin SetCvarBool]; // set cvar boolean value
+
 native static final void CvarUnlatchAll (); // NOOP in network game (so can be called safely)
 
 native static final void SetShadowCvar (name Name, int value); // set cvar int value

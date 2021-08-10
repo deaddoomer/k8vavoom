@@ -614,6 +614,9 @@ void VMethod::DumpAsm () {
       case OPCARGS_Builtin:
         disstr += va(" %s", StatementBuiltinInfo[Instructions[s].Arg1].name);
         break;
+      case OPCARGS_BuiltinCVar:
+        disstr += va(" %s('%s')", StatementBuiltinInfo[Instructions[s].Arg1].name, *VName::CreateWithIndexSafe(Instructions[s].Arg2));
+        break;
       case OPCARGS_Member_Int:
         disstr += va(" %s (%d)", *Instructions[s].Member->GetFullName(), Instructions[s].Arg2);
         break;
@@ -812,7 +815,13 @@ void VMethod::GenerateCode () {
       case OPCARGS_Int: WriteInt32(Instructions[i].Arg1); break;
       case OPCARGS_Name: WriteInt32(Instructions[i].NameArg.GetIndex()); break;
       case OPCARGS_NameS: WriteInt16(Instructions[i].NameArg.GetIndex()); break;
-      case OPCARGS_String: WritePtr((void *)&(GetPackage()->GetStringByIndex(Instructions[i].Arg1))); break;
+      case OPCARGS_String:
+        {
+          const VStr *sptr = &(GetPackage()->GetStringByIndex(Instructions[i].Arg1));
+          vassert(sptr && sptr->isNullOrImmutable());
+          WritePtr((void *)sptr);
+        }
+        break;
       case OPCARGS_FieldOffset:
         // make sure struct / class field offsets have been calculated
         if (Instructions[i].Member) {
@@ -895,6 +904,11 @@ void VMethod::GenerateCode () {
         }
         break;
       case OPCARGS_Builtin: WriteUInt8(Instructions[i].Arg1); break;
+      case OPCARGS_BuiltinCVar:
+        WriteUInt8(Instructions[i].Arg1);
+        WriteInt32(Instructions[i].Arg2); // name index
+        WritePtr(nullptr); // cached VCvar pointer
+        break;
       case OPCARGS_Member_Int: WritePtr(Instructions[i].Member); break; // int is not emited
       case OPCARGS_Type_Int: WriteInt32(Instructions[i].Arg2); break; // type is not emited
       case OPCARGS_ArrElemType_Int: WriteType(Instructions[i].TypeArg); WriteInt32(Instructions[i].Arg2); break;

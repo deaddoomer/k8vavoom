@@ -305,7 +305,7 @@ protected:
   VExpression *OptimizeBuiltin (VEmitContext &ec);
 
   // used by `OptimizeBuiltin`; `types` are `TYPE_xxx`
-  bool CheckSimpleConstArgs (int argc, const int *types) const;
+  bool CheckSimpleConstArgs (const int argc, const int *types, const bool exactArgC=true) const;
 
   // rebuild arglist if there are named args
   bool RebuildArgs ();

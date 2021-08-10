@@ -348,7 +348,7 @@ struct Instr {
         spdelta = -1;
         return;
       case OPC_CaseGotoB:
-      case OPC_CaseGotoS:
+      //case OPC_CaseGotoS:
       case OPC_CaseGoto:
       case OPC_CaseGotoN:
         return;
@@ -933,7 +933,37 @@ struct Instr {
             return;
           case OPC_Builtin_NameToIIndex:
             return;
+          // cvar getters with runtime-defined names
+          case OPC_Builtin_GetCvarIntRT:
+          case OPC_Builtin_GetCvarFloatRT:
+          case OPC_Builtin_GetCvarStrRT:
+          case OPC_Builtin_GetCvarBoolRT:
+            // name is replaced by the value
+            return;
+          case OPC_Builtin_SetCvarIntRT:
+          case OPC_Builtin_SetCvarFloatRT:
+          case OPC_Builtin_SetCvarStrRT:
+          case OPC_Builtin_SetCvarBoolRT:
+            spdelta -= 2; // remove name and value
+            return;
           default: VCFatalError("Unknown builtin");
+        }
+
+      case OPC_BuiltinCVar:
+        switch (Arg1) {
+          case OPC_Builtin_GetCvarInt:
+          case OPC_Builtin_GetCvarFloat:
+          case OPC_Builtin_GetCvarStr:
+          case OPC_Builtin_GetCvarBool:
+            spdelta += 1;
+            return;
+          case OPC_Builtin_SetCvarInt:
+          case OPC_Builtin_SetCvarFloat:
+          case OPC_Builtin_SetCvarStr:
+          case OPC_Builtin_SetCvarBool:
+            spdelta -= 1; // remove value
+            return;
+          default: VCFatalError("Unknown cstr builtin");
         }
 
       case OPC_DictDispatch:
@@ -1039,6 +1069,9 @@ struct Instr {
       case OPCARGS_Builtin:
         res += 1;
         break;
+      case OPCARGS_BuiltinCVar:
+        res += 1+4+sizeof(void *);
+        break;
       case OPCARGS_Member_Int:
         res += sizeof(void *);
         break;
@@ -1125,6 +1158,9 @@ struct Instr {
         break;
       case OPCARGS_Builtin:
         fprintf(stderr, " %s", StatementBuiltinInfo[Arg1].name);
+        break;
+      case OPCARGS_BuiltinCVar:
+        fprintf(stderr, " %s('%s')", StatementBuiltinInfo[Arg1].name, *VName::CreateWithIndexSafe(Arg2));
         break;
       case OPCARGS_Member_Int:
         fprintf(stderr, " %s (%d)", *Member->GetFullName(), Arg2);

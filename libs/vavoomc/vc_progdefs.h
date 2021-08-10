@@ -90,6 +90,27 @@ enum {
   DECLARE_OPC_BUILTIN(VectorMinF),
   DECLARE_OPC_BUILTIN(VectorMaxF),
   DECLARE_OPC_BUILTIN(VectorAbs),
+  // cvar getters/setters with runtime-defined names
+  // should be sequential in exactly this order!
+  DECLARE_OPC_BUILTIN(GetCvarIntRT),
+  DECLARE_OPC_BUILTIN(GetCvarFloatRT),
+  DECLARE_OPC_BUILTIN(GetCvarStrRT),
+  DECLARE_OPC_BUILTIN(GetCvarBoolRT),
+  DECLARE_OPC_BUILTIN(SetCvarIntRT),
+  DECLARE_OPC_BUILTIN(SetCvarFloatRT),
+  DECLARE_OPC_BUILTIN(SetCvarStrRT),
+  DECLARE_OPC_BUILTIN(SetCvarBoolRT),
+  // cvar optimisations
+  // in the bytecode, this builtin is followed with name index, and `VCvar*`; it can be `nullptr`, and can be hotpached
+  // should be sequential in exactly this order!
+  DECLARE_OPC_BUILTIN(GetCvarInt),
+  DECLARE_OPC_BUILTIN(GetCvarFloat),
+  DECLARE_OPC_BUILTIN(GetCvarStr),
+  DECLARE_OPC_BUILTIN(GetCvarBool),
+  DECLARE_OPC_BUILTIN(SetCvarInt),
+  DECLARE_OPC_BUILTIN(SetCvarFloat),
+  DECLARE_OPC_BUILTIN(SetCvarStr),
+  DECLARE_OPC_BUILTIN(SetCvarBool),
 # undef DECLARE_OPC_BUILTIN
 # undef BUILTIN_OPCODE_INFO
 # ifdef BUILTIN_OPCODE_INFO_DEFAULT
@@ -186,6 +207,7 @@ enum {
   OPCARGS_Type,
   OPCARGS_A2DDimsAndSize,
   OPCARGS_Builtin,
+  OPCARGS_BuiltinCVar,
   // used for call, int is argc
   OPCARGS_Member_Int,
   // used for delegate call, int is argc, type is delegate type
@@ -230,7 +252,7 @@ enum {
   //DECLARE_OPC(IfNotGotoS, BranchTargetS),
   DECLARE_OPC(IfNotGoto, BranchTarget),
   DECLARE_OPC(CaseGotoB, ByteBranchTarget),
-  DECLARE_OPC(CaseGotoS, ShortBranchTarget),
+  //DECLARE_OPC(CaseGotoS, ShortBranchTarget),
   DECLARE_OPC(CaseGoto, IntBranchTarget),
   DECLARE_OPC(CaseGotoN, NameBranchTarget),
 
@@ -548,6 +570,7 @@ enum {
 
   // builtins (k8: i'm short of opcodes, so...)
   DECLARE_OPC(Builtin, Builtin),
+  DECLARE_OPC(BuiltinCVar, BuiltinCVar),
 
   // universal dispatcher for dictionary type
   DECLARE_OPC(DictDispatch, TypeDD), // type followed by OPC_DictDispatch_XXX

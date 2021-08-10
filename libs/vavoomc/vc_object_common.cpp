@@ -1975,6 +1975,7 @@ IMPLEMENT_FUNCTION(VObject, CreateCvarStr) {
   VCvar::CreateNewStr(name, def, help, flags);
 }
 
+/*
 // native static final int GetCvar (name Name);
 IMPLEMENT_FUNCTION(VObject, GetCvar) {
   VName name;
@@ -2034,6 +2035,7 @@ IMPLEMENT_FUNCTION(VObject, SetCvarB) {
   vobjGetParam(name, value);
   VCvar::Set(*name, value ? 1 : 0);
 }
+*/
 
 
 IMPLEMENT_FUNCTION(VObject, SetShadowCvar) {

@@ -2892,9 +2892,9 @@ void VSwitch::DoEmit (VEmitContext &ec) {
       // int/byte
       if (ci.Value >= 0 && ci.Value < 256) {
         ec.AddStatement(OPC_CaseGotoB, ci.Value, ci.Address, Loc);
-      } else if (ci.Value >= MIN_VINT16 && ci.Value < MAX_VINT16) {
+      }/* else if (ci.Value >= MIN_VINT16 && ci.Value < MAX_VINT16) {
         ec.AddStatement(OPC_CaseGotoS, ci.Value, ci.Address, Loc);
-      } else {
+      }*/ else {
         ec.AddStatement(OPC_CaseGoto, ci.Value, ci.Address, Loc);
       }
     } else {
