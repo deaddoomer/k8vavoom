@@ -88,7 +88,7 @@ static int cli_SkipSprOfs = 0;
 
 static int hitexNewCount = 0;
 static int hitexReplaceCount = 0;
-static double hitexLastMessageTime = -1;
+static double hitexLastMessageTime = -1.0;
 
 static TMapNC<VName, bool> numForNameWarned;
 static TMapNC<VName, bool> numForNameWarnedMapTextures;

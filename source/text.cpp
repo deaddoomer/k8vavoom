@@ -272,9 +272,9 @@ static int currMsgNumber = 0;
 static int currMsgType = OSD_MapLoading;
 
 static int lastPBarWdt = -666;
-static double pbarStartTime = 0;
-static double pbarLastUpdateTime = 0;
-static double pbarLastLagUpdateTime = 0;
+static double pbarStartTime = 0.0;
+static double pbarLastUpdateTime = 0.0;
+static double pbarLastLagUpdateTime = 0.0;
 static int pbarMaxLagWidth = 0;
 
 int R_OSDMsgColorMain = CR_FIRE;
@@ -491,7 +491,7 @@ bool R_PBarUpdate (const char *message, int cur, int max, bool forced, bool send
   // textual
   {
     double currt = Sys_Time();
-    if (!forced && currt-pbarLastUpdateTime < 2) return false;
+    if (!forced && currt-pbarLastUpdateTime < 2.0) return false;
     pbarLastUpdateTime = currt;
     int prc = cur*100/max;
     if (!message) message = "PROCESSING";

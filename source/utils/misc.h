@@ -180,10 +180,10 @@ public:
 #define CLTR_DOOUTCODE(oc,mx,my) \
   (oc) = 0; \
        if ((my) < 0) (oc) |= CLTR_TOP; \
-  else if ((my) >= boxhd) (oc) |= CLTR_BOTTOM; \
+  else if ((my) >= boxh) (oc) |= CLTR_BOTTOM; \
   /* fuck you, gshitcc */ \
        if ((mx) < 0) (oc) |= CLTR_LEFT; \
-  else if ((mx) >= boxwd) (oc) |= CLTR_RIGHT;
+  else if ((mx) >= boxw) (oc) |= CLTR_RIGHT;
 
 static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx, float *by,
                                                  const float boxw, const float boxh) noexcept
@@ -203,17 +203,15 @@ static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx
   if (outcode1&outcode2) return false; // trivially outside
 
   // use doubles here for better precision
-  double x0 = (double)(*ax), y0 = (double)(*ay);
-  double x1 = (double)(*bx), y1 = (double)(*by);
-  const double boxwd = (double)boxw;
-  const double boxhd = (double)boxh;
+  float x0 = *ax, y0 = *ay;
+  float x1 = *bx, y1 = *by;
 
   CLTR_DOOUTCODE(outcode1, x0, y0);
   CLTR_DOOUTCODE(outcode2, x1, y1);
 
   if (outcode1&outcode2) return false;
 
-  double tmpx = 0, tmpy = 0;
+  float tmpx = 0.0, tmpy = 0.0;
 
   while (outcode1|outcode2) {
     // may be partially inside box
@@ -222,23 +220,23 @@ static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx
 
     // clip to each side
     if (outside&CLTR_TOP) {
-      const double dy = y0-y1;
-      const double dx = x1-x0;
+      const float dy = y0-y1;
+      const float dx = x1-x0;
       tmpx = x0+(dx*(y0))/dy;
       tmpy = 0;
     } else if (outside&CLTR_BOTTOM) {
-      const double dy = y0-y1;
-      const double dx = x1-x0;
-      tmpx = x0+(dx*(y0-boxhd))/dy;
-      tmpy = boxhd-1;
+      const float dy = y0-y1;
+      const float dx = x1-x0;
+      tmpx = x0+(dx*(y0-boxh))/dy;
+      tmpy = boxh-1;
     } else if (outside&CLTR_RIGHT) {
-      const double dy = y1-y0;
-      const double dx = x1-x0;
-      tmpy = y0+(dy*(boxwd-1-x0))/dx;
-      tmpx = boxwd-1;
+      const float dy = y1-y0;
+      const float dx = x1-x0;
+      tmpy = y0+(dy*(boxw-1-x0))/dx;
+      tmpx = boxw-1;
     } else if (outside&CLTR_LEFT) {
-      const double dy = y1-y0;
-      const double dx = x1-x0;
+      const float dy = y1-y0;
+      const float dx = x1-x0;
       tmpy = y0+(dy*(-x0))/dx;
       tmpx = 0;
     }
@@ -256,10 +254,10 @@ static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx
     if (outcode1&outcode2) return false; // trivially outside
   }
 
-  *ax = (float)x0;
-  *ay = (float)y0;
-  *bx = (float)x1;
-  *by = (float)y1;
+  *ax = x0;
+  *ay = y0;
+  *bx = x1;
+  *by = y1;
   return true;
 }
 
@@ -269,6 +267,8 @@ static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx
 #undef CLTR_RIGHT
 #undef CLTR_BOTTOM
 
+// i think that there's no need to use doubles there
+//#define DDA_USE_DOUBLES
 
 // this is blockmap walker
 // note that due to using floating point numbers, exact corner hits may be missed.
@@ -283,12 +283,22 @@ static VVA_OKUNUSED inline bool ClipLineToRect0 (float *ax, float *ay, float *bx
 // this is not a bug, and you'd better filter bad coords in the caller.
 template<unsigned tileWidth, unsigned tileHeight> struct DDALineWalker {
 public:
+#ifdef DDA_USE_DOUBLES
+  typedef double DDAFloat;
+  #define DDAfloor floor
+  #define DDAfabs  fabs
+#else
+  typedef float DDAFloat;
+  #define DDAfloor floorf
+  #define DDAfabs  fabsf
+#endif
+public:
   // worker variables
   // use doubles here for better precision
   int currTileX, currTileY;
   int endTileX, endTileY;
-  double deltaDistX, deltaDistY; // length of ray from one x or y-side to next x or y-side
-  double sideDistX, sideDistY; // length of ray from current position to next x-side
+  DDAFloat deltaDistX, deltaDistY; // length of ray from one x or y-side to next x or y-side
+  DDAFloat sideDistX, sideDistY; // length of ray from current position to next x-side
   int stepX, stepY; // what direction to step in x/y (either +1 or -1)
   int cornerHit; // 0: no; 1: return horiz cell; 2: return vert cell; 3: do step on both dirs; 4: abort (i.e. we're done)
 
@@ -301,10 +311,10 @@ public:
 
     #if 0
     // this seems to be better for negative coords, but negatives should not arrive here
-    const int tileSX = int(floor(double(x0)/double(tileWidth)));
-    const int tileSY = int(floor(double(y0)/double(tileHeight)));
-    endTileX = int(floor(double(x1)/double(tileWidth)));
-    endTileY = int(floor(double(y1)/double(tileHeight)));
+    const int tileSX = int(DDAfloor(DDAFloat(x0)/DDAFloat(tileWidth)));
+    const int tileSY = int(DDAfloor(DDAFloat(y0)/DDAFloat(tileHeight)));
+    endTileX = int(DDAfloor(DDAFloat(x1)/DDAFloat(tileWidth)));
+    endTileY = int(DDAfloor(DDAFloat(y1)/DDAFloat(tileHeight)));
     #else
     const int tileSX = x0/tileWidth;
     const int tileSY = y0/tileHeight;
@@ -337,8 +347,8 @@ public:
     }
 
     // inverse length, so we can use multiply instead of division (marginally faster)
-    const double absdx = double(1)/fabs(double(x1)-double(x0));
-    const double absdy = double(1)/fabs(double(y1)-double(y0));
+    const DDAFloat absdx = DDAFloat(1)/DDAfabs(DDAFloat(x1)-DDAFloat(x0));
+    const DDAFloat absdy = DDAFloat(1)/DDAfabs(DDAFloat(y1)-DDAFloat(y0));
 
     if (x0 < x1) {
       stepX = 1;
@@ -350,14 +360,14 @@ public:
 
     if (y0 < y1) {
       stepY = 1;
-      sideDistY = (double)((tileSY+1)*tileHeight-y0)*absdy;
+      sideDistY = (DDAFloat)((tileSY+1)*tileHeight-y0)*absdy;
     } else {
       stepY = -1;
-      sideDistY = (double)(y0-tileSY*tileHeight)*absdy;
+      sideDistY = (DDAFloat)(y0-tileSY*tileHeight)*absdy;
     }
 
-    deltaDistX = double(tileWidth)*absdx;
-    deltaDistY = double(tileHeight)*absdy;
+    deltaDistX = DDAFloat(tileWidth)*absdx;
+    deltaDistY = DDAFloat(tileHeight)*absdy;
   }
 
   // returns `false` if we're done (and the coords are undefined)

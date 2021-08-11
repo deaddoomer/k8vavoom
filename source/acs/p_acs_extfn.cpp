@@ -309,11 +309,11 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
           VName name = GetName(args[1]);
           if (name != NAME_None) {
             int chan = (argCount > 2 ? args[2] : 4)&7;
-            float volume = (argCount > 3 ? (double)args[3]/(double)0x10000 : 1.0f);
+            float volume = (argCount > 3 ? (float)args[3]/(float)0x10000 : 1.0f);
             if (volume <= 0) return 0;
             if (volume > 1) volume = 1;
             bool looping = (argCount > 4 ? !!args[4] : false);
-            float attenuation = (argCount > 5 ? (double)args[5]/(double)0x10000 : 1.0f);
+            float attenuation = (argCount > 5 ? (float)args[5]/(float)0x10000 : 1.0f);
             bool local = (argCount > 6 ? !!args[6] : false);
             if (local) attenuation = 0;
             Ent->StartSound(name, chan, volume, attenuation, looping, local);

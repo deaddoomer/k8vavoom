@@ -80,7 +80,7 @@ static float FrameTime = 1.0f/35.0f;
 *(vuint32 *)&FrameTime += 1; // this is 0x1.d41d44p-6
 */
 static constexpr double FrameTime = 0x1.d41d41d41d41ep-6; // see above
-double SV_GetFrameTimeConstant () { return FrameTime; }
+double SV_GetFrameTimeConstant () noexcept { return FrameTime; }
 
 /*
   float FrameTime = 1.0f/35.0f;
@@ -556,7 +556,7 @@ static void SV_NetworkHeartbeat (bool forced) {
   if (cls.demorecording || cls.demoplayback) return;
   #endif
   double currTime = Sys_Time();
-  if (currTime < 0) currTime = 0;
+  if (currTime < 0.0) currTime = 0.0;
   if (ServerLastKeepAliveTime > currTime) ServerLastKeepAliveTime = currTime; // wtf?!
   if (!forced && currTime-ServerLastKeepAliveTime < 1.0/60.0) return;
   ServerLastKeepAliveTime = currTime;
@@ -899,7 +899,7 @@ static void SV_Ticker () {
     double i;
     /*double frc =*/ (void)modf(host_frametime/FrameTime, &i);
     //GCon->Logf("*** ft=%f; frt=%f; int=%f; frc=%f", host_frametime, FrameTime, i, frc);
-    if (i < 1) { GCon->Logf(NAME_Error, "WTF?! i must be at least one, but it is %f", i); i = 1; }
+    if (i < 1.0) { GCon->Logf(NAME_Error, "WTF?! i must be at least one, but it is %f", i); i = 1.0; }
     int exec_times = (i > 0x1fffffff ? 0x1fffffff : (int)i);
     {
       bool showExecTimes = (cli_SVShowExecTimes > 0);

@@ -121,10 +121,10 @@ VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALU
 static double hostLastGCTime = 0.0;
 
 int host_frametics = 0; // used only in non-realtime mode
-double host_frametime = 0;
-double host_framefrac = 0; // unused frame time left from previous `SV_Ticker()` in realtime mode
-double host_time = 0; // used in UI and network heartbits; accumulates frame times
-double systime = 0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
+double host_frametime = 0.0;
+double host_framefrac = 0.0; // unused frame time left from previous `SV_Ticker()` in realtime mode
+double host_time = 0.0; // used in UI and network heartbits; accumulates frame times
+double systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
 int host_framecount = 0;
 
 bool host_initialised = false;
@@ -182,7 +182,7 @@ static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated se
 
 // this is hack for my GPU
 #ifdef CLIENT
-static double clientBadNetTimoutReleaseTime = 0;
+static double clientBadNetTimoutReleaseTime = 0.0;
 static VCvarI cl_framerate_net_timeout("cl_framerate_net_timeout", "28", "If we have a dangerous client timeout, slow down rendering for a while.", 0/*CVAR_Archive*/);
 #endif
 

@@ -511,22 +511,22 @@ bool VEntity::FixMapthingPos () {
         //double distance = fabs(P_InterceptVector(&dlv, &dll));
         float distance = 0.0f;
         {
-          const double v1x = dll_x;
-          const double v1y = dll_y;
-          const double v1dx = dll_dx;
-          const double v1dy = dll_dy;
-          const double v2x = dlv_x;
-          const double v2y = dlv_y;
-          const double v2dx = dlv_dx;
-          const double v2dy = dlv_dy;
+          const float v1x = dll_x;
+          const float v1y = dll_y;
+          const float v1dx = dll_dx;
+          const float v1dy = dll_dy;
+          const float v2x = dlv_x;
+          const float v2y = dlv_y;
+          const float v2dx = dlv_dx;
+          const float v2dy = dlv_dy;
 
-          const double den = v1dy*v2dx - v1dx*v2dy;
+          const float den = v1dy*v2dx-v1dx*v2dy;
 
-          if (den == 0) {
+          if (den == 0.0f) {
             // parallel
-            distance = 0;
+            distance = 0.0f;
           } else {
-            const double num = (v1x-v2x)*v1dy+(v2y-v1y)*v1dx;
+            const float num = (v1x-v2x)*v1dy+(v2y-v1y)*v1dx;
             distance = num/den;
           }
         }

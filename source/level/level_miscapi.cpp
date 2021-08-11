@@ -41,31 +41,31 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
     return in;
   }
 
-  double x = in.x, y = in.y;
-  double bestdist = /*HUGE_VAL*/1e200;
-  double bestx = x, besty = y;
+  float x = in.x, y = in.y;
+  float bestdist = INFINITY;
+  float bestx = x, besty = y;
   line_t *bestline = nullptr;
 
   line_t *line = sec->lines[0];
   for (int f = sec->linecount; f--; ++line) {
     const TVec *v1 = line->v1;
     const TVec *v2 = line->v2;
-    double a = v2->x-v1->x;
-    double b = v2->y-v1->y;
-    const double den = a*a+b*b;
-    double ix, iy, dist;
+    float a = v2->x-v1->x;
+    float b = v2->y-v1->y;
+    const float den = a*a+b*b;
 
-    if (fabs(den) <= 0.01) {
+    float ix, iy;
+    if (fabsf(den) <= 0.01f) {
       // this line is actually a point!
       ix = v1->x;
       iy = v1->y;
     } else {
-      double num = (x-v1->x)*a+(y-v1->y)*b;
-      double u = num/den;
-      if (u <= 0.0) {
+      const float num = (x-v1->x)*a+(y-v1->y)*b;
+      const float u = num/den;
+      if (u <= 0.0f) {
         ix = v1->x;
         iy = v1->y;
-      } else if (u >= 1.0) {
+      } else if (u >= 1.0f) {
         ix = v2->x;
         iy = v2->y;
       } else {
@@ -75,7 +75,7 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
     }
     a = ix-x;
     b = iy-y;
-    dist = a*a+b*b;
+    const float dist = a*a+b*b;
     if (dist < bestdist) {
       bestdist = dist;
       bestx = ix;
@@ -85,7 +85,7 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
   }
 
   if (resline) *resline = bestline;
-  return TVec((float)bestx, (float)besty, in.z);
+  return TVec(bestx, besty, in.z);
 }
 
 

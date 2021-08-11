@@ -2646,16 +2646,16 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           break;
         case PROP_Percent:
           sc->ExpectFloat();
-          pdef->Field->SetFloat(DefObj, midval(0.0f, (float)sc->Float, 100.0f)/100.0f);
+          pdef->Field->SetFloat(DefObj, midval(0.0f, sc->Float, 100.0f)/100.0f);
           break;
         case PROP_FloatClamped:
           sc->ExpectFloatWithSign();
-          pdef->Field->SetFloat(DefObj, midval(pdef->FMin, (float)sc->Float, pdef->FMax));
+          pdef->Field->SetFloat(DefObj, midval(pdef->FMin, sc->Float, pdef->FMax));
           break;
         case PROP_FloatClamped2:
           sc->ExpectFloatWithSign();
-          pdef->Field->SetFloat(DefObj, midval(pdef->FMin, (float)sc->Float, pdef->FMax));
-          pdef->Field2->SetFloat(DefObj, midval(pdef->FMin, (float)sc->Float, pdef->FMax));
+          pdef->Field->SetFloat(DefObj, midval(pdef->FMin, sc->Float, pdef->FMax));
+          pdef->Field2->SetFloat(DefObj, midval(pdef->FMin, sc->Float, pdef->FMax));
           break;
         case PROP_FloatOpt2:
           sc->ExpectFloat();
@@ -3564,7 +3564,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       Class->SetFieldFloat("ScaleY", sc->Float);
     } else if (sc->Check("Alpha")) {
       sc->ExpectFloat();
-      Class->SetFieldFloat("Alpha", midval(0.0f, (float)sc->Float, 1.0f));
+      Class->SetFieldFloat("Alpha", midval(0.0f, sc->Float, 1.0f));
     } else if (sc->Check("RenderStyle")) {
       int RenderStyle = 0;
            if (sc->Check("STYLE_None")) RenderStyle = STYLE_None;

@@ -38,7 +38,7 @@ public:
   VName Name8;
   VName Name;
   vint32 Number;
-  /*double*/float Float; // oops; it should be double, but VC cannot into doubles
+  float Float; // oops; it was double, but VC cannot into doubles
 
   char *ScriptPtr;
   char *TokStartPtr;

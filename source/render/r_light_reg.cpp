@@ -786,7 +786,7 @@ void VRenderLevelLightmap::LightFace (surface_t *surf) {
   }
 
   const bool accountTime = (lmapStaticRecalcTimeLeft > 0);
-  double stt = (accountTime ? -Sys_Time() : 0);
+  double stt = (accountTime ? -Sys_Time() : 0.0);
 
   LMapTraceInfo lmi;
   //lmi.points_calculated = false;

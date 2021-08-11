@@ -314,8 +314,8 @@ subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
             nodenum = node->children[0];
           }
         } else {
-          const double left = (double)node->dy*(double)dx;
-          const double right = (double)dy*(double)node->dx;
+          const float left = (float)node->dy*(float)dx;
+          const float right = (float)dy*(float)node->dx;
           nodenum = node->children[(unsigned)(right >= left)];
         }
       }

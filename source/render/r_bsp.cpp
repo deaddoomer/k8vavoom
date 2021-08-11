@@ -88,7 +88,7 @@ static int oldMaxMirrors = -666;
 static int oldPortalDepth = -666;
 */
 
-double dbgCheckVisTime = 0;
+double dbgCheckVisTime = 0.0;
 
 
 // sorry for this global!

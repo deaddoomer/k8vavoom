@@ -50,7 +50,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetDummy (texinfo_t *texinfo, VTextu
 }
 
 
-static double prevtime = -1.0f;
+static double prevtime = -1.0;
 
 
 //==========================================================================

@@ -49,8 +49,8 @@ static VCvarB dbg_limiter_remove_messages("dbg_limiter_remove_messages", false, 
 
 static VCvarI gm_corpse_limit("gm_corpse_limit", "-1", "Limit number of corpses per map (-1: no limit)?", CVAR_Archive);
 
-double worldThinkTimeVM = -1;
-double worldThinkTimeDecal = -1;
+double worldThinkTimeVM = -1.0;
+double worldThinkTimeDecal = -1.0;
 
 static TArray<VEntity *> corpseQueue;
 
@@ -336,7 +336,7 @@ extern "C" {
 void VLevel::TickDecals (float DeltaTime) {
   if (!r_decals || !decanimlist) { worldThinkTimeDecal = -1; return; }
   if (DeltaTime <= 0.0f) return;
-  double stimed = (dbg_world_think_decal_time ? -Sys_Time() : 0);
+  double stimed = (dbg_world_think_decal_time ? -Sys_Time() : 0.0);
   // run decal thinkers
   decal_t *dc = decanimlist;
   while (dc) {
@@ -362,7 +362,7 @@ void VLevel::TickWorld (float DeltaTime) {
   //if (pathInterceptsUsed) GCon->Logf(NAME_Debug, "unbalanced path iterators; used=%d", pathInterceptsUsed);
   ResetAllPathIntercepts();
 
-  double stimet = 0;
+  double stimet = 0.0;
 
   NextTime = Time+DeltaTime;
 
