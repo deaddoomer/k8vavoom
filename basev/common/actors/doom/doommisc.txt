@@ -26,9 +26,10 @@ actor ExplosiveBarrel 2035
   Death:
     BEXP A 5 Bright
     BEXP B 5 Bright A_Scream
-    BEXP C 5 Bright A_PreExplode(STYLE_Translucent, 0.5)
-    BEXP D 5 Bright A_Explode
+    BEXP C 5 Bright A_PreExplode(STYLE_Translucent, 0.5)  //k8: this may break stupid dehacked -- vanilla doesn't have any codepoint here
+    BEXP D 10 Bright A_Explode  //k8: it was 5
     BEXP E 10 Bright
+    //k8: this may break stupid dehacked -- vanilla removes barrel here
     //k8: this does barrel respawn when "sv_barrelrespawn" is set
     TNT1 A 1050 Bright A_BarrelDestroy
     TNT1 A 5 A_Respawn
