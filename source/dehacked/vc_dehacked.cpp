@@ -89,6 +89,7 @@ VCvarI Infighting("infighting", 0, "Allow infighting for all monster types?", 0/
 static TMapNC<VName, bool> ReplacedSprites; // lowercased
 static TMapNC<VName, VName> SpriteReplacements; // lowercased, origname, newname
 
+
 static char *Patch;
 static char *PatchPtr;
 static char *String;
@@ -96,15 +97,36 @@ static char *ValueString;
 static int value;
 
 
+struct DehState {
+  VState *State;
+  VMethod *Action;
+  VClass *Class;
+  // as i modified barrel states a little, we need this
+  bool BarrelFixStop;
+  bool BarrelRemoveAction;
+
+  inline DehState () noexcept
+    : State(nullptr)
+    , Action(nullptr)
+    , Class(nullptr)
+    , BarrelFixStop(false)
+    , BarrelRemoveAction(false)
+  {}
+
+  void FixMe () noexcept {
+    if (BarrelFixStop) { State->NextState = nullptr; BarrelFixStop = false; }
+    if (BarrelRemoveAction) { State->Function = nullptr; BarrelRemoveAction = false; }
+  }
+};
+
+
 static TArray<VName> Sprites;
 static TArray<VClass *> EntClasses;
 static TArray<bool> EntClassTouched; // by some dehacked definition
 static TArray<VClass *> WeaponClasses;
 static TArray<VClass *> AmmoClasses;
-static TArray<VState *> States;
-static TArray<VState *> CodePtrStates;
-static TArray<int> CodePtrStatesIdx; // for debug
-static TArray<VMethod *> StateActions;
+static TArray<DehState> DehStates;
+static TArray<int> CodePtrStatesIdx; // index in `DehStates`
 static TArray<VCodePtrInfo> CodePtrs;
 static TArray<VName> Sounds;
 
@@ -549,10 +571,11 @@ static int ParseRenderStyle () {
 //
 //==========================================================================
 static void DoThingState (VClass *Ent, const char *StateLabel) {
-  if (value < 0 || value >= States.length()) {
+  if (value < 0 || value >= DehStates.length()) {
     Warning("Bad state '%d' for thing '%s'", value, (Ent ? Ent->GetName() : "<undefined>"));
   } else {
-    Ent->SetStateLabel(StateLabel, States[value]);
+    DehStates[value].FixMe();
+    Ent->SetStateLabel(StateLabel, DehStates[value].State);
   }
 }
 
@@ -960,10 +983,10 @@ static void ReadSound (int num) {
 //==========================================================================
 static void ReadState (int num) {
   // reject dehextra
-  if (num >= 1089 && num <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (state #%d) (%d)", num, States.length());
+  if (num >= 1089 && num <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (state #%d) (%d)", num, DehStates.length());
 
   // check index
-  if (num >= States.length() || num < 0) {
+  if (num >= DehStates.length() || num < 0) {
     Warning("Invalid state num %d", num);
     while (ParseParam()) {}
     return;
@@ -983,6 +1006,7 @@ static void ReadState (int num) {
   }
 
   //TODO: do we need to set `EntClassTouched` here?
+  //k8: yes
   while (ParseParam()) {
     if (ignoreIt) continue;
     // sprite base
@@ -992,11 +1016,15 @@ static void ReadState (int num) {
       if (value < 0 || value >= Sprites.length()) {
         Warning("Bad sprite index %d for frame #%d", value, num);
       } else {
-        if (dbg_dehacked_dump_all || dbg_dehacked_frame_replaces) DHDebugLog("frame #%d; old sprite is '%s'(%d), new sprite is '%s' (%s)", num, *States[num]->SpriteName, States[num]->SpriteIndex, *Sprites[value], *States[num]->Loc.toStringNoCol());
-        //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; prev sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
-        States[num]->SpriteName = Sprites[value];
-        States[num]->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindAddSprite(Sprites[value]) : 1);
-        //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; NEW sprite is '%s' (%d)", num, *States[num]->SpriteName, States[num]->SpriteIndex);
+        if (dbg_dehacked_dump_all || dbg_dehacked_frame_replaces) {
+          DHDebugLog("frame #%d; old sprite is '%s'(%d), new sprite is '%s' (%s)", num, *DehStates[num].State->SpriteName, DehStates[num].State->SpriteIndex,
+            *Sprites[value], *DehStates[num].State->Loc.toStringNoCol());
+        }
+        //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; prev sprite is '%s' (%d)", num, *DehStates[num].State->SpriteName, DehStates[num].State->SpriteIndex);
+        DehStates[num].FixMe();
+        DehStates[num].State->SpriteName = Sprites[value];
+        DehStates[num].State->SpriteIndex = (Sprites[value] != NAME_None ? VClass::FindAddSprite(Sprites[value]) : 1);
+        //GCon->Logf(NAME_Debug, "DEHACKED: frame #%d; NEW sprite is '%s' (%d)", num, *DehStates[num].State->SpriteName, DehStates[num].State->SpriteIndex);
       }
       continue;
     }
@@ -1006,20 +1034,24 @@ static void ReadState (int num) {
         value &= 0x7fff;
         value |= VState::FF_FULLBRIGHT;
       }
-      States[num]->Frame = value;
+      DehStates[num].FixMe();
+      DehStates[num].State->Frame = value;
       continue;
     }
     // state duration
     if (VStr::strEquCI(String, "Duration")) {
-      States[num]->Time = (value < 0 ? value : value/35.0f);
+      DehStates[num].FixMe();
+      DehStates[num].State->Time = (value < 0 ? value : value/35.0f);
       continue;
     }
     // next state
     if (VStr::strEquCI(String, "Next frame")) {
-      if (value >= States.length() || value < 0) {
+      if (value >= DehStates.length() || value < 0) {
         Warning("Invalid next state %d", value);
       } else {
-        States[num]->NextState = States[value];
+        DehStates[num].FixMe();
+        DehStates[value].FixMe();
+        DehStates[num].State->NextState = DehStates[value].State;
         if (cli_DehackedDebug) {
           StInfo *sti = dehStInfoFind(value);
           GCon->Logf(NAME_Debug, "DEH:%d: ReadState(%d):   next: class `%s`; stcps=%d; ofs=%d", dehCurrLine, num, sti->stclass->GetName(), sti->stcps, value-sti->stcps);
@@ -1027,8 +1059,8 @@ static void ReadState (int num) {
       }
       continue;
     }
-    if (VStr::strEquCI(String, "Unknown 1")) { States[num]->Misc1 = value; continue; }
-    if (VStr::strEquCI(String, "Unknown 2")) { States[num]->Misc2 = value; continue; }
+    if (VStr::strEquCI(String, "Unknown 1")) { DehStates[num].FixMe(); DehStates[num].State->Misc1 = value; continue; }
+    if (VStr::strEquCI(String, "Unknown 2")) { DehStates[num].FixMe(); DehStates[num].State->Misc2 = value; continue; }
     if (VStr::strEquCI(String, "Action pointer")) { Warning("Tried to set action pointer."); continue; }
 
     // reject mbf21
@@ -1175,10 +1207,11 @@ static void ReadAmmo (int num) {
 //
 //==========================================================================
 static void DoWeaponState (VClass *Weapon, const char *StateLabel) {
-  if (value < 0 || value >= States.length()) {
+  if (value < 0 || value >= DehStates.length()) {
     Warning("Invalid weapon state %d for weapon '%s'", value, (Weapon ? Weapon->GetName() : "<undefined>"));
   } else {
-    Weapon->SetStateLabel(StateLabel, States[value]);
+    DehStates[value].FixMe();
+    Weapon->SetStateLabel(StateLabel, DehStates[value].State);
   }
 }
 
@@ -1253,7 +1286,7 @@ static void ReadWeapon (int num) {
 //
 //==========================================================================
 static void ReadPointer (int num) {
-  if (num < 0 || num >= CodePtrStates.length()) {
+  if (num < 0 || num >= CodePtrStatesIdx.length()) {
     Warning("Invalid pointer");
     while (ParseParam()) {}
     return;
@@ -1271,15 +1304,21 @@ static void ReadPointer (int num) {
     if (ignoreIt) continue;
 
     if (VStr::strEquCI(String, "Codep Frame")) {
-      if (value < 0 || value >= States.length()) {
+      if (value < 0 || value >= DehStates.length()) {
         Warning("Invalid source state %d", value);
       } else {
-        if (dbg_dehacked_dump_all || dbg_dehacked_codepointers) DHDebugLog("replacing codep frame #%d code pointer; old is (%d) '%s', new is '%s' (%s)", num, value, (CodePtrStates[num]->Function ? *CodePtrStates[num]->Function->GetFullName() : "none"), (StateActions[value] ? *StateActions[value]->GetFullName() : "none"), *CodePtrStates[num]->Loc.toStringNoCol());
-        if (cli_DehackedDebug) {
-          const char *ffname = (CodePtrStates[num]->Function ? *CodePtrStates[num]->Function->GetFullName() : "{WTF?!}");
-          GCon->Logf(NAME_Debug, "DEH:%d: ReadPointer(%d):   replacing `%s` with `%s`", dehCurrLine, num, ffname, *StateActions[value]->GetFullName());
+        DehStates[CodePtrStatesIdx[num]].FixMe();
+        DehStates[value].FixMe();
+        VState *st = DehStates[CodePtrStatesIdx[num]].State;
+        if (dbg_dehacked_dump_all || dbg_dehacked_codepointers) {
+          DHDebugLog("replacing codep frame #%d code pointer; old is (%d) '%s', new is '%s' (%s)", num, value, (st->Function ? *st->Function->GetFullName() : "none"),
+            (DehStates[value].Action ? *DehStates[value].Action->GetFullName() : "none"), *st->Loc.toStringNoCol());
         }
-        CodePtrStates[num]->Function = StateActions[value];
+        if (cli_DehackedDebug) {
+          const char *ffname = (st->Function ? *st->Function->GetFullName() : "{WTF?!}");
+          GCon->Logf(NAME_Debug, "DEH:%d: ReadPointer(%d):   replacing `%s` with `%s`", dehCurrLine, num, ffname, *DehStates[value].Action->GetFullName());
+        }
+        st->Function = DehStates[value].Action;
       }
       continue;
     }
@@ -1301,16 +1340,17 @@ static void ReadCodePtr (int) {
       int Index = VStr::atoi(String+6);
 
       // reject dehextra
-      if (Index >= 1089 && Index <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (frame #%d) (%d)", Index, States.length());
+      if (Index >= 1089 && Index <= 3999) DehFatal("DEHEXTRA is not supported and will never be. Sorry. (frame #%d) (%d)", Index, DehStates.length());
 
-      if (Index < 0 || Index >= States.length()) {
+      if (Index < 0 || Index >= DehStates.length()) {
         Warning("Bad frame index %d", Index);
         continue;
       }
 
       const bool ignoreIt = (cli_DehackedIgnoreWeapons && isWeaponState(Index));
 
-      VState *State = States[Index];
+      DehStates[Index].FixMe();
+      VState *State = DehStates[Index].State;
       if ((ValueString[0] == 'A' || ValueString[0] == 'a') && ValueString[1] == '_') ValueString += 2;
 
       bool found = false;
@@ -1819,17 +1859,18 @@ static void LoadDehackedDefinitions () {
   sc->Expect("states");
   sc->Expect("{");
   // append `S_NULL`
-  States.Append(nullptr);
-  StateActions.Append(nullptr);
+  DehStates.Append(DehState());
   // append other
   VState **StatesTail = &VClass::FindClass("Entity")->NetStates;
   while (*StatesTail) StatesTail = &(*StatesTail)->NetNext;
+  VClass *EntEx = VClass::FindClass("EntityEx");
   while (!sc->Check("}")) {
     StInfo sti;
     // class name
     sc->ExpectString();
     VClass *StatesClass = VClass::FindClass(*sc->String);
     if (!StatesClass) sc->Error(va("Dehacked: no such class `%s`", *sc->String));
+    if (!StatesClass->IsChildOf(EntEx)) sc->Error(va("Dehacked: class `%s` is not EntityEx", *sc->String));
     sti.stclass = StatesClass;
     // starting state specifier
     VState *S = nullptr;
@@ -1849,24 +1890,36 @@ static void LoadDehackedDefinitions () {
       if (!pState[0]) sc->Error("Bad state");
     }
     sti.stfirst = S;
-    sti.stcps = States.length();
+    sti.stcps = DehStates.length();
     // number of states
     sc->ExpectNumber();
     if (sc->Number < 1) sc->Error(va("Dehacked: invalid state count in class `%s`", StatesClass->GetName()));
     sti.count = sc->Number;
     dehStInfo.append(sti);
     //GCon->Logf(NAME_Debug, "STATES: class=`%s`; count=%d", StatesClass->GetName(), sc->Number);
-    //if (cli_DehackedDebug) GCon->Logf(NAME_Debug, "DEH: STATES: class=`%s`; cpsindex=%d; count=%d", StatesClass->GetName(), States.length(), sc->Number);
+    //if (cli_DehackedDebug) GCon->Logf(NAME_Debug, "DEH: STATES: class=`%s`; cpsindex=%d; count=%d", StatesClass->GetName(), DehStates.length(), sc->Number);
     for (int i = 0; i < sc->Number; ++i) {
       if (!S) sc->Error(va("Dehacked: class `%s` doen't have that many states (%d, aborted at %d)", StatesClass->GetName(), sc->Number, i));
-      States.Append(S);
-      StateActions.Append(S->Function);
+      DehState dehst;
+      dehst.State = S;
+      dehst.Action = S->Function;
+      dehst.Class = StatesClass;
+      dehst.BarrelFixStop = false;
+      dehst.BarrelRemoveAction = false;
+      DehStates.Append(dehst);
       // move net links to actor class
       *StatesTail = S;
       StatesTail = &S->NetNext;
       *pState = S->NetNext;
       S->NetNext = nullptr;
       S = S->Next;
+    }
+    // hack for barrels
+    if (VStr::strEqu(StatesClass->GetName(), "ExplosiveBarrel")) {
+      vassert(DehStates.length()-sti.stcps == 7);
+      DehStates[DehStates.length()-3].BarrelRemoveAction = true;
+      DehStates[DehStates.length()-3].Action = nullptr; // this frame has no action
+      DehStates[DehStates.length()-1].BarrelFixStop = true;
     }
   }
 
@@ -1884,15 +1937,15 @@ static void LoadDehackedDefinitions () {
   if (cli_DehackedDebug) GCon->Log(NAME_Debug, "DEH: code_pointer_states");
   while (!sc->Check("}")) {
     sc->ExpectNumber();
-    if (sc->Number < 0 || sc->Number >= States.length()) sc->Error(va("Bad state index %d", sc->Number));
-    //GCon->Logf(NAME_Debug, "DEHACKED: cpsidx=%d; cpnum=%d; state=%s", CodePtrStates.length(), sc->Number, *States[sc->Number]->Loc.toString());
+    if (sc->Number < 0 || sc->Number >= DehStates.length()) sc->Error(va("Bad state index %d", sc->Number));
+    //GCon->Logf(NAME_Debug, "DEHACKED: cpsidx=%d; cpnum=%d; state=%s", CodePtrStatesIdx.length(), sc->Number, *DehStates[sc->Number].State->Loc.toString());
     if (cli_DehackedDebug) {
       StInfo *sti = dehStInfoFind(sc->Number);
-      const char *ffname = (States[sc->Number]->Function ? *States[sc->Number]->Function->GetFullName() : "{WTF?!}");
-      GCon->Logf(NAME_Debug, "DEH: cps#%d: class `%s`; state `%s`; mt `%s`; cpsofs=%d; stloc=%s", sc->Number, sti->stclass->GetName(), *sti->stname, ffname, sc->Number-sti->stcps, *States[sc->Number]->Loc.toStringNoCol());
+      const char *ffname = (DehStates[sc->Number].State->Function ? *DehStates[sc->Number].State->Function->GetFullName() : "{WTF?!}");
+      GCon->Logf(NAME_Debug, "DEH: cps#%d: class `%s`; state `%s`; mt `%s`; cpsofs=%d; stloc=%s", sc->Number, sti->stclass->GetName(), *sti->stname, ffname,
+        sc->Number-sti->stcps, *DehStates[sc->Number].State->Loc.toStringNoCol());
     }
     CodePtrStatesIdx.Append(sc->Number);
-    CodePtrStates.Append(States[sc->Number]);
   }
   if (cli_DehackedDebug) GCon->Log(NAME_Debug, "DEH: ======");
 
@@ -2190,10 +2243,8 @@ void ProcessDehackedFiles () {
   EntClasses.Clear();
   WeaponClasses.Clear();
   AmmoClasses.Clear();
-  States.Clear();
+  DehStates.Clear();
   CodePtrStatesIdx.Clear();
-  CodePtrStates.Clear();
-  StateActions.Clear();
   CodePtrs.Clear();
   Sounds.Clear();
   SfxNames.Clear();
