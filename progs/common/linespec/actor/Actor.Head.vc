@@ -308,8 +308,12 @@ override void Destroyed () {
 //  This method is used to set properties to exploding things
 //  just before exploding. This one can be used in DECORATE now.
 //
+//  Currently it is used only for Doom explosive barrel.
+//
 //==========================================================================
 [decorate] final void A_PreExplode (int Style, float A) {
+  // barrel vanilla state doesn't have any codepointer there
+  // it will be fixed by dehacked processor
   RenderStyle = Style;
   Alpha = A;
 }
@@ -319,7 +323,7 @@ override void Destroyed () {
 //
 //  A_BarrelDestroy
 //
-//  This is only a stub method
+//  Currently it is used only for Doom explosive barrel.
 //
 //============================================================================
 [decorate] final void A_BarrelDestroy () {
@@ -327,6 +331,8 @@ override void Destroyed () {
   // deathmatch flags... here the only relevant function for it
   // would be to make things invisible.
   // k8: no, Janis, this method should destroy object
+  // barrel vanilla state doesn't have any codepointer there
+  // it will be fixed by dehacked processor
   //bRespawnItems = !!GetCvar('deathmatch');
   //bWeaponsStay = netgame && !GetCvar('deathmatch');
   if (Level.Game.netgame && Level.Game.deathmatch && GetCvarB('sv_barrel_respawn')) {
