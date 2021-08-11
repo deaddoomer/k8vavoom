@@ -35,7 +35,7 @@ public:
     float scrwmid, scrhmid; // width/2, height/2
   public:
     // default is "not initialised"
-    Viewport () noexcept /*: x0(0), y0(0), width(640), height(480), scrwmid(320), scrhmid(240)*/ {}
+    inline Viewport () noexcept /*: x0(0), y0(0), width(640), height(480), scrwmid(320), scrhmid(240)*/ {}
     inline void setOrigin (int x, int y) noexcept { x0 = x; y0 = y; }
     inline void setSize (int w, int h) noexcept { width = w; height = h; scrwmid = w*0.5f; scrhmid = h*0.5f; }
     inline bool isValid () const noexcept { return (width > 0 && height > 0); }
@@ -51,7 +51,7 @@ public:
 
 public:
   // default is "not initialised"
-  VViewportMats () noexcept : projMat(), modelMat(), vport() {}
+  inline VViewportMats () noexcept : projMat(), modelMat(), vport() {}
 
   // transform model coords to world coords
   inline TVec toWorld (const TVec &point) const noexcept { return modelMat*point; }

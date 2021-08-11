@@ -28,7 +28,7 @@ class VRotMatrix {
 public:
   float m[3][3];
 
-  inline VRotMatrix (const TVec &Axis, float Angle) noexcept {
+  inline VRotMatrix (const TVec &Axis, const float Angle) noexcept {
     //const float s = msin(Angle);
     //const float c = mcos(Angle);
     float s, c;

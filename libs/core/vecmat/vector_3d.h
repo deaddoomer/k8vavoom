@@ -103,15 +103,15 @@ public:
   //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { x = other.x; y = other.y; z = other.z; return *this; }
   VVA_ALWAYS_INLINE TVec &operator = (const TVec &src) noexcept = default;
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (const size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return (x == 0.0f && y == 0.0f && z == 0.0f); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return (x == 0.0f && y == 0.0f); }
 
   // this is what VavoomC wants: false is either zero, or invalid vector
-  inline VVA_CHECKRESULT bool toBool () const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool () const noexcept {
     return
       isFiniteF(x) && isFiniteF(y) && isFiniteF(z) &&
       (x != 0.0f || y != 0.0f || z != 0.0f);
@@ -218,7 +218,7 @@ public:
   }
 
   // range must be valid
-  inline void clampScaleInPlace (float fabsmax) noexcept {
+  inline void clampScaleInPlace (const float fabsmax) noexcept {
     if (isValid()) {
       if (fabsmax > 0.0f && (fabsf(x) > fabsmax || fabsf(y) > fabsmax || fabsf(z) > fabsmax)) {
         // need to rescale
@@ -312,8 +312,8 @@ VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const TVec &v) noexcept { return
 static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator + (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, v2.x), VSUM2(v1.y, v2.y), VSUM2(v1.z, v2.z)); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator - (const TVec &v1, const TVec &v2) noexcept { return TVec(VSUM2(v1.x, -(v2.x)), VSUM2(v1.y, -(v2.y)), VSUM2(v1.z, -(v2.z))); }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (const TVec &v, float s) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (const TVec &v, const float s) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator * (const float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE TVec operator / (const TVec &v, float s) noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(v.x*s, v.y*s, v.z*s); }
 
 static VVA_OKUNUSED VVA_ALWAYS_INLINE bool operator == (const TVec &v1, const TVec &v2) noexcept { return (v1.x == v2.x && v1.y == v2.y && v1.z == v2.z); }
@@ -404,7 +404,7 @@ void PerpendicularVector (TVec &dst, const TVec &src) noexcept; // assumes "src"
 
 
 // origin is center
-static inline VVA_OKUNUSED void Create2DBBox (float box[4], const TVec &origin, float radius) noexcept {
+static inline VVA_OKUNUSED void Create2DBBox (float box[4], const TVec &origin, const float radius) noexcept {
   box[BOX2D_MAXY] = origin.y+radius;
   box[BOX2D_MINY] = origin.y-radius;
   box[BOX2D_MINX] = origin.x-radius;
@@ -412,7 +412,7 @@ static inline VVA_OKUNUSED void Create2DBBox (float box[4], const TVec &origin, 
 }
 
 // origin is center, bottom
-static inline VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, float radius, float height) noexcept {
+static inline VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, const float radius, const float height) noexcept {
   box[BOX3D_MINX] = origin.x-radius;
   box[BOX3D_MINY] = origin.y-radius;
   box[BOX3D_MINZ] = origin.z;

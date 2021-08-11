@@ -67,15 +67,15 @@ public:
 
   VVA_ALWAYS_INLINE TPlane &operator = (const TPlane &src) noexcept = default;
 
-  inline VVA_CHECKRESULT bool isValid () const noexcept { return (normal.isValid() && !normal.isZero() && isFiniteF(dist)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (normal.isValid() && !normal.isZero() && isFiniteF(dist)); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isVertical () const noexcept { return (normal.z == 0.0f); }
 
-  VVA_ALWAYS_INLINE void Set (const TVec &Anormal, float Adist) noexcept {
+  VVA_ALWAYS_INLINE void Set (const TVec &Anormal, const float Adist) noexcept {
     normal = Anormal;
     dist = Adist;
   }
 
-  inline void SetAndNormalise (const TVec &Anormal, float Adist) noexcept {
+  inline void SetAndNormalise (const TVec &Anormal, const float Adist) noexcept {
     normal = Anormal;
     dist = Adist;
     NormaliseInPlace();
@@ -198,11 +198,11 @@ public:
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (const float x, const float y) const noexcept {
     return (VSUM3(dist, -(normal.x*x), -(normal.y*y))/normal.z);
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZRev (float x, float y) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZRev (const float x, const float y) const noexcept {
     return (VSUM3(-dist, -(-normal.x*x), -(-normal.y*y))/(-normal.z));
   }
 
@@ -333,16 +333,16 @@ public:
 
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide (const TVec &center, const float radius) const noexcept {
     return (PointDistance(center) <= -radius);
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool SphereTouches (const TVec &center, const float radius) const noexcept {
     return (fabsf(PointDistance(center)) < radius);
   }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, const float radius) const noexcept {
     const float d = PointDistance(center);
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
