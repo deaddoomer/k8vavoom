@@ -1,0 +1,46 @@
+class Main : Object;
+
+
+void main () {
+  writeln(vector(3, 4, 5).xy);
+  writeln(vector(3, 4, 5).xy.xy);
+  writeln(vector(3, 4, 5).xy.length);
+  writeln(vector(3, 4, 5).xy.length2D);
+  writeln(vector(3, 4, 5).length);
+
+  writeln(vector(3, 4, 5).yx.xy);
+  writeln(vector(3, 4, 5).yx.yx);
+
+  writeln(vector(3, 4, 5).xy.normalise);
+  writeln(vector(3, 4, 5).normalise2d);
+  writeln(vector(3, 4, 5).normalise);
+
+  writeln(vector(3, 4, 5).yxz.zxy);
+  writeln(vector(3, 4, 5).zyx);
+
+  TVec v = vector(3, 4, 5);
+  writeln(v.xy);
+  writeln(v.xy.length);
+  writeln(v.xy.length2D);
+  writeln(v.length);
+
+  writeln(v.yx.xy);
+  writeln(v.yx.yx);
+
+  writeln(v.yxz.zxy); // zyx
+  writeln(v.zyx, " -- correct");
+
+  writeln(v.yxz.zxy.yzx); // yxz
+  writeln(v.yxz, " -- correct");
+
+  writeln(v.xy.normalise);
+  writeln(v.normalise2d);
+  writeln(v.normalise);
+
+  float n = 42;
+  v = vector(6, 7, n).xy;
+  writeln(v);
+
+  v = vector(6, n, 7).zxy.yx; // 7 6 n -- 6 7 -- .xy
+  writeln(v);
+}
