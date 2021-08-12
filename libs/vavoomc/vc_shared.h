@@ -51,6 +51,7 @@ union VStack {
 // ////////////////////////////////////////////////////////////////////////// //
 // this is used in vector swizzling
 enum VCVectorSwizzleElem {
+  VCVSE_NothingZero = 0,
   VCVSE_Zero = 0,
   VCVSE_One = 1,
   VCVSE_X = 2,

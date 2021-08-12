@@ -182,11 +182,42 @@ public:
   VVectorSwizzleExpr (VExpression *AOp, int ASwizzle, bool ADirect, const TLocation &ALoc);
   virtual ~VVectorSwizzleExpr () override;
   virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &) override;
+  virtual VExpression *DoResolve (VEmitContext &ec) override;
   //virtual void RequestAddressOf () override;
-  virtual void Emit (VEmitContext &) override;
+  virtual void Emit (VEmitContext &ec) override;
+
+  virtual bool IsSwizzle () const override;
 
   virtual VStr toString () const override;
+
+  inline int GetSwizzleX () const noexcept { return (index&VCVSE_Mask); }
+  inline int GetSwizzleY () const noexcept { return ((index>>VCVSE_Shift)&VCVSE_Mask); }
+  inline int GetSwizzleZ () const noexcept { return ((index>>(VCVSE_Shift*2))&VCVSE_Mask); }
+
+  inline bool IsSwizzleIdentity () const noexcept { return (GetSwizzleX() == VCVSE_X && GetSwizzleY() == VCVSE_Y && GetSwizzleZ() == VCVSE_Z); }
+  inline bool IsSwizzleIdentityNeg () const noexcept { return (GetSwizzleX() == (VCVSE_X|VCVSE_Negate) && GetSwizzleY() == (VCVSE_Y|VCVSE_Negate) && GetSwizzleZ() == (VCVSE_Z|VCVSE_Negate)); }
+  inline bool IsSwizzleXY () const noexcept { return (index == (VCVSE_X|(VCVSE_Y<<VCVSE_Shift))); }
+
+  inline bool IsSwizzleConstant () const noexcept {
+    return
+      (GetSwizzleX()&VCVSE_ElementMask) <= VCVSE_One &&
+      (GetSwizzleY()&VCVSE_ElementMask) <= VCVSE_One &&
+      (GetSwizzleZ()&VCVSE_ElementMask) <= VCVSE_One;
+  }
+
+  TVec GetSwizzleConstant () const noexcept;
+
+  TVec DoSwizzle (TVec v) const noexcept;
+
+  static VStr SwizzleToStr (int index);
+
+protected:
+  // each optimiser returns `true` if something was changed
+  // optimisers must be called after resolving `op`
+
+  bool OptimiseSwizzleConsts (VEmitContext &ec);
+  bool OptimiseSwizzleSwizzle (VEmitContext &ec);
+  bool OptimiseSwizzleCtor (VEmitContext &ec);
 
 protected:
   VVectorSwizzleExpr () {}

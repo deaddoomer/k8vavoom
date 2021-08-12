@@ -25,6 +25,10 @@
 //**************************************************************************
 #include "vc_local.h"
 
+#define VVC_OPTIMIZE_SWIZZLE
+//#define VVC_OPTIMIZE_SWIZZLE_DEBUG
+
+
 // builtin codes
 #define BUILTIN_OPCODE_INFO
 #include "vc_progdefs.h"
@@ -1111,9 +1115,9 @@ int VVectorSwizzleExpr::ParseOneSwizzle (const char *&s) {
   if (!s[0]) return -1;
   bool negated = (s[0] == 'm');
   if (negated) ++s;
-  int res = (negated ? VCVSE_Negate : 0);
+  int res = (negated ? VCVSE_Negate : VCVSE_NothingZero);
   switch (s[0]) {
-    case '0': ++s; res |= VCVSE_Zero; break;
+    case '0': ++s; res = VCVSE_Zero; break; // ignore negation
     case '1': ++s; res |= VCVSE_One; break;
     case 'x': ++s; res |= VCVSE_X; break;
     case 'y': ++s; res |= VCVSE_Y; break;
@@ -1121,6 +1125,34 @@ int VVectorSwizzleExpr::ParseOneSwizzle (const char *&s) {
     default: return -1;
   }
   while (*s && s[0] == '_') ++s;
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::SwizzleToStr
+//
+//==========================================================================
+VStr VVectorSwizzleExpr::SwizzleToStr (int index) {
+  if (index == -1) return VStr("invalid");
+  VStr res;
+  for (unsigned spidx = 0; spidx <= 2; ++spidx) {
+    switch (index&VCVSE_Mask) {
+      case VCVSE_Zero: res += "0"; break;
+      case VCVSE_Zero|VCVSE_Negate: res += "m0"; break;
+      case VCVSE_One: res += "1"; break;
+      case VCVSE_One|VCVSE_Negate: res += "m1"; break;
+      case VCVSE_X: res += "x"; break;
+      case VCVSE_Y: res += "y"; break;
+      case VCVSE_Z: res += "z"; break;
+      case VCVSE_X|VCVSE_Negate: res += "mx"; break;
+      case VCVSE_Y|VCVSE_Negate: res += "my"; break;
+      case VCVSE_Z|VCVSE_Negate: res += "mz"; break;
+      default: res += "*"; break;
+    }
+    index >>= VCVSE_Shift;
+  }
   return res;
 }
 
@@ -1193,13 +1225,385 @@ void VVectorSwizzleExpr::DoSyntaxCopyTo (VExpression *e) {
 
 //==========================================================================
 //
+//  VVectorSwizzleExpr::GetSwizzleConstant
+//
+//==========================================================================
+TVec VVectorSwizzleExpr::GetSwizzleConstant () const noexcept {
+  TVec res(0.0f, 0.0f, 0.0f);
+  switch (GetSwizzleX()) {
+    case VCVSE_Zero: case VCVSE_Zero|VCVSE_Negate: res.x = 0.0f; break;
+    case VCVSE_One: res.x = 1.0f; break;
+    case VCVSE_One|VCVSE_Negate: res.x = -1.0f; break;
+    default: break;
+  }
+  switch (GetSwizzleY()) {
+    case VCVSE_Zero: case VCVSE_Zero|VCVSE_Negate: res.y = 0.0f; break;
+    case VCVSE_One: res.y = 1.0f; break;
+    case VCVSE_One|VCVSE_Negate: res.y = -1.0f; break;
+    default: break;
+  }
+  switch (GetSwizzleZ()) {
+    case VCVSE_Zero: case VCVSE_Zero|VCVSE_Negate: res.z = 0.0f; break;
+    case VCVSE_One: res.z = 1.0f; break;
+    case VCVSE_One|VCVSE_Negate: res.z = -1.0f; break;
+    default: break;
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::DoResolve
+//
+//==========================================================================
+TVec VVectorSwizzleExpr::DoSwizzle (TVec v) const noexcept {
+  float res[3];
+  int sw = index;
+  for (unsigned spidx = 0; spidx <= 2; ++spidx) {
+    switch (sw&VCVSE_ElementMask) {
+      case VCVSE_Zero: res[spidx] = 0.0f; break;
+      case VCVSE_One: res[spidx] = 1.0f; break;
+      case VCVSE_X: res[spidx] = v.x; break;
+      case VCVSE_Y: res[spidx] = v.y; break;
+      case VCVSE_Z: res[spidx] = v.z; break;
+      default: VPackage::InternalFatalError(va("Invalid vector access mask (0x%01x)", sw&VCVSE_Mask));
+    }
+    if (sw&VCVSE_Negate) res[spidx] = -res[spidx];
+    sw >>= VCVSE_Shift;
+  }
+  return TVec(res[0], res[1], res[2]);
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::OptimiseSwizzleConsts
+//
+//  modify constructor with constants
+//  this may convert vector ctor to constant vector ctor
+//
+//  can be used only on non-const vector ctors
+//  (const ctors are processed elsewhere)
+//
+//==========================================================================
+bool VVectorSwizzleExpr::OptimiseSwizzleConsts (VEmitContext &ec) {
+  if (!op || !op->IsVectorCtor()) return false;
+  VVectorExpr *vex = (VVectorExpr *)op;
+  if (!vex->op1 || !vex->op2 || !vex->op3) return false;
+  bool res = false;
+  int sw = index;
+  for (int spidx = 0; spidx < 3; ++spidx) {
+    VExpression *vop = vex->getOp(spidx);
+    vassert(vop);
+    VExpression *newop = nullptr;
+    switch (sw&VCVSE_Mask) {
+      case VCVSE_Zero:
+      case VCVSE_Zero|VCVSE_Negate:
+        if (!vop->IsFloatConst() || vop->GetFloatConst() != 0.0f) newop = new VFloatLiteral(0.0f, Loc);
+        break;
+      case VCVSE_One:
+        if (!vop->IsFloatConst() || vop->GetFloatConst() != 1.0f) newop = new VFloatLiteral(1.0f, Loc);
+        break;
+      case VCVSE_One|VCVSE_Negate:
+        if (!vop->IsFloatConst() || vop->GetFloatConst() != -1.0f) newop = new VFloatLiteral(-1.0f, Loc);
+        break;
+      default: break;
+    }
+    if (newop) {
+      newop = newop->Resolve(ec);
+      vassert(newop);
+      res = true;
+      delete vop;
+      vex->setOp(spidx, newop);
+    }
+    sw >>= VCVSE_Shift;
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::OptimiseSwizzleSwizzle
+//
+//  optimze swizzle of swizzle
+//
+//==========================================================================
+bool VVectorSwizzleExpr::OptimiseSwizzleSwizzle (VEmitContext &) {
+  if (!op || !op->IsSwizzle()) return false;
+  VVectorSwizzleExpr *swe = (VVectorSwizzleExpr *)op;
+  if (!swe->op) return false; // just in case
+  // .yxz.zxy -> zyx
+  // i.e. shuffle `swe` index with this index (because `swe` is applied first)
+  int swx = swe->GetSwizzleX();
+  int swy = swe->GetSwizzleY();
+  int swz = swe->GetSwizzleZ();
+  int newswx = swx, newswy = swy, newswz = swz;
+  for (int si = 0; si <= 2; ++si) {
+    const int csw = (si == 0 ? GetSwizzleX() : si == 1 ? GetSwizzleY() : GetSwizzleZ());
+    int nsw = -666;
+    switch (csw) {
+      case VCVSE_Zero:
+      case VCVSE_Zero|VCVSE_Negate:
+      case VCVSE_One:
+      case VCVSE_One|VCVSE_Negate:
+        nsw = csw;
+        break;
+      case VCVSE_X: nsw = swx; break;
+      case VCVSE_X|VCVSE_Negate: nsw = swx^VCVSE_Negate; break;
+      case VCVSE_Y: nsw = swy; break;
+      case VCVSE_Y|VCVSE_Negate: nsw = swy^VCVSE_Negate; break;
+      case VCVSE_Z: nsw = swz; break;
+      case VCVSE_Z|VCVSE_Negate: nsw = swz^VCVSE_Negate; break;
+      default: VPackage::InternalFatalError(va("Invalid vector access mask (0x%01x)", csw));
+    }
+    vassert(nsw >= 0);
+    switch (si) {
+      case 0: newswx = nsw; break;
+      case 1: newswy = nsw; break;
+      case 2: newswz = nsw; break;
+    }
+  }
+  // our `op` is `swe`, it is deleted below
+  op = swe->op;
+  swe->op = nullptr;
+  const int newidx = newswx|(newswy<<VCVSE_Shift)|(newswz<<(VCVSE_Shift*2));
+  //GLog.Logf(NAME_Debug, "optimized swizzle: %s : %s -> %s", *SwizzleToStr(swe->index), *SwizzleToStr(index), *SwizzleToStr(newidx));
+  index = newidx;
+  delete swe;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::OptimiseSwizzleCtor
+//
+//  modify vector constructor
+//  limited form: only with non-repeating operands
+//
+//  can be used only on non-const vector ctors
+//  (const ctors are processed elsewhere)
+//
+//==========================================================================
+bool VVectorSwizzleExpr::OptimiseSwizzleCtor (VEmitContext &ec) {
+  if (!op || !op->IsVectorCtor() || op->IsConstVectorCtor()) return false;
+  if (IsSwizzleIdentity()) return false;
+  VVectorExpr *vex = (VVectorExpr *)op;
+  if (!vex->op1 || !vex->op2 || !vex->op3) return false;
+
+  // check for valid transformation
+  int usecount[3] = {0, 0, 0};
+  bool valid = true;
+
+  int sw = index;
+  for (int spidx = 0; spidx <= 2; ++spidx) {
+    int useop = -1;
+    switch (sw&VCVSE_Mask) {
+      case VCVSE_X:
+      case VCVSE_X|VCVSE_Negate:
+        useop = 0;
+        break;
+      case VCVSE_Y:
+      case VCVSE_Y|VCVSE_Negate:
+        useop = 1;
+        break;
+      case VCVSE_Z:
+      case VCVSE_Z|VCVSE_Negate:
+        useop = 2;
+        break;
+      default: break;
+    }
+    if (useop >= 0) {
+      VExpression *vop = vex->getOp(useop);
+      vassert(vop);
+      // constants can be safely duplicated
+      if (!vop->IsFloatConst() && !vop->IsIntConst()) {
+        if (usecount[useop]) { valid = false; break; }
+        ++usecount[useop];
+      }
+    }
+    sw >>= VCVSE_Shift;
+  }
+
+  if (!valid) return false; // invalid transformation
+
+  // create new operand list for vector ctor
+  bool used[3] = {false, false, false}; // old unused operands must be deleted
+  bool res[3] = {false, false, false}; // new operands must be resolved
+  VExpression *ops[3] = {nullptr, nullptr, nullptr}; // new operands will be put here
+  sw = index;
+  for (int spidx = 0; spidx <= 2; ++spidx) {
+    int useop = -1;
+    switch (sw&VCVSE_Mask) {
+      case VCVSE_Zero:
+      case VCVSE_Zero|VCVSE_Negate:
+        ops[spidx] = new VFloatLiteral(0.0f, Loc);
+        res[spidx] = true;
+        break;
+      case VCVSE_One:
+        ops[spidx] = new VFloatLiteral(1.0f, Loc);
+        res[spidx] = true;
+        break;
+      case VCVSE_One|VCVSE_Negate:
+        ops[spidx] = new VFloatLiteral(-1.0f, Loc);
+        res[spidx] = true;
+        break;
+      case VCVSE_X:
+      case VCVSE_X|VCVSE_Negate:
+        useop = 0;
+        break;
+      case VCVSE_Y:
+      case VCVSE_Y|VCVSE_Negate:
+        useop = 1;
+        break;
+      case VCVSE_Z:
+      case VCVSE_Z|VCVSE_Negate:
+        useop = 2;
+        break;
+      default: VPackage::InternalFatalError(va("Invalid vector access mask (0x%01x)", sw&VCVSE_Mask));
+    }
+    if (useop >= 0) {
+      VExpression *vop = vex->getOp(useop);
+      vassert(vop);
+      if (vop->IsIntConst()) {
+        // operand is an integer constant
+        float v = (float)vop->GetIntConst();
+        if (sw&VCVSE_Negate) v = -v;
+        ops[spidx] = new VFloatLiteral(v, vop->Loc);
+        res[spidx] = true;
+      } else if (vop->IsFloatConst()) {
+        // operand is a float constant
+        float v = (float)vop->GetFloatConst();
+        if (sw&VCVSE_Negate) v = -v;
+        ops[spidx] = new VFloatLiteral(v, vop->Loc);
+        res[spidx] = true;
+      } else {
+        // operand is something complex
+        vassert(!used[useop]);
+        used[useop] = true;
+        if (sw&VCVSE_Negate) {
+          ops[spidx] = new VUnary(VUnary::Minus, vop, vop->Loc, true/*resolved*/);
+          res[spidx] = true;
+        } else {
+          ops[spidx] = vop;
+        }
+      }
+    }
+    sw >>= VCVSE_Shift;
+  }
+
+  // resolve new operands
+  for (int ff = 0; ff < 3; ++ff) {
+    vassert(ops[ff]);
+    if (res[ff]) {
+      VExpression *e = ops[ff]->Resolve(ec);
+      if (!e) { delete op; op = nullptr; return true; } // this will abort resolving in the caller
+      ops[ff] = e;
+    }
+  }
+
+  // delete unused operands
+  for (int ff = 0; ff < 3; ++ff) {
+    if (!used[ff]) {
+      VExpression *vop = vex->getOp(ff);
+      delete vop;
+    }
+  }
+
+  // set new operands
+  for (int ff = 0; ff < 3; ++ff) vex->setOp(ff, ops[ff]);
+
+  // now we're just an identity
+  index = (VCVSE_X|(VCVSE_Y<<VCVSE_Shift)|(VCVSE_Z<<(VCVSE_Shift*2)));
+
+  return true; // rewritten
+}
+
+
+//==========================================================================
+//
 //  VVectorSwizzleExpr::DoResolve
 //
 //==========================================================================
 VExpression *VVectorSwizzleExpr::DoResolve (VEmitContext &ec) {
-  // op is already resolved
+  // op is already resolved, but check it just in case
   if (op && !op->IsResolved()) op = op->Resolve(ec);
   if (!op) { delete this; return nullptr; }
+  if (index == -1) { delete this; return nullptr; }
+
+#ifdef VVC_OPTIMIZE_SWIZZLE
+  #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+  GLog.Logf(NAME_Debug, "SWIZZLE: %s", *toString());
+  #endif
+  for (;;) {
+    if (!op) { delete this; return nullptr; } // just in case
+    if (index == -1) { delete this; return nullptr; } // just in case
+
+    #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+    GLog.Logf(NAME_Debug, "SWIZZLE:  preop: %s", *toString());
+    #endif
+
+    // identity swizzle can be ignored
+    if (IsSwizzleIdentity()) {
+      VExpression *e = op;
+      op = nullptr;
+      delete this;
+      #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+      GLog.Logf(NAME_Debug, "SWIZZLE:  DONE-IDENTITY: %s", *e->toString());
+      #endif
+      return e;
+    }
+
+    // constant swizze can be performed in-place
+    if (op->IsConstVectorCtor()) {
+      TVec v = ((VVectorExpr *)op)->GetConstValue();
+      v = DoSwizzle(v);
+      VExpression *e = new VVectorExpr(v, Loc);
+      delete this;
+      #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+      GLog.Logf(NAME_Debug, "SWIZZLE:  DONE-INPLACE: %s", *e->toString());
+      #endif
+      return e->Resolve(ec);
+    }
+
+    // if at least one optimisation was done, try all optimisations again
+    if (OptimiseSwizzleSwizzle(ec)) {
+      #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+      GLog.Logf(NAME_Debug, "SWIZZLE:    swsw: %s", *toString());
+      #endif
+      continue;
+    }
+    if (OptimiseSwizzleConsts(ec)) {
+      #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+      GLog.Logf(NAME_Debug, "SWIZZLE:    swcc: %s", *toString());
+      #endif
+      continue;
+    }
+    if (OptimiseSwizzleCtor(ec)) {
+      #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+      GLog.Logf(NAME_Debug, "SWIZZLE:    swct: %s", *toString());
+      #endif
+      continue;
+    }
+
+    #ifdef VVC_OPTIMIZE_SWIZZLE_DEBUG
+    GLog.Logf(NAME_Debug, "SWIZZLE:  DONE: %s", *toString());
+    #endif
+    // cannot optimise anything
+    break;
+  }
+
+  // negate swizzle can be converted to vector negation
+  if (IsSwizzleIdentityNeg()) {
+    VExpression *e = new VUnary(VUnary::Minus, op, Loc, true/*resolved*/);
+    op = nullptr;
+    delete this;
+    return e->Resolve(ec);
+  }
+#endif
+
   Type = VFieldType(TYPE_Vector);
   SetResolved();
   return this;
@@ -1223,11 +1627,21 @@ void VVectorSwizzleExpr::Emit (VEmitContext &ec) {
 
 //==========================================================================
 //
+//  VVectorSwizzleExpr::IsSwizzle
+//
+//==========================================================================
+bool VVectorSwizzleExpr::IsSwizzle () const {
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VVectorSwizzleExpr::toString
 //
 //==========================================================================
 VStr VVectorSwizzleExpr::toString () const {
-  return e2s(op)+va("_swizzle(0x%04x:%c)", (unsigned)index, (direct ? 'd' : 'i'));
+  return e2s(op)+va("_swizzle(%s:%c)", *SwizzleToStr(index), (direct ? 'd' : 'i'));
 }
 
 

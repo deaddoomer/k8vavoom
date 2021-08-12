@@ -35,8 +35,8 @@ public:
   VExpression *op2;
   VExpression *op3;
 
-  VVectorExpr (VExpression *, VExpression *, VExpression *, const TLocation &);
-  VVectorExpr (const TVec &vv, const TLocation &aloc);
+  VVectorExpr (VExpression *AOp1, VExpression *AOp2, VExpression *AOp3, const TLocation &ALoc);
+  explicit VVectorExpr (const TVec &vv, const TLocation &aloc);
   virtual ~VVectorExpr () override;
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
@@ -48,6 +48,9 @@ public:
   // is this a const ctor? (should be called after resolving)
   bool IsConst () const;
   TVec GetConstValue () const;
+
+  inline VExpression *getOp (int idx) noexcept { return (idx == 0 ? op1 : idx == 1 ? op2 : idx == 2 ? op3 : nullptr); }
+  inline void setOp (int idx, VExpression *e) noexcept { vassert(idx >= 0 && idx <= 2); if (idx == 0) op1 = e; else if (idx == 1) op2 = e; else op3 = e; }
 
   virtual VStr toString () const override;
 

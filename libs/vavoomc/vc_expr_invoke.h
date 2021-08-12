@@ -266,6 +266,7 @@ public:
   bool BaseCall;
   VState *CallerState;
   VExpression *DgPtrExpr; // for calling struct's delegate field, for example
+  int OverrideBuiltin; // >=0: generate this builtin instead of func builtin
   // filled in resolver
   TArray<VEmitContext::VCompExit> elist;
 

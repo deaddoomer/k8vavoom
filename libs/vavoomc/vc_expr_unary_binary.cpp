@@ -286,16 +286,21 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
     }
   }
 
-  // optimize float constants
-  if (op->IsFloatConst()) {
-    float Value = op->GetFloatConst();
-    VExpression *e = nullptr;
-    switch (Oper) {
-      case Minus: e = new VFloatLiteral(-Value, Loc); break;
-      case Not: e = new VIntLiteral((isZeroInfNaN(Value) ? 1 : 0), Loc); break;
-      default: break;
+  // lognot operation resolved to boolean (int, actually), no need to check for it
+  if (Oper == Minus) {
+    // optimize float constants
+    if (op->IsFloatConst()) {
+      float Value = op->GetFloatConst();
+      VExpression *e = new VFloatLiteral(-Value, Loc);
+      delete this;
+      return e->Resolve(ec);
     }
-    if (e) {
+
+    // optimize vector constants
+    if (op->IsConstVectorCtor()) {
+      TVec v = ((VVectorExpr *)op)->GetConstValue();
+      v = -v;
+      VExpression *e = new VVectorExpr(v, op->Loc);
       delete this;
       return e->Resolve(ec);
     }

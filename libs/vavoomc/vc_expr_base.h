@@ -191,6 +191,7 @@ public:
   virtual bool IsComma () const;
   virtual bool IsCommaRetOp0 () const;
   virtual bool IsDropResult () const;
+  virtual bool IsSwizzle () const;
 
   virtual VStr toString () const = 0;
 

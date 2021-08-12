@@ -1850,6 +1850,7 @@ VInvocation::VInvocation (VExpression *ASelfExpr, VMethod *AFunc, VField *ADeleg
   , BaseCall(ABaseCall)
   , CallerState(nullptr)
   , DgPtrExpr(nullptr)
+  , OverrideBuiltin(-1)
 {
 }
 
@@ -1869,6 +1870,7 @@ VInvocation::VInvocation (VMethod *AFunc, int ADelegateLocal, const TLocation &A
   , BaseCall(false)
   , CallerState(nullptr)
   , DgPtrExpr(nullptr)
+  , OverrideBuiltin(-1)
 {
 }
 
@@ -1888,6 +1890,7 @@ VInvocation::VInvocation (VExpression *ASelfExpr, VExpression *ADgPtrExpr, VMeth
   , BaseCall(false)
   , CallerState(nullptr)
   , DgPtrExpr(ADgPtrExpr)
+  , OverrideBuiltin(-1)
 {
 }
 
@@ -1932,6 +1935,7 @@ void VInvocation::DoSyntaxCopyTo (VExpression *e) {
   res->BaseCall = BaseCall;
   res->CallerState = CallerState;
   res->DgPtrExpr = (DgPtrExpr ? DgPtrExpr->SyntaxCopy() : nullptr);
+  res->OverrideBuiltin = OverrideBuiltin;
 }
 
 
@@ -2165,10 +2169,30 @@ bool VInvocation::CheckSimpleConstArgs (const int argc, const int *types, const 
 
 //==========================================================================
 //
+//  ExtractSwizzleXY
+//
+//  if `e` is `vec.xy`, extract `e` operand, and delete `e`
+//
+//==========================================================================
+static VExpression *ExtractSwizzleXY (VExpression *e) {
+  //return nullptr;
+  if (!e || !e->IsSwizzle()) return nullptr;
+  VVectorSwizzleExpr *swe = (VVectorSwizzleExpr *)e;
+  if (!swe->op && !swe->IsSwizzleXY()) return nullptr;
+  VExpression *res = swe->op;
+  swe->op = nullptr;
+  delete swe;
+  return res;
+}
+
+
+//==========================================================================
+//
 //  VInvocation::OptimizeBuiltin
 //
 //==========================================================================
 VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
+  OverrideBuiltin = -1; // just in case
   if (!Func || Func->builtinOpc < 0) return this; // sanity check
   //GLog.Logf(NAME_Debug, "VInvocation::OptimizeBuiltin: <%s>", StatementBuiltinInfo[Func->builtinOpc].name);
   TVec v0(0, 0, 0), v1(0, 0, 0), v2(0, 0, 0);
@@ -2385,14 +2409,24 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       e = new VIntLiteral((fabsf(fv-fv2) < fvres ? 1 : 0), Loc);
       break;
     case OPC_Builtin_VecLength:
-      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) {
+        // `vec.xy.length` -> `vec.length2D`
+        e = ExtractSwizzleXY(Args[0]);
+        if (e) { Args[0] = e; OverrideBuiltin = OPC_Builtin_VecLength2D; }
+        return this;
+      }
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.length();
       if (!isFiniteF(fv)) return this;
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecLengthSquared:
-      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) {
+        // `vec.xy.lengthSquared` -> `vec.length2DSquared`
+        e = ExtractSwizzleXY(Args[0]);
+        if (e) { Args[0] = e; OverrideBuiltin = OPC_Builtin_VecLength2DSquared; }
+        return this;
+      }
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       fv = v0.lengthSquared();
       if (!isFiniteF(fv)) return this;
@@ -2413,7 +2447,12 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       e = new VFloatLiteral(fv, Loc);
       break;
     case OPC_Builtin_VecNormalize:
-      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
+      if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) {
+        // `vec.xy.normalise` -> `vec.normalise2D`
+        e = ExtractSwizzleXY(Args[0]);
+        if (e) { Args[0] = e; OverrideBuiltin = OPC_Builtin_VecNormalize2D; }
+        return this;
+      }
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v0 = normalise(v0);
       if (!v0.isValid()) return this;
@@ -2709,15 +2748,18 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
 void VInvocation::Emit (VEmitContext &ec) {
   EmitCheckResolved(ec);
 
+  const int builtIn = (Func->builtinOpc >= 0 ? (OverrideBuiltin >= 0 ? OverrideBuiltin : Func->builtinOpc) : -1);
+
   // special cvar optimisations
-  if (Func->builtinOpc >= OPC_Builtin_GetCvarInt && Func->builtinOpc <= OPC_Builtin_GetCvarBool) {
-    ec.AddCVarBuiltin(Func->builtinOpc, Args[0]->GetNameConst(), Loc);
+  if (builtIn >= OPC_Builtin_GetCvarInt && builtIn <= OPC_Builtin_GetCvarBool) {
+    ec.AddCVarBuiltin(builtIn, Args[0]->GetNameConst(), Loc);
     return;
   }
 
-  if (Func->builtinOpc >= OPC_Builtin_SetCvarInt && Func->builtinOpc <= OPC_Builtin_SetCvarBool) {
+  // special cvar optimisations
+  if (builtIn >= OPC_Builtin_SetCvarInt && builtIn <= OPC_Builtin_SetCvarBool) {
     Args[1]->Emit(ec);
-    ec.AddCVarBuiltin(Func->builtinOpc, Args[0]->GetNameConst(), Loc);
+    ec.AddCVarBuiltin(builtIn, Args[0]->GetNameConst(), Loc);
     return;
   }
 
@@ -2888,8 +2930,8 @@ void VInvocation::Emit (VEmitContext &ec) {
   }
 
   // some special functions will be converted to builtins
-  if (Func->builtinOpc >= 0) {
-    ec.AddBuiltin(Func->builtinOpc, Loc);
+  if (builtIn >= 0) {
+    ec.AddBuiltin(builtIn, Loc);
   } else if (DirectCall) {
     ec.AddStatement(OPC_Call, Func, SelfOffset, Loc);
   } else if (DelegateField) {

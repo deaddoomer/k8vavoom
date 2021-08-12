@@ -457,7 +457,7 @@ void VMethod::Emit () {
       if (loc.Name == NAME_None) continue;
       // ignore some special names
       const char *nn = *loc.Name;
-      if (nn[0] == '_' || VStr::startsWith(nn, "user_")) continue;
+      if (nn[0] == '_' || VStr::startsWithCI(nn, "user_")) continue;
       if (!loc.WasRead && !loc.WasWrite) {
         GLog.Logf(NAME_Warning, "%s: unused local `%s` in method `%s`", *loc.Loc.toStringNoCol(), nn, *GetFullName());
       } else if (!loc.WasRead && loc.WasWrite) {
@@ -549,83 +549,90 @@ void VMethod::DumpAsm () {
     VStr disstr;
     int st = Instructions[s].Opcode;
     disstr += va("%6d: %s", s, StatementInfo[st].name);
-    switch (StatementInfo[st].Args) {
-      case OPCARGS_None:
-        break;
-      case OPCARGS_Member:
-        // name of the object
-        disstr += va(" %s", *Instructions[s].Member->GetFullName());
-        break;
-      case OPCARGS_BranchTargetB:
-      case OPCARGS_BranchTargetNB:
-      //case OPCARGS_BranchTargetS:
-      case OPCARGS_BranchTarget:
-        disstr += va(" %6d", Instructions[s].Arg1);
-        break;
-      case OPCARGS_ByteBranchTarget:
-      case OPCARGS_ShortBranchTarget:
-      case OPCARGS_IntBranchTarget:
-        disstr += va(" %6d, %6d", Instructions[s].Arg1, Instructions[s].Arg2);
-        break;
-      case OPCARGS_NameBranchTarget:
-        disstr += va(" '%s', %6d", *VName(EName(Instructions[s].Arg1)), Instructions[s].Arg2);
-        break;
-      case OPCARGS_Byte:
-      case OPCARGS_Short:
-        disstr += va(" %6d (%x)", Instructions[s].Arg1, Instructions[s].Arg1);
-        break;
-      case OPCARGS_Int:
-        if (Instructions[s].Arg1IsFloat) {
-          disstr += va(" %f", *(const float *)&Instructions[s].Arg1);
-        } else {
+    if (Instructions[s].Opcode == OPC_VectorSwizzleDirect) {
+      vassert(StatementInfo[st].Args == OPCARGS_Short);
+      disstr += " (";
+      disstr += VVectorSwizzleExpr::SwizzleToStr(Instructions[s].Arg1);
+      disstr += ")";
+    } else {
+      switch (StatementInfo[st].Args) {
+        case OPCARGS_None:
+          break;
+        case OPCARGS_Member:
+          // name of the object
+          disstr += va(" %s", *Instructions[s].Member->GetFullName());
+          break;
+        case OPCARGS_BranchTargetB:
+        case OPCARGS_BranchTargetNB:
+        //case OPCARGS_BranchTargetS:
+        case OPCARGS_BranchTarget:
+          disstr += va(" %6d", Instructions[s].Arg1);
+          break;
+        case OPCARGS_ByteBranchTarget:
+        case OPCARGS_ShortBranchTarget:
+        case OPCARGS_IntBranchTarget:
+          disstr += va(" %6d, %6d", Instructions[s].Arg1, Instructions[s].Arg2);
+          break;
+        case OPCARGS_NameBranchTarget:
+          disstr += va(" '%s', %6d", *VName(EName(Instructions[s].Arg1)), Instructions[s].Arg2);
+          break;
+        case OPCARGS_Byte:
+        case OPCARGS_Short:
           disstr += va(" %6d (%x)", Instructions[s].Arg1, Instructions[s].Arg1);
-        }
-        break;
-      case OPCARGS_Name:
-        // name
-        disstr += va(" '%s'", *Instructions[s].NameArg);
-        break;
-      case OPCARGS_String:
-        // string
-        disstr += va(" %s", *Package->GetStringByIndex(Instructions[s].Arg1).quote());
-        break;
-      case OPCARGS_FieldOffset:
-        if (Instructions[s].Member) disstr += va(" %s", *Instructions[s].Member->Name); else disstr += va(" (0)");
-        break;
-      case OPCARGS_VTableIndex:
-        disstr += va(" %s", *Instructions[s].Member->Name);
-        break;
-      case OPCARGS_VTableIndex_Byte:
-      case OPCARGS_FieldOffset_Byte:
-      case OPCARGS_FieldOffsetS_Byte:
-        if (Instructions[s].Member) disstr += va(" %s %d", *Instructions[s].Member->Name, Instructions[s].Arg2); else disstr += va(" (0)%d", Instructions[s].Arg2);
-        break;
-      case OPCARGS_TypeSize:
-      case OPCARGS_Type:
-      case OPCARGS_A2DDimsAndSize:
-        disstr += va(" %s", *Instructions[s].TypeArg.GetName());
-        break;
-      case OPCARGS_TypeDD:
-        disstr += va(" %s!(%s,%s)", StatementDictDispatchInfo[Instructions[s].Arg2].name, *Instructions[s].TypeArg.GetName(), *Instructions[s].TypeArg1.GetName());
-        break;
-      case OPCARGS_TypeAD:
-        disstr += va(" %s!(%s)", StatementDynArrayDispatchInfo[Instructions[s].Arg2].name, *Instructions[s].TypeArg.GetName());
-        break;
-      case OPCARGS_Builtin:
-        disstr += va(" %s", StatementBuiltinInfo[Instructions[s].Arg1].name);
-        break;
-      case OPCARGS_BuiltinCVar:
-        disstr += va(" %s('%s')", StatementBuiltinInfo[Instructions[s].Arg1].name, *VName::CreateWithIndexSafe(Instructions[s].Arg2));
-        break;
-      case OPCARGS_Member_Int:
-        disstr += va(" %s (%d)", *Instructions[s].Member->GetFullName(), Instructions[s].Arg2);
-        break;
-      case OPCARGS_Type_Int:
-        disstr += va(" %s (%d)", *Instructions[s].TypeArg.GetName(), Instructions[s].Arg2);
-        break;
-      case OPCARGS_ArrElemType_Int:
-        disstr += va(" %s (%d)", *Instructions[s].TypeArg.GetName(), Instructions[s].Arg2);
-        break;
+          break;
+        case OPCARGS_Int:
+          if (Instructions[s].Arg1IsFloat) {
+            disstr += va(" %f", *(const float *)&Instructions[s].Arg1);
+          } else {
+            disstr += va(" %6d (%x)", Instructions[s].Arg1, Instructions[s].Arg1);
+          }
+          break;
+        case OPCARGS_Name:
+          // name
+          disstr += va(" '%s'", *Instructions[s].NameArg);
+          break;
+        case OPCARGS_String:
+          // string
+          disstr += va(" %s", *Package->GetStringByIndex(Instructions[s].Arg1).quote());
+          break;
+        case OPCARGS_FieldOffset:
+          if (Instructions[s].Member) disstr += va(" %s", *Instructions[s].Member->Name); else disstr += va(" (0)");
+          break;
+        case OPCARGS_VTableIndex:
+          disstr += va(" %s", *Instructions[s].Member->Name);
+          break;
+        case OPCARGS_VTableIndex_Byte:
+        case OPCARGS_FieldOffset_Byte:
+        case OPCARGS_FieldOffsetS_Byte:
+          if (Instructions[s].Member) disstr += va(" %s %d", *Instructions[s].Member->Name, Instructions[s].Arg2); else disstr += va(" (0)%d", Instructions[s].Arg2);
+          break;
+        case OPCARGS_TypeSize:
+        case OPCARGS_Type:
+        case OPCARGS_A2DDimsAndSize:
+          disstr += va(" %s", *Instructions[s].TypeArg.GetName());
+          break;
+        case OPCARGS_TypeDD:
+          disstr += va(" %s!(%s,%s)", StatementDictDispatchInfo[Instructions[s].Arg2].name, *Instructions[s].TypeArg.GetName(), *Instructions[s].TypeArg1.GetName());
+          break;
+        case OPCARGS_TypeAD:
+          disstr += va(" %s!(%s)", StatementDynArrayDispatchInfo[Instructions[s].Arg2].name, *Instructions[s].TypeArg.GetName());
+          break;
+        case OPCARGS_Builtin:
+          disstr += va(" %s", StatementBuiltinInfo[Instructions[s].Arg1].name);
+          break;
+        case OPCARGS_BuiltinCVar:
+          disstr += va(" %s('%s')", StatementBuiltinInfo[Instructions[s].Arg1].name, *VName::CreateWithIndexSafe(Instructions[s].Arg2));
+          break;
+        case OPCARGS_Member_Int:
+          disstr += va(" %s (%d)", *Instructions[s].Member->GetFullName(), Instructions[s].Arg2);
+          break;
+        case OPCARGS_Type_Int:
+          disstr += va(" %s (%d)", *Instructions[s].TypeArg.GetName(), Instructions[s].Arg2);
+          break;
+        case OPCARGS_ArrElemType_Int:
+          disstr += va(" %s (%d)", *Instructions[s].TypeArg.GetName(), Instructions[s].Arg2);
+          break;
+      }
     }
     GLog.Logf(NAME_Debug, "%s", *disstr);
   }
