@@ -79,14 +79,14 @@ vector TVec {
   native bool isZero () const;
   native bool isZero2D () const;
 
-  native TVec ClosestPointOnBox3D (const TVec bmin, const TVec bmax) const;
-  native TVec ClosestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
-  native TVec ClosestPointOnBox2D (const TVec bmin, const TVec bmax) const;
-  native TVec ClosestPointOnDoomBox2D (const TVec origin, const float radius) const;
-  native float Box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
-  native float DoomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
-  native float Box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
-  native float DoomBox2DDistanceSquared (const TVec origin, const float radius) const;
+  native TVec closestPointOnBox3D (const TVec bmin, const TVec bmax) const;
+  native TVec closestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
+  native TVec closestPointOnBox2D (const TVec bmin, const TVec bmax) const;
+  native TVec closestPointOnDoomBox2D (const TVec origin, const float radius) const;
+  native float box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float doomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
+  native float box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
+  native float doomBox2DDistanceSquared (const TVec origin, const float radius) const;
 };
 
 

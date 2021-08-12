@@ -2454,14 +2454,14 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
         return this;
       }
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
-      v0 = normalise(v0);
+      v0.normaliseInPlace(); //v0 = v0.normalised();
       if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;
     case OPC_Builtin_VecNormalize2D:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
-      v0 = normalise2D(v0);
+      v0.normalise2DInPlace(); //v0 = v0.normalised2D();
       if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;
@@ -2470,7 +2470,7 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Vector, TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v1 = ((VVectorExpr *)Args[1])->GetConstValue();
-      fv = dot(v0, v1);
+      fv = v0.dot(v1);
       if (!isFiniteF(fv)) ParseError(Loc, "dotproduct is INF/NAN");
       e = new VFloatLiteral(fv, Loc);
       break;
@@ -2478,7 +2478,7 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Vector, TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v1 = ((VVectorExpr *)Args[1])->GetConstValue();
-      fv = dot2D(v0, v1);
+      fv = v0.dot2D(v1);
       if (!isFiniteF(fv)) ParseError(Loc, "dotproduct2d is INF/NAN");
       e = new VFloatLiteral(fv, Loc);
       break;
@@ -2486,7 +2486,7 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Vector, TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v1 = ((VVectorExpr *)Args[1])->GetConstValue();
-      v0 = cross(v0, v1);
+      v0 = v0.cross(v1);
       if (!v0.isValid()) ParseError(Loc, "crossproduct is INF/NAN");
       e = new VVectorExpr(v0, Loc);
       break;
@@ -2494,7 +2494,7 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
       if (!CheckSimpleConstArgs(2, (const int []){TYPE_Vector, TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
       v1 = ((VVectorExpr *)Args[1])->GetConstValue();
-      fv = cross2D(v0, v1);
+      fv = v0.cross2D(v1);
       if (!isFiniteF(fv)) ParseError(Loc, "crossproduct2d is INF/NAN");
       e = new VFloatLiteral(fv, Loc);
       break;
