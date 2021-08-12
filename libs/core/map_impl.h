@@ -43,7 +43,7 @@ static_assert(sizeof(unsigned) >= 4, "`unsigned` should be at least 4 bytes");
 
 template<class TK, class TV> class TMap_Class_Name {
 public:
-  static inline unsigned nextPOTU32 (unsigned x) noexcept {
+  static VVA_ALWAYS_INLINE VVA_CONST unsigned nextPOTU32 (const unsigned x) noexcept {
     unsigned res = x;
     res |= (res>>1);
     res |= (res>>2);
@@ -55,7 +55,7 @@ public:
     return res;
   }
 
-  inline static unsigned hashU32 (unsigned a) noexcept {
+  static VVA_ALWAYS_INLINE VVA_CONST unsigned hashU32 (const unsigned a) noexcept {
     unsigned res = (unsigned)a;
     res -= (res<<6);
     res = res^(res>>17);
@@ -79,19 +79,19 @@ private:
     TK key;
     TV value;
 
-    inline bool isEmpty () const noexcept { return (hash == 0u); }
-    inline void setEmpty () noexcept { hash = 0u; }
+    VVA_ALWAYS_INLINE bool isEmpty () const noexcept { return (hash == 0u); }
+    VVA_ALWAYS_INLINE void setEmpty () noexcept { hash = 0u; }
 
-    inline void initEntry () noexcept {
+    VVA_ALWAYS_INLINE void initEntry () noexcept {
       new(&key, E_ArrayNew, E_ArrayNew)TK;
       new(&value, E_ArrayNew, E_ArrayNew)TV;
     }
 
-    inline void zeroEntry () noexcept {
+    VVA_ALWAYS_INLINE void zeroEntry () noexcept {
       memset((void *)this, 0, sizeof(*this));
     }
 
-    inline void destroyEntry () noexcept {
+    VVA_ALWAYS_INLINE void destroyEntry () noexcept {
       key.~TK();
       value.~TV();
     }
@@ -127,7 +127,7 @@ public:
 
   public:
     // ctor
-    inline TIterator (TMap_Class_Name *amap) noexcept : map(amap), index(0) {
+    VVA_ALWAYS_INLINE TIterator (TMap_Class_Name *amap) noexcept : map(amap), index(0) {
       vassert(amap);
       if (amap->mFirstEntry < 0) {
         index = amap->mEBSize;
@@ -139,50 +139,60 @@ public:
     }
 
     // special ctor that will create "end pointer"
-    inline TIterator (const TIterator &src, bool /*dummy*/) noexcept : map(src.map), index(src.map->mEBSize) {}
+    VVA_ALWAYS_INLINE TIterator (const TIterator &src, bool /*dummy*/) noexcept : map(src.map), index(src.map->mEBSize) {}
 
-    inline TIterator (const TIterator &src) noexcept : map(src.map), index(src.index) {}
-    inline TIterator &operator = (const TIterator &src) noexcept { if (&src != this) { map = src.map; index = src.index; } return *this; }
+    VVA_ALWAYS_INLINE TIterator (const TIterator &src) noexcept : map(src.map), index(src.index) {}
+    VVA_ALWAYS_INLINE TIterator &operator = (const TIterator &src) noexcept { if (&src != this) { map = src.map; index = src.index; } return *this; }
 
     // convert to bool
-    inline operator bool () const noexcept { return ((int)index <= map->mLastEntry); }
+    VVA_ALWAYS_INLINE operator bool () const noexcept { return ((int)index <= map->mLastEntry && index < map->mEBSize); }
 
     // next (prefix increment)
-    inline void operator ++ () noexcept {
+    VVA_ALWAYS_INLINE void operator ++ () noexcept {
       if (index < map->mEBSize) {
         ++index;
         while ((int)index <= map->mLastEntry && index < map->mEBSize && map->mEntries[index].isEmpty()) ++index;
-        if ((int)index > map->mLastEntry) index = map->mEBSize;
+        if ((int)index > map->mLastEntry) index = map->mEBSize; // make it equal to `end`, if necessary
       }
     }
+
+    VVA_ALWAYS_INLINE bool isValid () const noexcept { return ((int)index <= map->mLastEntry && index < map->mEBSize); }
 
     // `foreach` interface
-    inline TIterator begin () noexcept { return TIterator(*this); }
-    inline TIterator end () noexcept { return TIterator(*this, true); }
-    inline bool operator != (const TIterator &b) const noexcept { return (map != b.map || index != b.index); } /* used to compare with end */
-    inline TIterator operator * () const noexcept { return TIterator(*this); } /* required for iterator */
+    VVA_ALWAYS_INLINE TIterator begin () noexcept { return TIterator(*this); }
+    VVA_ALWAYS_INLINE TIterator end () noexcept { return TIterator(*this, true); }
+    VVA_ALWAYS_INLINE bool operator != (const TIterator &b) const noexcept { return (map != b.map || index != b.index); } /* used to compare with end */
+    VVA_ALWAYS_INLINE TIterator operator * () const noexcept { return TIterator(*this); } /* required for iterator */
 
     // key/value getters
-    inline const TK &GetKey () const noexcept { return map->mEntries[index].key; }
-    inline const TV &GetValue () const noexcept { return map->mEntries[index].value; }
-    inline TV &GetValue () noexcept { return map->mEntries[index].value; }
-    inline const TK &getKey () const noexcept { return map->mEntries[index].key; }
-    inline const TV &getValue () const noexcept { return map->mEntries[index].value; }
-    inline TV &getValue () noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE const TK &GetKey () const noexcept { return map->mEntries[index].key; }
+    VVA_ALWAYS_INLINE const TV &GetValue () const noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE TV &GetValue () noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE const TK &getKey () const noexcept { return map->mEntries[index].key; }
+    VVA_ALWAYS_INLINE const TV &getValue () const noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE TV &getValue () noexcept { return map->mEntries[index].value; }
 
-    inline const TK &key () const noexcept { return map->mEntries[index].key; }
-    inline const TV &value () const noexcept { return map->mEntries[index].value; }
-    inline TV &value () noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE const TK &key () const noexcept { return map->mEntries[index].key; }
+    VVA_ALWAYS_INLINE const TV &value () const noexcept { return map->mEntries[index].value; }
+    VVA_ALWAYS_INLINE TV &value () noexcept { return map->mEntries[index].value; }
 
-    inline void removeCurrent () noexcept {
+    // can be used after removing item, for example
+    VVA_ALWAYS_INLINE bool isValidEntry () const noexcept {
+      return ((int)index <= map->mLastEntry && index < map->mEBSize && !map->mEntries[index].isEmpty());
+    }
+
+    VVA_ALWAYS_INLINE void removeCurrentNoAdvance () noexcept {
       if ((int)index <= map->mLastEntry && index < map->mEBSize) {
-        if (!map->mEntries[index].isEmpty()) map->del(map->mEntries[index].key);
-        operator++();
+        if (!map->mEntries[index].isEmpty()) {
+          //map->del(map->mEntries[index].key);
+          (void)map->delInternal(map->mEntries[index].key, map->mEntries[index].hash);
+        }
+        //operator++();
       }
     }
-    inline void RemoveCurrent () noexcept { removeCurrent(); }
+    VVA_ALWAYS_INLINE void RemoveCurrentNoAdvance () noexcept { removeCurrentNoAdvance(); }
 
-    inline void resetToFirst () noexcept {
+    VVA_ALWAYS_INLINE void resetToFirst () noexcept {
       if (map->mFirstEntry < 0) {
         index = map->mEBSize;
       } else {
@@ -197,42 +207,42 @@ public:
 
 public:
   // this is for VavoomC VM
-  inline bool isValidIIdx (int index) const noexcept {
-    return (index >= 0 && index <= mLastEntry);
+  VVA_ALWAYS_INLINE bool isValidIIdx (int index) const noexcept {
+    return (index >= 0 && index <= mLastEntry && index < (int)mEBSize && !mEntries[index].isEmpty());
   }
 
   // this is for VavoomC VM
-  inline int getFirstIIdx () const noexcept {
+  VVA_ALWAYS_INLINE int getFirstIIdx () const noexcept {
     if (mFirstEntry < 0) return -1;
     int index = mFirstEntry;
     while (index <= mLastEntry && index < (int)mEBSize && mEntries[index].isEmpty()) ++index;
-    return (int)(index <= mLastEntry ? index : -1);
+    return (index <= mLastEntry && index < (int)mEBSize ? index : -1);
   }
 
   // <0: done
-  inline int getNextIIdx (int index) const noexcept {
+  VVA_ALWAYS_INLINE int getNextIIdx (int index) const noexcept {
     if (index >= 0 && index <= mLastEntry) {
       ++index;
-      while (index <= mLastEntry && mEntries[index].isEmpty()) ++index;
-      return (index <= mLastEntry ? index : -1);
+      while (index <= mLastEntry && index < (int)mEBSize && mEntries[index].isEmpty()) ++index;
+      return (index <= mLastEntry && index < (int)mEBSize ? index : -1);
     }
     return -1;
   }
 
-  inline int removeCurrAndGetNextIIdx (int index) noexcept {
-    if (index >= 0 && index <= mLastEntry) {
+  VVA_ALWAYS_INLINE int removeCurrAndGetNextIIdx (int index) noexcept {
+    if (index >= 0 && index <= mLastEntry && index < (int)mEBSize) {
       if (!mEntries[index].isEmpty()) del(mEntries[index].key);
       return getNextIIdx(index);
     }
     return -1;
   }
 
-  inline const TK *getKeyIIdx (int index) const noexcept {
-    return (isValidIIdx(index) && !mEntries[index].isEmpty() ? &mEntries[index].key : nullptr);
+  VVA_ALWAYS_INLINE const TK *getKeyIIdx (int index) const noexcept {
+    return (isValidIIdx(index) /*&& !mEntries[index].isEmpty()*/ ? &mEntries[index].key : nullptr);
   }
 
-  inline TV *getValueIIdx (int index) const noexcept {
-    return (isValidIIdx(index) && !mEntries[index].isEmpty() ? &mEntries[index].value : nullptr);
+  VVA_ALWAYS_INLINE TV *getValueIIdx (int index) const noexcept {
+    return (isValidIIdx(index) /*&& !mEntries[index].isEmpty()*/ ? &mEntries[index].value : nullptr);
   }
 
 private:
@@ -270,7 +280,7 @@ private:
       res = mFreeEntryHead;
       mFreeEntryHead = res->nextFree;
       // fix mFirstEntry and mLastEntry
-      int idx = (int)(res-&mEntries[0]);
+      int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
       if (mFirstEntry < 0 || idx < mFirstEntry) mFirstEntry = idx;
       if (idx > mLastEntry) mLastEntry = idx;
     }
@@ -283,7 +293,7 @@ private:
   }
 
   void releaseEntry (TEntry *e) noexcept {
-    const int idx = (int)(e-&mEntries[0]);
+    const int idx = (int)(ptrdiff_t)(e-&mEntries[0]);
     #if !defined(TMAP_NO_CLEAR)
     e->destroyEntry();
     #endif
@@ -313,7 +323,7 @@ private:
     }
   }
 
-  inline unsigned distToStIdx (unsigned idx) const noexcept {
+  VVA_ALWAYS_INLINE unsigned distToStIdx (unsigned idx) const noexcept {
     #ifndef TMAP_USE_MULTIPLY
     unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
     #else
@@ -352,14 +362,60 @@ private:
     __builtin_trap(); // we should not come here, ever
   }
 
-public:
-  inline TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {}
+  // if key hash is known
+  bool delInternal (const TK &akey, const unsigned khash) noexcept {
+    if (mBucketsUsed == 0) return false;
 
-  inline TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {
+    const unsigned bhigh = (unsigned)(mEBSize-1);
+    #ifndef TMAP_USE_MULTIPLY
+    unsigned idx = (khash^mSeed)&bhigh;
+    #else
+    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
+
+    // find key
+    if (!mBuckets[idx]) return false; // no key
+    bool res = false;
+    for (unsigned dist = 0; dist <= bhigh; ++dist) {
+      if (!mBuckets[idx]) break;
+      unsigned pdist = distToStIdx(idx);
+      if (dist > pdist) break;
+      res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
+      if (res) break;
+      idx = (idx+1)&bhigh;
+    }
+
+    if (!res) return false; // key not found
+
+    releaseEntry(mBuckets[idx]);
+
+    if (mBucketsUsed > 1) {
+      unsigned idxnext = (idx+1)&bhigh;
+      for (unsigned dist = 0; dist <= bhigh; ++dist) {
+        if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
+        unsigned pdist = distToStIdx(idxnext);
+        if (pdist == 0) { mBuckets[idx] = nullptr; break; }
+        mBuckets[idx] = mBuckets[idxnext];
+        idx = (idx+1)&bhigh;
+        idxnext = (idxnext+1)&bhigh;
+      }
+    } else {
+      mBuckets[idx] = nullptr;
+    }
+
+    --mBucketsUsed;
+
+    return true;
+  }
+
+public:
+  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {}
+
+  VVA_ALWAYS_INLINE TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {
     operator=(other);
   }
 
-  inline ~TMap_Class_Name () noexcept { clear(); }
+  VVA_ALWAYS_INLINE ~TMap_Class_Name () noexcept { clear(); }
 
   TMap_Class_Name &operator = (const TMap_Class_Name &other) noexcept {
     if (&other != this) {
@@ -591,69 +647,28 @@ public:
   }
 
   //WARNING! returned pointer will be invalidated by any map mutation
-  inline TV *Find (const TK &Key) noexcept { return get(Key); }
-  inline TV *find (const TK &Key) noexcept { return get(Key); }
-  inline const TV *Find (const TK &Key) const noexcept { return get(Key); }
-  inline const TV *find (const TK &Key) const noexcept { return get(Key); }
+  VVA_ALWAYS_INLINE TV *Find (const TK &Key) noexcept { return get(Key); }
+  VVA_ALWAYS_INLINE TV *find (const TK &Key) noexcept { return get(Key); }
+  VVA_ALWAYS_INLINE const TV *Find (const TK &Key) const noexcept { return get(Key); }
+  VVA_ALWAYS_INLINE const TV *find (const TK &Key) const noexcept { return get(Key); }
 
-  inline const TV FindPtr (const TK &Key) const noexcept {
+  VVA_ALWAYS_INLINE const TV FindPtr (const TK &Key) const noexcept {
     auto res = get(Key);
     if (res) return *res;
     return nullptr;
   }
-  inline const TV findptr (const TK &Key) const noexcept { return FindPtr(Key); }
+  VVA_ALWAYS_INLINE const TV findptr (const TK &Key) const noexcept { return FindPtr(Key); }
 
   // see http://codecapsule.com/2013/11/17/robin-hood-hashing-backward-shift-deletion/
-  bool del (const TK &akey) noexcept {
+  VVA_ALWAYS_INLINE bool del (const TK &akey) noexcept {
     if (mBucketsUsed == 0) return false;
-
-    const unsigned bhigh = (unsigned)(mEBSize-1);
     unsigned khash = GetTypeHash(akey);
     khash += !khash; // avoid zero hash value
-    //if (!khash) khash = 1; // avoid zero hash value
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
-
-    // find key
-    if (!mBuckets[idx]) return false; // no key
-    bool res = false;
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) break;
-      unsigned pdist = distToStIdx(idx);
-      if (dist > pdist) break;
-      res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
-      if (res) break;
-      idx = (idx+1)&bhigh;
-    }
-
-    if (!res) return false; // key not found
-
-    releaseEntry(mBuckets[idx]);
-
-    if (mBucketsUsed > 1) {
-      unsigned idxnext = (idx+1)&bhigh;
-      for (unsigned dist = 0; dist <= bhigh; ++dist) {
-        if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
-        unsigned pdist = distToStIdx(idxnext);
-        if (pdist == 0) { mBuckets[idx] = nullptr; break; }
-        mBuckets[idx] = mBuckets[idxnext];
-        idx = (idx+1)&bhigh;
-        idxnext = (idxnext+1)&bhigh;
-      }
-    } else {
-      mBuckets[idx] = nullptr;
-    }
-
-    --mBucketsUsed;
-
-    return true;
+    return delInternal(akey, khash);
   }
 
-  inline bool Remove (const TK &Key) noexcept { return del(Key); }
-  inline bool remove (const TK &Key) noexcept { return del(Key); }
+  VVA_ALWAYS_INLINE bool Remove (const TK &Key) noexcept { return del(Key); }
+  VVA_ALWAYS_INLINE bool remove (const TK &Key) noexcept { return del(Key); }
 
   // returns `true` if old value was replaced
   bool put (const TK &akey, const TV &aval) noexcept {
@@ -713,12 +728,12 @@ public:
     return false;
   }
 
-  inline void Set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
-  inline void set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
+  VVA_ALWAYS_INLINE void Set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
+  VVA_ALWAYS_INLINE void set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
 
-  inline int count () const noexcept { return (int)mBucketsUsed; }
-  inline int length () const noexcept { return (int)mBucketsUsed; }
-  inline int capacity () const noexcept { return (int)mEBSize; }
+  VVA_ALWAYS_INLINE int count () const noexcept { return (int)mBucketsUsed; }
+  VVA_ALWAYS_INLINE int length () const noexcept { return (int)mBucketsUsed; }
+  VVA_ALWAYS_INLINE int capacity () const noexcept { return (int)mEBSize; }
 
   #ifdef CORE_MAP_TEST
   int countItems () const noexcept {
@@ -728,5 +743,5 @@ public:
   }
   #endif
 
-  inline TIterator first () noexcept { return TIterator(this); }
+  VVA_ALWAYS_INLINE TIterator first () noexcept { return TIterator(this); }
 };

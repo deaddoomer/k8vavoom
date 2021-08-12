@@ -1440,6 +1440,7 @@ vuint32 VScriptDictElem::calcHash () const {
     case TYPE_SliceArray:
     case TYPE_Array:
     case TYPE_Struct:
+      //FIXME: this expects struct align bytes to be zeroed
       return joaatHashBuf(&value, (size_t)type.GetSize());
     case TYPE_Bool:
       return 0;
@@ -1735,49 +1736,82 @@ bool VScriptDict::cleanRefs () {
   if (!map) return false;
   if (map->count() == 0) return false;
   auto it = map->first();
-  if (!it) return false;
+  if (!it.isValid()) return false;
 
   // get types
-  VFieldType kt = it.getKey().type;
-  VFieldType vt = it.getValue().type;
+  const VFieldType kt = it.getKey().type;
+  const VFieldType vt = it.getValue().type;
+
+  // references are simple
+  const bool ktsimple = VScriptDictElem::isSimpleType(kt);
+  const bool vtsimple = VScriptDictElem::isSimpleType(vt);
+  if (ktsimple && vtsimple && vt.Type != TYPE_Reference && kt.Type != TYPE_Reference) return false; // nothing to do
 
   bool res = false;
+  bool needRehash = false;
 
-  // special handling for object keys
-  if (kt.Type == TYPE_Reference) {
-    while (!it) {
+  for (; it.isValid(); ++it) {
+    // cleanup key references
+    if (kt.Type == TYPE_Reference) {
       VObject *obj = *(VObject **)it.getKey().value;
       if (obj && obj->IsRefToCleanup()) {
-        //VObject::VMDumpCallStack();
-        //VPackage::InternalFatalError("dictionary key cleanup is not supported (yet)");
+        // this key must be removed
         res = true;
-        it.removeCurrent();
-      } else {
-        ++it;
-      }
-    }
-    it.resetToFirst();
-    if (!it) return res;
-  }
-
-  bool ktsimple = VScriptDictElem::isSimpleType(kt);
-  bool vtsimple = VScriptDictElem::isSimpleType(vt);
-  if (ktsimple && vtsimple && vt.Type != TYPE_Reference) return res; // nothing to do
-
-  while (it) {
-    if (!vtsimple) {
-      if (VField::CleanField((vuint8 *)it.getValue().value, vt)) res = true;
-    }
-    if (!ktsimple) {
-      if (VField::CleanField((vuint8 *)it.getKey().value, kt)) {
-        VObject::VMDumpCallStack();
-        VPackage::InternalFatalError("dictionary key cleanup is not supported (yet)");
-        res = true;
-        it.removeCurrent();
+        //it.getKey().clear();
+        //it.getValue().clear();
+        it.removeCurrentNoAdvance(); // this will clear both key and value
         continue;
       }
     }
-    ++it;
+
+    // value
+    if (!vtsimple) {
+      vuint8 *val = (vuint8 *)it.getValue().value;
+      if (val && VField::CleanField(val, vt)) {
+        res = true;
+        //WARNING! never use same objects for keys and for values!
+        // if this is some complex object, and it wasn't copied, and was cleaned, rehash, just in case
+        //if (!ktsimple && !needRehash) needRehash = !it.getValue().needDestroy();
+      }
+    } else if (vt.Type == TYPE_Reference) {
+      VObject *obj = *(VObject **)it.getValue().value;
+      if (obj && obj->IsRefToCleanup()) {
+        res = true;
+        it.getValue().clear();
+      }
+    }
+
+    // key
+    if (!ktsimple) {
+      // cleanup can change hash values, so make sure that we will rehash everything
+      vuint8 *val = (vuint8 *)it.getKey().value;
+      if (val && VField::CleanField(val, kt)) {
+        res = true;
+        needRehash = true;
+      }
+    }
+  }
+
+  if (map->count() == 0) {
+    clear(); // deallocate empty map
+    return res;
+  }
+
+  // if we need to rehash, recreate the table
+  // we need to recreate it because there can be key collisions now
+  if (needRehash) {
+    auto newmap = new TMap<VScriptDictElem, VScriptDictElem>;
+    for (auto &&oit : map->first()) {
+      if (newmap->has(oit.getKey())) {
+        // delete old item
+        oit.removeCurrentNoAdvance();
+      } else {
+        newmap->put(oit.getKey(), oit.getValue());
+      }
+    }
+    map->reset();
+    delete map;
+    map = newmap;
   }
 
   return res;

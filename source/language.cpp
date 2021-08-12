@@ -55,10 +55,10 @@ VLanguage::~VLanguage () noexcept {
 //
 //==========================================================================
 void VLanguage::FreeNonDehackedStrings () {
-  auto it = table.first();
-  while (it) {
-    if (it.getValue().PassNum != 0) it.removeCurrent(); else ++it;
+  for (auto &&it : table.first()) {
+    if (it.getValue().PassNum != 0) it.removeCurrentNoAdvance();
   }
+  table.compact();
 }
 
 
